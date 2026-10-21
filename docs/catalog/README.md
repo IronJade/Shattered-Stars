@@ -1,0 +1,47 @@
+# Reverse-engineering catalog
+
+Everything identified in Star Ocean 2 goes here, so it never has to be worked out twice.
+These files are the source of truth: the tools read names from them, and nothing else
+should hold a name that isn't recorded here.
+
+| File | Contents |
+|---|---|
+| `functions.csv` | Every named function: address, name, C-style signature, what it does |
+| `globals.csv` | Global variables and the structures behind them |
+| `script_opcodes.csv` | The event-script VM instruction set, with argument counts |
+| `formats.md` | File and data formats (archive, compression, programs, maps, scripts, text) |
+
+## Columns
+
+- **module**: which code the address belongs to. Programs share addresses, so the module
+  is part of the key.
+  - `boot`: `SCUS_944.21` / `.22`, resident at `0x80010000`
+  - `title`: archive entry #1 at `0x8002f810`
+  - `field`: archive entry #3100 at `0x8002f810`
+- **signature**: C-style, with struct names for pointers (`Loader *`, `ScriptCtx *`).
+  Unknown parameters are `int argN`.
+- **confidence**:
+  - `confirmed`: read in full from the decompilation, or checked against live data or a
+    reimplementation
+  - `likely`: consistent with the code read and the call sites
+  - `guess`: a working name from call sites only; verify before relying on it
+- **evidence**: how it was established, so it can be rechecked.
+- **port** (functions.csv): where the C++ port lives in `engine/`, empty until it's ported.
+  The share of rows with a port is the porting progress.
+
+Naming: `subsystem_verb_object` in snake_case (`loader_select_entry`, `inventory_add`).
+Sony library functions keep their SDK names (`CdControl`). Names that were never read
+(`FUN_8003xxxx` in Ghidra) stay out of the catalog until they are.
+
+## How the tools use it
+
+- `tools/psxexe2elf.py --symbols docs/catalog/functions.csv:boot,field` embeds the names for
+  the listed modules in the ELF that REA and Ghidra analyse.
+- `tools/ghidra_scripts/ApplyNames.java <csv> boot` names functions in the Ghidra project.
+- `analysis/SCUS_944.21.psyq.sym` holds the 406 PsyQ library names Ghidra's signature
+  matcher found; it is generated, so it isn't copied here.
+
+## Adding an entry
+
+Add the row when a function's purpose is established, even partially (use `guess`), and
+raise the confidence when it's confirmed. Keep one row per address and module.

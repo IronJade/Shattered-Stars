@@ -1,0 +1,6 @@
+# Game discs and everything derived from them: large and copyrighted.
+Source BIN files/
+extracted/
+analysis/
+__pycache__/
+engine/build*/

@@ -1,0 +1,61 @@
+module,address,name,type,summary,confidence,evidence
+boot,0x8002b550,g_system,System *,"Resident System object (0x8e5c bytes on the heap). +0x1 SLZ context, +0x4 graphics, +0x10 Loader (table of contents at +4 / +0x4804), +0x5a20 handoff registry, +0x5aa4 sound system",confirmed,boot_main
+boot,0x8002b468,g_rng_table,int[56],ran3 state (index 1..55 used),confirmed,rng_seed
+boot,0x8002b464,g_rng_index,int,ran3 position,confirmed,rng_next
+boot,0x8002b544,g_rng_seed,int,Last seed passed to rng_seed (0x4e421714 at boot),confirmed,rng_seed
+boot,0x8002b568,g_cd_bytes_left,int,Bytes still to read for the current load,confirmed,cd_sector_ready_callback
+boot,0x8002b56c,g_cd_dest,u8 *,Destination pointer for the next sector,confirmed,cd_sector_ready_callback
+boot,0x8002b57c,g_loader_busy,u8,Nonzero while a read is active,confirmed,loader_load_sync
+boot,0x8002b59c,g_cd_target_loc,CdlLOC,BCD position the drive seeks to,confirmed,loader_select_entry
+title,0x8004ebdc,t_system,System *,System object as seen by program #1,confirmed,title_program_main
+title,0x8004ebe4,t_loader,Loader *,System + 0x10,confirmed,title_program_main
+title,0x8004ebe8,t_slz_ctx,void *,System + 1 (first argument of slz_unpack),confirmed,title_program_main
+title,0x8004ebf8,t_sound,Sound *,System + 0x5aa4,confirmed,title_program_main
+title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main
+field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
+field,0x8007525c,f_loader,Loader *,System + 0x10,likely,usage with loader_* calls
+field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
+field,0x80075274,f_sound,Sound *,Sound system (music / effects),likely,music opcodes
+field,0x80075708,script_globals,u8 *,"Script global variable memory, byte-addressed. Word 0 is the VM return register",confirmed,vm_thread_update
+field,0x80075704,script_flags,u8 *,"Script global flag bits (bit n = byte n>>3, bit n&7). Event / chest state lives here",confirmed,vm_thread_update
+field,0x80075710,game_state,GameState *,"+0x08/+0x0c/+0x10 arrival position for map transfer, +0x1c current music, +0x24 leader actor index, +0x180 48 words of script-visible values, +0x248/+0x24a/+0x24c 16-bit counters (0x248 changed by add_money)",likely,table A + map_transfer
+field,0x80075270,game_counters,Counters *,"+0x14 program-swap counter, +0x18 counter clamped 0..999999999, +0x1c/+0x20/+0x24/+0x28/+0x2c readable counters, +0xe8 12-byte rows",likely,table A / ext 0xd3-0xd4
+field,0x8007527c,party_table,PartySlot[8],"0x60 bytes per slot. +0x00 s16 character id + 1 (negative = inactive?), +0x22 s16 maximum, +0x24 s16 current (HP?)",likely,table A 0x1e / 0x1f
+field,0x80075280,character_records,Character[8],"0xd0 bytes each. +0x0c..+0x18 seven s16 equipment slots, +0x1a s16 capped at 999, +0x3c / +0x5c byte arrays, +0xcc two bytes",likely,equipment functions
+field,0x80075278,inventory,u16[],"Item entries: bits 0-9 item id, bits 10-14 count",likely,table A 0x39
+field,0x80075360,field_actors,Actor *[],"Field actors indexed by script actor number; +0x00/+0x04/+0x08 position (<<12 fixed point)",likely,table A / ext actor opcodes
+field,0x80075668,message_windows,MsgWindow *[],Message windows indexed by window number,likely,message opcodes
+field,0x80075284,field_system,Field *,Map / field system object,likely,field_load_map
+field,0x80075288,message_system,Msg *,Message system,likely,msg_window_open
+field,0x8007570c,field_flags,u8 *,"Field-mode flags (+0x10 controlled actor, +0x26 input lock, +0x68 ...)",guess,scattered uses
+field,0x800750cc,music_table,s16[100],Script music numbers (< 100) map through this table,likely,music opcodes
+field,0x80077384,map_transfer_table,s16[],Map ids for map_transfer_table (ext 0xbb),likely,ext 0xbb
+field,0x1f800000,vm_args,int[16],Scratchpad buffer vm_fetch_args fills,confirmed,vm_fetch_args
+title,0x8004ec14,g_prologue_data,u8 *,0x52800-byte buffer: the prologue's first part (#2680 Claude / #2681 Rena) preloaded during name entry,confirmed,new_game_sequence
+title,0x8004ec18,g_text_x,s16,Next free texel column of the New Game text line buffer,confirmed,text_draw
+title,0x8004ec1a,g_text_line,s16,First texel row of the current text line,confirmed,text_draw
+title,0x8004ec1c,g_text_strings,u8 *,New Game string table (entry #14 block 0),confirmed,text_find
+title,0x8004ec20,g_text_font,u8 *,New Game font (entry #14 block 1),confirmed,text_draw
+title,0x8004ec24,g_text_pixels,u8 *,0x8000-byte 4-bit text line buffer (uploaded to VRAM 0x3c0; 0x100),confirmed,text_frame_upload
+title,0x8004ec28,g_battle_rank_unlocked,u8,Set by the Voice Collection (over half the voices heard); adds the Battle Rank screen to New Game,likely,voice_collection
+title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
+title,0x8004ecb0,g_load_queue_entry,u16[16],Background load queue: entries,confirmed,async_load
+title,0x8004ec70,g_load_queue_dest,void *[16],Background load queue: destinations,confirmed,async_load
+title,0x8004ecd0,g_load_current,u16,Entry being read by the load queue (0 = idle),confirmed,load_fifo_update
+boot,0x8002b584,g_cd_slot_bytes,int,Streaming: bytes per ring slot (the movie player uses 0x5000: ten sectors),confirmed,loader_start_stream
+boot,0x8002b58c,g_cd_slot_count,s16,Streaming: slots in the ring (2 for movies),confirmed,loader_start_stream
+boot,0x8002b58e,g_cd_slot,s16,Streaming: slot being filled; loader_stream_slot returns the one before it,confirmed,cd_sector_ready_callback
+boot,0x8002b592,g_cd_stream_headers,u8,Streaming: each sector's 32-byte STR header goes to the slot's header table (0x8002b570) and the rest to 0x8002b574,confirmed,cd_sector_ready_callback
+boot,0x8002b594,g_cd_defer_sectors,u8,Sectors wait while set (24-bit MDEC transfers); see loader_defer_sectors,likely,movie_update
+boot,0x8002b595,g_cd_sector_deferred,u8,A sector is waiting; movie_dma_callback then calls cd_sector_ready_callback,likely,movie_dma_callback
+title,0x80050aa8,g_movie_screen_cleared,s32,Both display buffers were cleared before the first frame,confirmed,movie_update
+title,0x80050aac,g_movie_slice_half,s32,Half of the slice buffer the MDEC fills next,confirmed,movie_dma_callback
+title,0x80050ab0,g_movie_slice_rect,RECT,VRAM column (mode * 8 halfwords x height) the finished slice is loaded to,confirmed,movie_dma_callback
+title,0x80050ab8,g_movie_slices,u_long *,Two MDEC output slices of mode * 0xf00 bytes (16 x 240 pixels each),confirmed,movie_open
+title,0x80050abc,g_movie_frame_count,s32,Frames decoded or skipped since movie_create. The intro and the attract mode start the opening's music once it passes 9; the prologue's cue clock while a movie plays,confirmed,movie_update + title_intro_sequence
+title,0x80050ac0,g_movie_frame_ready,s32,A frame is finished and waits for movie_present,confirmed,movie_dma_callback
+title,0x80050ac4,g_movie_decoding,s32,A frame is going through the MDEC (until movie_present),confirmed,movie_update
+title,0x80050ac8,g_movie_draw_buffer,s32,0: frames are decoded to y; 1: to y + 240,confirmed,movie_update
+title,0x80050acc,g_movie_rect,s16[4],x; y; width; height from movie_create,confirmed,movie_create
+title,0x80050ad4,g_movie_mode,s16,3 = 24-bit output; 2 = 15-bit (VRAM halfwords per two pixels),confirmed,movie_create
+title,0x80050ad6,g_movie_frames_in_ram,u8,Decode whole frames to RAM instead of VRAM; cleared by movie_create and never set,confirmed,movie_create

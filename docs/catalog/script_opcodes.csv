@@ -1,0 +1,452 @@
+group,opcode,sub,name,inline_args,stack_args,extra_words,summary,confidence
+core,"0x01,0x02,0x08",,pop_store_s32,,,0,Pop; store 32-bit to G/L var,confirmed
+core,"0x03,0x04",,pop_store_s16,,,0,Pop; store 16-bit,confirmed
+core,"0x05,0x06",,pop_store_s8,,,0,Pop; store 8-bit,confirmed
+core,0x07,,pop_store_flag,,,0,Pop; set flag if nonzero else clear,confirmed
+core,0x09,,index_scale,,,0,R = pop * imm (index into an array; element size remembered for 0x0a/0x10),confirmed
+core,0x0a,,index_load,,,0,"Load element at R + imm, push",confirmed
+core,"0x0b,0x0f",,push_s32,,,0,Push 32-bit var,confirmed
+core,0x0c,,push_s16,,,0,Push 16-bit var,confirmed
+core,0x0d,,push_u8,,,0,Push 8-bit var,confirmed
+core,0x0e,,push_flag,,,0,Push flag bit,confirmed
+core,0x10,,index_load_var,,,1,Load element at var + next word,confirmed
+core,0x11,,ret_mul,,,0,R *= imm,confirmed
+core,0x12,,push,,,0,Push 24-bit immediate,confirmed
+core,0x13,,push32,,,1,Push next word,confirmed
+core,0x14,,call,,,0,Call code_base + imm24*4,confirmed
+core,0x15,,jmp,,,0,Jump code_base + imm24*4,confirmed
+core,0x16,,jz,,,0,Pop; jump if zero,confirmed
+core,0x17,,return,,,0,Return; thread ends at call depth 0,confirmed
+core,0x18,,frame,,,1,Reserve local flag bytes (imm) and var bytes (next word),confirmed
+core,0x19,,push_eq_s32,,,1,Push (var32 == next word),confirmed
+core,0x1a,,store_s32_imm,,,1,var32 = next word,confirmed
+core,0x1b,,push_eq_s16,,,1,Push (var16 == next word),confirmed
+core,0x1c,,push_eq_u8,,,1,Push (var8 == next word),confirmed
+core,0x1d,,push_eq_flag,,,1,Push (flag == next word),confirmed
+core,0x21,,store_typed,,,1,Typed var = next word (type in bits 16-19); R = value,confirmed
+core,0x22,,pop_store_typed,,,0,Typed var = pop; R = value,confirmed
+core,0x23..0x45 odd,,binop_imm,,,1,R = var OP next word: add sub mul div mod and or xor shl shr eq ne gt lt ge le,confirmed
+core,0x24..0x46 even,,binop_pop,,,0,R = var OP pop,confirmed
+core,0x38,,logical_and,,,0,R = pop && pop,confirmed
+core,0x3a,,logical_or,,,0,R = pop || pop,confirmed
+core,0x47,,inc,,,0,var += 1,confirmed
+core,0x48,,dec,,,0,var -= 1,confirmed
+core,0x49,,not,,,0,R = ~var (flag: logical not),confirmed
+core,0x4a,,not_pop,,,0,R = ~pop,confirmed
+core,0x4b,,is_zero,,,0,R = (var == 0),confirmed
+core,0x4c,,is_zero_pop,,,0,R = !pop,confirmed
+core,0x4d..0x5f odd,,assign_imm,,,1,var OP= next word: add sub mul div mod and or xor shl shr (flags: and/or/xor),confirmed
+core,0x4e..0x60 even,,assign_pop,,,0,var OP= pop,confirmed
+core,0x61..0x63,,block_store,,,1 + N,Copy N words (N = next word) from the code stream into vars,confirmed
+ext,0x64,,msg_open,7,5,3 (inline),Message window with string (variants 0x64-0x6f: x/y/w/h/string/window...),likely
+ext,0x65,,ext_65,8,6,4 (inline),,args-only
+ext,0x66,,msg_show_66,3,1,1 (inline),Message with string number (short form of msg_open),likely
+ext,0x67,,msg_show_67,4,2,2 (inline),Message with string number (short form of msg_open),likely
+ext,0x68,,ext_68,7,5,3 (inline),,args-only
+ext,0x69,,ext_69,8,6,4 (inline),,args-only
+ext,0x6a,,msg_show_6a,3,1,1 (inline),Message with string number (short form of msg_open),likely
+ext,0x6b,,msg_show_6b,4,2,2 (inline),Message with string number (short form of msg_open),likely
+ext,0x6c,,ext_6c,7,5,3 (inline),,args-only
+ext,0x6d,,ext_6d,8,6,4 (inline),,args-only
+ext,0x6e,,msg_show_6e,3,1,1 (inline),Message with string number (short form of msg_open),likely
+ext,0x6f,,msg_show_6f,4,2,2 (inline),Message with string number (short form of msg_open),likely
+ext,0x70,,ext_70,9,8,4 (inline),,args-only
+ext,0x71,,ext_71,1,1,0 (inline),,args-only
+ext,0x72,,ext_72,2,2,1 (inline),,args-only
+ext,0x73,,ext_73,2,2,1 (inline),,args-only
+ext,0x74,,thread_start,11,9,5 (inline),Start a script thread at code_base + addr*4,likely
+ext,0x75,,thread_start_ex,13,11,6 (inline),thread_start with an extra range pair,likely
+ext,0x76,,ext_76,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+ext,0x77,,ext_77,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+ext,0x78,,ext_78,3,3,1 (inline),,args-only
+ext,0x79,,ext_79,4,4,2 (inline),,args-only
+ext,0x7a,,wait,1,1,0 (inline),Wait N frames (ctx+0xc += arg),confirmed
+ext,0x7b,,ext_7b,0,0,0 (inline),,args-only
+ext,0x7c,,ext_7c,2,2,1 (inline),,args-only
+ext,0x7d,,map_transfer,6,6,3 (inline),"(map, transition, x, y, z, dir): preloads entry 0xc87+map then loads the map",confirmed
+ext,0x7e,,ext_7e,0,0,0 (inline),,args-only
+ext,0x7f,,ext_7f,1,1,0 (inline),,args-only
+ext,0x80,,ext_80,0,0,0 (inline),,args-only
+ext,0x81,,ext_81,1,1,0 (inline),,args-only
+ext,0x82,,ext_82,0,0,0 (inline),,args-only
+ext,0x83,,ext_83,1,1,0 (inline),,args-only
+ext,0x84,,ext_84,0,0,0 (inline),,args-only
+ext,0x85,,ext_85,3,3,1 (inline),,args-only
+ext,0x86,,ext_86,4,4,2 (inline),,args-only
+ext,0x87,,ext_87,5,5,2 (inline),,args-only
+ext,0x88,,ext_88,6,6,3 (inline),,args-only
+ext,0x89,,ext_89,7,7,3 (inline),,args-only
+ext,0x8a,,ext_8a,4,4,2 (inline),,args-only
+ext,0x8b,,ext_8b,5,5,2 (inline),,args-only
+ext,0x8c,,ext_8c,6,6,3 (inline),,args-only
+ext,0x8d,,ext_8d,7,7,3 (inline),,args-only
+ext,0x8e,,ext_8e,8,8,4 (inline),,args-only
+ext,0x8f,,ext_8f,2,2,1 (inline),,args-only
+ext,0x90,,ext_90,3,3,1 (inline),,args-only
+ext,0x91,,ext_91,4,4,2 (inline),,args-only
+ext,0x92,,ext_92,5,5,2 (inline),,args-only
+ext,0x93,,ext_93,6,6,3 (inline),,args-only
+ext,0x94,,ext_94,4,4,2 (inline),,args-only
+ext,0x95,,ext_95,5,5,2 (inline),,args-only
+ext,0x96,,ext_96,4,4,2 (inline),,args-only
+ext,0x97,,ext_97,5,5,2 (inline),,args-only
+ext,0x98,,ext_98,4,4,2 (inline),,args-only
+ext,0x99,,ext_99,4,4,2 (inline),,args-only
+ext,0x9a,,ext_9a,2,2,1 (inline),,args-only
+ext,0x9b,,ext_9b,4,4,2 (inline),,args-only
+ext,0x9c,,ext_9c,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+ext,0x9d,,ext_9d,4,4,2 (inline),,args-only
+ext,0x9e,,ext_9e,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+ext,0x9f,,ext_9f,4,4,2 (inline),,args-only
+ext,0xa0,,ext_a0,2,2,1 (inline),,args-only
+ext,0xa1,,ext_a1,1,1,0 (inline),,args-only
+ext,0xa2,,ext_a2,1,1,0 (inline),,args-only
+ext,0xa3,,ext_a3,1,1,0 (inline),,args-only
+ext,0xa4,,map_transfer_b,7,7,3 (inline),map_transfer + extra value stored in game_state+0x1e,confirmed
+ext,0xa5,,ext_a5,3,3,1 (inline),,args-only
+ext,0xa6,,ext_a6,0,0,0 (inline),,args-only
+ext,0xa7,,ext_a7,0,0,0 (inline),,args-only
+ext,0xa8,,ext_a8,1,1,0 (inline),,args-only
+ext,0xa9,,ext_a9,1,1,0 (inline),,args-only
+ext,0xaa,,ext_aa,2,2,1 (inline),,args-only
+ext,0xab,,ext_ab,4,4,2 (inline),,args-only
+ext,0xac,,ext_ac,2,2,1 (inline),,args-only
+ext,0xad,,ext_ad,1,1,0 (inline),,args-only
+ext,0xae,,ext_ae,1,1,0 (inline),,args-only
+ext,0xaf,,ext_af,1,1,0 (inline),,args-only
+ext,0xb0,,ext_b0,2,2,1 (inline),,args-only
+ext,0xb1,,ext_b1,1,1,0 (inline),,args-only
+ext,0xb2,,ext_b2,0,0,0 (inline),,args-only
+ext,0xb3,,ext_b3,1,1,0 (inline),,args-only
+ext,0xb4,,ext_b4,2,2,1 (inline),,args-only
+ext,0xb5,,ext_b5,4,4,2 (inline),,args-only
+ext,0xb6,,ext_b6,2,2,1 (inline),,args-only
+ext,0xb7,,battle,3,3,1 (inline),Start a battle (preloads battle resources; wait state 0xb),likely
+ext,0xb8,,music,1,1,0 (inline),Change BGM (numbers < 100 go through music_table),confirmed
+ext,0xb9,,ext_b9,4,4,2 (inline),,args-only
+ext,0xba,,ext_ba,1,1,0 (inline),,args-only
+ext,0xbb,,map_transfer_table,1,1,0 (inline),map_transfer to map_transfer_table[arg],confirmed
+ext,0xbc,,battle_b,3,3,1 (inline),Battle variant,likely
+ext,0xbd,,ext_bd,1,1,0 (inline),,args-only
+ext,0xbe,,ext_be,0,0,0 (inline),,args-only
+ext,0xbf,,ext_bf,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+ext,0xc0,,ext_c0,3,3,1 (inline),,args-only
+ext,0xc1,,ext_c1,0,0,0 (inline),,args-only
+ext,0xc2,,ext_c2,4,3,2 (inline),,args-only
+ext,0xc3,,ext_c3,4,3,2 (inline),,args-only
+ext,0xc4,,ext_c4,4,3,2 (inline),,args-only
+ext,0xc5,,music_ex,3,3,1 (inline),music with fade parameters,likely
+ext,0xc6,,ext_c6,0,0,0 (inline),,args-only
+ext,0xc7,,ext_c7,0,0,0 (inline),,args-only
+ext,0xc8,,play_sfx,3,3,1 (inline),"Play sound effect (id, pan, volume; 0x7f40 = default volume); R = voice",likely
+ext,0xc9,,ext_c9,1,1,0 (inline),,args-only
+ext,0xca,,ext_ca,1,1,0 (inline),,args-only
+ext,0xcb,,ext_cb,5,5,2 (inline),,args-only
+ext,0xcc,,ext_cc,1,1,0 (inline),,args-only
+ext,0xcd,,ext_cd,1,1,0 (inline),,args-only
+ext,0xce,,ext_ce,1,1,0 (inline),,args-only
+ext,0xcf,,ext_cf,3,2,1 (inline),,args-only
+ext,0xd0,,ext_d0,1,1,0 (inline),,args-only
+ext,0xd1,,ext_d1,1,1,0 (inline),,args-only
+ext,0xd2,,ext_d2,3,3,1 (inline),,args-only
+ext,0xd3,,get_counter18,0,0,0 (inline),R = game_counters+0x18,confirmed
+ext,0xd4,,add_counter18,3,1,1 (inline),game_counters+0x18 += arg (clamped 0..999999999),confirmed
+ext,0xd5,,ext_d5,0,0,0 (inline),,args-only
+ext,0xd6,,ext_d6,0,0,0 (inline),,args-only
+ext,0xd7,,ext_d7,2,2,1 (inline),,args-only
+ext,0xd8,,ext_d8,15,12,7 (inline),,args-only
+ext,0xd9,,ext_d9,13,10,6 (inline),,args-only
+ext,0xda,,map_transfer_c,7,7,3 (inline),map_transfer + extra value stored in ctx+0x48,confirmed
+ext,0xdb,,ext_db,1,1,0 (inline),,args-only
+ext,0xdc,,ext_dc,1,1,0 (inline),,args-only
+ext,0xdd,,ext_dd,2,2,1 (inline),,args-only
+ext,0xde,,ext_de,3,3,1 (inline),,args-only
+ext,0xdf,,ext_df,4,4,2 (inline),,args-only
+ext,0xe0,,ext_e0,5,5,2 (inline),,args-only
+ext,0xe1,,ext_e1,1,1,0 (inline),,args-only
+ext,0xe2,,ext_e2,3,3,1 (inline),,args-only
+ext,0xe3,,ext_e3,1,1,0 (inline),,args-only
+ext,0xe4,,ext_e4,1,1,0 (inline),,args-only
+ext,0xe5,,ext_e5,1,1,0 (inline),,args-only
+ext,0xe6,,ext_e6,1,1,0 (inline),,args-only
+ext,0xe7,,ext_e7,1,1,0 (inline),,args-only
+ext,0xe8,,ext_e8,1,1,0 (inline),,args-only
+ext,0xe9,,ext_e9,1,1,0 (inline),,args-only
+ext,0xea,,ext_ea,0,0,0 (inline),,args-only
+ext,0xeb,,ext_eb,5,5,2 (inline),,args-only
+ext,0xec,,ext_ec,2,2,1 (inline),,args-only
+ext,0xed,,battle_c,2,2,1 (inline),Battle variant,likely
+ext,0xee,,ext_ee,4,4,2 (inline),,args-only
+ext,0xef,,ext_ef,4,4,2 (inline),,args-only
+ext,0xf0,,ext_f0,6,6,3 (inline),,args-only
+ext,0xf1,,ext_f1,2,2,1 (inline),,args-only
+ext,0xf2,,ext_f2,1,1,0 (inline),,args-only
+ext,0xf3,,ext_f3,11,9,5 (inline),,args-only
+ext,0xf4,,ext_f4,6,6,3 (inline),,args-only
+ext,0xf5,,ext_f5,4,4,2 (inline),,args-only
+ext,0xf6,,ext_f6,1,1,0 (inline),,args-only
+ext,0xf7,,ext_f7,6,6,3 (inline),,args-only
+ext,0xf8,,ext_f8,0,0,0 (inline),,args-only
+ext,0xf9,,get_state180,1,1,0 (inline),R = game_state+0x180[arg],confirmed
+ext,0xfa,,set_state180_random,1,1,0 (inline),game_state+0x180[arg] = random,confirmed
+ext,0xfb,,ext_fb,2,2,1 (inline),,args-only
+ext,0xfc,,ext_fc,2,2,1 (inline),,args-only
+ext,0xfd,,ext_fd,0,0,0 (inline),,args-only
+ext,0xfe,,table_a,0,0,0 (inline),Dispatch to table A (sub-command in bits 16-22),confirmed
+ext,0xff,,table_b,0,0,0 (inline),Dispatch to table B,confirmed
+table_a,0xfe,0x00,A_00,0,0,0 (inline),,args-only
+table_a,0xfe,0x01,add_money,1,1,0 (inline),game_state+0x248 += arg,likely
+table_a,0xfe,0x02,get_money,0,0,0 (inline),R = game_state+0x248,likely
+table_a,0xfe,0x03,A_03,0,0,0 (inline),,args-only
+table_a,0xfe,0x04,A_04,0,0,0 (inline),,args-only
+table_a,0xfe,0x05,A_05,0,0,0 (inline),,args-only
+table_a,0xfe,0x06,A_06,0,0,0 (inline),,args-only
+table_a,0xfe,0x07,A_07,0,0,0 (inline),,args-only
+table_a,0xfe,0x08,A_08,0,0,0 (inline),,args-only
+table_a,0xfe,0x09,A_09,0,0,0 (inline),,args-only
+table_a,0xfe,0x0a,A_0a,2,2,1 (inline),,args-only
+table_a,0xfe,0x0b,A_0b,0,0,0 (inline),,args-only
+table_a,0xfe,0x0c,A_0c,0,0,0 (inline),,args-only
+table_a,0xfe,0x0d,A_0d,0,0,0 (inline),,args-only
+table_a,0xfe,0x0e,A_0e,2,2,1 (inline),,args-only
+table_a,0xfe,0x0f,A_0f,2,2,1 (inline),,args-only
+table_a,0xfe,0x10,A_10,0,0,0 (inline),,args-only
+table_a,0xfe,0x11,A_11,0,0,0 (inline),,args-only
+table_a,0xfe,0x12,A_12,5,5,2 (inline),,args-only
+table_a,0xfe,0x13,A_13,12,12,6 (inline),,args-only
+table_a,0xfe,0x14,get_equipment,2,2,1 (inline),R = equipment slot of character,confirmed
+table_a,0xfe,0x15,A_15,0,0,0 (inline),,args-only
+table_a,0xfe,0x16,A_16,0,0,0 (inline),,args-only
+table_a,0xfe,0x17,A_17,0,0,0 (inline),,args-only
+table_a,0xfe,0x18,A_18,1,1,0 (inline),,args-only
+table_a,0xfe,0x19,A_19,5,5,2 (inline),,args-only
+table_a,0xfe,0x1a,A_1a,3,3,1 (inline),,args-only
+table_a,0xfe,0x1b,A_1b,6,6,3 (inline),,args-only
+table_a,0xfe,0x1c,A_1c,1,1,0 (inline),,args-only
+table_a,0xfe,0x1d,A_1d,1,1,0 (inline),,args-only
+table_a,0xfe,0x1e,get_hp,1,1,0 (inline),R = party slot current value (+0x24),likely
+table_a,0xfe,0x1f,set_hp,2,2,1 (inline),"Set current value, capped at maximum",likely
+table_a,0xfe,0x20,A_20,1,1,0 (inline),,args-only
+table_a,0xfe,0x21,A_21,2,2,1 (inline),,args-only
+table_a,0xfe,0x22,A_22,2,2,1 (inline),,args-only
+table_a,0xfe,0x23,A_23,0,0,0 (inline),,args-only
+table_a,0xfe,0x24,A_24,14,14,7 (inline),,args-only
+table_a,0xfe,0x25,A_25,3,3,1 (inline),,args-only
+table_a,0xfe,0x26,A_26,1,1,0 (inline),,args-only
+table_a,0xfe,0x27,A_27,1,1,0 (inline),,args-only
+table_a,0xfe,0x28,A_28,1,1,0 (inline),,args-only
+table_a,0xfe,0x29,A_29,0,0,0 (inline),,args-only
+table_a,0xfe,0x2a,A_2a,2,2,1 (inline),,args-only
+table_a,0xfe,0x2b,A_2b,2,2,1 (inline),,args-only
+table_a,0xfe,0x2c,A_2c,1,1,0 (inline),,args-only
+table_a,0xfe,0x2d,exit_to_program,0,0,0 (inline),Tear down the field and run the preloaded program,confirmed
+table_a,0xfe,0x2e,A_2e,4,4,2 (inline),,args-only
+table_a,0xfe,0x2f,A_2f,0,0,0 (inline),,args-only
+table_a,0xfe,0x30,A_30,0,0,0 (inline),,args-only
+table_a,0xfe,0x31,A_31,5,5,2 (inline),,args-only
+table_a,0xfe,0x32,A_32,0,0,0 (inline),,args-only
+table_a,0xfe,0x33,A_33,1,1,0 (inline),,args-only
+table_a,0xfe,0x34,A_34,0,0,0 (inline),,args-only
+table_a,0xfe,0x35,A_35,3,3,1 (inline),,args-only
+table_a,0xfe,0x36,A_36,0,0,0 (inline),,args-only
+table_a,0xfe,0x37,A_37,0,0,0 (inline),,args-only
+table_a,0xfe,0x38,A_38,2,2,1 (inline),,args-only
+table_a,0xfe,0x39,item_count,1,1,0 (inline),R = count of item (inventory bits 10-14),confirmed
+table_a,0xfe,0x3a,A_3a,4,4,2 (inline),,args-only
+table_a,0xfe,0x3b,A_3b,1,1,0 (inline),,args-only
+table_a,0xfe,0x3c,A_3c,0,0,0 (inline),,args-only
+table_a,0xfe,0x3d,A_3d,1,1,0 (inline),,args-only
+table_a,0xfe,0x3e,A_3e,0,0,0 (inline),,args-only
+table_a,0xfe,0x3f,A_3f,1,1,0 (inline),,args-only
+table_a,0xfe,0x40,A_40,1,1,0 (inline),,args-only
+table_a,0xfe,0x41,A_41,1,1,0 (inline),,args-only
+table_a,0xfe,0x42,A_42,2,2,1 (inline),,args-only
+table_a,0xfe,0x43,A_43,3,3,1 (inline),,args-only
+table_a,0xfe,0x44,A_44,4,4,2 (inline),,args-only
+table_a,0xfe,0x45,A_45,5,5,2 (inline),,args-only
+table_a,0xfe,0x46,A_46,6,6,3 (inline),,args-only
+table_a,0xfe,0x47,A_47,7,7,3 (inline),,args-only
+table_a,0xfe,0x48,A_48,8,8,4 (inline),,args-only
+table_a,0xfe,0x49,A_49,0,0,0 (inline),,args-only
+table_a,0xfe,0x4a,A_4a,0,0,0 (inline),,args-only
+table_a,0xfe,0x4b,A_4b,0,0,0 (inline),,args-only
+table_a,0xfe,0x4c,A_4c,0,0,0 (inline),,args-only
+table_a,0xfe,0x4d,A_4d,0,0,0 (inline),,args-only
+table_a,0xfe,0x4e,A_4e,0,0,0 (inline),,args-only
+table_a,0xfe,0x4f,A_4f,0,0,0 (inline),,args-only
+table_a,0xfe,0x50,A_50,0,0,0 (inline),,args-only
+table_a,0xfe,0x51,A_51,0,0,0 (inline),,args-only
+table_a,0xfe,0x52,A_52,0,0,0 (inline),,args-only
+table_a,0xfe,0x53,A_53,0,0,0 (inline),,args-only
+table_a,0xfe,0x54,A_54,0,0,0 (inline),,args-only
+table_a,0xfe,0x55,A_55,0,0,0 (inline),,args-only
+table_a,0xfe,0x56,A_56,0,0,0 (inline),,args-only
+table_a,0xfe,0x57,A_57,0,0,0 (inline),,args-only
+table_a,0xfe,0x58,A_58,0,0,0 (inline),,args-only
+table_a,0xfe,0x59,A_59,0,0,0 (inline),,args-only
+table_a,0xfe,0x5a,A_5a,0,0,0 (inline),,args-only
+table_a,0xfe,0x5b,A_5b,0,0,0 (inline),,args-only
+table_a,0xfe,0x5c,A_5c,0,0,0 (inline),,args-only
+table_a,0xfe,0x5d,A_5d,0,0,0 (inline),,args-only
+table_a,0xfe,0x5e,A_5e,0,0,0 (inline),,args-only
+table_a,0xfe,0x5f,A_5f,0,0,0 (inline),,args-only
+table_a,0xfe,0x60,A_60,0,0,0 (inline),,args-only
+table_a,0xfe,0x61,A_61,0,0,0 (inline),,args-only
+table_a,0xfe,0x62,A_62,0,0,0 (inline),,args-only
+table_a,0xfe,0x63,A_63,0,0,0 (inline),,args-only
+table_a,0xfe,0x64,A_64,0,0,0 (inline),,args-only
+table_a,0xfe,0x65,A_65,0,0,0 (inline),,args-only
+table_a,0xfe,0x66,A_66,0,0,0 (inline),,args-only
+table_a,0xfe,0x67,A_67,0,0,0 (inline),,args-only
+table_a,0xfe,0x68,A_68,0,0,0 (inline),,args-only
+table_a,0xfe,0x69,A_69,0,0,0 (inline),,args-only
+table_a,0xfe,0x6a,A_6a,0,0,0 (inline),,args-only
+table_a,0xfe,0x6b,A_6b,0,0,0 (inline),,args-only
+table_a,0xfe,0x6c,A_6c,0,0,0 (inline),,args-only
+table_a,0xfe,0x6d,A_6d,0,0,0 (inline),,args-only
+table_a,0xfe,0x6e,A_6e,0,0,0 (inline),,args-only
+table_a,0xfe,0x6f,A_6f,0,0,0 (inline),,args-only
+table_a,0xfe,0x70,A_70,0,0,0 (inline),,args-only
+table_a,0xfe,0x71,A_71,0,0,0 (inline),,args-only
+table_a,0xfe,0x72,A_72,0,0,0 (inline),,args-only
+table_a,0xfe,0x73,A_73,0,0,0 (inline),,args-only
+table_a,0xfe,0x74,A_74,0,0,0 (inline),,args-only
+table_a,0xfe,0x75,A_75,0,0,0 (inline),,args-only
+table_a,0xfe,0x76,A_76,0,0,0 (inline),,args-only
+table_a,0xfe,0x77,A_77,0,0,0 (inline),,args-only
+table_a,0xfe,0x78,A_78,0,0,0 (inline),,args-only
+table_a,0xfe,0x79,A_79,0,0,0 (inline),,args-only
+table_a,0xfe,0x7a,A_7a,0,0,0 (inline),,args-only
+table_a,0xfe,0x7b,A_7b,0,0,0 (inline),,args-only
+table_a,0xfe,0x7c,A_7c,0,0,0 (inline),,args-only
+table_a,0xfe,0x7d,A_7d,0,0,0 (inline),,args-only
+table_a,0xfe,0x7e,A_7e,0,0,0 (inline),,args-only
+table_a,0xfe,0x7f,A_7f,0,0,0 (inline),,args-only
+table_b,0xff,0x00,B_00,0,0,0 (inline),,args-only
+table_b,0xff,0x01,B_01,2,2,1 (inline),,args-only
+table_b,0xff,0x02,B_02,2,2,1 (inline),,args-only
+table_b,0xff,0x03,B_03,1,1,0 (inline),,args-only
+table_b,0xff,0x04,B_04,6,6,3 (inline),,args-only
+table_b,0xff,0x05,B_05,1,1,0 (inline),,args-only
+table_b,0xff,0x06,B_06,2,2,1 (inline),,args-only
+table_b,0xff,0x07,B_07,0,0,0 (inline),,args-only
+table_b,0xff,0x08,B_08,0,0,0 (inline),,args-only
+table_b,0xff,0x09,B_09,2,2,1 (inline),,args-only
+table_b,0xff,0x0a,B_0a,1,1,0 (inline),,args-only
+table_b,0xff,0x0b,B_0b,11,11,5 (inline),,args-only
+table_b,0xff,0x0c,B_0c,2,2,1 (inline),,args-only
+table_b,0xff,0x0d,B_0d,1,1,0 (inline),,args-only
+table_b,0xff,0x0e,B_0e,2,2,1 (inline),,args-only
+table_b,0xff,0x0f,B_0f,3,3,1 (inline),,args-only
+table_b,0xff,0x10,B_10,3,3,1 (inline),,args-only
+table_b,0xff,0x11,B_11,2,2,1 (inline),,args-only
+table_b,0xff,0x12,B_12,3,3,1 (inline),,args-only
+table_b,0xff,0x13,B_13,2,2,1 (inline),,args-only
+table_b,0xff,0x14,B_14,0,0,0 (inline),,args-only
+table_b,0xff,0x15,B_15,0,0,0 (inline),,args-only
+table_b,0xff,0x16,B_16,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+table_b,0xff,0x17,B_17,0,0,0 (inline),,args-only
+table_b,0xff,0x18,B_18,0,0,0 (inline),,args-only
+table_b,0xff,0x19,B_19,3,3,1 (inline),,args-only
+table_b,0xff,0x1a,B_1a,4,4,2 (inline),,args-only
+table_b,0xff,0x1b,B_1b,5,5,2 (inline),,args-only
+table_b,0xff,0x1c,B_1c,6,6,3 (inline),,args-only
+table_b,0xff,0x1d,B_1d,7,7,3 (inline),,args-only
+table_b,0xff,0x1e,B_1e,8,8,4 (inline),,args-only
+table_b,0xff,0x1f,B_1f,9,9,4 (inline),,args-only
+table_b,0xff,0x20,B_20,10,10,5 (inline),,args-only
+table_b,0xff,0x21,B_21,3,3,1 (inline),,args-only
+table_b,0xff,0x22,B_22,3,3,1 (inline),,args-only
+table_b,0xff,0x23,B_23,1,1,0 (inline),,args-only
+table_b,0xff,0x24,B_24,1,1,0 (inline),,args-only
+table_b,0xff,0x25,B_25,1,1,0 (inline),,args-only
+table_b,0xff,0x26,B_26,2,2,1 (inline),,args-only
+table_b,0xff,0x27,B_27,2,2,1 (inline),,args-only
+table_b,0xff,0x28,B_28,1,1,0 (inline),,args-only
+table_b,0xff,0x29,B_29,0,0,0 (inline),,args-only
+table_b,0xff,0x2a,B_2a,0,0,0 (inline),,args-only
+table_b,0xff,0x2b,B_2b,0,0,0 (inline),,args-only
+table_b,0xff,0x2c,B_2c,1,1,0 (inline),,args-only
+table_b,0xff,0x2d,B_2d,2,2,1 (inline),,args-only
+table_b,0xff,0x2e,B_2e,1,1,0 (inline),,args-only
+table_b,0xff,0x2f,B_2f,1,1,0 (inline),,args-only
+table_b,0xff,0x30,B_30,1,1,0 (inline),,args-only
+table_b,0xff,0x31,B_31,1,1,0 (inline),,args-only
+table_b,0xff,0x32,B_32,1,1,0 (inline),,args-only
+table_b,0xff,0x33,B_33,1,1,0 (inline),,args-only
+table_b,0xff,0x34,B_34,3,3,1 (inline),,args-only
+table_b,0xff,0x35,B_35,1,1,0 (inline),,args-only
+table_b,0xff,0x36,B_36,2,2,1 (inline),,args-only
+table_b,0xff,0x37,B_37,1,1,0 (inline),,args-only
+table_b,0xff,0x38,B_38,2,2,1 (inline),,args-only
+table_b,0xff,0x39,B_39,5,5,2 (inline),,args-only
+table_b,0xff,0x3a,B_3a,2,2,1 (inline),,args-only
+table_b,0xff,0x3b,B_3b,1,1,0 (inline),,args-only
+table_b,0xff,0x3c,B_3c,2,2,1 (inline),,args-only
+table_b,0xff,0x3d,B_3d,2,2,1 (inline),,args-only
+table_b,0xff,0x3e,B_3e,3,3,1 (inline),,args-only
+table_b,0xff,0x3f,B_3f,2,2,1 (inline),,args-only
+table_b,0xff,0x40,B_40,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+table_b,0xff,0x41,B_41,0,0,0 (inline),,args-only
+table_b,0xff,0x42,B_42,2,2,1 (inline),,args-only
+table_b,0xff,0x43,B_43,3,3,1 (inline),,args-only
+table_b,0xff,0x44,B_44,0,0,0 (inline),,args-only
+table_b,0xff,0x45,B_45,2,2,1 (inline),,args-only
+table_b,0xff,0x46,B_46,2,2,1 (inline),,args-only
+table_b,0xff,0x47,B_47,4,4,2 (inline),,args-only
+table_b,0xff,0x48,B_48,2,2,1 (inline),,args-only
+table_b,0xff,0x49,B_49,2,2,1 (inline),,args-only
+table_b,0xff,0x4a,B_4a,1,1,0 (inline),,args-only
+table_b,0xff,0x4b,B_4b,1,1,0 (inline),,args-only
+table_b,0xff,0x4c,B_4c,1,1,0 (inline),,args-only
+table_b,0xff,0x4d,B_4d,15,15,7 (inline),,args-only
+table_b,0xff,0x4e,B_4e,0,0,0 (inline),,args-only
+table_b,0xff,0x4f,B_4f,1,1,0 (inline),,args-only
+table_b,0xff,0x50,B_50,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+table_b,0xff,0x51,B_51,0,0,0 (inline),,args-only
+table_b,0xff,0x52,B_52,0,0,0 (inline),,args-only
+table_b,0xff,0x53,B_53,0,0,0 (inline),,args-only
+table_b,0xff,0x54,B_54,0,0,0 (inline),,args-only
+table_b,0xff,0x55,B_55,1,1,0 (inline),,args-only
+table_b,0xff,0x56,B_56,1,1,0 (inline),,args-only
+table_b,0xff,0x57,B_57,1,1,0 (inline),,args-only
+table_b,0xff,0x58,B_58,1,1,0 (inline),,args-only
+table_b,0xff,0x59,B_59,0,0,0 (inline),,args-only
+table_b,0xff,0x5a,B_5a,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+table_b,0xff,0x5b,B_5b,0,0,0 (inline),,args-only
+table_b,0xff,0x5c,B_5c,3,1,1 (inline),,args-only
+table_b,0xff,0x5d,B_5d,3,2,1 (inline),,args-only
+table_b,0xff,0x5e,has_item,1,1,0 (inline),R = item present in inventory,confirmed
+table_b,0xff,0x5f,item_query,1,1,0 (inline),R = FUN_800695f4(item),likely
+table_b,0xff,0x60,give_item,1,1,0 (inline),Add one of item to the inventory (chests),confirmed
+table_b,0xff,0x61,B_61,0,0,0 (inline),,args-only
+table_b,0xff,0x62,B_62,1,1,0 (inline),,args-only
+table_b,0xff,0x63,set_item_count,2,2,1 (inline),Set count of item,confirmed
+table_b,0xff,0x64,B_64,1,1,0 (inline),,args-only
+table_b,0xff,0x65,B_65,2,2,1 (inline),,args-only
+table_b,0xff,0x66,B_66,4,4,2 (inline),,args-only
+table_b,0xff,0x67,B_67,1,1,0 (inline),,args-only
+table_b,0xff,0x68,B_68,1,1,0 (inline),,args-only
+table_b,0xff,0x69,B_69,0,0,0 (inline),,args-only
+table_b,0xff,0x6a,B_6a,0,0,0 (inline),,args-only
+table_b,0xff,0x6b,B_6b,3,3,1 (inline),,args-only
+table_b,0xff,0x6c,B_6c,8,8,4 (inline),,args-only
+table_b,0xff,0x6d,B_6d,1,1,0 (inline),,args-only
+table_b,0xff,0x6e,B_6e,1,1,0 (inline),,args-only
+table_b,0xff,0x6f,B_6f,8,8,4 (inline),,args-only
+table_b,0xff,0x70,B_70,,,,Calls into an overlay; inline use observed with <= 1 argument,partial
+table_b,0xff,0x71,B_71,3,3,1 (inline),,args-only
+table_b,0xff,0x72,B_72,0,0,0 (inline),,args-only
+table_b,0xff,0x73,B_73,2,2,1 (inline),,args-only
+table_b,0xff,0x74,B_74,3,3,1 (inline),,args-only
+table_b,0xff,0x75,B_75,1,1,0 (inline),,args-only
+table_b,0xff,0x76,B_76,1,1,0 (inline),,args-only
+table_b,0xff,0x77,B_77,2,2,1 (inline),,args-only
+table_b,0xff,0x78,B_78,10,10,5 (inline),,args-only
+table_b,0xff,0x79,B_79,2,2,1 (inline),,args-only
+table_b,0xff,0x7a,B_7a,1,1,0 (inline),,args-only
+table_b,0xff,0x7b,B_7b,13,13,6 (inline),,args-only
+table_b,0xff,0x7c,B_7c,11,11,5 (inline),,args-only
+table_b,0xff,0x7d,B_7d,12,12,6 (inline),,args-only
+table_b,0xff,0x7e,B_7e,0,0,0 (inline),,args-only
+table_b,0xff,0x7f,B_7f,1,1,0 (inline),,args-only
