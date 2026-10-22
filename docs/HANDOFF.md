@@ -35,7 +35,7 @@ Resume an area from its log.
 | Battle | `game/battle/` | killer moves and the character modules (Claude first), Shot / Particle kinds, spells and items, party AI, voices |
 | Enemy | `game/battle/enemy_*` (new files) | the 16 resident enemy families, the slot A-D default modules, the encounter packs' enemy code; enemy spells wait on the battle agent |
 | Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
-| World | field / boot / title gaps | catalog rows with no port (triage: port, PsyQ, or not needed), field TODO(port)s incl. encounter streaming 0x80050dec, Voice Collection, the 'guess' rows |
+| World | memory cards, `game/field/mods.*`, `tools/so2_mod.py` | save / load round trips with the original (both directions, byte-level), then world edits part 2: item / shop / enemy data overrides and an in-window console overlay |
 | Effects | `game/field/field_sub_overlays.*`, `effects*`, `runtime/gpu*` | #3107 (the credits program, A 0x2d), then GPU accuracy: textured-quad and gouraud / UV stepping, subtractive blending |
 
 Main session: integration and commits, the field program's glue, play-testing the story
