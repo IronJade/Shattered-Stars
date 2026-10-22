@@ -363,10 +363,11 @@ with a[4] at +0x28, b[4] at +0x30, c[4] at +0x38, and a same-colour flag at +0x4
 the flat colour under a shaded actor's feet (found by probing the feet point, then half a sprite
 width left and right); list-4 polygons near the sprite (a loose box test) clip the sprite quad
 into coloured pieces (FT4 / FT3, at most 22 primitives per actor). 124 maps per disc carry
-list-4 or list-6 polygons. Quirks kept: the underfoot colour lives in a stack slot that is never
-cleared between calls; unscaled sprites divide the UV base too; vertically flipped pieces get no
-UVs; disabled or out-of-range polygons are still drawn in the drawing loop; a corner off the
-cell grid ends the function early.
+list-4 or list-6 polygons. The original's quirks (the underfoot colour lives in a stack slot that
+is never cleared between calls; unscaled sprites divide the UV base too; vertically flipped pieces
+get no UVs; disabled or out-of-range polygons are still drawn in the drawing loop; a corner off
+the cell grid ends the function early) were first reproduced and checked against PCSX-Redux, and
+are now fixed in the port (`docs/notes/original_bugs.md` F8).
 
 ## 6. Field actor (FieldActor, 0x3fc)
 

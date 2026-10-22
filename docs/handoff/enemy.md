@@ -164,6 +164,35 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   is newer and prints one line per reference), `sweep.sh FRAMES ENC...` (copy
   engine/build-enemy/shattered-stars to `bin/` first, or set SWEEP_BIN).
 
+## Phase 2 (coordinator, 2026-10-22 evening)
+
+1. The seven monster spell modules (53455d80ad Magnum Tornado is the world agent's):
+
+| Module | Spell | Caster (reference) | File | Who | State |
+|---|---|---|---|---|---|
+| 6673c9f485 | 5 Deep Freeze | Zand (m265) | spell_mod_deep_freeze.cpp | enemy agent | done, registered; m265 exact over 1500 vsyncs (RNG and every unit) |
+| 6563c70f92 | 7 Noah | G-Celesta (m515), Indalecio (m539) | spell_mod_noah.cpp | enemy agent | done, registered; m515 / m539 every unit sample exact to the battle's end, RNG only differs while the original slows to 3-vsync frames under the wall (48 draws a frame in both) |
+| cbdc2116f3 | 0x1c Star Flare | Breakwing (m528) | spell_mod_star_flare.cpp | helper C | running |
+| a6a642e880 | 0x24 Daemon's Gate / 0x41 The Scream | Weirddevil (m430) | spell_mod_daemons_gate.cpp | helper C | running |
+| c5209066cb | 0x43 Mind Blast | Vesper (m537) | spell_mod_mind_blast.cpp | helper B (done) | registered; m537 exact past the casts to b400, then the original slows to 3-vsync frames; unit states and the party's KO (b1000) still match |
+| c325548547 | 0x44 Spicule | Decus (m537) | spell_mod_spicule.cpp | helper B (done) | registered; as Mind Blast (same fight) |
+| 155b3550d0 | 0x45 Wind of Destruction | Cyril (m538) | spell_mod_wind_of_destruction.cpp | helper A (done) | registered; m538 RNG exact to b920 (the cast b530 on), unit states exact to b1500; Cyril's aura via enemy_cyril_aura() (enemy_modules.h) |
+
+   Helpers (three, write-only: their module files + `scratchpad/enemy/spell/catalog/`; guide
+   `scratchpad/enemy/spell/GUIDE.md`). Registration: one line each in the world agent's
+   spell_modules.{h,cpp} (agreed with it). Inputs read-only from `scratchpad/world/spell`
+   (modules/, mdec/, entries/; spell names in spell_names.txt). Their asm.txt shows switch
+   cases as `.word`s: `scratchpad/enemy/spell/mkelf.py` wraps a block in a MIPS ELF REA
+   disassembles fully. Catalog rows: `scratchpad/enemy/spell/catalog/<name>.csv` (merge at the
+   commit point). Local port in deep_freeze: voice_release 0x8007fd54 (sound_handle_release).
+2. Original bugs (docs/notes/original_bugs.md): done on disk: E1 E2 E3 E4 E8 fixed, E7 not a
+   bug (stun immunity), E10 = E8's cause, E13 (Noah's swapped lists) fixed, E14 new (decide).
+   Opinions on E5 E6 E9 E14 go to the coordinator with commit point 4. Not yet re-run
+   against the references (E1 changes Arcmene's choices: m50 will differ by design).
+3. Shot kinds 0x27 / 0x2d, shot_draw_frame_quad, bload_request, then the voice player
+   (voice_play_entry, the boss intro voice's RNG and hold).
+4. If time allows: Bark / Indalecio references with their HP poked low (kinds 0x36 / 0x3b).
+
 ## State and next step (2026-10-22, after commit point 3)
 
 - Nothing running (no helpers, no emulators); all work on disk; nothing of mine uncommitted

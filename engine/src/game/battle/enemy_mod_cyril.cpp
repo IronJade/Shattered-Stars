@@ -404,4 +404,9 @@ void shot_ring(Shot* s) {
 
 std::unique_ptr<EnemyUnit> enemy_mod_cyril_create() { return std::make_unique<EnemyCyril>(); }
 
+BObj* enemy_cyril_aura(Unit* u) {
+  auto* c = dynamic_cast<EnemyCyril*>(u);
+  return c != nullptr ? &c->aura : nullptr;
+}
+
 }  // namespace ss::game::battle

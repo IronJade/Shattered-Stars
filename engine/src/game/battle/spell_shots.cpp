@@ -7,9 +7,11 @@
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
+#include "game/battle/loaders.h"
 #include "game/battle/fx_draw.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
+#include "game/battle/items.h"
 #include "game/battle/spell_fx.h"
 #include "game/battle/spells.h"
 #include "game/battle/sprite.h"
@@ -1049,6 +1051,9 @@ bool spell_shot_update(Shot* s) {
     case 0x13: shot_k13_meteor(s); return true;
     case 0x15: shot_k15_heal_orb(s); return true;
     case 0x1D: shot_k1d_wind_blade(s); return true;
+    case 0x2E: shot_k2e_item_effect(s); return true;
+    case 0x2F: shot_k2f_bouncing_ball(s); return true;
+    case 0x30: shot_k30_bomb(s); return true;
     case 0x31: shot_k31_vortex(s); return true;
     default: return false;
   }
@@ -1130,6 +1135,26 @@ void shot_handle_command(Shot* s, int stationary) {
 
 // ---- The ten spells' spawners ----
 
+// 0x80080c7c (#1984.0) voice_thank_healer: when a member heals another member it likes
+// enough (affection config +0x4b + target * 12 + healer, plus twice the +0xdb byte, above 7),
+// the target thanks the healer at chance affection * 0x280 / 0x8000: one of 3 lines (2 for
+// Claude) from the target's voice table (battle_voice_table 0x80080b88: #1984.0 0x80081608 +
+// 0x18 * (character - 1)) for the healer.
+void voice_thank_healer(Unit* healer, Unit* target) {
+  BattleGlobals& g = bg();
+  if (unit_is_down(target) || unit_is_down(healer) || healer == target) return;
+  if (target->is_enemy != 0 || healer->is_enemy != 0) return;
+  const int tid = target->st()->id, hid = healer->st()->id;
+  const u8* row = g.config + tid * 0xC + hid;
+  const u32 affection = static_cast<u32>(row[0x4B]) + static_cast<u32>(row[0xDB]) * 2;
+  if (affection < 8 || affection * 0x280 < static_cast<u32>(rng_next() & 0x7FFF)) return;
+  const int pick = static_cast<int>(rng_range(tid == 1 ? 2u : 3u));
+  const u8* table = (tid < 1 || 0xC < tid) ? nullptr : ovl1984_data(0x80081608u + static_cast<u32>(tid - 1) * 0x18);
+  if (table == nullptr) return;  // (the console reads a null table)
+  const int entry = (table[(hid - 1) * 2] | table[(hid - 1) * 2 + 1] << 8) + pick;
+  voice_play_entry(entry, target);
+}
+
 void spell_firebolt(Unit* caster, Unit* target, int power) {
   s32 n = power / 0x32 + 2;
   if (8 < n) n = 8;
@@ -1203,7 +1228,7 @@ void spell_heal(Unit* caster, Unit* target, int power) {
   if (0x20 < n) n = 0x20;
   if (s == nullptr) return;
   bsfx_play_at(0x16, s);
-  // voice_thank_healer 0x80080c7c: the target's thanks (voices are not ported).
+  voice_thank_healer(caster, target);
   s->owner = caster;
   s->target = target;
   s->power = static_cast<s16>(power);
@@ -1220,7 +1245,7 @@ void spell_cure_light(Unit* caster, Unit* target, int power) {
   s32 n = power / 0x28 + 0x10;
   if (0x20 < n) n = 0x20;
   if (s == nullptr) return;
-  // voice_thank_healer 0x80080c7c (voices are not ported).
+  voice_thank_healer(caster, target);
   s->owner = caster;
   s->target = target;
   s->power = static_cast<s16>(power);

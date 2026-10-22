@@ -179,10 +179,11 @@ void bark_cast_vortex(BarkCast& sc) {
   for (int ring = 0; ring < 6; ++ring) {
     const s32 ang_a = sc.s24 + ring * 0x18;
     const s32 ang_b = sc.s24 + ring * 0x18 + 0x18;
-    // (Original quirk: the 20.12 height minus whole units, then shifted up by 12, so only
-    // the height's low 20 bits count; it gives the intended -n << 12 for a caster at 0.)
-    const s32 y0 = static_cast<s32>(static_cast<u32>(caster->pos[1] - 0x154 * (6 - ring)) << 12);
-    const s32 y1 = static_cast<s32>(static_cast<u32>(caster->pos[1] - 0x154 * (5 - ring)) << 12);
+    // ORIGINAL BUG (original_bugs.md E4): the 20.12 height minus whole units, then shifted
+    // up by 12, so only the height's low 20 bits count (right only for a caster at 0):
+    //   y0 = (u32)(caster->pos[1] - 0x154 * (6 - ring)) << 12, y1 the same with 5 - ring
+    const s32 y0 = caster->pos[1] - ((0x154 * (6 - ring)) << 12);
+    const s32 y1 = caster->pos[1] - ((0x154 * (5 - ring)) << 12);
     for (int seg = 0; seg < 0x10; ++seg) {
       // 22.5 degree steps through degrees (truncated twice: 0, 250, 500, 762, ...).
       const s32 lo = (((seg * 0x168) / 16) << 12) / 0x168;

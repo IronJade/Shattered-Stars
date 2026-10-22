@@ -19,7 +19,6 @@ namespace {
 
 FxState g_fx;
 GlowFx* g_glow = nullptr;             // 0x800752dc
-std::vector<GlowFx*> g_orphan_glows;  // replaced by a second ext 0x79 but still registered
 
 s32 mul(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cast<u32>(b)); }
 
@@ -66,7 +65,10 @@ void glow_draw(GlowFx* self) {
   const s32 frames = self->frames != 0 ? self->frames : 1;
   auto level = [&](s32 c) {
     s32 v = (c * t) / frames;
-    if (0x100 < v) v = 0xFF;  // 0x100 itself wraps to 0 in the byte
+    // ORIGINAL BUG (original_bugs.md F7): the clamp lets 0x100 through, which wraps to 0
+    // in the byte (a full-strength glow goes black for the frame it reaches 0x100).
+    //   if (0x100 < v) v = 0xFF;
+    if (0xFF < v) v = 0xFF;
     return static_cast<u32>(static_cast<u8>(v));
   };
   const u32 colour = level(self->rgb[0]) | level(self->rgb[1]) << 8 | level(self->rgb[2]) << 16;
@@ -108,7 +110,11 @@ void glow_draw(GlowFx* self) {
 GlowFx* field_glow() { return g_glow; }
 
 GlowFx* glow_spawn(int r, int g, int b, int frames) {
-  if (g_glow != nullptr) g_orphan_glows.push_back(g_glow);
+  // ORIGINAL BUG (original_bugs.md F3): a second ext 0x79 overwrote the pointer and left
+  // the old glow registered, drawing (and leaking) until the map ended:
+  //   g_glow = glow_create(new GlowFx, r, g, b, frames);  (the old one never unregistered)
+  // The new glow replaces the old one.
+  glow_destroy_current();
   g_glow = glow_create(new GlowFx, r, g, b, frames);
   return g_glow;
 }
@@ -119,11 +125,7 @@ void glow_destroy_current() {
   g_glow = nullptr;
 }
 
-void glow_destroy_all() {
-  glow_destroy_current();
-  for (GlowFx* glow : g_orphan_glows) glow_destroy(glow, 3);
-  g_orphan_glows.clear();
-}
+void glow_destroy_all() { glow_destroy_current(); }
 
 // ---- Pool and layers ---------------------------------------------------------------
 

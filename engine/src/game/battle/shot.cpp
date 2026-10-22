@@ -618,7 +618,8 @@ void Shot::update() {
     case 0x33: shot_k21_callback(this); break;
     default:
       // The spells' kinds (3-0xf, 0x12, 0x13, 0x15, 0x1d: spell_shots.cpp, the world agent's).
-      if (!spell_shot_update(this)) unported_kind(this);
+      // Kinds 0x27 / 0x2d: enemy_shots.cpp (the enemy agent's).
+      if (!spell_shot_update(this) && !enemy_shot_update(this)) unported_kind(this);
       break;
   }
 }

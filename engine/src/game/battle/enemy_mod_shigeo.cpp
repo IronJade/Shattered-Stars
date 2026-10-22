@@ -102,7 +102,8 @@ struct EnemyShigeo : EnemyUnit {
     sprite_set_fade(sp, 0x80, -8, 0x10);
   }
 
-  // 0x80088520 [26]: from 400 away (always: the chance 0x291c0 is above 0x7fff) the rocks
+  // 0x80088520 [26]: from 400 away (always: the chance 0x291c0 is above 0x7fff; intended,
+  // original_bugs.md E6) the rocks
   // (attack 3) start at once where it stands; nearer the grab (2); else the default.
   void choose_target() override {
     if (enemy_try_approach(this, 400, 0x291C0, 3, 0x40) != 0) {

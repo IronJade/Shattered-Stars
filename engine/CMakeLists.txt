@@ -194,8 +194,11 @@ target_sources(ss_game PRIVATE
   src/game/battle/pc_modules.cpp
   src/game/battle/pc_casters.cpp
   src/game/battle/pc_claude.cpp
+  src/game/battle/pc_bowman.cpp
   src/game/battle/pc_ernest.cpp
+  src/game/battle/pc_chisato.cpp
   src/game/battle/enemy_support.cpp
+  src/game/battle/enemy_shots.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp
   src/game/battle/enemy_mod_guardian.cpp
@@ -248,8 +251,20 @@ target_sources(ss_game PRIVATE
   src/game/battle/spell_windows.cpp
   src/game/battle/spellcast.cpp
   src/game/battle/spell_modules.cpp
-  src/game/battle/spell_mod_feehn.cpp
-  src/game/battle/spell_mod_starlight.cpp)
+  src/game/battle/command_menu.cpp
+  src/game/battle/items.cpp
+  src/game/battle/spell_mod_deep_freeze.cpp
+  src/game/battle/spell_mod_noah.cpp
+  src/game/battle/spell_mod_mind_blast.cpp
+  src/game/battle/spell_mod_spicule.cpp
+  src/game/battle/spell_mod_wind_of_destruction.cpp
+  src/game/battle/spell_mod_star_flare.cpp
+  src/game/battle/spell_mod_daemons_gate.cpp
+  src/game/battle/spell_mod_foehn.cpp
+  src/game/battle/spell_mod_starlight.cpp
+  src/game/battle/spell_mod_magnum_tornado.cpp
+  src/game/battle/spell_mod_cure_all.cpp
+  src/game/battle/spell_mod_thundercloud.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

@@ -58,6 +58,10 @@ int unit_is_disabled(const Unit* u);
 // 0x80056a0c: when s's owner holds the skill camera (+0x132), camera mode 7 ends on it after
 // 60 ticks.
 void shot_skill_camera_end(Shot* s);
+// 0x8007fd54 voice_release (#1984.0): releases the clip playing in the handle's slot (a
+// bsfx_play handle), if it still plays there. (Next to bsfx.h's other handle calls; only
+// the monster spells use it so far.)
+void sound_handle_release(u32 handle);
 
 // ---- Spells: the world agent's spells.h / spellcast.h / spell_fx.h (included above) have
 // the spell API, the SpellCast and the screen fade the stand-ins here stood for.
@@ -65,8 +69,15 @@ void shot_skill_camera_end(Shot* s);
 // ---- Other stand-ins (the battle agent's load queue, voices and resident effects).
 void bload_request(int entry, void* dest, s16 group, int priority);           // 0x800475c0 [stand-in]
 u32 voice_play_entry(int entry, Unit* speaker);                              // 0x8007f818 [stand-in: 0]
-// 0x8005b23c: steps o's animation and draws its frame as a free 3-D quad [stand-in: 0]
-s16 shot_draw_frame_quad(BObj* o, const s32 c0[3], const s32 c1[3], u32 flip, int arg);
+
+// ---- Resident Shot kinds and helpers only the monsters use (enemy_shots.cpp).
+// 0x8005b23c: steps o's animation (no sprite drawn) and draws the frame as a free quad from
+// o + c0 to o + c1 (flip bits 0-2 swap corners 1 / 2 in x / y / z), n x n patches; the
+// frame, or -1 at the loop limit.
+s16 shot_draw_frame_quad(BObj* o, const s32 c0[3], const s32 c1[3], u32 flip, int n);
+// Shot::update's kinds 0x27 (0x8005b558, a tossed item) and 0x2d (0x8005b9d0, a slash
+// wave); false for any other kind.
+bool enemy_shot_update(Shot* s);
 
 // Debugging (SS_ENEMY_TRACE=1): once a frame, from enemy_think of the first enemy still in
 // the battle, prints every enemy's type, state, action, position, HP and scratch words and

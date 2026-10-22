@@ -1,8 +1,8 @@
 // The field's visual effects, part 2 (overlay #3101 0x8008aa70-0x8008d928): the nine
 // particle behaviours and their drawing helpers. Everything goes through the GTE in the
 // original's order (rtps / rtpt / avsz3 / avsz4 / gpf12 / nccs / ncct) so stale registers
-// behave alike: fx_draw_line and the burst read OTZ without an average of their own, so
-// their depth is whatever the last avsz left (in practice an earlier particle's).
+// behave alike. (fx_draw_line and the burst read OTZ without an average of their own in
+// the original, a stale depth; the port averages their own points: original_bugs.md F1.)
 // Primitives come from the screen's arena and go into the particle's OT layer at
 // 0x820 - depth; additive ones get a DR_MODE (abr 1) linked in front.
 #include <cstring>
@@ -96,14 +96,27 @@ void fx_particle_integrate(Particle* p) {
   for (int i = 0; i < 3; ++i) p->pos[i] += mul(p->vel[i], ticks);
 }
 
+// The OTZ an avsz3 gives for a depth (SZ1-3 all 'sz'): what the line and the burst meant
+// to read (original_bugs.md F1).
+static u32 otz_for_depth(u32 sz) {
+  for (int i = 1; i <= 3; ++i) fx::gte().write_data(G::SZ0 + i, sz);
+  fx::run(G::kAvsz3);
+  return fx::otz();
+}
+
 void fx_draw_line(Particle* p, const psyq::SVECTOR* end) {
   fx::ldv(0, 0, 0, 0);
   fx::run(G::kRtps);
   const u32 xy0 = fx::sxy(2);
+  const u32 sz0 = fx::gte().read_data(G::SZ3);
   fx::ldv(0, *end);
   fx::run(G::kRtps);
   const u32 xy1 = fx::sxy(2);
-  const s32 o = static_cast<s32>(fx::otz()) >> 3;  // stale: no avsz here
+  const u32 sz1 = fx::gte().read_data(G::SZ3);
+  // ORIGINAL BUG (original_bugs.md F1): OTZ was read with no avsz of its own, so the line
+  // sorted at whatever depth the last average left (an earlier particle's):
+  //   const s32 o = static_cast<s32>(fx::otz()) >> 3;
+  const s32 o = static_cast<s32>(otz_for_depth((sz0 + sz1) / 2)) >> 3;
   if (o >= 0x800) return;
   auto* line = static_cast<psyq::LINE_G2*>(fx::alloc_prim(sizeof(psyq::LINE_G2)));
   if (line == nullptr) return;
@@ -432,7 +445,9 @@ void fx_burst_update(Particle* p) {
   fx::run(G::kRtps);
   const u32 centre = fx::sxy(2);
   const s16 cx = fx::screen_x(centre, origin_x()), cy = fx::screen_y(centre, origin_y());
-  const s32 o = static_cast<s32>(fx::otz()) >> 3;  // stale, as in fx_draw_line
+  // ORIGINAL BUG (original_bugs.md F1): the same stale OTZ as fx_draw_line:
+  //   const s32 o = static_cast<s32>(fx::otz()) >> 3;
+  const s32 o = static_cast<s32>(otz_for_depth(fx::gte().read_data(G::SZ3))) >> 3;
   const s32 r = p->p3c, div = p->p44 != 0 ? p->p44 : 1;
   for (s32 i = 0; i < 12; ++i) {
     const s32 a = (i << 12) / 12 + p->p38;

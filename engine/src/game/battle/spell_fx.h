@@ -34,9 +34,17 @@ void draw_star(s32 r_a, s32 r_b, s16 h, u32 rgb_a, u32 rgb_b);
 // tpage 0x20); 'flat' puts it at the back of its depth band's front (OT index 0x610).
 void draw_quad_g4(const s16 pts[4][4], const u32 colours[4], int flat);
 
+// 0x80063a70: a kind-0x12 Shot (a light streak) at pos homing on target: colours +0x12c
+// head / +0x130 tail, length +0x138, speed +0x134 growing by +0x128, +0x10c the puff at the
+// end (1 a stage sprite, 2 / 3 effect sprites 2 / 5).
+Shot* effect_spawn_streak_at(const s32 pos[3], const s32 target[3], u32 rgb_head, u32 rgb_tail, s32 length,
+                             s32 speed, s32 accel, s16 puff);
 // 0x80063b48: a kind-0x31 Shot (a vortex mesh: draw_vortex, stage grey fading in the last 32
 // ticks) at pos: +0x128 rings, +0x12c segments, +0x130 radius growth, +0x134 life, +0x138
 // width, vel x the step, +0x118 / +0x11c colours, +0x10a 1: held in the 0x40 pause.
 Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
                           s32 width, s32 step, s16 flag);
+// 0x80080c7c (#1984.0) voice_thank_healer: a healed member may thank the healer (an RNG draw
+// when it likes the healer enough; spell_shots.cpp).
+void voice_thank_healer(Unit* healer, Unit* target);
 }  // namespace ss::game::battle

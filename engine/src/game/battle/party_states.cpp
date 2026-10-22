@@ -816,7 +816,7 @@ void PartyUnit::state_approach() {
       reached = true;
     }
     if (jump && target != nullptr) {
-      const s32 tj = unit_jump_time(this, v234, target->pos) - 0x18000;
+      const s32 tj = jump_time(v234, target->pos) - 0x18000;  // vtable [6]
       Vec4 ap;
       unit_find_approach_point(this, &ap);
       const Vec4 dir = vec_direction_xz(pos, target->pos);

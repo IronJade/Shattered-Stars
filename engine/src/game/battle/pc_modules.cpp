@@ -14,7 +14,9 @@ std::unique_ptr<PartyUnit> pc_rena_create();    // pc_casters.cpp
 std::unique_ptr<PartyUnit> pc_celine_create();
 std::unique_ptr<PartyUnit> pc_leon_create();
 std::unique_ptr<PartyUnit> pc_noel_create();
+std::unique_ptr<PartyUnit> pc_bowman_create();  // pc_bowman.cpp
 std::unique_ptr<PartyUnit> pc_ernest_create();  // pc_ernest.cpp
+std::unique_ptr<PartyUnit> pc_chisato_create();  // pc_chisato.cpp
 
 namespace {
 
@@ -49,8 +51,10 @@ std::unique_ptr<PartyUnit> pc_module_create(int character) {
     case 2: return pc_rena_create();
     case 3: return pc_celine_create();
     case 8: return pc_leon_create();
+    case 4: return pc_bowman_create();
     case 10: return pc_ernest_create();
     case 11: return pc_noel_create();
+    case 12: return pc_chisato_create();
     default:
       runtime::Runtime::get().log_once("battle-module-" + std::to_string(character),
                                        "battle: the party-character module of character " +

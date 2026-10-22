@@ -48,16 +48,18 @@ struct EnemyVisseyer : EnemyUnit {
         if (step == 0) {
           v->pos[2] = pos[2];
         } else if ((step & 1) == 0) {
-          // Original quirk: the even (nearer) steps store into +0x30 (vel z), not pos z,
-          // so the member stays at the previous odd step's z.
-          v->vel[2] = pos[2] - step * 0x40000;
+          // ORIGINAL BUG (original_bugs.md E3): the even (nearer) steps store into +0x30
+          // (vel z), not pos z, so they test the previous odd step's z again:
+          //   v->vel[2] = pos[2] - step * 0x40000;
+          v->pos[2] = pos[2] - step * 0x40000;
         } else {
           v->pos[2] = pos[2] + (step + 1) * 0x40000;
         }
         if (unit_check_move(v, kZero, 7) == nullptr) break;
         step = tries == 0x62 ? 0 : step + 1;
       }
-      // (As the original: facing x from the member's own -vel x.)
+      // (Facing x from the member's own -vel x: they come out facing any way; intended,
+      // original_bugs.md E14.)
       v->facing[0] = -v->vel[0];
       v->facing[1] = 0;
       v->facing[2] = 0;

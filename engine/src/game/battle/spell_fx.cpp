@@ -96,6 +96,23 @@ Task* screen_fade_create(u32 rgb, int tpage, int step, int hold) {
   return f;
 }
 
+Shot* effect_spawn_streak_at(const s32 pos[3], const s32 target[3], u32 rgb_head, u32 rgb_tail, s32 length,
+                             s32 speed, s32 accel, s16 puff) {
+  Shot* s = shot_spawn(0x12);
+  if (s == nullptr) return nullptr;
+  s->pos[0] = pos[0], s->pos[1] = pos[1], s->pos[2] = pos[2];
+  s->point[0] = target[0];
+  s->point[1] = target[1];
+  s->p128 = accel;
+  s->p12c = static_cast<s32>(rgb_head);
+  s->p130 = static_cast<s32>(rgb_tail);
+  s->p134 = speed;
+  s->p138 = length;
+  s->aux = puff;
+  s->point[2] = target[2];
+  return s;
+}
+
 Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
                           s32 width, s32 step, s16 flag) {
   Shot* s = shot_spawn(0x31);

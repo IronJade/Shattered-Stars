@@ -732,12 +732,13 @@ void transform_run(SpellCast* sc) {
       break;
     }
     case 6: {  // 0x8008adb0
-      // (Original quirk: the funnel above has already turned +0x34 this frame, so the
-      // afterimage of the halo is never made.)
-      if (sc->s34 == 0) {
-        u->effects[0] = afterimage_create(&u->halo, 6, 0x802000, 1);
-        sc->s34 = 1;
-      }
+      // ORIGINAL BUG (original_bugs.md E8): the first frame is told by +0x34 == 0, but the
+      // funnel above has already turned +0x34 this frame, so the halo's afterimage is never
+      // made (and its "= 1" would turn the funnel):
+      //   if (sc->s34 == 0) { u->effects[0] = afterimage_create(...); sc->s34 = 1; }
+      // Step 5 clears the fade +0x38 too, and the fade only grows from here: its 0 marks
+      // the first frame.
+      if (sc->s38 == 0) u->effects[0] = afterimage_create(&u->halo, 6, 0x802000, 1);
       sc->obj2.rgb[0] = static_cast<u8>(-0x80 - sc->s38);
       sc->s38 += g.frame_ticks * 4;
       if (0x80 < sc->s38) sc->s38 = 0x80;

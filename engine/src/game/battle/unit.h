@@ -136,6 +136,8 @@ struct Unit : Collider {
   virtual int can_cast();                         // [3] unit_can_cast 0x8005287c (spells.cpp)
   virtual void interrupt() {}                     // [4]
   virtual int start_reaction();                   // [5] unit_start_reaction 0x80051fdc
+  // [6] unit_jump_time 0x80052a3c: a leap's flight time (Chisato's module shortens it).
+  virtual s32 jump_time(s32 v, const s32 dest[3]);
   virtual void update_vanish();                   // [8] unit_update_vanish 0x80053c04 (state 6)
   virtual int skill_level(int) { return 0; }      // [9]
   virtual void update_status_effects();           // [10] unit_update_status_effects 0x80053240
@@ -164,9 +166,9 @@ UnitGlobals& unit_globals();
 bool unit_is_down(const Unit* u);
 // 0x80034418 unit_check_move: what blocks moving u by d (flags 1 party, 2 enemies, 4
 // obstacles, 8 skip the arena bounds): a unit, kWallBlock (the original's -1: the arena
-// edge or an obstacle) or null.
+// edge or an obstacle) or null. (World agent: takes any BObj; item kind 0x2f's balls use it.)
 extern Unit* const kWallBlock;
-Unit* unit_check_move(const Unit* u, const s32 d[3], u32 flags);
+Unit* unit_check_move(const BObj* u, const s32 d[3], u32 flags);
 Unit* unit_try_move_scaled(const Unit* u, const s32 v[3], u32 flags);  // 0x800343b4: d = v * ticks
 void unit_draw_shadow(Unit* u, s32 height);  // 0x80052760
 s32 unit_ground_follow(Unit* u);   // 0x80052504

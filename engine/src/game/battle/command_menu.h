@@ -26,7 +26,7 @@ void tactics_menu_open();                                  // 0x800801c0
 u8 chosen_spell();
 s16 chosen_item_index();
 // 0x80082dec (#1984.1) item_use_battle: the item at inventory index 'index' from user on
-// target (null: the item's own targets). [port: step 2]
+// target (null: the item's own targets); items.cpp.
 void item_use_battle(Unit* user, Unit* target, int index);
 // Battle start / end: the menus' memory and the open menu.
 void command_menu_reset();

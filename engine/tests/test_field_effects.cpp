@@ -422,7 +422,8 @@ Result rerun_particles(const Dump& d, int stale_otz) {
         break;
     }
   }
-  // The stale OTZ the line and burst drawers use (taken from the reference's slots).
+  // The stale OTZ the original's line and burst drawers used (taken from the reference's
+  // slots; the port no longer reads it: original_bugs.md F1).
   if (stale_otz >= 0) ss::psyq::gte().write_data(psx::Gte::OTZ, static_cast<u32>(stale_otz));
   for (int i = 0; i < kFxPoolSize; ++i) {
     Particle* p = &fx.pool[i];
@@ -433,20 +434,32 @@ Result rerun_particles(const Dump& d, int stale_otz) {
     const u32 half = d.ram[bufs[l] & 0x1FFFFF];
     auto ref = walk_ot(d, bufs[l] + half * 0x20C0 + 4, kFxLayerEntries, 0x82E);
     psyq::P_TAG* table = fx.layer[l]->current();
+    std::vector<std::vector<bool>> used(0x82E);
     for (int e = 0; e < 0x82E; ++e) {
-      std::vector<bool> used(ref[static_cast<size_t>(e)].size(), false);
+      used[static_cast<size_t>(e)].assign(ref[static_cast<size_t>(e)].size(), false);
       for (const auto& wv : ref[static_cast<size_t>(e)]) {
         const u8 code = static_cast<u8>(wv[0] >> 24);
         if (code == 0x3A || code == 0x52 || code == 0x32 || code == 0x2E || code == 0x38) ++r.ref_effect;
       }
+    }
+    for (int e = 0; e < 0x82E; ++e) {
       for (psyq::P_TAG* m : chain(&table[e], table, kFxLayerEntries)) {
         if (m->len == 2) continue;  // DR_MODEs: identical words everywhere
         ++r.built;
-        for (size_t k = 0; k < ref[static_cast<size_t>(e)].size(); ++k) {
-          if (!used[k] && same_prim(m, ref[static_cast<size_t>(e)][k])) {
-            used[k] = true;
-            ++r.found;
-            break;
+        // Lines (LINE_G2 0x52) and the burst's quads (POLY_G4 0x3a): the original sorts
+        // them by a stale OTZ, the port by their own depth (original_bugs.md F1), so they
+        // are looked for in every slot of the layer.
+        const u8 code = static_cast<u8>(psyq::prim_words(m)[0] >> 24);
+        const bool any_slot = code == 0x52 || code == 0x3A;
+        bool hit = false;
+        for (int f = any_slot ? 0 : e; f < (any_slot ? 0x82E : e + 1) && !hit; ++f) {
+          for (size_t k = 0; k < ref[static_cast<size_t>(f)].size(); ++k) {
+            if (!used[static_cast<size_t>(f)][k] && same_prim(m, ref[static_cast<size_t>(f)][k])) {
+              used[static_cast<size_t>(f)][k] = true;
+              ++r.found;
+              hit = true;
+              break;
+            }
           }
         }
       }

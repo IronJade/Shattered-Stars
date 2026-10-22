@@ -55,6 +55,27 @@ Vec4 vec_direction(const s32 from[3], const s32 to[3]) {
   return v;
 }
 
+s32 projectile_arc_velocity(s32 out[4], const BObj* from, const BObj* to, s32 speed, int aim) {
+  const s32 d = vec_distance_xz_fx(from->pos, to->pos);
+  if (speed == 0) speed = 1;
+  const s32 t = d / speed;
+  s32 frames = t >> 12;
+  if (frames == 0) frames = 1;
+  s32 lift = 0;
+  if (aim == 1) lift = to->size[1] << 13;
+  else if (aim == 2) lift = to->size[1] << 14;
+  const s32 vy = (to->pos[1] - lift - from->pos[1]) / frames - t / 2;
+  const Vec4 dir = vec_direction_xz(from->pos, to->pos);
+  out[0] = static_cast<s32>(static_cast<u32>(dir.x) * static_cast<u32>(speed));
+  out[1] = vy;
+  // ORIGINAL BUG (original_bugs.md B9): z is scaled by a constant 24 instead of 'speed'
+  // (x * speed, z * 24), so the arc bends toward or away from the target in depth unless
+  // speed is 24. Kept for now; see the entry.
+  out[2] = dir.z * 24;
+  out[3] = dir.w;
+  return t;
+}
+
 Vec4 vec_direction_xz(const s32 from[3], const s32 to[3]) {
   s32 d = vec_distance_xz_fx(from, to) >> 12;
   if (d == 0) d = 1;
@@ -550,6 +571,8 @@ int unit_can_reach_target(Unit* u, Unit* target, int allow_straight) {
   }
   return 0;
 }
+
+s32 Unit::jump_time(s32 v, const s32 dest[3]) { return unit_jump_time(this, v, dest); }
 
 s32 unit_jump_time(const Unit* u, s32 v, const s32 dest[3]) {
   const s32 v1 = v + 1;

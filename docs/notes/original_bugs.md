@@ -47,11 +47,11 @@ by the user as a bug, fix pending.
 | E2 | ericodus attack 5 / enemy_mod_ericodus.cpp | can reach a step no branch handles, freezing the monster in state 13 | fixed (a block or a landing sets step 2) |
 | E3 | visseyer / jibril release search / enemy_mod_visseyer.cpp, enemy_mod_jibril.cpp | the even tries store the z into the member's z velocity (+0x30) instead of its z | fixed |
 | E4 | bark vortex ring / enemy_mod_bark.cpp | the ring heights shift a 20.12 value by 12 again, right only at height 0 | fixed |
-| E5 | marsilio afterimage / enemy_mod_marsilio.cpp | the afterimage ends on a hit, not at the end of the swing | to fix (user, 2026-10-22: the afterimage should last to the end of the swing) |
+| E5 | marsilio afterimage / enemy_mod_marsilio.cpp | the afterimage ends on a hit, not at the end of the swing | fixed (user, 2026-10-22: the afterimage should last to the end of the swing) |
 | E6 | shigeo choose_target / enemy_mod_shigeo.cpp | the 0x291c0 chance test always passes | keep (user, 2026-10-22: intended. Shigeo is meant to be unbeatable in the first fight; in the second he holds no aggro and is a one-time fight the story needs won) |
 | E7 | celesta status_test / enemy_mod_celesta.cpp | returns bit 24 of the mask argument instead of the status test | not a bug: effect word 0 bit 24 is stun immunity (unit_apply_stun), so she reports that one effect and nothing else: G-Celesta cannot be stunned |
 | E8 | indalecio step 6 / enemy_mod_indalecio.cpp | the halo afterimage is never made | fixed (the first frame of step 6 is told by the fade +0x38, which step 5 clears) |
-| E9 | carlaeagle feathers / enemy_mod_carlaeagle.cpp | every feather starts 0x78 above y 0 rather than above the bird | to fix (user, 2026-10-22: the feathers start at the bird and fan out toward the party) |
+| E9 | carlaeagle feathers / enemy_mod_carlaeagle.cpp | every feather starts 0x78 above y 0 rather than above the bird | fixed (user, 2026-10-22: the feathers start at the bird and fan out toward the party) |
 | E10 | indalecio funnel / enemy_mod_indalecio.cpp | the funnel has already turned +0x34 this frame when it is read | the cause of E8, not a second bug: fixed with it (the funnel itself turns as before) |
 | E11 | bunny / enemy_mod_bunny.cpp | when no point is found, an uninitialised stack slot is read | avoided (0) |
 | E12 | enemy_support.cpp | the colour register holds garbage for an unknown mode | avoided (0) |

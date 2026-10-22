@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "disc/slz.h"
 #include "game/battle/camera.h"
@@ -189,7 +190,54 @@ void spell_data_request(int spell, int priority, Unit* caster) {
   c.req_caster[static_cast<size_t>(at)] = caster;
 }
 
+namespace {
+
+// Debugging (SS_BATTLE_CAST="FRAMES:SLOT:SPELL:TARGET;..."): once g_battle_frames reaches
+// FRAMES, party unit SLOT gets command 4 (cast SPELL at TARGET: p0-p3 / e0-e7), as the
+// world agent's Redux driver does with BW_CAST.
+void debug_forced_casts() {
+  struct Cast {
+    s32 frames;
+    int slot, spell, index;
+    char side;
+    bool done;
+  };
+  static std::vector<Cast> casts;
+  static bool parsed = false;
+  BattleGlobals& g = bg();
+  if (!parsed) {
+    parsed = true;
+    if (const char* env = std::getenv("SS_BATTLE_CAST")) {
+      std::string list(env);
+      size_t at = 0;
+      while (at < list.size()) {
+        size_t stop = list.find(';', at);
+        if (stop == std::string::npos) stop = list.size();
+        Cast c{};
+        if (std::sscanf(list.substr(at, stop - at).c_str(), "%d:%d:%i:%c%d", &c.frames, &c.slot, &c.spell, &c.side, &c.index) == 5)
+          casts.push_back(c);
+        at = stop + 1;
+      }
+    }
+  }
+  for (Cast& c : casts) {
+    if (c.done || g.battle_frames < c.frames) continue;
+    c.done = true;
+    PartyUnit* u = g.party_units[static_cast<size_t>(c.slot & 3)];
+    if (u == nullptr) continue;
+    u->target = c.side == 'p' ? static_cast<Unit*>(g.party_units[static_cast<size_t>(c.index & 3)])
+                              : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(c.index & 7)]);
+    u->spell = static_cast<u8>(c.spell);
+    u->command = 4;
+    std::fprintf(stderr, "[spell] forced cast 0x%x by p%d at %c%d, battle frames %d\n", c.spell, c.slot, c.side, c.index,
+                 g.battle_frames);
+  }
+}
+
+}  // namespace
+
 void spell_data_update() {
+  debug_forced_casts();
   BattleGlobals& g = bg();
   SpellCache& c = g_cache;
   for (int i = 0; i < 16; ++i) {

@@ -23,6 +23,7 @@
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
+#include "game/battle/command_menu.h"
 #include "game/battle/spell_windows.h"
 #include "game/battle/spells.h"
 #include "game/battle/sprite.h"
@@ -209,6 +210,7 @@ void battle_init_objects() {
   director_reset();
   spells_reset();        // the spell-data cache, the SpellCasts (spells.cpp, spellcast.cpp)
   spell_windows_reset();
+  command_menu_reset();  // the list menus and their memory (command_menu.cpp)
   // TODO(port): the other pools: Shot (160 x 0x13c), DamagePopup (16 x 0x2c), PolyShard
   // (192 x 0x74), Particle (200 x 0x48).
   animset_pool_reset();
@@ -676,6 +678,7 @@ void battle_free_all() {
   result_screen_free();
   spells_reset();          // the SpellCasts, their fades and the spell data
   spell_windows_reset();   // the clash / skill-notice / scan windows
+  command_menu_reset();    // the command ring's list menus
   battle_windows_free();  // the debug window and the HUD release themselves
   g.tasks.fill(nullptr);
   g.task_count = 0;

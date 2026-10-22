@@ -26,6 +26,9 @@ std::unique_ptr<EnemyUnit> enemy_mod_guardian_create();   // #2129 slot A (0x800
 std::unique_ptr<EnemyUnit> enemy_mod_nicolus_create();    // #2129 slot B (0x80089f18, vt 0x8008b0c8)
 std::unique_ptr<EnemyUnit> enemy_mod_jibril_create();     // #2129 slot C (0x8008b1f0, vt 0x8008c0c4)
 std::unique_ptr<EnemyUnit> enemy_mod_cyril_create();
+// Cyril's aura (his +0x270 BObj), which his spell Wind of Destruction draws while it holds
+// him; null for any other unit.
+BObj* enemy_cyril_aura(Unit* u);
 std::unique_ptr<EnemyUnit> enemy_mod_carlaeagle_create();
 std::unique_ptr<EnemyUnit> enemy_mod_gelatin_create();
 std::unique_ptr<EnemyUnit> enemy_mod_arcmene_create();

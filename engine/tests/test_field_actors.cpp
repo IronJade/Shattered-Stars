@@ -582,16 +582,17 @@ TEST(field_actor_light_split_list4_triangle) {
     CHECK_EQ(t->u2, 95); CHECK_EQ(t->v2, 49);
   }
   {
-    // Upright, unscaled: the original divides the base in too ((u0 + du * dx) / w).
+    // Upright, unscaled. The original divides the base in too ((u0 + du * dx) / w: 31, 39 /
+    // 2, 10 / 2, 39); the port maps base + du * dx / w (original_bugs.md F8b).
     ShadeActor a(64, 10, 31, 49);
     fieldactor_build_light_split(&a.actor, 32, 50, &a.prim, 0, 0);
     CHECK_EQ(a.actor.prim_count, 3);
     if (a.actor.prim_count != 3) return;
     auto* t = reinterpret_cast<psyq::POLY_FT3*>(a.actor.prims[2]);
     CHECK_EQ(t->code, 0x24);
-    CHECK_EQ(t->u0, 31); CHECK_EQ(t->v0, 39);  // (64 + 31 * 30) / 32, (10 + 49 * 40) / 50
-    CHECK_EQ(t->u1, 2); CHECK_EQ(t->v1, 10);
-    CHECK_EQ(t->u2, 2); CHECK_EQ(t->v2, 39);
+    CHECK_EQ(t->u0, 93); CHECK_EQ(t->v0, 49);  // 64 + 31 * 30 / 32, 10 + 49 * 40 / 50
+    CHECK_EQ(t->u1, 64); CHECK_EQ(t->v1, 19);
+    CHECK_EQ(t->u2, 64); CHECK_EQ(t->v2, 49);
   }
 }
 
@@ -643,7 +644,7 @@ TEST(field_actor_light_split_matches_redux) {
   }
   NEEDS_FIELD_TABLES();
   std::map<int, std::vector<u8>> scenes;
-  int calls = 0, pieces = 0, bad = 0;
+  int calls = 0, pieces = 0, bad = 0, fewer = 0;
   for (const auto& file : std::filesystem::directory_iterator(dir)) {
     if (file.path().extension() != ".log") continue;
     std::ifstream in(file.path());
@@ -701,12 +702,11 @@ TEST(field_actor_light_split_matches_redux) {
       for (size_t i = 0; i < t.size(); ++i)
         if (t[i] == "pieces") want.assign(t.begin() + static_cast<long>(i) + 1, t.end());
       const int before = std::stoi(at("count"));
-      bool ok = a.prim_count == std::stoi(at("->", 2)) && a.prim_count - before == static_cast<int>(want.size());
-      for (size_t k = 0; ok && k < want.size(); ++k) {
+      // Whether port piece i equals reference piece k.
+      auto same = [&](int i, size_t k) {
         const auto colon = want[k].find(':');
         const auto bytes = unhex(want[k].substr(colon + 1));
-        const int i = before + static_cast<int>(k);
-        if (a.prim_ot[i] != std::stoi(want[k].substr(0, colon))) ok = false;
+        if (a.prim_ot[i] != std::stoi(want[k].substr(0, colon))) return false;
         const u8* got = reinterpret_cast<const u8*>(psyq::prim_words(a.prims[i]));
         for (size_t b = 0; b < bytes.size(); ++b) {
           // Bytes the original leaves as they were: the pads after uv2 / uv3, and the
@@ -714,14 +714,38 @@ TEST(field_actor_light_split_matches_redux) {
           if (b == 0x1A || b == 0x1B || b == 0x22 || b == 0x23) continue;
           const bool uv = b == 8 || b == 9 || b == 0x10 || b == 0x11 || b == 0x18 || b == 0x19 || b == 0x20 || b == 0x21;
           if (uv && (flips & 1)) continue;
-          if (got[b] != bytes[b]) ok = false;
+          // The port maps unscaled (cache B) sprites' texture coordinates correctly, where
+          // the original divides the base too (original_bugs.md F8b): their UVs differ.
+          if (uv && std::stoi(at("scaled")) == 0) continue;
+          if (got[b] != bytes[b]) return false;
         }
+        return true;
+      };
+      bool ok = a.prim_count == std::stoi(at("->", 2)) && a.prim_count - before == static_cast<int>(want.size());
+      for (size_t k = 0; ok && k < want.size(); ++k) {
+        ok = same(before + static_cast<int>(k), k);
         ++pieces;
+      }
+      if (!ok && a.prim_count - before < static_cast<int>(want.size())) {
+        // The original also draws the disabled polygons and those outside the actor's
+        // height range (original_bugs.md F8d; the dup46 run's list-4 copies): the port's
+        // pieces must then be among the original's, in order.
+        size_t k = 0;
+        bool subset = true;
+        for (int i = before; i < a.prim_count && subset; ++i) {
+          while (k < want.size() && !same(i, k)) ++k;
+          subset = k < want.size();
+          ++k;
+        }
+        if (subset) {
+          ++fewer;
+          ok = true;
+        }
       }
       if (!ok && ++bad <= 5) std::fprintf(stderr, "  %s: mismatch: %s\n", file.path().filename().c_str(), line.c_str());
     }
   }
-  std::printf("  %d calls, %d pieces compared, %d mismatches\n", calls, pieces, bad);
+  std::printf("  %d calls, %d pieces compared, %d with fewer pieces (F8d), %d mismatches\n", calls, pieces, fewer, bad);
   CHECK(calls > 0);
   CHECK_EQ(bad, 0);
 }

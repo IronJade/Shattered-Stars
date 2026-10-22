@@ -452,10 +452,12 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
   // The probe under the feet: the middle of the sprite's bottom edge, in BG pixels.
   s16 probe[2] = {static_cast<s16>(cam[0] + (q[4] + q[6]) / 2), static_cast<s16>(q[5] + cam[1])};
   const s32 ay = self->y >> 12;
-  // sp+0x10: the colour of the list-6 region under the feet, left as it was when there
-  // is none (FieldActorGlobals::shade_colour). Only list-4 polygons flagged +0x48 read it
-  // then, and no disc 1 map has one.
+  // sp+0x10: the colour of the list-6 region under the feet (FieldActorGlobals::shade_colour).
+  // ORIGINAL BUG (original_bugs.md F8a): with no region under the feet the stack slot kept
+  // whatever an earlier call left, and list-4 polygons flagged +0x48 compared with that.
+  // The port remembers whether this call found one (flagged polygons need it).
   u8* colour = g_globals.shade_colour;
+  bool have_colour = false;
   s32 cells[4] = {0, 0, 0, 0};
   for (int pass = 0; pass < 2; ++pass) {
     int list;
@@ -465,9 +467,12 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
       bool found = false;
       for (int k = 0; k < 3 && !found; ++k) {
         const int cell = zone_cell_at(self, probe);
-        if (cell == -1) return;
-        const int count = scene_cell_count(cell, 6);
-        const u8* item = scene_cell_list(cell, 6);
+        // ORIGINAL BUG (original_bugs.md F8e): a probe off the cell grid ended the whole
+        // function (no shading at all for an actor at the grid's edge):
+        //   if (cell == -1) return;
+        // The port tries the next probe.
+        const int count = cell == -1 ? 0 : scene_cell_count(cell, 6);
+        const u8* item = cell == -1 ? nullptr : scene_cell_list(cell, 6);
         int i = 0;
         for (; i < count; ++i, item += kLightPolySize)
           if (zone_test_point(self, item, probe, self->y >> 12)) break;
@@ -476,6 +481,7 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
           colour[1] = item[2];
           colour[2] = item[3];
           found = true;
+          have_colour = true;
         } else if (k == 0) {
           probe[0] = static_cast<s16>(probe[0] - w / 2);
         } else if (k == 1) {
@@ -491,8 +497,10 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
       int k = 0;
       for (; k < 4; ++k) {
         const int cell = zone_cell_at_xy(self, q[k * 2] + cam[0], q[k * 2 + 1] + cam[1]);
-        if (cell == -1) return;
+        // ORIGINAL BUG (original_bugs.md F8e): as above, a corner off the grid ended the
+        // function:  if (cell == -1) return;  The port skips that corner.
         cells[k] = cell;
+        if (cell == -1) continue;
         int j = 0;
         while (j < k && cells[j] != cell) ++j;
         if (j != k) continue;
@@ -550,7 +558,15 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
           if (d < 0) d = -d;
           if (d >= (ph + h) >> 1) continue;
         }
-        if (poly[0x48] != 0 && (colour[0] != poly[1] || colour[1] != poly[2] || colour[2] != poly[3])) continue;
+        // ORIGINAL BUG (original_bugs.md F8d): the drawing loop took every polygon near the
+        // box, also the disabled ones and those outside the actor's height range that the
+        // search above skips. The port skips them here too.
+        if (poly[0x10] == 0 || ay < rd16s(poly + 4) || rd16s(poly + 6) < ay) continue;
+        // (F8a: flagged polygons only with a colour found under the feet in this call.)
+        //   if (poly[0x48] != 0 && (colour[0] != poly[1] || ...)) continue;
+        if (poly[0x48] != 0 &&
+            (!have_colour || colour[0] != poly[1] || colour[1] != poly[2] || colour[2] != poly[3]))
+          continue;
         s32 v[kLightMaxVerts][2];
         const int nv = light_clip(poly, box, v);
         if (nv < 3) continue;
@@ -574,13 +590,20 @@ void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* pri
           if (box.x1 < v[k][0]) v[k][0] = box.x1;
         }
         const s32 du = prim->u1 - prim->u0, dv = prim->v2 - prim->v0;
-        // Texture coordinates only for upright sprites (flips 0) and mirrored ones (2):
-        // vertically flipped pieces keep whatever the primitive memory held (zero here).
-        const bool uvs = flips == 0 || flips == 2;
-        auto uv = [&](const s32 vert[2], bool divide_base, u8* out) {
-          const s32 off_x = flips == 2 ? box.x1 - vert[0] : vert[0] - box.x0;
-          out[0] = light_uv(prim->u0, du, off_x, w, scaled != 0, divide_base);
-          out[1] = light_uv(prim->v0, dv, vert[1] - box.y0, h, scaled != 0, divide_base);
+        // ORIGINAL BUG (original_bugs.md F8c): texture coordinates were only written for
+        // upright (flips 0) and mirrored (2) sprites; vertically flipped pieces kept
+        // whatever the primitive memory held:  const bool uvs = flips == 0 || flips == 2;
+        // ORIGINAL BUG (original_bugs.md F8b): sprites drawn from the unscaled cache
+        // interpolated (base + span * offset) / size, dividing the base too (except for
+        // mirrored triangles):  light_uv(..., divide_base = quads || flips == 0)
+        // The port maps every corner back into the texture: base + span * offset / size,
+        // mirrored horizontally (flips bit 1) and vertically (bit 0).
+        const bool uvs = true;
+        auto uv = [&](const s32 vert[2], bool /*divide_base*/, u8* out) {
+          const s32 off_x = (flips & 2) != 0 ? box.x1 - vert[0] : vert[0] - box.x0;
+          const s32 off_y = (flips & 1) != 0 ? box.y1 - vert[1] : vert[1] - box.y0;
+          out[0] = light_uv(prim->u0, du, off_x, w, scaled != 0, false);
+          out[1] = light_uv(prim->v0, dv, off_y, h, scaled != 0, false);
         };
 
         // A fan from vertex 0: quads while four or more vertices remain, then a triangle.

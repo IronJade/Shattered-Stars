@@ -5,6 +5,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/command_menu.h"
 #include "game/battle/killer.h"
 #include "game/battle/hud.h"
 #include "game/battle/render.h"
@@ -21,10 +22,6 @@ namespace ss::game::battle {
 namespace {
 
 BattleInput g_input;
-
-void todo(const char* what) {
-  runtime::Runtime::get().log_once(std::string("battle-input-") + what, std::string("battle: not ported yet: ") + what);
-}
 
 u16 key(int i) {
   u16 v;
@@ -365,7 +362,7 @@ void input_target_select_update(BattleInput* in) {
     if (in->target_purpose == 1) {
       u->target = target_enemy();
       u->command = 4;
-      todo("spell targeting (the spell menu)");
+      u->spell = chosen_spell();  // (command_menu.cpp, the world agent's)
       bsfx_play_ui(2);
       done = true;
     } else if (in->target_purpose == 0) {
@@ -383,7 +380,7 @@ void input_target_select_update(BattleInput* in) {
         g.assist_timer = 0xB4;
       }
     } else if (in->target_purpose == 2) {
-      todo("item_use_battle (the item menu)");
+      item_use_battle(u, target_enemy(), chosen_item_index());
       bsfx_play_ui(2);
       done = true;
     }
@@ -464,9 +461,8 @@ void input_target_select_update(BattleInput* in) {
     if (in->target_purpose != 0) {
       g.flags = static_cast<u8>(g.flags | 2);
       in->mode = 4;
-      todo("the spell / item list menus");
-      in->mode = 0;
-      g.flags = static_cast<u8>(g.flags & 0xFD);
+      if (in->target_purpose == 1) spell_menu_open();
+      else if (in->target_purpose == 2) item_menu_open();
     }
   }
 }
@@ -575,7 +571,7 @@ void input_dispatch(BattleInput* in) {
     in->arrow_t = static_cast<s8>(t);
     if (static_cast<s8>(t) < 1) input_hide_target_arrows(in);
   }
-  if (0 < in->ring_radius && in->mode != 3) todo("input_ring_menu_update (closing)");
+  if (0 < in->ring_radius && in->mode != 3) input_ring_menu_update(in, 1);
   bool can_act = false;
   if (1 < g.state && g.config[0x181] != 1 &&
       (g.controlled_slot == 0xFF || controlled()->status_test(3, 0x2000) == 0))
@@ -619,15 +615,11 @@ void input_dispatch(BattleInput* in) {
     return;
   }
   if (in->mode == 1) {
-    todo("input_member_select_update (mode 1)");
-    in->mode = 0;
-    g.flags = static_cast<u8>(g.flags & 0xFD);
+    input_member_select_update(in);  // (command_menu.cpp)
     return;
   }
   if (in->mode == 3) {
-    todo("input_ring_menu_update (mode 3)");
-    in->mode = 0;
-    g.flags = static_cast<u8>(g.flags & 0xFD);
+    input_ring_menu_update(in, 0);
     return;
   }
   if (in->mode != 0) return;
@@ -679,14 +671,18 @@ void input_dispatch(BattleInput* in) {
   if (g.free_run == 0 && (in->pressed & key(1)) != 0) {
     bsfx_play_ui(2);
     in->member_purpose = 0;
-    todo("input_open_member_select (mode 1)");
+    input_open_member_select(in);
     return;
   }
   if (u->status_test(3, 0x2000) != 1) {
     if ((in->pressed & key(2)) != 0) {
       end_free_run(in, u);
       bsfx_play_ui(2);
-      todo("input_ring_menu_open (spells / items / escape / tactics)");
+      in->mode = 3;
+      g.flags = static_cast<u8>(g.flags | 2);
+      if (in->member_t != 0) input_hide_member_cursor(in);
+      input_ring_menu_open(in);
+      camera_set_mode(cam, 2, nullptr);
       return;
     }
     const bool chainable = !unit_is_down(u) && u->action == 9 && !unit_is_down(u->target);

@@ -305,35 +305,41 @@ s32 compose_quad(const psyq::POLY_FT4& q, int movie_x, int frame_y) {
   }
 
   // Back to VRAM.
-  if (static_cast<u32>(min_x) < 0x140) {
+  // ORIGINAL BUG (original_bugs.md F5): only quads starting left of the screen were
+  // clipped, and wrongly: every row went to the quad's top row (the row was never added to
+  // y), read with the clipped width's stride from the buffer's start, and the right edge
+  // stopped at 0x13e; a quad running past the right edge was written whole, past the
+  // movie's columns (wrapping to VRAM x 0). The original:
+  //   if (static_cast<u32>(min_x) < 0x140) {
+  //     LoadImage(RECT{movie_x + (min_x * 3) / 2, frame_y + min_y, row_hw, dy}, frame);
+  //   } else {
+  //     x = max(min_x, 0); w = dx - (x - min_x); if (x + w >= 0x140) w = 0x13f - x;
+  //     for (r = 0; r < dy; ++r)  // rows with min_y + r < 0xe0
+  //       LoadImage(RECT{movie_x + (x * 3) / 2, frame_y + min_y, (w * 3 + 1) / 2, 1},
+  //                 frame + r * ((w * 3 + 1) / 2) * 2);
+  //   }
+  // The port writes back each row's visible columns, 0 to 0x13f, at its own row.
+  const int x0 = std::max(min_x, 0), x1 = std::min(min_x + dx, 0x140);
+  if (x0 == min_x && x1 == min_x + dx) {
     const RECT r{static_cast<s16>(movie_x + (min_x * 3) / 2), static_cast<s16>(frame_y + min_y),
                  static_cast<s16>(row_hw), static_cast<s16>(dy)};
     psyq::LoadImage(&r, frame.data());
     psyq::DrawSync(0);
-  } else {
-    // Clipped to x 0-0x13e. Every row lands on the quad's top row (the original never
-    // adds the row to y), read with the clipped width's stride from the buffer's start.
-    int x = min_x, w = dx;
-    if (x < 0) {
-      w += x;
-      x = 0;
-    }
-    if (x + w >= 0x140) w = 0x13F - x;
-    const int bytes = w * 3 + 1;
-    // TODO(port): a quad starting at x >= 0x140 gets a negative width here; the console
-    // would start a transfer of that size. Never seen; skipped.
-    if (bytes / 2 > 0) {
-      const int hx = movie_x + (x * 3) / 2;
-      size_t at = 0;  // offset of the row in the buffer (the console's buffer is word aligned)
-      for (int r = 0; r < dy; ++r, at += static_cast<size_t>(bytes / 2) * 2) {
-        if (static_cast<u32>(min_y + r) >= 0xE0) continue;
-        const size_t misalign = at & 3;
-        RECT rr{static_cast<s16>(misalign != 0 ? hx + 1 : hx), static_cast<s16>(frame_y + min_y),
-                static_cast<s16>(bytes / 2), 1};
-        if (at + misalign + static_cast<size_t>(bytes / 2) * 2 > frame.size() * 2) break;
-        psyq::LoadImage(&rr, frame_bytes + at + misalign);
-        psyq::DrawSync(0);
-      }
+  } else if (x1 > x0) {
+    // Byte offsets of the visible columns in a buffer row (the row starts at the
+    // halfword (min_x * 3) / 2, the first pixel ((min_x * 3) & 1) bytes in).
+    const int lead = (min_x * 3) & 1;
+    const int k0 = (lead + (x0 - min_x) * 3) / 2, k1 = (lead + (x1 - min_x) * 3 - 1) / 2;
+    const int hw = k1 - k0 + 1;
+    std::vector<u16> line(static_cast<size_t>(hw));
+    for (int r = 0; r < dy; ++r) {
+      if (static_cast<u32>(min_y + r) >= 0xE0) continue;
+      std::memcpy(line.data(), frame_bytes + static_cast<size_t>(r) * stride + static_cast<size_t>(k0) * 2,
+                  static_cast<size_t>(hw) * 2);
+      const RECT rr{static_cast<s16>(movie_x + (min_x * 3) / 2 + k0), static_cast<s16>(frame_y + min_y + r),
+                    static_cast<s16>(hw), 1};
+      psyq::LoadImage(&rr, line.data());
+      psyq::DrawSync(0);
     }
   }
   return dx * dy;

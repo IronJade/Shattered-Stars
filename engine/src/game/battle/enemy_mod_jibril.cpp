@@ -248,9 +248,10 @@ struct EnemyJibril : EnemyUnit {
         if (n == 0) {
           u->pos[2] = pos[2];
         } else if ((n & 1) == 0) {
-          // (Original bug: the even steps store the z into +0x30, his z velocity, so the
-          // spot tried keeps the previous z.)
-          u->vel[2] = pos[2] - n * 0x40000;
+          // ORIGINAL BUG (original_bugs.md E3): the even steps store the z into +0x30, his
+          // z velocity, so the spot tried keeps the previous z:
+          //   u->vel[2] = pos[2] - n * 0x40000;
+          u->pos[2] = pos[2] - n * 0x40000;
         } else {
           u->pos[2] = pos[2] + (n + 1) * 0x40000;
         }
@@ -258,6 +259,8 @@ struct EnemyJibril : EnemyUnit {
         ++n;
         if (k == 0x62) n = 0;
       }
+      // (Facing x from his own -vel x: they come out facing any way; intended,
+      // original_bugs.md E14.)
       u->facing[0] = -u->vel[0];
       u->facing[1] = 0;
       u->facing[2] = 0;

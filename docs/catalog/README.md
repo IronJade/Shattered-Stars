@@ -28,6 +28,9 @@ The structure behind the names (classes, flows, layouts) is in `docs/notes/`.
     linked for slot A 0x80088110, B 0x80089f18, C 0x8008b1f0 or D 0x80088900; `<name>` is
     its monsters (`docs/notes/battle_enemies.md`). The #2129 image's own default modules in
     those slots stay in `battle`
+  - `battle_spell_<name>`: a spell's code module (block 0 of data command 6 in the spell
+    data entries 0x8e1-0x981, linked for 0x8008cc00; slot 1's copy at 0x8008e600 has the same
+    layout); `<name>` is the spell it serves
   - `credits_3107`: archive entry #3107 at `0x8002f810`, the credits program (map 581's
     section 6, run by table A 0x2d; `docs/notes/credits.md`)
 - **signature**: C-style, with struct names for pointers (`Loader *`, `ScriptCtx *`).

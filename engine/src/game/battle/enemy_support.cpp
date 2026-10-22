@@ -8,6 +8,7 @@
 #include "game/battle/battle.h"
 #include "game/battle/camera.h"
 #include "game/boot/rng.h"
+#include "game/boot/sound.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
 #include "game/battle/sprite.h"
@@ -60,10 +61,6 @@ void unit_throw_weapons(Unit* u, s32 variant) {
 void bload_request(int, void*, s16, int) { todo("bload_request 0x800475c0 (enemy module)"); }
 u32 voice_play_entry(int, Unit*) {
   todo("voice_play_entry 0x8007f818 (enemy-module voices)");
-  return 0;
-}
-s16 shot_draw_frame_quad(BObj*, const s32*, const s32*, u32, int) {
-  todo("shot_draw_frame_quad 0x8005b23c");
   return 0;
 }
 
@@ -225,6 +222,10 @@ void collider_set_attack_box(Collider* c, s32 hx, s32 hy, s32 hz) {
   c->attack_min[0][2] = c->pos[2] - hz * 0x1000;
   c->attack_max[0][2] = c->pos[2] + hz * 0x1000;
   c->attack_max[0][1] = c->pos[1] + hy * 0x1000;
+}
+
+void sound_handle_release(u32 handle) {
+  if (sound_handle_active(handle)) sound_release_clip(bg().sound, static_cast<int>(handle >> 16) & 0xFF);
 }
 
 void shot_skill_camera_end(Shot* s) {
@@ -424,6 +425,22 @@ void enemy_debug_trace(const EnemyUnit* e) {
         std::snprintf(q, sizeof(q), " cam %d %d %d", c->mode, c->step, c->hold);
         line += q;
       }
+    }
+  }
+  static const bool shots = std::getenv("SS_ENEMY_TRACE")[0] == '3';
+  if (shots) {
+    // SS_ENEMY_TRACE=3: also every live Shot (kind, owner's unit slot, position, anim, hit).
+    line += " | shots";
+    for (int i = 0; i < 0xA0; ++i) {
+      const Shot* s = shot_at(i);
+      if (s == nullptr || s->kind == 0) continue;
+      int owner = -1;
+      for (int k = 0; k < 8; ++k)
+        if (s->owner != nullptr && s->owner == g.enemy_units[k]) owner = k;
+      char t[96];
+      std::snprintf(t, sizeof(t), " k%x/e%d/%d,%d,%d/a%d/h%d", s->kind, owner, s->pos[0] >> 12, s->pos[1] >> 12,
+                    s->pos[2] >> 12, s->anim, s->hit_landed);
+      line += t;
     }
   }
   std::fprintf(stderr, "[enemy] vblank %llu rng %u %s\n", static_cast<unsigned long long>(runtime::Runtime::get().vblanks()),

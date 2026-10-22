@@ -28,13 +28,15 @@ differ only by GPU-level steps (one gouraud step, sampling) and the random scree
 streak positions. `tests/test_field_effects.cpp` has 7 unit tests and 4 dump tests
 (`SS_FX_REF=<dir>`).
 
-## Quirks kept from the original
+## The original's quirks (docs/notes/original_bugs.md)
 
-- The line and burst drawers read a stale OTZ.
-- The burst's OT index is not range-checked (the port drops a primitive that would fall
-  outside the table).
-- A second ext 0x79 leaves the old glow drawing.
-- Only the lower hemisphere of the lit sphere is drawn.
+- Fixed (F1): the line and burst drawers read a stale OTZ; the port averages their own
+  points' depth. The dump tests look for those primitives in any slot of the layer.
+- Avoided (F2): the burst's OT index is not range-checked (the port drops a primitive that
+  would fall outside the table).
+- Fixed (F3): a second ext 0x79 left the old glow drawing; the new one replaces it.
+- Fixed (F7): a glow tint of 0x100 wrapped to 0.
+- Kept, looks intended (F4): only the lower hemisphere of the lit sphere is drawn.
 
 ## Field movies (embedded code section 5, #3103)
 

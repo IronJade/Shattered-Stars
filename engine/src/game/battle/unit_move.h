@@ -23,6 +23,10 @@ Vec4 vec_direction(const s32 from[3], const s32 to[3]);      // 0x80067284: unit
 Vec4 vec_direction_xz(const s32 from[3], const s32 to[3]);   // 0x80067484: y = 0
 Vec4 vec_velocity_toward(const s32 from[3], const s32 to[3], s32 speed);  // 0x80048d94
 Vec4 vec_velocity_toward_xz(const s32 from[3], const s32 to[3], s32 speed);  // 0x80048e28 (y = 0)
+// 0x8004906c: a jump from 'from' to land on 'to' (aim 1: half its height up, 2: its top;
+// else its feet): t = ground distance / speed; out = the xz direction times speed (x)
+// and 24 (z), out[1] = (to.y - aim - from.y) / max(t >> 12, 1) - t / 2. Returns t.
+s32 projectile_arc_velocity(s32 out[4], const BObj* from, const BObj* to, s32 speed, int aim);
 // 0x80048f60: a random point on a sphere of 'radius' units around centre (yaw rng_range(0x1000),
 // tilt rng_spread(0x400)).
 Vec4 vec_random_around(const s32 centre[3], s32 radius);

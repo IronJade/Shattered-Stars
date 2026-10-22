@@ -57,7 +57,7 @@ scratchpad/enemy/cmp.py's per-reference alignment (CMP_D). Casters: wizard (enco
 Sub-steps (reported to the coordinator): 1a spell data cache, spell_cast + the ten
 built-in spells (Shot kinds 3/4/6-0xf/0x1d), unit cast side, party / enemy cast states,
 shot_hit_magic, windows; 1b SpellCast object + API + kinds 1/2 + a module registry and the
-modules of the test casters (wizard: Cure All 0x32, Magnum Tornado 0xb, Feehn 0xa;
+modules of the test casters (wizard: Cure All 0x32, Magnum Tornado 0xb, Foehn 0xa;
 Goathead 277: Cure All, Thundercloud 0x10); 1c the other ~50 spell modules; 2 items.
 
 Battle agent's answers (2026-10-22): no character module overrides PartyUnit slots 11 /
@@ -83,7 +83,7 @@ it compared with PCSX-Redux yet:
   spells use).
 - Step 1b, partly: `battle/spellcast.{h,cpp}` (the SpellCast object and its API; a kind with no
   handler logs "not ported yet" and ends the cast), `battle/spell_modules.{h,cpp}` (registry by
-  block hash) with one module, `battle/spell_mod_feehn.cpp` (spell 0xa).
+  block hash) with one module, `battle/spell_mod_foehn.cpp` (spell 0xa).
 - Callers wired (flagged edits in other agents' files): `unit.h` (Unit [3] can_cast is
   unit_can_cast; PartyUnit [3] can_cast, [11] release_spell, [40] state_cast, [41]
   state_spell_release, all in spell_units.cpp), `party_states.cpp` (states 0xe / 0xf and
@@ -107,22 +107,67 @@ it compared with PCSX-Redux yet:
 - No catalog rows for phase 5 yet (the +118 rows in e37c3a5's functions.csv are other agents').
 - HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
 
+## In progress (since the restart, 2026-10-22 afternoon)
+
+- Verified against Redux (scratchpad/world/spell, cmp.py at the reference's own D; all RNG
+  samples and all unit samples equal): encounter 516 Shin (Foehn 0xa, module), 27 Magius
+  (Firebolt x3, Starlight x3), 41 Beastmaster (Wind Blade, Starlight x2), 3000 / 2000 vsyncs.
+  340 wizard and 277 Goathead match too (they never cast in 6000 vsyncs idle).
+- Catalog: the port column of every phase-5 function set (scratchpad/world/spell/cat_port.py),
+  rows for the Foehn / Starlight modules (module `battle_spell_<name>`, README updated;
+  scratchpad/world/spell/catalog/*.csv + cat_mods.py).
+- New since e37c3a5 (on disk): `battle/spell_mod_starlight.cpp` (spell 0x12, af4ef66c53;
+  in 858a228), kind 0x31 vortex + effect_spawn_t31_at (spell_shots.cpp / spell_fx.{h,cpp}),
+  spellcast.h `aux_point[4]` (+0x124), spell_modules.h helpers (spellcast_leads_camera,
+  spellcast_model), `SS_SPELL_TRACE=1` (a line per spell_cast) and
+  `SS_BATTLE_CAST="FRAMES:SLOT:SPELL:p0|e0;..."` (a forced party cast, spells.cpp); the Redux
+  driver copy `scratchpad/world/spell/redux/explore.lua` has the same `BW_CAST`, and
+  run.sh takes `BW_EXTRA_POKE`.
+- 1b modules written: magnum_tornado (0xb, Redux 197 exact), cure_all (0x32), thundercloud
+  (0x10) (+ effect_spawn_streak_at in spell_fx); Foehn renamed (was "Feehn"); original_bugs.md
+  S1 (Foehn's effects on the wrong side) fixed; catalog rows for all five modules.
+- Running: Redux references `ref/m277_3`, `ref/m111_3` (Goathead, 4000 vsyncs, for
+  Thundercloud / Cure All), queued after `ref/r340_3`. Redux reference `ref/r340_3` (encounter 340, slot 0 poked to Rena: id 2, class 9,
+  MP 200; forced casts Heal / Cure Light / Antidote on herself, Ice Needle / Thunderbolt /
+  Grave / Wounds / Word of Death on the wizard, from battle frame 400 every 200) to verify
+  the built-in spells the monsters never cast.
+
+- Step 2 started in the build: `command_menu.cpp` in CMakeLists.txt and called from input.cpp
+  (flagged edits in the battle agent's input.cpp: modes 1 / 3, the ring on key 2, the member
+  select on key 1, the spell / item targets, cancel back to the menus; the unused todo()
+  removed); command_menu_reset in battle_program.cpp. Not yet exercised with input.
+- 1c helpers (3, started ~17:55; guide `scratchpad/world/spell/GUIDE.md`, write-only new
+  `battle/spell_mod_<name>.cpp` + `scratchpad/world/spell/catalog/<name>.csv`, not in CMake
+  until reviewed): group A (13 modules: Divine Comedy, Gremlin Lair, Tractor Beam, Anti, Raise
+  Dead, Lunar Light, Extinction, Press, Energy Net, Neutral, Deep Mist, Bless, Forget), group B
+  (14: Black Saber, Earthquake, Explode, Fairy Light, Angel Feather, Dark Circle, Energy
+  Arrow, Dispel, Earth Grave, Tetanus Wind, Growth, Shadow Bolt, Protection, Silence), group C
+  (16: Sonic Saber, Meteor Swarm, Eruption, Southern Cross, Gravity Press, Blood Sucker / Mind
+  Absorber, Fairy Heal, Shadow Flare / Judgement Day, Reflection, Delay, Thunderstorm, Haste,
+  Light Cross, spell 0x40, Acid Rain, Curse). The enemy agent ports the other 7 (its list) with
+  at most 3 helpers.
+- Rena test (`ref/r340_3`, `pr340`): RNG equal to b700; at b800 the port has 4 more draws
+  (round the Cure Light cast) and the wizard then chants in the port only. A per-2-vsync
+  Redux run (`ref/r340d_3`, BW_BATTLE_EVERY=2, 900 vsyncs) is queued to find the frame.
+
 ## Next steps
 
-1. Verify 1a against PCSX-Redux: Rena's Heal / Cure Light (setup above), the Beastmaster's
-   heal; RNG counts and unit HP / MP at the reference's own offset (CMP_D).
-2. Finish 1b: the modules the test casters need (wizard 340: Cure All 0x32, Magnum Tornado
-   0xb, Feehn 0xa; Goathead 277: Cure All, Thundercloud 0x10); verify against 340 and 277.
-3. 1c: the other ~54 spell modules (helpers allowed, up to six, write-only; see the rules from
-   the coordinator).
-4. Step 2: item_use_battle and the rest of item use; verify the command menus against Redux.
+1. Compare r340 with the port (same pokes: SS_BATTLE_POKE "3:0x0=2/2,3:0x3=9/1,3:0x20=200/2,
+   3:0x22=200/2,3:0x24=200/2" + SS_BATTLE_CAST with the same list); fix differences.
+2. 1b: Magnum Tornado 0xb (53455d80ad; ref k197 Nightmare diverges at its cast, b700), Cure All
+   0x32 (95b9fdccfa). (Queue change: the enemy agent ports the spell modules of spells 12, 16,
+   22, 28, 51, 55, 56, 57 decimal = 0xc, 0x10 Thundercloud, 0x16, 0x1c, 0x33, 0x37, 0x38,
+   0x39, registering them in spell_modules.cpp; leave them out of 1c; six helpers in total
+   between us.)
+3. 1c: the other ~50 modules with helpers (guide to write: scratchpad/world/spell/GUIDE.md).
+4. Step 2: command_menu.cpp into CMake + input.cpp, item_use_battle.
 
 ## Findings not yet in the catalog
 
 - Spell data entries 0x8e1-0x981: command lists (5 sound, 6 code, 3 texture, 4 model, 7/9
   part, 8 raw); 55 distinct code modules (block k linked for slot k: 0x8008cc00 /
   0x8008e600); `scratchpad/world/spell/modules/index.txt` maps module hash -> entries ->
-  spells. Spell names: #1980 string 0x3e7 + spell, each byte + 1 (0x0a Feehn, 0x0b Magnum
+  spells. Spell names: #1980 string 0x3e7 + spell, each byte + 1 (0x0a Foehn, 0x0b Magnum
   Tornado, 0x10 Thundercloud, 0x32 Cure All ...).
 - Analysis program: `battle_s2.elf` in analysis/ghidra_world (the #2129 image with #1984.0
   / .1 patched in, the SpellCast code kept; PSX language: the default MIPS64 R6 pick breaks

@@ -29,7 +29,18 @@ inline const u8* spellcast_model(const SpellCast* sc, int k) {
 }
 
 // The modules (spell_mod_<name>.cpp).
-void spell_mod_feehn(SpellCast* sc);
+void spell_mod_foehn(SpellCast* sc);
 void spell_mod_starlight(SpellCast* sc);
+void spell_mod_magnum_tornado(SpellCast* sc);
+void spell_mod_cure_all(SpellCast* sc);
+// The monsters' spells (enemy agent).
+void spell_mod_deep_freeze(SpellCast* sc);
+void spell_mod_noah(SpellCast* sc);
+void spell_mod_mind_blast(SpellCast* sc);
+void spell_mod_spicule(SpellCast* sc);
+void spell_mod_wind_of_destruction(SpellCast* sc);
+void spell_mod_star_flare(SpellCast* sc);
+void spell_mod_daemons_gate(SpellCast* sc);
+void spell_mod_thundercloud(SpellCast* sc);
 
 }  // namespace ss::game::battle

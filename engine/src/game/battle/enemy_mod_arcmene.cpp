@@ -21,13 +21,17 @@ u32 rng15() { return static_cast<u32>(rng_next() & 0x7FFF); }  // rng_next15 0x8
 const s32 kZero[3] = {0, 0, 0};  // g_zero_vector 0x8006e33c
 
 struct EnemyArcmene : EnemyUnit {
-  // 0x80088110 [26]: 1/8 of the time the blink (attack 3), else the web from afar (attack
-  // 2) or the default choice. The blink was meant to need the nearest member within 1000
-  // units, but compares the member's index (enemy_nearest_party_index) with 0x3e8000, which
-  // always passes (original bug).
+  // 0x80088110 [26]: 1/8 of the time the blink (attack 3) when the nearest member is within
+  // 1000 units, else the web from afar (attack 2) or the default choice.
   void choose_target() override {
     bool blink = false;
-    if (rng15() < 0x1000) blink = enemy_nearest_party_index(this) < 0x3E8000;
+    // ORIGINAL BUG (original_bugs.md E1): the member's index (enemy_nearest_party_index) is
+    // compared with the distance 0x3e8000, so the test always passes:
+    //   if (rng15() < 0x1000) blink = enemy_nearest_party_index(this) < 0x3E8000;
+    if (rng15() < 0x1000) {
+      const int i = enemy_nearest_party_index(this);
+      blink = i >= 0 && vec_distance_fx(pos, bg().party_units[static_cast<size_t>(i)]->pos) < 0x3E8000;
+    }
     if (blink) {
       bsfx_play_at(0x21, this);
       action_kind = 3;

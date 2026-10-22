@@ -49,7 +49,7 @@ void unit_apply_global_blend(Unit* u) {
   }
 }
 
-Unit* unit_check_move(const Unit* u, const s32 d[3], u32 flags) {
+Unit* unit_check_move(const BObj* u, const s32 d[3], u32 flags) {  // (world agent: BObj)
   const StageData& s = stage();
   const s32 nz = u->pos[2] + d[2];
   const s32 nx = u->pos[0] + d[0];

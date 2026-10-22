@@ -113,16 +113,17 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
   - Redux: `BW_EXTRA_POKE` needs hex values (`0x<byte>/1`). A plain `8/1` is silently
     skipped, which is why the first l8 / l7 runs did move 2.
   - R1 presses start no move in either the original or the port.
-- **Bowman (in progress).** `pc_bowman.cpp` (#2139, all 10 moves and 10 callbacks) and
-  `projectile_arc_velocity` 0x8004906c (unit_move.cpp) are written, registered (pc_modules
-  case 4, CMake) and build.
-  - Move 1 (pills, byte 2) is verified against `ref/bowman_l2`: RNG to the exit, units
-    1311/1312.
-  - shot_place_at_unit_thunk 0x800553f0 passes dz 0. A Redux register trace (`BW_REG_BP`)
-    first looked like stale stack, but the thunk sets its own 5th argument.
-  - Refs for bytes 1, 4, 5, 6, 7 are running (`ref/bowman_l<byte>`). Bytes 3, 8, 9, 10
-    come next.
-  - Bowman port command: as Ernest's with `3:0x0=4/2`.
+- **Bowman (in progress; 7 of 10 moves verified).** `pc_bowman.cpp` (#2139, all 10 moves and
+  10 callbacks) and `projectile_arc_velocity` 0x8004906c (unit_move.cpp) are written,
+  registered (pc_modules case 4, CMake) and build.
+  - Verified against `ref/bowman_l<byte>` for bytes 1, 2, 4, 5, 6, 7 (moves 0, 1, 3, 4, 5,
+    6): RNG equal to the exit, units at most 3 sampling differences, frames under 1-2%
+    outside the end fade.
+  - Move 3 matches with B9 kept faithful.
+  - Refs for bytes 3, 8, 9, 0xa (moves 2, 7, 8, 9) are running.
+  - The compare script: `scratchpad/battle/pcrun.sh CHAR BYTE REF OUT` (the port run, rngcmp,
+    unitcmp and framecmp in one).
+  - shot_place_at_unit_thunk 0x800553f0 passes dz 0.
 - New original-bug candidate B9 (to add to original_bugs.md):
   - projectile_arc_velocity scales the arc's z by a constant 24 instead of the speed.
   - Bowman's move 3 calls it with speed 10, so his leap overshoots or undershoots in depth.
@@ -137,7 +138,9 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
    10. Then catalog rows (gen_catalog.py NEW, module battle_pc2139). Decompiled sources are
    in `scratchpad/battle/decomp/` (`decomp1.sh ELF ADDR` uses the private REA CLI's Ghidra).
 2. Dias (#2143, char05, vtable 0x801f11d4: overrides 1, 35-37, 46-49).
-3. Fix the original bugs B1, B2, B3 (B5 decide; B9 decide) as a separate commit point.
+3. B1 / B2 / B3 are fixed on disk (killer.cpp, particle.cpp; originals in
+   scratchpad/battle/*.prebugfix). Report them as their own commit point. B5 and B9 are
+   "decide".
 4. Party AI (pc_ai_fighter 0x80038664 / healer 0x80038114 / caster 0x80038328), voices.
 5. Claude's move 5 (Energy Sword) compare.
 6. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
@@ -187,13 +190,14 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
   states), 45, 46. MP costs by move byte at 0x8006b213 (4 7 0 9 15 11 17 12 28 32 38).
   Starting move byte 3 = Phase Gun (raises stats +0x2e to 0x2a8 for its hit).
 - Afterimage draws `(head + 2i + 2) % count` (verified in the asm), i.e. half the copies
-  twice with an even count.
+  twice with an even count. Fixed in the port (original_bugs.md B2).
 - Particle lines read the GTE OTZ register after RTPS (stale: the last AVSZ's value).
+  Fixed in the port (B3).
 - `battle_data` reads #2129; #1984 block 0 (0x800715d0) and #1981 (0x80085518) data come
   from the overlay images (`ovl1984_data` / `ovl1981_data`).
 - shot_apply_damage's redirect loop compares the random member with targets[tries],
   walking past the list (stack garbage on the console); the port compares only within it.
 - ribbon_trail_update passes the start angle where the end angle's cosine belongs (xy1 / xy3
-  use cos(start), sin(end)); the port keeps it. Shot +0x124 holds the trail colour until
+  use cos(start), sin(end)); fixed in the port (B1). Shot +0x124 holds the trail colour until
   the first frame replaces it with the trail pointer (pointers are negative as s32).
 - lens_flare_draw patches the shared stage flare tables in place (sizes[0..1], intensity[0]).

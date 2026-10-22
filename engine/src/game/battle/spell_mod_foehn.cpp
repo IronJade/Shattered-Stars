@@ -1,4 +1,4 @@
-// Spell code module 2a9c041ec7 (entries 0x915 / 0x916): Feehn (spell 0xa), a wall of wind
+// Spell code module 2a9c041ec7 (entries 0x915 / 0x916): Foehn (spell 0xa), a wall of wind
 // sweeping the field. One function at 0x8008cc00 (block 0, 2236 bytes).
 
 #include "game/battle/bsfx.h"
@@ -59,7 +59,7 @@ void draw_wall(SpellCast* sc) {
   }
 }
 
-void feehn(SpellCast* sc) {
+void foehn(SpellCast* sc) {
   BattleGlobals& g = bg();
   const Unit* t = sc->target;
   sc->centre[0] = t->pos[0];
@@ -112,15 +112,18 @@ void feehn(SpellCast* sc) {
       sc->s2c = 0xBB8000;
       return;
     case 3: {
-      // The wall passes the units of the side it sweeps (the original walks 8 entries of
-      // the party list for a party caster: the 4 members and the first 4 monsters).
+      // The wall's sounds and leaves on the units of the side it sweeps.
       int side = sc->caster->is_enemy;
       if (sc->combo == 3) side ^= 1;
+      // ORIGINAL BUG (original_bugs.md S1): the lists are swapped: side 0 (a party caster)
+      // walks 8 entries from the party list (the 4 members, then monsters 0-3), side 1 (a
+      // monster) the first 4 monsters, so the effects play on the caster's own side.
+      //   const int count = side == 0 ? 8 : 4;
+      //   Unit* u = side == 0 ? (i < 4 ? party_units[i] : enemy_units[i - 4]) : enemy_units[i];
       const int count = side == 0 ? 8 : 4;
       for (int i = 0; i < count; ++i) {
-        Unit* u = side == 0 ? (i < 4 ? static_cast<Unit*>(g.party_units[static_cast<size_t>(i)])
-                                     : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i - 4)]))
-                            : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i)]);
+        Unit* u = side == 0 ? static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i)])
+                            : static_cast<Unit*>(g.party_units[static_cast<size_t>(i)]);
         if (unit_is_down(u)) continue;
         if (!(u->pos[2] < sc->s2c && sc->s2c + g.frame_ticks * -0x3C000 <= u->pos[2])) continue;
         bsfx_play_at(0x4C, u);
@@ -174,6 +177,6 @@ void feehn(SpellCast* sc) {
 
 }  // namespace
 
-void spell_mod_feehn(SpellCast* sc) { feehn(sc); }
+void spell_mod_foehn(SpellCast* sc) { foehn(sc); }
 
 }  // namespace ss::game::battle

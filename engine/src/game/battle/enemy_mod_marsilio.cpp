@@ -58,15 +58,17 @@ struct EnemyMarsilio : EnemyUnit {
     if ((box_mask & 0xC) == 0 && hit_landed != 0) hit_landed = 0;
   }
 
-  // 0x800881f8 [27]: a plain swing (enemy_attack_step). The trail ends when the step reports
-  // a hit (it returns hits + 1), not when the animation ends: the original reads the step's
-  // result as "done". When no hit lands the afterimage stays bound to +0x1f4 and the next
-  // swing reuses it.
+  // 0x800881f8 [27]: a plain swing (enemy_attack_step) with its afterimage to the end.
   void attack1() override {
     loop_limit = 1;
     anim = 4;
     bind_trail(2);
-    if (enemy_attack_step(this) != 0) end_trail();
+    // ORIGINAL BUG (original_bugs.md E5): the step's result (hits + 1) is read as "done", so
+    // the trail ends on a hit and, when nothing is hit, stays bound to +0x1f4 into the next
+    // swing:
+    //   if (enemy_attack_step(this) != 0) end_trail();
+    enemy_attack_step(this);
+    if (action_kind == 0) end_trail();  // (the swing's end: enemy_attack_step went idle)
   }
 
   // 0x80088290 [28]: a slanted cut (one hit per attack).

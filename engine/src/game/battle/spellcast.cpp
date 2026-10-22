@@ -73,17 +73,6 @@ void spellcast_start(SpellCast* sc, int kind) {
   sc->alt_clut = 0;
 }
 
-// The temporary Shot the hit functions hand shot_apply_damage (a Shot on the stack of the
-// original: owner the caster, x far to the side the spell comes from).
-void damage_list(SpellCast* sc, int n, Unit** list, int power, u16 element, int knockback, s32 x) {
-  Shot tmp;
-  tmp.owner = sc->caster;
-  tmp.pos[0] = x;
-  tmp.pos[1] = 0;
-  tmp.pos[2] = 0;
-  shot_apply_damage(&tmp, n, list, nullptr, power, 0, element, 0, knockback);
-}
-
 // The sprite set's texture bank 'part' is in: its CLUT and images to VRAM (the end of a
 // command 4 / 7 / 9 stream).
 void upload_part(SpellCast* sc) {
@@ -119,6 +108,17 @@ void upload_part(SpellCast* sc) {
 }
 
 }  // namespace
+
+void spellcast_damage_units(SpellCast* sc, int n, Unit** list, int power, u16 element, int knockback, int party_side) {
+  // The temporary Shot the hit functions hand shot_apply_damage (a heap Shot on the console:
+  // owner the caster, x far to the side the spell comes from).
+  Shot tmp;
+  tmp.owner = sc->caster;
+  tmp.pos[0] = party_side == 0 ? 0x2710000 : static_cast<s32>(0xFD8F0000);
+  tmp.pos[1] = 0;
+  tmp.pos[2] = 0;
+  shot_apply_damage(&tmp, n, list, nullptr, power, 0, element, 0, knockback);
+}
 
 // ---- The object ----
 
@@ -344,7 +344,7 @@ void spell_damage_area(SpellCast* sc, const s32 rect[4], int power, u16 element,
   Unit* list[8] = {};
   const int n = units_in_rect(sc, rect, list, party);
   if (n == 0) return;
-  damage_list(sc, n, list, power, element, knockback, party == 0 ? 0x2710000 : static_cast<s32>(0xFD8F0000));
+  spellcast_damage_units(sc, n, list, power, element, knockback, party);
 }
 
 void spell_status_area(SpellCast* sc, const s32 rect[4], u32 mask, int chance, int icon, int party) {
@@ -475,8 +475,7 @@ void spell_hit_target(SpellCast* sc, u16 element, int knockback) {
     Unit* t = sc->combo == 3 ? sc->caster : sc->target;
     if (!unit_is_down(t)) {
       Unit* list[1] = {t};
-      damage_list(sc, 1, list, sc->eff_power, element, knockback,
-                  sc->caster->is_enemy != 0 ? static_cast<s32>(0xFD8F0000) : 0x2710000);
+      spellcast_damage_units(sc, 1, list, sc->eff_power, element, knockback, sc->caster->is_enemy);
     }
   }
   battle_flash_set(sc, 0x80, 0x80, 0x80);

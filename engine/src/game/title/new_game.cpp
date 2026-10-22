@@ -727,10 +727,12 @@ void new_game_sound_update(u8* bank, u8* sequence) {
 
 u32 scale_colour(u32 colour, int level) {
   // GPF with IR0 = level << 4 and IR1..3 = channel << 4: MAC = IR0 * IR >> 12, then
-  // the colour FIFO takes MAC >> 4.
+  // the colour FIFO takes MAC >> 4. IR0 keeps the low 16 bits (sign-extended): levels past
+  // +-0x7ff wrap (world agent: kind 0x30's bombs pass 0x100 - a colour).
   u32 out = 0;
+  const s32 ir0 = static_cast<s16>(static_cast<u32>(level) << 4);
   for (int shift = 0; shift < 24; shift += 8) {
-    const s64 mac = (static_cast<s64>(level << 4) * static_cast<s64>(((colour >> shift) & 0xFF) << 4)) >> 12;
+    const s64 mac = (static_cast<s64>(ir0) * static_cast<s64>(((colour >> shift) & 0xFF) << 4)) >> 12;
     out |= static_cast<u32>(std::clamp<s64>(mac >> 4, 0, 0xFF)) << shift;
   }
   return out;

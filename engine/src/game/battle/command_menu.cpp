@@ -116,13 +116,13 @@ struct DescPopup : BWindow {
     visible = 0;
     load_done_next = false;
   }
-  void show(s32 x, s32 y, int i) {
+  void show(s32 at_x, s32 at_y, int i) {
     // desc_popup_show 0x80041724.
     if (((visible == 0 && load == 0 && laid_out == 0) && timer == 0) || index != i) {
       hide();
       visible = 1;
-      anchor_x = x;
-      anchor_y = y;
+      anchor_x = at_x;
+      anchor_y = at_y;
       index = i;
     }
   }
@@ -278,6 +278,7 @@ struct ListMenu : BWindow {
   virtual void draw_frame() { window_draw_frame(this); }  // [7] list_menu_draw_frame 0x8007ef00
   virtual void item_pos(int c, int r, s32* ox, s32* oy) = 0;  // [8]
   virtual int confirm() = 0;    // [9]: 0 stay, 1 done, 2 another input mode took over
+  void draw_contents() override { draw_scrollbar(); }  // [5] (window_draw_frame calls it)
   void wrap_cursor(int c, int r, s32* oc, s32* orow) const;  // 0x8007ef20
   void clamp_scroll();          // 0x8007ef7c
   void draw_scrollbar();        // 0x8007efd0
@@ -612,7 +613,6 @@ void SpellMenu::draw_items(int first, int ry) {
   char num[8];
   window_draw_small_text(this, 0x18, 0x12, field::format_decimal(num, mp, 4, ' '), pal);
   window_text_end(this);
-  draw_scrollbar();
 }
 
 int SpellMenu::confirm() {
@@ -755,7 +755,6 @@ struct ItemMenu : ListMenu {
       }
     }
     window_text_end(this);
-    draw_scrollbar();
   }
   void item_pos(int c, int r, s32* ox, s32* oy) override {
     *ox = x + c * 0x90 + 0x16;
@@ -809,11 +808,6 @@ s16 chosen_item_index() { return g_cmd.chosen_item; }
 void spell_menu_open() { new SpellMenu(); }
 void item_menu_open() { new ItemMenu(); }
 void tactics_menu_open() { new TacticsMenu(); }
-
-void item_use_battle(Unit* user, Unit* target, int index) {
-  (void)user, (void)target, (void)index;
-  runtime::Runtime::get().log_once("battle-item-use", "battle: not ported yet: item_use_battle 0x80082dec (phase 5 step 2)");
-}
 
 void command_menu_reset() {
   for (ListMenu* m : g_closed) delete m;

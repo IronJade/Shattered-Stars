@@ -95,12 +95,44 @@ lines, `gpu_lines_match_hardware_dump`, CHECKLIST line). Verified after the cuto
 - Suites (coordinator, HEAD): ss_tests 78/0, ss_game_tests 74/0 with and without the
   disc, smoke 21/21; mine the same (smoke 16/16 in tools/smoke_field_events.sh here).
 
-## Phase 5 step 2: party modules (next)
+## Phase 5 step 2: party modules (in progress)
 
 Precis #2155, Ashton #2147, Opera #2153, Chisato #2159, each in battle/pc_<name>.cpp,
-registered in pc_modules.cpp (flag the hunk). Read docs/handoff/battle.md,
-docs/notes/battle_port.md (Verification / Clock alignment), pc_claude.cpp /
-pc_casters.cpp / pc_modules.h first.
+registered in pc_modules.cpp (flag the hunk to the coordinator).
+
+### Chisato (#2159): ported, verifying
+
+- `engine/src/game/battle/pc_chisato.cpp` (new): ChisatoUnit (vtable 0x801f0904), 8 moves,
+  6 Shot callbacks, the normal attack (slot 30), slots 4 / 6 / 33 / 35 / 36 / 39.
+- Small hunks in the battle agent's files (to flag): `pc_modules.cpp` (case 12),
+  `unit.h` (`Unit::jump_time`, vtable slot 6, virtual), `unit_move.cpp` (its body:
+  unit_jump_time), `party_states.cpp` (the leap calls `jump_time`), CMakeLists.
+- Verified against Redux (moves 0-3 at charge level 0): RNG draws equal at every sample
+  through the battle and the result screen (to the field's 1024 draws after the exit);
+  frames under 0.8% through the fights (b160-b900).
+- Running: Redux `chis_b5..b8` (moves 4-7, level 0); then all 8 at USES=999 (max level).
+- Tools: `scratchpad/fx_worker/battle/redux/run_pc.sh NAME CHAR L1BYTE [R1] [USES]` (Redux,
+  scratch HOME) and `port_pc.sh NAME CHAR L1BYTE [USES]` (port on the same field_exit dump);
+  compare with `scratchpad/battle/rngcmp.py REFLOG PORTLOG` and
+  `FRAMECMP_D=7 scratchpad/battle/framecmp.py REFDIR PORTDIR/cap 160 1100 10`.
+- Disassembly: `scratchpad/fx_worker/battle/char{06,07,09,12}.elf`; decompiles through the
+  MCP REA session (batch_decompile, open_binary with the CLI snapshot
+  `battle/<name>/snapshot`); listings with `dump_asm.py` (one CLI process).
+
+### Original bugs F1, F3, F5, F7, F8 (done, on disk, uncommitted): one commit point
+
+- F1 `field/effects_draw.cpp` (the line and burst depth: `otz_for_depth`), F3 / F7
+  `field/effects.cpp` (glow replaced; clamp), F5 `field/field_movie.cpp` (per-row clipped
+  write-back), F8 a-e `field/actor_field.cpp` (`fieldactor_build_light_split`).
+- Tests adjusted: `test_field_actors.cpp` (light-split Redux trace: cache-B UVs skipped for
+  F8b, 95 dup46 calls accepted as subsets for F8d; the list-4 triangle test expects the
+  corrected UVs), `test_field_effects.cpp` (the SS_FX_REF dump tests find lines / burst quads
+  in any slot, F1). ss_game_tests 74/0 with the disc; with SS_FX_REF all dump tests pass.
+- F4 (lit sphere): recommendation "intended" (only caller passes hemi 1, the other path is
+  dead). Docs: original_bugs.md rows, field_effects.md, field_overlay_c1d.md.
+
+Next: finish Chisato (b5-b8, max-level runs), report Chisato + the bug commit point; then
+Precis (char06), Opera (char09), Ashton (char07).
 
 ## Uncommitted files
 

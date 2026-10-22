@@ -194,15 +194,19 @@ struct EnemyEricodus : EnemyUnit {
       if (unit_try_move_scaled(this, d, 7) == nullptr) {
         bobj_move(this, d);
       } else {
-        // Blocked vertically: the step advances too (with a landing below, it reaches 3,
-        // which no branch handles: the original's quirk, kept).
-        ++counters[1];
+        // Blocked vertically: the jump ends (step 2).
+        // ORIGINAL BUG (original_bugs.md E2): both this and the landing below add 1, so a
+        // block and a landing in the same frame make step 3, which no branch handles: the
+        // monster stays in its attack state for good.
+        //   ++counters[1];
+        counters[1] = 2;
         bsfx_play_at(0x25, this);
       }
       vel[1] += g.frame_ticks * 0x1000;
       if (bobj_ground_height(this) < pos[1]) {
         pos[1] = bobj_ground_height(this);
-        ++counters[1];
+        // ORIGINAL BUG (original_bugs.md E2): ++counters[1];
+        counters[1] = 2;
         bsfx_play_at(0x25, this);
         dust(4);
         airborne = 0;

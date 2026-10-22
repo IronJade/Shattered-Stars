@@ -104,6 +104,9 @@ void spell_status_area(SpellCast* sc, const s32 rect[4], u32 mask, int chance, i
 void spellcast_dim_begin(SpellCast* sc, int side);         // 0x80086264
 void spellcast_dim_end(SpellCast* sc);                     // 0x80086478
 void spellcast_dim_step(SpellCast* sc);                    // 0x800864bc
+// shot_apply_damage on 'list' through a temporary Shot of the caster's (x far on the side
+// the spell comes from: party_side 0 the right, 1 the left), as the hit functions do.
+void spellcast_damage_units(SpellCast* sc, int n, Unit** list, int power, u16 element, int knockback, int party_side);
 void spell_hit_all(SpellCast* sc, u16 element, int knockback);              // 0x800867a0
 void spell_hit_rect(SpellCast* sc, const s32 rect[4], u16 element, int knockback);  // 0x800868a0
 void spell_hit_target(SpellCast* sc, u16 element, int knockback);           // 0x80086998

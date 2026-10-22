@@ -70,9 +70,10 @@ struct EnemyCarlaeagle : EnemyUnit {
             d->life = 0x30;
             d->flags = 0x100006;
             d->angle = enemy_module_s16(kSlotA, kFeatherAngles + 2 * static_cast<u32>(i));
-            // The height is the descriptor's point y (0 after shot_desc_init), not the
-            // bird's: every feather starts 0x78 above y 0 (original quirk).
-            const s32 from[3] = {pos[0] + (facing[0] > 0 ? 0x30000 : -0x30000), d->point[1] - 0x78000, pos[2]};
+            // ORIGINAL BUG (original_bugs.md E9): the height is the descriptor's point y (0
+            // after shot_desc_init), not the bird's, so every feather starts 0x78 above y 0:
+            //   from[1] = d->point[1] - 0x78000;
+            const s32 from[3] = {pos[0] + (facing[0] > 0 ? 0x30000 : -0x30000), pos[1] - 0x78000, pos[2]};
             shot_spawn_projectile(this, from, d, this);
           }
         }
