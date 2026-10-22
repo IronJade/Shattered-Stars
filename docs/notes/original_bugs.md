@@ -21,6 +21,8 @@ The port aims to play better than the original, not to copy its defects.
 Status: **kept** = the port still does what the original does (to fix); **avoided** = the port
 already does something safe instead; **fixed** = commented out and corrected; **decide** =
 a quirk that may be the intended look or feel, so it needs a decision before changing.
+**keep** = decided by the user: the original's behaviour is intended and stays; **to fix** = decided
+by the user as a bug, fix pending.
 
 ## Battle (battle agent)
 
@@ -45,16 +47,16 @@ a quirk that may be the intended look or feel, so it needs a decision before cha
 | E2 | ericodus attack 5 / enemy_mod_ericodus.cpp | can reach a step no branch handles, freezing the monster in state 13 | fixed (a block or a landing sets step 2) |
 | E3 | visseyer / jibril release search / enemy_mod_visseyer.cpp, enemy_mod_jibril.cpp | the even tries store the z into the member's z velocity (+0x30) instead of its z | fixed |
 | E4 | bark vortex ring / enemy_mod_bark.cpp | the ring heights shift a 20.12 value by 12 again, right only at height 0 | fixed |
-| E5 | marsilio afterimage / enemy_mod_marsilio.cpp | the afterimage ends on a hit, not at the end of the swing | decide |
-| E6 | shigeo choose_target / enemy_mod_shigeo.cpp | the 0x291c0 chance test always passes | decide (changes how often it attacks) |
+| E5 | marsilio afterimage / enemy_mod_marsilio.cpp | the afterimage ends on a hit, not at the end of the swing | to fix (user, 2026-10-22: the afterimage should last to the end of the swing) |
+| E6 | shigeo choose_target / enemy_mod_shigeo.cpp | the 0x291c0 chance test always passes | keep (user, 2026-10-22: intended. Shigeo is meant to be unbeatable in the first fight; in the second he holds no aggro and is a one-time fight the story needs won) |
 | E7 | celesta status_test / enemy_mod_celesta.cpp | returns bit 24 of the mask argument instead of the status test | not a bug: effect word 0 bit 24 is stun immunity (unit_apply_stun), so she reports that one effect and nothing else: G-Celesta cannot be stunned |
 | E8 | indalecio step 6 / enemy_mod_indalecio.cpp | the halo afterimage is never made | fixed (the first frame of step 6 is told by the fade +0x38, which step 5 clears) |
-| E9 | carlaeagle feathers / enemy_mod_carlaeagle.cpp | every feather starts 0x78 above y 0 rather than above the bird | decide |
+| E9 | carlaeagle feathers / enemy_mod_carlaeagle.cpp | every feather starts 0x78 above y 0 rather than above the bird | to fix (user, 2026-10-22: the feathers start at the bird and fan out toward the party) |
 | E10 | indalecio funnel / enemy_mod_indalecio.cpp | the funnel has already turned +0x34 this frame when it is read | the cause of E8, not a second bug: fixed with it (the funnel itself turns as before) |
 | E11 | bunny / enemy_mod_bunny.cpp | when no point is found, an uninitialised stack slot is read | avoided (0) |
 | E12 | enemy_support.cpp | the colour register holds garbage for an unknown mode | avoided (0) |
 | E13 | Noah module 6563c70f92 step 2 / battle/spell_mod_noah.cpp | as Foehn's S1: the wall's splashes (sounds, sparks, shakes) go to the caster's own side (party / monster lists swapped); the damage (spell_hit_all) is right | fixed (verified faithful first: Redux encounters 515, 539) |
-| E14 | visseyer / jibril release / enemy_mod_visseyer.cpp, enemy_mod_jibril.cpp | a released member's facing x is set from its own x velocity (-vel x, 0 after being swallowed), so it comes out facing an arbitrary way instead of toward the monster | decide (looks like a slip for the monster's facing; only the look) |
+| E14 | visseyer / jibril release / enemy_mod_visseyer.cpp, enemy_mod_jibril.cpp | a released member's facing x is set from its own x velocity (-vel x, 0 after being swallowed), so it comes out facing an arbitrary way instead of toward the monster | keep (user, 2026-10-22: released members are meant to come out facing a random way) |
 
 ## Field effects and map code (effects agent)
 
@@ -63,7 +65,7 @@ a quirk that may be the intended look or feel, so it needs a decision before cha
 | F1 | line and burst drawers / field/effects_draw.cpp | read a stale OTZ (no AVSZ first), so they sort at the wrong depth | fixed (avsz3 of their own points' depth, `otz_for_depth`) |
 | F2 | burst / field/effects_draw.cpp | the OT index is not range-checked | avoided (the primitive is dropped) |
 | F3 | ext 0x79 / field/effects.cpp `glow_spawn` | a second glow leaves the old one drawing | fixed (the new glow replaces the old) |
-| F4 | lit sphere 0x8008c378 / field/effects_draw.cpp | only the lower hemisphere is drawn | decide (looks intended: the only caller, the orb 0x8008bfd8, asks for it with hemi = 1, and the other path, i < 0, is dead code; additive, it reads as a glowing bowl / ground shockwave. Recommendation: keep) |
+| F4 | lit sphere 0x8008c378 / field/effects_draw.cpp | only the lower hemisphere is drawn | keep (user, 2026-10-22: the intended look) |
 | F5 | movie compose 0x801e9000 / field/field_movie.cpp | for a quad clipped at the screen edge the row is never added to y, so every row lands on its top row; the rows are also read with the clipped stride, the right edge stops at 0x13e, and a quad running past the right edge was written whole (past the movie's columns) | fixed (each row's visible columns written back at its own row) |
 | F6 | overlay 0xc1d layer clip / field BG | both DR_AREAs land after the sprites, so the clip never applies; the clip x uses y0 | avoided (the port skips the DR_AREAs, matching the hardware result) |
 | F7 | glow_draw / field/effects.cpp | a tint of 0x100 wraps to 0 in the clamp | fixed |
