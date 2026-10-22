@@ -3,10 +3,13 @@
 // instruction, or popped from the value stack when bit 23 is set. Opcodes the jump
 // table sends to the default case (0x7e, 0x82, 0xa6, 0xa7, 0xb2, 0xc1, 0xc6, 0xc7,
 // 0xfd) and anything outside 0x64-0xff do nothing.
+#include <cstdio>
+
 #include "game/boot/pad.h"
 #include "game/common/math.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
+#include "runtime/runtime.h"
 
 namespace ss::game::field {
 namespace {
@@ -201,6 +204,10 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       for (int i = 0; i < 8; ++i) t.corner[i] = a[i];
       trigger_compute_bbox(ctx, &t);
       vm_set_r(static_cast<u32>(slot));
+      char line[160];
+      std::snprintf(line, sizeof line, "trigger %d added: x %d..%d z %d..%d y %d..%d code word %ld", slot, t.min_x,
+                    t.max_x, t.min_z, t.max_z, t.y_min, t.y_max, static_cast<long>(t.code - ctx->code));
+      runtime::Runtime::get().trace(line);
       break;
     }
     case 0x76: case 0x77:

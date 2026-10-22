@@ -14,8 +14,11 @@ entry, loaders, render, field round trip — is done), the world map (game/field
 the shared party/stat library (game/common/party.*), field effects.
 Debug options: `--map N` starts a new game (Claude) directly on field map N;
 `SS_BATTLE_STUB=1` makes the not-yet-ported battle program "win" at once and return to the
-field; `SS_TRACE=1` logs VM milestones (fades, windows, map loads) and encounter settings
-with vblank stamps. Map 10 (Shingo Forest) gives a random battle after ~1800 vblanks of
+field; `SS_TRACE=1` logs VM milestones (fades, windows, map loads, trigger regions added /
+fired) and encounter settings with vblank stamps; `SS_TRACE_LEADER=N` prints the leader's
+world and view position, control and Fol every N vblanks (trigger regions on 2D fields use
+the view position). `tools/smoke_field_events.sh BIN` drives doors, a chest and a talk in
+Arlia headless and checks the traces (~6 s). Map 10 (Shingo Forest) gives a random battle after ~1800 vblanks of
 walking left/right. ASan build without root: `dnf download libasan` (x86_64), `rpm2cpio |
 cpio -idm` into a scratch dir, symlink `libasan.so -> libasan.so.8.0.0` there, configure
 `engine/build-asan` with `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>` in the

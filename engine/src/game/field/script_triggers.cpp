@@ -2,11 +2,14 @@
 // Private Action prompt and the choice cursor). Field 0x80068810-0x80068eec,
 // 0x80069d8c, 0x8006ad40, 0x8006afd8, 0x8006b630; ext 0x76 / 0x77 run world-map
 // overlay code (#3102 0x800829fc) that only touches the trigger table.
+#include <cstdio>
+
 #include "game/common/math.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
 #include "runtime/libgpu.h"
+#include "runtime/runtime.h"
 
 namespace ss::game::field {
 namespace {
@@ -146,6 +149,10 @@ void trigger_check_regions(ScriptCtx* ctx) {
       ctx->last_trigger = i;
       if (!started) return;
     }
+    char line[96];
+    std::snprintf(line, sizeof line, "trigger %d fires (code word %ld) at leader %d,%d,%d", i,
+                  static_cast<long>(ctx->ip - ctx->code), x, y, z);
+    runtime::Runtime::get().trace(line);
     ctx->active_trigger = i;
     ctx->depth = 1;
     ctx->saved_control = field_state_s16(0x10);

@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -500,11 +502,30 @@ void field_poison_step(Field*) {
   if (hurt) fade_draw_tile(field_fade(), 0, 0x80, 0, 1, 1, 0x80C);
 }
 
+// Debug (SS_TRACE_LEADER=N): the leader's position in map units and the field state every
+// N vblanks, for placing --map-pos and checking trigger regions.
+void trace_leader(Field* f) {
+  static const int every = [] {
+    const char* v = std::getenv("SS_TRACE_LEADER");
+    return v != nullptr ? std::max(1, std::atoi(v)) : 0;
+  }();
+  if (every == 0) return;
+  auto& rt = runtime::Runtime::get();
+  if (rt.vblanks() % static_cast<u64>(every) != 0) return;
+  const Actor* leader = field_actor(g_field.game_state[0x24]);
+  std::fprintf(stderr, "[leader] vblank %llu map %d state %d pos %s%d,%d,%d view %d,%d control %d fol %d\n",
+               static_cast<unsigned long long>(rt.vblanks()), static_cast<s16>(read_u16(g_field.game_state + 0x1A)), f->state,
+               leader == nullptr ? "(none) " : "", leader ? leader->x >> 12 : 0, leader ? leader->y >> 12 : 0,
+               leader ? leader->z >> 12 : 0, leader ? leader->screen_x : 0, leader ? leader->screen_y : 0,
+               static_cast<s16>(read_u16(g_field.field_flags + 0x10)), rd32(g_field.config + 0x18));
+}
+
 void field_update(Field* f) {
   // 0x8004c334. Before the switch (state 0 only): the save-point marker check and the
   // menu button (pressed & config button 2, or a forced menu 0x80076196) -> fade
   // out, close the windows, state 3 (camp menu).
   FieldGlobals& g = g_field;
+  trace_leader(f);
   if (f->state == 0 && (g.pressed[0] & read_u16(g.config + 4)) != 0) todo("field_update: camp menu");
   switch (f->state) {
     case 0:
