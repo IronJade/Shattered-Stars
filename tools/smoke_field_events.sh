@@ -13,8 +13,8 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 fail=0
 
-run() {  # run NAME FRAMES MAP INPUT
-  SS_TRACE=1 SS_TRACE_LEADER=30 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+run() {  # run NAME FRAMES MAP INPUT (no world edits unless SS_MODS_DIR is given)
+  SS_MODS_DIR="${SS_MODS_DIR:-$WORK/no-mods}" SS_TRACE=1 SS_TRACE_LEADER=30 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
     SS_MEMCARD1="$WORK/card.mcd" timeout 900 "$BIN" --headless --frames "$2" --map "$3" --input "$4" \
     >"$WORK/$1.log" 2>&1
 }
@@ -58,12 +58,26 @@ check arlia_wizard "and closes" '\[leader\] vblank 12[0-9]0 map 18 state 0 .* co
 run hearn_talk 1700 18 "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none"
 check hearn_talk "talk opens a window" 'msg_window_open_default\(text=\+0xc8b'
 
+# World edits (tools/so2_mod.py -> engine mods): the 200-Fol chest gives 5000 and the
+# store door leads to map 33. Needs the disc image for the tool (SS_DISC1).
+if [ -n "${SS_DISC1:-}" ] && [ -f "$SS_DISC1" ]; then
+  mkdir -p "$WORK/mods"
+  python3 tools/so2_mod.py chest "$SS_DISC1" 18 0x962 --fol 5000 -o "$WORK/mods/test.patch" >/dev/null
+  python3 tools/so2_mod.py door "$SS_DISC1" 18 1 --to 33 --x -276 --z 241 -o "$WORK/mods/test.patch" >/dev/null
+  SS_MODS_DIR="$WORK/mods" run mod_chest 1300 18 "200:up,439:none,450:left,554:none,560:up,572:none,600:cross,606:none,760:cross,766:none,1100:cross,1106:none"
+  check mod_chest "patched chest pays 5000 Fol" '\[leader\] vblank 1260 .* fol 5000$'
+  SS_MODS_DIR="$WORK/mods" run mod_door 900 18 "200:up,439:none,450:left,663:none,670:up,1000:none"
+  check mod_door "patched door leads to map 33" 'field_load_map\(map=33'
+else
+  echo "SKIP mods: set SS_DISC1 to the disc 1 .cue"
+fi
+
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
 SAVE=analysis/saves/dex_north_city.mcd
 if [ -f "$SAVE" ]; then
   cp "$SAVE" "$WORK/world.mcd"
-  SS_LOAD_SAVE=0 SS_TRACE=1 SS_TRACE_LEADER=60 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+  SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE=1 SS_TRACE_LEADER=60 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
     SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --frames 200 --map-pos 57219,-300,28622 \
     >"$WORK/north_city.log" 2>&1
   check north_city "world trigger fires" 'trigger 17 fires \(code word 4267\)'

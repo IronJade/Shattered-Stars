@@ -52,6 +52,9 @@ class Runtime {
   // degrees, game_state +0x18 / +0x1e).
   bool debug_start_pos_set = false;
   int debug_start_pos[5] = {0, 0, 0, 0, 0};
+  // World edits: directory of *.patch files (mods/ next to config.ini; --mods DIR,
+  // SS_MODS_DIR); see game/field/mods.h.
+  std::string mods_dir;
   u16 host_buttons() const;
 
   u64 vblanks() const { return vblank_count_; }

@@ -14,6 +14,7 @@
 #include "game/field/collision.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
+#include "game/field/mods.h"
 #include "game/field/music.h"
 #include "game/field/notice.h"
 #include "game/field/scene_renderer.h"
@@ -230,6 +231,7 @@ void field_load_map_sections(Field*, int container_entry) {
         g_map.font = unpack(data, 1);
         g_map.glyph_rows = g_map.font.data() + rd32(g_map.font.data()) + 8;
         g_map.script = unpack(data, 0);
+        mods_apply_script(container_entry - 0xC87, g_map.script);  // world edits (mods.h)
         if (g_hooks.font_loaded) g_hooks.font_loaded(g_map.font.data());
         if (g_hooks.script_loaded) g_hooks.script_loaded();
         if (g.field_flags[0x24] != 0 && g_script_vm != nullptr) vm_restore_state(g_script_vm);  // 0x80069aac (handoff 0xd)

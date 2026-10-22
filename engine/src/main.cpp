@@ -88,7 +88,7 @@ int usage(const char* argv0) {
   std::fprintf(stderr,
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
-               "       [--audio|--no-audio] [--audio-wav FILE]\n",
+               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR]\n",
                argv0);
   return 2;
 }
@@ -143,6 +143,8 @@ int main(int argc, char** argv) {
       battle_spec = next();
     } else if (arg == "--battle-end" && has_value) {
       battle_end = next();
+    } else if (arg == "--mods" && has_value) {  // world-edit patches (default: mods/ next to config.ini)
+      runtime::Runtime::get().mods_dir = std::filesystem::absolute(next()).string();
     } else if (arg == "--map" && has_value) {
       runtime::Runtime::get().debug_start_map = std::atoi(next());
     } else if (arg == "--map-pos" && has_value) {  // X,Y,Z[,FACING[,CAMERA]] on the first map loaded
@@ -212,6 +214,7 @@ int main(int argc, char** argv) {
   }
 
   auto& rt = runtime::Runtime::get();
+  if (rt.mods_dir.empty()) rt.mods_dir = (config_path().parent_path() / "mods").string();
   rt.gpu.dithering_enabled = reference_dither || config["dither"] != "0";
   if (reference_dither) rt.gpu.dither_textured = false;
   rt.frame_limit = frames;

@@ -123,4 +123,5 @@ from config+0x45).
 - [ ] Save / load compatible with the original memory card data
 - [x] Disc 2 swap (host side): `--disc2` is opened at start; `loader_insert_disc` attaches the archive holding marker entry 5 + disc wherever the original prompts (field_run / field_load_map check config +0x4c, script B 0x6a, New Game on the title). Without a disc 2 image the game stays on disc 1, whose archive has the same field / battle entries (the discs differ in entries 6 / 7, 4504-4522 and the movies). The insert-disc screens (0x8006f958, 0x8003c5ec) are not drawn
 - [ ] Windows build
-- [ ] Modding hooks (data overrides for chests, doors, items)
+- [x] World edits, part 1: script patches applied as maps load (`game/field/mods.cpp`; `*.patch` files in `mods/` next to config.ini, `--mods DIR`, `SS_MODS_DIR`), each checked against the original word; `tools/so2_mod.py` lists a map's chests and doors from the disc image and writes patches to change chest contents (items / Fol) and door targets. Verified in the smoke script (Arlia's chest pays 5000 Fol, the store door leads to map 33)
+- [ ] World edits, part 2: item / shop / enemy data overrides, an in-game debug overlay (map, position, flags, warps)

@@ -60,6 +60,13 @@ engine/build/shattered-stars --viewer
 engine/build/shattered-stars --entry 10 --dump analysis/render/entry10
 ```
 
+World edits: `tools/so2_mod.py list DISC.cue MAP` shows a map's chests and doors;
+`tools/so2_mod.py chest DISC.cue MAP FLAG --item ID` (or `--fol N`) and
+`tools/so2_mod.py door DISC.cue MAP INDEX --to MAP2 --x X --z Z` append patches to a file
+(`-o`). Put `*.patch` files in `mods/` next to `config.ini` (or pass `--mods DIR`); the
+game applies them as maps load and skips any patch whose original word has changed. The
+disc images are never modified.
+
 Debugging switches (start on a map, battles, traces, headless runs) are listed in
 `docs/HANDOFF.md`.
 

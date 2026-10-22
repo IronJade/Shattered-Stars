@@ -50,6 +50,8 @@ route.
   for a `--map` start.
 - `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`; `SS_BATTLE_STUB=1` (instant
   victory); `SS_BATTLE_RAM=<dump>`, `SS_BATTLE_STRONG=1`.
+- `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;
+  `tools/so2_mod.py` writes them).
 - `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
 - `SS_TRACE=1` VM milestones, map loads, trigger regions, encounter settings, voice banks;
   `SS_TRACE_LEADER=N` the leader's position, view position, control and Fol every N
