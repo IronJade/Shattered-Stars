@@ -24,6 +24,7 @@
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_combat.h"
 #include "game/field/menu_equip.h"
 #include "game/field/menu_items.h"
 #include "game/field/menu_options.h"
@@ -612,6 +613,9 @@ struct FieldMenuHost {
     menu::set_page_handler(5, &menu_page05_update);
     menu::set_page_handler(6, &menu_page06_update);
     menu::set_page_handler(7, &menu_page07_update);
+    menu::set_page_handler(8, &menu_page08_update);
+    menu::set_page_handler(9, &menu_page09_update);
+    menu::set_page_handler(10, &menu_page0a_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
@@ -624,6 +628,9 @@ struct FieldMenuHost {
     menu::set_page_handler(5, nullptr);
     menu::set_page_handler(6, nullptr);
     menu::set_page_handler(7, nullptr);
+    menu::set_page_handler(8, nullptr);
+    menu::set_page_handler(9, nullptr);
+    menu::set_page_handler(10, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
@@ -836,8 +843,45 @@ u16 field_get_option_b() { return g_option_b; }
 
 // ==== field_update hooks ========================================================================
 
+namespace {
+
+// Debugging: the config, inventory, party, record and game_state blocks, for comparisons
+// with the original. SS_MENU_DUMP=prefix: as the field continues after a menu (with
+// SS_MENU_DUMP_DELAY=n, n field frames later: the first frames after a menu still rescan
+// the equipment, which recomputes the stats without the item data);
+// SS_MENU_DUMP_OPEN=prefix: as a menu opens.
+int g_menu_dump_delay = 0;
+
+void dump_menu_state(const char* var = "SS_MENU_DUMP") {
+  const char* dump = std::getenv(var);
+  if (dump == nullptr || *dump == 0) return;
+  FieldGlobals& g = globals();
+  for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
+                                         std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
+                                         std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
+                                         std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
+                                         std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
+    if (block == nullptr) continue;
+    const std::string path = std::string(dump) + "_" + name + ".bin";
+    if (FILE* out = std::fopen(path.c_str(), "wb")) {
+      std::fwrite(block, 1, size, out);
+      std::fclose(out);
+    }
+  }
+}
+
+// The dump after a menu, now or SS_MENU_DUMP_DELAY field frames later.
+void schedule_menu_dump() {
+  const char* delay = std::getenv("SS_MENU_DUMP_DELAY");
+  g_menu_dump_delay = delay != nullptr ? std::atoi(delay) : 0;
+  if (g_menu_dump_delay <= 0) dump_menu_state();
+}
+
+}  // namespace
+
 void field_menu_check(Field* f) {
   FieldGlobals& g = globals();
+  if (g_menu_dump_delay > 0 && --g_menu_dump_delay == 0) dump_menu_state();
   if (f->state != 0) return;
   // The save point: sfx 0xc as the leader steps onto it (actor_touches_save_point).
   const s32 was_on = f->on_save_point;
@@ -912,34 +956,11 @@ void field_menu_check(Field* f) {
     world_bg_suspend(wb);
     delete[] world_take_region_save();
   }
+  dump_menu_state("SS_MENU_DUMP_OPEN");
   if (g_launcher != nullptr) menu_launcher_destroy(g_launcher);
   g_launcher = menu_launcher_create();
   menu_launcher_start(g_launcher, g_menu_request != 0 ? g_menu_request : 1);
 }
-
-namespace {
-
-// Debugging (SS_MENU_DUMP=prefix): the config, inventory, party, record and game_state
-// blocks as the field continues after a menu, for comparisons with the original.
-void dump_menu_state() {
-  const char* dump = std::getenv("SS_MENU_DUMP");
-  if (dump == nullptr || *dump == 0) return;
-  FieldGlobals& g = globals();
-  for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
-                                         std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
-                                         std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
-                                         std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
-                                         std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
-    if (block == nullptr) continue;
-    const std::string path = std::string(dump) + "_" + name + ".bin";
-    if (FILE* out = std::fopen(path.c_str(), "wb")) {
-      std::fwrite(block, 1, size, out);
-      std::fclose(out);
-    }
-  }
-}
-
-}  // namespace
 
 void field_menu_update(Field* f) {
   FieldGlobals& g = globals();
@@ -1020,7 +1041,7 @@ void field_menu_update(Field* f) {
       preload_release(-1);
       // TODO(port): 0x8007622c = 0 (the stash flag; stash.h has no setter).
       field_load_map(f, f->pending_map, true, 1);
-      dump_menu_state();
+      schedule_menu_dump();
       return;
     }
   }
@@ -1074,7 +1095,7 @@ void field_menu_update(Field* f) {
     default:
       break;
   }
-  dump_menu_state();
+  schedule_menu_dump();
 }
 
 }  // namespace ss::game::field

@@ -142,12 +142,50 @@ itemsref.lua also dump game_state.
 **Verification.** Compared against Redux `optref1` and port `opt_p2`. Config, party and
 records match.
 
-**Finding (not mine to fix).** After a menu, the original's game_state +0x1c is the
-music entry (0xa5d) and the port's is the music table index (0xd). It looks like the
-port leaves the save's index there on load, where the original turns it back into the
-entry.
+**The game_state +0x1c difference** was an artifact of where SS_MENU_DUMP sat (the
+coordinator traced it). The dump now runs at the end of field_menu_update, and a
+re-check shows game_state identical.
 
 **Catalog:** 1109 function rows.
+
+### Combat, pages 8-10 (done and verified)
+
+**New files:** `engine/src/game/field/menu_combat.{h,cpp}`:
+- TacticsPage and OrdersDialog (page 8);
+- PartyOrderPage and `swap_members` (page 9);
+- FormationPage, FormationPreview (GTE preview with its own OT) and LeaderDialog
+  (page 10).
+
+The handlers are `menu_page08_update`, `menu_page09_update` and `menu_page0a_update`
+(the catalog's names).
+
+**Hooks in my files:**
+- menu_camp.cpp registers pages 8-10.
+- `SS_MENU_DUMP_OPEN=prefix` dumps the blocks as a menu opens.
+- `SS_MENU_DUMP_DELAY=n` dumps n field frames after the menu instead of at once.
+- itemsrun.sh passes `SS_MENU_DUMP_OPEN=$OUT/before`.
+- itemsref.lua takes `SS_WATCH=offset`. It reports writes to records + offset and the
+  StatCalc and camp page calls.
+
+**Test card.** `cards/comb.mcd`: the items save with the north city save's party
+(`modsave.py --party-from cards/dex.mcd`). Rena and Ashton are dead (status 1, HP 0),
+and Ashton has record +0x3b = 1, +0xce = 3 and +0xcf = 4. The dex card itself is a disc
+2 save on the world map, so it was not used directly.
+
+**Verification.** Compared against Redux `combref2` and port `comb_p2`, with the
+dumps from `comb_p2d` (`SS_MENU_DUMP_DELAY=60`). Plan: `combref2/plan.txt`.
+- Config, inventory, party, records and game_state all match.
+- Frames: Tactics and Party Order differ only by one-step gouraud pixels. Formation
+  differs in the members' walk phase (about 8 frames; the port loads sooner), the help
+  bar logo and the cursor hand.
+- Finding: every field menu ends with the equipment rescan (`show_battle_results`).
+  Its StatCalc has no item data, so record +0xa (and slot +0x4c, record +4) drop back
+  from the camp page's item-bonus values. A dump right at the end of field_menu_update
+  comes before that rescan. Redux's SS_WATCH trace confirms the original does the same.
+
+**Tests:** ss_tests 76/0, ss_game_tests 73/0, smoke 16 PASS.
+
+**Catalog:** 1142 function rows and 148 global rows. menu.md has a "Combat" section.
 
 ### Not ported yet
 
@@ -157,8 +195,7 @@ entry.
 
 ## Next steps
 
-1. Combat (pages 8-10, 0xbca).
-2. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb) with the item
+1. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb) with the item
    creation pages 0xf / 0x10 / 0x13 (0xbc0 / 0xbae / 0xbc2 / 0xbcc), then page 0xe (0xbce,
    after Status) and the query page.
 
@@ -174,4 +211,6 @@ TODO is in field_menu_update.
 
 ## Findings not yet in the catalog
 
-- None. Everything so far is in analysis/menu_catalog.
+- Record +0x3b (the pair byte) is still not pinned down. Party Order clears +0x3b, +0xce
+  and +0xcf for bench members, which fits a pairing partner whose pending killer moves
+  are dropped. The party_update_bonds / party_find_bonded rows stay guesses.

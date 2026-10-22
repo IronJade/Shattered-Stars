@@ -113,7 +113,7 @@ from config+0x45).
 - [ ] #3107: the credits program (A 0x2d, 85 KB at 0x8002f810 with its own movie decoder)
 - [x] Field menus, part 1 (menu agent; `game/field/menu_camp.cpp`, `docs/notes/menu.md`): the menu button / script requests / save points open the menu (field_update state 0 checks, state 3, launcher and runners 0x80030470-0x80030c64, Callways hooks); camp page 1 (overlay 0xba6) matches PCSX-Redux captures apart from the known 1-step gouraud pixels; Data → Save / Load through the shared save page; a save written by the port loads in the original
 - [x] Shops (menu agent; `game/field/menu_shop.cpp`): buy / sell lists, prices with haggling and discounts, settling; a purchase at Hearn's leaves Fol, config and inventory identical to the original; the item viewer (3D model, description) and the list / scroll-bar / number library pieces
-- [ ] Field menus, part 2: pages 2-10 (Specialty, Items, Equipment, Skills, Status, Options, Combat pages), 0xc-0xd, 0xe-0x13, element kind 8, the query page's play-time object
+- [ ] Field menus, part 2 (menu agent): done and compared with PCSX-Redux: Items (3, with the item effects of entry 3001), Equipment (4), Skills (5), Status (6), Options (7), Combat (8 Tactics, 9 Party Order, 10 Formation), element kind 8, the query gauge. Left: the item creation block (Specialty 2 with 0xf / 0x10 / 0x13), page 0xe, the query page; 0xc-0xd are debug pages
 
 ## 4. Battle program (#2129) and its overlays
 

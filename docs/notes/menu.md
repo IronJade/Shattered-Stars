@@ -507,6 +507,52 @@ the first action.
 - Config, party and records match.
 - The frames differ only in the sample and highlight phases.
 
+## Combat (pages 8-10, overlay 0xbca)
+
+The camp page's Combat submenu (three choices, always starting on the first) opens one
+of three pages. All three are in overlay 0xbca (data 0xbcb).
+
+- **Tactics (page 8).** Eight member boxes, two columns of four (slots 0-3 on the left).
+  The grid runs row by row and table 0x800808e0 maps it to the slot. Each box shows the
+  member's sprite and current orders: group 4 message class * 6 + record +0x38, with the
+  class from table 0x800808e7 by character. A dialog lists the class's six orders.
+  Choosing 5 (stand by) from other orders keeps them in record +0x39.
+- **Party Order (page 9).** The same boxes with name, LV, HP / MP and status bars. The
+  first pick makes a second cursor and the second pick swaps the two slots and their
+  records. The swap is undone (the second cursor stays) if no front member can fight:
+  a character id above 0 with status & 7 clear. Members away from the party (negative
+  ids) count as empty. Cancel drops the second cursor or closes the page. When the page
+  closes:
+  - front slots whose character changed get their voices reloaded (a field hook);
+  - bench members lose record +0x3b, +0xce and +0xcf (their pairing and pending killer
+    moves; see party_update_bonds);
+  - config +0x41 (the controlled member) moves to the first filled slot if its slot
+    emptied.
+- **Formation (page 10).** A list of the 13 formations (group 9; the current one lit), a
+  description (group 10), and a 3D preview: the front four's sprites on a floor grid in
+  perspective. The preview uses the GTE (RTPT / AVSZ3) with its own 0x400-entry ordering
+  table spliced into the box's entry. Places come from table 0x800808f4, the floor from
+  0x80080a94. A marker of three frames, eight vblanks each, is over the controlled member.
+  Confirm sets config +0x40. Button 2 (triangle by default) opens a dialog that picks
+  the controlled member (config +0x41) from the front four; empty slots are refused.
+
+Every field menu ends with the equipment rescan (`show_battle_results`; post_battle.cpp).
+Its StatCalc runs without the item data, so stats that the camp page's StatCalc
+recomputed with item bonuses (record +0xa, slot +0x4c, record +4) drop back to their
+base. A dump at the end of field_menu_update comes before that rescan, so comparisons
+with a party wearing such items need `SS_MENU_DUMP_DELAY` (below).
+
+Verified against PCSX-Redux (`combref2`, port `comb_p2` / `comb_p2d`). The card is the
+items save with the north city save's party copied in, two members dead and pairing
+bytes set (`modsave.py --party-from`). The run covers:
+- formation 2 and a refused then accepted leader (Ashton);
+- a swap refused for leaving nobody able to fight, two accepted swaps (Ashton to the
+  bench), and a cancelled pick;
+- Rena's orders set to stand by.
+
+Config, inventory, party, records and game_state match (with a 60-frame dump delay). The
+frames match.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -613,14 +659,16 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3-7, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3-10, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),
   but it is drawn only on page 0xf.
 - `SS_SAVE_ANYWHERE=1` sets option a bit 0 (saving allowed) for testing the camp menu's
-  Save; `SS_MENU_DUMP=prefix` writes the config and inventory blocks after each field
-  menu (`prefix_config.bin`, `prefix_inventory.bin`) for comparisons.
+  Save. For comparisons, `SS_MENU_DUMP=prefix` writes the config, inventory, party,
+  records and game_state blocks after each field menu (`prefix_config.bin` and so on).
+  `SS_MENU_DUMP_DELAY=n` writes them n field frames later instead, after the equipment
+  rescan. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens.
 - The original stalls a few vblanks while unpacking the item data or rendering text; the
   port does not, so fades and loads run a few frames earlier.
 - Background loads with a sector offset read straight from the archive entry

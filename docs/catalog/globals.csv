@@ -796,3 +796,10 @@ title,0x80074bd8,g_upload_count,s16,VRAM upload queue: count; capacity 0x80074bd
 menu_0bbe,0x80081740,k_specialty_listed,code *[17],"Jump table of specialty_choice_list: which of specialties 1-17 the Items page offers (1, 4-7, 10, 11, 13, 14, 16, 17)",confirmed,disassembly
 menu_0bbe,0x80081cc8,g_sort_loop,s32[4],"item_sorter_merge_sort's loop variables (right index, temp index, output index, temp count) kept in globals across the recursion",confirmed,item_sorter_merge_sort
 field_sub3105,0x801fa558,end_music,void *,#3105: the 0x4000-byte music the final screen starts,confirmed,listing
+menu_0bca,0x800808e0,k_member_box_slots,u8[8],Tactics / Party Order grid index (row by row) -> party slot (boxes column by column),confirmed,"tactics_page_on_confirm, party_order_page_on_confirm"
+menu_0bca,0x800808e7,k_character_class,u8[],Indexed by character: which six orders it has (group 4 messages class * 6),confirmed,"tactics_refresh, orders_dialog_set_member"
+menu_0bca,0x800808f4,k_formation_places,s32[13][4][2],"Each formation's four places (x, z) for the preview",confirmed,"formation_preview_draw_background, formation_place_markers"
+menu_0bca,0x80080a94,k_formation_floor,s16[9][4],"The preview floor: eight lines (x0, z0, x1, z1) and the quad's corners",confirmed,formation_preview_draw_background
+menu_0bca,0x80080adc,k_formation_view,SVECTOR + VECTOR,"Preview rotation (0x80080adc, three s16) and translation (0x80080ae4, three s32)",confirmed,formation_preview_create
+menu_0bca,0x80080af4,g_marker_delay,s32,Vblanks into the controlled member marker's frame (eight each),confirmed,formation_preview_draw_background
+menu_0bca,0x80080af8,g_marker_frame,s32,The controlled member marker's frame (0-2),confirmed,formation_preview_draw_background
