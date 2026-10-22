@@ -6,6 +6,7 @@
 
 #include "disc/slz.h"
 #include "game/boot/sound.h"
+#include "game/field/callways.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
 #include "runtime/runtime.h"
@@ -27,7 +28,7 @@ FieldMusic& field_music() { return g_music; }
 
 int field_install_music(Field*, int entry) {
   FieldGlobals& g = globals();
-  // TODO(port): callways_song_active / callways_stop_song(1) (a Callways song playing).
+  if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   std::vector<u8>* source = &field_load_buffer();
   if (entry != 0) {
     u8* done = nullptr;
@@ -67,7 +68,7 @@ void sound_holder_restore() {
 
 void sound_holder_save() {
   FieldGlobals& g = globals();
-  // TODO(port): callways_song_active / callways_stop_song(1).
+  if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   if (auto* holder = static_cast<SoundHolder*>(handoff_get(g.handoff, 0xF))) {
     g.sound->saved_state = holder->state;
     g.sound->request_restore = 1;

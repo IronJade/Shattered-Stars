@@ -442,8 +442,16 @@ field,0x80075288,message_system,Msg *,Message system,likely,msg_window_open
 field,0x800752ac,g_script_vm,ScriptCtx *,"The event-script VM (class ScriptVM, 0x11cc bytes, vtable 0x80074028): one thread + 58 trigger regions",confirmed,vm_ctx_create / vm_init; port script_vm.h
 field,0x800752b0,g_load_queue,LoadQueue *,"Async CD load queue (0x160 bytes, vtable 0x80072dfc, task prio 1): 16-entry ring of {entry, active, bytes, dest, done*} at +8, head +0x148, tail +0x14c, callback +0x150, in-flight done* +0x154, busy +0x158, entry +0x15c",confirmed,load_queue_* decompilation
 field,0x800752b8,g_battle_setup,u8[0xc0],"Battle setup built by the encounter code (+0 encounter, +4 stage, +8 / +0x3c entry list, +0x70 count, +0x74 preloaded data pointers, +0xa8 free flags); handed to the battle program as handoff 5",likely,field_run; field_exit_to_program 0x80051c9c; battle_run
+field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
+field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
+field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
 field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending
 field,0x8007533d,g_battle_preload_requested,u8,An encounter's battle data is being preloaded (set by 0x80050f64),likely,0x80050f64; preload_release_pending
+field,0x80075340,g_encounter_last_group,s32,Group of the prepared encounter (no re-preparation for the same group / stage),confirmed,field_prepare_encounter
+field,0x80075344,g_encounter_last_stage,s32,Stage of the prepared encounter (-1 after field_construct),confirmed,field_prepare_encounter; field_construct
+field,0x8007534c,g_battle_preload_count,u8,Battle preload groups (consecutive archive entries share one read),confirmed,field_prepare_encounter 0x80050f64
+field,0x8007534d,g_battle_program_loaded,u8,#2129 has been read (field_update state 5 waits for it),confirmed,field_start_battle; field_update state 5
+field,0x80075350,g_battle_program_image,u8 *,#2129 read in the background by field_start_battle (the port runs native code),confirmed,field_start_battle 0x80051a34
 field,0x80075355,g_field_active,u8,Actors update while set (field_load_map sets it; scripts toggle it),likely,field_load_map; actor_sys_update
 field,0x80075360,field_actors,Actor *[],Field actors indexed by script actor number; +0x00/+0x04/+0x08 position (<<12 fixed point),likely,table A / ext actor opcodes
 field,0x80075668,message_windows,MsgWindow *[],Message windows indexed by window number,likely,message opcodes
@@ -454,16 +462,24 @@ field,0x80075708,script_globals,u8 *,"Script global variable memory, byte-addres
 field,0x8007570c,field_state,u8 *,"Field state block = script variables (handoff 9 + 0x180): +4..+0xc / +0x34 / +0x36 saved VM offsets, +0xe camera target, +0x10 controlled actor (-1 = an event has control), +0x24 returning, +0x26 input lock, +0x28 saved sprite packs, +0x32/+0x33 countdown, +0x68 3D/world map, +0x6b/+0x6c saved party, +0x7e battle param, +0x81/+0x83, +0x93 menu disabled (was field_flags)",confirmed,VM port engine/src/game/field/script_*.cpp
 field,0x80075710,game_state,GameState *,"+0x08/+0x0c/+0x10 arrival position for map transfer, +0x1c current music, +0x24 leader actor index, +0x180 48 words of script-visible values, +0x248/+0x24a/+0x24c 16-bit counters (0x248 changed by add_money)",likely,table A + map_transfer
 field,0x80075728,g_bg_anim_save,u8 *,"bg_suspend's heap copy of the BG animation state: u32 size, then the first 16 bytes of each 0xa0-byte animation record; handed over in slot 0x10 and restored by bg_resume",confirmed,overlay 0x800895e0 / 0x800897bc
+field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368
 field,0x80075734,g_music_sequence,u8 *,"The current map music's sequence, unpacked by field_install_music; scripts start it with sound_play_sequence / sound_resume_sequence",confirmed,field_install_music 0x8004b2b4
 field,0x80075738,g_load_buffer,u8 *,field_load_entry's buffer (mem_alloc_b); size 0x8007573c. Callers prefer preload_find's buffer when the entry was preloaded,confirmed,field_load_entry 0x8004a654
 field,0x80075740,g_music_bank,u8 *,The music entry kept while the sound driver uses its bank (the load buffer handed over by field_install_music),confirmed,field_install_music 0x8004b2b4
+field,0x80075744,g_music_pending,u8,The map's music is installed and starts once the SPU is idle (field_start_pending_music),confirmed,field_load_music_sync 0x8004b6b0; 0x80052bf4
+field,0x80075746,g_music_current,s16,Archive entry of the map music in place (-1 none); its preload is released once the music starts,confirmed,field_load_map 0x80053e8c; 0x80052bf4
 field,0x80075768,g_preloads,PreloadSlot[12],"Preload table, 0x14 bytes each: +0 kind (1 battle data, 2 map transfer), +1 done, +2 owned, +4 tag (s16), +8 entry, +0xc bytes, +0x10 buffer. Saved to a heap copy (0x80075858) around menus",confirmed,preload_* decompilation
 field,0x80075998,g_voice_stream_budget,s32,Voice-clip queue budget (voice_queue_build_field result),likely,load_queue_update
 field,0x8007599c,g_voice_stream_enabled,u8,Idle-time voice-clip streaming is on (load_queue_set_streaming),confirmed,load_queue_update
 field,0x800759a0,g_voice_stream_state,s32,"Voice-clip streaming: 0 idle, 1 build the queue, 2 loading, 3 done. Random encounters wait for 3",confirmed,load_queue_update; field_update
+field,0x800759a8,g_battle_preload_entry,s32[13],First archive entry of each battle preload group,confirmed,field_prepare_encounter
+field,0x800759dc,g_battle_preload_bytes,s32[13],Total bytes of each group,confirmed,field_prepare_encounter
+field,0x80075a10,g_battle_preload_pieces,s32[13],Entries in each group,confirmed,field_prepare_encounter; field_exit_to_program
+field,0x80075a44,g_battle_preload_order,s32[13],Load-list slot of each sorted id,confirmed,field_prepare_encounter; field_exit_to_program
 field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
 field,0x8007622c,g_inventory_stashed,u8,The stash holds the inventory (set by A 0x10 and when taken from handoff 0x11),confirmed,field_run; overlay 0x8008ea0c
 field,0x80076278,g_show_battle_results,u8,Set when the field restarts after a battle (and by script item gifts): field_update opens the post-battle stat / item window,likely,field_run; field_update state 0; table B
+field,0x80076279,g_sub_overlay_hook,u8,Run the sub-overlay's per-frame hook 0x801ead88 (script ext 0xa8 ops 0xe / 0xf),confirmed,field_special_command; field_main_loop
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
 title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
@@ -493,18 +509,3 @@ title,0x80050ac8,g_movie_draw_buffer,s32,0: frames are decoded to y; 1: to y + 2
 title,0x80050acc,g_movie_rect,s16[4],x; y; width; height from movie_create,confirmed,movie_create
 title,0x80050ad4,g_movie_mode,s16,3 = 24-bit output; 2 = 15-bit (VRAM halfwords per two pixels),confirmed,movie_create
 title,0x80050ad6,g_movie_frames_in_ram,u8,Decode whole frames to RAM instead of VRAM; cleared by movie_create and never set,confirmed,movie_create
-field,0x8007534c,g_battle_preload_count,u8,Battle preload groups (consecutive archive entries share one read),confirmed,field_prepare_encounter 0x80050f64
-field,0x800759a8,g_battle_preload_entry,s32[13],First archive entry of each battle preload group,confirmed,field_prepare_encounter
-field,0x800759dc,g_battle_preload_bytes,s32[13],Total bytes of each group,confirmed,field_prepare_encounter
-field,0x80075a10,g_battle_preload_pieces,s32[13],Entries in each group,confirmed,field_prepare_encounter; field_exit_to_program
-field,0x80075a44,g_battle_preload_order,s32[13],Load-list slot of each sorted id,confirmed,field_prepare_encounter; field_exit_to_program
-field,0x80075340,g_encounter_last_group,s32,Group of the prepared encounter (no re-preparation for the same group / stage),confirmed,field_prepare_encounter
-field,0x80075344,g_encounter_last_stage,s32,Stage of the prepared encounter (-1 after field_construct),confirmed,field_prepare_encounter; field_construct
-field,0x80075350,g_battle_program_image,u8 *,#2129 read in the background by field_start_battle (the port runs native code),confirmed,field_start_battle 0x80051a34
-field,0x8007534d,g_battle_program_loaded,u8,#2129 has been read (field_update state 5 waits for it),confirmed,field_start_battle; field_update state 5
-field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
-field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368
-field,0x80075744,g_music_pending,u8,The map's music is installed and starts once the SPU is idle (field_start_pending_music),confirmed,field_load_music_sync 0x8004b6b0; 0x80052bf4
-field,0x80075746,g_music_current,s16,Archive entry of the map music in place (-1 none); its preload is released once the music starts,confirmed,field_load_map 0x80053e8c; 0x80052bf4
-field,0x80075328,g_ui_atlas,const u8 *,"#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo)",confirmed,field_load_system_data 0x8004a428; field_update state 7
-field,0x80076279,g_sub_overlay_hook,u8,"Run the sub-overlay's per-frame hook 0x801ead88 (script ext 0xa8 ops 0xe / 0xf)",confirmed,field_special_command; field_main_loop

@@ -10,6 +10,7 @@
 #include "game/common/texture.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/callways.h"
 #include "game/field/camera.h"
 #include "game/boot/rng.h"
 #include "game/field/actors.h"
@@ -256,8 +257,8 @@ void field_create_subsystems(Field*) {
   for (auto*& panel : g_text_panels) panel = new TextPanel;  // 0x8007529c / 0x800752a0 / 0x800752a4
   load_queue_construct(new LoadQueue);
   notice_create(new Notice);
-  // TODO(port): Callways (callways_create 0x800313c8, task prio 1), SceneRenderer
-  // (scene_renderer_create 0x8005f5c8).
+  task_register(callways_create(new Callways), 1);
+  // TODO(port): SceneRenderer (scene_renderer_create 0x8005f5c8).
 }
 
 // 0x8004b418: the party fell (a lost script battle). The VM stops, encounters stop, the
@@ -396,7 +397,8 @@ void field_destroy_subsystems(Field*) {
   bg_destroy();
   if (CamScript* c = camscript()) camscript_destroy(c, 3);
   field_destroy_battle_transition(nullptr);
-  // TODO(port): FieldPanel, Callways, SceneRenderer, the glow and overlay objects.
+  if (Callways* c = callways()) callways_destroy(c);
+  // TODO(port): FieldPanel, SceneRenderer, the glow and overlay objects.
 }
 
 void field_update_encounters(Field* f) {
@@ -479,6 +481,25 @@ void field_update_encounters(Field* f) {
   f->state = 4;
 }
 
+// 0x8004c250: poisoned members (status nibble 8, slot bits 16-19) lose a 33rd of their
+// maximum HP (at least 1, never below 1 HP); the screen flashes green.
+void field_poison_step(Field*) {
+  FieldGlobals& g = g_field;
+  bool hurt = false;
+  for (int slot = 0; slot < 8; ++slot) {
+    u8* p = g.party + slot * 0x60;
+    const u32 w = static_cast<u32>(rd32(p));
+    if (static_cast<s16>(w) <= 0 || (w & 0xF0000) != 0x80000) continue;
+    s32 damage = rd32(p + 0x18) / 0x21;
+    if (damage < 1) damage = 1;
+    s32 hp = rd32(p + 0x1C) - damage;
+    if (hp < 1) hp = 1;
+    std::memcpy(p + 0x1C, &hp, 4);
+    hurt = true;
+  }
+  if (hurt) fade_draw_tile(field_fade(), 0, 0x80, 0, 1, 1, 0x80C);
+}
+
 void field_update(Field* f) {
   // 0x8004c334. Before the switch (state 0 only): the save-point marker check and the
   // menu button (pressed & config button 2, or a forced menu 0x80076196) -> fade
@@ -487,8 +508,15 @@ void field_update(Field* f) {
   if (f->state == 0 && (g.pressed[0] & read_u16(g.config + 4)) != 0) todo("field_update: camp menu");
   switch (f->state) {
     case 0:
-      // Play. TODO(port): poison steps (0x8004c250), the post-battle stat window
-      // (0x80076278), the save point and vehicles (field_flags / script flag bits).
+      // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects
+      // tick. TODO(port): the post-battle stat window (0x80076278), the save point and
+      // vehicles (field_flags / script flag bits).
+      if (field_actors()[g.game_state[9]] != nullptr && g.poison_next_step < (rd32(g.field_flags + 0x18) >> 12)) {
+        callways_step_tick(callways());
+        field_poison_step(f);
+        const s32 steps = rd32(g.field_flags + 0x18) >> 12;
+        g.poison_next_step = g.field_flags[0x68] != 0 ? steps + 400 : steps + (read_u16(map_data().scene.data() + 0x68) * 400) / 100;
+      }
       field_update_encounters(f);
       return;
     case 1: {
@@ -684,11 +712,7 @@ void field_run(Field* f) {
   stash_init();  // handoff 0x11
   g.battle_setup = BattleSetup{};  // 0x800752b8 (0xc0 bytes); the music sequence buffer is music.cpp's
   field_create_subsystems(f);
-  if (g.field_flags[0x24] != 0) {
-    // callways_clear_encounter_flags (0x8003199c): script flags 0x24 / 0x26.
-    g.script_flags[0x24 >> 3] = static_cast<u8>(g.script_flags[0x24 >> 3] & ~(1 << (0x24 & 7)));
-    g.script_flags[0x26 >> 3] = static_cast<u8>(g.script_flags[0x26 >> 3] & ~(1 << (0x26 & 7)));
-  }
+  if (g.field_flags[0x24] != 0) callways_clear_encounter_flags(callways());
   field_main_loop(f);
 }
 

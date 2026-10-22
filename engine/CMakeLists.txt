@@ -98,6 +98,7 @@ add_library(ss_game STATIC
   src/game/field/sprite_render.cpp
   src/game/field/collision.cpp
   src/game/field/field_input.cpp
+  src/game/field/callways.cpp
   src/game/field/camera.cpp
   src/game/field/bg.cpp
   src/game/field/field_program.cpp

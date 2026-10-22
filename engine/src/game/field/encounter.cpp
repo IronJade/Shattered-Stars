@@ -7,6 +7,7 @@
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/math.h"
+#include "game/field/callways.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/fade.h"
@@ -551,9 +552,8 @@ void field_exit_to_program(Field* f, int reason) {
   if (reason == 0) g.config[0x181] = 0;  // the battle's rule: normal
   const s32 swaps = rd32(g.config + 0x14) + 1;
   std::memcpy(g.config + 0x14, &swaps, 4);
-  // TODO(port): Callways: callways_stop_song_on_exit (0x80031764) and
-  // callways_apply_battle_bonuses (0x8003180c).
-  todo("callways battle bonuses (0x8003180c)");
+  if (callways_song_active(callways()) != 0) callways_stop_song_on_exit(callways());
+  callways_apply_battle_bonuses(callways());
   field_music_sequence().clear();
   g.field_flags[0x24] = 1;  // the field is coming back
   field_destroy_subsystems(f);

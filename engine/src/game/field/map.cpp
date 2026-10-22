@@ -8,6 +8,7 @@
 #include "game/common/texture.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/callways.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
@@ -248,9 +249,10 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   FieldGlobals& g = globals();
   u8* flags = g.field_flags;
   u8* gs = g.game_state;
-  // TODO(port): preload table cleanup (0x800570e8), Callways song stop, per-map globals
-  // of the effects/overlay objects (0x80076310 ...), extra packs, afterimages, scene
-  // objects, OT layers, side text.
+  // TODO(port): preload table cleanup (0x800570e8), per-map globals of the effects /
+  // overlay objects (0x80076310 ...), extra packs, afterimages, scene objects, OT layers,
+  // side text.
+  if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744
   flags[0x32] = 2;

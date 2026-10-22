@@ -5,6 +5,7 @@
 
 #include "game/common/program_image.h"
 #include "game/field/bg.h"
+#include "game/field/callways.h"
 #include "game/field/characters.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
@@ -168,7 +169,7 @@ void field_special_command(ScriptCtx* ctx, int op) {
         if (rd16s(g.party + i * 0x60) > 0 && g.records[i * 0xD0 + 0x8A] == 0) g.records[i * 0xD0 + 0x8A] = 1;
       break;
     case 0x13:
-      todo("callways_stop_song (0x80031724)");
+      if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
       break;
     default:
       break;

@@ -90,6 +90,7 @@ void field_load_system_data();                // 0x8004a428 (entry #3110)
 void field_setup_screen(Field* f);            // 0x80049b74
 [[noreturn]] void field_main_loop(Field* f);  // 0x80049bfc
 void field_update(Field* f);                  // 0x8004c334: the state machine
+void field_poison_step(Field* f);              // 0x8004c250
 void field_update_encounters(Field* f);       // 0x8004c334 state 0: random encounters
 void field_begin_game_over(Field* f);         // 0x8004b418: state 6 (the title program is read)
 // 0x8005ea54: creates the state block for a new game (or from the load-game snapshot,

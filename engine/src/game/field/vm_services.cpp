@@ -13,6 +13,7 @@
 #include "game/boot/sound.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/callways.h"
 #include "game/field/camera.h"
 #include "game/field/collision.h"
 #include "game/field/characters.h"
@@ -952,8 +953,8 @@ int vm_svc_sound_state_busy() {
   Sound* s = globals().sound;
   return s != nullptr ? sound_music_playing(s) : 0;  // sound_state +0x20 bit 0
 }
-int vm_svc_callways_song_active() { LOG_ONCE(); return 0; }
-void vm_svc_callways_stop_song(int a) { SVC("%d", a); }
+int vm_svc_callways_song_active() { return callways_song_active(callways()); }
+void vm_svc_callways_stop_song(int a) { callways_stop_song(callways(), a != 0); }
 void vm_svc_sound_bank_holder_alloc() {
   if (globals().sound != nullptr && globals().handoff != nullptr) {
     TRACE("%s", "");
