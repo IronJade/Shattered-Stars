@@ -393,6 +393,35 @@ Sandals, and opened Valuables and Specialty.
 - The frames match except for the model's turn phase, the help bar's logo phase and the
   CD time before pictures appear.
 
+## Equipment (page 4, overlay 0xbc4)
+
+Picking a member in the camp menu opens the page. The field handler (0x80035688)
+pops it whatever its result.
+
+- **The page**:
+  - The seven slots, labelled from the window art (tables 0x80081258 / 0x80081264), each
+    with its piece. The cursor is a 1 x 7 grid with an underline.
+  - The member box adds "EW ON / OFF" (record +0x3a bit 0) and the level.
+- **Confirming a slot**:
+  - The page stores the attributes and opens a list: "none" first, then the inventory
+    entries of the slot's type (0: 1 / 2 / 7, 1-4: 8-11, 5-6: 0xc) that the member can
+    wear (item field 4).
+  - The cursor puts each piece on, so the page shows ATK / AC / HIT / AVD / MAG "before
+    → after" (colour 2 worse, 3 better).
+  - Confirming a piece turns EW off, returns the old piece and takes the new one.
+    Cancelling puts the old piece back.
+- **Triangle** opens the options:
+  - Best equipment: slots 0-4 empty into the inventory, then the highest ATK weapon
+    and AC armour per slot go on.
+  - EW ON / OFF, switched with left / right.
+  - The options do not open while flag 0x2db is set and the slot holds item 0x2e7.
+
+Verified against PCSX-Redux on the items card (`equipref1`, port `equip_p1`): Sandals
+put on by hand, EW switched back on, then best equipment.
+- Party, records, config and inventory match.
+- The frames differ only in the sprite's phase, the cursor's glide and the item
+  file's CD time.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -499,7 +528,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3, 4, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

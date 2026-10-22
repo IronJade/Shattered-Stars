@@ -81,6 +81,22 @@ Rules that apply to every step:
 
 **Catalog:** 946 function rows and 141 global rows. menu.md has an "Items" section.
 
+### Equipment, page 4 (done and verified)
+
+**New files:** `engine/src/game/field/menu_equip.{h,cpp}`: EquipmentPage, EquipPicker,
+EquipOptions, best_equip and unequip_all.
+
+**Library additions:**
+- `Panel::create_member_box` (0x800d5b0c).
+- `TextBox::add_list_highlight(value, count)` (0x800dc29c).
+
+**Verification.** Compared against Redux `equipref1` and port `equip_p1`, with the same
+plan as itemsref plus 153 frames. Party, records, config and inventory match.
+
+**Tests:** ss_tests 76/0, ss_game_tests 71/0, smoke 16 PASS.
+
+**Catalog:** 982 function rows. menu.md has an "Equipment" section.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
@@ -89,13 +105,12 @@ Rules that apply to every step:
 
 ## Next steps
 
-1. Equipment (page 4, 0xbc4; ctor 0x8007e000, 0xbc bytes).
-2. Status (page 6, 0xbb2; ctor 0x8007e550; result 3 goes to page 0xe, 0xbce).
-3. Skills (page 5, 0xbc6; ctor 0x8007e740).
-4. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
-5. Options (page 7, 0xbc8).
-6. Combat (pages 8-10, 0xbca).
-7. Then the item creation pages 0xf / 0x10 / 0x13 and the query page.
+1. Status (page 6, 0xbb2; ctor 0x8007e550; result 3 goes to page 0xe, 0xbce).
+2. Skills (page 5, 0xbc6; ctor 0x8007e740).
+3. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
+4. Options (page 7, 0xbc8).
+5. Combat (pages 8-10, 0xbca).
+6. Then the item creation pages 0xf / 0x10 / 0x13 and the query page.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.

@@ -112,6 +112,8 @@ class TextBox : public MenuTask {
   // A kind 8 element: text lines first .. first + count - 1 are an option list whose
   // current one (*value; bit 15 none) is lit and framed by a glowing quad.
   int add_list_highlight(s16* value, s16 first, s16 count);
+  // menu_0ba5 0x800dc29c: the same from the next text line on.
+  int add_list_highlight(s16* value, s16 count) { return add_list_highlight(value, text ? text->line_count() : 0, count); }
   // title 0x800733d0 / menu_0ba5 0x800df9b8: underline text line *value + base.
   void set_highlight(s32 base, s16* value) { unknown7c = base, highlight = value; }
   // title 0x800733dc / menu_0ba5 0x800df9c4: the same from the next text line on.
@@ -398,6 +400,8 @@ class Panel : public Widget {
   // Field panels (menu_0ba5): the item viewer and its info box.
   void create_viewer(s16 x, s16 y, s16 z);     // menu_0ba5 0x800d4b2c (0x800d4b04: 0x118, 0x4a, 0x18)
   void set_viewer_item(int item);              // menu_0ba5 0x800d4c1c
+  // menu_0ba5 0x800d5b0c: a new member box (0, 0) 'width' (0: 0x68) x 0x50, filled.
+  void create_member_box(int width);
   void create_info_box();                      // menu_0ba5 0x800d5e8c: +0x70 at (0x60, 8) 0xd8 x 0x50
   void show_item_stats(int item);              // menu_0ba5 0x800d5f0c
   void show_usable_stats(int item);            // menu_0ba5 0x800d5fc4

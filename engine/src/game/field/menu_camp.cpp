@@ -24,6 +24,7 @@
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_equip.h"
 #include "game/field/menu_items.h"
 #include "game/field/menu_shop.h"
 #include "game/field/screen.h"
@@ -598,6 +599,7 @@ struct FieldMenuHost {
     menu::set_menu_frame_hook(&field_menu_frame);
     menu::set_page_handler(1, &page01_update);
     menu::set_page_handler(3, &menu_page03_update);
+    menu::set_page_handler(4, &menu_page04_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
@@ -605,6 +607,7 @@ struct FieldMenuHost {
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
     menu::set_page_handler(3, nullptr);
+    menu::set_page_handler(4, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);

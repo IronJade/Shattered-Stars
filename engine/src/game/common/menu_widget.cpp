@@ -1734,6 +1734,15 @@ void Panel::show_viewer_info() {
   }
 }
 
+void Panel::create_member_box(int width) {
+  if (width == 0) width = 0x68;
+  if (member_box) member_box->on_close();
+  member_box = new TextBox;
+  member_box->set_rect(0, 0, width, 0x50, 0);
+  build_members();
+  draw_member();
+}
+
 void Panel::create_info_box() {
   if (!info) {
     info = new TextBox;
