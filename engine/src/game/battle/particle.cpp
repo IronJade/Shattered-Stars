@@ -67,8 +67,8 @@ bool on_screen(u32 sxy) {
          static_cast<u16>(static_cast<s16>(sxy >> 16) + 0x3C) < 300;
 }
 
-// 0x8005e3cc: an additive LINE_G2 from the GTE origin (colour +0x38) to 'tail' (+0x3c).
-// (Its depth is the GTE's OTZ register, which RTPS does not set: the last AVSZ's.)
+// 0x8005e3cc: an additive LINE_G2 from the GTE origin (colour +0x38) to 'tail' (+0x3c),
+// sorted by the average depth of its two ends.
 void particle_draw_line(const Particle* p, s16 tx, s16 ty, s16 tz) {
   BattleGlobals& g = bg();
   RenderContext* pool = g.prim_pool_a;
@@ -85,6 +85,16 @@ void particle_draw_line(const Particle* p, s16 tx, s16 ty, s16 tz) {
   const s32 flag = static_cast<s32>(q.read_data(psx::Gte::FLAG));
   const u32 tail = q.read_data(psx::Gte::SXY2);
   if (flag < 0 || !on_screen(tail)) return;
+  // ORIGINAL BUG (original_bugs.md B3): the console reads the OTZ register here, which RTPS
+  // does not set, so the line sorts at the depth of whatever ran the last AVSZ:
+  //   const s32 otz = static_cast<s32>(q.read_data(psx::Gte::OTZ));
+  // The line's own depth instead: AVSZ4 over its two ends (head SZ2, tail SZ3), twice each.
+  const u32 sz_head = q.read_data(psx::Gte::SZ2), sz_tail = q.read_data(psx::Gte::SZ3);
+  q.write_data(psx::Gte::SZ0, sz_head);
+  q.write_data(psx::Gte::SZ1, sz_head);
+  q.write_data(psx::Gte::SZ2, sz_tail);
+  q.write_data(psx::Gte::SZ3, sz_tail);
+  q.execute(psx::Gte::kAvsz4);
   const s32 otz = static_cast<s32>(q.read_data(psx::Gte::OTZ));
   if (0x5F9 < (otz >> 5)) return;
   auto* line = screen_alloc_prims<psyq::LINE_G2>(pool->arena, 1);

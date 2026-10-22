@@ -51,9 +51,13 @@ void Afterimage::update() {
   BattleGlobals& g = bg();
   if (g.effects_suppressed != 0 && in_pause == 0) return;
   if (copies && (g.state < kStateOver || 0xF < g.end_countdown)) {
-    // Oldest first. (The console steps two slots at a time: (head + 2i + 2) % count.)
+    // Newest first (head + 1 is the newest copy; the OT draws the last added first, so the
+    // newest ends up on top).
     for (int i = 0; i < count; ++i) {
-      const int k = (head + i * 2 + 2) % count;
+      // ORIGINAL BUG (original_bugs.md B2): the console steps two slots at a time, so with an
+      // even count half the copies are drawn twice and the other half never:
+      //   const int k = (head + i * 2 + 2) % count;
+      const int k = (head + i + 1) % count;
       if (kinds[k] == 0) continue;
       BObj& c = copies[static_cast<size_t>(k)];
       c.blend = blend == 2 ? 0x82 : static_cast<u8>((blend != 0) << 1);
@@ -285,7 +289,10 @@ void RibbonTrail::update() {
     const s32 s1 = mul32(w, za >> 10) >> 12, s2 = mul32(h, za >> 10) >> 12;
     const s32 e1 = mul32(w, zb >> 10) >> 12, e2 = mul32(h, zb >> 10) >> 12;
     const s32 cs = bcos(static_cast<u32>(start)), ss = bsin(static_cast<u32>(start));
-    const s32 ce = bcos(static_cast<u32>(start));  // [sic] the original takes the start angle's cosine here
+    // ORIGINAL BUG (original_bugs.md B1): the console takes the start angle's cosine for the
+    // far edge, which skews it:
+    //   const s32 ce = bcos(static_cast<u32>(start));
+    const s32 ce = bcos(static_cast<u32>(end));
     const s32 se = bsin(static_cast<u32>(end));
     auto* quad = screen_alloc_prims<psyq::POLY_G4>(pool->arena, 1);
     auto* dm = screen_alloc_prims<psyq::DR_MODE>(pool->arena, 1);

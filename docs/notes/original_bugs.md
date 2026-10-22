@@ -26,9 +26,9 @@ a quirk that may be the intended look or feel, so it needs a decision before cha
 
 | Id | Where (original / port) | The bug | Status |
 |---|---|---|---|
-| B1 | ribbon_trail_update 0x80075a74 / battle/killer.cpp | xy1 / xy3 use cos(start angle) where cos(end) belongs, so the trail's far edge is skewed | kept |
-| B2 | afterimage draw / battle/killer.cpp | copies drawn as `(head + 2i + 2) % count`: with an even count half the copies are drawn twice and half never | kept |
-| B3 | particle line draw / battle/particle.cpp | the depth comes from the GTE OTZ register after RTPS, a stale value from the last AVSZ, so lines sort at the wrong depth | kept |
+| B1 | ribbon_trail_update 0x80075a74 / battle/killer.cpp | xy1 / xy3 use cos(start angle) where cos(end) belongs, so the trail's far edge is skewed | fixed (cos(end); the faithful version was verified with kind 0x16) |
+| B2 | afterimage draw / battle/killer.cpp | copies drawn as `(head + 2i + 2) % count`: with an even count half the copies are drawn twice and half never | fixed (each copy once, newest first: `(head + i + 1) % count`) |
+| B3 | particle line draw / battle/particle.cpp | the depth comes from the GTE OTZ register after RTPS, a stale value from the last AVSZ, so lines sort at the wrong depth | fixed (AVSZ4 over the line's two ends) |
 | B4 | shot_apply_damage 0x800548c4 / battle/shot.cpp | the redirect loop compares the random member with targets[tries] and walks past the list (stack garbage) | avoided (compares within the list) |
 | B5 | lens_flare_draw / battle/fx_draw.cpp | patches the shared stage flare tables in place (sizes[0..1], intensity[0]) | decide |
 | B6 | unit_move / battle/unit_move.cpp | an output vector's x / z start as stack garbage | avoided (starts at the unit's position) |
