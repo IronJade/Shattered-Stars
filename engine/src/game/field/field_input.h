@@ -9,7 +9,9 @@ namespace ss::game::field {
 
 struct FieldAnalog {
   u8 enabled = 0;   // 0x800762fc: an analog pad in analog mode
-  s32 x = 0;        // 0x80076308: stick deflection (dead zone applied by the pad module)
+  s32 rx = 0;       // 0x80076300: right stick
+  s32 ry = 0;       // 0x80076304
+  s32 x = 0;        // 0x80076308: left stick deflection (dead zone applied by the pad module)
   s32 y = 0;        // 0x8007630c
 };
 FieldAnalog& field_analog();

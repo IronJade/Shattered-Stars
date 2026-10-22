@@ -199,8 +199,10 @@ void SaveMenu::on_child_done(int id, int state, int) {
     sound_set_output_mode(menu_sound(), config[0x44]);
     session()->result = 1;
     if (!pad_is_dualshock(menu_pad(), 0)) {
-      // TODO(port): vibration setup 0x80013c0c(pad, 0, 0, 0, config[0x47], config[0x48],
-      // 0x20) / 0x80013c60(pad, 0, 0x50 x4) / 0x80013ca4(pad, 0, 1) (not ported, as at boot).
+      // The left stick's saved centre (a pad libpad did not identify sets nothing up itself).
+      pad_set_stick_centre(menu_pad(), 0, 0, 0, static_cast<s8>(config[0x47]), static_cast<s8>(config[0x48]), 0x20);
+      pad_set_stick_range(menu_pad(), 0, 0x50, 0x50, 0x50, 0x50);
+      pad_set_stick_dpad(menu_pad(), 0, 1);
     }
     finish(0);
   } else if (id == 2 && state == 3) {

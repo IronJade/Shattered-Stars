@@ -18,7 +18,11 @@ namespace {
 
 System g_system;  // 0x8002b550 points at the console's copy
 
-void vsync_callback() { vsync_callback_with(runtime::Runtime::get().host_buttons()); }
+void vsync_callback() {
+  auto& rt = runtime::Runtime::get();
+  u8 sticks[4];
+  vsync_callback_with(rt.host_buttons(), rt.host_sticks(sticks) ? sticks : nullptr);
+}
 
 }  // namespace
 

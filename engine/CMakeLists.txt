@@ -211,6 +211,7 @@ add_executable(ss_game_tests
 target_sources(ss_game_tests PRIVATE tests/test_battle.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_field_effects.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

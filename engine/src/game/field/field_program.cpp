@@ -12,6 +12,7 @@
 #include "game/common/disc_screen.h"
 #include "game/common/program_image.h"
 #include "game/common/texture.h"
+#include "game/field/actor_field.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
@@ -23,6 +24,7 @@
 #include "game/field/field_world.h"
 #include "game/field/music.h"
 #include "game/field/field.h"
+#include "game/field/field_input.h"
 #include "game/field/field_movie.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
@@ -507,6 +509,7 @@ void field_update_encounters(Field* f) {
   }
   if (get(0x18) < get(0x20) + f->encounter_extra) return;
   if (get(0x18) < get(0x1C)) return;
+  if (fieldactor_globals().vehicle_control != 0) return;  // 0x800761ea: on a scripted path (#3108)
   if (static_cast<s16>(rd16(flags + 0x10)) == -1 || flags[0x26] != 0) return;
   field_start_battle(f, ready - 1);
   f->state = 4;
@@ -904,6 +907,8 @@ void field_main_loop(Field* f) {
     }
     pad_clear(g.pad, 0);
     pad_clear(g.pad, 1);
+    FieldAnalog& analog = field_analog();
+    analog.enabled = pad_stick(g.pad, 0, &analog.rx, &analog.ry, &analog.x, &analog.y);
     g.disc_error_prev = g.disc_error;
     g.disc_error = 0;  // the host disc never opens
     field_update(f);

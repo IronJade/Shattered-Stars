@@ -1016,7 +1016,7 @@ void vm_svc_field_prepare_encounter(int a, int b) {
 int vm_svc_get_battle_preload_count() { return battle_preloads().count; }
 int vm_svc_get_battle_preload_entry(int i) { return i >= 0 && i < 13 ? battle_preloads().entry[i] : 0; }
 int vm_svc_get_battle_preload_size(int i) { return i >= 0 && i < 13 ? battle_preloads().bytes[i] : 0; }
-void vm_svc_field_rumble_stub(int level) { LOG_ONCE(); }
+void vm_svc_field_rumble_stub(int) {}  // 0x80055da0 is empty in this build (SsUtVibrateOn slot)
 void vm_svc_field_start_battle(int r) {
   if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
     TRACE("%d", r);

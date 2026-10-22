@@ -431,6 +431,19 @@ boot,0x8002b595,g_cd_sector_deferred,u8,A sector is waiting; movie_dma_callback 
 boot,0x8002b59c,g_cd_target_loc,CdlLOC,BCD position the drive seeks to,confirmed,loader_select_entry
 boot,0x8002b5dc,g_menu_hook,void *,Set by 0x800134d8 (the field: 0x8004b760 while its menus run),guess,disassembly
 boot,0x8002b620,g_clock_seconds,u32,Play clock in seconds (clock_seconds 0x80014434),confirmed,pad module
+boot,0x8002b640,g_pad_link,u8[2],"libpad connection per port: 1 searching (pad_driver_start; PadGetState 1), 2 identified (state 2, or state 6 after the actuator set-up and PadSetActAlign)",confirmed,vsync_callback
+boot,0x8002b644,g_pad_actuator_count,u8[2],Actuators libpad reported (at most 2),confirmed,vsync_callback; pad_vibrate
+boot,0x8002b648,g_pad_actuator_sub,u8[2][2],PadInfoAct InfoActSub per actuator (pad_vibrate: 1 gets the large level; 2 the small),confirmed,vsync_callback; pad_vibrate
+boot,0x8002b64c,g_pad_actuator_size,u8[2][2],PadInfoAct InfoActSize per actuator (0 on / off; else a level),confirmed,vsync_callback; pad_vibrate
+boot,0x8002b650,g_pad_actuator_mask,u8[2],Bit per actuator from PadInfoComb,confirmed,vsync_callback; pad_vibrate
+boot,0x8002b654,g_pad_actuator_data,u8[2][2],Actuator bytes sent each vblank (PadSetAct),confirmed,pad_vibrate
+boot,0x8002b658,g_pad_buffers,u8[2][0x22],PadInitDirect receive buffers (status; ID; buttons; 4 stick bytes from +4),confirmed,pad_driver_start; vsync_callback
+boot,0x8002b69c,g_pad_analog,u8[2],The pad answered in analog mode (ID 7) this vblank,confirmed,vsync_callback; pad_stick
+boot,0x8002b6a0,g_pad_axes,u8[2][4],Raw stick bytes: right X; right Y; left X; left Y (0x80 centred),confirmed,vsync_callback; pad_stick
+boot,0x8002b6a8,g_pad_stick_centre,s8[2][4],Per-axis centre offsets (pad_set_stick_centre),confirmed,pad_stick
+boot,0x8002b6b0,g_pad_dead_zone,u8[2],Stick dead zone (title 0x20),confirmed,pad_stick
+boot,0x8002b6b4,g_pad_stick_range,u8[2][4],Per-axis clamp (title 0x50); half is the d-pad threshold,confirmed,pad_stick; vsync_callback
+boot,0x8002b6bc,g_pad_stick_dpad,u8[2],Stick-as-d-pad mode (pad_set_stick_dpad),confirmed,vsync_callback
 boot,0x8002b6c0,sound_bank_order,u8[2][12],Bank slots in instrument-search order: 8 9 10 11 4 5 6 7 0 1 2 3; the second table swaps 4 and 5 (Sound + 0x74 picks),confirmed,sound_find_instrument
 boot,0x8002b6d8,g_sound_transfer_notify,void *,Object told when a bank transfer ends (sound_load_bank's 3rd argument; vtable +0x18 / +0x1c),confirmed,sound_transfer_done
 boot,0x8002b6dc,g_sound_transfer_notify_arg,int,Its argument,confirmed,sound_transfer_done
@@ -573,6 +586,8 @@ field,0x8007627a,g_sequence_sound,s16,Sound entry B 0x16 preloaded for the next 
 field,0x800762e4,g_side_done,u8,Done flag of the side load (field_side_load),confirmed,field_side_load; field_equip_report_draw
 field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) until field_install_side_text unpacks it,confirmed,field_side_load
 field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
+field,0x800762fc,g_field_analog,u8,"pad_stick(port 0) result each main-loop frame: the stick steers field and world-map actors (+0x2d4) unless it is centred",confirmed,field_main_loop; fieldactor_player_control
+field,0x80076300,g_field_stick,s32[4],"Port 0's axes from pad_stick: right X, right Y (0x80076304), left X (0x80076308), left Y (0x8007630c)",confirmed,field_main_loop
 field,0x800762ff,g_movie_stop,u8,"Set by table A 0x32 (with loader_cancel), cleared by B 0x50 / 0x6f: the main loop stops calling movie_update, which ends the movie",confirmed,decomp
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb

@@ -351,7 +351,10 @@ void title_program_main(System* sys) {
   std::vector<u8> sound(static_cast<size_t>(size8 + size9));
   g_title.loader->select_entry(8);
   g_title.loader->start_read(sound.data(), size8 + size9);
-  // TODO(port): controller vibration setup (0x8001408c, 0x80013c0c/60/a4).
+  pad_driver_start(g_title.pad);
+  pad_set_stick_centre(g_title.pad, 0, 0, 0, 0, 0, 0x20);
+  pad_set_stick_range(g_title.pad, 0, 0x50, 0x50, 0x50, 0x50);
+  pad_set_stick_dpad(g_title.pad, 0, 1);
   while (g_title.loader->poll() != 0) {
     memcard_update(g_title.memcard);
     rng_next();

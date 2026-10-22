@@ -65,6 +65,9 @@ class Runtime {
   std::function<void(const std::string&)> debug_command;
   std::function<std::string()> debug_status;
   u16 host_buttons() const;
+  // The host gamepad's sticks (Window::sticks); false with none, or with scripted input.
+  bool host_sticks(u8 out[4]) const;
+  void host_rumble(int small, int large);
 
   u64 vblanks() const { return vblank_count_; }
   u64 last_vsync() const { return last_vsync_; }

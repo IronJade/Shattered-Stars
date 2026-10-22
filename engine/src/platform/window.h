@@ -5,6 +5,7 @@
 #include "core/types.h"
 
 struct SDL_Window;
+struct SDL_Gamepad;
 
 namespace ss::platform {
 
@@ -41,20 +42,29 @@ class Window {
     while (next_event(open, e)) on_key(e);
     return open;
   }
-  u16 pad() const { return static_cast<u16>(pad_ | stick_); }
+  u16 pad() const { return pad_; }
+  // The open gamepad's sticks as a DualShock reports them (right X, right Y, left X,
+  // left Y; 0x80 centred, 0 left / up); false without a gamepad.
+  bool sticks(u8 out[4]) const;
 
   // Draws an RGBA8888 image scaled into the window, keeping 'aspect' (width / height).
   void present(const u32* pixels, int width, int height, float aspect);
   void set_title(const std::string& title);
 
+  // DualShock actuators on the open gamepad: 'small' on / off (the high-frequency motor),
+  // 'large' 0-255 (the low-frequency one); 0 / 0 stops. Nothing without a gamepad that
+  // can rumble.
+  void rumble(int small, int large);
+
  private:
   bool next_event(bool& open, KeyEvent& out);
 
   SDL_Window* window_ = nullptr;
+  SDL_Gamepad* gamepad_ = nullptr;  // the last one connected
   void* context_ = nullptr;
   unsigned texture_ = 0, program_ = 0, vao_ = 0;
   int tex_width_ = 0, tex_height_ = 0;
-  u16 stick_ = 0;           // d-pad bits from the left stick
+  s16 axes_[4] = {};        // gamepad right X, right Y, left X, left Y
   bool fullscreen_ = false; // F11 / Alt+Enter
   u16 pad_ = 0;
 };

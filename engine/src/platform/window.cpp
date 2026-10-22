@@ -80,7 +80,22 @@ u16 gamepad_to_pad(Uint8 button) {
 
 }  // namespace
 
+bool Window::sticks(u8 out[4]) const {
+  if (gamepad_ == nullptr) return false;
+  for (int i = 0; i < 4; ++i) out[i] = static_cast<u8>((axes_[i] + 0x8000) >> 8);
+  return true;
+}
+
+void Window::rumble(int small, int large) {
+  if (gamepad_ == nullptr) return;
+  const Uint16 low = static_cast<Uint16>((large < 0 ? 0 : large > 255 ? 255 : large) * 257);
+  const Uint16 high = small != 0 ? 0xFFFF : 0;
+  // The console keeps the motors at these levels until the game changes them.
+  SDL_RumbleGamepad(gamepad_, low, high, low == 0 && high == 0 ? 0 : 60000);
+}
+
 Window::~Window() {
+  if (gamepad_) SDL_CloseGamepad(gamepad_);
   if (context_) {
     if (texture_) gl::DeleteTextures(1, &texture_);
     if (vao_) gl::DeleteVertexArrays(1, &vao_);
@@ -169,7 +184,17 @@ bool Window::next_event(bool& open, KeyEvent& out) {
         break;
       }
       case SDL_EVENT_GAMEPAD_ADDED:
-        SDL_OpenGamepad(e.gdevice.which);
+        if (SDL_Gamepad* g = SDL_OpenGamepad(e.gdevice.which)) {
+          gamepad_ = g;
+          for (s16& a : axes_) a = 0;
+        }
+        break;
+      case SDL_EVENT_GAMEPAD_REMOVED:
+        if (gamepad_ != nullptr && SDL_GetGamepadID(gamepad_) == e.gdevice.which) {
+          SDL_CloseGamepad(gamepad_);
+          gamepad_ = nullptr;
+          for (s16& a : axes_) a = 0;
+        }
         break;
       case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
       case SDL_EVENT_GAMEPAD_BUTTON_UP: {
@@ -177,19 +202,18 @@ bool Window::next_event(bool& open, KeyEvent& out) {
         pad_ = e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN ? (pad_ | bit) : (pad_ & ~bit);
         break;
       }
-      case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
-        // The left stick doubles as the d-pad (the game reads a digital pad).
-        constexpr int kThreshold = 16000;
-        const int v = e.gaxis.value;
-        if (e.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX) {
-          stick_ = static_cast<u16>((stick_ & ~(kPadLeft | kPadRight)) | (v < -kThreshold ? kPadLeft : 0) |
-                                    (v > kThreshold ? kPadRight : 0));
-        } else if (e.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY) {
-          stick_ = static_cast<u16>((stick_ & ~(kPadUp | kPadDown)) | (v < -kThreshold ? kPadUp : 0) |
-                                    (v > kThreshold ? kPadDown : 0));
+      case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        // The game's pad module reads the sticks (and turns the left one into the d-pad).
+        if (gamepad_ != nullptr && SDL_GetGamepadID(gamepad_) == e.gaxis.which) {
+          switch (e.gaxis.axis) {
+            case SDL_GAMEPAD_AXIS_RIGHTX: axes_[0] = e.gaxis.value; break;
+            case SDL_GAMEPAD_AXIS_RIGHTY: axes_[1] = e.gaxis.value; break;
+            case SDL_GAMEPAD_AXIS_LEFTX: axes_[2] = e.gaxis.value; break;
+            case SDL_GAMEPAD_AXIS_LEFTY: axes_[3] = e.gaxis.value; break;
+            default: break;
+          }
         }
         break;
-      }
       default:
         break;
     }

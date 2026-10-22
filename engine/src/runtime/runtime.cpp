@@ -41,6 +41,12 @@ u16 Runtime::host_buttons() const {
   return window ? window->pad() : 0;
 }
 
+bool Runtime::host_sticks(u8 out[4]) const { return scripted_input.empty() && window != nullptr && window->sticks(out); }
+
+void Runtime::host_rumble(int small, int large) {
+  if (window != nullptr) window->rumble(small, large);
+}
+
 void Runtime::present() {
   std::vector<u32> pixels;
   int w = 0, h = 0;

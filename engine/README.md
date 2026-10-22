@@ -49,7 +49,8 @@ Memory card 1 is `memcard1.mcd` next to `config.ini` (created formatted on first
 copy, since the game writes to the card it uses.
 
 Keyboard pad: arrows = d-pad, Z = Cross, X = Circle, A = Square, S = Triangle,
-Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2. Gamepads work through SDL.
+Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2. Gamepads work through SDL and read as a DualShock in analog mode: the left stick walks
+(and works the d-pad in menus), and the game's Vibration setting drives the rumble.
 
 Other modes:
 
