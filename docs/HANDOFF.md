@@ -36,7 +36,7 @@ Resume an area from its log.
 | Enemy | `game/battle/enemy_*` (new files) | the 16 resident enemy families, the slot A-D default modules, the encounter packs' enemy code; enemy spells wait on the battle agent |
 | Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
 | World | field / boot / title gaps | catalog rows with no port (triage: port, PsyQ, or not needed), field TODO(port)s incl. encounter streaming 0x80050dec, Voice Collection, the 'guess' rows |
-| Effects | `game/field/field_sub_overlays.*`, `effects*` | embedded map code: #3104 rainbow (map 143), #3109 (map 688), #3105, #3107 (map 581), entry #2 (map 688) |
+| Effects | `game/field/field_sub_overlays.*`, `effects*`, `runtime/gpu*` | #3107 (the credits program, A 0x2d), then GPU accuracy: textured-quad and gouraud / UV stepping, subtractive blending |
 
 Main session: integration and commits, the field program's glue, play-testing the story
 route.

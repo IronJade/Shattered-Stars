@@ -74,6 +74,17 @@ bogus function starts at those addresses inside the init code; the eight big one
 listed in `battle_index_artifacts.csv`. Two decompile views exist: `analysis/decomp/battle` (image as loaded) and
 `analysis/decomp/battle_ovl` (runtime view with #1984.0, #1984.1 and #1981 patched in).
 
+**Building a runtime ELF from the catalog.** Drop the `battle` module rows in 0x800715d0-0x80088054 when an ELF
+(psxexe2elf `--symbols`) holds a battle RAM dump or the overlays patched in. These rows describe #2129's own bytes:
+the init code, the dead library and the stale copies. At run time #1984 block 0 and #1981 replace those bytes.
+Their symbols land inside the overlay functions, and Ghidra then cuts those functions short. Examples:
+
+- `draw_vortex` 0x8007deb4 ended at `pc2131_move_a_stale` 0x8007e088.
+- `lens_flare_render` 0x80074558 ended at `battle_setup_sprite_banks` 0x800747a0.
+- `ribbon_trail_update` 0x80075a74 ended at 0x80075ad8.
+
+Keep the `battle_ovl1984_*` / `battle_ovl1981` rows for that range.
+
 ## 3. Entry, init and main loop
 
 ```
