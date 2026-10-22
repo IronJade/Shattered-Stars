@@ -61,7 +61,7 @@ void sprite_anim_set_frame_byte(Field* f, int key, int id, int frame, u8 value) 
   if (sprite_pack_find_anim(f, key, id, &table, &anim) == 1) anim[4 + frame * 4 + 3] = value;
 }
 
-void sprite_anim_set_byte2(Field* f, int key, int id, u8 value) {
+void sprite_anim_set_mode(Field* f, int key, int id, u8 value) {
   u8 *table, *anim;
   if (sprite_pack_find_anim(f, key, id, &table, &anim) == 1) anim[2] = value;
 }

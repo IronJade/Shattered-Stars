@@ -332,7 +332,7 @@ The vptr is at actor+0x3f8. Base-class code is in 0x8003d53c (delete), 0x8003d75
 | +0x3d0 | Actor* attachment (child actor showing sprite +0x5a) |
 | +0x3dc | pushed-state buffer |
 | +0x3e1 | encounter-modifier byte (read for the leader) |
-| +0x3f0/+0x3f4 | actor_set_special values |
+| +0x3f0/+0x3f4 | actor_set_patrol_emote values |
 | +0x3f8 | vptr (+8 = per-frame method called by actor_sys_draw) |
 | +0x3fc / +0x410 / +0x425 / +0x428..+0x430 | world-map class fields (vehicle) |
 
@@ -873,7 +873,7 @@ Field maps run with VSync(0) (60 Hz target), the world map and battle intro with
 
 **Memory.**
 
-- Allocators: mem_alloc_b (temporary/large), mem_alloc_c (persistent), mem_alloc (operator
+- Allocators: mem_alloc_high (temporary/large), mem_alloc_low (persistent), mem_alloc (operator
   new). field_restore_preloads moves data through VRAM to avoid heap fragmentation; a port can
   keep the buffers.
 - Fixed overlay addresses 0x8007e000, 0x801e9000 and 0x801f9800 hold code. The port needs

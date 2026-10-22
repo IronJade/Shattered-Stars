@@ -70,7 +70,7 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] `title_program_main` flow up to the title screen (sound bank / config / game-state creation)
 - [x] `title_intro_sequence`: logos and tri-Ace particles (pixel-exact); studio and opening movies; sound bank loaded and music played by the sound driver
 - [x] `title_screen`: menu, cursor, confirm, fade, attract movie, movie-viewer list
-- [ ] Voice Collection (0x8003fb78)
+- [x] Voice Collection (0x8003fb78, `game/title/voice_collection.cpp`): heard voices from the cards, playback, the 50 / 75 / 95% unlocks, the reacting 32x40 picture grid; the menu is pixel-identical to PCSX-Redux, the grid up to GPU rasterisation
 - [x] Load-game screen (0x800317e0): Continue → slot → save list → "Do you want to load this save?" → the field on the saved map (`game/title/load_screen`, menu framework `game/common/menu_*`); save files read, unpacked (zero-run code) and checksum-verified as the original does. `SS_LOAD_SAVE=N` (or `S:N`) loads card position N without the menus
 - [x] Hand-off to the field program after New Game (`start_new_game`: config reset, leader slot, name, #3100 loaded, `boot_run_main_program`)
 

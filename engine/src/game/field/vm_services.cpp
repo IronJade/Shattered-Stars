@@ -632,7 +632,7 @@ void vm_svc_actor_and_flags(int slot, int word, u32 mask) {
 }
 void vm_svc_actor_set_special(int slot, int a, int b) {
   TRACE("slot=%d %d,%d", slot, a, b);
-  if (Actor* r = real_actor(slot)) actor_set_special(r, static_cast<u8>(a), static_cast<s16>(b));
+  if (Actor* r = real_actor(slot)) actor_set_patrol_emote(r, static_cast<u8>(a), static_cast<s16>(b));
 }
 void vm_svc_actor_sys_mark_all_dirty() {
   if (sys() != nullptr) actor_sys_mark_all_dirty(sys());
@@ -957,9 +957,9 @@ void vm_svc_sound_fade_in(int frames) {
   TRACE("%d", frames);
   if (Sound* s = globals().sound) sound_fade_in_all(s, frames);
 }
-void vm_svc_sound_fade_out_all(int frames) {
+void vm_svc_sound_fade_out_effects(int frames) {
   TRACE("%d", frames);
-  if (Sound* s = globals().sound) sound_fade_out_all(s, frames);
+  if (Sound* s = globals().sound) sound_fade_out_effects(s, frames);
 }
 void vm_svc_sound_set_tempo(int v) {
   TRACE("%d", v);
@@ -1023,7 +1023,10 @@ void vm_svc_field_prepare_encounter(int a, int b) {
 int vm_svc_get_battle_preload_count() { return battle_preloads().count; }
 int vm_svc_get_battle_preload_entry(int i) { return i >= 0 && i < 13 ? battle_preloads().entry[i] : 0; }
 int vm_svc_get_battle_preload_size(int i) { return i >= 0 && i < 13 ? battle_preloads().bytes[i] : 0; }
-void vm_svc_field_rumble_stub(int) {}  // 0x80055da0 is empty in this build (SsUtVibrateOn slot)
+// field_error_stub (0x80055da0): an error report left empty in this build. Its callers
+// pass a code: 0x27 / 0x28 no party member (0x80052ff4), 0x7c out of memory (0x8004b760),
+// 0x7f a battle preload failed (field_update, ext 0xb7).
+void vm_svc_field_error_stub(int) {}
 void vm_svc_field_start_battle(int r) {
   if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
     TRACE("%d", r);
@@ -1169,7 +1172,7 @@ void vm_svc_sprite_anim_set_frame_byte(int a, int b, int c, int d) {
 }
 void vm_svc_sprite_anim_set_byte2(int a, int b, int c) {
   TRACE("%d,%d,%d", a, b, c);
-  sprite_anim_set_byte2(field_program(), a, b, static_cast<u8>(c));
+  sprite_anim_set_mode(field_program(), a, b, static_cast<u8>(c));
 }
 void vm_svc_sprite_anim_set_loop_frame(int a, int b, int c) {
   TRACE("%d,%d,%d", a, b, c);

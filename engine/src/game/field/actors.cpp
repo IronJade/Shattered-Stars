@@ -469,7 +469,7 @@ void actor_sys_restore_all(ActorSystem*) {
     if (globals().field_flags[0x68] == 0) walk_snap_to_floor(a);
   }
   handoff_clear(globals().handoff, 0xB);
-  // The blob itself belongs to whoever stored it in the handoff (mem_free_b on the console).
+  // The blob itself belongs to whoever stored it in the handoff (mem_free on the console).
 }
 
 s16 actor_screen_x(const Actor* a) { return a->screen_x; }

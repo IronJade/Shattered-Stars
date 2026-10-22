@@ -105,7 +105,7 @@ battle,0x8006e8b8,b_system_5a18,void *,System + 0x5a18,confirmed,battle_run
 battle,0x8006e8bc,b_sound,Sound *,System + 0x5aa4,confirmed,battle_run + sound_* calls
 battle,0x8006e8c0,g_ovl_battle_code,u8 *,Copy of archive entry #1984 (0x7c0): SLZ chain of code blocks. Block 0 -> 0x800715d0 when the main loop starts; block 1 -> 0x80081728 when the battle state reaches 1 (then freed); blocks 2-10 -> 0x8008c1f4 for special stages,confirmed,battle_main_loop 0x800459fc + battle_run stage switch + load-list index 9
 battle,0x8006e8c4,g_ovl_result_code,u8 *,Copy of archive entry #1981 (0x7bd): one SLZ code block unpacked to 0x80085518 when the result screen starts (battle state 4),confirmed,load-list index 5 handler 0x800752c0 + battle_main_loop
-battle,0x8006e8c8,g_fixed_buf_801ee000,u8 *,0x10000-byte buffer forced to address 0x801ee000 (mem_alloc_b in a loop that frees blocks until the allocator returns that address); freed by battle_exit_to_field,confirmed,battle_main_loop + 0x80087644
+battle,0x8006e8c8,g_fixed_buf_801ee000,u8 *,0x10000-byte buffer forced to address 0x801ee000 (mem_alloc_high in a loop that frees blocks until the allocator returns that address); freed by battle_exit_to_field,confirmed,battle_main_loop + 0x80087644
 battle,0x8006e8cc,g_vsync_counter,VsyncCounter *,"12-byte vblank counter object (vtable 0x8006cd50, pad vblank handler); +8 = vblanks since last frame",confirmed,battle_init_objects 0x80074168 + battle_main_loop
 battle,0x8006e8d4,b_config,Config *,"Handoff 2 (config / counters block, 0x2a0 bytes). +0x41 controlled party slot, +0x4e (voice/sfx option), +0x178 battle outcome written at exit, +0x17e, +0x180 (no-music flag), +0x181 battle rule (2 escape race, 3 timed)",likely,"battle_run, battle_init_state, battle_main_loop, battle_exit_to_field"
 battle,0x8006e8d8,b_inventory,Inventory *,"Handoff 6 (inventory, 0xc28 bytes); +0x820 receives a pointer to a battle buffer (0x8006faf8)",likely,battle_run + battle_main_loop
@@ -429,8 +429,9 @@ boot,0x8002b592,g_cd_stream_headers,u8,Streaming: each sector's 32-byte STR head
 boot,0x8002b594,g_cd_defer_sectors,u8,Sectors wait while set (24-bit MDEC transfers); see loader_defer_sectors,likely,movie_update
 boot,0x8002b595,g_cd_sector_deferred,u8,A sector is waiting; movie_dma_callback then calls cd_sector_ready_callback,likely,movie_dma_callback
 boot,0x8002b59c,g_cd_target_loc,CdlLOC,BCD position the drive seeks to,confirmed,loader_select_entry
-boot,0x8002b5dc,g_menu_hook,void *,Set by 0x800134d8 (the field: 0x8004b760 while its menus run),guess,disassembly
+boot,0x8002b5dc,g_alloc_fail_hook,void *(*)(int),The heap allocators' out-of-memory hook (mem_set_alloc_fail_hook 0x800134d8): mem_alloc_low / mem_alloc_high call it with the size and return its result. The field sets field_alloc_retry 0x8004b760 while its menus run,confirmed,decompilation of 0x80012fec / 0x800130ec
 boot,0x8002b620,g_clock_seconds,u32,Play clock in seconds (clock_seconds 0x80014434),confirmed,pad module
+boot,0x8002b63c,g_pad_option,u8,Written by pad_set_option and pad_init; never read,confirmed,"every load/store in boot, field, title and battle"
 boot,0x8002b640,g_pad_link,u8[2],"libpad connection per port: 1 searching (pad_driver_start; PadGetState 1), 2 identified (state 2, or state 6 after the actuator set-up and PadSetActAlign)",confirmed,vsync_callback
 boot,0x8002b644,g_pad_actuator_count,u8[2],Actuators libpad reported (at most 2),confirmed,vsync_callback; pad_vibrate
 boot,0x8002b648,g_pad_actuator_sub,u8[2][2],PadInfoAct InfoActSub per actuator (pad_vibrate: 1 gets the large level; 2 the small),confirmed,vsync_callback; pad_vibrate
@@ -539,7 +540,7 @@ field,0x80075710,game_state,GameState *,"+0x08/+0x0c/+0x10 arrival position for 
 field,0x80075728,g_bg_anim_save,u8 *,"bg_suspend's heap copy of the BG animation state: u32 size, then the first 16 bytes of each 0xa0-byte animation record; handed over in slot 0x10 and restored by bg_resume",confirmed,overlay 0x800895e0 / 0x800897bc
 field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368
 field,0x80075734,g_music_sequence,u8 *,"The current map music's sequence, unpacked by field_install_music; scripts start it with sound_play_sequence / sound_resume_sequence",confirmed,field_install_music 0x8004b2b4
-field,0x80075738,g_load_buffer,u8 *,field_load_entry's buffer (mem_alloc_b); size 0x8007573c. Callers prefer preload_find's buffer when the entry was preloaded,confirmed,field_load_entry 0x8004a654
+field,0x80075738,g_load_buffer,u8 *,field_load_entry's buffer (mem_alloc_high); size 0x8007573c. Callers prefer preload_find's buffer when the entry was preloaded,confirmed,field_load_entry 0x8004a654
 field,0x80075740,g_music_bank,u8 *,The music entry kept while the sound driver uses its bank (the load buffer handed over by field_install_music),confirmed,field_install_music 0x8004b2b4
 field,0x80075744,g_music_pending,u8,The map's music is installed and starts once the SPU is idle (field_start_pending_music),confirmed,field_load_music_sync 0x8004b6b0; 0x80052bf4
 field,0x80075746,g_music_current,s16,Archive entry of the map music in place (-1 none); its preload is released once the music starts,confirmed,field_load_map 0x80053e8c; 0x80052bf4
@@ -601,6 +602,7 @@ field,0x80076277,g_report_drawn,u8,Member whose name / item windows are open (0x
 field,0x80076278,g_show_battle_results,u8,Set when the field restarts after a battle (and by script item gifts): field_update opens the post-battle stat / item window,likely,field_run; field_update state 0; table B
 field,0x80076279,g_movie_pip,u8,"Special commands 0xe / 0xf: movies play into a 15-bit texture at 0x280,0x110 shown by 0x801ead88 (picture in picture); BG keeps drawing",confirmed,decomp
 field,0x8007627a,g_sequence_sound,s16,Sound entry B 0x16 preloaded for the next B 0x6f sequence (0 after B 0x70),confirmed,decomp
+field,0x8007627e,g_screen_steering,u8,Set by field_update_screen_steering on maps whose camera looks down: the analog stick steers along the projected screen (fieldactor_player_control),confirmed,decompilation
 field,0x800762e4,g_side_done,u8,Done flag of the side load (field_side_load),confirmed,field_side_load; field_equip_report_draw
 field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) until field_install_side_text unpacks it,confirmed,field_side_load
 field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
@@ -685,6 +687,7 @@ title,0x8004b5d0,k_stat_kinds,u8[32],"Stat group kinds: bit 0 the record (else t
 title,0x8004b5e4,k_specialty_skills,u8[][3],Skills of each specialty (1-based); field copy 0x8007197c,confirmed,char_specialty_info; same bytes in the field image
 title,0x8004b8c8,k_card_code_pairs,char[2][255],Name character pairs (letter + ' ' or a voiced mark); code = index + 1; field copy 0x80071cd8,confirmed,text_to_card_codes; same bytes in the field image
 title,0x8004bcc4,k_item_stats_packed,SLZ,"0x338 items x 14 bytes, unpacked by stat_calc_load_items; field copy 0x80072134",confirmed,stat_calc_load_items; same bytes in the field image
+title,0x8004c8de,voice_entries,u16[0x4ff],Archive entry of each Voice Collection voice (536..2636; none 0xffff),confirmed,table dump; voice_collection case 3
 title,0x8004dd90,g_menu_debug_step,int,Progress marker set through the scene's frame and destructor (1-0xe); never read,confirmed,menu_scene_*
 title,0x8004dd94,g_menu_scene,MenuScene *,The running menu scene,confirmed,menu_scene_create
 title,0x8004dd98,g_menu_system,System *,get_system() for the menu code,confirmed,load_game_screen_run
@@ -707,6 +710,9 @@ title,0x8004de9c,g_menu_pages_debug_step,int,Progress marker in menu_pages_updat
 title,0x8004deb8,k_save_magic,char[16],"""STAR OCEAN 03/01"": first bytes of a save's summary",confirmed,save_summary_check
 title,0x8004decc,g_menu_frame_unused_a,int,0x90 every menu frame; never read in the title,confirmed,menu_scene_frame_begin
 title,0x8004ded0,g_menu_frame_unused_b,int,8 or 0xf8 by draw buffer every menu frame; never read in the title,confirmed,menu_scene_frame_begin
+title,0x8004e2dc,digit_strip,s16[11],"x of digits 0-9 in the text sheet (58, 68, ..., 146) and the end of 9 (155)",confirmed,draw_number
+title,0x8004e2f4,voice_spread,s32[12],How a key-on spreads over the grid columns (32 128 48 108 192 256 192 108 48 128 32 0),confirmed,voice_grid_update
+title,0x8004e328,g_voice_total,s32,"The highest voice number, 0x4fe (set by voice_collection)",confirmed,voice_collection; voice_grid_update
 title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
 title,0x8004ebdc,t_system,System *,System object as seen by program #1,confirmed,title_program_main
 title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main

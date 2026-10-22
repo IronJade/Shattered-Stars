@@ -33,7 +33,7 @@ void field_load_music_sync(Field* f, int entry);
 void field_start_pending_music(bool force);
 
 // The music kept across another program (handoff 0xf holds a 4-byte box with the
-// driver's save buffer; sound_bank_holder_new 0x8006f90c). Save: script table B 0x5a
+// driver's save buffer; sound_holder_create 0x8006f90c). Save: script table B 0x5a
 // (the driver copies its tracks on its next tick). Restore: table B 0x5b and field_run
 // when coming back (the driver restores on its next tick).
 void sound_holder_save();

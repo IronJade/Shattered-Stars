@@ -220,7 +220,7 @@ same entry.
 | 2 | — | starts the music `prologue_load_sound` unpacked (`sound_play_sequence`) |
 | 3 | offset, pan, volume, flag | sound clip at `script + offset`: `sound_open_clip(.., 2, 0)` then `sound_start_clip(slot, volume & 0xff, pan & 0xff, 0x2000, flag & 0xff)` |
 | 4 | small, large | controller vibration (`pad_vibrate(pad, 0, small, large)`) |
-| 5 | s16 frames (word) | `sound_fade_out_all(frames)`; the destructor then skips its own fade |
+| 5 | s16 frames (word) | `sound_fade_out_effects(frames)`; the destructor then skips its own fade |
 | other | — | ignored (no arguments) |
 
 | Entry | Path | Cues |

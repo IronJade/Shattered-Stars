@@ -200,7 +200,7 @@ struct Actor {
   u8 zone_dir = 0;                  // +0x3ed: 0x80 = none
   u8 zone_dir_prev = 0;             // +0x3ee
   u8 laps = 0;                      // +0x3ef: patrol laps
-  u8 lap_limit = 0;                 // +0x3f0: laps before the patrol emote (actor_set_special)
+  u8 lap_limit = 0;                 // +0x3f0: laps before the patrol emote (actor_set_patrol_emote)
   s16 still_time = 0;               // +0x3f2: frames without moving
   s16 lap_emote = 0;                // +0x3f4: patrol emote animation
   const ActorVtable* vtbl = nullptr;// +0x3f8
@@ -285,7 +285,7 @@ void actor_or_flags(Actor* a, s16 part, u32 bits);             // 0x80042d14
 void actor_and_flags(Actor* a, s16 part, u32 mask);            // 0x80042d3c
 int actor_walk_frame_delay(const Actor* a);                    // 0x80042f2c
 void actor_save_anim(Actor* a);                                // 0x80042fd0
-void actor_set_special(Actor* a, u8 laps, s16 emote);          // 0x80042ffc
+void actor_set_patrol_emote(Actor* a, u8 laps, s16 emote);          // 0x80042ffc
 
 // Angle conversion used by the command interpreter: degrees -> 4096 per turn.
 inline s32 actor_deg_to_angle(s32 deg) { return (deg << 12) / 360; }

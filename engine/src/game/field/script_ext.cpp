@@ -484,7 +484,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       const int count = vm_svc_get_battle_preload_count();
       for (int i = 0; i < count; ++i) {
         if (vm_svc_preload_start(vm_svc_get_battle_preload_entry(i), 1, -1, vm_svc_get_battle_preload_size(i)) == 0) {
-          vm_svc_field_rumble_stub(0x7F);
+          vm_svc_field_error_stub(0x7F);
         }
       }
       ctx->wait_state = 0xB;
@@ -615,7 +615,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       break;
     case 0xCD:
       vm_fetch_args(ctx, 1);
-      vm_svc_sound_fade_out_all(static_cast<s16>(a[0]));
+      vm_svc_sound_fade_out_effects(static_cast<s16>(a[0]));
       break;
     case 0xCE:
       vm_fetch_args(ctx, 1);

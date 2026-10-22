@@ -469,7 +469,7 @@ Ping-pong patrols reverse after 120 blocked frames; flag 0x4000000 shows a "bloc
      else speed = +0x94.
    - analog: mag = max(|x|, |y|); < 30 walk, else run (flag 0x400000) unless flag 10; speed = mag *
      +0x94 / 20; angle = ratan2(y, x) + scene+0xcc[0] + 0x400, or, when 0x8007627e (camera looks down,
-     set by field_update_screen_clamp_flag), ratan2(y, x) + direction from the actor to the world
+     set by field_update_screen_steering), ratan2(y, x) + direction from the actor to the world
      point 30 px above it on screen (0x800452b4 screen->world at the actor's y) + 0x800.
    - `actor_anim_advance`, then `fieldactor_walk_step(a, dir_or_angle, moving)`.
 3. `fieldactor_walk_step`:
@@ -612,8 +612,8 @@ group replay list. Script flag 10 (0x80075704[1] bit 2) disables running.
   task_unregister, screen_set_clear_colour, ot_layer_clear, 0x8005ff84 / 0x800617d8 / 0x8006ecf0 /
   0x8006ed5c (particle matrices and back colour), party_find_slot, party_move_character_to_slot,
   init_dias, inventory_add, inventory_check_byte, callways_song_active / callways_stop_song,
-  object_delete; boot: rng_next, handoff_get / handoff_clear, mem_alloc / mem_alloc_b / mem_alloc_c /
-  mem_free_b, __builtin_new / __builtin_delete, SetDrawMode, SetDrawArea, memset, strcpy; overlay
+  object_delete; boot: rng_next, handoff_get / handoff_clear, mem_alloc / mem_alloc_high / mem_alloc_low /
+  mem_free, __builtin_new / __builtin_delete, SetDrawMode, SetDrawArea, memset, strcpy; overlay
   0x801f9800 (special command 0, alternate input, second OT pass).
 - **Order of work for map 7**: section 0 upload + scene parse (done in field), BgRenderer object with
   bg_update_scroll / bg_build_tpages / bg_get_view_origin, bg_draw static + scroll-layer pieces

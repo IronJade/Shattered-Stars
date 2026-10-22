@@ -36,10 +36,12 @@ constexpr double kCpuHz = 33868800.0;
 constexpr double kSectorVblanks = kVblankHz / 150.0;  // double speed: 150 sectors a second
 
 // Measured in PCSX-Redux: from movie_open to the first sector of the opening (a seek
-// of 84800 sectors), and the decode in CPU cycles. Redux's seek time grows with the
-// distance (28 ms plus 3 ms per 1000 sectors), which needs the drive's head position
-// the loader does not keep yet, so every movie uses the opening's latency.
-// TODO(port): seek time from the head position.
+// of 84800 sectors), and the decode in CPU cycles. Every movie uses the opening's
+// latency. Redux's seek time grows with the distance, which would need the drive's
+// head position (the host loader keeps none): its studio movie (#4586, a seek of about
+// 221000 sectors) shows its first frame some 18 vblanks later than the port's (41 vs 23
+// after movie_open, PCSX-Redux 1489 -> 1530); two measurements do not pin down its
+// seek curve, so the difference stays.
 constexpr double kStartVblanks = 0.288 * kVblankHz;
 constexpr double kVlcCyclesPerCodeWord = 33.6;     // DecDCTvlc: per MDEC code word (header's first halfword)
 constexpr double kVlcCyclesPerByte = 30.5;         // ... and per bitstream byte
@@ -84,8 +86,8 @@ void console_idle_until(double t) {
 // speed and cd_sector_ready_callback (0x800111f0) copies every sector into the ring
 // as it arrives; here sectors arrive on the console clock: the first kStartVblanks
 // after the stream starts, then one every 1/150 s.
-// TODO(port): these belong in the Loader once it reads asynchronously. The archive
-// has no per-sector reads yet, so the streamed range is read when the stream starts.
+// (The host loader reads synchronously and the archive has no per-sector reads, so the
+// streamed range is read when the stream starts and handed out on the console clock.)
 
 struct Stream {
   int entry = -1;               // Setloc target (loader_select_entry)
@@ -240,7 +242,7 @@ void movie_dma_callback() {
 // ---- Prologue support ----------------------------------------------------------------
 
 // The vblank counter's handler (0x8004ff78) runs from the pad module's handler list
-// (boot 0x800141bc / 0x80014230) on the console. TODO(port): that list; until then the
+// (boot 0x800141bc / 0x80014230) on the console. The port keeps no handler list: the
 // counter catches up from the runtime's vblank count when read, which gives the same
 // values since it only counts and saturates.
 void counter_catch_up(Prologue::VblankCounter* c) {
@@ -483,7 +485,7 @@ Prologue::~Prologue() {
   // pad_remove_vblank_handler (boot 0x80014230).
   delete counter;
   if (faded_out == 0) {
-    sound_fade_out_all(sound, 8);
+    sound_fade_out_effects(sound, 8);
     psyq::VSync(8);
   }
   for (int clip = 1; clip < 9; ++clip) sound_release_clip(sound, clip);
@@ -539,7 +541,7 @@ int prologue_update(Prologue* self, int allow_cancel) {
         break;
       }
       case 5:  // fade the sound out over a number of frames (s16, padded to a word)
-        sound_fade_out_all(self->sound, static_cast<s16>(read_u16(self->cue)));
+        sound_fade_out_effects(self->sound, static_cast<s16>(read_u16(self->cue)));
         self->cue += 4;
         self->faded_out = 1;
         break;

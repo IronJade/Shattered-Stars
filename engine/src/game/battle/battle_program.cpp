@@ -311,7 +311,8 @@ void battle_run() {
   g.sound = &g.system->sound;
   screen_init();
   pad_set_option(g.pad, 1);
-  // 0x800134d8(0): TODO(port) (a boot pad / vibration setting).
+  // 0x800134d8(0): mem_set_alloc_fail_hook, clearing the heap's out-of-memory hook (not
+  // needed on the host).
   const psyq::RECT all{0, 0, 0x400, 0x200};
   psyq::ClearImage(&all, 0, 0, 0);
   // The setup: copied, the handoff cleared and freed.

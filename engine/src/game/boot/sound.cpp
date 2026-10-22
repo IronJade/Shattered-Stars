@@ -1833,7 +1833,7 @@ void sound_start_clip(Sound* s, int slot, int volume, int pan, int pitch_scale, 
   E.update = 1;
 }
 
-void sound_fade_out_all(Sound* s, int frames) {
+void sound_fade_out_effects(Sound* s, int frames) {
   s16 f = static_cast<s16>(frames);
   if (f > 2) f = static_cast<s16>(f - 2);
   if (f == 0) f = 1;  // the console traps

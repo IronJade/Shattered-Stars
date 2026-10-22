@@ -12,6 +12,8 @@ coordinator commits.
   screen (b906414, 69b33dd, 6c88bd4). Notes: `docs/notes/field_overlay_c1e.md`.
 - Phase 3 step 1 (catalog triage, party_swap_characters, screen clamp flag, draw_list
   bounds): b32c1a9.
+- Phase 3 step 2 (afterimages, encounter voice streaming, field_load_map /
+  field_unload_map teardown, voice budget floor): 1879d21.
 
 ## Phase 3 plan (coordinator, 2026-10-22)
 
@@ -31,58 +33,44 @@ order is kept; `scratchpad/catalog_order.py` restores it).
 
 ## In progress (uncommitted)
 
-Step 2 (field TODO(port)s) is done and tested; waiting for the coordinator's commit:
+Steps 3 and 4 are done and tested; waiting for the coordinator's commit:
 
-- New `engine/src/game/field/afterimage.cpp/.h` (+1 line in engine/CMakeLists.txt):
-  ghost trails 0x8005ee9c / 0x8005f018 / 0x8005f108, the list 0x800752ec,
-  field_destroy_map_objects 0x80051974. Table A 0x1b / 0x1c (vm_services.cpp) and
-  actor_destroy (actor_base.cpp) use it; the unused ActorHooks::destroyed is gone
-  (actors.h). Test: ss_game_tests field_afterimage_trails_and_fades. Only map 295 (a
-  minigame with four racers) uses it; no Redux reference.
-- `map.cpp` field_load_map: preload_free_saved_table (0x800570e8, load_queue.cpp), the
-  movie-stop / sub-overlay-hook / map-preload resets, afterimages, the side-loaded entry
-  (field_side_free, post_battle.cpp), streaming off + preload_release(1), the disc check
-  with the load-queue drain (preload_drop_incomplete) or reset, the CamScript teardown,
-  and the disc prompt moved after the teardown as in the original.
-- `encounter.cpp` field_unload_map: side entry, equipment report
-  (field_free_equip_report), CamScript, afterimages. Bug fix: the random-encounter voice
-  budget surplus is at least 3000 (0x80051588), not at most.
-- `field_program.cpp`: field_update_encounter_streaming (0x80050dec) after field_update
-  (decl in field.h); preload_free_saved_table in field_destroy_subsystems; the stale
-  TODOs (state 0, default, teardown) rewritten. `camera.cpp`: the world-branch TODO is a
-  note (world_camera_reset does the GTE setup).
-- `worldmap_actor.cpp`: SS_WORLD_DBG also prints the voice stream / encounter state.
-- Catalog: 7 function rows (0x80050dec, 0x80050f64, 0x80051974, 0x800570e8, afterimages)
-  and the global g_afterimages.
+- Step 3, Voice Collection: new `engine/src/game/title/voice_collection.cpp/.h` (+1 line
+  in engine/CMakeLists.txt; `title_program.cpp` calls it for choice 2). voice_collection
+  0x8003fb78, the grid 0x80041100 / 0x8004137c / 0x800413ec, draw_number 0x800411a4.
+  Verified with PCSX-Redux (ref/vc3: the save card; ref/vc5: a scratch card with every
+  voice heard, `scratchpad/world/cards/allvoices.mcd`, BGM track 0): menu, labels and
+  numbers match exactly; the grid's picture, wire frames and the music-driven heights
+  match up to GPU rasterisation (lines, GT4 texture interpolation). Exit returns to the
+  title. The stale sound TODOs in intro.cpp / title_screen.cpp are gone.
+- Step 4, readability: renames in the catalog and the port (word-boundary, engine/src
+  except battle/, docs/catalog, docs/notes/field_*): mem_alloc_c/_b/mem_free_b ->
+  mem_alloc_low/_high/mem_free, pad_set_menu_hook -> mem_set_alloc_fail_hook (g_menu_hook
+  -> g_alloc_fail_hook), field_rumble_stub -> field_error_stub (vm_svc_field_error_stub,
+  comment fixed), sound_fade_out_all -> sound_fade_out_effects, sprite_anim_set_byte2 ->
+  sprite_anim_set_mode, actor_set_special -> actor_set_patrol_emote,
+  obj_alloc_ptr_table -> render_ctx_create_ot, field_reset_effect_tables ->
+  field_static_init_effect_tables, field_update_screen_clamp_flag ->
+  field_update_screen_steering, sound_bank_holder_new -> sound_holder_create,
+  world_transform_vertices -> world_morph_vertices, entry_cache_free_pair ->
+  entry_cache_free_party_packs. New rows: field_alloc_retry 0x8004b760,
+  preload_evict_lowest 0x8005691c, render_ctx_create_arena 0x8006f89c; globals
+  g_pad_option 0x8002b63c (write-only), g_screen_steering 0x8007627e. 21 of the 23
+  'guess' rows are now likely / confirmed; the two left (party_update_bonds summary
+  improved, party_find_bonded) are the menu agent's (+0x3b pair semantics unknown).
+  Comment fixes in other agents' files: menu_camp.cpp (two 0x800134d8 TODOs: the
+  alloc-fail hook, not needed) and battle/battle_program.cpp (same). Not touched:
+  battle/loaders.cpp still says mem_alloc_b in a comment, docs/notes/battle.md too.
 
-Verified: PCSX-Redux world map from the north-city save (ref/voice1): the voice stream
-goes 0 -> 1 (t 4) -> 2 -> 3 and the battle preloads start, as in the port (CD timing and
-the random distance differ; the budget arithmetic matches with the 3000 floor).
-PCSX-Redux camp menu on the world map (ref/menu3): the camera block is unchanged after
-it. Tests after step 2: ss_tests 76/0, ss_game_tests 72/0, smoke 16/16 (with disc 2,
-and with SS_DISC2=/nonexistent).
+Tests after steps 3-4: ss_tests 76/0, ss_game_tests 73/0, smoke 16/16.
 
 ## Next steps
 
-- Step 3: Voice Collection (title 0x8003fb78; helpers 0x80041100 / 0x800411a4 /
-  0x8004137c / 0x800413ec = a spectrum grid of 32 x 40 quads fed by the sound voices).
-- Step 4: renames below, plus the remaining 'guess' rows; rename vm_svc_field_rumble_stub
-  to match 0x80055da0's real role (coordinator's request) and fix its comment.
+- Phase 3 is complete once steps 3-4 are committed. Known deviation left: title movie
+  start latency (movie.cpp note: the studio movie starts about 18 vblanks earlier than
+  in PCSX-Redux because every movie uses the opening's seek time; ref/mov2-3).
+- The two 'guess' party-bond rows (0x800341e4, 0x8003446c) belong to the menu agent.
 
-## Findings not yet in the catalog (step 4)
+## Findings not yet in the catalog
 
-- boot 0x80012fec mem_alloc_c = first-fit allocation from the low end of the heap list
-  (0x8002b5d8; with 0x8002b5e0 set it uses the high end); 0x800130ec mem_alloc_b = the
-  high end (carves a block's top); 0x80013254 mem_free_b = the general free (merges free
-  neighbours). Both allocators call the hook 0x8002b5dc with the size on failure.
-- boot 0x800134d8 "pad_set_menu_hook" sets that alloc-fail hook (global 0x8002b5dc,
-  "g_menu_hook"). The field installs 0x8004b760 (uncatalogued): if 0x8005691c
-  (uncatalogued: evicts the preload slot with the lowest buffer address, cancelling its
-  read) frees something it retries mem_alloc_c, else calls 0x80055da0(0x7c).
-- field 0x80055da0 "field_rumble_stub" is an empty error-report hook: codes 0x27 / 0x28
-  (no party member, 0x80052ff4), 0x7c (out of memory), 0x7f (a battle preload failed).
-- field 0x8006f8d4 "obj_alloc_ptr_table" = render_ctx_create_ot (ctx +8 =
-  screen_create_ot); 0x8006f89c (uncatalogued) = render_ctx_create_arena.
-- field 0x800573d0 "field_reset_effect_tables": only a data word at 0x8002f8e0 (after
-  g_current_program) points at it and nothing reads that word; a static initialiser
-  that never runs (__main is empty).
+- (none: the step-1 findings are in the catalog now)

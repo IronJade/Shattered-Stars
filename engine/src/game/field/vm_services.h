@@ -39,7 +39,7 @@ void vm_svc_field_free_ot_layers();                      // field_free_ot_layers
 // table A 0x2d: tears the field down, runs the program in 0x800756f4
 void vm_svc_exit_to_program_teardown();
 int vm_svc_field_install_music(int entry);               // field_install_music 0x8004b2b4: 1 = installed
-void vm_svc_music_free_buffers();                        // mem_free_b of 0x80075740 / 0x80075738 after a music change
+void vm_svc_music_free_buffers();                        // mem_free of 0x80075740 / 0x80075738 after a music change
 void vm_svc_map_resolve_entries(s16 files[17], int map, int x, int z);  // map_resolve_entries 0x80061888
 void vm_svc_screen_set_clear_colour(int r, int g, int b);  // screen_set_clear_colour 0x80048538 (0x80075290)
 // g_scene 0x80075330 (MapScene, section 0 block 0); may be null
@@ -125,7 +125,7 @@ void vm_svc_actor_mark_dirty(int slot);                               // actor_m
 void vm_svc_actor_set_flags(int slot, int word, u32 v);               // actor_set_flags 0x80042cf8
 void vm_svc_actor_or_flags(int slot, int word, u32 bits);             // actor_or_flags 0x80042d14
 void vm_svc_actor_and_flags(int slot, int word, u32 mask);            // actor_and_flags 0x80042d3c
-void vm_svc_actor_set_special(int slot, int a, int b);                // actor_set_special 0x80042ffc
+void vm_svc_actor_set_special(int slot, int a, int b);                // actor_set_patrol_emote 0x80042ffc
 void vm_svc_actor_sys_mark_all_dirty();                               // actor_sys_mark_all_dirty 0x800437e4
 void vm_svc_actor_sys_reset_sprite_cache();                           // actor_sys_reset_sprite_cache 0x80043840
 // A 0x1b: new Afterimage (0x88) afterimage_create 0x8005ee9c(actor, a1, a2, a3, a4 & 0xff,
@@ -204,13 +204,13 @@ void vm_svc_sound_stop();                                 // boot sound_stop 0x8
 void vm_svc_sound_play_sequence_fade(int a, int b);       // boot 0x8001a65c(sound, 0x80075734, a, b)
 void vm_svc_sound_fade_out(int frames);                   // boot sound_fade_out 0x8001a7e4
 void vm_svc_sound_fade_in(int frames);                    // boot 0x8001a82c
-void vm_svc_sound_fade_out_all(int frames);               // boot sound_fade_out_all 0x8001a88c
+void vm_svc_sound_fade_out_effects(int frames);               // boot sound_fade_out_effects 0x8001a88c
 void vm_svc_sound_set_tempo(int v);                       // boot 0x8001a938
 void vm_svc_sound_stop_voices(int mask);                  // boot 0x8001aac4
 int vm_svc_sound_state_busy();                            // boot sound_state 0x8001ab30 +0x20 & 1
 int vm_svc_callways_song_active();                        // callways_song_active 0x80031718 (g_stream 0x800752e0)
 void vm_svc_callways_stop_song(int a);                    // callways_stop_song 0x80031724
-// table B 0x5a (handoff 0xf, sound_bank_holder_new 0x8006f90c)
+// table B 0x5a (handoff 0xf, sound_holder_create 0x8006f90c)
 void vm_svc_sound_bank_holder_alloc();
 void vm_svc_sound_bank_holder_free();                     // table B 0x5b
 
@@ -229,7 +229,7 @@ void vm_svc_field_prepare_encounter(int a, int b);        // field_prepare_encou
 int vm_svc_get_battle_preload_count();                    // 0x8007534c
 int vm_svc_get_battle_preload_entry(int i);               // 0x800759a8[i]
 int vm_svc_get_battle_preload_size(int i);                // 0x800759dc[i]
-void vm_svc_field_rumble_stub(int level);                 // field_rumble_stub 0x80055da0
+void vm_svc_field_error_stub(int code);                  // field_error_stub 0x80055da0 (empty)
 void vm_svc_field_start_battle(int r);                    // field_start_battle 0x80051a34 (calls vm_save_state)
 bool vm_svc_battle_transition_done();                     // 0x800752d0 +0x10
 void vm_svc_field_destroy_battle_transition();            // field_destroy_battle_transition 0x80051c68
@@ -273,7 +273,7 @@ void vm_svc_sprite_packs_restore_palettes();              // sprite_packs_restor
 // sprite_anim_set_frame_bytes 0x800522d4
 void vm_svc_sprite_anim_set_frame_bytes(int a, int b, int count, const s32* values);
 void vm_svc_sprite_anim_set_frame_byte(int a, int b, int c, int d);  // sprite_anim_set_frame_byte 0x80052364
-void vm_svc_sprite_anim_set_byte2(int a, int b, int c);   // sprite_anim_set_byte2 0x800523c4
+void vm_svc_sprite_anim_set_byte2(int a, int b, int c);   // sprite_anim_set_mode 0x800523c4
 void vm_svc_sprite_anim_set_loop_frame(int a, int b, int c);  // sprite_anim_set_loop_frame 0x80052410
 
 // ---- Overlay code (#3101 0x8007e000, 0x801ea000 = #3103, 0x801f9800 = #3104-#3109) ---

@@ -555,7 +555,7 @@ battle values.
   fade), 0x8001a910, sound bank swap through System+0x5ac0/+0x5aa8.
 - **Pad**: pad_current/pressed/pressed_repeat/clear, pad_set_repeat_delay(12),
   pad_set_port_mask(3), clock read 0x80014434, reset callback 0x8001445c.
-- Heap: `mem_alloc`, `mem_alloc_b`, `mem_free_b`, `__builtin_new/delete`, mem stats 0x80013428
+- Heap: `mem_alloc`, `mem_alloc_high`, `mem_free`, `__builtin_new/delete`, mem stats 0x80013428
   (debug only). Cache flush 0x8001054c after loading code (no-op natively).
 
 ## Corrections and additions to the existing catalog

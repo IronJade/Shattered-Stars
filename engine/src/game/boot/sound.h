@@ -331,7 +331,7 @@ int sound_open_clip(Sound* s, const void* clip, int mode, int* out);
 u8* sound_import_effects(Sound* s, u8* data, int slot, int keep, int first);
 void sound_release_clip(Sound* s, int slot);                                                  // 0x8001a114
 void sound_start_clip(Sound* s, int slot, int volume, int pan, int pitch_scale, int invert);  // 0x8001a4b8
-void sound_fade_out_all(Sound* s, int frames);                                                // 0x8001a88c
+void sound_fade_out_effects(Sound* s, int frames);                                                // 0x8001a88c
 void* sound_state(Sound* s);                                     // 0x8001ab30: Sound + 0x20
 // Host: what the programs read through sound_state, whose bytes the port does not lay
 // out like the console: +0x20 bit 0 (Sound + 0x40, the music is playing) and +0x32

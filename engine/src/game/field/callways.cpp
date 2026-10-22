@@ -259,7 +259,7 @@ void callways_play_song(Callways* c, std::span<const u8> song, int id, int level
   FieldGlobals& g = globals();
   c->level = static_cast<s16>(level);
   if (c->song == 0) {
-    // The field music's state is saved first (sound_bank_holder_new 0x8006f90c).
+    // The field music's state is saved first (sound_holder_create 0x8006f90c).
     c->saved_music = new SoundSavedState;
     g.sound->saved_state = c->saved_music;
     g.sound->request_save = 1;

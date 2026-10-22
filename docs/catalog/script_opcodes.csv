@@ -143,7 +143,7 @@ ext,0xc9,,sound_release_clip,1,1,0 (inline),sound_release_clip,confirmed
 ext,0xca,,sound_effect_playing,1,1,0 (inline),"R = id of effect slot a while it plays, else 0 (boot 0x8001a0ac)",confirmed
 ext,0xcb,,sound_start_clip,5,5,2 (inline),"sound_start_clip(slot, volume, pan, pitch, flag)",confirmed
 ext,0xcc,,sound_fade_in,1,1,0 (inline),boot 0x8001a82c(frames),confirmed
-ext,0xcd,,sound_fade_out_all,1,1,0 (inline),sound_fade_out_all(frames),confirmed
+ext,0xcd,,sound_fade_out_effects,1,1,0 (inline),sound_fade_out_effects(frames),confirmed
 ext,0xce,,sound_set_tempo,1,1,0 (inline),boot 0x8001a938((s8) a),confirmed
 ext,0xcf,,actor_signal,3,2,1 (inline),"actor_cmd_signal(actor, entry lo|hi): the actor's queue later runs that script entry with vm_call_sync",confirmed
 ext,0xd0,,actor_wait_move,1,1,0 (inline),actor_cmd_wait_move,confirmed
@@ -429,7 +429,7 @@ table_b,0xff,0x67,set_76195,1,1,0 (inline),,confirmed
 table_b,0xff,0x68,bg_anim_get_state,1,1,0 (inline),overlay camera calls (R for 68/6e),confirmed
 table_b,0xff,0x69,menu_request_5,0,0,0 (inline),`0x80076196` = n (param `0x8007619a` = a or its party slot); wait 0xe,confirmed
 table_b,0xff,0x6a,disc_change_2,0,0,0 (inline),"config+0x4c = 1; FUN_80052ce8(field, 2, 1) -> disc_change_screen(2)",confirmed
-table_b,0xff,0x6b,actor_set_special,3,3,1 (inline),FUN_80042ffc,confirmed
+table_b,0xff,0x6b,actor_set_patrol_emote,3,3,1 (inline),FUN_80042ffc,confirmed
 table_b,0xff,0x6c,chest_create,8,8,4 (inline),section 5,confirmed
 table_b,0xff,0x6d,menu_request_2,1,1,0 (inline),`0x80076196` = n (param `0x8007619a` = a or its party slot); wait 0xe,confirmed
 table_b,0xff,0x6e,bg_anim_get_frame,1,1,0 (inline),overlay camera calls (R for 68/6e),confirmed

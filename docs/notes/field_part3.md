@@ -67,7 +67,7 @@ byte 1 bit 6 forces music_mode 0. `field_flags` (= script globals, handoff 9 +0x
 14. Party sprite packs (field maps): files[3] → sprite slot 0, files[4] → slot 1; each is
     reloaded only if its entry changed (`field_load_entry` + spin on `field_require_sprite_pack`,
     which SLZ-unpacks block 0 via `sprite_pack_register`). When slot 0 changes while slot 1 is
-    kept, slot 1's data is copied out to mem_alloc_b and back to mem_alloc_c around the load
+    kept, slot 1's data is copied out to mem_alloc_high and back to mem_alloc_low around the load
     (heap ordering). World maps (map < 4): optional vehicle packs 0x10e3 (flag byte 1 bit 3),
     0x10e2 (byte 1 bit 7), 0x10e4 (byte 2 bit 0) via `field_load_extra_pack`; then start
     loading files[3] (world party pack).
@@ -91,7 +91,7 @@ byte 1 bit 6 forces music_mode 0. `field_flags` (= script globals, handoff 9 +0x
     `field_load_map_sections(field, files[2])` (section 3). Then `preload_release(-1)` and
     `field_start_pending_music(1)`. Returning: BG renderer vtable +0x20 (restore).
 19. Embedded code (section 3, ids 5-12):
-    - section 5 copy → SLZ-unpacked to exactly 0x801e9000 (loops `mem_alloc_b(0x15000)` until
+    - section 5 copy → SLZ-unpacked to exactly 0x801e9000 (loops `mem_alloc_high(0x15000)` until
       the allocator returns that address, calling 0x800131ec otherwise);
     - sections 7-10/12 → 0x801f9800 (0x4800 bytes, same trick);
     - section 11 → new buffer 0x800756cc, pointer stored at inventory+0x820.
@@ -113,7 +113,7 @@ byte 1 bit 6 forces music_mode 0. `field_flags` (= script globals, handoff 9 +0x
     encounter distance +0x18 clamped to 0..0x7530000.
 23. `ResetGraph(1)`; `field_setup_screen` unless a fade hold/cross-fade is active. Field:
     `screen_layout_arena(1)`, `screen_set_clear_colour(scene +0x6f, +0x70, +0x71)`,
-    `field_update_screen_clamp_flag`, VSync divider 0x8007572d = 0 (60 Hz). World:
+    `field_update_screen_steering`, VSync divider 0x8007572d = 0 (60 Hz). World:
     layout 0, black, 0x8007572d = 2 (30 Hz).
 24. Two dummy frames (`screen_flip` + `screen_clear_ot` twice), `actor_sys_update_one(leader)`;
     special cases: `field_begin_game_over` (config+0x178 == 2 and field_flags+0x7e) or the
@@ -591,7 +591,7 @@ Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Noel, Chisato.
 | 0x80075744 / 0x80075746 | g_music_pending / g_music_entry | u8 / s16 | |
 | 0x800761a4 | g_preload_reserve | int | 0x14000 |
 | 0x800761a8 / 0x800761ac / 0x800761c4 | g_scene_obj_count / g_scene_objs / g_ot_layers[4] | | 4.6 |
-| 0x8007627e | g_screen_clamp | s16 | field_update_screen_clamp_flag (guess) |
+| 0x8007627e | g_screen_clamp | s16 | field_update_screen_steering (guess) |
 | 0x80074628 / 0x8007462a | g_option_a / g_option_b | u16 | accessors only |
 | 0x80075998 / 0x800759a0 | g_battle_stream_timer / g_battle_stream_state | int | battle-data streaming (part2 LoadQueue); accessors 0x80055e80-0x80055eb0 |
 | 0x8007533c / 0x8007533d | g_preload_release_pending | u8[2] | |
@@ -675,7 +675,7 @@ Already in script_opcodes.csv as args-only; semantics established here:
   pass before the first map can be walked; the functions cited here are the entry points.
 - **Dependencies on other ranges:** part2 (field_load_entry, map-section parser, sprite packs,
   music, LoadQueue, ActorSystem, Screen), part4 (VM: vm_push_frame, vm_thread_update), boot
-  (loader, SLZ, upload_texture / upload_clut256, mem_alloc_b/c, handoffs, sound).
+  (loader, SLZ, upload_texture / upload_clut256, mem_alloc_high/c, handoffs, sound).
 - **Heap tricks to drop:** fixed-address overlay allocation loops (0x801e9000 / 0x801f9800),
   `preload_defragment` and the slot-1 copy dance are fragmentation workarounds.
 - **Text:** implement the byte-varint decoder and the control codes in 3.2; the glyph

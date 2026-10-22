@@ -857,7 +857,8 @@ void field_menu_check(Field* f) {
   if (!(allowed && static_cast<s16>(rd16(g.field_flags + 0x10)) != -1 && idle && g.field_flags[0x26] == 0) &&
       g_menu_request == 0)
     return;
-  // TODO(port): boot 0x800134d8(0x8004b760), a pad / vibration setting for the menu.
+  // boot 0x800134d8 (mem_set_alloc_fail_hook) installs 0x8004b760, which evicts a preload
+  // and retries when the heap runs out: not needed on the host.
   if (g_menu_request == 0) {
     sound_play_sfx(g.sound, 2, 0, 0x7F40);
     if ((g.script_flags[2] & 0x10) != 0 && g_script_vm != nullptr) {
@@ -982,7 +983,7 @@ void field_menu_update(Field* f) {
     case 5: menu_run_save(g_launcher); break;
     default: result = menu_run_camp(g_launcher); break;
   }
-  // TODO(port): boot 0x800134d8(0): the pad setting back.
+  // mem_set_alloc_fail_hook(0) (boot 0x800134d8): not needed on the host.
   menu_launcher_destroy(g_launcher);
   g_launcher = nullptr;
   // pad_add_vblank_handler (host: none); the field's screen again.

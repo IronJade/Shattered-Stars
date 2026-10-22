@@ -97,6 +97,7 @@ add_library(ss_game STATIC
   src/game/title/movie.cpp
   src/game/title/title_program.cpp
   src/game/title/title_screen.cpp
+  src/game/title/voice_collection.cpp
   src/game/title/load_queue.cpp
   src/game/title/new_game.cpp
   src/game/title/text.cpp

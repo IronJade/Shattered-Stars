@@ -16,6 +16,7 @@
 #include "game/title/movie.h"
 #include "game/title/new_game.h"
 #include "game/title/title_screen.h"
+#include "game/title/voice_collection.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
 
@@ -462,10 +463,7 @@ void title_program_main(System* sys) {
       loaded = load_game_screen(g_title.memcard, g_title.load_screen_data) != 0;
       continue;
     }
-    if (choice == kTitleVoiceCollection) {
-      // TODO(port): Voice Collection 0x8003fb78.
-      runtime::Runtime::get().log_once("voice", "Voice Collection is not ported yet; back to the title");
-    }
+    if (choice == kTitleVoiceCollection) voice_collection(intro.get());  // 0x8003fb78
   }
   // LAB_8004241c after a load: the title's buffers, intro object and card manager go,
   // then the field program (#3100) starts from the save's snapshot (handoff 0xe).

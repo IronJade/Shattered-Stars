@@ -59,7 +59,7 @@ u16 rd16(const u8* p) {
   return v;
 }
 
-// field_update_screen_clamp_flag (0x80055c08): on maps whose camera looks down (the
+// field_update_screen_steering (0x80055c08): on maps whose camera looks down (the
 // scene's target y above its eye y: +0x18 < +0x0c) the analog stick steers along the
 // projected screen (fieldactor_player_control), except on a fixed list of maps.
 s16 screen_clamp_flag(const u8* scene, int map) {

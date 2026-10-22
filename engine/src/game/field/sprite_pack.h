@@ -30,7 +30,7 @@ int sprite_pack_find_anim(Field* f, int key, int id, u8** table, u8** anim);
 // Run-time edits of animation timing (script table B 0x19-0x22):
 void sprite_anim_set_frame_bytes(Field* f, int key, int id, int count, const int* values);  // 0x800522d4: durations
 void sprite_anim_set_frame_byte(Field* f, int key, int id, int frame, u8 value);            // 0x80052364: one duration
-void sprite_anim_set_byte2(Field* f, int key, int id, u8 value);                            // 0x800523c4: mode
+void sprite_anim_set_mode(Field* f, int key, int id, u8 value);                            // 0x800523c4: mode
 void sprite_anim_set_loop_frame(Field* f, int key, int id, int frame);                      // 0x80052410 (-1 = last)
 
 // 0x800525ac (script service): every sprite pack palette is backed up, then each colour

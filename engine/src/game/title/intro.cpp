@@ -423,7 +423,7 @@ void title_intro_sequence(TitleIntro* self) {
     for (;;) {
       if (movie_frame_count() > 9 && !music_started) {
         music_started = true;
-        sound_play_sequence(t.sound, sequence.data());  // TODO(port): sound system (stub logs once)
+        sound_play_sequence(t.sound, sequence.data());
       }
       const u16 pressed = pad_pressed(t.pad, 0);
       pad_clear(t.pad, 0);

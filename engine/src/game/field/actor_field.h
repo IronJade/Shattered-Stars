@@ -17,7 +17,7 @@ struct FieldActorGlobals {
   u8 children_pass = 0;      // 0x800761e8: overlay 0x801f9800 present (children drawn in a second pass)
   u8 shadow_boxes = 0;       // 0x800756b8 != 0: the 0x801e9000 overlay is loaded (shadows drawn as boxes)
   u8 vehicle_control = 0;    // 0x800761ea: the 0x801f9800 overlay steers the player (vehicles)
-  s16 screen_clamp = 0;      // 0x8007627e: control directions follow the projected screen (field_update_screen_clamp_flag)
+  s16 screen_clamp = 0;      // 0x8007627e: control directions follow the projected screen (field_update_screen_steering)
   // fieldactor_build_light_split's colour of the list-6 region under the feet (its stack
   // slot sp+0x10). The original never clears it: a call that finds no region still
   // compares list-4 polygons flagged +0x48 against what the slot holds, mostly the

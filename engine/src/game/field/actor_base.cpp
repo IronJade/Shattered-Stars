@@ -1145,7 +1145,7 @@ void actor_save_anim(Actor* a) {
   a->frozen_turning = a->turning;
 }
 
-void actor_set_special(Actor* a, u8 laps, s16 emote) {
+void actor_set_patrol_emote(Actor* a, u8 laps, s16 emote) {
   a->lap_limit = laps;
   a->lap_emote = emote;
   a->flags |= kActorPatrol | kActorPatrolEmote;
