@@ -113,6 +113,41 @@ struct BattleGlobals {
   u8 single_victory_voice = 0;        // 0x8006f004
   u8 intro_speakers[2] = {};          // 0x8006fb32 / 0x8006fb33
   Unit* last_attacker = nullptr;      // 0x8006fb00
+  u8 sound_test_tampered = 0;         // 0x8006f000: the sound-test record's checksum failed
+  u8 victory_speaker = 0;             // 0x8006fb17: the member who strikes the victory pose
+
+  // Screen effects the hits start and battle_frame_director runs.
+  u8 flash_active = 0;                // 0x8006fb0d: stage colour returns to its target
+  s16 flash_delay = 0;                // 0x8006fb8c
+  s16 flash_speed = 0;                // 0x8006fb8e
+  u8 flash_running = 0;               // 0x8006fb2a
+  s8 shake_amp[2] = {};               // 0x8006fb0e / 0x8006fb0f: x / y shake amplitude
+  s8 shake_period[2] = {};            // 0x8006fb10 / 0x8006fb11
+  s8 shake_phase[2] = {};             // 0x8006fb12 / 0x8006fb13
+  s16 shake_frames = 0;               // 0x8006fb90 (with the pad vibration)
+  s16 zoom_kick = 0;                  // 0x8006fb92
+  s16 zoom_kick_decay = 0;            // 0x8006fb94
+
+  // Targeting and the camera director.
+  u8 target_enemy = 0xFF;             // 0x8006fb0a g_target_enemy (index into enemy_units)
+  u8 target_enemy_prev = 0xFF;        // 0x8006fb09
+  std::array<u8, 4> member_target{};  // 0x8006fb3c: each member's last target
+  u8 free_run = 0;                    // 0x8006fb04: the controlled member runs freely
+  u8 director_idle = 0;               // 0x8006fb0c
+  s16 director_timer = 0;             // 0x800810bc
+  s16 camera_end_mode = 0;            // 0x8006f0b0: a mode to end after camera_end_timer
+  s16 camera_end_timer = 0;           // 0x8006f0b2
+  Unit* camera_next_target = nullptr; // 0x8006f0b4
+  Unit* camera_end_unit = nullptr;    // 0x8006f0b8
+  Unit* camera_special = nullptr;     // 0x8006faf0
+  u8 assist_request = 0;              // 0x8006fb29
+  s16 assist_timer = 0;               // 0x8006fba0
+  Unit* provoker = nullptr;           // 0x8006fae8 g_forced_target
+  s16 provoke_timer = 0;              // 0x8006fba2
+  u8 provoke_used = 0;                // 0x8006fb36
+  std::array<s32, 4> hud_member_flash{};  // g_hud +0x70: a member's HUD panel flashes (0xff) when hit
+  s16 stage_colour_saved[3] = {};     // 0x8006f044: stage_colour_set's copy
+  s16 item_cooldown = 0;              // 0x8006fba8 g_item_cooldown
 
   // Party and enemies.
   std::array<u8*, 4> party_slot{};    // 0x8006f9e4 g_party_slot: handoff 3 slot (0x60)
@@ -186,6 +221,13 @@ void battle_init_state();                     // 0x80074a74
 void battle_init_objects();                   // 0x80074168
 void battle_scene_start();                    // 0x80046cc0
 void battle_free_all();                       // 0x80087884 (#1981)
+void battle_message_show(int id);             // 0x80074ca4 (#1984.0): the message banner (#1980 string id)
+void battle_frame_director();                 // 0x800715d0 (#1984.0)
+void director_reset();
+void ui_draw_target_arrow(Sprite** icon, s32 sx, s32 sy, u32 rgb, int icon_id);  // 0x80072780 (#1984.0)
+void stage_colour_set(s16 r, s16 g, s16 b);   // 0x800726d4 (#1984.0)
+void stage_colour_restore();                  // 0x80072748 (#1984.0)
+void battle_victory_begin(Unit* last_hitter); // 0x80048c5c
 
 // Debug: when set, battle_main_loop ends the battle with this outcome after this many
 // frames of fighting (the result screen and the units' combat are not ported yet).

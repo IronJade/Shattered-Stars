@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "game/battle/camera.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
 #include "game/boot/rng.h"
@@ -225,7 +226,7 @@ void EnemyUnit::update() {
   if (removed != 0) return;
   BattleGlobals& g = bg();
   pool = g.prim_pool_a;
-  // TODO(port): drop the camera focus (+0x132) when the camera's target is another unit.
+  if (g.camera != nullptr && g.camera->target != this) camera_focus = 0;
   if (ignore_units != 0) {
     const s32 zero[3] = {0, 0, 0};
     if (unit_check_move(this, zero, 7) == nullptr) ignore_units = 0;
@@ -245,24 +246,6 @@ int EnemyUnit::animate(u32 anim_flags) {
   const int f = static_cast<s16>(bobj_anim_draw(this, anim_flags | (bg().flags & 0xFE)));
   if (f != -1) unit_draw_shadow(this, shadow);
   return f;
-}
-
-void enemy_think(EnemyUnit* e) {
-  BattleGlobals& g = bg();
-  if (g.effects_suppressed != 0) return;
-  // TODO(port): the intro voice (+0x242, voice_play_entry).
-  if (e->st()->id == 0x94 && e->animset) e->animset->layout = e->model_layout + 0x44;
-  if (e->st()->id == 0xCF && e->animset) e->animset->layout = e->model_layout + 0xC0;
-  if (g.state < kStateFighting) {
-    e->anim = 0;
-    e->animate(0);
-    return;
-  }
-  // TODO(port): the fighting states (AI, approach, attacks, reactions, dying). Until then
-  // the monster idles.
-  runtime::Runtime::get().log_once("battle-enemy-ai", "battle: monster AI not ported yet (monsters idle)");
-  e->anim = 0;
-  e->animate(0);
 }
 
 int enemy_count_active(const std::array<EnemyUnit*, 8>& units) {

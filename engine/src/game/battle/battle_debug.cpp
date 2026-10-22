@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "game/battle/battle.h"
+#include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
 #include "game/field/encounter.h"
 #include "game/field/field.h"
@@ -78,6 +79,10 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
         have_setup = true;
         std::fprintf(stderr, "[battle] setup from the dump: encounter %d stage %d\n", setup->encounter(),
                      setup->stage());
+        // The random generator as the field left it.
+        u32 table[56];
+        for (int i = 0; i < 56; ++i) table[i] = dump32(ram, 0x8002B468 + i * 4);
+        rng_restore(table, static_cast<s32>(dump32(ram, 0x8002B464)));
       }
     }
   }
@@ -86,6 +91,27 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
     // bound globals).
     field::field_bind_system(nullptr);
     field::battle_build_load_list(setup, encounter, stage);
+  }
+  if (std::getenv("SS_BATTLE_STRONG") != nullptr) {
+    // Debugging: a sturdy party (x10 HP, x8 attack) to reach the victory path.
+    for (int i = 0; i < 4; ++i) {
+      u8* slot = party + i * 0x60;
+      s16 id;
+      std::memcpy(&id, slot, 2);
+      if (id < 1) continue;
+      for (int off : {0x14, 0x18, 0x1C}) {
+        s32 v;
+        std::memcpy(&v, slot + off, 4);
+        v *= 10;
+        std::memcpy(slot + off, &v, 4);
+      }
+      for (int off : {0x2A, 0x2C, 0x2E}) {
+        s16 v;
+        std::memcpy(&v, slot + off, 2);
+        v = static_cast<s16>(v * 8);
+        std::memcpy(slot + off, &v, 2);
+      }
+    }
   }
   handoff_store(reg, setup, 5);
   runtime::Runtime::get().trace("battle debug start");

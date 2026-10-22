@@ -14,5 +14,6 @@ user's discs); the facts that matter are recorded here or in the catalog.
 | `field_part4.md` | 0x80064f30-0x8007c00c: event-script VM, opcode tables, battle load list, voice queue |
 | `field_overlay_c1d.md` | Code overlay 0xc1d (#3101) at 0x8007e000: BG renderer, field actors, walking and collision, camera pan queue, effects |
 | `battle.md` | Battle program #2129: entry and main loop, field↔battle handoff, classes, data formats, subsystems, port order |
+| `battle_port.md` | The battle port itself: file layout, deliberate deviations, how it was checked against PCSX-Redux, what is missing |
 | `battle_image_map.md` | Which parts of the #2129 image above 0x800715d0 are live code and which are stale copies |
 | `encounter_maps.md` | Field maps with random encounters (rate, group, stage), from a sweep of every map |

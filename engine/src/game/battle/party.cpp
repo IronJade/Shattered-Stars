@@ -18,6 +18,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
+#include "game/battle/sprite.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
 #include "runtime/libgpu.h"
@@ -385,7 +386,18 @@ PartyUnit::PartyUnit() {
 void PartyUnit::update() {
   // pc_update 0x80034fe8.
   if (removed != 0) {
-    todo("pc_update: removed member");
+    // Fled: the marker and bound effects go; a pending action is dropped.
+    if (low_hp_marker != nullptr) {
+      sprite_free(low_hp_marker);
+      low_hp_marker = nullptr;
+    }
+    interrupt();
+    release_effects();
+    if (action != 0) {
+      unit_release_spell_data(this);
+      action_kind = 0;
+      begin_action();
+    }
     return;
   }
   BattleGlobals& g = bg();
@@ -399,34 +411,25 @@ void PartyUnit::update() {
   unit_update_base(this);
 }
 
-void PartyUnit::think() {
-  // pc_think 0x80035508: hidden members do nothing; appearing ones flicker in.
-  if (bg().effects_suppressed != 0) return;
-  if (appear & 1) return;
-  if (appear & 2) {
-    appear_update();
-    return;
-  }
-  // TODO(port): states, commands, player input and the party AI. The member idles.
-  todo("pc_think (party states, input, AI)");
-  model_default();
-  anim = 0;
-  animate(0);
+void PartyUnit::model_default() {
+  // pc_model_default 0x80035168.
+  animset = model_sets[0];
+  model_apply();
 }
 
-void PartyUnit::model_default() {
-  // pc_model_default 0x80035168 -> slot 24 pc_model_apply 0x800351a0.
-  animset = model_sets[0];
+void PartyUnit::model_apply() {
+  // pc_model_apply 0x800351a0: the member's model blocks into the current set.
   AnimSet* a = animset;
-  if (a == nullptr) return;
-  a->layout = model_layout;
-  a->anims = model_anims;
-  a->sheets[0] = model_sheet;
-  a->frames[0] = model_frames;
-  a->sheets[1] = sheet_alt;
-  a->frames[1] = model_210;
-  a->sheets[2] = weapon_sheet;
-  a->frames[2] = model_218;
+  if (a != nullptr) {
+    a->layout = model_layout;
+    a->anims = model_anims;
+    a->sheets[0] = model_sheet;
+    a->frames[0] = model_frames;
+    a->sheets[1] = sheet_alt;
+    a->frames[1] = model_210;
+    a->sheets[2] = weapon_sheet;
+    a->frames[2] = model_218;
+  }
   pool = bg().prim_pool_a;
 }
 

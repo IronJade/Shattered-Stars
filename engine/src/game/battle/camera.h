@@ -64,5 +64,22 @@ s32 camera_units_center_x(Camera* c, int first, int last);   // 0x80033f0c: retu
 s32 camera_units_center_z(Camera* c, int first, int last);   // 0x80034014: returns the z span
 bool camera_hold_tick(Camera* c);                            // 0x800341ac
 int battle_party_start_appear();                             // 0x80034128
+void camera_setup_follow_target(Camera* c);                  // 0x80032140 (modes 5 / 7 / 15)
+void camera_setup_overview(Camera* c, s32 ticks, int all_units);  // 0x80031e68 (sets mode 11)
+void camera_set_lookat_offset(Camera* c, const s32 ofs[3]);  // 0x80032240 (mode 7 only)
+void camera_move_to(Camera* c, const s32 centre[3], s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
+                    s32 accel);                              // 0x80032440 (mode 10)
+void camera_orbit_unit(Camera* c, Unit* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
+                       s32 accel);                           // 0x80032544 (mode 12)
+void camera_set_focus_unit(Camera* c, Unit* who, Unit* focus);   // 0x800342cc
+void camera_set_lookat_unit(Camera* c, Unit* who, Unit* focus);  // 0x800342ec
+void camera_set_focus_timer(Camera* c, Unit* focus, s16 ticks);  // 0x8003430c
+void camera_set_hold(Camera* c, s16 ticks);                  // 0x80034358
+void camera_set_zoom(Camera* c, s32 zoom, s32 speed);        // 0x8003434c
+// #1984.0: end 'mode' after 'ticks' (battle_frame_director runs it down; 0x80072544) and
+// end the scheduled mode now (0x800724f4).
+void camera_schedule_end(int mode, Unit* u, s16 ticks);
+void camera_end_scheduled();
+extern const s32 kZeroVector[4];                             // g_zero_vector 0x8006e33c
 
 }  // namespace ss::game::battle

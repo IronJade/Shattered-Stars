@@ -39,6 +39,11 @@ s32 rng_next() {
   return static_cast<s32>(g_table[g_index]);
 }
 
+void rng_restore(const u32 table[56], s32 index) {
+  for (int i = 0; i < 56; ++i) g_table[i] = table[i];
+  g_index = index;
+}
+
 u32 rng_range(u32 n) { return n == 0 ? 0 : static_cast<u32>(rng_next()) % n; }
 
 }  // namespace ss::game

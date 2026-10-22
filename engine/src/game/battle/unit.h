@@ -133,13 +133,22 @@ struct Unit : Collider {
   // Unit virtual slots 3..21 (1 = update, 2 = get_box).
   virtual int can_cast() { return 1; }           // [3]
   virtual void interrupt() {}                     // [4]
-  virtual void start_reaction(int) {}             // [5]
+  virtual int start_reaction();                   // [5] unit_start_reaction 0x80051fdc
+  virtual void update_vanish();                   // [8] unit_update_vanish 0x80053c04 (state 6)
   virtual int skill_level(int) { return 0; }      // [9]
-  virtual void update_status_effects() {}         // [10]
+  virtual void update_status_effects();           // [10] unit_update_status_effects 0x80053240
   virtual void release_spell() {}                 // [11]
   virtual void begin_action() {}                  // [12]
+  virtual int resist_roll(int kind, int chance);  // [13] unit_resist_roll 0x80053b24
   virtual int status_test(int, u32) { return 0; } // [14]
+  virtual void set_effect_timer(int, s16) {}      // [16]
   virtual int race() { return 0; }                // [17]
+  virtual void accessory_proc(int, int, u32, int) {}  // [18] (item, word, mask, chance %)
+  virtual void clear_status(int, u32) {}          // [19]
+  virtual void set_status(int, u32) {}            // [20]
+  virtual void status_recovered() {}              // [21]
+  // The two bound effect Shots (+0x1f4 / +0x1f8) end (their +0xc = 1).
+  void release_effects() { effects[0] = effects[1] = nullptr; }
 };
 
 // Unit-related globals.
@@ -162,6 +171,7 @@ s32 unit_ground_follow(Unit* u);   // 0x80052504
 void unit_draw_model(Unit* u);     // 0x8004dfa8
 void unit_apply_global_blend(Unit* u);  // 0x8004df68
 void unit_update_base(Unit* u);    // 0x8004e0ec (Unit vtable[1])
+void unit_release_spell_data(Unit* u);  // 0x8004e09c: a pending spell without the hold timer is dropped
 
 // The resident monster families (the factory's vtables); Module = a class in the
 // encounter pack's code (not ported: base behaviour).
@@ -192,10 +202,38 @@ struct EnemyUnit : Unit {
 
   EnemyUnit();  // enemy_create 0x8003c8c8
   void update() override;             // [1] enemy_update 0x8003c944
+  int start_reaction() override;      // [5] (Axe family 0x8003f37c; base Unit)
+  void release_spell() override;      // [11] enemy_release_spell 0x8003e720
+  void begin_action() override;       // [12] enemy_begin_action 0x8003d52c
+  int resist_roll(int kind, int chance) override;  // [13] enemy_status_roll 0x8003e210
   int race() override { return race_byte; }  // [17] enemy_get_247
   virtual int animate(u32 flags);     // [22] enemy_animate 0x8003c9e4
-  virtual int pre_think() { return 0; }  // [32]
+  virtual void state_approach();      // [23] enemy_state_approach 0x8003d328
+  virtual void state_hit();           // [24] enemy_state_hit 0x8003d6ec (states 3 / 4)
+  virtual void state_dying();         // [25] enemy_state_dying 0x8003d764
+  virtual void choose_target();       // [26] enemy_choose_target 0x8003dca0
+  virtual void attack1();             // [27] enemy_attack1 0x8003de88 (state 9, anim 4)
+  virtual void attack2();             // [28] 0x8003deb4 (state 10, anim 5)
+  virtual void attack3();             // [29] 0x8003ded8
+  virtual void attack4();             // [30] 0x8003defc
+  virtual void attack5();             // [31] 0x8003df20
+  virtual int pre_think() { return 0; }  // [32] enemy_pre_think_default 0x8003e060
+  virtual void begin_move();          // [33] enemy_begin_move 0x8003e784
+  virtual void on_attack_start(int) {}  // [34] enemy_on_attack_start 0x8003e8a0
+  virtual void state_cast();          // [35] enemy_state_cast 0x8003e5dc
 };
+// EnemyUnit helpers.
+void enemy_ai_tick(EnemyUnit* e);              // 0x8003d8a0
+void enemy_wander(EnemyUnit* e);               // 0x8003db8c
+Unit* enemy_find_provoker();                   // 0x8003dbe8
+void enemy_aggro_check(EnemyUnit* e);          // 0x8003dda0
+void enemy_start_attack(EnemyUnit* e);         // 0x8003de4c
+int enemy_attack_step(EnemyUnit* e);           // 0x8003df44
+int enemy_nearest_party_index(const Unit* e);  // 0x8003e068
+void enemy_try_cast(EnemyUnit* e);             // 0x8003e3b0
+Unit* enemy_random_party_member(const Unit* e);  // 0x8003e7d4
+bool unit_random_run(Unit* u, s32 range, s32 min_dist);  // 0x800541e8: true when no free spot was found
+void battle_victory_begin(Unit* last_hitter);  // 0x80048c5c
 
 // Player characters (vtable 0x8006b6d0, ctor 0x80034ed0, 0x360 bytes for Claude). The
 // character modules (#2131, #2133, ...) construct the per-character subclass; the port
@@ -203,7 +241,25 @@ struct EnemyUnit : Unit {
 struct PartyUnit : Unit {
   u8 appear = 0;                      // +0x200: 1 hidden, 2 appearing, 4
   u8 busy = 0;                        // +0x201
+  u8 leap_dir = 0;                    // +0x202: leap direction class (0 none)
+  u8 leaping = 0;                     // +0x203
+  u8 combo = 0;                       // +0x204: in a killer-move combo
   u8 weapon_variant = 0;              // +0x205
+  u8 flee_voice = 0;                  // +0x206
+  u8 ai_spell = 0;                    // +0x207
+  u8 chain = 0;                       // +0x208: hit-pause / chain counter of the swing
+  u8 counter_ticks = 0;               // +0x209: ticks in a reaction
+  u8 eva_bonus = 0;                   // +0x20a
+  s16 tex_timer = 0;                  // +0x222
+  s32 fury_ticks = 0;                 // +0x22c
+  s32 last_dist = 0;                  // +0x230
+  s32 action_count = 0;               // +0x238
+  s16 flee_timer = 0;                 // +0x2dc
+  s16 target_far = 0;                 // +0x2ee
+  s16 killer_index = 0;               // +0x2f0
+  s16 hp_at_voice = 0;                // +0x2fa
+  s16 victory_voice = 0;              // +0x2fc
+  Sprite* low_hp_marker = nullptr;    // +0x328
   s32 item_value_sum = 0;             // +0x21e (item field 0xa total)
   u16 weapon_clut = 0;                // +0x21c
   s16 wait_after_spell = 0;           // +0x220
@@ -211,8 +267,16 @@ struct PartyUnit : Unit {
   s32 talk_voice = 0;                 // +0x228
   s32 v234 = 0;                       // +0x234
   std::array<AnimSet*, 5> model_sets{};  // +0x23c: default + 4 alternate model sets
+  std::array<const u8*, 4> alt_sheet{};   // +0x250: killer-move texture block per alternate
+  std::array<const u8*, 4> alt_frames{};  // +0x260
+  std::array<const u8*, 4> alt_anims{};   // +0x270
+  std::array<const u8*, 4> alt_layout{};  // +0x280
+  std::array<u16, 4> alt_clut{};          // +0x2d0
   std::array<s16, 8> killer_range{};  // +0x2de: [combo][move] near / far ranges
   std::array<s16, 4> killer_charge{}; // +0x2f2
+  s16 acc_hp_max[2] = {};             // +0x304: max HP without accessory 1 / 2
+  s16 acc_mp_max[2] = {};             // +0x308: max MP without accessory 1 / 2
+  s16 effect_timer[3] = {};           // +0x30c: timed effect counters 1..3
   u32 effect_bits[4] = {};            // +0x314: equipment / talent ability bits
   u8* record = nullptr;               // +0x324: handoff-4 character record
   // The member's model data (party-data loader phase 0): +0x108.. (Unit) plus the
@@ -224,13 +288,45 @@ struct PartyUnit : Unit {
 
   PartyUnit();                        // 0x80034ed0
   void update() override;             // [1] pc_update 0x80034fe8
+  int start_reaction() override;      // [5] pc_on_hit 0x8003bb84
   int skill_level(int skill) override;  // [9] pc_skill_level 0x8003b794
+  void update_status_effects() override;  // [10] pc_update_effects 0x8003adc8
+  void begin_action() override;       // [12] pc_begin_action 0x80037098
   int status_test(int word, u32 mask) override;  // [14] pc_has_effect 0x8003b8f4
+  void set_effect_timer(int which, s16 ticks) override;  // [16] 0x8003bc48
+  void accessory_proc(int item, int word, u32 mask, int chance) override;  // [18] pc_break_accessory 0x8003b93c
+  void clear_status(int word, u32 mask) override;  // [19] 0x8003bb44
+  void set_status(int word, u32 mask) override;    // [20] 0x8003bb60
+  void status_recovered() override { busy = 0; }   // [21] 0x8003bb7c
   virtual void think();               // [22] pc_think 0x80035508
-  virtual void model_default();       // [23] pc_model_default 0x80035168 (+ [24] pc_model_apply)
+  virtual void model_default();       // [23] pc_model_default 0x80035168
+  virtual void model_apply();         // [24] pc_model_apply 0x800351a0
+  virtual void model_select(int n);   // [25] pc_model_select 0x8003522c
   virtual int animate(u32 flags);     // [26] pc_animate 0x8003532c
+  virtual void state_approach();      // [27] pc_state_approach 0x80036410
+  virtual void state_leap();          // [28] pc_state_leap 0x80036c74
+  virtual void start_approach();      // [29] pc_start_approach 0x80036980
+  virtual void state_attack();        // [30] pc_state_attack 0x80037458 (states 9 / 12)
+  virtual void state_air_attack();    // [31] pc_state_air_attack 0x80037d08 (10 / 11)
+  virtual void state_knockback();     // [32] pc_state_knockback 0x800377ac (3 / 4)
+  virtual void state_victory();       // [33] pc_state_victory 0x8003785c
+  virtual void state_flee();          // [34] pc_state_flee 0x800378c0
+  virtual void killer_move_state(int) {}  // [37] (the character module's killer moves)
+  virtual void camera_follow_start(); // [38] pc_camera_follow_start 0x80037b9c
+  virtual void play_voice(int) {}     // [43] pc_play_voice 0x8003ac38 (voice clips: TODO)
   void appear_update();               // 0x800362a8 pc_appear_update
 };
+// PartyUnit helpers.
+void pc_record_counter_dec(PartyUnit* u, s16 n);   // 0x8003a1d0
+void pc_voice_attack_shout(PartyUnit* u);          // 0x8003ad30
+void pc_camera_follow_end(PartyUnit* u);           // 0x80037cb0
+int pc_try_ambush_skill(PartyUnit* u);             // 0x80036f50
+void pc_attack_animate(PartyUnit* u);              // 0x80037488
+void pc_attack_hit_check(PartyUnit* u);            // 0x80037660
+void pc_ai_update(PartyUnit* u);                   // 0x80037fb4
+int unit_target_is_far(const Unit* u, const Unit* target);  // 0x80037b64
+int unit_start_sidestep(Unit* u, Unit* from);      // 0x80053054 (from == kWallBlock: the arena edge)
+void unit_update_status_effects(Unit* u);          // 0x80053240 (Unit [10])
 
 // The party-data loader task (party_loader_create 0x80082bd8) and the end-of-battle reset.
 Task* party_loader_create();

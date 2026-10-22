@@ -143,7 +143,15 @@ target_sources(ss_game PRIVATE
   src/game/battle/unit.cpp
   src/game/battle/encounter.cpp
   src/game/battle/party.cpp
-  src/game/battle/vram.cpp)
+  src/game/battle/vram.cpp
+  src/game/battle/sprite.cpp
+  src/game/battle/unit_move.cpp
+  src/game/battle/combat.cpp
+  src/game/battle/bsfx.cpp
+  src/game/battle/party_states.cpp
+  src/game/battle/enemy_ai.cpp
+  src/game/battle/input.cpp
+  src/game/battle/director.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

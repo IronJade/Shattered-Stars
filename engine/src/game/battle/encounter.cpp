@@ -150,7 +150,7 @@ const u8* enemy_read_stats(int index, const u8* r) {
   std::memcpy(e->name, b + 0x17, 16);
   const u8 difficulty = g.config[0x4F];
   if (difficulty == 1) {
-    for (s16& v : s->atk) v = static_cast<s16>(static_cast<u16>(v) + (static_cast<s16>(v) - (static_cast<s16>(v) >> 15) >> 1));
+    for (s16& v : s->atk) v = static_cast<s16>(static_cast<u16>(v) + ((static_cast<s16>(v) - (static_cast<s16>(v) >> 15)) >> 1));
     s->hp_base += s->hp_base / 2;
     s->hp_max += s->hp_max / 2;
     s->hp += s->hp / 2;

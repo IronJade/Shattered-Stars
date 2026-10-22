@@ -10,8 +10,13 @@
 #include "game/battle/battle.h"
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
+#include "game/battle/input.h"
+#include "game/battle/bsfx.h"
+#include "game/battle/combat.h"
+#include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
+#include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
 #include "game/boot/pad.h"
@@ -184,8 +189,13 @@ void battle_init_objects() {
   g.prim_pool_b = new_render_context();
   render_ctx_create_arena(g.prim_pool_b, 0xC80);
   render_ctx_create_ot(g.prim_pool_b, 0xC);
-  // TODO(port): the object pools: Sprite (296 x 0xb8), Shot (160 x 0x13c), DamagePopup
-  // (16 x 0x2c), PolyShard (192 x 0x74), Particle (200 x 0x48).
+  sprite_pool_create();  // 296 x 0xb8 (g_pool_b8)
+  input_reset();         // g_input (0xa0)
+  damage_popups_reset(); // Pool2C (16 x 0x2c)
+  bsfx_reset();
+  director_reset();
+  // TODO(port): the other pools: Shot (160 x 0x13c), DamagePopup (16 x 0x2c), PolyShard
+  // (192 x 0x74), Particle (200 x 0x48).
   animset_pool_reset();
   auto* party = static_cast<u8*>(handoff_get(g.handoff, 3));
   auto* records = static_cast<u8*>(handoff_get(g.handoff, 4));
@@ -374,20 +384,74 @@ void battle_run() {
 
 // ---- The frame loop ---------------------------------------------------------------------
 
+void battle_victory_begin(Unit* last_hitter) {
+  // 0x80048c5c: hit-stop 20, state 3, slow motion and countdown (longer during a special
+  // move), outcome 0, the member who strikes the victory pose, music fade.
+  BattleGlobals& g = g_battle;
+  g.hitstop_frames = 0x14;
+  g.state = kStateOver;
+  const u8 extra = (g.flags & 0x40) != 0 ? 0x1E : 0;
+  g.slowmo_frames = static_cast<s8>(extra + 0x1E);
+  g.end_countdown = static_cast<s8>(extra + 0x5A);
+  // spell_data_clear_all 0x80048994: the spell-data cache is not ported (spells).
+  g.outcome = kVictory;
+  g.victory_speaker = 0;
+  if (last_hitter != nullptr) {
+    g.victory_speaker = last_hitter->slot;
+    if (3 < g.victory_speaker) g.victory_speaker = 0;
+  }
+  int tries = 0;
+  for (; tries < 0x20; ++tries) {
+    if (!unit_is_down(g.party_units[g.victory_speaker & 3])) break;
+    g.victory_speaker = static_cast<u8>(rng_range(4));
+  }
+  if (tries == 0x20) g.victory_speaker = 0xFF;
+  g.party_escaping = 0;
+  sound_fade_out(g.sound, 0x1E0);
+  // TODO(port): voice_pick_victory 0x800804d4 (its rng draws included).
+  todo("voice_pick_victory");
+  // battle_preload_field_program 0x80047ecc: the field program is native.
+}
+
 namespace {
 
-void battle_victory_begin(Unit* attacker) {
-  // 0x80048c5c: hit-stop 20, state 3, slow motion 30 (60 with flags 0x40), countdown 90,
-  // outcome 0, the victory speaker, fade, preload the field program.
+void battle_end_with(u8 outcome) {
+  // The common end (0x80046544): the outcome, spell data cleared, state 3, a 90-frame
+  // countdown, the music fades, the field program preloads.
   BattleGlobals& g = g_battle;
-  g.hitstop_frames = 20;
+  g.outcome = outcome;
   g.state = kStateOver;
-  g.slowmo_frames = static_cast<s8>((g.flags & 0x40) ? 60 : 30);
-  g.end_countdown = 90;
-  g.outcome = kVictory;
-  g.last_attacker = attacker;
+  g.end_countdown = 0x5A;
   sound_fade_out(g.sound, 0x1E0);
-  todo("battle_victory_begin: victory speaker, slow motion effects");
+}
+
+void battle_party_lost() {
+  BattleGlobals& g = g_battle;
+  u8 outcome = kDefeat;
+  if (g.party_escaping != 0 && 0 < party_count_fled()) outcome = kEscaped;
+  battle_end_with(outcome);
+}
+
+bool battle_sprites_busy() {
+  BattleGlobals& g = g_battle;
+  auto layout_of = [](const BObj* o) -> const u8* {
+    return o != nullptr && o->animset != nullptr ? o->animset->layout : nullptr;
+  };
+  for (int i = 0x18; i < 0x128; ++i) {
+    const Sprite* s = sprite_at(i);
+    if (s == nullptr || s->anim_id == 0) continue;
+    const u8* l = layout_of(s);
+    for (const PartyUnit* p : g.party_units) {
+      if (unit_is_down(p)) continue;
+      if (l == layout_of(p)) return true;
+      for (const u8* a : p->alt_layout)
+        if (l == a) return true;
+    }
+    for (const EnemyUnit* e : g.enemy_units)
+      if (!unit_is_down(e) && l == layout_of(e)) return true;
+    if (l == layout_of(g.sprite_bank_fx.get())) return true;
+  }
+  return false;
 }
 
 void battle_end(u8 outcome) {
@@ -449,33 +513,78 @@ void battle_main_loop() {
     if (g.state == kStateFighting && enemy_count_active(g.enemy_units) < 1 && (g.flags & 0x40) == 0) {
       battle_victory_begin(g.last_attacker);
     }
-    // The debug end (--battle): the result screen, the HUD and the units' combat are not
-    // ported, so a debug run can end the fight with a chosen outcome.
+    if (party_count_standing() == 0 && g.state == kStateFighting && (g.flags & 0x40) == 0) battle_party_lost();
+    // The debug end (--battle-end): a run can end the fight with a chosen outcome.
     if (g_debug.auto_end_frames >= 0 && g.state == kStateFighting && g.fight_frames >= g_debug.auto_end_frames) {
       rt.trace("battle debug end");
       battle_end(g_debug.auto_end_outcome);
     }
-    // TODO(port): voice_update, bload_update, spell_data_update, input_update.
+    if (g.sprite_bank_fx != nullptr) bobj_texcache_begin_frame(g.sprite_bank_fx.get());
+    // TODO(port): voice_update, bload_update, spell_data_update (spells and voices).
+    input_update(&battle_input());
     if (g.camera != nullptr) g.camera->update();
     camera_update_matrices();
-    // TODO(port): battle_frame_director (#1984.0 0x800715d0), bsfx_update, the lens flare.
+    battle_frame_director();
+    bsfx_update();
+    // TODO(port): the lens flare (stages with a sun), the result-screen start and the
+    // victory jingle (state 4).
     task_run_all();
     if (g.state == kStateLoaded && !g.battle_code_unpacked) g.battle_code_unpacked = true;  // #1984 block 1
-    // TODO(port): the Shot (160), Sprite (296) and Particle (200) pools.
+    // TODO(port): the Shot (160) pool before the sprites, the Particle (200) pool after.
+    sprite_pool_update();
     if (g.stage_hidden == 0) stage_draw_and_animate();
-    // TODO(port): clash_resolve (state > 1), the escape race (rule 2), the time limit (rule 3).
+    // TODO(port): clash_resolve (state > 1).
+    bool ended = false;
+    if (g.config[0x181] == 2 && g.state == kStateFighting && g.flags == 0) {
+      // The escape race: an enemy reaching the goal wins it.
+      static const s32 kGoal[3] = {0x640000, 0, 0x12C000};
+      for (EnemyUnit* e : g.enemy_units) {
+        if (unit_is_down(e)) continue;
+        if (vec_distance_xz_fx(e->pos, kGoal) < 0x30000) {
+          g.outcome = kRanOff;
+          bsfx_play_at_pos(0x1E, kGoal);
+          battle_end_with(g.outcome);
+          ended = true;
+          break;
+        }
+      }
+    }
+    if (!ended) {
+      bool check_defeat = true;
+      if (g.config[0x181] == 3 && g.state == kStateFighting) {
+        // The time limit (60 s).
+        if (g.flags != 0 || g.rule_timer < 0xE11) {
+          if ((g.flags & 0xBF) == 0) g.rule_timer = static_cast<s16>(g.rule_timer + g.frame_ticks);
+        } else {
+          battle_end_with(kTimeUp);
+          check_defeat = false;
+        }
+      }
+      if (check_defeat && party_count_standing() == 0 && g.state == kStateFighting && (g.flags & 0x40) == 0)
+        battle_party_lost();
+    }
     if (g.end_countdown != 0 && (g.flags & 4) == 0) {
       if ((g.flags & 8) == 0) g.end_countdown = static_cast<s8>(g.end_countdown - g.frame_ticks);
       if (g.end_countdown < 1) {
-        g.end_countdown = 0;
-        // The original waits for killer moves and sprites of living units, then (state 4)
-        // frees the party models, parks the field program in VRAM, reads the field's files
-        // and opens the #1981 result screen, whose battle_fade_task sets state 5.
-        // TODO(port): the wait, battle_free_party_models and the result screen.
-        g.state = kStateResult;
-        battle_queue_field_preloads();
-        todo("result screen (#1981): the battle ends without it");
-        g.state = kStateLeave;
+        // Wait while a living member is in a killer move or a sprite still belongs to a
+        // living unit or the effect bank.
+        int idle = 0;
+        for (PartyUnit* u : g.party_units)
+          if (unit_is_down(u) || u->action < 0x10) ++idle;
+        bool busy = idle != 4;
+        if (!busy) busy = battle_sprites_busy();
+        if (!busy) {
+          g.end_countdown = 0;
+          g.state = kStateResult;
+          // TODO(port): battle_free_party_models; the field program parked in VRAM (native).
+          battle_queue_field_preloads();
+          // TODO(port): the #1981 result screen (EXP, Fol, items, level-ups) and
+          // battle_fade_task, which sets state 5.
+          todo("result screen (#1981): the battle ends without it");
+          g.state = kStateLeave;
+        } else {
+          g.end_countdown = 2;
+        }
       }
     }
     // text_frame_upload; screen_compact_ot(layer 0).
@@ -533,20 +642,17 @@ void battle_free_all() {
   party_reset();
   g.camera = nullptr;
   g.camera_obj.reset();
+  sprite_pool_destroy();
 }
 
 void battle_exit_to_field() {
   BattleGlobals& g = g_battle;
-  runtime::Runtime::get().trace("battle exit to field");
+  runtime::Runtime::get().trace(("battle exit to field, outcome " + std::to_string(g.outcome)).c_str());
   if (g.outcome == kVictory) {
-    bool all_down = true, fled = false;
-    for (int i = 0; i < 4; ++i) {
-      const PartyUnit* u = g.party_units[i];
-      if (u == nullptr) continue;
-      if (!unit_is_down(u)) all_down = false;
-      if (u->removed == 2) fled = true;
-    }
-    if (all_down && !fled && g.party_units[0] != nullptr) g.outcome = kDefeat;
+    int down = 0;
+    for (const PartyUnit* u : g.party_units)
+      if (unit_is_down(u)) ++down;
+    if (down == 4 && party_count_fled() == 0) g.outcome = kDefeat;
   }
   pad_vibrate(g.pad, 0, 0, 0);
   const u16 outcome = g.outcome;

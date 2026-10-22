@@ -54,6 +54,8 @@ battle,0x8006cd28,g_intro_camera_modes,u8[4],Battle-start camera modes {1; 8; 9;
 battle,0x8006cd30,vtable_VBlankHandler,vtable,Vblank handler base: [1] pure 0x8001446c; [2] 0x800134f8 (boot); [3] tick = vblank_handler_tick_nop 0x80047c90,likely,data; VsyncCounter vtable 0x8006cd50 has the same layout
 battle,0x8006cd50,vtable_VsyncCounter,vtable,VsyncCounter : VBlankHandler; [3] vsync_counter_tick 0x80047578,confirmed,data at 0x8006cd6c
 battle,0x8006cd70,g_cursor_bounce_scale,s16[8],Scale steps of the bouncing cursor / target arrows {0x200 0x400 0x600 0x800 0xc00 0x1000 0x1400 0x1e65} indexed by phase/2 (phase < 0xe),confirmed,input_member_select_update / input_target_select_update
+battle,0x8006cd80,jt_probe_faces_a,u32[8],"unit_probe_path face cases when the swept box goes toward -z (c0 >= c2): point A, edges V1 / V2 per face; cases leave scratchpad values of earlier cases in place [port: engine/src/game/battle/unit_move.cpp (unit_probe_path)]",confirmed,disassembly
+battle,0x8006cda0,jt_probe_faces_b,u32[8],unit_probe_path face cases when the swept box goes toward +z (c0 < c2) [port: engine/src/game/battle/unit_move.cpp (unit_probe_path)],confirmed,disassembly
 battle,0x8006cdc0,g_element_multiplier,s8[],Damage multiplier x2 by resist class: 0 normal 2 / 1 weak 4 / 2 resist 1 / 3 immune 0 / 4 absorb -2,likely,pc_ai_choose_attack_spell
 battle,0x8006cdc8,g_low_hp_thresholds,u8[11],HP% thresholds {3 5 10 20 30 40 50 60 70 80 90} of the status (0 1) desperation attack bonus,confirmed,unit_calc_damage 0x800503f0
 battle,0x8006cdd4,g_low_hp_attack_bonus,u8[11],ATK bonus % per threshold {200 150 120 110 100 90 80 60 40 30 20} (ATK += ATK*bonus/100),confirmed,unit_calc_damage 0x800503f0
@@ -87,7 +89,7 @@ battle,0x8006d50c,g_texanim_dest,int[4][2],VRAM x;y destination of the 4 texture
 battle,0x8006d52c,g_lens_flare_src,VECTOR,Lens flare source position; params 0x8006f69c dist / 0x8006f698 rgb / 0x8006f6a0 size / 0x8006f69e threshold; enabled by 0x8006f6a1 unless 0x8006f001,likely,battle_main_loop call of lens_flare_draw
 battle,0x8006d53c,g_texcache_pool,TexCache[],Static pool of 0xe0-byte sprite texture caches handed out by texcache_create (count 0x8006fa50): +0 VRAM area x0 y0 x1 y1 +8 cursor x y +0xc u16 rect[16][4] +0x8c u32 key[16] (image address; -1 free) +0xcc u8 used_this_frame[16] +0xdc row height +0xdd next victim +0xde lock,confirmed,texcache_create + texcache_alloc
 battle,0x8006e33c,g_zero_vector,VECTOR,All zero; used as the default camera look-at offset (+0x38..) and as a zero move delta for overlap tests,confirmed,camera_end_mode; pc_think; data dump
-battle,0x8006e34c,g_zero_vector_2,VECTOR,Second zero VECTOR cleared by battle_static_init; passed to 0x80077620 by stage_draw_and_animate,guess,battle_static_init / stage_draw_and_animate
+battle,0x8006e34c,g_unit_scale,VECTOR,"Correction: {0x1000, 0x1000, 0x1000}, not a zero vector: the scale stage_draw_and_animate passes to obj_set_matrix 0x80077620 for the stage model [port: engine/src/game/battle/stage.cpp (stage_draw_and_animate)]",likely,battle port: stage model scale
 battle,0x8006e35c,g_obstacle_min,s32 [n][4],Obstacle box minimum x y z (20.12; stride 0x10) from stage ops 11/17,confirmed,load_stage
 battle,0x8006e4dc,g_obstacle_max,s32 [n][4],Obstacle box maximum x y z (stride 0x10),confirmed,load_stage
 battle,0x8006e660,g_clash_box_min,VECTOR[12],Clash slot min corners (x +0; y +4; z +8); cleared by 0x8004db64,likely,clash_register / clash_resolve
@@ -114,15 +116,15 @@ battle,0x8006ef20,g_ot_layers,OtLayer *[8],"Eight OT layer objects (+8 screen OT
 battle,0x8006ef40,g_stage_tex_count,u16,Number of op-1 stage textures (index into g_stage_tex_clut),confirmed,load_stage
 battle,0x8006ef44,g_stage_model_count,u16,Number of op-2 data blocks in g_stage_models,confirmed,load_stage
 battle,0x8006ef48,g_stage_tex_clut,u16 [16],CLUT id of each op-1 stage texture,confirmed,load_stage
-battle,0x8006ef68,g_stage_model_clut,u16,Passed as the 3rd argument of model_draw for stage models (CLUT?),guess,stage blocks
+battle,0x8006ef68,g_stage_model_tpage,u16[16],"Correction: a tpage id (5 for the stage textures), the 4th argument of model_render for each op-2 block; not a CLUT [port: engine/src/game/battle/stage.h (StageData::model_tpage)]",confirmed,battle port: model_render tpage words
 battle,0x8006ef88,g_stage_blocks,void *[],Stage data blocks unpacked by load_stage (command 2); stage objects draw models from [1] (0x8006ef8c); [2] (0x8006ef90); [3] (0x8006ef94); count 0x8006ef44,likely,stage blocks; battle_free_all
 battle,0x8006ef98,g_encounter_id,s16,Encounter / formation id (handoff 5 +0). 0x219-0x21c and 0 get special voice/sfx overrides,confirmed,battle_run
 battle,0x8006ef9a,g_stage_id,s16,"Battle stage (background) id (handoff 5 +4); archive entry 0x543 + id. Ids 0xd,0xe,0x10,0x15,0x17,0x1a,0x1f,0x24,0x28,0x29,0x33,0x38,0x39 load extra stage code / objects",confirmed,battle_run
 battle,0x8006ef9c,g_light_dir,s16 [3][4],Directional light vectors (x y z; stride 8) from stage ops 8/14,confirmed,load_stage
 battle,0x8006efb4,g_light_colour,s16 [3][4],Light colours r g b (byte<<2 for op 8 and <<4 for op 14; stride 8),confirmed,load_stage
 battle,0x8006efcc,g_prim_pool_a,PrimPool *,16-byte object: 62000-byte primitive arena + 0x621-entry OT (screen arena/OT slots at +4/+8),likely,battle_init_objects + 0x80087884
-battle,0x8006efd0,g_frame_ticks,int,Vblanks since the previous frame (from g_vsync_counter +8); every animation step is scaled by it,confirmed,battle_main_loop
-battle,0x8006efd4,g_camera_eye,VECTOR,Camera position (x 0x8006efd4; y 0x8006efd8; z 0x8006efdc) handed to the view setup 0x80076ce0,likely,stage_draw_and_animate / camera_update_matrices
+battle,0x8006efd0,g_frame_ticks,int,"Vblanks since the previous frame from the VsyncCounter (0x8006cd50, vsync_counter_tick 0x80047578), capped at 4 (6 while g_battle_flags & 0x40); every animation step is scaled by it [port: engine/src/game/battle/battle.h (BattleGlobals::frame_ticks)]",confirmed,battle port: main loop timing matched against PCSX-Redux frames
+battle,0x8006efd4,g_stage_orient,VECTOR,Correction: not the camera eye. The stage model orientation angles: stage_draw_and_animate passes it to lights_build (0x80076ce0) as the light rotation of the stage [port: engine/src/game/battle/render.h (ViewState::stage_orient)],confirmed,battle port: stage_draw_and_animate / lights_build
 battle,0x8006efe4,g_stage_height_grid,s16 *,Stage ground height grid (x0 z0 x1 z1 cell_w cell_h stride ? then heights); used when 0x8006efff is set,confirmed,stage_ground_height
 battle,0x8006efe9,g_victory_music_started,u8,Set when the victory sequence (entry #1978 music) has been started,confirmed,battle_main_loop
 battle,0x8006efea,g_can_escape,u8,1 unless the formation flags have bit 0 (boss: running away refused),likely,load_formation + 0x8004cf5c + #1984.1 0x80082dec
@@ -148,6 +150,7 @@ battle,0x8006f020,g_cam_eye,VECTOR,Current camera eye (20.12); default (0 -1050 
 battle,0x8006f02c,g_cam_lookat,VECTOR,Current look-at point; default (0 -1000 0),confirmed,camera_step_lookat
 battle,0x8006f038,g_zoom,int,Projection zoom (0x1000 = normal): H = 0x200*zoom; sizes of trails/flares scale with it; decays from 0x8006fb92 by 0x8006fb94 per frame,confirmed,gte_set_zoom + battle_frame_director
 battle,0x8006f03e,g_stage_colour,s16[3],Stage light colour (r;g;b; 0x80 = 1.0) scaling light colours / back colour / flares; saved copy 0x8006f044; fade target 0x8006f04a,confirmed,stage_colour_set + lights_build + battle_frame_director
+battle,0x8006f044,g_stage_colour_saved,s16[3],stage_colour_set 0x800726d4 saves 0x8006f03e/40/42 here; stage_colour_restore 0x80072748 puts them back [port: engine/src/game/battle/battle.h (BattleGlobals::stage_colour_saved)],confirmed,decompilation
 battle,0x8006f050,g_view_matrix,MATRIX,View rotation (RotMatrix of 0x8006f070 pitch/yaw/roll; copies 0x8006f080 pitch / 0x8006f082 yaw / 0x8006f084 roll),confirmed,camera_compute_view
 battle,0x8006f078,g_light_rotation,SVECTOR,Rotation of the light matrix (RotMatrix in camera_update_matrices),likely,camera_update_matrices
 battle,0x8006f080,g_bob_phase,s16,Phase of the global vertical lift used by bobj_project (+0x40 = 0x10000 + max(0 sin(phase) << 4)),guess,bobj_project
@@ -244,9 +247,11 @@ battle,0x8006fb1a,g_obstacle_count,u8,Number of stage obstacle boxes (cleared by
 battle,0x8006fb24,g_spell_menu_top,u8[4],Spell menu cursor memory per party slot: top row (+ col 0x8006fb1c[4]; row 0x8006fb20[4]),confirmed,spell_menu_create + spell_menu_confirm
 battle,0x8006fb28,g_chosen_spell,u8,Spell id picked in the spell menu (read by the select modes),confirmed,spell_menu_confirm
 battle,0x8006fb29,g_ai_assist_request,u8,1 = the member nearest to the leader target runs to it (set by input code 0x8004c014 / 0x8004c940),likely,pc_ai_assist_leader
+battle,0x8006fb2a,g_colour_fade_running,u8,1 while the stage-colour fade 0x8006fb0d runs this frame (battle_frame_director) [port: engine/src/game/battle/battle.h (BattleGlobals::flash_running)],confirmed,battle port: director
 battle,0x8006fb2b,g_spell_dim_side0,u8,Palette fade active for side 0 (party CLUT rows),confirmed,spellcast_dim_begin / spellcast_dim_end
 battle,0x8006fb2c,g_spell_dim_side1,u8,Palette fade active for side 1 (enemy CLUT rows),confirmed,spellcast_dim_begin / spellcast_dim_end
 battle,0x8006fb2d,g_spellcast_count,u8,Number of running casts; g_battle_flags bit 0x40 is set while > 0,confirmed,spellcast_start / spellcast_finish
+battle,0x8006fb2e,g_semi_tpage,u8,DR_MODE tpage model_render queues before its semi-transparent untextured polygons (blend mode bits) [port: engine/src/game/battle/battle.h (BattleGlobals::semi_tpage)],likely,battle port: model_render
 battle,0x8006fb2f,g_spell_landed,u8,Set to 1 when a spell's finishing hit resolves,likely,spell_hit_all / spell_hit_rect
 battle,0x8006fb30,g_intro_voice_mode,u8,1 after the first intro voice bank (index 10); 3 after the second (index 11),likely,battle_run
 battle,0x8006fb31,g_intro_voice_state,u8,Opening voice sequence 0..4 (flags 0x8006fb30: bit0 first / bit1 second speaker; party slots 0x8006fb32 / 0x8006fb33; handle 0x8006fb88; timer 0x8006fb34),likely,battle_frame_director
@@ -267,14 +272,17 @@ battle,0x8006fb80,g_battle_frames,int,Total vblanks while not paused,likely,batt
 battle,0x8006fb84,g_fight_frames,int,Vblanks spent in state 2,likely,battle_main_loop
 battle,0x8006fb8c,g_crit_flash,s16[2],Set to 2 and 0x20 on a critical hit (flash parameters); 0x8006fb92/0x8006fb94 = 5000/200 for on-screen attackers,guess,unit_attack_targets
 battle,0x8006fb90,g_shake_frames,u16,Pad vibration / screen shake duration; amplitudes 0x8006fb0e/0f (s8 x/y); periods 0x8006fb10/11; phase counters 0x8006fb12/13,confirmed,screen_shake + battle_frame_director
+battle,0x8006fb92,g_zoom_kick,s16,"Zoom (0x1000 = 1.0) of the critical-hit kick (5000), decreased by 0x8006fb94 per tick into g_zoom 0x8006f038 until 0x1000 [port: engine/src/game/battle/battle.h (BattleGlobals::zoom_kick)]",confirmed,battle port: unit_attack_targets / director
+battle,0x8006fb94,g_zoom_kick_decay,s16,Per-tick decrease of the zoom kick (200); 0 = no kick [port: engine/src/game/battle/battle.h (BattleGlobals::zoom_kick_decay)],confirmed,battle port: unit_attack_targets / director
 battle,0x8006fb96,g_text_x,s16,Next free texel column on the current text line,confirmed,text_draw / text_frame_begin
 battle,0x8006fb98,g_text_line,s16,First texel row of the current text line (0..0x3f),confirmed,text_draw / text_frame_begin
 battle,0x8006fb9a,g_item_menu_cursor,s16[3],Item menu cursor memory: col / row (0x8006fb9c) / top (0x8006fb9e),confirmed,item_menu_create + item_menu_confirm
-battle,0x8006fba0,g_ai_avoid_leader_target,int,With 0x8006fb29: AI members avoid the leader target,guess,pc_ai_pick_enemy
+battle,0x8006fba0,g_assist_timer,s16,Refinement: frames the assist request 0x8006fb29 stays set (0xb4 from input_target_select_update when the target is out of reach); battle_frame_director counts it down and clears 0x8006fb29 at 0 [port: engine/src/game/battle/battle.h (BattleGlobals::assist_timer)],likely,battle port: input / director
 battle,0x8006fba2,g_provoke_frames,s16,Duration of skill 0x2d: level * 180 + rng(10) frames (with g_forced_target 0x8006fae8 = the user),likely,input_dispatch; p2 g_forced_target
 battle,0x8006fba4,g_chosen_item_index,s16,Inventory index picked in the item menu,confirmed,item_menu_confirm
 battle,0x8006fba6,g_reward_flags,u8,Set by battle items: bit0 Fol x2 (kind 0x11); bit1 drop chance x2 (0x12); bit2 EXP x2 (0x13); read by the result screen,confirmed,item_use_battle + result_award_exp_money + result_roll_drops
 battle,0x8006fba8,g_item_cooldown,u16,Frames before items can be used again (set by item_use_battle; counted down by the director; ring menu disables items while > 0),likely,battle_frame_director + input_ring_menu_open
+battle,0x8006fbaa,g_intro_voice_gate,s16,Holds the end of the intro (pc_appear_update waits for 0) while > 0: set to 8 when a monster starts its intro voice (enemy_think); battle_frame_director counts it down [port: engine/src/game/battle/battle.h (BattleGlobals::intro_voice_gate)],confirmed,decompilation
 battle,0x8006fbac,g_bload_owner,u32,Owner token stamped on new load requests and used by bload_done (0 = matches every request); set around calls by spell_data_update (= the caster),confirmed,bload_request / bload_done / spell_data_update
 battle,0x8006fbb0,g_bload_cur_owner,u32,Owner token of the read in progress,confirmed,bload_start_next
 battle,0x8006fbb4,g_bload_cur_entry,int,Archive entry being read (0 = idle),confirmed,bload_start_next / bload_done
