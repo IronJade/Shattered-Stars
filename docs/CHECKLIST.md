@@ -116,7 +116,8 @@ from config+0x45).
 - [x] Battle program entry and round trip (`game/battle/`, battle agent, phase 1): handoff 5 setup, the 12-entry load list, main loop at 30 fps, stage and units rendered, intro camera; exit back to the field with the map's preloads and music (handoffs 0xc / 10). `--battle ENC[:STAGE]` starts a battle directly; `--battle-end FRAMES[:OUTCOME]` ends it
 - [x] Battle combat (battle agent, phase 2; `docs/notes/battle_port.md`): 30 fps loop, stage / units / camera (17 modes), the frame director, battle sound front end, movement (swept-box path probe), PartyUnit and EnemyUnit state machines with the enemy AI, player input, `unit_attack_targets` (accuracy, damage, crits, procs, knockback), victory / defeat / escape rules. A forced battle (encounter 2, stage 3) matches a PCSX-Redux run frame for frame (positions, animations, damage numbers, KO frame) apart from the missing HUD and dithering
 - [x] Battle HUD (step 1): window system, #1980 proportional text, the HUD (member HP / MP gauges, item / move icons, target select), the message banner; appears on the same frame as Redux and matches its layouts
-- [ ] Battle: result screen #1981 (EXP / Fol / drops / level-ups), killer moves and the character modules, spells and items (ring / list menus), Shot and Particle pools, party AI, voices, stage extras
+- [x] Battle result screen #1981 (step 2): EXP / Fol award, drops, level-ups with growth and learn tables, the defeat / escape / time-up messages, battle_fade_task, the victory jingle and voice picks (RNG draws; clips not yet); the handoffs at battle_exit_to_field equal the original's byte for byte (party, records; inventory apart from a RAM pointer), and the result pages match Redux frame for frame
+- [ ] Battle: killer moves and the character modules, spells and items (ring / list menus), Shot and Particle pools, party AI, voices, stage extras
 
 ## 5. Completion
 

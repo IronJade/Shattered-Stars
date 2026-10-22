@@ -115,6 +115,9 @@ struct BattleGlobals {
   Unit* last_attacker = nullptr;      // 0x8006fb00
   u8 sound_test_tampered = 0;         // 0x8006f000: the sound-test record's checksum failed
   u8 victory_speaker = 0;             // 0x8006fb17: the member who strikes the victory pose
+  u8 victory_voice_tier = 0;          // 0x8006fb3a: 0 best .. 2 (voice_pick_victory)
+  u8 reward_flags = 0;                // 0x8006fba6 g_reward_flags: battle items' bit0 Fol x2, bit1 drops x2, bit2 EXP x2
+  bool special_obj_released = false;  // battle_free_party_models freed g_special_obj0 (0x8006f920)
 
   // Screen effects the hits start and battle_frame_director runs.
   u8 flash_active = 0;                // 0x8006fb0d: stage colour returns to its target
@@ -169,10 +172,11 @@ struct BattleGlobals {
   Bytes item_data;                    // 0x8006faf8 g_item_data (1023 x 0x30)
   std::array<u8, 0x880> item_effects{};  // 0x8006fafc g_item_effects
 
-  // Kept-packed code entries (the port only needs to know they were loaded).
+  // The code overlays (native in the port); their data tables are read from the images.
   bool have_battle_code = false;      // 0x8006e8c0 g_ovl_battle_code (#1984)
   bool have_result_code = false;      // 0x8006e8c4 g_ovl_result_code (#1981)
-  Bytes battle_code;                  // #1984: its blocks' data tables are read by the port
+  Bytes ovl1984;                      // #1984 block 0 as loaded at 0x800715d0 (to 0x80081728)
+  Bytes ovl1981;                      // #1981 as unpacked at 0x80085518 (to 0x80088054)
 
   // Sprite banks (#1979 / #1982).
   Bytes ui_sprites0, ui_sprites1;     // 0x8006f8d4 / 0x8006f8e8
@@ -221,6 +225,7 @@ void battle_init_state();                     // 0x80074a74
 void battle_init_objects();                   // 0x80074168
 void battle_scene_start();                    // 0x80046cc0
 void battle_free_all();                       // 0x80087884 (#1981)
+void battle_free_party_models(bool victory);  // 0x80046be0 (state 4)
 void battle_message_show(int id);             // 0x80074ca4 (#1984.0): the message banner (#1980 string id)
 void battle_frame_director();                 // 0x800715d0 (#1984.0)
 void director_reset();

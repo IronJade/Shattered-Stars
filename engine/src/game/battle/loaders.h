@@ -27,4 +27,10 @@ u32 battle_party_member_mask_all();  // 0x8006a4e0: plus the state block's extra
 // blob (g_handoff10_blob, handed back in handoff 10), negating the kept ones.
 void battle_queue_field_preloads();  // 0x800480d8
 
+// The code overlays' data tables (their code is native): #1984 block 0 (0x800715d0 ..
+// 0x80081728) and #1981 (0x80085518 .. 0x80088054) as the load list read them; null
+// outside the images. (battle_data reads #2129, which these overlays cover at run time.)
+const u8* ovl1984_data(u32 address);
+const u8* ovl1981_data(u32 address);
+
 }  // namespace ss::game::battle

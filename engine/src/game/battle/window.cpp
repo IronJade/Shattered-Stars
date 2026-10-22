@@ -358,7 +358,7 @@ u32 text_draw(BWindow* w, int x, int y, const u8* s, u32 palette) {
   return static_cast<u32>((sy - w->y - 8) << 16) | static_cast<u32>((sx - w->x - 8) & 0xFFFF);
 }
 
-void text_draw_id(BWindow* w, int x, int y, int id, u32 palette) { text_draw(w, x, y, text_find(id), palette); }
+u32 text_draw_id(BWindow* w, int x, int y, int id, u32 palette) { return text_draw(w, x, y, text_find(id), palette); }
 
 void window_text_begin(BWindow* w) {
   auto* p = alloc<psyq::DR_AREA>(w);

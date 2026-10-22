@@ -15,6 +15,8 @@
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
 #include "game/battle/hud.h"
+#include "game/battle/result.h"
+#include "game/boot/rng.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
@@ -391,4 +393,68 @@ TEST(battle_message_banner) {
   g.tasks.fill(nullptr);
   g.task_count = 0;
   g.ot_layers.fill(nullptr);
+}
+
+TEST(battle_exp_table) {
+  // exp_table_build 0x80085518: cumulative (L*L + 1) * ((L - 1) / 10 + 5), x15 from level 100.
+  std::vector<s32> t(255, 0);
+  exp_table_build(t.data());
+  CHECK_EQ(t[1], 10);
+  CHECK_EQ(t[2], 35);
+  CHECK_EQ(t[3], 85);
+  CHECK_EQ(t[10], 1975);
+  CHECK_EQ(t[50], 351825);
+  CHECK_EQ(t[99], 3908511);
+  CHECK_EQ(t[254], 81405411);
+}
+
+TEST(battle_levelup_claude) {
+  NEEDS_DISC();
+  // Claude at level 1 with 20 EXP (the forced fight's two Lizardaxes) gains one level:
+  // HP +(level*3/2 + (r+3)*8), MP +(r+4), SP 1, and his six attribute gains from the #1981
+  // growth table (4 3)(2 1)(2 2)(3 2)(2 0)(2 0); then nothing to learn at level 2. The
+  // draws follow the console's order (HP, MP, then the six gains; no SP draw below
+  // level 10), checked against a replay of the same generator.
+  battle_load_entry(5, 1981, nullptr, entry_bytes(1981));
+  std::vector<u8> slot(0x60, 0), rec(0xD0, 0), cfg(0x2A0, 0);
+  u8* old_config = bg().config;
+  bg().config = cfg.data();
+  auto w16 = [](u8* p, s16 v) { std::memcpy(p, &v, 2); };
+  auto w32 = [](u8* p, s32 v) { std::memcpy(p, &v, 4); };
+  auto r16 = [](const u8* p) { s16 v; std::memcpy(&v, p, 2); return v; };
+  auto r32 = [](const u8* p) { s32 v; std::memcpy(&v, p, 4); return v; };
+  w16(slot.data(), 1);         // Claude
+  w32(slot.data() + 0x10, 20);
+  for (int off : {0x14, 0x18, 0x1C}) w32(slot.data() + off, 130);
+  for (int off : {0x20, 0x22, 0x24}) w16(slot.data() + off, 20);
+  w16(slot.data() + 0x26, 1);
+  w16(slot.data() + 0x28, 1);
+  w16(slot.data() + 0x2A, 10);
+  rng_seed(1234);
+  // The expected draws, replayed on a second run of the same seed.
+  const u32 hp_r = rng_range(3), mp_r = rng_range(3);
+  const s32 g[6][2] = {{4, 3}, {2, 1}, {2, 2}, {3, 2}, {2, 0}, {2, 0}};
+  s32 gain[6];
+  for (int k = 0; k < 6; ++k) gain[k] = static_cast<s32>(rng_range(static_cast<u32>(g[k][0]))) + g[k][1];
+  rng_seed(1234);
+  auto ctx = std::make_unique<LevelUpCtx>();
+  exp_table_build(ctx->table);
+  CHECK_EQ(levelup_apply(ctx.get(), slot.data(), rec.data()), 1);
+  CHECK_EQ(r16(slot.data() + 0x26), 2);
+  CHECK_EQ(r16(slot.data() + 0x28), 2);
+  const s32 hp = 1 * 3 / 2 + (static_cast<s32>(hp_r) + 3) * 8;
+  CHECK_EQ(r32(slot.data() + 0x1C), 130 + hp);
+  CHECK_EQ(r32(slot.data() + 0x18), 130 + hp);
+  CHECK_EQ(r16(slot.data() + 0x24), 20 + static_cast<s32>(mp_r) + 4);
+  CHECK_EQ(ctx->table[0], 1);  // SP
+  CHECK_EQ(r16(rec.data() + 0x1A), 1);
+  CHECK_EQ(r16(slot.data() + 0x2A), 10 + gain[0]);
+  CHECK_EQ(r16(slot.data() + 0x42), gain[1]);
+  CHECK_EQ(r16(slot.data() + 0x3C), gain[2]);
+  CHECK_EQ(r16(slot.data() + 0x30), gain[3]);
+  CHECK_EQ(r16(slot.data() + 0x48), gain[4]);
+  CHECK_EQ(r16(rec.data() + 6), gain[5]);
+  const u16* learned = levelup_learn_skills(ctx.get(), slot.data(), rec.data());
+  CHECK_EQ(learned[0], 0);  // Claude's first move comes at level 3
+  bg().config = old_config;
 }

@@ -6,7 +6,9 @@
 #include <fstream>
 #include <vector>
 
+#include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/boot/sound.h"
 #include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
 #include "game/field/encounter.h"
@@ -42,6 +44,26 @@ bool copy_handoff(const std::vector<u8>& ram, int tag, size_t bytes) {
 
 }  // namespace
 
+void battle_debug_frame() {
+  static const bool on = std::getenv("SS_BATTLE_RNG") != nullptr;
+  if (!on) return;
+  std::fprintf(stderr, "[battle] vblank %llu state %d rng %u\n",
+               static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), bg().state, rng_draws());
+}
+
+void battle_debug_exit() {
+  const char* path = std::getenv("SS_BATTLE_DUMP");
+  std::fprintf(stderr, "[battle] exit: rng draws %u\n", rng_draws());
+  if (path == nullptr || *path == 0) return;
+  std::ofstream out(path, std::ios::binary);
+  const std::pair<int, size_t> blocks[] = {{2, 0x2A0}, {3, 0x300}, {4, 0x680}, {6, 0xC28}};
+  for (const auto& [tag, bytes] : blocks) {
+    const auto* p = static_cast<const char*>(handoff_get(&get_system()->handoff, tag));
+    if (p != nullptr) out.write(p, static_cast<std::streamsize>(bytes));
+  }
+  std::fprintf(stderr, "[battle] handoffs 2/3/4/6 written to %s\n", path);
+}
+
 void battle_debug_set_end(const std::string& end) {
   if (end.empty()) return;
   int frames = 0, outcome = 0;
@@ -57,6 +79,21 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
   // What the title program leaves for a new game: config, party slots, character
   // records and the inventory (create_game_state 0x80061c58), with Claude in slot 0.
   create_game_state();
+  System* sys = get_system();
+  if (sys->sound.effect_scripts == nullptr) {
+    // What the title program loads at boot: the system sound bank (#8) and the effect
+    // sequences (#9), which the battle's menu and result sounds (table 0) play from.
+    std::vector<u8> bank(static_cast<size_t>(sys->loader.entry_size(8)));
+    std::vector<u8> seqs(static_cast<size_t>(sys->loader.entry_size(9)));
+    if (!bank.empty() && !seqs.empty()) {
+      sys->loader.load_sync(bank.data(), 8, 0);
+      sys->loader.load_sync(seqs.data(), 9, 0);
+      sound_load_bank(&sys->sound, bank.data(), 0, 0);
+      while (sound_bank_busy(&sys->sound) != 0) {
+      }
+      if (auto seq = disc::slz::unpack_block(seqs, 0, 0, nullptr)) sound_set_sequences(&sys->sound, seq->data());
+    }
+  }
   HandoffRegistry* reg = &get_system()->handoff;
   auto* party = static_cast<u8*>(handoff_get(reg, 3));
   auto* records = static_cast<u8*>(handoff_get(reg, 4));

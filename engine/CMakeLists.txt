@@ -161,7 +161,9 @@ target_sources(ss_game PRIVATE
   src/game/battle/input.cpp
   src/game/battle/director.cpp
   src/game/battle/window.cpp
-  src/game/battle/hud.cpp)
+  src/game/battle/hud.cpp
+  src/game/battle/result.cpp
+  src/game/battle/voice.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

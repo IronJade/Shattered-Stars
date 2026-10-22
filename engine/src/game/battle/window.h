@@ -40,7 +40,7 @@ void text_underline(BWindow* w, int x, int y, const u8* s, u32 colour);  // 0x80
 // 0x80068a0c: a glyph-code string at window-relative (x, y) with palette (CLUT row 0x1f9);
 // bit 15 also underlines it (colour table 0x8006d198). Returns (y << 16 | x) of the end.
 u32 text_draw(BWindow* w, int x, int y, const u8* s, u32 palette);
-void text_draw_id(BWindow* w, int x, int y, int id, u32 palette);  // 0x800686f8
+u32 text_draw_id(BWindow* w, int x, int y, int id, u32 palette);  // 0x800686f8 (text_draw's end position)
 void window_text_begin(BWindow* w);  // 0x80068760: full-screen draw area, runs after the text
 void window_text_end(BWindow* w);    // 0x80068834: the window's clip area and the font tpage
 void text_frame_begin();             // 0x80069060

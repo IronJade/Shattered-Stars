@@ -8,12 +8,15 @@
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/battle/battle_debug.h"
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
 #include "game/battle/input.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
 #include "game/battle/hud.h"
+#include "game/battle/result.h"
+#include "game/battle/voice.h"
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
@@ -157,6 +160,8 @@ void battle_init_state() {
   g.battle_frames = 0;
   g.fight_frames = 0;
   g.result_started = 0;
+  g.reward_flags = 0;
+  g.special_obj_released = false;
   g.party_escaping = 0;
   g.victory_music_started = 0;
   g.slowmo_phase = 0;
@@ -385,6 +390,15 @@ void battle_run() {
 
 // ---- The frame loop ---------------------------------------------------------------------
 
+void battle_free_party_models(bool victory) {
+  // 0x80046be0: frees the members' extra model / animation buffers (entries 1-4 of each
+  // set at 0x8006f954), the enemy sprite packs on a victory, g_special_obj0 and the effect
+  // sprite bank. The port keeps the buffers until battle_free_all; what changes is that the
+  // frame loop stops servicing g_special_obj0 (0x8006f920).
+  (void)victory;
+  g_battle.special_obj_released = true;
+}
+
 void battle_victory_begin(Unit* last_hitter) {
   // 0x80048c5c: hit-stop 20, state 3, slow motion and countdown (longer during a special
   // move), outcome 0, the member who strikes the victory pose, music fade.
@@ -409,8 +423,7 @@ void battle_victory_begin(Unit* last_hitter) {
   if (tries == 0x20) g.victory_speaker = 0xFF;
   g.party_escaping = 0;
   sound_fade_out(g.sound, 0x1E0);
-  // TODO(port): voice_pick_victory 0x800804d4 (its rng draws included).
-  todo("voice_pick_victory");
+  voice_pick_victory();
   // battle_preload_field_program 0x80047ecc: the field program is native.
 }
 
@@ -521,15 +534,28 @@ void battle_main_loop() {
       rt.trace("battle debug end");
       battle_end(g_debug.auto_end_outcome);
     }
-    if (g.sprite_bank_fx != nullptr) bobj_texcache_begin_frame(g.sprite_bank_fx.get());
+    if (g.sprite_bank_fx != nullptr && !g.special_obj_released) bobj_texcache_begin_frame(g.sprite_bank_fx.get());
     // TODO(port): voice_update, bload_update, spell_data_update (spells and voices).
     input_update(&battle_input());
     if (g.camera != nullptr) g.camera->update();
     camera_update_matrices();
     battle_frame_director();
     bsfx_update();
-    // TODO(port): the lens flare (stages with a sun), the result-screen start and the
-    // victory jingle (state 4).
+    // TODO(port): the lens flare (stages with a sun).
+    // The fade to the field once the result screen has closed (and the camera has settled).
+    if (g.result_started == 0 && g.state == kStateResult && battle_result_screen() == nullptr &&
+        (g.camera->mode == 0 || g.camera->remaining < 0xB400)) {
+      battle_fade_start();
+      g.result_started = 1;
+      if (g.victory_music_started != 0) sound_fade_out(g.sound, 0xB4);
+    }
+    // The victory jingle once the result window has opened.
+    if (kStateOver <= g.state && g.outcome == kVictory && battle_result_screen() != nullptr &&
+        g.config[0x180] == 0 && g.victory_music_started == 0 && 1 < battle_result_screen()->state &&
+        g.stage_id != 0x33) {
+      g.victory_music_started = 1;
+      sound_play_sequence(g.sound, g.victory_music.data());
+    }
     task_run_all();
     if (g.state == kStateLoaded && !g.battle_code_unpacked) g.battle_code_unpacked = true;  // #1984 block 1
     // TODO(port): the Shot (160) pool before the sprites, the Particle (200) pool after.
@@ -578,17 +604,16 @@ void battle_main_loop() {
         if (!busy) {
           g.end_countdown = 0;
           g.state = kStateResult;
-          // TODO(port): battle_free_party_models; the field program parked in VRAM (native).
+          battle_free_party_models(g.outcome == kVictory);
+          // (bload_done(0xa10) and the field program parked in VRAM: the field is native.)
           battle_queue_field_preloads();
-          // TODO(port): the #1981 result screen (EXP, Fol, items, level-ups) and
-          // battle_fade_task, which sets state 5.
-          todo("result screen (#1981): the battle ends without it");
-          g.state = kStateLeave;
+          result_screen_start();  // battle_fade_task follows it and sets state 5
         } else {
           g.end_countdown = 2;
         }
       }
     }
+    battle_debug_frame();
     text_frame_upload();
     // screen_compact_ot(layer 0).
     psyq::DrawSync(0);
@@ -630,6 +655,7 @@ void battle_main_loop() {
 
 void battle_free_all() {
   BattleGlobals& g = g_battle;
+  result_screen_free();
   battle_windows_free();  // the debug window and the HUD release themselves
   g.tasks.fill(nullptr);
   g.task_count = 0;
@@ -651,6 +677,7 @@ void battle_free_all() {
 
 void battle_exit_to_field() {
   BattleGlobals& g = g_battle;
+  battle_debug_exit();
   runtime::Runtime::get().trace(("battle exit to field, outcome " + std::to_string(g.outcome)).c_str());
   if (g.outcome == kVictory) {
     int down = 0;

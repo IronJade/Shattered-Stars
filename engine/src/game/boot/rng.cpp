@@ -5,6 +5,7 @@ namespace {
 
 u32 g_table[56];   // 0x8002b468; [55] is the seed variable 0x8002b544
 s32 g_index = 0;   // 0x8002b464
+u32 g_draws = 0;   // (port debugging only)
 
 }  // namespace
 
@@ -31,7 +32,10 @@ void rng_refill() {
   for (int i = 25; i < 56; ++i) g_table[i] -= g_table[i - 24];
 }
 
+u32 rng_draws() { return g_draws; }
+
 s32 rng_next() {
+  ++g_draws;
   if (++g_index > 0x37) {
     rng_refill();
     g_index = 1;

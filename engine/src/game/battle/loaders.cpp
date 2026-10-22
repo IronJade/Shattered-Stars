@@ -171,6 +171,18 @@ void load_intro_voice(int which, Bytes data) {
 
 }  // namespace
 
+const u8* ovl1984_data(u32 address) {
+  const Bytes& b = bg().ovl1984;
+  const u32 off = address - 0x800715D0u;
+  return off < b.size() ? b.data() + off : nullptr;
+}
+
+const u8* ovl1981_data(u32 address) {
+  const Bytes& b = bg().ovl1981;
+  const u32 off = address - 0x80085518u;
+  return off < b.size() ? b.data() + off : nullptr;
+}
+
 void battle_load_entry(int index, s32 entry, StageLoadCtx* ctx, Bytes data) {
   BattleGlobals& g = bg();
   (void)entry;
@@ -185,15 +197,17 @@ void battle_load_entry(int index, s32 entry, StageLoadCtx* ctx, Bytes data) {
     case 3: load_ui_sprites(data); break;
     case 4: load_battle_text(data); break;
     case 5:
-      // #1981 (the result screen code) is native; the console keeps the packed entry.
+      // #1981 (the result screen) is native; the console keeps the packed entry and unpacks
+      // it at state 4. Its level-up tables are read from the image.
+      g.ovl1981 = unpack(data, 0);
       g.have_result_code = true;
       break;
     case 6: load_item_data(data); break;
     case 7: load_formation(data); break;
     case 8: load_effect_sprites(data); break;
     case 9:
-      // #1984 (the battle code chain) is native; its data tables are read from the copy.
-      g.battle_code = std::move(data);
+      // #1984 (the battle code chain) is native; its data tables are read from block 0.
+      g.ovl1984 = unpack(data, 0);
       g.have_battle_code = true;
       break;
     case 10: load_intro_voice(0, std::move(data)); break;

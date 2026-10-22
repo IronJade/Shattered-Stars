@@ -26,6 +26,8 @@ console, how it was checked, and what is still missing.
 | `director.cpp` | `battle_frame_director`, the off-screen target arrow, stage colour save / restore |
 | `window.{h,cpp}` | the window base (BWindow: an arena and a 1-entry OT per window), frames, the 8x8 UI font, the #1980 proportional text renderer and its 64-row line buffer |
 | `hud.{h,cpp}` | the top status bar (BattleHud), the debug window, the bottom message banner (`battle_message_show`) |
+| `result.{h,cpp}` | #1981: the result screen (EXP / Fol, drops, level-ups and learning, the defeat / escape messages), `battle_fade_task` |
+| `voice.{h,cpp}` | the voice picks that draw from the RNG (`voice_pick_victory`, `voice_play_result`); the clips are not ported |
 | `bsfx.{h,cpp}` | battle sound front end (8 channels, 3-D pan, sound-test record) |
 | `vram.{h,cpp}` | CLUT / texture upload helpers |
 
@@ -44,6 +46,12 @@ console, how it was checked, and what is still missing.
   of it is kept and the field music resumes.
 - **Arenas.** Pool A's 62000-byte PS1 budget is emulated through `pool_a_bytes_used()`, counted in PS1
   primitive sizes. The host arenas are doubled.
+- **Overlay data.** The code of #1984 and #1981 is native, but their tables are read from the
+  images (`ovl1984_data` / `ovl1981_data`): `battle_data` reads #2129, whose bytes at
+  0x80071xxx-0x80088xxx the overlays replace at run time.
+- **Model buffers at state 4.** `battle_free_party_models` keeps the buffers until
+  `battle_free_all`. Only its visible effect is reproduced: the frame loop stops servicing
+  g_special_obj0.
 - **HUD disc notices.** `hud_draw` shows a notice when the disc lid is open or a read fails (strings
   0xc / 0xd) and pauses the music. The host disc never does either, so only the sound-test notice
   (string 0x10) is ported.
@@ -76,6 +84,16 @@ console, how it was checked, and what is still missing.
   in the #1980 font). Of the opaque HUD pixels (glyphs, frames, icons), 0.1-2 % differ. The rest of
   the band is the translucent backdrop over the stage's dither. Below the HUD the frames are identical
   to the run without it.
+- **Result screen (victory).** A second Redux reference: the same fight with Claude's slot poked
+  as `SS_BATTLE_STRONG` does (HP 1300, ATK 80) right after `field_exit`, with rng_next calls
+  counted. The RNG draw counts match at every 10 vsyncs from the battle start to the fade (335
+  draws), including `voice_pick_victory` at the kill and the result screen's drops, level-up
+  and result-voice draws. The pages match frame for frame (port n-2 against b<n>):
+  "Experience Points 20 / Fol 36", "Necklace obtained.", "Claude has increased. / 1 skill points
+  obtained.", the scroll-away, the shrink and the fade. HP 1288 / MP 25 after the level-up match.
+- **Result screen (defeat).** The forced_1_3 reference: the "Destroyed..." message (string 3),
+  its timing and the fade match. The battle exits at vblank 1048; the original switches to the
+  field between b1060 and b1070.
 - **Banner.** `battle_message_banner` (test_battle.cpp) checks the banner: centred, 14 ticks up to y
   0xc0, 61 held, 14 down, and a queued message following it. No banner appears in the reference fight.
 - **Field round trip.** `--map 10` with left/right walking reaches a random battle at vblank ~1915. The
@@ -86,10 +104,8 @@ console, how it was checked, and what is still missing.
 
 ## Not ported yet (in rough priority order)
 
-1. **#1981 (the result screen).**
-   - The result screen: EXP / Fol award, drops, level-ups, learn tables, write-back to handoffs 2/3/4/6.
-   - `battle_fade_task`, and `battle_free_party_models`.
-   - The victory jingle and the "Destroyed" banner of the result / defeat path.
+1. **Leftovers of the HUD and the result screen.**
+   - The voice clips of the victory and the level-up pages (their RNG draws are ported).
    - The start burst (`battle_start_burst_create` 0x8003c02c, the white radial wipe).
    - The HUD greys a killer move by its MP cost (PartyUnit vtable [35]), which comes from the
      character modules; until they are ported the cost is 0.

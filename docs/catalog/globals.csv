@@ -11,7 +11,7 @@ battle,0x8006b0e3,spell_target_class,u8[],Spell id -> 0 enemy target / 1-2 party
 battle,0x8006b12b,g_spell_needs_data,u8 [0x48],1 when the spell needs preloaded effect data (spell_cast aborts while it is missing),likely,spell_cast
 battle,0x8006b12c,skill_clash_enabled,u8[],Per skill id (1-based; index id-1): non-zero if the skill can interact in spell_clash_check,likely,spell_clash_check
 battle,0x8006b173,g_spell_element,u8[],Per spell number: element index 0-11 (offset into the target stats +4 resist bytes),confirmed,pc_ai_choose_attack_spell
-battle,0x8006b1ab,class_spell_count,u8[],Spell list length per class byte (slot+3): 9 -> 23; 0xa -> 19; 0xb -> 21; 0xc -> 21,confirmed,learn_spells_from_table + data dump
+battle,0x8006b1ab,class_spell_count,u8[],Spell list length per class byte (slot+3) [port: engine/src/game/battle/result.cpp (battle_data)],confirmed,learn_spells_from_table; battle port
 battle,0x8006b1b8,spells_rena,u8[23],Rena class spell list (learned flag index = position),confirmed,levelup_learn_skills
 battle,0x8006b1d0,spells_leon,u8[19],Leon class spell list,confirmed,levelup_learn_skills
 battle,0x8006b1e4,spells_celine,u8[21],Celine class spell list,confirmed,levelup_learn_skills
@@ -208,7 +208,7 @@ battle,0x8006faa8,g_message_window,MessageWindow *,Current bottom message banner
 battle,0x8006faac,g_scan_window,ScanWindow *,Open enemy analysis window or 0,confirmed,scan_window_show / scan_window_draw
 battle,0x8006fab0,g_skill_notice,SkillNoticeWindow *,Open battle-skill activation banner or 0,confirmed,skill_notice_show / skill_notice_draw
 battle,0x8006fab4,g_spell_clash_window,SpellClashWindow *,Open two-spell banner or 0,confirmed,spell_clash_window_open / _release
-battle,0x8006fab8,g_result_screen,ResultScreen *,"Victory result screen object (0x1ec bytes, ctor 0x80085f4c in #1981 code)",likely,battle_main_loop
+battle,0x8006fab8,g_result_screen,ResultScreen *,The #1981 result screen while it is open (state 4); battle_main_loop starts battle_fade_task once it is null [port: engine/src/game/battle/result.cpp (battle_result_screen)],confirmed,decompilation; battle port
 battle,0x8006fabc,g_pool_b8,PoolObj *,"296 objects x 0xb8 (vtable 0x8006b030, update 0x800300e0); active when +0x8c != 0",confirmed,battle_init_objects + battle_main_loop
 battle,0x8006fac0,g_pool_2c,Pool2C *,16 objects x 0x2c (vtable 0x8006cf64); active flag +8,confirmed,battle_init_objects
 battle,0x8006fac4,g_pool_13c,PoolObj13C *,"160 objects x 0x13c (Collider subclass, vtable 0x8006ce90, update 0x80054560); active when +0x108 != 0",confirmed,battle_init_objects + battle_main_loop
@@ -261,7 +261,7 @@ battle,0x8006fb36,g_provoke_active,u8,Set when the controlled member uses skill 
 battle,0x8006fb37,g_slowmo_phase,u8,Tick counter of the slow motion (frozen while < 6),confirmed,battle_main_loop
 battle,0x8006fb38,g_unit_blend_mode,u8,Global blend override for units: 1 = semi-transparent (alpha 0x8006fb39); 2 = opaque,likely,unit_apply_global_blend
 battle,0x8006fb39,g_unit_blend_alpha,u8,Alpha used with g_unit_blend_mode 1,likely,unit_apply_global_blend
-battle,0x8006fb3a,g_victory_voice_tier,u8,0 best .. 2 (from standing members and fight time),confirmed,voice_pick_victory
+battle,0x8006fb3a,g_victory_voice_tier,u8,"0 best .. 2, from the standing members and the fight time (voice_pick_victory) [port: engine/src/game/battle/battle.h (BattleGlobals::victory_voice_tier)]",confirmed,decompilation; battle port
 battle,0x8006fb3c,g_member_target,u8[4],Remembered target enemy per party slot (restored into g_target_enemy when control switches),confirmed,input_dispatch / input_member_select_update
 battle,0x8006fb40,g_obstacle_kind,u8 [n],Obstacle kind: 1 (op 11) or 2 (op 17),confirmed,load_stage
 battle,0x8006fb55,g_obstacle_active,u8[3],Obstacle slot flags indexed backwards from 0x8006fb57 (slot 23 = 0x8006fb57): 1 rolling object present / 2 hanging object; the per-frame stage hooks spawn only when 0x8006fb57 == 0,likely,stage blocks 2/4/5/8
@@ -280,7 +280,7 @@ battle,0x8006fb9a,g_item_menu_cursor,s16[3],Item menu cursor memory: col / row (
 battle,0x8006fba0,g_assist_timer,s16,Refinement: frames the assist request 0x8006fb29 stays set (0xb4 from input_target_select_update when the target is out of reach); battle_frame_director counts it down and clears 0x8006fb29 at 0 [port: engine/src/game/battle/battle.h (BattleGlobals::assist_timer)],likely,battle port: input / director
 battle,0x8006fba2,g_provoke_frames,s16,Duration of skill 0x2d: level * 180 + rng(10) frames (with g_forced_target 0x8006fae8 = the user),likely,input_dispatch; p2 g_forced_target
 battle,0x8006fba4,g_chosen_item_index,s16,Inventory index picked in the item menu,confirmed,item_menu_confirm
-battle,0x8006fba6,g_reward_flags,u8,Set by battle items: bit0 Fol x2 (kind 0x11); bit1 drop chance x2 (0x12); bit2 EXP x2 (0x13); read by the result screen,confirmed,item_use_battle + result_award_exp_money + result_roll_drops
+battle,0x8006fba6,g_reward_flags,u8,"Battle items: bit0 Fol x2 (kind 0x11), bit1 drop chance x2 (0x12), bit2 EXP x2 (0x13); cleared by battle_init_state; read by result_award_exp_money / result_roll_drops [port: engine/src/game/battle/battle.h (BattleGlobals::reward_flags)]",confirmed,decompilation; battle port
 battle,0x8006fba8,g_item_cooldown,u16,Frames before items can be used again (set by item_use_battle; counted down by the director; ring menu disables items while > 0),likely,battle_frame_director + input_ring_menu_open
 battle,0x8006fbaa,g_intro_voice_gate,s16,Holds the end of the intro (pc_appear_update waits for 0) while > 0: set to 8 when a monster starts its intro voice (enemy_think); battle_frame_director counts it down [port: engine/src/game/battle/battle.h (BattleGlobals::intro_voice_gate)],confirmed,decompilation
 battle,0x8006fbac,g_bload_owner,u32,Owner token stamped on new load requests and used by bload_done (0 = matches every request); set around calls by spell_data_update (= the caster),confirmed,bload_request / bload_done / spell_data_update
@@ -375,8 +375,8 @@ battle_ovl1981,0x80087dd0,learn_table_claude,u8[][2],{level; killer move} pairs 
 battle_ovl1981,0x80087e74,learn_table_rena,u8[][2],{level; spell} pairs (Rena); Celine 0x80087ea4; Noel 0x80087ed0; Leon 0x80087efc; message base 1000,confirmed,levelup_learn_skills
 battle_ovl1981,0x80087f4c,vtable_BattleFadeTask,vtable,[1] battle_fade_task_update 0x8008741c (no further slots),confirmed,battle_fade_task_ctor
 battle_ovl1981,0x80087f5c,vtable_ResultScreen,vtable,Window subclass: [1] result_screen_update 0x80086000; [2] result_screen_dtor 0x80087d60; [3] window_open 0x80067960; [4] window_release 0x800679ac; [5] 0x80069170 (nop); [6] result_screen_open 0x80085f94,confirmed,result_screen_ctor + data dump
-battle_ovl1981,0x80087f94,levelup_growth,u8[12][6][2],Per character (id-1) 6 {range; base} pairs: gain = rng_range(range) + base for attr3 / attr7 / attr6 / attr4 / attr8 / record attr9. Claude (4 3)(2 1)(2 2)(3 2)(2 0)(2 0); casters (2 1)(3 1)(2 1)(3 0)(0 0)(1 0),confirmed,levelup_apply + data dump
-battle_ovl1981,0x80088024,g_learned_list,u16[24],0-terminated message ids of skills learned in the last levelup_learn_skills call,confirmed,learn_from_table
+battle_ovl1981,0x80087f94,levelup_growth,u8[12][6][2],Per character (id-1) six {range; base}: gain = rng_range(range) + base for attr3 / attr7 / attr6 / attr4 / attr8 / record attr9 [port: engine/src/game/battle/result.cpp (read from the #1981 image)],confirmed,levelup_apply + data dump; battle port
+battle_ovl1981,0x80088024,g_learned_list,u16[24],0-terminated message ids of the skills learned in the last levelup_learn_skills call [port: engine/src/game/battle/result.cpp (g_learned)],confirmed,learn_from_table; battle port
 battle_ovl1984_0,0x8006faa8,g_message_window,MessageWindow *,The bottom banner on screen (null when none); a new message makes it sink and follows it [port: engine/src/game/battle/hud.cpp (battle_message)],confirmed,decompilation; battle port
 battle_ovl1984_0,0x80080dc8,ovl0_ctor_list,void (*[1])(void),.ctors-style entry holding bsfx_emitters_init (0x8008016c); no code found that walks it,likely,word at 0x80080dc8
 battle_ovl1984_0,0x80080dcc,jt_frame_director_stage,void *[50],Jump table of battle_frame_director's g_stage_id switch (stages 8..0x39),confirmed,disassembly of 0x800715d0
@@ -400,8 +400,8 @@ battle_ovl1984_0,0x800810c0,lens_flare_set_a,FlareSet,11-element lens flare: s16
 battle_ovl1984_0,0x80081114,lens_flare_set_b,FlareSet,4-element lens flare: s16 pos 0x4b0 0xbb8 0xe10 0x1194 / s16 size 0x20 0x30 0x60 0x40 (0x8008111c) / u8 type 1 2 3 5 (0x80081124) / u8 radius 0x18 0x10 0x20 0x30 (0x80081128) / u8 inner 4 0 4 8 (0x8008112c),likely,lens_flare_draw_small 0x800744cc
 battle_ovl1984_0,0x80081130,g_parent_matrix,MATRIX,Parent rotation + translation (t at 0x80081144/48/4c = parent position >> 12) kept by obj_set_matrix_parent for obj_set_matrix_child (bss),likely,0x800779c4 + 0x80077dcc
 battle_ovl1984_0,0x80081150,g_sfx_emitters,BObj[8],8 internal 0x88-byte sound emitters (bss) used by bsfx_play mode 2 (slot n -> 0x80081150 + 0x88*(n-1)); only the position +8 is set (bsfx_play_at_pos),confirmed,bsfx_play + bsfx_play_at_pos + bsfx_emitters_init
-battle_ovl1984_0,0x8008158c,victory_voice_table,u32[13],Per character (index 1..12 at 0x80081590): u16 first voice entry + u16 counts (nibbles: >>8 tier 0 count; >>4 tier 1; &0xf tier 2). All 3/3/3: 9 victory lines per character (entries 0x988.. Claude; 0x993 Rena; 0x99e; 0x9a9 (4/3/3); ...),confirmed,voice_pick_victory 0x800804d4
-battle_ovl1984_0,0x800815c0,result_voice_base,u16[12],Per character first entry of 5 lines used by voice_play_result (0xa11 0xa16 ... 0xa43),confirmed,voice_play_result 0x800807c8
+battle_ovl1984_0,0x8008158c,victory_voice_table,u32[13],Per character: u16 first victory line + u16 counts (>>8 tier 0; >>4 &0xf tier 1; &0xf tier 2) [port: engine/src/game/battle/voice.cpp (read from the #1984 image)],confirmed,voice_pick_victory; battle port
+battle_ovl1984_0,0x800815c0,result_voice_base,u16[12],Per character first of the 1-5 result lines (voice_play_result) [port: engine/src/game/battle/voice.cpp (read from the #1984 image)],confirmed,voice_play_result; battle port
 battle_ovl1984_0,0x800815d8,extra_voice_base,u16[12],Per character first entry of 2 lines (0x991 0x99c 0x9a7 ...; right after the 9 victory lines),confirmed,voice_play_extra 0x80080878
 battle_ovl1984_0,0x800815f0,battle_voice_bank_base,u16[12],Per character first entry of the battle voice bank (0x246 0x279 0x2b2 0x2e9 0x320 0x359 0x392 0x3cc 0x403 0x439 0x474 0x4ad); voice_play_battle_line picks base + rng(4),confirmed,voice_play_battle_line 0x800808e8
 battle_ovl1984_0,0x80081608,healer_name_voice_table,u16[12][12],Per speaking character (0x18 bytes each; through 0x80081728): voice entry of the line naming each other character (0 for self); e.g. Claude 0 0x23f 0x241 0x243 ...,confirmed,battle_voice_table 0x80080b88 (matched field 0x80078d18)

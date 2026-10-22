@@ -19,5 +19,11 @@ namespace ss::game::battle {
 Program battle_debug_start(const std::string& spec, const std::string& end);
 // --battle-end alone: every battle of the run (the field's too) ends that way.
 void battle_debug_set_end(const std::string& end);
+// SS_BATTLE_RNG=1: traces the RNG draw count each frame (to line up with a PCSX-Redux
+// count of rng_next calls). SS_BATTLE_DUMP=<file>: at battle_exit_to_field writes the
+// handoff blocks the field reads back (2 config 0x2a0, 3 party 0x300, 4 records 0x680,
+// 6 inventory 0xc28, in that order) for a comparison with a RAM dump of the original.
+void battle_debug_frame();
+void battle_debug_exit();
 
 }  // namespace ss::game::battle
