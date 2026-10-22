@@ -1220,7 +1220,7 @@ void vm_svc_set_global_7621d(int a, int b) { SVC("%d,%d", a, b); }
 int vm_svc_get_global_761ea() { LOG_ONCE(); return 0; }
 int vm_svc_get_global_76214() { LOG_ONCE(); return -1; }
 void vm_svc_set_global_76310(int v) { SVC("%d", v); }
-void vm_svc_set_global_76278(int v) { SVC("%d", v); }
+void vm_svc_set_global_76278(int v) { globals().show_battle_results = static_cast<u8>(v); }
 void vm_svc_worldmap_add_entry(const s32 args[14]) { SVC("%d,%d", args[0], args[1]); }
 
 }  // namespace ss::game::field

@@ -323,7 +323,7 @@ void vm_svc_set_global_7621d(int a, int b);               // 0x8007621d / 0x8007
 int vm_svc_get_global_761ea();                            // 0x800761ea (u16, ext 0xea)
 int vm_svc_get_global_76214();                            // 0x80076214 (s16, ext 0xea)
 void vm_svc_set_global_76310(int v);                      // 0x80076310 (A 0x35)
-void vm_svc_set_global_76278(int v);                      // 0x80076278 (B 0x60)
+void vm_svc_set_global_76278(int v);                      // g_show_battle_results 0x80076278 (B 0x60)
 void vm_svc_worldmap_add_entry(const s32 args[14]);       // A 0x24: 0x8007470c / 0x80076284 tables, count 0x80076282
 
 }  // namespace ss::game::field

@@ -428,6 +428,8 @@ boot,0x8002b77c,_spu_tsa,u16,libspu: transfer start address / 8,confirmed,SpuSet
 boot,0x8002bc04,_spu_rev_startaddr,u32[10],libspu: reverb work-area start (/ 8) per mode (0xfffe 0xfb28 0xfc18 0xf6f8 0xf204 0xea44 0xe128 0xcff8 0xcff8 0xf880),confirmed,SpuSetReverbModeParam; read at run time from SCUS_944.21
 boot,0x8002bc34,_spu_rev_param,u8[10][0x44],"libspu: reverb presets, a u32 register mask then the 32 reverb registers (dAPF1 .. vRIN)",confirmed,_spu_setReverbAttr; read at run time from SCUS_944.21
 field,0x1f800000,vm_args,int[16],Scratchpad buffer vm_fetch_args fills,confirmed,vm_fetch_args
+field,0x80074cf0,g_encounter_barred_a,s16[],"0-terminated list: with ability bit 8 an encounter roll whose list INDEX appears here is re-rolled (field_prepare_encounter compares the index, not the id)",confirmed,assembly 0x800510cc
+field,0x80074d70,g_encounter_barred_b,s16[],"As 0x80074cf0, for ability bit 0x10",confirmed,assembly 0x80051134
 field,0x800750cc,music_table,s16[100],Script music numbers (< 100) map through this table,likely,music opcodes
 field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
 field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
@@ -444,6 +446,7 @@ field,0x800752b0,g_load_queue,LoadQueue *,"Async CD load queue (0x160 bytes, vta
 field,0x800752b8,g_battle_setup,u8[0xc0],"Battle setup built by the encounter code (+0 encounter, +4 stage, +8 / +0x3c entry list, +0x70 count, +0x74 preloaded data pointers, +0xa8 free flags); handed to the battle program as handoff 5",likely,field_run; field_exit_to_program 0x80051c9c; battle_run
 field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
 field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
+field,0x800752e4,g_report_panels,TextPanel *,4 TextPanels (array new with count at -8) of the Equipment Wizard columns; frame hidden,confirmed,field_update state 0; field_destroy_subsystems
 field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
 field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending
 field,0x8007533d,g_battle_preload_requested,u8,An encounter's battle data is being preloaded (set by 0x80050f64),likely,0x80050f64; preload_release_pending
@@ -476,10 +479,20 @@ field,0x800759a8,g_battle_preload_entry,s32[13],First archive entry of each batt
 field,0x800759dc,g_battle_preload_bytes,s32[13],Total bytes of each group,confirmed,field_prepare_encounter
 field,0x80075a10,g_battle_preload_pieces,s32[13],Entries in each group,confirmed,field_prepare_encounter; field_exit_to_program
 field,0x80075a44,g_battle_preload_order,s32[13],Load-list slot of each sorted id,confirmed,field_prepare_encounter; field_exit_to_program
+field,0x80076190,g_ability_bits,u32,"party_scan_equip_effects mask after a battle / gift: 1 encounters -20%, 2 -50%, 4 +20% (encounter distance), 8 / 0x10 re-roll indexes in 0x80074cf0 / 0x80074d70",confirmed,field_update; field_prepare_encounter
+field,0x8007619e,g_auto_equipped,u8,party_auto_equip result (anything equipped),confirmed,field_update state 0
+field,0x800761a0,g_equip_report,u8 *,"8 x 0x30: attributes before (+0) / after (+0xa), equipment before (+0x14) / after (+0x22)",confirmed,stat_calc_auto_equip; field_equip_report_draw
 field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
 field,0x8007622c,g_inventory_stashed,u8,The stash holds the inventory (set by A 0x10 and when taken from handoff 0x11),confirmed,field_run; overlay 0x8008ea0c
+field,0x80076274,g_report_showing,u8,A member page of the Equipment Wizard is up,confirmed,field_update state 0xf
+field,0x80076275,g_report_member,u8,Party slot the Equipment Wizard shows,confirmed,field_update state 0xf
+field,0x80076276,g_report_opened,u8,Member the report window was opened for (0xff = not yet),confirmed,field_update state 0xf
+field,0x80076277,g_report_drawn,u8,Member whose name / item windows are open (0xff = none),confirmed,field_equip_report_draw
 field,0x80076278,g_show_battle_results,u8,Set when the field restarts after a battle (and by script item gifts): field_update opens the post-battle stat / item window,likely,field_run; field_update state 0; table B
 field,0x80076279,g_sub_overlay_hook,u8,Run the sub-overlay's per-frame hook 0x801ead88 (script ext 0xa8 ops 0xe / 0xf),confirmed,field_special_command; field_main_loop
+field,0x800762e4,g_side_done,u8,Done flag of the side load (field_side_load),confirmed,field_side_load; field_equip_report_draw
+field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) until field_install_side_text unpacks it,confirmed,field_side_load
+field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
 title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update

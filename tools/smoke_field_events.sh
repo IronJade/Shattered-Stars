@@ -48,6 +48,12 @@ run arlia_chest 1300 18 "200:up,439:none,450:left,554:none,560:up,572:none,600:c
 check arlia_chest "chest message" 'msg_window_open\(rect=2,30,37,1'
 check arlia_chest "200 Fol added once" '\[leader\] vblank 1260 .* fol 200$'
 
+# Map 18: the left crate holds Leather Armor; the post-battle path auto-equips it on
+# Claude and shows the Equipment Wizard (field state 15) until confirmed.
+run arlia_wizard 1300 18 "200:up,439:none,450:left,593:none,600:up,612:none,640:cross,646:none,800:cross,806:none,1000:cross,1006:none"
+check arlia_wizard "Equipment Wizard opens" '\[leader\] vblank 9[0-9]0 map 18 state 15 '
+check arlia_wizard "and closes" '\[leader\] vblank 12[0-9]0 map 18 state 0 .* control 0 '
+
 # Map 26: talking to Mr. Hearn opens his window.
 run hearn_talk 1700 18 "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none"
 check hearn_talk "talk opens a window" 'msg_window_open_default\(text=\+0xc8b'

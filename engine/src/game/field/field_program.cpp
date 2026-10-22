@@ -24,6 +24,7 @@
 #include "game/field/map.h"
 #include "game/field/message.h"
 #include "game/field/notice.h"
+#include "game/field/post_battle.h"
 #include "game/field/music.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -80,6 +81,7 @@ Field* field_program() { return g_program; }
 // it runs (after the title, after a battle).
 void field_construct_globals() {
   FieldGlobals& g = g_field;
+  post_battle_reset();
   g.battle_preloaded = 0;
   g.battle_preload_requested = 0;
   g.vsync_mode = 0;
@@ -400,6 +402,7 @@ void field_destroy_subsystems(Field*) {
   if (CamScript* c = camscript()) camscript_destroy(c, 3);
   field_destroy_battle_transition(nullptr);
   if (Callways* c = callways()) callways_destroy(c);
+  post_battle_destroy_panels();
   // TODO(port): FieldPanel, SceneRenderer, the glow and overlay objects.
 }
 
@@ -414,10 +417,13 @@ void field_update_encounters(Field* f) {
     put(0x1C, 0);
   } else if (get(0x1C) == 0) {
     // A new distance: the rate adjusted by the encounter modifiers (game_state
-    // +0x266 / +0x267, field_flags +0x84; Callways songs 0x80076190, not ported), then
-    // randomised by up to a third and scaled to the map.
-    const int mod = static_cast<s8>(g.game_state[0x266]) + static_cast<s8>(g.game_state[0x267]) +
-                    static_cast<s8>(flags[0x84]);
+    // +0x266 / +0x267, field_flags +0x84, the equipment ability bits), then randomised
+    // by up to a third and scaled to the map.
+    int mod = static_cast<s8>(g.game_state[0x266]) + static_cast<s8>(g.game_state[0x267]) +
+              static_cast<s8>(flags[0x84]);
+    if (field_ability_bits() & 1) mod -= 0x14;
+    if (field_ability_bits() & 2) mod -= 0x32;
+    if (field_ability_bits() & 4) mod += 0x14;
     if (mod >= 1) {
       rate -= (rate * mod) / 100;
       if (rate < 3) rate = 3;
@@ -530,15 +536,27 @@ void field_update(Field* f) {
   switch (f->state) {
     case 0:
       // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects
-      // tick. TODO(port): the post-battle stat window (0x80076278), the save point and
-      // vehicles (field_flags / script flag bits).
+      // tick; after a battle the equipment rescan / auto-equip report (post_battle.cpp).
+      // TODO(port): the save point and vehicles (field_flags / script flag bits).
       if (field_actors()[g.game_state[9]] != nullptr && g.poison_next_step < (rd32(g.field_flags + 0x18) >> 12)) {
         callways_step_tick(callways());
         field_poison_step(f);
         const s32 steps = rd32(g.field_flags + 0x18) >> 12;
         g.poison_next_step = g.field_flags[0x68] != 0 ? steps + 400 : steps + (read_u16(map_data().scene.data() + 0x68) * 400) / 100;
       }
+      if (g_script_vm != nullptr && g_script_vm->wait_state != 1 && g_script_vm->wait_state != 3 &&
+          g_script_vm->wait_state != 8 && g.field_flags[0x26] == 0 && static_cast<s16>(read_u16(g.field_flags + 0x10)) != -1 &&
+          field_post_battle_check(f)) {
+        f->state = 0xF;
+        return;
+      }
       field_update_encounters(f);
+      return;
+    case 0xF:  // the auto-equip report, a page per member
+      field_update_equip_report(f);
+      return;
+    case 0x10:  // closing it
+      field_update_equip_report_close(f);
       return;
     case 1: {
       // Map change: wait out the fade, then load the pending map; the leader takes

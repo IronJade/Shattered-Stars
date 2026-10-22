@@ -8,6 +8,7 @@
 #include "game/boot/sound.h"
 #include "game/common/math.h"
 #include "game/field/callways.h"
+#include "game/field/post_battle.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/fade.h"
@@ -338,13 +339,26 @@ void field_prepare_encounter(Field* f, int group, int stage) {
   int encounter = -group;
   if (group >= 0) {
     // A random member of the area's group (the table at 0x80074fe0 holds 0-terminated
-    // s16 lists); Callways songs can bar some (0x80076190 bits 3 / 4: lists 0x80074cf0
-    // / 0x80074d70). TODO(port): those modifiers come from Callways (not ported: 0).
+    // s16 lists). With equipment ability bit 8 / 0x10 the roll is repeated while its
+    // list INDEX (not the encounter) appears in the 0-terminated list 0x80074cf0 /
+    // 0x80074d70, as the original compares it.
     if (group == 0) group = 1;
-    const u8* list = field_data(static_cast<u32>(rd32(field_data(0x80074FE0 + group * 4))));
-    int n = 0;
-    while (rd16s(list + n * 2) != 0) ++n;
-    encounter = rd16s(list + static_cast<int>(rng_range(static_cast<u32>(n))) * 2);
+    auto barred = [](u32 table, int index) {
+      const u8* t = field_data(table);
+      int i = 0;
+      while (rd16s(t + i * 2) != 0 && rd16s(t + i * 2) != index) ++i;
+      return rd16s(t + i * 2) != 0;
+    };
+    for (;;) {
+      const u8* list = field_data(static_cast<u32>(rd32(field_data(0x80074FE0 + group * 4))));
+      int n = 0;
+      while (rd16s(list + n * 2) != 0) ++n;
+      const int index = static_cast<int>(rng_range(static_cast<u32>(n)));
+      encounter = rd16s(list + index * 2);
+      if ((field_ability_bits() & 8) != 0 && barred(0x80074CF0, index)) continue;
+      if ((field_ability_bits() & 0x10) != 0 && barred(0x80074D70, index)) continue;
+      break;
+    }
   }
   BattleSetup& b = g.battle_setup;
   battle_build_load_list(&b, encounter, stage);

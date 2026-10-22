@@ -106,9 +106,9 @@ ported") → field with the save's snapshot (handoff 0xe, already handled by
 1. Rerun the tests; finish the actor items above; map 7 with all actors vs the original.
 2. Walking on map 7 (leader control, collision, camera follow) → M4.
 3. Menu agent's files into CMake, catalogue them, finish the Continue screen.
-4. Remaining field_update states (camp menu 3, post-battle stat windows 0xf / 0x10 with
-   party_scan_equip_effects 0x80030dec, which also sets the Callways walk flags), FieldPanel,
-   SceneRenderer. Callways, poison steps and map music are done.
+4. Remaining field_update states (camp menu 3 — menu agent, save point, vehicles),
+   FieldPanel, SceneRenderer. Callways, poison steps, map music and the post-battle
+   Equipment Wizard (states 0xf / 0x10) are done.
 5. Battle port following `docs/notes/battle.md` §8.
 
 ## Conventions to keep
