@@ -42,7 +42,7 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [ ] GPU: hardware-exact gouraud/UV interpolation (fixed-point stepping); today ±1 LSB vs PCSX-Redux on gradients
 - [ ] GPU: subtractive blending over modulated sprites differs from PCSX-Redux by up to 2 LSB (New Game shade frames over portraits) — find which side is right
 - [x] Display output from DISPENV (incl. 24-bit)
-- [ ] 480i display
+- [x] 480i display: an interlaced DISPENV taller than 256 lines shows both fields (`PutDispEnv`; the insert-disc screen's 640x480)
 - [x] GTE: all 22 commands bit-exact with PCSX-Redux (incl. FLAG); libgte (PsyQ 4.2) matched against Sony's object code run in Redux (`psx/gte`, `runtime/libgte`)
 - [x] Controller module the game reads (held / pressed / repeat, `vsync_callback`)
 - [x] Controller: a host gamepad reads as a DualShock in analog mode (`game/boot/pad.cpp`): the Vibration setting drives SDL rumble (pad_vibrate 0x80013e14); the stick set-up the title and the save menu do (0x80013c0c / 60 / a4, the driver start 0x8001408c) is ported with pad_stick (0x80013cb8) and the vsync step that turns the left stick into the d-pad, and the field main loop fills its analog block (0x800762fc) each frame, so the left stick steers the leader as on the console. The keyboard alone stays a digital pad
@@ -59,7 +59,7 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] New Game option screens (`new_game_sequence` 0x80042cc8): Sound Select, Vibration, Claude/Rena, name entry, combat mode, Battle Rank, memory card notice — window/text system ported; screen timings identical to the original (window constructors at the same vsync), static frames within ±1 of PCSX-Redux
 - [x] Background load queue (`async_load` family, 0x80048f34-0x800492d0)
 - [x] Prologue player after New Game (0x8004fa98 class; entries #2680/#2681, #4504-#4507) — class ported (`Prologue` in `game/title/movie.h`, cue lists #4504/#4507 run in `ss_game_tests`); called from `start_new_game` for both characters (all three of Claude's parts with the background loads, Rena's part); the run reaches the field hand-off. Music plays; the streamed voice clips (sound_open_clip 0x800197ec) are still stubbed
-- [ ] Disc 1 prompt before New Game (0x8003c5ec)
+- [x] Disc 1 prompt before New Game (0x8003c5ec): the shared insert-disc screen (`game/common/disc_screen.cpp`), pixel-identical to PCSX-Redux except its random background
 - [x] Reference comparison: `tools/redux_reference.lua` (original game in PCSX-Redux) + `tools/compare_frames.py`
 - [x] Scripted controller input for tests (`--input FRAME:buttons,...`)
 

@@ -87,7 +87,9 @@ DISPENV* PutDispEnv(DISPENV* env) {
   d.width = env->disp.w;
   d.height = env->disp.h;
   d.top = env->screen.y;
-  d.lines = env->screen.h;  // 0: the full height
+  // 0: the full height. The screen height counts lines of one field: an interlaced
+  // 480-line display (isinter with disp.h > 256, the insert-disc screen) shows twice as many.
+  d.lines = env->isinter != 0 && env->disp.h > 256 ? env->screen.h * 2 : env->screen.h;
   d.color24 = env->isrgb24;
   return env;
 }
