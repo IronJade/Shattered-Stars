@@ -91,8 +91,8 @@ matches at an offset of 5-6 vsyncs or of 0-2.
 | 320 | Shout (MP drain particles) | exact |
 | 92 | 2 Ooze | exact (they never move: attack odds 0) |
 | 193 / 19 / 202 / 21 / 268 / 352 | Bandit (thief), 2 Landworm (base), Troll (giant), 2 Alraune (plant), Lizardaxe (axe), F-thiefL99 | exact |
-| 280 | Darkcrusader (knight) | exact until its sword waves (Shot kind 2, not ported) hit Claude |
-| 277 | Goathead (goat) | exact until its first spell (enemy_try_cast, not ported) |
+| 280 | Darkcrusader (knight) | exact to the battle's end (its sword waves are Shot kind 2) |
+| 277 | Goathead (goat) | exact, its spells included |
 | 420 | 4 Robinfake (archer) | exact to vsync 1110; from vsync 1078 the original slows to 3-vsync frames (the robins' volleys), which the port does not model, and a later choice of which robin attacks differs |
 | 457 | Owlbear (image slot A: guardian) | exact |
 | 80 | Cockatrice (carlaeagle) | exact |
@@ -108,10 +108,20 @@ matches at an offset of 5-6 vsyncs or of 0-2.
 | 107 | Kitty | exact |
 | 282 | Rikiha (ricki) | exact |
 | 191 | Alen-Tax (ogre) | exact |
+| 563 / 240 / 206 / 284 / 523 / 543 | Gelatinblock (gelatin), 2 Controller, Azamgil, Ericodus, 2 Gargoyle, 2 Snowman | exact |
+| 153 / 186 / 211 / 204 | 3 NiquiaHG (niquia), Weirdavia (xine), Ghost, Dias | exact |
+| 520 / 521 / 530 / 531 / 533 | Berle, Synard, Marsilio, Bark, Shigeo | exact |
+| 536 | Ruprecht (pack slot A) with the image's Nicolus (B) and Jibril (C) | exact to the battle's end |
+| 197 / 265 / 430 / 515 / 528 | Nightmare (succubus), Zand, Weirddevil (shin), G-Celesta, Lover + 2 Breakwing | exact until the first cast of a spell whose code module is not ported yet (spells 16, 12, 51, 22, 28) |
+| 537 / 538 / 539 | Vesper + Decus, Cyril, Indalecio | the same, to vsyncs 390, 530, 430 (spells 55 / 56, 57, 22); the original also draws RNG for the boss's intro voice and, in 538, holds the fight 57 vsyncs for it |
+| 524 | Guardbox, 2 Magicbox, Workbox, Magichand | exact until the boxes toss (Shot kind 0x27, not ported) |
+
+Bark's SpellCast (kind 0x36, every tenth of its HP lost) and Indalecio's transformation (kind
+0x3b) are not reached in these fights: Claude stands idle and does no damage.
 
 A sweep of every disc-1 encounter (0-563, 3000 frames, Claude idle) runs without a crash.
-What the monsters still miss is the battle agent's: spells and SpellCast (casters stand in
-their cast animation), Shot kinds 2, 0x27, 0x2c and 0x2d, shot_draw_frame_quad.
+What the monsters still miss: spell code modules (the world agent's), Shot kinds 0x27 and
+0x2d, shot_draw_frame_quad and the voices (the battle agent's).
 
 ## Findings
 
@@ -126,6 +136,8 @@ their cast animation), Shot kinds 2, 0x27, 0x2c and 0x2d, shot_draw_frame_quad.
 - Guardian (image slot A): phase 1 sets weapon element bit 4 before each melee test and only
   restores it when a hit lands, so the bit stays once phase 1 starts.
 - The thunks 0x800553f0 (shot_place_at_unit) and 0x80030050 (sprite_place_near) pass dz = 0.
+- Under load the original slows to 3-vsync frames (encounter 420: four Robinfakes' volleys,
+  vsyncs 1078-1110); the port always runs 2-vsync frames, so busy fights drift from there.
 - Some blocks hold code that resident tables point at: Shot kinds 0x26 (stingray, 0x8008a30c)
   and 0x29 (magichand, 0x80088cb0) in g_shot_kind_table 0x8006fea8, SpellCast kinds 0x36
   (bark, 0x800885d8) and 0x3b (indalecio, 0x80089c80, the transformation). Nothing inside the
