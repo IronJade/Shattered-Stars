@@ -15,7 +15,7 @@
 namespace ss::game::battle {
 namespace {
 
-void todo(const char* what) {
+[[maybe_unused]] void todo(const char* what) {
   runtime::Runtime::get().log_once(std::string("battle-combat-") + what,
                                    std::string("battle: not ported yet: ") + what);
 }

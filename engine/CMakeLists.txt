@@ -173,7 +173,12 @@ target_sources(ss_game PRIVATE
   src/game/battle/hud.cpp
   src/game/battle/result.cpp
   src/game/battle/voice.cpp
-  src/game/battle/shot.cpp)
+  src/game/battle/shot.cpp
+  src/game/battle/fx_draw.cpp
+  src/game/battle/killer.cpp
+  src/game/battle/particle.cpp
+  src/game/battle/pc_modules.cpp
+  src/game/battle/pc_claude.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

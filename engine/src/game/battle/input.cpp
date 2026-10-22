@@ -5,6 +5,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/killer.h"
 #include "game/battle/hud.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
@@ -388,10 +389,10 @@ void input_target_select_update(BattleInput* in) {
     }
   }
   if (!done) {
-    if (((in->pressed & key(4)) != 0 && in->target_purpose == 0) || ((in->pressed & key(5)) != 0 && in->target_purpose == 0)) {
-      todo("command_killer_move (killer moves)");
-    }
-    const bool keep = (in->pressed & (key(1) | key(3))) == 0 && g.enemy_count != 0 && g.state < 3 &&
+    // A killer move queued from the target select closes it.
+    bool queued = (in->pressed & key(4)) != 0 && in->target_purpose == 0 && command_killer_move(0) != 0;
+    if (!queued) queued = (in->pressed & key(5)) != 0 && in->target_purpose == 0 && command_killer_move(1) != 0;
+    const bool keep = !queued && (in->pressed & (key(1) | key(3))) == 0 && g.enemy_count != 0 && g.state < 3 &&
                       !unit_is_down(controlled()) && g.effects_suppressed == 0;
     if (keep) {
       if (in->bounce < 0xE) {
@@ -695,7 +696,14 @@ void input_dispatch(BattleInput* in) {
       if (in->pressed & key(5)) in->chain_latch = 2;
       const int lvl = u->skill_level(0x2B);
       if (in->chain_latch == 0 || u->chain < 2 || lvl + 1 <= u->chain) return;
-      todo("command_killer_move (chained killer moves)");
+      // A killer move chained onto the swing (skill 0x2b, Chain Combo).
+      command_killer_move(in->chain_latch - 1);
+      if (u->command == 0) return;
+      effect_skill_popup(u, 0x2B);
+      ghost_create(u, 0x905050);
+      u->attack_recovery = 0;
+      u->action_kind = 0;
+      u->begin_action();
       return;
     }
     in->chain_latch = 0;
@@ -717,7 +725,7 @@ void input_dispatch(BattleInput* in) {
         bsfx_play_ui(2);
         return;
       }
-      todo("command_killer_move (killer moves)");
+      command_killer_move((in->pressed & key(4)) != 0 ? 0 : 1);
       return;
     }
     if ((in->pressed & mask) == 0) return;
@@ -737,7 +745,7 @@ void input_dispatch(BattleInput* in) {
   u->command = 1;
   u->target = u->last_attacker;
   effect_skill_popup(u, 0x24);
-  // TODO(port): the counter's afterimage (0x800756e0, colour 0x905050).
+  ghost_create(u, 0x905050);
   u->attack_recovery = 0;
   u->action_kind = 0;
   u->begin_action();

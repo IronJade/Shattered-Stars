@@ -45,6 +45,7 @@ Sprite* sprite_spawn_a(int anim, int loops, u8* owner);   // 0x8002f9c0: set A, 
 Sprite* sprite_spawn_b(int anim, int loops, u8* owner);   // 0x8002fa40: set B (debris), pool A
 Sprite* sprite_spawn_c(int anim, int loops, u8* owner);   // 0x8002fac0: set C (stage sprites)
 Sprite* sprite_spawn_from(int anim, int loops, const BObj* src, u8* owner);  // 0x8002fb34
+inline Sprite* unit_play_anim(const BObj* u, int anim) { return sprite_spawn_from(anim, 0, u, nullptr); }  // 0x80053ee0
 void sprite_reset(Sprite* s, int anim, int loops, u8* owner);               // 0x8002fbc4
 void sprite_set_fade(Sprite* s, u8 level, s32 speed, s16 hold);             // 0x8002fe88
 void sprite_set_pos(Sprite* s, s32 x, s32 y, s32 z);                        // 0x8002feac

@@ -8,6 +8,7 @@
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/battle/fx_draw.h"
 #include "game/battle/battle_debug.h"
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
@@ -16,6 +17,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/hud.h"
 #include "game/battle/result.h"
+#include "game/battle/particle.h"
 #include "game/battle/shot.h"
 #include "game/battle/voice.h"
 #include "game/battle/unit_move.h"
@@ -197,6 +199,7 @@ void battle_init_objects() {
   render_ctx_create_arena(g.prim_pool_b, 0xC80);
   render_ctx_create_ot(g.prim_pool_b, 0xC);
   shot_pool_create();    // 160 x 0x13c (g_pool_13c)
+  particle_pool_create();  // 200 x 0x48 (g_pool_48)
   sprite_pool_create();  // 296 x 0xb8 (g_pool_b8)
   input_reset();         // g_input (0xa0)
   damage_popups_reset(); // Pool2C (16 x 0x2c)
@@ -543,7 +546,9 @@ void battle_main_loop() {
     camera_update_matrices();
     battle_frame_director();
     bsfx_update();
-    // TODO(port): the lens flare (stages with a sun).
+    if (stage().flare_on != 0 && g.stage_hidden == 0) {
+      lens_flare_draw(stage().flare_pos, stage().flare_size, stage().flare_colour, stage().flare_b, stage().flare_cos);
+    }
     // The fade to the field once the result screen has closed (and the camera has settled).
     if (g.result_started == 0 && g.state == kStateResult && battle_result_screen() == nullptr &&
         (g.camera->mode == 0 || g.camera->remaining < 0xB400)) {
@@ -561,8 +566,8 @@ void battle_main_loop() {
     task_run_all();
     if (g.state == kStateLoaded && !g.battle_code_unpacked) g.battle_code_unpacked = true;  // #1984 block 1
     shot_pool_update();
-    // TODO(port): the Particle (200) pool after the sprites.
     sprite_pool_update();
+    particle_pool_update();
     if (g.stage_hidden == 0) stage_draw_and_animate();
     // TODO(port): clash_resolve (state > 1).
     bool ended = false;
@@ -677,6 +682,7 @@ void battle_free_all() {
   g.camera_obj.reset();
   sprite_pool_destroy();
   shot_pool_destroy();
+  particle_pool_destroy();
 }
 
 void battle_exit_to_field() {

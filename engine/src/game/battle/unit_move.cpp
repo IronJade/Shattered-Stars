@@ -3,7 +3,9 @@
 #include <utility>
 
 #include "game/battle/render.h"
+#include "game/battle/sprite.h"
 #include "game/battle/stage.h"
+#include "game/boot/rng.h"
 
 namespace ss::game::battle {
 namespace {
@@ -60,6 +62,33 @@ Vec4 vec_direction_xz(const s32 from[3], const s32 to[3]) {
   v.x = (to[0] - from[0]) / d;
   v.y = 0;
   v.z = (to[2] - from[2]) / d;
+  return v;
+}
+
+Vec4 vec_velocity_toward_xz(const s32 from[3], const s32 to[3], s32 speed) {
+  Vec4 v = vec_direction_xz(from, to);
+  v.x *= speed;
+  v.y *= speed;
+  v.z *= speed;
+  return v;
+}
+
+void vec_to_angles(s32 out[3], const s32 v[3]) {
+  const s32 x = static_cast<s16>(v[0]), z = static_cast<s16>(v[2]);
+  const s32 yaw = ratan2(v[2], v[0]);
+  const s32 len = square_root0(static_cast<s32>(static_cast<u32>(x * x) + static_cast<u32>(z * z)));
+  out[0] = ratan2(v[1], len);
+  out[1] = yaw;
+  out[2] = 0;
+}
+
+Vec4 vec_random_around(const s32 centre[3], s32 radius) {
+  const u32 a = rng_range(0x1000);
+  const s32 b = rng_spread(0x400);
+  Vec4 v;
+  v.x = ((bcos(a) * bcos(static_cast<u32>(b))) >> 12) * radius + centre[0];
+  v.y = centre[1] - bsin(a) * radius;
+  v.z = ((bcos(a) * bsin(static_cast<u32>(b))) >> 12) * radius + centre[2];
   return v;
 }
 

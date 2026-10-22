@@ -16,6 +16,8 @@ namespace ss::game::battle {
 // screen are not ported yet. With SS_BATTLE_RAM=<2 MB RAM dump of the original> the
 // party, config and inventory (and, when the dump was taken at field_exit_to_program,
 // the encounter and stage of the field's setup) come from the dump instead.
+// SS_BATTLE_POKE=TAG:OFFSET=VALUE/SIZE,... then writes into the handoff blocks (after
+// SS_BATTLE_STRONG), e.g. "4:0xcc=10/1" for killer move byte 10 on slot 0's L1.
 Program battle_debug_start(const std::string& spec, const std::string& end);
 // --battle-end alone: every battle of the run (the field's too) ends that way.
 void battle_debug_set_end(const std::string& end);

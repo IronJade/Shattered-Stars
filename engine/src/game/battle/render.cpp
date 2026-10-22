@@ -113,6 +113,16 @@ s32 square_root0(s32 a) {
   return static_cast<s32>((static_cast<u32>(root) << shift) >> 12);
 }
 
+// 0x8003c838 colour_lerp: per channel from + (to - from) * t >> 12 (t 0..0x1000).
+u32 colour_lerp(u32 from, u32 to, s32 t) {
+  const u32 r0 = (from & 0xFF) * 0x10, g0 = from >> 4 & 0xFF0, b0 = from >> 0xC & 0xFF0;
+  const u32 r1 = (to & 0xFF) * 0x10, g1 = to >> 4 & 0xFF0, b1 = to >> 0xC & 0xFF0;
+  const u32 r = static_cast<u32>(static_cast<s32>(r0) + (static_cast<s32>((r1 - r0) * static_cast<u32>(t)) >> 12)) >> 4;
+  const u32 g = (g0 + (static_cast<s32>((g1 - g0) * static_cast<u32>(t)) >> 12)) * 0x10 & 0xFF00;
+  const u32 b = (b0 + (static_cast<s32>((b1 - b0) * static_cast<u32>(t)) >> 12)) * 0x1000 & 0xFF0000;
+  return r | g | b;
+}
+
 s32 ratan2(s32 y, s32 x) {
   const bool neg_x = x < 0;
   if (neg_x) x = -x;

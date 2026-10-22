@@ -63,6 +63,7 @@ void rot_matrix_y(s32 angle, psyq::MATRIX* m);                // 0x8006400c
 void rot_matrix_axis(const s32 axis[3], s32 angle, psyq::MATRIX* m);  // 0x80064078
 s32 square_root0(s32 a);                                      // 0x8006a720 SquareRoot0
 s32 ratan2(s32 y, s32 x);                                     // 0x8006add0
+u32 colour_lerp(u32 from, u32 to, s32 t);                     // 0x8003c838: per channel, t 0..0x1000
 void set_fog_near(s32 a, s32 h);                              // 0x8006a620 SetFogNear
 
 void camera_reset();              // 0x80076be8 (#1984.0): GTE H / offset / far colour, view reset

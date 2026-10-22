@@ -22,6 +22,13 @@ s32 vec_distance_xz_fx(const s32 a[3], const s32 b[3]);  // 0x80067204: ground p
 Vec4 vec_direction(const s32 from[3], const s32 to[3]);      // 0x80067284: unit vector (4.12)
 Vec4 vec_direction_xz(const s32 from[3], const s32 to[3]);   // 0x80067484: y = 0
 Vec4 vec_velocity_toward(const s32 from[3], const s32 to[3], s32 speed);  // 0x80048d94
+Vec4 vec_velocity_toward_xz(const s32 from[3], const s32 to[3], s32 speed);  // 0x80048e28 (y = 0)
+// 0x80048f60: a random point on a sphere of 'radius' units around centre (yaw rng_range(0x1000),
+// tilt rng_spread(0x400)).
+Vec4 vec_random_around(const s32 centre[3], s32 radius);
+// 0x800491b4: out = {pitch ratan2(y, |v.xz|), yaw ratan2(z, x), 0}. The length squares the
+// low 16 bits of x and z (GTE SQR on IR1 / IR3).
+void vec_to_angles(s32 out[3], const s32 v[3]);
 
 // 0x8004e7ac: sweeps u's box by (vx, vz) x look-ahead (+0x162) against the living
 // units, the stage obstacles and the arena edge; the nearest blocking point (a cell

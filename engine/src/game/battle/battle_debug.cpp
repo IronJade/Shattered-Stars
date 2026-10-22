@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <string>
 #include <vector>
 
 #include "disc/slz.h"
@@ -148,6 +149,27 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
         v = static_cast<s16>(v * 8);
         std::memcpy(slot + off, &v, 2);
       }
+    }
+  }
+  if (const char* pokes = std::getenv("SS_BATTLE_POKE"); pokes != nullptr) {
+    // Debugging: TAG:OFFSET=VALUE/SIZE,... written into handoff TAG (as a Redux BW_POKE
+    // after field_exit), e.g. 4:0xcc=10/1 gives slot 0 killer move byte 10 on L1.
+    std::string list(pokes);
+    size_t at = 0;
+    while (at < list.size()) {
+      size_t stop = list.find(',', at);
+      if (stop == std::string::npos) stop = list.size();
+      const std::string item = list.substr(at, stop - at);
+      at = stop + 1;
+      unsigned tag = 0, size = 0;
+      int off = 0;
+      long long value = 0;
+      if (std::sscanf(item.c_str(), "%u:%i=%lli/%u", &tag, &off, &value, &size) != 4) continue;
+      auto* block = static_cast<u8*>(handoff_get(reg, static_cast<int>(tag)));
+      if (block == nullptr || off < 0 || (size != 1 && size != 2 && size != 4)) continue;
+      const u32 v = static_cast<u32>(value);
+      std::memcpy(block + off, &v, size);
+      std::fprintf(stderr, "[battle] poke handoff %u +0x%x = 0x%x (%u bytes)\n", tag, off, v, size);
     }
   }
   handoff_store(reg, setup, 5);

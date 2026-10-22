@@ -9,6 +9,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/killer.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -693,10 +694,31 @@ void PartyUnit::begin_action() {
       bobj_anim_reset(this);
       return;
     case 7: case 8: case 9: case 0xA: case 0xB: case 0xC: case 0xD: case 0xE: case 0xF: case 0x10: case 0x11: {
+      // A killer move: its voice (slot 39), the MP cost (slot 36), state kind + 9
+      // (0x10..0x1a, run by the character module's slot 37) and the use counter.
       if (target == nullptr) break;
       pc_record_counter_dec(this, 2);
-      todo("killer moves (the character modules' slots 35-37)");
-      break;
+      play_move_voice(killer_index);
+      const int cost = move_mp_cost(killer_index);
+      vel[0] = vel[1] = vel[2] = 0;
+      if (st()->mp < cost) break;
+      half_damage = 0;
+      st()->mp = static_cast<s16>(st()->mp - cost);
+      action = static_cast<u8>(action_kind + 9);
+      u8* uses = record + 0x7E + action_kind * 2;
+      s16 n;
+      std::memcpy(&n, uses, 2);
+      if (n < 999) {
+        ++n;
+        std::memcpy(uses, &n, 2);
+      }
+      animate(0);
+      bobj_anim_reset(this);
+      counters[1] = counters[2] = counters[3] = 0;
+      loop_limit = 1;
+      layer = 1;
+      ++action_count;
+      return;
     }
     case 0x12:
       if (jumping != 0) jumping = 0;

@@ -13,6 +13,8 @@
 // Virtual slot n of the original is the method commented "[n]".
 namespace ss::game::battle {
 
+struct Afterimage;
+
 // The stats record (the PartySlot layout, 0x60 bytes): the handoff-3 slot itself for
 // party members, a 0x60-byte block for monsters (built from the encounter pack).
 struct Stats {
@@ -125,7 +127,7 @@ struct Unit : Collider {
   s32 walk_dest[4] = {};              // +0x1d8
   Unit* last_attacker = nullptr;      // +0x1e8
   Sprite* status_icons[2] = {};       // +0x1ec
-  void* effects[2] = {};              // +0x1f4
+  Afterimage* effects[2] = {};        // +0x1f4: the bound afterimage trails (killer moves)
   u8* stats = nullptr;                // +0x1fc
 
   Unit();  // unit_create 0x8004dd30
@@ -147,8 +149,8 @@ struct Unit : Collider {
   virtual void clear_status(int, u32) {}          // [19]
   virtual void set_status(int, u32) {}            // [20]
   virtual void status_recovered() {}              // [21]
-  // The two bound effect Shots (+0x1f4 / +0x1f8) end (their +0xc = 1).
-  void release_effects() { effects[0] = effects[1] = nullptr; }
+  // The two bound afterimages (+0x1f4 / +0x1f8) end (their +0xc = 1) and are let go.
+  void release_effects();
 };
 
 // Unit-related globals.
@@ -273,7 +275,13 @@ struct PartyUnit : Unit {
   std::array<const u8*, 4> alt_layout{};  // +0x280
   std::array<u16, 4> alt_clut{};          // +0x2d0
   std::array<s16, 8> killer_range{};  // +0x2de: [combo][move] near / far ranges
-  std::array<s16, 4> killer_charge{}; // +0x2f2
+  std::array<s16, 4> killer_charge{}; // +0x2f2: the moves' proficiency (charge levels)
+  // Party loader phases 1-4: the killer-move data blocks.
+  std::array<std::array<const u8*, 4>, 4> move_parts{};  // +0x290: [move][part]
+  std::array<std::array<const u8*, 2>, 4> attack_data{}; // +0x330: block +0x10 / +0x18 per move
+  std::array<const u8*, 4> move_data{};                   // +0x350: MoveData (block +0x20)
+  s16 v2d8 = 0;                       // +0x2d8 (character modules)
+  s16 v2da = 0;                       // +0x2da
   s16 acc_hp_max[2] = {};             // +0x304: max HP without accessory 1 / 2
   s16 acc_mp_max[2] = {};             // +0x308: max MP without accessory 1 / 2
   s16 effect_timer[3] = {};           // +0x30c: timed effect counters 1..3
@@ -312,7 +320,10 @@ struct PartyUnit : Unit {
   virtual void state_victory();       // [33] pc_state_victory 0x8003785c
   virtual void state_flee();          // [34] pc_state_flee 0x800378c0
   virtual int killer_move_cost(int) { return 0; }  // [35] MP cost of killer move 0 / 1 (character module)
+  virtual int move_mp_cost(int) { return 0; }       // [36] MP cost of killer move index (character module)
   virtual void killer_move_state(int) {}  // [37] (the character module's killer moves)
+  virtual void play_move_voice(int) {}    // [39] pc_play_move_voice 0x8003ac70 (voice clips: TODO)
+  virtual int forced_attack_choice() { return -1; }  // [45] pc_forced_attack_choice 0x8003bc40
   virtual void camera_follow_start(); // [38] pc_camera_follow_start 0x80037b9c
   virtual void play_voice(int) {}     // [43] pc_play_voice 0x8003ac38 (voice clips: TODO)
   void appear_update();               // 0x800362a8 pc_appear_update

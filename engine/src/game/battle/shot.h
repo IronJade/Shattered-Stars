@@ -28,6 +28,7 @@ struct Shot : Collider {
   s32 p134 = 0;              // +0x134
   s32 p138 = 0;              // +0x138: flags (kind 0x16) or a parameter
   ShotFn handler = nullptr;  // +0x138 of the callback kinds 0x21 / 0x33
+  BObj* spark_owner = nullptr;  // +0x110 of kind 0x11 (any object to follow)
   // (Module code keeps state in fields of its own; they are named where it is ported.)
   s32 user[4] = {};
 
@@ -63,6 +64,13 @@ int shot_fade_out(Shot* s);
 Shot* shot_spawn_callback(ShotFn fn);         // 0x8005b4f0: kind 0x33
 Shot* shot_spawn_callback_always(ShotFn fn);  // 0x8005b4b0: kind 0x21 (runs while suppressed)
 int shot_kind_absent(int kind);               // 0x800874d4: 1 when no Shot has the kind
+// 0x80063824 / 0x800639ac: a kind-0x11 Shot (a ring of textured quads) at pos / following
+// owner: +0x128 count, +0x118 / +0x11c / +0x120 / +0x12c / +0x130 / +0x134 / +0x138
+// parameters, +0x10a flag.
+Shot* effect_spawn_sparks_at(const s32 pos[3], s32 count, s32 p118, s32 p11c, s32 p130, s32 p134, s32 p12c,
+                             s32 p120, s32 p138, s16 power);
+Shot* effect_spawn_sparks_on(BObj* owner, s32 count, s32 p118, s32 p11c, s32 p130, s32 p134, s32 p12c, s32 p120,
+                             s32 p138, s16 power);
 int shot_kind21_absent(ShotFn fn);            // 0x80087510: 1 when no kind-0x21 Shot runs fn
 
 }  // namespace ss::game::battle

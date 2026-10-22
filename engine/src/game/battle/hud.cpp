@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "game/battle/input.h"
+#include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/unit.h"
 #include "game/boot/sound.h"
@@ -14,8 +15,10 @@
 namespace ss::game::battle {
 namespace {
 
-std::unique_ptr<BattleHud> g_hud;            // 0x8006fa9c
-std::unique_ptr<DebugWindow> g_debug_window; // 0x8006faa0
+// (Plain pointers: a run that stops mid-battle must not destroy them after the screen
+// manager's statics are gone.)
+BattleHud* g_hud = nullptr;                  // 0x8006fa9c
+DebugWindow* g_debug_window = nullptr;       // 0x8006faa0
 MessageWindow* g_message = nullptr;          // 0x8006faa8 (deletes itself when released)
 
 void add_prim(BWindow* w, void* p) { psyq::addPrim(w->ctx.ot_head, p); }
@@ -35,16 +38,6 @@ void queue_draw_mode(BWindow* w, int dfe, int dtd, int tpage) {
 const char* str(u32 address) { return reinterpret_cast<const char*>(battle_data(address)); }
 
 void small_text(BWindow* w, int x, int y, const char* s, int pal) { window_draw_small_text(w, x, y, s, pal); }
-
-// 0x8003c838 colour_lerp: per channel from + (to - from) * t >> 12 (t 0..0x1000).
-u32 colour_lerp(u32 from, u32 to, s32 t) {
-  const u32 r0 = (from & 0xFF) * 0x10, g0 = from >> 4 & 0xFF0, b0 = from >> 0xC & 0xFF0;
-  const u32 r1 = (to & 0xFF) * 0x10, g1 = to >> 4 & 0xFF0, b1 = to >> 0xC & 0xFF0;
-  const u32 r = static_cast<u32>(static_cast<s32>(r0) + (static_cast<s32>((r1 - r0) * static_cast<u32>(t)) >> 12)) >> 4;
-  const u32 g = (g0 + (static_cast<s32>((g1 - g0) * static_cast<u32>(t)) >> 12)) * 0x10 & 0xFF00;
-  const u32 b = (b0 + (static_cast<s32>((b1 - b0) * static_cast<u32>(t)) >> 12)) * 0x1000 & 0xFF0000;
-  return r | g | b;
-}
 
 // Palette of a value against its maximum: 10 (red) at 0, 15 below a quarter, else 0.
 int value_palette(s32 value, s32 max) {
@@ -149,12 +142,13 @@ void hud_draw_target_select(BattleHud* h) {
 
 }  // namespace
 
-BattleHud* battle_hud() { return g_hud.get(); }
+BattleHud* battle_hud() { return g_hud; }
 MessageWindow* battle_message() { return g_message; }
 
 void battle_windows_create() {
-  g_hud = std::make_unique<BattleHud>();
-  g_debug_window = std::make_unique<DebugWindow>();
+  battle_windows_free();
+  g_hud = new BattleHud();
+  g_debug_window = new DebugWindow();
   g_message = nullptr;
 }
 
@@ -168,8 +162,10 @@ void battle_windows_free() {
     delete g_message;
     g_message = nullptr;
   }
-  g_debug_window.reset();
-  g_hud.reset();
+  delete g_debug_window;
+  g_debug_window = nullptr;
+  delete g_hud;
+  g_hud = nullptr;
 }
 
 void hud_init(BattleHud* h) {

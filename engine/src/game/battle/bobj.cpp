@@ -145,7 +145,10 @@ bool texcache_alloc(BObj* o, s32* u0, s32* v0, s32* u1, s32* v1, int depth, cons
     tc->cursor[0] = static_cast<s16>(tc->cursor[0] + step);
     if (tc->row_height < h) tc->row_height = static_cast<u8>(h);
   }
-  runtime::Runtime::get().log_once("battle-texcache-none", "battle: sprite texture cache: no room (NO CASH)");
+  // The console prints "NO CASH" (the last attempt collided) or "NO CASH TAG" through the
+  // empty debug_print.
+  if (collided) runtime::Runtime::get().log_once("battle-texcache-none", "battle: sprite texture cache: no room (NO CASH)");
+  else runtime::Runtime::get().log_once("battle-texcache-tag", "battle: sprite texture cache: no room (NO CASH TAG)");
   return false;
 }
 

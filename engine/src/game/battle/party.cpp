@@ -16,6 +16,7 @@
 #include "disc/slz.h"
 #include "game/battle/battle.h"
 #include "game/battle/camera.h"
+#include "game/battle/pc_modules.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
 #include "game/battle/sprite.h"
@@ -45,6 +46,10 @@ void todo(const std::string& what) {
 
 std::array<std::unique_ptr<PartyUnit>, 4> g_members;
 std::array<std::vector<u8>, 4> g_member_data;   // g_member_buf / g_member_data: the unpacked phase-0 block
+std::array<std::array<std::vector<u8>, 4>, 4> g_move_blocks;  // g_member_data [slot][1..4]: killer-move data
+// Claude's two upgraded moves: killer_move_data_entry patches its entry table in RAM for
+// the rest of the battle (#2129 is reloaded with the next one).
+u8 g_claude_upgrades = 0;
 
 // pc_calc_equipment_stats context (g_statcalc_inventory 0x8008517c / g_statcalc_record 0x80085178).
 const u8* g_statcalc_record = nullptr;
@@ -147,7 +152,8 @@ void pc_construct_slot(int slot) {
   auto* party = static_cast<u8*>(handoff_get(g.handoff, 3));
   auto* records = static_cast<u8*>(handoff_get(g.handoff, 4));
   g.party_standing_at_start = 0;
-  g_members[slot] = std::make_unique<PartyUnit>();
+  // The character's module (its PartyUnit subclass; offset 0 of the code block).
+  g_members[slot] = pc_module_create(rds16(party + slot * 0x60));
   PartyUnit* u = g_members[slot].get();
   g.party_units[slot] = u;
   u->stats = party + slot * 0x60;
@@ -251,6 +257,66 @@ void tex_rects_offset(u8* block, s32 dx, s32 dy) {
   }
 }
 
+// 0x80083db0 killer_move_data_entry: the archive entry of the data of assigned killer move
+// phase - 1 (record +0xcc..+0xcf; byte = move + 1), per character (and weapon variant).
+s32 killer_move_data_entry(int phase, const PartyUnit* u) {
+  const int k = phase - 1;
+  const u8 b = u->record[0xCC + k];
+  if (b == 0) return 0;
+  const int idx = b - 1;
+  const bool v0 = u->weapon_variant == 0;
+  switch (u->st()->id - 1) {
+    case 0:  // Claude
+      if (199 < u->killer_charge[k] && idx == 1) g_claude_upgrades |= 1;
+      if (99 < u->killer_charge[k] && idx == 7) g_claude_upgrades |= 2;
+      if ((g_claude_upgrades & 1) != 0 && idx == 1) return v0 ? 0x8C0 : 0x872;
+      if ((g_claude_upgrades & 2) != 0 && idx == 7) return v0 ? 0x8C7 : 0x878;
+      return battle_s16((v0 ? 0x80085198u : 0x80085180u) + static_cast<u32>(idx) * 2);
+    case 3: return battle_s16(0x80084F20 + static_cast<u32>(idx) * 2);                            // Bowman
+    case 4: return battle_s16((v0 ? 0x80084F34u : 0x80084F48u) + static_cast<u32>(idx) * 2);  // Dias
+    case 5: return battle_s16(0x80084F5C + static_cast<u32>(idx) * 2);                            // Precis
+    case 6: return battle_s16((v0 ? 0x80084F84u : 0x80084F70u) + static_cast<u32>(idx) * 2);  // Ashton
+    case 8: return battle_s16(0x80084F0C + static_cast<u32>(idx) * 2);                            // Opera
+    case 9: return battle_s16(0x80084F98 + static_cast<u32>(idx) * 2);                            // Ernest
+    case 0xB: return battle_s16(0x80084FA8 + static_cast<u32>(idx) * 2);                          // Chisato
+    default: return 0;
+  }
+}
+
+// Phases 1-4 of one member (party_loader_update): the killer-move data blocks.
+void party_load_moves(int slot) {
+  BattleGlobals& g = bg();
+  PartyUnit* u = g.party_units[slot];
+  for (int phase = 1; phase <= 4; ++phase) {
+    const s32 entry = killer_move_data_entry(phase, u);
+    if (entry <= 0) continue;
+    std::vector<u8> packed(static_cast<size_t>(g.loader->entry_size(entry)));
+    if (packed.empty()) continue;
+    g.loader->load_sync(packed.data(), entry, 0);
+    auto unpacked = disc::slz::unpack_block(packed, 0, 0, nullptr);
+    if (!unpacked || unpacked->size() < 0x38) continue;
+    const int k = phase - 1;
+    g_move_blocks[slot][k] = std::move(*unpacked);
+    const std::vector<u8>& block = g_move_blocks[slot][k];
+    const u8* d = block.data();
+    u->alt_layout[k] = d + rd32(d);
+    u->alt_anims[k] = d + rd32(d + 4);
+    u->alt_frames[k] = d + rd32(d + 8);
+    u->alt_sheet[k] = d + rd32(d + 0xC);
+    u->attack_data[k][0] = d + 0x10;
+    u->attack_data[k][1] = d + 0x18;
+    u->move_data[k] = d + 0x20;
+    for (int i = 0; i < 4; ++i) u->move_parts[k][i] = d + rd32(d + 0x28 + i * 4);
+    // The move's palette to CLUT row 0x1cf + slot * 4 + phase (its cels stream through
+    // the unit's TexCache).
+    const size_t sheet = rd32(d + 0xC);
+    const size_t clut = sheet + rd32(d + sheet);
+    u16 work[256];
+    clut_build_pair(work, block, clut + 4, static_cast<int>(rd32(d + clut)));
+    u->alt_clut[k] = upload_clut256(work, 0, slot * 4 + phase + 0x1CF);
+  }
+}
+
 // Phase 0 of one member: the data entry, the unit, its textures.
 void party_load_member(int slot) {
   BattleGlobals& g = bg();
@@ -326,9 +392,7 @@ void party_load_member(int slot) {
     u->texcache = texcache_create(area);
   }
   psyq::DrawSync(0);
-  // TODO(port): phases 1-4, the killer-move data (killer_move_data_entry 0x80083db0).
-  if (u->record[0xCC] | u->record[0xCD] | u->record[0xCE] | u->record[0xCF])
-    todo("killer-move data (party loader phases 1-4)");
+  party_load_moves(slot);
 }
 
 }  // namespace
@@ -368,6 +432,10 @@ Task* party_loader_create() {
 void party_reset() {
   for (auto& m : g_members) m.reset();
   for (auto& d : g_member_data) d.clear();
+  for (auto& m : g_move_blocks)
+    for (auto& d : m) d.clear();
+  g_claude_upgrades = 0;
+  pc_modules_reset();
 }
 
 // ---- PartyUnit -------------------------------------------------------------------------
@@ -378,9 +446,9 @@ PartyUnit::PartyUnit() {
   sfx_crit = 0x48;
   sfx_guard = 0x4F;
   jump_threshold = static_cast<s32>(0xFFF88000);
-  animset = animset_alloc();
-  for (AnimSet*& m : model_sets) m = nullptr;
-  model_sets[0] = animset;
+  // The default model set and the four killer-move alternates (+0x23c..+0x24c).
+  for (AnimSet*& m : model_sets) m = animset_alloc();
+  animset = model_sets[0];
 }
 
 void PartyUnit::update() {

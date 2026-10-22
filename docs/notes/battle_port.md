@@ -10,7 +10,7 @@ console, how it was checked, and what is still missing.
 | File | Contents |
 |---|---|
 | `battle.h`, `battle_program.cpp` | program entry / run / main loop / exit, BattleGlobals (addresses in comments), tasks, OT layers, end checks, victory / defeat |
-| `battle_debug.{h,cpp}` | `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`, `SS_BATTLE_RAM`, `SS_BATTLE_STRONG` |
+| `battle_debug.{h,cpp}` | `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`, `SS_BATTLE_RAM`, `SS_BATTLE_STRONG`, `SS_BATTLE_POKE`, `SS_BATTLE_RNG`, `SS_BATTLE_DUMP` |
 | `loaders.{h,cpp}` | the 12 load-list handlers, sprite banks, inventory check, the field reload list + preloads (handoffs 0xc / 10) |
 | `stage.{h,cpp}` | stage command lists (ops 1-17), ground height, `stage_draw_and_animate`, `model_render` |
 | `render.{h,cpp}` | ViewState, trig / sqrt / ratan2 copies, GTE setup, `camera_compute_view`, lights, `obj_set_matrix` |
@@ -28,6 +28,11 @@ console, how it was checked, and what is still missing.
 | `hud.{h,cpp}` | the top status bar (BattleHud), the debug window, the bottom message banner (`battle_message_show`) |
 | `result.{h,cpp}` | #1981: the result screen (EXP / Fol, drops, level-ups and learning, the defeat / escape messages), `battle_fade_task` |
 | `voice.{h,cpp}` | the voice picks that draw from the RNG (`voice_pick_victory`, `voice_play_result`); the clips are not ported |
+| `shot.{h,cpp}` | the Shot pool (160 effect / projectile actors): spawn / kill / fade / draw helpers, the callback kinds 0x21 / 0x33, kind 1 (stun stars) and kind 0x11 (ring of textured quads) |
+| `particle.{h,cpp}` | the Particle pool (200): spawners for kinds 1-5; kinds 1-3 drawn with the GTE |
+| `fx_draw.{h,cpp}` | #1984 3-D effect drawers: `draw_vortex`, the lens flares (`lens_flare_draw`, `lens_flare_draw_small`, flare ring / polygon), `project_to_screen` |
+| `killer.{h,cpp}` | killer-move helpers shared by the modules: afterimages and ghosts (#1984), `pc_bind_shot`, `pc_attack_hit`, charge level, the MP cost and `command_killer_move` |
+| `pc_modules.{h,cpp}`, `pc_claude.cpp` | the party-character modules: the factory used by `pc_construct_slot`, byte access to each module's data, Claude's module (#2131) |
 | `bsfx.{h,cpp}` | battle sound front end (8 channels, 3-D pan, sound-test record) |
 | `vram.{h,cpp}` | CLUT / texture upload helpers |
 
@@ -37,8 +42,11 @@ console, how it was checked, and what is still missing.
   encounter packs' enemy code. Only data is read from the disc.
   - Monsters whose class lives in an encounter pack (the "Module" family) run the EnemyUnit base
     behaviour. This is logged once per monster type.
-  - The party-character modules are not ported, so Claude etc. use the PartyUnit base. Normal attacks
-    need nothing from the module. Killer moves (slots 35-37, 42, 45) do.
+  - Of the party-character modules only Claude's (#2131 / #2133) is ported (`pc_claude.cpp`). The
+    others use the PartyUnit base, which is logged once. Normal attacks need nothing from the
+    module. Killer moves (slots 35-37, 42, 45) do. The ported module is a native subclass. Its data
+    tables are read from the module image at its slot-0 link address (0x801ee000), whatever slot
+    the character is in.
 - **Synchronous loads.** Loads are synchronous: the party loader, the field preloads, and the intro
   voice banks. The bload queue, spell-data cache and voice clips are not ported.
 - **Heap budget.** `battle_queue_field_preloads` uses only the 0xa0000 cap, not "free heap - 0x4000".
@@ -101,26 +109,50 @@ console, how it was checked, and what is still missing.
   resumed (checked with a WAV recording).
 - **Victory path.** `SS_BATTLE_STRONG=1 --battle 2:3` with Cross mashing kills both enemies through the
   dying animations, then victory (outcome 0) and exit.
+- **Killer move (Phase Gun).** A third Redux reference: the same poked fight with L1 pressed every 45
+  vsyncs, so Claude uses his starting move, Phase Gun, again and again (`ref/phasegun_2_3`).
+  - The RNG draw counts match at every 10 vsyncs from the battle start to b1600 (708 draws). That
+    covers the move's sprite jitter and its 48 `vec_random_around` streaks per hit.
+  - The frames match (port n-2 against b<n>): the charge, the blast, the streaks, the damage
+    numbers (701, 688) and the result pages. The remaining differences are dither. Measured on 4x4
+    block means, which cancel the dither, the result screen differs in 3.6 % of blocks, all in the
+    stage background.
+  - The exit matches too (`ref/phasegun_exit`: L1 for the fight, then Cross). The RNG counts
+    are equal up to the exit at b1236, and the handoffs at the exit differ only in the 12 known
+    bytes. Handoff 3 (party, MP, the move's use counter) is byte-identical.
+  - The sprite texture cache runs out of room at the same moment. A Redux breakpoint on the
+    failure path of `texcache_alloc` (0x8004516c) fires 8 times a frame at b582-586; the port
+    logs its first failure at port frame 579-580. (The console's "NO CASH" text goes to an empty
+    `debug_print`.)
+- **Killer moves (Sword Bomber).** A fourth reference (`ref/moves_9_5`): the same fight, with
+  `SS_BATTLE_POKE` / `BW_POKE` giving Claude move byte 10 (Sword Bomber, move 9) on L1, byte 6
+  on R1 and 200 MP.
+  - The RNG counts match at every 10 vsyncs to b1600, through the victory and the result
+    screen at b879.
+  - The frames show the same vortex funnel (`draw_vortex`), the small lens flare
+    (`lens_flare_draw_small`), the kind-0x11 fire rings and the damage numbers.
 
 ## Not ported yet (in rough priority order)
 
 1. **Leftovers of the HUD and the result screen.**
    - The voice clips of the victory and the level-up pages (their RNG draws are ported).
    - The start burst (`battle_start_burst_create` 0x8003c02c, the white radial wipe).
-   - The HUD greys a killer move by its MP cost (PartyUnit vtable [35]), which comes from the
-     character modules; until they are ported the cost is 0.
-2. **Killer moves.** The party loader phases 1-4 (killer-move data) and the character modules.
-   Command 2/3 logs a TODO.
+   - The HUD greys a killer move by its MP cost (PartyUnit vtable [35]). The cost comes from the
+     character modules, so it is 0 for every character but Claude.
+2. **Killer moves.** The other eleven character modules, and the sound-handle duck / fade /
+   pitch calls (no clip handles are tracked yet).
 3. **Spells and items.** `spell_cast`, the SpellCast tasks and spell data, `unit_begin_cast`, enemy
    `try_cast`, and `item_use_battle`. The ring menu and list menus, the member select (input mode 1), and
    escape.
-4. **Shot and Particle pools.** Projectiles, the stun stars (`unit_apply_stun`), thrown weapons, and
-   confetti / debris particles.
+4. **Shot and Particle pools.** The pools, kinds 1 / 0x11 / 0x21 / 0x33 of Shot and kinds 1-3 of
+   Particle are ported. The other Shot kinds (thrown weapons, the module kinds) log once and are
+   removed. Particle kinds 4 / 5 (shards, confetti) spawn with their RNG draws but are not drawn.
 5. **Party AI.** Fighter / healer / caster AI for the non-controlled members.
    `pc_update_effects` beyond `unit_update_status_effects`.
 6. **Voices.** Voice clips and voice tables, including `voice_pick_victory`, which draws from the RNG
    at victory, and the opening voices.
-7. **Stage extras.** Stage code blocks, stage-8 lightning, and the lens flare.
+7. **Stage extras.** Stage code blocks and stage-8 lightning. The stage lens flare is ported
+   (`fx_draw.cpp`) but has not been compared yet (Shingo Forest has none).
 
 ## Hooks outside engine/src/game/battle
 
@@ -128,6 +160,7 @@ console, how it was checked, and what is still missing.
 - **main.cpp.**
   - `--battle ENC[:STAGE]` and `--battle-end FRAMES[:OUTCOME]`.
   - Without `--battle`, `--battle-end` applies to every battle, including ones the field starts.
-- **boot/rng.{h,cpp}.** `rng_restore(table, index)`, a debug-only state restore used by `SS_BATTLE_RAM`.
+- **boot/rng.{h,cpp}.** `rng_restore(table, index)`, a debug-only state restore used by `SS_BATTLE_RAM`,
+  and `rng_draws()`, a debug-only draw counter (`SS_BATTLE_RNG`).
 - **CMakeLists.txt.** The battle sources are in `ss_game`, and `tests/test_battle.cpp` is in
   `ss_game_tests`.
