@@ -1134,8 +1134,14 @@ void vm_svc_party_move_character_to_slot(int character, int slot) {
 void vm_svc_party_swap_characters(int a, int b) { SVC("%d,%d", a, b); }
 
 // ---- Map objects / sprite packs -----------------------------------------------------
-void vm_svc_sprite_packs_tint(int a, int b, int c) { SVC("%d,%d,%d", a, b, c); }
-void vm_svc_sprite_packs_restore_palettes() { SVC("%s", ""); }
+void vm_svc_sprite_packs_tint(int a, int b, int c) {
+  if (field_program() != nullptr) sprite_packs_tint(field_program(), a, b, c);
+  else SVC("%d,%d,%d", a, b, c);
+}
+void vm_svc_sprite_packs_restore_palettes() {
+  if (field_program() != nullptr) sprite_packs_restore_palettes(field_program());
+  else SVC("%s", "");
+}
 void vm_svc_sprite_anim_set_frame_bytes(int a, int b, int count, const s32* values) {
   TRACE("%d,%d count=%d", a, b, count);
   int v[16];

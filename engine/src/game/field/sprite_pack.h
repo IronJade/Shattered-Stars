@@ -33,4 +33,11 @@ void sprite_anim_set_frame_byte(Field* f, int key, int id, int frame, u8 value);
 void sprite_anim_set_byte2(Field* f, int key, int id, u8 value);                            // 0x800523c4: mode
 void sprite_anim_set_loop_frame(Field* f, int key, int id, int frame);                      // 0x80052410 (-1 = last)
 
+// 0x800525ac (script service): every sprite pack palette is backed up, then each colour
+// becomes its luminance scaled by (r, g, b) (16.16 factors; the result is not clamped);
+// field_flags +0x27 = 1. 0x80052838 copies the backups back (field_load_map does it while
+// +0x27 is set).
+void sprite_packs_tint(Field* f, int r, int g, int b);
+void sprite_packs_restore_palettes(Field* f);
+
 }  // namespace ss::game::field

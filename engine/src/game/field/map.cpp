@@ -11,12 +11,14 @@
 #include "game/field/callways.h"
 #include "game/field/effects.h"
 #include "game/field/fade.h"
+#include "game/field/collision.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
 #include "game/field/music.h"
 #include "game/field/notice.h"
 #include "game/field/scene_renderer.h"
 #include "game/field/screen.h"
+#include "game/field/sprite_pack.h"
 #include "game/field/script_vm.h"
 #include "game/field/worldmap.h"
 #include "runtime/libgpu.h"
@@ -273,7 +275,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   // state's disc further down (keep_vram 1). TODO(port): the LoadQueue drain it does first.
   if (g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0) field_prompt_disc_change(f, g.config[0x4C] + 1, 1);
   if (flags[0x27] != 0) {
-    todo("sprite_packs_restore_palettes");
+    sprite_packs_restore_palettes(f);  // 0x80052838
     flags[0x27] = 0;
   }
   if (flags[0x24] == 0 && flags[0x68] != 0 && world_bg() != nullptr) world_bg_release(world_bg());  // overlay 0x800888e0
@@ -495,11 +497,8 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     // re-apply the walk-group switches saved in field_flags +0x89.
     if (flags[0x7F] == 0 || (read_u16(g.config + 0x178) == 2 && flags[0x7E] != 0))
       fade_push(field_fade(), 1, 0x14, 0, 0);
-    for (int i = 0; i < static_cast<s8>(flags[0x91]); ++i) {
-      // TODO(port): walk_set_group_enabled (overlay 0x8008df74)(ctx, flags[0x89 + i] & 0x7f,
-      // !(flags[0x89 + i] & 0x80)).
-      todo("walk_set_group_enabled (overlay 0x8008df74)");
-    }
+    for (int i = 0; i < static_cast<s8>(flags[0x91]); ++i)
+      walk_set_group_enabled(flags[0x89 + i] & 0x7F, (flags[0x89 + i] & 0x80) == 0);  // overlay 0x8008df74
   }
   // World map: the camera yaw (game_state +0x1e) and centre (the leader's spot).
   if (WorldBg* wbg = world_bg(); wbg != nullptr && flags[0x68] != 0) {
