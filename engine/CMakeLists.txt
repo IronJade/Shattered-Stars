@@ -92,6 +92,7 @@ add_library(ss_game STATIC
   src/game/field/menu_equip.cpp
   src/game/field/menu_status.cpp
   src/game/field/menu_skills.cpp
+  src/game/field/menu_specialty.cpp
   src/game/field/menu_options.cpp
   src/game/field/menu_combat.cpp
   src/game/common/menu_viewer.cpp

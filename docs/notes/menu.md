@@ -553,6 +553,54 @@ bytes set (`modsave.py --party-from`). The run covers:
 Config, inventory, party, records and game_state match (with a 60-frame dump delay). The
 frames match.
 
+## Specialty (page 2, overlay 0xbbc)
+
+The camp page's Specialty command picks a member, then shows what that member can do
+outside battle. The first entry depends on the character (table 0x80084057): Killer Move
+Setting for fighters, Spell Setting for Rena, Celine, Leon and Noel. After it come the
+field specialties the member knows: Oracle (2), Musical Talent (3), Practice (8), Scout
+(9) and Familiar (12). A member with only the first entry goes straight to it.
+
+- **Killer Move Setting.** Two slots, record +0xcc / +0xcd, filled from the moves learned
+  (record +0x3c + i) that are in no slot. Triangle with accessory 0x15c opens Link Combo
+  ON / OFF:
+  - ON picks a partner among the other front members (or partner 0x10 with script flag
+    0x5d) into record +0x3b. Choosing someone ends the Link Combos that member had.
+  - With a partner there are two sets: the second set is record +0xce / +0xcf, and the
+    member box shows "LC ON".
+  - A member who is someone else's partner cannot set moves.
+- **Spell Setting.** The character's spell list (record +0x3c + i is the spell times
+  +1 / -1). Square switches a spell off or on for battle. Field spells 0x2f-0x36 can be
+  cast on a member:
+  - heals of 100 / 800 / 2800 HP, or 1200 / 2200 for everyone, plus the caster's slot
+    +0x46 / 4 and half its practice with the spell;
+  - a revive at half HP;
+  - cures of statuses 8 and 0xe.
+  The MP cost comes from table 0x8008406f, halved or cut to two thirds by equipment
+  effects (stat_calc_mp_cost).
+- **Oracle:** a random message among the first min(level * 5, 0x24).
+- **Musical Talent:**
+  - Compose takes a Feather Pen (0x2c) and an owned instrument (0x2d-0x34), each of
+    which has two songs. A new song (script flags 0x2f-0x3e) comes with a level-based
+    chance.
+  - Play takes item 0x35 and plays a composed song through Callways (the song's sound
+    entry is read in the background), at a negative level without the talents.
+- **Practice:** record +0x3a bit 2.
+- **Scout:** script flags 0x22 / 0x23 with game_state +0x266 / +0x267 = level * 5 (more
+  or fewer encounters). Without the talents, the sign is random.
+- **Familiar:** item 0x1a2 with the talent: a chance of level * 8. On success it sets
+  game_state +0x288 and session +0x12 = 0x5a + (level - 1) / 2, and the page goes on to
+  page 0xb (that shop). Not in places with script flag 0xc or 0xe.
+
+Using a specialty can wake one of the talents it wants (record +0x20). The chance is
+table 0x80083fb2 by character and talent, and a woken talent gives 100 SP.
+
+Verified against PCSX-Redux in four runs (`kms`, `spx`, `spell`, `fam`; see the
+continuation log). Config, inventory, party, records and game_state match. With the
+generator set to the original's state when the menu opens (`SS_MENU_RNG`), the generator
+also ends in the same state. Frames differ in sprite, help-bar and model phases, and the
+original reads the viewer's model about 20 frames later.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -659,7 +707,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3-10, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1-10, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),
@@ -668,7 +716,10 @@ by design).
   Save. For comparisons, `SS_MENU_DUMP=prefix` writes the config, inventory, party,
   records and game_state blocks after each field menu (`prefix_config.bin` and so on).
   `SS_MENU_DUMP_DELAY=n` writes them n field frames later instead, after the equipment
-  rescan. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens.
+  rescan. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens. Each dump has a
+  `_rng.bin` with the random generator as the original keeps it (index at 0x8002b464, then
+  the table). `SS_MENU_RNG=file` loads such a state as a menu opens, since the field before
+  the menu draws differently from PCSX-Redux.
 - The original stalls a few vblanks while unpacking the item data or rendering text; the
   port does not, so fades and loads run a few frames earlier.
 - Background loads with a sector offset read straight from the archive entry

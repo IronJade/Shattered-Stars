@@ -8,6 +8,7 @@
 
 #include "disc/slz.h"
 #include "game/boot/pad.h"
+#include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
@@ -30,6 +31,7 @@
 #include "game/field/menu_options.h"
 #include "game/field/menu_shop.h"
 #include "game/field/menu_skills.h"
+#include "game/field/menu_specialty.h"
 #include "game/field/menu_status.h"
 #include "game/field/mods.h"
 #include "game/field/screen.h"
@@ -610,6 +612,7 @@ struct FieldMenuHost {
     menu::set_entry_cache_table(&field_cache_slot);
     menu::set_menu_frame_hook(&field_menu_frame);
     menu::set_page_handler(1, &page01_update);
+    menu::set_page_handler(2, &menu_page02_update);
     menu::set_page_handler(3, &menu_page03_update);
     menu::set_page_handler(4, &menu_page04_update);
     menu::set_page_handler(5, &menu_page05_update);
@@ -625,6 +628,7 @@ struct FieldMenuHost {
   }
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
+    menu::set_page_handler(2, nullptr);
     menu::set_page_handler(3, nullptr);
     menu::set_page_handler(4, nullptr);
     menu::set_page_handler(5, nullptr);
@@ -870,6 +874,28 @@ void dump_menu_state(const char* var = "SS_MENU_DUMP") {
       std::fclose(out);
     }
   }
+  // The random generator as the original keeps it: the index (0x8002b464), then the table.
+  u32 rng[57];
+  s32 index = 0;
+  rng_save(rng + 1, &index);
+  rng[0] = static_cast<u32>(index);
+  if (FILE* out = std::fopen((std::string(dump) + "_rng.bin").c_str(), "wb")) {
+    std::fwrite(rng, 4, 57, out);
+    std::fclose(out);
+  }
+}
+
+// Debugging (SS_MENU_RNG=file, a _rng.bin dump of the original's): the random generator
+// a menu opens with, so that its draws can be compared with the original's.
+void load_menu_rng() {
+  const char* path = std::getenv("SS_MENU_RNG");
+  if (path == nullptr || *path == 0) return;
+  u32 rng[57];
+  FILE* in = std::fopen(path, "rb");
+  if (in == nullptr) return;
+  const size_t n = std::fread(rng, 4, 57, in);
+  std::fclose(in);
+  if (n == 57) rng_restore(rng + 1, static_cast<s32>(rng[0]));
 }
 
 // The dump after a menu, now or SS_MENU_DUMP_DELAY field frames later.
@@ -958,6 +984,7 @@ void field_menu_check(Field* f) {
     world_bg_suspend(wb);
     delete[] world_take_region_save();
   }
+  load_menu_rng();
   dump_menu_state("SS_MENU_DUMP_OPEN");
   if (g_launcher != nullptr) menu_launcher_destroy(g_launcher);
   g_launcher = menu_launcher_create();

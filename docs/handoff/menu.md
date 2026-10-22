@@ -187,6 +187,57 @@ dumps from `comb_p2d` (`SS_MENU_DUMP_DELAY=60`). Plan: `combref2/plan.txt`.
 
 **Catalog:** 1142 function rows and 148 global rows. menu.md has a "Combat" section.
 
+### Specialty, page 2 (done and verified)
+
+**New files:** `engine/src/game/field/menu_specialty.{h,cpp}`: SpecialtyPage,
+KillerMoveList, LinkComboDialog, PartnerDialog, the specialty dialogs (Oracle, Music with
+ComposeList / PlayList, Practice, Scout, Familiar), SpellTarget and SpellEffect.
+
+**Library additions:**
+- `StatCalc::wears_effect` (field 0x8003c4bc) and `mp_cost` (0x8003c3d8).
+- `party_find_char_slot` (0x80033708).
+
+**Hooks in my files:**
+- menu_camp.cpp registers page 2.
+- Every dump also writes `_rng.bin` (the generator as the original keeps it).
+- `SS_MENU_RNG=file` loads a generator state as a menu opens.
+- itemsref.lua dumps `_rng.bin` too and takes `SS_WATCH`.
+
+**Test cards:**
+- `cards/spec.mcd`: the items save with the dex party and inventory (`modsave.py
+  --party-from cards/dex.mcd --party-all --inventory-from cards/dex.mcd`).
+- `cards/spec2.mcd`: as spec, plus:
+  - items 0x35 x3 and 0x1a2 x2;
+  - Rena at 100 HP and Ashton with status 8;
+  - Claude wearing accessory 0x15c (record +0x18);
+  - song 1 composed (flag 0x2f).
+- `cards/spec3.mcd`: as spec2, with Claude's talents 0xdc (Familiar's talent).
+
+**Runs** (`specrun.sh NAME CARD PLAN END` runs Redux in the background and the port):
+- `kms`: killer moves, Link Combo ON with Ashton, the second set.
+- `spx`: Oracle, compose, play, Practice, Scout.
+- `spell`: Rena heals herself twice, switches Fairy Heal off, cures Ashton, and tries a
+  non-field spell.
+- `fam`: Familiar order, its shop, back.
+
+All four runs' dumps match the original. With the RNG override, spx and fam also end
+with the original's generator state, which means the Oracle line and the compose draws
+match. Frames differ only in sprite, help-bar and model phases, and in the viewer
+model's CD timing (about 20 frames).
+
+**Tests:** ss_tests 76/0, ss_game_tests 74/0, smoke 21 PASS.
+
+**RNG at menu open differs** between the port and Redux (index 18 vs 33): the field draws
+differently before the menu, which is not menu code. With `SS_MENU_RNG` set to Redux's
+`before_rng.bin` the fam run ends with the same generator state as the original.
+
+**Catalog:** 1260 function rows, 158 global rows (menu_0bbc rows, three field rows).
+
+**Record +0x3b is pinned down:** it is the Link Combo partner's character id (0x10 is
+the extra partner offered with script flag 0x5d). PartnerDialog sets it; Link Combo OFF
+clears it with +0xce / +0xcf (the second set of killer moves). Accessory 0x15c enables
+it.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
@@ -195,9 +246,11 @@ dumps from `comb_p2d` (`SS_MENU_DUMP_DELAY=60`). Plan: `combref2/plan.txt`.
 
 ## Next steps
 
-1. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb) with the item
-   creation pages 0xf / 0x10 / 0x13 (0xbc0 / 0xbae / 0xbc2 / 0xbcc), then page 0xe (0xbce,
-   after Status) and the query page.
+1. The item creation pages 0xf / 0x10 / 0x13 (0xbc0 / 0xbae / 0xbc2 / 0xbcc). 0xbc0,
+   0xbae and 0xbc2 share about 7.3 KB of code (`scratchpad/menu/ovl_match.py` groups
+   functions by normalized code). Page 0xf's ctor 0x8007e790 picks a Panel subclass
+   (0x108 bytes) by the specialty in session +0x1c. Then page 0xe (0xbce, after Status)
+   and the query page.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.
@@ -211,6 +264,6 @@ TODO is in field_menu_update.
 
 ## Findings not yet in the catalog
 
-- Record +0x3b (the pair byte) is still not pinned down. Party Order clears +0x3b, +0xce
-  and +0xcf for bench members, which fits a pairing partner whose pending killer moves
-  are dropped. The party_update_bonds / party_find_bonded rows stay guesses.
+- Record +0x3b is the Link Combo partner (see Specialty above). The docs/catalog rows
+  0x800341e4 party_update_bonds / 0x8003446c party_find_bonded can move from guess to
+  confirmed: "bond" = Link Combo; +0xce / +0xcf are the second set of killer moves.

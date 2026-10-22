@@ -117,6 +117,13 @@ int party_selected_char() {
   return id < 1 ? 0 : id;
 }
 
+int party_find_char_slot(int character) {
+  for (int i = 0; i < 8; ++i) {
+    if (party_slot_active(i) == character) return i;
+  }
+  return -1;
+}
+
 int party_slot_active(int slot) {
   const int saved = party_get_selected();
   party_select(slot);
@@ -235,7 +242,7 @@ int party_super_specialty_level(int id) {
   return static_cast<s16>(out[4]);
 }
 
-int party_find_bonded(int character) {
+int party_find_link_partner(int character) {
   const int saved = party_get_selected();
   int found = 0;
   for (int i = 0; i < 4; ++i) {
@@ -247,7 +254,7 @@ int party_find_bonded(int character) {
   return found;
 }
 
-void party_update_bonds() {
+void party_update_link_combos() {
   const int saved = party_get_selected();
   for (int i = 0; i < 4; ++i) {
     party_select(i);
@@ -290,7 +297,7 @@ void party_update_bonds() {
   for (int i = 0; i < 4; ++i) {
     party_select(i);
     const int id = party_selected_char();
-    if (id != 0 && party_find_bonded(id) != 0) {
+    if (id != 0 && party_find_link_partner(id) != 0) {
       g.record[0xCC] = g.record[0xCD] = g.record[0xCE] = g.record[0xCF] = 0;
     }
   }

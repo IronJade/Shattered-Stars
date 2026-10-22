@@ -875,3 +875,13 @@ credits_3107,0x800446b4,g_credits_movie_state,s32,"0 no movie, 1 opened (black f
 credits_3107,0x800446b8,g_credits_shown,u8,VRAM buffer on screen (0xff none yet),confirmed,listing
 credits_3107,0x800446b9,g_credits_uploaded,u8,VRAM buffer uploaded last (set by the DrawSync callback; 0xff none yet),confirmed,listing
 credits_3107,0x800446c0,g_credits_hold,s32,"Vblanks a card stays at full brightness (0xcf), then the gap after it (5)",confirmed,listing
+menu_0bbc,0x80083fb2,k_talent_chances,u8[13][10],By character and talent: the chance out of 256 that using a specialty wakes it,confirmed,specialty_wake_talent
+menu_0bbc,0x80084032,k_specialty_talents,s16[],By specialty: the talents it can wake (and needs),confirmed,specialty_talent_mask
+menu_0bbc,0x80084057,k_specialty_first_entry,u8[13],"By character: 1 killer moves, 2 spells (the Specialty page's first entry)",confirmed,specialty_page_build_entries
+menu_0bbc,0x80084064,k_field_spells,u8[],"Spells usable from the menu (0x2f-0x36), 0-terminated",confirmed,"specialty_page_on_confirm, specialty_page_draw_spell"
+menu_0bbc,0x8008406f,k_spell_costs,u8[],By spell: MP cost (bit 7: no practice shown),confirmed,"specialty_page_show_spell, spell_target_on_confirm"
+menu_0bbc,0x800840b0,k_spell_lists,u8[4] + u8[],"Spell counts of characters 2, 8, 3, 0xb, then their lists (0x800840b4, 0x800840cc, 0x800840e0, 0x800840f8)",confirmed,specialty_page_setup_spells
+menu_0bbc,0x80084167,k_killer_groups,u8[13],By character: the text group of its killer move names (descriptions: 0x80084173),confirmed,"killer_move_list_create, specialty_page_show_killer"
+menu_0bbc,0x800841ac,k_killer_costs,u8 *[13],By character: its killer moves' MP costs,confirmed,specialty_page_show_killer
+menu_0bbc,0x800841de,k_song_entries,s16[17],By song: the archive entry played through Callways,confirmed,play_list_on_confirm
+menu_0bbc,0x80084200,g_specialty,s32,The specialty whose dialog the Specialty page opened,confirmed,"specialty_page_on_confirm, specialty_dialog_create"

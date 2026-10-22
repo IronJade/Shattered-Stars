@@ -114,6 +114,24 @@ void StatCalc::item_bonuses() {
   if (get16(record, 4) > 0xFF) put16(record, 4, 0xFF);
 }
 
+bool StatCalc::wears_effect(int effect) const {
+  for (int i = 0; i < 7; ++i) {
+    const int item = char_get_equip(i);
+    if (item != 0 && static_cast<int>(item_stat(item, 2)) == effect) return true;
+  }
+  return false;
+}
+
+int StatCalc::mp_cost(int cost) const {
+  if (cost == 0) return 0;
+  if (wears_effect(0xA5) || wears_effect(0xDC) || wears_effect(0xDD)) {
+    cost >>= 1;
+  } else if (wears_effect(0xA1) || wears_effect(0xD2)) {
+    cost = cost * 2 / 3;
+  }
+  return cost == 0 ? 1 : cost;
+}
+
 u32 StatCalc::item_stat(int item, int field) const {
   if (item == 0) return 0;
   if (items_.empty()) {

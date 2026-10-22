@@ -32,6 +32,7 @@ int stat_group_offset(int group);           // title 0x800342d8 / field 0x800333
 
 int party_selected_char();                  // title 0x8003469c / field 0x800337a4: character id, 0 when <= 0
 int party_slot_active(int slot);            // field 0x80033758: party_selected_char of 'slot' (selection kept)
+int party_find_char_slot(int character);    // field 0x80033708: the slot holding 'character', -1 if none
 int party_selected_alive();                 // field 0x800337cc: party_selected_char when status & 7 is clear, else 0
 u32 char_equip_mask();                      // field 0x8003381c: 1 << (character - 1), 0 for none
 u16 config_get_button(int index);           // title 0x800349d8 / field 0x80033ae0
@@ -50,11 +51,12 @@ int char_specialty_level(int specialty);    // field 0x80033cf8: out[5]
 // the second), out[3] 2, out[4] level (sum / 3, max 10; -1 when out[2] is 0).
 void party_super_specialty_info(int id, u16 out[5]);
 int party_super_specialty_level(int id);    // field 0x80033e7c: out[4]
-// field 0x800341e4: the front four's pending bond partners (record +0xce/+0xcf) move
-// to +0xcc/+0xcd (voice_reload_member); a member keeps a pair (+0x3b) only while
-// wearing accessory 0x15c with the partner in the front row (or partner 0x10).
-void party_update_bonds();
-int party_find_bonded(int character);       // field 0x8003446c: front member whose +0x3b == character
+// field 0x800341e4: Link Combos. The front four's pending second killer-move set
+// (record +0xce/+0xcf) moves to +0xcc/+0xcd (voice_reload_member); a member keeps a
+// Link Combo partner (+0x3b, a character id; 0x10 the extra partner of script flag
+// 0x5d) only while wearing accessory 0x15c with the partner in the front row.
+void party_update_link_combos();
+int party_find_link_partner(int character); // field 0x8003446c: the front member whose partner (+0x3b) is 'character
 int inventory_find(const u8* inventory, int item);  // field 0x8003c820: index of the item (low 10 bits), -1
 int inventory_count(int item);              // field 0x800335d8: count bits 10-14 of its entry
 u8 party_selected_status();                 // field 0x80039e08: slot +2 (& 7: cannot be healed)

@@ -200,7 +200,7 @@ void callways_stop_song_on_exit(Callways* c) {
 
 void callways_apply_battle_bonuses(Callways* c) {
   FieldGlobals& g = globals();
-  party_update_bonds();
+  party_update_link_combos();
   bool applied = c != nullptr && c->song != 0;
   // Members with record +0x3a bit 2 add their specialty 8 level: a quarter of the sum
   // moves from config +0x188 / +0x18a to +0x194.

@@ -33,6 +33,12 @@ class StatCalc {   // 8 bytes: +0 item table, +4 vtable (title 0x8004bcb4 / fiel
   // title 0x8003ab4c / field 0x8003baa8: the equipment slot of 'item' (0 weapon, 1-4 armour,
   // 5 accessory; by item field 1).
   int equip_slot(int item) const;
+  // field 0x8003c4bc: whether one of the selected member's equipment pieces has effect
+  // 'effect' (item field 2).
+  bool wears_effect(int effect) const;
+  // field 0x8003c3d8: an MP cost after the member's equipment: halved with effect 0xa5,
+  // 0xdc or 0xdd, two thirds with 0xa1 or 0xd2; at least 1 (0 stays 0).
+  int mp_cost(int cost) const;
 
  private:
   std::vector<u16> items_;    // +0: 0x338 entries of 8 u16 (null in the original when the
