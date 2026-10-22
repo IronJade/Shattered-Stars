@@ -118,13 +118,21 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
 - enemy_try_cast / enemy_state_chant / enemy_state_cast (the family casters: goat, magius,
   wizard, beastmaster).
 
-## In progress (uncommitted)
+## State at the weekly-limit cutoff (2026-10-22, about 11:10)
 
-- Commit point 2: the 42 module files, enemy_support / enemy_modules / enemy_classes changes,
-  encounter.cpp enemy_adopt + enemy_extra_data, CMake lines, catalog rows, README note,
-  notes/battle_enemies.md, this log.
-- Redux references still running (`batch.sh redux3 m ...`): gelatin 563, controller 240,
-  azamgil 206, ericodus 284, gargoyle 523, snowman 543.
+- Commit point 2 is committed (a56ba4b): all 43 modules, the README / notes rows, the catalog.
+- At the cutoff the Redux references for gelatin (563), controller (240), azamgil (206),
+  ericodus (284), gargoyle (523), snowman (543) and the boss encounters were running or done:
+  output folders `scratchpad/enemy/ref/m<enc>_3` up to 09:59 (m153 m197 m430 m521 m524 m528 m531
+  m536-m539 ...). They have not been compared with the port yet (`cmp.py`).
+- Since then the world agent wired the spells into this worker's files (committed unverified
+  in e37c3a5): enemy_support's spell stand-in block is gone (the real spells.h / spellcast.h
+  replace it), and enemy_mod_bark / indalecio / cyril / decus / dias / vesper / zand call the
+  real SpellCast API. Re-check those modules' references once the spells are verified.
+- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
+
+Resume: compare the finished references (cmp.py, each at its own CMP_D), rerun any that did
+not finish, then send commit point 3 (results only, unless a fix is needed).
 
 ## Findings
 

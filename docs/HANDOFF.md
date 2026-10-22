@@ -4,6 +4,20 @@ The port boots from the user's `.cue`, plays the logos, the opening movie and th
 starts a New Game or Continues a save, and plays field maps, the world map and battles.
 `docs/CHECKLIST.md` has the item-by-item state; this file is the quick orientation.
 
+## State after the weekly-limit cutoff (2026-10-22)
+
+The account's weekly limit stopped all five agents mid-task at about 11:10. The user
+committed their unfinished work as e37c3a5. That commit builds and passes every suite
+(ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21), and eleven
+encounters run headless without trouble, but most of it has not been compared with
+PCSX-Redux yet. Each area's log in `docs/handoff/` has a "cutoff" section saying exactly
+what is in that commit, what is verified, and where to resume:
+- battle: the air-attack check (enc 35, b470 miss), then Ernest's check;
+- effects: GPU lines written (passes its hardware-dump test); the four modules not started;
+- menu: item creation page 0xf written, the viewer morph half done; nothing verified;
+- world: the spell system and command menus written; nothing verified;
+- enemy: Redux references for the last modules finished but not compared.
+
 ## What works (verified against PCSX-Redux where marked)
 
 - **Title and boot:** logos, opening / attract movies, title menu, Continue / load screen
@@ -49,7 +63,7 @@ carry the rest to the next session.
 
 - `cmake --build engine/build`; `SS_DISC1=<disc 1 .cue> engine/build/ss_tests` (76) and
   `engine/build/ss_game_tests` (71); `tools/smoke_field_events.sh` (16 checks; `SS_DISC1` must
-  be set, disc 2 is found next to it). All green at `6c88bd4`.
+  be set, disc 2 is found next to it). All green at `e37c3a5` (ss_tests 78, ss_game_tests 74).
 - ASan without root: `dnf download libasan` (x86_64), `rpm2cpio | cpio -idm` into a scratch
   dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
   `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>`. `gdb.minimal` is installed.

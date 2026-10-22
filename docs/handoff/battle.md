@@ -99,6 +99,14 @@ the port's sample for sample (`ref/dense10`, `ref/order10` with loop-order break
   b460; at b470 Claude's slash hits an eagle in the original and misses in the port (the
   eagle walks away in the port). `ref/enc35e` (per-vsync unit log, `BW_ELOG`) is running.
 
+## State at the weekly-limit cutoff (2026-10-22, about 11:10)
+
+The account's weekly limit stopped this worker mid-step. Everything under "In progress"
+above was committed unverified by the user in e37c3a5 (state_air_attack, pc_jump_step,
+the shot_place_at_unit wrap, pc_ernest.cpp, SS_BATTLE_CAM, the docs). HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
+The worker had just started a box trace (port and explore.lua) to chase the enc 35 b470
+miss in the air-attack check; nothing of that trace was written. Resume at step 1 below.
+
 ## Next steps
 
 1. Finish the enc35 check (air attack, the b470 miss), then Ernest's run-time check

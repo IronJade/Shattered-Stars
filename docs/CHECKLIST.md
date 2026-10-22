@@ -16,9 +16,9 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] **M2** Opening movie plays — studio logo, opening and attract movie through the ported player (`game/title/movie`); every frame shown exactly as decoded (jPSXdec-exact), within ±3 levels of PCSX-Redux's MDEC; frame timing from a drive/MDEC model (same flip vblank as Redux for the opening's first 135 frames; Redux's 60.008 Hz vblank then drifts 1 field per ~230 frames, same wall-clock length)
 - [x] **M3** Title screen is interactive — menu, cursor, confirm/fade, attract timer; pixel-identical to the original (with a memory card inserted)
 - [x] **M4** New Game reaches the first map and the player can walk: Claude's opening on map 7 plays through (13 windows; timing and pixels match PCSX-Redux from the fade-in on, apart from the known 1-step window-body and shadow blend differences), the script moves to map 8, its scene plays, then the D-pad walks Claude around
-- [ ] **M5** Events: dialogue, doors, chests, shops — dialogue, doors and chests verified through the whole game loop (`tools/smoke_field_events.sh`: Arlia → Hearn's store, the 200-Fol chest, talking to Mr. Hearn, the ruins' shut exit); shops wait on the field menu (state 3)
-- [ ] **M6** Menus (items, equipment, skills, save/load)
-- [ ] **M7** Battles
+- [x] **M5** Events: dialogue, doors, chests, shops — verified through the whole game loop (`tools/smoke_field_events.sh`: Arlia → Hearn's store, the 200-Fol chest, talking to Mr. Hearn, the ruins' shut exit, a patched shop); shops compared with PCSX-Redux at Hearn's store (Fol, inventory, recent list)
+- [ ] **M6** Menus (items, equipment, skills, save/load) — the camp pages 1-11 and save / load are done and compared with PCSX-Redux; left: item creation (0xf / 0x10 / 0x13, in progress), page 0xe, the query page, the stash flag after loads
+- [ ] **M7** Battles — combat, HUD, result screen, every enemy class, Claude's and the casters' moves, the Shot kinds the monsters use are done and compared with PCSX-Redux; left: spells and battle items (in progress), the remaining character modules, party AI, voices
 - [ ] **M8** Disc 2 swap; the game can be finished
 
 ## 0. Foundations
@@ -124,7 +124,7 @@ from config+0x45).
 - [x] Battle combat (battle agent, phase 2; `docs/notes/battle_port.md`): 30 fps loop, stage / units / camera (17 modes), the frame director, battle sound front end, movement (swept-box path probe), PartyUnit and EnemyUnit state machines with the enemy AI, player input, `unit_attack_targets` (accuracy, damage, crits, procs, knockback), victory / defeat / escape rules. A forced battle (encounter 2, stage 3) matches a PCSX-Redux run frame for frame (positions, animations, damage numbers, KO frame) apart from the missing HUD and dithering
 - [x] Battle HUD (step 1): window system, #1980 proportional text, the HUD (member HP / MP gauges, item / move icons, target select), the message banner; appears on the same frame as Redux and matches its layouts
 - [x] Battle result screen #1981 (step 2): EXP / Fol award, drops, level-ups with growth and learn tables, the defeat / escape / time-up messages, battle_fade_task, the victory jingle and voice picks (RNG draws; clips not yet); the handoffs at battle_exit_to_field equal the original's byte for byte (party, records; inventory apart from a RAM pointer), and the result pages match Redux frame for frame
-- [ ] Battle: killer moves and the character modules, spells and items (ring / list menus), Shot and Particle pools, party AI, voices, stage extras
+- [ ] Battle, part 2. Done and compared with PCSX-Redux: Claude's module and the killer-move framework, Rena / Celine / Leon / Noel, the Particle pool, Shot kinds 0x10 / 0x11 / 0x16 / 2 / 0x2c / 0x32 and shot_apply_damage, all 16 enemy families and the 43 encounter-pack / image enemy modules (`docs/notes/battle_enemies.md`). Written, not yet verified (e37c3a5): the jump attack (pc_state_air_attack), Ernest; the spell system (spell_cast, the ten built-in spells, SpellCast with one module, the cast states) and the command ring / list menus. Left: ~54 spell modules, battle item use, Bowman / Dias / Precis / Ashton / Opera / Chisato, party AI, voices, stage extras
 
 ## 5. Completion
 

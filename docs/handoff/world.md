@@ -70,13 +70,38 @@ run_victory.sh) `BW_EXTRA_POKE="4047@0x8009a9c0=0x2/2;4047@0x8009a9e0=0xc8/2"` (
 at 0x8009a9c0, handoff 4 slot-0 record 0x8009acd0); her spell list bytes are in her
 record (to find); D = 2 for that dump.
 
-## In progress (uncommitted)
+## State at the weekly-limit cutoff (2026-10-22, about 11:10; committed unverified in e37c3a5)
 
-- Phase 5 step 1a: reading / porting the spell system.
+The weekly limit stopped this worker before it reported phase 5. What is in e37c3a5, none of
+it compared with PCSX-Redux yet:
+- Step 1a, written: `battle/spells.{h,cpp}` (the spell tables, the spell-data cache spell_data_*
+  0x800482a8-0x80048c5c, spell_cast 0x80062c24), `battle/spell_shots.cpp` (the ten built-in
+  spells as Shot kinds 3 / 4 / 6-0xf / 0x1d; kind 0x12 with +0x10c 1 still logs),
+  `battle/spell_units.cpp` (the unit casting side 0x8005287c-0x80053054: chant, release,
+  clash; EnemyUnit::state_cast / release_spell / enemy_state_chant), `battle/spell_windows.{h,cpp}`
+  (spell-clash, skill-notice and scan windows), `battle/spell_fx.{h,cpp}` (drawing helpers the
+  spells use).
+- Step 1b, partly: `battle/spellcast.{h,cpp}` (the SpellCast object and its API; a kind with no
+  handler logs "not ported yet" and ends the cast), `battle/spell_modules.{h,cpp}` (registry by
+  block hash) with one module, `battle/spell_mod_feehn.cpp` (spell 0xa).
+- Callers wired: enemy_ai.cpp (enemy_state_chant, spell_data_cancel_owner, unit_begin_cast);
+  the enemy agent's spell stand-ins removed from enemy_support.{h,cpp}; enemy_mod_bark /
+  indalecio / cyril / decus / dias / vesper / zand call the real SpellCast API.
+- Step 2, started: `battle/command_menu.{h,cpp}` (1172 lines): the command ring
+  (input_ring_menu_open / update 0x8004cf5c / 0x8004d178), the member select (0x8004b1ac /
+  0x8004b65c), escape (0x8004d914) and the #1984.0 list menus (spell, item, tactics) with the
+  description balloon. item_use_battle 0x80082dec still logs "not ported".
+- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
 
 ## Next steps
 
-- Phase 5 step 1, then step 2 (items).
+1. Verify 1a against PCSX-Redux: Rena's Heal / Cure Light (setup above), the Beastmaster's
+   heal; RNG counts and unit HP / MP at the reference's own offset (CMP_D).
+2. Finish 1b: the modules the test casters need (wizard 340: Cure All 0x32, Magnum Tornado
+   0xb, Feehn 0xa; Goathead 277: Cure All, Thundercloud 0x10); verify against 340 and 277.
+3. 1c: the other ~54 spell modules (helpers allowed, up to six, write-only; see the rules from
+   the coordinator).
+4. Step 2: item_use_battle and the rest of item use; verify the command menus against Redux.
 
 ## Findings not yet in the catalog
 

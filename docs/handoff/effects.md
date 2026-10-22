@@ -81,9 +81,22 @@ uv-interpolation, quad, transparency, lines), replayed on `psx::Gpu` with
   `test_field_message`'s comments and `docs/CHECKLIST.md` (the two GPU items, plus the DMA
   line) updated; `docs/notes/field_effects.md` table updated.
 
-## Phase 5 step 1: GPU lines (in progress)
+## Phase 5 step 1: GPU lines (written, committed unverified in e37c3a5)
 
-Started: compare the port's line stepping with the ps1-tests gpu/lines dump.
+The weekly limit stopped this worker (2026-10-22, about 11:10) before it reported. What is
+in e37c3a5:
+- `Gpu::draw_line` walks lines as the hardware does (Mednafen's / DuckStation's model: k + 1
+  pixels from the left end, 32.32 stepping from the pixel centre, each step rounded away
+  from zero, colours stepped in 12-bit fixed point; every line dithered when dithering is on).
+- `Gpu::dither_lines` (gpu.h): false matches PCSX-Redux's renderer, which dithers no line;
+  `--reference-dither` now also covers lines and modulated textures (CHECKLIST line).
+- New test `gpu_lines_match_hardware_dump` (test_gpu.cpp), probes from the ps1-tests
+  gpu/lines VRAM dump: passes.
+- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff). The Redux comparison tests (test_field_message and others) still pass.
+
+Still to do for this step: a full-dump comparison with the ps1-tests harness (`harness lines`)
+and a note in docs/notes/gpu_accuracy.md. Then step 2: the four character modules
+(Precis #2155, Ashton #2147, Opera #2153, Chisato #2159), not started.
 
 ## Uncommitted files (phase 4 step 2, committed in 155be10)
 

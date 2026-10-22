@@ -238,6 +238,23 @@ the extra partner offered with script flag 0x5d). PartnerDialog sets it; Link Co
 clears it with +0xce / +0xcf (the second set of killer moves). Accessory 0x15c enables
 it.
 
+### Item creation, pages 0xf / 0x10 (in progress at the cutoff; committed unverified in e37c3a5)
+
+The weekly limit stopped this worker (2026-10-22, about 11:10) while it wrote the
+CreationViewer's morph. What is in e37c3a5:
+- `engine/src/game/field/menu_creation.{h,cpp}` (1366 lines) and `menu_item_list.h`: the
+  creation Panel and its loop of steps (pick materials, confirm, watch, result, talent
+  waking) for page 0xf with overlay 0xbc0 (specialties 1, 5, 6, 7, 10, 13, 14, 16, 17),
+  registered for pages 0xf and 0x10 in menu_camp.cpp.
+- `menu_viewer.{h,cpp}`: the item viewer's texture upload and draw take parameters, for the
+  morph of the materials into the result; the morph itself was being written.
+- Still logging "not ported": page 0xf's 0xbae variant (specialties 4 and 11) and page 0x10
+  (the super specialties, 0xbc2). Page 0x13 (0xbcc) is not started.
+- Nothing of this has been compared with PCSX-Redux yet. HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
+
+Resume: finish the CreationViewer morph, verify page 0xf against Redux (as itemsref did),
+then 0xbae, 0x10 and 0x13.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
