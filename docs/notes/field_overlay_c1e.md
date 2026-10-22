@@ -213,26 +213,61 @@ yaw + 0x400). Outside ring 1 the colours fade towards dusk (light (0xa0, 0x32, 0
 90% of the radius, 2 in the core. Everything is then multiplied by the BG tint (0x80075aba /
 128). Suspend blob: {u32 size, u32 count, {s32 x, z; s16 params[12]}[count]}.
 
-## 7. Port status (`engine/src/game/field/worldmap*.cpp`)
+## 7. Vehicles, the bunny and the courier (field_update on the world map)
+
+Field-side code (port `game/field/field_world.cpp`, `worldmap_vehicle.cpp`):
+
+- **Vehicle packs** (field_load_map, maps 1-3): 0x10e3 (script flag 11, vehicle id 1), 0x10e2
+  (flag 15, id 3), 0x10e4 (flag 16, id 4), each through `field_load_extra_pack` 0x8004a920
+  into four model slots (0x80076230; image to VRAM (0x280 + 0x40 n, 0x100), palette row 0x1f8 + n;
+  tag 9: a sprite pack with id 30000). Actor 0xd = vehicle 1 at game_state +0x26c / +0x28c /
+  +0x270 (map 1) or +0x274 / +0x290 / +0x278 (others; script table A 0x19 sets them); while
+  riding (flag 12) the vehicle takes the leader's slot, camera pitch 18 and the GTE offset
+  -50 (0x80075c38). Actor 0xe = vehicle 4 at +0x268 / +0x298 / +0x29c, angle +0x28a.
+- **Models** (`model_draw` 0x8006053c): u32 object count; per object a word and twenty
+  sections {u32 count; records} (see the catalog row); the vehicles use the 0x34 lit G3, 0x3c
+  lit GT3 (grey 0x808080), 0x24 G3 and 0x30 GT3 sections. The first group is lit by the
+  particles' matrices (zeroed: ambient only), the second by the terrain light from above.
+  Drawn at OT 0x82a - OTZ / 2 with camera_set_object_matrix (rot: 0x800751a4[id] - angle,
+  pitch from the climb); vehicle 1 also has a subtractive shadow quad.
+- **Steering** (0x80085944) and **states 9-0xe**: boarding (hold the action button within 0x105
+  of actor 0xd: the leader walks in and fades, music 0xa86 is read; 9: actor 0xd takes the
+  leader's slot; 10: 70 frames up (to -0x4b0 above, the camera lifted); 0xb: control), landing
+  (the cancel button over walkable ground with all eight directions 0x122 and 0x104 out clear
+  of triggers: 0xc 30 frames down, the vehicle back to slot 0xd, the leader recreated and
+  walking out; 0xe: control once the world music 0xa89 / 0xa8a is in). Frame-by-frame equal
+  to PCSX-Redux with the original's frame pacing replayed.
+- **The bunny** (script flag 14, sprite 199 from pack 0xfc3): the camp menu's result 5 (and a
+  map load while riding) reads music 0xa92 (0x11-0x14), then the pack (0x15); getting off
+  (state 0 check: the action button on walkable ground with terrain bit 4, outside the
+  triggers) creates actor 0xf (model 10000) hopping away and brings the world music back
+  (0x16-0x1a).
+- **The courier** (states 0x1b-0x20): the camp menu's result 4 places an order (game_state
+  +0x294 becomes the delivery time, kind +0x288 1-5, sprite pack 0xfc3 + kind; 0x1c: the
+  creature, actor 0xe screen-space, flies off along an arc; script flag 13 set). When the play
+  clock (boot 0x8002b620) passes +0x294 the state 0 check brings it back (0x1d), the ten
+  item slots at +0x250 go into the inventory (0x1e, window 6 lists them from the system
+  strings), it fades (0x1f) and leaves (0x20: flag 13 cleared, +0x294 = 0).
+
+## 8. Port status (`engine/src/game/field/worldmap*.cpp`, `field_world.cpp`)
 
 Ported: WorldCam, WorldBg (section 3, streaming through the load queue, lighting regions,
 suspend / resume through handoff 0x10, terrain queries), the terrain renderer with depth fog,
-the visibility pass, sky and clouds, texture animations, map 2's whirlwind walls, WorldActor
-(sprite draw with the sprite caches, wading, blob shadow, flat actors, auto animation, scripted
-moves, walking with the slide / avoid searches, encounter settings), the follow / manual camera,
-and the field-side world branches (section 1). Map 2 from the user's save renders like
-PCSX-Redux; with the console's pacing (`SS_WORLD_VSYNC=3`, see 4.) a 45-frame walk with camera
-turns matches the original's leader position, facing, camera yaw and turn speed frame for frame
-(the original then takes one 2-vblank frame and the runs drift apart). Remaining pixel
-differences are GPU-level (PCSX-Redux applies dithering after semi-transparent blending, so its
-fog / wall overlays come out about 0.5-1 level darker).
+the visibility pass, sky and clouds, texture animations, map 2's whirlwind walls, the map
+(markers / corner map), WorldActor (sprite draw with the sprite caches, wading, blob shadow,
+flat actors, auto animation, scripted moves, walking with the slide / avoid searches,
+encounter settings), the vehicles (models, steering, boarding / landing), the bunny and the
+courier states, the follow / manual camera, and the field-side world branches (section 1).
+Map 2 from the user's save renders like PCSX-Redux; walking and the vehicle match the
+original frame for frame when its frame pacing is replayed (`SS_WORLD_TICKS`, logged in
+PCSX-Redux by the world script's `WW_TICKS`; `SS_WORLD_VSYNC=3` approximates it). Remaining
+pixel differences are GPU-level (PCSX-Redux applies dithering after semi-transparent
+blending, so its fog / wall overlays come out about 0.5-1 level darker).
 
 Not ported:
 
-- Vehicles: `worldactor_vehicle_control` 0x80085944, the vehicle model draw through field
-  0x8006053c (tables 0x80075190 / 0x800751a4), vehicle packs 0x10e2-0x10e4, vehicle actors
-  0xd / 0xe, landing tests.
-- Place markers / corner minimap (`worldbg_draw_markers` 0x8008b064, lists 0x8008f4ec map 1 /
-  0x8008f580 map 2; Start cycles game_state +0x20 = 0..2).
+- Model sections 2 and 3 (G3 with three colours, one or three normals): no vehicle model uses
+  them; the renderer logs them.
+- Vehicle 3 (pack 0x10e2) is loaded, but no field or overlay code gives an actor vehicle id 3.
 - `worldcam_target_from_angle`, `worldcam_set_zoom`, the leaf accessors 0x800887d4-0x8008880c
   and 0x80082900 have no caller in the field or the overlay (embedded map code API).

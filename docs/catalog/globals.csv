@@ -470,6 +470,8 @@ field,0x80074090,g_menu_field_query_time,void *,Play-time draw object of the que
 field,0x80074094,g_menu_pages_debug_step,int,Progress marker in menu_pages_update; never read,confirmed,menu_pages_update
 field,0x800740c4,g_menu_frame_unused_a,int,0x90 every menu frame (title 0x8004decc),confirmed,menu_scene_frame_begin 0x800300dc
 field,0x800740c8,g_menu_frame_unused_b,int,8 or 0xf8 by draw buffer (title 0x8004ded0),confirmed,menu_scene_frame_begin 0x800300dc
+field,0x800744ea,g_courier_model,s16[6],Sprite model of the courier per kind (game_state +0x288): 236 / 242 / 241 / 243 / 240 for 1-5,confirmed,field_update states 0x1c / 0x1d
+field,0x8007451c,g_courier_anims,s16 *[6],"Per courier kind: animations {leave, arrive, arrive early, hand over}",confirmed,field_update states 0x1c-0x1e
 field,0x80074628,g_field_option_a,u16,"What the menu may offer: bit 0 saving (world map or save point), bit 1 field_flags +0x25",confirmed,"field_update state 3, data_menu_create"
 field,0x8007462a,g_field_option_b,u16,Cleared before a menu; read back (unused) after it,confirmed,field_update state 3
 field,0x800746ec,g_fx_light_params,int[3],"Particle light rotation {flag, yaw, angle} for fx_setup_light (0 at camera_reset; nothing else writes it)",confirmed,decomp
@@ -586,7 +588,7 @@ field,0x8007627a,g_sequence_sound,s16,Sound entry B 0x16 preloaded for the next 
 field,0x800762e4,g_side_done,u8,Done flag of the side load (field_side_load),confirmed,field_side_load; field_equip_report_draw
 field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) until field_install_side_text unpacks it,confirmed,field_side_load
 field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
-field,0x800762fc,g_field_analog,u8,"pad_stick(port 0) result each main-loop frame: the stick steers field and world-map actors (+0x2d4) unless it is centred",confirmed,field_main_loop; fieldactor_player_control
+field,0x800762fc,g_field_analog,u8,pad_stick(port 0) result each main-loop frame: the stick steers field and world-map actors (+0x2d4) unless it is centred,confirmed,field_main_loop; fieldactor_player_control
 field,0x80076300,g_field_stick,s32[4],"Port 0's axes from pad_stick: right X, right Y (0x80076304), left X (0x80076308), left Y (0x8007630c)",confirmed,field_main_loop
 field,0x800762ff,g_movie_stop,u8,"Set by table A 0x32 (with loader_cancel), cleared by B 0x50 / 0x6f: the main loop stops calling movie_update, which ends the movie",confirmed,decomp
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
@@ -625,6 +627,8 @@ field_ovl_c1e,0x80076280,world_cam_frames,s16,Frames of the follow camera's scri
 field_ovl_c1e,0x80076282,world_region_count,s16,Number of lighting regions (max 16),confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
 field_ovl_c1e,0x80076284,world_region_params,s16[16][12],"Lighting region parameters: radius, light rings 1-3, fog / sky rings (5-7 / 9-11)",confirmed,worldbg_update_lighting 0x8008e9b4
 field_ovl_c1e,0x800762fd,world_in_region,u8,"0 outside every lighting region, 1 within 90% of its radius, 2 in its core (encounter stage / kind use it)",confirmed,worldbg_update_lighting 0x8008e9b4
+field_ovl_c1e,0x8008f4ec,g_world_places_1,s32[][2],"Map 1 places shown on the map ({x, z} until x == -1; 18)",confirmed,worldbg_draw_markers
+field_ovl_c1e,0x8008f580,g_world_places_2,s32[][2],Map 2 places shown on the map (14),confirmed,worldbg_draw_markers
 field_sub3103,0x801ecb7c,movie_globals,,"#3103's copy of the title's movie globals (0x80050aa8-0x80050ad6): +0 screen_cleared, +8 slice_rect (0x801ecb86 = y of the frame shown next), +0x14 frame_count (B 0x53), +0x18 frame_ready, +0x1c decoding, +0x20 draw_buffer, +0x24 x, +0x26 y, +0x2a height, +0x2c mode, +0x2e frames_in_ram",confirmed,word compare + decomp
 menu_0ba5,0x800e0cd0,vt_dialog,vtable,Dialog (title 0x800746e8),confirmed,dialog destructor 0x800d47b4
 menu_0ba5,0x800e0dd0,k_item_figure_text,char[],"Item figure lines: 0x800e0dd0 ATK HIT MAG, 0x800e0df0 DEF AVD MAG, 0x800e0e08 HIT AC AVD, 0x800e0e24 GUTS STM LUC CRT, 0x800e0de8 %4d, 0x800e0e3c %3d",confirmed,panel_show_equipment_stats

@@ -87,12 +87,15 @@ void disc_change_screen(int disc) {
   rt.log_once("disc_screen_" + std::to_string(disc),
               "insert disc " + std::to_string(disc) + ": the action button tries the configured images, Select goes on");
   for (;;) {
-    // The lid: wait for the action button / Start (Select: carry on with this disc).
-    pad_clear(&sys->pad, 0);
-    u16 pressed = 0;
+    // The lid: wait for the action button / Start (Select: carry on with this disc). The
+    // host controller is read directly: the game's pad module only polls the ports the
+    // title enabled, and a run that skips the title has none.
+    u16 pressed = 0, previous = rt.host_buttons();
     while ((pressed & (0x40 | 0x800 | 0x100)) == 0) {
       psyq::VSync(0);
-      pressed = static_cast<u16>(pressed | pad_pressed(&sys->pad, 0));
+      const u16 now = rt.host_buttons();
+      pressed = static_cast<u16>(pressed | (now & ~previous));
+      previous = now;
     }
     draw_tim(prompt, 6, 0x262, 0x37, 3, true);  // reading
     if ((pressed & 0x100) != 0 || loader_insert_disc(sys->loader, disc)) {
