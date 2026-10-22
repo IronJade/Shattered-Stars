@@ -121,7 +121,7 @@ struct EnemyDecus : EnemyUnit {
     if (kStateFighting < g.state && g.end_countdown < 0x14) {
       interrupt();
     } else {
-      const SpellCastView* sc = spellcast_slot0();
+      const SpellCast* sc = spellcast_slot0();
       bool held_over = false;
       if (sc != nullptr && sc->kind == 0x38) {
         if (counters[2] == 3 && !(sc->step < 6)) {

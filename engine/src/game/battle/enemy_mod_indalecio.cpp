@@ -37,15 +37,7 @@ void set_vel(BObj* o, const Vec4& v) {
   o->vel[2] = v.z;
 }
 
-// g_spell_data_entry 0x8006d1f2 (s16 [0x48][5]: the archive entry of each spell's effect
-// data per caster variant, in the #2129 image). The transformation points his spells at
-// the second form's data. [stand-in: the spells' table is not ported; the writes are
-// dropped]
-void spell_data_entry_set(int spell, int variant, s16 entry) {
-  (void)spell, (void)variant, (void)entry;
-  runtime::Runtime::get().log_once("battle-indalecio-spell-data",
-                                   "battle: not ported yet: g_spell_data_entry 0x8006d1f2 (Indalecio's second-form spells)");
-}
+// (g_spell_data_entry 0x8006d1f2: spell_data_entry_set, spells.h.)
 
 // The rising mote (anim 0x24) of the second form: a random x within 300, 0x190 up,
 // floating up faster and faster.
@@ -243,7 +235,7 @@ struct EnemyIndalecio : EnemyUnit {
       end_attack();
       return;
     }
-    if (const SpellCastView* sc = spellcast_slot0(); sc != nullptr && sc->kind == 0x3A && 7 < sc->step) {
+    if (const SpellCast* sc = spellcast_slot0(); sc != nullptr && sc->kind == 0x3A && 7 < sc->step) {
       end_attack();
       return;
     }
@@ -307,7 +299,7 @@ struct EnemyIndalecio : EnemyUnit {
       spell_effect_started_flag() = 1;
       spellcast_create(0x3B, this, target, 0, nullptr);
     }
-    const SpellCastView* sc = spellcast_slot0();
+    const SpellCast* sc = spellcast_slot0();
     if (sc == nullptr || sc->kind != 0x3B) {
       anim = 0x2E;
       loop_limit = 0;
@@ -469,36 +461,9 @@ struct EnemyIndalecio : EnemyUnit {
 // ---- The transformation: SpellCast kind 0x3b ----------------------------------------
 // g_spell_kind_handlers[0x3b] (0x80088020 table) is 0x80089c80, in this block: the
 // SpellCast that attack 4 starts runs it every frame (spellcast_update 0x80085b0c, task
-// priority 3) until it sets +0x0e. SpellCast (0x248 bytes, spellcast_init 0x80085760) is
-// the spells' and not ported, so the handler works on this view of the fields it uses.
-// [port partial: nothing runs it until SpellCast exists; then spellcast_create(0x3b, ...)
-// should run spellcast_kind3b_transform with the cast's fields]
-struct TransformCast {
-  u8 finished = 0;                    // +0x0e: the cast is over
-  EnemyIndalecio* caster = nullptr;   // +0x14
-  s32 timer = 0;                      // +0x20
-  s32 flag = 0;                       // +0x24
-  s32 ring_angle = 0;                 // +0x34: the light funnel's turn
-  s32 fade = 0;                       // +0x38
-  s32 halo_y = 0;                     // +0x3c: the halo's height above him
-  s32 step = 0;                       // +0x40
-  s32 wait = 0;                       // +0x44: spellcast_wait's timer
-  BObj ring;                          // +0x1bc: the cast's second sprite object (the funnel's cel)
-};
-
-// spellcast_wait 0x80085c84 and spellcast_timer_tick 0x80085ccc (resident SpellCast API,
-// two lines each) on the view.
-void cast_wait(TransformCast* sc, s32 frames) {
-  sc->wait = frames;
-  ++sc->step;
-}
-int cast_timer_tick(TransformCast* sc) {
-  if (sc->wait == 0) return 0;
-  sc->wait -= bg().frame_ticks;
-  if (sc->wait < 0) sc->wait = 0;
-  return 1;
-}
-
+// priority 3) until it sets +0x0e. Its fields: +0x20 (s20) timer, +0x24 (s24) flag, +0x34
+// (s34) the light funnel's turn, +0x38 (s38) fade, +0x3c (s3c) the halo's height above
+// him, +0x40 step, +0x44 the wait, +0x1bc (obj2) the funnel's cel.
 // 0x80089c80: the transformation. Steps 0-6 draw him (he is frozen in the spell pause)
 // with his shadow, and the halo once he has it; steps 3-6 draw a funnel of light round him
 // (10 bands x 10 segments of anim 0x24's cel, a bowl from 0x500 wide and 0x32 up to
@@ -512,9 +477,9 @@ int cast_timer_tick(TransformCast* sc) {
 // faster, no status; 64 beams, 4 rings, the battle music again, a voice, his second-form
 // voices and spells. 6: the funnel fades as the halo sinks to -0x1f4. 7: a flash back, the
 // cast ends and so does attack 4.
-[[maybe_unused]] void spellcast_kind3b_transform(TransformCast* sc) {
+void transform_run(SpellCast* sc) {
   BattleGlobals& g = bg();
-  EnemyIndalecio* u = sc->caster;
+  auto* u = static_cast<EnemyIndalecio*>(sc->caster);
   if (sc->step < 7) {
     bobj_project(u);
     bobj_anim_draw(u, g.flags & 0xC);
@@ -529,7 +494,7 @@ int cast_timer_tick(TransformCast* sc) {
       h.pool = g.prim_pool_a;
       h.anim = 0xD;
       h.pos[0] = u->pos[0];
-      h.pos[1] = u->pos[1] + sc->halo_y;
+      h.pos[1] = u->pos[1] + sc->s3c;
       h.pos[2] = u->pos[2];
       h.facing[0] = u->facing[0];
       h.facing[1] = u->facing[1];
@@ -541,7 +506,7 @@ int cast_timer_tick(TransformCast* sc) {
     }
   }
   if (static_cast<u32>(sc->step - 3) < 4) {
-    BObj* ring = &sc->ring;
+    BObj* ring = &sc->obj2;
     ring->anim = 0x24;
     bobj_anim_draw(ring, (g.flags & 0xC) | 0x9800u);
     const FrameUv& f = frame_uv();
@@ -552,7 +517,7 @@ int cast_timer_tick(TransformCast* sc) {
     for (int band = 0; band < 10; ++band, twist += 0xC000) {
       const s32 o = 10 - band, i = 9 - band;
       const s32 radius[2] = {band * 0x80, band * 0x80 + 0x80};
-      const s32 base[2] = {twist / 360 + sc->ring_angle, twist / 360 + sc->ring_angle + 0x88};
+      const s32 base[2] = {twist / 360 + sc->s34, twist / 360 + sc->s34 + 0x88};
       const s32 y[2] = {-0x32000 - (((o * 30 * o * o * o) / 200) << 12), -0x32000 - (((i * 30 * i * i * i) / 200) << 12)};
       for (int seg = 0; seg < 10; ++seg) {
         // (The console builds the corners in the scratchpad at 0x1f8003c0.)
@@ -568,20 +533,20 @@ int cast_timer_tick(TransformCast* sc) {
       }
     }
     if ((g.flags & 0xC) != 0) return;
-    sc->ring_angle = (sc->ring_angle + g.frame_ticks * 10) & 0xFFF;
+    sc->s34 = (sc->s34 + g.frame_ticks * 10) & 0xFFF;
   }
   if ((g.flags & 0xC) != 0) return;
-  if (cast_timer_tick(sc) != 0) return;
+  if (spellcast_timer_tick(sc) != 0) return;
   const s32 top[3] = {u->pos[0], -0x60E000, u->pos[2]};
   switch (sc->step) {
     case 0: {  // 0x8008a240
       screen_fade_create(0, 0x20, -8, 0x78);
-      battle_flash_set(nullptr, 0x18, 0x18, 0x18);  // (the stand-in has no SpellCast to take)
+      battle_flash_set(sc, 0x18, 0x18, 0x18);
       bsfx_play_at(0x2A, u);
       bsfx_play_at(0x22, u);
-      cast_wait(sc, 0x96);
-      bobj_share_sprite(u, &sc->ring);
-      sc->ring.pool = g.prim_pool_a;
+      spellcast_wait(sc, 0x96);
+      bobj_share_sprite(u, &sc->obj2);
+      sc->obj2.pool = g.prim_pool_a;
       sound_fade_out(g.sound, 500);
       break;
     }
@@ -642,8 +607,8 @@ int cast_timer_tick(TransformCast* sc) {
             bobj_share_sprite(u, ring);
           }
         }
-        sc->ring.colour_mode = 2;
-        sc->ring.rgb[0] = 0;
+        sc->obj2.colour_mode = 2;
+        sc->obj2.rgb[0] = 0;
         const s32 high[3] = {u->pos[0], -0x3E8000, u->pos[2]};
         camera_move_to(g.camera, high, 0xC00, -0x71, 0xC00, 0x258, 0x80, 5);
       }
@@ -658,9 +623,9 @@ int cast_timer_tick(TransformCast* sc) {
       break;
     }
     case 3: {  // 0x8008a834
-      const u8 lit = static_cast<u8>(sc->ring.rgb[0] + g.frame_ticks * 2);
-      sc->ring.rgb[0] = lit;
-      if (0x80 < lit) sc->ring.rgb[0] = 0x80;
+      const u8 lit = static_cast<u8>(sc->obj2.rgb[0] + g.frame_ticks * 2);
+      sc->obj2.rgb[0] = lit;
+      if (0x80 < lit) sc->obj2.rgb[0] = 0x80;
       for (int i = 0; i < 2; ++i) {
         Shot* s = shot_spawn_callback_always(shot_spiral);
         if (s == nullptr) continue;
@@ -675,11 +640,11 @@ int cast_timer_tick(TransformCast* sc) {
         s->anim = 0x14;
         bobj_share_sprite(u, s);
       }
-      sc->timer += g.frame_ticks;
-      if (0x3C < sc->timer) {
+      sc->s20 += g.frame_ticks;
+      if (0x3C < sc->s20) {
         sc->step = 4;
-        sc->timer = 0;
-        sc->flag = 0;
+        sc->s20 = 0;
+        sc->s24 = 0;
       }
       break;
     }
@@ -698,22 +663,22 @@ int cast_timer_tick(TransformCast* sc) {
         sp->scale_vel[0] = 0x80;
         sp->layer = 0xC;
       }
-      sc->timer += g.frame_ticks;
-      if (0xB4 < sc->timer && sc->flag == 0) {
+      sc->s20 += g.frame_ticks;
+      if (0xB4 < sc->s20 && sc->s24 == 0) {
         screen_fade_create(0, 0x20, -4, 0x96);
-        sc->flag = 1;
+        sc->s24 = 1;
         const u32 h = bsfx_play_at(0x2E, u);
         sound_handle_fade_out(h, 0x3C, 0x78);
         sound_handle_pitch_down(h, 0x78);
       }
-      if (0x10E < sc->timer) {
-        cast_wait(sc, 0x78);
-        sc->timer = 0;
+      if (0x10E < sc->s20) {
+        spellcast_wait(sc, 0x78);
+        sc->s20 = 0;
         bsfx_play_ui(0x2A);
         bsfx_play_ui(0x29);
         bsfx_play_ui(0x21);
         bsfx_play_ui(0x22);
-        sc->halo_y = -0x5DC000;
+        sc->s3c = -0x5DC000;
       }
       break;
     }
@@ -728,8 +693,8 @@ int cast_timer_tick(TransformCast* sc) {
       u->run_speed += 0x38;
       u->base_speed += 0x38;
       u->status_bits = 0;
-      sc->fade = 0;
-      sc->ring_angle = 0;
+      sc->s38 = 0;
+      sc->s34 = 0;
       camera_move_to(g.camera, u->pos, 0xC00, 0x71, 0xC30, 0x12C, 0x80, 5);
       sc->step = 6;
       for (int i = 0; i < 0x40; ++i) {
@@ -769,17 +734,17 @@ int cast_timer_tick(TransformCast* sc) {
     case 6: {  // 0x8008adb0
       // (Original quirk: the funnel above has already turned +0x34 this frame, so the
       // afterimage of the halo is never made.)
-      if (sc->ring_angle == 0) {
+      if (sc->s34 == 0) {
         u->effects[0] = afterimage_create(&u->halo, 6, 0x802000, 1);
-        sc->ring_angle = 1;
+        sc->s34 = 1;
       }
-      sc->ring.rgb[0] = static_cast<u8>(-0x80 - sc->fade);
-      sc->fade += g.frame_ticks * 4;
-      if (0x80 < sc->fade) sc->fade = 0x80;
+      sc->obj2.rgb[0] = static_cast<u8>(-0x80 - sc->s38);
+      sc->s38 += g.frame_ticks * 4;
+      if (0x80 < sc->s38) sc->s38 = 0x80;
       if (u->effects[0] != nullptr) u->effects[0]->next_kind = 1;
-      sc->halo_y += g.frame_ticks * 0x4000;
-      if (-0x1F4000 < sc->halo_y) {
-        sc->halo_y = -0x1F4000;
+      sc->s3c += g.frame_ticks * 0x4000;
+      if (-0x1F4000 < sc->s3c) {
+        sc->s3c = -0x1F4000;
         ++sc->step;
         if (u->effects[0] != nullptr) u->effects[0]->ending = 1;
         u->effects[0] = nullptr;
@@ -789,7 +754,7 @@ int cast_timer_tick(TransformCast* sc) {
     }
     case 7: {  // 0x8008af48
       u->effects[0] = nullptr;
-      battle_flash_set(nullptr, 0x80, 0x80, 0x80);
+      battle_flash_set(sc, 0x80, 0x80, 0x80);
       sc->finished = 1;
       ++sc->step;
       u->action_kind = 0;
@@ -936,6 +901,8 @@ void shot_burst(Shot* s) {
 }
 
 }  // namespace
+
+void spellcast_kind3b_transform(SpellCast* sc) { transform_run(sc); }
 
 std::unique_ptr<EnemyUnit> enemy_mod_indalecio_create() { return std::make_unique<EnemyIndalecio>(); }
 

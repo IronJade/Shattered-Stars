@@ -1,6 +1,7 @@
 # Battle: continuation log
 
-Worker: battle agent (phase 2: HUD, result screen, killer moves, spells and items).
+Worker: battle agent (phase 2: HUD, result screen, killer moves; spells and items moved to the
+world agent).
 Build dirs: `engine/build-battle` (normal) and `engine/build-battle-asan` (ASan; run with
 `LD_PRELOAD=scratchpad/battle/asan/usr/lib64/libasan.so.8`). Scratch (on disk):
 `scratchpad/battle/`. The worker does not commit; the coordinator does.
@@ -62,31 +63,50 @@ fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phas
 
 ## Committed since: kinds 2 / 0x2c / 0x32 (3c4509e)
 
+## Committed since: kind 0x10 / draw_sphere / lights_build_oriented, pc_casters (bbed220)
+
+## Queue change (coordinator, 2026-10-22)
+
+Step 4 (spells and items) now belongs to the world agent: spell_cast and the spell routines,
+the #2129 spell-cast object API (0x80085518-0x80088054), the spell data loader, the unit cast
+functions (0x80052000-0x80053fff), shot_hit_magic 0x800547d4 (a flagged addition in shot.cpp),
+the spell-clash / skill-notice / scan windows, the enemy spell path in enemy_ai.cpp, and the
+battle command ring / item list menus, in new files (battle/spells*, battle/spellcast*). This
+worker keeps pc_state_air_attack, the big character modules, the Energy Sword compare, party
+AI, voices, the analog branch and the effect-task leaks; character modules call spells through
+the existing stand-ins until then. Answer the world agent's questions about the party cast
+states and how to get a party setup with Rena.
+
+## Clock alignment: no camera fix (coordinator correction, 2026-10-22)
+
+The "port one frame late in the intro" report was a sampling-convention misread, and the
+original's phase varies between references. Nothing in camera.cpp changed. Method written into
+docs/notes/battle_port.md (Verification, "Clock alignment"): pick D per reference (zero RNG
+mismatches; rngcmp.py and scratchpad/enemy/cmp.py take CMP_D), and read Redux samples as
+the finished frame with its in-frame g_battle_frames value. Encounter 10's camera fields equal
+the port's sample for sample (`ref/dense10`, `ref/order10` with loop-order breakpoints; port
+`SS_BATTLE_CAM=1`, new in battle_debug.cpp).
+
 ## In progress (uncommitted, all build)
 
-- Kind 0x10 (`shot.cpp` shot_k10_sphere) with `fx_draw.cpp` draw_sphere 0x8007c520 and
-  `render.cpp` lights_build_oriented 0x80076eec. Exercised by encounter 340 (wizard): the
-  impact explosion looks like the reference; the wizard's sequence runs ~5 frames early in
-  the port because of the enemy odds-batch phase (below), so no exact frame match yet.
-- The small party modules: `pc_casters.cpp` (Rena #2135, Celine #2137, Leon #2141, Noel
-  #2157), registered in `pc_modules.cpp`, `CMakeLists.txt`; `unit.h` gains PartyUnit slot 42
-  `spell_hook`. Not run-time tested (spells and the party members' setups are not there).
-- `loaders.cpp` / `docs/notes/battle.md`: mem_alloc_b -> mem_alloc_high (catalog rename).
-- Catalog regenerated (501 rows).
-- Found (reported): in every encounter compared (10, 340) the enemies' first odds batch
-  (5 rng draws every 8 ticks, enemy_ai.cpp ai_ticks) fires on the first frame of state 2 in
-  the port but about one cycle later in the original; the RNG totals re-sync by b300 but the
-  decisions stay a few frames early. Enemy-side; routed to the enemy agent. Claude's
-  approach drift in encounter 10 follows from it.
+- `party_states.cpp`: PartyUnit::state_air_attack (0x80037d08, jump attacks).
+- `killer.{h,cpp}`: `pc_jump_step` (was claude_jump_step; pc_claude.cpp uses it).
+- `shot.cpp`: shot_place_at_unit's y uses the console's u32 wrap.
+- `pc_ernest.cpp` (#2151, vtable 0x801f03e4, 0x370 bytes): moves 0-7 and the five
+  callbacks; registered in pc_modules.cpp (case 10) and CMakeLists. Not run-time tested.
+- `battle_debug.cpp`: `SS_BATTLE_CAM=1`.
+- Verifying the air attack against `ref/enc35` (Carlaeagles, Cross mash, D = 2): RNG equal to
+  b460; at b470 Claude's slash hits an eagle in the original and misses in the port (the
+  eagle walks away in the port). `ref/enc35e` (per-vsync unit log, `BW_ELOG`) is running.
 
 ## Next steps
 
-1. PartyUnit::state_air_attack (pc_state_air_attack 0x80037d08, jump attacks) is still a
-   todo in party_states.cpp: port it (all members but Leon use it).
-2. The bigger character modules (Bowman #2139, Dias #2143, Precis #2155, Ashton #2147, Opera
-   #2153, Ernest #2151, Chisato #2159), each verified as Claude's was.
-3. Claude's move 5 (Energy Sword) compare; the other character modules (casters first).
-4. Step 4: spells and items (shot_hit_magic 0x800547d4 next to shot_apply_damage).
+1. Finish the enc35 check (air attack, the b470 miss), then Ernest's run-time check
+   (SS_BATTLE_POKE party slot id 10 plus killer-move bytes; the same BW_EXTRA_POKE in Redux).
+2. Catalog rows for Ernest and the air attack (gen_catalog.py), battle_port.md layout row.
+3. The bigger character modules (Bowman #2139, Dias #2143, Precis #2155, Ashton #2147, Opera
+   #2153, Chisato #2159), each verified as Claude's was.
+4. Claude's move 5 (Energy Sword) compare.
 5. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
 6. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (leak), and
    `Unit` has no dtor destroying its effects (console unit_destroy 0x8004def0 does). Unit

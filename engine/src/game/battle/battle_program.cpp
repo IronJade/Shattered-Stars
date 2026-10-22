@@ -23,6 +23,8 @@
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
+#include "game/battle/spell_windows.h"
+#include "game/battle/spells.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
@@ -205,6 +207,8 @@ void battle_init_objects() {
   damage_popups_reset(); // Pool2C (16 x 0x2c)
   bsfx_reset();
   director_reset();
+  spells_reset();        // the spell-data cache, the SpellCasts (spells.cpp, spellcast.cpp)
+  spell_windows_reset();
   // TODO(port): the other pools: Shot (160 x 0x13c), DamagePopup (16 x 0x2c), PolyShard
   // (192 x 0x74), Particle (200 x 0x48).
   animset_pool_reset();
@@ -280,7 +284,7 @@ void battle_scene_start() {
   }
   camera_set_mode(g.camera, mode, nullptr);
   battle_windows_open();  // the HUD at (0, 0, 0x140, 0x28), the debug window below it
-  // TODO(port): the start burst (battle_start_burst_create 0x8003c02c: the white radial wipe).
+  battle_start_burst_create();  // 0x8003bf18: the opening wipe
   ot_layer_to_front(g.prim_pool_b);
 }
 
@@ -414,7 +418,7 @@ void battle_victory_begin(Unit* last_hitter) {
   const u8 extra = (g.flags & 0x40) != 0 ? 0x1E : 0;
   g.slowmo_frames = static_cast<s8>(extra + 0x1E);
   g.end_countdown = static_cast<s8>(extra + 0x5A);
-  // spell_data_clear_all 0x80048994: the spell-data cache is not ported (spells).
+  spell_data_clear_all();
   g.outcome = kVictory;
   g.victory_speaker = 0;
   if (last_hitter != nullptr) {
@@ -440,6 +444,7 @@ void battle_end_with(u8 outcome) {
   // countdown, the music fades, the field program preloads.
   BattleGlobals& g = g_battle;
   g.outcome = outcome;
+  spell_data_clear_all();
   g.state = kStateOver;
   g.end_countdown = 0x5A;
   sound_fade_out(g.sound, 0x1E0);
@@ -494,6 +499,7 @@ void battle_main_loop() {
   battle_separate_units();
   battle_scene_start();
   hud_init(battle_hud());
+  int frame_no = 0;
   for (;;) {
     if (g.state > kStateResult) battle_exit_to_field();
     screen_flip();
@@ -541,7 +547,8 @@ void battle_main_loop() {
       battle_end(g_debug.auto_end_outcome);
     }
     if (g.sprite_bank_fx != nullptr && !g.special_obj_released) bobj_texcache_begin_frame(g.sprite_bank_fx.get());
-    // TODO(port): voice_update, bload_update, spell_data_update (spells and voices).
+    // TODO(port): voice_update, bload_update (voices, the load queue).
+    spell_data_update();
     input_update(&battle_input());
     if (g.camera != nullptr) g.camera->update();
     camera_update_matrices();
@@ -626,7 +633,9 @@ void battle_main_loop() {
     text_frame_upload();
     // screen_compact_ot(layer 0).
     psyq::DrawSync(0);
-    psyq::VSync(2);
+    // VSync(2); a debug run can shorten the first frames (battle_debug_frame_wait).
+    const int wait = battle_debug_frame_wait(frame_no++);
+    psyq::VSync(wait == 1 ? 0 : wait);
     // VsyncCounter (vsync_counter_tick 0x80047578): vblanks since the last frame, capped
     // at 4 (6 during a special move).
     const u64 now = rt.vblanks();
@@ -665,6 +674,8 @@ void battle_main_loop() {
 void battle_free_all() {
   BattleGlobals& g = g_battle;
   result_screen_free();
+  spells_reset();          // the SpellCasts, their fades and the spell data
+  spell_windows_reset();   // the clash / skill-notice / scan windows
   battle_windows_free();  // the debug window and the HUD release themselves
   g.tasks.fill(nullptr);
   g.task_count = 0;

@@ -320,6 +320,34 @@ void RibbonTrail::update() {
   }
 }
 
+// ---- Jump step (module copies) ------------------------------------------------------
+
+int pc_jump_step(PartyUnit* u, s32 gravity) {
+  BattleGlobals& g = bg();
+  if (g.flags != 0 || u->jumping == 0) return 0;
+  s32 d[3] = {u->vel[0], 0, 0};
+  if (unit_try_move_scaled(u, d, 7) == nullptr) bobj_move(u, d);
+  d[0] = 0;
+  d[1] = u->vel[1];
+  int r;
+  if (unit_try_move_scaled(u, d, 7) == nullptr) {
+    bobj_move(u, d);
+    u->vel[1] += gravity * g.frame_ticks;
+    if (u->pos[1] <= bobj_ground_height(u)) return 0;
+    u->pos[1] = bobj_ground_height(u);
+    u->vel[1] = 0;
+    bsfx_play_at(0x1E, u);
+    r = 2;
+    u->airborne = 0;
+  } else {
+    bsfx_play_at(0x1E, u);
+    r = 1;
+    u->airborne = 2;
+  }
+  u->jumping = 0;
+  return r;
+}
+
 // ---- PartyUnit helpers -------------------------------------------------------------------
 
 int pc_attack_anim_step(PartyUnit* u) {

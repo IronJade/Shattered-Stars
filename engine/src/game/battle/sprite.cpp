@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "game/battle/render.h"
+#include "game/battle/spell_windows.h"
 #include "game/battle/unit.h"
 #include "game/boot/rng.h"
 
@@ -374,10 +375,7 @@ void effect_rise_icon(const BObj* u, int kind) {
 
 void effect_skill_popup(const BObj* u, int skill) {
   BattleGlobals& g = bg();
-  if (u == g.party_units[g.controlled_slot]) {
-    // TODO(port): skill_notice_show 0x800642f4 (the skill-notice window).
-    (void)skill;
-  }
+  if (u == g.party_units[g.controlled_slot]) skill_notice_show(skill);  // (spell_windows.cpp)
   Sprite* s = sprite_spawn_a(0x33, 0x10, nullptr);
   if (s == nullptr) return;
   sprite_set_pos(s, u->pos[0], u->pos[1] + u->size[1] * -0x3000, u->pos[2]);

@@ -25,7 +25,14 @@ void battle_debug_set_end(const std::string& end);
 // count of rng_next calls). SS_BATTLE_DUMP=<file>: at battle_exit_to_field writes the
 // handoff blocks the field reads back (2 config 0x2a0, 3 party 0x300, 4 records 0x680,
 // 6 inventory 0xc28, in that order) for a comparison with a RAM dump of the original.
+// SS_BATTLE_CAM=1: the camera / clock fields once a frame. SS_BATTLE_BOXES=LO:HI: every
+// unit's box mask, enabled boxes and animation fields once a frame in that frame range.
 void battle_debug_frame();
 void battle_debug_exit();
+// The vblanks battle frame 'n' (0 = the first) waits for at its end (VSync(2): 2).
+// SS_BATTLE_TICKS=W0,W1,... overrides the first frames' waits, to reproduce a reference
+// whose setup ended mid-way through a 2-vblank period: "1" gives the original's 2, 1, 2,
+// 2, ... tick pattern (frame 1 runs with 1 tick; g_battle_frames odd from then on).
+int battle_debug_frame_wait(int n);
 
 }  // namespace ss::game::battle

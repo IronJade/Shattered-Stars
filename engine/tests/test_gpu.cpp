@@ -144,3 +144,38 @@ TEST(gpu_gouraud_and_uv_match_hardware_dumps) {
   constexpr Probe kUv[] = {{3, 5, 0x03E0}, {6, 10, 0x03E0}, {9, 15, 0x03E0}, {12, 20, 0x03E0}, {2, 5, 0x001F}};
   for (const Probe& p : kUv) CHECK_EQ(gpu.pixel(p.x, 256 + p.y), p.colour);
 }
+
+// Probes from the hardware VRAM dump of ps1-tests gpu/lines: the line walk (steep lines
+// from x 110 + 8n to x 110 + 9n), gouraud stepping, and dithering of mono lines.
+TEST(gpu_lines_match_hardware_dump) {
+  psx::Gpu gpu;
+  const u32 white[] = {0x02FFFFFF, xy(0, 0), xy(320, 240)};
+  gpu.gp0(white);
+  const u32 no_dither[] = {0xE1000400};
+  gpu.gp0(no_dither);
+  for (int x = 0; x < 10; ++x) {
+    const u32 line[] = {0x40000000, xy(110 + x * 8, 16), xy(110 + x * 8 + x, 96)};
+    gpu.gp0(line);
+  }
+  for (int i = 0; i < 64; ++i) {
+    const u32 line[] = {0x50000000, xy(16, 166 + i), 0x000000FF, xy(16 + i, 166 + i)};
+    gpu.gp0(line);
+  }
+  const u32 dither[] = {0xE1000600};
+  gpu.gp0(dither);
+  for (int i = 0; i < 64; ++i) {
+    const u32 mono[] = {0x400000AA, xy(84, 100 + i), xy(84 + i, 100 + i)};
+    gpu.gp0(mono);
+    const u32 shaded[] = {0x50000000, xy(84, 166 + i), 0x000000FF, xy(84 + i, 166 + i)};
+    gpu.gp0(shaded);
+  }
+  struct Probe {
+    int x, y;
+    u16 colour;
+  };
+  constexpr Probe kProbes[] = {{174, 21, 0x0000}, {175, 21, 0x7FFF}, {151, 40, 0x0000}, {152, 56, 0x0000},
+                               {153, 72, 0x0000}, {84, 100, 0x0014}, {94, 136, 0x0014}, {86, 152, 0x0014},
+                               {85, 168, 0x0010}, {93, 201, 0x0008}, {123, 216, 0x0019}, {17, 168, 0x0010},
+                               {23, 198, 0x0007}, {41, 213, 0x0011}};
+  for (const Probe& p : kProbes) CHECK_EQ(gpu.pixel(p.x, p.y), p.colour);
+}

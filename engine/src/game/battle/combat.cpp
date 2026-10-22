@@ -6,6 +6,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/render.h"
+#include "game/battle/spells.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/boot/rng.h"
@@ -802,7 +803,7 @@ int Unit::resist_roll(int kind, int chance) { return unit_resist_roll(this, kind
 
 void unit_release_spell_data(Unit* u) {
   if (u->spell != 0 && u->special_timer == 0) {
-    // spell_data_cancel_owner 0x80048a20: the spell-data cache is not ported (spells).
+    spell_data_cancel_owner(u);
     u->spell = 0;
   }
 }

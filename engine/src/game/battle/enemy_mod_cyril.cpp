@@ -254,7 +254,7 @@ struct EnemyCyril : EnemyUnit {
       return;
     }
     special_timer = 8;
-    if (const SpellCastView* sc = spellcast_slot0(); sc != nullptr && sc->kind == 0x39) {
+    if (const SpellCast* sc = spellcast_slot0(); sc != nullptr && sc->kind == 0x39) {
       if (counters[2] == 3 && 5 < sc->step) {
         end_attack();
         return;

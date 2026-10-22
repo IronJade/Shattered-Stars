@@ -54,41 +54,13 @@ void unit_throw_weapons(Unit* u, s32 variant) {
   }
 }
 
-// ---- Spell stand-ins (the world agent's; see enemy_support.h).
-void spell_cast(int, Unit*, Unit*, int) { todo("spell_cast 0x80062c24 (enemy-module spell)"); }
-void spell_data_request(int, int, Unit*) { todo("spell_data_request 0x800482e8"); }
-int spell_data_status(int, Unit*) {
-  todo("spell_data_status 0x800487c8");
-  return 2;
-}
-void spell_data_cancel_owner(Unit*) { todo("spell_data_cancel_owner 0x80048a20"); }
-void unit_begin_cast(Unit*) { todo("unit_begin_cast 0x80052bac (enemy-module spell)"); }
-SpellCast* spellcast_create(int, Unit*, Unit*, int, const void*) {
-  todo("spellcast_create 0x80085560 (enemy-module SpellCast)");
-  return nullptr;
-}
-void battle_flash_set(SpellCast*, int, int, int) { todo("battle_flash_set 0x80085c10"); }
-void spellcast_wait(SpellCast*, int) { todo("spellcast_wait 0x80085c84"); }
-void spellcast_dim_end(SpellCast*) { todo("spellcast_dim_end 0x80086478"); }
-u8& spell_landed_flag() {
-  static u8 flag = 0;
-  return flag;
-}
-u8& spell_effect_started_flag() {
-  static u8 flag = 0;
-  return flag;
-}
-const SpellCastView* spellcast_slot0() { return nullptr; }
+// (The spell stand-ins went: spells.h / spellcast.h / spell_fx.h have the real ones.)
 
 // ---- Other stand-ins (the battle agent's).
 void bload_request(int, void*, s16, int) { todo("bload_request 0x800475c0 (enemy module)"); }
 u32 voice_play_entry(int, Unit*) {
   todo("voice_play_entry 0x8007f818 (enemy-module voices)");
   return 0;
-}
-Task* screen_fade_create(u32, int, int, int) {
-  todo("screen_fade_create 0x8003c3b0");
-  return nullptr;
 }
 s16 shot_draw_frame_quad(BObj*, const s32*, const s32*, u32, int) {
   todo("shot_draw_frame_quad 0x8005b23c");

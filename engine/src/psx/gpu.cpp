@@ -409,17 +409,44 @@ void Gpu::draw_line(std::span<const u32> p) {
 }
 
 void Gpu::draw_segment(Vertex a, Vertex b, const Shading& s) {
-  const int dx = b.x - a.x, dy = b.y - a.y;
-  if (std::abs(dx) >= 1024 || std::abs(dy) >= 512) return;
-  const int steps = std::max(std::abs(dx), std::abs(dy));
-  for (int k = 0; k <= steps; ++k) {
-    const int x = steps ? a.x + (dx * k + (dx >= 0 ? steps / 2 : -steps / 2)) / steps : a.x;
-    const int y = steps ? a.y + (dy * k + (dy >= 0 ? steps / 2 : -steps / 2)) / steps : a.y;
-    if (!in_area(x, y)) continue;
-    const int r = steps ? a.r + (b.r - a.r) * k / steps : a.r;
-    const int g = steps ? a.g + (b.g - a.g) * k / steps : a.g;
-    const int bl = steps ? a.b + (b.b - a.b) * k / steps : a.b;
-    shade_pixel(x, y, r, g, bl, 0, 0, s, dithering_enabled && state_.dither && s.gouraud);
+  // The hardware's line walk (Mednafen's / DuckStation's model, identical to the hardware
+  // VRAM dump of JaCzekanski's ps1-tests gpu/lines): k = the longer axis' length; k + 1
+  // pixels from the left end; x and y step in 32.32 from the pixel centre (x biased
+  // back by 1024 / 2^32, y too when it steps up), each step rounded away from zero;
+  // colours step in 12-bit fixed point from the centre of the start value. Every line
+  // is dithered when dithering is on (PCSX-Redux dithers none: dither_lines false).
+  const int adx = std::abs(b.x - a.x), ady = std::abs(b.y - a.y);
+  if (adx >= 1024 || ady >= 512) return;
+  const int k = std::max(adx, ady);
+  if (a.x >= b.x && k > 0) std::swap(a, b);
+  auto div_xy = [](s64 delta, s32 dk) { return ((delta << 32) - (delta < 0 ? dk - 1 : 0) + (delta > 0 ? dk - 1 : 0)) / dk; };
+  s64 dxdk = 0, dydk = 0;
+  s32 drdk = 0, dgdk = 0, dbdk = 0;
+  if (k != 0) {
+    dxdk = div_xy(b.x - a.x, k);
+    dydk = div_xy(b.y - a.y, k);
+    drdk = ((b.r - a.r) * 4096) / k;
+    dgdk = ((b.g - a.g) * 4096) / k;
+    dbdk = ((b.b - a.b) * 4096) / k;
+  }
+  s64 cur_x = ((static_cast<s64>(a.x) << 32) | (s64{1} << 31)) - 1024;
+  s64 cur_y = ((static_cast<s64>(a.y) << 32) | (s64{1} << 31)) - (dydk < 0 ? 1024 : 0);
+  s32 cr = a.r << 12 | 1 << 11, cg = a.g << 12 | 1 << 11, cb = a.b << 12 | 1 << 11;
+  const bool dither = dithering_enabled && dither_lines && state_.dither;
+  for (int i = 0; i <= k; ++i) {
+    const int x = sext11(static_cast<u32>(cur_x >> 32));
+    const int y = sext11(static_cast<u32>(cur_y >> 32));
+    if (in_area(x, y)) {
+      const int r = s.gouraud ? (cr >> 12) & 0xFF : a.r;
+      const int g = s.gouraud ? (cg >> 12) & 0xFF : a.g;
+      const int bl = s.gouraud ? (cb >> 12) & 0xFF : a.b;
+      shade_pixel(x, y, r, g, bl, 0, 0, s, dither);
+    }
+    cur_x += dxdk;
+    cur_y += dydk;
+    cr += drdk;
+    cg += dgdk;
+    cb += dbdk;
   }
 }
 

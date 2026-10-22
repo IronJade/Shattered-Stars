@@ -408,6 +408,8 @@ class Panel : public Widget {
 
   // Field panels (menu_0ba5): the item viewer and its info box.
   void create_viewer(s16 x, s16 y, s16 z);     // menu_0ba5 0x800d4b2c (0x800d4b04: 0x118, 0x4a, 0x18)
+  // menu_0ba5 0x800d4b9c: a viewer made elsewhere (the creation pages' kind) as +0x50.
+  void attach_viewer(ItemViewer* v, s16 x, s16 y, s16 z);
   void set_viewer_item(int item);              // menu_0ba5 0x800d4c1c
   // menu_0ba5 0x800d5b0c: a new member box (0, 0) 'width' (0: 0x68) x 0x50, filled.
   void create_member_box(int width);

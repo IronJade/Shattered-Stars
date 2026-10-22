@@ -13,6 +13,7 @@
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
+#include "game/battle/spells.h"
 #include "game/battle/unit.h"
 #include "game/battle/unit_move.h"
 #include "game/boot/rng.h"
@@ -539,12 +540,8 @@ void PartyUnit::think() {
       case 0xC: state_attack(); return;
       case 0xA:
       case 0xB: state_air_attack(); return;
-      case 0xE:
-      case 0xF:
-        todo("pc_state_cast / pc_state_spell_release (spells)");
-        action_kind = 0;
-        begin_action();
-        return;
+      case 0xE: state_cast(); return;            // [40] (spell_units.cpp)
+      case 0xF: state_spell_release(); return;   // [41]
       case 0x10: case 0x11: case 0x12: case 0x13: case 0x14: case 0x15:
       case 0x16: case 0x17: case 0x18: case 0x19: case 0x1A:
         killer_move_state(action - 0x10);
@@ -586,7 +583,7 @@ void PartyUnit::think() {
           start_approach();
         }
       } else if (cmd == 4) {
-        todo("unit_begin_cast (spells)");
+        unit_begin_cast(this);
         busy = 1;
         camera_focus = 0;
       }
@@ -993,10 +990,55 @@ void PartyUnit::state_attack() {
   pc_attack_hit_check(this);
 }
 
+// 0x80037d08 pc_state_air_attack (slot 31, states 10 / 11): from frame +0x2d8 (state 10) /
+// +0x2da (11) the member is airborne: vertical move with gravity (blocked: the move ends),
+// horizontal move, landing ends it; hits enemies on the way (power 0x100); the frame
+// follows the height (+0x234 the jump height).
 void PartyUnit::state_air_attack() {
-  todo("pc_state_air_attack (jump attacks)");
-  action_kind = 0;
-  begin_action();
+  BattleGlobals& g = bg();
+  model_default();
+  anim = static_cast<u16>(action + 2);
+  const s32 limit = action == 0xA ? v2d8 : v2da;
+  if (limit <= frame && g.flags == 0) {
+    jumping = 1;
+    airborne = 1;
+    s32 d[3] = {0, vel[1], 0};
+    if (unit_try_move_scaled(this, d, 7) != nullptr) {
+      jumping = 0;
+      action_kind = 0;
+      begin_action();
+      return;
+    }
+    bobj_move(this, d);
+    vel[1] += g.frame_ticks << 12;
+    d[0] = vel[0], d[1] = 0, d[2] = vel[2];
+    if (unit_try_move_scaled(this, d, 7) == nullptr) bobj_move(this, d);
+    const s32 gy = bobj_ground_height(this);
+    if (!(pos[1] < gy)) {
+      pos[1] = gy;
+      jumping = 0;
+      airborne = 0;
+      action_kind = 0;
+      begin_action();
+      return;
+    }
+    Unit* found[8] = {};
+    Vec4 pts[8] = {};
+    const int n = collider_attack_overlaps(this, found, pts, 0);
+    if (n != 0 && hit_landed == 0) unit_attack_targets(this, n, found, pts, 0x100, 9999, 0);
+    s32 h = (v234 << 12) + vel[1];
+    const s32 top = v234 << 13;
+    if (!(h < top)) h = top;
+    const s32 t = bobj_anim_ticks(this, limit, 1000);
+    const s32 num = static_cast<s32>(static_cast<u32>(t) * static_cast<u32>(h));
+    // (A zero jump height divides by zero; the R3000 then leaves -1 / 1 in LO.)
+    const s32 q = top == 0 ? (num >= 0 ? -1 : 1) : (num == INT32_MIN && top == -1 ? num : num / top);
+    ticks_left = static_cast<s16>(-q + 1);
+    frame = static_cast<s8>(limit - 1);
+    if (frame < 0) frame = 0;
+  }
+  animate(0);
+  attack_recovery = 0;
 }
 
 void PartyUnit::state_knockback() {

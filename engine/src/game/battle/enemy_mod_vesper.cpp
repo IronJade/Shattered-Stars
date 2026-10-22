@@ -186,7 +186,7 @@ struct EnemyVesper : EnemyUnit {
     if (kStateFighting < g.state && g.end_countdown < 0x14) {
       interrupt();
     } else if (counters[2] != 3 || (g.flags & 0x40) != 0) {
-      const SpellCastView* sc = spellcast_slot0();
+      const SpellCast* sc = spellcast_slot0();
       if (sc != nullptr && sc->kind == 0x37 && (g.flags & 0x40) != 0 && static_cast<u32>(sc->step - 3) < 2) {
         counters[2] = 3;
         return;

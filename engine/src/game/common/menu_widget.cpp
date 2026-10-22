@@ -1736,8 +1736,10 @@ void Panel::frame() {
   }
 }
 
-void Panel::create_viewer(s16 vx, s16 vy, s16 vz) {
-  viewer = new ItemViewer;
+void Panel::create_viewer(s16 vx, s16 vy, s16 vz) { attach_viewer(new ItemViewer, vx, vy, vz); }
+
+void Panel::attach_viewer(ItemViewer* v, s16 vx, s16 vy, s16 vz) {
+  viewer = v;
   viewer->set_table(item_strings(2));
   viewer->place(vx, vy, vz);
 }

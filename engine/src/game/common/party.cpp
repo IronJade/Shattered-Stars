@@ -117,6 +117,18 @@ int party_selected_char() {
   return id < 1 ? 0 : id;
 }
 
+int party_random_alive_slot() {
+  const int saved = party_get_selected();
+  int slot;
+  for (;;) {
+    slot = static_cast<int>(rng_range(8));
+    party_select(slot);
+    if (party_selected_char() != 0 && (party_selected_slot()[2] & 7) == 0) break;
+  }
+  party_select(saved);
+  return slot;
+}
+
 int party_find_char_slot(int character) {
   for (int i = 0; i < 8; ++i) {
     if (party_slot_active(i) == character) return i;

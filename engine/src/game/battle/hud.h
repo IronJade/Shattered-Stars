@@ -51,5 +51,8 @@ void battle_windows_open();     // battle_scene_start
 void battle_windows_free();     // battle_free_all
 BattleHud* battle_hud();
 MessageWindow* battle_message();  // the banner on screen (null when none)
+// 0x8003bf18 battle_start_burst_create (battle_scene_start): the radial wipe the battle
+// opens with, a task with its own layer that deletes itself once the wipe is over.
+void battle_start_burst_create();
 
 }  // namespace ss::game::battle

@@ -77,7 +77,7 @@ struct EnemyZand : EnemyUnit {
     } else {
       bobj_move(this, d);
       vel[1] += gravity * g.frame_ticks;
-      if (!(pos[1] < bobj_ground_height(this))) return 0;
+      if (!(bobj_ground_height(this) < pos[1])) return 0;  // (lands once below the ground)
       pos[1] = bobj_ground_height(this);
       vel[1] = 0;
       bsfx_play_at(0x1E, this);

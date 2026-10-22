@@ -540,4 +540,89 @@ void MessageWindow::draw() {
   window_draw_frame(this);
 }
 
+// ---- The opening wipe (0x8003bf18-0x8003c3ac) ------------------------------------------
+
+namespace {
+
+// BurstFx (0x18 bytes, vtable 0x8006b888): a fan of subtractive gouraud triangles round
+// the screen centre. It starts fully subtracted (black); the base colour fades out over 16
+// ticks, then the fan's edge sweeps from 0x800 to 0, leaving the scene behind it. Two
+// opposite sectors are drawn (each triangle and its point mirror).
+struct BurstFx : Task {
+  s32 angle = 0x800;          // +0x08: the fan's edge
+  s32 colour = 0xFFFFFF;      // +0x0c: the colour at the edge (it grows 0x101010 a step inwards)
+  s32 cap = 0xFFFFFF;         // +0x10: the centre vertex's limit
+  RenderContext layer;        // +0x14: a 0x55c-byte arena and a one-entry OT
+
+  BurstFx() {  // 0x8003bf18
+    task_register(this, 0);
+    render_ctx_create_arena(&layer, 0x55C);
+    render_ctx_create_ot(&layer, 1);
+    layer.ot_head = screen_clear_ot(layer.ot);
+    ot_layer_add(&layer);
+  }
+  ~BurstFx() override {  // 0x8003bf9c
+    task_unregister(this);
+    ot_layer_remove(&layer);
+    if (layer.arena >= 0) screen_destroy_arena(layer.arena);
+    if (layer.ot >= 0) screen_destroy_ot(layer.ot);
+  }
+  void update() override;
+};
+
+// 0x8003c02c battle_start_burst_update.
+void BurstFx::update() {
+  ot_layer_to_front(&layer);
+  auto* tri = screen_alloc_prims<psyq::POLY_G3>(layer.arena, 48);
+  s32 a = angle;
+  s32 c = colour;
+  // Steps from the edge inwards: 0x20 while the colour grows, 0x100 once it is white.
+  while (tri != nullptr && a > 0) {
+    const s32 x1 = bcos(static_cast<u32>(a + 0x400)) * 300 >> 12;
+    const s32 y1 = bsin(static_cast<u32>(a + 0x400)) * 300 >> 12;
+    s32 c2 = c + 0x101010;
+    s32 a2 = a - 0x20;
+    if (0xFFFFFF < c2) {
+      c2 = 0xFFFFFF;
+      a2 = a - 0x100;
+    }
+    if (a2 < 0) a2 = 0;
+    const s32 x2 = bcos(static_cast<u32>(a2 + 0x400)) * 300 >> 12;
+    const s32 y2 = bsin(static_cast<u32>(a2 + 0x400)) * 300 >> 12;
+    for (int side = 0; side < 2; ++side) {
+      psyq::POLY_G3* p = tri++;
+      const s32 sx = side == 0 ? 1 : -1;
+      p->x0 = 0xA0;
+      p->y0 = 0x78;
+      p->x1 = static_cast<s16>(0xA0 + sx * x1);
+      p->y1 = static_cast<s16>(0x78 + sx * y1);
+      p->x2 = static_cast<s16>(0xA0 + sx * x2);
+      p->y2 = static_cast<s16>(0x78 + sx * y2);
+      const u32 centre = static_cast<u32>(c < cap ? c : cap) | 0x32000000u;  // semi-transparent
+      std::memcpy(&p->r0, &centre, 4);
+      std::memcpy(&p->r1, &c, 3);
+      std::memcpy(&p->r2, &c, 3);
+      psyq::setlen(p, 6);
+      psyq::addPrim(layer.ot_head, p);
+    }
+    a = a2;
+    c = c2;
+  }
+  if (auto* m = screen_alloc_prims<psyq::DR_MODE>(layer.arena, 1)) {
+    psyq::SetDrawMode(m, 0, 1, 0x40, nullptr);  // subtractive (abr 2)
+    psyq::addPrim(layer.ot_head, m);
+  }
+  const s32 ticks = bg().frame_ticks;
+  colour -= ticks * 0x101010;
+  if (colour < 0) colour = 0;
+  if (colour == 0) angle -= ticks * 15;
+  cap -= ticks * 0x40404;
+  if (cap < 0) cap = 0;
+  if (angle < 1) delete this;  // (battle_start_burst_destroy with 3; out of the task list first)
+}
+
+}  // namespace
+
+void battle_start_burst_create() { new BurstFx(); }
+
 }  // namespace ss::game::battle

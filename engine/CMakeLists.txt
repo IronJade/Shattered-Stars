@@ -84,6 +84,7 @@ add_library(ss_game STATIC
   src/game/common/menu_widget.cpp
   src/game/common/menu_stats.cpp
   src/game/common/menu_save.cpp
+  src/game/common/save_icon.cpp
   src/game/title/load_screen.cpp
   src/game/field/menu_camp.cpp
   src/game/field/menu_shop.cpp
@@ -95,8 +96,8 @@ add_library(ss_game STATIC
   src/game/field/menu_specialty.cpp
   src/game/field/menu_options.cpp
   src/game/field/menu_combat.cpp
+  src/game/field/menu_creation.cpp
   src/game/common/menu_viewer.cpp
-  src/game/common/save_icon.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
   src/game/credits/credits_program.cpp
@@ -190,8 +191,9 @@ target_sources(ss_game PRIVATE
   src/game/battle/killer.cpp
   src/game/battle/particle.cpp
   src/game/battle/pc_modules.cpp
-  src/game/battle/pc_claude.cpp
   src/game/battle/pc_casters.cpp
+  src/game/battle/pc_claude.cpp
+  src/game/battle/pc_ernest.cpp
   src/game/battle/enemy_support.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp
@@ -237,7 +239,15 @@ target_sources(ss_game PRIVATE
   src/game/battle/enemy_mod_decus.cpp
   src/game/battle/enemy_mod_nicolus.cpp
   src/game/battle/enemy_mod_jibril.cpp
-  src/game/battle/enemy_mod_indalecio.cpp)
+  src/game/battle/enemy_mod_indalecio.cpp
+  src/game/battle/spells.cpp
+  src/game/battle/spell_shots.cpp
+  src/game/battle/spell_units.cpp
+  src/game/battle/spell_fx.cpp
+  src/game/battle/spell_windows.cpp
+  src/game/battle/spellcast.cpp
+  src/game/battle/spell_modules.cpp
+  src/game/battle/spell_mod_feehn.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

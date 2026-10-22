@@ -13,6 +13,7 @@
 #include "game/battle/killer.h"
 #include "game/battle/particle.h"
 #include "game/battle/render.h"
+#include "game/battle/spells.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/common/screen.h"
@@ -615,7 +616,10 @@ void Shot::update() {
     case 0x32: shot_k32_light_streak(this); break;
     case 0x21:
     case 0x33: shot_k21_callback(this); break;
-    default: unported_kind(this); break;
+    default:
+      // The spells' kinds (3-0xf, 0x12, 0x13, 0x15, 0x1d: spell_shots.cpp, the world agent's).
+      if (!spell_shot_update(this)) unported_kind(this);
+      break;
   }
 }
 
@@ -697,7 +701,7 @@ int shot_hit_melee(Shot* s, int power, int vs_party) {
 
 void shot_place_at_unit(Shot* s, const BObj* u, s32 dx, s32 dy, s32 dz) {
   s->pos[0] = u->pos[0] + bobj_facing_fx(u, dx);
-  s->pos[1] = u->pos[1] + dy * -0x1000;
+  s->pos[1] = static_cast<s32>(static_cast<u32>(u->pos[1]) - (static_cast<u32>(dy) << 12));  // (32-bit wrap)
   s->pos[2] = u->pos[2] + dz;
   s->facing[0] = u->facing[0];
 }
@@ -906,6 +910,18 @@ Shot* effect_spawn_sphere_at(const s32 pos[3], s32 lat, s32 lon, s32 grow, s32 l
   s->point[0] = static_cast<s32>(rgb);
   s->power = power;
   return s;
+}
+
+// 0x800547d4 shot_hit_magic (the world agent's, next to shot_apply_damage): the spell
+// damage on whatever the Shot's attack boxes meet (vs_party: the party); +0x6d marks the
+// hit. Returns shot_apply_damage + 1, or 0 when nothing was met.
+int shot_hit_magic(Shot* s, int power, int vs_party, int sfx, u16 element, int spark, int knockback) {
+  Unit* found[8] = {};
+  Vec4 points[8] = {};
+  const int n = collider_attack_overlaps(s, found, points, vs_party);
+  if (n == 0) return 0;
+  s->hit_landed = 1;
+  return shot_apply_damage(s, n, found, points, power, sfx, element, spark, knockback) + 1;
 }
 
 int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int power, int sfx, u16 element, int spark,

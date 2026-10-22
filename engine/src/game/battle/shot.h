@@ -99,6 +99,9 @@ inline Shot* effect_spawn_sphere_at_default(const s32 pos[3], s32 lat, s32 lon, 
 // target took no damage. A redirect replaces targets[i].
 int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int power, int sfx, u16 element, int spark,
                       int knockback);
+// 0x800547d4: shot_apply_damage on the units the Shot's attack boxes meet (vs_party: the
+// party), +0x6d set; returns its result + 1, or 0 when it met nothing (spells).
+int shot_hit_magic(Shot* s, int power, int vs_party, int sfx, u16 element, int spark, int knockback);
 
 // The projectile descriptor (0x74 bytes, scratchpad 0x1f800000 s_shot_desc) that
 // shot_spawn_projectile turns into a kind-0x16 Shot.

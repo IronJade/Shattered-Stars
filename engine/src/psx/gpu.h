@@ -78,6 +78,9 @@ class Gpu {
   // The console also dithers modulated textures; PCSX-Redux's software renderer only
   // dithers gouraud shading. False matches PCSX-Redux for reference comparisons.
   bool dither_textured = true;
+  // The console dithers every line (mono or gouraud) when dithering is on; PCSX-Redux's
+  // software renderer dithers none. False matches PCSX-Redux for reference comparisons.
+  bool dither_lines = true;
 
  private:
   struct Vertex {

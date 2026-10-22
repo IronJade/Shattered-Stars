@@ -10,7 +10,7 @@ console, how it was checked, and what is still missing.
 | File | Contents |
 |---|---|
 | `battle.h`, `battle_program.cpp` | program entry / run / main loop / exit, BattleGlobals (addresses in comments), tasks, OT layers, end checks, victory / defeat |
-| `battle_debug.{h,cpp}` | `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`, `SS_BATTLE_RAM`, `SS_BATTLE_STRONG`, `SS_BATTLE_POKE`, `SS_BATTLE_RNG`, `SS_BATTLE_DUMP` |
+| `battle_debug.{h,cpp}` | `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`, `SS_BATTLE_RAM`, `SS_BATTLE_STRONG`, `SS_BATTLE_POKE`, `SS_BATTLE_RNG`, `SS_BATTLE_DUMP`, `SS_BATTLE_CAM`, `SS_BATTLE_BOXES`, `SS_BATTLE_TICKS` |
 | `loaders.{h,cpp}` | the 12 load-list handlers, sprite banks, inventory check, the field reload list + preloads (handoffs 0xc / 10) |
 | `stage.{h,cpp}` | stage command lists (ops 1-17), ground height, `stage_draw_and_animate`, `model_render` |
 | `render.{h,cpp}` | ViewState, trig / sqrt / ratan2 copies, GTE setup, `camera_compute_view`, lights, `obj_set_matrix` |
@@ -32,7 +32,7 @@ console, how it was checked, and what is still missing.
 | `particle.{h,cpp}` | the Particle pool (200): spawners for kinds 1-5; kinds 1-3 drawn with the GTE |
 | `fx_draw.{h,cpp}` | #1984 3-D effect drawers: `draw_vortex`, the lens flares (`lens_flare_draw`, `lens_flare_draw_small`, flare ring / polygon), `project_to_screen` |
 | `killer.{h,cpp}` | killer-move helpers shared by the modules: afterimages and ghosts (#1984), `pc_bind_shot`, `pc_attack_hit`, charge level, the MP cost and `command_killer_move` |
-| `pc_modules.{h,cpp}`, `pc_claude.cpp` | the party-character modules: the factory used by `pc_construct_slot`, byte access to each module's data, Claude's module (#2131) |
+| `pc_modules.{h,cpp}`, `pc_claude.cpp`, `pc_casters.cpp`, `pc_ernest.cpp` | the party-character modules: the factory used by `pc_construct_slot`, byte access to each module's data, Claude's module (#2131), the casters' small modules (Rena #2135, Celine #2137, Leon #2141, Noel #2157), Ernest's (#2151) |
 | `bsfx.{h,cpp}` | battle sound front end (8 channels, 3-D pan, sound-test record) |
 | `vram.{h,cpp}` | CLUT / texture upload helpers |
 
@@ -42,8 +42,9 @@ console, how it was checked, and what is still missing.
   encounter packs' enemy code. Only data is read from the disc.
   - Monsters whose class lives in an encounter pack (the "Module" family) run the EnemyUnit base
     behaviour. This is logged once per monster type.
-  - Of the party-character modules only Claude's (#2131 / #2133) is ported (`pc_claude.cpp`). The
-    others use the PartyUnit base, which is logged once. Normal attacks need nothing from the
+  - Ported party-character modules: Claude (#2131 / #2133, `pc_claude.cpp`), Rena, Celine, Leon
+    and Noel (`pc_casters.cpp`) and Ernest (#2151, `pc_ernest.cpp`). Bowman, Dias, Precis, Ashton,
+    Opera and Chisato use the PartyUnit base, which is logged once. Normal attacks need nothing from the
     module. Killer moves (slots 35-37, 42, 45) do. The ported module is a native subclass. Its data
     tables are read from the module image at its slot-0 link address (0x801ee000), whatever slot
     the character is in.
@@ -88,6 +89,52 @@ console, how it was checked, and what is still missing.
   `SS_BATTLE_RAM=<field_exit dump> --battle 2:3 --input <Cross every 45 vblanks from 5>`. The dump
   supplies handoffs 2/3/4/6, the field's setup block and the RNG state. The RNG state goes through
   `rng_restore`, a small hook in `boot/rng`.
+- **Clock alignment (read this before comparing).** The original's g_battle_frames (0x8006fb80)
+  starts when its battle setup ends, so it runs D vsyncs behind the battle's vsync count. The port's
+  battle_frames equals its vblank count. Compare ref b<n> with port vblank n-D.
+  - D is not a constant. It depends on how long the original's setup took (CD loads), which differs
+    between references. Across the enemy agent's 25 references the offsets fall into two groups:
+    D = 5/6 (encounters 10, 19, 34, 99, 107, 202, 205, 286, 320, 457) and D = 0..2 (encounters 2, 35,
+    47, 285, 314, 326, 412, 420).
+  - The setup's vsync phase also sets the tick pattern of the first frames. Encounter 10 runs 2, 2, 2
+    ... from b5 (g_battle_frames even). Encounter 285 has a 2-tick frame at b6, then a 1-tick frame at
+    b7 (g_battle_frames odd). The 190-tick intro motion (camera_motion_step integrates speed with
+    frame_ticks) therefore ends on a different battle frame: step 0 -> 1 at frames 154 for
+    encounter 10 and 149 for 285. The port does it at frame 154 in both.
+  - A fixed shift in the port would fix one group and break the other, so the port's own clock
+    stays as it is (2, 2, 2, ...).
+  - **Reproducing the 1-tick start (`SS_BATTLE_TICKS`).** For a reference whose g_battle_frames is
+    odd at its samples (the 2, 1, 2, 2, ... start; `BW_DENSE=0:12` shows it), run the port with
+    `SS_BATTLE_TICKS=1`. Its first frame then waits one vblank, so frame 1 runs with 1 tick like the
+    original's, and the intro camera, the animations' cel phase and every timer follow the
+    original. Then compare at D = 6 at odd samples and 7 at even ones (port frame = the sample's
+    g_battle_frames). Shift the input presses to port vblank = ref vsync - battle_main_loop vsync
+    - 5. In general, port press = ref press (vsyncs since battle_main_loop) - (D_even - 2).
+    - Encounter 35 (two Carlaeagles, Claude, Cross every 45 vsyncs; `ref/enc35`, `ref/enc35e`):
+      without it, the best plain offset (D = 2) keeps the RNG equal only to b460. At b466 Claude's
+      slash then hits an eagle in the original and misses in the port: the eagles' walk cels (and
+      so their body boxes) run half a cycle apart, because the intro is 5 ticks shorter in the
+      original's battle frames.
+    - With `SS_BATTLE_TICKS=1` the RNG totals are equal at every sample through the battle's exit
+      at b1048. Unit state is equal in 925 of 930 samples; the other 5 are HP changes caught one
+      frame apart by the sampling. This includes Claude's air attack (state 11) at b577 and the
+      party's defeat at b807. The frames match from b160 on. The fade-in before that is the
+      unported start wipe.
+  - **What a Redux sample shows.** Breakpoints on the loop top, the camera update, the VSync(2)
+    call and the end-of-frame tick (encounter 10) give this order: the setup ends after b5; frame 1
+    runs and waits; after b6 its tick is added (frames 2), and frame 2 runs to its VSync(2) before
+    b7. From then on VSync(2) returns right after each even vblank, the tick is added, and the next
+    frame runs and waits. explore.lua's GPU::Vsync callback runs at the vblank, before VSync
+    returns. So samples b(2k+1) and b(2k+2) both show the same finished frame with its in-frame
+    g_battle_frames value. That value is the port frame to compare with: the port's `[battle]` lines
+    are printed at the end of each frame, before its tick. D is therefore b - frames: 5 at odd
+    samples and 6 at even ones for encounter 10. "Step 1 at b159, frames 154" means the camera
+    changed step in frame 154, the same frame as the port's. The camera's remaining and speed fields
+    equal the port's sample for sample (b6 = port frame 0, b7 and b8 = frame 2, ...). A heavy frame
+    can still be running at the odd sample, so prefer even samples for RNG totals.
+  - `SS_BATTLE_CAM=1` prints the port's camera and clock fields once a frame: battle_frames,
+    frame_ticks, state, flags, camera mode / step / remaining / speed / ticks. These are the same
+    fields as explore.lua's `BW_DENSE=LO:HI`.
 - **Result.** At every checked frame (100 to 800), port frame n-2 shows the same scene as ref b<n>: the
   intro fly-over, the camera cuts and the units' positions and animations. Damage numbers also match
   (10 dealt; 51, 52 and 49 taken), and Claude's KO falls on the same frame. The remaining pixel

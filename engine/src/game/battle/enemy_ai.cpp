@@ -1,7 +1,7 @@
 // EnemyUnit behaviour (vtable 0x8006b908): enemy_think's state machine (0x8003cac0),
 // the idle AI that rolls the five behaviour odds every 8 ticks, target choice, approach,
-// the attack slots with melee hit detection, reactions and dying. Spells and the
-// encounter packs' code modules are not ported (those monsters use the base class).
+// the attack slots with melee hit detection, reactions and dying. The spell states are in
+// spell_units.cpp, the encounter packs' classes in enemy_mod_*.cpp.
 // parts/p2.md "EnemyUnit".
 
 #include <cstring>
@@ -9,6 +9,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
+#include "game/battle/spells.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -159,16 +160,12 @@ void enemy_think(EnemyUnit* e) {
     case 11: e->attack3(); return;
     case 12: e->attack4(); return;
     case 13: e->attack5(); return;
-    case 14:
-      todo("enemy_state_chant (spells)");
-      e->action_kind = 0;
-      e->begin_action();
-      return;
+    case 14: enemy_state_chant(e); return;  // (spell_units.cpp)
     case 15: e->state_cast(); return;
     default: break;
   }
   // Idle (and unknown states).
-  // spell_data_cancel_owner 0x80048a20 for state 0: the spell-data cache is not ported.
+  if (e->action == 0) spell_data_cancel_owner(e);
   const u8 cmd = e->command;
   if (cmd != 0) {
     if (cmd == 1) {
@@ -176,7 +173,7 @@ void enemy_think(EnemyUnit* e) {
       e->action_kind = 1;
       e->begin_move();
     } else if (cmd == 4) {
-      todo("unit_begin_cast (spells)");
+      unit_begin_cast(e);
       e->camera_focus = 0;
     }
     e->command = 0;
@@ -215,12 +212,7 @@ int EnemyUnit::start_reaction() {
   return unit_start_reaction(this);
 }
 
-void EnemyUnit::release_spell() {
-  todo("enemy_release_spell (spell_cast)");
-  action_kind = 0;
-  recovery_gauge = 0x3C;
-  begin_action();
-}
+// EnemyUnit::release_spell [11] 0x8003e720: spell_units.cpp.
 
 void EnemyUnit::begin_action() {
   if (target != nullptr) {
@@ -374,11 +366,7 @@ void EnemyUnit::begin_move() {
   }
 }
 
-void EnemyUnit::state_cast() {
-  todo("enemy_state_cast (spells)");
-  action_kind = 0;
-  begin_action();
-}
+// EnemyUnit::state_cast [35] 0x8003e5dc: spell_units.cpp.
 
 void enemy_ai_tick(EnemyUnit* e) {
   BattleGlobals& g = bg();
@@ -501,10 +489,7 @@ int enemy_nearest_party_index(const Unit* e) {
   return idx;
 }
 
-void enemy_try_cast(EnemyUnit* e) {
-  (void)e;
-  todo("enemy_try_cast (spells)");
-}
+// enemy_try_cast 0x8003e3b0: spell_units.cpp.
 
 Unit* enemy_random_party_member(const Unit* e) {
   const BattleGlobals& g = bg();

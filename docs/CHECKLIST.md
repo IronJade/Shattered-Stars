@@ -38,9 +38,10 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] Frame timing: `VSync(n)`, 59.94 Hz pacing, VSync callbacks
 - [x] libgpu layer: DRAWENV / DISPENV, ordering tables (`ClearOTag[R]`, `addPrim`, `DrawOTag`), `DrawSync`, `SetDispMask`, `SetDrawMode`
 - [x] PsyQ primitive structs and set* helpers: POLY_F3/F4/FT3/FT4/G3/G4/GT3/GT4, LINE_F2-4/G2-4, SPRT/SPRT_8/SPRT_16, TILE/TILE_1/8/16, DR_MODE/AREA/TPAGE/OFFSET/TWIN/MOVE/STP/LOAD
-- [x] Reference dithering mode (`--reference-dither`: gouraud only, as PCSX-Redux's software renderer) for comparisons
+- [x] Reference dithering mode (`--reference-dither`: gouraud polygons only, no modulated textures or lines, as PCSX-Redux's software renderer) for comparisons
 - [x] GPU: hardware-exact gouraud/UV interpolation: per-triangle planes with 12-bit gradients and a half-unit round (Mednafen's model), identical to the hardware VRAM dumps of ps1-tests gpu/triangle and gpu/uv-interpolation; PCSX-Redux's edge walker is up to 1 LSB off them (`docs/notes/gpu_accuracy.md`)
 - [x] GPU: blending of dithered / modulated pixels: the hardware dithers and saturates the colour to 5 bits, then blends (ps1-tests gpu/lines); PCSX-Redux blends the unsaturated colour (and in 8 bits before dithering), hence its 1-2 LSB differences (window bodies, New Game portraits) — the port is right there
+- [x] GPU: lines walked as the hardware does (32.32 stepping from the pixel centre, every line dithered), identical to the ps1-tests gpu/lines VRAM dump (`docs/notes/gpu_accuracy.md`)
 - [x] GPU: LoadImage's DMA ignores the source address's low two bits (a misaligned image lands one pixel right: the end screen's logo, as on PCSX-Redux)
 - [x] Display output from DISPENV (incl. 24-bit)
 - [x] 480i display: an interlaced DISPENV taller than 256 lines shows both fields (`PutDispEnv`; the insert-disc screen's 640x480)

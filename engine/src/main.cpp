@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
     rt.debug_overlay = true;
   }
   rt.gpu.dithering_enabled = reference_dither || config["dither"] != "0";
-  if (reference_dither) rt.gpu.dither_textured = false;
+  if (reference_dither) rt.gpu.dither_textured = rt.gpu.dither_lines = false;
   rt.frame_limit = frames;
   rt.capture_dir = capture_dir;
   std::stringstream list(capture_frames);

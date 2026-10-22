@@ -1,6 +1,8 @@
 # Effects / embedded map code: continuation log
 
-Worker: field effects agent. Phase 4: the credits program #3107, then GPU accuracy.
+Worker: field effects agent. Phase 5 (current): GPU lines, then battle party modules
+Precis #2155, Ashton #2147, Opera #2153, Chisato #2159. Phase 4 (credits, GPU) committed
+as bc1b341 and 155be10.
 Build dir: `engine/build-fx`. Scratch (on disk): `scratchpad/fx_worker/`. Nothing here is
 committed by the worker; the coordinator commits.
 
@@ -79,7 +81,11 @@ uv-interpolation, quad, transparency, lines), replayed on `psx::Gpu` with
   `test_field_message`'s comments and `docs/CHECKLIST.md` (the two GPU items, plus the DMA
   line) updated; `docs/notes/field_effects.md` table updated.
 
-## Uncommitted files (phase 4 step 2)
+## Phase 5 step 1: GPU lines (in progress)
+
+Started: compare the port's line stepping with the ps1-tests gpu/lines dump.
+
+## Uncommitted files (phase 4 step 2, committed in 155be10)
 
 - New: `docs/notes/gpu_accuracy.md`.
 - Edited: `engine/src/psx/gpu.cpp` (plane attributes, quad split / drop),

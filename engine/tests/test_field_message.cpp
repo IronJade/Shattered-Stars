@@ -124,6 +124,7 @@ TestField* field() {
   auto& gpu = runtime::Runtime::get().gpu;
   gpu.dithering_enabled = true;  // --reference-dither: PCSX-Redux dithers gouraud only
   gpu.dither_textured = false;
+  gpu.dither_lines = false;
   ok = true;
   return &f;
 }

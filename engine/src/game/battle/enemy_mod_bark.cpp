@@ -157,37 +157,28 @@ struct EnemyBark : EnemyUnit {
 
 // ---- SpellCast kind 0x36 (the spells' kind table 0x80088020 points at 0x800885d8) ----
 //
-// The port has no SpellCast yet (the spells' 0x248-byte object; spellcast_create is a
-// stand-in that creates nothing), so nothing runs this handler. It is ported against the
-// fields of the SpellCast it uses; the spells agent wires kind 0x36 to it.
-struct BarkCast {
-  SpellCast* api = nullptr;  // the cast as the module API (battle_flash_set ...) takes it
-  u8 finished = 0;           // +0x0e
-  Unit* caster = nullptr;    // +0x14
-  Unit* target = nullptr;    // +0x18
-  s32 spin = 0;              // +0x24: step 1 the shard timer, steps 3-4 the vortex angle
-  s32 rain_ticks = 0;        // +0x28: step 1
-  s32 grow_ticks = 0;        // +0x2c: steps 3-4 (the vortex radius)
-  s32 fade = 0;              // +0x34: step 4
-  s32 step = 0;              // +0x40
-  BObj obj;                  // +0x1bc: the crystal (anim 6) / the vortex cel (anim 8)
-};
+// The handler of the cast attack 1 starts, on the SpellCast's fields: +0x0e finished,
+// +0x14 caster, +0x24 (s24) step 1 the shard timer / steps 3-4 the vortex angle, +0x28
+// (s28) the rain ticks of step 1, +0x2c (s2c) the vortex radius ticks of steps 3-4, +0x34
+// (s34) the fade of step 4, +0x40 step, +0x1bc (obj2) the crystal (anim 6) / the vortex
+// cel (anim 8).
+using BarkCast = SpellCast;
 
 // The vortex (steps 3-4): 6 rings x 16 segments of anim 8's cel as textured quads round the
 // caster, radius +0x2c * 9.375, rings 0x154 high, turning with +0x24.
 void bark_cast_vortex(BarkCast& sc) {
   Unit* caster = sc.caster;
-  sc.obj.anim = 8;
-  bobj_anim_draw(&sc.obj, 0x9800);
+  sc.obj2.anim = 8;
+  bobj_anim_draw(&sc.obj2, 0x9800);
   const FrameUv& f = frame_uv();
   const s32 uv[4] = {f.u0, f.v0, f.u1, f.v1};
   const u16 tpage = f.tpage, clut = f.clut;
-  const u32 code = bobj_poly_tag(&sc.obj, tpage);
-  const s32 r = (sc.grow_ticks * 0x960) / 256;
+  const u32 code = bobj_poly_tag(&sc.obj2, tpage);
+  const s32 r = (sc.s2c * 0x960) / 256;
   const s32 cx = caster->pos[0], cz = caster->pos[2];
   for (int ring = 0; ring < 6; ++ring) {
-    const s32 ang_a = sc.spin + ring * 0x18;
-    const s32 ang_b = sc.spin + ring * 0x18 + 0x18;
+    const s32 ang_a = sc.s24 + ring * 0x18;
+    const s32 ang_b = sc.s24 + ring * 0x18 + 0x18;
     // (Original quirk: the 20.12 height minus whole units, then shifted up by 12, so only
     // the height's low 20 bits count; it gives the intended -n << 12 for a caster at 0.)
     const s32 y0 = static_cast<s32>(static_cast<u32>(caster->pos[1] - 0x154 * (6 - ring)) << 12);
@@ -226,36 +217,36 @@ void bark_cast_vortex(BarkCast& sc) {
 // 4 the crystal greys out over 32 ticks (the vortex goes on growing);
 // 5 every standing party member is hit (power 0x100) at its centre, the light comes back,
 //   the dimming ends, the cast is finished.
-[[maybe_unused]] void bark_cast_step(BarkCast& sc) {
+void bark_cast_run(BarkCast& sc) {
   BattleGlobals& g = bg();
   Unit* caster = sc.caster;
   caster->facing[0] = 0x64000;
   caster->anim = 4;
   const s32 top[4] = {caster->pos[0], caster->pos[1] - 0x1C2000, caster->pos[2], 0};
   if (sc.step == 1) {
-    sc.obj.anim = 6;
-    sc.obj.pos[0] = top[0];
-    sc.obj.pos[1] = top[1];
-    sc.obj.layer = 0x10;
-    sc.obj.pos[2] = top[2];
-    bobj_project(&sc.obj);
-    bobj_anim_draw(&sc.obj, 0);
+    sc.obj2.anim = 6;
+    sc.obj2.pos[0] = top[0];
+    sc.obj2.pos[1] = top[1];
+    sc.obj2.layer = 0x10;
+    sc.obj2.pos[2] = top[2];
+    bobj_project(&sc.obj2);
+    bobj_anim_draw(&sc.obj2, 0);
   }
   // (The console also builds the target's centre - 0x12c here and never uses it.)
   if (static_cast<u32>(sc.step - 3) < 2) {
     bark_cast_vortex(sc);
     if ((g.flags & 0xC) != 0) return;
-    sc.spin = (sc.spin + g.frame_ticks * 8) & 0xFFF;
+    sc.s24 = (sc.s24 + g.frame_ticks * 8) & 0xFFF;
   }
   if ((g.flags & 0xC) != 0) return;
   switch (static_cast<u32>(sc.step)) {  // jump table 0x80089558
     case 0: {
-      battle_flash_set(sc.api, 0x40, 0x40, 0x40);
+      battle_flash_set(&sc, 0x40, 0x40, 0x40);
       const s32 at[3] = {caster->pos[0] + 0xC8000, caster->pos[1], caster->pos[2]};
       camera_move_to(g.camera, at, 0xC00, 0xE3, 0xA00, 0, 0x80, 5);
       camera_move_to(g.camera, at, 0xC00, 0x11C, 0xC00, 0xB4, 0x80, 5);
-      bobj_share_sprite(caster, &sc.obj);
-      spellcast_wait(sc.api, 0x12);
+      bobj_share_sprite(caster, &sc.obj2);
+      spellcast_wait(&sc, 0x12);
       const u32 h = bsfx_play_at(0x46, caster);
       sound_handle_pitch_up(h, 0x140);
       sound_handle_fade_out(h, 0x3C, 0xF0);
@@ -263,11 +254,11 @@ void bark_cast_vortex(BarkCast& sc) {
     }
     case 1: {
       const s32 t = g.frame_ticks;
-      sc.obj.scale_x += t * 0x60;
-      sc.spin += t;
-      sc.obj.scale_y += t * 0x60;
-      if (5 < sc.spin) {
-        sc.spin -= 6;
+      sc.obj2.scale_x += t * 0x60;
+      sc.s24 += t;
+      sc.obj2.scale_y += t * 0x60;
+      if (5 < sc.s24) {
+        sc.s24 -= 6;
         const s32 yaw = static_cast<s32>(rng_range(0x1000));
         const s32 pitch = static_cast<s32>(rng_range(0x1000));
         const s32 a = rng_spread(0x1E);
@@ -289,9 +280,9 @@ void bark_cast_vortex(BarkCast& sc) {
         sprite_set_fade(sp, 0x80, -8, static_cast<s16>((d >> 16) - 8));
         sp->layer = 0xC;
       }
-      sc.rain_ticks += g.frame_ticks;
-      if (100 < sc.rain_ticks) {
-        spellcast_wait(sc.api, 0x3C);
+      sc.s28 += g.frame_ticks;
+      if (100 < sc.s28) {
+        spellcast_wait(&sc, 0x3C);
         bsfx_play_ui(0x21);
         bsfx_play_ui(0x22);
         screen_fade_create(0xFFFFFF, 0x20, 4, 8);
@@ -317,7 +308,7 @@ void bark_cast_vortex(BarkCast& sc) {
         sp->layer = 0x10;
         sprite_set_fade(sp, 0x80, -2, 0x78);
       }
-      sc.spin = 0;
+      sc.s24 = 0;
       const s32 far[3] = {caster->pos[0] + 0x3E8000, caster->pos[1], caster->pos[2] - 0x1F4000};
       camera_move_to(g.camera, caster->pos, 0xE38, 0xE3, 0x1000, 0, 0x80, 5);
       camera_move_to(g.camera, far, 0xF1C, 0xE3, 0x2000, 0x140, 0x80, 5);
@@ -327,9 +318,9 @@ void bark_cast_vortex(BarkCast& sc) {
       return;
     }
     case 3: {
-      sc.grow_ticks += g.frame_ticks;
-      if (0x140 < sc.grow_ticks) ++sc.step;
-      const Vec4 c = vec_random_in_disc_xz(caster->pos, (sc.grow_ticks * 0x960) / 256);
+      sc.s2c += g.frame_ticks;
+      if (0x140 < sc.s2c) ++sc.step;
+      const Vec4 c = vec_random_in_disc_xz(caster->pos, (sc.s2c * 0x960) / 256);
       Sprite* sp = sprite_spawn_from(0xD, 0, caster, nullptr);
       if (sp == nullptr) return;
       if (rng15() < 0x4000) bsfx_play_at(0x50, sp);
@@ -358,11 +349,11 @@ void bark_cast_vortex(BarkCast& sc) {
       return;
     }
     case 4:
-      sc.obj.colour_mode = 2;
-      sc.obj.rgb[0] = static_cast<u8>(0x80 - sc.fade);
-      sc.fade += g.frame_ticks * 4;
-      sc.grow_ticks += g.frame_ticks;
-      if (0x7F < sc.fade) ++sc.step;
+      sc.obj2.colour_mode = 2;
+      sc.obj2.rgb[0] = static_cast<u8>(0x80 - sc.s34);
+      sc.s34 += g.frame_ticks * 4;
+      sc.s2c += g.frame_ticks;
+      if (0x7F < sc.s34) ++sc.step;
       return;
     case 5: {
       Unit* units[8] = {};
@@ -378,8 +369,8 @@ void bark_cast_vortex(BarkCast& sc) {
         unit_attack_targets(caster, n, units, points, 0x100, caster->facing[0] < 0 ? 0x800 : 0, 0);
         caster->attack_recovery = 0;
       }
-      battle_flash_set(sc.api, 0x80, 0x80, 0x80);
-      spellcast_dim_end(sc.api);
+      battle_flash_set(&sc, 0x80, 0x80, 0x80);
+      spellcast_dim_end(&sc);
       sc.finished = 1;
       ++sc.step;
       return;
@@ -390,6 +381,8 @@ void bark_cast_vortex(BarkCast& sc) {
 }
 
 }  // namespace
+
+void bark_cast_step(SpellCast* sc) { bark_cast_run(*sc); }
 
 std::unique_ptr<EnemyUnit> enemy_mod_bark_create() { return std::make_unique<EnemyBark>(); }
 

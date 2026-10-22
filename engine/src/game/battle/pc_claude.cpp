@@ -60,34 +60,6 @@ void big_flash(BObj* at, s32 zoom) {
   }
 }
 
-// 0x801f0640: one step of a jump arc (gravity a tick) for a unit in the air: 1 bumped into
-// something (lands), 2 touched the ground, 0 still flying.
-int claude_jump_step(PartyUnit* u, s32 gravity) {
-  BattleGlobals& g = bg();
-  if (g.flags != 0 || u->jumping == 0) return 0;
-  s32 d[3] = {u->vel[0], 0, 0};
-  if (unit_try_move_scaled(u, d, 7) == nullptr) bobj_move(u, d);
-  d[0] = 0;
-  d[1] = u->vel[1];
-  int r;
-  if (unit_try_move_scaled(u, d, 7) == nullptr) {
-    bobj_move(u, d);
-    u->vel[1] += gravity * g.frame_ticks;
-    if (u->pos[1] <= bobj_ground_height(u)) return 0;
-    u->pos[1] = bobj_ground_height(u);
-    u->vel[1] = 0;
-    bsfx_play_at(0x1E, u);
-    r = 2;
-    u->airborne = 0;
-  } else {
-    bsfx_play_at(0x1E, u);
-    r = 1;
-    u->airborne = 2;
-  }
-  u->jumping = 0;
-  return r;
-}
-
 s32 abs_ext(const BObj* o) { return o->ext_x1 < 0 ? -o->ext_x1 : o->ext_x1; }
 
 // ---- Shot callbacks ----------------------------------------------------------------------
@@ -692,7 +664,7 @@ void ClaudeUnit::move3() {
     case 3: {
       anim = 4;
       if (g.flags == 0) {
-        const int r = claude_jump_step(this, 0x1000);
+        const int r = pc_jump_step(this, 0x1000);
         if (r != 0) {
           counters[1] = 4;
           if (r == 2)
@@ -756,7 +728,7 @@ void ClaudeUnit::move4() {
   }
   if (jumping == 0) vel[0] = 0;
   else vel[0] = 0 < facing[0] ? 0x8000 : static_cast<s32>(0xFFFF8000);
-  const int r = claude_jump_step(this, 0x1C2);
+  const int r = pc_jump_step(this, 0x1C2);
   if (r != 0) {
     bsfx_play_at(0x1E, this);
     if (r == 2)
@@ -1060,7 +1032,7 @@ void ClaudeUnit::move10() {
       airborne = 1;
       jumping = 1;
     }
-    if (counters[2] != 0) claude_jump_step(this, 0xC00);
+    if (counters[2] != 0) pc_jump_step(this, 0xC00);
   }
   if (g.flags == 0 && unit_try_move_scaled(this, vel, 7) == nullptr) bobj_move(this, vel);
 }

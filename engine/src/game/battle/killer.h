@@ -81,6 +81,10 @@ void pc_camera_behind_start(PartyUnit* u);                  // 0x80037c2c: camer
 // 0x8003ab68: u's attack boxes against the enemies (knockback 9999); hits + 1, or 0.
 int pc_attack_hit(PartyUnit* u, int power, u16 elements);
 int unit_mp_cost(Unit* u, int cost);                        // 0x80053f6c
+// One step of a jump arc (gravity a tick) for a member in the air (each module has its
+// own copy: Claude 0x801f0640, Ernest 0x801ef724): 1 bumped into something (airborne 2),
+// 2 touched the ground, 0 still flying (or not jumping, or paused).
+int pc_jump_step(PartyUnit* u, s32 gravity);
 // 0x8004c940: queues killer move 'which' (0 / 1) for the controlled member against the
 // target enemy; 1 when queued (else the buzzer and the X marks).
 int command_killer_move(int which);

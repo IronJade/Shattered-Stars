@@ -9,6 +9,8 @@
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/battle/camera.h"
+#include "game/battle/unit.h"
 #include "game/boot/sound.h"
 #include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
@@ -46,10 +48,63 @@ bool copy_handoff(const std::vector<u8>& ram, int tag, size_t bytes) {
 }  // namespace
 
 void battle_debug_frame() {
+  static const bool cam_on = std::getenv("SS_BATTLE_CAM") != nullptr;
+  if (cam_on) {
+    // The camera / clock fields explore.lua's BW_DENSE logs (in-frame values, before the
+    // end-of-frame tick).
+    const BattleGlobals& g = bg();
+    const Camera* c = g.camera;
+    std::fprintf(stderr, "[battle] cam v%llu f %d ticks %d st %d fl %d cam %d %d rem %d spd %d ct %d\n",
+                 static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), g.battle_frames, g.frame_ticks,
+                 g.state, g.flags, c ? c->mode : -1, c ? c->step : -1, c ? c->remaining : 0, c ? c->speed : 0,
+                 c ? c->ticks : 0);
+  }
+  static int box_lo = -1, box_hi = -1;
+  static const bool box_init = [] {
+    if (const char* b = std::getenv("SS_BATTLE_BOXES")) std::sscanf(b, "%d:%d", &box_lo, &box_hi);
+    return true;
+  }();
+  (void)box_init;
+  if (box_lo >= 0 && bg().battle_frames >= box_lo && bg().battle_frames <= box_hi) {
+    // Each unit's box mask (+0x6a) and enabled boxes in units (explore.lua's BW_BOXES).
+    auto line = [](const char* tag, int i, const Unit* u) {
+      if (u == nullptr) return;
+      std::fprintf(stderr, "[battle] box v%d %s%d m%x x%d y%d z%d an%d fr%d tl%d te%d lp%d", bg().battle_frames, tag, i,
+                   u->box_mask, u->pos[0] >> 12, u->pos[1] >> 12, u->pos[2] >> 12, u->anim, u->frame, u->ticks_left,
+                   u->ticks_elapsed, u->loops);
+      for (int b = 0; b < 4; ++b) {
+        if ((u->box_mask & (1 << b)) == 0) continue;
+        const s32* lo = b < 2 ? u->body_min[b] : u->attack_min[b - 2];
+        const s32* hi = b < 2 ? u->body_max[b] : u->attack_max[b - 2];
+        std::fprintf(stderr, " b%d %d,%d,%d..%d,%d,%d", b, lo[0] >> 12, lo[1] >> 12, lo[2] >> 12, hi[0] >> 12,
+                     hi[1] >> 12, hi[2] >> 12);
+      }
+      std::fprintf(stderr, "\n");
+    };
+    for (int i = 0; i < 8; ++i) line("e", i, bg().enemy_units[i]);
+    for (int i = 0; i < 4; ++i) line("p", i, bg().party_units[i]);
+  }
   static const bool on = std::getenv("SS_BATTLE_RNG") != nullptr;
   if (!on) return;
   std::fprintf(stderr, "[battle] vblank %llu state %d rng %u\n",
                static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), bg().state, rng_draws());
+}
+
+int battle_debug_frame_wait(int n) {
+  static const std::vector<int> waits = [] {
+    std::vector<int> w;
+    if (const char* s = std::getenv("SS_BATTLE_TICKS")) {
+      for (const char* p = s; *p != 0;) {
+        w.push_back(std::atoi(p));
+        while (*p != 0 && *p != ',') ++p;
+        if (*p == ',') ++p;
+      }
+    }
+    return w;
+  }();
+  if (n >= 0 && static_cast<size_t>(n) < waits.size() && waits[static_cast<size_t>(n)] > 0)
+    return waits[static_cast<size_t>(n)];
+  return 2;
 }
 
 void battle_debug_exit() {

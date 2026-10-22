@@ -133,7 +133,7 @@ struct Unit : Collider {
   Unit();  // unit_create 0x8004dd30
   Stats* st() const { return stats_of(stats); }
   // Unit virtual slots 3..21 (1 = update, 2 = get_box).
-  virtual int can_cast() { return 1; }           // [3]
+  virtual int can_cast();                         // [3] unit_can_cast 0x8005287c (spells.cpp)
   virtual void interrupt() {}                     // [4]
   virtual int start_reaction();                   // [5] unit_start_reaction 0x80051fdc
   virtual void update_vanish();                   // [8] unit_update_vanish 0x80053c04 (state 6)
@@ -306,6 +306,11 @@ struct PartyUnit : Unit {
   void clear_status(int word, u32 mask) override;  // [19] 0x8003bb44
   void set_status(int word, u32 mask) override;    // [20] 0x8003bb60
   void status_recovered() override { busy = 0; }   // [21] 0x8003bb7c
+  // The spell states (spell_units.cpp).
+  int can_cast() override;            // [3] pc_can_cast 0x80037a80
+  void release_spell() override;      // [11] pc_cast_spell 0x8003a088
+  virtual void state_cast();          // [40] pc_state_cast 0x80039198 (state 0xe)
+  virtual void state_spell_release(); // [41] pc_state_spell_release 0x80039ef4 (state 0xf)
   virtual void think();               // [22] pc_think 0x80035508
   virtual void model_default();       // [23] pc_model_default 0x80035168
   virtual void model_apply();         // [24] pc_model_apply 0x800351a0

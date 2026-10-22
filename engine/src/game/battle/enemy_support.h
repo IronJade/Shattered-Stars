@@ -3,6 +3,9 @@
 #include "core/types.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/shot.h"
+#include "game/battle/spell_fx.h"
+#include "game/battle/spellcast.h"
+#include "game/battle/spells.h"
 #include "game/battle/unit.h"
 #include "game/battle/unit_move.h"
 #include "runtime/libgte.h"
@@ -56,36 +59,12 @@ int unit_is_disabled(const Unit* u);
 // 60 ticks.
 void shot_skill_camera_end(Shot* s);
 
-// ---- Spell stand-ins (the world agent's spells, SpellCast and spell data, not ported yet).
-// They log once and return "nothing"; each goes when the real one is ported. The signatures
-// are the ones the modules call.
-struct SpellCast;
-void spell_cast(int spell, Unit* caster, Unit* target, int power);            // 0x80062c24 [stand-in]
-void spell_data_request(int spell, int priority, Unit* caster);               // 0x800482e8 [stand-in]
-// 0x800487c8 [stand-in: 2, "loaded", so the modules go on to spell_cast]
-int spell_data_status(int spell, Unit* caster);
-void spell_data_cancel_owner(Unit* owner);                                    // 0x80048a20 [stand-in]
-void unit_begin_cast(Unit* u);                                                // 0x80052bac [stand-in]
-SpellCast* spellcast_create(int kind, Unit* caster, Unit* target, int power, const void* data);  // 0x80085560 [stand-in: null]
-void battle_flash_set(SpellCast* sc, int r, int g, int b);                    // 0x80085c10 [stand-in]
-void spellcast_wait(SpellCast* sc, int frames);                              // 0x80085c84 [stand-in]
-void spellcast_dim_end(SpellCast* sc);                                        // 0x80086478 [stand-in]
-// Spell globals the modules read (the spells set them; until they are ported they stay 0):
-u8& spell_landed_flag();           // g_spell_landed 0x8006fb2f: a spell's finishing hit resolved
-u8& spell_effect_started_flag();   // 0x8006f6d1: spell_cast started a table-driven effect
-// g_spellcasts[0] 0x8006fe08: the SpellCast in the first slot (null when none runs); the
-// casters' modules (Cyril, Vesper, Decus, Indalecio) time their cast animations by its kind
-// (+0x08) and its step / tick counter (+0x40). [stand-in: null, no SpellCast runs yet]
-struct SpellCastView {
-  u8 kind;
-  s32 step;
-};
-const SpellCastView* spellcast_slot0();
+// ---- Spells: the world agent's spells.h / spellcast.h / spell_fx.h (included above) have
+// the spell API, the SpellCast and the screen fade the stand-ins here stood for.
 
 // ---- Other stand-ins (the battle agent's load queue, voices and resident effects).
 void bload_request(int entry, void* dest, s16 group, int priority);           // 0x800475c0 [stand-in]
 u32 voice_play_entry(int entry, Unit* speaker);                              // 0x8007f818 [stand-in: 0]
-Task* screen_fade_create(u32 rgb, int tpage, int step, int hold);             // 0x8003c3b0 [stand-in: null]
 // 0x8005b23c: steps o's animation and draws its frame as a free 3-D quad [stand-in: 0]
 s16 shot_draw_frame_quad(BObj* o, const s32 c0[3], const s32 c1[3], u32 flip, int arg);
 

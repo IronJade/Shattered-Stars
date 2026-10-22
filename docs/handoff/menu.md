@@ -264,6 +264,5 @@ TODO is in field_menu_update.
 
 ## Findings not yet in the catalog
 
-- Record +0x3b is the Link Combo partner (see Specialty above). The docs/catalog rows
-  0x800341e4 party_update_bonds / 0x8003446c party_find_bonded can move from guess to
-  confirmed: "bond" = Link Combo; +0xce / +0xcf are the second set of killer moves.
+- None. (Record +0x3b is the Link Combo partner; the coordinator renamed the two party
+  functions to party_update_link_combos / party_find_link_partner.)

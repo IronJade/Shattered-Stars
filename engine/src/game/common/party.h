@@ -33,6 +33,7 @@ int stat_group_offset(int group);           // title 0x800342d8 / field 0x800333
 int party_selected_char();                  // title 0x8003469c / field 0x800337a4: character id, 0 when <= 0
 int party_slot_active(int slot);            // field 0x80033758: party_selected_char of 'slot' (selection kept)
 int party_find_char_slot(int character);    // field 0x80033708: the slot holding 'character', -1 if none
+int party_random_alive_slot();              // field 0x80034154: rng_range(8) until a member who can act
 int party_selected_alive();                 // field 0x800337cc: party_selected_char when status & 7 is clear, else 0
 u32 char_equip_mask();                      // field 0x8003381c: 1 << (character - 1), 0 for none
 u16 config_get_button(int index);           // title 0x800349d8 / field 0x80033ae0
