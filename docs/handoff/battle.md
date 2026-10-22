@@ -58,39 +58,37 @@ Claude's module, Particle pool, Afterimage / Ghost, party loader phases 1-4, kin
 fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phasegun_2_3`,
 `ref/phasegun_exit`, `ref/pg_cash`, `ref/moves_9_5`; see docs/notes/battle_port.md).
 
+## Committed since: kind 0x16 + shot_apply_damage + RibbonTrail (162ad2d); sound handles (22ac0e8)
+
 ## In progress (uncommitted, all build; reported to main)
 
-- Shot kind 0x16: `shot.{h,cpp}` ShotDesc / shot_desc_init / shot_spawn_projectile /
-  shot_k16_projectile / effect_spawn_sphere_at(_default) / shot_apply_damage;
-  `killer.{h,cpp}` RibbonTrail. Moved out of the enemy agent's `enemy_support.{h,cpp}`
-  (ShotDesc, shot_desc_init, shot_spawn_projectile, effect_spawn_sphere_at_default stand-in);
-  backups of the pre-edit files in `scratchpad/battle/enemy_support.{h,cpp}.bak`.
-- `tests/test_battle.cpp`: battle_projectile_spawn. ss_game_tests 73/73 (ASan too); the
-  Phase Gun regression is still exact.
-- `docs/notes/battle.md`: the stale #2129 rows warning (ELF building).
-- Catalog regenerated (475 rows); gen_catalog.py no longer repeats "battle port".
-- Not run-time verified: monsters in the port's debug starts (oozes enc 92, Alraunes enc
-  21 / 23) never pick their ranged attack, so no projectile has spawned yet. Compare with
-  Redux once one does (Ooze attack2: shot_desc_init(6), speed 0x1a, life 0x1e, flags
-  0x100006).
+- Shot kinds 2 (boomerang / sword wave), 0x2c (thrown weapon), 0x32 (light streak) with
+  effect_spawn_beam_at and shot_set_gte_origin in `shot.{h,cpp}`; bobj_near_point in
+  `bobj.{h,cpp}`; the beam stand-in removed from `enemy_support.{h,cpp}` (backups
+  `scratchpad/battle/enemy_support.{h,cpp}.bak3`). Catalog regenerated (486 rows).
+- Verified: encounter 280 (enemy agent's `scratchpad/enemy/ref/i280_3`, idle party) RNG equal
+  to the exit; encounter 65 (`ref/enc65`, idle party) RNG equal to the exit and frames
+  match (arrows, shadows, impacts, damage). Tests 76 / 73, ASan clean (also battles 280, 65).
+- Not exercised: kind 0x2c; kind 0x10 (sphere) is not ported (logs once if spawned).
 
 ## Next steps
 
-1. Sound handles in bsfx: sound_handle_fade_out / duck / pitch_up / pitch_down
-   (0x8007fd98-0x8007feb0) with clip-handle tracking; then delete the enemy agent's
-   stand-ins (enemy_support.cpp: sound_handle_pitch_down and any others) and tell main.
-2. Shot kinds 2 (sword wave), 0x2c (thrown weapons), 0x32 (beam / effect_spawn_beam_at),
-   0x10 (sphere, needs draw_sphere 0x8007c520).
+1. Kind 0x10 (expanding lit sphere, 0x80058a7c) with draw_sphere 0x8007c520 (#1984.0).
+2. Claude's approach-walk drift (enemy agent: encounter 10, Cross mash, about 1 unit per 10
+   frames from b340). Note: the enemy agent's i280 reference has Claude idle; compare with
+   an idle party.
 3. Claude's move 5 (Energy Sword) compare; the other character modules (casters first).
 4. Step 4: spells and items (shot_hit_magic 0x800547d4 next to shot_apply_damage).
 5. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
-6. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (the task
-   table is just cleared): a leak, not a crash; and `Unit` has no dtor deleting its
-   effects (the console's unit_destroy 0x8004def0 destroys +0x1f4 / +0x1f8). Unit +0x1f8 is
-   a RibbonTrail on the console (port: `effects[1]`, unused so far).
+6. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (leak), and
+   `Unit` has no dtor destroying its effects (console unit_destroy 0x8004def0 does). Unit
+   +0x1f8 is a RibbonTrail on the console (port: `effects[1]`, unused so far).
 
 ## Tooling notes
 
+- `scratchpad/battle/asm.py ADDR...`: instructions through the private REA CLI
+  (`scratchpad/battle/rea.sh`, ~30 s a call), saved in `scratchpad/battle/asm/<addr>.s`. The
+  shared MCP REA session gets switched by other agents mid-batch.
 - Disassembly ELF without stale symbols: `scratchpad/battle/modules/char01_live.elf`, built
   from a Redux RAM dump with `functions_live.csv` (docs/catalog minus the "battle" rows in
   0x800715d0-0x80088054: #2129's own bytes there are replaced by #1984 / #1981 at run time,
@@ -102,6 +100,16 @@ fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phas
   vblank 5 + 45(k - 6).
 
 ## Findings not yet in the catalog / notes
+
+- The Redux "forced" fights so far (`ref/forced_1_3`, victory, Phase Gun, moves) are all
+  encounter 2 on stage 3: the old poke of game_state +0x99 did nothing (the field reads the
+  encounter from +0x264, s16); `run_forced.sh` now pokes +0x264. The comparisons hold (both
+  sides ran encounter 2).
+- From the enemy agent: Claude's approach walk drifts about 1 unit per 10 frames from the
+  original (encounter 10, Cross mash, from b340): PartyUnit code, to chase. +0x12a is
+  uninitialised heap in the original until first set. Oozes / Alraunes never fire in those
+  encounters (attack odds 0); archers (enc 65, 420: Robinfake), Shout (320) and the wizard
+  (340) fire with an idle party: use them for kind 0x16. Darkcrusader (enc 280) uses kind 2.
 
 - Character → code entry: Claude 2131 (2133 identical), Rena 2135, Celine 2137, Bowman
   2139, Dias 2143 (= 2145), Precis 2155, Ashton 2147 (= 2149), Leon 2141, Opera 2153,

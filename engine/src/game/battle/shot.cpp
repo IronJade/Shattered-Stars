@@ -8,6 +8,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
+#include "game/battle/enemy_support.h"
 #include "game/battle/killer.h"
 #include "game/battle/particle.h"
 #include "game/battle/render.h"
@@ -32,6 +33,177 @@ s32 mul32(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_c
 s16 lo16(s32 v) { return static_cast<s16>(v); }
 s16 hi16(s32 v) { return static_cast<s16>(static_cast<u32>(v) >> 16); }
 u16 ulo16(s32 v) { return static_cast<u16>(v); }
+
+// Kind 2 (0x800558d0): a spinning boomerang (the knights' sword waves): flies with its
+// velocity for +0x128 / 24 ticks, slows by +0x118.. a tick for 0x18 ticks, then homes back
+// to its owner (speed 0x18) and is gone on arrival; hits the party with the owner's attack.
+// +0x130: 0 nothing hit, 1 returning, else the unit last hit (port: 2 and last_hit).
+void shot_k02_boomerang(Shot* s) {
+  BattleGlobals& g = bg();
+  s->anim = 7;
+  s->size[2] = 0x10;
+  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  if (g.flags != 0) return;
+  Unit* o = s->owner;
+  const s32 home[3] = {o->pos[0], o->pos[1] - (o->size[1] << 13), o->pos[2]};
+  const s32 t = g.frame_ticks;
+  auto gone = [s, o]() {
+    if (--o->counters[1] < 0) o->counters[1] = 0;
+    shot_kill(s);
+  };
+  if (kStateOver <= g.state && g.end_countdown < 0x10) {
+    gone();
+    return;
+  }
+  bool check_home = true;
+  if (0 < s->p128) {
+    s->p128 -= t * 24;
+    check_home = false;
+  } else if (s->p12c < 0x18) {
+    s->vel[0] -= s->point[0] * t;
+    s->vel[1] -= s->point[1] * t;
+    s->vel[2] -= s->point[2] * t;
+    s->p12c += t;
+  } else {
+    if (s->p130 == 0) {
+      s->hit_landed = 0;
+      s->p130 = 1;
+      s->last_hit = nullptr;
+    }
+    const Vec4 v = vec_velocity_toward(s->pos, home, 0x18);
+    s->vel[0] = v.x, s->vel[1] = v.y, s->vel[2] = v.z, s->extra34 = v.w;
+  }
+  if (check_home && bobj_near_point(s, home, t * 25)) {
+    gone();
+    return;
+  }
+  bobj_move(s, s->vel);
+  if (s->vel[0] < 0) s->roll = static_cast<s16>(s->roll + (t << 8));
+  else s->roll = static_cast<s16>(s->roll + (-(t << 9)) / 2);
+  Unit* found[8] = {};
+  Vec4 pts[8] = {};
+  const int n = collider_attack_overlaps(s, found, pts, 1);
+  if (n == 0) {
+    s->p130 = 0;
+    s->last_hit = nullptr;
+    return;
+  }
+  if (s->p130 == 2 && s->last_hit == found[0]) return;
+  s->p130 = 2;
+  s->last_hit = found[0];
+  const s32 saved[3] = {o->facing[0], o->facing[1], o->facing[2]};
+  o->facing[0] = s->vel[0], o->facing[1] = s->vel[1], o->facing[2] = s->vel[2];
+  if (unit_attack_targets(o, n, found, pts, 0x100, s->vel[0] < 0 ? 0x800 : 0, 0) != 0) {
+    s->p128 = 0;
+    s->p12c = 0x18;
+  }
+  o->facing[0] = saved[0], o->facing[1] = saved[1], o->facing[2] = saved[2];
+}
+
+// Kind 0x2c (0x8005b6d0): a spinning thrown weapon (variant +0x130: 0 anim 0x36, 1 anim
+// 0x38 of sprite set A, 2 anim 10 of the effect bank) flying for 0x20 ticks, fading after
+// 0x18; its first hit is the owner's attack (power 0x40, 0x20 for variants 1 / 2), except
+// that variant 0 destroys a Starguarder (type 0x7f) outright.
+void shot_k2c_thrown_weapon(Shot* s) {
+  BattleGlobals& g = bg();
+  s->layer = 2;
+  s->size[2] = 0xE;
+  u16 element = 0;
+  switch (s->p130) {
+    case 0:
+      shot_use_anims_f928(s);
+      s->anim = 0x36;
+      element = 0x20;
+      break;
+    case 1:
+      shot_use_anims_f928(s);
+      s->anim = 0x38;
+      element = 0;
+      break;
+    case 2:
+      shot_use_anims_f920(s);
+      s->anim = 0xA;
+      element = 4;
+      break;
+    default: break;
+  }
+  bobj_project(s);
+  bobj_anim_draw(s, g.flags);
+  if (g.flags != 0) return;
+  bobj_move(s, s->vel);
+  if (0x20 < s->p128) shot_kill(s);  // (the console carries on with the frame)
+  if (0x18 < s->p128) {
+    s->colour_mode = 2;
+    s->rgb[0] = static_cast<u8>(-0x80 - (s->p128 - 0x18) * 12);
+  }
+  s->p128 += g.frame_ticks;
+  s->roll = static_cast<s16>(s->roll + g.frame_ticks * 0x71);
+  if (s->hit_landed != 0) return;
+  Unit* found[8] = {};
+  Vec4 pts[8] = {};
+  const int n = collider_attack_overlaps(s, found, pts, s->owner->is_enemy);
+  if (n == 0) return;
+  s->hit_landed = 1;
+  Unit* t = found[0];
+  int hit;
+  if (t->is_enemy == 1 && t->st()->id == 0x7F && s->p130 == 0) {
+    t->death = 1;
+    t->st()->hp = 0;
+    bsfx_play_at(0x33, t);
+    bsfx_play_at(0x2A, t);
+    hit = 1;
+  } else {
+    hit = unit_attack_targets(s->owner, n, found, pts, s->p130 != 0 ? 0x20 : 0x40, s->vel[0] < 0 ? 0x800 : 0,
+                              element);
+  }
+  s->owner->attack_recovery = 0;
+  if (hit != 0) {
+    const s32 spread[3] = {0x40000, 0x20000, 0x20000};
+    effect_debris_burst(s->pos, spread, 2, 2, 1, 0x1000, s->p130 == 2 ? 5 : 4);
+  }
+  shot_kill(s);
+}
+
+// Kind 0x32 (0x8005d2d0): a textured light streak (patch 1 x 1, UV (1, 0x60)-(7, 0x7f),
+// CLUT 0x7d40 + +0x12c, tpage 0x2f) +0x130 wide and +0x138 long along its direction to
+// +0x118, dimming as it nears; speed +0x134 grows by +0x128 a tick; gone on arrival.
+void shot_k32_light_streak(Shot* s) {
+  BattleGlobals& g = bg();
+  shot_set_gte_origin(s);
+  {
+    const Vec4 d = vec_velocity_toward(s->pos, s->point, 1);
+    s->vel[0] = d.x, s->vel[1] = d.y, s->vel[2] = d.z, s->extra34 = d.w;
+  }
+  const s32 uv[4] = {1, 0x60, 7, 0x7F};
+  s32 c[4][4] = {};
+  c[0][0] = s->pos[0] + mul32(s->vel[1], s->p130);
+  c[0][1] = s->pos[1] + mul32(s->vel[0], s->p130);
+  c[0][2] = s->pos[2];
+  c[1][0] = s->pos[0] - mul32(s->vel[1], s->p130);
+  c[1][1] = s->pos[1] - mul32(s->vel[0], s->p130);
+  c[1][2] = s->pos[2];
+  for (int k = 0; k < 2; ++k) {
+    c[k + 2][0] = c[k][0] + mul32(s->vel[0], s->p138);
+    c[k + 2][1] = c[k][1] + mul32(s->vel[1], s->p138);
+    c[k + 2][2] = c[k][2] + mul32(s->vel[2], s->p138);
+  }
+  s32 level = vec_distance_fx(s->pos, s->point) >> 12;
+  if (0x100 < level) level = 0x100;
+  const u32 rgb = scale_colour(0x808080, level) | 0x2E000000u;
+  draw_textured_patch(uv, c, static_cast<u16>(s->p12c + 0x7D40), 0x2F, 6, rgb, 1);
+  if (s->power != 0 && (g.flags & 0x40) != 0) return;
+  if ((g.flags & 0xBF) != 0) return;
+  s->vel[0] = mul32(s->vel[0], s->p134) >> 12;
+  s->vel[1] = mul32(s->vel[1], s->p134) >> 12;
+  s->vel[2] = mul32(s->vel[2], s->p134) >> 12;
+  bobj_move(s, s->vel);
+  s->p134 += mul32(s->p128, g.frame_ticks);
+  s32 d = vec_distance_fx(s->pos, s->point);
+  if (d < 0) d = -d;
+  if (mul32(s->p134, g.frame_ticks) + s->p138 < d) return;
+  s->pos[0] = s->point[0], s->pos[1] = s->point[1], s->pos[2] = s->point[2];
+  shot_kill(s);
+}
 
 // Kind 0x16 (0x8005a4d8): the descriptor projectile (shot_spawn_projectile). Flags +0x138:
 // 1 trail sprites, 2 ends at the battle's end, 4 hits, bits 3-4 impact effect kind, 6-9
@@ -416,8 +588,11 @@ void Shot::update() {
   if (g.effects_suppressed != 0 && kind != 0x21 && command != 0xA5) return;
   switch (kind) {
     case 1: shot_k01_stun_orbit(this); break;
+    case 2: shot_k02_boomerang(this); break;
     case 0x11: shot_k11_sprite_ring(this); break;
     case 0x16: shot_k16_projectile(this); break;
+    case 0x2C: shot_k2c_thrown_weapon(this); break;
+    case 0x32: shot_k32_light_streak(this); break;
     case 0x21:
     case 0x33: shot_k21_callback(this); break;
     default: unported_kind(this); break;
@@ -451,6 +626,7 @@ void shot_reset(Shot* s) {
   s->spark_owner = nullptr;
   s->trail = nullptr;
   s->trail_rgb = 0;
+  s->last_hit = nullptr;
   for (s32& v : s->user) v = 0;
   s->lift = 0;
   s->animset = nullptr;
@@ -830,6 +1006,46 @@ int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int po
   }
   if (sfx != 0) bsfx_play_at(sfx, targets[0]);
   return missed;
+}
+
+void shot_set_gte_origin(const Shot* s) {
+  ViewState& v = view();
+  psx::Gte& q = psyq::gte();
+  s16 d[3];
+  if (s->owner != nullptr) {
+    d[0] = static_cast<s16>((s->owner->pos[0] - v.view_eye[0]) >> 12);
+    d[1] = static_cast<s16>((s->owner->pos[1] - v.view_eye[1] - 0x10000) >> 12);
+    d[2] = static_cast<s16>((s->owner->pos[2] - v.view_eye[2]) >> 12);
+  } else {
+    d[0] = static_cast<s16>((s->pos[0] - v.view_eye[0]) >> 12);
+    d[1] = static_cast<s16>((s->pos[1] - v.view_eye[1]) >> 12);
+    d[2] = static_cast<s16>((s->pos[2] - v.view_eye[2]) >> 12);
+  }
+  psyq::SetRotMatrix(&v.render_view);
+  q.write_data(psx::Gte::VXY0, static_cast<u32>(static_cast<u16>(d[0])) | static_cast<u32>(static_cast<u16>(d[1])) << 16);
+  q.write_data(psx::Gte::VZ0, static_cast<u32>(static_cast<s32>(d[2])));
+  q.execute(psx::Gte::kRtv0);
+  psyq::MATRIX m = v.render_view;
+  m.t[0] = static_cast<s32>(q.read_data(psx::Gte::MAC1));
+  m.t[1] = static_cast<s32>(q.read_data(psx::Gte::MAC2));
+  m.t[2] = static_cast<s32>(q.read_data(psx::Gte::MAC3));
+  psyq::SetRotMatrix(&v.render_view);
+  psyq::SetTransMatrix(&m);
+}
+
+Shot* effect_spawn_beam_at(const s32 pos[3], const s32 target[3], s32 p12c, s32 p138, s32 p130, s32 p134, s32 p128,
+                           s16 power) {
+  Shot* s = shot_spawn(0x32);
+  if (s == nullptr) return nullptr;
+  s->pos[0] = pos[0], s->pos[1] = pos[1], s->pos[2] = pos[2];
+  s->point[0] = target[0], s->point[1] = target[1], s->point[2] = target[2];
+  s->p128 = p128;
+  s->p12c = p12c;
+  s->p130 = p130;
+  s->p134 = p134;
+  s->p138 = p138;
+  s->power = power;
+  return s;
 }
 
 }  // namespace ss::game::battle

@@ -747,6 +747,15 @@ void bobj_move(BObj* o, const s32 vel[3]) {
   for (int i = 0; i < 3; ++i) o->pos[i] += vel[i] * t;
 }
 
+bool bobj_near_point(const BObj* o, const s32 p[3], s32 r) {
+  const s32 lim = static_cast<s32>(static_cast<u32>(r) << 12);
+  for (int k = 0; k < 3; ++k) {
+    const s32 d = o->pos[k] - p[k];
+    if (!((d < 0 ? p[k] - o->pos[k] : d) < lim)) return false;
+  }
+  return true;
+}
+
 bool bobj_on_screen(const BObj* o) {
   return static_cast<u16>(o->screen_x + 0x17) < 0x177 && static_cast<u16>(o->screen_y - 0x19) < 0xF7;
 }

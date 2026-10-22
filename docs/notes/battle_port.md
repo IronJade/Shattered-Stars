@@ -75,9 +75,15 @@ console, how it was checked, and what is still missing.
 ## Verification
 
 - **Reference run.** A PCSX-Redux run of the original was recorded. It covers New Game as Claude, the
-  field state poked to a forced battle (encounter 2, stage 3, two Lizardaxes), and Cross pressed every 45
-  vsyncs from vsync 3810. Captures were taken every 10 vsyncs, with RAM dumps at `field_exit` and at
-  `battle_main_loop`.
+  field state poked to a forced battle on map 7, and Cross pressed every 45 vsyncs from vsync 3810.
+  Captures were taken every 10 vsyncs, with RAM dumps at `field_exit` and at `battle_main_loop`.
+  - The fight is encounter 2 (two Lizardaxes) on stage 3. That is a random encounter of map 7's group
+    1, not the encounter the script asked for. The poke wrote game_state +0x99, which does nothing; the
+    field takes the encounter from game_state +0x264 (s16). The script now pokes +0x264.
+  - Every comparison below still holds, because the port started the same fight. The port reads the
+    encounter and stage from the field's setup block in the dump.
+  - Unit +0x12a (action kind) is uninitialised heap in the original until it is first set. Keep that
+    in mind when comparing RAM.
 - **Port run.** The same battle is started with
   `SS_BATTLE_RAM=<field_exit dump> --battle 2:3 --input <Cross every 45 vblanks from 5>`. The dump
   supplies handoffs 2/3/4/6, the field's setup block and the RNG state. The RNG state goes through
@@ -99,7 +105,7 @@ console, how it was checked, and what is still missing.
   and result-voice draws. The pages match frame for frame (port n-2 against b<n>):
   "Experience Points 20 / Fol 36", "Necklace obtained.", "Claude has increased. / 1 skill points
   obtained.", the scroll-away, the shrink and the fade. HP 1288 / MP 25 after the level-up match.
-- **Result screen (defeat).** The forced_1_3 reference: the "Destroyed..." message (string 3),
+- **Result screen (defeat).** The forced_1_3 reference (also encounter 2, see above): the "Destroyed..." message (string 3),
   its timing and the fade match. The battle exits at vblank 1048; the original switches to the
   field between b1060 and b1070.
 - **Banner.** `battle_message_banner` (test_battle.cpp) checks the banner: centred, 14 ticks up to y

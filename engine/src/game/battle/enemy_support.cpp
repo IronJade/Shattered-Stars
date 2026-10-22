@@ -53,13 +53,6 @@ void unit_throw_weapons(Unit* u, s32 variant) {
   }
 }
 
-Shot* effect_spawn_beam_at(const s32 pos[3], const s32 dir[3], s32 p12c, s32 p138, s32 p130, s32 p134, s32 p128,
-                           s16 power) {
-  (void)pos, (void)dir, (void)p12c, (void)p138, (void)p130, (void)p134, (void)p128, (void)power;
-  todo("effect_spawn_beam_at 0x80063c1c / Shot kind 0x32 (beams)");
-  return nullptr;
-}
-
 void spell_cast(int, Unit*, Unit*, int) { todo("spell_cast 0x80062c24 (enemy-module spell)"); }
 void spell_data_request(int, int, Unit*) { todo("spell_data_request 0x800482e8"); }
 int spell_data_status(int, Unit*) {

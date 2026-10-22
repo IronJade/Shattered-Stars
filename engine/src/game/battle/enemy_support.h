@@ -53,12 +53,6 @@ void collider_set_attack_box(Collider* c, s32 hx, s32 hy, s32 hz);
 // 0x80053e94: 1 when status bits 0xe6, +0x11c bits 0x48 or the freeze timer +0x154 hold u.
 int unit_is_disabled(const Unit* u);
 
-// Stand-ins (the battle agent's: the clip handles in bsfx and the Shot kinds); they log once.
-// 0x80063c1c: a kind-0x32 beam Shot (quad strip from pos along dir) [stand-in: nothing
-// is spawned until the kind is ported].
-Shot* effect_spawn_beam_at(const s32 pos[3], const s32 dir[3], s32 p12c, s32 p138, s32 p130, s32 p134, s32 p128,
-                           s16 power);
-
 // Spells, the load queue, voices and resident effect tasks the modules call; all are the
 // battle agent's and not ported yet. Stand-ins that log once (and return "nothing").
 struct SpellCast;

@@ -32,6 +32,7 @@ struct Shot : Collider {
   s32 p138 = 0;              // +0x138: flags (kind 0x16) or a parameter
   ShotFn handler = nullptr;  // +0x138 of the callback kinds 0x21 / 0x33
   BObj* spark_owner = nullptr;  // +0x110 of kind 0x11 (any object to follow)
+  const Unit* last_hit = nullptr;  // +0x130 of kind 2 when it holds a unit (p130 is then 2)
   // (Module code keeps state in fields of its own; they are named where it is ported.)
   s32 user[4] = {};
 
@@ -75,6 +76,13 @@ Shot* effect_spawn_sparks_at(const s32 pos[3], s32 count, s32 p118, s32 p11c, s3
 Shot* effect_spawn_sparks_on(BObj* owner, s32 count, s32 p118, s32 p11c, s32 p130, s32 p134, s32 p12c, s32 p120,
                              s32 p138, s16 power);
 int shot_kind21_absent(ShotFn fn);            // 0x80087510: 1 when no kind-0x21 Shot runs fn
+// 0x80058908: GTE rotation = the render view, translation = the view of the Shot's
+// position (its owner's, 0x10000 higher, when +0x110 is set).
+void shot_set_gte_origin(const Shot* s);
+// 0x80063c1c: a kind-0x32 light streak (a textured quad +0x130 wide, +0x138 long, CLUT
+// 0x7d40 + +0x12c) from pos homing on target at speed +0x134 growing by +0x128 a tick.
+Shot* effect_spawn_beam_at(const s32 pos[3], const s32 target[3], s32 p12c, s32 p138, s32 p130, s32 p134, s32 p128,
+                           s16 power);
 // 0x8006375c: a kind-0x10 Shot (an expanding lit sphere: lat x lon segments, radius +0x138
 // growing by +0x130, life +0x134, colour +0x118, scale +0x10c, +0x10a flag) at pos;
 // 0x80063718 passes scale 0x1000.

@@ -107,6 +107,8 @@ void bobj_move(BObj* o, const s32 vel[3]);            // 0x800452d0
 // 0x800457f4: v << 12, negated when o faces left (+0x18 < 0).
 inline s32 bobj_facing_fx(const BObj* o, s32 v) { return (o->facing[0] < 0 ? -v : v) << 12; }
 bool bobj_on_screen(const BObj* o);                   // 0x80045448
+// 0x800454a8: |dx|, |dy| and |dz| between o and p all below r << 12.
+bool bobj_near_point(const BObj* o, const s32 p[3], s32 r);
 bool bobj_outside_arena(const BObj* o);               // 0x80045564
 int bobj_anim_ticks(const BObj* o, int from, int to); // 0x800456a0: ticks of frames from..to-1
 
