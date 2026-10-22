@@ -18,27 +18,38 @@ starts a New Game or Continues a save, and plays field maps, the world map and b
 - **Menus:** the camp menu's first page, Data → Save / Load (a port save loads in the
   original), the title's Continue page.
 - **Battles:** entry from the field, combat (movement, attacks, enemy AI, damage, KO,
-  victory / defeat / escape), the return to the field with the map's music; a forced battle
-  matches Redux frame for frame apart from the missing HUD.
+  victory / defeat / escape), the HUD and the result screen (#1981), the return to the field
+  with the map's music; a forced battle matches Redux frame for frame.
+- **Controller:** keyboard as a digital pad; a gamepad as an analog DualShock (the left stick
+  steers, the Vibration setting drives rumble).
 - **Disc 2:** with `--disc2`, the loader swaps archives where the original prompts.
 
 ## In progress (agents)
 
+Each agent keeps a continuation log in `docs/handoff/<area>.md` (done and verified, in
+progress with the uncommitted files, exact next steps), updated after every finished step.
+Resume an area from its log.
+
 | Agent | Area | Next steps |
 |---|---|---|
-| Battle | `game/battle/` | HUD and window system, result screen #1981 (EXP / Fol / drops / level-ups), killer moves, spells and items |
-| Menu | `game/common/menu_*`, `game/field/menu_camp.*` | VM specialty services, list widgets, shops, the camp pages (Items, Equipment, Status, Skills, Specialty, Options, Combat), stash flag after loads |
-| World | `game/field/worldmap*` | field_update states 9-0xe / 0x11-0x20 (vehicles, world exits, menu warps, clock event), place markers and minimap, insert-disc screens |
-| Effects | `game/field/effects*`, core field fixes | `fieldactor_build_shadow` overflow (ASan), the field's own RotMatrix call sites, embedded map code (container sections 5-12, 25 maps) |
+| Battle | `game/battle/` | killer moves and the character modules (Claude first), Shot / Particle kinds, spells and items, party AI, voices |
+| Enemy | `game/battle/enemy_*` (new files) | the 16 resident enemy families, the slot A-D default modules, the encounter packs' enemy code; enemy spells wait on the battle agent |
+| Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
+| World | field / boot / title gaps | catalog rows with no port (triage: port, PsyQ, or not needed), field TODO(port)s incl. encounter streaming 0x80050dec, Voice Collection, the 'guess' rows |
+| Effects | `game/field/field_sub_overlays.*`, `effects*` | embedded map code: #3104 rainbow (map 143), #3109 (map 688), #3105, #3107 (map 581), entry #2 (map 688) |
 
 Main session: integration and commits, the field program's glue, play-testing the story
 route.
 
+**Stopping work:** when weekly usage reaches 95%, every agent is told to bring its log up
+to date and stop; the main session verifies and commits what is finished, and the logs
+carry the rest to the next session.
+
 ## Build and tests
 
 - `cmake --build engine/build`; `SS_DISC1=<disc 1 .cue> engine/build/ss_tests` (76) and
-  `engine/build/ss_game_tests` (63); `tools/smoke_field_events.sh engine/build/shattered-stars`
-  (11 checks, ~6 s). All green at `eb94cb1`.
+  `engine/build/ss_game_tests` (71); `tools/smoke_field_events.sh` (16 checks; `SS_DISC1` must
+  be set, disc 2 is found next to it). All green at `6c88bd4`.
 - ASan without root: `dnf download libasan` (x86_64), `rpm2cpio | cpio -idm` into a scratch
   dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
   `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>`. `gdb.minimal` is installed.
@@ -74,7 +85,8 @@ route.
   the git-ignored `scratchpad/<name>/` in the repo, and delete finished scratch promptly.
 - Catalogue every reversed function in `docs/catalog` (LF line endings; write CSVs with
   `lineterminator="\n"`, and never open a file for writing in the same expression that
-  reads it); prose goes in `docs/notes/`.
+  reads it); prose goes in `docs/notes/`. Keep each module's rows in address order inside
+  its existing block; don't reorder the file (it hides real changes in the diff).
 - Parallel agents: separate build dirs (`engine/build-<name>`) and Ghidra project dirs; the
   REA server is shared, so re-open your binary before each batch of REA calls and check
   the result's subject.
