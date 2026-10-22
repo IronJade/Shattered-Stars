@@ -14,6 +14,7 @@
 #include "game/battle/battle.h"
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
+#include "game/battle/hud.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
@@ -33,13 +34,14 @@ using namespace ss::game::battle;
 namespace {
 
 bool battle_disc() {
-  if (battle_data(0x80070078) != nullptr) return true;
+  // (Open the disc before the first battle_data: program_data caches what it finds,
+  // an empty image included.)
   static std::unique_ptr<disc::DiscImage> image;
   static disc::Archive archive;
   static bool tried = false;
-  if (tried) return false;
-  tried = true;
   if (get_system()->loader.archive() == nullptr) {
+    if (tried) return false;
+    tried = true;
     const char* path = std::getenv("SS_DISC1");
     if (path == nullptr || *path == 0) return false;
     std::string error;
@@ -285,4 +287,108 @@ TEST(battle_field_reload_list) {
   bg().handoff10_blob.clear();
   if (old9 != nullptr) handoff_store(reg, old9, 9);
   else handoff_clear(reg, 9);
+}
+
+TEST(battle_hud_gauge) {
+  // hud_draw_gauge 0x80066d84: (width - 1) * value / max filled in a G4 from 0xc0c0 to
+  // (pct << 8 | 0xc0 - pct | pct / 4 << 16) (pct = value * 0xc0 / max), the rest a dark
+  // TILE, and a three-point shadow line whose x leaves out the window x (the console's).
+  auto w = std::make_unique<BWindow>(0x50);
+  w->x = 0x10;
+  w->y = 4;
+  w->ctx.ot_head = screen_clear_ot(w->ctx.ot);
+  hud_draw_gauge(w.get(), 0x2A, 0x13, 0x30, 65, 130);
+  auto* line = reinterpret_cast<psyq::LINE_F3*>(w->ctx.ot_head->next);  // added last, so first
+  CHECK(line != nullptr);
+  auto* tile = reinterpret_cast<psyq::TILE*>(line->tag.next);
+  auto* g4 = reinterpret_cast<psyq::POLY_G4*>(tile->tag.next);
+  const int fill = 47 * 65 / 130;  // 23
+  CHECK_EQ(g4->code & 0xFC, 0x38);
+  CHECK_EQ(g4->x0, 0x10 + 0x2A);
+  CHECK_EQ(g4->x1, 0x10 + 0x2A + fill);
+  CHECK_EQ(g4->y0, 4 + 0x13);
+  CHECK_EQ(g4->y2, 4 + 0x13 + 4);
+  CHECK_EQ(g4->r0, 0xC0);
+  CHECK_EQ(g4->g0, 0xC0);
+  CHECK_EQ(g4->b0, 0);
+  CHECK_EQ(g4->r1, 0x60);  // 0xc0 - 96
+  CHECK_EQ(g4->g1, 0x60);  // 96
+  CHECK_EQ(g4->b1, 0x18);  // 96 / 4
+  CHECK_EQ(tile->code, 0x60);
+  CHECK_EQ(tile->x0, 0x10 + 0x2A + fill);
+  CHECK_EQ(tile->w, 47 - fill);
+  CHECK_EQ(tile->h, 4);
+  CHECK_EQ(tile->r0, 0x40);
+  CHECK_EQ(line->code, 0x48);
+  CHECK_EQ(line->x0, 0x2A + 1);
+  CHECK_EQ(line->x1, 0x2A + 47 + 1);
+  CHECK_EQ(line->y2, 4 + 0x13);
+  CHECK(tile->tag.next == nullptr || reinterpret_cast<void*>(tile->tag.next) == g4);
+}
+
+TEST(battle_message_banner) {
+  NEEDS_DISC();
+  // battle_message_show 0x80074ca4 / start 0x80074d54 / update 0x80074e20: the banner is
+  // the string's width + 0x18 wide, centred, rises 3 px a tick from y 0xe8 to 0xc0, holds
+  // 60 ticks, sinks back and closes; a second message makes the first sink at once and
+  // follows it.
+  BattleGlobals& g = bg();
+  std::vector<u8> config(0x2A0, 0);
+  u8* old_config = g.config;
+  g.config = config.data();
+  g.tasks.fill(nullptr);
+  g.task_count = 0;
+  g.ot_layers.fill(nullptr);
+  g.state = 2;
+  g.flags = 0;
+  g.frame_ticks = 1;
+  battle_load_entry(4, 1980, nullptr, entry_bytes(1980));
+  // One battle_main_loop frame: the text line buffer starts over, then the tasks run.
+  auto frame = [] {
+    text_frame_begin();
+    task_run_all();
+  };
+  const int id = 0x2711;
+  const int width = text_width_id(id) + 0x18;
+  CHECK(width > 0x18);
+  battle_message_show(id);
+  MessageWindow* m = battle_message();
+  CHECK(m != nullptr);
+  if (m == nullptr) return;
+  CHECK_EQ(m->x, 0xA0 - width / 2);
+  CHECK_EQ(m->w, width);
+  CHECK_EQ(m->y, 0xE8);
+  int updates = 0;
+  while (battle_message() == m && m->step == 0 && updates < 100) frame(), ++updates;
+  CHECK_EQ(updates, 14);
+  CHECK_EQ(m->y, 0xC0);
+  updates = 0;
+  while (battle_message() == m && m->step == 1 && updates < 100) frame(), ++updates;
+  CHECK_EQ(updates, 61);
+  updates = 0;
+  while (battle_message() == m && updates < 100) frame(), ++updates;
+  CHECK_EQ(updates, 14);
+  CHECK(battle_message() == nullptr);
+  // A queued message.
+  battle_message_show(id);
+  m = battle_message();
+  frame();
+  frame();
+  battle_message_show(0x2714);
+  CHECK_EQ(m->step, 2);
+  CHECK_EQ(m->queued, 0x2714);
+  frame();  // 0xe2 -> 0xe5
+  CHECK(battle_message() == m);
+  frame();  // 0xe8: closes and the next one opens
+  MessageWindow* next = battle_message();
+  CHECK(next != nullptr);
+  if (next != nullptr) {
+    CHECK_EQ(next->text_id, 0x2714);
+    CHECK_EQ(next->step, 0);
+  }
+  battle_windows_free();
+  g.config = old_config;
+  g.tasks.fill(nullptr);
+  g.task_count = 0;
+  g.ot_layers.fill(nullptr);
 }

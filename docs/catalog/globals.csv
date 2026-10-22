@@ -201,8 +201,8 @@ battle,0x8006fa04,g_enemy_stats,Stats *[8],0x60-byte stats block of each monster
 battle,0x8006fa24,g_animset_pool,AnimSet *,(allocated here) 0x1040 bytes = 40 AnimSet records of 0x68 bytes handed out by animset_alloc 0x80045750 (in-use bytes 0x8006fa28..0x8006fa4f cleared by battle_init_objects),confirmed,battle_init_objects + animset_alloc
 battle,0x8006fa50,g_texcache_count,int,Number of TexCaches taken from g_texcache_pool,confirmed,texcache_create
 battle,0x8006fa54,g_sfx_slot,u8[8],bsfx channels: sound slot id (0 = free); emitters 0x8006fa5c (BObj *[8]); distances 0x8006fa7c (int[8]),confirmed,bsfx_play + bsfx_update
-battle,0x8006fa9c,g_hud,BattleHud *,Top party status bar (0x88 bytes; created in 0x800744cc; opened at (0 0 0x140 0x28) by battle_scene_start; hud_init at battle start),confirmed,0x800744cc + battle_main_loop + 0x80046cc0
-battle,0x8006faa0,g_debug_text,DebugWindow *,0x470-byte debug console window (never drawn) receiving debug_print output,confirmed,0x800744cc + texcache_alloc
+battle,0x8006fa9c,g_hud,BattleHud *,"Top party status bar (BattleHud 0x88 bytes, vtable 0x8006d130): created by battle_init_objects, opened at (0 0 0x140 0x28) by battle_scene_start, hud_init at the main-loop start, task priority 0 [port: engine/src/game/battle/hud.cpp (battle_hud)]",confirmed,decompilation; battle port
+battle,0x8006faa0,g_debug_text,DebugWindow *,"0x470-byte debug console window (vtable 0x8006b848), opened at (0 0x28 0x10 0x10) and never drawn [port: engine/src/game/battle/hud.cpp (g_debug_window)]",confirmed,decompilation; battle port
 battle,0x8006faa4,g_open_list_menu,ListMenu *,The one open battle list menu (a new one releases the old),confirmed,list_menu_create + list_menu_update
 battle,0x8006faa8,g_message_window,MessageWindow *,Current bottom message banner,confirmed,battle_message_show
 battle,0x8006faac,g_scan_window,ScanWindow *,Open enemy analysis window or 0,confirmed,scan_window_show / scan_window_draw
@@ -218,7 +218,7 @@ battle,0x8006fad0,g_prim_pool_b,PrimPool *,16-byte object: 0xc80-byte primitive 
 battle,0x8006fad4,g_input,BattleInput *,"0xa0-byte battle input / command state; +0 mode byte (1,3,4 / 2), +0x3a u16 counter",guess,battle_init_objects + 0x800715d0 (ovl)
 battle,0x8006fad8,g_text_strings,u8 *,Battle string table (#1980 block 0): {u16 id; u16 offset} pairs ending in 0xffff then glyph-code strings. Ids: 0-0x33 messages (Results; Not enough MP; CD errors; element abbreviations 0x14-0x1d; :Weaker/:Stronger point; Friend:/Enemy:) 0x3e8+ spell names (0x3e7+spell) 0x7d0 tactics 0xbb8+ item names 0x1388+ killer moves (0x1387 + move + 0x32*(char-1)) 0x1f40+ battle skills (0x1f1f+skill) 0x2710+,confirmed,load_battle_data_1980 + text_find + dump of 1980.0
 battle,0x8006fadc,g_text_font,u8 *,Battle font (#1980 block 1): s32 glyph count; s32 height (12); u8 widths[count] (padded to 4); u16 rows[height] per glyph (1 bit per pixel). Temporarily swapped by the speech window 0x800417bc,confirmed,load_battle_data_1980 + text_draw
-battle,0x8006fae0,g_text_pixels,u8 *,0x2000-byte 4-bit text line buffer (128 bytes per row; 64 rows) uploaded to VRAM (0x3c0 0x1c0) each frame,confirmed,load_battle_data_1980 + text_draw + text_frame_upload
+battle,0x8006fae0,g_text_pixels,u8 *,"0x2000-byte 4-bit #1980 line buffer (64 rows of 128 bytes), cleared by load_battle_text, uploaded to VRAM (0x3c0 0x1c0) before DrawSync [port: engine/src/game/battle/window.cpp (g_pixels)]",confirmed,decompilation; battle port
 battle,0x8006fae4,g_battle_music,u8 *,"Battle music sequence unpacked from the enemy pack (load-list index 0, SLZ block after the sound bank); played with sound_play_sequence at the start",confirmed,0x80072190 + battle_run
 battle,0x8006fae8,g_forced_target,Unit *,When set every monster targets it (enemy_find_provoker),likely,enemy_find_provoker
 battle,0x8006faec,g_target_arrow_icon,Sprite *,Icon sprite of the off-screen target arrow,confirmed,ui_update_target_arrow
@@ -274,8 +274,8 @@ battle,0x8006fb8c,g_crit_flash,s16[2],Set to 2 and 0x20 on a critical hit (flash
 battle,0x8006fb90,g_shake_frames,u16,Pad vibration / screen shake duration; amplitudes 0x8006fb0e/0f (s8 x/y); periods 0x8006fb10/11; phase counters 0x8006fb12/13,confirmed,screen_shake + battle_frame_director
 battle,0x8006fb92,g_zoom_kick,s16,"Zoom (0x1000 = 1.0) of the critical-hit kick (5000), decreased by 0x8006fb94 per tick into g_zoom 0x8006f038 until 0x1000 [port: engine/src/game/battle/battle.h (BattleGlobals::zoom_kick)]",confirmed,battle port: unit_attack_targets / director
 battle,0x8006fb94,g_zoom_kick_decay,s16,Per-tick decrease of the zoom kick (200); 0 = no kick [port: engine/src/game/battle/battle.h (BattleGlobals::zoom_kick_decay)],confirmed,battle port: unit_attack_targets / director
-battle,0x8006fb96,g_text_x,s16,Next free texel column on the current text line,confirmed,text_draw / text_frame_begin
-battle,0x8006fb98,g_text_line,s16,First texel row of the current text line (0..0x3f),confirmed,text_draw / text_frame_begin
+battle,0x8006fb96,g_text_x,s16,Next free texel column on the current text line (reset each frame by text_frame_begin) [port: engine/src/game/battle/window.cpp],confirmed,decompilation; battle port
+battle,0x8006fb98,g_text_line,s16,First texel row of the current text line (0..0x3f; text_draw stops past 0x3f) [port: engine/src/game/battle/window.cpp],confirmed,decompilation; battle port
 battle,0x8006fb9a,g_item_menu_cursor,s16[3],Item menu cursor memory: col / row (0x8006fb9c) / top (0x8006fb9e),confirmed,item_menu_create + item_menu_confirm
 battle,0x8006fba0,g_assist_timer,s16,Refinement: frames the assist request 0x8006fb29 stays set (0xb4 from input_target_select_update when the target is out of reach); battle_frame_director counts it down and clears 0x8006fb29 at 0 [port: engine/src/game/battle/battle.h (BattleGlobals::assist_timer)],likely,battle port: input / director
 battle,0x8006fba2,g_provoke_frames,s16,Duration of skill 0x2d: level * 180 + rng(10) frames (with g_forced_target 0x8006fae8 = the user),likely,input_dispatch; p2 g_forced_target
@@ -377,6 +377,7 @@ battle_ovl1981,0x80087f4c,vtable_BattleFadeTask,vtable,[1] battle_fade_task_upda
 battle_ovl1981,0x80087f5c,vtable_ResultScreen,vtable,Window subclass: [1] result_screen_update 0x80086000; [2] result_screen_dtor 0x80087d60; [3] window_open 0x80067960; [4] window_release 0x800679ac; [5] 0x80069170 (nop); [6] result_screen_open 0x80085f94,confirmed,result_screen_ctor + data dump
 battle_ovl1981,0x80087f94,levelup_growth,u8[12][6][2],Per character (id-1) 6 {range; base} pairs: gain = rng_range(range) + base for attr3 / attr7 / attr6 / attr4 / attr8 / record attr9. Claude (4 3)(2 1)(2 2)(3 2)(2 0)(2 0); casters (2 1)(3 1)(2 1)(3 0)(0 0)(1 0),confirmed,levelup_apply + data dump
 battle_ovl1981,0x80088024,g_learned_list,u16[24],0-terminated message ids of skills learned in the last levelup_learn_skills call,confirmed,learn_from_table
+battle_ovl1984_0,0x8006faa8,g_message_window,MessageWindow *,The bottom banner on screen (null when none); a new message makes it sink and follows it [port: engine/src/game/battle/hud.cpp (battle_message)],confirmed,decompilation; battle port
 battle_ovl1984_0,0x80080dc8,ovl0_ctor_list,void (*[1])(void),.ctors-style entry holding bsfx_emitters_init (0x8008016c); no code found that walks it,likely,word at 0x80080dc8
 battle_ovl1984_0,0x80080dcc,jt_frame_director_stage,void *[50],Jump table of battle_frame_director's g_stage_id switch (stages 8..0x39),confirmed,disassembly of 0x800715d0
 battle_ovl1984_0,0x80080e94,s_no_mp_cost,char[4],'---' shown when the selected spell has no cost,confirmed,spell_menu_draw_items

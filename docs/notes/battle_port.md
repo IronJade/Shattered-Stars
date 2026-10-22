@@ -1,7 +1,7 @@
 # Battle port notes (engine/src/game/battle)
 
-Notes from the battle worker. The function and global rows were merged into `docs/catalog` (332 rows,
-319 functions and 13 globals). Each ported function lists its engine file in `port`, and partial ports are
+Notes from the battle worker. The function and global rows are merged into `docs/catalog`. Each ported
+function lists its engine file in `port`, and partial ports are
 marked "[port partial: ...]". This file is about the port itself: what it does differently from the
 console, how it was checked, and what is still missing.
 
@@ -24,6 +24,8 @@ console, how it was checked, and what is still missing.
 | `enemy_ai.cpp`, `encounter.cpp` | EnemyUnit state machine and AI; formation / stats loading |
 | `input.{h,cpp}` | `input_update` / `input_dispatch`, target select, free run, HUD gauge and range panel |
 | `director.cpp` | `battle_frame_director`, the off-screen target arrow, stage colour save / restore |
+| `window.{h,cpp}` | the window base (BWindow: an arena and a 1-entry OT per window), frames, the 8x8 UI font, the #1980 proportional text renderer and its 64-row line buffer |
+| `hud.{h,cpp}` | the top status bar (BattleHud), the debug window, the bottom message banner (`battle_message_show`) |
 | `bsfx.{h,cpp}` | battle sound front end (8 channels, 3-D pan, sound-test record) |
 | `vram.{h,cpp}` | CLUT / texture upload helpers |
 
@@ -42,6 +44,9 @@ console, how it was checked, and what is still missing.
   of it is kept and the field music resumes.
 - **Arenas.** Pool A's 62000-byte PS1 budget is emulated through `pool_a_bytes_used()`, counted in PS1
   primitive sizes. The host arenas are doubled.
+- **HUD disc notices.** `hud_draw` shows a notice when the disc lid is open or a read fails (strings
+  0xc / 0xd) and pauses the music. The host disc never does either, so only the sound-test notice
+  (string 0x10) is ported.
 - **Probe stack garbage.** `unit_probe_path` returns stack garbage for x/z when it reaches the wall code
   with vx == 0. The port returns the unit's own x/z there.
 - **Null owner flag.** `sprite_free` on the console dereferences a null owner flag. The port skips it.
@@ -64,8 +69,15 @@ console, how it was checked, and what is still missing.
 - **Result.** At every checked frame (100 to 800), port frame n-2 shows the same scene as ref b<n>: the
   intro fly-over, the camera cuts and the units' positions and animations. Damage numbers also match
   (10 dealt; 51, 52 and 49 taken), and Claude's KO falls on the same frame. The remaining pixel
-  differences are the missing top HUD window and dithering. (The captures were kept in the session
-  scratchpad, not in the repository.)
+  differences are the stage's dithering. (Captures were kept in the session scratchpad.)
+- **HUD.** In the same run the HUD appears on the same frame as the reference (b330). Both layouts
+  match: the normal bar (name, HP / MP digits and gauges, cursor, item / move icons) and the
+  target-select bar ("Lizardaxe", Claude 130/130 and later 79/130, the L1 / R1 buttons, "Phase Gun"
+  in the #1980 font). Of the opaque HUD pixels (glyphs, frames, icons), 0.1-2 % differ. The rest of
+  the band is the translucent backdrop over the stage's dither. Below the HUD the frames are identical
+  to the run without it.
+- **Banner.** `battle_message_banner` (test_battle.cpp) checks the banner: centred, 14 ticks up to y
+  0xc0, 61 held, 14 down, and a queued message following it. No banner appears in the reference fight.
 - **Field round trip.** `--map 10` with left/right walking reaches a random battle at vblank ~1915. The
   game returns to the field with the outcome in config+0x178, handoffs 0xc / 10, and the map music
   resumed (checked with a WAV recording).
@@ -74,12 +86,13 @@ console, how it was checked, and what is still missing.
 
 ## Not ported yet (in rough priority order)
 
-1. **#1981 and the HUD.**
+1. **#1981 (the result screen).**
    - The result screen: EXP / Fol award, drops, level-ups, learn tables, write-back to handoffs 2/3/4/6.
    - `battle_fade_task`, and `battle_free_party_models`.
-   - The victory jingle. The "Destroyed" banner (`battle_message_show`) is only logged.
-   - The HUD (`hud_init` / `hud_draw`, 6 KB), with the window system and the #1980 text renderer
-     (`window_*`, `text_*`, 64-row buffer at VRAM 0x3c0,0x1c0).
+   - The victory jingle and the "Destroyed" banner of the result / defeat path.
+   - The start burst (`battle_start_burst_create` 0x8003c02c, the white radial wipe).
+   - The HUD greys a killer move by its MP cost (PartyUnit vtable [35]), which comes from the
+     character modules; until they are ported the cost is 0.
 2. **Killer moves.** The party loader phases 1-4 (killer-move data) and the character modules.
    Command 2/3 logs a TODO.
 3. **Spells and items.** `spell_cast`, the SpellCast tasks and spell data, `unit_begin_cast`, enemy

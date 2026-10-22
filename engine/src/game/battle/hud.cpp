@@ -150,6 +150,7 @@ void hud_draw_target_select(BattleHud* h) {
 }  // namespace
 
 BattleHud* battle_hud() { return g_hud.get(); }
+MessageWindow* battle_message() { return g_message; }
 
 void battle_windows_create() {
   g_hud = std::make_unique<BattleHud>();

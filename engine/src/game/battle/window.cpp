@@ -10,7 +10,12 @@ namespace ss::game::battle {
 namespace {
 
 // The #1980 line buffer (g_text_pixels 0x8006fae0) and its cursor (0x8006fb96 / 0x8006fb98).
-std::vector<u8> g_pixels(0x2000, 0);
+// The console's buffer is 0x2000 bytes (64 rows), but text_draw starts a line at any row
+// up to 0x3f and writes its 12 rows (and a glyph's 8-byte group past the row end) from
+// there, so the last lines of a full frame run into the heap after it. The port keeps
+// that room (13 more rows); only the 64 rows are uploaded.
+constexpr size_t kTextBytes = 0x2000;
+std::vector<u8> g_pixels(kTextBytes + 13 * 0x80, 0);
 s16 g_text_x = 0;
 s16 g_text_line = 0;
 
@@ -85,9 +90,7 @@ void queue_draw_mode(BWindow* w, int dfe, int dtd, int tpage) {
 }  // namespace
 
 BWindow::BWindow(int prims) {
-  // The console's prims * 0x28 bytes, doubled: host primitives carry a 16-byte tag (4 on
-  // the PS1), so the same draws take up to twice the room.
-  render_ctx_create_arena(&ctx, static_cast<size_t>(prims) * 0x28 * 2);
+  render_ctx_create_arena(&ctx, static_cast<size_t>(prims) * 0x28);  // (the screen manager doubles it)
   render_ctx_create_ot(&ctx, 1);
 }
 
@@ -401,7 +404,7 @@ void text_frame_upload() {
 }
 
 void text_reset() {
-  std::fill(g_pixels.begin(), g_pixels.end(), 0);
+  std::fill(g_pixels.begin(), g_pixels.end(), 0);  // (the console clears its 0x2000 bytes)
   g_text_x = 0;
   g_text_line = 0;
 }

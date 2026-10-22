@@ -50,5 +50,6 @@ void battle_windows_create();   // battle_init_objects: g_hud and the debug wind
 void battle_windows_open();     // battle_scene_start
 void battle_windows_free();     // battle_free_all
 BattleHud* battle_hud();
+MessageWindow* battle_message();  // the banner on screen (null when none)
 
 }  // namespace ss::game::battle
