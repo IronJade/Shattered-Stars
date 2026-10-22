@@ -12,7 +12,10 @@ namespace ss::game::menu {
 
 class StatCalc {   // 8 bytes: +0 item table, +4 vtable (title 0x8004bcb4 / field 0x80072124)
  public:
-  StatCalc();                 // title 0x8003a250 / field 0x8003b1ac stat_calc_create
+  StatCalc() : StatCalc(true) {}  // title 0x8003a250 / field 0x8003b1ac stat_calc_create
+  // adjust_levels false skips the constructor's party pass (+0x26 from +0x28): what the
+  // destructor's recomputation sees after a load replaced the party.
+  explicit StatCalc(bool adjust_levels);
   ~StatCalc();                // title 0x8003a368 / field 0x8003b2c4 stat_calc_destroy
   void load_items();          // title 0x8003a3c4 / field 0x8003b320: unpacks the 0x338-item table
   void all();                 // title 0x8003a534 / field 0x8003b490 stat_calc_all

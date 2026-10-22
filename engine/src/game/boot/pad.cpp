@@ -47,6 +47,11 @@ void clock_reset(Pad*) {
   g_pad.seconds = 0;
 }
 
+void clock_set(Pad*, u32 seconds) {
+  g_pad.seconds = seconds;
+  g_pad.frames = 0;
+}
+
 u32 clock_seconds() { return g_pad.seconds; }
 
 void pad_enable_vibration(Pad*, int port, bool on) { g_pad.vibration[port] = on; }

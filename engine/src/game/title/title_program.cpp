@@ -1,5 +1,6 @@
 #include "game/title/title_program.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <optional>
@@ -10,6 +11,7 @@
 #include "game/boot/rng.h"
 #include "game/title/intro.h"
 #include "game/title/load_queue.h"
+#include "game/title/load_screen.h"
 #include "game/title/movie.h"
 #include "game/title/new_game.h"
 #include "game/title/title_screen.h"
@@ -368,6 +370,21 @@ void title_program_main(System* sys) {
     g_title.config[0x45] = 0;
     boot_run_main_program(sys, Program::Field);
   }
+  if (const char* spec = std::getenv("SS_LOAD_SAVE"); spec && *spec) {
+    // Debug start: load a save without the menus ("POSITION" on card slot 1, or
+    // "SLOT:POSITION", positions 0-14 as the load screen lists them) and run the field.
+    int slot = 0, index = std::atoi(spec);
+    if (const char* colon = std::strchr(spec, ':')) {
+      slot = std::atoi(spec) & 1;
+      index = std::atoi(colon + 1);
+    }
+    if (load_save_without_menu(g_title.memcard, slot, index) != 0) {
+      memcard_destroy(g_title.memcard);
+      g_title.memcard = nullptr;
+      boot_run_main_program(sys, Program::Field);
+    }
+    runtime::Runtime::get().log_once("load_save", "SS_LOAD_SAVE: no valid save at that position");
+  }
   g_title.entry12.assign(static_cast<size_t>(g_title.loader->entry_size(0x0C)), 0);
 
   auto intro = std::make_unique<TitleIntro>();
@@ -381,11 +398,36 @@ void title_program_main(System* sys) {
   while (g_title.loader->poll() != 0) {
   }
   pad_set_option(g_title.pad, 0);
+  // Back in the title program after a game (0x8002b54c set): with saves on the card,
+  // the load screen opens before the title screen.
+  bool loaded = false;
+  if (g_title_shown == 1) {
+    bool saves = false;
+    if (memcard_start_check(g_title.memcard) != 0) {
+      int status;
+      do {
+        rng_next();
+        memcard_update(g_title.memcard);
+        status = memcard_status(g_title.memcard);
+        if (status == 2) saves = true;
+      } while (status < 1);
+    }
+    if (saves) {
+      int bytes = 0;
+      for (int e = 0xBD0; e <= 0xBD2; ++e) bytes += g_title.loader->entry_size(e);
+      g_title.load_screen_data.assign(static_cast<size_t>(bytes), 0);
+      g_title.loader->select_entry(0xBD0);
+      g_title.loader->start_read(g_title.load_screen_data.data(), bytes);
+      while (g_title.loader->poll() != 0) {
+      }
+      loaded = load_game_screen(g_title.memcard, g_title.load_screen_data) != 0;
+    }
+  }
   g_title_shown = 1;
 
   // The title menu loop (0x80041db0): back to the title after the attract movie
   // and the Voice Collection; on to the field program after New Game / Continue.
-  for (;;) {
+  while (!loaded) {
     const int choice = title_screen(intro.get());
     if (g_title.config) g_title.config[0x17F] = static_cast<u8>(choice);
     if (choice == kTitleNewGame) {
@@ -403,8 +445,9 @@ void title_program_main(System* sys) {
       continue;
     }
     if (choice == kTitleContinue) {
-      // TODO(port): load-game screen 0x800317e0 (needs the memory card).
-      runtime::Runtime::get().log_once("continue", "Continue chosen: the load screen is not ported yet");
+      // 0x800317e0: the load screen (entries #3024-#3026 were read while the title
+      // faded); a loaded game goes on to the field program.
+      loaded = load_game_screen(g_title.memcard, g_title.load_screen_data) != 0;
       continue;
     }
     if (choice == kTitleVoiceCollection) {
@@ -412,6 +455,14 @@ void title_program_main(System* sys) {
       runtime::Runtime::get().log_once("voice", "Voice Collection is not ported yet; back to the title");
     }
   }
+  // LAB_8004241c after a load: the title's buffers, intro object and card manager go,
+  // then the field program (#3100) starts from the save's snapshot (handoff 0xe).
+  g_title.entry12.clear();
+  g_title.entry12.shrink_to_fit();
+  intro.reset();
+  memcard_destroy(g_title.memcard);
+  g_title.memcard = nullptr;
+  boot_run_main_program(sys, Program::Field);
 }
 
 void title_entry(System* sys) { title_program_main(sys); }

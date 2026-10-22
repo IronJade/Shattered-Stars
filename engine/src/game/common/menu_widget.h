@@ -66,9 +66,9 @@ class TextBox : public MenuTask {
   void draw_fill();                                     // title 0x800710c8
   int add_string(const char* text);                     // title 0x8006f01c
   void pen_reset() { pen(0x10, 8, 0xE); }               // title 0x8006f048
-  void pen_move(s16 dx, s16 dy) { pen_x += dx, pen_y += dy; }  // title 0x8006f070
-  void pen_at(s16 x, s16 y) { pen_x = x, pen_y = y; }   // title 0x8006f08c
-  void pen(s16 x, s16 y, s16 step) { pen_x = x, pen_y = y, line_step = step; }  // title 0x8006f0c0
+  void pen_move(s16 by_x, s16 by_y) { pen_x = static_cast<s16>(pen_x + by_x), pen_y = static_cast<s16>(pen_y + by_y); }  // title 0x8006f070
+  void pen_at(s16 at_x, s16 at_y) { pen_x = at_x, pen_y = at_y; }  // title 0x8006f08c
+  void pen(s16 at_x, s16 at_y, s16 step) { pen_x = at_x, pen_y = at_y, line_step = step; }  // title 0x8006f0c0
   int add_string_at(const s16 offset[2], const char* text);  // title 0x8006f0d0
   TextRenderer* text_renderer();                        // title 0x8006f218 (creates it)
   void set_group(s16 group);                            // title 0x8006f26c
@@ -134,6 +134,10 @@ class MessageBox : public TextBox {      // title 0x8007343c
   MessageBox();
   void show(int index);                    // title 0x80073498
 };
+
+// title 0x80073498: fills a box with message 'index' of its text group, sized to the
+// text and centred, with a "next" arrow (the save menu calls it on plain text boxes).
+void message_box_show(TextBox* box, int index);
 
 // Gradient quad helper (title 0x80073204).
 void box_gradient(TextBox* box, u32 c0, u32 c1, u32 c2, u32 c3, s16 x, s16 y, s16 w, s16 h, int slot);
@@ -249,7 +253,7 @@ class Widget : public MenuTask {
   virtual void on_left_right(int n);           // [19] title 0x80074364
   virtual void on_shoulder(int n);             // [20] title 0x80074380
 
-  void open_child(s16 id, Widget* child) { child_id = id, this->child = child; }  // title 0x80073f10
+  void open_child(s16 id, Widget* widget) { child_id = id, child = widget; }  // title 0x80073f10
   void finish(s16 code);                       // title 0x8007439c: confirm with a result
   void cancel();                               // title 0x800743e8
   void set_result(s16 code);                   // title 0x80074438

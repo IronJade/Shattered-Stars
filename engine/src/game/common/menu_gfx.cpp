@@ -343,6 +343,8 @@ void TextRenderer::set_default_font(const u8* font, const u8* strings) {
   g_font_strings = strings;
 }
 
+void TextRenderer::set_expansion_cursor(int index) { g_expansion_next = index; }
+
 TextRenderer::TextRenderer() {
   cvram_merge_free();
   set_font(g_font, g_font_strings);
@@ -816,11 +818,11 @@ void sprite_step(Sprite* s) {
     }
     const u8* e = pack + 4 + i * 28;
     s->frame_info = pack + read_u32(e + 20);
-    s->clut_info = pack + read_u32(e + 20) + 0x14;
-    const u8* cells = pack + read_u32(e + 24);
-    s->cells = cells + (s->frame_info[2] == 1 ? 12 : 16);
-    s->cell_rects = cells + read_u32(cells + 4);
-    s->cell_data = cells + read_u32(cells);
+    s->cells = pack + read_u32(e + 20) + 0x14;
+    const u8* images = pack + read_u32(e + 24);
+    s->rects = images + (s->frame_info[2] == 1 ? 12 : 16);
+    s->pixels = images + read_u32(images + 4);
+    s->clut = images + read_u32(images);
     const u32 scripts = read_u32(e + 16);
     s->script = pack + read_u32(pack + found * 4 + scripts + 4) + scripts;
   }
@@ -854,13 +856,15 @@ void sprite_step(Sprite* s) {
 
 namespace {
 
-// title 0x800688d4: finds or uploads the cell image 'rect' of 'data'; returns its
-// texture rectangle in u0..v1 (1 = ok, 0 = no room this frame).
-int sprite_cache_cell(Sprite* s, int* u0, int* v0, int* u1, int* v1, int bpp8, const u8* rect, const u8* data) {
+// title 0x800688d4: finds or uploads the cell image 'rect' (pixels at 'base' + rect[8])
+// in the sprite's VRAM region; returns its texture rectangle in u0..v1 (1 = ok, 0 = no
+// room this frame). The original keys cells by the low 16 bits of the pixels' RAM
+// address; the port keys them by the host address (distinct images never collide).
+int sprite_cache_cell(Sprite* s, int* u0, int* v0, int* u1, int* v1, int bpp8, const u8* rect, const u8* base) {
   SpriteCellCache* c = s->cache;
   if (!c) return 0;
-  const u8* pixels = data + read_u32(rect + 8);
-  const u32 key = static_cast<u32>(reinterpret_cast<uintptr_t>(pixels) & 0xFFFFFFFFu) | 0x10000u;
+  const u8* pixels = base + read_u32(rect + 8);
+  const u32 key = static_cast<u32>(reinterpret_cast<uintptr_t>(pixels) & 0x7FFFFFFFu) | 0x80000000u;
   for (int i = 0; i < 48; ++i) {
     if (c->keys[i] == key) {
       *u0 = c->cells[i][0];
@@ -919,6 +923,7 @@ int sprite_cache_cell(Sprite* s, int* u0, int* v0, int* u1, int* v1, int bpp8, c
       const bool oy = (a[1] <= b[1] && b[1] < a[3]) || (a[1] < b[3] && b[3] < a[3]) || (b[1] <= a[1] && a[3] <= b[3]);
       if (!(ox && oy)) continue;
       if (c->used[j]) {
+        // An image drawn this frame is in the way: undo this call's evictions, move on.
         std::memcpy(c->keys, backup, sizeof backup);
         c->keys[slot] = 0xFFFF;
         collided = true;
@@ -954,18 +959,18 @@ void sprite_draw(Sprite* s, const RenderContext* ctx, int slot) {
     g_shared.anim = s->anim;
   }
   const u8* cell = s->cells + (s->frame_info[2] == 1 ? s->cell * 4 : s->cell * 8);
-  const u8* rect = s->cell_rects + cell[0] * 0xC;
+  const u8* rect = s->rects + cell[0] * 0xC;
   auto* p = prim_alloc<psyq::POLY_FT4>(ctx);
   if (!p) return;
   psyq::setlen(p, 9);
   const u32 code = s->colour | 0x2C000000u;
   std::memcpy(&p->r0, &code, 4);
   int u0 = 1, v0 = 1, u1 = 10, v1 = 10;
-  const u16 clut_xy0 = read_u16(s->clut_info);
-  const int bpp8 = clut_xy0 >> 15;
-  if (sprite_cache_cell(s, &u0, &v0, &u1, &v1, bpp8, rect, s->cell_data) != 1) return;
-  const u16 cy = read_u16(s->clut_info + 2);
-  p->tpage = static_cast<u16>(bpp8 << 7 | (cy >> 4 & 0x10) | ((clut_xy0 & 0x3FF) >> 6) | ((cy & 0x200) << 2));
+  const int bpp8 = read_u16(s->clut) >> 15;
+  if (sprite_cache_cell(s, &u0, &v0, &u1, &v1, bpp8, rect, s->pixels) != 1) return;
+  // The texture page is the cache region's.
+  const u16 rx = static_cast<u16>(s->cache->x0), ry = static_cast<u16>(s->cache->y0);
+  p->tpage = static_cast<u16>(bpp8 << 7 | (ry >> 4 & 0x10) | ((rx & 0x3FF) >> 6) | ((ry & 0x200) << 2));
   const u16 gfx = static_cast<u16>(s->gfx);
   int clut_x = 0;
   u32 row = gfx;
@@ -975,12 +980,12 @@ void sprite_draw(Sprite* s, const RenderContext* ctx, int slot) {
   }
   if (gfx < 12 && !g_clut_loaded[gfx]) {
     const psyq::RECT r{static_cast<s16>(clut_x), static_cast<s16>(row + 0x1E4), 0x10, 1};
-    psyq::LoadImage(&r, s->clut_info + 4);
+    psyq::LoadImage(&r, s->clut + 4);
     g_clut_loaded[gfx] = 1;
   } else if (gfx >= 12) {
     // The original indexes its 12-byte flag table past the end; reload every time.
     const psyq::RECT r{static_cast<s16>(clut_x), static_cast<s16>(row + 0x1E4), 0x10, 1};
-    psyq::LoadImage(&r, s->clut_info + 4);
+    psyq::LoadImage(&r, s->clut + 4);
   }
   p->clut = static_cast<u16>((row + 0x1E4) * 0x40 | ((s->mode * 0x10 + clut_x) >> 4 & 0x3F));
   const s16 ox = static_cast<s16>(read_u16(rect + 4)), oy = static_cast<s16>(read_u16(rect + 6));

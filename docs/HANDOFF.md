@@ -5,6 +5,10 @@
 pass (76 + 34). M4 is reached: map 7's opening plays through and matches the original
 from the fade-in on, the script moves to map 8, and the D-pad walks Claude. Captures
 now use the display's visible lines (224 on the field), as PCSX-Redux's do.
+Continue works (menu agent): title → load screen → field; `SS_LOAD_SAVE=N` skips the menus.
+The save file layout is in the menu agent's notes (to be merged into docs/notes). The user's
+real save (analysis/saves/dex_north_city.mcd) is on disc 2 / world map 2: it needs the
+world-map port and disc 2 support (agent running).
 Debug options: `--map N` starts a new game (Claude) directly on field map N;
 `SS_BATTLE_STUB=1` makes the not-yet-ported battle program "win" at once and return to the
 field; `SS_TRACE=1` logs VM milestones (fades, windows, map loads) and encounter settings

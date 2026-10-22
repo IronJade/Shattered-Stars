@@ -571,9 +571,12 @@ MessageBox::MessageBox() {
   text_renderer();
 }
 
-void MessageBox::show(int index) {
-  TextRenderer* r = text_renderer();
+void MessageBox::show(int index) { message_box_show(this, index); }
+
+void message_box_show(TextBox* box, int index) {
+  TextRenderer* r = box->text_renderer();
   const u8* p = r->message(index);
+  TextRenderer::set_expansion_cursor(0);
   int width = 0, height = 0;
   for (;;) {
     const int n = message_line_length(p);
@@ -583,19 +586,19 @@ void MessageBox::show(int index) {
     line[n] = 0;
     const int w = r->measure(line);
     if (width < w) width = w;
-    add_text_line(line);
+    box->add_text_line(line);
     p += n;
-    height += line_step;
+    height += box->line_step;
   }
   width += 0x20;
   height += 0xE;
-  base_x = rx = static_cast<s16>(0x9C - width / 2);
-  base_y = ry = static_cast<s16>(0x6C - height / 2);
-  base_w = rw = static_cast<s16>(width);
-  base_h = rh = static_cast<s16>(height);
-  x = rx;
-  y = ry;
-  pen_at(static_cast<s16>(width), static_cast<s16>(height));
+  box->base_x = box->rx = static_cast<s16>(0x9C - width / 2);
+  box->base_y = box->ry = static_cast<s16>(0x6C - height / 2);
+  box->base_w = box->rw = static_cast<s16>(width);
+  box->base_h = box->rh = static_cast<s16>(height);
+  box->x = box->rx;
+  box->y = box->ry;
+  box->pen_at(static_cast<s16>(width), static_cast<s16>(height));
   PolyFT4Raw arrow{};
   arrow.x0 = -0x10, arrow.y0 = -8;
   arrow.x1 = 0, arrow.y1 = -8;
@@ -607,7 +610,7 @@ void MessageBox::show(int index) {
   arrow.u3 = 0xF8, arrow.v3 = 0x10;
   arrow.clut = 0x7A10;
   arrow.tpage = 0x16;
-  add_icon_anim(arrow, 8, 4);
+  box->add_icon_anim(arrow, 8, 4);
 }
 
 // ==== Cursor ==================================================================================
@@ -992,8 +995,9 @@ Widget::Widget() {
 
 Widget::~Widget() {
   // A parent may still look at this child's result (the original reads freed memory).
-  if (MenuScene* s = scene()) {
+  if (MenuScene* s = scene(); s && s->windows) {
     for (auto& e : s->windows->entries) {
+      if (e.flags & 8) continue;  // already deleted
       auto* w = dynamic_cast<Widget*>(e.task);
       if (w && w != this && w->child == this) {
         w->child = nullptr;

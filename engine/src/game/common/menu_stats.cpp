@@ -33,9 +33,9 @@ void mod_percent(u8* slot, int off, int pct) {
 
 }  // namespace
 
-StatCalc::StatCalc() {
+StatCalc::StatCalc(bool adjust_levels) {
   const int saved = party_get_selected();
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8 && adjust_levels; ++i) {
     party_select(i);
     if (party_slot_active() == 0) continue;
     u8* slot = globals().selected_slot;

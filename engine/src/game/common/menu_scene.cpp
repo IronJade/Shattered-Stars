@@ -18,7 +18,7 @@ namespace {
 // title 0x8004ae2c / field 0x8006ff3c: GTE setup shared with the New Game screens
 // (ZSF3/4, H, DQA/B, screen offset 0).
 void gte_setup() {
-  psx::Gte& g = gte();
+  psx::Gte& g = psyq::gte();
   g.write_ctrl(psx::Gte::ZSF3, 0x155);
   g.write_ctrl(psx::Gte::ZSF4, 0x100);
   g.write_ctrl(psx::Gte::H, 1000);

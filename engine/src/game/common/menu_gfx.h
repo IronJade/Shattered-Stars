@@ -139,6 +139,8 @@ class TextRenderer {
   // Font tables shared by every renderer (title 0x8004ece8 / 0x8004ecec): blocks 1
   // and 0 of the page data.
   static void set_default_font(const u8* font, const u8* strings);  // title 0x80032134
+  // title 0x80033fb0: the next entry of the 0x4009 expansion table (0x8004efb0).
+  static void set_expansion_cursor(int index);
 
  private:
   s16 count_ = 0;                    // +0x02
@@ -168,7 +170,7 @@ struct SpriteCellCache;
 struct Sprite {
   s16 x = 0, y = 0;       // +0x00 / +0x02
   s16 scale = 0;          // +0x04 (0x1000 = 1)
-  s16 mode = 3;           // +0x06: 0/1/2 brightness mode
+  s16 mode = 3;           // +0x06: palette column (0 normal, 1 / 2 the greyed copies)
   u32 colour = 0;         // +0x08
   s16 anim = 0;           // +0x0c: animation (direction * 12 + pose)
   s16 timer = 0;          // +0x0e
@@ -177,11 +179,13 @@ struct Sprite {
   u8 backwards = 1;       // +0x14: ping-pong direction
   s16 loaded_anim = -1;   // +0x16
   const u8* pack = nullptr;        // +0x18: sub-pack of the sprite data
-  const u8* clut_info = nullptr;   // +0x1c
-  const u8* frame_info = nullptr;  // +0x20
-  const u8* cells = nullptr;       // +0x24
-  const u8* cell_rects = nullptr;  // +0x28
-  const u8* cell_data = nullptr;   // +0x2c
+  const u8* cells = nullptr;       // +0x1c: cell table (frame_info + 0x14; 4 or 8 bytes a cell:
+                                   //        rect index, dx, dy, flip bits)
+  const u8* frame_info = nullptr;  // +0x20: [2] == 1: 4-byte cells
+  const u8* rects = nullptr;       // +0x24: 12-byte image rectangles (+1 width px, +2 height,
+                                   //        +4/+6 origin, +8 pixel offset)
+  const u8* pixels = nullptr;      // +0x28: base of the image data
+  const u8* clut = nullptr;        // +0x2c: u16 flags (bit 15: 8-bit images), CLUT at +4
   const u8* script = nullptr;      // +0x30
   u16 cell = 0;                    // +0x34
   SpriteCellCache* cache = nullptr;  // +0x38

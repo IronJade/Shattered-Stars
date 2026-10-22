@@ -20,6 +20,7 @@ u16 pad_pressed_repeat(Pad* pad, int port);                   // 0x8001439c: new
 void pad_clear(Pad* pad, int port);                           // 0x800143e8
 void pad_set_option(Pad* pad, u8 value);                      // 0x8001440c (purpose unknown)
 void clock_reset(Pad* pad);                                   // 0x8001441c: play-time clock to zero
+void clock_set(Pad* pad, u32 seconds);                        // 0x80014444: play-time clock (a loaded game's)
 
 // Vibration (DualShock actuators). The host has no rumble output yet; the settings are kept.
 void pad_enable_vibration(Pad* pad, int port, bool on);        // 0x80013f84: the player's Vibration ON/OFF

@@ -75,6 +75,13 @@ add_library(ss_game STATIC
   src/game/common/program_image.cpp
   src/game/common/memcard.cpp
   src/game/common/screen.cpp
+  src/game/common/menu_core.cpp
+  src/game/common/menu_scene.cpp
+  src/game/common/menu_gfx.cpp
+  src/game/common/menu_widget.cpp
+  src/game/common/menu_stats.cpp
+  src/game/common/menu_save.cpp
+  src/game/title/load_screen.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
   src/game/title/title_program.cpp
@@ -149,6 +156,7 @@ add_executable(ss_game_tests
   tests/test_movie.cpp
   tests/test_script_vm.cpp
   tests/test_field_message.cpp
+  tests/test_menu.cpp
   tests/test_field_actors.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
