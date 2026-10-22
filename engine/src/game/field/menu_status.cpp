@@ -571,6 +571,8 @@ void StatusPage::draw_member() {
 
 }  // namespace
 
+menu::Widget* create_talents_dialog() { return new Talents; }
+
 // ==== Page handler ========================================================================
 
 void menu_page06_update(menu::MenuPageLoader* p) {

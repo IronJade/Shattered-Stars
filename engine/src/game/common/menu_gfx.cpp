@@ -345,6 +345,9 @@ void TextRenderer::set_default_font(const u8* font, const u8* strings) {
 }
 
 void TextRenderer::set_expansion_cursor(int index) { g_expansion_next = index; }
+void TextRenderer::set_expansion(int slot, const u8* font, const u8* strings, int group, int index) {
+  g_expansions[slot & 7] = Expansion{font, strings, group, index};
+}
 void TextRenderer::set_name_source(const char* (*source)(int index)) { g_name_source = source; }
 
 TextRenderer::TextRenderer() {

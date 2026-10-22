@@ -4,6 +4,7 @@
 
 namespace ss::game::menu {
 class MenuPageLoader;
+class Widget;
 }
 
 // The camp menu's Status page: page 6 of the field's menus (code overlay 0xbb2 at 0x8007e000,
@@ -17,5 +18,8 @@ class MenuPageLoader;
 namespace ss::game::field {
 
 void menu_page06_update(menu::MenuPageLoader* p);   // field 0x800357b0
+// The talents list (Status 0x8007e000; the Skills page has its own copy at the same
+// address of 0xbc6).
+menu::Widget* create_talents_dialog();
 
 }  // namespace ss::game::field

@@ -113,6 +113,24 @@ portrait's CD timing.
 
 **Catalog:** 1020 function rows.
 
+### Skills, page 5 (done and verified)
+
+**New files:** `engine/src/game/field/menu_skills.{h,cpp}`: SkillsPage, RaiseNotice,
+SpecialtyList, SpecialtyDetail, SuperDetail. The talents dialog comes from menu_status
+(`create_talents_dialog`).
+
+**Library additions:**
+- `TextBox::add_ascii_text` (0x800dbc10).
+- `TextRenderer::set_expansion` (0x800d7944).
+
+**Test cards:** `modsave.py` now takes `--rec` and `--flag`. The cards are
+`cards/skills.mcd` and `cards/skills2.mcd`.
+
+**Verification.** Compared against Redux `skillref1-4` and port `skill_p1-4`. Records,
+party, config and inventory match. The notices are pixel-exact.
+
+**Catalog:** 1080 function rows.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
@@ -121,11 +139,10 @@ portrait's CD timing.
 
 ## Next steps
 
-1. Skills (page 5, 0xbc6; ctor 0x8007e740).
-2. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
-3. Options (page 7, 0xbc8).
-4. Combat (pages 8-10, 0xbca).
-5. Then page 0xe (0xbce, after Status), the item creation pages 0xf / 0x10 / 0x13 and the query page.
+1. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
+2. Options (page 7, 0xbc8).
+3. Combat (pages 8-10, 0xbca).
+4. Then page 0xe (0xbce, after Status), the item creation pages 0xf / 0x10 / 0x13 and the query page.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.

@@ -452,6 +452,31 @@ Verified against PCSX-Redux on the items card (`statref1`, port `stat_p2`): the 
 talents and resistances match except for the sprite's phase and the help bar. The
 portrait rises later in the original, because of CD time.
 
+## Skills (page 5, overlay 0xbc6)
+
+- **The list** has the 46 skills in id order, two to a row, with gaps for skills the
+  member neither knows nor may learn. A skill can be learned once its book is read:
+  script flag 700 + its group of five in table 0x80081168.
+  - Each row shows the name, the level and the SP for the next level: table 0x80080f92
+    + skill * 10 + level, less twice skill 0xb's level, at least 1.
+  - Battle skills 0x21-0x2e are drawn in colour 3, or colour 4 when switched off.
+- **Confirm** pays from the member's SP (record +0x1a) and raises the level (keeping its
+  sign). The level's bonus follows: the copy of 3001's skill_level_bonus.
+  - A RaiseNotice dialog takes the specialty and super specialty levels before and
+    after the raise.
+  - For each one that changed it shows a message box (group 0xc, with expansions for the
+    character, the specialty and the level): learned (0 / 2) or rose (1 / 3).
+- **Square** flips a known battle skill's sign (off / on).
+- **Triangle** opens the specialties and super specialties the member has started, with
+  a dot per skill (or specialty) needed. A complete one opens its details. Triangle
+  there opens the talents, the same dialog as the Status page's.
+
+Verified against PCSX-Redux with copies of the items card that add SP, skills and flag
+700 (`skillref1-4`, port `skill_p1-4`). The runs covered raises, the on / off switch,
+both notices ("rose to 2", "learned"), the specialty list and a detail.
+- Records, party, config and inventory match.
+- The frames differ only in the sprite and the help bar.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -558,7 +583,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3, 4, 6, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3-6, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

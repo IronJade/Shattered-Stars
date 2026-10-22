@@ -159,6 +159,9 @@ class TextRenderer {
   static void set_default_font(const u8* font, const u8* strings);  // title 0x80032134
   // title 0x80033fb0: the next entry of the 0x4009 expansion table (0x8004efb0).
   static void set_expansion_cursor(int index);
+  // title 0x800320f4 / menu_0ba5 0x800d7944: expansion entry 'slot' is message 'index' of
+  // group 'group' of the pack.
+  static void set_expansion(int slot, const u8* font, const u8* strings, int group, int index);
   // The field's text code 0x4006 n draws character n's name (menu_0ba5 0x800d9388;
   // the title's copy skips it): the host gives the name (field 0x80055f78).
   static void set_name_source(const char* (*source)(int index));

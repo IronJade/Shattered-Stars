@@ -97,6 +97,9 @@ class TextBox : public MenuTask {
   // title 0x8006f31c / menu_0ba5 0x800db904: the item's name (item text group 3); the
   // font and group stay.
   void add_item_name(int item);
+  // title 0x8006f628 / menu_0ba5 0x800dbc10: an ASCII text as a text line, each card code
+  // a message of group 1; the group stays. Returns the line's element.
+  int add_ascii_text(const char* ascii);
   // title 0x800732c0 / menu_0ba5 0x800df8a8: a gouraud line (colours scaled by the box's
   // brightness) into the box's OT entry.
   void draw_gradient_line(s16 x0, s16 y0, s16 x1, s16 y1, u32 c0, u32 c1);

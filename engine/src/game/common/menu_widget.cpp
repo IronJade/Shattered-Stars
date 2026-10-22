@@ -468,6 +468,25 @@ void TextBox::add_item_name(int item) {
   set_font_group(font, strings, group);
 }
 
+int TextBox::add_ascii_text(const char* ascii) {
+  TextRenderer* r = text_renderer();
+  const s16 group = r->group();
+  r->set_group(1);
+  u8 card[0x80] = {};
+  text_to_card_codes(ascii, card, sizeof(card));
+  u8 codes[0x100] = {};
+  size_t o = 0;
+  for (const u8* p = card; p < card + sizeof(card) && *p != 0 && o + 2 < sizeof(codes); ++p) {
+    const u8* m = r->message(*p);
+    codes[o++] = m[0];
+    if (m[0] >= 0x80) codes[o++] = m[1];
+  }
+  codes[o] = 0;
+  const int line = add_text_line(codes);
+  r->set_group(group);
+  return line;
+}
+
 void TextBox::draw_gradient_line(s16 x0, s16 y0, s16 x1, s16 y1, u32 c0, u32 c1) {
   auto* l = prim_alloc<psyq::LINE_G2>(ctx);
   if (!l) return;
