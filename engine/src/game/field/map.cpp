@@ -499,7 +499,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   actor_sys_update_one(actor_system(), gs[0x24]);  // 0x80044318
   if (read_u16(g.config + 0x178) == 2 && flags[0x7E] != 0) {
     // A lost script battle that ends the game.
-    todo("field_begin_game_over (0x8004b418)");
+    field_begin_game_over(f);
   } else if (((g.script_flags[1] >> 6) & 1) != 0) {
     // TODO(port): side text 0xa92 (0x80053a24), field_flags +0x10 = -1, state 0x11, music fade.
     todo("map load: script flag 14 path (side text 0xa92, state 0x11)");

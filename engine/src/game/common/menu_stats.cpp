@@ -37,11 +37,11 @@ StatCalc::StatCalc(bool adjust_levels) {
   const int saved = party_get_selected();
   for (int i = 0; i < 8 && adjust_levels; ++i) {
     party_select(i);
-    if (party_slot_active() == 0) continue;
-    u8* slot = globals().selected_slot;
+    if (party_selected_char() == 0) continue;
+    u8* slot = party_selected_slot();
     put16(slot, 0x26, get16(slot, 0x28));
     // Accessory 0x98 in either accessory slot raises it by one.
-    if (char_attr(5) == 0x98 || char_attr(6) == 0x98) {
+    if (char_get_equip(5) == 0x98 || char_get_equip(6) == 0x98) {
       if (get16(slot, 0x26) < 0xFF) put16(slot, 0x26, static_cast<s16>(get16(slot, 0x26) + 1));
     }
   }
@@ -54,7 +54,7 @@ StatCalc::~StatCalc() { all(); }
 
 void StatCalc::load_items() {
   // A packed table of 0x338 items x 14 bytes in the program image (title 0x8004bcc4).
-  const u8* packed = table(0x8004BCC4, 0);
+  const u8* packed = table(0x8004BCC4, 0x80072134);
   items_.assign(0x338 * 8, 0);
   if (!packed) return;
   auto raw = disc::slz::unpack_block(std::span<const u8>(packed, read_u32(packed + 4) + 0x10), 0, 0, nullptr);
@@ -77,7 +77,7 @@ void StatCalc::all() {
   const int saved = party_get_selected();
   for (int i = 0; i < 8; ++i) {
     party_select(i);
-    if (party_slot_active() != 0) member();
+    if (party_selected_char() != 0) member();
   }
   party_select(saved);
 }
@@ -100,10 +100,10 @@ void StatCalc::member() {
 }
 
 void StatCalc::item_bonuses() {
-  u8* slot = globals().selected_slot;
-  u8* record = globals().selected_record;
+  u8* slot = party_selected_slot();
+  u8* record = party_selected_record();
   for (int i = 0; i < 7; ++i) {
-    const int item = char_attr(i);
+    const int item = char_get_equip(i);
     if (item == 0) continue;
     put16(slot, 0x4C, static_cast<s16>(get16(slot, 0x4C) + item_data_get(item, 0x2C)));
     put16(record, 10, static_cast<s16>(get16(record, 10) + item_data_get(item, 0x14)));
@@ -129,10 +129,10 @@ u32 StatCalc::item_stat(int item, int field) const {
 }
 
 void StatCalc::equip_effects() {
-  u8* slot = globals().selected_slot;
+  u8* slot = party_selected_slot();
   int doubled = 0;
   for (int i = 0; i < 7; ++i) {
-    const int item = char_attr(i);
+    const int item = char_get_equip(i);
     if (item == 0) continue;
     int hp = 0;
     switch (item_stat(item, 2)) {

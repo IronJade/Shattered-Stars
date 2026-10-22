@@ -506,3 +506,5 @@ field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect
 field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368
 field,0x80075744,g_music_pending,u8,The map's music is installed and starts once the SPU is idle (field_start_pending_music),confirmed,field_load_music_sync 0x8004b6b0; 0x80052bf4
 field,0x80075746,g_music_current,s16,Archive entry of the map music in place (-1 none); its preload is released once the music starts,confirmed,field_load_map 0x80053e8c; 0x80052bf4
+field,0x80075328,g_ui_atlas,const u8 *,"#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo)",confirmed,field_load_system_data 0x8004a428; field_update state 7
+field,0x80076279,g_sub_overlay_hook,u8,"Run the sub-overlay's per-frame hook 0x801ead88 (script ext 0xa8 ops 0xe / 0xf)",confirmed,field_special_command; field_main_loop

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "game/battle/battle.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
@@ -50,6 +51,15 @@ System* get_system() { return &g_system; }
 
 void boot_run_main_program(System*, Program next) { throw ProgramSwitch{next}; }
 
+void boot_restart_title(System* sys) {
+  sound_shutdown(&sys->sound);  // 0x80014a7c
+  sys->loader.cancel();
+  // Everything in the handoff registry belonged to the old heap; the console
+  // re-initialises the heap (0x80012f8c), the host lets the old objects go.
+  boot_main(1, sys->loader.archive());
+  boot_run_main_program(sys, Program::Title);
+}
+
 Program boot_main(int is_reset, disc::Archive* archive) {
   // InitHeap(0x80090000, 0x16e000): the port allocates from the host heap.
   System* sys = &g_system;
@@ -78,6 +88,9 @@ void run_program(Program program) {
       return;
     case Program::Field:
       field::field_entry(get_system());
+    case Program::Battle:
+      if (std::getenv("SS_BATTLE_STUB") == nullptr) battle::battle_entry(get_system());  // never returns
+      [[fallthrough]];
     default:
       if (program == Program::Battle && std::getenv("SS_BATTLE_STUB") != nullptr) {
         // Debug stand-in for the battle program: takes the setup (handoff 5), "wins"

@@ -212,8 +212,8 @@ int vm_svc_zone_test_point(int actor, const u8* item, int sx, int sy, int y) {
   return 0;
 }
 const u8* vm_svc_ui_atlas() {
-  LOG_ONCE();
-  static const u8 zero[0x100] = {};
+  if (globals().ui_atlas != nullptr) return globals().ui_atlas;  // 0x80075328
+  static const u8 zero[0x200] = {};
   return zero;
 }
 int vm_svc_frame_counter() { LOG_ONCE(); return 0; }

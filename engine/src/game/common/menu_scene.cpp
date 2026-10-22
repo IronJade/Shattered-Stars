@@ -41,6 +41,7 @@ MenuSession::MenuSession() {
   g.inventory = static_cast<u8*>(handoff_get(h, 6));
   g.party = static_cast<u8*>(handoff_get(h, 3));
   g.records = static_cast<u8*>(handoff_get(h, 4));
+  party_bind(g.config, g.inventory, g.party, g.records);
   if (handoff_get(h, 0xE) == nullptr) handoff_store(h, new u8[0x440](), 0xE);
   build_button_map();
   g.item_data.clear();

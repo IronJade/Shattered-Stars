@@ -9,6 +9,9 @@ Continue works (menu agent): title → load screen → field; `SS_LOAD_SAVE=N` s
 The save file layout is in the menu agent's notes (to be merged into docs/notes). The user's
 real save (analysis/saves/dex_north_city.mcd) is on disc 2 / world map 2: it needs the
 world-map port and disc 2 support (agent running).
+In progress at this commit (agents running): the battle program's combat (phase 1 —
+entry, loaders, render, field round trip — is done), the world map (game/field/worldmap*),
+the shared party/stat library (game/common/party.*), field effects.
 Debug options: `--map N` starts a new game (Claude) directly on field map N;
 `SS_BATTLE_STUB=1` makes the not-yet-ported battle program "win" at once and return to the
 field; `SS_TRACE=1` logs VM milestones (fades, windows, map loads) and encounter settings

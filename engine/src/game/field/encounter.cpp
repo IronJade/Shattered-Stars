@@ -533,6 +533,13 @@ void field_start_battle(Field* f, int transition) {
   party_stash_slot_ids();
 }
 
+void field_read_title_program() {
+  FieldGlobals& g = globals();
+  g_battle_program.assign(static_cast<size_t>(g.loader->entry_size(1)), 0);
+  g_battle_program_loaded = 0;
+  load_queue_push(load_queue(), 1, g_battle_program.data(), &g_battle_program_loaded, 0);
+}
+
 void field_destroy_battle_transition(Field*) {
   if (g_transition != nullptr) battle_transition_destruct(g_transition);
   g_transition = nullptr;

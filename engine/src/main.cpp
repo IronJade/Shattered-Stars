@@ -8,6 +8,8 @@
 // PCSX-Redux's software renderer (gouraud only) for comparisons, not remembered.
 // Testing options: --headless (no window), --frames N (stop after N vblanks),
 // --map N (debug: new game as Claude, straight onto field map N),
+// --battle ENC[:STAGE] [--battle-end FRAMES[:OUTCOME]] (debug: straight into a battle with a
+// new game's party; see game/battle/battle_debug.h),
 // --capture DIR --capture-frames A,B,... (save the display on those vblanks),
 // --input FRAME:buttons,... (scripted controller, e.g. 900:down,906:none,930:cross).
 // SS_VRAM_PNG=file writes VRAM as a 1024x512 PNG when the run ends.
@@ -38,6 +40,7 @@
 
 #include "disc/archive.h"
 #include "disc/disc_image.h"
+#include "game/battle/battle_debug.h"
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
 #include "platform/audio.h"
@@ -94,6 +97,7 @@ int main(int argc, char** argv) {
   auto config = load_config();
   std::filesystem::path dump_dir, capture_dir;
   std::string capture_frames, input_script;
+  std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
   bool viewer = false, headless = false, config_changed = false, reference_dither = false,
        no_memcard = false;
   int entry = 10;
@@ -133,6 +137,10 @@ int main(int argc, char** argv) {
       reference_dither = true;
     } else if (arg == "--headless") {
       headless = true;
+    } else if (arg == "--battle" && has_value) {
+      battle_spec = next();
+    } else if (arg == "--battle-end" && has_value) {
+      battle_end = next();
     } else if (arg == "--map" && has_value) {
       runtime::Runtime::get().debug_start_map = std::atoi(next());
     } else if (arg == "--frames" && has_value) {
@@ -237,6 +245,8 @@ int main(int argc, char** argv) {
 
   try {
     game::Program program = game::boot_main(0, &archive);
+    if (!battle_spec.empty()) program = game::battle::battle_debug_start(battle_spec, battle_end);
+    else game::battle::battle_debug_set_end(battle_end);
     for (;;) {
       try {
         game::run_program(program);

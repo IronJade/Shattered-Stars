@@ -75,6 +75,7 @@ add_library(ss_game STATIC
   src/game/common/program_image.cpp
   src/game/common/memcard.cpp
   src/game/common/screen.cpp
+  src/game/common/party.cpp
   src/game/common/menu_core.cpp
   src/game/common/menu_scene.cpp
   src/game/common/menu_gfx.cpp
@@ -121,9 +122,26 @@ add_library(ss_game STATIC
   src/game/field/music.cpp
   src/game/field/stash.cpp
   src/game/field/encounter.cpp
+  src/game/field/worldmap_bg.cpp
+  src/game/field/worldmap_camera.cpp
+  src/game/field/worldmap_render.cpp
+  src/game/field/worldmap_actor.cpp
   src/game/field/characters.cpp
   src/game/field/special.cpp
   src/tools/viewer.cpp)
+# The battle program (#2129), native (docs/notes/battle.md).
+target_sources(ss_game PRIVATE
+  src/game/battle/battle_program.cpp
+  src/game/battle/battle_debug.cpp
+  src/game/battle/loaders.cpp
+  src/game/battle/stage.cpp
+  src/game/battle/render.cpp
+  src/game/battle/camera.cpp
+  src/game/battle/bobj.cpp
+  src/game/battle/unit.cpp
+  src/game/battle/encounter.cpp
+  src/game/battle/party.cpp
+  src/game/battle/vram.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})
@@ -161,6 +179,7 @@ add_executable(ss_game_tests
   tests/test_menu.cpp
   tests/test_field_actors.cpp
   tests/test_field_party.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_battle.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

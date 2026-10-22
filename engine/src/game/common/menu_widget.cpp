@@ -1438,9 +1438,9 @@ void Panel::draw_member() {
   if (!box) return;
   box->clear();
   box->pen_at(8, 0x1E);
-  box->add_party_character(static_cast<s16>(read_u16(globals().selected_slot)), 3, 0x1000);
+  box->add_party_character(static_cast<s16>(read_u16(party_selected_slot())), 3, 0x1000);
   box->pen(0x2C, 0x2C, 0xC);
-  box->add_string(reinterpret_cast<const char*>(globals().selected_record + 0x24));
+  box->add_string(reinterpret_cast<const char*>(party_selected_record() + 0x24));
 }
 
 void Panel::build_members() {
@@ -1448,9 +1448,9 @@ void Panel::build_members() {
   member_count = 0;
   for (int i = 0; i < 8; ++i) {
     party_select(i);
-    if (party_slot_active() == 0) continue;
+    if (party_selected_char() == 0) continue;
     bool ok = true;
-    if (!(help_flags & 0x1000)) ok = (globals().selected_slot[2] & 7) == 0;
+    if (!(help_flags & 0x1000)) ok = (party_selected_slot()[2] & 7) == 0;
     if (!ok) continue;
     if (i == selected) member = member_count;
     members[member_count++] = static_cast<s16>(i);

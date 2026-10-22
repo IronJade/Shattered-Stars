@@ -5,6 +5,7 @@
 
 #include "core/types.h"
 #include "game/boot/system.h"
+#include "game/common/party.h"
 
 // The menu framework both the title and the field program link in (title
 // 0x8002fff4-0x8003c000 + 0x80067d4c-0x80074fe4; field 0x8002f9f8-0x8003d000 plus the
@@ -92,10 +93,6 @@ struct MenuGlobals {
   u8* inventory = nullptr;          // title 0x8004dda4: handoff 6
   u8* party = nullptr;              // title 0x8004dda8: handoff 3, 8 x 0x60
   u8* records = nullptr;            // title 0x8004ddac: handoff 4, 8 x 0xd0
-  // party_select (title 0x800340c0): the member the stat accessors work on.
-  int selected = 0;                 // title 0x8004ddc8
-  u8* selected_slot = nullptr;      // title 0x8004ddcc
-  u8* selected_record = nullptr;    // title 0x8004ddd0
   u8 input_lock = 0;                // title 0x8004ece4: frames the pad is ignored after a press
 };
 MenuGlobals& globals();
@@ -171,15 +168,7 @@ struct StrBuf {
   void set(const char* text);                 // copy
 };
 
-// ---- Party / stat library (title 0x800340b0-0x80034ff8 / field 0x800331b8-0x80034100)
-int party_get_selected();                         // title 0x800340b0 / field 0x800331b8
-void party_select(int slot);                      // title 0x800340c0 / field 0x800331c8
-s32 stat_get(u32 id);                             // title 0x80034110 / field 0x80033218
-void stat_set(u32 id, s32 value);                 // title 0x800341f0 / field 0x800332f8
-int stat_group_offset(int group);                 // title 0x800342d8 / field 0x800333e0
-int party_slot_active();                          // title 0x8003469c / field 0x80033758: character id or 0
-u16 config_get_button(int index);                 // title 0x800349d8 / field 0x80033ae0
-inline s32 char_attr(int n) { return stat_get(static_cast<u32>(n + 0xB)); }  // title 0x80034b6c
+// ---- Party / stat library: game/common/party.h (shared with the field) ----------------
 // Message pack lookups (title 0x80034390-0x80034440).
 void strings_set(const u8* pack);                 // title 0x80034390
 u32 strings_word(int index);                      // title 0x800343b8: u32 at pack + index * 4
@@ -187,7 +176,7 @@ const u8* strings_block(int index);               // title 0x800343fc: pack + of
 const u8* item_strings(int index);                // title 0x80034440: item data + offset[index]
 // title 0x80038354: a name in the game's ASCII-ish form to glyph codes ('@' toggles the
 // second table). Writes at most 'out_size' bytes including the terminator.
-void name_to_glyphs(const char* name, u8* out, size_t out_size);
+void text_to_card_codes(const char* name, u8* out, size_t out_size);
 
 // Colour scaling used by every widget (title 0x80038430 / 0x8003853c): the 24-bit
 // colour 'rgb' divided by 0x80 / brightness, ORed with a GP0 code.

@@ -38,6 +38,9 @@ struct ProgramSwitch {
   Program next;
 };
 [[noreturn]] void boot_run_main_program(System* sys, Program next);
+// The field's game over (state 8): the console re-creates the whole System (heap, pad,
+// loader, handoffs, sound) the way boot_main does on a reset, then runs the title.
+[[noreturn]] void boot_restart_title(System* sys);
 
 // boot 0x80010650. Returns the first program to run.
 Program boot_main(int is_reset, disc::Archive* archive);

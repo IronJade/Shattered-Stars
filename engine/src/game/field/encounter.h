@@ -52,6 +52,8 @@ void field_start_battle(Field* f, int transition);  // 0x80051a34
 void field_destroy_battle_transition(Field* f);     // 0x80051c68
 [[noreturn]] void field_exit_to_program(Field* f, int reason);  // 0x80051c9c
 bool field_battle_program_loaded();                 // 0x8007534d: #2129 read into its buffer
+// field_begin_game_over: the title program (entry 1) read into the same buffer / flag.
+void field_read_title_program();
 
 void field_unload_map(Field* f, bool free_scene);   // 0x8005166c
 void field_destroy_subsystems(Field* f);            // 0x80049098

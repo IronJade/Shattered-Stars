@@ -816,7 +816,7 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
   s32 level = 0;
   for (int i = 0; i < 8; ++i) {
     if (rd16s(g.party + i * 0x60) == config[0x45] + 1) {
-      name_to_glyphs(reinterpret_cast<const char*>(g.records + i * 0xD0 + 0x24), name, sizeof name);
+      text_to_card_codes(reinterpret_cast<const char*>(g.records + i * 0xD0 + 0x24), name, sizeof name);
       level = rd16s(g.party + i * 0x60 + 0x26);
     }
   }

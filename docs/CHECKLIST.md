@@ -88,6 +88,7 @@ from config+0x45).
 - [ ] Map container sections 3 (world terrain) and 5-12 (embedded map code, ~25 maps)
 - [x] BG renderer (overlay 0x8008672c / bg_draw 0x80086f00): static, parallax and scrolling pieces, animation and colour records; map 7 draws into VRAM
 - [x] Subsystems created in the original order (field_create_subsystems 0x800494dc): Screen, ScreenFade, ScriptCtx, MsgSystem, TextPanels, LoadQueue, Notice; map loads start the VM (vm_init) and the message font; the VM's services call the real field program, message, notice, fade, BG, sound, music and preload code (`vm_services.cpp`)
+- [x] Game over (field_begin_game_over 0x8004b418, field_update states 6-8): the field fades, the fallen stay, "GAME OVER" (UI atlas) fades in and out, then the System restarts like a reset and the title runs
 - [x] Character starting data for all twelve (party_slot_init 0x8007a20c, init_claude .. init_chisato, roll_talents; `game/field/characters.cpp`, generated from the decompilation and checked byte-for-byte against the title's port for Claude / Rena); party_move_character_to_slot; field_special_command (script ext 0xa8: names, party order, BG animation colours, scroll layers, Dias, disc-2 flag)
 - [x] Field music: install (field_install_music 0x8004b2b4), load-and-start on map loads (field_load_music_sync 0x8004b6b0, field_start_pending_music 0x80052bf4: game_state +0x1c after loading a save, the battle's kept music via handoff 0xc), music kept across a battle (handoff 0xf, table B 0x5a / 0x5b)
 - [x] field_run's return path (0x80048a84): battle outcome to script register R, escape count, preloads back from handoff 10 / 0xc, party slot ids, encounter flags; inventory stash (handoff 0x11, table A 0x10 / 0x11 / 0x34) — untested until the battle program exists
@@ -107,7 +108,8 @@ from config+0x45).
 ## 4. Battle program (#2129) and its overlays
 
 - [x] Identify and catalog the battle program: #2129 confirmed (field_exit_to_program 0x80051c9c runs it with the 0xc0-byte setup in handoff 5; it writes the outcome to config+0x178 and returns to #3100). 931 functions, 187 overlay functions (#1984 blocks 0-10, #1981), 405 globals in `docs/catalog`; structure, data formats (encounter packs #1405-#1968, stage lists, item table #1983, party code #2130+) and a port order in `docs/notes/battle.md`
-- [ ] Battle flow, rendering, AI overlays, effects
+- [x] Battle program entry and round trip (`game/battle/`, battle agent, phase 1): handoff 5 setup, the 12-entry load list, main loop at 30 fps, stage and units rendered, intro camera; exit back to the field with the map's preloads and music (handoffs 0xc / 10). `--battle ENC[:STAGE]` starts a battle directly; `--battle-end FRAMES[:OUTCOME]` ends it
+- [ ] Battle flow, rendering, AI overlays, effects: combat (party / enemy actions, damage, AI), result screen (#1981), killer moves (in progress)
 
 ## 5. Completion
 

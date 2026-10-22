@@ -1,0 +1,574 @@
+// The battle program's flow: battle_entry (0x8002f810), battle_run (0x8007160c: the
+// System pointers, the setup from handoff 5, the 12-entry load list), the per-battle
+// init (battle_init_state 0x80074a74, battle_init_objects 0x80074168), the frame loop
+// (battle_main_loop 0x800459fc, 30 fps) and the swap back to the field
+// (battle_exit_to_field 0x80087644, #1981). docs/notes/battle.md §3.
+#include <cstring>
+#include <memory>
+
+#include "disc/slz.h"
+#include "game/battle/battle.h"
+#include "game/battle/bobj.h"
+#include "game/battle/camera.h"
+#include "game/battle/loaders.h"
+#include "game/battle/render.h"
+#include "game/battle/stage.h"
+#include "game/battle/unit.h"
+#include "game/boot/pad.h"
+#include "game/boot/rng.h"
+#include "game/common/program_image.h"
+#include "game/common/screen.h"
+#include "runtime/libgpu.h"
+#include "runtime/runtime.h"
+
+namespace ss::game::battle {
+namespace {
+
+BattleGlobals g_battle;
+BattleDebug g_debug;
+
+void todo(const std::string& what) {
+  runtime::Runtime::get().log_once("battle-" + what, "battle: not ported yet: " + what);
+}
+
+s32 rd32(const u8* p) {
+  s32 v;
+  std::memcpy(&v, p, 4);
+  return v;
+}
+
+RenderContext* new_render_context() {
+  BattleGlobals& g = g_battle;
+  g.render_contexts.push_back(std::make_unique<RenderContext>());
+  return g.render_contexts.back().get();
+}
+
+}  // namespace
+
+BattleGlobals& bg() { return g_battle; }
+BattleDebug& battle_debug() { return g_debug; }
+
+const u8* battle_data(u32 address) { return program_data(kBattleProgramEntry, address); }
+s16 battle_s16(u32 address) {
+  const u8* p = battle_data(address);
+  s16 v = 0;
+  if (p != nullptr) std::memcpy(&v, p, 2);
+  return v;
+}
+u16 battle_u16(u32 address) { return static_cast<u16>(battle_s16(address)); }
+s32 battle_s32(u32 address) {
+  const u8* p = battle_data(address);
+  return p != nullptr ? rd32(p) : 0;
+}
+
+s32 item_data_field(int item, int field) {
+  const BattleGlobals& g = g_battle;
+  if (item == 0) return 0;
+  const size_t at = static_cast<size_t>(item - 1) * 0x30 + static_cast<size_t>(field);
+  if (item < 0 || at + 4 > g.item_data.size()) return 0;
+  const u8* p = g.item_data.data() + at;
+  if (field == 0) return rd32(p);
+  if (static_cast<u32>(field - 4) < 0xF) {
+    s16 v;
+    std::memcpy(&v, p, 2);
+    return v;
+  }
+  return *p;
+}
+
+// ---- Task list and OT layers ------------------------------------------------------------
+
+void task_register(Task* task, int prio) {
+  BattleGlobals& g = g_battle;
+  u32 i = 0;
+  while (i < g.tasks.size() && g.tasks[i] != nullptr) ++i;
+  if (i >= g.tasks.size()) return;
+  g.task_prio[i] = static_cast<u8>(prio);
+  g.tasks[i] = task;
+  if (i >= g.task_count) g.task_count = static_cast<u16>(i + 1);
+}
+
+void task_unregister(Task* task) {
+  BattleGlobals& g = g_battle;
+  for (u32 i = 0; i < g.task_count; ++i) {
+    if (g.tasks[i] == task) {
+      g.tasks[i] = nullptr;
+      if (i == static_cast<u32>(g.task_count) - 1) --g.task_count;
+      return;
+    }
+  }
+}
+
+void task_run_all() {
+  BattleGlobals& g = g_battle;
+  for (u8 prio = 0; prio < 5; ++prio) {
+    for (u16 i = 0; i < g.task_count; ++i) {
+      if (g.task_prio[i] == prio && g.tasks[i] != nullptr) g.tasks[i]->update();
+    }
+  }
+}
+
+void ot_layer_add(RenderContext* layer) {
+  BattleGlobals& g = g_battle;
+  for (auto& slot : g.ot_layers) {
+    if (slot == nullptr) {
+      slot = layer;
+      layer->ot_head = screen_clear_ot(layer->ot);
+      return;
+    }
+  }
+}
+
+void ot_layer_remove(RenderContext* layer) {
+  for (auto& slot : g_battle.ot_layers)
+    if (slot == layer) slot = nullptr;
+}
+
+void ot_layer_to_front(RenderContext* layer) {
+  auto& l = g_battle.ot_layers;
+  int at = -1;
+  for (int i = 0; i < 8; ++i)
+    if (l[i] == layer) at = i;
+  if (at < 0) return;
+  for (int i = at; i > 0; --i) l[i] = l[i - 1];
+  l[0] = layer;
+}
+
+// ---- Init -------------------------------------------------------------------------------
+
+void battle_init_state() {
+  BattleGlobals& g = g_battle;
+  g.enemy_units.fill(nullptr);
+  g.enemy_stats.fill(nullptr);
+  g.ot_layers.fill(nullptr);
+  g.controlled_slot = g.config[0x41];
+  g.leader_slot = g.config[0x41];
+  g.state = kStateLoading;
+  g.dispmask_delay = 0;
+  g.flags = 1;
+  g.palette_cycle_timer = 4;
+  g.enemy_count = 0;
+  g.battle_frames = 0;
+  g.fight_frames = 0;
+  g.result_started = 0;
+  g.party_escaping = 0;
+  g.victory_music_started = 0;
+  g.slowmo_phase = 0;
+  g.last_attacker = nullptr;
+  g.stage_hidden = 0;
+  g.effects_suppressed = 0;
+  g.special_voice_set = 0;
+  g.intro_voice_gate = 0;
+  g.rule_timer = 0;
+  g.task_count = 0;
+  g.tasks.fill(nullptr);
+  view().fog_on = 0;
+  stage().has_panorama = 0;
+  stage().has_lights = 0;
+  stage().height_grid_on = 0;
+  stage().flare_on = 0;
+  view().clear_alt_on = 0;
+  unit_globals() = UnitGlobals{};
+  // TODO(port): g_member_tables (party_banter_voice_table per member, 0x54 bytes each)
+  // for the #1984.1 banter lines.
+}
+
+void battle_init_objects() {
+  BattleGlobals& g = g_battle;
+  // VsyncCounter, g_input (0xa0): the port's input block is not ported yet.
+  g.camera_obj = std::make_unique<Camera>();
+  g.camera = g.camera_obj.get();
+  g.prim_pool_a = new_render_context();
+  render_ctx_create_arena(g.prim_pool_a, 62000);
+  render_ctx_create_ot(g.prim_pool_a, 0x621);
+  g.prim_pool_b = new_render_context();
+  render_ctx_create_arena(g.prim_pool_b, 0xC80);
+  render_ctx_create_ot(g.prim_pool_b, 0xC);
+  // TODO(port): the object pools: Sprite (296 x 0xb8), Shot (160 x 0x13c), DamagePopup
+  // (16 x 0x2c), PolyShard (192 x 0x74), Particle (200 x 0x48).
+  animset_pool_reset();
+  auto* party = static_cast<u8*>(handoff_get(g.handoff, 3));
+  auto* records = static_cast<u8*>(handoff_get(g.handoff, 4));
+  for (int i = 0; i < 4; ++i) {
+    g.party_units[i] = nullptr;
+    s16 id = 0;
+    if (party != nullptr) std::memcpy(&id, party + i * 0x60, 2);
+    if (id < 1) {
+      g.party_slot[i] = nullptr;
+      g.party_record[i] = nullptr;
+    } else {
+      g.party_slot[i] = party + i * 0x60;
+      g.party_record[i] = records + i * 0xD0;
+    }
+  }
+  g.item_effects.fill(0);
+  g.sprite_bank_fx = std::make_unique<BObj>();
+  g.sprite_bank_fx2 = std::make_unique<BObj>();
+  g.sprite_set_a = std::make_unique<BObj>();
+  g.sprite_set_b = std::make_unique<BObj>();
+  g.sprite_set_c = std::make_unique<BObj>();
+  // TODO(port): the HUD window g_hud (BattleHud, vtable 0x8006d130) and the debug window.
+}
+
+void battle_separate_units() {
+  BattleGlobals& g = g_battle;
+  for (int i = 0; i < 12; ++i) {
+    Unit* u = i < 4 ? static_cast<Unit*>(g.party_units[i]) : g.enemy_units[i - 4];
+    if (u == nullptr) continue;
+    const s32 step = u->pos[0] > 0 ? -0x30000 : 0x30000;
+    const s32 zero[3] = {0, 0, 0};
+    for (int guard = 0; guard < 0x1000 && unit_check_move(u, zero, 7) != nullptr; ++guard) {
+      u->pos[0] += step;
+      if (u->flying == 0 && u->airborne == 0) u->pos[1] = bobj_ground_height(u);
+    }
+  }
+}
+
+void battle_scene_start() {
+  BattleGlobals& g = g_battle;
+  ViewState& v = view();
+  gte_setup();
+  screen_setup_buffer0(0, 0, 0x140, 0xF0, 8, 0, 0, 0);
+  screen_setup_buffer1(0, 0xE8, 0x140, 0xF0, 8, 0, 0, 0);
+  for (int i = 0; i < 2; ++i) {
+    psyq::DRAWENV* d = screen_drawenv(i);
+    d->isbg = 1;
+    d->r0 = v.clear_rgb[0];
+    d->g0 = v.clear_rgb[1];
+    d->b0 = v.clear_rgb[2];
+  }
+  g.dispmask_delay = 2;
+  g.frame_ticks = 2;
+  pad_set_port_mask(g.pad, 1);
+  pad_set_repeat_delay(g.pad, 0xC);
+  camera_reset();
+  ot_layer_add(g.prim_pool_b);
+  g.ot_layers[7] = g.prim_pool_a;  // DAT_8006ef3c: pool A is the bottom layer
+  g.last_frame_vblank = runtime::Runtime::get().vblanks();
+  bool boss = false;
+  for (EnemyUnit* e : g.enemy_units)
+    if (!unit_is_down(e) && e->boss != 0) boss = true;
+  int mode;
+  if (g.stage_id == 0x33) {
+    mode = 0x11;
+  } else if (boss) {
+    mode = 0xD;
+  } else {
+    const u8* modes = battle_data(0x8006CD28);
+    mode = modes != nullptr ? modes[g.intro_type & 3] : 1;
+  }
+  camera_set_mode(g.camera, mode, nullptr);
+  // TODO(port): the HUD window_open(0, 0, 0x140, 0x28), the debug window, the start burst
+  // (battle_start_burst_create 0x8003c02c: the white radial wipe).
+  ot_layer_to_front(g.prim_pool_b);
+}
+
+// ---- battle_run --------------------------------------------------------------------------
+
+void battle_entry(System* sys) {
+  // battle_program_create (0x800715d0): new BattleProgram (12 bytes) -> g_current_program;
+  // vtable[2] program_set_system(sys), vtable[1] battle_run.
+  (void)sys;
+  battle_run();
+}
+
+void battle_run() {
+  // Fresh globals: the console reloads the whole program image for every battle.
+  g_battle.~BattleGlobals();
+  new (&g_battle) BattleGlobals{};
+  view() = ViewState{};
+  stage() = StageData{};
+  encounter_reset();
+  party_reset();
+  texcache_pool_reset();
+  pool_a_bytes_used() = 0;
+  BattleGlobals& g = g_battle;
+  g.system = get_system();
+  g.handoff = &g.system->handoff;
+  g.loader = &g.system->loader;
+  g.pad = &g.system->pad;
+  g.sound = &g.system->sound;
+  screen_init();
+  pad_set_option(g.pad, 1);
+  // 0x800134d8(0): TODO(port) (a boot pad / vibration setting).
+  const psyq::RECT all{0, 0, 0x400, 0x200};
+  psyq::ClearImage(&all, 0, 0, 0);
+  // The setup: copied, the handoff cleared and freed.
+  auto* setup = static_cast<BattleSetup*>(handoff_get(g.handoff, 5));
+  if (setup != nullptr) {
+    g.setup = std::move(*setup);
+    delete setup;
+  }
+  handoff_clear(g.handoff, 5);
+  g.encounter_id = static_cast<s16>(g.setup.encounter());
+  g.stage_id = static_cast<s16>(g.setup.stage());
+  g.config = static_cast<u8*>(handoff_get(g.handoff, 2));
+  g.inventory = static_cast<u8*>(handoff_get(g.handoff, 6));
+  // g_preload_list = map_resolve_entries(new 0x22, -1, 0, 0): the files the field reloads
+  // afterwards (handoff 0xc). Without the field's state block (--battle) there is none.
+  g.preload_list.clear();
+  g.handoff10_blob.clear();
+  if (handoff_get(g.handoff, 9) != nullptr) {
+    g.preload_list.assign(0x11, 0);
+    battle_map_resolve_entries(g.preload_list.data(), -1, 0, 0);
+  }
+  if (g.config == nullptr || g.inventory == nullptr) {
+    std::fprintf(stderr, "[battle] no config / inventory handoff; back to the field\n");
+    boot_run_main_program(g.system, Program::Field);
+  }
+  if (!inventory_verify_all(g.inventory)) {
+    // The console shows entry 0x542 full screen and hangs (anti-tamper).
+    runtime::Runtime::get().log_once("battle-inventory", "battle: the inventory check failed (the console hangs here)");
+  }
+  battle_init_state();
+  battle_init_objects();
+  StageLoadCtx ctx;
+  stage_load_ctx_init(&ctx);
+  StageData& st = stage();
+  st.tex_count = 0;
+  st.anim_start.fill(0xFF);
+  g.intro_speakers[0] = static_cast<u8>(g.setup.voice_member(0));
+  g.intro_speakers[1] = static_cast<u8>(g.setup.voice_member(1));
+  // The load list: entry +8[i] while +0x3c[i] != 0.
+  for (int i = 0; i < 12 && g.setup.id(i) != 0; ++i) {
+    const s32 entry = g.setup.entry(i);
+    Bytes data;
+    if (!g.setup.preloaded[i].empty()) {
+      data = g.setup.preloaded[i];
+    } else if (entry > 0) {
+      data.resize(static_cast<size_t>(g.loader->entry_size(entry)));
+      g.loader->load_sync(data.data(), entry, 0);
+    }
+    battle_load_entry(i, entry, &ctx, std::move(data));
+    if (!g.music_started && g.config[0x180] == 0 && sound_bank_busy(g.sound) != 1 && !g.battle_music.empty()) {
+      g.music_started = true;
+      sound_play_sequence(g.sound, g.battle_music.data());
+    }
+  }
+  // The stage code blocks (#1984 blocks 2-10) and the stage objects (Shot kinds 0x19..0x2b)
+  // are not ported yet.
+  switch (g.stage_id) {
+    case 0xD: case 0x38: case 0x39: case 0x10: case 0x15: case 0x28: case 0x17: case 0x1A: case 0x1F:
+    case 0x24: case 0x29: case 0x33: case 0xE:
+      todo("stage code and objects of stage " + std::to_string(g.stage_id));
+      break;
+    default:
+      break;
+  }
+  battle_setup_sprite_banks();
+  // Voice / sfx id patches (config +0x4e, rng(3), encounters 0 / 0x219-0x21c): the voice
+  // tables live in #1984 block 0. The rng draw is kept for the order of later draws.
+  const u32 pick = rng_range(3);
+  (void)pick;
+  g.single_victory_voice = 0;
+  if (g.encounter_id == 0 || (g.encounter_id >= 0x21A && g.encounter_id <= 0x21C)) {
+    g.special_voice_set = 1;
+    g.single_victory_voice = 1;
+  } else if (g.encounter_id == 0x219) {
+    g.special_voice_set = 2;
+    g.single_victory_voice = 1;
+  }
+  if (g.config[0x4E] != 0 || g.special_voice_set != 0) todo("battle voice table patches");
+  battle_main_loop();
+}
+
+// ---- The frame loop ---------------------------------------------------------------------
+
+namespace {
+
+void battle_victory_begin(Unit* attacker) {
+  // 0x80048c5c: hit-stop 20, state 3, slow motion 30 (60 with flags 0x40), countdown 90,
+  // outcome 0, the victory speaker, fade, preload the field program.
+  BattleGlobals& g = g_battle;
+  g.hitstop_frames = 20;
+  g.state = kStateOver;
+  g.slowmo_frames = static_cast<s8>((g.flags & 0x40) ? 60 : 30);
+  g.end_countdown = 90;
+  g.outcome = kVictory;
+  g.last_attacker = attacker;
+  sound_fade_out(g.sound, 0x1E0);
+  todo("battle_victory_begin: victory speaker, slow motion effects");
+}
+
+void battle_end(u8 outcome) {
+  BattleGlobals& g = g_battle;
+  g.outcome = outcome;
+  g.state = kStateOver;
+  g.end_countdown = 90;
+  sound_fade_out(g.sound, 0x1E0);
+}
+
+}  // namespace
+
+void battle_main_loop() {
+  BattleGlobals& g = g_battle;
+  runtime::Runtime& rt = runtime::Runtime::get();
+  rt.trace("battle main loop");
+  // #1984 block 0 is native code; the 0x10000 block at 0x801ee000 (party code slots) is not
+  // needed. The party-data loader drives state 0.
+  task_register(party_loader_create(), 0);
+  battle_separate_units();
+  battle_scene_start();
+  // TODO(port): hud_init(g_hud).
+  for (;;) {
+    if (g.state > kStateResult) battle_exit_to_field();
+    screen_flip();
+    // text_frame_begin; the clash masks (12 words at 0x8006fe10); deferred deletes.
+    pool_a_bytes_used() = 0;
+    for (RenderContext* layer : g.ot_layers)
+      if (layer != nullptr) layer->ot_head = screen_clear_ot(layer->ot);
+    // Freezes: hit-stop and slow motion drive g_battle_flags bit 3.
+    u8 flags = g.flags;
+    if (g.hitstop_frames == 0) {
+      if (g.slowmo_frames != 0) {
+        const u32 phase = g.slowmo_phase;
+        g.slowmo_phase = static_cast<u8>(phase + g.frame_ticks);
+        if (static_cast<s8>(phase + g.frame_ticks) < 6) {
+          g.flags = static_cast<u8>(g.flags | 8);
+        } else {
+          g.slowmo_phase = 0;
+          g.flags = static_cast<u8>(g.flags & 0xF7);
+          g.slowmo_frames = static_cast<s8>(g.slowmo_frames - g.frame_ticks);
+        }
+        flags = g.flags;
+        if (g.slowmo_frames < 1) {
+          g.slowmo_frames = 0;
+          flags = static_cast<u8>(g.flags & 0xF7);
+        }
+      }
+    } else {
+      const s32 left = g.hitstop_frames - g.frame_ticks;
+      g.hitstop_frames = static_cast<s8>(left);
+      flags = static_cast<u8>(g.flags | 8);
+      if (static_cast<s32>(static_cast<u32>(left) << 24) < 1) {
+        g.hitstop_frames = 0;
+        flags = static_cast<u8>(g.flags & 0xF7);
+      }
+    }
+    g.flags = flags;
+    if (g.state == kStateFighting && enemy_count_active(g.enemy_units) < 1 && (g.flags & 0x40) == 0) {
+      battle_victory_begin(g.last_attacker);
+    }
+    // The debug end (--battle): the result screen, the HUD and the units' combat are not
+    // ported, so a debug run can end the fight with a chosen outcome.
+    if (g_debug.auto_end_frames >= 0 && g.state == kStateFighting && g.fight_frames >= g_debug.auto_end_frames) {
+      rt.trace("battle debug end");
+      battle_end(g_debug.auto_end_outcome);
+    }
+    // TODO(port): voice_update, bload_update, spell_data_update, input_update.
+    if (g.camera != nullptr) g.camera->update();
+    camera_update_matrices();
+    // TODO(port): battle_frame_director (#1984.0 0x800715d0), bsfx_update, the lens flare.
+    task_run_all();
+    if (g.state == kStateLoaded && !g.battle_code_unpacked) g.battle_code_unpacked = true;  // #1984 block 1
+    // TODO(port): the Shot (160), Sprite (296) and Particle (200) pools.
+    if (g.stage_hidden == 0) stage_draw_and_animate();
+    // TODO(port): clash_resolve (state > 1), the escape race (rule 2), the time limit (rule 3).
+    if (g.end_countdown != 0 && (g.flags & 4) == 0) {
+      if ((g.flags & 8) == 0) g.end_countdown = static_cast<s8>(g.end_countdown - g.frame_ticks);
+      if (g.end_countdown < 1) {
+        g.end_countdown = 0;
+        // The original waits for killer moves and sprites of living units, then (state 4)
+        // frees the party models, parks the field program in VRAM, reads the field's files
+        // and opens the #1981 result screen, whose battle_fade_task sets state 5.
+        // TODO(port): the wait, battle_free_party_models and the result screen.
+        g.state = kStateResult;
+        battle_queue_field_preloads();
+        todo("result screen (#1981): the battle ends without it");
+        g.state = kStateLeave;
+      }
+    }
+    // text_frame_upload; screen_compact_ot(layer 0).
+    psyq::DrawSync(0);
+    psyq::VSync(2);
+    // VsyncCounter (vsync_counter_tick 0x80047578): vblanks since the last frame, capped
+    // at 4 (6 during a special move).
+    const u64 now = rt.vblanks();
+    s32 ticks = static_cast<s32>(now - g.last_frame_vblank);
+    const s32 cap = (g.flags & 0x40) ? 6 : 4;
+    if (ticks > cap) ticks = cap;
+    if (ticks < 1) ticks = 1;
+    g.last_frame_vblank = now;
+    g.frame_ticks = ticks;
+    if ((g.flags & 4) == 0) {
+      g.battle_frames += g.frame_ticks;
+      if (g.state == kStateFighting) g.fight_frames += g.frame_ticks;
+    }
+    // Both draw environments clear to the stage colour (the alternate one for a band of pitches).
+    ViewState& v = view();
+    for (int i = 0; i < 2; ++i) {
+      psyq::DRAWENV* d = screen_drawenv(i);
+      const u8* c = v.clear_rgb;
+      if (static_cast<u16>(v.pitch + 0x781) < 0x704 && v.clear_alt_on != 0 && g.stage_hidden == 0) c = v.clear_rgb_alt;
+      s32 r = c[0] * v.stage_colour[0] >> 7;
+      s32 gg = c[1] * v.stage_colour[1] >> 7;
+      s32 b = c[2] * v.stage_colour[2] >> 7;
+      d->r0 = static_cast<u8>(r > 0xFF ? 0xFF : r);
+      d->g0 = static_cast<u8>(gg > 0xFF ? 0xFF : gg);
+      d->b0 = static_cast<u8>(b > 0xFF ? 0xFF : b);
+    }
+    screen_put_env();
+    if (g.dispmask_delay != 0 && g.dispmask_delay-- == 1) psyq::SetDispMask(1);
+    for (int i = 7; i >= 0; --i)
+      if (g.ot_layers[i] != nullptr) screen_draw_ot(g.ot_layers[i]->ot);
+  }
+}
+
+// ---- Exit ---------------------------------------------------------------------------------
+
+void battle_free_all() {
+  BattleGlobals& g = g_battle;
+  g.tasks.fill(nullptr);
+  g.task_count = 0;
+  for (auto& rc : g.render_contexts) {
+    if (rc->arena >= 0) screen_destroy_arena(rc->arena);
+    if (rc->ot >= 0) screen_destroy_ot(rc->ot);
+  }
+  g.render_contexts.clear();
+  g.prim_pool_a = g.prim_pool_b = nullptr;
+  g.ot_layers.fill(nullptr);
+  g.party_units.fill(nullptr);
+  g.enemy_units.fill(nullptr);
+  encounter_reset();
+  party_reset();
+  g.camera = nullptr;
+  g.camera_obj.reset();
+}
+
+void battle_exit_to_field() {
+  BattleGlobals& g = g_battle;
+  runtime::Runtime::get().trace("battle exit to field");
+  if (g.outcome == kVictory) {
+    bool all_down = true, fled = false;
+    for (int i = 0; i < 4; ++i) {
+      const PartyUnit* u = g.party_units[i];
+      if (u == nullptr) continue;
+      if (!unit_is_down(u)) all_down = false;
+      if (u->removed == 2) fled = true;
+    }
+    if (all_down && !fled && g.party_units[0] != nullptr) g.outcome = kDefeat;
+  }
+  pad_vibrate(g.pad, 0, 0, 0);
+  const u16 outcome = g.outcome;
+  std::memcpy(g.config + 0x178, &outcome, 2);
+  battle_free_all();
+  psyq::ResetGraph(1);
+  psyq::SetDispMask(0);
+  // Handoffs 0xc (the field's reload list, s16[0x11]; kept entries negated) and 10 (the
+  // kept entries' bytes in list order). The field frees both as u8 arrays.
+  if (!g.preload_list.empty()) {
+    auto* list = new u8[0x22];
+    std::memcpy(list, g.preload_list.data(), 0x22);
+    handoff_store(g.handoff, list, 0xC);
+  }
+  if (!g.handoff10_blob.empty()) {
+    auto* blob = new u8[g.handoff10_blob.size()];
+    std::memcpy(blob, g.handoff10_blob.data(), g.handoff10_blob.size());
+    handoff_store(g.handoff, blob, 10);
+  }
+  g.preload_list.clear();
+  g.handoff10_blob.clear();
+  boot_run_main_program(g.system, Program::Field);
+}
+
+}  // namespace ss::game::battle

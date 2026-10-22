@@ -15,6 +15,7 @@
 #include "game/field/actors.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
+#include "game/field/music.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
@@ -154,9 +155,10 @@ void field_create_state_block() {
       block[0x244] = 0;
       gs[0x1A] = 7;  // map 7: Milokeenia
       gs[0x1B] = 0;
-      if (const int m = runtime::Runtime::get().debug_start_map; m >= 0) {  // --map N
+      if (const int m = runtime::Runtime::get().debug_start_map; m >= 0) {  // --map N (once)
         gs[0x1A] = static_cast<u8>(m);
         gs[0x1B] = static_cast<u8>(m >> 8);
+        runtime::Runtime::get().debug_start_map = -1;
       }
       block[0x8C0] |= 2;
       std::strcpy(reinterpret_cast<char*>(block + 0x248), entered);
@@ -210,6 +212,7 @@ void field_load_system_data() {
   g.system_data = data.data();
   g.system_strings = data.data() + rd32(data.data());
   u8* icons = data.data() + rd32(data.data() + 0x0C);
+  g.ui_atlas = icons + 0xC;  // 0x80075328
   const u8* image = icons + rd32(icons + 4);
   upload_texture(gpu, reinterpret_cast<const u16*>(image + 4), 0, 0, 0x180, 0x100, rd16(image), rd16(image + 2));
   // Clear the first colour of each 16-colour palette in the icons' CLUT, then upload it at (0, 0x1ff).
@@ -255,6 +258,116 @@ void field_create_subsystems(Field*) {
   notice_create(new Notice);
   // TODO(port): Callways (callways_create 0x800313c8, task prio 1), SceneRenderer
   // (scene_renderer_create 0x8005f5c8).
+}
+
+// 0x8004b418: the party fell (a lost script battle). The VM stops, encounters stop, the
+// leader and the event actors stand still (anim 0xff, shadows grown), the title program
+// is read in the background and the music fades: state 6.
+void field_begin_game_over(Field* f) {
+  FieldGlobals& g = g_field;
+  g.game_state[0x20] = 0;
+  if (g_script_vm != nullptr) task_unregister(g_script_vm);
+  g.field_flags[0x25] = 0;
+  const s16 none = -1;
+  std::memcpy(g.field_flags + 0x10, &none, 2);
+  if (Actor* leader = field_actor(g.game_state[0x24])) {
+    actor_set_anim(leader, -1);
+    actor_and_flags(leader, 0, 0xFFFFFF7Fu);
+  }
+  for (int slot = 0; slot < 12; ++slot) {
+    Actor* a = field_actor(slot);
+    if (a == nullptr || a->anim != -1) continue;
+    actor_stop(a);
+    actor_set_anim(a, 0xFF);
+    a->shadow_w = 0x800;
+    a->shadow_h = 900;
+    a->tinted = 0;
+  }
+  field_read_title_program();
+  sound_fade_out(g.sound, 0x46);
+  f->state = 6;
+}
+
+// field_update state 7: the game-over sequence. The BG fades to black from the kept
+// colour, the actors (apart from the fallen, anim 0xff) leave, the rest darken, and the
+// "GAME OVER" logo (UI atlas +0x1ba) fades in and out at the centre (OT 0x818).
+void field_update_game_over(Field* f) {
+  FieldGlobals& g = g_field;
+  if (f->state_timer <= 0) {
+    f->state = 8;
+    return;
+  }
+  s32 t = f->state_timer - g.frame_ticks;
+  if (t < 0x78) t = 0;
+  f->state_timer = t;
+  if (t > 0x1E0) return;
+  g_fade_targets.bg_tint_active = 1;
+  ActorSystem* sys = actor_system();
+  auto set_actor_tint = [&](u8 v) {
+    if (sys == nullptr) return;
+    actor_sys_mark_all_dirty(sys);
+    sys->tint[0] = sys->tint[1] = sys->tint[2] = v;
+  };
+  if (t < 0x1A5) {
+    g_fade_targets.bg_tint[0] = g_fade_targets.bg_tint[1] = g_fade_targets.bg_tint[2] = 0;
+    if (rd32(g.field_flags + 0x44) == 0) {
+      int slot = 0;
+      for (; slot < 12; ++slot) {
+        Actor* a = field_actor(slot);
+        if (a == nullptr) continue;
+        if (a->anim == 0xFF)
+          a->tinted = 1;
+        else if (sys != nullptr)
+          actor_delete_slot(sys, slot);
+      }
+      for (; slot < 0xC2; ++slot)
+        if (field_actor(slot) != nullptr && sys != nullptr) actor_delete_slot(sys, slot);
+      set_actor_tint(0x80);
+      const s32 one = 1;
+      std::memcpy(g.field_flags + 0x44, &one, 4);
+    }
+  } else {
+    const s32 k = t - 0x1A4;
+    for (int i = 0; i < 3; ++i)
+      g_fade_targets.bg_tint[i] = static_cast<s16>((k * rd32(g.field_flags + 0x38 + i * 4)) / 0x3C);
+    if (sys != nullptr) sys->tint_on = 1;
+    set_actor_tint(static_cast<u8>((k * 0x80) / 0x3C));
+  }
+  if (t < 0x168) {
+    s32 v = ((0x168 - t) * 0x80) / 0x3C;
+    if (v > 0x80) v = 0x80;
+    if (sys != nullptr) sys->tint_on = 1;
+    set_actor_tint(static_cast<u8>(0x80 - v));
+  }
+  if (t > 299 || g.ui_atlas == nullptr) return;
+  s32 a;
+  if (t < 0xB5) {
+    a = ((t - 0x78) * 0x80) / 0x3C;
+    if (a < 0) a = 0;
+  } else {
+    a = ((300 - t) * 0x80) / 0x3C;
+    if (a > 0x80) a = 0x80;
+  }
+  const u8* uv = g.ui_atlas + 0x1BA;  // u0, v0, u1, v1
+  const int w = uv[2] - uv[0], h = uv[3] - uv[1];
+  auto* p = g_screen.alloc_prims<psyq::POLY_FT4>();
+  if (p == nullptr) return;
+  psyq::setPolyFT4(p);
+  psyq::setSemiTrans(p, true);
+  p->r0 = p->g0 = p->b0 = static_cast<u8>(a);
+  const s16 x0 = static_cast<s16>(0xA0 - w / 2), x1 = static_cast<s16>(w + 0xA0 - w / 2);
+  const s16 y0 = static_cast<s16>(0x70 - h / 2), y1 = static_cast<s16>(h + 0x70 - h / 2);
+  p->x0 = x0, p->y0 = y0;
+  p->x1 = x1, p->y1 = y0;
+  p->x2 = x0, p->y2 = y1;
+  p->x3 = x1, p->y3 = y1;
+  p->u0 = uv[0], p->v0 = uv[1];
+  p->u1 = static_cast<u8>(uv[0] + w), p->v1 = uv[1];
+  p->u2 = uv[0], p->v2 = static_cast<u8>(uv[1] + h);
+  p->u3 = static_cast<u8>(uv[0] + w), p->v3 = static_cast<u8>(uv[1] + h);
+  p->tpage = 0x36;
+  p->clut = 0x7FC0;
+  psyq::addPrim(g_screen.ot_entry(0x818), p);
 }
 
 // field_update state 0, the random-encounter part (0x8004c334): each area's rate
@@ -426,8 +539,49 @@ void field_update(Field* f) {
       f->state = 2;
       return;
     }
+    case 6: {
+      // Game over, once the screen has faded: 540 frames of sequence, the field music
+      // fading; the colour the BG fades from is kept in field_flags +0x38..+0x40.
+      if (fade_is_active(field_fade(), -1)) return;
+      f->state_timer = 0x21C;
+      f->state = 7;
+      sound_fade_out(g.sound, 0x46);
+      if (g.field_flags[0x68] == 0) {
+        s32 rgb[3] = {0x80, 0x80, 0x80};
+        if (g_fade_targets.bg_tint_active != 0)
+          if (const BgRenderer* bg = bg_renderer()) rgb[0] = bg->tint[0], rgb[1] = bg->tint[1], rgb[2] = bg->tint[2];
+        std::memcpy(g.field_flags + 0x38, rgb, 12);
+      } else {
+        const s32 rgb[3] = {g_fade_targets.bg_tint[0], g_fade_targets.bg_tint[1], g_fade_targets.bg_tint[2]};
+        std::memcpy(g.field_flags + 0x38, rgb, 12);
+      }
+      std::memset(g.field_flags + 0x44, 0, 4);
+      return;
+    }
+    case 7:
+      field_update_game_over(f);
+      return;
+    case 8:
+      // The title program is in: tear everything down and start it like a reset.
+      if (!field_battle_program_loaded()) return;
+      if (ActorSystem* sys = actor_system()) actor_delete_slot(sys, -1);
+      if (MsgSystem* msg = msg_system()) msg_window_destroy(msg, -1);
+      task_list_clear();
+      field_music_sequence().clear();
+      field_unload_map(f, true);
+      field_destroy_subsystems(f);
+      preload_release(-1);
+      if (auto* block = static_cast<u8*>(handoff_get(g.handoff, 9))) {
+        handoff_clear(g.handoff, 9);
+        delete[] block;
+      }
+      sound_stop(g.sound);
+      psyq::ResetGraph(1);
+      psyq::SetDispMask(0);
+      delete f;
+      boot_restart_title(g.system);
     default:
-      // TODO(port): 3 camp menu, 6.. game over / battle results, save point,
+      // TODO(port): 3 camp menu, battle results (0xf / 0x10), save point,
       // vehicles, world map transfers (0x8004c334 cases 3, 6-0x20).
       todo("field_update: state " + std::to_string(f->state));
       return;

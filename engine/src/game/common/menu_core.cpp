@@ -464,86 +464,7 @@ void StrBuf::set(const char* text) {
   if (str_len(buffer.data()) > 0x7F) std::fprintf(stderr, "over\n");
 }
 
-// ---- Party / stats --------------------------------------------------------------------
-
-int party_get_selected() { return g_menu.selected; }
-
-void party_select(int slot) {
-  g_menu.selected_slot = g_menu.party ? g_menu.party + slot * 0x60 : nullptr;
-  g_menu.selected = slot;
-  g_menu.selected_record = g_menu.records ? g_menu.records + slot * 0xD0 : nullptr;
-}
-
-int stat_group_offset(int group) {
-  switch (group) {
-    case 1: return 0x14;
-    case 2: return 0x20;
-    case 3: return 0x2A;
-    case 4: return 0x30;
-    case 5: return 0x36;
-    case 6: return 0x3C;
-    case 7: return 0x42;
-    case 8: return 0x48;
-    case 9: return 6;
-    case 10: return 0;
-    case 0xB: return 0xC;
-    case 0xC: return 0xE;
-    case 0xD: return 0x10;
-    case 0xE: return 0x12;
-    case 0xF: return 0x14;
-    case 0x10: return 0x16;
-    case 0x11: return 0x18;
-    default: return 0;  // the original leaves the offset untouched (0)
-  }
-}
-
-// id: bits 0-4 group, bits 8-11 index. Table title 0x8004b5d0: bit 0 = record (else
-// party slot), bit 1 = 32-bit field (else 16-bit).
-s32 stat_get(u32 id) {
-  const u8* kinds = table(0x8004B5D0, 0);
-  const int group = static_cast<int>(id & 0x1F);
-  const u8 kind = kinds ? kinds[group] : 0;
-  const int index = static_cast<int>((id & 0xF00) >> 8);
-  u8* base = (kind & 1) ? g_menu.selected_record : g_menu.selected_slot;
-  if (!base) return 0;
-  const int off = stat_group_offset(group);
-  if (kind & 2) {
-    s32 v;
-    std::memcpy(&v, base + off + index * 4, 4);
-    return v;
-  }
-  s16 v;
-  std::memcpy(&v, base + off + index * 2, 2);
-  return v;
-}
-
-void stat_set(u32 id, s32 value) {
-  const u8* kinds = table(0x8004B5D0, 0);
-  const int group = static_cast<int>(id & 0x1F);
-  const u8 kind = kinds ? kinds[group] : 0;
-  const int index = static_cast<int>((id & 0xF00) >> 8);
-  u8* base = (kind & 1) ? g_menu.selected_record : g_menu.selected_slot;
-  if (!base) return;
-  const int off = stat_group_offset(group);
-  if (kind & 2) {
-    std::memcpy(base + off + index * 4, &value, 4);
-  } else {
-    const s16 v = static_cast<s16>(value);
-    std::memcpy(base + off + index * 2, &v, 2);
-  }
-}
-
-int party_slot_active() {
-  if (!g_menu.selected_slot) return 0;
-  s16 id;
-  std::memcpy(&id, g_menu.selected_slot, 2);
-  return id < 1 ? 0 : id;
-}
-
-u16 config_get_button(int index) {
-  if (index < 0 || index > 7 || !g_menu.config) return 0;
-  return read_u16(g_menu.config + index * 2);
-}
+// ---- Strings ---------------------------------------------------------------------------
 
 void strings_set(const u8* pack) { g_menu.strings = pack; }
 u32 strings_word(int index) { return read_u32(g_menu.strings + index * 4); }
@@ -552,10 +473,10 @@ const u8* item_strings(int index) {
   return g_menu.item_data.data() + read_u32(g_menu.item_data.data() + index * 4);
 }
 
-void name_to_glyphs(const char* name, u8* out, size_t out_size) {
+void text_to_card_codes(const char* name, u8* out, size_t out_size) {
   // Table title 0x8004b8c8: pairs (first byte, second byte); a second byte 0xde/0xdf
   // (voiced marks) belongs to the character, anything else reads as ' '.
-  const u8* pairs = table(0x8004B8C8, 0);
+  const u8* pairs = table(0x8004B8C8, 0x80071CD8);
   size_t n = 0;
   int alternate = 0;
   const auto* p = reinterpret_cast<const u8*>(name);
