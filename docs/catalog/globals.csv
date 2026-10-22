@@ -503,6 +503,14 @@ field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) unt
 field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
+field,0x8007b692,voice_field_clip_base,s16[13],Per character: archive entry of the first field voice clip bank (clip index added),confirmed,voice_queue_build_field
+field,0x8007bf0e,voice_caster_banks,s16[],Voice bank entry per class (party slot +3 >= 9: casters),confirmed,voice_queue_build_battle
+field,0x8007bfa0,g_voice_entries,s16[24],"Voice queue: archive entries to read (-1 = copy a bank another member already loaded), sorted ascending",confirmed,voice_queue_build_battle / _field / _update
+field,0x8007bfd0,g_voice_info,u16[24],"Voice queue: party slot (bits 0-3), killer index (bits 4-7), copy source info (high byte)",confirmed,voice_queue_build_battle; voice_queue_update
+field,0x8007c000,g_voice_reading,u8,The head entry has been read (or a copy is due); the next update uploads it,confirmed,voice_queue_update
+field,0x8007c001,g_voice_field_mode,u8,The queue holds field clips (sound_load_effect_bank) rather than battle banks (sound_add_effect_bank),confirmed,voice_queue_build_field; voice_queue_update
+field,0x8007c004,g_voice_read_buf,u8 *,Buffer of the entry being read,confirmed,voice_queue_update
+field,0x8007c008,g_voice_held_buf,u8 *,Buffer the sound driver is still uploading (freed once sound_bank_busy != 1),confirmed,voice_queue_update; voice_queue_abort
 title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
 title,0x8004ebdc,t_system,System *,System object as seen by program #1,confirmed,title_program_main
 title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main

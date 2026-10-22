@@ -457,7 +457,7 @@ void field_update_equip_report_close(Field* f) {
     return;
   }
   field_end_overlay_event();
-  const s16 leader = g.game_state[9];
+  const s16 leader = g.game_state[0x24];  // DAT_80075710 is an int*: +9 words
   std::memcpy(g.field_flags + 0x10, &leader, 2);
   preload_restore_table();
   world().streaming = 1;

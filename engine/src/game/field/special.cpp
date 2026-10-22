@@ -6,6 +6,7 @@
 #include "game/common/program_image.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
+#include "game/field/voice_queue.h"
 #include "game/field/characters.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
@@ -58,7 +59,8 @@ void party_move_character_to_slot(int character, int slot) {
   std::memcpy(g.records + slot * 0xD0, g.records + from * 0xD0, 0xD0);
   std::memcpy(g.records + from * 0xD0, tmp, 0xD0);
   // An active member changed: the battle voice clips must be rebuilt.
-  // TODO(port): voice_slot_invalidate (0x8007972c) for the slots below 4.
+  if (slot < 4) voice_slot_invalidate(slot);
+  if (from < 4) voice_slot_invalidate(from);
   if (slot < 4 || from < 4) {
     load_queue_set_streaming(load_queue(), false);
     voice_stream().state = 0;

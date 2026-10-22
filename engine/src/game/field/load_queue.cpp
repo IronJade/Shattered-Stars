@@ -1,7 +1,7 @@
 #include "game/field/load_queue.h"
 
 #include "game/field/field.h"
-#include "runtime/runtime.h"
+#include "game/field/voice_queue.h"
 
 namespace ss::game::field {
 namespace {
@@ -11,12 +11,6 @@ VoiceStream g_voice;
 PreloadSlot g_preloads[12];                      // 0x80075768
 std::vector<PreloadSlot> g_saved_preloads;       // 0x80075858 (empty = none saved)
 bool g_preloads_saved = false;
-
-void todo(const char* what) {
-  runtime::Runtime::get().log_once(std::string("field:") + what, std::string("field: not ported yet: ") + what);
-}
-
-void voice_queue_abort() { todo("voice_queue_abort (0x80079a7c)"); }
 
 // Frees a slot's buffer and marks it free (the common tail of the release paths).
 void preload_free(PreloadSlot& s) {
@@ -100,12 +94,19 @@ void load_queue_set_streaming(LoadQueue*, bool on) {
 
 void LoadQueue::update() {
   if (busy == 0 && head == tail) {
+    // Idle: the voice queue streams (voice_queue.cpp): the battle banks queued by
+    // field_prepare_encounter, then field clips with what is left of the budget.
     if (g_voice.enabled != 0 && g_voice.state - 1U < 2) {
-      // TODO(port): the voice-clip queue (voice_queue_busy 0x80078fd4, _update
-      // 0x80079764, _build_field 0x80079308, _abort 0x80079a7c).
-      todo("voice clip streaming");
-      g_voice.state = 3;
-      g_voice.enabled = 0;
+      if (voice_queue_busy()) {
+        voice_queue_update();
+      } else if (g_voice.state == 1) {
+        g_voice.budget = voice_queue_build_field(g_voice.budget);
+        g_voice.state = 2;
+      } else {
+        g_voice.state = 3;
+        g_voice.enabled = 0;
+        voice_queue_abort();
+      }
     }
     return;
   }

@@ -9,6 +9,7 @@
 #include "game/common/math.h"
 #include "game/field/callways.h"
 #include "game/field/post_battle.h"
+#include "game/field/voice_queue.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/fade.h"
@@ -400,10 +401,38 @@ void field_prepare_encounter(Field* f, int group, int stage) {
   g.battle_preload_requested = 1;
   bp.count = static_cast<u8>(groups);
   if (voice_stream().state == 0) {
-    // TODO(port): the voice-clip queue (voice_queue_abort / _reset / _build_field,
-    // voice_party_spu_needed): its budget from the leader's walking speed.
-    voice_stream().state = 1;
-    if (g.scripted_battle == 0) f->last_encounter_rate = g.field_flags[0x25];
+    // The battle's voice banks stream while the player walks (voice_queue.cpp). A random
+    // encounter adds budget for field clips: the frames left before the battle
+    // (distance / walking speed) minus those the preloads take to read, at 1000 a
+    // second above 1000, up to 3000 (the console's divides by 235520 and 60 via
+    // multiply-high).
+    VoiceStream& v = voice_stream();
+    voice_queue_abort();
+    v.state = 1;
+    v.budget = voice_party_spu_needed();
+    if (g.scripted_battle == 0) {
+      if (const Actor* leader = field_actor(g.game_state[0x24])) {
+        s32 speed = leader->walk_speed;
+        if (g.field_flags[0x68] == 0) {
+          const s32 scale = read_u16(map_data().scene.data() + 0x68);
+          if (scale != 0) speed = ((speed * 100) / scale) << 12;
+        }
+        s32 preloaded = 0;
+        for (int i = 0; i < groups; ++i) preloaded += bp.bytes[i];
+        const s32 frames = (speed << 2) != 0 ? rd32(g.field_flags + 0x1C) / (speed << 2) : 0;
+        const s32 read60 = preloaded * 60;
+        const s32 read_frames =
+            static_cast<s32>((static_cast<s64>(read60) * 0x473C1AB7) >> 48) - (read60 >> 31);
+        const s32 ms = (frames - read_frames) * 1000;
+        const s32 spare = ((static_cast<s32>((static_cast<s64>(ms) * static_cast<s32>(0x88888889u)) >> 32) + ms) >> 5) -
+                          (ms >> 31);
+        const s32 extra = spare - v.budget - 1000;
+        if (extra > 0) v.budget += extra < 3000 ? extra : 3000;
+      }
+      f->last_encounter_rate = g.field_flags[0x25];
+    }
+    voice_queue_reset();
+    v.budget = voice_queue_build_battle(v.budget);
   }
   load_queue_set_streaming(load_queue(), true);
 }

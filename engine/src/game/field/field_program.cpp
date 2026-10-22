@@ -25,6 +25,7 @@
 #include "game/field/message.h"
 #include "game/field/notice.h"
 #include "game/field/post_battle.h"
+#include "game/field/voice_queue.h"
 #include "game/field/music.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -538,7 +539,7 @@ void field_update(Field* f) {
       // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects
       // tick; after a battle the equipment rescan / auto-equip report (post_battle.cpp).
       // TODO(port): the save point and vehicles (field_flags / script flag bits).
-      if (field_actors()[g.game_state[9]] != nullptr && g.poison_next_step < (rd32(g.field_flags + 0x18) >> 12)) {
+      if (field_actors()[g.game_state[0x24]] != nullptr && g.poison_next_step < (rd32(g.field_flags + 0x18) >> 12)) {
         callways_step_tick(callways());
         field_poison_step(f);
         const s32 steps = rd32(g.field_flags + 0x18) >> 12;
@@ -591,7 +592,12 @@ void field_update(Field* f) {
       if (fade_is_active(field_fade(), -1)) return;
       g.scripted_battle = 1;
       if (voice_stream().state == 0) {
-        voice_stream().state = 1;  // TODO(port): voice-clip queue
+        VoiceStream& v = voice_stream();
+        voice_queue_abort();
+        v.state = 1;
+        v.budget = voice_party_spu_needed();
+        voice_queue_reset();
+        v.budget = voice_queue_build_battle(v.budget);
         load_queue_set_streaming(load_queue(), true);
       }
       field_prepare_encounter(f, -static_cast<s16>(rd16(g.game_state + 0x264)),

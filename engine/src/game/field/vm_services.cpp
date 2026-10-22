@@ -14,6 +14,7 @@
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
+#include "game/field/voice_queue.h"
 #include "game/field/camera.h"
 #include "game/field/collision.h"
 #include "game/field/characters.h"
@@ -973,16 +974,24 @@ void vm_svc_sound_bank_holder_free() {
 }
 
 // ---- Battle start, voices, preloads, loader ----------------------------------------
-void vm_svc_voice_slot_invalidate(int slot) { SVC("%d", slot); }
+// The voice queue runs with a field (VM unit tests have no sound driver).
+static bool voice_live() { return field_program() != nullptr && globals().sound != nullptr && globals().party != nullptr; }
+void vm_svc_voice_slot_invalidate(int slot) {
+  if (voice_live()) voice_slot_invalidate(slot);
+  else SVC("%d", slot);
+}
 void vm_svc_load_queue_set_streaming(int on) { load_queue_set_streaming(load_queue(), on != 0); }
-// The voice-clip queue is not ported: its state reads "loaded" (3) so battles can start.
-int vm_svc_get_voice_cache_state() { return voice_stream().state < 3 && voice_stream().enabled ? voice_stream().state : 3; }
+int vm_svc_get_voice_cache_state() { return voice_stream().state; }
 void vm_svc_set_voice_cache_state(int v) { voice_stream().state = v; }
-void vm_svc_voice_queue_abort() { LOG_ONCE(); }
-int vm_svc_voice_party_spu_needed() { LOG_ONCE(); return 0; }
-void vm_svc_voice_queue_reset() { LOG_ONCE(); }
-int vm_svc_voice_queue_build_battle(int budget) { LOG_ONCE(); return budget; }
-void vm_svc_set_voice_budget(int v) { LOG_ONCE(); }
+void vm_svc_voice_queue_abort() {
+  if (voice_live()) voice_queue_abort();
+}
+int vm_svc_voice_party_spu_needed() { return voice_live() ? voice_party_spu_needed() : 0; }
+void vm_svc_voice_queue_reset() {
+  if (voice_live()) voice_queue_reset();
+}
+int vm_svc_voice_queue_build_battle(int budget) { return voice_live() ? voice_queue_build_battle(budget) : budget; }
+void vm_svc_set_voice_budget(int v) { voice_stream().budget = v; }
 void vm_svc_set_force_streaming(int v) { LOG_ONCE(); }
 void vm_svc_field_prepare_encounter(int a, int b) {
   if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {

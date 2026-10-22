@@ -119,6 +119,7 @@ add_library(ss_game STATIC
   src/game/field/fade.cpp
   src/game/field/notice.cpp
   src/game/field/post_battle.cpp
+  src/game/field/voice_queue.cpp
   src/game/field/text_panel.cpp
   src/game/field/load_queue.cpp
   src/game/field/music.cpp
