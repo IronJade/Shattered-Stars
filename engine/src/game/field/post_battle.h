@@ -32,6 +32,10 @@ bool field_side_load_done();         // 0x800762e4
 std::vector<u8>& field_side_buffer();  // 0x800762e8 (the world map installs music / sprite packs from it)
 s16 field_side_entry();              // 0x800762ec
 void field_side_clear_done();        // 0x800762e4 = 0
+// field_load_map / field_unload_map: frees the side-loaded entry, cancelling its read if
+// it has not finished (0x800762e8, 0x800762e4, 0x800762ec).
+void field_side_free();
+void field_free_equip_report();      // field_unload_map: 0x800761a0
 
 // field_update state 0 (0x8004c334): with g_show_battle_results set and the leader in
 // control, the scan and auto-equip; returns true when the report starts (state 0xf).

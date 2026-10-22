@@ -380,6 +380,12 @@ bool field_side_load_done() { return g_side_done != 0; }
 std::vector<u8>& field_side_buffer() { return g_side_buffer; }
 s16 field_side_entry() { return g_side_entry; }
 void field_side_clear_done() { g_side_done = 0; }
+void field_free_equip_report() { g_report.clear(); }
+void field_side_free() {
+  if (g_side_buffer.empty()) return;
+  if (g_side_done == 0) load_queue_cancel_entry(load_queue(), g_side_entry);
+  g_side_buffer.clear();
+}
 
 bool field_post_battle_check(Field*) {
   FieldGlobals& g = globals();

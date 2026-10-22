@@ -26,11 +26,13 @@ s32 mul(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cas
 CameraBlock& camera_block() { return g_camera; }
 
 void camera_reset() {
+  // On the world map the original first sets up the GTE (H = 0x80075764 * zoom, offset
+  // (160, 112), far colour, fog 0xe00..50000). The port does that in world_camera_reset
+  // (worldmap_camera.cpp), which then calls this. The original also gets here after a
+  // menu on the world map (actor_sys_setup_view with no scene); PCSX-Redux shows no
+  // lasting change there (the world camera rewrites the block every frame), and the
+  // port's actor_sys_setup_view returns early without a scene.
   const bool world = globals().field_flags != nullptr && globals().field_flags[0x68] != 0;
-  if (world) {
-    // TODO(port): world map GTE setup (H from 0x80075764 * zoom, offset (160, 112),
-    // far colour 0x80075c15.., fog 0xe00..50000).
-  }
   g_camera.look_at = 0;
   for (int i = 0; i < 3; ++i) g_camera.eye[i] = g_camera.target[i] = 0;
   g_camera.zoom = world ? 0xCCC : 0x1000;

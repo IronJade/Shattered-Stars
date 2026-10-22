@@ -8,6 +8,10 @@
 #include "game/common/texture.h"
 #include "game/field/actor_field.h"
 #include "game/field/actors.h"
+#include "game/field/afterimage.h"
+#include "game/field/camera.h"
+#include "game/field/field_movie.h"
+#include "game/field/post_battle.h"
 #include "game/field/field_sub_overlays.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
@@ -279,13 +283,31 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   FieldGlobals& g = globals();
   u8* flags = g.field_flags;
   u8* gs = g.game_state;
-  // TODO(port): preload table cleanup (0x800570e8), per-map globals of the effects /
-  // overlay objects, extra packs, afterimages, side text.
+  preload_free_saved_table();  // 0x800570e8: a menu's copy of the preload table
   field_set_gauge_clock(-1);  // 0x80076310, the menu's query gauge
   if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
+  field_movie_set_stop(0);     // 0x800762ff
+  g.sub_overlay_hook = 0;      // 0x80076279
+  g.map_preload_pending = 0;   // 0x800756d9
   field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
   sub_overlays_map_reset();  // mirror slots (0x800761d4), 0x800761e8, path count 0x800761ea
   world_load_map_reset();  // world globals: regions, leader hit, vehicle models (0x800519d4)
+  field_destroy_map_objects();  // 0x80051974: afterimages
+  field_side_free();            // the side-loaded entry (0x800762e8; its read cancelled)
+  // The load queue stops streaming voices, the battle preloads go (0x8004358c,
+  // 0x80056728(1)), and on the right disc the queue's reads finish before the
+  // unfinished preloads are dropped (0x80056a3c); on the wrong one it is cleared.
+  load_queue_set_streaming(load_queue(), false);
+  preload_release(1);
+  const int disc = g.config[0x4C] + 1;
+  const bool right_disc = g.loader->entry_size(disc + 5) != 0;  // loader_is_disc (boot 0x80011d38)
+  if (right_disc) {
+    // (Bounded: the ring holds 16 reads, and a read the host loader refuses would spin.)
+    for (int n = 0; n < 32 && load_queue_busy(load_queue()); ++n) load_queue()->update();
+    preload_drop_incomplete();
+  } else {
+    load_queue_reset(load_queue());
+  }
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744
   // The BG renderer's script switches back to their defaults: parallax follows
@@ -306,9 +328,6 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     gs[0x24] = 0;  // ... or slot 0 (Claude)
     gs[0x25] = 1;
   }
-  // The disc check (loader_is_disc(config +0x4c + 1)): the original prompts for the
-  // state's disc further down (keep_vram 1). TODO(port): the LoadQueue drain it does first.
-  if (g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0) field_prompt_disc_change(f, g.config[0x4C] + 1, 1);
   if (flags[0x27] != 0) {
     sprite_packs_restore_palettes(f);  // 0x80052838
     flags[0x27] = 0;
@@ -351,7 +370,9 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   bg_destroy();
   glow_destroy_current();   // 0x800752dc: glow_destroy(3)
   world_destroy_objects();  // world BG (vtable delete) and WorldCam (0x800752c4)
-  // TODO(port): helper object 0x800752b4 teardown, the disc prompt.
+  if (CamScript* c = camscript()) camscript_destroy(c, 3);  // 0x800752b4 (field maps make a new one)
+  // The state's disc, asked for once the old map is gone (keep_vram 1).
+  if (!right_disc) field_prompt_disc_change(f, disc, 1);
   // Music. A loaded game (mode 1) restarts game_state +0x1c; coming back from a battle,
   // its reload list (handoff 0xc) says whether the map music was kept there (-entry,
   // field maps) or the preloaded one plays (mode 2).
@@ -406,7 +427,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
       }
     }
   } else {
-    // World maps: the vehicle packs (script flag bits 11 / 15 / 16; not ported), then the
+    // World maps: the vehicle packs (script flag bits 11 / 15 / 16), then the
     // world party pack (files[3]: sprite packs, the map music, a copy of #3102).
     if (rd16s(gs + 0x1A) < 4) {
       if ((g.script_flags[1] >> 3 & 1) != 0) world_vehicle_load_pack(f, 0x10E3, 1);  // 0x8004a920

@@ -13,6 +13,7 @@
 #include "game/field/post_battle.h"
 #include "game/field/voice_queue.h"
 #include "game/field/actors.h"
+#include "game/field/afterimage.h"
 #include "game/field/bg.h"
 #include "game/field/camera.h"
 #include "game/field/effects.h"
@@ -50,7 +51,7 @@ s32 rd32(const u8* p) {
   return v;
 }
 
-void todo(const char* what) {
+[[maybe_unused]] void todo(const char* what) {
   runtime::Runtime::get().log_once(std::string("encounter:") + what, std::string("field: not ported yet: ") + what);
 }
 
@@ -408,8 +409,8 @@ void field_prepare_encounter(Field* f, int group, int stage) {
     // The battle's voice banks stream while the player walks (voice_queue.cpp). A random
     // encounter adds budget for field clips: the frames left before the battle
     // (distance / walking speed) minus those the preloads take to read, at 1000 a
-    // second above 1000, up to 3000 (the console's divides by 235520 and 60 via
-    // multiply-high).
+    // second above 1000; any surplus counts as at least 3000 (0x80051588; the console
+    // divides by 235520 and 60 via multiply-high).
     VoiceStream& v = voice_stream();
     voice_queue_abort();
     v.state = 1;
@@ -431,7 +432,7 @@ void field_prepare_encounter(Field* f, int group, int stage) {
         const s32 spare = ((static_cast<s32>((static_cast<s64>(ms) * static_cast<s32>(0x88888889u)) >> 32) + ms) >> 5) -
                           (ms >> 31);
         const s32 extra = spare - v.budget - 1000;
-        if (extra > 0) v.budget += extra < 3000 ? extra : 3000;
+        if (extra > 0) v.budget += extra < 3000 ? 3000 : extra;
       }
       f->last_encounter_rate = g.field_flags[0x25];
     }
@@ -527,10 +528,13 @@ void field_unload_map(Field*, bool free_scene) {
   map.font = {};
   map.script = {};
   field_load_buffer() = {};
-  // TODO(port): the side text (0x800762e8), stat snapshot (0x800761a0), extra buffers
-  // (0x800752c4) and the per-map objects (0x800752ec) are not created by the port yet.
-  world_vehicle_models_free();  // 0x800519d4: the vehicle models (0x80076230)
-  glow_destroy_current();  // 0x800752dc: glow_destroy(3)
+  field_side_free();             // 0x800762e8 (its read cancelled if unfinished)
+  field_free_equip_report();     // 0x800761a0
+  glow_destroy_current();        // 0x800752dc: glow_destroy(3)
+  // (0x800752c4, the WorldCam, is deleted with the world BG by world_destroy_objects.)
+  if (CamScript* c = camscript()) camscript_destroy(c, 3);  // 0x800752b4
+  world_vehicle_models_free();   // 0x800519d4: the vehicle models (0x80076230)
+  field_destroy_map_objects();   // 0x80051974: afterimages
   if (WorldBg* wbg = world_bg(); wbg != nullptr && globals().field_flags[0x68] != 0)
     world_bg_release(wbg);  // overlay 0x800888e0
   // The party's sprite packs are remembered so they come back after the battle.

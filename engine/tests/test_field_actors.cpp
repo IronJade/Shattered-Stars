@@ -29,8 +29,10 @@
 #include "game/field/actor_base.h"
 #include "game/field/actor_field.h"
 #include "game/field/actors.h"
+#include "game/field/afterimage.h"
 #include "game/field/bg.h"
 #include "game/field/collision.h"
+#include "game/field/tasks.h"
 #include "game/field/field.h"
 #include "game/field/map.h"
 #include "game/field/screen.h"
@@ -722,4 +724,87 @@ TEST(field_actor_light_split_matches_redux) {
   std::printf("  %d calls, %d pieces compared, %d mismatches\n", calls, pieces, bad);
   CHECK(calls > 0);
   CHECK_EQ(bad, 0);
+}
+
+// Ghost trails (field 0x8005ee9c-0x8005f5c8, table A 0x1b / 0x1c): twelve effect actors
+// from slot 0x82; each frame the next one in the ring (counting down) copies the
+// source and every live one fades by 10, so a ghost is taken again 12 frames later at
+// brightness 8; only the first ghost takes the motion (mode 1: grow). Once stopping,
+// the ghosts fade out and the afterimage deletes itself.
+TEST(field_afterimage_trails_and_fades) {
+  Actor** actors = field_actors();
+  for (int s = 0x82; s < 0x8e; ++s) {
+    if (actors[s] != nullptr) {
+      std::printf("  (skipped: effect slots in use)\n");
+      return;
+    }
+  }
+  // An empty map: no floor zones (the ghosts are placed with fieldactor_place).
+  std::vector<u8> saved_scene = map_data().scene;
+  const auto saved_table = map_data().cell_table;
+  const auto saved_cells = map_data().cells;
+  static u8 no_cells[0x100] = {};
+  map_data().scene.assign(0x100, 0);
+  map_data().cell_table = no_cells;
+  map_data().cells = no_cells;
+  globals().frame_ticks = 1;
+  map_data().actor_scale = 100;
+  auto* src = new Actor;
+  fieldactor_construct(src);
+  const s32 pos[3] = {100, 0, 200};
+  actor_init(src, 0, pos, 0, 0, 0, -1, 0x1000F);
+  actors[5] = src;
+
+  Afterimage* a = afterimage_create(new Afterimage, src, 3, 0x80FF80, 1, 1);
+  for (int i = 0; i < 12; ++i) {
+    CHECK_EQ(a->slot[i], 0x82 + i);
+    CHECK(actors[0x82 + i] != nullptr);
+  }
+  afterimage_update(a);
+  Actor* g0 = actors[0x82];
+  CHECK_EQ(a->state[0], 2);  // mode 1 + 1, then the mode is used up
+  CHECK_EQ(a->mode, 0);
+  CHECK_EQ(a->bright[0], 0x80);
+  CHECK_EQ(a->head, 11);
+  CHECK_EQ(g0->x, src->x);
+  CHECK_EQ(g0->blend, 1);
+  CHECK(g0->rgb[0] == 0x80 && g0->rgb[1] == 0xFF && g0->rgb[2] == 0x80);
+  CHECK((g0->flags & kActorHidden) == 0 && (g0->flags & kActorAnimPaused) != 0);
+  CHECK(g0->vtbl == &kFieldActorVtable);
+
+  src->x += 0x10000;
+  const s32 scale = g0->scale_x;
+  afterimage_update(a);
+  CHECK_EQ(a->bright[0], 0x80 - 10);
+  CHECK_EQ(g0->scale_x, scale + 0x80);  // grows
+  CHECK_EQ(a->state[11], 1);
+  CHECK_EQ(actors[0x82 + 11]->x, src->x);
+  // Ghost 0 is two frames older than the next one (head 10): recoloured by its age.
+  afterimage_update(a);
+  CHECK_EQ(g0->rgb[1], static_cast<u8>((0xFF * (0x80 - 10)) >> 7));
+  // Frame 12: ghost 0 has faded 11 times; frame 13 takes it again.
+  for (int k = 0; k < 9; ++k) afterimage_update(a);
+  CHECK_EQ(a->bright[0], 0x80 - 110);
+  CHECK_EQ(a->head, 0);
+  afterimage_update(a);
+  CHECK_EQ(a->bright[0], 0x80);
+  CHECK_EQ(a->state[0], 1);
+  // Stopping: no new ghosts; the last one fades out on the 13th frame, and the frame
+  // after finds none left (afterimage_destroy(self, 3)).
+  a->stopping = 1;
+  for (int k = 0; k < 13; ++k) afterimage_update(a);
+  CHECK_EQ(a->state[0], 0);
+  CHECK(actors[0x82] != nullptr);
+  afterimage_update(a);
+  for (int s = 0x82; s < 0x8e; ++s) CHECK(actors[s] == nullptr);
+
+  // Through the list: deleting the source deletes its afterimages.
+  afterimage_attach(src, 3, 0x808080, 1, 0);
+  CHECK(actors[0x82] != nullptr);
+  actor_destroy(src, 3);
+  actors[5] = nullptr;
+  for (int s = 0x82; s < 0x8e; ++s) CHECK(actors[s] == nullptr);
+  map_data().scene = saved_scene;
+  map_data().cell_table = saved_table;
+  map_data().cells = saved_cells;
 }

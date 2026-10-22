@@ -285,6 +285,10 @@ void debug_trace(Actor* a) {
   std::printf("[world] v%llu state %d veh %d thr %d climb %d turn %d bank %d ground %d sf1 %d ctl %d ofsy %d\n", vb,
               f != nullptr ? f->state : -1, static_cast<s8>(a->vehicle), w->throttle, w->climb, w->turn, w->bank,
               w->ground, fg().script_flags[1], static_cast<s16>(read_u16(fg().field_flags + 0x10)), v.geom_ofs_y);
+  const VoiceStream& vs = voice_stream();
+  std::printf("[world] v%llu voice %d en %d budget %d rate %d bp %d req %d dist %d step %d\n", vb, vs.state, vs.enabled,
+              vs.budget, fg().field_flags[0x25], fg().battle_preloaded, fg().battle_preload_requested,
+              static_cast<s32>(read_u32(fg().field_flags + 0x1C)), static_cast<s32>(read_u32(fg().field_flags + 0x18)));
 }
 
 // vtable[1] 0x80082f44.

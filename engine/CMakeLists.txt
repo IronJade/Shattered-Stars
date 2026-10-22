@@ -99,6 +99,7 @@ add_library(ss_game STATIC
   src/game/title/text.cpp
   src/game/title/window.cpp
   src/game/field/actors.cpp
+  src/game/field/afterimage.cpp
   src/game/field/actor_base.cpp
   src/game/field/actor_field.cpp
   src/game/field/sprite_pack.cpp

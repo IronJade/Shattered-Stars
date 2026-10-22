@@ -195,6 +195,11 @@ void preload_restore_table() {
   g_preloads_saved = false;
 }
 
+void preload_free_saved_table() {
+  g_saved_preloads.clear();
+  g_preloads_saved = false;
+}
+
 int preload_release(int kind) {
   int lo = kind, hi = kind;
   if (kind == -1) {

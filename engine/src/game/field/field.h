@@ -100,6 +100,7 @@ void field_poison_step(Field* f);              // 0x8004c250
 // is already in) and otherwise stays on disc 1, which holds the same field / battle data.
 void field_prompt_disc_change(Field* f, int disc, int keep_vram);
 void field_update_encounters(Field* f);       // 0x8004c334 state 0: random encounters
+void field_update_encounter_streaming(Field* f);  // 0x80050dec: voice streaming follows the rate
 void field_begin_game_over(Field* f);         // 0x8004b418: state 6 (the title program is read)
 // 0x8005ea54: creates the state block for a new game (or from the load-game snapshot,
 // handoff 0xe): starting map 7 (Claude) or 18 (Rena), names, money.

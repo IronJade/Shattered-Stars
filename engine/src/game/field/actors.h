@@ -88,7 +88,6 @@ s16 actor_screen_y(const Actor* a);                   // actor +0x76
 
 // Calls out of the actor code into subsystems that are not ported yet.
 struct ActorHooks {
-  void (*destroyed)(Actor* a) = nullptr;  // actor_destroy: afterimages (0x800752ec) of this actor
   // OT layers (0x800761a8 count, 0x800761b4 ids, 0x800761c4 tables; SceneRenderer).
   int (*ot_layer_count)() = nullptr;
 };

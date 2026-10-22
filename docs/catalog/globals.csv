@@ -505,6 +505,7 @@ field,0x800752dc,g_glow,GlowFx *,Edge glow of script ext 0x79 (overlay glow_crea
 field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
 field,0x800752e4,g_report_panels,TextPanel *,4 TextPanels (array new with count at -8) of the Equipment Wizard columns; frame hidden,confirmed,field_update state 0; field_destroy_subsystems
 field,0x800752e8,g_gauge,Gauge *,#3109's gauge (A 0x35); the main loop calls 0x801f999c while set,confirmed,decomp
+field,0x800752ec,g_afterimages,Afterimage *[12],"The running ghost trails (table A 0x1b adds to the first free entry, 0x1c and actor_destroy delete those of an actor, field_destroy_map_objects all)",confirmed,"decompilation (0x80067634 cases 0x1b / 0x1c, 0x8003d53c, 0x80051974)"
 field,0x80075324,g_frame_counter,s32,Vblanks since field_construct (vsync_counter_tick 0x800521e8 increments it every vblank); the Private Action / trigger prompts blink from it,confirmed,field_construct; vsync_counter_tick; pa_draw_prompt
 field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
 field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending

@@ -13,6 +13,7 @@
 #include "game/boot/pad.h"
 #include "game/boot/sound.h"
 #include "game/field/actors.h"
+#include "game/field/afterimage.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
 #include "game/field/voice_queue.h"
@@ -640,9 +641,14 @@ void vm_svc_actor_sys_reset_sprite_cache() {
   if (sys() != nullptr) actor_sys_reset_sprite_cache(sys());
 }
 void vm_svc_afterimage_attach(int slot, int a1, int a2, int a3, int a4, int a5) {
-  SVC("slot=%d %d,%d,%d,%d,%d", slot, a1, a2, a3, a4, a5);
+  TRACE("slot=%d %d,%#x,%d,%d,%d", slot, a1, a2, a3, a4, a5);
+  // afterimage_create (0x8005ee9c) takes a5 too but never reads it.
+  if (Actor* a = field_actor(slot)) afterimage_attach(a, a1, static_cast<u32>(a2), a3, a4);
 }
-void vm_svc_afterimage_detach(int slot) { SVC("slot=%d", slot); }
+void vm_svc_afterimage_detach(int slot) {
+  TRACE("slot=%d", slot);
+  if (Actor* a = field_actor(slot)) afterimage_detach(a);
+}
 
 // ---- Message windows, notice banner ------------------------------------------------
 void vm_svc_msg_window_open(int x, int y, int w, int h, const u8* text, int window, int a7) {

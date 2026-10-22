@@ -76,6 +76,7 @@ void preload_clear_table();                                    // 0x80056374
 int preload_start(int entry, int kind, int tag, int bytes);    // 0x800563a0: 1 = queued or present
 void preload_save_table();                                     // 0x8005658c (before a menu)
 void preload_restore_table();                                  // 0x80056600 (after it)
+void preload_free_saved_table();                               // 0x800570e8: drops the saved copy unused
 int preload_release(int kind);                                 // 0x80056728 (-1 = all)
 int preload_release_kind2_except(int tag);                     // 0x80056830
 void preload_drop_incomplete();                                // 0x80056a3c

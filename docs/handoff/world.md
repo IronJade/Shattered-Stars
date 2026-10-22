@@ -10,6 +10,8 @@ coordinator commits.
 
 - Phase 1-2: world map overlay 0xc1e, vehicles, bunny, courier, minimap, insert-disc
   screen (b906414, 69b33dd, 6c88bd4). Notes: `docs/notes/field_overlay_c1e.md`.
+- Phase 3 step 1 (catalog triage, party_swap_characters, screen clamp flag, draw_list
+  bounds): b32c1a9.
 
 ## Phase 3 plan (coordinator, 2026-10-22)
 
@@ -29,31 +31,43 @@ order is kept; `scratchpad/catalog_order.py` restores it).
 
 ## In progress (uncommitted)
 
-Step 1 (triage) is done and tested; waiting for the coordinator's commit. My changes:
+Step 2 (field TODO(port)s) is done and tested; waiting for the coordinator's commit:
 
-- `docs/catalog/functions.csv`: port column of 309 of the 317 triage rows (list in
-  `scratchpad/world/triage_all.csv`, values in `scratchpad/world/triage_apply.py`).
-  The 8 left are steps 2-3: 0x80050dec, 0x80051974, 0x800570e8, 0x800573d0, the
-  afterimages 0x8005ee9c / 0x8005f018 / 0x8005f108, title 0x8003fb78.
-- `script_party.cpp` / `script_vm.h`: party_swap_characters (0x800534b4, ext 0xb0; no
-  map script on either disc uses it); `vm_services.cpp`: vm_svc_party_swap_characters
-  calls it, vm_svc_loader_11988 returns 1 (loader_select_entry_at accepts when idle; the
-  scripts' B_4f prefetches never read the result).
-- `map.cpp`: screen_clamp_flag (field_update_screen_clamp_flag 0x80055c08) at the old
-  TODO in field_load_map (analog steering on maps whose camera looks down).
-- `field_program.cpp`: the FieldPanel TODO is now a note (0x800752a8 is never opened).
-- `common/menu_widget.cpp` (menu agent's file): Widget::draw_list skips rows past the
-  item count, as title 0x80073cdc does.
+- New `engine/src/game/field/afterimage.cpp/.h` (+1 line in engine/CMakeLists.txt):
+  ghost trails 0x8005ee9c / 0x8005f018 / 0x8005f108, the list 0x800752ec,
+  field_destroy_map_objects 0x80051974. Table A 0x1b / 0x1c (vm_services.cpp) and
+  actor_destroy (actor_base.cpp) use it; the unused ActorHooks::destroyed is gone
+  (actors.h). Test: ss_game_tests field_afterimage_trails_and_fades. Only map 295 (a
+  minigame with four racers) uses it; no Redux reference.
+- `map.cpp` field_load_map: preload_free_saved_table (0x800570e8, load_queue.cpp), the
+  movie-stop / sub-overlay-hook / map-preload resets, afterimages, the side-loaded entry
+  (field_side_free, post_battle.cpp), streaming off + preload_release(1), the disc check
+  with the load-queue drain (preload_drop_incomplete) or reset, the CamScript teardown,
+  and the disc prompt moved after the teardown as in the original.
+- `encounter.cpp` field_unload_map: side entry, equipment report
+  (field_free_equip_report), CamScript, afterimages. Bug fix: the random-encounter voice
+  budget surplus is at least 3000 (0x80051588), not at most.
+- `field_program.cpp`: field_update_encounter_streaming (0x80050dec) after field_update
+  (decl in field.h); preload_free_saved_table in field_destroy_subsystems; the stale
+  TODOs (state 0, default, teardown) rewritten. `camera.cpp`: the world-branch TODO is a
+  note (world_camera_reset does the GTE setup).
+- `worldmap_actor.cpp`: SS_WORLD_DBG also prints the voice stream / encounter state.
+- Catalog: 7 function rows (0x80050dec, 0x80050f64, 0x80051974, 0x800570e8, afterimages)
+  and the global g_afterimages.
 
-Tests after step 1: ss_tests 76/0, ss_game_tests 71/0, smoke 16/16 (SS_DISC1 set).
+Verified: PCSX-Redux world map from the north-city save (ref/voice1): the voice stream
+goes 0 -> 1 (t 4) -> 2 -> 3 and the battle preloads start, as in the port (CD timing and
+the random distance differ; the budget arithmetic matches with the 3000 floor).
+PCSX-Redux camp menu on the world map (ref/menu3): the camera block is unchanged after
+it. Tests after step 2: ss_tests 76/0, ss_game_tests 72/0, smoke 16/16 (with disc 2,
+and with SS_DISC2=/nonexistent).
 
 ## Next steps
 
-- Step 2: field_update_encounter_streaming (0x80050dec), preload_free_saved_table
-  (0x800570e8), extra packs, afterimages (0x8005ee9c / 0x8005f018 / 0x8005f108) with
-  field_destroy_map_objects (0x80051974), TODO(port) in encounter.cpp and camera.cpp.
-- Step 3: Voice Collection (title 0x8003fb78).
-- Step 4: renames below, plus the remaining 'guess' rows.
+- Step 3: Voice Collection (title 0x8003fb78; helpers 0x80041100 / 0x800411a4 /
+  0x8004137c / 0x800413ec = a spectrum grid of 32 x 40 quads fed by the sound voices).
+- Step 4: renames below, plus the remaining 'guess' rows; rename vm_svc_field_rumble_stub
+  to match 0x80055da0's real role (coordinator's request) and fix its comment.
 
 ## Findings not yet in the catalog (step 4)
 

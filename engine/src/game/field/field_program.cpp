@@ -430,7 +430,38 @@ void field_destroy_subsystems(Field*) {
   scene_renderer_destroy();  // 0x800752d8
   glow_destroy_all();        // 0x800752dc: glow_destroy(3)
   field_free_ot_layers();    // 0x80053158: particle pool and OT layers
-  // TODO(port): FieldPanel and the overlay objects.
+  preload_free_saved_table();  // 0x80075858
+  // The FieldPanel (0x800752a8) is not created (see field_create_subsystems); the
+  // sub-overlay objects (0x800752e8, 0x800752cc, 0x800756b8 / 0x800756c0 / 0x800756cc)
+  // and the movie (0x800752c8) belong to field_sub_overlays.cpp / field_movie.cpp.
+}
+
+// 0x80050dec, after field_update: script flag bits 12 and 14 (byte 1 bits 4 / 6) stop
+// the voice streaming; an encounter rate (field_flags +0x25, raised to at least 10)
+// that turns on starts streaming the battle voices, and one that turns off stops it.
+void field_update_encounter_streaming(Field* f) {
+  FieldGlobals& g = g_field;
+  u8* flags = g.field_flags;
+  VoiceStream& v = voice_stream();
+  if (((g.script_flags[1] >> 4) & 1) != 0 || ((g.script_flags[1] >> 6) & 1) != 0) {
+    load_queue_set_streaming(load_queue(), false);
+    v.state = 0;
+  }
+  if (flags[0x25] != 0 && flags[0x25] < 10) flags[0x25] = 10;
+  if (f->last_encounter_rate == 0) {
+    if (flags[0x25] != 0 && v.state == 0) {
+      voice_queue_abort();
+      v.state = 1;
+      v.budget = voice_party_spu_needed();
+      voice_queue_reset();
+      v.budget = voice_queue_build_battle(v.budget);
+      load_queue_set_streaming(load_queue(), true);
+    }
+  } else if (flags[0x25] == 0) {
+    load_queue_set_streaming(load_queue(), false);
+    v.state = 0;
+  }
+  f->last_encounter_rate = flags[0x25];
 }
 
 void field_update_encounters(Field* f) {
@@ -564,8 +595,9 @@ void field_update(Field* f) {
   switch (f->state) {
     case 0:
       // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects
-      // tick; after a battle the equipment rescan / auto-equip report (post_battle.cpp).
-      // TODO(port): the save point and vehicles (field_flags / script flag bits).
+      // tick; after a battle the equipment rescan / auto-equip report (post_battle.cpp);
+      // then the world map's clock event, bunny and vehicle (field_world.cpp). The save
+      // point and the menu button are checked before the switch (field_menu_check).
       if (field_actors()[g.game_state[0x24]] != nullptr && g.poison_next_step < (rd32(g.field_flags + 0x18) >> 12)) {
         callways_step_tick(callways());
         field_poison_step(f);
@@ -693,8 +725,7 @@ void field_update(Field* f) {
       delete f;
       boot_restart_title(g.system);
     default:
-      // TODO(port): 3 camp menu, battle results (0xf / 0x10), save point,
-      // vehicles, world map transfers (0x8004c334 cases 3, 6-0x20).
+      // Every state the original's switch has (0-0x21) is handled above.
       todo("field_update: state " + std::to_string(f->state));
       return;
   }
@@ -915,7 +946,7 @@ void field_main_loop(Field* f) {
     g.disc_error_prev = g.disc_error;
     g.disc_error = 0;  // the host disc never opens
     field_update(f);
-    // TODO(port): field_update_encounter_streaming (0x80050dec).
+    field_update_encounter_streaming(f);  // 0x80050dec
     if (field_sub_program() != nullptr && !field_movie_main_loop(f)) continue;
     task_run_all();
     if (gauge_exists()) gauge_update();  // 0x800752e8: 0x801f999c (#3109)

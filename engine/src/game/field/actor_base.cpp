@@ -4,6 +4,7 @@
 
 #include "game/common/math.h"
 #include "game/field/actor_field.h"
+#include "game/field/afterimage.h"
 #include "game/field/actors.h"
 #include "game/field/field.h"
 #include "game/field/map.h"
@@ -76,8 +77,7 @@ void actor_destroy(Actor* self, int flags) {
   if (self->emote) actor_destroy(self->emote, 3);
   for (Actor* child : self->children)
     if (child) actor_destroy(child, 3);
-  // Afterimages (0x800752ec) whose source is this actor go with it.
-  if (actor_hooks().destroyed) actor_hooks().destroyed(self);
+  afterimage_detach(self);  // afterimages (0x800752ec) whose source is this actor go with it
   if (flags & 1) {
     if (world) {
       delete static_cast<WorldActor*>(self);
