@@ -3,91 +3,153 @@
 Worker: enemy agent (the battle program's monster classes: the 16 resident families, the
 #2129 image's default enemy-code modules and the encounter packs' modules). Build dir:
 `engine/build-enemy`. Scratch (on disk, git-ignored): `scratchpad/enemy/`. The worker does not
-commit; the coordinator does.
+commit; the coordinator does. Notes for readers: `docs/notes/battle_enemies.md`.
 
 ## Layout (new files, all mine)
 
 | File | Contents |
 |---|---|
-| `battle/enemy_classes.h` | `enemy_class_create(type)` (the factory's class choice), `enemy_modules_reset/load` (the pack's code list), `enemy_try_approach` |
+| `battle/enemy_classes.h` | `enemy_class_create(type)` (the factory's class choice), `enemy_modules_reset/load` (the pack's code list), `enemy_adopt`, `enemy_extra_data`, `enemy_try_approach` |
 | `battle/enemy_families.cpp` | the 16 resident families (0x8003e248-0x80041600) |
-| `battle/enemy_modules.{h,cpp}` | module registry: the 40 pack blocks (FNV-1a 64 of the unpacked bytes) + 3 image defaults, slot state, the factory switch for module types, `enemy_module_u8/s16/s32` (a module's own tables by link address) |
-| `battle/enemy_support.{h,cpp}` | resident helpers only the monsters need so far (bobj_front_x, unit_play_anim_ex, unit_throw_weapons, gte_set_view_matrix, draw_tri_g3, ShotDesc + shot_desc_init, stand-ins: shot_spawn_projectile, sound_handle_pitch_down), `SS_ENEMY_TRACE` |
+| `battle/enemy_modules.{h,cpp}` | module registry: the 40 pack blocks (FNV-1a 64 of the unpacked bytes + size) + 3 image defaults, slot state, the factory switch for module types, `enemy_module_u8/s16/s32` (a module's own tables by link address), the 43 `enemy_mod_<name>_create()` |
+| `battle/enemy_mod_<name>.cpp` | one file per block: guardian, nicolus, jibril (image defaults) and the 40 pack blocks |
+| `battle/enemy_support.{h,cpp}` | resident helpers only the monsters need so far (draw_beam, draw_textured_patch, draw_quad_gt4, gte_set_view_matrix, draw_tri_g3, vec_random_in_disc_xz, bobj_poly_tag, bobj_set_pos, collider_set_attack_box, bobj_front_x, unit_play_anim_ex, unit_throw_weapons, unit_is_disabled, shot_skill_camera_end), logging stand-ins for what the battle agent has not ported (spells, SpellCast, voices, load queue, screen fade, shot_draw_frame_quad), the spell flags and `spellcast_slot0()`, `SS_ENEMY_TRACE` |
 
 ## Edits to other agents' files (hooks only)
 
-- `encounter.cpp`: `enemy_create_by_type` builds `enemy_class_create(type)` (the family sfx
-  switch and the "module not ported" log moved into the classes / enemy_modules.cpp);
-  `load_formation` (3) calls `enemy_modules_reset()` then `enemy_modules_load(kind, block)`
-  for each code-list entry; include + header comment.
+- `encounter.cpp`: `enemy_create_by_type` builds `enemy_class_create(type)`; `load_formation`
+  (3) calls `enemy_modules_reset()` then `enemy_modules_load(kind, block)` for each code-list
+  entry; `enemy_adopt()` (a module's mid-battle enemy joins g_enemies: slime / gelatin / gerel
+  splits) and `enemy_extra_data(i)` (g_enemy_extra_data accessor: Cyril, Dias, Vesper, Decus,
+  Indalecio clips); include + header comment.
 - `enemy_ai.cpp`: `enemy_think` starts with `enemy_debug_trace(e)` (SS_ENEMY_TRACE); include.
-- `engine/CMakeLists.txt`: enemy_support.cpp, enemy_families.cpp, enemy_modules.cpp.
+- `engine/CMakeLists.txt`: enemy_support.cpp, enemy_families.cpp, enemy_modules.cpp, and the 43
+  enemy_mod_*.cpp after pc_claude.cpp.
 
 ## Done
 
-- Step 1 (families): ported, builds, tests green (ss_tests 76, ss_game_tests 71, smoke).
-  Redux comparisons (forced battle on stage 3, Claude with the STRONG poke standing idle so
-  the monsters attack him; RNG draws and every enemy's state / position / HP / scratch words
-  every 10 vsyncs; scratchpad/enemy/cmp.py):
-  - 315 Bugbear (kobold family): 150/150 RNG samples, 150/150 enemy samples exact over 1500
-    vsyncs (Claude killed at ~b1090 by the flurries; KO state one sample late).
-  - 47 two Sandglass: RNG equal (31 samples one frame apart, none off), 300/300 enemy samples.
-  - 412 two Dreamshade (time stop, heal): RNG and 212/212 enemy samples equal up to the
-    battle's end (Claude KO, b1060).
-  - 280 Darkcrusader (knight): equal until b590, when the sword waves hit Claude in the
-    original; Shot kind 2 is not ported (the port spawns it and shot.cpp removes it).
-  - 10 Kobold / 41 Beastmaster with Cross mashing: equal until the beastmaster's first spell
-    (state 14 chant; spells are the battle agent's) and Claude's walk drifting by 1 unit (see
-    findings).
-- Step 2: Guardian (image slot A) ported (enemy_mod_guardian.cpp). Nicolus / Jibril (image B
-  / C) and the 40 pack blocks are being ported by six helper agents (see "In progress").
+- Step 1 (families): ported; Redux-exact (see Verification).
+- Step 2 (modules): all 43 classes ported, registered and built: Guardian (mine); 40 pack
+  blocks + Nicolus / Jibril by six helpers (reports below), each file reviewed and then
+  consolidated: the split copies (slime, gelatin, gerel) go through `enemy_adopt`; local
+  stand-ins for g_enemy_extra_data, g_spell_landed, g_spell_effect_started and g_spellcasts[0]
+  replaced by the shared `enemy_extra_data()`, `spell_landed_flag()`,
+  `spell_effect_started_flag()`, `spellcast_slot0()`; stingray's `shot_skill_camera_end`
+  moved to enemy_support; the stingray / magichand block Shot handlers (kinds 0x26 / 0x29)
+  spawned as callback Shots (kind 0x33).
+- Step 3 (factory hook): `enemy_create_by_type` -> `enemy_class_create`.
+- Sweep: every disc-1 encounter (0-563) runs 3000 frames headless (new-game party, Claude
+  sturdy and idle, stage 3) without a crash (`scratchpad/enemy/sweep.sh`; one Niquia crash
+  fixed: pre_think with no target reads a zeroed BObj, the console reads low RAM).
+
+## Verification (Redux, scratchpad/enemy)
+
+`redux/run.sh` (or `batch.sh`) records the original: forced battle on stage 3, Claude poked
+sturdy and left idle, RNG draws and every enemy's state / position / HP / scratch words every
+10 vsyncs. `run_port.sh` runs the port from the reference's field_exit dump; `cmp.py`
+compares. The original's phase differs between runs (the first frames' tick pattern decides
+when its camera intro ends), so cmp.py tries offsets 0..8 and uses the one with the fewest
+RNG mismatches. Results (1500 vsyncs each, or to the battle's end):
+
+- Exact (all RNG samples, all enemy samples): families 315 Bugbear, 47 Sandglass, 412
+  Dreamshade, 205 Shielder, 320 Shout, 92 Ooze, 193 Bandit, 19 Landworm, 202 Troll, 21
+  Alraune, 268 Lizardaxe, 352 F-thiefL99; modules 457 Owlbear (guardian), 80 Cockatrice
+  (carlaeagle), 269 Vopalbunny (bunny), 314 Slime, 43 Gerel, 99 Salamander, 50 Scewer
+  (arcmene), 326 Hellhound (hounddog), 34 Stingray, 285 Miel64 (miel), 286 Kidnier
+  (visseyer), 107 Kitty, 282 Rikiha (ricki), 191 Alen-Tax (ogre).
+- 280 Darkcrusader: exact until its sword waves (Shot kind 2, not ported) at b590.
+- 277 Goathead: diverges at b640, its first spell (enemy_try_cast: the battle agent's).
+- 420 four Robinfakes: exact to b1110. From b1078 to b1110 the original runs 3-vsync frames
+  (slowdown: 4 robins' 5-arrow volleys; per-vsync reference `ref/n420_3`), the port always
+  2, so the draws regroup and at b1128 a different robin starts attack 3. Not a code
+  difference; the port does not model the console's CPU load.
+
+## Committed
+
+- 22ac0e8 (commit point 1): families, enemy_support, enemy_modules registry, Guardian.
+
+## Helper reports (all six groups done; helpers finished, none running)
+
+Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
+
+- Group 1 (carlaeagle gelatin arcmene hounddog salamander kitty ricki ogre snowman bunny):
+  carlaeagle's feathers start at absolute y -0x78 (original quirk); arcmene's blink test
+  compares an index with 0x3e8000 (always true, original bug); kitty's attack 2 is
+  unreachable for its only type 0x5a; bunny ignores unit_find_approach_point's result.
+- Group 2 (ericodus xine gargoyle stingray gerel controller niquia azamgil guardbox lover):
+  stingray's kind-0x26 handler and magichand's kind-0x29 handler are block code that the
+  resident g_shot_kind_table points at; guardbox needs Shot kind 0x27 (shot_k27_tossed_item
+  0x8005b558, resident); ericodus attack 5 can freeze in state 13 (original); niquia writes
+  the host's +0x24e only for an enemy host (port guard).
+- Group 3 (visseyer slime miel shin magichand succubus ghost berle): ghost needs Shot kind
+  0x2d (0x8005b9d0); magichand attack 5 dereferences enemy_random_party_member() unchecked
+  (as the original; only matters with the whole party down).
+- Group 4 (cyril dias zand bark synard celesta): Cyril's attack 2 waits for
+  g_spell_effect_started (set by spells) and hangs until spells exist; Dias leaks its slash
+  Shot until shot_draw_frame_quad 0x8005b23c is ported; bark's SpellCast kind-0x36 handler
+  (`bark_cast_step`, block code) is ported but unused until SpellCast exists.
+- Group 5 (marsilio shigeo ruprecht vesper decus): Vesper's / Decus's attack 3 end only
+  through their spell's SpellCast (stuck until spells exist).
+- Group 6 (nicolus jibril indalecio): Indalecio's transformation is SpellCast kind 0x3b
+  (`spellcast_kind3b_transform`, block code, ported, unused); his second-form writes to
+  g_spell_data_entry 0x8006d1f2 are a local log-once stand-in.
+
+## For the battle agent (missing callees the monsters use)
+
+- Shot kinds 2 (knight sword waves), 0x27 (guardbox tossed item 0x8005b558), 0x2c (thrown
+  weapons, unit_throw_weapons), 0x2d (ghost slash 0x8005b9d0); kinds 0x26 / 0x29 are block
+  handlers (stingray / magichand) spawned as callbacks; shot.cpp could dispatch them while
+  that block is loaded.
+- shot_draw_frame_quad 0x8005b23c (stand-in returns 0: Dias's slash never dies).
+- voice_play_entry 0x8007f818, bload_request 0x800475c0, screen_fade_create 0x8003c3b0.
+
+## For the world agent (owns spells and items now)
+
+- The spell stand-ins sit in one block of enemy_support.{h,cpp} ("Spell stand-ins"); delete
+  each as its real function lands, keeping the signatures the modules call: spell_cast,
+  spell_data_request/status/cancel_owner, unit_begin_cast, spellcast_create,
+  battle_flash_set, spellcast_wait, spellcast_dim_end, `spell_landed_flag()` (g_spell_landed
+  0x8006fb2f), `spell_effect_started_flag()` (0x8006f6d1), `spellcast_slot0()`
+  (g_spellcasts[0] 0x8006fe08: kind +0x08, step +0x40).
+- Block-resident SpellCast handlers: kind 0x36 `bark_cast_step` (enemy_mod_bark.cpp) and kind
+  0x3b `spellcast_kind3b_transform` (enemy_mod_indalecio.cpp), each on a local view of the
+  SpellCast fields it uses; Indalecio's g_spell_data_entry writes are a local stand-in
+  (`spell_data_entry_set`).
+- enemy_try_cast / enemy_state_chant / enemy_state_cast (the family casters: goat, magius,
+  wizard, beastmaster).
 
 ## In progress (uncommitted)
 
-- All files in the layout table, plus `enemy_mod_guardian.cpp` (in CMake).
-- Helper agents write `battle/enemy_mod_<name>.cpp` (not yet in CMake / the registry) and
-  `scratchpad/enemy/catalog/<name>.csv`; guide `scratchpad/enemy/GUIDE.md`. Groups: (1)
-  carlaeagle gelatin arcmene hounddog salamander kitty ricki ogre snowman bunny; (2) ericodus
-  xine gargoyle stingray gerel controller niquia azamgil guardbox lover; (3) visseyer slime
-  miel shin magichand succubus ghost berle; (4) cyril dias zand bark synard celesta; (5)
-  marsilio shigeo ruprecht vesper decus; (6) nicolus jibril indalecio.
-- Pending catalog merge: `scratchpad/enemy/catalog_mine/step1.csv` (port column of the
-  families and the helpers) via `scratchpad/enemy/catalog_update.py`.
-
-## Next steps
-
-1. As each helper reports: review its files, add them to CMake (after enemy_mod_guardian.cpp)
-   and the registry pointer in enemy_modules.cpp (`kModules[]`), build, test.
-2. Move any locally ported resident helpers into enemy_support.
-3. Redux-verify a sample of modules (encounters in scratchpad/enemy/type_map.txt).
-4. Merge the catalog rows; notes in docs/notes/battle_enemies.md.
+- Commit point 2: the 42 module files, enemy_support / enemy_modules / enemy_classes changes,
+  encounter.cpp enemy_adopt + enemy_extra_data, CMake lines, catalog rows, README note,
+  notes/battle_enemies.md, this log.
+- Redux references still running (`batch.sh redux3 m ...`): gelatin 563, controller 240,
+  azamgil 206, ericodus 284, gargoyle 523, snowman 543.
 
 ## Findings
 
 - 40 distinct enemy code blocks on the two discs (disc 2's packs are byte-identical to disc
   1's). Each serves exactly one factory entry (a constructor at a slot base or a vtable inside
-  the slot). The #2129 image's slot A module is Guardian / Geo-guardian / Owlbear (0xbe-0xc0,
-  encounters 457 458 501 512 525 527 558), B is Nicolus (0xc9, enc 536), C is Jibril (0xca,
-  enc 536). The catalog's enemy_modb/modc "factory types" lists name the pack modules' types.
-- Vtable-type modules (e.g. Snowman vt 0x80088418) have no constructor at the slot base: offset
-  0 is an ordinary method (Snowman: slot 26).
-- Thunks shot_place_at_unit_thunk 0x800553f0 / sprite_place_near_thunk 0x80030050 pass dz = 0.
-- enemy_thief_attack1 animates twice a frame (enemy_attack_step, then slot 22 again).
-- enemy_sandglass_attack3 freezes the party every frame past frame 9 (no once-flag).
-- Forcing an encounter in Redux: the field reads the encounter from game_state +0x264 (s16,
-  `*0x80075710 + 0x264 = ENC`; field_prepare_encounter takes -(+0x264), so a positive value
-  is the encounter itself). The battle agent's scripts poke +0x99, which does nothing: their
-  "forced" battles are random encounters of map 7's group 1 (Lizardaxes).
+  the slot), one class per block. The #2129 image's slot A module is Guardian / Geo-guardian /
+  Owlbear (0xbe-0xc0, encounters 457 458 501 512 525 527 558), B is Nicolus (0xc9, enc 536), C
+  is Jibril (0xca, enc 536).
+- The original's battle phase is not fixed relative to battle_main_loop: in encounter 10 the
+  first frames tick 2,2,2.. and the camera intro's first step ends at b159; in 285 they tick
+  2,1,2,.. and it ends at b155 (the port: 154 in both). Everything after (appear, state 2, the
+  AI batches) follows. Compare with a per-reference offset (cmp.py does).
+- Under load the original slows to 3-vsync frames (enc 420, four Robinfakes shooting: b1078
+  to b1110); the port always runs 2-vsync frames, so long busy fights drift there.
+- Monsters with attack odds 0 (Ooze, Alraune) never start their special attack on their own
+  (Redux agrees).
+- Forcing an encounter in Redux: `*0x80075710 + 0x264 = ENC` (s16) at the field; +0x99 does
+  nothing.
 - The action kind +0x12a is uninitialised heap on the console until first set (cmp.py
   ignores it).
-- Claude's approach walk in the port drifts from the original by about one unit per 10
-  frames (enc 10, from b340); PartyUnit code, reported to the coordinator.
 
 ## Tools (scratchpad/enemy)
 
-- `scan_packs.py` (code lists, types, names; blocks to `modules/`), `type_map.py`, `entries.py`
-  (function starts per block), `ghd_modules.sh` + `ghidra_scripts/ModuleDecompile.java`
-  (patches a block into a copy of the analysed battle runtime program, read-only, and writes
-  `decomp/<block>/*.c` + `asm.txt`), `show.py MODULE [ADDR..]` (decompiles with catalog names).
-- `redux/run.sh ENC STAGE OUT` (Redux reference: forced battle, STRONG poke, Cross mash,
-  RNG counts and `[bw] enemy` lines every 10 vsyncs), `SS_ENEMY_TRACE=1` on the port side.
+- `scan_packs.py`, `type_map.py` / `type_map.txt` (blocks, types, encounters), `entries.py`,
+  `ghd_modules.sh` + `ghidra_scripts/` (block decompiles in `decomp/`), `show.py`.
+- `redux/run.sh ENC STAGE OUT` (+ `BW_DENSE=lo:hi` per-vsync camera / tick / appear lines,
+  `BW_BATTLE_EVERY=1` per-vsync enemy lines), `batch.sh`, `run_port.sh`, `run_port2.sh`
+  (`SS_ENEMY_TRACE=2`), `cmp.py` (`CMP_D=n` forces the offset), `verify_all.sh`, `sweep.sh`.

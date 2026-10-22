@@ -24,6 +24,13 @@ std::unique_ptr<EnemyUnit> enemy_class_create(int type);
 void enemy_modules_reset();
 void enemy_modules_load(int kind, std::span<const u8> packed_block);
 
+// The encounter keeps a unit a module made mid-battle (a slime's or gelatin's split copy,
+// which the console allocates and battle_free_all frees with the other enemies).
+void enemy_adopt(std::unique_ptr<EnemyUnit> e);
+// g_enemy_extra_data 0x8006fd8c[i]: the encounter pack's extra data blocks (the sprite
+// pack's extra offsets: voice clips and the like for some bosses), or null.
+const u8* enemy_extra_data(int i);
+
 // 0x8003e248: the family attack helper. When fighting, not afraid and not immobile, and
 // the nearest member is at least min_dist away (or rng_next15 < chance), then with
 // 25000 / 32768: approach that member (or the provoker) with 'action' at 'speed' (+0x13a);

@@ -52,9 +52,13 @@ inline void bobj_set_pos(BObj* o, const s32 p[3]) { o->pos[0] = p[0], o->pos[1] 
 void collider_set_attack_box(Collider* c, s32 hx, s32 hy, s32 hz);
 // 0x80053e94: 1 when status bits 0xe6, +0x11c bits 0x48 or the freeze timer +0x154 hold u.
 int unit_is_disabled(const Unit* u);
+// 0x80056a0c: when s's owner holds the skill camera (+0x132), camera mode 7 ends on it after
+// 60 ticks.
+void shot_skill_camera_end(Shot* s);
 
-// Spells, the load queue, voices and resident effect tasks the modules call; all are the
-// battle agent's and not ported yet. Stand-ins that log once (and return "nothing").
+// ---- Spell stand-ins (the world agent's spells, SpellCast and spell data, not ported yet).
+// They log once and return "nothing"; each goes when the real one is ported. The signatures
+// are the ones the modules call.
 struct SpellCast;
 void spell_cast(int spell, Unit* caster, Unit* target, int power);            // 0x80062c24 [stand-in]
 void spell_data_request(int spell, int priority, Unit* caster);               // 0x800482e8 [stand-in]
@@ -66,6 +70,19 @@ SpellCast* spellcast_create(int kind, Unit* caster, Unit* target, int power, con
 void battle_flash_set(SpellCast* sc, int r, int g, int b);                    // 0x80085c10 [stand-in]
 void spellcast_wait(SpellCast* sc, int frames);                              // 0x80085c84 [stand-in]
 void spellcast_dim_end(SpellCast* sc);                                        // 0x80086478 [stand-in]
+// Spell globals the modules read (the spells set them; until they are ported they stay 0):
+u8& spell_landed_flag();           // g_spell_landed 0x8006fb2f: a spell's finishing hit resolved
+u8& spell_effect_started_flag();   // 0x8006f6d1: spell_cast started a table-driven effect
+// g_spellcasts[0] 0x8006fe08: the SpellCast in the first slot (null when none runs); the
+// casters' modules (Cyril, Vesper, Decus, Indalecio) time their cast animations by its kind
+// (+0x08) and its step / tick counter (+0x40). [stand-in: null, no SpellCast runs yet]
+struct SpellCastView {
+  u8 kind;
+  s32 step;
+};
+const SpellCastView* spellcast_slot0();
+
+// ---- Other stand-ins (the battle agent's load queue, voices and resident effects).
 void bload_request(int entry, void* dest, s16 group, int priority);           // 0x800475c0 [stand-in]
 u32 voice_play_entry(int entry, Unit* speaker);                              // 0x8007f818 [stand-in: 0]
 Task* screen_fade_create(u32 rgb, int tpage, int step, int hold);             // 0x8003c3b0 [stand-in: null]

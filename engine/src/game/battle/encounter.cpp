@@ -12,10 +12,10 @@
 #include "disc/slz.h"
 #include "game/battle/battle.h"
 #include "game/battle/enemy_classes.h"
-#include "game/field/mods.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
+#include "game/field/mods.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
 
@@ -73,6 +73,12 @@ void encounter_reset() {
   g_packs.clear();
   g_enemies.clear();
   g_enemy_extra_data.fill(nullptr);
+}
+
+void enemy_adopt(std::unique_ptr<EnemyUnit> e) { g_enemies.push_back(std::move(e)); }
+
+const u8* enemy_extra_data(int i) {
+  return i >= 0 && i < static_cast<int>(g_enemy_extra_data.size()) ? g_enemy_extra_data[i] : nullptr;
 }
 
 void enemy_create_by_type(int index, int type) {

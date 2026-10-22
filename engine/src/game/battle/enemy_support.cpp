@@ -6,6 +6,7 @@
 #include <string>
 
 #include "game/battle/battle.h"
+#include "game/battle/camera.h"
 #include "game/boot/rng.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
@@ -53,6 +54,7 @@ void unit_throw_weapons(Unit* u, s32 variant) {
   }
 }
 
+// ---- Spell stand-ins (the world agent's; see enemy_support.h).
 void spell_cast(int, Unit*, Unit*, int) { todo("spell_cast 0x80062c24 (enemy-module spell)"); }
 void spell_data_request(int, int, Unit*) { todo("spell_data_request 0x800482e8"); }
 int spell_data_status(int, Unit*) {
@@ -68,6 +70,17 @@ SpellCast* spellcast_create(int, Unit*, Unit*, int, const void*) {
 void battle_flash_set(SpellCast*, int, int, int) { todo("battle_flash_set 0x80085c10"); }
 void spellcast_wait(SpellCast*, int) { todo("spellcast_wait 0x80085c84"); }
 void spellcast_dim_end(SpellCast*) { todo("spellcast_dim_end 0x80086478"); }
+u8& spell_landed_flag() {
+  static u8 flag = 0;
+  return flag;
+}
+u8& spell_effect_started_flag() {
+  static u8 flag = 0;
+  return flag;
+}
+const SpellCastView* spellcast_slot0() { return nullptr; }
+
+// ---- Other stand-ins (the battle agent's).
 void bload_request(int, void*, s16, int) { todo("bload_request 0x800475c0 (enemy module)"); }
 u32 voice_play_entry(int, Unit*) {
   todo("voice_play_entry 0x8007f818 (enemy-module voices)");
@@ -240,6 +253,10 @@ void collider_set_attack_box(Collider* c, s32 hx, s32 hy, s32 hz) {
   c->attack_min[0][2] = c->pos[2] - hz * 0x1000;
   c->attack_max[0][2] = c->pos[2] + hz * 0x1000;
   c->attack_max[0][1] = c->pos[1] + hy * 0x1000;
+}
+
+void shot_skill_camera_end(Shot* s) {
+  if (s->owner->camera_focus != 0) camera_schedule_end(7, s->owner, 0x3C);
 }
 
 int unit_is_disabled(const Unit* u) {
@@ -415,6 +432,27 @@ void enemy_debug_trace(const EnemyUnit* e) {
     if (u == nullptr) continue;
     std::snprintf(buf, sizeof(buf), " | p%d s%d x%d z%d hp%d", i, u->action, u->pos[0] >> 12, u->pos[2] >> 12, u->st()->hp);
     line += buf;
+  }
+  static const bool ticks = std::getenv("SS_ENEMY_TRACE")[0] == '2';
+  if (ticks) {
+    // SS_ENEMY_TRACE=2: also the AI tick accumulators (+0x239) and the battle state / flags.
+    char t[64];
+    std::snprintf(t, sizeof(t), " | st%d fl%d ai", g.state, g.flags);
+    line += t;
+    for (const EnemyUnit* u : g.enemy_units)
+      if (u != nullptr) line += " " + std::to_string(static_cast<s8>(u->ai_ticks));
+    if (const PartyUnit* p = g.party_units[0]) {
+      std::snprintf(t, sizeof(t), " pc %d pa %d gate %d vset %d frames %d", p->counters[0], p->appear,
+                    g.intro_voice_gate, g.special_voice_set, g.battle_frames);
+      line += t;
+      char q[96];
+      std::snprintf(q, sizeof(q), " e %d %d %d p %d %d", e->action, e->pos[0], e->pos[2], p->pos[0], p->pos[2]);
+      line += q;
+      if (const Camera* c = g.camera) {
+        std::snprintf(q, sizeof(q), " cam %d %d %d", c->mode, c->step, c->hold);
+        line += q;
+      }
+    }
   }
   std::fprintf(stderr, "[enemy] vblank %llu rng %u %s\n", static_cast<unsigned long long>(runtime::Runtime::get().vblanks()),
                rng_draws(), line.c_str());

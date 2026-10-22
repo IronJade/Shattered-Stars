@@ -192,7 +192,49 @@ target_sources(ss_game PRIVATE
   src/game/battle/enemy_support.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp
-  src/game/battle/enemy_mod_guardian.cpp)
+  src/game/battle/enemy_mod_guardian.cpp
+  src/game/battle/enemy_mod_carlaeagle.cpp
+  src/game/battle/enemy_mod_ericodus.cpp
+  src/game/battle/enemy_mod_gelatin.cpp
+  src/game/battle/enemy_mod_marsilio.cpp
+  src/game/battle/enemy_mod_slime.cpp
+  src/game/battle/enemy_mod_visseyer.cpp
+  src/game/battle/enemy_mod_xine.cpp
+  src/game/battle/enemy_mod_arcmene.cpp
+  src/game/battle/enemy_mod_hounddog.cpp
+  src/game/battle/enemy_mod_salamander.cpp
+  src/game/battle/enemy_mod_kitty.cpp
+  src/game/battle/enemy_mod_ricki.cpp
+  src/game/battle/enemy_mod_ogre.cpp
+  src/game/battle/enemy_mod_snowman.cpp
+  src/game/battle/enemy_mod_bunny.cpp
+  src/game/battle/enemy_mod_gargoyle.cpp
+  src/game/battle/enemy_mod_stingray.cpp
+  src/game/battle/enemy_mod_gerel.cpp
+  src/game/battle/enemy_mod_controller.cpp
+  src/game/battle/enemy_mod_niquia.cpp
+  src/game/battle/enemy_mod_azamgil.cpp
+  src/game/battle/enemy_mod_guardbox.cpp
+  src/game/battle/enemy_mod_lover.cpp
+  src/game/battle/enemy_mod_miel.cpp
+  src/game/battle/enemy_mod_shin.cpp
+  src/game/battle/enemy_mod_magichand.cpp
+  src/game/battle/enemy_mod_succubus.cpp
+  src/game/battle/enemy_mod_ghost.cpp
+  src/game/battle/enemy_mod_berle.cpp
+  src/game/battle/enemy_mod_cyril.cpp
+  src/game/battle/enemy_mod_dias.cpp
+  src/game/battle/enemy_mod_zand.cpp
+  src/game/battle/enemy_mod_bark.cpp
+  src/game/battle/enemy_mod_synard.cpp
+  src/game/battle/enemy_mod_celesta.cpp
+  src/game/battle/enemy_mod_shigeo.cpp
+  src/game/battle/enemy_mod_ruprecht.cpp
+  src/game/battle/enemy_mod_vesper.cpp
+  src/game/battle/enemy_mod_decus.cpp
+  src/game/battle/enemy_mod_nicolus.cpp
+  src/game/battle/enemy_mod_jibril.cpp
+  src/game/battle/enemy_mod_indalecio.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})
