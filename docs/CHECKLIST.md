@@ -79,12 +79,8 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 Openings differ by leader: **Claude** starts on **map 7** (entry 3214, Milokeenia: Ronixis
 and the survey team, "Well? Any results different from the pre-landing survey?");
 **Rena** starts on **map 18** (entry 3225, Arlia: Rena and her mother Westa, "I'll be going." /
-<<<<<<< HEAD
 "Wait!"). Set by the field's new-game state block (field 0x8005ea54: game_state+0x1a = 7 or 0x12
 from config+0x45).
-=======
-"Wait!").
->>>>>>> 09fbfde30dc39f6a0ee5f6db5a697df5b7d9647c
 
 - [x] Field program skeleton: state block (new game / load snapshot), system data #3110, screen, task list, main loop (0x80049bfc)
 - [x] Map container load (entry 3207 + map): sections 0 (textures, CLUTs, scene) / 1 (script, font) / 2 (sprites); party sprite packs
