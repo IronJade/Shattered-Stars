@@ -17,6 +17,7 @@ installed Redux was built from (f63cfc34, October 2026).
 | Flat blending, the four modes | | identical (gpu/quad, gpu/transparency) | | identical |
 | Order of dithering and blending | dither and saturate to 5 bits, then blend 5-bit values (gpu/lines: the transparent dithered gouraud polyline is `(B + Q) >> 1` of the opaque one's dithered value Q at every pixel; 8 channels are impossible if blending came first) | as the hardware | blends the 8-bit colour with the background expanded to 8 bits, then dithers | as the hardware |
 | Modulated colour in a blend | saturated (the blend is 5-bit) | saturated | not saturated: up to 62 enters B - F, B + F, (B + F) / 2 | saturated |
+| Line walk and line dithering | gpu/lines (below) | DDA, nearest pixel; gouraud lines dithered | Bresenham octants; no line dithered | identical (0) |
 | LoadImage from a misaligned address | (DMA: MADR bits 0-1 ignored) | took the address as given | aligns down | aligns down (`psyq::dma_source`) |
 
 ## The interpolation model
@@ -51,5 +52,37 @@ cleanly, but not in general.
   one step off remain where Redux's walker differs from the hardware model.
 - Polygons: a quad is dropped whole when any of the five edges of its two triangles
   spans 1024 columns or 512 rows (Redux's notes, checked on three console models).
-- Not covered: lines (the port's DDA against the hardware's Bresenham variants; gpu/lines
-  was used only for the blend order).
+
+## Lines
+
+`gpu/lines` draws horizontal, vertical and diagonal lines of every slope, mono and
+gouraud lines with dithering off and on, opaque and semi-transparent polylines and a
+16-segment circle. The port's earlier DDA (rounded to the nearest pixel, colour
+interpolated per step, only gouraud lines dithered) was 50 pixels off in the steep lines
+(the whole line one column off from its middle on), 1 LSB off in 129 / 111 gouraud and
+528 dithered mono pixels, and 48 in the polylines. `Gpu::draw_segment` now walks lines as
+Mednafen and DuckStation do, and the whole 1024x512 dump is identical:
+
+- k = the longer axis' length, k + 1 pixels, from the left end (the ends swap when the
+  line runs leftwards);
+- x and y in 32.32 from the pixel centre, x biased back by 1024 / 2^32 (and y too when it
+  steps up), the per-step increment `(delta << 32 ± (k - 1)) / k` rounded away from zero;
+- colours in 12-bit fixed point from the centre of the start value, `(c1 - c0) << 12 / k`;
+- every line is dithered when dithering is on, mono or gouraud (psx-spx says so too);
+  each polyline segment is drawn whole, so a semi-transparent polyline blends its shared
+  vertices twice.
+
+PCSX-Redux uses Bresenham octants (with a hardware-checked bias for shallow lines) and
+dithers no line at all; `Gpu::dither_lines = false` (set by `--reference-dither` and
+`test_field_message`) keeps the reference comparisons on its side.
+
+One input of the test is not defined: `gouraudMultiLine` sets its third colour twice and
+never the fourth, which is then stack garbage on the console. Fitting the last segment
+gives 0x6400d2 (r 210, g 0, b 100) exactly; with it the dump is identical, with 0 instead
+only those 32 + 32 pixels of the two last segments differ.
+
+Replayed: `scratchpad/fx_worker/ps1tests/harness.cpp` (`./harness lines out.bin` with
+`C3=0x6400d2`, then `cmp.py`; the dump is `gpu/lines/vram.png` of the ps1-tests
+repository). Probes from it are in `engine/tests/test_gpu.cpp`
+(`gpu_lines_match_hardware_dump`). The transparency dump is white outside its 320x240
+screen (the capture's state, not drawing); inside it is identical.

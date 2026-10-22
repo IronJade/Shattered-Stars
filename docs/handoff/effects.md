@@ -81,24 +81,32 @@ uv-interpolation, quad, transparency, lines), replayed on `psx::Gpu` with
   `test_field_message`'s comments and `docs/CHECKLIST.md` (the two GPU items, plus the DMA
   line) updated; `docs/notes/field_effects.md` table updated.
 
-## Phase 5 step 1: GPU lines (written, committed unverified in e37c3a5)
+## Phase 5 step 1: GPU lines (done, verified, reported)
 
-The weekly limit stopped this worker (2026-10-22, about 11:10) before it reported. What is
-in e37c3a5:
-- `Gpu::draw_line` walks lines as the hardware does (Mednafen's / DuckStation's model: k + 1
-  pixels from the left end, 32.32 stepping from the pixel centre, each step rounded away
-  from zero, colours stepped in 12-bit fixed point; every line dithered when dithering is on).
-- `Gpu::dither_lines` (gpu.h): false matches PCSX-Redux's renderer, which dithers no line;
-  `--reference-dither` now also covers lines and modulated textures (CHECKLIST line).
-- New test `gpu_lines_match_hardware_dump` (test_gpu.cpp), probes from the ps1-tests
-  gpu/lines VRAM dump: passes.
-- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff). The Redux comparison tests (test_field_message and others) still pass.
+Code committed in e37c3a5 (draw_segment, `dither_lines`, `--reference-dither` covering
+lines, `gpu_lines_match_hardware_dump`, CHECKLIST line). Verified after the cutoff:
+- The ps1-tests harness (`harness lines`) against the whole 1024x512 gpu/lines dump:
+  identical, with the test's undefined last polyline colour fitted (0x6400d2; with 0 only
+  that segment's 2 x 32 pixels differ). triangle / uv-interpolation / quad: identical over
+  the whole dump; transparency identical inside its 320x240 screen.
+- Before: 50 px wrong in steep lines, 1 LSB in 129 / 111 gouraud and 528 dithered mono
+  pixels, 48 in the polylines.
+- `docs/notes/gpu_accuracy.md`: a Lines section and a table row (uncommitted).
+- Suites (coordinator, HEAD): ss_tests 78/0, ss_game_tests 74/0 with and without the
+  disc, smoke 21/21; mine the same (smoke 16/16 in tools/smoke_field_events.sh here).
 
-Still to do for this step: a full-dump comparison with the ps1-tests harness (`harness lines`)
-and a note in docs/notes/gpu_accuracy.md. Then step 2: the four character modules
-(Precis #2155, Ashton #2147, Opera #2153, Chisato #2159), not started.
+## Phase 5 step 2: party modules (next)
 
-## Uncommitted files (phase 4 step 2, committed in 155be10)
+Precis #2155, Ashton #2147, Opera #2153, Chisato #2159, each in battle/pc_<name>.cpp,
+registered in pc_modules.cpp (flag the hunk). Read docs/handoff/battle.md,
+docs/notes/battle_port.md (Verification / Clock alignment), pc_claude.cpp /
+pc_casters.cpp / pc_modules.h first.
+
+## Uncommitted files
+
+- `docs/notes/gpu_accuracy.md` (Lines section), this log.
+
+## Phase 4 step 2 files (committed in 155be10)
 
 - New: `docs/notes/gpu_accuracy.md`.
 - Edited: `engine/src/psx/gpu.cpp` (plane attributes, quad split / drop),
