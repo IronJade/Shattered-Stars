@@ -46,10 +46,10 @@ Resume an area from its log.
 
 | Agent | Area | Next steps |
 |---|---|---|
-| Battle | `game/battle/` | pc_state_air_attack, the character modules Ernest, Bowman and Dias, party AI, voices |
-| Enemy | `game/battle/enemy_*` (new files) | the 16 resident enemy families, the slot A-D default modules, the encounter packs' enemy code; enemy spells wait on the battle agent |
+| Battle | `game/battle/` | pc_state_air_attack, the character modules Ernest, Bowman and Dias, party AI |
+| Enemy | `game/battle/enemy_*`, `spell_mod_<name>.cpp` (new) | the eight monster spell modules (12, 16, 22, 28, 51, 55, 56, 57) checked against its boss references, then Shot kinds 0x27 / 0x2d, shot_draw_frame_quad, bload_request and the battle voice player |
 | Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
-| World | `game/battle/spells*`, `spellcast*` (new) | battle spells: spell_cast and the spell routines, the #2129 spell-cast object, the spell data loader, the unit cast functions, the enemy spell path; then the command ring / item list menus and item use |
+| World | `game/battle/spells*`, `spellcast*`, `command_menu*` | verify the spell system and command menus, the test casters' modules, the other ~45 spell modules, battle item use |
 | Effects | `psx/gpu.cpp`, `game/battle/pc_<name>.cpp` (new) | GPU line stepping (hardware model), then the character modules Precis, Ashton, Opera and Chisato |
 
 Main session: integration and commits, the field program's glue, play-testing the story
