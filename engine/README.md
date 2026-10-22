@@ -15,9 +15,9 @@ or data: everything is read at runtime from your own disc images.
 | GPU (VRAM, polygons, sprites, lines, transfers, blending, mask, dithering) | software renderer, unit-tested |
 | Window, OpenGL presentation, keyboard and gamepad | done |
 | GTE + libgte | done, bit-exact with PCSX-Redux / Sony's PsyQ 4.2 code |
-| MDEC + STR movies | decoder done, exact against jPSXdec's PS1 mode; player being ported |
-| SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (title music matches PCSX-Redux); memory cards ported (raw 128 KB images) |
-| Game code | boot, title program (logos, title screen, New Game screens) ported; field program next |
+| MDEC + STR movies | decoder and player done, exact against jPSXdec's PS1 mode |
+| SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (music and effects match PCSX-Redux); memory cards (raw 128 KB images) |
+| Game code | boot, title (logos, movies, menu, New Game, Continue); field maps (event scripts, messages, actors, doors, chests, encounters, effects); world map; camp menu (first page, save / load); battles (combat, HUD). Result screen, shops, most menu pages and vehicles are in progress — see `docs/CHECKLIST.md` |
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
@@ -36,20 +36,39 @@ cmake --build engine/build
 ## Run
 
 ```sh
-# Texture viewer: Left/Right change entry, Up/Down change block, V shows all of VRAM.
-engine/build/shattered-stars --disc "Source BIN files/Star Ocean - The Second Story (Disc 1).bin"
-
-# Write an entry's textures as PNGs instead of opening a window.
-engine/build/shattered-stars --disc "…Disc 1.bin" --entry 10 --dump analysis/render/entry10
+# Play: opens the game window. The disc paths are remembered in
+# ~/.config/shattered-stars/config.ini, so later runs need no arguments.
+engine/build/shattered-stars --disc1 ".../Star Ocean - The Second Story (Disc 1).cue" \
+                             --disc2 ".../Star Ocean - The Second Story (Disc 2).cue"
+engine/build/shattered-stars
 ```
 
+Memory card 1 is `memcard1.mcd` next to `config.ini` (created formatted on first use);
+`--memcard1 FILE` / `--memcard2 FILE` use other raw 128 KB images. A DexDrive save
+(`.gme`) converts with `tools/gme_to_mcd.py SAVE.gme CARD.mcd` — point `--memcard1` at a
+copy, since the game writes to the card it uses.
+
 Keyboard pad: arrows = d-pad, Z = Cross, X = Circle, A = Square, S = Triangle,
-Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2.
+Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2. Gamepads work through SDL.
+
+Other modes:
+
+```sh
+# Texture viewer: Left/Right change entry, Up/Down change block, V shows all of VRAM.
+engine/build/shattered-stars --viewer
+# Write an entry's textures as PNGs instead of opening a window.
+engine/build/shattered-stars --entry 10 --dump analysis/render/entry10
+```
+
+Debugging switches (start on a map, battles, traces, headless runs) are listed in
+`docs/HANDOFF.md`.
 
 ## Tests
 
 ```sh
-SS_DISC1="Source BIN files/Star Ocean - The Second Story (Disc 1).bin" engine/build/ss_tests
+SS_DISC1=".../Star Ocean - The Second Story (Disc 1).cue" engine/build/ss_tests
+SS_DISC1=".../Star Ocean - The Second Story (Disc 1).cue" engine/build/ss_game_tests
+tools/smoke_field_events.sh engine/build/shattered-stars   # whole-game headless checks
 ```
 
 The disc tests compare against reference values from `tools/so2_archive.py` and the
