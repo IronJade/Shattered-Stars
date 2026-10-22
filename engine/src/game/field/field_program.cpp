@@ -439,6 +439,43 @@ void field_destroy_subsystems(Field*) {
 // 0x80050dec, after field_update: script flag bits 12 and 14 (byte 1 bits 4 / 6) stop
 // the voice streaming; an encounter rate (field_flags +0x25, raised to at least 10)
 // that turns on starts streaming the battle voices, and one that turns off stops it.
+// Debugging: SS_STATE_DUMP="VBLANK:PATH,..." writes, at the first field frame on or
+// after each vblank, the state block (handoff 9, 0xa40), config (0x2a0), party (0x300),
+// records (0x680) and inventory (0xc28) to PATH, for comparison with a PCSX-Redux RAM
+// dump (scratchpad tools read the same blocks through the handoff registry).
+void state_dump_check() {
+  static const char* spec = std::getenv("SS_STATE_DUMP");
+  static size_t done = 0;
+  if (spec == nullptr) return;
+  const unsigned long long now = runtime::Runtime::get().vblanks();
+  size_t index = 0;
+  for (const char* p = spec; p != nullptr && *p != 0; ++index) {
+    char* end = nullptr;
+    const unsigned long long at = std::strtoull(p, &end, 10);
+    if (end == nullptr || *end != ':') return;
+    const char* path = end + 1;
+    const char* comma = std::strchr(path, ',');
+    const std::string file = comma ? std::string(path, comma) : std::string(path);
+    p = comma ? comma + 1 : nullptr;
+    if (index < done || now < at) continue;
+    done = index + 1;
+    FieldGlobals& g = g_field;
+    const u8* block = static_cast<const u8*>(handoff_get(g.handoff, 9));
+    std::FILE* out = std::fopen(file.c_str(), "wb");
+    if (out == nullptr || block == nullptr) {
+      if (out) std::fclose(out);
+      continue;
+    }
+    std::fwrite(block, 1, 0xA40, out);
+    std::fwrite(g.config, 1, 0x2A0, out);
+    std::fwrite(g.party, 1, 0x300, out);
+    std::fwrite(g.records, 1, 0x680, out);
+    std::fwrite(g.inventory, 1, 0xC28, out);
+    std::fclose(out);
+    std::fprintf(stderr, "[state] dumped %s at vblank %llu\n", file.c_str(), now);
+  }
+}
+
 void field_update_encounter_streaming(Field* f) {
   FieldGlobals& g = g_field;
   u8* flags = g.field_flags;
@@ -947,6 +984,7 @@ void field_main_loop(Field* f) {
     g.disc_error = 0;  // the host disc never opens
     field_update(f);
     field_update_encounter_streaming(f);  // 0x80050dec
+    state_dump_check();
     if (field_sub_program() != nullptr && !field_movie_main_loop(f)) continue;
     task_run_all();
     if (gauge_exists()) gauge_update();  // 0x800752e8: 0x801f999c (#3109)

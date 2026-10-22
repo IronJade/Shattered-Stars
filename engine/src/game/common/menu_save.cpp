@@ -7,6 +7,7 @@
 #include "game/boot/sound.h"
 #include "game/common/memcard.h"
 #include "game/common/menu_scene.h"
+#include "game/common/save_icon.h"
 #include "game/title/title_program.h"
 #include "runtime/runtime.h"
 
@@ -822,6 +823,9 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
       level = rd16s(g.party + i * 0x60 + 0x26);
     }
   }
+  // The field's page (overlay 0xbb6) also picks an icon; its buffer holds the freed icon
+  // sheet's bytes where save_build writes nothing (save_icon.h).
+  const u8* field_icon = host() == Host::Field ? field_save_prefill(file) : nullptr;
   std::memset(file, 0, 0x200);
   file[0] = 'S', file[1] = 'C', file[2] = 0x13, file[3] = 0x01;
   // Title: "ＳＯ２　" + position, play time h:mm, the leader's name, "ＬＶ" + level.
@@ -859,7 +863,11 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
   put_sjis(tmp);
   std::memcpy(file + 4, sb.str(), std::strlen(sb.str()));
   // Icon: CLUT (0x60) and three frames (0x80); zero in the title's copy of the module.
-  if (const u8* icon = table(0x80067B9C, 0x80082B78)) std::memcpy(file + 0x60, icon, 0x1A0);
+  if (field_icon != nullptr) {
+    std::memcpy(file + 0x60, field_icon, 0x1A0);
+  } else if (const u8* icon = table(0x80067B9C, 0x80082B78)) {
+    std::memcpy(file + 0x60, icon, 0x1A0);
+  }
   // Summary.
   u8* summary = file + kSaveSummary;
   static const u8 kMagic[16] = {'S', 'T', 'A', 'R', ' ', 'O', 'C', 'E', 'A', 'N', ' ', '0', '3', '/', '0', '1'};

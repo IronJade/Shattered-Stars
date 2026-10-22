@@ -93,6 +93,7 @@ add_library(ss_game STATIC
   src/game/field/menu_skills.cpp
   src/game/field/menu_options.cpp
   src/game/common/menu_viewer.cpp
+  src/game/common/save_icon.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
   src/game/title/title_program.cpp
@@ -231,6 +232,7 @@ target_sources(ss_game_tests PRIVATE tests/test_battle.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_field_effects.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)
