@@ -55,11 +55,13 @@ Resume an area from its log.
 Main session: integration and commits, the field program's glue, play-testing the story
 route.
 
-**Never losing work:** every agent brings its log up to date (and keeps its work on disk)
-at least every 20 minutes, and the main session runs `tools/checkpoint.sh` every 20
-minutes (a CronCreate job at :07 / :27 / :47; session-only, so recreate it in a new
-session). The script commits everything as a "WIP checkpoint" when `engine/build` builds,
-otherwise `docs/` only. Verified work gets its own commit as each agent reports it.
+**Never losing work:** agents write straight to disk and keep their logs and catalog rows
+current at least every 20 minutes. The main session commits once an hour with
+`tools/checkpoint.sh [notes]` (a CronCreate job at :13; session-only, so recreate it in a
+new session; it fires only while the session is idle). The script builds; if the build
+passes, it runs ss_tests / ss_game_tests / smoke and commits everything with the results
+and the list of what was verified since the last checkpoint; otherwise it commits `docs/`
+only. Agents run the suites themselves before reporting a step as verified.
 
 ## Build and tests
 
