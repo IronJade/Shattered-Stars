@@ -48,6 +48,28 @@ struct Ghost : Task {
 };
 Ghost* ghost_create(const BObj* src, u32 rgb);
 
+// 0x2a0-byte task (vtable 0x80080fbc, priority 3): a camera-facing ribbon through the last
+// 'length' positions of an object (history of 32), fading 0x100 / length a tick; additive.
+struct RibbonTrail : Task {
+  u8 length = 0;              // +0x08
+  s8 head = 0;                // +0x09: next history slot (counts down)
+  u8 tpage = 0x20;            // +0x0a: the DR_MODE's semi-transparency bits
+  u8 in_pause = 0;            // +0x0b: created during the 0x40 pause; keeps running
+  u8 stop = 0;                // +0x0c: the owner is done; fade out and delete
+  u8 no_lift = 0;             // +0x0d: follow the position itself (else 2 * height above it)
+  RibbonTrail** back = nullptr;  // +0x10: cleared when the task goes
+  u32 rgb_a = 0;              // +0x14: trailing edge colour
+  u32 rgb_b = 0;              // +0x18: leading edge colour
+  const BObj* source = nullptr;  // +0x1c
+  s32 alpha[32] = {};         // +0x20
+  s32 hist[32][4] = {};       // +0xa0: positions (x, y, z, w)
+
+  RibbonTrail(const BObj* src, u8 len, u32 a, u32 b);  // ribbon_trail_create 0x80075944
+  ~RibbonTrail() override;                             // ribbon_trail_destroy 0x80075a10
+  void update() override;                              // ribbon_trail_update 0x80075a74
+};
+RibbonTrail* ribbon_trail_create(const BObj* src, u8 len, u32 rgb_a, u32 rgb_b);
+
 // 0x8003a88c: animates (slot 26); at the end, or late in the end countdown, ends the move
 // (action kind 0x12 + slot 12), releases the bound effects and the camera look offset;
 // returns 1 when finished.

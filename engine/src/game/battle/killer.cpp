@@ -5,6 +5,13 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/render.h"
+#include "game/battle/stage.h"
+#include "game/common/screen.h"
+#include "game/title/new_game.h"
+#include "psx/gte.h"
+#include "runtime/libgpu.h"
+#include "runtime/libgte.h"
 #include "game/battle/input.h"
 #include "game/battle/shot.h"
 #include "game/battle/unit_move.h"
@@ -134,6 +141,183 @@ void Ghost::update() {
     }
   }
   delete this;
+}
+
+// ---- RibbonTrail -----------------------------------------------------------------------
+
+RibbonTrail::RibbonTrail(const BObj* src, u8 len, u32 a, u32 b) {
+  length = len;
+  head = 0;
+  tpage = 0x20;
+  in_pause = (bg().flags & 0x40) != 0 ? 1 : 0;
+  stop = 0;
+  no_lift = 0;
+  source = src;
+  rgb_a = a;
+  rgb_b = b;
+  back = nullptr;
+  task_register(this, 3);
+}
+
+RibbonTrail::~RibbonTrail() {
+  if (back != nullptr) *back = nullptr;
+  task_unregister(this);
+}
+
+RibbonTrail* ribbon_trail_create(const BObj* src, u8 len, u32 rgb_a, u32 rgb_b) {
+  return new RibbonTrail(src, len, rgb_a, rgb_b);
+}
+
+namespace {
+
+// 32-bit R3000 products and quotients (a zero divisor gives what the CPU leaves in LO).
+s32 mul32(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cast<u32>(b)); }
+s32 div_r3000(s32 n, s32 d) {
+  if (d == 0) return n >= 0 ? -1 : 1;
+  if (n == INT32_MIN && d == -1) return n;
+  return n / d;
+}
+s32 abs_angle(s32 dy, s32 dx) {
+  const s32 a = ratan2(dy, dx);
+  return a < 0 ? -ratan2(dy, dx) : ratan2(dy, dx);
+}
+u32 svec_xy(s32 x, s32 y) { return static_cast<u32>(static_cast<u16>(x)) | static_cast<u32>(static_cast<u16>(y)) << 16; }
+
+}  // namespace
+
+void RibbonTrail::update() {
+  BattleGlobals& g = bg();
+  if (g.effects_suppressed != 0 && in_pause == 0) return;
+  if (kStateResult <= g.state) {
+    delete this;
+    return;
+  }
+  const u8 paused = in_pause != 0 ? (g.flags & 0xBF) : g.flags;
+  if (paused == 0) {
+    int alive = 32;
+    for (s32& a : alpha) {
+      if (a == 0) {
+        --alive;
+        continue;
+      }
+      a -= 0x100 / length;
+      if (a < 0) a = 0;
+      if (a == 0) --alive;
+    }
+    if (stop != 0 && alive == 0) {
+      delete this;
+      return;
+    }
+    if (g.state == kStateFighting && stop == 0) {
+      const int i = head;
+      hist[i][0] = source->pos[0];
+      hist[i][1] = source->pos[1];
+      hist[i][2] = source->pos[2];
+      hist[i][3] = source->pos_w;
+      alpha[i] = 0x100;
+      head = static_cast<s8>(head - 1);
+      if (head < 0) head = 0x1F;
+    }
+  }
+  const s32 w = source->size[0], h = source->size[1];
+  RenderContext* pool = g.prim_pool_a;
+  if (!arena_has_room(pool, length * 0x30)) return;
+  ViewState& v = view();
+  psx::Gte& q = psyq::gte();
+  s32 lift = bsin(static_cast<u32>(v.pitch)) << 4;
+  if (lift < 0) lift = 0;
+  lift += 0x10000;
+  s16 prev1[2] = {}, prev3[2] = {};  // the last quad's xy1 / xy3 (the next one's xy0 / xy2)
+  for (int k = 0; k < length; ++k) {
+    int idx[4];
+    idx[0] = k > 0 ? (head + k) & 0x1F : -1;
+    idx[1] = (head + k + 1) & 0x1F;
+    idx[2] = (head + k + 2) & 0x1F;
+    idx[3] = (head + k + 3) & 0x1F;
+    if (alpha[idx[1]] == 0 || alpha[idx[2]] == 0) continue;
+    s16 sx[4] = {}, sy[4] = {};
+    s32 sz[4] = {};
+    for (int j = 0; j < 4; ++j) {
+      if (idx[j] < 0) continue;
+      const s32* p = hist[idx[j]];
+      const s16 dx = static_cast<s16>((p[0] - v.view_eye[0]) >> 12);
+      s32 dyw = (p[1] - lift - v.view_eye[1]) >> 12;
+      if (no_lift == 0) dyw -= h * 2;
+      const s16 dy = static_cast<s16>(dyw);
+      const s16 dz = static_cast<s16>((p[2] - v.view_eye[2]) >> 12);
+      psyq::SetRotMatrix(&v.render_view);
+      q.write_data(psx::Gte::VXY0, svec_xy(dx, dy));
+      q.write_data(psx::Gte::VZ0, static_cast<u32>(static_cast<s32>(dz)));
+      q.execute(psx::Gte::kRtv0);
+      psyq::MATRIX m = v.render_view;
+      m.t[0] = static_cast<s32>(q.read_data(psx::Gte::MAC1));
+      m.t[1] = static_cast<s32>(q.read_data(psx::Gte::MAC2));
+      m.t[2] = static_cast<s32>(q.read_data(psx::Gte::MAC3));
+      psyq::SetTransMatrix(&m);
+      psyq::SetRotMatrix(&v.render_view);
+      q.write_data(psx::Gte::VXY0, 0);
+      q.write_data(psx::Gte::VZ0, 0);
+      q.execute(psx::Gte::kRtps);
+      const u32 sxy = q.read_data(psx::Gte::SXY2);
+      sx[j] = static_cast<s16>(sxy);
+      sy[j] = static_cast<s16>(sxy >> 16);
+      sz[j] = static_cast<s32>(q.read_data(psx::Gte::SZ3));
+    }
+    const s32 otz = (sz[1] + sz[2]) >> 6;
+    if (0x5FE < static_cast<u32>(otz - 7)) continue;
+    const s32 a12 = abs_angle(sy[2] - sy[1], sx[2] - sx[1]);
+    s32 start = a12;
+    if (k == 0) {
+      if (0 <= idx[0] && alpha[idx[0]] != 0) {
+        const s32 s = abs_angle(sy[1] - sy[0], sx[1] - sx[0]) + a12;
+        start = (s < 0 ? s + 1 : s) >> 1;
+      }
+      start += 0x400;
+    }
+    s32 end = a12;
+    if (alpha[idx[3]] != 0) {
+      const s32 s = abs_angle(sy[3] - sy[2], sx[3] - sx[2]) + a12;
+      end = (s < 0 ? s + 1 : s) >> 1;
+    }
+    end += 0x400;
+    const s32 za = mul32(div_r3000(0x10000, sz[1] >> 5), v.zoom);
+    const s32 zb = mul32(div_r3000(0x10000, sz[2] >> 5), v.zoom);
+    const s32 s1 = mul32(w, za >> 10) >> 12, s2 = mul32(h, za >> 10) >> 12;
+    const s32 e1 = mul32(w, zb >> 10) >> 12, e2 = mul32(h, zb >> 10) >> 12;
+    const s32 cs = bcos(static_cast<u32>(start)), ss = bsin(static_cast<u32>(start));
+    const s32 ce = bcos(static_cast<u32>(start));  // [sic] the original takes the start angle's cosine here
+    const s32 se = bsin(static_cast<u32>(end));
+    auto* quad = screen_alloc_prims<psyq::POLY_G4>(pool->arena, 1);
+    auto* dm = screen_alloc_prims<psyq::DR_MODE>(pool->arena, 1);
+    if (quad == nullptr || dm == nullptr) return;
+    psyq::setPolyG4(quad);
+    const u32 lead = scale_colour(rgb_b, alpha[idx[1]]) | 0x3A000000u;
+    const u32 trail = scale_colour(rgb_a, alpha[idx[2]]);
+    std::memcpy(&quad->r0, &lead, 4);
+    std::memcpy(&quad->r1, &lead, 3);
+    std::memcpy(&quad->r2, &trail, 3);
+    std::memcpy(&quad->r3, &trail, 3);
+    if (k > 0) {
+      quad->x0 = prev1[0], quad->y0 = prev1[1];
+      quad->x2 = prev3[0], quad->y2 = prev3[1];
+    } else {
+      quad->x0 = static_cast<s16>(sx[1] + (mul32(cs, s1) >> 13));
+      quad->y0 = static_cast<s16>(sy[1] - (mul32(ss, s2) >> 13));
+      quad->x2 = static_cast<s16>(sx[1] - (mul32(cs, e1) >> 13));
+      quad->y2 = static_cast<s16>(sy[1] + (mul32(ss, e2) >> 13));
+    }
+    quad->x1 = static_cast<s16>(sx[2] + (mul32(ce, s1) >> 13));
+    quad->y1 = static_cast<s16>(sy[2] - (mul32(se, s2) >> 13));
+    quad->x3 = static_cast<s16>(sx[2] - (mul32(ce, e1) >> 13));
+    quad->y3 = static_cast<s16>(sy[2] + (mul32(se, e2) >> 13));
+    prev1[0] = quad->x1, prev1[1] = quad->y1;
+    prev3[0] = quad->x3, prev3[1] = quad->y3;
+    psyq::P_TAG* ot = &pool->ot_head[0x616 - otz];
+    psyq::addPrim(ot, quad);
+    psyq::SetDrawMode(dm, 0, 1, tpage, nullptr);
+    psyq::addPrim(ot, dm);
+    pool_a_bytes_used() += 0x30;
+  }
 }
 
 // ---- PartyUnit helpers -------------------------------------------------------------------

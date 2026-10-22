@@ -2,6 +2,7 @@
 
 #include "core/types.h"
 #include "game/battle/unit.h"
+#include "game/battle/unit_move.h"
 
 // The Shot: the battle's generic effect / projectile actor (0x13c bytes, vtable 0x8006ce90,
 // a Collider). 160 of them in g_pool_13c (0x8006fac4); battle_main_loop runs vtable[1]
@@ -11,6 +12,7 @@
 namespace ss::game::battle {
 
 struct Shot;
+struct RibbonTrail;
 using ShotFn = void (*)(Shot*);
 
 struct Shot : Collider {
@@ -21,7 +23,8 @@ struct Shot : Collider {
   Unit* owner = nullptr;     // +0x110
   Unit* target = nullptr;    // +0x114
   s32 point[3] = {};         // +0x118: target point / centre, or three parameters
-  void* trail = nullptr;     // +0x124: ribbon trail (kind 0x16)
+  RibbonTrail* trail = nullptr;  // +0x124: ribbon trail (kind 0x16)
+  u32 trail_rgb = 0;         // +0x124 before kind 0x16's first frame: the trail colour
   s32 p128 = 0;              // +0x128: timer / variant
   s32 p12c = 0;              // +0x12c: the ending fade counter (shot_fade_out)
   s32 p130 = 0;              // +0x130
@@ -72,5 +75,53 @@ Shot* effect_spawn_sparks_at(const s32 pos[3], s32 count, s32 p118, s32 p11c, s3
 Shot* effect_spawn_sparks_on(BObj* owner, s32 count, s32 p118, s32 p11c, s32 p130, s32 p134, s32 p12c, s32 p120,
                              s32 p138, s16 power);
 int shot_kind21_absent(ShotFn fn);            // 0x80087510: 1 when no kind-0x21 Shot runs fn
+// 0x8006375c: a kind-0x10 Shot (an expanding lit sphere: lat x lon segments, radius +0x138
+// growing by +0x130, life +0x134, colour +0x118, scale +0x10c, +0x10a flag) at pos;
+// 0x80063718 passes scale 0x1000.
+Shot* effect_spawn_sphere_at(const s32 pos[3], s32 lat, s32 lon, s32 grow, s32 life, u32 rgb, s32 radius, s16 power,
+                             s16 scale);
+inline Shot* effect_spawn_sphere_at_default(const s32 pos[3], s32 lat, s32 lon, s32 grow, s32 life, u32 rgb,
+                                            s32 radius, s16 power) {
+  return effect_spawn_sphere_at(pos, lat, lon, grow, life, rgb, radius, power, 0x1000);
+}
+// 0x800548c4: spell damage from s (its owner +0x110) to n targets (hit points[]): power
+// raised by the owner's statuses, per target halving, MP burns, unit_calc_damage (magic),
+// misses / guts / absorb / reflect / redirect / barrier, the popup and HP (or MP when the
+// owner's +0x134) damage, an optional spark; sfx on the first target. Returns 1 when a
+// target took no damage. A redirect replaces targets[i].
+int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int power, int sfx, u16 element, int spark,
+                      int knockback);
+
+// The projectile descriptor (0x74 bytes, scratchpad 0x1f800000 s_shot_desc) that
+// shot_spawn_projectile turns into a kind-0x16 Shot.
+struct ShotDesc {
+  Unit* target = nullptr;  // +0x00: aims at the target's centre (null: at point)
+  s32 point[3] = {};       // +0x04
+  s32 w10 = 0;             // +0x10
+  s32 angle = 0;           // +0x14: yaw offset from the target direction (4096 = 360)
+  s32 speed = 0;           // +0x18
+  s32 anim = 0;            // +0x1c
+  s32 trail_rgb = 0;       // +0x20 (Shot +0x124): ribbon trail colour (0: none; length 12)
+  s32 spin = 0;            // +0x24 (Shot +0x130 low half): trail sprites' fade speed; flag 1
+  s32 trail_anim = 0;      // +0x28 (Shot +0x134 when spin is set): trail sprite anim - 1
+  u32 flags = 0;           // +0x2c (Shot +0x138; see shot_k16_projectile)
+  s32 trail_bits[4] = {};  // +0x30..+0x3c: impact effect kind / colour / size a / size b (flags bits 3, 6, 10, 12)
+  s32 power = 0;           // +0x40 (Shot +0x118)
+  s32 hit_effect = 0;      // +0x44 (Shot +0x11c low half): hit sprite anim
+  s32 hit_effect_hi = 0;   // +0x48 (Shot +0x11c high half): kind of a Shot spawned on the hit
+  s32 hits = 0;            // +0x4c (Shot +0x120 low half): hit sprite count
+  s32 hit_bits[3] = {};    // +0x50..+0x58: flags bits 14 (scatter) / 16 (sprite set, scale) / 18
+  s32 hits_hi = 0;         // +0x5c (Shot +0x120 high half): hit sprites' CLUT offset
+  s32 box = 0;             // +0x60 (Shot +0x56)
+  s32 sfx = 0;             // +0x64 (Shot +0x10c)
+  s32 life = 0;            // +0x68 (Shot +0x130 high half, flag 0x2000000)
+  s32 airborne = 0;        // +0x6c (Shot +0x6b): CLUT offset of a glow sprite each frame
+  s32 element = 0;         // +0x70 (Shot +0x10a; a nonzero high half (+0x72) sets +0x6b bit 7: pierces)
+};
+// 0x8005a0cc: clears the descriptor and sets the defaults (anim and trail anim, box 0x60,
+// sfx 0x4a, flags 0x1000000, power 0x100, one hit, +0x58 = 1).
+ShotDesc* shot_desc_init(int anim);
+// 0x8005a158: a kind-0x16 projectile from 'from' (owner, descriptor, sprite source).
+Shot* shot_spawn_projectile(Unit* owner, const s32 from[3], const ShotDesc* d, const BObj* anim_src);
 
 }  // namespace ss::game::battle

@@ -52,50 +52,42 @@ and `PartyUnit` (fields at +0x290..+0x35x, virtual slots 36 / 39 / 45).
     `shot.{h,cpp}`, delete them there, and flag the edit to the coordinator.
 - `fx_draw.*` and `bsfx.*` stay mine; the enemy agent won't edit them.
 
-## Step 3 so far: done and verified, NOT committed yet (reported to main)
+## Step 3 part 1: committed (403f921)
 
-Builds in build-battle and build-battle-asan; ss_tests 76/76, ss_game_tests 71/71 (also
-under ASan); an ASan run of the Sword Bomber battle is clean.
+Claude's module, Particle pool, Afterimage / Ghost, party loader phases 1-4, kind 0x11,
+fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phasegun_2_3`,
+`ref/phasegun_exit`, `ref/pg_cash`, `ref/moves_9_5`; see docs/notes/battle_port.md).
 
-- New files: `battle/killer.{h,cpp}` (Afterimage, Ghost, pc_* helpers, command_killer_move),
-  `battle/particle.{h,cpp}` (pool of 200, kinds 1-3 drawn, 4/5 spawn only),
-  `battle/pc_modules.{h,cpp}` (factory, module data access), `battle/pc_claude.cpp` (Claude:
-  all 11 moves, Shot callbacks, vtable slots 23/25/35/36/37/45), `battle/fx_draw.{h,cpp}`
-  (draw_vortex, project_to_screen, draw_flare_ring / _polygon, lens_flare_draw / _small,
-  colour_modulate).
-- Edited: `shot.{h,cpp}` (kind 0x11, sparks spawners, spark_owner), `party.cpp` (phases 1-4,
-  module factory), `party_states.cpp` (killer begin_action), `input.cpp` (killer commands),
-  `unit.h`, `unit_move.{h,cpp}` (vec_velocity_toward_xz, vec_random_around,
-  vec_to_angles), `render.{h,cpp}` (colour_lerp moved here from hud.cpp), `hud.cpp` (raw
-  window pointers), `bobj.cpp` (NO CASH / NO CASH TAG message as the console picks it),
-  `sprite.h`, `bobj.h`, `combat.cpp`, `battle_program.cpp` (particle pool; stage lens flare
-  call), `battle_debug.{h,cpp}` (`SS_BATTLE_POKE=TAG:OFF=VAL/SIZE,...`), `CMakeLists.txt`.
-- Verified against Redux:
-  - `ref/phasegun_2_3` (L1 Phase Gun every 45): RNG equal to b1600; frames equal but dither.
-  - `ref/phasegun_exit` (L1 then Cross): RNG equal to the exit (b1236); handoffs equal but the
-    12 known bytes; handoff 3 identical.
-  - `ref/pg_cash`: texcache_alloc fails 8x/frame at b582-586, where the port logs NO CASH.
-  - `ref/moves_9_5` (Sword Bomber on L1 via pokes): RNG equal to b1600; vortex, flare and
-    kind-0x11 fire rings look the same.
-- Catalog: `analysis/battle_catalog/port_updates.csv` regenerated (466 rows) with
-  `scratchpad/battle/gen_catalog.py`; notes in `docs/notes/battle_port.md` (synced to
-  `analysis/battle_catalog/port_notes.md`).
+## In progress (uncommitted, all build; reported to main)
+
+- Shot kind 0x16: `shot.{h,cpp}` ShotDesc / shot_desc_init / shot_spawn_projectile /
+  shot_k16_projectile / effect_spawn_sphere_at(_default) / shot_apply_damage;
+  `killer.{h,cpp}` RibbonTrail. Moved out of the enemy agent's `enemy_support.{h,cpp}`
+  (ShotDesc, shot_desc_init, shot_spawn_projectile, effect_spawn_sphere_at_default stand-in);
+  backups of the pre-edit files in `scratchpad/battle/enemy_support.{h,cpp}.bak`.
+- `tests/test_battle.cpp`: battle_projectile_spawn. ss_game_tests 73/73 (ASan too); the
+  Phase Gun regression is still exact.
+- `docs/notes/battle.md`: the stale #2129 rows warning (ELF building).
+- Catalog regenerated (475 rows); gen_catalog.py no longer repeats "battle port".
+- Not run-time verified: monsters in the port's debug starts (oozes enc 92, Alraunes enc
+  21 / 23) never pick their ranged attack, so no projectile has spawned yet. Compare with
+  Redux once one does (Ooze attack2: shot_desc_init(6), speed 0x1a, life 0x1e, flags
+  0x100006).
 
 ## Next steps
 
-1. Shot kind 0x16 (projectile) with ribbon trails: asm already read and written down in
-   `scratchpad/battle/notes/k16.md` (shot_spawn_projectile, shot_k16_projectile,
-   ribbon_trail_create / update). Still to read: ribbon_trail_destroy 0x80075a10 (clears
-   the owner back pointer, task_destroy), shot_hit_magic 0x800547d4, shot_apply_damage
-   0x800548c4, 0x80063718 (effect spawner of impact kind 2), 0x800443f8 (check the port
-   name), tables 0x8006ffb8.. / 0x8006cf24 / 0x8006cee4 (battle_data). Then move
-   `shot_desc_init` / `shot_spawn_projectile` from `enemy_support.{h,cpp}` into
-   `shot.{h,cpp}` and tell the coordinator.
-2. Test Claude's move 5 (Energy Sword, byte 6: kind-0x11 rings variants 0/1) the same way.
-3. Sound handles (fade / duck / pitch) in bsfx; then delete the enemy agent's stand-ins.
-4. Shot kinds 2, 0x2c, 0x32; the other character modules (casters first), each verified.
-5. Step 4: spells and items.
-6. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
+1. Sound handles in bsfx: sound_handle_fade_out / duck / pitch_up / pitch_down
+   (0x8007fd98-0x8007feb0) with clip-handle tracking; then delete the enemy agent's
+   stand-ins (enemy_support.cpp: sound_handle_pitch_down and any others) and tell main.
+2. Shot kinds 2 (sword wave), 0x2c (thrown weapons), 0x32 (beam / effect_spawn_beam_at),
+   0x10 (sphere, needs draw_sphere 0x8007c520).
+3. Claude's move 5 (Energy Sword) compare; the other character modules (casters first).
+4. Step 4: spells and items (shot_hit_magic 0x800547d4 next to shot_apply_damage).
+5. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
+6. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (the task
+   table is just cleared): a leak, not a crash; and `Unit` has no dtor deleting its
+   effects (the console's unit_destroy 0x8004def0 destroys +0x1f4 / +0x1f8). Unit +0x1f8 is
+   a RibbonTrail on the console (port: `effects[1]`, unused so far).
 
 ## Tooling notes
 
@@ -122,6 +114,8 @@ under ASan); an ASan run of the Sword Bomber battle is clean.
 - Particle lines read the GTE OTZ register after RTPS (stale: the last AVSZ's value).
 - `battle_data` reads #2129; #1984 block 0 (0x800715d0) and #1981 (0x80085518) data come
   from the overlay images (`ovl1984_data` / `ovl1981_data`).
+- shot_apply_damage's redirect loop compares the random member with targets[tries],
+  walking past the list (stack garbage on the console); the port compares only within it.
 - ribbon_trail_update passes the start angle where the end angle's cosine belongs (xy1 / xy3
   use cos(start), sin(end)); the port keeps it. Shot +0x124 holds the trail colour until
   the first frame replaces it with the trail pointer (pointers are negative as s32).

@@ -16,6 +16,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/hud.h"
 #include "game/battle/result.h"
+#include "game/battle/shot.h"
 #include "game/boot/rng.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
@@ -457,4 +458,48 @@ TEST(battle_levelup_claude) {
   const u16* learned = levelup_learn_skills(ctx.get(), slot.data(), rec.data());
   CHECK_EQ(learned[0], 0);  // Claude's first move comes at level 3
   bg().config = old_config;
+}
+
+TEST(battle_projectile_spawn) {
+  NEEDS_DISC();
+  // shot_spawn_projectile (0x8005a158) packs the descriptor into a kind-0x16 Shot.
+  shot_pool_create();
+  BObj src;
+  ShotDesc* d = shot_desc_init(6);
+  CHECK(d->box == 0x60 && d->sfx == 0x4A && d->flags == 0x1000000 && d->power == 0x100);
+  CHECK(d->trail_anim == 6 && d->hits == 1 && d->hit_bits[2] == 1);
+  d->point[0] = 0x100000;
+  d->speed = 0x10;
+  d->spin = 3;
+  d->trail_anim = 0x20;
+  d->life = 0x1E;
+  d->trail_rgb = 0x204060;
+  d->trail_bits[0] = 2, d->trail_bits[1] = 5, d->trail_bits[2] = 1, d->trail_bits[3] = 3;
+  d->hit_effect = 7;
+  d->hit_effect_hi = 0x16;
+  d->hits = 2;
+  d->hits_hi = 4;
+  d->hit_bits[0] = 1, d->hit_bits[1] = 2, d->hit_bits[2] = 1;
+  d->airborne = 3;
+  d->element = 0x10004;  // element 4; the high half makes it pierce
+  const s32 from[3] = {0, 0, 0};
+  Shot* s = shot_spawn_projectile(nullptr, from, d, &src);
+  CHECK(s != nullptr);
+  if (s != nullptr) {
+    CHECK(s->kind == 0x16);
+    CHECK(s->anim == 6);
+    CHECK(s->vel[0] == 0x10 * 0x1000 && s->vel[1] == 0 && s->vel[2] == 0);
+    const u32 want = 0x1000000u | 1u | 0x2000000u | 2u << 3 | 5u << 6 | 1u << 10 | 3u << 12 | 1u << 14 | 2u << 16 | 1u << 18;
+    CHECK(static_cast<u32>(s->p138) == want);
+    CHECK(s->p130 == (3 | 0x1E << 16));
+    CHECK(s->p134 == 0x20);
+    CHECK(s->trail_rgb == 0x204060u);
+    CHECK(s->point[0] == 0x100);
+    CHECK(s->point[1] == (7 | 0x16 << 16));
+    CHECK(s->point[2] == (2 | 4 << 16));
+    CHECK(s->airborne == 0x83);
+    CHECK(s->power == 4);
+    CHECK(s->size[2] == 0x60 && s->aux == 0x4A && s->layer == 1);
+  }
+  shot_pool_destroy();
 }

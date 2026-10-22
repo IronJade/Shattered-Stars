@@ -6,7 +6,10 @@
 
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
+#include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
+#include "game/battle/killer.h"
+#include "game/battle/particle.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -15,6 +18,7 @@
 #include "psx/gte.h"
 #include "runtime/libgpu.h"
 #include "runtime/libgte.h"
+#include "game/boot/rng.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
@@ -22,6 +26,198 @@ namespace {
 
 constexpr int kShots = 160;
 std::unique_ptr<Shot[]> g_pool;  // g_pool_13c 0x8006fac4
+ShotDesc g_shot_desc;            // s_shot_desc (scratchpad 0x1f800000)
+
+s32 mul32(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cast<u32>(b)); }
+s16 lo16(s32 v) { return static_cast<s16>(v); }
+s16 hi16(s32 v) { return static_cast<s16>(static_cast<u32>(v) >> 16); }
+u16 ulo16(s32 v) { return static_cast<u16>(v); }
+
+// Kind 0x16 (0x8005a4d8): the descriptor projectile (shot_spawn_projectile). Flags +0x138:
+// 1 trail sprites, 2 ends at the battle's end, 4 hits, bits 3-4 impact effect kind, 6-9
+// its colour, 10-11 / 12-13 its sizes, 14-15 hit sprite scatter, 16-17 hit sprite set,
+// 18-19 hit sprite scale, 0x20 two impact effects, 0x100000 ground shadow, 0x200000 runs
+// in the 0x40 pause, 0x400000 hugs the ground, 0x800000 magic damage, 0x1000000 impact
+// on the ground, 0x2000000 lifetime (+0x132), 0x4000000 flickers.
+void shot_k16_projectile(Shot* s) {
+  BattleGlobals& g = bg();
+  s->facing[0] = s->vel[0], s->facing[1] = s->vel[1], s->facing[2] = s->vel[2];
+  u32& flags = reinterpret_cast<u32&>(s->p138);
+  if ((flags & 0x4000000) != 0 && s->p12c == 0) {
+    s->colour_mode = 2;
+    if ((flags & 0x8000000) != 0) {
+      s->rgb[0] = 0x80;
+      flags &= ~0x8000000u;
+    } else {
+      s->rgb[0] = 0xE0;
+      flags |= 0x8000000;
+    }
+  }
+  bobj_project(s);
+  bobj_anim_draw(s, g.flags);
+  if (static_cast<s32>(s->trail_rgb) > 0) {
+    s->trail = ribbon_trail_create(s, 0xC, s->trail_rgb, s->trail_rgb);
+    s->trail_rgb = 0;
+    if (s->trail != nullptr) {
+      s->trail->no_lift = 1;
+      s->trail->back = &s->trail;  // (port: the console leaves +0x10 clear)
+    }
+  }
+  auto kill = [s]() {
+    if (s->trail != nullptr) {
+      s->trail->stop = 1;
+      s->trail->back = nullptr;
+      s->trail = nullptr;
+    }
+    shot_kill(s);
+  };
+  if ((flags & 0x100000) != 0) {
+    s32 e = s->ext_x1;
+    if (e < 0) e = -e;
+    const s32 v = e * 5;
+    bobj_draw_shadow(s, -v, v, -v, v, static_cast<u32>(s->p128));
+  }
+  const u8 paused = (flags & 0x200000) != 0 ? (g.flags & 0xBF) : g.flags;
+  if (paused != 0) return;
+  if ((flags & 0x2000000) != 0) {
+    const s32 life = hi16(s->p130) - g.frame_ticks;
+    if (life < 0x14 && s->p12c == 0) s->p12c = 1;
+    if (life < 0) {
+      kill();
+      return;
+    }
+    s->p130 = static_cast<s32>(ulo16(s->p130) | static_cast<u32>(life) << 16);
+  }
+  if (s->p12c == 0) {
+    if (kStateOver <= g.state && (flags & 2) != 0) s->p12c = 1;
+    if (bobj_outside_arena(s)) s->p12c = 1;
+    if ((flags & 1) != 0) {
+      Sprite* sp = nullptr;
+      if (s->p134 < 0) {
+        sp = sprite_spawn_b((-s->p134) >> 16, 1, nullptr);
+        if (sp != nullptr) sp->clut_offset = static_cast<u8>(-s->p134);
+      } else {
+        sp = shot_spawn_sprite(s, s->p134 + 1);
+      }
+      if (sp != nullptr) {
+        sprite_set_pos_v(sp, s->pos);
+        sprite_set_fade(sp, 0x80, lo16(s->p130), 0);
+      }
+    }
+  } else {
+    const u8 mask = (flags & 0x200000) != 0 ? 0xBF : 0xFF;
+    if ((g.flags & mask) == 0) {
+      s->colour_mode = 2;
+      s->rgb[0] = static_cast<u8>(-0x80 - s->p12c * 4);
+      s->p12c += g.frame_ticks;
+      if (0x18 < s->p12c) {
+        kill();
+        return;
+      }
+    }
+  }
+  if ((s->airborne & 0x7F) != 0) {
+    if (Sprite* sp = sprite_spawn_b(4, 1, nullptr)) {
+      sprite_set_pos_v(sp, s->pos);
+      sp->freeze_class = (g.flags & 0x40) != 0 ? 2 : 1;
+      sprite_set_fade(sp, 0x80, -4, 0x14);
+      sp->clut_offset = static_cast<u8>(s->airborne & 0x7F);
+    }
+  }
+  bobj_move(s, s->vel);
+  if ((flags & 0x400000) != 0) s->pos[1] = bobj_ground_height(s);
+  if (0xF < s->p12c || s->hit_landed != 0 || (flags & 4) == 0) return;
+  Unit* found[8] = {};
+  Vec4 pts[8] = {};
+  const int n = collider_attack_overlaps(s, found, pts, s->owner->is_enemy);
+  if (n == 0) return;
+  s->hit_landed = 1;
+  if ((flags & 0x800000) != 0) {
+    shot_apply_damage(s, n, found, pts, s->point[0], s->aux, static_cast<u16>(s->power), 0, 0x12);
+  } else {
+    u8* st = s->owner->stats;
+    u16 saved;
+    std::memcpy(&saved, st + 0x5C, 2);
+    const u16 el = static_cast<u16>(saved | static_cast<u16>(s->power));
+    std::memcpy(st + 0x5C, &el, 2);
+    unit_attack_targets(s->owner, n, found, pts, s->point[0], s->vel[0] < 0 ? 0x800 : 0, 0);
+    std::memcpy(st + 0x5C, &saved, 2);
+  }
+  // Hit sprites.
+  const u16 hit_anim = ulo16(s->point[1]);
+  if (hit_anim != 0) {
+    for (int i = 0; i < ulo16(s->point[2]); ++i) {
+      Sprite* sp = nullptr;
+      switch (hi16(static_cast<s32>(flags)) & 3) {
+        case 0: sp = shot_spawn_sprite(s, hit_anim); break;
+        case 1: sp = sprite_spawn_from(hit_anim, 0, g.sprite_bank_fx.get(), nullptr); break;
+        case 2: sp = sprite_spawn_a(hit_anim, 0, nullptr); break;
+        case 3: sp = sprite_spawn_b(hit_anim, 0, nullptr); break;
+      }
+      if (sp == nullptr) continue;
+      const int j = static_cast<int>(flags >> 14) & 3;
+      if (j == 0) {
+        sprite_set_pos_v(sp, s->pos);
+      } else {
+        const s32 x = s->pos[0] + rng_spread(battle_s16(0x8006FFCC + static_cast<u32>(j) * 2));
+        const s32 y = s->pos[1] + rng_spread(battle_s16(0x8006FFD4 + static_cast<u32>(j) * 2));
+        const s32 z = s->pos[2] + rng_spread(battle_s16(0x8006FFCC + static_cast<u32>(j) * 2));
+        sprite_set_pos(sp, x, y, z);
+      }
+      const u32 k = static_cast<u32>(hi16(static_cast<s32>(flags)) & 0xC);
+      const s32 sc = rng_between(battle_s16(0x8006FFDC + k), battle_s16(0x8006FFDE + k));
+      sp->scale_x = sp->scale_y = sc;
+      sprite_set_fade(sp, 0x80, -4, 0x14);
+      sp->clut_offset = static_cast<u8>(hi16(s->point[2]));
+      sp->freeze_class = static_cast<u8>((flags >> 21) & 1);
+      if (0 < i) {
+        sp->size[2] = static_cast<s16>(rng_range(static_cast<u32>(i * 8 + 8)));
+        sp->vel[0] = rng_spread_fixed(6);
+        sp->vel[2] = rng_spread_fixed(6);
+      }
+    }
+  }
+  // A follow-up Shot.
+  if (const s16 kind2 = hi16(s->point[1]); kind2 != 0) {
+    if (Shot* n2 = shot_spawn(kind2)) {
+      n2->owner = s->owner;
+      n2->target = found[0];
+      n2->pos[0] = s->pos[0], n2->pos[1] = s->pos[1], n2->pos[2] = s->pos[2];
+      n2->vel[0] = s->vel[0], n2->vel[1] = s->vel[1], n2->vel[2] = s->vel[2];
+    }
+  }
+  // Impact effects.
+  if (((flags >> 3) & 3) != 0) {
+    const u32 a = (flags >> 10) & 3, b = (flags >> 12) & 3;
+    const s32 radius = *battle_data(0x8006FFB8 + a);
+    const s32 width = *battle_data(0x8006FFBC + a);
+    s32 grow = *battle_data(0x8006FFC4 + b);
+    const s32 segs = *battle_data(0x8006FFC0 + b);
+    const s32 life = *battle_data(0x8006FFC8 + b);
+    s32 at[4] = {s->pos[0], s->pos[1], s->pos[2], 0};
+    const s32 ci = static_cast<s32>(flags >> 6) & 0xF;
+    if ((flags & 0x1000000) != 0) at[1] = bobj_ground_height(s);
+    const int count = (flags & 0x20) != 0 ? 2 : 1;
+    const u32 rgb_b = static_cast<u32>(battle_s32(0x8006CF24 + static_cast<u32>(ci) * 4));
+    const u32 rgb_a = static_cast<u32>(battle_s32(0x8006CEE4 + static_cast<u32>(ci) * 4));
+    for (int m = 0; m < count; ++m) {
+      switch ((flags >> 3) & 3) {
+        case 1: particle_spawn_ring(at, segs, width, grow, life, rgb_b, rgb_a, radius, 0); break;
+        case 2:
+          effect_spawn_sphere_at_default(at, segs, segs, grow, life, rgb_a, radius,
+                                         static_cast<s16>(flags & 0x200000));
+          break;
+        case 3:
+          effect_spawn_sparks_at(at, segs, width / 4, width + 0x10, grow, life, ci, 1, radius,
+                                 static_cast<s16>(flags & 0x200000));
+          break;
+      }
+      grow /= 2;
+    }
+  }
+  if ((s->airborne & 0x80) != 0) return;
+  kill();
+}
 
 // Kind 1 (0x8005566c): three stun stars circling the head of +0x114; keeps the target's
 // stun bit (stats +2 0x40) set for +0x128 ticks.
@@ -221,6 +417,7 @@ void Shot::update() {
   switch (kind) {
     case 1: shot_k01_stun_orbit(this); break;
     case 0x11: shot_k11_sprite_ring(this); break;
+    case 0x16: shot_k16_projectile(this); break;
     case 0x21:
     case 0x33: shot_k21_callback(this); break;
     default: unported_kind(this); break;
@@ -252,6 +449,8 @@ void shot_reset(Shot* s) {
   s->p128 = s->p12c = s->p130 = s->p134 = s->p138 = 0;
   s->handler = nullptr;
   s->spark_owner = nullptr;
+  s->trail = nullptr;
+  s->trail_rgb = 0;
   for (s32& v : s->user) v = 0;
   s->lift = 0;
   s->animset = nullptr;
@@ -425,6 +624,212 @@ void unit_apply_stun(Unit* u) {
   if (s == nullptr) return;
   s->target = u;
   s->p128 = u->status_test(0, 0x800000) != 0 ? 0x3C : 0x78;
+}
+
+ShotDesc* shot_desc_init(int anim) {
+  g_shot_desc = ShotDesc{};
+  g_shot_desc.box = 0x60;
+  g_shot_desc.sfx = 0x4A;
+  g_shot_desc.flags = 0x1000000;
+  g_shot_desc.anim = anim;
+  g_shot_desc.trail_anim = anim;
+  g_shot_desc.hit_bits[2] = 1;
+  g_shot_desc.hits = 1;
+  g_shot_desc.power = 0x100;
+  return &g_shot_desc;
+}
+
+Shot* shot_spawn_projectile(Unit* owner, const s32 from[3], const ShotDesc* d, const BObj* anim_src) {
+  Shot* s = shot_spawn(0x16);
+  if (s == nullptr) return nullptr;
+  s->anim = static_cast<u16>(d->anim);
+  s->owner = owner;
+  s->target = d->target;
+  s->pos[0] = from[0], s->pos[1] = from[1], s->pos[2] = from[2];
+  u32 flags = d->flags;
+  auto set_vel = [s](const Vec4& v) { s->vel[0] = v.x, s->vel[1] = v.y, s->vel[2] = v.z, s->extra34 = v.w; };
+  if (const Unit* t = d->target; t != nullptr) {
+    const s32 aim[3] = {t->pos[0] + (t->size[0] << 13), t->pos[1] - (t->size[1] << 13), t->pos[2]};
+    if (d->angle != 0) {
+      const s32 yaw = ratan2(aim[2] - from[2], aim[0] - from[0]) + d->angle;
+      set_vel(vec_velocity_toward(from, aim, d->speed));
+      s->vel[0] = mul32(bcos(static_cast<u32>(yaw)), d->speed);
+      s->vel[2] = mul32(bsin(static_cast<u32>(yaw)), d->speed);
+      if ((flags & 0x400000) != 0) s->vel[1] = 0;
+    } else if ((flags & 0x400000) != 0) {
+      set_vel(vec_velocity_toward_xz(from, aim, d->speed));
+    } else {
+      set_vel(vec_velocity_toward(from, aim, d->speed));
+    }
+  } else if ((flags & 0x400000) != 0) {
+    set_vel(vec_velocity_toward_xz(from, d->point, d->speed));
+  } else {
+    set_vel(vec_velocity_toward(from, d->point, d->speed));
+  }
+  s->p130 = d->spin;
+  if (d->spin != 0) {
+    flags |= 1;
+    s->p134 = d->trail_anim;
+  }
+  s->p130 = static_cast<s32>(ulo16(s->p130) | static_cast<u32>(d->life) << 16);
+  if (d->life != 0) flags |= 0x2000000;
+  s->trail_rgb = static_cast<u32>(d->trail_rgb);
+  if (d->trail_bits[0] != 0) {
+    flags |= static_cast<u32>(d->trail_bits[0]) << 3 | static_cast<u32>(d->trail_bits[1]) << 6 |
+             static_cast<u32>(d->trail_bits[2]) << 10 | static_cast<u32>(d->trail_bits[3]) << 12;
+  }
+  s->point[1] = static_cast<s32>(static_cast<u32>(d->hit_effect) | static_cast<u32>(d->hit_effect_hi) << 16);
+  if (s->point[1] != 0) {
+    s->point[2] = static_cast<s32>(static_cast<u32>(d->hits) | static_cast<u32>(d->hits_hi) << 16);
+    flags |= static_cast<u32>(d->hit_bits[0]) << 14 | static_cast<u32>(d->hit_bits[1]) << 16 |
+             static_cast<u32>(d->hit_bits[2]) << 18;
+  }
+  s->p138 = static_cast<s32>(flags);
+  s->airborne = static_cast<u8>(d->airborne);
+  if (hi16(d->element) != 0) s->airborne = static_cast<u8>(d->airborne | 0x80);
+  s->point[0] = d->power;
+  s->power = static_cast<s16>(d->element);
+  s->size[2] = static_cast<s16>(d->box);
+  s->layer = 1;
+  s->aux = static_cast<s16>(d->sfx);
+  bobj_share_sprite(anim_src, s);
+  return s;
+}
+
+Shot* effect_spawn_sphere_at(const s32 pos[3], s32 lat, s32 lon, s32 grow, s32 life, u32 rgb, s32 radius, s16 power,
+                             s16 scale) {
+  Shot* s = shot_spawn(0x10);
+  if (s == nullptr) return nullptr;
+  s->pos[0] = pos[0], s->pos[1] = pos[1], s->pos[2] = pos[2];
+  s->p128 = lat;
+  s->p12c = lon;
+  s->p130 = grow;
+  s->p134 = life;
+  s->p138 = radius;
+  s->aux = scale;
+  s->point[0] = static_cast<s32>(rgb);
+  s->power = power;
+  return s;
+}
+
+int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int power, int sfx, u16 element, int spark,
+                      int knockback) {
+  BattleGlobals& g = bg();
+  Unit* owner = s->owner;
+  int missed = 0;
+  auto tenth = [](s32 v) { return v / 10; };
+  if (owner->status_test(0, 0x8000) != 0) power += tenth(power);
+  if (owner->status_test(1, 2) != 0 && (element & 2) != 0) power += tenth(power * 3);
+  if (owner->status_test(1, 4) != 0 && (element & 4) != 0) power += tenth(power * 3);
+  if (owner->status_test(1, 8) != 0 && (element & 0x10) != 0) power += tenth(power * 3);
+  if (owner->status_test(1, 0x8000000) != 0 || owner->status_test(2, 0x80) != 0) power += power >> 1;
+  if (owner->status_test(3, 0x80) != 0) power = tenth(power * 14);
+  if (owner->status_test(3, 0x1000) != 0) power += power >> 1;
+  const s32 base = power;
+  for (int i = 0; i < n; ++i) {
+    Unit* t = targets[i];
+    const s32 dir = t->pos[0] < s->pos[0] ? -0x1000 : 0x1000;
+    s32 kb = knockback - t->st()->stat54[2];
+    if (kb <= 0) kb = 1;
+    s32 p = base;
+    if ((t->status_bits & 0x8000) != 0) p /= 2;
+    if (t->status_test(0, 0x4000) != 0 || t->status_test(1, 0x20) != 0) {
+      const s32 d = -p / 10;
+      unit_damage_mp(t, d);
+      damage_popup_spawn(t, d, 0, 1);
+    }
+    if (t->status_test(1, 0x100) != 0 && (element & 0x10) != 0) {
+      const s32 d = -p / 20;
+      unit_damage_mp(t, d);
+      damage_popup_spawn(t, d, 0, 1);
+    }
+    s32 dmg = unit_calc_damage(owner, t, p, 1, element);
+    t->last_attacker = owner;
+    g.last_attacker = owner;
+    if (t->status_test(0, 0x80000000) != 0 && rng_range(100) < 10) dmg = 0;
+    if (t->status_test(1, 0x40000000) != 0) dmg >>= 1;
+    t->knockback[1] = 0;
+    t->knockback[2] = 0;
+    if (dmg != 0) {
+      t->reaction = 1;
+      t->knockback[0] = mul32(dir, kb) * 2;
+      const u32 guts = static_cast<u32>(static_cast<s32>(t->st()->guts[2]));
+      if (rng_range(0x400) < guts) {
+        dmg /= 2;
+        unit_show_guts_effect(owner, t, owner->is_enemy != 0);
+      }
+      screen_shake(2, 2, 10);
+    } else {
+      missed = 1;
+    }
+    if (t->status_test(0, 0x100000) != 0) {
+      dmg = -dmg;
+      t->accessory_proc(0x65, 0, 0x100000, 8);
+    }
+    if (t->status_test(0, 0x4000000) != 0) t->accessory_proc(0x6F, 0, 0x4000000, 5);
+    if (dmg != 0 && t->status_test(0, 0x20000000) != 0) {
+      t->accessory_proc(0x72, 0, 0x20000000, 10);
+      dmg /= 10;
+    }
+    if (t->status_test(1, 0x40) != 0 && rng_range(100) < 10) dmg = -dmg;
+    // Reflected back at the caster (5 % / 10 %).
+    if (dmg != 0 && t->status_test(1, 0x4000) != 0 && rng_range(100) < 10) {
+      damage_popup_spawn(owner, dmg, 0, 0);
+      unit_damage_hp(owner, dmg);
+      dmg = 0;
+    }
+    if (dmg != 0 && t->status_test(1, 0x10000) != 0 && rng_range(100) < 5) {
+      damage_popup_spawn(owner, dmg, 0, 0);
+      unit_damage_hp(owner, dmg);
+      dmg = 0;
+    }
+    // Passed on to another party member (10 %).
+    if (dmg != 0 && t->status_test(1, 0x20000) != 0 && rng_range(100) < 10) {
+      for (int tries = 0; tries < 100; ++tries) {
+        Unit* other = g.party_units[rng_range(4)];
+        // The console compares with targets[tries], walking past the list; the port stops
+        // comparing at the list's end.
+        const Unit* listed = tries < n ? targets[tries] : nullptr;
+        if (other == listed) continue;
+        if (!unit_is_down(other)) {
+          targets[i] = other;
+          break;
+        }
+      }
+      t = targets[i];
+    }
+    if (dmg != 0 && t->status_test(2, 0x10000) != 0) {
+      dmg = 0;
+      t->clear_status(2, 0x10000);
+    }
+    if (9999 < dmg) dmg = 9999;
+    if (dmg < -9999) dmg = -9999;
+    s32 vx = mul32(dir, kb);
+    vx = (vx < 0 ? vx + 3 : vx) >> 2;
+    if (owner->hits_mp != 0) {
+      damage_popup_spawn(t, dmg, vx, 1);
+      unit_damage_mp(t, dmg);
+    } else {
+      damage_popup_spawn(t, dmg, vx, 0);
+      unit_damage_hp(t, dmg);
+    }
+    if (t->status_test(0, 8) != 0) {
+      const s32 d = -(dmg / 5);
+      damage_popup_spawn(t, d, 0, 1);
+      unit_damage_mp(t, d);
+    }
+    owner->last_damage = dmg;
+    if (spark != 0) {
+      s->hit_landed = 1;
+      if (Sprite* sp = sprite_spawn_a(0x11, 1, nullptr)) {
+        const s32 at[3] = {points[i].x, points[i].y, points[i].z};
+        sprite_set_pos_v(sp, at);
+        sp->layer = 2;
+      }
+    }
+  }
+  if (sfx != 0) bsfx_play_at(sfx, targets[0]);
+  return missed;
 }
 
 }  // namespace ss::game::battle
