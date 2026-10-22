@@ -123,6 +123,7 @@ add_library(ss_game STATIC
   src/game/field/message_draw.cpp
   src/game/field/fade.cpp
   src/game/field/notice.cpp
+  src/game/field/debug_console.cpp
   src/game/field/mods.cpp
   src/game/field/post_battle.cpp
   src/game/field/voice_queue.cpp

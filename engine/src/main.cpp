@@ -45,6 +45,7 @@
 #include "game/battle/battle_debug.h"
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
+#include "game/field/debug_console.h"
 #include "platform/audio.h"
 #include "platform/window.h"
 #include "runtime/boot_exe.h"
@@ -88,7 +89,7 @@ int usage(const char* argv0) {
   std::fprintf(stderr,
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
-               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR]\n",
+               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug]\n",
                argv0);
   return 2;
 }
@@ -101,7 +102,7 @@ int main(int argc, char** argv) {
   std::string capture_frames, input_script;
   std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
   bool viewer = false, headless = false, config_changed = false, reference_dither = false,
-       no_memcard = false;
+       no_memcard = false, debug_console = false;
   int entry = 10;
   u64 frames = 0;
   bool audio_asked = false;
@@ -143,6 +144,8 @@ int main(int argc, char** argv) {
       battle_spec = next();
     } else if (arg == "--battle-end" && has_value) {
       battle_end = next();
+    } else if (arg == "--debug") {  // debug console on the terminal (game/field/debug_console.h)
+      debug_console = true;
     } else if (arg == "--mods" && has_value) {  // world-edit patches (default: mods/ next to config.ini)
       runtime::Runtime::get().mods_dir = std::filesystem::absolute(next()).string();
     } else if (arg == "--map" && has_value) {
@@ -215,6 +218,10 @@ int main(int argc, char** argv) {
 
   auto& rt = runtime::Runtime::get();
   if (rt.mods_dir.empty()) rt.mods_dir = (config_path().parent_path() / "mods").string();
+  if (debug_console) {
+    game::field::debug_console_install();
+    rt.start_debug_console();
+  }
   rt.gpu.dithering_enabled = reference_dither || config["dither"] != "0";
   if (reference_dither) rt.gpu.dither_textured = false;
   rt.frame_limit = frames;

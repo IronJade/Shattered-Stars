@@ -1,8 +1,11 @@
 #pragma once
 
 #include <chrono>
+#include <deque>
 #include <filesystem>
+#include <functional>
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 
@@ -55,6 +58,12 @@ class Runtime {
   // World edits: directory of *.patch files (mods/ next to config.ini; --mods DIR,
   // SS_MODS_DIR); see game/field/mods.h.
   std::string mods_dir;
+  // Debug console (--debug): lines typed into the terminal run as commands on the game
+  // thread at the next vblank (game code installs the handler), and the window title
+  // shows a status line from 'debug_status' twice a second.
+  void start_debug_console();
+  std::function<void(const std::string&)> debug_command;
+  std::function<std::string()> debug_status;
   u16 host_buttons() const;
 
   u64 vblanks() const { return vblank_count_; }
@@ -74,6 +83,9 @@ class Runtime {
   u64 last_vsync_ = 0;
   std::chrono::steady_clock::time_point next_deadline_{};
   std::set<std::string> logged_;
+  bool debug_console_ = false;
+  std::mutex debug_mutex_;
+  std::deque<std::string> debug_lines_;
 };
 
 }  // namespace ss::runtime

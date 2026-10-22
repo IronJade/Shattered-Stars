@@ -67,6 +67,11 @@ World edits: `tools/so2_mod.py list DISC.cue MAP` shows a map's chests and doors
 game applies them as maps load and skips any patch whose original word has changed. The
 disc images are never modified.
 
+Debug console: start with `--debug` and type commands into the terminal (`help` lists
+them): `where`, `warp MAP [X Y Z [DIR]]`, `fol N`, `item ID [COUNT]`, `heal`,
+`flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`. The window title then
+shows the map, the leader's position and the Fol.
+
 Debugging switches (start on a map, battles, traces, headless runs) are listed in
 `docs/HANDOFF.md`.
 

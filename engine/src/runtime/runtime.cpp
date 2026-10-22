@@ -1,8 +1,9 @@
-#include <algorithm>
 #include "runtime/runtime.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 #include <iterator>
 #include <thread>
 #include <vector>
@@ -71,7 +72,31 @@ void Runtime::present() {
   }
 }
 
+void Runtime::start_debug_console() {
+  if (debug_console_) return;
+  debug_console_ = true;
+  std::fprintf(stderr, "[debug] console on: type 'help' and press Enter\n");
+  std::thread([this] {
+    for (std::string line; std::getline(std::cin, line);) {
+      std::lock_guard<std::mutex> lock(debug_mutex_);
+      debug_lines_.push_back(line);
+    }
+  }).detach();
+}
+
 void Runtime::vblank() {
+  if (debug_console_) {
+    std::deque<std::string> lines;
+    {
+      std::lock_guard<std::mutex> lock(debug_mutex_);
+      lines.swap(debug_lines_);
+    }
+    for (const std::string& line : lines) {
+      if (debug_command) debug_command(line);
+      else std::fprintf(stderr, "[debug] no game state to act on yet\n");
+    }
+    if (window && debug_status && vblank_count_ % 30 == 0) window->set_title("Shattered Stars — " + debug_status());
+  }
   if (audio_tick) audio_tick();
   if (vsync_callback) vsync_callback();
   if (window || capture_frames.count(vblank_count_)) present();

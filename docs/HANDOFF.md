@@ -50,6 +50,8 @@ route.
   for a `--map` start.
 - `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`; `SS_BATTLE_STUB=1` (instant
   victory); `SS_BATTLE_RAM=<dump>`, `SS_BATTLE_STRONG=1`.
+- `--debug`: a console on the terminal (`help`; where / warp / fol / item / heal / flag /
+  global / battle / noclip) and a status line in the window title.
 - `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;
   `tools/so2_mod.py` writes them).
 - `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
