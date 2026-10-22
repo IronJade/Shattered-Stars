@@ -35,6 +35,7 @@ int party_slot_active(int slot);            // field 0x80033758: party_selected_
 int party_selected_alive();                 // field 0x800337cc: party_selected_char when status & 7 is clear, else 0
 u32 char_equip_mask();                      // field 0x8003381c: 1 << (character - 1), 0 for none
 u16 config_get_button(int index);           // title 0x800349d8 / field 0x80033ae0
+void config_set_button(int index, u16 button);   // field 0x80033bc8: config + index * 2 (0-7)
 s32 char_get_equip(int slot);               // title 0x80034b6c / field 0x80033c74: stat_get(slot + 0xb)
 void char_set_equip(int slot, s32 item);    // field 0x80033c94: stat_set(slot + 0xb)
 int char_skill_level(int skill);            // field 0x80033cb4: |record + 0x5c + skill|

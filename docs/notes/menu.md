@@ -477,6 +477,36 @@ both notices ("rose to 2", "learned"), the specialty list and a detail.
 - Records, party, config and inventory match.
 - The frames differ only in the sprite and the help bar.
 
+## Options (page 7, overlay 0xbc8)
+
+The page has two screens of options. Moving the cursor into a group of the other screen
+scrolls every box by 0xd8. Only the current row's choices are lit (kind 8 highlights;
+bit 15 of each value means not lit).
+
+- **Screen 1:**
+  - message speed 1-8 (game_state +0x118), with a sample in group 7 that advances at
+    that speed;
+  - sound output (config +0x44);
+  - the four window corners: a dialog with RGB sliders (gradients and markers) that
+    recolours a sample box;
+  - three two- or three-way settings (config +0x49, mapped 0 / 1 / 2 to rows 1 / 2 / 0;
+    +0x4a; +0x4b).
+- **Screen 2:**
+  - the eight button assignments. In these rows a pressed button is assigned and the row
+    that had it takes the old one; cancel is ignored there;
+  - vibration (config +0x46).
+- The values go back into the config when the page is destroyed, together with the
+  vibration switch and the sound mode.
+- The analog and vibration-test rows need a DualShock. The flag +0xe8 that would add
+  them is never set in this overlay.
+- The page makes a second cursor after its boxes, so it draws on top of them.
+
+Verified against PCSX-Redux (`optref1`, port `opt_p2`): two speed steps, a sound mode,
+three red steps and one green step on a corner, a +0x49 change, and square assigned to
+the first action.
+- Config, party and records match.
+- The frames differ only in the sample and highlight phases.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -583,7 +613,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3-6, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3-7, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

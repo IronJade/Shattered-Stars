@@ -26,6 +26,7 @@
 #include "game/field/map.h"
 #include "game/field/menu_equip.h"
 #include "game/field/menu_items.h"
+#include "game/field/menu_options.h"
 #include "game/field/menu_shop.h"
 #include "game/field/menu_skills.h"
 #include "game/field/menu_status.h"
@@ -610,6 +611,7 @@ struct FieldMenuHost {
     menu::set_page_handler(4, &menu_page04_update);
     menu::set_page_handler(5, &menu_page05_update);
     menu::set_page_handler(6, &menu_page06_update);
+    menu::set_page_handler(7, &menu_page07_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
@@ -621,6 +623,7 @@ struct FieldMenuHost {
     menu::set_page_handler(4, nullptr);
     menu::set_page_handler(5, nullptr);
     menu::set_page_handler(6, nullptr);
+    menu::set_page_handler(7, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
@@ -960,7 +963,8 @@ void field_menu_update(Field* f) {
     for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
                                            std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
                                            std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
-                                           std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680}}) {
+                                           std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
+                                           std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
       if (block == nullptr) continue;
       const std::string path = std::string(dump) + "_" + name + ".bin";
       if (FILE* out = std::fopen(path.c_str(), "wb")) {

@@ -133,6 +133,11 @@ u32 char_equip_mask() {
   return mask;
 }
 
+void config_set_button(int index, u16 button) {
+  if (index < 0 || index > 7 || !g.config) return;
+  std::memcpy(g.config + index * 2, &button, 2);
+}
+
 u16 config_get_button(int index) {
   if (index < 0 || index > 7 || !g.config) return 0;
   u16 v;

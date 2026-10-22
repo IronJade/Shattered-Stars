@@ -131,6 +131,24 @@ party, config and inventory match. The notices are pixel-exact.
 
 **Catalog:** 1080 function rows.
 
+### Options, page 7 (done and verified)
+
+**New files:** `engine/src/game/field/menu_options.{h,cpp}`: OptionsPage, ColourDialog,
+ColourBox.
+
+**Library additions:** `config_set_button` in party (0x80033bc8). SS_MENU_DUMP and
+itemsref.lua also dump game_state.
+
+**Verification.** Compared against Redux `optref1` and port `opt_p2`. Config, party and
+records match.
+
+**Finding (not mine to fix).** After a menu, the original's game_state +0x1c is the
+music entry (0xa5d) and the port's is the music table index (0xd). It looks like the
+port leaves the save's index there on load, where the original turns it back into the
+entry.
+
+**Catalog:** 1109 function rows.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
@@ -139,10 +157,10 @@ party, config and inventory match. The notices are pixel-exact.
 
 ## Next steps
 
-1. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
-2. Options (page 7, 0xbc8).
-3. Combat (pages 8-10, 0xbca).
-4. Then page 0xe (0xbce, after Status), the item creation pages 0xf / 0x10 / 0x13 and the query page.
+1. Combat (pages 8-10, 0xbca).
+2. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb) with the item
+   creation pages 0xf / 0x10 / 0x13 (0xbc0 / 0xbae / 0xbc2 / 0xbcc), then page 0xe (0xbce,
+   after Status) and the query page.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.
