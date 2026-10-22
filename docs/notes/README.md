@@ -23,3 +23,4 @@ user's discs); the facts that matter are recorded here or in the catalog.
 | `battle_image_map.md` | Which parts of the #2129 image above 0x800715d0 are live code and which are stale copies |
 | `battle_enemies.md` | The monster classes: the 16 resident families, the 40 encounter-pack code blocks and the image's default modules, how the port picks a class, Redux checks, quirks kept |
 | `encounter_maps.md` | Field maps with random encounters (rate, group, stage), from a sweep of every map |
+| `original_bugs.md` | The original's bugs: the port comments them out and corrects them (each listed with its status), and does not model the original's slowdown |

@@ -91,6 +91,9 @@ otherwise `docs/` only. Verified work gets its own commit as each agent reports 
 
 ## Conventions to keep
 
+- Enhance, don't degrade: the port runs at full speed (no modelling of the original's
+  slowdown), and the original's bugs are commented out and corrected, each listed in
+  `docs/notes/original_bugs.md`. Save data stays byte-compatible.
 - No game code or assets in git; data is read from the user's discs at run time.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).
