@@ -273,11 +273,26 @@ menu_0bb9 rows) and 169 global rows.
 **Next:**
 1. Compare s1-s8 and write the menu.md section.
 2. Report the block to the coordinator.
-3. Page 0x13 (0xbcc): a full-screen picture scroller with its own frame loop, streaming
-   320x16 strips of entry 0x117c + param.
-4. Page 0xe (0xbce).
+3. Page 0xe (0xbce): the rename screen. It is the title's name entry again (keyboard and
+   name box classes copied into the overlay, data from the page pack) with the
+   character's picture from entry 0xbd3 + character. The new name goes to game_state
+   +0x28 + (character - 1) * 0x14 and record +0x24.
 5. Step 5 (the stash setter).
 6. The menu bug list (original_bugs.md, "Menus").
+
+### Page 0x13: pictures (done and verified)
+
+**Files:** `engine/src/game/field/menu_picture.{h,cpp}` (PicturePage and PictureViewer, its
+own frame loop); menu_camp.cpp registers page 0x13.
+
+**Verification:** card `cards/pic.mcd` (spec2 with item 6, Portrait A, at the front of the
+inventory, via `modsave.py --item-first`). The run is `pic`, plan `p_pic.txt`: scrolling,
+R1 / L1 jumps and closing.
+- Data matches.
+- Frames match once the strips are loaded; the port loads them sooner.
+- itemsref.lua's plan pattern now takes buttons with digits (L1 / R1).
+
+**Catalog:** menu_0bcc, 14 rows.
 
 ### Not ported yet
 

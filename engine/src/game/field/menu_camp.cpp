@@ -30,6 +30,7 @@
 #include "game/field/menu_equip.h"
 #include "game/field/menu_items.h"
 #include "game/field/menu_options.h"
+#include "game/field/menu_picture.h"
 #include "game/field/menu_shop.h"
 #include "game/field/menu_skills.h"
 #include "game/field/menu_specialty.h"
@@ -628,6 +629,7 @@ struct FieldMenuHost {
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0xF, &menu_page0f_update);
     menu::set_page_handler(0x10, &menu_page10_update);
+    menu::set_page_handler(0x13, &menu_page13_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
     menu::TextRenderer::set_name_source(&field_character_name);
@@ -646,6 +648,7 @@ struct FieldMenuHost {
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0xF, nullptr);
     menu::set_page_handler(0x10, nullptr);
+    menu::set_page_handler(0x13, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
     menu::set_panel_frame_hook(nullptr);

@@ -660,6 +660,25 @@ the run match.
 - In the port the animation starts about 77 frames earlier: its four model files load at
   once.
 
+## Page 0x13: pictures (overlay 0xbcc)
+
+The Items page opens it for items 6-0x11, the portraits Art can make. Their effect sets
+session +0x12 to the picture, and the picture's entry is 0x117c + n. After 31 frames the
+page leaves the menu's frame loop and shows the picture in its own loop (picture_show):
+- The picture is 320 x 1200 in 15-bit colour, 75 strips of 320 x 16, shown on an
+  interlaced 320 x 480 display, 28 strips at a time.
+- Up / down (or the left stick) scroll it with momentum, up to 16 rows a frame.
+- Buttons 4 / 5 (L1 / R1) jump to the top / bottom.
+- Cancel fades it out.
+- Strips coming into view are read from the CD at most three at a time, into two
+  buffers. They go into 30 VRAM rows at (0x140, slot * 16) and fade in from 8 to 0x80.
+- Five VRAM areas of the menu are saved before and put back after, along with the menu's
+  screen setup. The page then closes 31 frames later.
+
+Verified against PCSX-Redux: scrolling, the jumps and closing match frame for frame
+once the strips are in. The port reads the strips at once, so they fade in sooner. Data
+unchanged.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -766,7 +785,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1-0xb, 0xf, 0x10 and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1-0xb, 0xf-0x11 and 0x13 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

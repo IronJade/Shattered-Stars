@@ -97,6 +97,7 @@ add_library(ss_game STATIC
   src/game/field/menu_options.cpp
   src/game/field/menu_combat.cpp
   src/game/field/menu_creation.cpp
+  src/game/field/menu_picture.cpp
   src/game/common/menu_viewer.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
