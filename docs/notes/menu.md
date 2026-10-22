@@ -525,7 +525,7 @@ of three pages. All three are in overlay 0xbca (data 0xbcb).
   closes:
   - front slots whose character changed get their voices reloaded (a field hook);
   - bench members lose record +0x3b, +0xce and +0xcf (their pairing and pending killer
-    moves; see party_update_bonds);
+    moves; see party_update_link_combos);
   - config +0x41 (the controlled member) moves to the first filled slot if its slot
     emptied.
 - **Formation (page 10).** A list of the 13 formations (group 9; the current one lit), a
@@ -600,6 +600,65 @@ continuation log). Config, inventory, party, records and game_state match. With 
 generator set to the original's state when the menu opens (`SS_MENU_RNG`), the generator
 also ends in the same state. Frames differ in sprite, help-bar and model phases, and the
 original reads the viewer's model about 20 frames later.
+
+## Item creation (pages 0xf / 0x10, overlays 0xbc0 / 0xbae / 0xbc2)
+
+The Items page's Item Creation and Super Specialty Skills commands open these pages. The
+choice goes in session +0x1c. Page 0xf loads overlay 0xbae for specialties 4 (Customize)
+and 11 (Cooking) and overlay 0xbc0 for the others (1 Art, 5 Identify, 6 Metalwork,
+7 Authoring, 10 Compounding, 13 Alchemy, 14 Survival, 16 Reproduction, 17 Machinery).
+Page 0x10 loads overlay 0xbc2 for the eight super specialties (Master Chef, Orchestra,
+Comprehension, Come on Bunny, Publishing, Identify All!, Blacksmith, Reverse Side).
+
+All three overlays carry the same Panel (0x108 bytes, compiled into each) with one class
+per specialty. The page runs a loop of steps, by state:
+
+| State | Step |
+|---|---|
+| 0 / 2 | pick materials (scrolling lists of owned items) |
+| 4 | the create / stop prompt |
+| 6 | the creation animation |
+| 8 | the result message |
+| 10 | the failure message |
+| 12 | talent waking |
+| 14 | again |
+
+- Each class supplies its lists, how the result and the chance are worked out ([39]),
+  and what is used up ([43]). The chance usually grows with the level, plus a bonus:
+  Callways song modifier 13, the creation bonus, and +20 for owning the specialty's
+  helper item.
+- Config +0x20 counts the tries and +0x28 the successes.
+- A result may turn into its rare kind (30%; the item pack's blocks 3-5).
+- Without the specialty's talents the level counts as 0. A creation can wake one of them,
+  as on the Specialty page.
+- Super specialties use only the selected member, skip the failure and talent steps, and
+  show the party in the member box. Several are not creations:
+  - Orchestra plays song entry 0xaae when 4 instruments and 8 songs are owned.
+  - Comprehension switches script flag 0x25.
+  - Come on Bunny works only on the world map; success sets session +0x30 and page 0x10
+    then closes the menu.
+  - Identify All! sets flag 0x2e0 or 0x2df once.
+  - Reverse Side also lowers one of config +0x58 / +0xe8's marks.
+- Cooking in a query session (the cooking contest) moves PRESS (field flags +0x38). It
+  ends when the TIME / PRESS gauge's five minutes run out.
+
+The animation is the CreationViewer (entry 3001, 0x8008a364, 0xa8 bytes), an item viewer
+moved to the middle of the screen:
+- It loads the four items' models (material 1, material 2, the other result, the result),
+  with textures at (0x200 + i * 0x40, 0x100) and CLUT rows 0x1e0 + i.
+- It builds four morph pairs. For each vertex of one model it finds the nearest vertex of
+  the other, both pushed along their normals (morph_pair_prepare).
+- It blends them over 300 frames (model_blend): material 1 to the result and back, then
+  the other result to the result and back.
+
+Verified against PCSX-Redux runs of every specialty and super specialty except Cooking's
+query path: config, inventory, party, records, game_state and the generator state after
+the run match.
+- The port runs start from the original's generator state (`SS_MENU_RNG`) and dump with
+  the menu open (`SS_MENU_DUMP_FRAME`).
+- The morph data matches byte for byte.
+- In the port the animation starts about 77 frames earlier: its four model files load at
+  once.
 
 ## The item viewer (entry 3001 at 0x80088000)
 
@@ -707,7 +766,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1-10, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1-0xb, 0xf, 0x10 and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),
@@ -716,7 +775,8 @@ by design).
   Save. For comparisons, `SS_MENU_DUMP=prefix` writes the config, inventory, party,
   records and game_state blocks after each field menu (`prefix_config.bin` and so on).
   `SS_MENU_DUMP_DELAY=n` writes them n field frames later instead, after the equipment
-  rescan. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens. Each dump has a
+  rescan. `SS_MENU_DUMP_FRAME=n` writes them at the menu's frame n, with the menu still
+  open. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens. Each dump has a
   `_rng.bin` with the random generator as the original keeps it (index at 0x8002b464, then
   the table). `SS_MENU_RNG=file` loads such a state as a menu opens, since the field before
   the menu draws differently from PCSX-Redux.

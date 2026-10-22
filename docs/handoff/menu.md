@@ -238,22 +238,46 @@ the extra partner offered with script flag 0x5d). PartnerDialog sets it; Link Co
 clears it with +0xce / +0xcf (the second set of killer moves). Accessory 0x15c enables
 it.
 
-### Item creation, pages 0xf / 0x10 (in progress at the cutoff; committed unverified in e37c3a5)
+### Item creation, pages 0xf / 0x10 (ported; verification finishing)
 
-The weekly limit stopped this worker (2026-10-22, about 11:10) while it wrote the
-CreationViewer's morph. What is in e37c3a5:
-- `engine/src/game/field/menu_creation.{h,cpp}` (1366 lines) and `menu_item_list.h`: the
-  creation Panel and its loop of steps (pick materials, confirm, watch, result, talent
-  waking) for page 0xf with overlay 0xbc0 (specialties 1, 5, 6, 7, 10, 13, 14, 16, 17),
-  registered for pages 0xf and 0x10 in menu_camp.cpp.
-- `menu_viewer.{h,cpp}`: the item viewer's texture upload and draw take parameters, for the
-  morph of the materials into the result; the morph itself was being written.
-- Still logging "not ported": page 0xf's 0xbae variant (specialties 4 and 11) and page 0x10
-  (the super specialties, 0xbc2). Page 0x13 (0xbcc) is not started.
-- Nothing of this has been compared with PCSX-Redux yet. HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
+**Files:** `engine/src/game/field/menu_creation.{h,cpp}`, `menu_item_list.h`; the
+CreationViewer in `menu_viewer.{h,cpp}` (with `Panel::attach_viewer`); `party_random_alive_slot`
+in party; and in menu_camp.cpp `field_gauge_seconds_left`, `SS_MENU_DUMP_FRAME` (a dump at
+the menu's frame n, menu still open) and `_rng.bin` / `SS_MENU_RNG`. All on disk; they build.
 
-Resume: finish the CreationViewer morph, verify page 0xf against Redux (as itemsref did),
-then 0xbae, 0x10 and 0x13.
+**What is ported:**
+- Page 0xf, overlay 0xbc0: specialties 1 Art, 5 Identify, 6 Metalwork, 7 Authoring,
+  10 Compounding, 13 Alchemy, 14 Survival, 16 Reproduction and 17 Machinery.
+- Page 0xf, overlay 0xbae: 4 Customize and 11 Cooking. Cooking in a query session is the
+  cooking contest, with the PRESS value and the gauge's time.
+- Page 0x10, overlay 0xbc2: Master Chef, Orchestra, Comprehension, Come on Bunny,
+  Publishing, Identify All!, Blacksmith and Reverse Side.
+- The CreationViewer morph (entry 3001 0x80089bc4-0x8008b338).
+
+**Verified against Redux:**
+- The data (config, inventory, party, records, game_state) and the end generator state
+  match for Art and the eight other 0xbc0 specialties, for Customize and for Cooking.
+  Each run's inventory changes show real creations, both successes and failures.
+- The ports ran with `SS_MENU_RNG=famr/before_rng.bin`; the plans come from `crplan.py`.
+  `runredux.sh` runs the references and `specrun.sh` with `OPEN=1` the port side.
+- The morph data matches byte for byte at a morph frame (`artd`).
+- Frames: the morph plays about 77 frames earlier in the port. A spinning textured model
+  drifts up to about a pixel; this is not explained (the vertices and turn match).
+- Not exercised: Cooking's query path (the contest needs its script).
+
+**In progress:** Redux runs `s1`-`s8` (the super specialties), via runredux2.log.
+
+**Catalog:** 1603 function rows (menu_0bc0, menu_0bae, menu_0bc2 and the viewer's
+menu_0bb9 rows) and 169 global rows.
+
+**Next:**
+1. Compare s1-s8 and write the menu.md section.
+2. Report the block to the coordinator.
+3. Page 0x13 (0xbcc): a full-screen picture scroller with its own frame loop, streaming
+   320x16 strips of entry 0x117c + param.
+4. Page 0xe (0xbce).
+5. Step 5 (the stash setter).
+6. The menu bug list (original_bugs.md, "Menus").
 
 ### Not ported yet
 

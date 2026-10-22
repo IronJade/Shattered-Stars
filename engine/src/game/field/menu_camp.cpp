@@ -601,9 +601,12 @@ const char* field_character_name(int index) {
   return reinterpret_cast<const char*>(globals().game_state + 0x28 + index * 0x14);
 }
 
+void count_menu_frame();   // debugging (SS_MENU_DUMP_FRAME), below
+
 void field_menu_frame() {
   // field 0x800300dc: the Callways task keeps ticking (songs, money per second).
   if (Callways* c = callways()) c->update();
+  count_menu_frame();
 }
 
 // The library and the field's page handlers for one menu run.
@@ -848,6 +851,7 @@ void field_set_option_a(u16 v) { g_option_a = v; }
 void field_set_option_b(u16 v) { g_option_b = v; }
 void field_set_gauge_clock(s32 v) { g_gauge_clock = v; }
 s32 field_gauge_clock() { return g_gauge_clock; }
+s32 field_gauge_seconds_left() { return gauge_seconds_left(); }
 
 u16 field_get_option_a() { return g_option_a; }
 u16 field_get_option_b() { return g_option_b; }
@@ -862,6 +866,7 @@ namespace {
 // the equipment, which recomputes the stats without the item data);
 // SS_MENU_DUMP_OPEN=prefix: as a menu opens.
 int g_menu_dump_delay = 0;
+int g_menu_frames = 0;   // field frames since the menu opened (SS_MENU_DUMP_FRAME)
 
 void dump_menu_state(const char* var = "SS_MENU_DUMP") {
   const char* dump = std::getenv(var);
@@ -901,6 +906,13 @@ void load_menu_rng() {
   const size_t n = std::fread(rng, 4, 57, in);
   std::fclose(in);
   if (n == 57) rng_restore(rng + 1, static_cast<s32>(rng[0]));
+}
+
+// Debugging (SS_MENU_DUMP_FRAME=n): the dump at the menu's frame n, with the menu still open
+// (runs whose inputs leave it open).
+void count_menu_frame() {
+  const char* at = std::getenv("SS_MENU_DUMP_FRAME");
+  if (at != nullptr && ++g_menu_frames == std::atoi(at)) dump_menu_state();
 }
 
 // The dump after a menu, now or SS_MENU_DUMP_DELAY field frames later.
@@ -990,6 +1002,7 @@ void field_menu_check(Field* f) {
     delete[] world_take_region_save();
   }
   load_menu_rng();
+  g_menu_frames = 0;
   dump_menu_state("SS_MENU_DUMP_OPEN");
   if (g_launcher != nullptr) menu_launcher_destroy(g_launcher);
   g_launcher = menu_launcher_create();

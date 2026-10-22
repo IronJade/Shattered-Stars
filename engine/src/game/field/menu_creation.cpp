@@ -14,6 +14,7 @@
 #include "game/common/party.h"
 #include "game/field/callways.h"
 #include "game/field/field.h"
+#include "game/field/menu_camp.h"
 #include "game/field/menu_item_list.h"
 #include "game/field/mods.h"
 #include "game/field/post_battle.h"
@@ -33,9 +34,11 @@ struct Overlay {
   u32 talent_masks;     // s16[]: by specialty (0 = none)
   u32 lv_label;         // the member box's "SPECIAL / LV" label
   u32 lv_format;        // "%3d"
+  bool super = false;   // 0xbc2: the super specialties (page 0x10)
 };
 constexpr Overlay kOverlay0bc0{0xBC0, 0x80083B0A, 0x80083B8A, 0x80082A98, 0x80082AA8};
 constexpr Overlay kOverlay0bae{0xBAE, 0x80081DC6, 0x80081E46, 0x80081788, 0x80081798};
+constexpr Overlay kOverlay0bc2{0xBC2, 0, 0, 0x80082B58, 0x80082B68, true};
 
 const u8* data_at(int entry, u32 address) { return menu::page_table(entry, address); }
 u8 data_byte(int entry, u32 address) {
@@ -62,6 +65,13 @@ std::vector<s16> data_list(int entry, u32 address) {
   }
   out.push_back(0);
   return out;
+}
+u32 data_u32(int entry, u32 address) {
+  const u8* p = data_at(entry, address);
+  if (!p) return 0;
+  u32 v;
+  std::memcpy(&v, p, 4);
+  return v;
 }
 const char* data_text(int entry, u32 address) {
   const u8* p = data_at(entry, address);
@@ -345,7 +355,7 @@ CreationPage::CreationPage(const Overlay& overlay) : overlay_(overlay) {
     menu::bgload_queue_bytes(&client_, 3000, item_buffer_.data(), total);
   }
   create_help();
-  super_ = 0;
+  super_ = overlay_.super ? 1 : 0;
   id_ = g.session->variant;
   level_ = static_cast<s16>(super_ == 0 ? char_specialty_level(id_) : party_super_specialty_level(id_));
   create_member_box(0);
@@ -364,7 +374,7 @@ CreationPage::CreationPage(const Overlay& overlay) : overlay_(overlay) {
   scroll1_ = choice1_ = scroll2_ = choice2_ = 0;
   sfx_ = sfx_clip_ = 0;
   rare_chance_ = 1;
-  talents_ = static_cast<u16>(data_s16(overlay_.entry, overlay_.talent_masks + id_ * 2));
+  talents_ = overlay_.talent_masks != 0 ? static_cast<u16>(data_s16(overlay_.entry, overlay_.talent_masks + id_ * 2)) : 0;
   saved_vram_.assign(0xC000, 0);
   psyq::StoreImage(&kSavedArea, saved_vram_.data());
   list_ = nullptr;
@@ -697,7 +707,14 @@ void CreationPage::step_result() {
     open_child(1, new menu::ConfirmDialog);
     if (rare_ == 0) {
       if (success_ != 0) sound_play_sfx(globals().sound, 0xC, 0, 0x7F40);
-      show_made(id_, made_);
+      if (overlay_.super) {
+        // 0xbc2 0x80080a04: always message 0.
+        menu::MessageBox* box = new_message(10);
+        menu::TextRenderer::set_expansion(0, menu::item_strings(1), menu::item_strings(0), 3, made_);
+        menu::message_box_show(box, 0);
+      } else {
+        show_made(id_, made_);
+      }
     } else {
       show_rare(made_);
     }
@@ -1305,6 +1322,685 @@ void Creation17::compute() {
   good_item_ = l[static_cast<size_t>(i)];
 }
 
+// ==== Overlay 0xbae: specialties 4 and 11 ===================================================
+
+// Customize (4; vtable 0x800819b0; 0xbae 0x80080e4c): an item the character can customize
+// (its list, 0x80082b00 by character) and one of the materials of 0x80081f74. The item's
+// worth (0xbae 0x800810a0) plus the material's (0x80081f98) and a random part picks a tier
+// of the character's results (0x80081e56); some pairs are recipes (0x80082ad0 by character).
+class Customize final : public CreationPage {
+ public:
+  Customize() : CreationPage(kOverlay0bae) { sfx_ = 0x5E; }
+ protected:
+  void build_list1() override {            // 0x80080e98
+    const std::vector<s16> l = list(data_u32(entry(), 0x80082B00 + character_ * 4));
+    for (s16 item : l) {
+      if (item == 0) break;
+      if (!list_->contains(item)) list_->add_owned(item);
+    }
+  }
+  void build_list2() override {            // 0x80080f20
+    const std::vector<s16> l = list(0x80081F74);
+    list_->add_owned_list(l.data());
+  }
+  int worth(int item) const;               // 0x800810a0
+  int tier_item(int value) const;          // 0x80081118
+  int recipe(int value) const;             // 0x800811c4: the result, -1 refused, 0 none
+  void compute() override;                 // 0x80080f4c
+};
+
+int Customize::worth(int item) const {
+  for (u32 i = 0; i < 12; ++i) {
+    const std::vector<s16> l = list(data_u32(entry(), 0x80082B04 + i * 4));
+    for (size_t k = 0; k + 1 < l.size(); ++k) {
+      if (l[k] == item) return half(data_u32(entry(), 0x80082B34 + i * 4) + static_cast<u32>(k) * 2);
+    }
+  }
+  return 0;
+}
+
+int Customize::tier_item(int value) const {
+  static constexpr int kTop[9] = {4, 9, 0x13, 0x1D, 0x27, 0x31, 0x3B, 0x45, 0x4F};
+  int tier = 10;
+  if (value >= 0) {
+    tier = 0;
+    while (tier < 9 && value > kTop[tier]) ++tier;
+  }
+  return half(0x80081E56 + static_cast<u32>(character_ * 0xB + tier) * 2);
+}
+
+int Customize::recipe(int value) const {
+  u32 a = data_u32(entry(), 0x80082AD0 + character_ * 4);
+  for (;;) {
+    const s16 threshold = half(a);
+    if (threshold == 0) return 0;
+    const s16 dish = half(a + 2);
+    const s16 material = half(a + 4);
+    a += 6;
+    for (;; a += 2) {
+      const s16 item = half(a);
+      if (item == 0) {
+        a += 2;
+        break;
+      }
+      if (item == item1_ && material == item2_) return value <= threshold ? -1 : dish;
+    }
+  }
+}
+
+void Customize::compute() {
+  if (owns(0x1CB)) bonus_ = static_cast<s16>(bonus_ + 0x14);
+  int value = worth(item1_);
+  const s16 extra = half(0x80081F98 + index2_ * 2);
+  value += extra + random(level_ * 5 + 1) + bonus_;
+  if (value > 100) value = 100;
+  if (level_ != 0) success_ = chance(level_ + bonus_ + 0x3C) ? 1 : 0;
+  fail_item_ = static_cast<s16>(tier_item(-1));
+  const int r = recipe(value);
+  if (r == -1) success_ = 0;
+  if (r > 0) good_item_ = static_cast<s16>(r);
+  if (good_item_ == 0) good_item_ = static_cast<s16>(tier_item(value));
+  if (success_ != 0 && item1_ == good_item_) success_ = 0;
+}
+
+// Cooking (11; vtable 0x80081840; 0xbae 0x80081250): an ingredient (items 0x117-0x11c,
+// 0x30e-0x316, 0x336) into one of its dishes (0x80082b64 by its position; characters 1, 2,
+// 6 and 8 have their own list for the third). In a query session (the cooking contest)
+// the dish moves the gauge's PRESS value (field flags +0x38) and the page closes when the
+// gauge's time is up.
+class Cooking final : public CreationPage {
+ public:
+  Cooking() : CreationPage(kOverlay0bae) { sfx_ = 0x3B; }
+  void frame() override {                  // [9] 0x8008166c
+    CreationPage::frame();
+    if ((state_ == 1 || state_ == 5) && menu::globals().session->field_query != 0 && field_gauge_seconds_left() == 0) {
+      cancel();
+      state_ = 0x10;
+    }
+  }
+ protected:
+  void build_list1() override {            // 0x8008129c
+    list_->add_owned_range(0x117, 0x11C);
+    list_->add_owned_range(0x30E, 0x316);
+    list_->add_owned(0x336);
+  }
+  void compute() override;                 // 0x800812ec
+  void step_result() override;             // 0x8008155c
+};
+
+void Cooking::compute() {
+  if (owns(0x1FD)) bonus_ = static_cast<s16>(bonus_ + 0x14);
+  int level = level_;
+  if (menu::globals().session->field_query != 0) {
+    level -= (rd32s(globals().field_flags + 0x38) - char_skill_level(0x1C) * 5) / 10;
+    if (level < 0) level = 0;
+  }
+  u32 dishes = data_u32(entry(), 0x80082B64 + index1_ * 4);
+  u32 fails = data_u32(entry(), 0x80082BA4 + index1_ * 4);
+  u32 kinds = data_u32(entry(), 0x80082BE4 + index1_ * 4);
+  if (index1_ == 2 && (character_ == 1 || character_ == 2 || character_ == 6 || character_ == 8)) {
+    dishes = 0x800828E8, fails = 0x80082900, kinds = 0x80082904;
+  }
+  for (;;) {
+    const int i = random(list_count(list(dishes)));
+    const u8 f = byte(kinds + static_cast<u32>(i));
+    if ((f & 0x10) != 0 && level < 4) continue;
+    if ((f & 0x20) != 0 && level <= 6) continue;
+    good_item_ = half(dishes + static_cast<u32>(i) * 2);
+    if (level != 0) {
+      const int div = f & 0xF;
+      int p = div != 0 ? (level * 10 + 0x32) / div : 0;
+      if (p > 0x5A) p = 0x5A;
+      success_ = chance(p + bonus_) ? 1 : 0;
+    }
+    const int n = list_count(list(fails));
+    if (n != 0) fail_item_ = half(fails + static_cast<u32>(random(n)) * 2);
+    return;
+  }
+}
+
+void Cooking::step_result() {
+  if (menu::globals().session->field_query != 0) {
+    int sign, lo, range;
+    if (success_ == 0) {
+      sign = 1;
+      lo = half(0x80082A94 + index1_ * 2);
+      range = half(0x80082AB4 + index1_ * 2) - lo;
+    } else {
+      sign = -1;
+      lo = half(0x80082A54 + index1_ * 2);
+      range = half(0x80082A74 + index1_ * 2) - lo;
+    }
+    const int r = static_cast<int>(rng_range(static_cast<u32>(range + 1)));
+    u8* ff = globals().field_flags;
+    s32 press = rd32s(ff + 0x38) + (lo + r) * sign;
+    if (press < 0) press = 0;
+    if (press > 100) press = 100;
+    wr32(ff + 0x38, press);
+  }
+  CreationPage::step_result();
+}
+
+// 0xbae 0x8007e790
+menu::Widget* create_0bae() {
+  switch (menu::globals().session->variant) {
+    case 4: return new Customize;
+    case 0xB: return new Cooking;
+    default: return nullptr;
+  }
+}
+
+// ==== Overlay 0xbc2: the super specialties (page 0x10) =====================================
+
+// The base (0xbc2 0x8007e6f8): only the selected member; no talents; the member box shows
+// the party (0x8008100c); no failure or talent steps; the recipe box shows the super
+// specialty's level (0x80080d98).
+class SuperPage : public CreationPage {
+ public:
+  SuperPage() : CreationPage(kOverlay0bc2) {}
+  void build_members() override {           // [25] 0x8007ec38
+    member_count = 0;
+    member = 0;
+    members[member_count++] = static_cast<s16>(party_get_selected());
+    party_select(members[member]);
+  }
+  void draw_member() override;              // [23] 0x8008100c
+ protected:
+  void step_failure() override { state_ = static_cast<s16>(state_ + 2); }   // [31] 0x80080c3c
+  void step_talent() override { state_ = static_cast<s16>(state_ + 2); }    // [32] 0x80080c50
+  void draw_title_text(menu::TextBox* box) override;    // [40] 0x80080c64
+  void draw_recipe_text(menu::TextBox* box) override;   // [41] 0x80080d98
+  void message(s16 group, int index) {      // a message dialog (vtable 0x80083bd0)
+    auto* d = new menu::ConfirmDialog;
+    open_child(1, d);
+    menu::dialog_show_message(d, group, index);
+  }
+};
+
+void SuperPage::draw_member() {
+  menu::TextBox* b = member_box;
+  if (!b) return;
+  b->clear();
+  const int selected = party_get_selected();
+  for (int i = 0; i < 8; ++i) {
+    party_select(i);
+    const int character = party_selected_char();
+    if (character == 0) continue;
+    b->pen_at(static_cast<s16>((i % 4) * 0x16), static_cast<s16>((i / 4) << 5));
+    b->add_party_character(static_cast<s16>(character), 0x12, 0xC00);
+  }
+  party_select(selected);
+}
+
+void SuperPage::draw_title_text(menu::TextBox* box) {
+  if (id_ >= 1 && id_ <= 8) box->set_group(static_cast<s16>(0xF + id_));
+  switch (state_) {
+    case 1: box->add_message(0); break;
+    case 3: box->add_message(1); break;
+    case 5:
+      box->set_group(9);
+      box->add_message(2);
+      break;
+    default: break;
+  }
+}
+
+void SuperPage::draw_recipe_text(menu::TextBox* box) {
+  box->set_font_group(menu::strings_block(1), menu::strings_block(0), 8);
+  menu::TextRenderer* r = box->text;
+  r->set_colour(2);
+  box->add_message(3);   // the super specialty's level
+  r->set_colour(1);
+  r->set_pen(static_cast<s16>(box->pen_x + 0x6E), static_cast<s16>(box->pen_y - 0xE), 0xC);
+  r->add_number(level_, 2);
+  if ((flags_ & 1) == 0) {
+    box->set_font_group(menu::strings_block(1), menu::strings_block(0), 8);
+    r->set_colour(2);
+    box->add_message(0);
+    r->set_colour(1);
+    if (item1_ != 0) {
+      if ((flags_ & 4) == 0) {
+        box->set_font_group(menu::item_strings(1), menu::item_strings(0), 3);
+        box->add_message(item1_);
+      } else {
+        box->set_font_group(menu::strings_block(1), menu::strings_block(0), 0);
+        box->add_message(static_cast<s16>(item1_ + 0x18));   // a character's name
+      }
+    }
+    if (item2_ != 0) {
+      box->set_font_group(menu::item_strings(1), menu::item_strings(0), 3);
+      box->add_message(item2_);
+    }
+  }
+  if (tool_ != 0) {
+    box->set_font_group(menu::strings_block(1), menu::strings_block(0), 8);
+    box->pen_at(0x10, 0x32);
+    r->set_colour(2);
+    box->add_message(1);
+    r->set_colour(1);
+    box->add_item_count(tool_);
+  }
+}
+
+// Super specialty 1 (vtable 0x80083640; 0x800810e4): two ingredients (0x117-0x11c) into a
+// dish (tables 0x80083c78 / 0x80083c9c / 0x80083cc8 / 0x80083cf4); 1 in 255 item 0x1a1.
+class Super1 final : public SuperPage {
+ public:
+  Super1() { sfx_ = 0x3B; }
+ protected:
+  void build_list1() override { list_->add_owned_range(0x117, 0x11C); }   // 0x80081148
+  void build_list2() override {            // 0x80081170
+    inventory_take_one(item1_);
+    list_->add_owned_range(0x117, 0x11C);
+    inventory_give_one(item1_);
+  }
+  void compute() override {                // 0x800811bc
+    if (owns(0x1FD)) bonus_ = static_cast<s16>(bonus_ + 0x14);
+    const u32 pair = static_cast<u32>(index1_ * 6 + index2_);
+    if (level_ != 0) {
+      const int div = byte(0x80083CF4 + pair);
+      int p = div != 0 ? (level_ * 10 + 0x32) / div : 0;
+      if (p > 0x5A) p = 0x5A;
+      success_ = chance(p + bonus_) ? 1 : 0;
+    }
+    const u32 i = static_cast<u32>(byte(0x80083C78 + pair) - 1) * 2;
+    fail_item_ = half(0x80083CC8 + i);
+    good_item_ = half(0x80083C9C + i);
+    if (random(0xFF) == 0) good_item_ = 0x1A1;
+  }
+};
+
+// Super specialty 2 (vtable 0x800834d0; 0x800812fc, 0x114 bytes): with four instruments and
+// eight composed songs, item 0x35 plays song entry 0xaae through Callways (id 0x11).
+class Super2 final : public SuperPage {
+ public:
+  Super2() {
+    tool_ = 0x35;
+    flags_ = 1;
+    load_ = 0;
+  }
+  ~Super2() override { menu::bgload_cancel_owner(&song_client_); }
+  void frame() override;                   // [9] 0x800815a8
+ protected:
+  void step_pick1() override;              // [26] 0x80081374
+  bool decide() override;                  // [36] 0x80081414
+  void step_create() override {            // [29] 0x80081524
+    if (success_ == 0) {
+      message(0x11, note_);
+      state_ = 0xD;
+    }
+  }
+ private:
+  menu::BgLoadClient song_client_;         // +0x108
+  s16 load_ = 0;                           // +0x110
+  s16 note_ = 0;                           // +0x112
+};
+
+void Super2::step_pick1() {
+  list_->add_owned_range(1, 2);
+  list_box_->set_group(0xC);
+  list_box_->add_message(0);
+  choice_ = 0;
+  cursor->add_grid(&choice_, 0, 1, 1, 0, 0xC, 0, 0xE, list_box_);
+  state_ = 5;
+}
+
+bool Super2::decide() {
+  note_ = 0;
+  success_ = 0;
+  if (tool_ != 0 && inventory_count(tool_) == 0) return false;
+  int instruments = 0;
+  for (int i = 0x2D; i < 0x35; ++i) {
+    if (inventory_count(i) != 0) ++instruments;
+  }
+  if (instruments < 4) {
+    note_ = 1;
+  } else {
+    int songs = 0;
+    for (int i = 0; i < 0x10; ++i) {
+      if (((globals().script_flags[(i + 0x2F) >> 3] >> ((i + 0x2F) & 7)) & 1) != 0) ++songs;
+    }
+    if (songs > 7) {
+      success_ = 1;
+      inventory_take_one(tool_);
+      load_ = static_cast<s16>(menu::bgload_queue(&song_client_, 0xAAE, 0, nullptr, 0, 0));
+      ++state_;
+      return true;
+    }
+    note_ = 2;
+  }
+  ++state_;
+  return true;
+}
+
+void Super2::frame() {
+  CreationPage::frame();
+  if (load_ != 0 && menu::bgload_owner_done(&song_client_)) {
+    const menu::LoadRequest* req = menu::bgload_request(load_);
+    if (req != nullptr && req->dest != nullptr && callways() != nullptr) {
+      callways_play_song(callways(), std::span<const u8>(req->dest, static_cast<size_t>(req->sectors) << 11), 0x11, level_);
+    }
+    menu::bgload_cancel(load_);
+    load_ = 0;
+    state_ = 0xE;
+  }
+}
+
+// Super specialty 3 (vtable 0x80083360; 0x80081634): script flag 0x25 on or off.
+class Super3 final : public SuperPage {
+ public:
+  Super3() { flags_ = 1; }
+  void on_confirm(int n) override {        // [13] 0x800817e8
+    if (state_ == 5) {
+      u8* f = globals().script_flags;
+      f[0x25 >> 3] &= static_cast<u8>(~(1 << (0x25 & 7)));
+      if (choice_ != 0) f[0x25 >> 3] |= static_cast<u8>(1 << (0x25 & 7));
+      ++state_;
+    }
+    Widget::on_confirm(-n);
+  }
+ protected:
+  void step_pick1() override {             // [26] 0x80081698
+    list_->add_owned_range(1, 2);
+    list_box_->set_group(0xD);
+    list_box_->add_list_highlight(&choice_, 2);
+    list_box_->add_message(0);
+    list_box_->add_message(1);
+    choice_ = ((globals().script_flags[0x25 >> 3] >> (0x25 & 7)) & 1) != 0 ? 1 : 0;
+    cursor->add_grid(&choice_, 0, 1, 2, 0, 0xC, 0, 0xE, list_box_);
+    state_ = 5;
+  }
+  void step_create() override {            // [29] 0x80081774
+    message(0x12, 1);
+    state_ = 0xD;
+  }
+  void draw_title_text(menu::TextBox* box) override {   // [40] 0x80081868
+    if (state_ == 5) {
+      box->set_group(0x12);
+      box->add_message(0);
+    }
+  }
+};
+
+// Super specialty 4 (vtable 0x800831f0; 0x800818b0, 0x114 bytes): only on the world map
+// and not with script flags 0xc / 0xe. A random member's voice (entry table 0x80083d16 by
+// character) plays; success (level * 4 + bonus) sets session +0x30 and closes the menu.
+class Super4 final : public SuperPage {
+ public:
+  Super4() { flags_ = 1; }
+  ~Super4() override { menu::bgload_cancel_owner(&voice_client_); }
+  void frame() override;                   // [9] 0x80081b58
+ protected:
+  static bool usable() {                   // 0x80081ab0
+    const u8* f = globals().script_flags;
+    if ((f[0xE >> 3] >> (0xE & 7)) & 1) return false;
+    if ((f[0xC >> 3] >> (0xC & 7)) & 1) return false;
+    return globals().field_flags[0x68] != 0;
+  }
+  void step_pick1() override {             // [26] 0x80081920
+    list_->add_owned_range(1, 1);
+    list_box_->set_group(0xE);
+    menu::TextRenderer* r = list_box_->text_renderer();
+    r->set_colour(usable() ? 1 : 4);
+    list_box_->add_message(0);
+    r->set_colour(1);
+    choice_ = 0;
+    cursor->add_grid(&choice_, 0, 1, 1, 0, 0xC, 0, 0xE, list_box_);
+    state_ = 5;
+  }
+  bool decide() override;                  // [36] 0x800819fc
+  void step_create() override {}           // [29] 0x80081b08
+  void step_again() override {             // [33] 0x80081b10
+    if (success_ == 0) {
+      state_ = 0;
+    } else {
+      menu::globals().session->unknown30 = 1;
+      finish(0);
+    }
+  }
+ private:
+  menu::BgLoadClient voice_client_;        // +0x108
+  s16 load_ = 0;                           // +0x110: loading (> 0) or playing (< 0)
+  s16 clip_ = 0;                           // +0x112
+};
+
+bool Super4::decide() {
+  if (tool_ != 0 && inventory_count(tool_) == 0) return false;
+  if (!usable()) return false;
+  inventory_take_one(tool_);
+  success_ = chance(level_ * 4 + bonus_) ? 1 : 0;
+  const int character = party_slot_active(party_random_alive_slot());
+  load_ = static_cast<s16>(menu::bgload_queue(&voice_client_, half(0x80083D16 + static_cast<u32>(character) * 2), 0, nullptr, 0, 0));
+  ++state_;
+  return true;
+}
+
+void Super4::frame() {
+  CreationPage::frame();
+  if (load_ == 0) return;
+  if (load_ > 0) {
+    if (menu::bgload_is_done(load_)) {
+      const menu::LoadRequest* req = menu::bgload_request(load_);
+      clip_ = 0;
+      if (req != nullptr && req->dest != nullptr) {
+        clip_ = static_cast<s16>(sound_open_clip(globals().sound, req->dest, 2, nullptr));
+      }
+      load_ = static_cast<s16>(-load_);
+    }
+    return;
+  }
+  if (clip_ < 1 || sound_effect_playing(globals().sound, clip_) == 0) {
+    menu::bgload_cancel(-load_);
+    load_ = 0;
+    message(0x13, success_ + 1);
+    state_ = 0xD;
+  }
+}
+
+// Super specialty 5 (vtable 0x80083080; 0x80081c8c): a party member into a book about
+// them (tables 0x80083d68 / 0x80083d30 / 0x80083d4c); tool 0xa4, failure 0xa3.
+class Super5 final : public SuperPage {
+ public:
+  Super5() {
+    tool_ = 0xA4;
+    flags_ = 4;
+    sfx_ = 0x3B;
+  }
+  void draw_item(menu::TextBox* box, int slot, int index) override {   // [8] 0x80081ef8
+    menu::TextRenderer* r = box->text;
+    r->begin_line(box->scroll->line(slot));
+    const int character = list_->at(index).item;
+    r->set_pen_x(0);   // 0x80081f70
+    if (character != 0) r->draw_current(r->message(character + 0x18));
+    r->upload_line();
+  }
+ protected:
+  void build_list1() override {            // 0x80081d00
+    for (int i = 0; i < 8; ++i) {
+      const int character = party_slot_active(i);
+      if (character != 0) list_->add(character);
+    }
+    list_box_->set_font_group(menu::strings_block(1), menu::strings_block(0), 0);
+  }
+  void compute() override;                 // 0x80081d88
+  void show_item(int item) override {      // [42] 0x80081fe0
+    menu::TextBox* b = info;
+    if (state_ < 6 && state_ > 3) {
+      b->clear();
+      b->pen_reset();
+      b->set_font_group(menu::strings_block(1), menu::strings_block(0), 6);
+      b->add_message_lines(id_ - 1, 6);
+      return;
+    }
+    set_viewer_item(0);
+    b->clear();
+    b->pen_reset();
+    b->set_group(0x14);
+    if (item != 0) b->add_message_lines(item, 1);
+  }
+};
+
+void Super5::compute() {
+  if (owns(0x1CE)) bonus_ = static_cast<s16>(bonus_ + 0x14);
+  int index = 0;
+  for (int i = 0; i < 0xC; ++i) {
+    if (byte(0x80083D68 + static_cast<u32>(i)) == item1_) {
+      index = i;
+      break;
+    }
+  }
+  const bool second = chance(10);
+  if (level_ != 0) success_ = chance((second ? (level_ * 0x10) / 7 : (level_ << 4) / 3) + bonus_) ? 1 : 0;
+  fail_item_ = 0xA3;
+  good_item_ = half((second ? 0x80083D4Cu : 0x80083D30u) + static_cast<u32>(index) * 2);
+  item1_ = 0;
+}
+
+// Super specialty 6 (vtable 0x80082f10; 0x800820c8): with item 0x36, script flag 0x2e0 or
+// 0x2df on (once; the third choice clears both).
+class Super6 final : public SuperPage {
+ public:
+  Super6() {
+    flags_ = 1;
+    tool_ = 0x36;
+  }
+  void on_confirm(int n) override;         // [13] 0x80082218
+ protected:
+  static bool flag(int n) { return ((globals().script_flags[n >> 3] >> (n & 7)) & 1) != 0; }
+  static void set(int n, bool on) {
+    u8& b = globals().script_flags[n >> 3];
+    b = static_cast<u8>(on ? (b | (1 << (n & 7))) : (b & ~(1 << (n & 7))));
+  }
+  void step_pick1() override {             // [26] 0x80082134
+    list_->add_owned_range(1, 2);
+    list_box_->set_group(0xF);
+    list_box_->add_message(0);
+    list_box_->add_message(1);
+    list_box_->add_message(2);
+    // The original picks the current setting here and then starts at 0 anyway.
+    choice_ = 0;
+    cursor->add_grid(&choice_, 0, 1, 3, 0, 0xC, 0, 0xE, list_box_);
+    state_ = 5;
+  }
+  void step_create() override {            // [29] 0x80082344
+    message(0x15, note_);
+    state_ = 0xD;
+  }
+  void draw_title_text(menu::TextBox* box) override {   // [40] 0x800823b8
+    if (state_ == 5) {
+      box->set_group(0x15);
+      box->add_message(0);
+    }
+  }
+ private:
+  s32 note_ = 0;                           // +0x108
+};
+
+void Super6::on_confirm(int n) {
+  if (state_ == 5) {
+    if (choice_ == 2) {
+      set(0x2DF, false);
+      set(0x2E0, false);
+      state_ = 0xE;
+    } else if (flag(0x2DF)) {
+      note_ = 4;
+      state_ = 6;
+    } else if (flag(0x2E0)) {
+      note_ = 3;
+      state_ = 6;
+    } else {
+      if (tool_ != 0 && inventory_count(tool_) == 0) return;
+      inventory_take_one(tool_);
+      set(0x2DF, false);
+      set(0x2E0, false);
+      if (choice_ == 0) set(0x2E0, true);
+      if (choice_ == 1) set(0x2DF, true);
+      state_ = 6;
+      note_ = choice_ + 1;
+    }
+  }
+  Widget::on_confirm(-n);
+}
+
+// Super specialty 7 (vtable 0x80082da0; 0x80082400): a material of 0x80083d74 into one of
+// its results (0x80083e70 / 0x80083ea8, or 0x80083e8c / 0x80083ec4 with item 0x1cb);
+// tool 0x1d6, failure 0x2a4.
+class Super7 final : public SuperPage {
+ public:
+  Super7() {
+    tool_ = 0x1D6;
+    sfx_ = 0x5E;
+  }
+ protected:
+  void build_list1() override {            // 0x8008246c
+    const std::vector<s16> l = list(0x80083D74);
+    list_->add_owned_list(l.data());
+  }
+  void compute() override {                // 0x80082498
+    if (owns(0x1CB)) bonus_ = static_cast<s16>(bonus_ + 0x14);
+    const bool better = owns(0x1CB);
+    const u32 items = data_u32(entry(), (better ? 0x80083E8Cu : 0x80083E70u) + static_cast<u32>(index1_) * 4);
+    const u32 divs = data_u32(entry(), (better ? 0x80083EC4u : 0x80083EA8u) + static_cast<u32>(index1_) * 4);
+    const int i = random(list_count(list(items)));
+    const int div = byte(divs + static_cast<u32>(i));
+    int p = div != 0 ? (level_ * 8 + 0x28) / div : 0;
+    if (p > 0x5A) p = 0x5A;
+    if (level_ != 0) success_ = chance(p + bonus_) ? 1 : 0;
+    fail_item_ = 0x2A4;
+    good_item_ = half(items + static_cast<u32>(i) * 2);
+  }
+};
+
+// Super specialty 8 (vtable 0x80082c30; 0x800825f0): one of 0x80083e4c; each try may lower
+// a random mark of config +0x58 / +0xe8 (12 x 12); tool 0x1d9, failure 0x1da.
+class Super8 final : public SuperPage {
+ public:
+  Super8() {
+    tool_ = 0x1D9;
+    flags_ = 1;
+    sfx_ = 0x3B;
+  }
+ protected:
+  void lower_mark() {                      // 0x80082730
+    const int row = random(0xC);
+    const int col = random(0xC);
+    const int which = random(4);
+    int off;
+    if (which == 1) {
+      off = row * 0xC + 0xE8;
+    } else if (which == 0) {
+      off = row * 0xC + 0x58;
+    } else {
+      return;
+    }
+    u8& m = party_config()[off + col];
+    if (m != 0) --m;
+  }
+  void compute() override {                // 0x80082664
+    lower_mark();
+    const int i = random(list_count(list(0x80083E4C)));
+    const int div = byte(0x80083E64 + static_cast<u32>(i));
+    if (level_ != 0) success_ = chance((div != 0 ? (level_ << 3) / div : 0) + bonus_) ? 1 : 0;
+    fail_item_ = 0x1DA;
+    good_item_ = half(0x80083E4C + static_cast<u32>(i) * 2);
+  }
+};
+
+// 0xbc2 0x8007e5e0: page 0x10's class by the super specialty in session +0x1c.
+menu::Widget* create_0bc2() {
+  switch (menu::globals().session->variant) {
+    case 1: return new Super1;
+    case 2: return new Super2;
+    case 3: return new Super3;
+    case 4: return new Super4;
+    case 5: return new Super5;
+    case 6: return new Super6;
+    case 7: return new Super7;
+    case 8: return new Super8;
+    default: return nullptr;
+  }
+}
+
 // 0xbc0 0x8007e790: the class by the specialty in session +0x1c.
 menu::Widget* create_0bc0() {
   switch (menu::globals().session->variant) {
@@ -1328,7 +2024,7 @@ void menu_page0f_update(menu::MenuPageLoader* p) {
     case 1: {
       p->publish_id();
       const s8 v = menu::globals().session->variant;
-      menu::Widget* page = (v == 4 || v == 0xB) ? nullptr : create_0bc0();
+      menu::Widget* page = (v == 4 || v == 0xB) ? create_0bae() : create_0bc0();
       if (page == nullptr) {
         runtime::Runtime::get().log_once("menu:page0f_variant", "menu: page 0xf variant not ported");
         p->pop();
@@ -1348,15 +2044,21 @@ void menu_page0f_update(menu::MenuPageLoader* p) {
 
 void menu_page10_update(menu::MenuPageLoader* p) {
   switch (p->substate) {
-    case 1:
-      runtime::Runtime::get().log_once("menu:page10", "menu: page 0x10 (super specialties) not ported");
-      p->pop();
+    case 1: {
+      p->publish_id();
+      menu::Widget* page = create_0bc2();
+      if (page == nullptr) {
+        p->pop();
+        break;
+      }
+      p->push(page);
       break;
+    }
     case 2:
       p->pop();
       break;
     case 3:
-      p->goto_page(0x14);
+      p->goto_page(0x14);   // super specialty 4 closes the menu
       break;
     default:
       break;

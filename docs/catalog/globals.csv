@@ -885,3 +885,14 @@ menu_0bbc,0x80084167,k_killer_groups,u8[13],By character: the text group of its 
 menu_0bbc,0x800841ac,k_killer_costs,u8 *[13],By character: its killer moves' MP costs,confirmed,specialty_page_show_killer
 menu_0bbc,0x800841de,k_song_entries,s16[17],By song: the archive entry played through Callways,confirmed,play_list_on_confirm
 menu_0bbc,0x80084200,g_specialty,s32,The specialty whose dialog the Specialty page opened,confirmed,"specialty_page_on_confirm, specialty_dialog_create"
+menu_0bc0,0x80083b0a,k_creation_talent_chances,u8[13][10],By character and talent: the chance out of 256 that a creation wakes it,confirmed,creation_wake_talent
+menu_0bc0,0x80083b8a,k_creation_talents,s16[],By specialty: the talents it wants and can wake,confirmed,creation_talent_mask
+menu_0bc0,0x80083bb0,k_art_level_rows,u8[12],"Art: by level, the row of weights",confirmed,art_compute
+menu_0bc0,0x80083bbc,k_art_tables,u8[] / s16[],Art: weights and result groups for item 1 (0x80083bbc / 0x80083bd8) and item 0x2b (0x80083c14 / 0x80083c30); favourites 0x80083c58 by item 6-0x11,confirmed,art_compute
+menu_0bc0,0x80083c62,k_metalwork_tables,s16[] / u8[],"Metalwork: character masks (0x80083c62), usable masks (0x80083c7c), results (0x80083d60), materials (0x80083d3c), divisors (0x80083d58), failures (0x80083e20)",confirmed,metalwork_compute
+menu_0bc0,0x80083e28,k_authoring_tables,s16[] / u8[],"Authoring: skills (0x80083e28), their books (0x80083e54), rare books (0x80083e80), divisors (0x80083e8c)",confirmed,authoring_compute
+menu_0bc0,0x80083ea0,k_compounding_tables,u8[] / s16[],"Compounding: chances by level (0x80083ea0), material pairs (0x80083ecc), results (0x80083ee8)",confirmed,compounding_compute
+menu_0bc0,0x80083f98,k_alchemy_divisors,u8[],"Alchemy: by item index, the chance divisor",confirmed,alchemy_compute
+menu_0bc0,0x80083fa8,k_survival_tables,u8[] / s16[],"Survival: weights by place (0x80083fa8), divisors (0x80084000), lists with scales (0x8008400c / 0x8008403c, 0x80084098 / 0x800840c4)",confirmed,survival_compute
+menu_0bc0,0x80084124,k_machinery_tables,s16[] / u8[],Machinery: items and divisors (0x80084124 / 0x8008414c; character 9 0x80084160 / 0x80084170; character 6 0x80084178 / 0x80084188),confirmed,machinery_compute
+menu_0bc0,0x80084190,g_creation_viewer,CreationViewer *,The creation page's viewer,confirmed,"creation_page_frame, creation_anim_*"
