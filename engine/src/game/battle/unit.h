@@ -325,6 +325,7 @@ struct PartyUnit : Unit {
   virtual void play_move_voice(int) {}    // [39] pc_play_move_voice 0x8003ac70 (voice clips: TODO)
   virtual int forced_attack_choice() { return -1; }  // [45] pc_forced_attack_choice 0x8003bc40
   virtual void camera_follow_start(); // [38] pc_camera_follow_start 0x80037b9c
+  virtual void spell_hook(int) {}     // [42] pc_spell_hook 0x8003bc38: after spell_cast (modules: voice lines)
   virtual void play_voice(int) {}     // [43] pc_play_voice 0x8003ac38 (voice clips: TODO)
   void appear_update();               // 0x800362a8 pc_appear_update
 };

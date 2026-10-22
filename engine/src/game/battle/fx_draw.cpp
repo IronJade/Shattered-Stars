@@ -115,6 +115,89 @@ void draw_vortex(const VortexParams& p) {
   }
 }
 
+void draw_sphere(s32 rings, s32 segs, s32 radius, u32 rgb, s32 level, s32 hemisphere, s32 blend, s32 y_scale) {
+  BattleGlobals& g = bg();
+  RenderContext* pool = g.prim_pool_a;
+  const s32 per_quad = blend != 0 ? 0x30 : 0x24;
+  if (!arena_has_room(pool, mul32(mul32(per_quad, rings), segs))) return;
+  const u32 rgbc = scale_colour(rgb, level) | (blend != 0 ? 0x3A000000u : 0x38000000u);
+  ViewState& v = view();
+  psyq::SetLightMatrix(&v.light_matrix);
+  psyq::SetColorMatrix(&v.colour_matrix);
+  gte_set_back_colour();
+  psx::Gte& q = psyq::gte();
+  const s32 yr = mul32(y_scale, radius) >> 12;
+  const s32 first = hemisphere == 1 ? rings / 2 : 0;
+  for (s32 ring = first; ring < rings; ++ring) {
+    for (s32 seg = 0; seg < segs; ++seg) {
+      const s32 a0 = (ring << 11) / rings - 0x400, b0 = (seg << 12) / segs;
+      const s32 a1 = ((ring + 1) << 11) / rings - 0x400, b1 = ((seg + 1) << 12) / segs;
+      const s32 ca0 = bcos(static_cast<u32>(a0)), sa0 = bsin(static_cast<u32>(a0));
+      const s32 cb0 = bcos(static_cast<u32>(b0)), sb0 = bsin(static_cast<u32>(b0));
+      const s32 ca1 = bcos(static_cast<u32>(a1)), sa1 = bsin(static_cast<u32>(a1));
+      const s32 cb1 = bcos(static_cast<u32>(b1)), sb1 = bsin(static_cast<u32>(b1));
+      // Normals 0x1f80021c.. (rings a0 / a1 x segments b0 / b1) and vertices 0x1f800004..
+      SVec n[4];
+      n[0] = {static_cast<s16>(mul32(ca0, cb0) >> 12), static_cast<s16>(-sa0), static_cast<s16>(mul32(ca0, sb0) >> 12)};
+      n[1] = {static_cast<s16>(mul32(ca0, cb1) >> 12), static_cast<s16>(-sa0), static_cast<s16>(mul32(ca0, sb1) >> 12)};
+      n[2] = {static_cast<s16>(mul32(ca1, cb0) >> 12), static_cast<s16>(-sa1), static_cast<s16>(mul32(ca1, sb0) >> 12)};
+      n[3] = {static_cast<s16>(mul32(ca1, cb1) >> 12), static_cast<s16>(-sa1), static_cast<s16>(mul32(ca1, sb1) >> 12)};
+      SVec p[4];
+      for (int k = 0; k < 4; ++k) {
+        p[k].x = static_cast<s16>(mul32(n[k].x, radius) >> 12);
+        p[k].y = static_cast<s16>(mul32(n[k].y, yr) >> 12);
+        p[k].z = static_cast<s16>(mul32(n[k].z, radius) >> 12);
+      }
+      load(q, 0, p[0]);
+      q.execute(psx::Gte::kRtps);
+      const u32 s0 = q.read_data(psx::Gte::SXY2);
+      load(q, 0, p[1]);
+      load(q, 1, p[2]);
+      load(q, 2, p[3]);
+      q.execute(psx::Gte::kRtpt);
+      const u32 s1 = q.read_data(psx::Gte::SXY0), s2 = q.read_data(psx::Gte::SXY1), s3 = q.read_data(psx::Gte::SXY2);
+      q.execute(psx::Gte::kAvsz4);
+      auto x_in = [](u32 xy) { return static_cast<u16>(xy) < 0x140; };
+      auto y_in = [](u32 xy) { return static_cast<u16>(static_cast<u16>(xy >> 16) + 0x40) < 0x158; };
+      if (!(x_in(s0) || x_in(s1) || x_in(s2) || x_in(s3))) continue;
+      if (!(y_in(s0) || y_in(s1) || y_in(s2) || y_in(s3))) continue;
+      const s32 otz = static_cast<s32>(q.read_data(psx::Gte::OTZ)) >> 3;
+      // Lighting (NCCS on the first normal, NCCT on the other three).
+      load(q, 0, n[0]);
+      q.write_data(psx::Gte::RGBC, rgbc);
+      q.execute(psx::Gte::kNccs);
+      if (0x5F9 < otz) continue;
+      auto* quad = screen_alloc_prims<psyq::POLY_G4>(pool->arena, 1);
+      if (quad == nullptr) return;
+      psyq::setPolyG4(quad);
+      const u32 c0 = q.read_data(psx::Gte::RGB2);
+      load(q, 0, n[1]);
+      load(q, 1, n[2]);
+      load(q, 2, n[3]);
+      q.execute(psx::Gte::kNcct);
+      const u32 c1 = q.read_data(psx::Gte::RGB0), c2 = q.read_data(psx::Gte::RGB1), c3 = q.read_data(psx::Gte::RGB2);
+      std::memcpy(&quad->r0, &c0, 4);
+      std::memcpy(&quad->r1, &c1, 3);
+      std::memcpy(&quad->r2, &c2, 3);
+      std::memcpy(&quad->r3, &c3, 3);
+      quad->x0 = static_cast<s16>(s0), quad->y0 = static_cast<s16>(s0 >> 16);
+      quad->x1 = static_cast<s16>(s1), quad->y1 = static_cast<s16>(s1 >> 16);
+      quad->x2 = static_cast<s16>(s2), quad->y2 = static_cast<s16>(s2 >> 16);
+      quad->x3 = static_cast<s16>(s3), quad->y3 = static_cast<s16>(s3 >> 16);
+      psyq::P_TAG* ot = &pool->ot_head[0x616 - otz];
+      psyq::addPrim(ot, quad);
+      pool_a_bytes_used() += 0x24;
+      if (blend != 0) {
+        auto* dm = screen_alloc_prims<psyq::DR_MODE>(pool->arena, 1);
+        if (dm == nullptr) return;
+        psyq::SetDrawMode(dm, 0, 1, (blend - 1) << 5, nullptr);
+        psyq::addPrim(ot, dm);
+        pool_a_bytes_used() += 0xC;
+      }
+    }
+  }
+}
+
 u32 colour_modulate(u32 a, u32 b) {
   u32 r = (a & 0xFF) * (b & 0xFF) >> 7;
   if (0xFF < r) r = 0xFF;

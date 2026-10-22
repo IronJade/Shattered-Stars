@@ -185,6 +185,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/particle.cpp
   src/game/battle/pc_modules.cpp
   src/game/battle/pc_claude.cpp
+  src/game/battle/pc_casters.cpp
   src/game/battle/enemy_support.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp

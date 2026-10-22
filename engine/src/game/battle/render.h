@@ -70,6 +70,10 @@ void camera_reset();              // 0x80076be8 (#1984.0): GTE H / offset / far 
 void camera_compute_view();       // 0x800771d8 (#1984.0)
 void camera_update_matrices();    // 0x800473f0
 void lights_build(const s32 orient[3]);                         // 0x80076ce0 (#1984.0)
+// 0x80076eec (#1984.0): the colour and light matrices as lights_build makes them, the light
+// matrix turned into the space of an object with yaw orient[1] and tilt orient[2] (the
+// unlit light matrix is left alone).
+void lights_build_oriented(const s32 orient[3]);
 void obj_set_matrix(const s32 pos[3], s32 orient[3], const s32 scale[3]);  // 0x80077620 (#1984.0)
 void gte_set_zoom();              // 0x80078350 (#1984.0)
 void gte_set_back_colour();       // 0x8007838c (#1984.0)

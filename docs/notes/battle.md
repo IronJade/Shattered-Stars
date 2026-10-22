@@ -7,7 +7,7 @@ the names are in `battle.csv`, `battle_overlays.csv` and `battle_globals.csv`.
 
 Entry #2129 (`0x851`) is the **battle program**. Confirmed by:
 
-- the field queues it in `field_start_battle` (field 0x80051a34: `loader_entry_size(loader, 0x851)`, `mem_alloc_b`,
+- the field queues it in `field_start_battle` (field 0x80051a34: `loader_entry_size(loader, 0x851)`, `mem_alloc_high`,
   `LoadQueue` read into `DAT_80075350`) and runs it from `field_exit_to_program` (field 0x80051c9c:
   `boot_run_main_program(system, DAT_80075350, 1)`) after storing the battle setup in handoff 5;
 - the program reads that setup (handoff 5: encounter id, stage id, the archive entries the field preloaded),
@@ -99,7 +99,7 @@ battle_entry (0x8002f810)                      same code as the title / field en
     if inventory_verify(inventory) != 1: load entry 0x542, show it full screen, hang (anti-tamper)
     battle_init_state (0x80074a74) ; battle_init_objects (0x80074168) ; stage_load_ctx_init
     for each load-list index i while setup+0x3c[i] != 0 (entry = setup+8[i]):
-        data = setup+0x74+4i (preloaded by the field) or loader_load_sync into mem_alloc_b
+        data = setup+0x74+4i (preloaded by the field) or loader_load_sync into mem_alloc_high
         switch (i): 0 load_battle_music_pack  1 load_victory_music  2 load_stage  3 load_ui_sprites (#1979)
                     4 load_battle_text (#1980)  5 load_result_code (#1981)  6 load_item_data (#1983)
                     7 load_formation (0x8007344c: encounter pack; monster factory 0x80075ad8)

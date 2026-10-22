@@ -9,6 +9,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
+#include "game/battle/fx_draw.h"
 #include "game/battle/killer.h"
 #include "game/battle/particle.h"
 #include "game/battle/render.h"
@@ -203,6 +204,24 @@ void shot_k32_light_streak(Shot* s) {
   if (mul32(s->p134, g.frame_ticks) + s->p138 < d) return;
   s->pos[0] = s->point[0], s->pos[1] = s->point[1], s->pos[2] = s->point[2];
   shot_kill(s);
+}
+
+// Kind 0x10 (0x80058a7c): an expanding lit hemisphere (draw_sphere: +0x128 rings x +0x12c
+// segments, radius +0x138 growing +0x130 a tick, colour +0x118 at level 4 * life, height
+// scale +0x10c, additive) for +0x134 ticks at the Shot (or its owner, 0x10000 higher).
+void shot_k10_sphere(Shot* s) {
+  BattleGlobals& g = bg();
+  stage_colour_set(0x80, 0x80, 0x80);  // stage_colour_set_grey 0x80072724
+  static const s32 kZero[3] = {0, 0, 0};  // 0x8006e33c
+  lights_build_oriented(kZero);
+  shot_set_gte_origin(s);
+  draw_sphere(s->p128, s->p12c, s->p138, static_cast<u32>(s->point[0]), s->p134 << 2, 1, 2, s->aux);
+  stage_colour_restore();
+  if (s->power != 0 && (g.flags & 0x40) != 0) return;
+  if ((g.flags & 0xBF) != 0) return;
+  s->p138 += s->p130;
+  s->p134 -= g.frame_ticks;
+  if (s->p134 < 1) shot_kill(s);
 }
 
 // Kind 0x16 (0x8005a4d8): the descriptor projectile (shot_spawn_projectile). Flags +0x138:
@@ -589,6 +608,7 @@ void Shot::update() {
   switch (kind) {
     case 1: shot_k01_stun_orbit(this); break;
     case 2: shot_k02_boomerang(this); break;
+    case 0x10: shot_k10_sphere(this); break;
     case 0x11: shot_k11_sprite_ring(this); break;
     case 0x16: shot_k16_projectile(this); break;
     case 0x2C: shot_k2c_thrown_weapon(this); break;

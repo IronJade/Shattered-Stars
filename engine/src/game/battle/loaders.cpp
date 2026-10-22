@@ -339,7 +339,7 @@ void battle_map_resolve_entries(s16 out[0x11], int map, u32 x, u32 z) {
 
 void battle_queue_field_preloads() {
   // The console takes min(free heap - 0x4000, 0xa0000) bytes, retrying 32 KB smaller until
-  // mem_alloc_b succeeds (nothing below 0x801). The host has the room, so the cap holds.
+  // mem_alloc_high succeeds (nothing below 0x801). The host has the room, so the cap holds.
   BattleGlobals& g = bg();
   if (g.preload_list.empty()) return;
   s32 room = 0xA0000;

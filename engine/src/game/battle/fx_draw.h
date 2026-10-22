@@ -28,6 +28,12 @@ struct VortexParams {
 // 0x8007deb4: a funnel of rings x segments gouraud quads, fading toward the last ring.
 void draw_vortex(const VortexParams& p);
 
+// 0x8007c520: a lit UV sphere of rings x segs POLY_G4 (NCCS / NCCT with the light
+// matrices built by lights_build*: normals are the unit sphere), radius 'radius' (y scaled
+// by y_scale / 0x1000), colour scale_colour(rgb, level); only the lower half of the rings
+// (y below the centre) with 'hemisphere' 1; blend != 0 adds a DR_MODE (mode blend - 1).
+// Uses the GTE rotation / translation the caller set.
+void draw_sphere(s32 rings, s32 segs, s32 radius, u32 rgb, s32 level, s32 hemisphere, s32 blend, s32 y_scale);
 // 0x80073bb8: the screen x / y of a world point (20.12) through the render view. Leaves
 // the GTE translation at the rotated offset.
 void project_to_screen(const s32 world[3], s16 out[2]);

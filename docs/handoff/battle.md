@@ -60,23 +60,31 @@ fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phas
 
 ## Committed since: kind 0x16 + shot_apply_damage + RibbonTrail (162ad2d); sound handles (22ac0e8)
 
-## In progress (uncommitted, all build; reported to main)
+## Committed since: kinds 2 / 0x2c / 0x32 (3c4509e)
 
-- Shot kinds 2 (boomerang / sword wave), 0x2c (thrown weapon), 0x32 (light streak) with
-  effect_spawn_beam_at and shot_set_gte_origin in `shot.{h,cpp}`; bobj_near_point in
-  `bobj.{h,cpp}`; the beam stand-in removed from `enemy_support.{h,cpp}` (backups
-  `scratchpad/battle/enemy_support.{h,cpp}.bak3`). Catalog regenerated (486 rows).
-- Verified: encounter 280 (enemy agent's `scratchpad/enemy/ref/i280_3`, idle party) RNG equal
-  to the exit; encounter 65 (`ref/enc65`, idle party) RNG equal to the exit and frames
-  match (arrows, shadows, impacts, damage). Tests 76 / 73, ASan clean (also battles 280, 65).
-- Not exercised: kind 0x2c; kind 0x10 (sphere) is not ported (logs once if spawned).
+## In progress (uncommitted, all build)
+
+- Kind 0x10 (`shot.cpp` shot_k10_sphere) with `fx_draw.cpp` draw_sphere 0x8007c520 and
+  `render.cpp` lights_build_oriented 0x80076eec. Exercised by encounter 340 (wizard): the
+  impact explosion looks like the reference; the wizard's sequence runs ~5 frames early in
+  the port because of the enemy odds-batch phase (below), so no exact frame match yet.
+- The small party modules: `pc_casters.cpp` (Rena #2135, Celine #2137, Leon #2141, Noel
+  #2157), registered in `pc_modules.cpp`, `CMakeLists.txt`; `unit.h` gains PartyUnit slot 42
+  `spell_hook`. Not run-time tested (spells and the party members' setups are not there).
+- `loaders.cpp` / `docs/notes/battle.md`: mem_alloc_b -> mem_alloc_high (catalog rename).
+- Catalog regenerated (501 rows).
+- Found (reported): in every encounter compared (10, 340) the enemies' first odds batch
+  (5 rng draws every 8 ticks, enemy_ai.cpp ai_ticks) fires on the first frame of state 2 in
+  the port but about one cycle later in the original; the RNG totals re-sync by b300 but the
+  decisions stay a few frames early. Enemy-side; routed to the enemy agent. Claude's
+  approach drift in encounter 10 follows from it.
 
 ## Next steps
 
-1. Kind 0x10 (expanding lit sphere, 0x80058a7c) with draw_sphere 0x8007c520 (#1984.0).
-2. Claude's approach-walk drift (enemy agent: encounter 10, Cross mash, about 1 unit per 10
-   frames from b340). Note: the enemy agent's i280 reference has Claude idle; compare with
-   an idle party.
+1. PartyUnit::state_air_attack (pc_state_air_attack 0x80037d08, jump attacks) is still a
+   todo in party_states.cpp: port it (all members but Leon use it).
+2. The bigger character modules (Bowman #2139, Dias #2143, Precis #2155, Ashton #2147, Opera
+   #2153, Ernest #2151, Chisato #2159), each verified as Claude's was.
 3. Claude's move 5 (Energy Sword) compare; the other character modules (casters first).
 4. Step 4: spells and items (shot_hit_magic 0x800547d4 next to shot_apply_damage).
 5. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).

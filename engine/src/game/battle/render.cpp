@@ -271,6 +271,31 @@ void lights_build(const s32 orient[3]) {
   psyq::MulMatrix(&v.light_matrix, &m);
 }
 
+void lights_build_oriented(const s32 orient[3]) {
+  ViewState& v = g_view;
+  v.colour_matrix = {};
+  v.light_matrix = {};
+  const s32 r = v.stage_colour[0], gc = v.stage_colour[1], b = v.stage_colour[2];
+  v.unlit_colour.m[0][0] = static_cast<s16>(r << 5);
+  v.unlit_colour.m[1][0] = static_cast<s16>(gc << 5);
+  v.unlit_colour.m[2][0] = static_cast<s16>(b << 5);
+  for (int i = 0; i < 3; ++i) {
+    if (((v.light_mask >> i) & 1) == 0) continue;
+    v.light_matrix.m[i][0] = v.light_dir[i][0];
+    v.light_matrix.m[i][1] = v.light_dir[i][1];
+    v.light_matrix.m[i][2] = v.light_dir[i][2];
+    v.colour_matrix.m[0][i] = static_cast<s16>(v.light_colour[i][0] * r >> 7);
+    v.colour_matrix.m[1][i] = static_cast<s16>(v.light_colour[i][1] * gc >> 7);
+    v.colour_matrix.m[2][i] = static_cast<s16>(v.light_colour[i][2] * b >> 7);
+  }
+  const s32 axis[3] = {bcos(static_cast<u32>(orient[1])), 0, -bsin(static_cast<u32>(orient[1]))};
+  psyq::MATRIX my{}, ma{}, m{};
+  rot_matrix_y(orient[1], &my);
+  rot_matrix_axis(axis, orient[2], &ma);
+  psyq::MulMatrix0(&ma, &my, &m);  // RT = ma, each column of my through RT * IR (sf 1)
+  psyq::MulMatrix(&v.light_matrix, &m);
+}
+
 void gte_set_zoom() {
   ViewState& v = g_view;
   const s32 h = (v.zoom << 9) >> 12;
