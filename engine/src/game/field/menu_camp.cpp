@@ -31,6 +31,7 @@
 #include "game/field/menu_shop.h"
 #include "game/field/menu_skills.h"
 #include "game/field/menu_status.h"
+#include "game/field/mods.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/worldmap.h"
@@ -256,6 +257,7 @@ void CampMenu::on_close() {
       g.item_data = unpack(p);
       p += item_sizes_[0] + item_sizes_[1];
       g.session->buffer = unpack(p);
+      mods_apply_items(g.session->buffer);  // world edits (mods.h)
       g.item_table = g.session->buffer.data();
       p += item_sizes_[2];
       menu::entry_cache_load_0bbb(p);

@@ -226,6 +226,7 @@ int main(int argc, char** argv) {
   if (debug_console) {
     game::field::debug_console_install();
     rt.start_debug_console();
+    rt.debug_overlay = true;
   }
   rt.gpu.dithering_enabled = reference_dither || config["dither"] != "0";
   if (reference_dither) rt.gpu.dither_textured = false;

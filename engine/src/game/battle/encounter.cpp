@@ -12,6 +12,7 @@
 #include "disc/slz.h"
 #include "game/battle/battle.h"
 #include "game/battle/enemy_classes.h"
+#include "game/field/mods.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
@@ -341,7 +342,10 @@ void load_formation(std::span<const u8> pack) {
   const u8* r = base + p + 4;
   for (int i = 0; i < g.enemy_count; ++i) {
     if (r + 0x5C > base + pack.size()) break;
-    r = enemy_read_stats(i, r);
+    // World edits (game/field/mods.h): a patched copy of the record for this type.
+    const EnemyUnit* u = g.enemy_units[i];
+    enemy_read_stats(i, u != nullptr ? field::mods_enemy_stats(u->st()->id, r) : r);
+    r += 0x5C;
   }
   psyq::DrawSync(0);
 }

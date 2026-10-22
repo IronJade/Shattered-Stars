@@ -55,6 +55,7 @@ add_library(ss_core STATIC
   src/game/boot/sound.cpp
   src/game/boot/stubs.cpp
   src/runtime/runtime.cpp
+  src/runtime/debug_overlay.cpp
   src/runtime/libgpu.cpp
   src/runtime/libgte.cpp
   src/runtime/libspu.cpp

@@ -10,6 +10,7 @@
 #include "game/battle/window.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
+#include "game/field/mods.h"
 #include "game/title/title_program.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
@@ -141,6 +142,7 @@ void load_battle_text(const Bytes& data) {
 void load_item_data(const Bytes& data) {
   BattleGlobals& g = bg();
   g.item_data = unpack(data, 0);
+  field::mods_apply_items(g.item_data);  // world edits (game/field/mods.h)
   // The console also points inventory +0x820 at this table; the port's readers take it
   // from item_data_field.
   for (int item = 1; item < 0x400; ++item) {

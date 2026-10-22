@@ -61,17 +61,43 @@ engine/build/shattered-stars --viewer
 engine/build/shattered-stars --entry 10 --dump analysis/render/entry10
 ```
 
-World edits: `tools/so2_mod.py list DISC.cue MAP` shows a map's chests and doors;
-`tools/so2_mod.py chest DISC.cue MAP FLAG --item ID` (or `--fol N`) and
-`tools/so2_mod.py door DISC.cue MAP INDEX --to MAP2 --x X --z Z` append patches to a file
-(`-o`). Put `*.patch` files in `mods/` next to `config.ini` (or pass `--mods DIR`); the
-game applies them as maps load and skips any patch whose original word has changed. The
-disc images are never modified.
+World edits: patch files change map scripts and game data as they load. Put `*.patch`
+files in `mods/` next to `config.ini` (or pass `--mods DIR`); they apply in name order,
+and every patch carries the value the disc holds, so the game skips (and logs) a patch
+whose data no longer matches. The disc images are never modified. `tools/so2_mod.py`
+reads your disc and writes the lines (`-o FILE` appends to a file):
+
+```sh
+tools/so2_mod.py list    DISC.cue MAP                # a map's chests and doors
+tools/so2_mod.py chest   DISC.cue MAP FLAG --item ID # (or --fol N)
+tools/so2_mod.py door    DISC.cue MAP INDEX --to MAP2 --x X --z Z
+tools/so2_mod.py items   DISC.cue ITEM               # an item record's fields
+tools/so2_mod.py item    DISC.cue ITEM FIELD VALUE   # e.g. item 0x15 price 4321
+tools/so2_mod.py shops   DISC.cue                    # every shop's stock
+tools/so2_mod.py shop    DISC.cue SHOP INDEX ITEM    # INDEX `add` appends, ITEM 0 removes
+tools/so2_mod.py enemies DISC.cue [TYPE]             # enemy stats from the encounter packs
+tools/so2_mod.py enemy   DISC.cue TYPE FIELD VALUE   # e.g. enemy 4 hp 9999
+```
+
+The patch lines (numbers in decimal or 0x hex, `#` comments; details in
+`src/game/field/mods.h`):
+
+| line | changes |
+| --- | --- |
+| `script MAP WORD EXPECTED VALUE` | a word of map MAP's event script |
+| `item ITEM FIELD EXPECTED VALUE` | item ITEM's record, wherever the game loads it (menus, shops, battles, the field) |
+| `shop SHOP INDEX EXPECTED VALUE` | stock entry INDEX of shop SHOP |
+| `enemy TYPE FIELD EXPECTED VALUE` | the stats of every enemy of type TYPE when a battle loads |
+
+Item fields: `price`, `atk`, `def`, `amount`, `effect`, `type`, `sell`; enemy fields:
+`hp`, `mp`, `exp`, `fol`, `speed`, `drop1`, `drop2`, `atk`, `def`, `int`, `level`, `eva`,
+`acc`, `guts`, `drop1_odds`, `drop2_odds`; or a byte offset `OFFSET[:SIZE]`.
 
 Debug console: start with `--debug` and type commands into the terminal (`help` lists
 them): `where`, `warp MAP [X Y Z [DIR]]`, `fol N`, `item ID [COUNT]`, `heal`,
-`flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`. The window title then
-shows the map, the leader's position and the Fol.
+`flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`. The status line
+(map, field state, the leader's position, Fol) and the console's last lines are shown
+over the top of the picture and in the window title; without `--debug` neither appears.
 
 Debugging switches (start on a map, battles, traces, headless runs) are listed in
 `docs/HANDOFF.md`.

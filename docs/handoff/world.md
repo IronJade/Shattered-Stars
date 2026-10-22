@@ -15,6 +15,8 @@ coordinator commits.
 - Phase 3 step 2 (afterimages, encounter voice streaming, field_load_map /
   field_unload_map teardown, voice budget floor): 1879d21.
 - Phase 3 steps 3-4 (Voice Collection, readability renames): 6ddcb4d.
+- Phase 4 step 1 (saves byte-compatible: field save icon, buffer leftovers, snapshot
+  refresh; SS_STATE_DUMP; test_save): 4b86443.
 
 ## Phase 4 plan (coordinator, 2026-10-22)
 
@@ -32,32 +34,29 @@ coordinator commits.
 
 ## In progress (uncommitted)
 
-Phase 4 step 1 (save round trips) is done and verified; waiting for the commit:
+Phase 4 step 2 is done and tested; waiting for the commit:
 
-- Fixes: new `engine/src/game/common/save_icon.cpp/.h` (CMake +1): the field save
-  page's icon (overlay 0xbb6 0x8007f648, entry 0xbd3, by story progress), the file
-  buffer prefilled with the freed icon sheet from +0x454 (the bytes save_build never
-  writes), and the snapshot refresh before saving (field 0x80055fc8, so game_state +0x1c
-  is saved as the music index like the original). menu_save.cpp (menu agent's): two
-  small hunks in save_build (call field_save_prefill, use its icon).
-- Test: ss_game_tests save_field_icon_and_leftovers (new tests/test_save.cpp, CMake +1).
-- Debug option SS_STATE_DUMP="VBLANK:PATH,..." (field_program.cpp).
-- Results (scratch cards only; Redux ref/sv1, ref/rt_a, ref/rt_b; port rt/*):
-  (c) port S02 vs Redux S02 saved from the same loaded state: identical except
-      inventory +0x820 (RAM address of the item records), game_state +0x14 (the leader's
-      position pad word: uninitialised heap in the original's world actor), snapshot
-      +0x410..+0x440 (the original's 0x440 snapshot buffer is not cleared), and their
-      consequences (packed length / stream, the two checksums).
-  (a) the port's save loaded in Redux and (b) Redux's save loaded in the port: config,
-      party, records, inventory, game_state, script flags, field flags, map and position
-      identical, except the encounter distance (field flags +0x1c, RNG) and the
-      inventory check bytes (+0x824.., salted with rng_range on load).
-- Tests after step 1: ss_tests 76/0, ss_game_tests 74/0, smoke 16/16.
+- Step 2, data overrides: `engine/src/game/field/mods.{h,cpp}` rewritten (kinds script /
+  item / shop / enemy, field names or OFFSET[:SIZE], EXPECTED checked, applied / skipped
+  logged once). Hooks (one or two lines each): item records in map.cpp (section 11),
+  menu_shop.cpp / menu_camp.cpp / menu_status.cpp (entry 3002, menu agent's), battle
+  loaders.cpp load_item_data (battle agent's); shop stock in menu_shop.cpp (shop
+  lists); enemy stats in battle/encounter.cpp's record loop (enemy agent's file).
+  `tools/so2_mod.py`: item / items / shop / shops / enemy / enemies (EXPECTED read from
+  entry 3002, overlay 0xbaa, the encounter packs 0x57d + N).
+- Step 2, overlay: `engine/src/runtime/debug_overlay.cpp/.h` (5x7 font; status line +
+  last six console lines on a darkened band, drawn into the displayed and captured
+  image, only with --debug); runtime.{h,cpp} (debug_overlay flag, debug_say, the typed
+  command echoed, SS_DEBUG_INPUT="VBLANK:cmd;..." for tests); debug_console.cpp's say()
+  goes through debug_say; main.cpp sets debug_overlay with --debug; CMake +1.
+- Smoke: mod_shop (shop 1 entry 0 -> Revival Card at 4321 Fol: the buy list shows it),
+  mod_enemy (--battle 19: Landworms with 4321 HP), debug_console (scripted commands).
+  engine/README.md: world edits table / tool commands, the overlay.
+- Tests after step 2: ss_tests 76/0, ss_game_tests 74/0, smoke 21/21.
 
 ## Next steps
 
-- Phase 4 step 2: mods data overrides (items, shops, enemy stats hook), the console
-  overlay (--debug), smoke cases, engine/README.md.
+- Phase 4 complete once committed; wait for the coordinator.
 
 ## Findings not yet in the catalog
 

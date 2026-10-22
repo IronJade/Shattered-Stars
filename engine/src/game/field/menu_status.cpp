@@ -5,6 +5,7 @@
 
 #include "disc/slz.h"
 #include "game/common/menu_core.h"
+#include "game/field/mods.h"
 #include "game/common/menu_gfx.h"
 #include "game/common/menu_scene.h"
 #include "game/common/menu_widget.h"
@@ -315,6 +316,7 @@ void StatusPage::finish_item_data() {
   g.item_data = unpack(p);
   p += item_sizes_[0] + item_sizes_[1];   // entry 3001: native code
   g.session->buffer = unpack(p);
+  mods_apply_items(g.session->buffer);  // world edits (mods.h)
   g.item_table = g.session->buffer.data();
   p += item_sizes_[2];
   menu::entry_cache_load_0bbb(p);

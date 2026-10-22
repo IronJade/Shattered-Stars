@@ -64,6 +64,11 @@ class Runtime {
   void start_debug_console();
   std::function<void(const std::string&)> debug_command;
   std::function<std::string()> debug_status;
+  // With --debug, the status line and the console's last lines are also drawn over the
+  // picture (runtime/debug_overlay.h); off otherwise.
+  bool debug_overlay = false;
+  // Console output: printed as "[debug] ..." and kept for the overlay (last six lines).
+  void debug_say(const std::string& text);
   u16 host_buttons() const;
   // The host gamepad's sticks (Window::sticks); false with none, or with scripted input.
   bool host_sticks(u8 out[4]) const;
@@ -89,6 +94,7 @@ class Runtime {
   bool debug_console_ = false;
   std::mutex debug_mutex_;
   std::deque<std::string> debug_lines_;
+  std::deque<std::string> debug_output_;
 };
 
 }  // namespace ss::runtime

@@ -1,8 +1,11 @@
 #include "runtime/runtime.h"
 
+#include "runtime/debug_overlay.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <iterator>
 #include <thread>
@@ -57,6 +60,7 @@ void Runtime::present() {
     h = gpu.display().height > 0 ? gpu.display().height : 240;
     pixels.assign(static_cast<size_t>(w) * h, 0xFF000000u);
   }
+  if (debug_overlay) draw_debug_overlay(pixels, w, h, debug_status ? debug_status() : "debug console", debug_output_);
   if (capture_frames.count(vblank_count_) && !capture_dir.empty()) {
     std::filesystem::create_directories(capture_dir);
     char name[64];
@@ -90,6 +94,19 @@ void Runtime::start_debug_console() {
   }).detach();
 }
 
+void Runtime::debug_say(const std::string& text) {
+  size_t start = 0;
+  while (start <= text.size()) {
+    const size_t end = text.find('\n', start);
+    const std::string line = text.substr(start, end == std::string::npos ? std::string::npos : end - start);
+    std::fprintf(stderr, "[debug] %s\n", line.c_str());
+    debug_output_.push_back(line);
+    while (debug_output_.size() > 6) debug_output_.pop_front();
+    if (end == std::string::npos) break;
+    start = end + 1;
+  }
+}
+
 void Runtime::vblank() {
   if (debug_console_) {
     std::deque<std::string> lines;
@@ -97,7 +114,22 @@ void Runtime::vblank() {
       std::lock_guard<std::mutex> lock(debug_mutex_);
       lines.swap(debug_lines_);
     }
+    // Tests: SS_DEBUG_INPUT="VBLANK:command;VBLANK:command" types commands at set vblanks.
+    static const char* scripted = std::getenv("SS_DEBUG_INPUT");
+    for (const char* p = scripted; p != nullptr && *p != 0;) {
+      char* end = nullptr;
+      const unsigned long long at = std::strtoull(p, &end, 10);
+      if (end == nullptr || *end != ':') break;
+      const char* semi = std::strchr(end + 1, ';');
+      const char* text = end + 1;
+      if (at == vblank_count_) lines.push_back(semi ? std::string(text, static_cast<size_t>(semi - text)) : std::string(text));
+      p = semi ? semi + 1 : nullptr;
+    }
     for (const std::string& line : lines) {
+      if (debug_overlay && !line.empty()) {
+        debug_output_.push_back("> " + line);
+        while (debug_output_.size() > 6) debug_output_.pop_front();
+      }
       if (debug_command) debug_command(line);
       else std::fprintf(stderr, "[debug] no game state to act on yet\n");
     }

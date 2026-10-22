@@ -41,7 +41,7 @@ bool number(const std::string& s, long long* out) {
   return end != nullptr && *end == 0;
 }
 
-void say(const std::string& text) { std::fprintf(stderr, "[debug] %s\n", text.c_str()); }
+void say(const std::string& text) { runtime::Runtime::get().debug_say(text); }
 
 const char* kHelp =
     "commands (numbers in decimal or 0x hex):\n"

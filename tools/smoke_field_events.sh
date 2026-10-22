@@ -68,9 +68,28 @@ if [ -n "${SS_DISC1:-}" ] && [ -f "$SS_DISC1" ]; then
   check mod_chest "patched chest pays 5000 Fol" '\[leader\] vblank 1260 .* fol 5000$'
   SS_MODS_DIR="$WORK/mods" run mod_door 900 18 "200:up,439:none,450:left,663:none,670:up,1000:none"
   check mod_door "patched door leads to map 33" 'field_load_map\(map=33'
+  # Data overrides: Hearn's shop (shop 1) sells a Revival Card (item 0x15) first, at
+  # 4321 Fol; a Landworm (enemy type 4, encounter 19) has 4321 HP.
+  mkdir -p "$WORK/mods2"
+  python3 tools/so2_mod.py shop "$SS_DISC1" 1 0 0x15 -o "$WORK/mods2/data.patch" >/dev/null
+  python3 tools/so2_mod.py item "$SS_DISC1" 0x15 price 4321 -o "$WORK/mods2/data.patch" >/dev/null
+  python3 tools/so2_mod.py enemy "$SS_DISC1" 4 hp 4321 -o "$WORK/mods2/data.patch" >/dev/null
+  SS_MODS_DIR="$WORK/mods2" run mod_shop 1710 18 "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1400:cross,1406:none,1500:cross,1506:none,1600:cross,1606:none"
+  check mod_shop "shop stock patched" 'data.patch:[0-9]+: shop 1 \+0 0x2d8 -> 0x15'
+  check mod_shop "item price patched" 'data.patch:[0-9]+: item 21 \+0 0xc8 -> 0x10e1'
+  SS_MODS_DIR="$WORK/mods2" SS_ENEMY_TRACE=1 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+    SS_MEMCARD1="$WORK/card.mcd" timeout 900 "$BIN" --headless --frames 60 --battle 19 >"$WORK/mod_enemy.log" 2>&1
+  check mod_enemy "enemy stats patched" '\[enemy\] vblank 0 .* t4 .* hp4321 '
 else
   echo "SKIP mods: set SS_DISC1 to the disc 1 .cue"
 fi
+
+# The debug console (--debug): commands from the terminal run in the field, and their
+# output goes to the log (and the in-window overlay).
+SS_DEBUG_INPUT="300:fol 1234;310:flag 5" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+  SS_MEMCARD1="$WORK/card.mcd" timeout 900 "$BIN" --headless --debug --frames 400 --map 18 </dev/null >"$WORK/debug_console.log" 2>&1
+check debug_console "fol command" '\[debug\] Fol 1234'
+check debug_console "flag command" '\[debug\] flag 5 = 0'
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.

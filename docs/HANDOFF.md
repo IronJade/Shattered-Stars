@@ -66,6 +66,8 @@ carry the rest to the next session.
 - `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;
   `tools/so2_mod.py` writes them).
 - `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
+- `SS_STATE_DUMP="VBLANK:PATH,..."` the state block, config, party, records and inventory at those vblanks; `SS_MENU_DUMP=prefix` (with `SS_MENU_DUMP_OPEN`, `SS_MENU_DUMP_DELAY=n`) the same blocks around field menus.
+- `SS_DEBUG_INPUT="VBLANK:cmd;VBLANK:cmd"` types debug console commands at set vblanks (with `--debug`).
 - `SS_TRACE=1` VM milestones, map loads, trigger regions, encounter settings, voice banks;
   `SS_TRACE_LEADER=N` the leader's position, view position, control and Fol every N
   vblanks; `SS_WORLD_DBG=N` world camera / leader; `SS_WORLD_VSYNC=3` the console's 20 fps

@@ -11,6 +11,7 @@
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
 #include "game/field/field.h"
+#include "game/field/mods.h"
 #include "game/field/script_vm.h"
 
 namespace ss::game::field {
@@ -232,6 +233,7 @@ void Shop::load_items() {
   g.item_data = unpack(p);
   p += item_sizes_[0] + item_sizes_[1];
   g.session->buffer = unpack(p);
+  mods_apply_items(g.session->buffer);  // world edits (mods.h)
   g.item_table = g.session->buffer.data();
   p += item_sizes_[2];
   menu::entry_cache_load_0bbb(p);
@@ -287,7 +289,7 @@ void Shop::setup_lists() {
     }
   } else {
     const u8* entry = shop_table(0x80081C98 + shop * 4);
-    if (entry) buy.add_list(shop_table(read_u32(entry)));
+    if (entry) buy.add_list(mods_shop_stock(shop, shop_table(read_u32(entry))).data());  // with world edits
   }
   can_settle_ = 1;
   can_buy_ = buy.count() != 0;

@@ -273,7 +273,11 @@ void field_load_map_sections(Field*, int container_entry) {
         if (id >= 5 && id <= 12) g_sub_sections |= 1u << id;
         // Section 11 (entry #2): the item records, unpacked when the map loads
         // (0x800756cc) and pointed at by the inventory (+0x820).
-        if (id == 11) sub_set_item_records(unpack(data, 0));
+        if (id == 11) {
+          std::vector<u8> records = unpack(data, 0);
+          mods_apply_items(records);  // world edits (mods.h)
+          sub_set_item_records(std::move(records));
+        }
         break;
     }
   }
