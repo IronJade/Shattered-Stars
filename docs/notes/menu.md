@@ -238,6 +238,23 @@ out differently (e.g. the sprite pose table title 0x80074b7c is 0x800e119c). The
 entry cache is the sprite pack table 0x8007585c: the camp page finds the party's sprites
 there. The save page (0xbb6) keeps the title page 0x11's constants 0x1afdc higher.
 
+### The query gauge (0x80034514-0x80034c08)
+
+Script A 0x35 starts a minigame (the 0x801f9800 overlay object; script flag 20), and
+while it runs the menu button opens the query page (request 3) for the member the script
+names. `menu_scene_run` creates a 0x10-byte gauge for such sessions (session +0x31) and
+the field's Panel frame draws it while a window has the focus, at (0x10, 0xa4) in OT
+entry 8:
+
+- "TIME" and m:ss, five minutes counting down from 0x80076310 (clock_seconds; -1 after
+  map loads and A 0x35, set by the first draw once script flag 19 is on: A 0x36);
+- "PRESS" and script variable +0x38, a percentage;
+- each with a bar (x + 0x2a, 80 px for full, 12 high): POLY_F4 0x2a8020ff added over
+  0x2a507090 averaged.
+
+The text is the 8x8 font in the window art (tpage 0x16, v 0xc8-0xdf, CLUT (0x110,
+0x1e0 + palette): 2 for the labels, 1 for the values), drawn by 0x80034c08.
+
 ### Camp menu, page 1 (overlay 0xba6, 0xec bytes)
 
 - Left: the command box (0x68 by 0xb8): the logo strip turned on its side, eight 20x20
@@ -405,7 +422,9 @@ by design).
   address, so the original's rare key collisions do not happen.
 - The field's pages other than 1, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
-  Field results 4 and 5 (warps) and the query page's play-time object are not ported.
+  Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
+  (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),
+  but it is drawn only on page 0xf.
 - `SS_SAVE_ANYWHERE=1` sets option a bit 0 (saving allowed) for testing the camp menu's
   Save; `SS_MENU_DUMP=prefix` writes the config and inventory blocks after each field
   menu (`prefix_config.bin`, `prefix_inventory.bin`) for comparisons.

@@ -357,6 +357,10 @@ class ConfirmDialog : public Dialog {
 };
 void dialog_show_message(Dialog* d, s16 message, int arg);   // title 0x8006ac6c
 
+// Field 0x80034ba0, which the field's Panel frame calls before its widgets: the query
+// page's TIME / PRESS gauge (none on the title).
+void set_panel_frame_hook(void (*hook)(const RenderContext* ctx));
+
 // ---- Panel (title 0x8006acfc, 0x98 bytes, vtables 0x80074898 / 0x80074888) -----------
 // A full-screen menu page: fades in and out, owns the help bar at the bottom
 // (page name and the game logo) and a member box; embeds a StatCalc (+0x48).

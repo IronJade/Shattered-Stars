@@ -15,6 +15,7 @@
 #include "game/field/field_world.h"
 #include "game/field/collision.h"
 #include "game/field/load_queue.h"
+#include "game/field/menu_camp.h"
 #include "game/field/message.h"
 #include "game/field/mods.h"
 #include "game/field/music.h"
@@ -53,7 +54,7 @@ u16 rd16(const u8* p) {
   return v;
 }
 
-void todo(const char* what) {
+[[maybe_unused]] void todo(const char* what) {
   runtime::Runtime::get().log_once(std::string("map:") + what, std::string("field: not ported yet: ") + what);
 }
 
@@ -265,7 +266,8 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   u8* flags = g.field_flags;
   u8* gs = g.game_state;
   // TODO(port): preload table cleanup (0x800570e8), per-map globals of the effects /
-  // overlay objects (0x80076310 ...), extra packs, afterimages, side text.
+  // overlay objects, extra packs, afterimages, side text.
+  field_set_gauge_clock(-1);  // 0x80076310, the menu's query gauge
   if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
   world_load_map_reset();  // world globals: regions, leader hit, vehicle models (0x800519d4)

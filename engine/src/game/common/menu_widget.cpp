@@ -12,6 +12,8 @@
 namespace ss::game::menu {
 namespace {
 
+void (*g_panel_frame_hook)(const RenderContext* ctx) = nullptr;
+
 MenuScene* scene() { return globals().scene; }
 MenuSession* session() { return globals().session; }
 
@@ -1615,6 +1617,8 @@ void dialog_show_message(Dialog*, s16 message, int arg) {
 
 // ==== Panel =========================================================================================
 
+void set_panel_frame_hook(void (*hook)(const RenderContext* ctx)) { g_panel_frame_hook = hook; }
+
 Panel::Panel() {
   fade_count = 0x10;
   fade = 1;
@@ -1642,7 +1646,7 @@ void Panel::close() {
 void Panel::frame() {
   help_anim();
   if (fade != 0) fade_step();
-  // TODO(port): the field query page's play time (0x80034ba0; session +0x31).
+  if (g_panel_frame_hook) g_panel_frame_hook(ctx);  // field 0x80034ba0
   Widget::frame();
   if (viewer) {
     // menu_0ba5 0x800d4cac: the info box follows the viewer's item once its file is in.

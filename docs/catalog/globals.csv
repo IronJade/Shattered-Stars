@@ -591,6 +591,7 @@ field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_lo
 field,0x800762fc,g_field_analog,u8,pad_stick(port 0) result each main-loop frame: the stick steers field and world-map actors (+0x2d4) unless it is centred,confirmed,field_main_loop; fieldactor_player_control
 field,0x80076300,g_field_stick,s32[4],"Port 0's axes from pad_stick: right X, right Y (0x80076304), left X (0x80076308), left Y (0x8007630c)",confirmed,field_main_loop
 field,0x800762ff,g_movie_stop,u8,"Set by table A 0x32 (with loader_cancel), cleared by B 0x50 / 0x6f: the main loop stops calling movie_update, which ends the movie",confirmed,decomp
+field,0x80076310,g_gauge_clock,s32,"clock_seconds when the gauge five minutes started; -1 on map loads and script A 0x35, set by the first gauge draw with script flag 19",confirmed,disassembly of 0x80034594 / 0x80053f2c / 0x80068410
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
 field,0x8007884c,g_menu_input_lock,u8,Field copy of title 0x8004ece4,confirmed,menu_scene_frame_begin 0x800300dc

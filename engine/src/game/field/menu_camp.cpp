@@ -39,6 +39,7 @@ s16 g_menu_request = 0;              // 0x80076196
 s16 g_menu_param = 0;                // 0x8007619a
 u16 g_option_a = 0;                  // 0x80074628
 u16 g_option_b = 0;                  // 0x8007462a
+s32 g_gauge_clock = -1;              // 0x80076310: when the gauge's five minutes started
 
 constexpr int kCampPageCode = 0xBA6;   // page 1 (loaded by the launcher at 0x8007e000)
 
@@ -451,6 +452,131 @@ void page11_update(menu::MenuPageLoader* p) {
   }
 }
 
+// ==== The query page's gauge (0x80034514-0x80034c00) ==========================================
+// While a script's minigame runs (script A 0x35: the 0x801f9800 overlay object and script
+// flag 20), the menu button opens one member's query page (request 3, page 0xf) and the
+// field keeps this gauge on the page: "TIME", five minutes counting down from
+// g_gauge_clock (set by the first draw once script flag 19 is on), and "PRESS", script
+// variable +0x38 as a percentage, each with a bar 80 pixels wide. Text is the 8x8 font of
+// the window art (tpage 0x16).
+
+struct QueryGauge {     // 0x10 bytes, vtable 0x800719e0 (ctor 0x80034514, dtor 0x80034528)
+  s32 x = 0x10;         // +4
+  s32 y = 0xA4;         // +8
+};
+QueryGauge* g_query_gauge = nullptr;   // 0x80074090
+bool g_query_gauge_on = false;         // 0x8007408c
+
+s32 gauge_press() { return rd32(globals().field_flags + 0x38); }                         // [1] 0x8003455c
+bool gauge_running() { return ((globals().script_flags[2] >> 3) & 1) != 0; }            // [2] 0x80034574: flag 19
+
+// 0x80034a8c: seconds left of the five minutes (all of them until the clock starts).
+s32 gauge_seconds_left() {
+  if (g_gauge_clock == -1) return 300;
+  const s32 left = 300 - static_cast<s32>(clock_seconds() - static_cast<u32>(g_gauge_clock));
+  return left < 0 ? 0 : left;
+}
+
+// 0x80034c08: 8x8 sprites of the window art's font (u = (c - 0x20) % 32 * 8, v = 0xc8 +
+// (c - 0x20) / 32 * 8; CLUT row 0x1e0 + palette at x 0x110) into OT entry 'slot'.
+void debug_text(const RenderContext* ctx, int slot, s16 x, s16 y, const char* text, int palette) {
+  const int n = menu::str_len(text);
+  auto* sp = screen_alloc_prims<psyq::SPRT>(ctx->arena, static_cast<size_t>(n));
+  if (!sp) return;
+  const u16 clut = static_cast<u16>(((palette + 0x1E0) << 6) | 0x11);
+  for (int i = 0; i < n; ++i, ++sp) {
+    const u8 c = static_cast<u8>(static_cast<u8>(text[i]) - 0x20);
+    psyq::setlen(sp, 4);
+    sp->r0 = sp->g0 = sp->b0 = 0x80;
+    sp->code = 0x64;
+    sp->x0 = x;
+    sp->y0 = y;
+    sp->u0 = static_cast<u8>((c & 0x1F) << 3);
+    sp->v0 = static_cast<u8>(((c >> 5) << 3) - 0x38);
+    sp->clut = clut;
+    sp->w = sp->h = 8;
+    menu::prim_link(ctx, slot, sp);
+    x = static_cast<s16>(x + 8);
+  }
+  auto* m = screen_alloc_prims<psyq::DR_MODE>(ctx->arena, 1);
+  if (!m) return;
+  const psyq::RECT tw{};
+  psyq::SetDrawMode(m, 0, 1, 0x16, &tw);
+  menu::prim_link(ctx, slot, m);
+}
+
+// A bar of the gauge: POLY_F4 (semi-transparent) and the blend mode it is drawn with.
+void gauge_bar(const RenderContext* ctx, u32 colour, s16 x0, s16 x1, s16 y, int tpage) {
+  auto* q = screen_alloc_prims<psyq::POLY_F4>(ctx->arena, 1);
+  auto* m = screen_alloc_prims<psyq::DR_MODE>(ctx->arena, 1);
+  if (!q || !m) return;
+  psyq::setlen(q, 5);
+  std::memcpy(&q->r0, &colour, 4);
+  q->x0 = q->x2 = x0;
+  q->x1 = q->x3 = x1;
+  q->y0 = q->y1 = y;
+  q->y2 = q->y3 = static_cast<s16>(y + 0xC);
+  menu::prim_link(ctx, 8, q);
+  const psyq::RECT tw{};
+  psyq::SetDrawMode(m, 1, 0, tpage, &tw);
+  menu::prim_link(ctx, 8, m);
+}
+
+// 0x80034594
+void query_gauge_draw(const QueryGauge& o, const RenderContext* ctx) {
+  if (gauge_running() && g_gauge_clock == -1) g_gauge_clock = static_cast<s32>(clock_seconds());
+  const s32 left = gauge_seconds_left();
+  const s16 x = static_cast<s16>(o.x), y = static_cast<s16>(o.y);
+  debug_text(ctx, 8, x, static_cast<s16>(y + 2), "TIME", 2);
+  debug_text(ctx, 8, x, static_cast<s16>(y + 0x12), "PRESS", 2);
+  for (int row = 0; row < 2; ++row) {
+    char text[16];
+    s32 length;
+    if (row == 0) {
+      length = left * 80 / 300;
+      const s32 minutes = left / 60;
+      char seconds[8];
+      menu::format_decimal(text, minutes, 0, ' ');
+      menu::str_cat(text, ":");
+      menu::format_decimal(seconds, left - minutes * 60, 2, '0');
+      menu::str_cat(text, seconds);
+      debug_text(ctx, 8, static_cast<s16>(x + 0x42), static_cast<s16>(y + 2), text, 1);
+    } else {
+      length = static_cast<s32>(static_cast<u32>(gauge_press()) * 80u) / 100;
+      menu::format_decimal(text, gauge_press(), 0, ' ');
+      debug_text(ctx, 8, static_cast<s16>(x + 0x4A), static_cast<s16>(y + 0x12), text, 1);
+    }
+    const s16 top = static_cast<s16>(y + row * 16);
+    gauge_bar(ctx, 0x2A8020FF, static_cast<s16>(x + 0x2A), static_cast<s16>(x + 0x2A + length), top, 0x20);
+    gauge_bar(ctx, 0x2A507090, static_cast<s16>(x + 0x2A), static_cast<s16>(x + 0x7A), top, 0);
+  }
+  auto* m = screen_alloc_prims<psyq::DR_MODE>(ctx->arena, 1);
+  if (!m) return;
+  const psyq::RECT tw{};
+  psyq::SetDrawMode(m, 1, 0, 0x20, &tw);
+  menu::prim_link(ctx, 8, m);
+}
+
+// 0x80034afc / 0x80034b6c: the menu scene creates the gauge for a query session.
+void query_gauge_begin(const menu::MenuSession& session) {
+  g_query_gauge = nullptr;
+  g_query_gauge_on = false;
+  if (session.field_query == 0) return;
+  g_query_gauge_on = true;
+  g_query_gauge = new QueryGauge;
+}
+void query_gauge_end() {
+  delete g_query_gauge;
+  g_query_gauge = nullptr;
+}
+
+// 0x80034ba0: the Panel frame hook, while a window has the focus.
+void query_gauge_hook(const RenderContext* ctx) {
+  menu::MenuScene* scene = menu::globals().scene;
+  if (scene == nullptr || scene->windows == nullptr || scene->windows->focus() == nullptr) return;
+  if (g_query_gauge_on && g_query_gauge != nullptr) query_gauge_draw(*g_query_gauge, ctx);
+}
+
 // ==== Field host ===========================================================================
 
 menu::EntryCacheSlotRef field_cache_slot(int index) {
@@ -472,12 +598,14 @@ struct FieldMenuHost {
     menu::set_page_handler(1, &page01_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
+    menu::set_panel_frame_hook(&query_gauge_hook);
   }
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
+    menu::set_panel_frame_hook(nullptr);
     menu::set_entry_cache_table(nullptr);
     menu::set_page_code_entry(0);
     menu::set_host(menu::Host::Title);
@@ -491,7 +619,9 @@ void run_menu(menu::MenuSession& session, Setup setup, int member = -1) {
   setup(session);
   menu::MenuScene scene(nullptr);
   if (member >= 0) party_select(member);  // menu_scene_select_member (0x8002ffbc)
+  query_gauge_begin(session);
   scene.run();
+  query_gauge_end();
 }
 
 }  // namespace
@@ -675,6 +805,9 @@ int field_menu_request_pending() { return g_menu_request; }
 
 void field_set_option_a(u16 v) { g_option_a = v; }
 void field_set_option_b(u16 v) { g_option_b = v; }
+void field_set_gauge_clock(s32 v) { g_gauge_clock = v; }
+s32 field_gauge_clock() { return g_gauge_clock; }
+
 u16 field_get_option_a() { return g_option_a; }
 u16 field_get_option_b() { return g_option_b; }
 

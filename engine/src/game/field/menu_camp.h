@@ -56,6 +56,11 @@ void field_set_option_b(u16 v);
 u16 field_get_option_a();                              // 0x80055dd0
 u16 field_get_option_b();                              // 0x80055de0
 
+// The clock (seconds, 0x80076310) at which the query gauge's five minutes started; -1
+// until the gauge's first draw with script flag 19 on. Map loads and script A 0x35 set -1.
+void field_set_gauge_clock(s32 v);
+s32 field_gauge_clock();
+
 // 0x8004c334 before the state switch (state 0): the save point check (sfx 0xc when the
 // leader steps on one), then the menu button or a pending request opens the menu
 // (fade out, preloads saved, the leader's position stored, the launcher started) and
