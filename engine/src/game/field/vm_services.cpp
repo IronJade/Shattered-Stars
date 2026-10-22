@@ -15,6 +15,7 @@
 #include "game/field/bg.h"
 #include "game/field/camera.h"
 #include "game/field/collision.h"
+#include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
@@ -54,13 +55,22 @@ void note(const char* name, const char* fmt, ...) {
 __attribute__((format(printf, 2, 3)))
 #endif
 void trace(const char* name, const char* fmt, ...) {
-  if (g_sink == nullptr) return;
   char args[256];
   va_list ap;
   va_start(ap, fmt);
   std::vsnprintf(args, sizeof args, fmt, ap);
   va_end(ap);
-  g_sink(name, args);
+  if (g_sink != nullptr) g_sink(name, args);
+  // SS_TRACE: the events that line the port up with reference captures (fades,
+  // windows, notices, map loads), stamped with the vblank count.
+  static const char* const kMilestones[] = {"fade_push", "msg_window_open", "msg_window_open_default",
+                                            "msg_window_close", "notice_show", "field_load_map"};
+  for (const char* m : kMilestones) {
+    if (std::strcmp(name, m) == 0) {
+      runtime::Runtime::get().trace((std::string("vm ") + name + "(" + args + ")").c_str());
+      break;
+    }
+  }
 }
 #define TRACE(...) trace(&__func__[7], __VA_ARGS__)
 
@@ -971,16 +981,41 @@ void vm_svc_voice_queue_reset() { LOG_ONCE(); }
 int vm_svc_voice_queue_build_battle(int budget) { LOG_ONCE(); return budget; }
 void vm_svc_set_voice_budget(int v) { LOG_ONCE(); }
 void vm_svc_set_force_streaming(int v) { LOG_ONCE(); }
-void vm_svc_field_prepare_encounter(int a, int b) { SVC("%d,%d", a, b); }
-int vm_svc_get_battle_preload_count() { LOG_ONCE(); return 0; }
-int vm_svc_get_battle_preload_entry(int i) { LOG_ONCE(); return 0; }
-int vm_svc_get_battle_preload_size(int i) { LOG_ONCE(); return 0; }
+void vm_svc_field_prepare_encounter(int a, int b) {
+  if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
+    TRACE("%d,%d", a, b);
+    field_prepare_encounter(f, a, b);
+    return;
+  }
+  SVC("%d,%d", a, b);
+}
+int vm_svc_get_battle_preload_count() { return battle_preloads().count; }
+int vm_svc_get_battle_preload_entry(int i) { return i >= 0 && i < 13 ? battle_preloads().entry[i] : 0; }
+int vm_svc_get_battle_preload_size(int i) { return i >= 0 && i < 13 ? battle_preloads().bytes[i] : 0; }
 void vm_svc_field_rumble_stub(int level) { LOG_ONCE(); }
-void vm_svc_field_start_battle(int r) { SVC("%d", r); }
-bool vm_svc_battle_transition_done() { LOG_ONCE(); return true; }
-void vm_svc_field_destroy_battle_transition() { SVC("%s", ""); }
-int vm_svc_get_battle_ready() { LOG_ONCE(); return 1; }
+void vm_svc_field_start_battle(int r) {
+  if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
+    TRACE("%d", r);
+    field_start_battle(f, r);
+    return;
+  }
+  SVC("%d", r);
+}
+bool vm_svc_battle_transition_done() {
+  if (field_program() == nullptr) return true;
+  const BattleTransition* t = battle_transition();
+  return t == nullptr || t->done != 0;
+}
+void vm_svc_field_destroy_battle_transition() {
+  TRACE("%s", "");
+  field_destroy_battle_transition(field_program());
+}
+int vm_svc_get_battle_ready() { return field_program() == nullptr || field_battle_program_loaded() ? 1 : 0; }
 void vm_svc_field_exit_to_program(int mode) {
+  if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
+    TRACE("%d", mode);
+    field_exit_to_program(f, mode);
+  }
   SVC("%d", mode);
   // The real call never returns (the battle program replaces the field); coming back,
   // vm_init / vm_restore_state start from a clear wait state.

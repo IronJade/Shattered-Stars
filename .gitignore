@@ -4,3 +4,8 @@ extracted/
 analysis/
 __pycache__/
 engine/build*/
+
+# Memory card / save files (user data)
+*.gme
+*.mcd
+*.mcr

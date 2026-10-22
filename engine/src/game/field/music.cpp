@@ -15,8 +15,6 @@ namespace {
 
 std::vector<u8> g_sequence;  // 0x80075734
 std::vector<u8> g_bank;      // 0x80075740: the music entry, kept while the driver uses its bank
-std::unique_ptr<SoundSavedState> g_saved;  // the 0xb18-byte save buffer (the driver uses 0x858)
-
 struct SoundHolder {  // 4 bytes on the console: the save buffer's address
   SoundSavedState* state = nullptr;
 };
@@ -72,8 +70,9 @@ void sound_holder_save() {
     g.sound->request_restore = 1;
     delete holder;
   }
-  g_saved = std::make_unique<SoundSavedState>();
-  auto* holder = new SoundHolder{g_saved.get()};
+  // The save buffer (0xb18 bytes on the console; the driver uses 0x858) belongs to the
+  // sound driver from here: sound_restore_state deletes it once it has restored.
+  auto* holder = new SoundHolder{new SoundSavedState};
   g.sound->saved_state = holder->state;
   g.sound->request_save = 1;  // System + 0x5aa9
   handoff_store(g.handoff, holder, 0xF);

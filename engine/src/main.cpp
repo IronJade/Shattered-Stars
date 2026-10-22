@@ -7,6 +7,7 @@
 // Display: --no-dither / --dither (remembered); --reference-dither dithers like
 // PCSX-Redux's software renderer (gouraud only) for comparisons, not remembered.
 // Testing options: --headless (no window), --frames N (stop after N vblanks),
+// --map N (debug: new game as Claude, straight onto field map N),
 // --capture DIR --capture-frames A,B,... (save the display on those vblanks),
 // --input FRAME:buttons,... (scripted controller, e.g. 900:down,906:none,930:cross).
 // SS_VRAM_PNG=file writes VRAM as a 1024x512 PNG when the run ends.
@@ -81,7 +82,7 @@ void save_config(const std::map<std::string, std::string>& config) {
 int usage(const char* argv0) {
   std::fprintf(stderr,
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
-               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
+               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
                "       [--audio|--no-audio] [--audio-wav FILE]\n",
                argv0);
   return 2;
@@ -132,6 +133,8 @@ int main(int argc, char** argv) {
       reference_dither = true;
     } else if (arg == "--headless") {
       headless = true;
+    } else if (arg == "--map" && has_value) {
+      runtime::Runtime::get().debug_start_map = std::atoi(next());
     } else if (arg == "--frames" && has_value) {
       frames = std::strtoull(next(), nullptr, 10);
     } else if (arg == "--capture" && has_value) {

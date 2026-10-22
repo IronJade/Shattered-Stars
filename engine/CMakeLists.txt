@@ -113,6 +113,7 @@ add_library(ss_game STATIC
   src/game/field/load_queue.cpp
   src/game/field/music.cpp
   src/game/field/stash.cpp
+  src/game/field/encounter.cpp
   src/tools/viewer.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)

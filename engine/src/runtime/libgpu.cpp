@@ -86,6 +86,8 @@ DISPENV* PutDispEnv(DISPENV* env) {
   d.y = env->disp.y;
   d.width = env->disp.w;
   d.height = env->disp.h;
+  d.top = env->screen.y;
+  d.lines = env->screen.h;  // 0: the full height
   d.color24 = env->isrgb24;
   return env;
 }

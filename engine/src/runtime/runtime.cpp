@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "runtime/runtime.h"
 
 #include <cstdio>
@@ -55,7 +56,19 @@ void Runtime::present() {
     std::snprintf(name, sizeof name, "frame%05llu.png", static_cast<unsigned long long>(vblank_count_));
     util::write_png(capture_dir / name, pixels, w, h);
   }
-  if (window) window->present(pixels.data(), w, h, 4.0f / 3.0f);
+  if (window) {
+    // On a TV the lines outside the display range are border: put them back so the
+    // picture keeps its 4:3 proportions.
+    const auto& d = gpu.display();
+    if (display_enabled && h < d.height) {
+      std::vector<u32> framed(static_cast<size_t>(w) * d.height, 0xFF000000u);
+      const int top = std::clamp(d.top, 0, d.height - h);
+      std::copy(pixels.begin(), pixels.end(), framed.begin() + static_cast<std::ptrdiff_t>(top) * w);
+      window->present(framed.data(), w, d.height, 4.0f / 3.0f);
+    } else {
+      window->present(pixels.data(), w, h, 4.0f / 3.0f);
+    }
+  }
 }
 
 void Runtime::vblank() {

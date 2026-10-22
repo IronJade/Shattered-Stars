@@ -44,6 +44,9 @@ class Runtime {
   // Scripted controller input for tests: from each listed vblank on, port 0
   // holds the given buttons (replacing the window's controller).
   std::map<u64, u16> scripted_input;
+  // Debug: start a new game (Claude) directly on this field map, skipping the title
+  // and prologue (--map N); -1 = normal start.
+  int debug_start_map = -1;
   u16 host_buttons() const;
 
   u64 vblanks() const { return vblank_count_; }

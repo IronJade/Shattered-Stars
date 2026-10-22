@@ -1,4 +1,21 @@
-# Handoff: state of the port when work stopped (2026-10-21)
+# Handoff: state of the port (2026-10-21)
+
+**Update (session resumed):** the actor items below were already done by the agent
+(ActorSystem created, CamScript, brightness hook, actor services wired); all tests
+pass (76 + 34). M4 is reached: map 7's opening plays through and matches the original
+from the fade-in on, the script moves to map 8, and the D-pad walks Claude. Captures
+now use the display's visible lines (224 on the field), as PCSX-Redux's do.
+Debug options: `--map N` starts a new game (Claude) directly on field map N;
+`SS_BATTLE_STUB=1` makes the not-yet-ported battle program "win" at once and return to the
+field; `SS_TRACE=1` logs VM milestones (fades, windows, map loads) and encounter settings
+with vblank stamps. Map 10 (Shingo Forest) gives a random battle after ~1800 vblanks of
+walking left/right. ASan build without root: `dnf download libasan` (x86_64), `rpm2cpio |
+cpio -idm` into a scratch dir, symlink `libasan.so -> libasan.so.8.0.0` there, configure
+`engine/build-asan` with `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>` in the
+linker flags. `gdb.minimal` is installed for backtraces.
+PCSX-Redux note: its default memory cards (~/.config/pcsx-redux/memcard*.mcd) were
+created by our own reference runs on 2026-10-21 and are written by every run; point
+reference runs at scratch cards.
 
 Work was stopped mid-session. This records what every line of work had, so the next
 session can pick up without re-deriving anything. Last commit: `f8b4403`; everything

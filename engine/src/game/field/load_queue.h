@@ -70,6 +70,7 @@ struct PreloadSlot {     // 0x14 bytes
   std::vector<u8> data;  // +0x10
 };
 PreloadSlot* preload_table();  // 0x80075768[12]
+bool preload_table_saved();    // 0x80075858 != 0: a menu holds the table
 
 void preload_clear_table();                                    // 0x80056374
 int preload_start(int entry, int kind, int tag, int bytes);    // 0x800563a0: 1 = queued or present

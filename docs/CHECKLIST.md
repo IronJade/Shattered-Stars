@@ -15,7 +15,7 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] **M1** Standalone window boots from the `.cue` and shows the startup logos (SCEA, tri-Ace, Enix) — pixel-identical to the original (no-dither comparison)
 - [x] **M2** Opening movie plays — studio logo, opening and attract movie through the ported player (`game/title/movie`); every frame shown exactly as decoded (jPSXdec-exact), within ±3 levels of PCSX-Redux's MDEC; frame timing from a drive/MDEC model (same flip vblank as Redux for the opening's first 135 frames; Redux's 60.008 Hz vblank then drifts 1 field per ~230 frames, same wall-clock length)
 - [x] **M3** Title screen is interactive — menu, cursor, confirm/fade, attract timer; pixel-identical to the original (with a memory card inserted)
-- [ ] **M4** New Game reaches the first map and the player can walk
+- [x] **M4** New Game reaches the first map and the player can walk: Claude's opening on map 7 plays through (13 windows; timing and pixels match PCSX-Redux from the fade-in on, apart from the known 1-step window-body and shadow blend differences), the script moves to map 8, its scene plays, then the D-pad walks Claude around
 - [ ] **M5** Events: dialogue, doors, chests, shops
 - [ ] **M6** Menus (items, equipment, skills, save/load)
 - [ ] **M7** Battles
@@ -90,10 +90,11 @@ from config+0x45).
 - [x] Subsystems created in the original order (field_create_subsystems 0x800494dc): Screen, ScreenFade, ScriptCtx, MsgSystem, TextPanels, LoadQueue, Notice; map loads start the VM (vm_init) and the message font; the VM's services call the real field program, message, notice, fade, BG, sound, music and preload code (`vm_services.cpp`)
 - [x] Field music install (field_install_music 0x8004b2b4: bank to the sound driver, sequence unpacked); music kept across a battle (handoff 0xf, table B 0x5a / 0x5b)
 - [x] field_run's return path (0x80048a84): battle outcome to script register R, escape count, preloads back from handoff 10 / 0xc, party slot ids, encounter flags; inventory stash (handoff 0x11, table A 0x10 / 0x11 / 0x34) — untested until the battle program exists
-- [ ] ActorSystem, FieldPanel, Callways, SceneRenderer in field_create_subsystems; actor and camera-script services
-- [ ] Camera follow / scroll from the leader (needs actors)
+- [ ] FieldPanel, Callways, SceneRenderer in field_create_subsystems (ActorSystem and the actor / camera-script services are done)
+- [x] Battle start from the field (`game/field/encounter.cpp`): random encounters (field_update state 0: distance from the area rate, battle-data preloads), forced / script battles (state 0x21, VM wait states 0xb-0xd), battle_build_load_list, the BattleTransition swirl / split, field_start_battle, field_exit_to_program (handoffs 5 BattleSetup, 0xb, 0xd, 0xf, 0x10, 0x11), field_destroy_subsystems, field_construct resets; the round trip back (field_run's return path, actors / VM / BG / music restored) runs repeatedly with the `SS_BATTLE_STUB=1` stand-in battle (clean under AddressSanitizer). Encounter maps: `docs/notes/encounter_maps.md`
+- [x] Actors, sprites, collision, camera follow, CamScript (`actor_base`, `actor_field`, `actors`, `sprite_*`, `collision`, `camera`); map 7's cast walks where the original's does
 - [ ] field_update (0x8004c334): play state (no-encounter path) and state 1 done; encounters, camp menu, battle start/return, vehicles to do
-- [ ] Actors and character models
+- [x] Actors and character models (field sprites; vehicles / world map not yet)
 - [x] Event-script VM port (core, extended, tables A/B): `game/field/script_*.cpp`, one thread + 58 trigger regions, wait states, sync calls, talk probe, choice prompt; every other subsystem behind `vm_services.h` (stand-ins until ported). Unit-tested; the openings of maps 7 / 18 and every map's main function (964 scripts) run with no unclaimed instruction; the openings execute the same ext instructions, in the same order, as the original in PCSX-Redux (`tools/redux_vm_trace.lua`: map 7 132 of 132 up to Ronixis's first window, map 18 86 of 86 up to Rena's)
 - [ ] Event trigger table: there is none on disc; each map script builds it at load time (trigger regions ext 0x74/0x75/0xd8/0xd9, NPC talk entries ext 0x70/0xf3, chests B 0x6c). VM side ported; needs actors and the walk code
 - [x] Text: glyph table and font rendering (`game/field/message_text.cpp`): map font + 0xfc2 font, byte-stream codes, all control codes 0x4000-0x400f, word wrap / justification / centring, names, numbers, item strings, ruby, icons; lines rendered with shadow into 4-bit cells in VRAM. Glyph positions equal the original's RAM; the text is pixel-identical to PCSX-Redux on map 7 (Ronixis, Science Officer, the map-name notice)

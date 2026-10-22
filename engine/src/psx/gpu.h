@@ -23,6 +23,9 @@ struct Rect {
 struct DisplayMode {
   int x = 0, y = 0;            // top-left of the displayed VRAM area
   int width = 320, height = 240;
+  // Vertical display range (DISPENV screen.y / screen.h, GP1 07): the TV shows 'lines'
+  // VRAM rows from y, 'top' lines below the default start; the rest is border.
+  int top = 0, lines = 0;      // lines 0 = height
   bool color24 = false;        // 24-bit display (movies)
   bool enabled = false;
 };
@@ -53,7 +56,8 @@ class Gpu {
   std::span<const u16> vram() const { return vram_; }
   u16 pixel(int x, int y) const { return vram_[(y & 511) * kVramWidth + (x & 1023)]; }
 
-  // Converts to RGBA8888 (red in the low byte) for presentation.
+  // Converts the visible lines (the display range) to RGBA8888 (red in the low byte),
+  // as an emulator's screenshot shows them.
   void display_to_rgba(std::vector<u32>& out, int& width, int& height) const;
   void vram_to_rgba(std::vector<u32>& out) const;
 

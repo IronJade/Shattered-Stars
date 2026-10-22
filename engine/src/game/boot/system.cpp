@@ -1,9 +1,11 @@
 #include "game/boot/system.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
+#include "game/common/battle_setup.h"
 #include "game/field/field.h"
 #include "game/title/title_program.h"
 #include "platform/window.h"
@@ -77,6 +79,19 @@ void run_program(Program program) {
     case Program::Field:
       field::field_entry(get_system());
     default:
+      if (program == Program::Battle && std::getenv("SS_BATTLE_STUB") != nullptr) {
+        // Debug stand-in for the battle program: takes the setup (handoff 5), "wins"
+        // (config +0x178 = 0) after a second and goes back to the field, so the field's
+        // round trip can be tested before battles are ported.
+        HandoffRegistry* reg = &get_system()->handoff;
+        delete static_cast<BattleSetup*>(handoff_get(reg, 5));
+        handoff_clear(reg, 5);
+        for (int i = 0; i < 60; ++i) psyq::VSync(0);
+        auto* config = static_cast<u8*>(handoff_get(reg, 2));
+        config[0x178] = config[0x179] = 0;
+        runtime::Runtime::get().trace("battle stub: victory, back to the field");
+        boot_run_main_program(get_system(), Program::Field);
+      }
       std::fprintf(stderr, "[port] program #%d is not ported yet\n", static_cast<int>(program));
       for (;;) psyq::VSync(0);  // hold on a blank screen until the window closes
   }

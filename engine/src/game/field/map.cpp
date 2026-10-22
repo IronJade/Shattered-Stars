@@ -1,5 +1,6 @@
 #include "game/field/map.h"
 
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -12,6 +13,7 @@
 #include "game/field/message.h"
 #include "game/field/notice.h"
 #include "game/field/screen.h"
+#include "game/field/script_vm.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
 
@@ -50,24 +52,6 @@ std::vector<u8> unpack(const u8* slz, int block) {
   return out ? std::move(*out) : std::vector<u8>{};
 }
 
-// 0x80061bd0 / 0x80061c4c: bit c-1 for every character c in the party (and the reserve
-// list, script flag byte 0 bit 2).
-u32 party_member_mask_all() {
-  const FieldGlobals& g = globals();
-  u32 mask = 0;
-  for (int i = 0; i < 8; ++i) {
-    const u16 c = rd16(g.party + i * 0x60);
-    if (static_cast<u16>(c - 1) < 12) mask |= 1u << (c - 1);
-  }
-  if ((g.script_flags[0] >> 2) & 1) {
-    const u8* block = g.state_block;
-    for (int i = 0; i < block[0x1EB]; ++i) {
-      const u32 c = (block[0x1EC + i] & 0xF) - 1u;
-      if (c < 12) mask |= 1u << c;
-    }
-  }
-  return mask;
-}
 
 }  // namespace
 
@@ -232,7 +216,7 @@ void field_load_map_sections(Field*, int container_entry) {
         actor_sys_setup_view(actor_system());  // 0x80044394
         g_map.projection_h = rd16s(g_map.scene.data() + 0x6A);
         g_map.actor_scale = rd16s(g_map.scene.data() + 0x68);
-        if (g.field_flags[0x24] != 0) todo("restore actors after another program (0x800456f0)");
+        if (g.field_flags[0x24] != 0) actor_sys_restore_all(actor_system());  // 0x800456f0 (handoff 0xb)
         break;
       }
       case 1: {
@@ -241,7 +225,7 @@ void field_load_map_sections(Field*, int container_entry) {
         g_map.script = unpack(data, 0);
         if (g_hooks.font_loaded) g_hooks.font_loaded(g_map.font.data());
         if (g_hooks.script_loaded) g_hooks.script_loaded();
-        if (g.field_flags[0x24] != 0) todo("restore the script state after another program (0x80069aac)");
+        if (g.field_flags[0x24] != 0 && g_script_vm != nullptr) vm_restore_state(g_script_vm);  // 0x80069aac (handoff 0xd)
         break;
       }
       case 2:

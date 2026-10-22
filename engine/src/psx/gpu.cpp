@@ -424,7 +424,7 @@ void Gpu::draw_rectangle(std::span<const u32> p) {
 
 void Gpu::display_to_rgba(std::vector<u32>& out, int& width, int& height) const {
   width = display_.width;
-  height = display_.height;
+  height = display_.lines > 0 && display_.lines < display_.height ? display_.lines : display_.height;
   out.assign(static_cast<size_t>(width) * height, 0xFF000000u);
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {

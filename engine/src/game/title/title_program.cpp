@@ -360,6 +360,14 @@ void title_program_main(System* sys) {
   }
   sound_set_volume(g_title.sound, 0x40, 0x7F);
   title_init_config();
+  if (runtime::Runtime::get().debug_start_map >= 0) {
+    // Debug start (--map N): New Game as Claude, straight into the field; the field's
+    // new-game state block puts him on map N.
+    auto* records = static_cast<u8*>(handoff_get(g_title.handoff, 4));
+    if (records[0x24] == 0) std::strcpy(reinterpret_cast<char*>(records + 0x24), "Claude");
+    g_title.config[0x45] = 0;
+    boot_run_main_program(sys, Program::Field);
+  }
   g_title.entry12.assign(static_cast<size_t>(g_title.loader->entry_size(0x0C)), 0);
 
   auto intro = std::make_unique<TitleIntro>();

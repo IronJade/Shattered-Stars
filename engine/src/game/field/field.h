@@ -4,6 +4,7 @@
 
 #include "core/types.h"
 #include "game/boot/system.h"
+#include "game/common/battle_setup.h"
 
 // The field program (archive entry #3100, loaded at 0x8002f810): map exploration,
 // events and the in-field menus. Names and layouts follow docs/catalog (module
@@ -53,7 +54,7 @@ struct FieldGlobals {
   u8 field_active = 0;                 // 0x80075355: actors update (set by field_load_map, scripts)
   s32 poison_next_step = 0;            // 0x80076314: step count (field_flags +0x18 >> 12) of the next poison tick
   u8 show_battle_results = 0;          // 0x80076278: open the post-battle / item-gained window
-  std::array<u8, 0xC0> battle_setup{}; // 0x800752b8: becomes handoff 5 for the battle program
+  BattleSetup battle_setup;            // 0x800752b8: becomes handoff 5 for the battle program
   u8* system_data = nullptr;           // 0x80075720: entry #3110 unpacked (strings, window art)
   u8* system_strings = nullptr;        // 0x8007571c
 };
@@ -87,6 +88,7 @@ void field_load_system_data();                // 0x8004a428 (entry #3110)
 void field_setup_screen(Field* f);            // 0x80049b74
 [[noreturn]] void field_main_loop(Field* f);  // 0x80049bfc
 void field_update(Field* f);                  // 0x8004c334: the state machine
+void field_update_encounters(Field* f);       // 0x8004c334 state 0: random encounters
 // 0x8005ea54: creates the state block for a new game (or from the load-game snapshot,
 // handoff 0xe): starting map 7 (Claude) or 18 (Rena), names, money.
 void field_create_state_block();

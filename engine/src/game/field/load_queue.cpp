@@ -132,6 +132,7 @@ void LoadQueue::update() {
 // ---- Preload table --------------------------------------------------------------
 
 PreloadSlot* preload_table() { return g_preloads; }
+bool preload_table_saved() { return g_preloads_saved; }
 
 void preload_clear_table() {
   for (auto& s : g_preloads) s = PreloadSlot{};

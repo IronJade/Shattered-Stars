@@ -493,3 +493,14 @@ title,0x80050ac8,g_movie_draw_buffer,s32,0: frames are decoded to y; 1: to y + 2
 title,0x80050acc,g_movie_rect,s16[4],x; y; width; height from movie_create,confirmed,movie_create
 title,0x80050ad4,g_movie_mode,s16,3 = 24-bit output; 2 = 15-bit (VRAM halfwords per two pixels),confirmed,movie_create
 title,0x80050ad6,g_movie_frames_in_ram,u8,Decode whole frames to RAM instead of VRAM; cleared by movie_create and never set,confirmed,movie_create
+field,0x8007534c,g_battle_preload_count,u8,Battle preload groups (consecutive archive entries share one read),confirmed,field_prepare_encounter 0x80050f64
+field,0x800759a8,g_battle_preload_entry,s32[13],First archive entry of each battle preload group,confirmed,field_prepare_encounter
+field,0x800759dc,g_battle_preload_bytes,s32[13],Total bytes of each group,confirmed,field_prepare_encounter
+field,0x80075a10,g_battle_preload_pieces,s32[13],Entries in each group,confirmed,field_prepare_encounter; field_exit_to_program
+field,0x80075a44,g_battle_preload_order,s32[13],Load-list slot of each sorted id,confirmed,field_prepare_encounter; field_exit_to_program
+field,0x80075340,g_encounter_last_group,s32,Group of the prepared encounter (no re-preparation for the same group / stage),confirmed,field_prepare_encounter
+field,0x80075344,g_encounter_last_stage,s32,Stage of the prepared encounter (-1 after field_construct),confirmed,field_prepare_encounter; field_construct
+field,0x80075350,g_battle_program_image,u8 *,#2129 read in the background by field_start_battle (the port runs native code),confirmed,field_start_battle 0x80051a34
+field,0x8007534d,g_battle_program_loaded,u8,#2129 has been read (field_update state 5 waits for it),confirmed,field_start_battle; field_update state 5
+field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
+field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368

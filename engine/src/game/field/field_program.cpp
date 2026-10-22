@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -8,6 +9,11 @@
 #include "game/common/program_image.h"
 #include "game/common/texture.h"
 #include "game/field/actors.h"
+#include "game/field/bg.h"
+#include "game/field/camera.h"
+#include "game/boot/rng.h"
+#include "game/field/actors.h"
+#include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
@@ -66,8 +72,31 @@ const u8* field_data(u32 address) { return program_data(kFieldProgramEntry, addr
 FieldGlobals& globals() { return g_field; }
 Field* field_program() { return g_program; }
 
+// field_construct (0x8004880c): the field program starts from a clean slate each time
+// it runs (after the title, after a battle).
+void field_construct_globals() {
+  FieldGlobals& g = g_field;
+  g.battle_preloaded = 0;
+  g.battle_preload_requested = 0;
+  g.vsync_mode = 0;
+  g.disc_error = g.disc_error_prev = 0;
+  g.returning = 0;
+  g.show_battle_results = 0;
+  g.draw_enabled = 1;
+  g.field_active = 0;
+  g.scripted_battle = 0;
+  battle_preloads().last_group = 0;
+  battle_preloads().last_stage = -1;
+  map_data() = MapData{};
+  field_load_buffer() = {};
+  for (int i = 0; i < 16; ++i) sprite_pack_slots()[i] = SpritePackSlot{};
+  preload_clear_table();
+  task_list_clear();
+}
+
 void field_entry(System* sys) {
   // field_program_create (0x800487e4): new Field (0x50 bytes) -> field_construct.
+  field_construct_globals();
   auto* f = new Field;
   g_program = f;
   f->state = 0;
@@ -125,6 +154,10 @@ void field_create_state_block() {
       block[0x244] = 0;
       gs[0x1A] = 7;  // map 7: Milokeenia
       gs[0x1B] = 0;
+      if (const int m = runtime::Runtime::get().debug_start_map; m >= 0) {  // --map N
+        gs[0x1A] = static_cast<u8>(m);
+        gs[0x1B] = static_cast<u8>(m >> 8);
+      }
       block[0x8C0] |= 2;
       std::strcpy(reinterpret_cast<char*>(block + 0x248), entered);
       std::memcpy(block + 0x25C, field_data(0x800734C8), 5);  // "Rena"
@@ -224,6 +257,115 @@ void field_create_subsystems(Field*) {
   // (scene_renderer_create 0x8005f5c8).
 }
 
+// field_update state 0, the random-encounter part (0x8004c334): each area's rate
+// (field_flags +0x25) sets a walking distance; once the battle's data is preloaded and
+// the leader has walked that far (field_flags +0x18 >= +0x1c), the battle starts.
+// 0x80049098: deletes what field_create_subsystems made (before another program runs).
+// The pad's vblank callback is not registered on the host (the counter reads the runtime).
+void field_destroy_subsystems(Field*) {
+  if (MsgSystem* msg = msg_system()) {
+    msg_system_destroy(msg);
+    delete msg;
+  }
+  if (ActorSystem* sys = actor_system()) actor_sys_destruct(sys, 3);
+  delete field_fade();  // ~ScreenFade: fade_destruct
+  for (auto*& panel : g_text_panels) {
+    delete panel;
+    panel = nullptr;
+  }
+  if (g_script_vm != nullptr) {
+    task_unregister(g_script_vm);
+    delete g_script_vm;
+    g_script_vm = nullptr;
+  }
+  if (LoadQueue* q = load_queue()) load_queue_destruct(q);
+  delete g_notice_object();  // ~Notice: notice_destroy
+  bg_destroy();
+  if (CamScript* c = camscript()) camscript_destroy(c, 3);
+  field_destroy_battle_transition(nullptr);
+  // TODO(port): FieldPanel, Callways, SceneRenderer, the glow and overlay objects.
+}
+
+void field_update_encounters(Field* f) {
+  FieldGlobals& g = g_field;
+  u8* flags = g.field_flags;
+  auto get = [&](int off) { return rd32(flags + off); };
+  auto put = [&](int off, s32 v) { std::memcpy(flags + off, &v, 4); };
+  s32 rate = flags[0x25];
+  if (rate == 0) {
+    g.battle_preloaded = 0;
+    put(0x1C, 0);
+  } else if (get(0x1C) == 0) {
+    // A new distance: the rate adjusted by the encounter modifiers (game_state
+    // +0x266 / +0x267, field_flags +0x84; Callways songs 0x80076190, not ported), then
+    // randomised by up to a third and scaled to the map.
+    const int mod = static_cast<s8>(g.game_state[0x266]) + static_cast<s8>(g.game_state[0x267]) +
+                    static_cast<s8>(flags[0x84]);
+    if (mod >= 1) {
+      rate -= (rate * mod) / 100;
+      if (rate < 3) rate = 3;
+    } else if (mod < 0) {
+      rate += (rate * -mod) / 100;
+    }
+    runtime::Runtime::get().trace(("encounters: rate " + std::to_string(flags[0x25]) + " group " +
+                                   std::to_string(static_cast<s16>(rd16(flags + 0x14))) + " stage " +
+                                   std::to_string(static_cast<s16>(rd16(flags + 0x12))))
+                                      .c_str());
+    s32 distance = (rate * 2 * 8 + rate * 9) * 4;
+    const s32 spread = distance / 3;
+    if (spread != 0) {
+      s32 r = rng_next() % spread;
+      if ((rng_next() & 1) != 0) r = -r;
+      distance += r;
+      if (distance < 600) distance = 600;
+      if (flags[0x68] == 0)
+        put(0x1C, ((distance * rd16(map_data().scene.data() + 0x68)) / 100) * 0x1000);
+      else
+        put(0x1C, distance << 12);
+    }
+  } else if (!preload_table_saved() && g.battle_preloaded == 0) {
+    // Preload the battle's entries once its voice clips are in (and not inside a map
+    // transfer's trigger, nor while music loads).
+    if (g.battle_preload_requested != 0 && voice_stream().state > 2) {
+      const int tag = preload_get_kind2_tag();
+      if ((tag == -1 || g_script_vm == nullptr || !trigger_contains_leader(g_script_vm, tag)) &&
+          (g_script_vm == nullptr || g_script_vm->music == -1)) {
+        const BattlePreloads& bp = battle_preloads();
+        int started = 0;
+        for (; started < bp.count; ++started) {
+          if (preload_start(bp.entry[started], 1, -1, bp.bytes[started]) == 0) {
+            g.battle_preloaded = 0;
+            g.battle_preload_requested = 0;
+            preload_release(1);
+            break;
+          }
+        }
+        if (started == bp.count) g.battle_preloaded = 1;
+      }
+    }
+  }
+  if (g.battle_preloaded == 0) {
+    if (get(0x1C) == 0 || flags[0x26] != 0 || static_cast<s16>(rd16(flags + 0x10)) == -1) return;
+    field_prepare_encounter(f, static_cast<s16>(rd16(flags + 0x14)), static_cast<s16>(rd16(flags + 0x12)));
+    return;
+  }
+  const int ready = field_battle_preloads_ready();
+  if (voice_stream().state < 3 || ready == 0) return;
+  if (get(0x20) == 0) {
+    put(0x20, get(0x18));
+    const s32 extra = static_cast<s32>(static_cast<u32>(rng_next()) % 300) + 300;
+    f->encounter_extra = extra * 0x1000;
+    if (const Actor* leader = field_actor(g.game_state[0x24]); leader != nullptr && leader->walked_last != 0)
+      put(0x20, get(0x20) - extra * 0x1000);
+    if (get(0x20) == 0) return;
+  }
+  if (get(0x18) < get(0x20) + f->encounter_extra) return;
+  if (get(0x18) < get(0x1C)) return;
+  if (static_cast<s16>(rd16(flags + 0x10)) == -1 || flags[0x26] != 0) return;
+  field_start_battle(f, ready - 1);
+  f->state = 4;
+}
+
 void field_update(Field* f) {
   // 0x8004c334. Before the switch (state 0 only): the save-point marker check and the
   // menu button (pressed & config button 2, or a forced menu 0x80076196) -> fade
@@ -231,19 +373,11 @@ void field_update(Field* f) {
   FieldGlobals& g = g_field;
   if (f->state == 0 && (g.pressed[0] & read_u16(g.config + 4)) != 0) todo("field_update: camp menu");
   switch (f->state) {
-    case 0: {
+    case 0:
       // Play. TODO(port): poison steps (0x8004c250), the post-battle stat window
-      // (0x80076278), vehicles (field_flags bits), random encounters (field_flags +0x25
-      // rate, 0x8005161c / 0x80051a34 -> state 4).
-      const u8 rate = g.field_flags[0x25];
-      if (rate == 0) {
-        g.battle_preloaded = 0;
-        std::memset(g.field_flags + 0x1C, 0, 4);
-        return;
-      }
-      todo("field_update: random encounters");
+      // (0x80076278), the save point and vehicles (field_flags / script flag bits).
+      field_update_encounters(f);
       return;
-    }
     case 1: {
       // Map change: wait out the fade, then load the pending map; the leader takes
       // control again (field_flags +0x10).
@@ -255,9 +389,46 @@ void field_update(Field* f) {
       }
       return;
     }
+    case 2:  // forced battle: wait for the battle's voice clips too
+      if (voice_stream().state < 3) return;
+      [[fallthrough]];
+    case 4:  // random battle: wait for the transition to end
+      if (BattleTransition* t = battle_transition(); t != nullptr && t->done != 0) {
+        field_destroy_battle_transition(f);
+        f->state = 5;
+        g.draw_enabled = 0;
+      }
+      return;
+    case 5:  // hand over once #2129 and every battle preload are in
+      if (field_battle_program_loaded() && preload_count_done(1) == battle_preloads().count) {
+        g.field_flags[0x7E] = 1;
+        field_exit_to_program(f, 0);
+      }
+      return;
+    case 0x21: {
+      // Forced battle (scripts / menus): encounter -(game_state +0x264), stage
+      // field_flags +0x12; its entries are preloaded at once.
+      if (fade_is_active(field_fade(), -1)) return;
+      g.scripted_battle = 1;
+      if (voice_stream().state == 0) {
+        voice_stream().state = 1;  // TODO(port): voice-clip queue
+        load_queue_set_streaming(load_queue(), true);
+      }
+      field_prepare_encounter(f, -static_cast<s16>(rd16(g.game_state + 0x264)),
+                              static_cast<s16>(rd16(g.field_flags + 0x12)));
+      std::memset(g.game_state + 0x264, 0, 2);
+      const BattlePreloads& bp = battle_preloads();
+      for (int i = 0; i < bp.count; ++i) preload_start(bp.entry[i], 1, -1, bp.bytes[i]);
+      g.scripted_battle = 0;
+      field_start_battle(f, 2);
+      const s16 control = static_cast<s16>(f->saved_control);
+      std::memcpy(g.field_flags + 0x10, &control, 2);
+      f->state = 2;
+      return;
+    }
     default:
-      // TODO(port): 2/4 battle start, 3 camp menu, 5.. battle return, save point,
-      // vehicles, world map transfers (0x8004c334 cases 2-0x21).
+      // TODO(port): 3 camp menu, 6.. game over / battle results, save point,
+      // vehicles, world map transfers (0x8004c334 cases 3, 6-0x20).
       todo("field_update: state " + std::to_string(f->state));
       return;
   }
@@ -357,7 +528,7 @@ void field_run(Field* f) {
     party_restore_slot_ids(f);
   }
   stash_init();  // handoff 0x11
-  g.battle_setup.fill(0);  // 0x800752b8 (0xc0 bytes); the music sequence buffer is music.cpp's
+  g.battle_setup = BattleSetup{};  // 0x800752b8 (0xc0 bytes); the music sequence buffer is music.cpp's
   field_create_subsystems(f);
   if (g.field_flags[0x24] != 0) {
     // callways_clear_encounter_flags (0x8003199c): script flags 0x24 / 0x26.
