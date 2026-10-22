@@ -55,9 +55,11 @@ Resume an area from its log.
 Main session: integration and commits, the field program's glue, play-testing the story
 route.
 
-**Stopping work:** when weekly usage reaches 95%, every agent is told to bring its log up
-to date and stop; the main session verifies and commits what is finished, and the logs
-carry the rest to the next session.
+**Never losing work:** every agent brings its log up to date (and keeps its work on disk)
+at least every 20 minutes, and the main session runs `tools/checkpoint.sh` every 20
+minutes (a CronCreate job at :07 / :27 / :47; session-only, so recreate it in a new
+session). The script commits everything as a "WIP checkpoint" when `engine/build` builds,
+otherwise `docs/` only. Verified work gets its own commit as each agent reports it.
 
 ## Build and tests
 
