@@ -66,6 +66,8 @@ route.
   `~/.config/pcsx-redux`; run PCSX-Redux only with `-cli` and a scratch HOME, on scratch
   memory-card copies — never the user's saves.
 - Kill processes only by exact PID.
+- `/tmp` is RAM-backed (tmpfs): keep large scratch (captures, dumps, extra builds) on disk under
+  the git-ignored `scratchpad/<name>/` in the repo, and delete finished scratch promptly.
 - Catalogue every reversed function in `docs/catalog` (LF line endings; write CSVs with
   `lineterminator="\n"`, and never open a file for writing in the same expression that
   reads it); prose goes in `docs/notes/`.
