@@ -78,7 +78,8 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 
 Openings differ by leader: **Claude** starts on **map 7** (entry 3214, Milokeenia: Ronixis
 and the survey team, "Well? Any results different from the pre-landing survey?");
-**Rena** starts on a different map under different circumstances (not yet identified).
+**Rena** starts on **map 18** (entry 3225, Arlia: Rena and her mother Westa, "I'll be going." /
+"Wait!").
 
 - [ ] Map container load (entry 3207 + map) and section 0 / 2 formats
 - [ ] Map renderer (geometry, textures, camera)
