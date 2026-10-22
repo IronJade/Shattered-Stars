@@ -1085,9 +1085,12 @@ void vm_svc_loader_cancel() {
 }
 int vm_svc_loader_entry_size(int entry) { return globals().loader != nullptr ? globals().loader->entry_size(entry) : 0; }
 int vm_svc_loader_poll() { return globals().loader != nullptr ? globals().loader->poll() : 0; }
+// loader_select_entry_at (boot 0x80011988): seeks to the entry (plus a1 sectors) and
+// returns 1 unless a read is in progress. The host loader is never busy, and the field
+// movie (field_movie.cpp) reads its entry itself, so only the result matters.
 int vm_svc_loader_11988(int a1, int entry) {
-  SVC("%d,%d", a1, entry);
-  return 0;
+  TRACE("%d,%d", a1, entry);
+  return 1;
 }
 void vm_svc_set_loader_cancel_flag(int v) { field_movie_set_stop(v); }  // 0x800762ff: stops the movie
 
@@ -1132,7 +1135,10 @@ void vm_svc_party_move_character_to_slot(int character, int slot) {
   TRACE("%d,%d", character, slot);
   if (globals().party != nullptr && globals().records != nullptr) party_move_character_to_slot(character, slot);
 }
-void vm_svc_party_swap_characters(int a, int b) { SVC("%d,%d", a, b); }
+void vm_svc_party_swap_characters(int a, int b) {
+  TRACE("%d,%d", a, b);
+  if (globals().party != nullptr && globals().records != nullptr) party_swap_characters(a, b);
+}
 
 // ---- Map objects / sprite packs -----------------------------------------------------
 void vm_svc_sprite_packs_tint(int a, int b, int c) {

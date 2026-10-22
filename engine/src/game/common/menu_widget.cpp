@@ -1427,9 +1427,13 @@ void Widget::draw_list(TextBox* box) {
   const u16 cf = cursor ? cursor->flags : 0;
   for (int i = 0; i < n; ++i) {
     const int idx = (i - (top - 0x400)) % n;
-    if ((cf & 0x10) && idx == l.v[3]) draw_item(box, i, l.v[3] + top);
-    if ((cf & 0x20) && idx == 0) draw_item(box, i, top);
-    if (cf & 0x80) draw_item(box, i, top + idx);
+    // title 0x80073cdc: rows past the item count (l.v[1]) are not drawn.
+    const auto item = [&](int index) {
+      if (index >= 0 && index < l.v[1]) draw_item(box, i, index);
+    };
+    if ((cf & 0x10) && idx == l.v[3]) item(l.v[3] + top);
+    if ((cf & 0x20) && idx == 0) item(top);
+    if (cf & 0x80) item(top + idx);
     box->text->draw_line(l.line(i), box->ctx, 5, static_cast<s16>(box->x + l.v[7]),
                          static_cast<s16>(box->y + idx * step - pos % step + l.v[8]));
   }

@@ -54,6 +54,16 @@ u16 rd16(const u8* p) {
   return v;
 }
 
+// field_update_screen_clamp_flag (0x80055c08): on maps whose camera looks down (the
+// scene's target y above its eye y: +0x18 < +0x0c) the analog stick steers along the
+// projected screen (fieldactor_player_control), except on a fixed list of maps.
+s16 screen_clamp_flag(const u8* scene, int map) {
+  if (scene == nullptr || rd32(scene + 0x18) >= rd32(scene + 0x0C)) return 0;
+  const bool excepted = (map >= 0xA1 && map <= 0xA2) || map == 0xB7 || (map >= 0x17F && map <= 0x180) ||
+                        map == 0x1A4 || map == 0x1B8 || (map >= 0x1C8 && map <= 0x1D2);
+  return excepted ? 0 : 1;
+}
+
 [[maybe_unused]] void todo(const char* what) {
   runtime::Runtime::get().log_once(std::string("map:") + what, std::string("field: not ported yet: ") + what);
 }
@@ -600,7 +610,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     screen_layout_arena(screen, 1);
     const u8* scene = g_map.scene.data();
     screen_set_clear_colour(screen, scene[0x6F], scene[0x70], scene[0x71]);
-    // TODO(port): field_update_screen_clamp_flag (0x80055c08).
+    fieldactor_globals().screen_clamp = screen_clamp_flag(scene, rd16s(gs + 0x1A));  // 0x80055c08
   } else {
     if (Actor* l = field_actor(gs[0x24])) actor_or_flags(l, 0, 0x1000000);  // smoothed turning
     g.vsync_mode = 2;

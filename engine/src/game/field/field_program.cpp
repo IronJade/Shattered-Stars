@@ -278,7 +278,8 @@ void field_create_subsystems(Field*) {
     g_map_script = map_data().script.data();
     vm_init(g_script_vm);
   };
-  // TODO(port): FieldPanel (field_panel_create 0x80055cd4, 0x6c bytes).
+  // Not ported: the FieldPanel (field_panel_create 0x80055cd4, 0x6c bytes, 0x800752a8)
+  // embeds a TextPanel that nothing ever opens; only the teardown reads the pointer.
   for (auto*& panel : g_text_panels) panel = new TextPanel;  // 0x8007529c / 0x800752a0 / 0x800752a4
   load_queue_construct(new LoadQueue);
   notice_create(new Notice);

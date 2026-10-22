@@ -178,6 +178,7 @@ int party_has_equipped(ScriptCtx* ctx, int item);                            // 
 int char_get_equipment(ScriptCtx* ctx, int character, int slot);             // 0x800696c4
 void party_isolate_hero(ScriptCtx* ctx);                                     // 0x8006a7ac
 void party_swap_slots(ScriptCtx* ctx, int a, int b);                         // 0x8006a8ec
+void party_swap_characters(int a, int b);                                    // 0x800534b4
 void party_restore_saved(ScriptCtx* ctx);                                    // 0x8006ab4c
 int relation_hash_mod(ScriptCtx* ctx, int n);                                // 0x8006b59c
 int party_count_members();                                                   // 0x80052268

@@ -245,6 +245,27 @@ void party_swap_slots(ScriptCtx*, int a, int b) {
   if (static_cast<u32>(b) < 4) invalidate_voice(b);
 }
 
+// 0x800534b4 (ext 0xb0): the same swap by character (record index; reserves count).
+// Nothing happens unless both characters are in the party.
+void party_swap_characters(int a, int b) {
+  if (a == b) return;
+  int sa = 0, sb = 0, found = 0;
+  for (int i = 0; i < 8; ++i) {
+    int id = slot_id(i);
+    if (id < 0) id = -id;
+    if (id == a + 1) {
+      sa = i;
+      ++found;
+    } else if (id == b + 1) {
+      sb = i;
+      ++found;
+    }
+    if (found == 2) break;
+  }
+  if (found != 2) return;
+  party_swap_slots(nullptr, sa, sb);
+}
+
 void party_restore_saved(ScriptCtx* ctx) {
   FieldGlobals& g = globals();
   bool invalidated = false;
