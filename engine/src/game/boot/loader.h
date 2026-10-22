@@ -21,9 +21,15 @@ class Loader {
   void cancel() {}                                       // loader_cancel
   int load_sync(void* dest, int entry, int bytes);       // loader_load_sync
 
+  // Host: the drive head, the sector after the last one read (movies time their seek
+  // from it). start_read moves it; the movie player's stream moves it as it reads.
+  u32 head() const { return head_; }
+  void set_head(u32 lba) { head_ = lba; }
+
  private:
   disc::Archive* archive_ = nullptr;
   int selected_ = -1;
+  u32 head_ = 0;
 };
 
 // The host's disc drive (port). The console asks the player to swap discs until

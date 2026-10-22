@@ -30,7 +30,7 @@ struct System {
 System* get_system();  // 0x800100c4
 
 // Programs the boot executable swaps in at 0x8002f810, by archive entry.
-enum class Program { Title = 1, Field = 3100, Battle = 2129 };
+enum class Program { Title = 1, Field = 3100, Battle = 2129, Credits = 3107 };
 
 // boot_run_main_program never returns on the console: the new program overwrites
 // the caller. The port unwinds to the program loop in main by throwing this.

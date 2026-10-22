@@ -179,7 +179,9 @@ void vm_svc_field_free_ot_layers() {
   }
   SVC("%s", "");
 }
-void vm_svc_exit_to_program_teardown() { SVC("%s", ""); }
+void vm_svc_exit_to_program_teardown() {
+  if (!field_run_section6_program()) SVC("%s", "");  // the credits, on map 581
+}
 int vm_svc_field_install_music(int entry) {
   if (Field* f = field_program(); f != nullptr && globals().sound != nullptr) {
     TRACE("entry=%d", entry);

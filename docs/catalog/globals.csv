@@ -750,7 +750,7 @@ title,0x80050ac4,g_movie_decoding,s32,A frame is going through the MDEC (until m
 title,0x80050ac8,g_movie_draw_buffer,s32,0: frames are decoded to y; 1: to y + 240,confirmed,movie_update
 title,0x80050acc,g_movie_rect,s16[4],x; y; width; height from movie_create,confirmed,movie_create
 title,0x80050ad4,g_movie_mode,s16,3 = 24-bit output; 2 = 15-bit (VRAM halfwords per two pixels),confirmed,movie_create
-title,0x80050ad6,g_movie_frames_in_ram,u8,Decode whole frames to RAM instead of VRAM; cleared by movie_create and never set,confirmed,movie_create
+title,0x80050ad6,g_movie_frames_in_ram,u8,"Decode whole frames to RAM instead of VRAM (the slice buffer then holds frames of 320x240x3 in 16-pixel columns; frame draw_buffer is decoded, nothing goes to VRAM); cleared by movie_create and never set in the title. The credits program's copy (0x80031ce2) sets 3",confirmed,movie_create; #3107 credits_run
 title,0x8006742c,k_save_time_label,char[],"""   \x08\x02TIME\x08\x01\n"" (ASCII element: palette 2, back to 1)",confirmed,save_list_show_entry
 title,0x80067450,k_save_battles_label,char[],"""\x08\x02BATTLES\x08\x01\n""",confirmed,save_list_show_entry
 title,0x800674e0,k_save_title_prefix,char[],"Shift-JIS ""ＳＯ２　"" (save title); 0x800674ec ""　"", 0x800674f0 ""："", 0x800674f4 ""　ＬＶ""",confirmed,save_build
@@ -849,3 +849,29 @@ battle_enemy_vesper,0x800892b4,vtable_EnemyVesper,vtable[36],"The module's Enemy
 battle_enemy_visseyer,0x8008a674,vtable_EnemyVisseyer,vtable[36],"The module's EnemyUnit vtable (37 slots): 4 interrupt 0x8008a19c, 24 0x8008a200, 25 0x8008a2dc, 27 0x80089f68, 28 0x8008a120, 32 0x8008a4c0, 36 dtor 0x8008a64c; the rest EnemyUnit's.",confirmed,asm of block 1b2600bcb2ff + modvt.py
 battle_enemy_xine,0x80088b64,vtable_EnemyXine,vtable[36],"The module's EnemyUnit vtable: slots 25, 26, 28, 29, 32 and 36 overridden (0x80088964, 0x800882d8, 0x8008838c, 0x8008890c, 0x80088160, 0x80088b3c)",confirmed,modvt.py + asm of block 8ac9dffedd2a
 battle_enemy_zand,0x800888c0,vtable_EnemyZand,vtable[36],"Zand's EnemyUnit vtable (37 slots): overrides 26 choose target, 27 attack 1 (base), 28 attack 2 (shock wave), 29 attack 3 (leap), 36 dtor",confirmed,asm of block 7956332dbbd1
+credits_3107,0x8002f8c4,program_base_vtable,vtable,"Base program vtable (+0x0c 0x8001446c destructor, +0x14 program_set_system)",confirmed,listing
+credits_3107,0x8002f8dc,g_current_program,Credits *,The program object (0x28 bytes; credits_global_ctor),confirmed,listing
+credits_3107,0x80030400,g_screen_envs,DRAWENV / DISPENV x2,"The screen library's buffers (0x70 bytes each: DRAWENV at +0, DISPENV at +0x5c); arenas 0x80030540 (ends) / 0x800305a0 (current), ordering tables 0x80030600 / sizes 0x80030660, draw y 0x80030784; the buffer index and overflow callback are gp-relative (gp+0 / gp+0xc). Unused by the credits",likely,listing
+credits_3107,0x80031c44,s_movie_error,char[],"""error : %d\n"" (movie_update, bitstream larger than a slot)",confirmed,listing
+credits_3107,0x80031c54,movie_vtable,vtable,Movie vtable (+0x0c movie_destroy),confirmed,listing
+credits_3107,0x80031c84,dct_vlc_table,u32[],libpress Huffman table for DecDCTvlc (to 0x800427f4),likely,title counterpart
+credits_3107,0x80031cb4,g_movie_globals,MovieGlobals,"The movie player's globals, as the title's 0x80050aa8-0x80050ad6 (screen_cleared, slice_half, slice_rect 0x80031cbc, slices 0x80031cc4, frame_count 0x80031cc8, frame_ready 0x80031ccc, decoding 0x80031cd0, draw_buffer 0x80031cd4, x/y/w/h 0x80031cd8-0x80031cde, mode 0x80031ce0, frames_in_ram 0x80031ce2). The credits set frames_in_ram = 3, slices = three 0x38400-byte RAM frames, and use draw_buffer (0-2) as the RAM frame decoded next",confirmed,listing; relocation-masked match with the title
+credits_3107,0x80044230,credits_layout_jump,u32[5],credits_compose's layout switch,confirmed,listing
+credits_3107,0x80044248,credits_ticker_vtable,vtable,"Vblank handler vtable (+0x0c 0x8001446c, +0x14 0x800134f8, +0x1c credits_vblank); the object is 12 bytes, +8 the flip countdown (starts at 4)",confirmed,listing
+credits_3107,0x80044268,credits_vtable,vtable,"Program vtable (+0x0c credits_run, +0x14 program_set_system)",confirmed,listing
+credits_3107,0x80044280,g_credits_compose_frame,s32,RAM frame (0-2) credits_compose / credits_draw_image write into,confirmed,listing
+credits_3107,0x80044284,g_credits_upload_frame,s32,RAM frame the vblank handler uploads next (-1 at the start),confirmed,listing
+credits_3107,0x80044288,g_credits_upload_buffer,s32,"VRAM buffer the next upload goes to (0 = y 0xf0 = movie disp[0], 1 = y 0); the DrawSync callback copies it to 0x800446b9 and toggles it",confirmed,listing
+credits_3107,0x8004428c,g_credits_upload_pending,s32,A composed RAM frame waits for the vblank handler,confirmed,listing
+credits_3107,0x80044290,credits_cue_list,s16[2][37],"{op, arg}: 0 end, 1 movie (entry; waits for the current to end), 2 wait (vblanks), 3 sound_fade_out(arg). Wait 720, then #4594-#4604 each followed by waits (1200+420, 1380+360, ...), fade-out 960 frames before the last 360 + 660",confirmed,listing + table dump
+credits_3107,0x80044324,credits_card_script,s16[],"Cards: layout, then image counts / colour codes, -16; ends where the first word of 0x8004466c reads -16",confirmed,listing + table dump
+credits_3107,0x8004466c,credits_colours,u32[4],"0x00BBGGRR by -code: 1 0x40c0ff (gold, also the default), 2 0xffb060 (blue), 3 0xfff0c0 (pale blue); entry 0 (0xfff0) only ends the script",confirmed,listing + table dump
+credits_3107,0x8004467c,g_credits_movie,Movie *,The movie player (0x50 bytes),confirmed,listing
+credits_3107,0x80044680,g_credits_disp,DISPENV[2],"x 0x1e0, y 0 / 0xf0, 320x240, interlaced 24-bit; only the matching VRAM is cleared, never shown",confirmed,listing
+credits_3107,0x800446a8,g_credits_wait,s32,Vblanks before the next cue (the handler counts it down),confirmed,listing
+credits_3107,0x800446ac,g_credits_unused,s32,"Cleared at the start, never read",confirmed,listing
+credits_3107,0x800446b0,g_credits_display_countdown,s32,2: the first flip calls SetDispMask(1),confirmed,listing
+credits_3107,0x800446b4,g_credits_movie_state,s32,"0 no movie, 1 opened (black frames go on), 2 its frames are coming",confirmed,listing
+credits_3107,0x800446b8,g_credits_shown,u8,VRAM buffer on screen (0xff none yet),confirmed,listing
+credits_3107,0x800446b9,g_credits_uploaded,u8,VRAM buffer uploaded last (set by the DrawSync callback; 0xff none yet),confirmed,listing
+credits_3107,0x800446c0,g_credits_hold,s32,"Vblanks a card stays at full brightness (0xcf), then the gap after it (5)",confirmed,listing

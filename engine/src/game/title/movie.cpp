@@ -35,14 +35,16 @@ constexpr double kVblankHz = 60000.0 / 1001.0;  // the runtime's field rate
 constexpr double kCpuHz = 33868800.0;
 constexpr double kSectorVblanks = kVblankHz / 150.0;  // double speed: 150 sectors a second
 
-// Measured in PCSX-Redux: from movie_open to the first sector of the opening (a seek
-// of 84800 sectors), and the decode in CPU cycles. Every movie uses the opening's
-// latency. Redux's seek time grows with the distance, which would need the drive's
-// head position (the host loader keeps none): its studio movie (#4586, a seek of about
-// 221000 sectors) shows its first frame some 18 vblanks later than the port's (41 vs 23
-// after movie_open, PCSX-Redux 1489 -> 1530); two measurements do not pin down its
-// seek curve, so the difference stays.
-constexpr double kStartVblanks = 0.288 * kVblankHz;
+// From movie_open to the first sector: PCSX-Redux's drive seeks 3 us a sector of
+// distance plus 1 ms for a read (cdrom.cc computeSeekDelay), then reads the sector; in
+// Redux the first sector comes about 30 ms later still (the boot loader's Setloc /
+// ReadS round trips). Measured on the title's opening (0.288 s for the 84800 sectors
+// from the end of the studio movie: 26 ms), its studio movie (first frame 41 vblanks
+// after movie_open, 189230 sectors from #2676) and the eleven credit movies (#3107; the
+// first 116363 sectors from the names it read last, the others 30 sectors on: 26-45 ms).
+// The decode is in CPU cycles.
+constexpr double kSeekSecondsPerSector = 3e-6;
+constexpr double kSeekSeconds = 0.001 + 0.030;
 constexpr double kVlcCyclesPerCodeWord = 33.6;     // DecDCTvlc: per MDEC code word (header's first halfword)
 constexpr double kVlcCyclesPerByte = 30.5;         // ... and per bitstream byte
 constexpr double kVlcCyclesBase = -18000.0;
@@ -84,13 +86,15 @@ void console_idle_until(double t) {
 //
 // On the console the boot loader (0x80011744-0x8001205c) reads with ReadS at double
 // speed and cd_sector_ready_callback (0x800111f0) copies every sector into the ring
-// as it arrives; here sectors arrive on the console clock: the first kStartVblanks
-// after the stream starts, then one every 1/150 s.
+// as it arrives; here sectors arrive on the console clock: the first after the seek
+// from the drive head (Loader::head), then one every 1/150 s.
 // (The host loader reads synchronously and the archive has no per-sector reads, so the
 // streamed range is read when the stream starts and handed out on the console clock.)
 
 struct Stream {
   int entry = -1;               // Setloc target (loader_select_entry)
+  Loader* loader = nullptr;     // host: its head follows the stream
+  u32 lba = 0;                  // host: the entry's first sector
   bool busy = false;            // loader_poll: until the drive pauses after the last sector
   std::vector<u8> sectors;      // the range being streamed, 2048 bytes per sector
   u32 count = 0;                // sectors to stream
@@ -114,6 +118,7 @@ u32 slot_chunks() { return g_stream.slot_bytes >> 11; }
 u16 sector_chunk(u32 index) { return read_u16(&g_stream.sectors[size_t{index} * 2048 + 4]); }
 
 void stream_stop() {
+  if (g_stream.busy && g_stream.loader != nullptr) g_stream.loader->set_head(g_stream.lba + g_stream.delivered);
   g_stream.busy = false;
   g_stream.sectors.clear();
   g_stream.sectors.shrink_to_fit();
@@ -199,7 +204,11 @@ void loader_start_stream(Loader* loader, u8* ring, int headers, int slot_bytes, 
   }
   s.delivered = 0;
   s.busy = true;
-  s.first_arrival = console_now() + kStartVblanks;
+  s.loader = loader;
+  s.lba = archive->entry(static_cast<u32>(s.entry)).lba;
+  const u32 head = loader->head();
+  const u32 distance = s.lba > head ? s.lba - head : head - s.lba;
+  s.first_arrival = console_now() + (distance * kSeekSecondsPerSector + kSeekSeconds) * kVblankHz + kSectorVblanks;
 }
 
 int loader_stream_slot(Loader*) {  // 0x80011744: the slot completed last
@@ -227,11 +236,18 @@ void movie_dma_callback() {
   // A CD sector that arrived while the MDEC held the bus is read now.
   if (g.mode == 3 && loader_sector_deferred(loader)) cd_sector_ready_callback(loader, 1);
   const size_t slice_words = static_cast<size_t>(g.mode) * 0xF00 / 4;
-  psyq::LoadImage(&g.slice_rect, g.slice_buffers.data() + g.slice_half * slice_words);
+  if (g.frames_in_ram == 0) psyq::LoadImage(&g.slice_rect, g.slice_buffers.data() + g.slice_half * slice_words);
   g.slice_half ^= 1;
   g.slice_rect.x = static_cast<s16>(g.slice_rect.x + g.mode * 8);
   if (g.slice_rect.x < g.x + g.mode * 0xA0) {
-    psyq::DecDCTout(g.slice_buffers.data() + g.slice_half * slice_words, g.mode * 0x3C0);
+    if (g.frames_in_ram == 0) {
+      psyq::DecDCTout(g.slice_buffers.data() + g.slice_half * slice_words, g.mode * 0x3C0);
+    } else {
+      // Frames in RAM: frame draw_buffer of the caller's buffer, stored as columns 16
+      // pixels wide (the slice x counts halfwords, as in VRAM).
+      const size_t at = static_cast<size_t>((g.draw_buffer * g.mode * 0x140 + g.slice_rect.x * 2) * 0xF0);
+      psyq::DecDCTout(g.slice_buffers.data() + at / 4, g.mode * 0x3C0);
+    }
   } else {
     g.frame_ready = 1;
     ++g.frame_count;
@@ -282,6 +298,7 @@ Movie* movie_create(Movie* self, int x, int y, int w, int h, int interlace, int 
   g.screen_cleared = 0;
   g.frames_in_ram = 0;
   g.loop_vblanks = 0;
+  g.caller_idles = false;
   g.slice_buffers.clear();
   self->ring.clear();
   self->rl_buffers.clear();
@@ -394,7 +411,9 @@ int movie_update(Movie* self) {
     g.slice_rect.w = static_cast<s16>(g.mode * 8);
     g.slice_rect.h = g.height;
     if (g.mode == 3) loader_defer_sectors(self->loader, 1);
-    psyq::DecDCTout(g.slice_buffers.data(), g.mode * 0x3C0);
+    // Frames in RAM: the first column of frame draw_buffer.
+    const size_t first = g.frames_in_ram != 0 ? static_cast<size_t>(g.draw_buffer * g.mode * 0x12C00) / 4 : 0;
+    psyq::DecDCTout(g.slice_buffers.data() + first, g.mode * 0x3C0);
     // Host: the frame went through at once; the console's MDEC takes a while, and
     // movie_present holds it back until then.
     g_frame_done_at = console_now() + cycles_to_vblanks(kMdecCyclesPerWord * g.mode * 0x3C0 * (0xA0 / 8));
@@ -402,7 +421,9 @@ int movie_update(Movie* self) {
   }
   // Host: with nothing to do the console keeps polling until the drive delivers more
   // or the MDEC finishes.
-  if (g.loop_vblanks > 0) {
+  if (g.caller_idles) {
+    // host: the caller waits (movie_next_event)
+  } else if (g.loop_vblanks > 0) {
     console_spend(g.loop_vblanks);  // host: the caller's loop runs on while the player waits
   } else if (!busy) {
     if (g.frame_ready != 0 && console_now() < g_frame_done_at) {
@@ -434,6 +455,19 @@ MovieGlobals& movie_globals() { return g; }
 bool movie_frame_ready() { return g.frame_ready != 0 && console_now() >= g_frame_done_at; }
 
 void movie_console_spend(double vblanks) { console_spend(vblanks); }
+
+double movie_console_now() { return console_now(); }
+
+double movie_next_event(const Movie* self) {
+  const double now = console_now();
+  if (g.frame_ready != 0) return now < g_frame_done_at ? std::min(g_frame_done_at, stream_next_event()) : now;
+  // A decoded frame waiting for the MDEC, or a slot not looked at yet: at once.
+  if (self->rl_pending != 0 || g.decoding != 0) return now;
+  if (loader_stream_slot(self->loader) != self->last_slot && self->rl_decoded != self->rl_index) return now;
+  return stream_next_event();  // infinity once the stream has stopped
+}
+
+void movie_console_idle_until(double t) { console_idle_until(t); }
 
 // ---- Prologue --------------------------------------------------------------------------
 

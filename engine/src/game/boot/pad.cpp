@@ -31,10 +31,39 @@ struct PadState {
 };
 PadState g_pad;
 
+// 0x8002b5ec / 0x8002b5f0 / 0x8002b608: the vblank handler list.
+struct HandlerList {
+  s32 count = 0;
+  VblankHandler* handler[6] = {};
+  s32 arg[6] = {};
+};
+HandlerList g_handlers;
+
 }  // namespace
+
+bool pad_add_vblank_handler(Pad*, VblankHandler* h, s32 arg) {
+  if (g_handlers.count >= 6) return false;
+  g_handlers.arg[g_handlers.count] = arg;
+  g_handlers.handler[g_handlers.count] = h;
+  ++g_handlers.count;
+  h->added();
+  return true;
+}
+
+void pad_remove_vblank_handler(Pad*, VblankHandler* h) {
+  for (int i = 0; i < g_handlers.count; ++i) {
+    if (g_handlers.handler[i] != h) continue;
+    for (int j = i; j < g_handlers.count - 1; ++j) {
+      g_handlers.arg[j] = g_handlers.arg[j + 1];
+      g_handlers.handler[j] = g_handlers.handler[j + 1];
+    }
+    --g_handlers.count;
+  }
+}
 
 void pad_init(Pad*) {
   g_pad = PadState{};
+  g_handlers.count = 0;
 }
 
 void pad_set_port_mask(Pad*, u8 mask) { g_pad.port_mask = mask; }
@@ -118,7 +147,7 @@ bool pad_stick(Pad*, int port, s32* rx, s32* ry, s32* lx, s32* ly) {
 }
 
 void vsync_callback_with(u16 port0_buttons, const u8* port0_sticks) {
-  // TODO(port): registered vblank handlers (0x8002b5f0 list: sound, movies).
+  for (int i = 0; i < g_handlers.count; ++i) g_handlers.handler[i]->vblank(g_handlers.arg[i]);
   if (++g_pad.frames > 59) {
     g_pad.frames = 0;
     ++g_pad.seconds;

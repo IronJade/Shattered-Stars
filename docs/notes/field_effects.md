@@ -67,7 +67,7 @@ tests see no difference.
 | 10 | #3104 | 143 | The rainbow (special command 0): 24 rays x 8 bands of additive POLY_G4 | within one 5-bit step from +2 to +400 frames |
 | 7, 11 | #3109, entry #2 | 688 | The Cooking Master TIME / PRESS gauge (A 0x33 / 0x35 / 0x37; updated after `task_run_all`); section 11 is the 0x30-byte item records A 0x33 reads | TIME row pixel-identical at +200 / +800 |
 | 12 | #3105 | 581 | The final "fin." screen (A 0x40, never returns): the caption typed in, then the logo and "fin." at 640x480 with music | caption within one step; the logo 1 px left |
-| 6 | #3107 | (A 0x2d) | The credits: an 85 KB program at 0x8002f810 with its own movie decoder, played between the private endings and the final screen | not ported; A 0x2d is a stub |
+| 6 | #3107 | 581 (A 0x2d) | The credits: a program of its own (`docs/notes/credits.md`, `game/credits`); A 0x2d tears the field down and runs it, and it starts the field again | movie opens within a vblank, name cards pixel-identical, frames within 2-3 LSB |
 
 ## Known differences / open
 
@@ -81,6 +81,6 @@ tests see no difference.
   (28 before the first frame, then 20 / 0 / 1 / 6 per frame against Redux's 18 / 0 / 1 / 5):
   each pass costs 1/28 vblank of host time and the compose 0.86 vblank per ~990 pixels,
   calibrated on map 548.
-- #3107 (the credits program) is not ported; the end screen's logo is 1 px left of Redux
+- The end screen's logo is 1 px left of Redux
   (probably the GPU's rasterisation of 15-bit textured quads); the mirror image's shadow
   differs by a few pixels.

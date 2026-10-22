@@ -98,6 +98,7 @@ add_library(ss_game STATIC
   src/game/common/save_icon.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
+  src/game/credits/credits_program.cpp
   src/game/title/title_program.cpp
   src/game/title/title_screen.cpp
   src/game/title/voice_collection.cpp
@@ -120,6 +121,7 @@ add_library(ss_game STATIC
   src/game/field/effects_camera.cpp
   src/game/field/scene_renderer.cpp
   src/game/field/field_movie.cpp
+  src/game/field/field_section6.cpp
   src/game/field/field_sub_overlays.cpp
   src/game/field/bg.cpp
   src/game/field/field_program.cpp

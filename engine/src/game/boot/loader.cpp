@@ -20,6 +20,7 @@ int Loader::start_read(void* dest, int bytes) {
     std::fprintf(stderr, "[loader] read of entry %d (%zu bytes) failed\n", selected_, count);
     return 0;
   }
+  head_ = archive_->entry(static_cast<u32>(selected_)).lba + static_cast<u32>((count + 2047) / 2048);
   return 1;
 }
 

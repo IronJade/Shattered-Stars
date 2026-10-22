@@ -69,6 +69,14 @@ void sub_set_item_records(std::vector<u8> data);  // section 11 unpacked (0x8007
 // 640x480, interlaced, with the ending music; it never returns (the game is over).
 [[noreturn]] void the_end(int n);  // 0x801f9a64 (loads with 0x801f9800)
 
+// ---- Section 6: #3107, the credits (map 581) ---------------------------------------
+// Table A 0x2d: tears the field down (map, layers, BG, actors, windows, subsystems;
+// the stash is not kept), then runs the program in section 6, the credits
+// (game/credits), which starts the field again at its end. Never returns on a map
+// with section 6; false (nothing done) elsewhere, where the console would run whatever
+// 0x800756f4 points at.
+bool field_run_section6_program();  // vm_exec_table_a case 0x2d (field_section6.cpp)
+
 // Clears what field_load_map clears (0x800761d4 mirror slots, 0x800761e8, 0x800761ea).
 void sub_overlays_map_reset();
 

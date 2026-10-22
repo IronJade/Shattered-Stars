@@ -41,6 +41,18 @@ void pad_set_stick_dpad(Pad* pad, int port, u8 mode);
 // 0x80013cb8: the four axes; false (all 0) unless the pad is in analog mode.
 bool pad_stick(Pad* pad, int port, s32* rx, s32* ry, s32* lx, s32* ly);
 
+// The vblank handler list (0x8002b5f0, arguments at 0x8002b608; up to six): objects
+// vsync_callback runs through their vtable every vblank, before the clock and the
+// controllers. The title's prologue counter keeps its own catch-up instead (movie.cpp);
+// the credits program (#3107) uses the list.
+struct VblankHandler {
+  virtual ~VblankHandler() = default;
+  virtual void added() {}         // vtable +0x14: once, from pad_add_vblank_handler
+  virtual void vblank(s32 arg) = 0;  // vtable +0x1c: every vblank, with the argument it was added with
+};
+bool pad_add_vblank_handler(Pad* pad, VblankHandler* h, s32 arg);  // 0x800141bc: false when the list is full
+void pad_remove_vblank_handler(Pad* pad, VblankHandler* h);        // 0x80014230
+
 // The console's VSync callback (0x80013578): runs vblank handlers, advances the
 // clock and samples the controllers. 'buttons' is the host controller state;
 // 'sticks' its raw stick bytes (right X, right Y, left X, left Y; 0x80 centred), or

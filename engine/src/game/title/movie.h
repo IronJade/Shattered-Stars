@@ -67,14 +67,19 @@ struct MovieGlobals {
   s32 draw_buffer = 0;             // 0x80050ac8: frames go to y (0) or y + 240 (1)
   s16 x = 0, y = 0, width = 0, height = 0;  // 0x80050acc-0x80050ad2
   s16 mode = 0;                    // 0x80050ad4: 3 = 24-bit, 2 = 15-bit
-  // 0x80050ad6: decode whole frames to RAM instead of VRAM. movie_create clears it and
-  // nothing sets it, so its paths are not ported.
+  // 0x80050ad6: decode whole frames to RAM instead of VRAM: slice_buffers then holds
+  // frames of 320x240x3 bytes, stored as columns 16 pixels wide, and frame draw_buffer
+  // is decoded. movie_create clears it; the credits program (#3107) sets it after.
   u8 frames_in_ram = 0;
   // Host: console time one pass of the caller's loop takes when the caller polls the
   // player from its own loop (the field: ~1/28 vblank, measured in PCSX-Redux). Each
   // movie_update then spends it instead of idling to the next event. 0 (movie_create)
   // for callers that only wait on the player, as the title does.
   double loop_vblanks = 0;
+  // Host: the caller idles itself (movie_next_event) after the checks its loop makes
+  // after movie_update, which then never waits. False (movie_create) for the title and
+  // the field.
+  bool caller_idles = false;
 };
 MovieGlobals& movie_globals();
 // frame_ready as the console's code sees it. The host decodes a frame at once and sets
@@ -84,6 +89,15 @@ bool movie_frame_ready();
 // Host: the console spends 'vblanks' of CPU time (code outside the player whose cost
 // matters to the movie's timing, such as the field's compose).
 void movie_console_spend(double vblanks);
+// Host: the console clock (runtime vblanks plus the part of the current field already
+// spent), and a busy loop with nothing to do until 't' (or the end of the field, when
+// the vblank interrupt may change what it sees).
+double movie_console_now();
+void movie_console_idle_until(double t);
+// Host: when the player next has something to do (a slot completing, the MDEC finishing
+// a frame, the drive pausing), in console time; now when it has something to do at once,
+// infinity when it waits for nothing.
+double movie_next_event(const Movie* self);
 
 // The scripted movie player title_program_main uses after New Game (0x8004fa98-
 // 0x8004ffb4; 0x70 bytes, vtable 0x80050a20): a Movie driven by a cue list

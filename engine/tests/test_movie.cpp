@@ -190,7 +190,9 @@ TEST(disc1_logo_movie_plays_like_the_console) {
   if (!d) return;
   auto& rt = runtime::Runtime::get();
   game::System* sys = game::get_system();
-  // title_intro_sequence's loop for the studio movie.
+  // title_intro_sequence's loop for the studio movie. The drive head is where the
+  // title leaves it, after entry #2676 (the seek time grows with the distance).
+  sys->loader.set_head(d->archive.entry(2676).lba + d->archive.entry(2676).sectors);
   game::Movie* movie = game::movie_create(new game::Movie, 0, 0, 0x140, 0xF0, 1, 3);
   game::movie_open(movie, 0x11EA);
   const u64 opened = rt.vblanks();
@@ -211,11 +213,12 @@ TEST(disc1_logo_movie_plays_like_the_console) {
     CHECK(game::movie_frame_count() >= before);
   }
   // The entry's 480 sectors less the 30 never read: 45 frames, about four fields apart
-  // (ten sectors at 150 a second), the first after the seek and the first frame's decode.
+  // (ten sectors at 150 a second), the first after the seek and the first frame's decode
+  // (PCSX-Redux: 41 vblanks after movie_open).
   CHECK_EQ(flips.size(), 45u);
   CHECK_EQ(game::movie_frame_count(), 45);
   if (flips.size() == 45) {
-    CHECK(flips[0] - opened >= 20 && flips[0] - opened <= 26);
+    CHECK(flips[0] - opened >= 38 && flips[0] - opened <= 44);
     for (size_t i = 1; i < flips.size(); ++i) CHECK(flips[i] - flips[i - 1] >= 3 && flips[i] - flips[i - 1] <= 5);
     CHECK(flips[44] - flips[0] >= 44 * 4 - 2 && flips[44] - flips[0] <= 44 * 4 + 2);
   }

@@ -7,6 +7,7 @@
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
+#include "game/credits/credits_program.h"
 #include "game/field/field.h"
 #include "game/title/title_program.h"
 #include "platform/window.h"
@@ -90,6 +91,8 @@ void run_program(Program program) {
     case Program::Title:
       title_entry(get_system());
       return;
+    case Program::Credits:
+      credits::credits_entry(get_system());  // never returns
     case Program::Field:
       field::field_entry(get_system());
     case Program::Battle:
