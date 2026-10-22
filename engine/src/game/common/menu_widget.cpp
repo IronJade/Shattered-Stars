@@ -458,6 +458,27 @@ void TextBox::add_item_count(int item) {
   set_font_group(font, strings, group);
 }
 
+void TextBox::add_item_name(int item) {
+  const u8 *font = nullptr, *strings = nullptr;
+  TextRenderer* r = text_renderer();
+  r->get_font(&font, &strings);
+  const s16 group = r->group();
+  set_font_group(item_strings(1), item_strings(0), 3);
+  add_message(static_cast<s16>(item));
+  set_font_group(font, strings, group);
+}
+
+void TextBox::draw_gradient_line(s16 x0, s16 y0, s16 x1, s16 y1, u32 c0, u32 c1) {
+  auto* l = prim_alloc<psyq::LINE_G2>(ctx);
+  if (!l) return;
+  psyq::setlen(l, 4);
+  set_word(&l->r0, menu_colour_code(0x50000000, colour, c0));
+  l->x0 = x0, l->y0 = y0;
+  set_word(&l->r1, menu_colour(colour, c1));
+  l->x1 = x1, l->y1 = y1;
+  prim_link(ctx, slot, l);
+}
+
 int TextBox::add_sprite(BoxElement& e) {
   auto* s = new Sprite;
   sprite_init(s);

@@ -97,6 +97,22 @@ plan as itemsref plus 153 frames. Party, records, config and inventory match.
 
 **Catalog:** 982 function rows. menu.md has an "Equipment" section.
 
+### Status, page 6 (done and verified)
+
+**New files:** `engine/src/game/field/menu_status.{h,cpp}`: StatusPage, StatusBox,
+Talents, Resistances.
+
+**Library additions:**
+- `TextBox::add_item_name` (0x800db904) and `draw_gradient_line` (0x800df8a8).
+- `TextRenderer::set_name_source`: the field's text code 0x4006 draws a character's
+  name. FieldMenuHost supplies game_state +0x28 + i * 0x14.
+
+**Verification.** Compared against Redux `statref1` and port `stat_p2`. The data is
+unchanged and the frames match apart from the sprite and help bar phase and the
+portrait's CD timing.
+
+**Catalog:** 1020 function rows.
+
 ### Not ported yet
 
 - Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
@@ -105,12 +121,11 @@ plan as itemsref plus 153 frames. Party, records, config and inventory match.
 
 ## Next steps
 
-1. Status (page 6, 0xbb2; ctor 0x8007e550; result 3 goes to page 0xe, 0xbce).
-2. Skills (page 5, 0xbc6; ctor 0x8007e740).
-3. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
-4. Options (page 7, 0xbc8).
-5. Combat (pages 8-10, 0xbca).
-6. Then the item creation pages 0xf / 0x10 / 0x13 and the query page.
+1. Skills (page 5, 0xbc6; ctor 0x8007e740).
+2. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
+3. Options (page 7, 0xbc8).
+4. Combat (pages 8-10, 0xbca).
+5. Then page 0xe (0xbce, after Status), the item creation pages 0xf / 0x10 / 0x13 and the query page.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.

@@ -40,6 +40,7 @@ struct Expansion {
 };
 Expansion g_expansions[8];
 int g_expansion_next = 0;
+const char* (*g_name_source)(int index) = nullptr;
 
 // title 0x80032eec: the three tables of colour set i + 1.
 void build_colour_tables(int i, int fg, int shadow) {
@@ -344,6 +345,7 @@ void TextRenderer::set_default_font(const u8* font, const u8* strings) {
 }
 
 void TextRenderer::set_expansion_cursor(int index) { g_expansion_next = index; }
+void TextRenderer::set_name_source(const char* (*source)(int index)) { g_name_source = source; }
 
 TextRenderer::TextRenderer() {
   cvram_merge_free();
@@ -632,12 +634,29 @@ void TextRenderer::draw_text(TextLine* line, const u8* s) {
       continue;
     }
     if (c == 0x4006) {
-      // Switches to the default font and straight back (no visible effect).
-      ++s;
+      // The title switches to the default font and straight back (no visible effect);
+      // the field draws character n's name in it (menu_0ba5 0x800d9388).
+      const u8 n = *s++;
       const u8* font = font_;
       const u8* strings = strings_;
       const s16 group = group_;
       set_font(g_font, g_font_strings);
+      if (g_name_source != nullptr && strings_ != nullptr) {
+        // menu_0ba5 0x800d9850: the name to card codes, each code to its glyph(s) from
+        // group 1 of the default strings.
+        u8 card[64] = {};
+        text_to_card_codes(g_name_source(n - 1), card, sizeof(card));
+        u8 codes[130] = {};
+        size_t o = 0;
+        const u8* group1 = strings_ + read_u32(strings_ + 4);
+        for (const u8* p = card; *p != 0 && o + 2 < sizeof(codes); ++p) {
+          const u8* m = skip_messages(group1, *p);
+          codes[o++] = m[0];
+          if (m[0] >= 0x80) codes[o++] = m[1];
+        }
+        codes[o] = 0;
+        draw_text(line, codes);
+      }
       set_font(font, strings);
       set_group(group);
       continue;

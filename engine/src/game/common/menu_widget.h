@@ -94,6 +94,12 @@ class TextBox : public MenuTask {
   // title 0x8006f3c8 / menu_0ba5 0x800db9b0: the item's name (item text group 3) at the
   // pen, then "x" and the count held 0x6a / 0x6e pixels on; the font and group stay.
   void add_item_count(int item);
+  // title 0x8006f31c / menu_0ba5 0x800db904: the item's name (item text group 3); the
+  // font and group stay.
+  void add_item_name(int item);
+  // title 0x800732c0 / menu_0ba5 0x800df8a8: a gouraud line (colours scaled by the box's
+  // brightness) into the box's OT entry.
+  void draw_gradient_line(s16 x0, s16 y0, s16 x1, s16 y1, u32 c0, u32 c1);
   int add_sprite(BoxElement& e);                        // title 0x8006f88c
   int add_character(s16 gfx, s16 flags, s16 anim, s16 scale);  // title 0x8006f930
   int add_party_character(int character, s16 anim, s16 scale);  // title 0x8006f97c

@@ -422,6 +422,36 @@ put on by hand, EW switched back on, then best equipment.
 - The frames differ only in the sprite's phase, the cursor's glide and the item
   file's CD time.
 
+## Status (page 6, overlay 0xbb2)
+
+The camp menu opens it for the member picked. Script menus use it too
+(`menu_run_member`, a single member, help flags 0x506 instead of 0x1507). The handler
+(0x800357b0) goes on to page 0xe when the page finishes (confirm, not for a single
+member).
+
+- **One status box** holds:
+  - the slot labels and equipment names;
+  - the sprite and the name. Page group 0xd's message starts with text code 0x4006 n:
+    in the field it draws character n's first name (game_state +0x28 + (n - 1) * 0x14)
+    in the default font, while the title's copy of the renderer skips it;
+  - the class (group 0xb; Rena with flag 0x2dc uses 0xd);
+  - HP / MP, LV, EXP / NEXT with the level gauge;
+  - the eight abilities and the favourite food (only once known: record +0x3a bit 1;
+    table 0x80081612);
+  - ATK / AC / HIT / AVD / MAG.
+- **The portrait** is entry 0x1170 + character: a 160 x 160 16-bit TIM. Each 0x800
+  sector after the first carries 0x10 bytes of header. It streams into VRAM (0x200, 0)
+  as it is read, and the box draws it rising 4 rows a frame behind the rows uploaded.
+  It drops out when the member changes. The page saves that VRAM and restores it.
+- **Triangle** opens the talents: record +0x20 bits, group 4 names, group 5
+  descriptions.
+- **Square** (with the item data) opens the elements and status resistances of the
+  equipment.
+
+Verified against PCSX-Redux on the items card (`statref1`, port `stat_p2`): the page,
+talents and resistances match except for the sprite's phase and the help bar. The
+portrait rises later in the original, because of CD time.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -528,7 +558,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 3, 4, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3, 4, 6, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

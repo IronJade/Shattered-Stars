@@ -27,6 +27,7 @@
 #include "game/field/menu_equip.h"
 #include "game/field/menu_items.h"
 #include "game/field/menu_shop.h"
+#include "game/field/menu_status.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/worldmap.h"
@@ -586,6 +587,12 @@ menu::EntryCacheSlotRef field_cache_slot(int index) {
   return {&s.data, &s.id};
 }
 
+// field 0x80055f78: character i + 1's name (game_state +0x28, 0x14 bytes each), for the
+// menus' text code 0x4006.
+const char* field_character_name(int index) {
+  return reinterpret_cast<const char*>(globals().game_state + 0x28 + index * 0x14);
+}
+
 void field_menu_frame() {
   // field 0x800300dc: the Callways task keeps ticking (songs, money per second).
   if (Callways* c = callways()) c->update();
@@ -600,18 +607,22 @@ struct FieldMenuHost {
     menu::set_page_handler(1, &page01_update);
     menu::set_page_handler(3, &menu_page03_update);
     menu::set_page_handler(4, &menu_page04_update);
+    menu::set_page_handler(6, &menu_page06_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
+    menu::TextRenderer::set_name_source(&field_character_name);
   }
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
     menu::set_page_handler(3, nullptr);
     menu::set_page_handler(4, nullptr);
+    menu::set_page_handler(6, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
     menu::set_panel_frame_hook(nullptr);
+    menu::TextRenderer::set_name_source(nullptr);
     menu::set_entry_cache_table(nullptr);
     menu::set_page_code_entry(0);
     menu::set_host(menu::Host::Title);
