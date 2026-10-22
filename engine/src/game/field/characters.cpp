@@ -5,6 +5,7 @@
 
 #include "game/boot/rng.h"
 #include "game/field/field.h"
+#include "runtime/runtime.h"
 
 // Generated from the decompilation of 0x8007a37c-0x8007b0c0 (straight lists of stores;
 // repeated stores are in the original).
@@ -552,6 +553,12 @@ void party_slot_init(u8* slot, u8* record, int character) {
 }
 
 void character_init_data(u8* slot, u8* record, int character) {
+  // The talent tables and names come from the field program's image; without a disc
+  // (unit tests) the member keeps the cleared slot.
+  if (field_data(0x8007B6FC) == nullptr) {
+    runtime::Runtime::get().log_once("character_init_data", "character starting data: no field program image");
+    return;
+  }
   switch (character) {
     case 1: init_claude(slot, record); break;
     case 2: init_rena(slot, record); break;
