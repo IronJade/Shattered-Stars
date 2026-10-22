@@ -15,6 +15,7 @@ namespace {
 
 std::vector<u8> g_sequence;  // 0x80075734
 std::vector<u8> g_bank;      // 0x80075740: the music entry, kept while the driver uses its bank
+FieldMusic g_music;
 struct SoundHolder {  // 4 bytes on the console: the save buffer's address
   SoundSavedState* state = nullptr;
 };
@@ -22,6 +23,7 @@ struct SoundHolder {  // 4 bytes on the console: the save buffer's address
 }  // namespace
 
 std::vector<u8>& field_music_sequence() { return g_sequence; }
+FieldMusic& field_music() { return g_music; }
 
 int field_install_music(Field*, int entry) {
   FieldGlobals& g = globals();
@@ -37,7 +39,8 @@ int field_install_music(Field*, int entry) {
   // The original keeps the load buffer itself as the bank buffer; a preload stays in the
   // preload table. The host keeps its own copy either way.
   g_bank = *source;
-  if (source == &field_load_buffer()) field_load_buffer().clear();
+  g_music.bank_kept = source == &field_load_buffer();
+  if (g_music.bank_kept) field_load_buffer().clear();
   if (g_bank.size() < 8) return 1;
   sound_stop(g.sound);
   u32 bank_offset;
@@ -76,6 +79,37 @@ void sound_holder_save() {
   g.sound->saved_state = holder->state;
   g.sound->request_save = 1;  // System + 0x5aa9
   handoff_store(g.handoff, holder, 0xF);
+}
+
+void field_load_music_sync(Field* f, int entry) {
+  FieldGlobals& g = globals();
+  if (entry != 0) field_load_entry(f, entry);
+  while (sound_bank_busy(g.sound) != 0) {
+  }
+  while (field_install_music(f, entry) != 1) load_queue()->update();
+  g_music.pending = 1;
+  const s16 e = static_cast<s16>(entry);
+  std::memcpy(g.game_state + 0x1C, &e, 2);
+}
+
+void field_start_pending_music(bool force) {
+  FieldGlobals& g = globals();
+  if (g_music.pending == 0 || (!force && sound_bank_busy(g.sound) != 0)) return;
+  while (sound_bank_busy(g.sound) != 0) {
+  }
+  // The bank is in SPU RAM now: its source goes (the preload, or the kept buffer).
+  if (!g_music.bank_kept)
+    preload_remove(g_music.current);
+  else
+    g_bank = {};
+  g_music.bank_kept = false;
+  if (!g_sequence.empty()) {
+    if (g.field_flags[0x24] == 0)
+      sound_play_sequence(g.sound, g_sequence.data());
+    else
+      sound_resume_sequence(g.sound, g_sequence.data(), 0x3C, 1);
+  }
+  g_music.pending = 0;
 }
 
 void field_music_free_buffers() {

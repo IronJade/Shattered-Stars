@@ -11,6 +11,7 @@
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
+#include "game/field/music.h"
 #include "game/field/notice.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -251,6 +252,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   // of the effects/overlay objects (0x80076310 ...), extra packs, afterimages, scene
   // objects, OT layers, side text.
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
+  field_music().pending = 0;  // 0x80075744
   flags[0x32] = 2;
   g.frame_ticks = 1;
   for (int p = 0; p < 2; ++p) g.held[p] = g.pressed[p] = g.repeat[p] = 0;
@@ -268,6 +270,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   }
   flags[0x68] = static_cast<u32>(map - 1) < 3;
   std::memcpy(gs + 0x1A, &map, 2);
+  preload_prune_for_map(map);  // 0x8005711c
   MapFiles files;
   const int which = flags[0x24] == 0 ? map : -1;
   int first_free_pack = 0;
@@ -287,9 +290,40 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   g_map.script.clear();
   for (int i = first_free_pack; i < 16; ++i) g_packs[i] = SpritePackSlot{};
   bg_destroy();
-  // TODO(port): helper objects 0x800752dc / 0x800752c4 / 0x800752b4 teardown, music
-  // (handoff 0xc, field_load_music_sync), the disc prompt.
-  if (music_mode != 0) todo("map music");
+  // TODO(port): helper objects 0x800752dc / 0x800752c4 / 0x800752b4 teardown, the disc
+  // prompt.
+  // Music. A loaded game (mode 1) restarts game_state +0x1c; coming back from a battle,
+  // its reload list (handoff 0xc) says whether the map music was kept there (-entry,
+  // field maps) or the preloaded one plays (mode 2).
+  FieldMusic& music = field_music();
+  music.current = -1;
+  int music_entry = -1;
+  if (flags[0x24] != 0) {
+    if (auto* list = static_cast<u8*>(handoff_get(g.handoff, 0xC))) {
+      const s16 first = rd16s(list);
+      if (rd16s(gs + 0x1C) != -1 && flags[0x7F] == 0) {
+        if (flags[0x68] == 0) {
+          if (first < -1) music_entry = -first;
+        } else {
+          music_mode = 2;
+        }
+      }
+      music.current = static_cast<s16>(-first);
+      delete[] list;
+      handoff_clear(g.handoff, 0xC);
+    }
+  }
+  if (music_mode == 1) {
+    music_entry = rd16s(gs + 0x1C);
+  } else if (music_mode == 2 && flags[0x68] == 0) {
+    music_entry = preload_find_music();
+  }
+  if (flags[0x68] != 0 && music_mode != 0 && ((g.script_flags[1] >> 4) & 1) != 0 && rd16s(gs + 0x1C) != 0xA86)
+    music_entry = 0xA86;  // vehicle music
+  if (music_entry != -1) {
+    field_load_music_sync(f, music_entry);
+    if (music.current == -1) music.current = static_cast<s16>(music_entry);
+  }
 
   // Party sprite packs (slots 0 / 1), reloaded only when their entries change.
   const int a = files.pack_a == -1 ? 0 : files.pack_a;
@@ -325,9 +359,12 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     todo("world map BG renderer (overlay 0x80088814)");
   }
   // The map container.
+  field_start_pending_music(false);  // 0x80052bf4
   field_load_entry(f, files.container);
   field_load_map_sections(f, files.container);
+  preload_release(-1);
   g_load_buffer.clear();
+  field_start_pending_music(true);
   if (flags[0x24] != 0) bg_resume(bg_renderer());
 
   // Leader placement.

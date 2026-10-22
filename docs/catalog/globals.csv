@@ -504,3 +504,5 @@ field,0x80075350,g_battle_program_image,u8 *,#2129 read in the background by fie
 field,0x8007534d,g_battle_program_loaded,u8,#2129 has been read (field_update state 5 waits for it),confirmed,field_start_battle; field_update state 5
 field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
 field,0x80075730,g_buffer_draw_y,s16[2],Draw y of the two screen buffers (0 and 0xe0; set by screen_setup_buffer0/1),confirmed,0x80048280 / 0x80048368
+field,0x80075744,g_music_pending,u8,The map's music is installed and starts once the SPU is idle (field_start_pending_music),confirmed,field_load_music_sync 0x8004b6b0; 0x80052bf4
+field,0x80075746,g_music_current,s16,Archive entry of the map music in place (-1 none); its preload is released once the music starts,confirmed,field_load_map 0x80053e8c; 0x80052bf4
