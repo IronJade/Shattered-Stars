@@ -342,8 +342,7 @@ void async_load_queue_update() {
         break;
       case 2:
         if (loader->select_entry(r.entry) == 0) return;
-        // TODO(port): a nonzero sector offset seeks into the entry (boot 0x80011988).
-        if (r.offset != 0) runtime::Runtime::get().log_once("bgload_offset", "bgload: sector offsets not ported");
+        // A nonzero sector offset seeks into the entry (boot 0x80011988); see state 3.
         advance = true;
         break;
       case 3:
@@ -351,7 +350,12 @@ void async_load_queue_update() {
           g_bg.state = 5;
           continue;
         }
-        advance = loader->start_read(r.dest, r.sectors << 11) != 0;
+        if (r.offset != 0 && loader->archive() != nullptr) {
+          advance = loader->archive()->read_from_entry(static_cast<u32>(r.entry), static_cast<size_t>(r.sectors) << 11, r.dest,
+                                                       static_cast<u32>(r.offset));
+        } else {
+          advance = loader->start_read(r.dest, r.sectors << 11) != 0;
+        }
         break;
       case 4:
         if (r.flags & 0x20) {
@@ -494,6 +498,39 @@ void StrBuf::set(const char* text) {
 }
 
 // ---- Strings ---------------------------------------------------------------------------
+
+char* format_decimal(char* out, s32 value, int width, char pad) {
+  char* p = out;
+  if (value < 0) {
+    *p++ = '-';
+    value = -value;
+  }
+  if (width < 1) {
+    char tmp[16];
+    int n = 0;
+    do {
+      tmp[n++] = static_cast<char>('0' + value % 10);
+      value /= 10;
+    } while (value > 0);
+    while (n > 0) *p++ = tmp[--n];
+    *p = 0;
+    return out;
+  }
+  p += width;
+  *p = 0;
+  int written = 0;
+  for (;;) {
+    *--p = static_cast<char>('0' + value % 10);
+    value /= 10;
+    ++written;
+    if (value == 0 || written >= width) break;
+  }
+  while (written < width) {
+    *--p = pad;
+    ++written;
+  }
+  return out;
+}
 
 void strings_set(const u8* pack) { g_menu.strings = pack; }
 u32 strings_word(int index) { return read_u32(g_menu.strings + index * 4); }

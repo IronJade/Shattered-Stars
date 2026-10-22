@@ -793,11 +793,7 @@ void unit_update_vanish(Unit* u) {
   }
 }
 
-void unit_apply_stun(Unit* u) {
-  if (u->status_test(0, 0x1000000) != 0) return;
-  // TODO(port): the kind-1 Shot (stun stars, 120 frames) that keeps status 0x40 set.
-  todo("unit_apply_stun: the stun Shot (kind 1)");
-}
+// unit_apply_stun 0x80055588: shot.cpp (the kind-1 Shot).
 
 
 int Unit::start_reaction() { return unit_start_reaction(this); }

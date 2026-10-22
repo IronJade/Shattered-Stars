@@ -355,6 +355,19 @@ and per-area input tables. `walk_set_group_enabled` (script B 0x06) switches tag
 obstacles on/off and records the change in field_flags+0x89.. (8 entries, bit 7 = off, count +0x91),
 which field_load_map replays after loading.
 
+**Light polygons** (screen-space cell lists 4 and 6, 0x4c bytes; read by
+`fieldactor_build_light_split` 0x80083d70, ported in `game/field/actor_field.cpp` and checked
+call by call against PCSX-Redux): the zone header (type, colour r g b at +1..+3, y range, bbox,
+enabled +0x10), corners at +0x14 closed by a copy of the first, edge lines `a x + b y + c = 0`
+with a[4] at +0x28, b[4] at +0x30, c[4] at +0x38, and a same-colour flag at +0x48. List 6 gives
+the flat colour under a shaded actor's feet (found by probing the feet point, then half a sprite
+width left and right); list-4 polygons near the sprite (a loose box test) clip the sprite quad
+into coloured pieces (FT4 / FT3, at most 22 primitives per actor). 124 maps per disc carry
+list-4 or list-6 polygons. Quirks kept: the underfoot colour lives in a stack slot that is never
+cleared between calls; unscaled sprites divide the UV base too; vertically flipped pieces get no
+UVs; disabled or out-of-range polygons are still drawn in the drawing loop; a corner off the
+cell grid ends the function early.
+
 ## 6. Field actor (FieldActor, 0x3fc)
 
 ### 6.1 Per-frame flow

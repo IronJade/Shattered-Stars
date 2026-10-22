@@ -77,8 +77,13 @@ fi
 SAVE=analysis/saves/dex_north_city.mcd
 if [ -f "$SAVE" ]; then
   cp "$SAVE" "$WORK/world.mcd"
+  # The save is on disc 2: use the disc 2 image next to disc 1 if there is one (this run
+  # only); otherwise Select at the insert-disc screen goes on with disc 1's archive.
+  D2="${SS_DISC2:-${SS_DISC1:+${SS_DISC1//Disc 1/Disc 2}}}"
+  NC_INPUT="0:none"
+  if [ -n "$D2" ] && [ -f "$D2" ]; then export SS_DISC2="$D2"; else NC_INPUT="30:select,36:none,90:select,96:none,150:select,156:none,210:select,216:none"; fi
   SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE=1 SS_TRACE_LEADER=60 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
-    SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --frames 200 --map-pos 57219,-300,28622 \
+    SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --frames 400 --map-pos 57219,-300,28622 --input "$NC_INPUT" \
     >"$WORK/north_city.log" 2>&1
   check north_city "world trigger fires" 'trigger 17 fires \(code word 4267\)'
   check north_city "North City loads" 'field_load_map\(map=260'

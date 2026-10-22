@@ -213,23 +213,8 @@ void loader_defer_sectors(Loader*, u8 on) { g_stream.defer_sectors = on; }  // 0
 u8 loader_sector_deferred(Loader*) { return 0; }
 void cd_sector_ready_callback(Loader*, int) {}  // boot 0x800111f0: see stream_deliver_sector
 
-// ---- The player's globals (0x80050aa8-0x80050ad6) ---------------------------------
+// ---- The player's globals (0x80050aa8-0x80050ad6; MovieGlobals in movie.h) -----------
 
-struct MovieGlobals {
-  s32 screen_cleared = 0;          // 0x80050aa8: both buffers were cleared before the first frame
-  s32 slice_half = 0;              // 0x80050aac: half of slice_buffers the MDEC fills next
-  RECT slice_rect{};               // 0x80050ab0: VRAM column the finished slice goes to
-  std::vector<u32> slice_buffers;  // 0x80050ab8: two MDEC output slices (16 x 240 pixels each)
-  s32 frame_count = 0;             // 0x80050abc: frames decoded or skipped
-  s32 frame_ready = 0;             // 0x80050ac0: a frame is finished and waits for movie_present
-  s32 decoding = 0;                // 0x80050ac4: a frame is on its way through the MDEC
-  s32 draw_buffer = 0;             // 0x80050ac8: frames go to y (0) or y + 240 (1)
-  s16 x = 0, y = 0, width = 0, height = 0;  // 0x80050acc-0x80050ad2
-  s16 mode = 0;                    // 0x80050ad4: 3 = 24-bit, 2 = 15-bit
-  // 0x80050ad6: decode whole frames to RAM instead of VRAM. movie_create clears it and
-  // nothing sets it, so its paths are not ported.
-  u8 frames_in_ram = 0;
-};
 MovieGlobals g;
 double g_frame_done_at = 0;  // host: console time the MDEC finishes the current frame
 
@@ -376,7 +361,12 @@ int movie_update(Movie* self) {
       const int size = psyq::DecDCTBufSize(reinterpret_cast<const u32*>(bitstream));
       if (size > 0x5000) std::fprintf(stderr, "error : %d\n", size);
       u32* const rl = self->rl_buffers.data() + static_cast<size_t>(self->rl_index) * (0x14000 / 4);
-      psyq::DecDCTvlc(reinterpret_cast<const u32*>(bitstream), rl, 0x5000 - 0x140, 0x14000 / 4, g.width, g.height);
+      // The console's DecDCTvlc decodes the whole bitstream; the host decoder needs the
+      // frame's size for that, from the sector header (+0x10 / +0x12). It can differ
+      // from the shown size: the field shows 320x240 movies 224 rows high.
+      const int frame_w = read_u16(base + 0x10) != 0 ? read_u16(base + 0x10) : g.width;
+      const int frame_h = read_u16(base + 0x12) != 0 ? read_u16(base + 0x12) : g.height;
+      psyq::DecDCTvlc(reinterpret_cast<const u32*>(bitstream), rl, 0x5000 - 0x140, 0x14000 / 4, frame_w, frame_h);
       // Host: the CPU time of the decode, from the frame's size (sector header +0x0c: bitstream bytes).
       console_spend(cycles_to_vblanks(kVlcCyclesBase + kVlcCyclesPerCodeWord * size +
                                       kVlcCyclesPerByte * read_u32(base + 0x0C)));
@@ -433,6 +423,10 @@ void movie_present(Movie* self) {
 }
 
 s32 movie_frame_count() { return g.frame_count; }
+
+MovieGlobals& movie_globals() { return g; }
+
+bool movie_frame_ready() { return g.frame_ready != 0 && console_now() >= g_frame_done_at; }
 
 // ---- Prologue --------------------------------------------------------------------------
 

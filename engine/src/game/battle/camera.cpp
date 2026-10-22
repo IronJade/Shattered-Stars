@@ -368,7 +368,7 @@ void camera_setup_closeup(Camera* c) {
 // (raised while a kind-2 obstacle stands between), the look-at on it (or on the focus
 // unit), framing the unit attacking it in mode 7, and a view-cone search that keeps the
 // focus unit in sight.
-void camera_update_follow(Camera* c, s32 elev, Unit* who) {
+void camera_update_follow(Camera* c, s32 elev, BObj* who) {
   BattleGlobals& g = bg();
   ViewState& v = view();
   const StageData& st = stage();
@@ -414,7 +414,7 @@ void camera_update_follow(Camera* c, s32 elev, Unit* who) {
     for (int i = 0; i < 4; ++i)
       if (g.party_units[i] == who) {
         first_side = 0;
-        party_who = who;
+        party_who = g.party_units[i];
       }
     for (int side = 0; side < 2; ++side) {
       if (side == first_side) {
@@ -624,7 +624,7 @@ void Camera::update() {
   ticks += g.frame_ticks;
 }
 
-int camera_set_mode(Camera* c, int mode, Unit* target) {
+int camera_set_mode(Camera* c, int mode, BObj* target) {
   if (mode == 0) return 0;
   const u8 prio = battle_data(0x8006B493 + mode) ? *battle_data(0x8006B493 + mode) : 0;
   if (c->mode != 0 && prio < c->priority) return 0;
@@ -662,7 +662,7 @@ int camera_set_mode(Camera* c, int mode, Unit* target) {
   return 1;
 }
 
-int camera_request_mode(Camera* c, int mode, Unit* target) {
+int camera_request_mode(Camera* c, int mode, BObj* target) {
   if (mode == 0) return 0;
   if (c->mode == mode) {
     if (mode != 5 && mode != 7) return 0;
@@ -810,7 +810,7 @@ int battle_party_start_appear() {
 
 void camera_setup_follow_target(Camera* c) {
   view().view_mode = 1;
-  const Unit* t = c->target;
+  const BObj* t = c->target;
   c->lookat_dest[0] = t->pos[0] + c->lookat_offset[0];
   c->lookat_dest[1] = t->pos[1] + c->lookat_offset[1];
   c->lookat_dest[2] = t->pos[2] + c->lookat_offset[2];
@@ -892,21 +892,21 @@ void camera_orbit_unit(Camera* c, Unit* u, s32 yaw, s32 pitch, s32 dist, s32 tic
   }
 }
 
-void camera_set_focus_unit(Camera* c, Unit* who, Unit* focus) {
+void camera_set_focus_unit(Camera* c, BObj* who, BObj* focus) {
   if (who == c->target) {
     c->focus = focus;
     c->look_straight = 0;
   }
 }
 
-void camera_set_lookat_unit(Camera* c, Unit* who, Unit* focus) {
+void camera_set_lookat_unit(Camera* c, BObj* who, BObj* focus) {
   if (who == c->target) {
     c->focus = focus;
     c->look_straight = 1;
   }
 }
 
-void camera_set_focus_timer(Camera* c, Unit* focus, s16 ticks) {
+void camera_set_focus_timer(Camera* c, BObj* focus, s16 ticks) {
   if (c->focus == focus) c->focus_timer = ticks;
 }
 

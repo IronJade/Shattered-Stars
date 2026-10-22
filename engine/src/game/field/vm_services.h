@@ -310,9 +310,9 @@ void vm_svc_overlay_801f9800_create(int a1, int a2);      // new 0xb0, 0x801f980
 void vm_svc_overlay_801f9800_destroy();                   // 0x801f98c0(obj, 3)
 int vm_svc_overlay_801f9f54();                            // table A 0x37: 0x801f9f54(obj)
 void vm_svc_overlay_801f9a64(int a0);                     // table A 0x40
-void vm_svc_overlay_801eac28(ScriptCtx* ctx, u32 instr);  // table B 0x16 / 0x70 (#3103; fetches 1)
-void vm_svc_overlay_801eaa30(ScriptCtx* ctx);             // table B 0x50 (#3103; fetches 2)
-int vm_svc_overlay_801ea374(ScriptCtx* ctx);              // table B 0x6f (#3103; reads the 8 fetched arguments)
+void vm_svc_overlay_801eac28(ScriptCtx* ctx, u32 instr);  // table B 0x16 / 0x70 (#3103; fetches 2 / 1): field_movie_preload
+void vm_svc_overlay_801eaa30(ScriptCtx* ctx);             // table B 0x50 (#3103; fetches 2): field_movie_start
+int vm_svc_overlay_801ea374(ScriptCtx* ctx);              // table B 0x6f (#3103; reads the 8 fetched): field_movie_sequence
 int vm_svc_overlay_801ea_loaded();                        // 0x800752c8
 int vm_svc_overlay_801ea_value();                         // 0x801ecb90
 

@@ -7,6 +7,7 @@
 #include "game/field/camera.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
+#include "game/field/field_movie.h"
 #include "game/field/map.h"
 #include "game/field/message.h"
 #include "game/field/screen.h"
@@ -497,7 +498,9 @@ void BgRenderer::update() {
   BgGlobals& bgg = g_bg_globals;
   MapData& map = map_data();
   if (!bgg.draw_enabled || map.scene.empty()) return;
-  // TODO(port): skipped while a sub-program runs (0x800752c8) unless 0x80076279.
+  // Skipped while a movie plays over the field (0x800752c8), unless it plays into the
+  // picture-in-picture texture (0x80076279).
+  if (field_sub_program() != nullptr && globals().sub_overlay_hook == 0) return;
   u8* scene = map.scene.data();
   const s32 ticks = globals().frame_ticks;
   step_animations(scene, ticks);

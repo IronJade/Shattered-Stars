@@ -262,13 +262,43 @@ void draw_flat(Actor* a, const u8* frame, const u8* cel) {
   if (ot >= 0 && ot < kOtEntries) psyq::addPrim(field_screen()->ot_entry(ot), p);
 }
 
+// Debugging: SS_WORLD_DBG=N prints the leader's and the camera's state every N vblanks
+// (the fields the PCSX-Redux world-map script logs, for frame-by-frame comparisons).
+void debug_trace(Actor* a) {
+  static const int every = [] {
+    const char* v = std::getenv("SS_WORLD_DBG");
+    return v != nullptr ? std::max(2, std::atoi(v)) : 0;
+  }();
+  if (every == 0 || actor_slot(a) != fg().game_state[0x24]) return;
+  const auto vb = static_cast<unsigned long long>(runtime::Runtime::get().vblanks());
+  if (vb % static_cast<unsigned long long>(every) >= 2) return;
+  const WorldView& v = view();
+  const WorldActor* w = W(a);
+  std::printf("[world] v%llu actor %d pos %d %d %d screen %d %d depth8 %d eye %d %d %d target %d %d %d zoom %d\n", vb,
+              actor_slot(a), a->x >> 12, a->y >> 12, a->z >> 12, a->origin_x, a->origin_y, w->depth8, v.eye[0] >> 12,
+              v.eye[1] >> 12, v.eye[2] >> 12, v.target[0] >> 12, v.target[1] >> 12, v.target[2] >> 12, v.zoom);
+  if (const WorldBg* bg = world_bg())
+    std::printf("[world] v%llu a0 ang %d spd %d walk %d walked %d | bg yaw %d pitch %d turn %d brake %d tspd %d ticks %d\n",
+                vb, static_cast<u16>(a->angle), a->speed, a->walk_speed, a->walked, bg->yaw, bg->pitch, bg->turn,
+                bg->turn_brake, bg->turn_speed, ticks());
+  const Field* f = field_program();
+  std::printf("[world] v%llu state %d veh %d thr %d climb %d turn %d bank %d ground %d sf1 %d ctl %d ofsy %d\n", vb,
+              f != nullptr ? f->state : -1, static_cast<s8>(a->vehicle), w->throttle, w->climb, w->turn, w->bank,
+              w->ground, fg().script_flags[1], static_cast<s16>(read_u16(fg().field_flags + 0x10)), v.geom_ofs_y);
+}
+
 // vtable[1] 0x80082f44.
 void wa_draw(Actor* a, int arg) {
   WorldActor* w = W(a);
   if ((a->flags & 0x200) == 0 && w->ground == -0x8000) ground_snap(a);
   if (a->vehicle != 0xff) {
-    // Vehicles (Hoverboard, Dragon, boats) are 3D models drawn by field 0x8006053c.
-    runtime::Runtime::get().log_once("world:vehicle", "world: vehicle models (0x80082f44 / 0x8006053c) not ported yet");
+    // Vehicles are 3D models (field 0x8006053c): worldmap_vehicle.cpp.
+    project(a);
+    debug_trace(a);
+    if (static_cast<u16>(a->origin_x + 0x140) > 0x3c0) return;
+    if (static_cast<u16>(a->origin_y + 0xf0) > 0x2d0) return;
+    if ((a->flags & 0x80) == 0) auto_anim(a, a->walked != 0);
+    worldactor_draw_vehicle(a);
     return;
   }
   a->prim_count = 0;
@@ -287,20 +317,7 @@ void wa_draw(Actor* a, int arg) {
     return;
   }
   project(a);
-  // Debugging: SS_WORLD_DBG=N prints the leader's and the camera's state every N vblanks
-  // (the fields the PCSX-Redux world-map script logs, for frame-by-frame comparisons).
-  if (const char* dbg = std::getenv("SS_WORLD_DBG");
-      dbg != nullptr && actor_slot(a) == 0 && (runtime::Runtime::get().vblanks() % std::max(2, std::atoi(dbg))) < 2) {
-    const WorldView& v = view();
-    std::printf("[world] v%llu actor %d pos %d %d %d screen %d %d depth8 %d eye %d %d %d target %d %d %d zoom %d\n",
-                static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), actor_slot(a), a->x >> 12,
-                a->y >> 12, a->z >> 12, a->origin_x, a->origin_y, w->depth8, v.eye[0] >> 12,
-                v.eye[1] >> 12, v.eye[2] >> 12, v.target[0] >> 12, v.target[1] >> 12, v.target[2] >> 12, v.zoom);
-    if (const WorldBg* bg = world_bg())
-      std::printf("[world] v%llu a0 ang %d spd %d walk %d walked %d | bg yaw %d pitch %d turn %d brake %d tspd %d ticks %d\n",
-                  static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), static_cast<u16>(a->angle), a->speed,
-                  a->walk_speed, a->walked, bg->yaw, bg->pitch, bg->turn, bg->turn_brake, bg->turn_speed, ticks());
-  }
+  debug_trace(a);
   if (w->depth8 < 9) return;
   if (static_cast<u16>(a->origin_x + 0x140) > 0x3c0) return;
   if (static_cast<u16>(a->origin_y + 0xf0) > 0x2d0) return;
@@ -449,8 +466,8 @@ void wa_draw(Actor* a, int arg) {
   xy[6] = xy[2];
   xy[7] = xy[5];
   fix_edges(xy, &u0, &v0, &u1, &v1);
-  a->quad[1] = xy[3];
-  a->quad[3] = xy[5];
+  a->quad[3] = xy[3];  // +0x2be: the top (vertex 1's y)
+  a->quad[5] = xy[5];  // +0x2c2: the bottom (vertex 2's y); emotes / the clock event use the height
   for (int k = 0; k < 4; ++k) {
     put16(p, 8 + k * 8, static_cast<u16>(xy[k * 2]));
     put16(p, 0xa + k * 8, static_cast<u16>(xy[k * 2 + 1]));
@@ -1007,7 +1024,7 @@ void wa_control(Actor* a, int camera) {
   if (!sflag(1, 4)) {
     walk(a, camera, mag);
   } else {
-    runtime::Runtime::get().log_once("world:vehicle-control", "world: vehicle control (0x80085944) not ported yet");
+    worldactor_vehicle_control(a, camera, mag);
   }
   actor_anim_advance(a);
 }
@@ -1171,8 +1188,9 @@ void worldactor_defaults(WorldActor* w) {
   w->sprite_scale_xz[0] = 0xe80;
   w->sprite_scale_xz[1] = 0xe80;
   w->ot_bias = 0;
-  w->vel[0] = w->vel[1] = w->vel[2] = 0;
-  w->field_438 = 0;
+  // +0x428 (the throttle) is left as the heap had it until boarding zeroes it.
+  w->climb = w->vel_430 = 0;
+  w->turn = w->bank = 0;
   w->ground = -0x8000;
 }
 

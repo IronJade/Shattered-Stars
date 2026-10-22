@@ -6,6 +6,7 @@
 #include "game/boot/sound.h"
 #include "game/common/math.h"
 #include "game/common/menu_scene.h"
+#include "game/common/menu_viewer.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::menu {
@@ -86,7 +87,7 @@ TextBox::TextBox() {
   flags = 0;
   unknown7c = 0;
   highlight = nullptr;
-  flags_unused = 0;
+  pulse = 0;
 }
 
 TextBox::~TextBox() { clear(); }
@@ -211,7 +212,7 @@ void TextBox::draw() {
         case 5: draw_sprite(e); break;
         case 6: draw_party_status(e); break;
         case 7: draw_level(e); break;
-        case 8: todo("text box list highlight (kind 8, title 0x80071b74)"); break;
+        case 8: draw_list_highlight(e); break;
         default: break;
       }
     }
@@ -243,7 +244,54 @@ void TextBox::draw() {
   }
 }
 
-void TextBox::draw_scrollbar() { todo("list scroll bar (title 0x800703d4)"); }
+void TextBox::draw_scrollbar() {
+  // title 0x800703d4 / menu_0ba5 0x800dc9bc: a groove right of the rows (TILE and two
+  // LINE_F3 edges) and a gouraud diamond for the visible part, when the list scrolls.
+  const ListScroll& l = *scroll;
+  if (l.v[7] < 0 || l.v[2] == 0) return;
+  const s32 bx = rx + l.v[7] + l.v[5];
+  const s32 h = l.v[3] * l.v[6];
+  const s32 by = ry + l.v[8];
+  const s32 total = l.v[1] * l.v[6];
+  s32 y0 = by + (l.v[0] * h) / total;
+  s32 y1 = by + ((l.v[0] + (l.v[3] * l.v[6]) / 2) * h) / total;
+  s32 y2 = by + ((l.v[0] + l.v[3] * l.v[6]) * h) / total;
+  if (y0 == y1) y1 = y0 + 1;
+  if (y0 == y2) y2 = y2 + 1;
+  if (y1 == y2) y2 = y1 + 1;
+  auto* g = prim_alloc<psyq::POLY_G4>(ctx);
+  auto* a = prim_alloc<psyq::LINE_F3>(ctx);
+  auto* b = prim_alloc<psyq::LINE_F3>(ctx);
+  auto* t = prim_alloc<psyq::TILE>(ctx);
+  if (!g || !a || !b || !t) return;
+  psyq::setlen(g, 8);
+  set_word(&g->r0, 0x38FFD0A0);
+  set_word(&g->r1, 0xF04020);
+  set_word(&g->r2, 0xFFA050);
+  set_word(&g->r3, 0xA01000);
+  g->x0 = static_cast<s16>(bx + 4), g->y0 = static_cast<s16>(y0);
+  g->x1 = static_cast<s16>(bx + 8), g->y1 = static_cast<s16>(y1);
+  g->x2 = static_cast<s16>(bx + 1), g->y2 = static_cast<s16>(y1);
+  g->x3 = static_cast<s16>(bx + 4), g->y3 = static_cast<s16>(y2);
+  prim_link(ctx, slot, g);
+  psyq::setLineF3(a);
+  set_word(&a->r0, 0x48301010);
+  a->x0 = static_cast<s16>(bx + 8), a->y0 = static_cast<s16>(by + 3);
+  a->x1 = static_cast<s16>(bx), a->y1 = static_cast<s16>(by + 3);
+  a->x2 = static_cast<s16>(bx), a->y2 = static_cast<s16>(by + h - 5);
+  prim_link(ctx, slot, a);
+  psyq::setLineF3(b);
+  set_word(&b->r0, 0x48806060);
+  b->x0 = static_cast<s16>(bx + 8), b->y0 = static_cast<s16>(by + 3);
+  b->x1 = static_cast<s16>(bx + 8), b->y1 = static_cast<s16>(by + h - 5);
+  b->x2 = static_cast<s16>(bx), b->y2 = static_cast<s16>(by + h - 5);
+  prim_link(ctx, slot, b);
+  psyq::setlen(t, 3);
+  set_word(&t->r0, 0x60503030);
+  t->x0 = static_cast<s16>(bx + 1), t->y0 = static_cast<s16>(by + 4);
+  t->w = 7, t->h = static_cast<s16>(h - 9);
+  prim_link(ctx, slot, t);
+}
 
 void TextBox::draw_frame() {
   // Eight pieces of the window art: corners 8x8, edges stretched (title 0x800707fc).
@@ -286,6 +334,36 @@ void TextBox::draw_fill() {
 int TextBox::add_element(BoxElement e) {
   elements.push_back(std::move(e));
   return static_cast<int>(elements.size()) - 1;
+}
+
+int TextBox::set_list(s16 count, s16 rows, s16 width, s16 step, s16 lx, s16 ly) {
+  if (count == 0) count = 1;
+  delete scroll;
+  scroll = new ListScroll;
+  ListScroll& l = *scroll;
+  s16 shown = rows;
+  l.v[0] = 0;
+  if (count - rows < 0) {
+    l.v[2] = 0;
+    shown = count;
+  } else {
+    l.v[2] = static_cast<s16>(count - rows);
+  }
+  l.v[1] = count;
+  l.v[3] = rows;
+  l.v[4] = static_cast<s16>(rows + 1);
+  l.v[5] = width;
+  l.v[6] = step;
+  l.v[7] = lx;
+  l.v[8] = ly;
+  TextRenderer* r = text_renderer();
+  for (int i = 0; i < l.v[4] && i < 10; ++i) {
+    r->set_pen(0, 0, 0xC);
+    l.v[9 + i] = static_cast<s16>(r->alloc_line(width, 1));
+    r->begin_line(l.v[9 + i]);
+    r->upload_line();
+  }
+  return shown;
 }
 
 int TextBox::add_string(const char* text_) {
@@ -614,6 +692,55 @@ void TextBox::draw_level(BoxElement& e) {
   }
 }
 
+int TextBox::add_list_highlight(s16* value, s16 first, s16 count) {
+  BoxElement e;
+  e.kind = 8;
+  e.flags = 4;
+  e.data = value;
+  e.state = static_cast<u16>(first);
+  e.x = count;
+  add_element(std::move(e));
+  return static_cast<int>(elements.size()) - 1;
+}
+
+// title 0x80071b74 / menu_0ba5 0x800de15c.
+void TextBox::draw_list_highlight(BoxElement& e) {
+  if (!text || !e.data) return;
+  const u32 cur = static_cast<u16>(*static_cast<s16*>(e.data));
+  for (int k = 0; k < e.x; ++k) {
+    TextLine* l = text->line(e.state + k);
+    if (!l) continue;
+    const u16 row = static_cast<u16>((l->clut >> 6) & 0x7FF8);
+    l->clut = static_cast<u16>(((k == static_cast<int>(cur & 0x7FFF)) ? row + 1 : row + 4) << 6 | (l->clut & 0x3F));
+  }
+  if (cur & 0x8000) return;
+  const TextLine* l = text->line(e.state + static_cast<int>(cur));
+  if (!l) return;
+  const s16 lx = static_cast<s16>(rx + l->x), ly = static_cast<s16>(ry + l->y);
+  auto* q = prim_alloc<psyq::POLY_G4>(ctx);
+  if (!q) return;
+  psyq::setlen(q, 8);
+  u32 cols[4];
+  for (int i = 0; i < 4; ++i) {
+    int c = pulse + i * 0x80;
+    if (c > 0xFF) c -= 0x200;
+    if (c < 0) c = -c;
+    cols[i] = static_cast<u32>((c << 6) >> 8 | ((c * 0x90) >> 8) << 8 | ((c * 0xA0) >> 8) << 16 | 0x3A000000);
+  }
+  set_word(&q->r0, cols[0]);
+  set_word(&q->r1, cols[1]);
+  set_word(&q->r2, cols[2]);
+  set_word(&q->r3, cols[3]);
+  q->x0 = q->x2 = static_cast<s16>(lx - 1);
+  q->x1 = q->x3 = static_cast<s16>(lx + l->width + 2);
+  q->y0 = q->y1 = static_cast<s16>(ly - 1);
+  q->y2 = q->y3 = static_cast<s16>(ly + 0xD);
+  const s16 p = pulse;
+  pulse = static_cast<s16>(p + 2) > 0xFF ? static_cast<s16>(p - 0x1FE) : static_cast<s16>(p + 2);
+  prim_link(ctx, slot - 1, q);
+  draw_mode(ctx, slot - 1, 0, 1, 0x36);
+}
+
 int TextBox::add_party_status(s16 index) {
   BoxElement e;
   e.kind = 6;
@@ -916,6 +1043,51 @@ void GridGroup::place() {
   state |= 1;
 }
 
+void ScrollGridGroup::begin() {
+  GridGroup::begin();
+  if (value) index = *value;
+  if (scroll) {
+    index = static_cast<s16>(index - (scroll->v[0] / scroll->v[6]) * cols);
+    limit = static_cast<s16>(scroll->v[2] * scroll->v[6]);
+  }
+  if (flags & 0x30) flags |= 0x800;
+  flags &= 0xFF8F;
+}
+
+void ScrollGridGroup::end() {
+  if (!scroll) return;
+  if (flags & 0x30) {
+    const s16 old = target;
+    const int step = (flags & 0x40) ? scroll->v[3] * scroll->v[6] : scroll->v[6];
+    if (flags & 0x10) {
+      target = static_cast<s16>(target + step);
+      if (target > limit) target = limit;
+    }
+    if (flags & 0x20) {
+      target = static_cast<s16>(target - step);
+      if (target < 0) target = 0;
+    }
+    if (old != target) {
+      if (flags & 0x40) {
+        scroll->v[0] = target;
+        flags |= 0x80;
+      }
+      cursor->sound = 1;
+      cursor->anim = 1;
+    }
+  }
+  // Glide toward the target, at most 4 pixels a frame.
+  const s16 cur = scroll->v[0];
+  if (cur != target) {
+    int d = target - cur;
+    if (d < 0) d = -d;
+    const s16 move = static_cast<s16>(d > 3 ? 4 : d);
+    scroll->v[0] = static_cast<s16>(cur <= target ? cur + move : cur - move);
+  }
+  index = static_cast<s16>(index + (scroll->v[0] / scroll->v[6]) * cols);
+  if (value) *value = index;
+}
+
 void ListGroup::begin() {
   CursorGroup::begin();
   scroll_pos = *scroll_var;
@@ -1106,8 +1278,7 @@ void Cursor::next_group() {
 }
 
 void Cursor::add_grid(s16* value, u16 mode, s16 cols, s16 rows, s16 gx, s16 gy, s16 gdx, s16 gdy, TextBox* box) {
-  if (mode & 2) todo("scrolling cursor grid (title 0x8006a710)");
-  auto* g = new GridGroup;
+  GridGroup* g = (mode & 2) ? new ScrollGridGroup : new GridGroup;
   for (auto& slotp : groups) {
     if (!slotp) {
       slotp = g;
@@ -1243,7 +1414,25 @@ void Widget::draw() {
   host->next = own;
 }
 
-void Widget::draw_list(TextBox*) { todo("list widgets (title 0x80073adc)"); }
+void Widget::draw_list(TextBox* box) {
+  // title 0x80073adc / menu_0ba5 0x800e00c4: the visible + 1 lines are a ring; slot i
+  // shows item top + (i - top) mod n. The cursor's flags say what to redraw: 0x10 the
+  // row coming in below, 0x20 the one above, 0x80 all.
+  ListScroll& l = *box->scroll;
+  const int pos = l.v[0], step = l.v[6];
+  const int top = pos / step;
+  const int n = l.v[4];
+  const u16 cf = cursor ? cursor->flags : 0;
+  for (int i = 0; i < n; ++i) {
+    const int idx = (i - (top - 0x400)) % n;
+    if ((cf & 0x10) && idx == l.v[3]) draw_item(box, i, l.v[3] + top);
+    if ((cf & 0x20) && idx == 0) draw_item(box, i, top);
+    if (cf & 0x80) draw_item(box, i, top + idx);
+    box->text->draw_line(l.line(i), box->ctx, 5, static_cast<s16>(box->x + l.v[7]),
+                         static_cast<s16>(box->y + idx * step - pos % step + l.v[8]));
+  }
+  if (cf & 0x80) cursor->set_flags(0x8080);
+}
 
 void Widget::frame() {
   if (child_id != -1) {
@@ -1433,11 +1622,11 @@ Panel::Panel() {
   unknown92 = 0;
   member_box = nullptr;
   info = nullptr;
-  unknown54 = 0;
+  info_mode = 0;
   help = nullptr;
-  unknown50 = 0;
-  unknown84 = 0;
-  unknown58 = 0;
+  viewer = nullptr;
+  viewer_shown = 0;
+  viewer_item = 0;
   member_count = 0;
   arrow_frame = 0;
   flags |= 8;
@@ -1453,15 +1642,190 @@ void Panel::close() {
 void Panel::frame() {
   help_anim();
   if (fade != 0) fade_step();
+  // TODO(port): the field query page's play time (0x80034ba0; session +0x31).
   Widget::frame();
+  if (viewer) {
+    // menu_0ba5 0x800d4cac: the info box follows the viewer's item once its file is in.
+    const u8 *a, *b, *c;
+    const bool shown = viewer->info(&a, &b, &c);
+    if (viewer_shown == 0) {
+      if (shown) {
+        viewer_shown = 1;
+        show_viewer_info();
+      }
+    } else if (!shown) {
+      viewer_shown = 0;
+    }
+  }
+}
+
+void Panel::create_viewer(s16 vx, s16 vy, s16 vz) {
+  viewer = new ItemViewer;
+  viewer->set_table(item_strings(2));
+  viewer->place(vx, vy, vz);
+}
+
+void Panel::set_viewer_item(int item) {
+  viewer_item = item;
+  if (!viewer) return;
+  viewer->set_item(item);
+  if (!viewer->ready()) {
+    if (info) {
+      info->clear();
+      viewer_shown = 0;
+    }
+  } else {
+    viewer_shown = 1;
+    show_viewer_info();
+  }
+}
+
+void Panel::show_viewer_info() {
+  if (!viewer) return;
+  const u8 *a = nullptr, *strings = nullptr, *font = nullptr;
+  viewer->info(&a, &strings, &font);
+  if (!info) return;
+  info->clear();
+  info->pen_reset();
+  if (info_mode == 0) {
+    if (strings && read_u32(strings) == 4) {
+      info->set_font_group(font, strings, 0);
+      info->add_message_lines(0, 1);
+    }
+  } else {
+    show_item_stats(viewer->item());
+  }
+}
+
+void Panel::create_info_box() {
+  if (!info) {
+    info = new TextBox;
+    info->set_rect(0x60, 8, 0xD8, 0x50, 0);
+  } else {
+    info->clear();
+  }
+}
+
+void Panel::show_item_stats(int item) {
+  if (info_mode == 2) {
+    todo("the item debug figures (menu_0ba5 0x800d729c; session +0x1f)");
+    return;
+  }
+  switch (item_data_get(item, 0x2A)) {
+    case 0: show_usable_stats(item); break;
+    case 1: case 2: case 7:
+    case 8: case 9: case 10: case 11: case 12: show_equipment_stats(item); break;
+    default: break;
+  }
+}
+
+void Panel::show_usable_stats(int item) {
+  // What an item restores and how much (or nothing to show).
+  TextBox* box = info;
+  box->set_font_group(item_strings(1), item_strings(0), 2);
+  const s16 x0 = box->pen_x, y0 = box->pen_y;
+  box->pen_at(x0, y0);
+  const s32 kind = item_data_get(item, 0x28);
+  const s32 amount = item_data_get(item, 0x19);
+  bool number = true;
+  switch (kind) {
+    case 1: case 2: case 6: box->add_message(1); break;
+    case 3: case 4: box->add_message(2); break;
+    case 5: box->add_message(3); break;
+    default:
+      box->add_message(0);
+      number = false;
+      break;
+  }
+  if (number) {
+    TextRenderer* r = box->text;
+    r->set_pen(static_cast<s16>(box->pen_x + 0x58), static_cast<s16>(box->pen_y - 0xE), 0xC);
+    r->add_number(amount, 3);
+    box->pen(static_cast<s16>(x0 + 0x70), y0, 8);
+    box->set_group(0);
+    box->add_message(0x17);
+  }
+}
+
+void Panel::show_equipment_stats(int item) {
+  // Element icons of the item (lit: it has it), its attack / resistance icons, then its
+  // figures as ASCII lines.
+  TextBox* box = info;
+  box->set_font_group(item_strings(1), item_strings(0), 1);
+  const s16 x0 = box->pen_x, y0 = box->pen_y;
+  const u32 elements = static_cast<u32>(item_data_get(item, 6));
+  auto icon = [&](int i, int row, int clut_row) {
+    PolyFT4Raw q{};
+    const u8 u0 = static_cast<u8>(i << 4), u1 = static_cast<u8>(0x10 + (i << 4));
+    const u8 v0 = static_cast<u8>(0x80 + row), v1 = static_cast<u8>(0x90 + row);
+    q.x0 = 0, q.y0 = 0, q.u0 = u0, q.v0 = v0;
+    q.clut = static_cast<u16>((clut_row + 0x1E0) * 0x40 | 0x12);
+    q.x1 = 0x10, q.y1 = 0, q.u1 = u1, q.v1 = v0, q.tpage = 0x16;
+    q.x2 = 0, q.y2 = 0x10, q.u2 = u0, q.v2 = v1;
+    q.x3 = 0x10, q.y3 = 0x10, q.u3 = u1, q.v3 = v1;
+    box->add_icon(q);
+    box->pen_move(0x10, -0x10);
+  };
+  box->pen(x0, y0, 0x10);
+  box->add_message(0);
+  box->pen_move(0x18, -0x12);
+  for (int i = 0; i < 10; ++i) icon(i, 0, (elements & (1u << i)) ? i : 0xF);
+  box->pen(x0, static_cast<s16>(y0 + 0x10), 0x10);
+  box->add_message(1);
+  box->pen_move(0x18, -0x12);
+  int row = 0, clut = 0xF;  // values 5 and up keep the previous icon's (the original's registers)
+  for (int i = 0; i < 10; ++i) {
+    const s32 v = item_data_get(item, i + 0x1C);
+    if (v == 1) {
+      row = 0x20, clut = i;
+    } else if (v == 0) {
+      row = 0, clut = 0xF;
+    } else if (v >= 2 && v < 5) {
+      row = 0x10, clut = i;
+    }
+    icon(i, row, clut);
+  }
+  auto text = [](u32 address, const char* fallback) {
+    const u8* p = table(0, address);
+    return p ? reinterpret_cast<const char*>(p) : fallback;
+  };
+  const char* d4 = text(0x800E0DE8, "%4d");
+  const char* sp2 = text(0x800E0DEC, "  ");
+  const char* sp1 = text(0x800E0E20, " ");
+  const char* d3 = text(0x800E0E3C, "%3d");
+  StrBuf sb;
+  box->pen(x0, static_cast<s16>(y0 + 0x24), 8);
+  auto figure = [&](int field) { sb.put_int(item_data_get(item, field)); };
+  switch (item_data_get(item, 0x2A)) {
+    case 1: case 2: case 7:
+      sb.set(text(0x800E0DD0, ""));
+      sb.put(d4), figure(8), sb.put(sp2), sb.put(d4), figure(0xC), sb.put(sp2), sb.put(d4), figure(0x12);
+      break;
+    case 8: case 9: case 10: case 11:
+      sb.set(text(0x800E0DF0, ""));
+      sb.put(d4), figure(0x10), sb.put(sp2), sb.put(d4), figure(0xE), sb.put(sp2), sb.put(d4), figure(0x12);
+      break;
+    case 12:
+      sb.set(text(0x800E0E08, ""));
+      sb.put(d4), figure(0xC), sb.put(sp1), sb.put(d4), figure(0x10), sb.put(sp2), sb.put(d4), figure(0xE);
+      break;
+    default:
+      break;
+  }
+  box->add_string(sb.str());
+  box->pen(x0, static_cast<s16>(y0 + 0x34), 8);
+  sb.set(text(0x800E0E24, ""));
+  sb.put(d3), figure(0x2C), sb.put(sp1), sb.put(d3), figure(0x14), sb.put(sp1), sb.put(d3), figure(0x16), sb.put(sp1), sb.put(d3),
+      figure(0x1B);
+  box->add_string(sb.str());
 }
 
 void Panel::on_button3(int n) {
-  if (unknown58 != 0 && info != nullptr) {
-    ++unknown54;
-    const bool wrap = session()->unknown1f == 0 ? unknown54 >= 2 : unknown54 >= 3;
-    if (wrap) unknown54 = 0;
-    unknown84 = 0;
+  if (viewer_item != 0 && info != nullptr) {
+    ++info_mode;
+    const bool wrap = session()->unknown1f == 0 ? info_mode >= 2 : info_mode >= 3;
+    if (wrap) info_mode = 0;
+    viewer_shown = 0;
     n = -n;
   }
   Widget::on_button3(n);

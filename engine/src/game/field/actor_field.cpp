@@ -14,7 +14,6 @@
 #include "game/field/script_vm.h"
 #include "game/field/sprite_pack.h"
 #include "game/field/sprite_render.h"
-#include "runtime/runtime.h"
 
 namespace ss::game::field {
 namespace {
@@ -226,6 +225,125 @@ void fix_uvs(const psyq::POLY_FT4* p, s32& u0, s32& v0, s32& u1, s32& v1) {
   }
 }
 
+// --- shading regions (fieldactor_build_light_split 0x80083d70) ---
+
+// A light polygon of cell lists 4 / 6 (0x4c bytes): the ZoneItem head (+0 type, 0 =
+// triangle, else quad; +1..+3 colour; +4 / +6 world y range; +8..+0xe box; +0x10
+// enabled), the corners at +0x14 closed by a copy of the first (5 x {s16 x, y}), each
+// edge's line a x + b y + c = 0 (s16 a[4] at +0x28, s16 b[4] at +0x30, s32 c[4] at
+// +0x38), and +0x48: only drawn with the colour of the list-6 region under the feet.
+constexpr int kLightPolySize = 0x4C;
+constexpr int kLightMaxVerts = 32;  // the original's stack holds 12 (a convex quad clips to 8)
+
+// The R3000's quotient: this code divides without the compiler's zero checks, so a zero
+// divisor gives -1 (1 for a negative dividend) instead of trapping.
+s32 div_r3000(s32 a, s32 b) {
+  if (b == 0) return a < 0 ? 1 : -1;
+  return b == -1 ? static_cast<s32>(0u - static_cast<u32>(a)) : a / b;
+}
+s32 neg(s32 v) { return static_cast<s32>(0u - static_cast<u32>(v)); }
+
+// Where edge e crosses the row y / the column x (the callers check the divisor).
+s32 light_edge_x(const u8* poly, int e, s32 y) {
+  return div_r3000(neg(mul(rd16s(poly + 0x30 + e * 2), y) + rd32s(poly + 0x38 + e * 4)), rd16s(poly + 0x28 + e * 2));
+}
+s32 light_edge_y(const u8* poly, int e, s32 x) {
+  return div_r3000(neg(mul(rd16s(poly + 0x28 + e * 2), x) + rd32s(poly + 0x38 + e * 4)), rd16s(poly + 0x30 + e * 2));
+}
+
+// The sprite's screen box (BG pixels) the polygons are clipped to.
+struct LightBox {
+  s16 x0, y0, x1, y1;
+};
+
+// Clips a light polygon to the box (0x8008459c-0x80084aac): rows first, recording the
+// polygon edge each vertex lies on, then columns, where a segment's crossing is taken
+// on the edge of its end vertex (or kept level when both ends share a row). Returns the
+// vertex count (the result is open: the last vertex joins the first).
+int light_clip(const u8* poly, const LightBox& box, s32 out[kLightMaxVerts][2]) {
+  s32 rows[kLightMaxVerts][2];
+  int edge_of[kLightMaxVerts];
+  int n = 0;
+  const int edges = poly[0] == 0 ? 3 : 4;
+  auto put_row = [&](int e, s32 x, s32 y) {
+    if (n >= kLightMaxVerts - 1) return;
+    edge_of[n] = e;
+    rows[n][0] = x;
+    rows[n][1] = y;
+    ++n;
+  };
+  for (int e = 0; e < edges; ++e) {
+    const s32 px = rd16s(poly + 0x14 + e * 4), py = rd16s(poly + 0x16 + e * 4);
+    s32 qx = rd16s(poly + 0x18 + e * 4), qy = rd16s(poly + 0x1A + e * 4);
+    // a == 0: a level edge, whose crossings keep the corner's x.
+    const bool has_x = rd16s(poly + 0x28 + e * 2) != 0;
+    if (qy < box.y0) {
+      if (py < box.y0) continue;
+      qy = box.y0;
+      if (has_x) qx = light_edge_x(poly, e, box.y0);
+    } else if (py < box.y0) {
+      put_row(e, has_x ? light_edge_x(poly, e, box.y0) : px, box.y0);
+    }
+    if (box.y1 < qy) {
+      if (box.y1 < py) continue;
+      qy = box.y1;
+      if (has_x) qx = light_edge_x(poly, e, box.y1);
+    } else if (box.y1 < py) {
+      put_row(e, has_x ? light_edge_x(poly, e, box.y1) : px, box.y1);
+    }
+    put_row(e, qx, qy);
+  }
+  if (n != 0) {
+    // Closed with the first vertex (its edge recorded as 0).
+    edge_of[n] = 0;
+    rows[n][0] = rows[0][0];
+    rows[n][1] = rows[0][1];
+    ++n;
+  }
+  int m = 0;
+  auto put = [&](s32 x, s32 y) {
+    if (m >= kLightMaxVerts) return;
+    out[m][0] = x;
+    out[m][1] = y;
+    ++m;
+  };
+  for (int i = 0; i + 1 < n; ++i) {
+    const s32 px = rows[i][0], py = rows[i][1];
+    s32 qx = rows[i + 1][0], qy = rows[i + 1][1];
+    const int e = edge_of[i + 1];
+    // A crossing moves along the edge unless the segment is level (it runs along a
+    // clipped row) or the edge is vertical (b == 0): then it keeps a y.
+    const bool along = rows[i + 1][1] != py && rd16s(poly + 0x30 + e * 2) != 0;
+    if (qx < box.x0) {
+      if (px < box.x0) continue;
+      if (along) qy = light_edge_y(poly, e, box.x0);
+      qx = box.x0;
+    } else if (px < box.x0) {
+      put(box.x0, along ? light_edge_y(poly, e, box.x0) : py);
+    }
+    if (box.x1 < qx) {
+      if (box.x1 < px) continue;
+      if (along) qy = light_edge_y(poly, e, box.x1);
+      qx = box.x1;
+    } else if (box.x1 < px) {
+      put(box.x1, along ? light_edge_y(poly, e, box.x1) : py);
+    }
+    put(qx, qy);
+  }
+  return m;
+}
+
+// The texture coordinate of a piece's vertex (0x80084cb8-0x80085314): 'offset' is the
+// distance from the box's left (or, mirrored, right) edge or top. Prescaled sprites
+// (cache A) map pixels 1:1; unscaled ones scale by the main sprite's texel span over its
+// size, and every form but the triangles' mirrored one divides the base in too
+// ((base + span * offset) / size): kept.
+u8 light_uv(u8 base, s32 span, s32 offset, s32 size, bool scaled, bool divide_base) {
+  if (scaled) return static_cast<u8>(base + offset);
+  if (divide_base) return static_cast<u8>(div_r3000(base + mul(span, offset), size));
+  return static_cast<u8>(base + div_r3000(mul(span, offset), size));
+}
+
 }  // namespace
 
 FieldActorGlobals& fieldactor_globals() { return g_globals; }
@@ -324,14 +442,203 @@ void fieldactor_select_auto_anim(Actor* self, int walked) {
   }
 }
 
-void fieldactor_build_light_split(Actor* self, s32, s32, psyq::POLY_FT4*, int, int) {
+void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* prim, int flips, int scaled) {
   if ((self->flags & kActorShaded) == 0) return;
-  // TODO(port): 0x80083d70 (7.6 KB): shading regions of cell lists 6 (flat colour under
-  // the feet) and 4 (gradients across the sprite's corners) recolour / split the main
-  // sprite. Maps without those lists (map 7) are unaffected.
-  const int cell = zone_cell_at(self, &self->screen_x);
-  if (cell != -1 && (scene_cell_count(cell, 6) != 0 || scene_cell_count(cell, 4) != 0)) {
-    runtime::Runtime::get().log_once("actor:shade", "field: not ported yet: actor shading regions (0x80083d70)");
+  s16 cam[2] = {0, 0};
+  // 0x80086bbc. (kActorNoScroll is not applied here, unlike in fieldactor_draw.)
+  if (BgRenderer* bg = bg_renderer(); bg != nullptr && !map_data().scene.empty()) bg_get_view_origin(bg, cam);
+  const s16* q = self->quad;  // x0, y0 .. x3, y3: the main sprite's screen corners
+  // The probe under the feet: the middle of the sprite's bottom edge, in BG pixels.
+  s16 probe[2] = {static_cast<s16>(cam[0] + (q[4] + q[6]) / 2), static_cast<s16>(q[5] + cam[1])};
+  const s32 ay = self->y >> 12;
+  // sp+0x10: the colour of the list-6 region under the feet, left as it was when there
+  // is none (FieldActorGlobals::shade_colour). Only list-4 polygons flagged +0x48 read it
+  // then, and no disc 1 map has one.
+  u8* colour = g_globals.shade_colour;
+  s32 cells[4] = {0, 0, 0, 0};
+  for (int pass = 0; pass < 2; ++pass) {
+    int list;
+    if (pass == 0) {
+      // List 6 (flat shade under the feet): a region at the probe, then half a sprite
+      // to the left, then half a sprite to the right.
+      bool found = false;
+      for (int k = 0; k < 3 && !found; ++k) {
+        const int cell = zone_cell_at(self, probe);
+        if (cell == -1) return;
+        const int count = scene_cell_count(cell, 6);
+        const u8* item = scene_cell_list(cell, 6);
+        int i = 0;
+        for (; i < count; ++i, item += kLightPolySize)
+          if (zone_test_point(self, item, probe, self->y >> 12)) break;
+        if (i != count) {
+          colour[0] = item[1];
+          colour[1] = item[2];
+          colour[2] = item[3];
+          found = true;
+        } else if (k == 0) {
+          probe[0] = static_cast<s16>(probe[0] - w / 2);
+        } else if (k == 1) {
+          probe[0] = static_cast<s16>(probe[0] + w);
+        }
+      }
+      if (!found) continue;
+      list = 6;
+    } else {
+      // List 4: any enabled polygon in a corner's cell, at the actor's height, whose box
+      // comes near the sprite (centres closer than the sum of the sizes, not half).
+      const s32 cx = (q[0] + q[2]) / 2 + cam[0], cy = (q[1] + q[5]) / 2 + cam[1];
+      int k = 0;
+      for (; k < 4; ++k) {
+        const int cell = zone_cell_at_xy(self, q[k * 2] + cam[0], q[k * 2 + 1] + cam[1]);
+        if (cell == -1) return;
+        cells[k] = cell;
+        int j = 0;
+        while (j < k && cells[j] != cell) ++j;
+        if (j != k) continue;
+        const int count = scene_cell_count(cell, 4);
+        const u8* item = scene_cell_list(cell, 4);
+        int i = 0;
+        for (; i < count; ++i, item += kLightPolySize) {
+          if (item[0x10] == 0 || ay < rd16s(item + 4) || rd16s(item + 6) < ay) continue;
+          const s32 x0 = rd16s(item + 8), y0 = rd16s(item + 0xA), x1 = rd16s(item + 0xC), y1 = rd16s(item + 0xE);
+          s32 d = (x0 + x1) / 2 - cx;
+          if (d < 0) d = -d;
+          if (d >= (x1 - x0) + w) continue;
+          d = (y0 + y1) / 2 - cy;
+          if (d < 0) d = -d;
+          if (d < (y1 - y0) + h) break;
+        }
+        if (i != count) break;
+      }
+      if (k == 4) return;
+      list = 4;
+    }
+
+    // The cells under the sprite's corners.
+    int ncells = 0;
+    for (int k = 0; k < 4; ++k) {
+      const int cell = zone_cell_at_xy(self, q[k * 2] + cam[0], q[k * 2 + 1] + cam[1]);
+      if (cell == -1) continue;
+      int j = 0;
+      while (j < ncells && cells[j] != cell) ++j;
+      if (j == ncells) cells[ncells++] = cell;
+    }
+    if (ncells == 0) continue;
+    const s16 top = q[5] < q[1] ? q[5] : q[1];
+    const s16 left = q[2] < q[0] ? q[2] : q[0];
+    LightBox box;
+    box.y0 = static_cast<s16>(cam[1] + top);
+    box.x0 = static_cast<s16>(cam[0] + left);
+    box.y1 = static_cast<s16>(box.y0 + h);
+    box.x1 = static_cast<s16>(box.x0 + w);
+
+    // Every polygon of the list near the box (enabled or not, at any height) is clipped
+    // to it and drawn as tinted pieces of the sprite; one stored in two of the cells
+    // (maps keep a copy per cell) is drawn twice.
+    for (int ci = 0; ci < ncells; ++ci) {
+      const int count = scene_cell_count(cells[ci], list);
+      const u8* poly = scene_cell_list(cells[ci], list);
+      for (int i = 0; i < count; ++i, poly += kLightPolySize) {
+        {
+          const s32 px0 = rd16s(poly + 8), pw = rd16s(poly + 0xC) - px0;
+          s32 d = (left + cam[0] + (w >> 1)) - (px0 + pw / 2);
+          if (d < 0) d = -d;
+          if (d >= (pw + w) >> 1) continue;
+          const s32 py0 = rd16s(poly + 0xA), ph = rd16s(poly + 0xE) - py0;
+          d = (top + cam[1] + (h >> 1)) - (py0 + ph / 2);
+          if (d < 0) d = -d;
+          if (d >= (ph + h) >> 1) continue;
+        }
+        if (poly[0x48] != 0 && (colour[0] != poly[1] || colour[1] != poly[2] || colour[2] != poly[3])) continue;
+        s32 v[kLightMaxVerts][2];
+        const int nv = light_clip(poly, box, v);
+        if (nv < 3) continue;
+
+        // The piece colour: the sprite's plus the polygon's difference from the ambient.
+        const u8 sprite_rgb[3] = {prim->r0, prim->g0, prim->b0};
+        u8 rgb[3];
+        for (int c = 0; c < 3; ++c) {
+          s32 value = sprite_rgb[c] + (poly[1 + c] - scene()[0x6C + c]);
+          if (value < 0) {
+            value = 0;
+          } else if (value > 0xFF) {
+            value = 0xFF;
+          }
+          rgb[c] = static_cast<u8>(value);
+        }
+        for (int k = 0; k < nv; ++k) {
+          if (v[k][1] < box.y0) v[k][1] = box.y0;
+          if (box.y1 < v[k][1]) v[k][1] = box.y1;
+          if (v[k][0] < box.x0) v[k][0] = box.x0;
+          if (box.x1 < v[k][0]) v[k][0] = box.x1;
+        }
+        const s32 du = prim->u1 - prim->u0, dv = prim->v2 - prim->v0;
+        // Texture coordinates only for upright sprites (flips 0) and mirrored ones (2):
+        // vertically flipped pieces keep whatever the primitive memory held (zero here).
+        const bool uvs = flips == 0 || flips == 2;
+        auto uv = [&](const s32 vert[2], bool divide_base, u8* out) {
+          const s32 off_x = flips == 2 ? box.x1 - vert[0] : vert[0] - box.x0;
+          out[0] = light_uv(prim->u0, du, off_x, w, scaled != 0, divide_base);
+          out[1] = light_uv(prim->v0, dv, vert[1] - box.y0, h, scaled != 0, divide_base);
+        };
+
+        // A fan from vertex 0: quads while four or more vertices remain, then a triangle.
+        int base = 0;
+        const int pieces = (nv - 1) / 2;
+        for (int piece = 0; piece < pieces; ++piece) {
+          // The original builds each piece at the primitive cursor and advances it only
+          // when the actor has room for it (22 here, not 24).
+          const bool room = self->prim_count < 0x16;
+          if (nv - base < 4) {
+            const s32* c[3] = {v[0], v[base + 1], v[base + 2]};
+            auto* t = room ? static_cast<psyq::POLY_FT3*>(field_screen()->alloc(sizeof(psyq::POLY_FT3))) : nullptr;
+            if (t == nullptr) continue;
+            psyq::setlen(t, 7);
+            t->code = static_cast<u8>(self->blend != 0 ? 0x26 : 0x24);
+            t->r0 = rgb[0];
+            t->g0 = rgb[1];
+            t->b0 = rgb[2];
+            if (uvs) {
+              // Mirrored triangles alone scale only the offset.
+              const bool divide_base = flips == 0;
+              uv(c[0], divide_base, &t->u0);
+              uv(c[1], divide_base, &t->u1);
+              uv(c[2], divide_base, &t->u2);
+            }
+            t->x0 = static_cast<s16>(c[0][0] - cam[0]), t->y0 = static_cast<s16>(c[0][1] - cam[1]);
+            t->x1 = static_cast<s16>(c[1][0] - cam[0]), t->y1 = static_cast<s16>(c[1][1] - cam[1]);
+            t->x2 = static_cast<s16>(c[2][0] - cam[0]), t->y2 = static_cast<s16>(c[2][1] - cam[1]);
+            t->tpage = prim->tpage;
+            t->clut = prim->clut;
+            add_prim(self, &t->tag, static_cast<u16>(self->layer + 1));
+          } else {
+            // Corners 0, 1, 3, 2 of the FT4 run round the fan's four vertices.
+            const s32* c[4] = {v[0], v[base + 1], v[base + 3], v[base + 2]};
+            base += 2;
+            psyq::POLY_FT4* p = room ? new_ft4() : nullptr;
+            if (p == nullptr) continue;
+            psyq::setlen(p, 9);
+            p->code = static_cast<u8>(self->blend != 0 ? 0x2E : 0x2C);
+            p->r0 = rgb[0];
+            p->g0 = rgb[1];
+            p->b0 = rgb[2];
+            if (uvs) {
+              uv(c[0], true, &p->u0);
+              uv(c[1], true, &p->u1);
+              uv(c[2], true, &p->u2);
+              uv(c[3], true, &p->u3);
+            }
+            p->x0 = static_cast<s16>(c[0][0] - cam[0]), p->y0 = static_cast<s16>(c[0][1] - cam[1]);
+            p->x1 = static_cast<s16>(c[1][0] - cam[0]), p->y1 = static_cast<s16>(c[1][1] - cam[1]);
+            p->x2 = static_cast<s16>(c[2][0] - cam[0]), p->y2 = static_cast<s16>(c[2][1] - cam[1]);
+            p->x3 = static_cast<s16>(c[3][0] - cam[0]), p->y3 = static_cast<s16>(c[3][1] - cam[1]);
+            p->tpage = prim->tpage;
+            p->clut = prim->clut;
+            add_prim(self, &p->tag, static_cast<u16>(self->layer + 1));
+          }
+        }
+      }
+    }
   }
 }
 

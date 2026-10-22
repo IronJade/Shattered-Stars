@@ -36,11 +36,27 @@ streak positions. `tests/test_field_effects.cpp` has 7 unit tests and 4 dump tes
 - A second ext 0x79 leaves the old glow drawing.
 - Only the lower hemisphere of the lit sphere is drawn.
 
+## Field movies (embedded code section 5, #3103)
+
+`game/field/field_movie.cpp`: maps whose container carries section 5 load #3103 at
+0x801e9000, a field movie player that is word for word the title's (it reuses
+`game::Movie` / `game::Prologue`) plus field parts: compose (0x801e9000, the frame and the
+map's sprites composited), the 24-to-15-bit conversion (0x801ea1d0), the B_6f sequence
+(0x801ea374), B_50 / B_51 / B_53, the B_16 / B_70 preload (0x801eac28) and the
+picture-in-picture draw (0x801ead88). While a movie plays the BG, the SceneRenderer and
+DrawOTag stand down. Field movies are 320x240 shown 224 rows high (the frame size comes
+from the STR sector header). Map 548's movie matches Redux to a mean 0.4/255 per frame,
+about 10 vblanks early (stream start latency, shared with the title movies). Section 5 also
+sets `shadow_boxes` (0x800756b8): shadows drawn as boxes.
+
+The field's own RotMatrix (0x8006e52c) adds cz·sx + B·cx in m21 where libgte subtracts; every
+field call site the original routes through it now calls `field_rot_matrix` (actor view,
+battle swirl, world-map camera); map 129 (scene roll 3882) matches Redux.
+
 ## Known differences / open
 
 - `psyq::SetDrawMode(..., nullptr)` writes 0xe2000000 as the second word where libgpu
   writes 0; the effects write their DR_MODE words directly.
-- The field's own RotMatrix (0x8006e52c) adds cz·sx + B·cx in m21 where libgte subtracts;
-  the call sites that use it are being moved off `psyq::RotMatrix`.
-- Map 548 enters a different scene in the port with the same script globals (the embedded
-  map code, container sections 5-12, is not ported yet).
+- The B_16 / B_70 preload always reads the whole entry (the console's size depends on free
+  heap; a partial preload decides whether the sequence gets its sound bank) and the main loop
+  runs once per vblank during movies — both still to be checked against Redux.

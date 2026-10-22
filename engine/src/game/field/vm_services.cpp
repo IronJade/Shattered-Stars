@@ -22,6 +22,7 @@
 #include "game/field/characters.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
+#include "game/field/field_movie.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
 #include "game/field/menu_camp.h"
@@ -1088,7 +1089,7 @@ int vm_svc_loader_11988(int a1, int entry) {
   SVC("%d,%d", a1, entry);
   return 0;
 }
-void vm_svc_set_loader_cancel_flag(int v) { LOG_ONCE(); }
+void vm_svc_set_loader_cancel_flag(int v) { field_movie_set_stop(v); }  // 0x800762ff: stops the movie
 
 // ---- Field menus --------------------------------------------------------------------
 void vm_svc_set_menu_request(int menu) {
@@ -1315,20 +1316,40 @@ void vm_svc_overlay_801f9800_destroy() {
 }
 int vm_svc_overlay_801f9f54() { LOG_ONCE(); return 0; }
 void vm_svc_overlay_801f9a64(int a0) { SVC("%d", a0); }
+// #3103, the movie player (field_movie.cpp), runs with a field (VM unit tests have no
+// field program, loader, screen or sound driver).
+static bool movie_live() {
+  return field_program() != nullptr && globals().loader != nullptr && globals().sound != nullptr &&
+         field_screen() != nullptr;
+}
 void vm_svc_overlay_801eac28(ScriptCtx* ctx, u32 instr) {
-  vm_fetch_args(ctx, 1);  // the instruction never equals 0x16, so it always fetches one
+  if (movie_live()) {
+    field_movie_preload(ctx, instr);
+    TRACE("%d", g_vm_args[0]);
+    return;
+  }
+  vm_fetch_args(ctx, ((instr >> 16) & 0x7F) == 0x16 ? 2 : 1);
   SVC("%d", g_vm_args[0]);
 }
 void vm_svc_overlay_801eaa30(ScriptCtx* ctx) {
+  if (movie_live()) {
+    field_movie_start(ctx);
+    TRACE("%d,%d", g_vm_args[0], g_vm_args[1]);
+    return;
+  }
   vm_fetch_args(ctx, 2);
   SVC("%d,%d", g_vm_args[0], g_vm_args[1]);
 }
 int vm_svc_overlay_801ea374(ScriptCtx* ctx) {
+  if (movie_live()) {
+    TRACE("%d,%d", g_vm_args[0], g_vm_args[1]);
+    return field_movie_sequence(ctx);
+  }
   SVC("%s", "");
   return 0;
 }
-int vm_svc_overlay_801ea_loaded() { LOG_ONCE(); return 0; }
-int vm_svc_overlay_801ea_value() { LOG_ONCE(); return -1; }
+int vm_svc_overlay_801ea_loaded() { return field_sub_program() != nullptr ? 1 : 0; }
+int vm_svc_overlay_801ea_value() { return field_movie_frame_count(); }
 
 // ---- Other field globals ------------------------------------------------------------
 void vm_svc_set_global_76224(int a, int b) {  // 0x80076224 / 0x80076226: forced BG parallax

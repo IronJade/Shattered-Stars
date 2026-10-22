@@ -14,6 +14,7 @@
 #include "game/field/voice_queue.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/camera.h"
 #include "game/field/effects.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
@@ -138,7 +139,7 @@ void draw_swirl(BattleTransition* t, bool long_form) {
     t->angle = t->angle - (t->timer + ((c * c) >> 0x14));
   psyq::SVECTOR rot{0, 0, static_cast<s16>(t->angle), 0};
   psyq::MATRIX m{};
-  psyq::RotMatrix(&rot, &m);
+  field_rot_matrix(&rot, &m);  // the field's own RotMatrix (0x8006e52c)
   psyq::VECTOR move{0, 0, t->timer * -3 + 0x200, 0};
   psyq::TransMatrix(&m, &move);
   psyq::SetRotMatrix(&m);
@@ -527,8 +528,8 @@ void field_unload_map(Field*, bool free_scene) {
   map.script = {};
   field_load_buffer() = {};
   // TODO(port): the side text (0x800762e8), stat snapshot (0x800761a0), extra buffers
-  // (0x800752c4), extra packs (0x80076230) and the per-map objects (0x800752ec) are not
-  // created by the port yet.
+  // (0x800752c4) and the per-map objects (0x800752ec) are not created by the port yet.
+  world_vehicle_models_free();  // 0x800519d4: the vehicle models (0x80076230)
   glow_destroy_current();  // 0x800752dc: glow_destroy(3)
   if (WorldBg* wbg = world_bg(); wbg != nullptr && globals().field_flags[0x68] != 0)
     world_bg_release(wbg);  // overlay 0x800888e0

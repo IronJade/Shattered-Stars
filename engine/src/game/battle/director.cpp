@@ -165,14 +165,14 @@ void battle_frame_director() {
       else g.director_timer = 0;
     }
     if (cam->mode == 5) {
-      Unit* t = cam->target;
-      if (t != g.party_units[g.controlled_slot & 3] && g.camera_end_mode == 0) {
-        bool known = false;
+      BObj* tb = cam->target;
+      if (tb != g.party_units[g.controlled_slot & 3] && g.camera_end_mode == 0) {
+        Unit* t = nullptr;  // (the target may be a Shot: only units are looked at)
         for (PartyUnit* u : g.party_units)
-          if (u == t) known = true;
+          if (u != nullptr && u == tb) t = u;
         for (EnemyUnit* u : g.enemy_units)
-          if (u == t) known = true;
-        if (known && t->action < 8) camera_schedule_end(cam->mode, t, 0x5A);
+          if (u != nullptr && u == tb) t = u;
+        if (t != nullptr && t->action < 8) camera_schedule_end(cam->mode, t, 0x5A);
       }
     }
     if (g.camera_end_mode != 0) {

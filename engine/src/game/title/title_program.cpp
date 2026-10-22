@@ -1,3 +1,4 @@
+#include "game/common/disc_screen.h"
 #include "game/title/title_program.h"
 
 #include <cstdlib>
@@ -437,10 +438,12 @@ void title_program_main(System* sys) {
     if (g_title.config) g_title.config[0x17F] = static_cast<u8>(choice);
     if (choice == kTitleNewGame) {
       load_queue_reset();
-      if (loader_is_disc(*g_title.loader, 1) != 1 && !loader_insert_disc(*g_title.loader, 1)) {
-        // TODO(port): the "insert disc 1" prompt (0x8003c5ec), then entries #14-#16 again
-        // (the host swaps a configured disc 1 image back in itself: loader_insert_disc).
-        runtime::Runtime::get().log_once("disc1_prompt", "New Game needs disc 1; the swap prompt is not ported");
+      if (loader_is_disc(*g_title.loader, 1) != 1 && !loader_insert_disc(*g_title.loader, 1) &&
+          !disc_screen_declined(1)) {
+        // The "insert disc 1" screen (0x8003c5ec, the field's 0x8006f958 again); the
+        // original then reads entries #14-#16 back into the buffer it freed for it (the
+        // host kept them).
+        disc_change_screen(1);
       }
       RenderContext* holder = nullptr;  // the original's 4-byte object
       char name[24] = {};

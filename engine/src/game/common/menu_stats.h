@@ -23,6 +23,16 @@ class StatCalc {   // 8 bytes: +0 item table, +4 vtable (title 0x8004bcb4 / fiel
   void item_bonuses();        // title 0x8003a738 / field 0x8003b694 stat_calc_item_bonuses
   u32 item_stat(int item, int field) const;  // title 0x8003abd0 / field 0x8003bb2c item_stat_get
   void equip_effects();       // title 0x8003ad68 / field 0x8003bcc4 stat_calc_equip_effects
+  // title 0x8003a8d8 / field 0x8003b834: attribute 'which' (0 ATK, 1 AC, 2 HIT, 3 AVD, 4 MAG)
+  // of the selected member: its equipment's item fields 3-7 plus the slot's base value.
+  s32 attr_total(int which) const;
+  void snapshot_attrs(s16 out[5]) const;      // title 0x8003a85c / field 0x8003b7b8
+  void snapshot_equip(s16 out[7]) const;      // title 0x8003aaa0 / field 0x8003b9fc
+  // title 0x8003ab18 / field 0x8003ba74: nonzero when the selected member can wear 'item'.
+  u32 can_equip(int item) const;
+  // title 0x8003ab4c / field 0x8003baa8: the equipment slot of 'item' (0 weapon, 1-4 armour,
+  // 5 accessory; by item field 1).
+  int equip_slot(int item) const;
 
  private:
   std::vector<u16> items_;    // +0: 0x338 entries of 8 u16 (null in the original when the

@@ -97,7 +97,7 @@ void compute_view() {
     // Angle form (not used on the world map): view from the negated target angles.
     psyq::SVECTOR r{static_cast<s16>(-v.target[0]), static_cast<s16>(-v.target[1]), static_cast<s16>(-v.target[2]), 0};
     psyq::MATRIX m{};
-    psyq::RotMatrix(&r, &m);
+    field_rot_matrix(&r, &m);  // the field's own RotMatrix (0x8006e52c), as below
     psyq::SetRotMatrix(&m);
     ldv(0, 0x1000, 0, 0);
     run(G::kRtv0);
@@ -118,7 +118,7 @@ void compute_view() {
     if (f[2] != 0) v.roll2 = static_cast<s16>(v.roll2 + ((o[2] << 16) >> 4) / f[2]);
   }
   psyq::SVECTOR r{v.pitch, v.yaw, v.b38, 0};
-  psyq::RotMatrix(&r, &v.view);
+  field_rot_matrix(&r, &v.view);
   psyq::SetGeomOffset(v.geom_ofs_x + 0xa0, v.geom_ofs_y + 0x80);
 }
 
@@ -368,7 +368,7 @@ void world_camera_update_matrices() {
   init_light_matrices();
   psyq::SVECTOR r{v.offset[0], v.offset[1], v.offset[2], 0};
   psyq::MATRIX m{};
-  psyq::RotMatrix(&r, &m);
+  field_rot_matrix(&r, &m);
   psyq::PushMatrix();
   v.rot_b44 = m;
   rot_columns(v.view, &v.rot_b44);
@@ -403,9 +403,9 @@ void world_set_object_matrix(const s32 pos[3], const s32 angles[3], const s32 sc
   psyq::ScaleMatrix(&t, &sc);
 
   psyq::SVECTOR ry{0, v.yaw2, 0, 0};
-  psyq::RotMatrix(&ry, &v.world);
+  field_rot_matrix(&ry, &v.world);  // overlay 0x8007ef78 / 0x8007efa8 call the field's 0x8006e52c
   psyq::SVECTOR rp{v.pitch2, 0, v.roll, 0};
-  psyq::RotMatrix(&rp, &v.proj);
+  field_rot_matrix(&rp, &v.proj);
   psyq::SVECTOR p2{static_cast<s16>((pos[0] - v.eye[0]) >> 12), static_cast<s16>(pos[1] >> 12),
                    static_cast<s16>((pos[2] - v.eye[2]) >> 12), 0};
   psyq::VECTOR out{};

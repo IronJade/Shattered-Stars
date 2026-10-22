@@ -225,6 +225,34 @@ void stat_mod_attr_3e(u8* slot, int pct) {
   if (get16(slot, 0x40) < 0) put16(slot, 0x40, 0);
 }
 
+s32 StatCalc::attr_total(int which) const {
+  static const int kBase[5] = {0x2C, 0x32, 0x3E, 0x38, 0x44};
+  s32 sum = 0;
+  for (int i = 0; i < 7; ++i) sum += static_cast<s32>(item_stat(char_get_equip(i), 3 + which));
+  return sum + static_cast<s16>(read_u16(party_selected_slot() + kBase[which]));
+}
+
+void StatCalc::snapshot_attrs(s16 out[5]) const {
+  for (int i = 0; i < 5; ++i) out[i] = static_cast<s16>(attr_total(i));
+}
+
+void StatCalc::snapshot_equip(s16 out[7]) const {
+  for (int i = 0; i < 7; ++i) out[i] = static_cast<s16>(char_get_equip(i));
+}
+
+u32 StatCalc::can_equip(int item) const { return item_stat(item, 0) & char_equip_mask(); }
+
+int StatCalc::equip_slot(int item) const {
+  switch (item_stat(item, 1)) {
+    case 8: return 1;
+    case 9: return 2;
+    case 10: return 3;
+    case 11: return 4;
+    case 12: return 5;
+    default: return 0;
+  }
+}
+
 s32 item_data_get(int item, int field) {
   // field 0x80034100 -> 0x8003c538: the records the inventory points at (+0x820), once
   // the item data is in.

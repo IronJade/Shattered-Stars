@@ -20,6 +20,7 @@ namespace ss::game::menu {
 
 class Widget;
 class Cursor;
+class ItemViewer;
 
 // ---- Text box (title 0x8006e5e0, 0x84 bytes, vtable 0x80074a78) ----------------------
 // A framed panel with a list of elements (ASCII strings, rendered text lines, icons,
@@ -43,8 +44,14 @@ struct BoxElement {      // 0x24 bytes
   s16 status[4] = {};    // +0x14..+0x1a: kind 6 HP, max HP, MP, max MP (state 0x10)
 };
 
-struct ListScroll {  // the list state a box can show (+0x5c); s16 fields
-  s16 v[10] = {};
+// The list a box shows (+0x5c, 0x26 bytes; title 0x8006e940 / menu_0ba5 0x800daf28):
+// v[0] scroll position in pixels, v[1] item count, v[2] highest top row, v[3] visible
+// rows, v[4] text lines (visible + 1, a ring), v[5] line width, v[6] row height, v[7] /
+// v[8] x / y of the rows in the box, v[9..] the text line of each ring slot.
+struct ListScroll {
+  s16 v[19] = {};
+  s16& pos() { return v[0]; }
+  s16 line(int slot) const { return v[9 + slot]; }
 };
 
 class TextBox : public MenuTask {
@@ -86,11 +93,18 @@ class TextBox : public MenuTask {
   int add_icon(const PolyFT4Raw& poly);                 // title 0x8006fa58
   int add_icon_anim(const PolyFT4Raw& poly, s16 frames, s16 delay);  // title 0x8006fa7c
   int add_element(BoxElement e);                        // title 0x8006fd10
+  // title 0x8006e940 / menu_0ba5 0x800daf28: a scrolling list of 'count' items showing
+  // 'visible' rows of 'width' pixels, 'step' apart from (x, y); allocates visible + 1 blank
+  // text lines. Returns the rows shown (count when smaller).
+  int set_list(s16 count, s16 rows, s16 width, s16 step, s16 x, s16 y);
   // title 0x8006fb68 / menu_0ba5 0x800dc150: HP and MP of party slot 'slot' with gauges.
   int add_party_status(s16 slot);
   // title 0x8006fbc8 / menu_0ba5 0x800dc1b0: experience to the next level with a gauge of
   // 'percent' (or MASTER from level 255).
   int add_level(s16 level, s32 exp_to_next, s16 percent);
+  // A kind 8 element: text lines first .. first + count - 1 are an option list whose
+  // current one (*value; bit 15 none) is lit and framed by a glowing quad.
+  int add_list_highlight(s16* value, s16 first, s16 count);
   // title 0x800733d0 / menu_0ba5 0x800df9b8: underline text line *value + base.
   void set_highlight(s32 base, s16* value) { unknown7c = base, highlight = value; }
   // title 0x800733dc / menu_0ba5 0x800df9c4: the same from the next text line on.
@@ -103,6 +117,7 @@ class TextBox : public MenuTask {
   void draw_party_status(BoxElement& e);                // title 0x80071810 (kind 6)
   void draw_level(BoxElement& e);                       // title 0x80071aa0 (kind 7)
   void draw_highlight();                                // title 0x8006fe0c (+0x80)
+  void draw_list_highlight(BoxElement& e);              // title 0x80071b74 (kind 8)
   // title 0x8007293c: 'value' right-aligned in 'width' 8x8 digits from (x, y), blank
   // padded, palette row 'colour'.
   void draw_number(s32 value, s16 at_x, s16 at_y, int width, int colour);
@@ -111,7 +126,7 @@ class TextBox : public MenuTask {
   // title 0x80071e40 (HP / MP) and 0x800721c0 (experience): a gauge 'w' pixels wide.
   void draw_gauge(s16 at_x, s16 at_y, int w, int value, int max, bool exp);
 
-  u16 flags_unused = 0;      // +0x08
+  s16 pulse = 0;             // +0x08: phase of the kind 8 highlight glow
   Widget* owner = nullptr;   // +0x0c
   u32 colour = 0;            // +0x10: the owner's brightness colour (refreshed every frame)
   u16 frame_clut = 0x7910;   // +0x18
@@ -198,6 +213,16 @@ class GridGroup : public CursorGroup {   // title 0x80069a80 (0x34 bytes, vtable
   s16 dx = 0, dy = 0;        // +0x28 / +0x2a
   ListScroll* scroll = nullptr;  // +0x2c
   s16 limit = 0;             // +0x30
+};
+
+// A grid linked to a box's list (mode 2; title 0x8006a710 / menu_0ba5 0x800d4400, 0x38
+// bytes, vtable 0x800745a0): moving past the edge or the page buttons (config 8 / 10)
+// scroll the list, which glides 4 pixels a frame toward the target.
+class ScrollGridGroup : public GridGroup {
+ public:
+  void begin() override;     // [1] menu_0ba5 0x800d443c
+  void end() override;       // [2] menu_0ba5 0x800d4520
+  s16 target = 0;            // +0x34: scroll position aimed at
 };
 
 class ListGroup : public CursorGroup {   // title 0x8006a064 (0x2c bytes, vtable 0x800745f0)
@@ -347,7 +372,9 @@ class Panel : public Widget {
   virtual void on_member_changed();            // [21] title 0x8006bdcc
   virtual void draw_help();                    // [22] title 0x8006bb5c
   virtual void draw_member();                  // [23] title 0x8006bd40
-  virtual void unknown24() {}                  // [24] title 0x8006ae9c
+  // [24] title 0x8006ae9c (empty) / menu_0ba5 0x800d4d60: the viewer's item into the info
+  // box: its description (info_mode 0) or its figures (show_item_stats).
+  virtual void show_viewer_info();
   virtual void build_members();                // [25] title 0x8006bc5c
 
   void fade_step();                            // title 0x8006af24
@@ -356,16 +383,24 @@ class Panel : public Widget {
   void help_anim();                            // title 0x8006b1f4
   void help_rebuild();                         // title 0x8006b340
 
-  s32 unknown50 = 0;          // +0x50
-  s32 unknown54 = 0;          // +0x54
-  s32 unknown58 = 0;          // +0x58
+  // Field panels (menu_0ba5): the item viewer and its info box.
+  void create_viewer(s16 x, s16 y, s16 z);     // menu_0ba5 0x800d4b2c (0x800d4b04: 0x118, 0x4a, 0x18)
+  void set_viewer_item(int item);              // menu_0ba5 0x800d4c1c
+  void create_info_box();                      // menu_0ba5 0x800d5e8c: +0x70 at (0x60, 8) 0xd8 x 0x50
+  void show_item_stats(int item);              // menu_0ba5 0x800d5f0c
+  void show_usable_stats(int item);            // menu_0ba5 0x800d5fc4
+  void show_equipment_stats(int item);         // menu_0ba5 0x800d6154
+
+  ItemViewer* viewer = nullptr;  // +0x50
+  s32 info_mode = 0;             // +0x54: 0 description, 1 figures (2 with session +0x1f)
+  s32 viewer_item = 0;           // +0x58
   s16 members[8] = {};        // +0x5c
   s16 member = 0;             // +0x6c
   s16 member_count = 0;       // +0x6e
   TextBox* info = nullptr;    // +0x70
   TextBox* member_box = nullptr;  // +0x7c
   TextBox* help = nullptr;    // +0x80
-  s32 unknown84 = 0;          // +0x84
+  s32 viewer_shown = 0;       // +0x84: the info box shows the viewer's item
   s16 shimmer = 0;            // +0x8a
   s16 arrow_frame = 0;        // +0x8c
   s16 logo_phase = 0;         // +0x8e

@@ -2,6 +2,9 @@
 // map section 3, block streaming, lighting regions, suspend / resume and the terrain
 // height queries the walkers, the camera and the field use.
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 #include <cstring>
 #include <memory>
 
@@ -505,6 +508,25 @@ void world_parse_section3(WorldBg* bg, const u8* data) {
 void WorldBg::update() {
   WorldBg* bg = this;
   FieldGlobals& g = fg();
+  // Debugging: SS_WORLD_TICKS=FILE replays the original's frame pacing (one frame_ticks
+  // value per frame from the world map's start, as the PCSX-Redux world script logs with
+  // WW_TICKS): the next frame waits that many vblanks.
+  static const std::vector<int> replay = [] {
+    std::vector<int> t;
+    if (const char* path = std::getenv("SS_WORLD_TICKS"))
+      if (FILE* fp = std::fopen(path, "r")) {
+        for (int v; std::fscanf(fp, "%d", &v) == 1;) t.push_back(v);
+        std::fclose(fp);
+      }
+    return t;
+  }();
+  static size_t replay_at = 0;
+  static bool started = false;
+  if (!started) {
+    started = true;
+    runtime::Runtime::get().trace("world map (WorldBg update)");
+  }
+  if (!replay.empty()) g.vsync_mode = static_cast<u8>(std::max(1, replay[std::min(replay_at++, replay.size() - 1)]));
   update_lighting(bg);
   if (static_cast<s16>(read_u16(g.field_flags + 0x10)) == -1) world_camera_manual(bg);
   if (g.pressed[0] & 0x800) g.game_state[0x20] = static_cast<u8>((g.game_state[0x20] + 1) % 3);
@@ -574,6 +596,12 @@ void world_bg_set_angle(WorldBg* bg, s32 angle) { bg->yaw = angle << 12; }  // 0
 void world_bg_set_centre(WorldBg* bg, s32 x, s32 z) {  // 0x8008f410
   bg->centre_x = x;
   bg->centre_z = z;
+}
+
+void world_load_map_reset() {
+  g_world.region_count = 0;
+  g_world.leader_hit = TerrainHit{};
+  world_vehicle_models_reset();
 }
 
 // Script table A 0x24 (worldmap_add_entry): a lighting region.

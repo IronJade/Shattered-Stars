@@ -5,6 +5,7 @@
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/effects.h"
+#include "game/field/field_movie.h"
 #include "game/field/screen.h"
 #include "runtime/libgte.h"
 
@@ -33,7 +34,8 @@ void scene_renderer_destroy() {
 void SceneRenderer::update() { scene_renderer_update(this); }
 
 void scene_renderer_update(SceneRenderer*) {
-  // Skipped while the sub-overlay at 0x801ea000 is loaded (0x800752c8; not ported).
+  // Skipped while a movie plays (the sub-program at 0x800752c8, #3103).
+  if (field_sub_program() != nullptr) return;
   FxState& fx = fx_state();
   if (fx.count == 0) return;
   for (auto& layer : fx.layer) {

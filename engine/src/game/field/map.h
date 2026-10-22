@@ -58,6 +58,9 @@ void field_load_entry(Field* f, int entry, u8* done = nullptr, int bytes = 0);
 const u8* field_entry_data(int entry);
 int field_require_sprite_pack(Field* f, int entry);        // 0x8004a830: 1 = registered
 void field_load_map_sections(Field* f, int entry);         // 0x8004aca0
+// Embedded code / data sections (5-12) the current map's container carries, bit n for
+// section n (field_load_map_sections records them).
+u32 field_map_sub_sections();
 
 // 0x80053e8c: loads map 'map'. 'keep_position' keeps the saved leader position
 // (else the map's default spawn); 'music_mode' 0 keep, 1 game_state music, 2 preloaded.

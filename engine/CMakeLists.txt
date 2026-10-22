@@ -47,6 +47,7 @@ add_library(ss_core STATIC
   src/psx/spu.cpp
   src/psx/memory_card.cpp
   src/game/common/texture.cpp
+  src/game/common/disc_screen.cpp
   src/game/common/math.cpp
   src/game/boot/loader.cpp
   src/game/boot/pad.cpp
@@ -84,6 +85,8 @@ add_library(ss_game STATIC
   src/game/common/menu_save.cpp
   src/game/title/load_screen.cpp
   src/game/field/menu_camp.cpp
+  src/game/field/menu_shop.cpp
+  src/game/common/menu_viewer.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
   src/game/title/title_program.cpp
@@ -105,6 +108,7 @@ add_library(ss_game STATIC
   src/game/field/effects_draw.cpp
   src/game/field/effects_camera.cpp
   src/game/field/scene_renderer.cpp
+  src/game/field/field_movie.cpp
   src/game/field/bg.cpp
   src/game/field/field_program.cpp
   src/game/field/map.cpp
@@ -136,6 +140,8 @@ add_library(ss_game STATIC
   src/game/field/worldmap_camera.cpp
   src/game/field/worldmap_render.cpp
   src/game/field/worldmap_actor.cpp
+  src/game/field/worldmap_vehicle.cpp
+  src/game/field/field_world.cpp
   src/game/field/characters.cpp
   src/game/field/special.cpp
   src/tools/viewer.cpp)
@@ -163,7 +169,8 @@ target_sources(ss_game PRIVATE
   src/game/battle/window.cpp
   src/game/battle/hud.cpp
   src/game/battle/result.cpp
-  src/game/battle/voice.cpp)
+  src/game/battle/voice.cpp
+  src/game/battle/shot.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

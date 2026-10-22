@@ -547,6 +547,68 @@ void TextRenderer::draw_line(int index, const RenderContext* ctx, int slot, s16 
   }
 }
 
+namespace {
+// field 0x800d863c: past 'n' zero-terminated messages.
+const u8* skip_messages(const u8* p, int n) {
+  while (n != 0) {
+    if (*p++ == 0) --n;
+  }
+  return p;
+}
+void cat(u8* dst, const u8* src) {  // field 0x800d8608
+  while (*dst) ++dst;
+  while ((*dst++ = *src++) != 0) {
+  }
+}
+}  // namespace
+
+int TextRenderer::add_number(s32 value, int digits) {
+  const int index = alloc_line(digits * 6, 0);
+  begin_line(index);
+  draw_number(value, digits);
+  upload_line();
+  return index;
+}
+
+void TextRenderer::draw_number(s32 value, int digits) {
+  const u8* group0 = strings_ + read_u32(strings_);
+  char text[32];
+  format_decimal(text, value, digits, ' ');
+  u8 buf[0x40] = {};
+  int width = 0;
+  for (int i = 0; i < digits + 1 && text[i] != 0; ++i) {
+    if (text[i] == ' ') continue;
+    const int glyph = text[i] == '-' ? 0xC : text[i] - '0';
+    const u8* m = skip_messages(group0, glyph);
+    width += static_cast<s16>(measure(m));  // field 0x800d8598 text_cat_measure
+    cat(buf, m);
+  }
+  int x = digits * 6 + pen_x() - width;
+  if (x < 0) x = 0;
+  set_pen_x(x);
+  draw_current(buf);
+}
+
+int TextRenderer::add_message_line(int index) { return add_line(message(index)); }
+
+void TextRenderer::draw_pack_message(int index) { draw_current(skip_messages(strings_ + read_u32(strings_), index)); }
+
+void TextRenderer::draw_two_digits(int value) {
+  const u8* group0 = strings_ + read_u32(strings_);
+  u8 buf[0x20] = {};
+  int tens = 0;
+  if (value / 10 != 0) {
+    const u8* m = skip_messages(group0, value / 10);
+    tens = measure(m);
+    cat(buf, m);
+  }
+  const u8* m = skip_messages(group0, value % 10);
+  const int ones = measure(m);
+  cat(buf, m);
+  set_pen_x(pen_x() - (static_cast<s16>(tens + ones) - 0xC));
+  draw_current(buf);
+}
+
 int TextRenderer::measure(const u8* text) {
   const int saved = g_expansion_next;
   pen_ = 0;

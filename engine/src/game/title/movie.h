@@ -53,6 +53,30 @@ void movie_close(Movie* self);            // 0x8004f444: stops and frees the str
 // opening's music once it passes 9; the prologue's cues run on it.
 s32 movie_frame_count();
 
+// The player's globals (title 0x80050aa8-0x80050ad6). The field's embedded copy of
+// the player (#3103, globals at 0x801ecb7c-0x801ecbaa) is the same code, and the
+// field's main loop reads and clears some of them (game/field/field_movie.cpp).
+struct MovieGlobals {
+  s32 screen_cleared = 0;          // 0x80050aa8: both buffers were cleared before the first frame
+  s32 slice_half = 0;              // 0x80050aac: half of slice_buffers the MDEC fills next
+  psyq::RECT slice_rect{};         // 0x80050ab0: VRAM column the finished slice goes to
+  std::vector<u32> slice_buffers;  // 0x80050ab8: two MDEC output slices (16 x 240 pixels each)
+  s32 frame_count = 0;             // 0x80050abc: frames decoded or skipped
+  s32 frame_ready = 0;             // 0x80050ac0: a frame is finished and waits for movie_present
+  s32 decoding = 0;                // 0x80050ac4: a frame is on its way through the MDEC
+  s32 draw_buffer = 0;             // 0x80050ac8: frames go to y (0) or y + 240 (1)
+  s16 x = 0, y = 0, width = 0, height = 0;  // 0x80050acc-0x80050ad2
+  s16 mode = 0;                    // 0x80050ad4: 3 = 24-bit, 2 = 15-bit
+  // 0x80050ad6: decode whole frames to RAM instead of VRAM. movie_create clears it and
+  // nothing sets it, so its paths are not ported.
+  u8 frames_in_ram = 0;
+};
+MovieGlobals& movie_globals();
+// frame_ready as the console's code sees it. The host decodes a frame at once and sets
+// the flag then; the console's MDEC sets it only when the frame is done, which
+// movie_present waits for. Code outside the player tests this instead of the flag.
+bool movie_frame_ready();
+
 // The scripted movie player title_program_main uses after New Game (0x8004fa98-
 // 0x8004ffb4; 0x70 bytes, vtable 0x80050a20): a Movie driven by a cue list
 // (archive entries #4504-#4507, see docs/catalog/formats.md "Prologue cue list")

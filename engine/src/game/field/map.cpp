@@ -6,11 +6,13 @@
 
 #include "disc/slz.h"
 #include "game/common/texture.h"
+#include "game/field/actor_field.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
 #include "game/field/effects.h"
 #include "game/field/fade.h"
+#include "game/field/field_world.h"
 #include "game/field/collision.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
@@ -29,6 +31,7 @@ namespace ss::game::field {
 namespace {
 
 MapData g_map;
+u32 g_sub_sections = 0;  // bit n: container section n (5-12) on the current map
 SpritePackSlot g_packs[16];
 std::vector<u8> g_load_buffer;  // 0x80075738
 s32 g_load_bytes = 0;           // 0x8007573c
@@ -184,6 +187,8 @@ int field_require_sprite_pack(Field*, int entry) {
   return 1;
 }
 
+u32 field_map_sub_sections() { return g_sub_sections; }
+
 void field_load_map_sections(Field*, int container_entry) {
   FieldGlobals& g = globals();
   psx::Gpu& gpu = runtime::Runtime::get().gpu;
@@ -245,9 +250,11 @@ void field_load_map_sections(Field*, int container_entry) {
         if (g.field_flags[0x24] != 0) actor_sys_restore_all(actor_system());  // 0x800456f0 (handoff 0xb)
         break;
       default:
-        // Sections 5-12 are copies of code overlays and data (0x801e9000 / 0x801f9800 /
-        // entry #2); none of the ported maps uses them yet.
-        todo("embedded code sections 5-12");
+        // Sections 5-12 are copies of code overlays and data: 5 #3103 (0x801e9000, the
+        // movie player, field_movie.cpp), 6 #3107, 7-10 #3109 / #3108 / #3106 / #3104 and
+        // 12 #3105 (0x801f9800), 11 entry #2's data. Their code is native in the port;
+        // field_load_map only needs to know which the map carries (0x800756bc ...).
+        if (id >= 5 && id <= 12) g_sub_sections |= 1u << id;
         break;
     }
   }
@@ -261,6 +268,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   // overlay objects (0x80076310 ...), extra packs, afterimages, side text.
   if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
+  world_load_map_reset();  // world globals: regions, leader hit, vehicle models (0x800519d4)
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744
   // The BG renderer's script switches back to their defaults: parallax follows
@@ -383,9 +391,11 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   } else {
     // World maps: the vehicle packs (script flag bits 11 / 15 / 16; not ported), then the
     // world party pack (files[3]: sprite packs, the map music, a copy of #3102).
-    if (rd16s(gs + 0x1A) < 4 && ((g.script_flags[1] >> 3 & 1) != 0 || (g.script_flags[1] >> 7) != 0 ||
-                                 (g.script_flags[2] & 1) != 0))
-      todo("world map vehicle packs 0x10e2-0x10e4 (field_load_extra_pack)");
+    if (rd16s(gs + 0x1A) < 4) {
+      if ((g.script_flags[1] >> 3 & 1) != 0) world_vehicle_load_pack(f, 0x10E3, 1);  // 0x8004a920
+      if ((g.script_flags[1] >> 7) != 0) world_vehicle_load_pack(f, 0x10E2, 3);
+      if ((g.script_flags[2] & 1) != 0) world_vehicle_load_pack(f, 0x10E4, 4);
+    }
     field_load_entry(f, files.pack_a);
   }
   // The code overlay (#3101 field / #3102 world) is native code in the port; only the
@@ -421,7 +431,10 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     preload_remove(files.pack_a);
     world_create_objects();
   }
-  // The map container.
+  // The map container. The previous map's embedded code areas are released first
+  // (0x800756b8: 0x801e9000).
+  fieldactor_globals().shadow_boxes = 0;
+  g_sub_sections = 0;
   field_start_pending_music(false);  // 0x80052bf4
   field_load_entry(f, files.container);
   field_load_map_sections(f, files.container);
@@ -435,6 +448,9 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
       world_bg_resume(wbg);  // vtable[4] 0x8008af54
     }
   }
+  // Section 5: #3103 unpacked to 0x801e9000 (0x15000 reserved). While it is there,
+  // actor shadows are drawn as boxes, which its compose can blend into movie frames.
+  if (g_sub_sections & (1u << 5)) fieldactor_globals().shadow_boxes = 1;
 
   // Leader placement.
   if (flags[0x24] == 0) {
@@ -499,8 +515,34 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
         bg->vertical_scroll = rd16(g_map.scene.data() + 6) > 0xF0;
       }
     } else {
-      if ((g.script_flags[1] >> 3 & 1) != 0 || (g.script_flags[2] & 1) != 0)
-        todo("world map vehicles (actors 0xd / 0xe, field_load_map)");
+      // The vehicles: actor 0xd (vehicle 1, script flag 11) at its spot, or the leader's
+      // slot when riding it (flag 12: camera pitch 18, the camera 50 units higher);
+      // actor 0xe (vehicle 4, flag 16) at game_state +0x268 / +0x298 / +0x29c, angle +0x28a.
+      if ((g.script_flags[1] >> 3 & 1) != 0) {
+        const bool riding = (g.script_flags[1] >> 4 & 1) != 0;
+        const int slot = riding ? leader : 0xD;
+        const bool m1 = rd16s(gs + 0x1A) == 1;
+        s32 vpos[3] = {rd32(gs + (m1 ? 0x26C : 0x274)), rd32(gs + (m1 ? 0x28C : 0x290)), rd32(gs + (m1 ? 0x270 : 0x278))};
+        actor_create(actor_system(), slot, slot, vpos, angle, brightness, 0xFFFF, 0xFFFF, 0x1000F);
+        if (Actor* v = field_actor(slot)) {
+          v->vehicle = 1;
+          if (!riding) {
+            world().cam_pitch_deg = 0x15;
+          } else {
+            world().view.geom_ofs_y = -50;
+            world().cam_pitch_deg = 0x12;
+            if (is_world_actor(v)) {
+              WorldActor* wv = static_cast<WorldActor*>(v);
+              wv->throttle = wv->climb = wv->vel_430 = 0;
+            }
+          }
+        }
+      }
+      if ((g.script_flags[2] & 1) != 0) {
+        s32 vpos[3] = {rd32(gs + 0x268), rd32(gs + 0x298), rd32(gs + 0x29C)};
+        actor_create(actor_system(), 0xE, 0xE, vpos, rd16s(gs + 0x28A), brightness, 0xFFFF, 0xFFFF, 0x1000F);
+        if (Actor* v = field_actor(0xE)) v->vehicle = 4;
+      }
     }
   } else {
     // Back from another program: fade in (unless a script holds the screen), and
@@ -579,8 +621,8 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     // A lost script battle that ends the game.
     field_begin_game_over(f);
   } else if (((g.script_flags[1] >> 6) & 1) != 0) {
-    // TODO(port): side text 0xa92 (0x80053a24), field_flags +0x10 = -1, state 0x11, music fade.
-    todo("map load: script flag 14 path (side text 0xa92, state 0x11)");
+    // Riding the bunny (script flag 14): its music and sprite pack again (state 0x11).
+    field_world_bunny_reload(f);
   }
   g_load_buffer.clear();
   g.scripted_battle = 0;

@@ -377,6 +377,9 @@ void field_side_load(s16 entry) {
 }
 
 bool field_side_load_done() { return g_side_done != 0; }
+std::vector<u8>& field_side_buffer() { return g_side_buffer; }
+s16 field_side_entry() { return g_side_entry; }
+void field_side_clear_done() { g_side_done = 0; }
 
 bool field_post_battle_check(Field*) {
   FieldGlobals& g = globals();

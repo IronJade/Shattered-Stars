@@ -49,9 +49,9 @@ std::optional<std::vector<u8>> Archive::read_entry(u32 index) {
   return data;
 }
 
-bool Archive::read_from_entry(u32 index, size_t bytes, u8* dest) {
+bool Archive::read_from_entry(u32 index, size_t bytes, u8* dest, u32 first_sector) {
   if (!disc_ || !has_entry(index)) return false;
-  const u32 lba = entries_[index].lba;
+  const u32 lba = entries_[index].lba + first_sector;
   const u32 full = static_cast<u32>(bytes / DiscImage::kSectorData);
   if (full && !disc_->read_sectors(lba, full, dest)) return false;
   if (const size_t rest = bytes % DiscImage::kSectorData) {

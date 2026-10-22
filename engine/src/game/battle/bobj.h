@@ -104,6 +104,8 @@ void bobj_texcache_reset(BObj* o);                    // 0x80042090
 void bobj_share_sprite(const BObj* src, BObj* dst);   // 0x8004547c: dst uses src's AnimSet and TexCache
 s32 bobj_ground_height(const BObj* o);                // 0x80044184
 void bobj_move(BObj* o, const s32 vel[3]);            // 0x800452d0
+// 0x800457f4: v << 12, negated when o faces left (+0x18 < 0).
+inline s32 bobj_facing_fx(const BObj* o, s32 v) { return (o->facing[0] < 0 ? -v : v) << 12; }
 bool bobj_on_screen(const BObj* o);                   // 0x80045448
 bool bobj_outside_arena(const BObj* o);               // 0x80045564
 int bobj_anim_ticks(const BObj* o, int from, int to); // 0x800456a0: ticks of frames from..to-1

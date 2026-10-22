@@ -207,6 +207,11 @@ void text_to_card_codes(const char* name, u8* out, size_t out_size);
 u32 menu_colour_code(u32 code, u32 brightness, u32 rgb);   // title 0x80038430
 u32 menu_colour(u32 brightness, u32 rgb);                   // title 0x8003853c
 
+// boot 0x800100ec: 'value' in decimal into 'out'; width > 0 right-aligns it in exactly
+// width characters padded with 'pad' (higher digits dropped), width <= 0 writes all
+// digits. A negative value gets a '-' in front. Returns out.
+char* format_decimal(char* out, s32 value, int width, char pad);
+
 // The lowest set bit of a pad mask (title 0x8003093c / field 0x8003039c).
 u32 menu_input_lowest_bit(u32 bits);
 

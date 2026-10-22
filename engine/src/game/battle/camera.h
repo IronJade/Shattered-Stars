@@ -35,8 +35,8 @@ struct Camera : Task {
   s32 eye_vel[4] = {};        // +0x64
   s32 lookat_dest[4] = {};    // +0x74
   s32 lookat_vel[4] = {};     // +0x84
-  Unit* target = nullptr;     // +0x94
-  Unit* focus = nullptr;      // +0x98
+  BObj* target = nullptr;     // +0x94 (a unit, or a Shot in mode 0xc)
+  BObj* focus = nullptr;      // +0x98 (a unit or a Shot)
   Unit* attacker = nullptr;   // +0x9c
   u8 priority = 0;            // +0xa0
   u8 decelerating = 0;        // +0xa1
@@ -46,8 +46,8 @@ struct Camera : Task {
   void update() override;     // [1] camera_update 0x80031390
 };
 
-int camera_set_mode(Camera* c, int mode, Unit* target);      // 0x80031118
-int camera_request_mode(Camera* c, int mode, Unit* target);  // 0x800310b0
+int camera_set_mode(Camera* c, int mode, BObj* target);      // 0x80031118
+int camera_request_mode(Camera* c, int mode, BObj* target);  // 0x800310b0
 void camera_end_mode(Camera* c, int mode, int next, Unit* u);  // 0x800312b0
 void camera_reset_mode(Camera* c);                           // 0x80031358 (the catalogue's camera_reset)
 void camera_set_motion(Camera* c, s32 ticks, s32 speed, s32 accel, s32 min, s32 max);  // 0x800338d8
@@ -71,9 +71,9 @@ void camera_move_to(Camera* c, const s32 centre[3], s32 yaw, s32 pitch, s32 dist
                     s32 accel);                              // 0x80032440 (mode 10)
 void camera_orbit_unit(Camera* c, Unit* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
                        s32 accel);                           // 0x80032544 (mode 12)
-void camera_set_focus_unit(Camera* c, Unit* who, Unit* focus);   // 0x800342cc
-void camera_set_lookat_unit(Camera* c, Unit* who, Unit* focus);  // 0x800342ec
-void camera_set_focus_timer(Camera* c, Unit* focus, s16 ticks);  // 0x8003430c
+void camera_set_focus_unit(Camera* c, BObj* who, BObj* focus);   // 0x800342cc
+void camera_set_lookat_unit(Camera* c, BObj* who, BObj* focus);  // 0x800342ec
+void camera_set_focus_timer(Camera* c, BObj* focus, s16 ticks);  // 0x8003430c
 void camera_set_hold(Camera* c, s16 ticks);                  // 0x80034358
 void camera_set_zoom(Camera* c, s32 zoom, s32 speed);        // 0x8003434c
 // #1984.0: end 'mode' after 'ticks' (battle_frame_director runs it down; 0x80072544) and

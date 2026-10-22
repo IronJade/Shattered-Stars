@@ -16,6 +16,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/hud.h"
 #include "game/battle/result.h"
+#include "game/battle/shot.h"
 #include "game/battle/voice.h"
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
@@ -195,6 +196,7 @@ void battle_init_objects() {
   g.prim_pool_b = new_render_context();
   render_ctx_create_arena(g.prim_pool_b, 0xC80);
   render_ctx_create_ot(g.prim_pool_b, 0xC);
+  shot_pool_create();    // 160 x 0x13c (g_pool_13c)
   sprite_pool_create();  // 296 x 0xb8 (g_pool_b8)
   input_reset();         // g_input (0xa0)
   damage_popups_reset(); // Pool2C (16 x 0x2c)
@@ -558,7 +560,8 @@ void battle_main_loop() {
     }
     task_run_all();
     if (g.state == kStateLoaded && !g.battle_code_unpacked) g.battle_code_unpacked = true;  // #1984 block 1
-    // TODO(port): the Shot (160) pool before the sprites, the Particle (200) pool after.
+    shot_pool_update();
+    // TODO(port): the Particle (200) pool after the sprites.
     sprite_pool_update();
     if (g.stage_hidden == 0) stage_draw_and_animate();
     // TODO(port): clash_resolve (state > 1).
@@ -673,6 +676,7 @@ void battle_free_all() {
   g.camera = nullptr;
   g.camera_obj.reset();
   sprite_pool_destroy();
+  shot_pool_destroy();
 }
 
 void battle_exit_to_field() {

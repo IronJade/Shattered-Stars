@@ -36,9 +36,10 @@ class Archive {
   // Port of loader_entry_size: size in bytes.
   u32 entry_size(u32 index) const { return has_entry(index) ? entries_[index].sectors * 2048 : 0; }
   std::optional<std::vector<u8>> read_entry(u32 index);
-  // Reads 'bytes' starting at an entry's first sector, continuing into the entries
-  // after it on disc, as loader_start_read does when given a byte count.
-  bool read_from_entry(u32 index, size_t bytes, u8* dest);
+  // Reads 'bytes' starting at an entry's first sector (or 'first_sector' sectors into
+  // it), continuing into the entries after it on disc, as loader_start_read does when
+  // given a byte count.
+  bool read_from_entry(u32 index, size_t bytes, u8* dest, u32 first_sector = 0);
 
  private:
   DiscImage* disc_ = nullptr;

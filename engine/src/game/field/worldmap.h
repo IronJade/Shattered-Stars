@@ -46,12 +46,14 @@ struct WorldView {
   psyq::MATRIX proj{};             // 0x80075b08: rotation for the curved -> screen projection
   s16 offset[3]{};                 // 0x80075b28
   u8 ambient[3]{};                 // 0x80075b30
+  u8 ambient_pad = 0;              // 0x80075b33: tpage of the model renderer's semi-transparent G3s (never written)
   s16 pitch = 0, yaw = 0;          // 0x80075b34 / 0x80075b36 (camera_compute_view angles)
   s16 b38 = 0;                     // 0x80075b38
   s16 pitch2 = 0, yaw2 = 0;        // 0x80075b3c / 0x80075b3e
   s16 roll2 = 0;                   // 0x80075b40
   psyq::MATRIX rot_b44{};          // 0x80075b44
-  psyq::MATRIX colour_b64{};       // 0x80075b64
+  psyq::MATRIX colour_b64{};       // 0x80075b64: the particles' colour matrix (cleared by every camera update)
+  psyq::MATRIX light_b84{};        // 0x80075b84: the particles' light matrix
   psyq::MATRIX colour{};           // 0x80075ba4: GTE colour matrix (light colour << 5 in column 0)
   psyq::MATRIX light_m{};          // 0x80075bc4: GTE light matrix (L12 = 0x1000: lit by normal.y)
   u8 far_colour[3]{};              // 0x80075c15: fog colour of this frame
@@ -115,8 +117,12 @@ struct WorldActor : Actor {
   s32 normal[4]{};                 // +0x414: floor normal (shadow)
   u8 wade = 0;                     // +0x424: depth into water (0..0x20, sprite clipped)
   u8 face_heading = 1;             // +0x425: scripted moves turn to the heading
-  s32 vel[3]{};                    // +0x428: vehicle velocity (0x428 / 0x42c / 0x430)
-  s32 field_434 = 0, field_438 = 0;  // +0x434 / +0x438
+  // Vehicle state (worldactor_vehicle_control 0x80085944).
+  s32 throttle = 0;                // +0x428: 0..0x1000 (speed = walk * throttle >> 12 << 5)
+  s32 climb = 0;                   // +0x42c: vertical speed (20.12; -0x28000..0x28000, + = down)
+  s32 vel_430 = 0;                 // +0x430: cleared with the others, not read
+  s32 turn = 0;                    // +0x434: camera turn rate
+  s32 bank = 0;                    // +0x438: heading offset from the camera's view direction
   s32 ground = -0x8000;            // +0x43c: terrain height under the actor (-0x8000 unknown)
 };
 
@@ -189,6 +195,14 @@ void world_bg_set_angle(WorldBg* bg, s32 angle);       // 0x8008f404: +0x30 = an
 void world_bg_set_centre(WorldBg* bg, s32 x, s32 z);   // 0x8008f410
 // Script table A 0x24: a lighting region (x, z, 12 parameters).
 void world_add_light_region(const s32 args[14]);
+
+// ---- Vehicles (worldmap_vehicle.cpp) ----
+void world_vehicle_models_free();                                   // field 0x800519d4
+void world_vehicle_models_reset();                                  // field_load_map: free + VRAM cursors
+// field_load_map's resets of the world globals (every map): lighting regions
+// (0x80076282), the leader's terrain hit (0x80076258) and the vehicle models.
+void world_load_map_reset();
+void world_vehicle_load_pack(Field* f, int entry, int vehicle);     // field 0x8004a920 (packs 0x10e2-0x10e4)
 
 // ---- Terrain ----
 // 0x8008d478: height of the terrain under (x, z) (20.12), or -0x8000 when no loaded

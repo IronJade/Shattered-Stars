@@ -130,6 +130,21 @@ class TextRenderer {
   int measure(const u8* text);                      // title 0x800339a8
   void draw_text(TextLine* line, const u8* text);   // title 0x80033a2c (line null: measure only)
   void draw_glyph(int glyph, int stride_px);        // title 0x80033d2c
+  // title 0x800324a0 / field 0x800d7cf0: a new line of 'digits' * 6 pixels showing 'value'.
+  int add_number(s32 value, int digits);
+  // title 0x80032b3c / field 0x800d838c: 'value' right-aligned in digits * 6 pixels from the
+  // pen into the current line; the digit glyphs are messages 0-9 of the pack's group 0
+  // ('-' message 12).
+  void draw_number(s32 value, int digits);
+  // title 0x80032524 / field 0x800d7d74: add_line(message(index)).
+  int add_message_line(int index);
+  // title 0x800339f8 / field 0x800d9248: draw_text into the current line.
+  void draw_current(const u8* text) { draw_text(lines_[current_], text); }
+  // field 0x800d86f4: message 'index' of the pack's group 0 into the current line.
+  void draw_pack_message(int index);
+  // field 0x800d84a8: 'value' (0-99) in group 0 digits, right-aligned 12 pixels past the pen.
+  void draw_two_digits(int value);
+  s16 current_line() const { return current_; }
   s16 x() const { return x_; }
   s16 y() const { return y_; }
   TextLine* line(int i) { return lines_[static_cast<size_t>(i)]; }

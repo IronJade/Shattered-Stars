@@ -7,6 +7,7 @@
 #include <cstring>
 #include <vector>
 
+#include "game/field/actors.h"
 #include "game/field/camera.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
@@ -552,6 +553,41 @@ void world_bend_to_world(const s16 pt[3], s16 out[3]) {
   out[2] = static_cast<s16>((v.eye[2] >> 12) + ((bx * -s + bz * c) >> 12));
 }
 
+// 0x8005ff84 (the field's camera_set_object_matrix) on the world map's camera block:
+// RT = view * Raxis(rot[2]) * Ry(rot[1]) (rot[0] != 0 picks the other axis and is the
+// angle), TR = view * (pos - eye), scaled; H from the zoom.
+void world_flat_object_matrix(const s32 pos[3], const s32 rot_in[3], const s32 scale[3]) {
+  WorldView& v = view();
+  s32 rot[3] = {rot_in[0], rot_in[1], rot_in[2]};
+  s32 axis[3] = {rcos(rot[1]), 0, -rsin(rot[1])};
+  if (rot[0] != 0) {
+    rot[2] = rot[0];
+    axis[0] = -rsin(rot[1]);
+    axis[2] = -rcos(rot[1]);
+  }
+  psyq::MATRIX ry{}, m{};
+  rot_matrix_y(rot[1], &ry);
+  rot_matrix_axis(axis, rot[2], &m);
+  rot_columns(v.view, &m);  // view * Raxis
+  {
+    const psyq::MATRIX left = m;
+    m = ry;
+    rot_columns(left, &m);  // * Ry
+  }
+  psyq::SetRotMatrix(&v.view);
+  ldv(0, static_cast<s16>((pos[0] - v.eye[0]) >> 12), static_cast<s16>((pos[1] - v.eye[1]) >> 12),
+      static_cast<s16>((pos[2] - v.eye[2]) >> 12));
+  run(G::kRtv0);
+  const psyq::VECTOR t{mac(1), mac(2), mac(3), 0};
+  psyq::TransMatrix(&m, &t);
+  const psyq::VECTOR sc{scale[0], scale[1], scale[2], 0};
+  psyq::ScaleMatrix(&m, &sc);
+  gte().write_ctrl(G::H, static_cast<u32>(mul(map_data().projection_h, v.zoom) >> 12));
+  psyq::SetRotMatrix(&m);
+  psyq::SetTransMatrix(&m);
+}
+
+
 namespace {
 
 // 0x8008a880: which sub-cells of the nine blocks to draw. The 13 x 13 grid of sub-cell
@@ -658,40 +694,6 @@ void step_texture_anims() {
   }
 }
 
-// 0x8005ff84 (the field's camera_set_object_matrix) on the world map's camera block:
-// RT = view * Raxis(rot[2]) * Ry(rot[1]) (rot[0] != 0 picks the other axis and is the
-// angle), TR = view * (pos - eye), scaled; H from the zoom.
-void flat_object_matrix(const s32 pos[3], const s32 rot_in[3], const s32 scale[3]) {
-  WorldView& v = view();
-  s32 rot[3] = {rot_in[0], rot_in[1], rot_in[2]};
-  s32 axis[3] = {rcos(rot[1]), 0, -rsin(rot[1])};
-  if (rot[0] != 0) {
-    rot[2] = rot[0];
-    axis[0] = -rsin(rot[1]);
-    axis[2] = -rcos(rot[1]);
-  }
-  psyq::MATRIX ry{}, m{};
-  rot_matrix_y(rot[1], &ry);
-  rot_matrix_axis(axis, rot[2], &m);
-  rot_columns(v.view, &m);  // view * Raxis
-  {
-    const psyq::MATRIX left = m;
-    m = ry;
-    rot_columns(left, &m);  // * Ry
-  }
-  psyq::SetRotMatrix(&v.view);
-  ldv(0, static_cast<s16>((pos[0] - v.eye[0]) >> 12), static_cast<s16>((pos[1] - v.eye[1]) >> 12),
-      static_cast<s16>((pos[2] - v.eye[2]) >> 12));
-  run(G::kRtv0);
-  const psyq::VECTOR t{mac(1), mac(2), mac(3), 0};
-  psyq::TransMatrix(&m, &t);
-  const psyq::VECTOR sc{scale[0], scale[1], scale[2], 0};
-  psyq::ScaleMatrix(&m, &sc);
-  gte().write_ctrl(G::H, static_cast<u32>(mul(map_data().projection_h, v.zoom) >> 12));
-  psyq::SetRotMatrix(&m);
-  psyq::SetTransMatrix(&m);
-}
-
 // Map 2's two whirlwind barrier walls (the middle of 0x800893c0): around (67000, 40000)
 // r 24000 and (0x13023, 0xd4b5) r 8000. When the point of the circle nearest the camera
 // focus is within 0x3000, an arc of 10 segments x 10 rows of additive G4s (red channel
@@ -731,7 +733,7 @@ void draw_walls(WorldBg* bg, s32 cam_yaw) {
                         static_cast<s16>(static_cast<s16>((rsin(a) * r) >> 12) + static_cast<s16>(cz) - origin[1])};
       world_bend_to_world(p, pts[i]);
     }
-    flat_object_matrix(zero, v.light_angle, one);
+    world_flat_object_matrix(zero, v.light_angle, one);
     s32 rising = 0;
     constexpr int kHalf = kSegs >> 1;
     for (int i = 0; i < kSegs; ++i, rising += fade) {
@@ -966,9 +968,150 @@ void world_bg_draw(WorldBg* bg) {
   draw_sky(bg);
 }
 
-// 0x8008b064: the town markers (Start toggles game_state +0x20). Not ported yet.
-void world_draw_markers(WorldBg*, int) {
-  runtime::Runtime::get().log_once("world:markers", "world: map markers (0x8008b064) not ported yet");
+// 0x8008b064: the map (Start cycles game_state +0x20: 0 none, 1 the rotating corner map,
+// 2 the whole map). Places from the overlay lists 0x8008f4ec (map 1) / 0x8008f580 (map 2)
+// ({s32 x, z} until x == -1) blink with the frame counter; the parked vehicle (actor 0xd's
+// spot) too; a red arrow shows the facing. Everything goes to OT 0x810. The map image is
+// section 3 tag 7's (VRAM (896, 256), CLUT row 0x1fa); its transparent texels (STP set)
+// darken the scene subtractively (tpage abr 2).
+void world_draw_markers(WorldBg* bg, int mode) {
+  FieldGlobals& g = globals();
+  const u8* gs = g.game_state;
+  const bool map1 = static_cast<s16>(read_u16(gs + 0x1a)) == 1;
+  const u32 list = map1 ? 0x8008f4ecu : 0x8008f580u;
+  Screen* screen = field_screen();
+  auto link810 = [&](psyq::P_TAG* p) { link(0x810, p); };
+  auto div = [](s32 v, int sh) { return (v < 0 ? v + ((1 << sh) - 1) : v) >> sh; };
+  s32 pulse = static_cast<s32>((runtime::Runtime::get().vblanks() - g.vblank_base) % 0x60);
+  if (pulse < 0x20) {
+    pulse *= 4;
+  } else if (pulse < 0x40) {
+    pulse = 0x80;
+  } else {
+    pulse = (0x60 - pulse) * 4;
+  }
+  if (pulse == 0) pulse = 1;
+  const u8 c = static_cast<u8>(pulse);
+  const s32 yaw = world_camera_yaw();
+  const bool riding = ((g.script_flags[1] >> 4) & 1) != 0;
+  const s32 veh_x = rd32(gs + (map1 ? 0x26c : 0x274)), veh_z = rd32(gs + (map1 ? 0x270 : 0x278));
+  auto places = [&](auto&& fn) {
+    for (u32 a = list;; a += 8) {
+      const u8* e = world_ovl_data(a);
+      if (e == nullptr || rd32(e) == -1) break;
+      fn(rd32(e), rd32(e + 4));
+    }
+  };
+  auto arrow = [&](s32 cx, s32 cy, s32 a0, s32 a1, s32 a2) {
+    psyq::P_TAG* p = alloc_prim(4);
+    if (p == nullptr) return;
+    put32(p, 4, 0x210000a0);
+    const s32 ang[3] = {a0, a1, a2};
+    for (int k = 0; k < 3; ++k) {
+      s32 x = rcos(ang[k]) * 7, y = rsin(ang[k]) * 7;
+      if (x < 0) x += 0xfff;
+      if (y < 0) y += 0xfff;
+      put16(p, 8 + k * 4, static_cast<u16>(cx + (x >> 12)));
+      put16(p, 0xa + k * 4, static_cast<u16>(cy + (y >> 12)));
+    }
+    link810(p);
+  };
+  const s16 draw_y = static_cast<s16>(screen->current == &screen->buffers[0] ? 0 : 0xe0);  // 0x80075730[buffer]
+  if (mode == 2) {
+    // The whole map: 2x2 tiles over a 108x84 sprite of the map image (bottom right).
+    auto tile = [&](s32 x, s32 z) {
+      psyq::P_TAG* p = alloc_prim(3);
+      if (p == nullptr) return;
+      put32(p, 4, 0x60000000u | static_cast<u8>(c * 2 - 1));
+      put16(p, 8, static_cast<u16>(div(x, 10) + 0xcb));
+      put16(p, 0xa, static_cast<u16>(0xd9 - div(z, 10)));
+      put16(p, 0xc, 2);
+      put16(p, 0xe, 2);
+      link810(p);
+    };
+    places(tile);
+    if (!riding && ((g.script_flags[1] >> 3) & 1) != 0) tile(veh_x, veh_z);
+    arrow(div(bg->centre_x, 10) + 0xcc, 0xd8 - div(bg->centre_z, 10), 0x1000 - yaw, 0x1671 - yaw, 0x98f - yaw);
+    psyq::P_TAG* sp = alloc_prim(4);
+    if (sp != nullptr) {
+      put32(sp, 4, 0x67000000);
+      put16(sp, 8, 0xcc);
+      put16(sp, 0xa, 0x84);
+      put8(sp, 0xc, 4);
+      put8(sp, 0xd, 0xa8);
+      put16(sp, 0xe, 0x7e80);
+      put16(sp, 0x10, 0x6c);
+      put16(sp, 0x12, 0x54);
+      link810(sp);
+    }
+    psyq::P_TAG* dm = alloc_prim(2);
+    if (dm != nullptr) {
+      put32(dm, 4, 0xe100025e);
+      put32(dm, 8, 0);
+      link810(dm);
+    }
+    return;
+  }
+  // The corner map: the map image tiled 3 x 3 around the focus, turned with the camera,
+  // clipped to (204, 132)-(311, 215).
+  auto area = [&](s16 x, s16 y, s16 w, s16 h) {
+    psyq::P_TAG* p = alloc_prim(2);
+    if (p == nullptr) return;
+    psyq::DR_AREA a{};
+    const psyq::RECT r{x, y, w, h};
+    psyq::SetDrawArea(&a, &r);
+    put32(p, 4, a.code[0]);
+    put32(p, 8, a.code[1]);
+    link810(p);
+  };
+  area(0, draw_y, 0x140, 0xe0);
+  const s32 lx = div(bg->centre_x, 9), lz = 0xa8 - div(bg->centre_z, 9);
+  const s32 C = rcos(0x400 - yaw), S = rsin(0x400 - yaw);
+  auto marker = [&](s32 x, s32 z, u16 clut) {
+    psyq::P_TAG* p = alloc_prim(4);
+    if (p == nullptr) return;
+    const s32 dx = div(x, 9) - (lx + 2), dz = (0xaa - lz) - div(z, 9);
+    put32(p, 4, 0x66000000u | c | static_cast<u32>(c) << 8 | static_cast<u32>(c) << 16);
+    put16(p, 8, static_cast<u16>(((dx * C + dz * S) >> 12) + 0x102));
+    put16(p, 0xa, static_cast<u16>(((dx * -S + dz * C) >> 12) + 0xae));
+    put8(p, 0xc, 0xaa);
+    put8(p, 0xd, 0x12);
+    put16(p, 0xe, clut);
+    put16(p, 0x10, 4);
+    put16(p, 0x12, 4);
+    link810(p);
+  };
+  places([&](s32 x, s32 z) { marker(x, z, 0x7fc9); });
+  if (!riding) marker(veh_x, veh_z, 0x7fcc);
+  psyq::P_TAG* dm = alloc_prim(2);
+  if (dm != nullptr) {
+    put32(dm, 4, 0xe1000236);
+    put32(dm, 8, 0);
+    link810(dm);
+  }
+  const Actor* who = (g.script_flags[2] & 1) != 0 ? field_actor(0xe) : field_actor(gs[0x24]);
+  if (who != nullptr) {
+    const s32 d = yaw - who->angle;
+    arrow(0x102, 0xae, d - 0x400, d - 0xa71, d + 0x271);
+  }
+  for (int i = 0; i < 9; ++i) {
+    psyq::P_TAG* p = alloc_prim(9);
+    if (p == nullptr) return;
+    const s32 ox = (i % 3 - 1) * 0xd8 - lx, oz = (i / 3 - 1) * 0xa8 - lz;
+    const s32 xs[2] = {ox, ox + 0xd8}, zs[2] = {oz, oz + 0xa8};
+    put32(p, 4, 0x2f000000);
+    for (int k = 0; k < 4; ++k) {
+      const s32 x = xs[k & 1], z = zs[k >> 1];
+      put16(p, 8 + k * 8, static_cast<u16>(((x * C + z * S) >> 12) + 0x102));
+      put16(p, 0xa + k * 8, static_cast<u16>(((x * -S + z * C) >> 12) + 0xae));
+      put8(p, 0xc + k * 8, (k & 1) != 0 ? 0xd7 : 0);
+      put8(p, 0xd + k * 8, (k >> 1) != 0 ? 0xa7 : 0);
+    }
+    put16(p, 0xe, 0x7e80);
+    put16(p, 0x16, 0x5e);
+    link810(p);
+  }
+  area(0xcc, static_cast<s16>(draw_y + 0x84), 0x6c, 0x54);
 }
 
 }  // namespace ss::game::field

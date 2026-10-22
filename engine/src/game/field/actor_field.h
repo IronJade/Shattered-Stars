@@ -18,6 +18,12 @@ struct FieldActorGlobals {
   u8 shadow_boxes = 0;       // 0x800756b8 != 0: the 0x801e9000 overlay is loaded (shadows drawn as boxes)
   u8 vehicle_control = 0;    // 0x800761ea: the 0x801f9800 overlay steers the player (vehicles)
   s16 screen_clamp = 0;      // 0x8007627e: control directions follow the projected screen (field_update_screen_clamp_flag)
+  // fieldactor_build_light_split's colour of the list-6 region under the feet (its stack
+  // slot sp+0x10). The original never clears it: a call that finds no region still
+  // compares list-4 polygons flagged +0x48 against what the slot holds, mostly the
+  // colour of an earlier call (PCSX-Redux, map 18: 627 of 807 calls), so it is kept here.
+  // (No map on either disc flags a list-4 polygon.)
+  u8 shade_colour[3] = {0, 0, 0};
 };
 FieldActorGlobals& fieldactor_globals();
 
@@ -43,7 +49,15 @@ void fieldactor_apply_light_zone(Actor* self);
 // 0x80085d94: the facing (relative to the camera) picks one of 12 directions: stand,
 // walk (moving) or run animation; or the set animation when +0x10 != -1.
 void fieldactor_select_auto_anim(Actor* self, int walked);
-// 0x80083d70: shading regions (cell lists 6 / 4) recolour the sprite. Not ported yet.
+// 0x80083d70: shading regions. When a list-6 polygon lies under the feet (the bottom
+// edge's middle, or half a sprite to either side), every list-6 polygon near the sprite
+// (those flagged +0x48 only in that polygon's colour), then, if any list-4 polygon comes
+// near the sprite, every list-4 polygon near it, is clipped to the sprite's box and
+// drawn over the sprite as POLY_FT4 / POLY_FT3 pieces with the sprite's texture, tinted
+// by the polygon's colour minus the ambient (scene +0x6c). 'prim' is the main sprite (quad corners in actor +0x2b8), w / h
+// its size on screen, flips = flip x << 1 | flip y, scaled = drawn from sprite cache A.
+// The original writes through the screen's primitive cursor; here the pieces come from
+// field_screen()->alloc.
 void fieldactor_build_light_split(Actor* self, s32 w, s32 h, psyq::POLY_FT4* prim, int flips, int scaled);
 
 }  // namespace ss::game::field

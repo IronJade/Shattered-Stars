@@ -121,3 +121,17 @@ s32 world_ratan2(s32 y, s32 x);
 s32 world_sqrt(s32 v);
 
 }  // namespace ss::game::field::wm
+
+namespace ss::game::field {
+
+// worldmap_render.cpp: field 0x8005ff84 (camera_set_object_matrix) on the world map's
+// camera block: RT = view * Raxis(rot[2]) * Ry(rot[1]), TR = view * (pos - eye), scaled;
+// H from the zoom (the flat camera, without the curvature bend).
+void world_flat_object_matrix(const s32 pos[3], const s32 rot[3], const s32 scale[3]);
+void world_bend_to_world(const s16 pt[3], s16 out[3]);
+// worldmap_vehicle.cpp: the vehicle branch of worldactor_draw (0x80082f44) after the
+// projection and the auto animation, and the vehicle steering (0x80085944).
+void worldactor_draw_vehicle(Actor* a);
+void worldactor_vehicle_control(Actor* a, int camera, s32 mag);
+
+}  // namespace ss::game::field

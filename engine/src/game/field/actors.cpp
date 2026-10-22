@@ -352,7 +352,7 @@ void actor_sys_setup_view(ActorSystem* sys) {
   psyq::MATRIX base = flip;
   const s16 roll = sys->camera_rot.vz;
   sys->camera_rot.vz = 0;
-  psyq::RotMatrix(&sys->camera_rot, &r);
+  field_rot_matrix(&sys->camera_rot, &r);  // the field's own RotMatrix (0x8006e52c)
   sys->camera_rot.vz = roll;
   psyq::RotMatrixZ(roll, &r);
   psyq::MulMatrix(&r, &base);

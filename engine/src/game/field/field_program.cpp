@@ -9,6 +9,7 @@
 #include "disc/slz.h"
 #include "game/boot/pad.h"
 #include "game/boot/stubs.h"
+#include "game/common/disc_screen.h"
 #include "game/common/program_image.h"
 #include "game/common/texture.h"
 #include "game/field/actors.h"
@@ -19,8 +20,10 @@
 #include "game/field/effects.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
+#include "game/field/field_world.h"
 #include "game/field/music.h"
 #include "game/field/field.h"
+#include "game/field/field_movie.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
 #include "game/field/menu_camp.h"
@@ -565,12 +568,21 @@ void field_update(Field* f) {
         g.poison_next_step = g.field_flags[0x68] != 0 ? steps + 400 : steps + (read_u16(map_data().scene.data() + 0x68) * 400) / 100;
       }
       if (g_script_vm != nullptr && g_script_vm->wait_state != 1 && g_script_vm->wait_state != 3 &&
-          g_script_vm->wait_state != 8 && g.field_flags[0x26] == 0 && static_cast<s16>(read_u16(g.field_flags + 0x10)) != -1 &&
-          field_post_battle_check(f)) {
-        f->state = 0xF;
-        return;
+          g_script_vm->wait_state != 8 && g.field_flags[0x26] == 0 && static_cast<s16>(read_u16(g.field_flags + 0x10)) != -1) {
+        if (field_post_battle_check(f)) {
+          f->state = 0xF;
+          return;
+        }
+        // The clock event, the bunny and the world-map vehicle (field_world.cpp).
+        if (field_world_play_checks(f)) return;
       }
       field_update_encounters(f);
+      return;
+    case 9: case 0xA: case 0xB: case 0xC: case 0xD: case 0xE:  // the vehicle (field_world.cpp)
+    case 0x11: case 0x12: case 0x13: case 0x14: case 0x15:      // the bunny
+    case 0x16: case 0x17: case 0x18: case 0x19: case 0x1A:
+    case 0x1B: case 0x1C: case 0x1D: case 0x1E: case 0x1F: case 0x20:  // clock event / warp
+      field_world_update(f);
       return;
     case 0xF:  // the auto-equip report, a page per member
       field_update_equip_report(f);
@@ -746,11 +758,41 @@ void party_restore_slot_ids(Field*) {
   }
 }
 
-void field_prompt_disc_change(Field*, int disc, int) {
-  if (loader_insert_disc(*g_field.loader, disc)) return;
-  runtime::Runtime::get().log_once("disc_prompt_" + std::to_string(disc),
-                                   "field: disc " + std::to_string(disc) +
-                                       " is needed but not configured (--disc2); continuing with disc 1's archive");
+void field_prompt_disc_change(Field* f, int disc, int keep_vram) {
+  if (loader_insert_disc(*g_field.loader, disc) || disc_screen_declined(disc)) return;
+  // No image of that disc: the insert-disc screen (0x8006f958), as the console shows it.
+  // With keep_vram the sprite-cache area (0x180, 0x100) 128x256 and the CLUT rows
+  // (0, 0x1d8) 256x48 are saved around it and the field's screen is set up again.
+  FieldGlobals& g = g_field;
+  psyq::ResetGraph(1);
+  psyq::SetDispMask(0);
+  const psyq::RECT cache{0x180, 0x100, 0x80, 0x100}, cluts{0, 0x1d8, 0x100, 0x30};
+  std::vector<u16> saved_cache, saved_cluts;
+  if (keep_vram != 0) {
+    load_queue_set_streaming(load_queue(), false);
+    load_queue_reset(load_queue());
+    preload_release(-1);
+    saved_cache.resize(0x80 * 0x100);
+    saved_cluts.resize(0x100 * 0x30);
+    psyq::StoreImage(&cache, saved_cache.data());
+    psyq::StoreImage(&cluts, saved_cluts.data());
+    psyq::DrawSync(0);
+  }
+  field_free_ot_layers();  // 0x80053158
+  disc_change_screen(disc);
+  sound_play_sfx(g.sound, 2, 0, 0x7f40);
+  if (keep_vram != 0) {
+    psyq::LoadImage(&cache, saved_cache.data());
+    psyq::LoadImage(&cluts, saved_cluts.data());
+    psyq::DrawSync(0);
+    Screen* screen = field_screen();
+    screen_clear_vram(screen);
+    field_setup_screen(f);
+    psyq::PutDispEnv(&screen->current->disp);
+    psyq::PutDrawEnv(&screen->current->draw);
+    screen_flip(screen);
+    screen_clear_ot(screen);
+  }
 }
 
 void field_run(Field* f) {
@@ -823,12 +865,37 @@ void field_main_loop(Field* f) {
     rt.debug_start_pos_set = false;
     keep_position = true;
   }
+  // Debugging: SS_STATE_POKE="gs:0x274:4:59813,sf:1:1:|0x08,..." writes the state block
+  // (gs game_state, sf script flags, ff field flags) before the first map loads; a
+  // leading '|' ORs. The PCSX-Redux world script (WW_POKE) writes the same.
+  if (const char* poke = std::getenv("SS_STATE_POKE"); poke != nullptr && g.field_flags[0x24] == 0) {
+    static bool done = false;
+    for (const char* p = poke; !done && p != nullptr && *p != 0;) {
+      char area[4] = {};
+      unsigned off = 0, size = 0;
+      int used = 0;
+      if (std::sscanf(p, "%2[a-z]:%i:%u:%n", area, &off, &size, &used) < 3) break;
+      p += used;
+      const bool orr = *p == '|';
+      if (orr) ++p;
+      char* end = nullptr;
+      const long value = std::strtol(p, &end, 0);
+      p = end != nullptr && *end == ',' ? end + 1 : nullptr;
+      u8* base = std::strcmp(area, "gs") == 0 ? g.game_state : std::strcmp(area, "sf") == 0 ? g.script_flags : g.field_flags;
+      for (unsigned i = 0; i < size && i < 4; ++i) {
+        const u8 b = static_cast<u8>(static_cast<unsigned long>(value) >> (8 * i));
+        base[off + i] = orr ? static_cast<u8>(base[off + i] | b) : b;
+      }
+    }
+    done = true;
+  }
   field_load_map(f, map, keep_position, g.returning != 0);
   f->present = 1;
   g_vsync_counter.frames();
   for (;;) {
-    screen_flip(&g_screen);
-    pad_set_option(g.pad, 1);
+    // While a movie plays (#3103, 0x800752c8) the buffers flip only when a frame is ready.
+    if (field_sub_program() == nullptr) screen_flip(&g_screen);
+    pad_set_option(g.pad, field_sub_program() == nullptr ? 1 : 0);
     screen_clear_ot(&g_screen);
     for (int port = 0; port < 2; ++port) {
       g.held[port] = pad_current(g.pad, port);
@@ -841,6 +908,7 @@ void field_main_loop(Field* f) {
     g.disc_error = 0;  // the host disc never opens
     field_update(f);
     // TODO(port): field_update_encounter_streaming (0x80050dec).
+    if (field_sub_program() != nullptr && !field_movie_main_loop(f)) continue;
     task_run_all();
     psyq::DrawSync(0);
     psyq::VSync(g.vsync_mode);
@@ -852,7 +920,8 @@ void field_main_loop(Field* f) {
       psyq::PutDispEnv(&g_screen.current->disp);
       psyq::PutDrawEnv(&g_screen.current->draw);
     }
-    if (g.draw_enabled) {
+    if (g.sub_overlay_hook != 0) field_movie_pip_draw();  // 0x801ead88
+    if (g.draw_enabled && field_sub_program() == nullptr) {
       screen_compact_ot(&g_screen);
       psyq::DrawOTag(g_screen.current->ot.data());
     }

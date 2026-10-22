@@ -262,6 +262,65 @@ The page handler (`menu_page01_update`) maps choices 0-12 to pages 2, 3, 4, 5, 6
 0x11, 8, 9, 10, 0xb, 0xc, 0xd. The field's page 0x11 handler pops one level more after a
 save or load, so the camp menu closes with it.
 
+## Shops (page 0xb, overlay 0xbaa)
+
+Script B 0x6d asks for menu 2 with the shop id (`g_menu_param`); the launcher reads
+0xba8-0xbab and the session starts at page 0xb with the id as its argument. The help bar
+shows group 0xc message id - 1 (the shop's name).
+
+- **Shop** (Panel, 0x2b8 bytes): command box Buy / Sell / Settle (order shops 0x5a-0x5e:
+  Order / Settle), a member box, the info box (group 7 text of the command), a help text
+  box and the money box (Fol, Purchase, Sales, Balance = Fol + sales - purchase).
+  Its lists are built once the item data (entries 3000-3003) is in: the stock from
+  `k_shop_stock` (shop 0x58: items 0xc4-0xdb whose flag 0x194 + item is set) and the
+  inventory's priced items to sell (shops 0x39 / 0x58: owned items 0xc4-0xdb).
+- **ShopList** (Dialog): a scrolling list of name, price, "x" and the count in the cart.
+  Left / right change the cart (selling up to the count held, buying up to 20 held);
+  square toggles the info box between the item's description and its figures;
+  confirming asks "Account settlement: is this acceptable?" (a negative balance gets a
+  notice instead). Hovering an item loads its file into the item viewer and marks which
+  members could wear it and whether it is better (arrows by ATK for weapons, AC else).
+- **Prices**: item field 0 (above 9,999,999 counted in tens), item 0x171 + 250 a minute
+  of play, item 0x1da negative; selling: * field 0x2d % plus the best skill 4 * 3 % and
+  the super specialty 6 bargain; buying: the bargain minus flag discounts 0x2c8 (25 %) /
+  0x2c9 (5 %).
+- **Settling** (Settle, or Yes in the list): sold items leave the inventory, bought ones
+  are added with the new bit, money = the balance, session +0x1e = bought. Order shops
+  write up to ten orders to game_state +0x250 due at -(clock + delay by specialty 0xc
+  level) in +0x294, which the field turns into a delivery event (menu result 4). Any
+  booking clears the one-shot bargain flags 0x2c8 / 0x2c9 / 0x2df / 0x2e0.
+- Page 0xc of the same overlay is a debug panel with a cheat list (all items x5, SP max,
+  HP / MP, status, level max); 0xd an empty panel.
+
+Verified against PCSX-Redux on a save made by the port in front of Mr. Hearn (Arlia,
+map 26, 200 Fol): buying three Sandals, toggling the figures, settling, then selling one
+on a second visit leave config and inventory (entries, counts, new bits, recent list)
+identical to the original's (captures kept in the git-ignored `scratchpad/menu/`).
+
+## The item viewer (entry 3001 at 0x80088000)
+
+Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
+For the hovered item it streams the item's file from archive entry 0x1189 (sector and
+length from block 2 of the item pack) into a five-slot cache. A file holds two SLZ
+blocks: a text pack (font, messages: the description the panel shows in its info box)
+and a model:
+
+| Header word | Block |
+|---|---|
+| 0 | triangles, 0x20 bytes: u16 flags; vertex, normal, colour and UV indices (+2, +0xe, +0x14, +0x1a) |
+| 1 | vertices (8 bytes: x, y, z) |
+| 3 | normals |
+| 4 | colours (RGBC words) |
+| 5 | UVs (u16) |
+| 6 | texture (or 0): 8-bit image to (0x200, 0x100), 256-colour CLUT to (0, 0x1e0) |
+| 7 (low half) | triangle count |
+
+Triangle flags: 0x10 textured (POLY_GT3, else POLY_G3), 0x80 semi-transparent (mode bits
+from 0x60), lighting 4 (one normal) / 8 (smooth) with 1 (one colour) / 2 (three) through
+NCCS / NCCT under light matrix 0x8008d2b8, else the table colours. Triangles go into the
+viewer's own ordering table by OTZ (range z * 0x40 +- 0x140), which is spliced into the
+owner widget's entry 9. The model turns through six phases (0x800889ac).
+
 ## Page 0x11: save / load
 
 These classes are listed in `menu.csv` with their vtables.
@@ -344,11 +403,16 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1 and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 and 5 (warps) and the query page's play-time object are not ported.
 - `SS_SAVE_ANYWHERE=1` sets option a bit 0 (saving allowed) for testing the camp menu's
-  Save.
+  Save; `SS_MENU_DUMP=prefix` writes the config and inventory blocks after each field
+  menu (`prefix_config.bin`, `prefix_inventory.bin`) for comparisons.
+- The original stalls a few vblanks while unpacking the item data or rendering text; the
+  port does not, so fades and loads run a few frames earlier.
+- Background loads with a sector offset read straight from the archive entry
+  (`Archive::read_from_entry`'s first_sector).
 - `--load-save` / `SS_LOAD_SAVE=[slot:]position` loads a save without the menu
   (`load_save_without_menu`). It has the same side effects as the load flow: StatCalc,
   last-used position, clock, sound mode.

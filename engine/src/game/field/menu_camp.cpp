@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <tuple>
 
 #include "disc/slz.h"
 #include "game/boot/pad.h"
@@ -18,9 +20,11 @@
 #include "game/field/bg.h"
 #include "game/field/callways.h"
 #include "game/field/fade.h"
+#include "game/field/field_world.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_shop.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/worldmap.h"
@@ -50,8 +54,6 @@ u16 rd16(const u8* p) {
   return v;
 }
 void wr16(u8* p, u16 v) { std::memcpy(p, &v, 2); }
-
-void log_once(const char* key, const char* what) { runtime::Runtime::get().log_once(key, what); }
 
 // A string constant of the camp page's code (overlay 0xba6).
 const char* camp_text(u32 address) {
@@ -468,10 +470,12 @@ struct FieldMenuHost {
     menu::set_entry_cache_table(&field_cache_slot);
     menu::set_menu_frame_hook(&field_menu_frame);
     menu::set_page_handler(1, &page01_update);
+    menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
   }
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
+    menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
     menu::set_entry_cache_table(nullptr);
@@ -798,6 +802,17 @@ void field_menu_update(Field* f) {
     case 5: menu_run_save(g_launcher); break;
     default: result = menu_run_camp(g_launcher); break;
   }
+  if (const char* dump = std::getenv("SS_MENU_DUMP"); dump != nullptr && *dump != 0) {
+    // Debugging: the config and inventory blocks after each menu, for comparisons.
+    for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
+                                           std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28}}) {
+      const std::string path = std::string(dump) + "_" + name + ".bin";
+      if (FILE* out = std::fopen(path.c_str(), "wb")) {
+        std::fwrite(block, 1, size, out);
+        std::fclose(out);
+      }
+    }
+  }
   // TODO(port): boot 0x800134d8(0): the pad setting back.
   menu_launcher_destroy(g_launcher);
   g_launcher = nullptr;
@@ -870,15 +885,9 @@ void field_menu_update(Field* f) {
       wr16(g.field_flags + 0x10, 0xFFFF);
       f->state = 0x21;
       break;
-    case 4:
-      // TODO(port): field_side_load(game_state +0x288 + 0xfc3), field_flags +0x3c =
-      // 0x800762ec, state 0x1b (world map warp).
-      log_once("field_menu_result4", "field menu: result 4 (warp) is not ported yet");
-      break;
+    case 4:  // a warp (state 0x1b) and 5: the bunny call (state 0x11): field_world.cpp
     case 5:
-      // TODO(port): on the world map without script flag 0xe: field_side_load(0xa92),
-      // music fade, state 0x11.
-      log_once("field_menu_result5", "field menu: result 5 is not ported yet");
+      field_world_menu_result(f, result);
       break;
     case 6: {
       // Teleport to map 0x2c0.
