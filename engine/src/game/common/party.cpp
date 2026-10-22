@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "game/boot/rng.h"
 #include "game/common/program_image.h"
 
 namespace ss::game {
@@ -141,6 +142,15 @@ u16 config_get_button(int index) {
 
 s32 char_get_equip(int slot) { return stat_get(static_cast<u32>(slot + 0xB)); }
 void char_set_equip(int slot, s32 item) { stat_set(static_cast<u32>(slot + 0xB), item); }
+
+void char_set_skill_level(int skill, int level) {
+  if (g.record) g.record[0x5C + skill] = static_cast<u8>(level);
+}
+
+int party_selected_alive() {
+  const int c = party_selected_char();
+  return (c != 0 && (party_selected_status() & 7) == 0) ? c : 0;
+}
 
 int char_skill_level(int skill) {
   if (!g.record) return 0;
@@ -390,6 +400,32 @@ void stat_change_heal(StatChange* sc, int is_mp, int amount) {
 }
 
 void stat_change_add_money(StatChange* sc, int delta) { stat_change_set(sc, 7, stat_change_get(sc, 7) + delta); }
+
+void stat_change_heal_mp_pct(StatChange* sc, int pct) { stat_change_heal_pct(sc, 1, pct); }
+
+void stat_change_add_hp_mp(StatChange* sc, int is_mp, s32 amount) {
+  const int first = is_mp ? 4 : 1, last = is_mp ? 6 : 3;
+  for (int id = first; id <= last; ++id) stat_change_set(sc, id, stat_change_get(sc, id) + amount);
+}
+
+void stat_change_set_status(StatChange* sc, u8 status) {
+  if (party_selected_status() == status) return;
+  sc->status_changed = 1;
+  if (sc->apply && g.slot) g.slot[2] = status;
+}
+
+void stat_change_set_attr(StatChange* sc, int i, s32 value) {
+  s32 max = 0;
+  if (static_cast<u32>(i) < 8) max = (i == 5 || i == 7) ? 0xFF : 9999;  // table 0x80071dbc
+  const s32 v = clamp_max(value, max);
+  if (stat_change_get_attr(sc, i) == v) return;
+  sc->attr_changed = 1;
+  if (sc->apply) stat_set(static_cast<u32>(i + 3), v);
+}
+
+void stat_change_add_attr(StatChange* sc, int i, s32 amount) { stat_change_set_attr(sc, i, stat_change_get_attr(sc, i) + amount); }
+
+bool stat_change_chance(StatChange*, int pct) { return rng_range(100) < static_cast<u32>(pct); }
 
 s32 stat_change_get_attr(StatChange*, int i) { return stat_get(static_cast<u32>(i + 3)); }
 

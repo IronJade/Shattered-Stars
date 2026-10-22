@@ -465,8 +465,8 @@ field,0x80074068,g_menu_item_data,u8 *,"Item pack (entry 3000) once the camp pag
 field,0x8007406c,g_menu_member_slot,u8 *,Cleared by menu_scene_create,likely,menu_scene_create 0x8002f9f8
 field,0x80074074,g_menu_session,MenuSession *,"Field session: also +0xe camp member, +0x10 member list scroll, +0x18 last camp command, +0x1b game over, +0x30 / +0x35 results 5 / 6",confirmed,"menu_run_camp, camp page"
 field,0x80074078,g_party_selected,int,Selected party slot; slot / record pointers at 0x8007407c / 0x80074080,confirmed,party_select 0x800331c8
-field,0x8007408c,g_menu_field_query,u8,Session +0x31 (page 0xf query): play time drawn by the Panel frame,confirmed,menu_field_query_begin
-field,0x80074090,g_menu_field_query_time,void *,Play-time draw object of the query page,confirmed,menu_field_query_begin
+field,0x8007408c,g_menu_field_query,u8,Session +0x31 (page 0xf query): the Panel frame draws the gauge,confirmed,menu_field_query_begin
+field,0x80074090,g_query_gauge,QueryGauge *,The query page TIME / PRESS gauge,confirmed,menu_field_query_begin
 field,0x80074094,g_menu_pages_debug_step,int,Progress marker in menu_pages_update; never read,confirmed,menu_pages_update
 field,0x800740c4,g_menu_frame_unused_a,int,0x90 every menu frame (title 0x8004decc),confirmed,menu_scene_frame_begin 0x800300dc
 field,0x800740c8,g_menu_frame_unused_b,int,8 or 0xf8 by draw buffer (title 0x8004ded0),confirmed,menu_scene_frame_begin 0x800300dc
@@ -656,8 +656,14 @@ menu_0baa,0x80081df8,k_shop58_stock,u32,Pointer to shop 0x58's candidate list (i
 menu_0baa,0x80081e28,g_shop_clock_price,s32,Item 0x171's extra price: play minutes * 250,confirmed,shop_setup_lists
 menu_0bb6,0x80082408,k_save_time_label,char[],"Field save page copy of title 0x8006742c (the page 0x11 constants sit 0x1afdc above the title's: 0x8008242c, 0x800824bc..0x800824d0, 0x80082b38, 0x80082b50, 0x80082b68, 0x80082b78)",confirmed,same bytes
 menu_0bb9,0x8008cf50,vt_item_viewer,vtable,ItemViewer: [1] 0x80088178 [2] 0x8008825c (0x103) [4] 0x80088264 [5] 0x80088694,confirmed,vtable dump
+menu_0bb9,0x8008d090,k_item_effect_cases,code *[0x62],item_effect_run jump table by item field 0x28 - 1,confirmed,disassembly
+menu_0bb9,0x8008d18a,k_book_skills,u8[],Indexed by item: the skill of books 0xa6-0xbb,confirmed,item_effect_run
+menu_0bb9,0x8008d216,k_own_items,s16[],Indexed by character * 2: the character's own item (full recovery),confirmed,item_effect_heal
+menu_0bb9,0x8008d242,k_page13_params,u8[],Indexed by item: the page 0x13 parameter of items 6-0x11 (0x8008d190 / 0x8008d184 + item: the config marks of 0xc4-0xdb),confirmed,item_effect_run
+menu_0bb9,0x8008d260,k_map_regions,s16[][2],Map id ranges (0-terminated) for item 0x1e3: flag 0x2cb + index,confirmed,item_effect_map_flag
 menu_0bb9,0x8008d298,k_viewer_colour_matrix,MATRIX,Colour matrix: all 0x1000,confirmed,item_viewer_place
 menu_0bb9,0x8008d2b8,k_viewer_light_matrix,MATRIX,"Light directions (-0x1000, -0x1000, -0x1000 / 0x1000, -0x1000, -0x1000 / 0)",confirmed,item_viewer_draw
+menu_0bb9,0x8008d2d8,k_book_groups,s8[],Skills in groups of five (0xff ends): a book needs script flag 700 + index / 5,confirmed,skill_book_allowed
 title,0x8004b410,k_menu_button_icons,u16[8],Pad masks in the order of the button icon cells (0x20 0x40 0x10 0x80 4 8 1 2); field copy 0x800717b0,confirmed,menu_session_build_button_map; same bytes in the field image
 title,0x8004b5d0,k_stat_kinds,u8[32],"Stat group kinds: bit 0 the record (else the party slot), bit 1 32-bit; field copy 0x80071968",confirmed,stat_get; same bytes in the field image
 title,0x8004b5e4,k_specialty_skills,u8[][3],Skills of each specialty (1-based); field copy 0x8007197c,confirmed,char_specialty_info; same bytes in the field image
@@ -765,3 +771,5 @@ title,0x80074bac,g_sprite_cell_caches,SpriteCellCache *,"8 regions of 0x284 byte
 title,0x80074bc0,g_sprite_clut_loaded,u8[12],CLUT row uploaded for graphics 0-11 (indexed past the end for higher numbers),confirmed,sprite_draw
 title,0x80074bcc,g_cvram,VramRect *,"CVram table: 12-byte {flags (1 used, 2 free, 4 4-bit, 8 8-bit, 0x10 to free), x, y, w, h, tpage}; capacity 0x80074bd0, count 0x80074bd4",confirmed,cvram_*
 title,0x80074bd8,g_upload_count,s16,VRAM upload queue: count; capacity 0x80074bdc; table 0x80074be0 (0x18-byte entries),confirmed,upload_*
+menu_0bbe,0x80081740,k_specialty_listed,code *[17],"Jump table of specialty_choice_list: which of specialties 1-17 the Items page offers (1, 4-7, 10, 11, 13, 14, 16, 17)",confirmed,disassembly
+menu_0bbe,0x80081cc8,g_sort_loop,s32[4],"item_sorter_merge_sort's loop variables (right index, temp index, output index, temp count) kept in globals across the recursion",confirmed,item_sorter_merge_sort

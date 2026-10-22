@@ -314,6 +314,85 @@ map 26, 200 Fol): buying three Sandals, toggling the figures, settling, then sel
 on a second visit leave config and inventory (entries, counts, new bits, recent list)
 identical to the original's (captures kept in the git-ignored `scratchpad/menu/`).
 
+## Items (page 3, overlay 0xbbe)
+
+The field handler (0x80035580) pushes the 0x18b0-byte page and maps its result: 1 page
+0xf (item creation with the specialty in session +0x1c), 2 page 0x10 (super
+specialty), 3 close, 4 page 0x13 (session +0x12 = the item's parameter).
+
+- **The page** is a list of two columns over the whole inventory ((last used + 2) / 2
+  rows, 7 shown). Each entry shows a kind icon (pack messages 0x10 usable, 0x12 other,
+  0x13 equipment), the name (colour 3 while it is in the recent list) and "x count".
+  - The info box is a picture box: the viewer's text pack carries a 4-bit picture of
+    the name (w, h, pixels). It is uploaded to (0x200, 0) and drawn with clut 0x7b90,
+    additive, over a subtracted shadow, with a rule under it. The description sits
+    below.
+  - Square toggles the figures (Panel info mode).
+  - A count box shows "position / total".
+  - The page saves the VRAM it uses for the picture and restores it on exit.
+- **Confirm** runs the item effect (below):
+  - Kind 4 (no member) is used at once.
+  - Kinds 1-3 open the member picker: eight boxes with sprite, LV, HP / MP gauges.
+  - Kind 5 is used and ends the page.
+  - Equipment opens the equip picker: arrows compare ATK (weapons) or AC (armour), as
+    in shops. Equipping it puts the worn piece back in the inventory.
+  - Using an item when everyone is down closes the menu (session +0x1b, camp result 2).
+- **Triangle** opens the commands:
+  - 8 sort orders (icons from page data block 4): recent, battle use, the game's order
+    (page data block 2), weapons by ATK, armour by AC, accessories, price, field use.
+    A stable merge sort writes the inventory back with new check bytes.
+  - Specialty: the 11 item creation specialties a member who can act knows.
+  - Super Specialty.
+  - Valuables: script flags 0x40-0x5d, names group 0xd, descriptions group 0xe.
+
+### Item effects (entry 3001, 0x8008b9b0-0x8008ce7c)
+
+A 0x100-byte object built on StatChange. `kind` and `usable` are dry runs. They save the
+random generator's table and index and put them back, so trying an item costs no draws.
+`apply` makes the changes and returns the sound (0x13 heals / status, 0x28 other, 0x16 a
+character's own item, 0x23 a knock-out).
+
+The effect is item field 0x28:
+
+| Field 0x28 | Effect |
+|---|---|
+| 1 / 2 | HP % (field 0x19) on one member / everyone |
+| 3 / 4 | MP % on one member / everyone |
+| 5 | HP and MP % on one member |
+| 6, 0xa | Revive (0xa: everyone, full) |
+| 0x15 / 0x20 | 1 / 3 random items (field 0x2b >= 0x1e) |
+| 0x21 | Half the time an item, else a battle (game_state +0x264 = 0x227) |
+| 0x25-0x27, 0x3b-0x43, 0x47, 0x52, 0x5d-0x62 | Statuses with small heals |
+| 0x2a | Swaps HP and MP |
+| 0x2f / 0x4c | Config marks |
+| 0x35 / 0x4b | Script flags 0x26 / 0x24 |
+| 0x3d / 0x3e | Session +0x33 / +0x32, read by the item creation pages |
+| 0x60 | A teleport on maps 0x2ba-0x339 (session +0x35, camp result 6) |
+
+Other items act by id:
+
+| Item | Effect |
+|---|---|
+| 0x1b9 | Plays the song in entry 0xa9b |
+| 0x1d0-0x1d5 | Record flags of characters 6 / 9 |
+| 0x1e1 | One experience point short of the next level |
+| 0x1e3 | The current map's region flag |
+| 0x1e4 | 1000 Fol a level for a member who is down |
+| 0xa6-0xbb | Skill books: level + 1 and the level bonus 0x8008b530 |
+| 6-0x11 | Page 0x13 with a parameter |
+| 0xc4-0xdb | Config marks |
+
+Heals add skill 0x12 for some ranges of items. A character's own item (table
+0x8008d216) heals fully instead.
+
+Verified against PCSX-Redux from a copy of the Hearn save with five items added and
+Claude at 40 / 130 HP (`scratchpad/menu/modsave.py`; `itemsref1/2`, port `items_p4/5`).
+The runs used a Sweet Syrup on Claude, sorted by price, toggled the figures, equipped
+Sandals, and opened Valuables and Specialty.
+- Inventory, config, party and records match.
+- The frames match except for the model's turn phase, the help bar's logo phase and the
+  CD time before pictures appear.
+
 ## The item viewer (entry 3001 at 0x80088000)
 
 Field panels with items (shops, items, equipment) create it at (0x118, 0x4a) depth 0x18.
@@ -420,7 +499,7 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1, 0xb and 0x11 are not ported: the page loader logs them and
+- The field's pages other than 1, 3, 0xb and 0x11 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
   (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),

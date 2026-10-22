@@ -41,148 +41,72 @@ Rules that apply to every step:
   - ss_game_tests: 70 run, 0 failed.
   - smoke_field_events: all PASS.
 
-## In progress: M6 step 4, the Items page (page 3; code 0xbbe, data 0xbbf)
+## M6 step 4: the pages (in progress)
 
-**Analysis status.** Analysis is complete, but no code is written yet. Nothing is
-uncommitted except files the coordinator is already committing.
+### Items, page 3 (done and verified)
 
-### Field page handler 0x80035580
+**New files:**
+- `engine/src/game/field/menu_items.{h,cpp}`: ItemsPage, PictureBox, Commands,
+  ItemSorter, CreationChoice (specialty and super), Valuables, UseOnMember, EquipDialog.
+- `engine/src/game/field/item_effect.{h,cpp}`: ItemEffect (entry 3001) and the skill
+  level bonus.
 
-- Substate 1 pushes `new ItemsPage` (0x18b0 bytes, ctor 0x8007e5c0).
-- Substate 2 pops.
-- Substate 3 maps the result to the next page:
+**Library additions:**
+- `TextBox::set_rect_below`, `move_base` and `add_item_count`.
+- `Cursor::clear_groups`.
+- `TextRenderer::get_font` and `group`.
+- StatChange helpers in party.{h,cpp}: heal_mp_pct, add_hp_mp, set_status, set_attr,
+  add_attr, chance, plus `char_set_skill_level` and `party_selected_alive`.
+  StatChange `unknown4` / `unknown5` are renamed to `status_changed` / `attr_changed`.
+- MenuSession `creation_bonus` (+0x32) and `creation_aid` (+0x33).
 
-  | Result | Next page |
-  |---|---|
-  | 1 | 0xf: specialty, 0xbc0 (0xbae for variant 4 / 0xb) |
-  | 2 | 0x10: super specialty, 0xbc2 |
-  | 3 | 0x14: close |
-  | 4 | 0x13: 0xbcc, item param in session +0x12 |
+**Small hooks in other files:**
+- `rng_save` in boot/rng.{h,cpp}.
+- SS_MENU_DUMP also writes party and records.
+- CMakeLists has item_effect.cpp and menu_items.cpp.
+- FieldMenuHost registers page 3.
 
-### Classes in overlay 0xbbe
+**Verification.** Compared against Redux with `scratchpad/menu/cards/items.mcd`
+(`modsave.py` adds items to hearn200 and sets Claude to 40 HP / 5 MP).
+- Runs: Redux `itemsref1/2` with `redux/itemsref.lua`; port `items_p4/5` with
+  `itemsrun.sh`. Port frame = Redux frame + 153.
+- The dumps match: inventory entries, config, party and records. Check bytes are random
+  by design.
+- Frames differ only in the model turn, the help bar logo phase and CD timing.
 
-Each entry gives the vtable, then the constructor.
+**Tests:**
+- ss_tests: 76 run, 0 failed.
+- ss_game_tests: 71 run, 0 failed.
+- smoke_field_events: 16 PASS.
 
-- **ItemsPage** (vtable 0x80081bb8)
-  - Virtuals: [1] 0x8007e890, [3] 0x8007e924, [8] draw_item 0x8007f070, [9] frame,
-    [10] 0x8007f2f0, [12] on_cursor 0x8007eaec, [13] on_confirm 0x8007ec50,
-    [15] on_button2 0x8007eefc (commands), [24] show_viewer_info 0x8007e9a8.
-  - It shows the inventory in a list of 2 columns. Each row shows the item's kind icon
-    (pack messages 0x10 / 0x12 / 0x13), its name (from a table of 1024 name pointers at
-    +0x8b0), "x" and its count. Items in the recent list (+0x800) are in colour 3.
-  - A count box at (0xf0, 0x11) shows "position / total".
-  - A picture box (0x8007e000) is set as the info box (0x800d5f04: `info = box`).
-  - The viewer is at (0x10e, 0x3e, 0x12).
-  - It saves VRAM (0x200, 0, 0x40, 0x20) with StoreImage, clears it, and restores it in
-    the destructor.
-  - It sets help_flags = 6 and session +0x34 = 1.
-- **PictureBox** (0x80081c88; 0x8007e000, 0x90 bytes)
-  - draw_background 0x8007e064 draws the item picture from VRAM (0x200, 0) with clut
-    0x7b90: POLY_FT4 at tpage 0x28, and its shadow at tpage 0x48 with colour 0x202020.
-  - It also draws two LINE_F2 rules. Note: xy1.y uses box **x** + 0x1e, a bug in the
-    original.
-- **Commands** (0x80081b00; 0x8007f40c, 0x58 bytes)
-  - A sort row of 8 icons (+0x54). Confirming it sorts with ItemSorter (0x80080f04..),
-    which uses the sort kind and a merge sort.
-  - Three commands (+0x34):
-    - 0: specialty dialog 0x8008097c.
-    - 1: super specialty dialog 0x80080c8c.
-    - 2: Valuables 0x8007f7ac (script flags 0x40-0x5d; group 0xd names, group 0xe text).
-  - The specialty and super specialty dialogs store their choice in session +0x1c and
-    finish with 0. Commands then finishes with its choice.
-- **UseOnMember** (0x800818f8; 0x8007fa98, 0x7c bytes)
-  - Eight member boxes; 0x8007ff30 draws each.
-  - Confirming runs ItemEffect on the member. If all members are down (0x8003284c) it
-    cancels.
-- **EquipDialog** (0x800819b0; 0x800803d8, 0x20c bytes)
-  - Equips the item on a member.
-  - Verdict arrows come from StatCalc snapshots (0x80080644).
+**Catalog:** 946 function rows and 141 global rows. menu.md has an "Items" section.
 
-### ItemEffect (entry 3001, 0x8008b9b0-0x8008ce7c, 0x100 bytes)
+### Not ported yet
 
-The listing is `analysis/decomp/menu_0bb9/effect_listing.s`.
-
-**Layout.**
-- +0: StatChange.
-- +8 / +0xc: special result (1 = page 0x13 with the param; 2 = warp
-  game_state +0x264 = 0x227; 3 = session +0x35).
-- +0x10..+0xf0: saved RNG table. +0xf0: saved RNG index.
-- +0xf4: item. +0xf6: member. +0xf8: sound.
-- +0xfa..+0xfe: target kind flags.
-
-**Entry points.**
-- `kind(item)`, 0x8008ba00: a dry run. Returns 5..0 from the flags fe..fa.
-- `usable(item, member)`, 0x8008baa0: a dry run. Returns 4 / 3 / 2 / 1 from the
-  StatChange bytes [3] / [4] / [2] / [1].
-- `apply(item, member)`, 0x8008bbb4: clears, sets apply = 1, runs, and returns +0xf8.
-- `run`, 0x8008bc10: switches on item field 0x28.
-
-**Tables (3001 data).**
-- 0x8008d188 + 2 + item: the skill of book items 0xa6-0xbb.
-- 0x8008d242 + item: items 6-0x11.
-- 0x8008d190 + item: items 0xc4-0xcf.
-- 0x8008d184 + item: items 0xd0-0xdb.
-- 0x8008d216 + char * 2: each character's own item.
-- 0x8008d260: map ranges.
-- 0x8008d2d8: book skills.
-
-**Field StatChange helpers the effect code needs.** These are not in party.h yet:
-
-| Address | What it does |
-|---|---|
-| 0x80039810 | heal MP by percent |
-| 0x80039e20 | set status: dirty [4], writes slot +2 |
-| 0x80039f94 | chance: `rng_range(100) < pct` |
-| 0x80039a30 | add to HP or MP (base, max, current), via 0x800399e8 and 0x80039a0c |
-| 0x80039e9c | set an attribute (max 9999, or 255 for 5 and 7), dirty [5] |
-| 0x80039b08 | add to an attribute |
-| 0x8003363c | inventory give |
-| 0x80033ce0 | set skill level |
-| 0x800337cc | selected member alive |
-| 0x8003284c | all members down |
-| 0x8003c85c | last used inventory index |
-| 0x8003c974 | verify the whole inventory |
-
-**Skill book bonus.** 0x8008b530 applies the bonus for the skill's new level. It
-contains the "up gold %d" debug print.
-
-### Library helpers the page needs that are not ported yet
-
-The title address is given first, then the field copy.
-
-| Title | Field | What it does |
-|---|---|---|
-| 0x80069e04 | 0x800d3af4 | `Cursor::clear_groups` |
-| 0x8006eac0 | 0x800db0a8 | set_rect below another box, centred at 0x9c |
-| 0x8006eb28 | 0x800db110 | box base_x / base_y += dx / dy |
-| 0x8006f3c8 | 0x800db9b0 | `TextBox::add_item_count`: item name, "x", count |
-| 0x80032308 | 0x800d7b58 | `TextRenderer` get font |
-| 0x80032374 | 0x800d7bc4 | `TextRenderer` get group |
-
-The RNG also needs a save function next to `rng_restore` (boot/rng.h is not my file, so
-this would be a small hook).
-
-### Planned files
-
-- `engine/src/game/field/menu_items.{h,cpp}`: the page and its dialogs.
-- `engine/src/game/field/item_effect.{h,cpp}`: ItemEffect.
-- In FieldMenuHost: register page 3.
+- Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
+  (0xbcc). The Items page reaches them, and the loader then logs and pops back.
+- The query page (0xf variant 0xb, 0xbae), with the TIME / PRESS gauge.
 
 ## Next steps
 
-1. Write ItemEffect and the StatChange additions. Unit-test the dry runs if practical.
-2. Write menu_items.cpp: ItemsPage, PictureBox, Commands, ItemSorter, Valuables,
-   SpecialtyChoice, SuperChoice, UseOnMember and EquipDialog.
-3. Verify against Redux. Use the hearn200 card (copy it first), open the camp menu,
-   choose Items, then use a Blueberry on a member and sort. Compare frames and the
-   config / inventory / party dumps (SS_MENU_DUMP).
-4. Then do pages 0xf, 0x10 and 0x13 (item creation), Equipment (4, 0xbc4), Status
-   (6, 0xbb2; result 3 goes to page 0xe, 0xbce), Skills (5, 0xbc6), Specialty
-   (2, 0xbbc), Options (7, 0xbc8), and Combat (8-10, 0xbca).
-5. Step 5: add a stash.h setter and clear 0x8007622c after a load. The TODO is in
-   field_menu_update.
+1. Equipment (page 4, 0xbc4; ctor 0x8007e000, 0xbc bytes).
+2. Status (page 6, 0xbb2; ctor 0x8007e550; result 3 goes to page 0xe, 0xbce).
+3. Skills (page 5, 0xbc6; ctor 0x8007e740).
+4. Specialty (page 2, 0xbbc; ctor 0x8007e61c; confirm goes to page 0xb).
+5. Options (page 7, 0xbc8).
+6. Combat (pages 8-10, 0xbca).
+7. Then the item creation pages 0xf / 0x10 / 0x13 and the query page.
+
+For each page:
+- Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.
+- Get the 3001 code from `analysis/decomp/menu_0bb9/listing.s`.
+- Get field library code from `scratchpad/menu/lib_0ba5.s` and `field_lib.s`. Use
+  `fn.sh LISTING ADDR` to pull one function.
+- To verify, adapt itemsref.lua's SS_SHOP plan and itemsrun.sh.
+
+After the pages, M6 step 5: add a stash.h setter and clear 0x8007622c after a load. The
+TODO is in field_menu_update.
 
 ## Findings not yet in the catalog
 
-- Everything listed under "In progress" above. Once the code exists, it goes into
-  gen_catalog.py with the port column.
+- None. Everything so far is in analysis/menu_catalog.

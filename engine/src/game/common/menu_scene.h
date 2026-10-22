@@ -50,7 +50,7 @@ struct MenuSession {
   s8 command = 0;         // +0x18: the camp menu's last command
   u8 cached_0bd2 = 0;     // +0x19: free entry 0xbd2 on destruction
   u8 cached_0bbb = 0;     // +0x1a
-  s8 unknown1b = 0;       // +0x1b
+  s8 unknown1b = 0;       // +0x1b: everyone is down (0x8003284c; camp result 2)
   s8 variant = 0;         // +0x1c: page variant (4 / 0xb)
   s8 start_page = 0;      // +0x1d
   s8 select_result = 0;   // +0x1e
@@ -58,8 +58,10 @@ struct MenuSession {
   u8 button_map[16] = {}; // +0x20: icon cell for each config button
   s8 unknown30 = 0;       // +0x30
   s8 field_query = 0;     // +0x31
+  s8 creation_bonus = 0;  // +0x32: item effect 0x3e (100), read by the item creation pages
+  s8 creation_aid = 0;    // +0x33: item effect 0x3d, read by the item creation pages
   s8 inventory_dirty = 0; // +0x34
-  s8 unknown35 = 0;       // +0x35
+  s8 unknown35 = 0;       // +0x35: item effect 0x60 (camp result 6, the way out of a dungeon)
 };
 
 // Scene (title 0x3c bytes on the stack / field 0x40).

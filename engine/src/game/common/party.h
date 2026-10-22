@@ -32,11 +32,13 @@ int stat_group_offset(int group);           // title 0x800342d8 / field 0x800333
 
 int party_selected_char();                  // title 0x8003469c / field 0x800337a4: character id, 0 when <= 0
 int party_slot_active(int slot);            // field 0x80033758: party_selected_char of 'slot' (selection kept)
+int party_selected_alive();                 // field 0x800337cc: party_selected_char when status & 7 is clear, else 0
 u32 char_equip_mask();                      // field 0x8003381c: 1 << (character - 1), 0 for none
 u16 config_get_button(int index);           // title 0x800349d8 / field 0x80033ae0
 s32 char_get_equip(int slot);               // title 0x80034b6c / field 0x80033c74: stat_get(slot + 0xb)
 void char_set_equip(int slot, s32 item);    // field 0x80033c94: stat_set(slot + 0xb)
 int char_skill_level(int skill);            // field 0x80033cb4: |record + 0x5c + skill|
+void char_set_skill_level(int skill, int level);  // field 0x80033ce0: record + 0x5c + skill
 // field 0x80033d1c: out[0..2] the specialty's skills (table title 0x8004b5e4 / field
 // 0x8007197c), out[3] skills learnt, out[4] skills needed, out[5] level (average of
 // the skill levels once all are learnt, -1 when none, +1 per accessory 0x1b4, max 10).
@@ -73,8 +75,8 @@ struct StatChange {
   u8 hp_changed = 0;     // +1
   u8 mp_changed = 0;     // +2
   u8 money_changed = 0;  // +3
-  u8 unknown4 = 0;       // +4
-  u8 unknown5 = 0;       // +5
+  u8 status_changed = 0; // +4
+  u8 attr_changed = 0;   // +5
 };
 void stat_change_clear(StatChange* sc);                         // field 0x800397d0 (create 0x800397a4)
 StatChange* stat_change_begin(StatChange* sc);                  // field 0x800323dc: clear, apply = 1
@@ -86,6 +88,15 @@ void stat_change_heal(StatChange* sc, int is_mp, int amount);   // field 0x80039
 void stat_change_add_money(StatChange* sc, int delta);          // field 0x80039ac0 (wrapper 0x800324c8)
 s32 stat_change_get_attr(StatChange* sc, int i);                // field 0x80039e7c: stat_get(i + 3)
 void party_heal_all(StatChange* sc, int is_mp, int amount);     // field 0x80032410: stat_change_heal on every member
+void stat_change_heal_mp_pct(StatChange* sc, int pct);          // field 0x80039810
+// field 0x80039a30 (wrappers 0x800399e8 HP / 0x80039a0c MP): base, max and current
+// all + amount.
+void stat_change_add_hp_mp(StatChange* sc, int is_mp, s32 amount);
+void stat_change_set_status(StatChange* sc, u8 status);         // field 0x80039e20: slot +2
+// field 0x80039e9c: attribute i (stat i + 3), clamped to 9999 (255 for 5 and 7, 0 past 7).
+void stat_change_set_attr(StatChange* sc, int i, s32 value);
+void stat_change_add_attr(StatChange* sc, int i, s32 amount);   // field 0x80039b08
+bool stat_change_chance(StatChange* sc, int pct);               // field 0x80039f94: rng_range(100) < pct
 s32 clamp_max(s32 value, s32 max);                              // field 0x80039f48: 0..max
 s32 percent_of(s32 value, s32 pct);                             // field 0x80039f6c: value * pct / 100
 

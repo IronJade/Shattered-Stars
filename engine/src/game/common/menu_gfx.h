@@ -113,6 +113,9 @@ class TextRenderer {
   void set_owner_colour(const u32* colour) { colour_ = colour; }  // title 0x800322f8 (+4 owner, +0xd0 owner + 0x20)
   void set_font(const u8* font, const u8* strings); // title 0x80032320
   void set_group(s16 group) { group_ = group; }     // title 0x8003236c
+  s16 group() const { return group_; }               // title 0x80032374
+  // title 0x80032308: the font and message pack set_font took.
+  void get_font(const u8** font, const u8** strings) const { *font = font_, *strings = strings_; }
   const u8* message(int index) const;               // title 0x80032380
   void free_line(int index);                        // title 0x800323bc
   void set_pen(s16 x, s16 y, s16 step) { x_ = x; y_ = y; step_ = step; }  // title 0x80032488

@@ -71,6 +71,10 @@ class TextBox : public MenuTask {
   void clear();                                         // title 0x8006e80c
   void set_rect_centered(int w, int h, int anim);       // title 0x8006eb44
   void set_rect(int x, int y, int w, int h, int anim);  // title 0x8006ebb0 / 0x8006ebfc
+  // title 0x8006eac0 / menu_0ba5 0x800db0a8: w x h centred on x 0x9c, just under 'above'.
+  void set_rect_below(int w, int h, const TextBox* above, int anim);
+  // title 0x8006eb28 / menu_0ba5 0x800db110: moves the resting position.
+  void move_base(s16 by_x, s16 by_y) { base_x = static_cast<s16>(base_x + by_x), base_y = static_cast<s16>(base_y + by_y); }
   void draw();                                          // title 0x8006fe0c
   void draw_scrollbar();                                // title 0x800703d4
   void draw_frame();                                    // title 0x800707fc
@@ -87,6 +91,9 @@ class TextBox : public MenuTask {
   int add_message(s16 index);                           // title 0x8006f4e8
   void add_message_lines(int index, int colour);        // title 0x8006f53c
   int add_text_line(const u8* text);                    // title 0x8006f730
+  // title 0x8006f3c8 / menu_0ba5 0x800db9b0: the item's name (item text group 3) at the
+  // pen, then "x" and the count held 0x6a / 0x6e pixels on; the font and group stay.
+  void add_item_count(int item);
   int add_sprite(BoxElement& e);                        // title 0x8006f88c
   int add_character(s16 gfx, s16 flags, s16 anim, s16 scale);  // title 0x8006f930
   int add_party_character(int character, s16 anim, s16 scale);  // title 0x8006f97c
@@ -259,6 +266,7 @@ class Cursor : public MenuTask {
   void move_to(s16 x, s16 y);                 // title 0x80069da4
   void jump_to(s16 x, s16 y);                 // title 0x80069dbc
   void attach(CursorGroup* g);                // title 0x80069dc8
+  void clear_groups();                        // title 0x80069e04 / menu_0ba5 0x800d3af4
 
   Widget* owner = nullptr;           // +0x08
   RenderContext* ctx = nullptr;      // +0x0c

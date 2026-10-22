@@ -24,6 +24,7 @@
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_items.h"
 #include "game/field/menu_shop.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -596,12 +597,14 @@ struct FieldMenuHost {
     menu::set_entry_cache_table(&field_cache_slot);
     menu::set_menu_frame_hook(&field_menu_frame);
     menu::set_page_handler(1, &page01_update);
+    menu::set_page_handler(3, &menu_page03_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
     menu::set_page_handler(0x11, &page11_update);
     menu::set_panel_frame_hook(&query_gauge_hook);
   }
   ~FieldMenuHost() {
     menu::set_page_handler(1, nullptr);
+    menu::set_page_handler(3, nullptr);
     menu::set_page_handler(0xB, nullptr);
     menu::set_page_handler(0x11, nullptr);
     menu::set_menu_frame_hook(nullptr);
@@ -936,9 +939,12 @@ void field_menu_update(Field* f) {
     default: result = menu_run_camp(g_launcher); break;
   }
   if (const char* dump = std::getenv("SS_MENU_DUMP"); dump != nullptr && *dump != 0) {
-    // Debugging: the config and inventory blocks after each menu, for comparisons.
+    // Debugging: the config, inventory, party and record blocks after each menu.
     for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
-                                           std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28}}) {
+                                           std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
+                                           std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
+                                           std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680}}) {
+      if (block == nullptr) continue;
       const std::string path = std::string(dump) + "_" + name + ".bin";
       if (FILE* out = std::fopen(path.c_str(), "wb")) {
         std::fwrite(block, 1, size, out);

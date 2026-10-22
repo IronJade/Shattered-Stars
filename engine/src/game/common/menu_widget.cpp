@@ -170,6 +170,10 @@ void TextBox::set_rect(int x0, int y0, int w, int h, int anim_mode) {
   flags |= 4;
 }
 
+void TextBox::set_rect_below(int w, int h, const TextBox* above, int anim_mode) {
+  set_rect(0x9C - w / 2, above->base_y + above->base_h, w, h, anim_mode);
+}
+
 void TextBox::update() {
   if (flags & 0x100) return;
   if (visible == 0) return;
@@ -436,6 +440,22 @@ int TextBox::add_text_line(const u8* t) {
   add_element(std::move(e));
   pen_y = static_cast<s16>(pen_y + line_step);
   return static_cast<int>(elements.size()) - 1;
+}
+
+void TextBox::add_item_count(int item) {
+  const s16 at_x = pen_x, at_y = pen_y;
+  const u8 *font = nullptr, *strings = nullptr;
+  TextRenderer* r = text_renderer();
+  r->get_font(&font, &strings);
+  const s16 group = r->group();
+  set_font_group(item_strings(1), item_strings(0), 3);
+  add_message(static_cast<s16>(item));
+  set_group(0);
+  text->set_pen(static_cast<s16>(at_x + 0x6A), at_y, 0xC);
+  text->add_message_line(0xF);
+  text->set_pen(static_cast<s16>(at_x + 0x6E), at_y, 0xC);
+  text->add_number(inventory_count(item), 2);
+  set_font_group(font, strings, group);
 }
 
 int TextBox::add_sprite(BoxElement& e) {
@@ -1339,6 +1359,15 @@ void Cursor::move_to(s16 tx, s16 ty) {
 void Cursor::jump_to(s16 fx, s16 fy) {
   from_x = fx;
   from_y = fy;
+}
+
+void Cursor::clear_groups() {
+  flags |= 4;
+  for (auto*& g : groups) {
+    delete g;
+    g = nullptr;
+  }
+  active = 0;
 }
 
 void Cursor::attach(CursorGroup* g) {
