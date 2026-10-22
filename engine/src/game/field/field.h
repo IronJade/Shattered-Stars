@@ -51,6 +51,9 @@ struct FieldGlobals {
   u8 battle_preload_requested = 0;     // 0x8007533d: an encounter's data is being preloaded
   u8 scripted_battle = 0;              // 0x800756d8: a script battle is pending (ext 0xb7 / 0xc2)
   u8 map_preload_pending = 0;          // 0x800756d9
+  s32 map_preload_x = 0;               // 0x800756dc: script ext 0xa5's last map-transfer preload spot
+  s32 map_preload_z = 0;               // 0x800756e0
+  u64 vblank_base = 0;                 // host: runtime vblank at field_construct (g_frame_counter 0x80075324 = 0)
   u8 field_active = 0;                 // 0x80075355: actors update (set by field_load_map, scripts)
   s32 poison_next_step = 0;            // 0x80076314: step count (field_flags +0x18 >> 12) of the next poison tick
   u8 show_battle_results = 0;          // 0x80076278: open the post-battle / item-gained window

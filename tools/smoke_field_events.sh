@@ -58,4 +58,19 @@ check arlia_wizard "and closes" '\[leader\] vblank 12[0-9]0 map 18 state 0 .* co
 run hearn_talk 1700 18 "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none"
 check hearn_talk "talk opens a window" 'msg_window_open_default\(text=\+0xc8b'
 
+# World map 2 -> North City (map 260), from the user's own save if it is present: Continue
+# with a throwaway copy, start in the town's entrance region, the transfer runs.
+SAVE=analysis/saves/dex_north_city.mcd
+if [ -f "$SAVE" ]; then
+  cp "$SAVE" "$WORK/world.mcd"
+  SS_LOAD_SAVE=0 SS_TRACE=1 SS_TRACE_LEADER=60 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+    SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --frames 200 --map-pos 57219,-300,28622 \
+    >"$WORK/north_city.log" 2>&1
+  check north_city "world trigger fires" 'trigger 17 fires \(code word 4267\)'
+  check north_city "North City loads" 'field_load_map\(map=260'
+  check north_city "leader in town" '\[leader\] vblank 1[0-9]0 map 260 state 0 '
+else
+  echo "SKIP north_city: $SAVE not present"
+fi
+
 exit $fail

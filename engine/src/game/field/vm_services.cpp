@@ -109,7 +109,6 @@ struct StubState {
   StubActor actors[0xC2];
   int menu_request = 0;
   int preload_pending[2] = {};
-  int map_preload_x = 0, map_preload_z = 0, map_preload_pending = 0;
   int voice_cache_state = 0;
   bool overlay_object = false;
 };
@@ -229,8 +228,9 @@ const u8* vm_svc_ui_atlas() {
   static const u8 zero[0x200] = {};
   return zero;
 }
-int vm_svc_frame_counter() { LOG_ONCE(); return 0; }
-int vm_svc_pad_button_icon_offset(int buttons) { LOG_ONCE(); return 0; }
+// g_frame_counter 0x80075324: vblanks since field_construct (vsync_counter_tick 0x800521e8).
+int vm_svc_frame_counter() { return static_cast<int>(runtime::Runtime::get().vblanks() - globals().vblank_base); }
+int vm_svc_pad_button_icon_offset(int buttons) { return pad_button_icon_offset(static_cast<u32>(buttons)); }
 void vm_svc_set_scene_loaded(int v) {
   TRACE("%d", v);
   bg_globals().draw_enabled = static_cast<u8>(v);  // 0x80075354
@@ -1069,16 +1069,14 @@ void vm_svc_set_preload_release_pending(int i, int v) {
   if (i == 1) globals().battle_preload_requested = static_cast<u8>(v);
 }
 void vm_svc_get_map_preload(int* x, int* z, int* pending) {
-  LOG_ONCE();
-  *x = g_stub.map_preload_x;
-  *z = g_stub.map_preload_z;
-  *pending = g_stub.map_preload_pending;
+  *x = globals().map_preload_x;
+  *z = globals().map_preload_z;
+  *pending = globals().map_preload_pending;
 }
 void vm_svc_set_map_preload(int x, int z, int pending) {
-  LOG_ONCE();
-  g_stub.map_preload_x = x;
-  g_stub.map_preload_z = z;
-  g_stub.map_preload_pending = pending;
+  globals().map_preload_x = x;
+  globals().map_preload_z = z;
+  globals().map_preload_pending = static_cast<u8>(pending);
 }
 void vm_svc_loader_cancel() {
   TRACE("%s", "");

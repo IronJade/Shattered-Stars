@@ -480,6 +480,7 @@ field,0x800752d8,g_scene_renderer,SceneRenderer *,SceneRenderer task (8 bytes; f
 field,0x800752dc,g_glow,GlowFx *,Edge glow of script ext 0x79 (overlay glow_create); destroyed on map loads / unloads,confirmed,decomp
 field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
 field,0x800752e4,g_report_panels,TextPanel *,4 TextPanels (array new with count at -8) of the Equipment Wizard columns; frame hidden,confirmed,field_update state 0; field_destroy_subsystems
+field,0x80075324,g_frame_counter,s32,Vblanks since field_construct (vsync_counter_tick 0x800521e8 increments it every vblank); the Private Action / trigger prompts blink from it,confirmed,field_construct; vsync_counter_tick; pa_draw_prompt
 field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
 field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending
 field,0x8007533d,g_battle_preload_requested,u8,An encounter's battle data is being preloaded (set by 0x80050f64),likely,0x80050f64; preload_release_pending
@@ -492,6 +493,8 @@ field,0x80075355,g_field_active,u8,Actors update while set (field_load_map sets 
 field,0x80075360,field_actors,Actor *[],Field actors indexed by script actor number; +0x00/+0x04/+0x08 position (<<12 fixed point),likely,table A / ext actor opcodes
 field,0x80075668,message_windows,MsgWindow *[],Message windows indexed by window number,likely,message opcodes
 field,0x800756d8,g_scripted_battle,u8,A script battle is pending (ext 0xb7 / 0xc2 set it; field_load_map clears it); enables voice-clip streaming,likely,vm_exec_ext 0xb7; load_queue_set_streaming
+field,0x800756dc,g_map_preload_x,s32,Script ext 0xa5: x of the last map-transfer preload spot (a new spot restarts the preload),confirmed,vm_exec_ext 0xa5
+field,0x800756e0,g_map_preload_z,s32,Script ext 0xa5: z of that spot,confirmed,vm_exec_ext 0xa5
 field,0x800756f8,g_map_script,u8 *,"Section 1 block 0 of the current map: the script header, code, string table and text vm_init binds",confirmed,vm_init
 field,0x80075704,script_flags,u8 *,"Script global flag bits (bit n = byte n>>3, bit n&7). Event / chest state lives here",confirmed,vm_thread_update
 field,0x80075708,script_globals,u8 *,"Script global variable memory, byte-addressed. Word 0 is the VM return register",confirmed,vm_thread_update

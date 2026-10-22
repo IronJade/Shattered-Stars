@@ -86,6 +86,7 @@ Field* field_program() { return g_program; }
 // it runs (after the title, after a battle).
 void field_construct_globals() {
   FieldGlobals& g = g_field;
+  g.vblank_base = runtime::Runtime::get().vblanks();  // g_frame_counter 0x80075324 = 0
   post_battle_reset();
   g.battle_preloaded = 0;
   g.battle_preload_requested = 0;

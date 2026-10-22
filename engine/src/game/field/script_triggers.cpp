@@ -196,6 +196,10 @@ void worldmap_trigger_add(ScriptCtx* ctx, u32 op) {
   for (int i = 0; i < 8; ++i) t.corner[i] = g_vm_args[i];
   trigger_compute_bbox(ctx, &t);
   vm_set_r(static_cast<u32>(slot));
+  char line[160];
+  std::snprintf(line, sizeof line, "world trigger %d added: x %d..%d z %d..%d y %d..%d code word %ld", slot, t.min_x,
+                t.max_x, t.min_z, t.max_z, t.y_min, t.y_max, static_cast<long>(t.code - ctx->code));
+  runtime::Runtime::get().trace(line);
 }
 
 int field_try_talk(ScriptCtx* ctx, int talk) {
