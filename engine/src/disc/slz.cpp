@@ -11,13 +11,20 @@ bool fail(std::string* error, const char* message) {
 }
 
 // Shared decoder. Method 1 ends on a zero distance; method 2 adds run-length fills
-// (length nibble 0xF) and ends after 'size' output bytes. The original copies with
-// unrolled word moves when the distance is at least 16; the result equals a forward
-// byte copy, which is what this does.
+// (length nibble 0xF) and ends once 'size' output bytes exist. The original copies
+// with unrolled word moves when the distance is at least 16; the result equals a
+// forward byte copy, which is what this does. Neither method checks the output
+// against the declared size: a stream may run a few bytes past it (archive entry
+// #2674's sequence block ends 3 bytes beyond; the console writes them into the heap
+// slack after the buffer). Those bytes are kept here, so 'out' can be longer than
+// 'size'; a method 1 stream that ends early leaves the rest zero.
 bool lzss(const u8* src, size_t src_len, std::vector<u8>& out, size_t size, bool rle, std::string* error) {
   out.assign(size, 0);
   size_t s = 0, d = 0;
   unsigned flags = 0, bits = 0;
+  auto room = [&](size_t n) {
+    if (d + n > out.size()) out.resize(d + n, 0);
+  };
   for (;;) {
     if (rle && d >= size) return true;
     if (bits == 0) {
@@ -30,7 +37,7 @@ bool lzss(const u8* src, size_t src_len, std::vector<u8>& out, size_t size, bool
     --bits;
     if (literal) {
       if (s >= src_len) return fail(error, "SLZ: input ended inside a literal");
-      if (d >= size) return fail(error, "SLZ: output exceeds the declared size");
+      room(1);
       out[d++] = src[s++];
       continue;
     }
@@ -38,10 +45,7 @@ bool lzss(const u8* src, size_t src_len, std::vector<u8>& out, size_t size, bool
     const u8 b0 = src[s], b1 = src[s + 1];
     const size_t distance = b0 | (b1 & 0x0F) << 8;
     const unsigned nibble = b1 >> 4;
-    if (!rle && distance == 0) {
-      if (d != size) return fail(error, "SLZ: stream ended before the declared size");
-      return true;
-    }
+    if (!rle && distance == 0) return true;
     if (rle && nibble == 0x0F) {
       size_t count;
       u8 value;
@@ -55,14 +59,14 @@ bool lzss(const u8* src, size_t src_len, std::vector<u8>& out, size_t size, bool
         count = (b1 & 0x0F) + 3;
         s += 2;
       }
-      if (count > size - d) return fail(error, "SLZ: fill exceeds the declared size");
+      room(count);
       std::memset(out.data() + d, value, count);
       d += count;
       continue;
     }
     const size_t length = nibble + 3;
     if (distance > d) return fail(error, "SLZ: reference before the start of the output");
-    if (length > size - d) return fail(error, "SLZ: reference exceeds the declared size");
+    room(length);
     for (size_t k = 0; k < length; ++k, ++d) out[d] = out[d - distance];
     s += 2;
   }

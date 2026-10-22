@@ -9,6 +9,11 @@
 // Testing options: --headless (no window), --frames N (stop after N vblanks),
 // --capture DIR --capture-frames A,B,... (save the display on those vblanks),
 // --input FRAME:buttons,... (scripted controller, e.g. 900:down,906:none,930:cross).
+// SS_VRAM_PNG=file writes VRAM as a 1024x512 PNG when the run ends.
+//
+// Audio: --audio / --no-audio (remembered; on by default with a window, off when
+// headless unless --audio is given), --audio-wav FILE or SS_AUDIO_WAV=FILE (record
+// the sound output as a WAV file, also headless).
 //
 // Memory cards: --memcard1 FILE / --memcard2 FILE (raw 128 KB images, the .mcd/.mcr
 // format emulators use; remembered; "none" removes the card). Slot 1 defaults to
@@ -34,9 +39,12 @@
 #include "disc/disc_image.h"
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
+#include "platform/audio.h"
 #include "platform/window.h"
+#include "runtime/boot_exe.h"
 #include "runtime/runtime.h"
 #include "tools/viewer.h"
+#include "util/png.h"
 
 namespace {
 
@@ -73,7 +81,8 @@ void save_config(const std::map<std::string, std::string>& config) {
 int usage(const char* argv0) {
   std::fprintf(stderr,
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
-               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n",
+               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
+               "       [--audio|--no-audio] [--audio-wav FILE]\n",
                argv0);
   return 2;
 }
@@ -88,6 +97,9 @@ int main(int argc, char** argv) {
        no_memcard = false;
   int entry = 10;
   u64 frames = 0;
+  bool audio_asked = false;
+  std::filesystem::path audio_wav;
+  if (const char* wav = std::getenv("SS_AUDIO_WAV"); wav && *wav) audio_wav = wav;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     auto next = [&]() -> const char* { return argv[++i]; };
@@ -128,6 +140,15 @@ int main(int argc, char** argv) {
       capture_frames = next();
     } else if (arg == "--input" && has_value) {
       input_script = next();
+    } else if (arg == "--audio") {
+      config["audio"] = "1";
+      config_changed = true;
+      audio_asked = true;
+    } else if (arg == "--no-audio") {
+      config["audio"] = "0";
+      config_changed = true;
+    } else if (arg == "--audio-wav" && has_value) {
+      audio_wav = next();
     } else {
       return usage(argv[0]);
     }
@@ -145,6 +166,9 @@ int main(int argc, char** argv) {
     std::fprintf(stderr, "%s: %s\n", config["disc1"].c_str(), error.c_str());
     return 1;
   }
+  // The sound driver's tables (and libspu's reverb presets) are read from the boot executable.
+  if (std::string exe_error; !runtime::boot_exe_open(*disc, &exe_error))
+    std::fprintf(stderr, "%s: %s (no sound)\n", config["disc1"].c_str(), exe_error.c_str());
   if (!dump_dir.empty()) return tools::dump_textures(archive, entry, dump_dir);
   if (viewer) return tools::run_viewer(archive, entry, static_cast<int>(frames));
 
@@ -201,6 +225,13 @@ int main(int argc, char** argv) {
     rt.window = &window;
   }
 
+  platform::AudioOptions audio;
+  audio.device = config["audio"] != "0" && (!headless || audio_asked);
+  audio.wav = audio_wav;
+  if (std::string audio_error; !platform::audio_open(audio, &audio_error))
+    std::fprintf(stderr, "audio: %s\n", audio_error.c_str());
+  rt.audio_tick = platform::audio_vblank;
+
   try {
     game::Program program = game::boot_main(0, &archive);
     for (;;) {
@@ -213,6 +244,12 @@ int main(int argc, char** argv) {
     }
   } catch (const runtime::QuitRequested&) {
   }
+  if (const char* vram_png = std::getenv("SS_VRAM_PNG")) {  // debugging: VRAM at exit
+    std::vector<u32> pixels;
+    rt.gpu.vram_to_rgba(pixels);
+    util::write_png(vram_png, pixels, 1024, 512);
+  }
+  platform::audio_close();
   std::printf("stopped after %llu vblanks\n", static_cast<unsigned long long>(rt.vblanks()));
   return 0;
 }

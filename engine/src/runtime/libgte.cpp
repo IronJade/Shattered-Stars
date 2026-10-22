@@ -427,6 +427,51 @@ MATRIX* ScaleMatrix(MATRIX* m, const VECTOR* v) {
   return m;
 }
 
+namespace {
+s16 rot_term(s16 a, s32 f) { return static_cast<s16>((static_cast<s32>(a) * f) >> 12); }
+}  // namespace
+
+MATRIX* RotMatrixX(s32 r, MATRIX* m) {
+  const s32 c = game::cos4096(static_cast<u32>(r)), s = game::sin4096(static_cast<u32>(r));
+  for (int j = 0; j < 3; ++j) {
+    const s16 a = m->m[1][j], b = m->m[2][j];
+    m->m[1][j] = static_cast<s16>(rot_term(a, c) - rot_term(b, s));
+    m->m[2][j] = static_cast<s16>(rot_term(a, s) + rot_term(b, c));
+  }
+  return m;
+}
+
+MATRIX* RotMatrixY(s32 r, MATRIX* m) {
+  const s32 c = game::cos4096(static_cast<u32>(r)), s = game::sin4096(static_cast<u32>(r));
+  for (int j = 0; j < 3; ++j) {
+    const s16 a = m->m[0][j], b = m->m[2][j];
+    m->m[0][j] = static_cast<s16>(rot_term(a, c) + rot_term(b, s));
+    m->m[2][j] = static_cast<s16>(rot_term(b, c) - rot_term(a, s));
+  }
+  return m;
+}
+
+MATRIX* RotMatrixZ(s32 r, MATRIX* m) {
+  const s32 c = game::cos4096(static_cast<u32>(r)), s = game::sin4096(static_cast<u32>(r));
+  for (int j = 0; j < 3; ++j) {
+    const s16 a = m->m[0][j], b = m->m[1][j];
+    m->m[0][j] = static_cast<s16>(rot_term(a, c) - rot_term(b, s));
+    m->m[1][j] = static_cast<s16>(rot_term(a, s) + rot_term(b, c));
+  }
+  return m;
+}
+
+VECTOR* Square0(const VECTOR* v0, VECTOR* v1) {
+  gte().write_data(G::IR1, static_cast<u32>(v0->vx));
+  gte().write_data(G::IR2, static_cast<u32>(v0->vy));
+  gte().write_data(G::IR3, static_cast<u32>(v0->vz));
+  gte().execute(G::kSqr0);
+  v1->vx = gte().mac(1);
+  v1->vy = gte().mac(2);
+  v1->vz = gte().mac(3);
+  return v1;
+}
+
 // PsyQ keeps a 20-entry stack of RT and TR; overflow and underflow print an
 // error there and change nothing, as here.
 void PushMatrix() {

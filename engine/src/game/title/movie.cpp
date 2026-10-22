@@ -254,22 +254,6 @@ void movie_dma_callback() {
 
 // ---- Prologue support ----------------------------------------------------------------
 
-// The sound calls the cues make that have no stub yet. TODO(port): the sound system
-// (System + 0x5aa4).
-void todo(const char* key, const char* what) {
-  Runtime::get().log_once(key, std::string("not ported yet: ") + what);
-}
-int sound_open_clip(Sound*, const u8*, int, int*) {  // 0x800197ec: returns the clip's slot (1-8)
-  todo("sound_open_clip", "prologue sound clips (0x800197ec / 0x8001a4b8)");
-  return 0;
-}
-void sound_start_clip(Sound*, int, int, int, int, int) {}  // 0x8001a4b8
-void sound_release_clip(Sound*, int) {}                    // 0x8001a114: keys off a clip slot's voices
-void sound_fade_out_all(Sound*, int frames) {              // 0x8001a88c
-  (void)frames;
-  todo("sound_fade_out_all", "sound fade-out (0x8001a88c)");
-}
-
 // The vblank counter's handler (0x8004ff78) runs from the pad module's handler list
 // (boot 0x800141bc / 0x80014230) on the console. TODO(port): that list; until then the
 // counter catches up from the runtime's vblank count when read, which gives the same

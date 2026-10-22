@@ -1,0 +1,124 @@
+#pragma once
+
+#include <vector>
+
+#include "core/types.h"
+#include "game/common/menu_core.h"
+#include "game/common/screen.h"
+
+namespace ss::game {
+struct MemoryCard;
+}
+
+// The menu scene, the session and the page loader shared by the title (load-game
+// screen) and the field (camp menu, save points, shops).
+//
+// How a menu runs:
+//   1. the caller unpacks the resource pack (TIMs) into g_menu_res and the page data
+//      into g_menu_data, and makes the sprite pack (0xbd2) resident;
+//   2. MenuSession (title 0x80030b0c / field 0x8003253c) records the start page;
+//   3. MenuScene (title 0x8002fff4 / field 0x8002f9f8) sets up the 320x240 screen,
+//      the window list and the menu VRAM;
+//   4. menu_scene_run (title 0x800305c4 / field 0x8002ffdc) loops frame_begin, the
+//      page loader (which creates each page's widget), the window list update and
+//      frame_end until the pages reach page 0x14 (close);
+//   5. the destructors restore the VRAM the menu borrowed and free everything.
+namespace ss::game::menu {
+
+class MenuPageLoader;
+class Widget;
+
+// Session (0x38 bytes): what the menu was opened for and what it returns.
+struct MenuSession {
+  MenuSession();                      // title 0x80030b0c / field 0x8003253c
+  ~MenuSession();                     // title 0x80030c00 / field 0x80032630
+  void free_data();                   // title 0x80030cbc / field 0x800326ec
+  void free_cache();                  // title 0x80030d24 / field 0x80032754
+  void build_button_map();            // title 0x80030d64 / field 0x80032794
+
+  s32 heap_free = 0;      // +0x00
+  MenuScene* scene = nullptr;  // +0x04
+  std::vector<u8> buffer; // +0x08
+  u16 help_flags = 0;     // +0x0c: the focused panel's help-bar flags
+  s16 arg = 0;            // +0x12: argument of script-opened menus
+  s8 page_id = 0;         // +0x14: current page (menu_pages_publish_id)
+  s8 load_mode = 0;       // +0x15: page 0x11 loads (1) or saves (0)
+  s8 result = 0;          // +0x16: 1 = a game was loaded (handoff 0xe is kept)
+  s8 single_member = 0;   // +0x17
+  u8 cached_0bd2 = 0;     // +0x19: free entry 0xbd2 on destruction
+  u8 cached_0bbb = 0;     // +0x1a
+  s8 unknown1b = 0;       // +0x1b
+  s8 variant = 0;         // +0x1c: page variant (4 / 0xb)
+  s8 start_page = 0;      // +0x1d
+  s8 select_result = 0;   // +0x1e
+  s8 unknown1f = 0;       // +0x1f
+  u8 button_map[16] = {}; // +0x20: icon cell for each config button
+  s8 unknown30 = 0;       // +0x30
+  s8 field_query = 0;     // +0x31
+  s8 inventory_dirty = 0; // +0x34
+  s8 unknown35 = 0;       // +0x35
+};
+
+// Scene (title 0x3c bytes on the stack / field 0x40).
+struct MenuScene {
+  explicit MenuScene(MemoryCard* card);  // title 0x8002fff4 / field 0x8002f9f8
+  ~MenuScene();                          // title 0x8003036c / field 0x8002fd8c
+  int run();                             // title 0x800305c4 / field 0x8002ffdc
+  void frame_begin();                    // title 0x800306a4 / field 0x800300dc
+  void frame_end();                      // title 0x8003083c / field 0x8003029c
+  void upload_tim(int index, const psyq::RECT& rect, const s16 clut[4]);  // title 0x80030974 / field 0x800303d4
+
+  RenderContext* ctx = nullptr;          // +0x04
+  WindowList* windows = nullptr;         // +0x0c
+  MenuPageLoader* pages = nullptr;       // +0x10
+  MemoryCard* memcard = nullptr;         // +0x14
+  s16 external_memcard = 0;              // +0x18: the caller owns the card manager
+  s16 input_off = 0;                     // +0x1a
+  u32 held = 0;                          // +0x1c (lowest set bit)
+  u32 repeat = 0;                        // +0x20
+  u32 pressed = 0;                       // +0x24
+  s32 vsync_result = 0;                  // +0x28
+  s32 frames = 0;                        // +0x2c
+  s32 vsync_mode = 0;                    // +0x30: 0/1/2/10/60 vblanks
+  std::vector<u16> saved_icons;          // +0x34: VRAM (0x200,0x100) 64x128
+  std::vector<u16> saved_cluts;          // +0x38: VRAM (0,0x1e0) 320x16
+  bool owns_memcard = false;
+};
+
+// Page loader (0x70 bytes): a stack of pages; each page creates one widget and
+// reacts to its result.
+class MenuPageLoader {
+ public:
+  MenuPageLoader();                       // title 0x8003540c / field 0x80034dd0
+  ~MenuPageLoader();                      // title 0x8003544c / field 0x80034e1c
+  void request(int page);                 // title 0x8003549c / field 0x80034e6c
+  int update();                           // title 0x8003562c / field 0x80035020
+  void goto_page(s16 page);               // title 0x80035aa4 / field 0x80035fa8
+  void pop();                             // title 0x80035afc / field 0x80036000
+  void publish_id();                      // title 0x80035b50 / field 0x80036054
+  void push(Widget* page);          // title 0x80035b64 / field 0x80036068
+
+  s16 page = 0;            // +0x00
+  s16 substate = 0;        // +0x02: 1 create, 0 running
+  s16 choice = 0;          // +0x04
+  BgLoadClient client;     // +0x08
+  Widget* current = nullptr;  // +0x14
+  s16 depth = 0;           // +0x10
+  struct Entry {           // +0x18: {Widget*, page id} (8 bytes)
+    Widget* widget = nullptr;
+    s16 id = 0;
+  } stack[8];
+  std::vector<u8> code_dest;  // +0x58: page code destination (field: 0x8007e000)
+  std::vector<u8> read_buf;   // +0x5c
+  s32 entry = 0;              // +0x60
+  s32 code_size = 0;          // +0x64
+  s32 data_size = 0;          // +0x68
+  s16 loads_on = 0;           // +0x6c
+};
+
+// Page handlers (title 0x80035940-0x80035a94). The title links only pages 0 and
+// 0x11; the field's are listed in docs/catalog (menu_page*_update).
+void menu_page00_start(MenuPageLoader* p);   // title 0x80035940 / field 0x80035334
+void menu_page11_update(MenuPageLoader* p);  // title 0x800359b8 / field 0x800358e8
+
+}  // namespace ss::game::menu

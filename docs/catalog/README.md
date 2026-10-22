@@ -9,7 +9,9 @@ should hold a name that isn't recorded here.
 | `functions.csv` | Every named function: address, name, C-style signature, what it does |
 | `globals.csv` | Global variables and the structures behind them |
 | `script_opcodes.csv` | The event-script VM instruction set, with argument counts |
-| `formats.md` | File and data formats (archive, compression, programs, maps, scripts, text) |
+| `formats.md` | File and data formats (archive, compression, programs, maps, scripts, text, sound) |
+
+The structure behind the names (classes, flows, layouts) is in `docs/notes/`.
 
 ## Columns
 
@@ -18,6 +20,10 @@ should hold a name that isn't recorded here.
   - `boot`: `SCUS_944.21` / `.22`, resident at `0x80010000`
   - `title`: archive entry #1 at `0x8002f810`
   - `field`: archive entry #3100 at `0x8002f810`
+  - `field_ovl_c1d` / `field_ovl_c1e`: the field's code overlays #3101 (field maps) and
+    #3102 (world map), both at `0x8007e000`
+  - `battle`: archive entry #2129 at `0x8002f810`
+  - `battle_ovl1984_N` (block N of entry #1984) and `battle_ovl1981`: battle code overlays
 - **signature**: C-style, with struct names for pointers (`Loader *`, `ScriptCtx *`).
   Unknown parameters are `int argN`.
 - **confidence**:

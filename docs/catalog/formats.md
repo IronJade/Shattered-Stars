@@ -76,11 +76,12 @@ Container: u32 section count, then `(u32 section id, u32 offset)` pairs.
 | Offset | Field |
 |---|---|
 | 0x00 | code size in bytes |
-| 0x04 | unknown (0 in samples) |
-| 0x08 | unknown |
+| 0x04 | code start in words after the header (0 in all 964 scripts) |
+| 0x08 | main entry (word index): `vm_init` pushes a frame returning there and starts at word 0, which is always `return` |
 | 0x0C | string count |
 | 0x10 | text size in bytes |
-| 0x14, 0x18 | unknown (possibly local variable / flag area sizes) |
+| 0x14 | size of the save-game variables (0x344-0x364): the map's own variables and the call frames' locals start above it (rounded up to 4) |
+| 0x18 | size of the save-game flag bytes (0x170): the map's local flags start above it |
 | 0x1C | code (32-bit instructions); branch targets are word indexes from here |
 | 0x1C + code size | string offset table: `string count` u16 values, relative to the text start |
 | after that | text |
@@ -90,7 +91,11 @@ Container: u32 section count, then `(u32 section id, u32 offset)` pairs.
 - Bits 24–31: opcode. Bit 23: operand is in the thread's locals (1) or globals (0).
   Bits 0–22: address or immediate.
 - Typed operands (opcodes 0x21–0x60): bits 16–19 type (0 s32, 1 s16, 2 s8, 3 flag,
-  8 u32, 9 u16, 10 u8), bits 0–15 address.
+  8 u32, 9 u16, 10 u8; the binary ops read s8 unsigned), bits 0–15 address. An operand with
+  `instr & 0x80ffff == 0` is `[indexed]`: the address the last `index_load` (0x0a / 0x10)
+  computed is OR-ed into the instruction. `index_scale` (0x09 / 0x11) leaves the element
+  size (1 byte, 2 s16, 4 s32, anything else = flags, e.g. `0x800001`) for the index loads,
+  which put the element in R.
 - Opcodes 0x64 and up take N arguments (`script_opcodes.csv`): inline when bit 23 is clear
   (first argument in bits 0–15, the rest packed two 16-bit values per following word,
   N // 2 extra words), popped from the value stack when it is set.
@@ -100,18 +105,57 @@ Container: u32 section count, then `(u32 section id, u32 offset)` pairs.
 
 - `script_globals`: byte-addressed variables; word 0 is the return register R.
 - `script_flags`: bit array (flag n = byte n >> 3, bit n & 7).
-- Thread locals: variables below `ctx+0x18`, flags below `ctx+0x1c`, both addressed downward.
-- Value stack at `ctx+0x24`, growing upward. Call stack at `ctx+0x20`.
+- Locals: a local of size s at address n is at `ctx+0x18 - n - s`, local flag n in byte
+  `ctx+0x1c - (n >> 3) - 1`; `frame` (0x18) raises both tops, `return` restores them.
+- All of it is the field state block (handoff 9): call stack at +0 (4 words a frame:
+  locals offset, local-flags offset, wait counter, IP offset), value stack at +0x100,
+  variables at +0x180 (the low variables are the field state, game_state is at +0xa0),
+  flags at +0x8c0.
 
-Script context fields: `+0x08` current instruction, `+0x0c` wait counter, `+0x10` instruction
-pointer, `+0x14` code base, `+0x28` string offset table, `+0x2c` text, `+0x30` pending wait
-state, `+0x34` its parameter, `+0x4c + n*0x48` thread slots.
+One script thread per map (class ScriptVM, 0x11cc bytes): `+0x08` current instruction,
+`+0x0c` wait counter, `+0x10` IP, `+0x14` code base, `+0x18` / `+0x1c` locals / local flags
+tops, `+0x20` / `+0x24` call / value stack, `+0x28` string offset table, `+0x2c` text,
+`+0x30` wait state, `+0x34` its parameter, `+0x4c + n*0x48` the 58 **trigger regions**
+(convex floor quads bound to script functions; not threads). Events (talk, regions, Private
+Actions, actor command callbacks) interrupt the thread with a call frame. Full layout and the
+per-frame order (triggers, wait counter, music, wait state, instructions) in
+`analysis/field_catalog/part4.md`; port in `engine/src/game/field/script_*.cpp`, checked
+instruction for instruction against the original's openings of maps 7 and 18.
 
 ### Text
 
-- 16-bit little-endian character codes: `0x1B6`–`0x1CF` = A–Z, `0x1D0`–`0x1E9` = a–z,
-  `0x285` = space. Other printable codes are not mapped yet.
-- Codes with bit 15 set are control codes followed by one parameter byte.
+Strings are **byte streams** (correction: earlier notes read them as u16): a byte below 0x80 is
+a one-byte code; otherwise code = `(b & 0x7f) | next << 7`. 0 ends the string. Codes below
+0x4000 are 1-based glyph indexes into the map's own font (section 1 block 1: `u32 count; u32
+height (12); u8 width[count]; u16 rows[count][12]`, bit 15 = leftmost pixel). Glyphs:
+'0'-'9' 0xaa-0xb3, '-' 0xb4, '.' 0xb5, 'A'-'Z' 0xb6-0xcf, 'a'-'z' 0xd0-0xe9, '?' 0xed,
+'!' 0xef, '=' 0xff, ':' 0x100, ';' 0x101, ',' 0x103, '/' 0x104, space 0x105; 0x55-0xa9 kana.
+
+Control codes (field `msg_window_print`, `text_layout_line`, `text_render_line`):
+
+| Code | Params | Effect |
+|---|---|---|
+| 0x4000 | - | new line |
+| 0x4001 | - | wait for a button, then clear the window (new page) |
+| 0x4002 | - | wait for a button (or 300 frames with auto text, script flag byte 0x5e bit 1) |
+| 0x4003 | u8 n | text speed (n < 5) or pause n - 5 frames |
+| 0x4004 | u8 n | text colour n * 2 + 3 |
+| 0x4005 | - | centre the line |
+| 0x4006 | u16 | timed wait (frames) |
+| 0x4007 | u8 v | character name of message variable v |
+| 0x4008 | u8 v | item / menu string (entry 0xfc2 id = variable v + 2999), drawn with the 0xfc2 font |
+| 0x4009 | - | start of a ruby base (the glyphs a 0x400a block annotates) |
+| 0x400a ... 0x400b | | ruby: 6x6 glyphs (#3110 atlas) centred over the 0x4009 glyphs; inside, half-width kana are one byte and every other code two bytes |
+| 0x400c | u8 c | character name c (game_state + 0x28 + 0x14 * c, ASCII, '@' toggles kana) |
+| 0x400d | u8 i | fixed space (width table 0x80076318) drawn as icon i (#3110 icons, table 0x80076330; 0-5 = the configured pad buttons) |
+| 0x400e | u8 v | message variable v as a decimal number |
+| 0x400f | u8 x | set the x position |
+
+Message variables are 16 s32 at script globals + 0x38 (when the 0xfc2 strings are loaded,
+0x400e uses the low half and 0x4008 the high half). Lines wrap at the window width (glyph width
++ 1 px each) at class changes (kana / digits / letters / codes >= 0x107), never before closing
+punctuation; glyph 1 ('「') always starts a new line. A wrapped line drops a leading space.
+Port: `engine/src/game/field/message*.cpp`, verified against PCSX-Redux captures.
 
 ## Inventory entry
 
@@ -126,7 +170,7 @@ u16: bits 0–9 item id, bits 10–14 count.
   - block 3: menu art (texture pack block) uploaded to (0x140, 0), CLUT row 0x1e0.
 - **#15** block 0: window skin; `+0xc` → inner block; `inner + inner[0] + 4` = 256-colour CLUT (row 0x1fe), `inner + inner[1]` = `{u16 w, u16 h, pixels}` 4-bit, uploaded to (0x3c0, 0).
 - **#16** blocks 0 / 1: Claude / Rena portraits, 16-bit, at (0x140 / 0x240, 0x100); widths 0xce / 0xe4.
-- **#2674 / #2675** (0xa72 / 0xa73): `u32 bank_offset`, an SLZ sequence at +4, the sound bank at `bank_offset` (the Sound Select / later screens' demo tunes).
+- **#2674 / #2675** (0xa72 / 0xa73): `u32 bank_offset`, an SLZ sequence at +4, the sound bank at `bank_offset` (the Sound Select / later screens' demo tunes; see "Sound banks" and "Sound sequences"). #2674's sequence block runs 3 bytes past its declared unpacked size (2633 vs 2630): the console's `slz_lzss` doesn't check.
 - **#2680 / #2681**: first part of Claude's / Rena's prologue (loaded into a 0x52800 buffer during name entry).
 
 ## Party slot (0x60 bytes, handoff 3) and character record (0xd0 bytes, handoff 4)
@@ -188,3 +232,144 @@ same entry.
 
 The music and bank come from `g_prologue_data` (entry #2680 for Claude, #2681 for Rena:
 a sound bank at the offset given by the first word, then an SLZ block of music).
+
+## Sound banks (`sound_load_bank` 0x80018ff4)
+
+The sound driver (System + 0x5aa4, `engine/src/game/boot/sound.cpp`) keeps its own
+format, not libsnd's VAB. Music entries (#2674-#2677, ...) are `u32 bank_offset`, an
+SLZ block with the sequence at +4, and the bank at `bank_offset`. Bank #8 (the resident
+effects) is read with entry #9 right behind it.
+
+| Offset | Field |
+|---|---|
+| 0x0 | u32 size of the bank (header + samples) |
+| 0x4 | s16 header size = offset of the sample data |
+| 0x6 | u8 (0x14 in the banks seen; not read) |
+| 0x7 | u8 slot: 0 = slot 6 (SPU RAM 0x1010, bank #8), 1 = slot 7 (0x12000), 2 and up = slot 7 at 0x34000 |
+| 0x8 | u32 (not read) |
+| 0xC | instrument table, ended by the word 0xffffffff |
+| header size | ADPCM samples, DMAed as they are to the slot's SPU address |
+
+Instrument (program): u16 program id, u16 ADSR1, u16 ADSR2, u8 (unused), u8 region
+count, then 20-byte regions:
+
+| Offset | Field |
+|---|---|
+| 0x0 / 0x1 | lowest / highest note |
+| 0x2 / 0x3 | lowest / highest velocity |
+| 0x4 | u32 sample address (relative to the slot; `sound_copy_instruments` adds the slot's SPU address) |
+| 0x8 | u32 loop address (relocated too; voices loop by their ADPCM flags) |
+| 0xC | volume |
+| 0xD | s8 coarse tune (semitones) |
+| 0xE | s8 fine tune (1/64 semitone) |
+| 0xF / 0x10 / 0x11 | note, length, pan used instead of the sequence's (tracks with flag 0x40) |
+
+A region whose first word is 0xfffffff8 is not re-keyed after a pause. Programs are
+looked up by id through the 12 bank slots in the order of 0x8002b6c0 (8 9 10 11 4 5 6
+7 0 1 2 3); slots 8-11 hold one-shot clip programs.
+
+## Sound sequences (`sound_sequence_init` 0x80018560, `sound_track_step` 0x80015c94)
+
+Music (unpacked from the entry's SLZ block):
+
+| Offset | Field |
+|---|---|
+| 0x0 | u16 0xffff |
+| 0x2 | u16 (size; not read) |
+| 0x4 | u32 id (a restored sequence resumes only if the id matches) |
+| 0x8 | u16 offset of the track table |
+| 0xF | base tempo (beats a minute) |
+| 0x13 / 0x14 / 0x15 | reverb mode (libspu `SPU_REV_MODE_*`, 5 = hall), delay, feedback |
+
+Track table: 24 entries of 6 bytes: flags (0x80 notes not transposed (drums), 0x40 the
+region sets note / length / pan, 0x02 pan follows the note, 0x01 never keyed on),
+priority (a voice may be stolen for a lower value), s8 transpose, first wait - 1, u16
+offset of the track's pattern list. A pattern list is u16 offsets (from the sequence
+start) of patterns, ended by 0xffff; a track stops at the end of its list and the music
+ends when every track has.
+
+Time: a music tick is one interrupt of root counter 2 (system clock / 8 = 4,233,600
+Hz) of period 125000000 / (tempo * 24), about 48.8 ticks a beat; below tempo 80 the
+counter runs two or four times faster and only every second or fourth interrupt is a
+music tick. Effect ticks come every 65104 counter ticks (65.03 Hz) regardless.
+
+Commands. A byte below 0x80 is a note: note, wait (ticks to the next command), then by
+the note format set with 0x9e: 4 (default) length, velocity; 3 length (fixed velocity);
+1 velocity (fixed length); 2 nothing (both fixed). The other commands start with their
+wait unless noted:
+
+| Command | Arguments | Effect |
+|---|---|---|
+| 0x80 | - | end of pattern: the next one (effect tracks stop) |
+| 0x81 | wait, priority | |
+| 0x82 | wait, s8 | tempo change: tempo * (1 + n / 64) (n / 128 below 0) |
+| 0x83 | wait, u16 | program |
+| 0x84 | wait, s8 | pitch bend, times the bend range / 64 semitones |
+| 0x85 / 0x86 | wait, value | volume / expression |
+| 0x87 | wait, value | note pan (0x40 centre) |
+| 0x88 | wait, depth | vibrato from the track LFO (phase advances by the vibrato rate) |
+| 0x89 | wait, on | sustain pedal (ended notes are held until it is released) |
+| 0x8a | wait, depth | reverb depth (value << 8, both sides) |
+| 0x8d | - | loop start |
+| 0x8e | count | loop end: back to the loop start count - 1 times (0 = forever) |
+| 0x8f | wait | rest |
+| 0x90 | wait, on | reverb for the track's voices |
+| 0x91 | wait, mode | reverb phase: 1 left inverted, 2 right, 3 both |
+| 0x92 | wait, mode | surround phase of the voices: 1 left inverted, 2 right, 3 both |
+| 0x93 | wait, on | delayed vibrato |
+| 0x94 | wait, delay, depth, rate | delayed vibrato parameters (0x30 / 0x14 / 4 by default) |
+| 0x95 | wait, s8 | fine tune (1/64 semitone) |
+| 0x96 | wait, range | bend range (12 by default) |
+| 0x97 | wait, u16, u16 | ADSR1, ADSR2 |
+| 0x99 | wait, on | random pitch (-3..3 / 64 semitone per note) |
+| 0x9a | wait, on | echo: a copy of the track on a free track, with 0x9b's parameters |
+| 0x9b | wait, delay, transpose, fine, volume, pan | echo parameters |
+| 0x9e | length, velocity | note format (no wait): fixed length and / or velocity, 0 = given per note |
+
+0x8b, 0x8c, 0x98, 0x9c, 0x9d and 0x9f-0xff are not commands: the console's interpreter
+would spin on them (the port stops the track).
+
+## Sound effects (entry #9, `sound_set_sequences` 0x80014508, `sound_play_sfx` 0x80019b1c)
+
+| Offset | Field |
+|---|---|
+| 0x0 | u32 offset of the script table |
+| 0x4 | u16 offsets (from +4) of the effect sequences (the command set above, run on effect tracks 24-31 at the effect tick) |
+| script table | s16 offsets (from the table) of the effect scripts |
+
+A script is a u32 header (priority << 24 | group << 16) and words `op << 24 | arg`: 0
+wait for the effect's track to finish, then end; 1 delay `arg` effect ticks; 2 wait for
+the track; 3 start effect sequence `arg` (volume and pan from the caller's
+`volume << 8 | pan`, transpose from the caller). Eight effects play at once, one per
+group; a new effect takes a free slot, else its group's slot unless that one has a
+higher priority, else the slot with the highest priority value. Ids with a high byte
+(1-11) use the effect tables of bank slot `id >> 24 - 1` instead; 0x6f / 0x70 are
+streamed clips.
+
+## Effect banks and clips (`sound_import_effects` 0x800192fc, `sound_open_clip` 0x800197ec)
+
+A bank that carries its own effects, imported into one of the bank slots: the
+prologue's voice clips (at offsets inside the cue-list entries #4504-#4507), the Voice
+Collection's, and the field's effect banks.
+
+| Offset | Field |
+|---|---|
+| 0x0 | u32 offset of the bank part |
+| 0x4 | s16 per effect, ended by -0x8000: offset (from +4) of its record; 0 none; another negative value: the same effect as entry -n; -0x7fff skipped |
+| record | u32 record size, u32 effect-script header (priority << 24 / group << 16), the effect's sequence (record size - 8 bytes) |
+| bank part | a sound bank as above (u32 size, s16 header size, instrument table at +0xc, samples) |
+
+Each record becomes, in the slot's tables, the script "header; start sequence n; end"
+(n = its sequence's index) and sequence n. The instruments are relocated to the slot's
+SPU address; for the stream slots 8-11 that is the SpuSt buffer of the voice the
+import takes from the free-voice ring (0x70000 + voice * 0x100), and the samples stay in
+RAM: `sound_open_clip` mode 2 streams them through SpuSt, refilling the 0x100-byte buffer
+0x80 bytes at a time on the SPU interrupt. Clips with 0x80 sample bytes or fewer load
+instead (mode 1, slots 4 / 5 at SPU 0x28000 / 0x2d800).
+
+#4504's clip (Claude's prologue, part 1, offset 32): one effect (header 0x401405b3, a
+sequence playing note 0x3c with program 0x900 looped five times), 0x40f90 sample bytes
+(about 19.6 s at pitch 0x89e).
+
+Neither disc has XA-ADPCM sectors (no sector's submode has the audio bit) or CD-DA
+tracks (one data track each): all of the game's sound goes through the SPU.

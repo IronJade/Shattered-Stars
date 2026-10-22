@@ -44,16 +44,21 @@ add_library(ss_core STATIC
   src/psx/gpu.cpp
   src/psx/gte.cpp
   src/psx/mdec.cpp
+  src/psx/spu.cpp
   src/psx/memory_card.cpp
   src/game/common/texture.cpp
   src/game/common/math.cpp
   src/game/boot/loader.cpp
   src/game/boot/pad.cpp
   src/game/boot/rng.cpp
+  src/game/boot/sound.cpp
   src/game/boot/stubs.cpp
   src/runtime/runtime.cpp
   src/runtime/libgpu.cpp
   src/runtime/libgte.cpp
+  src/runtime/libspu.cpp
+  src/runtime/libapi.cpp
+  src/runtime/boot_exe.cpp
   src/runtime/libcard.cpp
   src/util/png.cpp)
 target_include_directories(ss_core PUBLIC src)
@@ -61,6 +66,7 @@ target_compile_options(ss_core PRIVATE ${SS_WARNINGS})
 
 add_library(ss_platform STATIC
   src/platform/gl.cpp
+  src/platform/audio.cpp
   src/platform/window.cpp)
 
 # Ported game programs; they present through the platform window.
@@ -77,6 +83,36 @@ add_library(ss_game STATIC
   src/game/title/new_game.cpp
   src/game/title/text.cpp
   src/game/title/window.cpp
+  src/game/field/actors.cpp
+  src/game/field/actor_base.cpp
+  src/game/field/actor_field.cpp
+  src/game/field/sprite_pack.cpp
+  src/game/field/sprite_render.cpp
+  src/game/field/collision.cpp
+  src/game/field/field_input.cpp
+  src/game/field/camera.cpp
+  src/game/field/bg.cpp
+  src/game/field/field_program.cpp
+  src/game/field/map.cpp
+  src/game/field/screen.cpp
+  src/game/field/tasks.cpp
+  src/game/field/script_vm.cpp
+  src/game/field/script_ext.cpp
+  src/game/field/script_table_a.cpp
+  src/game/field/script_table_b.cpp
+  src/game/field/script_triggers.cpp
+  src/game/field/script_party.cpp
+  src/game/field/script_gte.cpp
+  src/game/field/vm_services.cpp
+  src/game/field/message.cpp
+  src/game/field/message_text.cpp
+  src/game/field/message_draw.cpp
+  src/game/field/fade.cpp
+  src/game/field/notice.cpp
+  src/game/field/text_panel.cpp
+  src/game/field/load_queue.cpp
+  src/game/field/music.cpp
+  src/game/field/stash.cpp
   src/tools/viewer.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
@@ -98,6 +134,8 @@ add_executable(ss_tests
   tests/test_disc.cpp
   tests/test_mdec.cpp
   tests/test_memcard.cpp
+  tests/test_spu.cpp
+  tests/test_sound.cpp
   tests/test_game.cpp)
 target_link_libraries(ss_tests PRIVATE ss_core)
 target_compile_options(ss_tests PRIVATE ${SS_WARNINGS})
@@ -107,7 +145,10 @@ add_test(NAME ss_tests COMMAND ss_tests)
 # never open a window.
 add_executable(ss_game_tests
   tests/test_main.cpp
-  tests/test_movie.cpp)
+  tests/test_movie.cpp
+  tests/test_script_vm.cpp
+  tests/test_field_message.cpp
+  tests/test_field_actors.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

@@ -1,36 +1,477 @@
 module,address,name,type,summary,confidence,evidence
-boot,0x8002b550,g_system,System *,"Resident System object (0x8e5c bytes on the heap). +0x1 SLZ context, +0x4 graphics, +0x10 Loader (table of contents at +4 / +0x4804), +0x5a20 handoff registry, +0x5aa4 sound system",confirmed,boot_main
-boot,0x8002b468,g_rng_table,int[56],ran3 state (index 1..55 used),confirmed,rng_seed
+battle,0x1f800000,s_shot_desc,ShotDesc (scratchpad),0x74-byte projectile descriptor filled by shot_desc_init and consumed by shot_spawn_projectile (also reused as VortexParams by kinds 0x30/0x31),likely,0x8005a0cc + 0x8005a158
+battle,0x1f80021c,s_shatter_centre,int[3] (scratchpad),Explosion centre of model_shatter (pos >> 12); 0x1f80023c = fragment speed,confirmed,model_shatter + shard_set_vertices
+battle,0x8002f8c4,vtable_Program,vtable,Program base vtable ([1] pure 0x8001446c; [2] program_set_system),confirmed,program_create
+battle,0x8002f8dc,g_current_program,Program *,Current program object (shared slot with title/field: program_create stores self here); the battle's BattleProgram (12 bytes; vtable 0x80079098),confirmed,battle_entry / battle_program_create 0x800715d0
+battle,0x8006b030,vtable_Sprite,vtable,Sprite (0xb8 pool object): [1] sprite_update 0x800300e0; [2] 0x80045838 (BObj),confirmed,sprite_ctor; battle_init_objects
+battle,0x8006b047,tactics_text_base,u8[],Per character offset into the tactics names (text id 2000 + base + i),likely,tactics_menu_draw_items
+battle,0x8006b053,g_spell_mp_cost,u8 [0x48],Base MP cost by spell id (index spell; 1 Firebolt 2; 0x2f Heal 3; 0x30 Cure Light 11 ...); modified by 0x80053f6c; also read as 0x8006b054[spell-1],confirmed,spell_cast
+battle,0x8006b09b,g_spell_cast_ticks,u8[],Chant time in ticks per spell number (1-based; 0x8006b09c = spell 1); x3/4 with effect 1/0x100000; reduced by skill 0x27,confirmed,0x80052bac
+battle,0x8006b0e3,spell_target_class,u8[],Spell id -> 0 enemy target / 1-2 party member / 3 none,likely,spell_menu_confirm
+battle,0x8006b12b,g_spell_needs_data,u8 [0x48],1 when the spell needs preloaded effect data (spell_cast aborts while it is missing),likely,spell_cast
+battle,0x8006b12c,skill_clash_enabled,u8[],Per skill id (1-based; index id-1): non-zero if the skill can interact in spell_clash_check,likely,spell_clash_check
+battle,0x8006b173,g_spell_element,u8[],Per spell number: element index 0-11 (offset into the target stats +4 resist bytes),confirmed,pc_ai_choose_attack_spell
+battle,0x8006b1ab,class_spell_count,u8[],Spell list length per class byte (slot+3): 9 -> 23; 0xa -> 19; 0xb -> 21; 0xc -> 21,confirmed,learn_spells_from_table + data dump
+battle,0x8006b1b8,spells_rena,u8[23],Rena class spell list (learned flag index = position),confirmed,levelup_learn_skills
+battle,0x8006b1d0,spells_leon,u8[19],Leon class spell list,confirmed,levelup_learn_skills
+battle,0x8006b1e4,spells_celine,u8[21],Celine class spell list,confirmed,levelup_learn_skills
+battle,0x8006b1fc,spells_noel,u8[21],Noel class spell list,confirmed,levelup_learn_skills
+battle,0x8006b220,g_km_params_claude,s16[][2],Killer-move s16 pair per move (1-based) copied to unit+0x2de/+0x2e0 (likely the move's distance window); other characters: Bowman 0x8006b258 Dias 0x8006d4b8 Precis 0x8006b298 Ashton 0x8006b2cc Opera 0x8006b300 Ernest 0x8006b330 Chisato 0x8006b358,likely,pc_setup_killer_moves 0x80084874 / pc_killer_move_table 0x800849c0
+battle,0x8006b377,item_target_class,u8[],Item effect class -> menu action (0/1/5 member select 3/4/5; 2 enemy target; 3/4 immediate),likely,item_menu_confirm
+battle,0x8006b3dc,camera_set_mode_jt,u32[17],Jump table of camera_set_mode (mode-1 -> setup),confirmed,camera_set_mode
+battle,0x8006b424,camera_update_jt,u32[17],Jump table of camera_update (mode-1 -> updater),confirmed,camera_update
+battle,0x8006b484,vtable_Camera,vtable,Camera vptr value; [1] camera_update 0x80031390 (entry at 0x8006b490),confirmed,camera_ctor
+battle,0x8006b494,g_camera_mode_priority,u8[17],Priority of camera modes 1..17 (read as 0x8006b493[mode]): 70 80 10 80 78 82 80 70 70 60 10 60 70 81 78 70 70; a new mode is refused while the current one has a higher priority (+0xa0),confirmed,camera_set_mode
+battle,0x8006b4a8,vtable_Collider,vtable,Collider vtable set inline by unit_create before the Unit vtable ([1] pure; [2] collider_get_box 0x80034360),confirmed,unit_create 0x8004dd30
+battle,0x8006b5bc,g_spell_ai_weight,struct{s16 base; s16 int_scale; s16 prof_scale;}[0x2e],AI value of attack spells (index spell-1): base (-1 = only vs low resist; -2 = finisher under 1/4 HP; 0 = never) + int_scale*INT(stats+0x46)/256 + prof_scale*proficiency/256,confirmed,pc_ai_choose_attack_spell
+battle,0x8006b6d0,vtable_PartyUnit,vtable[47],PartyUnit (player character) vtable: 46 slots (see p1.md table); slot 46 = pc_dtor,confirmed,pc_ctor; pc_dtor
+battle,0x8006b848,vtable_DebugWindow,vtable[5],Window subclass (0x470 bytes ctor debug_window_create): [1] debug_window_draw_nop [2] debug_window_destroy [3] debug_window_nop3 [4] 0x800679ac [5] 0x80069170,confirmed,vtable dump + ctor 0x8003be6c
+battle,0x8006b878,vtable_ScreenFade,vtable[1],Full-screen fade task (0x1c bytes): [1] screen_fade_update (dtor screen_fade_destroy is not virtual),confirmed,ctor 0x8003c3b0
+battle,0x8006b888,vtable_BurstFx,vtable[1],Battle-start radial white wipe task (0x18 bytes): [1] battle_start_burst_update,confirmed,ctor 0x8003bf18
+battle,0x8006b898,jt_enemy_think_state,u32[16],Switch table of enemy_think on +0x124 (states 0-15),confirmed,disassembly (targets inside 0x8003cac0)
+battle,0x8006b8d8,jt_enemy_begin_action,u32[6],Switch table of enemy_begin_action on +0x12a (1-6),confirmed,disassembly
+battle,0x8006b8f0,jt_enemy_ai_behaviour,u32[5],enemy_ai_tick behaviour cases: choose target (slot 26) / try cast / counterattack / aggro check / wander,confirmed,disassembly 0x8003da94
+battle,0x8006b908,vtable_EnemyUnit,vtable[36],EnemyUnit (monsters; 0x26c bytes): [1] enemy_update [11] enemy_release_spell [12] enemy_begin_action [13] enemy_status_roll [17] enemy_get_247 [22] enemy_animate [23] enemy_state_approach [24] enemy_state_hit [25] enemy_state_dying [26] enemy_choose_target [27-31] enemy_attack1-5 [32] enemy_pre_think_default [33] enemy_begin_move [34] enemy_on_attack_start [35] enemy_state_cast [36] enemy_destroy; others inherited from Unit 0x8006cde0,confirmed,vtable dump
+battle,0x8006ba30,vtable_EnemyWolf,vtable[36],Werewolf 0x44 Wolfhead 0x45 (type 0x46): [26] enemy_wolf_choose_target [28] enemy_wolf_attack2 [32] enemy_wolf_pre_think [36] enemy_wolf_destroy,confirmed,vtable dump + factory 0x80075ad8
+battle,0x8006bb58,vtable_EnemyBeastmaster,vtable[36],Shynesslady 0x41 Beastmaster 0x42 (type 0x43): [26] enemy_beastmaster_choose_target [29] enemy_beastmaster_attack3 [36] dtor,confirmed,vtable dump + factory
+battle,0x8006bc80,vtable_EnemyOoze,vtable[36],Ooze 0x32 Evilwater 0x33 Slimepool 0x34: [26] enemy_ooze_choose_target [28] enemy_ooze_attack2 [36] dtor,confirmed,vtable dump + factory
+battle,0x8006bda8,vtable_EnemySandglass,vtable[36],Sandglass 0x29 Timekeeper 0x2a Rolesher 0x2b Dreamshade 0x92: [25] enemy_sandglass_dying [26] choose_target [28] attack2 (heal) [29] attack3 (time stop) [32] pre_think (HP-dependent sprite) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006bed0,vtable_EnemyMagius,vtable[36],Eldermagius 0x19 Pilesherry 0x1a Magius 0x1b Warlock 0x86 Meigus 0x87: [9] enemy_magius_skill_level [26] choose_target [27] attack1 (drift) [28] attack2 [36] dtor,confirmed,vtable dump + factory
+battle,0x8006bff8,vtable_EnemyKobold,vtable[36],Kobold 0x13 Bugbear 0x14 Koboldking 0x15: [26] choose_target [28] attack2 [29] attack3 [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c120,vtable_EnemyAxe,vtable[36],Doomaxe 0x1c Lizardaxe 0x1d Robberaxe 0x1e Dragonaxe 0x88 Weirdaxe 0x89: [5] enemy_axe_knockback [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c248,vtable_EnemyThief,vtable[36],FunnyThief 0x16 Bandit 0x17 Lessassassin 0x18 MetalFunny 0x84 F-thiefL99 0x85: [26] choose_target (MetalFunny flees) [27] attack1 [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c370,vtable_EnemyPlant,vtable[36],Alraune 0xd Shadowflower 0xe Mandrake 0xf: [26] choose_target [28] attack2 (spores) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c498,vtable_EnemyGuard,vtable[36],Guarder 7 Shielder 8 Defender 9 Livingarmor 0x7d Reflectguard 0x7e Starguarder 0x7f: [5] enemy_guard_knockback [26] choose_target [28] attack2 (stance) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c5c0,vtable_EnemyKnight,vtable[36],Armedknight 1 Gladiator 2 Sargwen 3 Darkcrusader 0x79 Insaneload 0x7a Weirdknight 0x7b Lastavenger 0x7c: [26] choose_target [27] attack1 (combo) [28] attack2 (sword wave) [32] pre_think (stance) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c6e8,vtable_EnemyWizard,vtable[36],Wizard 0xb3 Masterwizard 0xb4 Soulmaster 0xb5 Weird-mage 0xb6 Wisesorcerer 0xb7: [27] enemy_wizard_attack1 (energy ball) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c810,vtable_EnemyShout,vtable[36],Shout 0x6e Burst 0x6f Bang 0x70: [27] enemy_shout_attack1 (MP drain) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006c938,vtable_EnemyArcher,vtable[36],Archer 0x60 Giantbow 0x61 (type 0x62) Robinfake 0xa1 Robinmaster 0xa2: [26] choose_target [28] attack2 (arrow) [29] attack3 (volley) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006ca60,vtable_EnemyGoat,vtable[37],Goathead 0x4e Harfainx 0x4f Breakwing 0x50 Greatergoat 0x9c Weirdgoat 0x9d (flying): [24] enemy_goat_hit [26] choose_target [36] dtor [37] enemy_goat_chant (extra slot; unused),confirmed,vtable dump + factory
+battle,0x8006cb90,vtable_EnemyGiant,vtable[36],Ghark 0x4a Troll 0x4b Yety 0x4c Mountsnow 0x4d Giant 0x99 Atlus 0x9a Killergigant 0x9b: [26] choose_target [28] attack2 (smash) [36] dtor,confirmed,vtable dump + factory
+battle,0x8006ccb8,vtable_DescPopup,vtable[5],Description balloon of the spell / item menus (0x840 bytes): [1] desc_popup_draw [2] desc_popup_destroy [3] 0x80067960 [4] 0x800679ac [5] 0x80069170,confirmed,vtable dump + ctor 0x80041620
+battle,0x8006cce8,s_cash_full,char[],"""CASH FULL"" (texture cache debug message; also ""NO CASH"" 0x8006ccfc and ""NO CASH TAG"" 0x8006cd04; ""("" 0x8006ccf4 and "")\n"" 0x8006ccf8)",confirmed,texcache_alloc
+battle,0x8006cd28,g_intro_camera_modes,u8[4],Battle-start camera modes {1; 8; 9; 0x10} indexed by g_battle_intro_kind 0x8006efeb (used unless stage 0x33 = mode 0x11 or a boss enemy +0x238 = mode 0xd),confirmed,battle_scene_start 0x80046cc0
+battle,0x8006cd30,vtable_VBlankHandler,vtable,Vblank handler base: [1] pure 0x8001446c; [2] 0x800134f8 (boot); [3] tick = vblank_handler_tick_nop 0x80047c90,likely,data; VsyncCounter vtable 0x8006cd50 has the same layout
+battle,0x8006cd50,vtable_VsyncCounter,vtable,VsyncCounter : VBlankHandler; [3] vsync_counter_tick 0x80047578,confirmed,data at 0x8006cd6c
+battle,0x8006cd70,g_cursor_bounce_scale,s16[8],Scale steps of the bouncing cursor / target arrows {0x200 0x400 0x600 0x800 0xc00 0x1000 0x1400 0x1e65} indexed by phase/2 (phase < 0xe),confirmed,input_member_select_update / input_target_select_update
+battle,0x8006cdc0,g_element_multiplier,s8[],Damage multiplier x2 by resist class: 0 normal 2 / 1 weak 4 / 2 resist 1 / 3 immune 0 / 4 absorb -2,likely,pc_ai_choose_attack_spell
+battle,0x8006cdc8,g_low_hp_thresholds,u8[11],HP% thresholds {3 5 10 20 30 40 50 60 70 80 90} of the status (0 1) desperation attack bonus,confirmed,unit_calc_damage 0x800503f0
+battle,0x8006cdd4,g_low_hp_attack_bonus,u8[11],ATK bonus % per threshold {200 150 120 110 100 90 80 60 40 30 20} (ATK += ATK*bonus/100),confirmed,unit_calc_damage 0x800503f0
+battle,0x8006cde0,vtable_Unit,vtable,Unit (combatant base) vtable; 21 slots: [1] unit_update; [2] collider_get_box; [3] unit_can_cast; [4] interrupt hook (nop); [5] unit_start_reaction; [6] unit_jump_time; [7] unit_jump_rise_time; [8] unit_update_vanish; [9] skill_level (0); [10] unit_update_status_effects; [11] cast-release hook (nop); [12] begin action / idle (nop); [13] unit_resist_roll; [14] has_status(word;mask) (0); [15] (0); [16] set_param (nop); [17] race (0); [18] accessory_proc (nop); [19] clear_status (nop); [20] set_status (nop); [21] status-recovered hook (nop),confirmed,data at 0x8006cde0; ctor 0x8004dd30
+battle,0x8006ce90,vtable_Shot,vtable,Shot (0x13c pool object; Collider subclass): [1] shot_update 0x80054560 (kind dispatch) [2] collider_get_box 0x80034360. Followed by the element tables 0x8006cea8..,confirmed,battle_init_objects + vtable read
+battle,0x8006cea8,g_element_clut,u8[12],CLUT/palette index per spell element (05 01 00 02 03 04 08 06 07 0a 09 0a); kind-3 cast aura sets BObj +0x6e from it,likely,shot_k03_cast_aura 0x80055d10
+battle,0x8006ceb4,g_element_rgb,u32[12],RGB per spell element (0x68a0b8 0xffa800 0xa8ff 0x98c8ff 0xc8c8 0x80ff00 0xd000d0 0xd0d098 0x888888 0xc8e8 0xf8a8 0xc8e8) for the kind-5 cast ring,likely,shot_k05_ring_burst 0x80055fc4
+battle,0x8006cee4,g_impact_rgb_a,u32[16],Impact effect colour A indexed by Shot flags bits 6-9 (kind 0x16 impact effects: particle ring outer / sphere colour),likely,shot_k16_projectile 0x8005a4d8
+battle,0x8006cf24,g_impact_rgb_b,u32[16],Impact effect colour B (particle ring inner colour) indexed by flags bits 6-9,likely,shot_k16_projectile
+battle,0x8006cf64,vtable_DamagePopup,vtable,DamagePopup (Pool2C: 16 x 0x2c Task objects): [1] damage_popup_update 0x8005d818,confirmed,battle_init_objects + vtable read
+battle,0x8006cf74,jt_shard_update,u32[8],Jump table of shard_update's primitive switch (types 1-8 -> 0x80060ad0 0x80060b9c 0x80060c9c 0x80060d78 0x80060eb8 0x80060fac 0x80061104 0x80061214),confirmed,0x800606f8 disassembly
+battle,0x8006cf94,vtable_PolyShard,vtable,PolyShard (Pool74: 192 x 0x74 Task objects): [1] shard_update 0x800606f8 (vtable 0x8006cfa4 that follows belongs to a Window subclass),confirmed,battle_init_objects + vtable read
+battle,0x8006cfa4,vtable_SpellClashWindow,vtable,SpellClashWindow : Window (0x30 bytes): [1] spell_clash_window_draw [2] spell_clash_window_destroy [3] window_open [4] spell_clash_window_release [5] window_draw_contents_nop,confirmed,vtable dump
+battle,0x8006cfd4,spell_cast_jump_table,void *[0x35],Switch table of spell_cast (spell 1..0x35),confirmed,data dump
+battle,0x8006d0a8,vtable_SkillNoticeWindow,vtable,SkillNoticeWindow : Window (0x88 bytes): [1] skill_notice_draw [2] skill_notice_destroy [3] window_open [4] window_release [5] nop,confirmed,vtable dump
+battle,0x8006d0d8,s_scan_hp,char [4],HP  (scan window); 0x8006d0dc /; 0x8006d0e0 MP,confirmed,scan_window_draw
+battle,0x8006d0e8,vtable_ScanWindow,vtable,ScanWindow : Window (0x3c bytes): [1] scan_window_draw [2] scan_window_destroy [3] window_open [4] window_release [5] nop,confirmed,vtable dump
+battle,0x8006d118,s_hud_hp,char [4],HP (small-font label); 0x8006d11c MP; 0x8006d120 { 0x8006d124 } 0x8006d128 ~ (status glyphs); 0x8006d12c /,confirmed,hud_draw
+battle,0x8006d130,vtable_BattleHud,vtable,BattleHud : Window (0x88 bytes): [1] hud_draw [2] hud_destroy [3] window_open [4] window_release [5] nop,confirmed,vtable dump
+battle,0x8006d160,vtable_Window,vtable,Battle Window base: [1] window_draw_frame [2] window_destroy [3] window_open [4] window_release [5] window_draw_contents_nop,confirmed,vtable dump
+battle,0x8006d190,g_window_corner_u,u8 [4],Corner SPRT u of the window frame: 0 0x28 0 0x28,confirmed,window_draw_frame
+battle,0x8006d194,g_window_corner_v,u8 [4],Corner SPRT v: 0x30 0x30 0x58 0x58,confirmed,window_draw_frame
+battle,0x8006d198,g_text_underline_colour,u32 [4],Underline colour per palette when text_draw gets bit 15: white; grey 0x888888; red 0x5850ff; orange 0x1098ff,confirmed,text_draw
+battle,0x8006d1a8,map_resolve_entries_jump_table,void *[0x15],Switch table of map_resolve_entries (world chunk remaps 0x26..0x3a),confirmed,data dump
+battle,0x8006d1f2,g_spell_data_entry,s16 [0x48][5],Archive entry of each spell effect data block per caster variant (0x800482a8); first valid row is spell 1 at 0x8006d1fc (0x8fa ..),likely,spell_cast
+battle,0x8006d4dc,knight_afterimage_colours,u32[4],Afterimage colours for Insaneload / Weirdknight / Lastavenger (index 1-3): 0x806040 0x802020 0x206080,confirmed,enemy_knight_attack1
+battle,0x8006d4ec,g_null_vector,VECTOR,Static zero vector returned by bobj_get_box_default (BObj vtable[2]); cleared by zero_vector_init,likely,0x80045838 + 0x800458f8
+battle,0x8006d4fc,g_stage_bounds,s32 [4],Arena rectangle x0 z0 x1 z1 (20.12) from stage op 6; formation and party placements are fractions of it (v * (x1-x0) / 4100 + centre),confirmed,load_stage op 6 + load_formation
+battle,0x8006d500,g_arena_z_min,int,Arena edge in z: rolling stage objects past it fall off (+0x12c),guess,stage blocks 2/5/8
+battle,0x8006d50c,g_texanim_dest,int[4][2],VRAM x;y destination of the 4 texture-animation channels,confirmed,stage_draw_and_animate
+battle,0x8006d52c,g_lens_flare_src,VECTOR,Lens flare source position; params 0x8006f69c dist / 0x8006f698 rgb / 0x8006f6a0 size / 0x8006f69e threshold; enabled by 0x8006f6a1 unless 0x8006f001,likely,battle_main_loop call of lens_flare_draw
+battle,0x8006d53c,g_texcache_pool,TexCache[],Static pool of 0xe0-byte sprite texture caches handed out by texcache_create (count 0x8006fa50): +0 VRAM area x0 y0 x1 y1 +8 cursor x y +0xc u16 rect[16][4] +0x8c u32 key[16] (image address; -1 free) +0xcc u8 used_this_frame[16] +0xdc row height +0xdd next victim +0xde lock,confirmed,texcache_create + texcache_alloc
+battle,0x8006e33c,g_zero_vector,VECTOR,All zero; used as the default camera look-at offset (+0x38..) and as a zero move delta for overlap tests,confirmed,camera_end_mode; pc_think; data dump
+battle,0x8006e34c,g_zero_vector_2,VECTOR,Second zero VECTOR cleared by battle_static_init; passed to 0x80077620 by stage_draw_and_animate,guess,battle_static_init / stage_draw_and_animate
+battle,0x8006e35c,g_obstacle_min,s32 [n][4],Obstacle box minimum x y z (20.12; stride 0x10) from stage ops 11/17,confirmed,load_stage
+battle,0x8006e4dc,g_obstacle_max,s32 [n][4],Obstacle box maximum x y z (stride 0x10),confirmed,load_stage
+battle,0x8006e660,g_clash_box_min,VECTOR[12],Clash slot min corners (x +0; y +4; z +8); cleared by 0x8004db64,likely,clash_register / clash_resolve
+battle,0x8006e720,g_clash_box_max,VECTOR[12],Clash slot max corners,likely,clash_register / clash_resolve
+battle,0x8006e7c0,g_ascii_glyph_table,u8 [256],ASCII -> glyph index (text_from_ascii) and -> 8x8 UI-font cell (window_draw_small_text: u = (cell&0x1f)*8; v = (cell>>5)*8),confirmed,text_from_ascii + window_draw_small_text
+battle,0x8006e8a0,b_system,System *,System object as seen by the battle program (get_system()),confirmed,battle_run 0x8007160c
+battle,0x8006e8a4,b_handoff,Registry *,System + 0x5a20 (handoff registry),confirmed,battle_run
+battle,0x8006e8a8,b_loader,Loader *,System + 0x10,confirmed,battle_run
+battle,0x8006e8ac,b_slz_ctx,void *,System + 1 (first argument of slz_unpack),confirmed,battle_run
+battle,0x8006e8b0,b_system_2,void *,System + 2 (not used further in the code read),confirmed,battle_run
+battle,0x8006e8b4,b_pad,Pad *,System + 4,confirmed,battle_run + pad_* calls
+battle,0x8006e8b8,b_system_5a18,void *,System + 0x5a18,confirmed,battle_run
+battle,0x8006e8bc,b_sound,Sound *,System + 0x5aa4,confirmed,battle_run + sound_* calls
+battle,0x8006e8c0,g_ovl_battle_code,u8 *,Copy of archive entry #1984 (0x7c0): SLZ chain of code blocks. Block 0 -> 0x800715d0 when the main loop starts; block 1 -> 0x80081728 when the battle state reaches 1 (then freed); blocks 2-10 -> 0x8008c1f4 for special stages,confirmed,battle_main_loop 0x800459fc + battle_run stage switch + load-list index 9
+battle,0x8006e8c4,g_ovl_result_code,u8 *,Copy of archive entry #1981 (0x7bd): one SLZ code block unpacked to 0x80085518 when the result screen starts (battle state 4),confirmed,load-list index 5 handler 0x800752c0 + battle_main_loop
+battle,0x8006e8c8,g_fixed_buf_801ee000,u8 *,0x10000-byte buffer forced to address 0x801ee000 (mem_alloc_b in a loop that frees blocks until the allocator returns that address); freed by battle_exit_to_field,confirmed,battle_main_loop + 0x80087644
+battle,0x8006e8cc,g_vsync_counter,VsyncCounter *,"12-byte vblank counter object (vtable 0x8006cd50, pad vblank handler); +8 = vblanks since last frame",confirmed,battle_init_objects 0x80074168 + battle_main_loop
+battle,0x8006e8d4,b_config,Config *,"Handoff 2 (config / counters block, 0x2a0 bytes). +0x41 controlled party slot, +0x4e (voice/sfx option), +0x178 battle outcome written at exit, +0x17e, +0x180 (no-music flag), +0x181 battle rule (2 escape race, 3 timed)",likely,"battle_run, battle_init_state, battle_main_loop, battle_exit_to_field"
+battle,0x8006e8d8,b_inventory,Inventory *,"Handoff 6 (inventory, 0xc28 bytes); +0x820 receives a pointer to a battle buffer (0x8006faf8)",likely,battle_run + battle_main_loop
+battle,0x8006e8dc,g_tasks,Task *[64],"Battle task list objects (vtable+8 = per-frame update), run by priority 0..4 in battle_main_loop",likely,battle_main_loop + task_register 0x80046f70
+battle,0x8006eddc,g_task_prio,u8 [64],Priority of each task list entry,likely,battle_main_loop
+battle,0x8006ef1c,g_task_count,u16,Number of task list entries,likely,battle_main_loop
+battle,0x8006ef20,g_ot_layers,OtLayer *[8],"Eight OT layer objects (+8 screen OT slot, +0xc OT head after screen_clear_ot); drawn from 7 down to 0 each frame",likely,battle_main_loop
+battle,0x8006ef40,g_stage_tex_count,u16,Number of op-1 stage textures (index into g_stage_tex_clut),confirmed,load_stage
+battle,0x8006ef44,g_stage_model_count,u16,Number of op-2 data blocks in g_stage_models,confirmed,load_stage
+battle,0x8006ef48,g_stage_tex_clut,u16 [16],CLUT id of each op-1 stage texture,confirmed,load_stage
+battle,0x8006ef68,g_stage_model_clut,u16,Passed as the 3rd argument of model_draw for stage models (CLUT?),guess,stage blocks
+battle,0x8006ef88,g_stage_blocks,void *[],Stage data blocks unpacked by load_stage (command 2); stage objects draw models from [1] (0x8006ef8c); [2] (0x8006ef90); [3] (0x8006ef94); count 0x8006ef44,likely,stage blocks; battle_free_all
+battle,0x8006ef98,g_encounter_id,s16,Encounter / formation id (handoff 5 +0). 0x219-0x21c and 0 get special voice/sfx overrides,confirmed,battle_run
+battle,0x8006ef9a,g_stage_id,s16,"Battle stage (background) id (handoff 5 +4); archive entry 0x543 + id. Ids 0xd,0xe,0x10,0x15,0x17,0x1a,0x1f,0x24,0x28,0x29,0x33,0x38,0x39 load extra stage code / objects",confirmed,battle_run
+battle,0x8006ef9c,g_light_dir,s16 [3][4],Directional light vectors (x y z; stride 8) from stage ops 8/14,confirmed,load_stage
+battle,0x8006efb4,g_light_colour,s16 [3][4],Light colours r g b (byte<<2 for op 8 and <<4 for op 14; stride 8),confirmed,load_stage
+battle,0x8006efcc,g_prim_pool_a,PrimPool *,16-byte object: 62000-byte primitive arena + 0x621-entry OT (screen arena/OT slots at +4/+8),likely,battle_init_objects + 0x80087884
+battle,0x8006efd0,g_frame_ticks,int,Vblanks since the previous frame (from g_vsync_counter +8); every animation step is scaled by it,confirmed,battle_main_loop
+battle,0x8006efd4,g_camera_eye,VECTOR,Camera position (x 0x8006efd4; y 0x8006efd8; z 0x8006efdc) handed to the view setup 0x80076ce0,likely,stage_draw_and_animate / camera_update_matrices
+battle,0x8006efe4,g_stage_height_grid,s16 *,Stage ground height grid (x0 z0 x1 z1 cell_w cell_h stride ? then heights); used when 0x8006efff is set,confirmed,stage_ground_height
+battle,0x8006efe9,g_victory_music_started,u8,Set when the victory sequence (entry #1978 music) has been started,confirmed,battle_main_loop
+battle,0x8006efea,g_can_escape,u8,1 unless the formation flags have bit 0 (boss: running away refused),likely,load_formation + 0x8004cf5c + #1984.1 0x80082dec
+battle,0x8006efeb,g_intro_type,u8,Formation flags bits 1/2/3 -> 1/2/3 (0 normal): battle-start camera (0x80046cc0 table 0x8006cd28) and party start positions (pc_construct_slot); probably Back / Surrounded / Raided Attack (#1980 strings 9 10 17),likely,load_formation + 0x80046cc0
+battle,0x8006efec,g_battle_state,int,"0 init/intro, 1 (loads #1984 block 1), 2 fighting, 3 ending (fade), 4 result screen, >4 leave (battle_exit_to_field)",likely,battle_main_loop
+battle,0x8006efed,g_dispmask_delay,u8,Frames until SetDispMask(1) at the start,likely,battle_main_loop
+battle,0x8006efee,g_light_mask,u8,Enabled stage lights (bits 0-2); directions 0x8006ef9c (s16 x3 per 8 bytes); colours 0x8006efb4 (s16 x3 per 8 bytes); ambient 0x8006efef/f0/f1 (u8); fog colour 0x8006eff3/f4/f5,likely,lights_build + gte_set_back_colour + camera_reset
+battle,0x8006efef,g_ambient_rgb,u8 [3],Ambient colour (stage op 7),confirmed,load_stage
+battle,0x8006eff2,g_stage_has_panorama,u8,Set by stage op 3 (background panorama texture),likely,load_stage
+battle,0x8006eff3,g_stage_op5_rgb,u8 [3],Colour of the unused stage op 5 (flag 0x8006eff6; u32 -> g_fog_near 0x8006f086),guess,load_stage
+battle,0x8006eff7,g_clear_rgb,u8 [3],Background clear colour (stage op 6) used by the draw env each frame,confirmed,load_stage + battle_main_loop + 0x80046cc0
+battle,0x8006effa,g_clear_rgb_alt,u8 [3],Alternate clear colour (stage op 16; flag 0x8006effd) used when the camera angle is in a range,likely,load_stage + battle_main_loop
+battle,0x8006effe,g_stage_has_lights,u8,Set by stage ops 8/14,confirmed,load_stage
+battle,0x8006efff,g_stage_height_grid_on,u8,Height grid enabled,confirmed,stage_ground_height
+battle,0x8006f000,g_sound_test_tampered,u8,Set when the heard-sounds bitset checksum (config+0x50 over config+0x1a0 x 0x40 words) fails,confirmed,bsfx_play
+battle,0x8006f001,g_stage_hidden,u8,Skips stage_draw_and_animate and the alternative tint (and the lens flare),likely,battle_main_loop
+battle,0x8006f002,g_effects_suppressed,u8,Effect tasks skip drawing (afterimage/ghost/trails...) unless created while flags bit 0x40,likely,0x800751fc + 0x80075818 + 0x80075a74
+battle,0x8006f003,g_special_voice_set,u8,1 for encounters 0 / 0x21a-0x21c and 2 for 0x219 (with g_single_victory_voice 0x8006f004 = 1 and voice id patches in 0x8006d206..0x8006d454),likely,battle_run
+battle,0x8006f004,g_single_victory_voice,u8,Only one victory speaker when set,likely,voice_pick_victory
+battle,0x8006f005,g_view_mode,u8,0 = camera angles; 1 = look-at eye/target,confirmed,camera_compute_view + camera_reset
+battle,0x8006f008,g_view_eye,VECTOR,Render eye used by camera_compute_view (previous-frame copy of g_cam_eye 0x8006f020); Camera eye (20.12); 0x8006f014 target (or angles in mode 0),confirmed,camera_compute_view
+battle,0x8006f020,g_cam_eye,VECTOR,Current camera eye (20.12); default (0 -1050 -4700),confirmed,camera_ctor; camera_step_eye
+battle,0x8006f02c,g_cam_lookat,VECTOR,Current look-at point; default (0 -1000 0),confirmed,camera_step_lookat
+battle,0x8006f038,g_zoom,int,Projection zoom (0x1000 = normal): H = 0x200*zoom; sizes of trails/flares scale with it; decays from 0x8006fb92 by 0x8006fb94 per frame,confirmed,gte_set_zoom + battle_frame_director
+battle,0x8006f03e,g_stage_colour,s16[3],Stage light colour (r;g;b; 0x80 = 1.0) scaling light colours / back colour / flares; saved copy 0x8006f044; fade target 0x8006f04a,confirmed,stage_colour_set + lights_build + battle_frame_director
+battle,0x8006f050,g_view_matrix,MATRIX,View rotation (RotMatrix of 0x8006f070 pitch/yaw/roll; copies 0x8006f080 pitch / 0x8006f082 yaw / 0x8006f084 roll),confirmed,camera_compute_view
+battle,0x8006f078,g_light_rotation,SVECTOR,Rotation of the light matrix (RotMatrix in camera_update_matrices),likely,camera_update_matrices
+battle,0x8006f080,g_bob_phase,s16,Phase of the global vertical lift used by bobj_project (+0x40 = 0x10000 + max(0 sin(phase) << 4)),guess,bobj_project
+battle,0x8006f084,g_camera_roll,s16,Camera roll subtracted from sprite roll +0x58,likely,bobj_anim_draw
+battle,0x8006f086,g_fog_near,s16,SetFogNear distance,confirmed,camera_reset + gte_set_zoom
+battle,0x8006f088,g_rule_timer,s16,Frames elapsed in a timed battle (config+0x181 == 3); outcome 4 past 0xe10 (60 s),likely,battle_main_loop
+battle,0x8006f08a,g_cull_threshold,s16,-NCLIP threshold of model_render (0 = back-face culling; 0xffff = double sided),confirmed,model_draw + model_render
+battle,0x8006f08c,g_render_view_matrix,MATRIX,Camera rotation used for projection (position 0x8006f008/0x8006f00c/0x8006f010),confirmed,bobj_project
+battle,0x8006f0ac,g_camera,Camera *,"Battle camera (0xa4 bytes, ctor 0x80030fe4); vtable+8 per frame; +8 s16 mode; +0x18 int; +0x94 target unit",likely,battle_init_objects + battle_main_loop + 0x800715d0 (ovl)
+battle,0x8006f0b0,g_camera_end_mode,s16,Camera mode whose end is pending (camera_schedule_end); 0x8006f0b2 s16 frames left; 0x8006f0b8 Unit* target,confirmed,camera_schedule_end + battle_frame_director
+battle,0x8006f0b4,g_camera_focus_request,Unit *,Unit the director should show next (mode 5); written by spell_camera_focus 0x80063690,likely,battle_frame_director
+battle,0x8006f0bc,g_clut_work,u16[256],CLUT build buffer (clut_build_pair) for party body palettes (rows 0x1f1+slot; killer-move rows 0x1cf+slot*4+phase); 0x8006f2bc is the weapon palette buffer (rows 0x1ed+slot),confirmed,party_loader_update
+battle,0x8006f4bc,g_colour_matrix,MATRIX,GTE light colour matrix (built by lights_build); light matrix 0x8006f4dc; 0x8006f4fc / 0x8006f51c two more matrices (stage colour column / unit),likely,lights_build + model_render
+battle,0x8006f53c,g_shake_offset,int[2],Screen shake offsets x / y (0x8006f540) added to the GTE geometry offset,confirmed,battle_frame_director + camera_compute_view
+battle,0x8006f544,g_texanim_frames,RECT[],Source VRAM rectangle of each texture-animation frame,confirmed,stage_draw_and_animate
+battle,0x8006f644,g_texanim_durations,s16[],Duration (ticks) of each texture-animation frame,confirmed,stage_draw_and_animate
+battle,0x8006f684,g_texanim_end,s8[4],End frame (exclusive) per channel,confirmed,stage_draw_and_animate
+battle,0x8006f688,g_texanim_start,u8[4],Start frame per channel (0xff = channel off),confirmed,stage_draw_and_animate
+battle,0x8006f68c,g_texanim_frame,u8[4],Current frame per channel,confirmed,stage_draw_and_animate
+battle,0x8006f690,g_texanim_timer,s16[4],Ticks left on the current frame per channel,confirmed,stage_draw_and_animate
+battle,0x8006f6a2,g_panorama_clut,u16,CLUT id of the op-3 background texture,likely,load_stage
+battle,0x8006f6a4,g_panorama_params,u16 [3],Stage op 4 header values (+0x6a4 / +0x6a6 / +0x6a8 = width) ; mode byte at 0x8006f6cc,guess,load_stage op 4
+battle,0x8006f6ac,g_panorama_rects,u16 [n][4],Stage op 4 rectangles x y w h (x/y relative to the op-3 texture); count 0x8006f6cd,likely,load_stage op 4
+battle,0x8006f6cf,g_party_escaping,u8,Set by the escape item; party wipe then gives outcome 1 when somebody fled,likely,item_use_battle + battle_main_loop
+battle,0x8006f6d0,g_stage_sprites_present,u8,Stage op 13 loaded a stage sprite set (data 0x8006f934 main copy / 0x8006f938 anim table / 0x8006f93c frames / 0x8006f940 sheet),likely,load_stage op 13 + battle_setup_sprite_banks
+battle,0x8006f6d1,g_spell_effect_started,u8,Set when spell_cast starts a table-driven SpellEffect,guess,spell_cast
+battle,0x8006f6d4,g_ui_palette,u16 [256],Copy of the #1979 block-0 CLUT (row 0x1fe) for palette animation,likely,load_ui_sprites
+battle,0x8006f782,g_anim_clut_range_a,u16[16],Inside the CLUT copy 0x8006f6d4: entries rotated by one every 4 frames (second range at 0x8006f7a2),confirmed,battle_frame_director
+battle,0x8006f8d4,g_ui_sprites0_block,void *,#1979 block 0 (kept; pointers 0x8006f8d8 layout / dc sheet / e0 frames / e4 anim table),confirmed,load_ui_sprites
+battle,0x8006f8e8,g_ui_sprites1_block,void *,#1979 block 1 (pointers 0x8006f8ec / f0 / f4 / f8),confirmed,load_ui_sprites
+battle,0x8006f8fc,g_fx_sprites_block,void *,#1982 block (kept; freed by 0x80046be0),confirmed,load_effect_sprites
+battle,0x8006f900,g_effect_data,void *[],0-terminated offset list of #1982 (3 data blocks),likely,load_effect_sprites
+battle,0x8006f904,g_fx_model_death_a,Model *,First effect model of Word of Death (model_draw CLUT 0x7dc7 tpage 0x1a bias 1),likely,shot_k0d_word_of_death 0x80057e20
+battle,0x8006f908,g_fx_model_death_b,Model *,Second effect model of Word of Death (bias 3),likely,shot_k0d_word_of_death
+battle,0x8006f920,g_sprite_bank_fx,BObj *,(= g_special_obj0) 0x88-byte BObj whose AnimSet (+0x5c) holds the #1982 effect sprites; Sprite objects are spawned from it (sprite_spawn_from(id; 0; g_sprite_bank_fx; 0)),likely,load_effect_sprites + module code
+battle,0x8006f924,g_sprite_bank_fx2,BObj *,Same sprites as g_sprite_bank_fx with CLUT row 0x1f6,confirmed,battle_setup_sprite_banks
+battle,0x8006f928,g_sprite_set_a,BObj *,Shared sprite set A (data 0x8006f8d8..; CLUT 0x7f80) used by sprite_spawn_ui / sprite_spawn_a,confirmed,sprite_init_set_a; 0x800747a0
+battle,0x8006f92c,g_sprite_set_b,BObj *,Shared sprite set B (data 0x8006f8ec..; CLUT 0x7fc0) used by sprite_spawn_b (debris),confirmed,sprite_init_set_b; 0x800747a0
+battle,0x8006f930,g_sprite_set_c,BObj *,Shared sprite set C (data 0x8006f934..; CLUT 0x7a00) used by sprite_spawn_c,confirmed,sprite_init_set_c; 0x800747a0
+battle,0x8006f944,g_member_buf,u8 *[4],0xb000-byte buffer per active party member (model / animation data?),likely,battle_init_objects
+battle,0x8006f954,g_member_data,void *[4][5],Per party slot: [0] model / texture data (finally in g_member_buf[slot]); [1..4] killer-move data of phases 1-4 (decompressed blocks),confirmed,party_loader_create / party_loader_update
+battle,0x8006f9a4,g_enemy_packs,void *[4],Unpacked monster sprite packs (one per formation group; shrunk after the texture upload),confirmed,load_formation + 0x80046be0
+battle,0x8006f9b4,g_party_units,Unit *[4],"Party combatants (PartyUnit objects), indexed by party slot",confirmed,"battle_main_loop, battle_exit_to_field"
+battle,0x8006f9c4,g_enemy_units,Unit *[8],Enemy combatants (EnemyUnit objects),likely,"battle_main_loop, battle_exit_to_field"
+battle,0x8006f9e4,g_party_slot,PartySlot *[4],"Handoff 3 party slot (0x60 bytes) of each active member, else 0",confirmed,battle_init_objects
+battle,0x8006f9f4,g_party_record,Character *[4],Handoff 4 character record (0xd0 bytes) of each active member,confirmed,battle_init_objects
+battle,0x8006fa04,g_enemy_stats,Stats *[8],0x60-byte stats block of each monster (= unit+0x1fc; party-slot layout; +0 type),confirmed,enemy_create_by_type + enemy_read_stats
+battle,0x8006fa24,g_animset_pool,AnimSet *,(allocated here) 0x1040 bytes = 40 AnimSet records of 0x68 bytes handed out by animset_alloc 0x80045750 (in-use bytes 0x8006fa28..0x8006fa4f cleared by battle_init_objects),confirmed,battle_init_objects + animset_alloc
+battle,0x8006fa50,g_texcache_count,int,Number of TexCaches taken from g_texcache_pool,confirmed,texcache_create
+battle,0x8006fa54,g_sfx_slot,u8[8],bsfx channels: sound slot id (0 = free); emitters 0x8006fa5c (BObj *[8]); distances 0x8006fa7c (int[8]),confirmed,bsfx_play + bsfx_update
+battle,0x8006fa9c,g_hud,BattleHud *,Top party status bar (0x88 bytes; created in 0x800744cc; opened at (0 0 0x140 0x28) by battle_scene_start; hud_init at battle start),confirmed,0x800744cc + battle_main_loop + 0x80046cc0
+battle,0x8006faa0,g_debug_text,DebugWindow *,0x470-byte debug console window (never drawn) receiving debug_print output,confirmed,0x800744cc + texcache_alloc
+battle,0x8006faa4,g_open_list_menu,ListMenu *,The one open battle list menu (a new one releases the old),confirmed,list_menu_create + list_menu_update
+battle,0x8006faa8,g_message_window,MessageWindow *,Current bottom message banner,confirmed,battle_message_show
+battle,0x8006faac,g_scan_window,ScanWindow *,Open enemy analysis window or 0,confirmed,scan_window_show / scan_window_draw
+battle,0x8006fab0,g_skill_notice,SkillNoticeWindow *,Open battle-skill activation banner or 0,confirmed,skill_notice_show / skill_notice_draw
+battle,0x8006fab4,g_spell_clash_window,SpellClashWindow *,Open two-spell banner or 0,confirmed,spell_clash_window_open / _release
+battle,0x8006fab8,g_result_screen,ResultScreen *,"Victory result screen object (0x1ec bytes, ctor 0x80085f4c in #1981 code)",likely,battle_main_loop
+battle,0x8006fabc,g_pool_b8,PoolObj *,"296 objects x 0xb8 (vtable 0x8006b030, update 0x800300e0); active when +0x8c != 0",confirmed,battle_init_objects + battle_main_loop
+battle,0x8006fac0,g_pool_2c,Pool2C *,16 objects x 0x2c (vtable 0x8006cf64); active flag +8,confirmed,battle_init_objects
+battle,0x8006fac4,g_pool_13c,PoolObj13C *,"160 objects x 0x13c (Collider subclass, vtable 0x8006ce90, update 0x80054560); active when +0x108 != 0",confirmed,battle_init_objects + battle_main_loop
+battle,0x8006fac8,g_pool_48,Pool48 *,200 records x 0x48 (no vtable); active when s16 +0 != 0; updated by 0x8005e1b0,confirmed,battle_init_objects + battle_main_loop
+battle,0x8006facc,g_pool_74,Pool74 *,192 objects x 0x74 (vtable 0x8006cf94); active flag +8,confirmed,battle_init_objects
+battle,0x8006fad0,g_prim_pool_b,PrimPool *,16-byte object: 0xc80-byte primitive arena + 12-entry OT,likely,battle_init_objects + 0x80087884
+battle,0x8006fad4,g_input,BattleInput *,"0xa0-byte battle input / command state; +0 mode byte (1,3,4 / 2), +0x3a u16 counter",guess,battle_init_objects + 0x800715d0 (ovl)
+battle,0x8006fad8,g_text_strings,u8 *,Battle string table (#1980 block 0): {u16 id; u16 offset} pairs ending in 0xffff then glyph-code strings. Ids: 0-0x33 messages (Results; Not enough MP; CD errors; element abbreviations 0x14-0x1d; :Weaker/:Stronger point; Friend:/Enemy:) 0x3e8+ spell names (0x3e7+spell) 0x7d0 tactics 0xbb8+ item names 0x1388+ killer moves (0x1387 + move + 0x32*(char-1)) 0x1f40+ battle skills (0x1f1f+skill) 0x2710+,confirmed,load_battle_data_1980 + text_find + dump of 1980.0
+battle,0x8006fadc,g_text_font,u8 *,Battle font (#1980 block 1): s32 glyph count; s32 height (12); u8 widths[count] (padded to 4); u16 rows[height] per glyph (1 bit per pixel). Temporarily swapped by the speech window 0x800417bc,confirmed,load_battle_data_1980 + text_draw
+battle,0x8006fae0,g_text_pixels,u8 *,0x2000-byte 4-bit text line buffer (128 bytes per row; 64 rows) uploaded to VRAM (0x3c0 0x1c0) each frame,confirmed,load_battle_data_1980 + text_draw + text_frame_upload
+battle,0x8006fae4,g_battle_music,u8 *,"Battle music sequence unpacked from the enemy pack (load-list index 0, SLZ block after the sound bank); played with sound_play_sequence at the start",confirmed,0x80072190 + battle_run
+battle,0x8006fae8,g_forced_target,Unit *,When set every monster targets it (enemy_find_provoker),likely,enemy_find_provoker
+battle,0x8006faec,g_target_arrow_icon,Sprite *,Icon sprite of the off-screen target arrow,confirmed,ui_update_target_arrow
+battle,0x8006faf0,g_camera_hold_unit,Unit *,While this unit's action state is 0xf the director does not move the camera,likely,battle_frame_director
+battle,0x8006faf4,g_item_data_size,u32,Unpacked size of #1983,confirmed,load_item_data
+battle,0x8006faf8,g_item_data,ItemData *,#1983 item table (1023 x 0x30) also stored in inventory+0x820; freed by party_loader_update at the end of state 0,confirmed,load_item_data
+battle,0x8006fafc,g_item_effects,u8 *,Battle item effect table: +0x80+item = effect kind (switch in item_use_battle); +0x480+item = power; freed by battle_free_all,likely,item_use_battle + battle_free_all
+battle,0x8006fb00,g_last_attacker,Unit *,Owner of the last Shot that damaged a unit (also stored in the target +0x1e8),likely,shot_apply_damage 0x800548c4
+battle,0x8006fb04,g_free_run,u8,1 while the controlled member runs freely under player control (hold config button [3] or the d-pad); controlled unit +0x200 bit 4 while moving,confirmed,input_dispatch / input_free_run
+battle,0x8006fb05,g_leader_slot,u8,config+0x41 at battle start,confirmed,battle_init_state 0x80074a74
+battle,0x8006fb06,g_controlled_slot,u8,Party slot the player controls (starts at config+0x41),likely,battle_init_state + 0x800715d0 (ovl)
+battle,0x8006fb07,g_battle_flags,u8,"Battle pause / freeze flags (bit 2 4 = paused, bit 3 8 = timed freeze, bit 6 0x40 = ...); 1 at start",likely,battle_main_loop (257 references)
+battle,0x8006fb08,g_palette_cycle_timer,u8,Frames until the next animated-palette step (4),confirmed,battle_frame_director
+battle,0x8006fb09,g_prev_target_enemy,u8,Target index of the previous frame (the target marker sprite is re-created when it changes),confirmed,input_dispatch
+battle,0x8006fb0a,g_target_enemy,u8,Enemy slot targeted by the controlled unit (0xff none); hud_draw prints its name in command mode,likely,hud_draw + 0x80049310
+battle,0x8006fb0b,g_enemy_count,u8,Number of monster placements in the formation,confirmed,load_formation
+battle,0x8006fb0c,g_camera_shot_requested,u8,Set while the director wants a shot this frame (resets g_camera_idle_frames),confirmed,battle_frame_director
+battle,0x8006fb0d,g_colour_fade_active,u8,Colour fade 0x8006f03e -> 0x8006f04a running; delay 0x8006fb8c (s16); step 0x8006fb8e (s16 per frame); 0x8006fb2a = 1 while fading,confirmed,battle_frame_director
+battle,0x8006fb14,g_end_countdown,s8,Frames (90) between the end condition and the result / exit,likely,battle_main_loop
+battle,0x8006fb15,g_hitstop_frames,s8,Freeze frames (g_battle_flags bit 3 while > 0); 20 at victory,confirmed,battle_main_loop / battle_victory_begin
+battle,0x8006fb16,g_slowmo_frames,s8,Slow-motion length after the freeze (30 or 60 at victory): the battle is frozen 5 of every 6 ticks,confirmed,battle_main_loop
+battle,0x8006fb17,g_victory_speaker,u8,Party slot that speaks first at victory,likely,voice_pick_victory + battle_victory_begin
+battle,0x8006fb18,g_result_started,u8,The 0x14-byte result helper (0x800872f8) has been created,likely,battle_main_loop
+battle,0x8006fb19,g_battle_outcome,u8,"0 victory, 1 lost but members escaped (+0x12f == 2, allowed by 0x8006f6cf), 2 party wiped, 3 escaped by running off (rule 2), 4 time up (rule 3). Written to config+0x178 (the field's script register R)",likely,battle_main_loop + battle_exit_to_field
+battle,0x8006fb1a,g_obstacle_count,u8,Number of stage obstacle boxes (cleared by stage_load_ctx_init),confirmed,load_stage + stage_load_ctx_init
+battle,0x8006fb24,g_spell_menu_top,u8[4],Spell menu cursor memory per party slot: top row (+ col 0x8006fb1c[4]; row 0x8006fb20[4]),confirmed,spell_menu_create + spell_menu_confirm
+battle,0x8006fb28,g_chosen_spell,u8,Spell id picked in the spell menu (read by the select modes),confirmed,spell_menu_confirm
+battle,0x8006fb29,g_ai_assist_request,u8,1 = the member nearest to the leader target runs to it (set by input code 0x8004c014 / 0x8004c940),likely,pc_ai_assist_leader
+battle,0x8006fb2b,g_spell_dim_side0,u8,Palette fade active for side 0 (party CLUT rows),confirmed,spellcast_dim_begin / spellcast_dim_end
+battle,0x8006fb2c,g_spell_dim_side1,u8,Palette fade active for side 1 (enemy CLUT rows),confirmed,spellcast_dim_begin / spellcast_dim_end
+battle,0x8006fb2d,g_spellcast_count,u8,Number of running casts; g_battle_flags bit 0x40 is set while > 0,confirmed,spellcast_start / spellcast_finish
+battle,0x8006fb2f,g_spell_landed,u8,Set to 1 when a spell's finishing hit resolves,likely,spell_hit_all / spell_hit_rect
+battle,0x8006fb30,g_intro_voice_mode,u8,1 after the first intro voice bank (index 10); 3 after the second (index 11),likely,battle_run
+battle,0x8006fb31,g_intro_voice_state,u8,Opening voice sequence 0..4 (flags 0x8006fb30: bit0 first / bit1 second speaker; party slots 0x8006fb32 / 0x8006fb33; handle 0x8006fb88; timer 0x8006fb34),likely,battle_frame_director
+battle,0x8006fb32,g_intro_speakers,s8 [2],Party slots of the 1-2 members who speak the intro voices (handoff 5 +0xb8 / +0xbc as chosen by the field's battle_pick_intro_voices; -1 = none),likely,battle_run + field battle_pick_intro_voices (b+0xb8/+0xbc)
+battle,0x8006fb35,g_party_standing_at_start,u8,Count of party members not down when constructed,likely,pc_construct_slot
+battle,0x8006fb36,g_provoke_active,u8,Set when the controlled member uses skill 0x2d (Select); blocks reuse,likely,input_dispatch
+battle,0x8006fb37,g_slowmo_phase,u8,Tick counter of the slow motion (frozen while < 6),confirmed,battle_main_loop
+battle,0x8006fb38,g_unit_blend_mode,u8,Global blend override for units: 1 = semi-transparent (alpha 0x8006fb39); 2 = opaque,likely,unit_apply_global_blend
+battle,0x8006fb39,g_unit_blend_alpha,u8,Alpha used with g_unit_blend_mode 1,likely,unit_apply_global_blend
+battle,0x8006fb3a,g_victory_voice_tier,u8,0 best .. 2 (from standing members and fight time),confirmed,voice_pick_victory
+battle,0x8006fb3c,g_member_target,u8[4],Remembered target enemy per party slot (restored into g_target_enemy when control switches),confirmed,input_dispatch / input_member_select_update
+battle,0x8006fb40,g_obstacle_kind,u8 [n],Obstacle kind: 1 (op 11) or 2 (op 17),confirmed,load_stage
+battle,0x8006fb55,g_obstacle_active,u8[3],Obstacle slot flags indexed backwards from 0x8006fb57 (slot 23 = 0x8006fb57): 1 rolling object present / 2 hanging object; the per-frame stage hooks spawn only when 0x8006fb57 == 0,likely,stage blocks 2/4/5/8
+battle,0x8006fb58,g_field_program,u8 *,"Packed field program (entry 0xa10 = #2576 = #3100) preloaded during the battle; parked in VRAM (0x2c0,0,0x100x0x200) while the result screen runs (value 1), read back before the swap",confirmed,0x80047ecc + battle_main_loop + battle_exit_to_field
+battle,0x8006fb6c,g_voice_entry,s16[2],Two voice slots: archive entry (0 = free); buffers 0x8006fb5c; speakers 0x8006fb64; sound ids 0x8006fb70; clip slots 0x8006fb74; flags 0x8006fb78 (1 loaded 2 requested 4 playing),confirmed,voice_play_entry + voice_update
+battle,0x8006fb7c,g_member_tables,u8 *,0x150 bytes: a 0x54-byte per-character table copy for each of the 4 party slots (0x80074980),guess,battle_init_state
+battle,0x8006fb80,g_battle_frames,int,Total vblanks while not paused,likely,battle_main_loop
+battle,0x8006fb84,g_fight_frames,int,Vblanks spent in state 2,likely,battle_main_loop
+battle,0x8006fb8c,g_crit_flash,s16[2],Set to 2 and 0x20 on a critical hit (flash parameters); 0x8006fb92/0x8006fb94 = 5000/200 for on-screen attackers,guess,unit_attack_targets
+battle,0x8006fb90,g_shake_frames,u16,Pad vibration / screen shake duration; amplitudes 0x8006fb0e/0f (s8 x/y); periods 0x8006fb10/11; phase counters 0x8006fb12/13,confirmed,screen_shake + battle_frame_director
+battle,0x8006fb96,g_text_x,s16,Next free texel column on the current text line,confirmed,text_draw / text_frame_begin
+battle,0x8006fb98,g_text_line,s16,First texel row of the current text line (0..0x3f),confirmed,text_draw / text_frame_begin
+battle,0x8006fb9a,g_item_menu_cursor,s16[3],Item menu cursor memory: col / row (0x8006fb9c) / top (0x8006fb9e),confirmed,item_menu_create + item_menu_confirm
+battle,0x8006fba0,g_ai_avoid_leader_target,int,With 0x8006fb29: AI members avoid the leader target,guess,pc_ai_pick_enemy
+battle,0x8006fba2,g_provoke_frames,s16,Duration of skill 0x2d: level * 180 + rng(10) frames (with g_forced_target 0x8006fae8 = the user),likely,input_dispatch; p2 g_forced_target
+battle,0x8006fba4,g_chosen_item_index,s16,Inventory index picked in the item menu,confirmed,item_menu_confirm
+battle,0x8006fba6,g_reward_flags,u8,Set by battle items: bit0 Fol x2 (kind 0x11); bit1 drop chance x2 (0x12); bit2 EXP x2 (0x13); read by the result screen,confirmed,item_use_battle + result_award_exp_money + result_roll_drops
+battle,0x8006fba8,g_item_cooldown,u16,Frames before items can be used again (set by item_use_battle; counted down by the director; ring menu disables items while > 0),likely,battle_frame_director + input_ring_menu_open
+battle,0x8006fbac,g_bload_owner,u32,Owner token stamped on new load requests and used by bload_done (0 = matches every request); set around calls by spell_data_update (= the caster),confirmed,bload_request / bload_done / spell_data_update
+battle,0x8006fbb0,g_bload_cur_owner,u32,Owner token of the read in progress,confirmed,bload_start_next
+battle,0x8006fbb4,g_bload_cur_entry,int,Archive entry being read (0 = idle),confirmed,bload_start_next / bload_done
+battle,0x8006fbb8,g_bload_entry,int[16],Load queue: entry per request (0 = free; >= 0x10000 = ((file+1) << 16) + sector: a single 2 KB sector),confirmed,bload_request
+battle,0x8006fbf8,g_bload_req_owner,u32[16],Load queue: owner token per request,confirmed,bload_request
+battle,0x8006fc38,g_bload_cur_group,s16,Group of the read in progress,confirmed,bload_start_next
+battle,0x8006fc3c,g_bload_group,s16[16],Load queue: group per request (0 spell data; 1 field program; 2 field preloads; 6 = read entry and entry+1 together),confirmed,bload_request callers
+battle,0x8006fc5c,g_bload_priority,s16[16],Load queue: priority (lower first; aged by g_frame_ticks each frame down to 0; -1 = append at the end),confirmed,bload_request / bload_update
+battle,0x8006fc7c,g_spell_req_priority,s16[16],Pending spell-data requests: priority (aged while fewer than 3 slots are used),confirmed,spell_data_request / spell_data_update
+battle,0x8006fc9c,g_spell_req_spell,u8[16],Pending spell-data requests: spell id (0 = free),confirmed,spell_data_request
+battle,0x8006fcac,g_spell_req_caster,Unit *[16],Pending spell-data requests: caster,confirmed,spell_data_request
+battle,0x8006fcec,g_spell_slot_spell,u8[16],Spell-data slots: spell id (0 = free),confirmed,spell_data_update
+battle,0x8006fcfc,g_spell_slot_owner,Unit *[16],Spell-data slots: caster,confirmed,spell_data_update
+battle,0x8006fd3c,g_spell_slot_ready,u8[16],Spell-data slots: 1 once the bload finished,confirmed,spell_data_update
+battle,0x8006fd4c,g_spell_slot_buffer,void *[16],Spell-data slots: heap B buffer holding the loaded entry (taken by spell_data_take),confirmed,spell_data_update / spell_data_take
+battle,0x8006fd8c,g_enemy_extra_data,void *[],Extra per-pack data pointers (packs whose kind count has bit 7 set),likely,load_formation
+battle,0x8006fdb4,g_bload_cur_dest,void *,Destination of the read in progress,confirmed,bload_start_next
+battle,0x8006fdb8,g_bload_dest,void *[16],Load queue: destination per request,confirmed,bload_request
+battle,0x8006fdf8,g_preload_list,void *,"0x22-byte list rebuilt by 0x8006a11c(list,-1,0,0); stored in handoff 0xc at exit (the field reloads these entries)",likely,battle_run + battle_exit_to_field
+battle,0x8006fdfc,g_handoff10_blob,void *,Stored in handoff 10 at exit (the field parks the handoff-10 blob in VRAM),guess,battle_exit_to_field
+battle,0x8006fe00,g_victory_music,u8 *,"Victory music sequence (entry #1978, load-list index 1)",confirmed,0x8007221c + battle_main_loop
+battle,0x8006fe04,g_stage_height_fn,"int (*)(int x, int y, int z)",Optional stage callback: extra height added when drawing units (unit_draw_model),likely,unit_draw_model
+battle,0x8006fe08,g_spellcasts,SpellCast *[2],The two concurrent spell casts (slot 0 / slot 1 = clash); read by the resident clash window 0x800628ac / 0x80062a60,confirmed,spellcast_create 0x80085560
+battle,0x8006fe10,g_clash_mask,u16[12],Element bit mask per clash slot (0 = free); battle_main_loop clears all 12 every frame (loop from 0x8006fe26 down),likely,clash_register; clash_resolve; battle_main_loop
+battle,0x8006fe28,g_clash_team,u8[12],Team byte per clash slot,likely,clash_register
+battle,0x8006fe34,g_clash_power,s16[12],Power per clash slot,likely,clash_register
+battle,0x8006fe4c,g_clash_result,u8 *[12],Where clash_resolve writes the slot result (1 weaker/close; 2 stronger; 3 both cancel),likely,clash_register / clash_resolve
+battle,0x8006fe7c,g_clash_out_power,s16 *[12],Receives the opposing (weaker) power when the slot wins,likely,clash_register / clash_resolve
+battle,0x8006fea8,g_shot_kind_table,void (*[0x34])(Shot *),"Shot update per kind (+0x108), dispatched by 0x80054560. Static data: kinds 0x18-0x2b hold the link addresses of the stage-block functions at 0x8008c1f4.. (0x18 0x8008c2ac; 0x19/0x1a/0x1c/0x1f/0x2a 0x8008c1f4; 0x1b 0x8008c280; 0x1e 0x8008c2d0; 0x20 0x8008c320; 0x22 0x8008c290; 0x23 0x8008c47c; 0x28 0x8008c270; 0x2b 0x8008c2f8) so only the block loaded for the stage makes its kinds valid; 0x14/0x17/0x24/0x25 point into party-character code (0x801efa88..); 0x21/0x33 = callback kinds (+0x138)",confirmed,data dump + 0x80054560
+battle,0x8006ff78,g_ring_uv_table,u8[8][8],UV corners per texture mode of the kind-0x11 sprite ring (bytes u v x4 in order uv2 uv3 uv0 uv1); mode 2 is rewritten each frame from the animation frame (0x8006ff88..0x8006ff8f); modes 4-7 cycle,likely,shot_k11_sprite_ring 0x80058b78
+battle,0x8006ffb8,g_impact_param_tables,u8[5][4],Kind-0x16 impact effect parameters: 0x8006ffb8 radius (0x10 0x20 0x38 0x60) and 0x8006ffbc width (0x0c 0x20 0x40 0x80) by flags bits 10-11; 0x8006ffc0 segments (8 0xa 0xc 0xc) 0x8006ffc4 growth (0x10 0x20 0x30 0x40) 0x8006ffc8 life (0x5a 0x50 0x46 0x3c) by bits 12-13,likely,shot_k16_projectile 0x8005a4d8
+battle,0x8006ffcc,g_hit_scatter_tables,s16[4] + s16[4] + s16[3][2],Hit-sprite placement: 0x8006ffcc xz scatter (0 0x40 0x80 0x140) and 0x8006ffd4 y scatter (0 0x10 0x30 0x80) by +0x138 bits 14-15; 0x8006ffdc scale ranges (0x600-0xa00 0x1c00-0x2400 0x3800-0x4800) by +0x13a bits 2-3,likely,shot_k16_projectile
+battle,0x8006ffe8,g_particle_kind_table,PMF[5],Particle (Pool48) handlers as g++ pointer-to-member entries {s16 delta 0; s16 index -1 (non-virtual); fn}: 1 0x8005e618 homing line 2 0x8005e7d8 spark line 3 0x8005e8f0 ring 4 0x8005ee08 shard 5 0x8005f128 confetti,confirmed,particle_update 0x8005e1b0 + table read
+battle,0x80070010,g_shard_cursor,int,Round-robin allocation cursor over the 192 PolyShards (wraps at 0xbe),confirmed,shard_alloc 0x800600a0
+battle,0x80070014,g_shatter_flags,u16,Flags given to new PolyShards (+0xc): 1 gravity + upward kick 2 run in the 0x40 pause 4 semi-transparent,confirmed,model_shatter 0x8005f30c + shard_update
+battle,0x80070016,g_shatter_abr,u16,Semi-transparency tpage bits ORed into textured shards' tpage and used as the DR_MODE tpage of untextured ones (+0xb),likely,model_shatter + shard_alloc
+battle,0x80070018,g_shatter_fade,s16,Colour fade per frame of new shards (+0xe) = speed/4 (min 2),confirmed,model_shatter
+battle,0x8007001c,g_shatter_ot_bias,int,OT depth bias of new shards (+0xa),confirmed,model_shatter + shard_update
+battle,0x8007002f,g_spell_effect_kind,u8 [0x48],SpellEffect kind passed to spell_effect_create (0x80085560) for the spells spell_cast does not handle itself; 0 = none,confirmed,spell_cast
+battle,0x8007087c,g_scan_queue_count,int,Number of queued scan units,confirmed,scan_window_show
+battle,0x80070880,g_scan_queue,Unit *[4],Units waiting for the scan window,confirmed,scan_window_show / scan_window_draw
+battle,0x80070890,g_screen_buffer,int,Current double-buffer index (0/1),confirmed,screen_* functions (field screen module copy)
+battle,0x80070894,g_draw_env,DRAWENV [2],Draw environments (stride 0x70),confirmed,screen_drawenv / screen_put_env
+battle,0x800708f0,g_disp_env,DISPENV [2],Display environments (stride 0x70),confirmed,screen_dispenv / screen_put_env
+battle,0x80070974,g_arena_base,u8 *[12][2],Primitive arena halves per slot,confirmed,screen_create_arena / screen_flip
+battle,0x800709d4,g_arena_end,u8 *[12][2],End of each arena half,confirmed,screen_alloc
+battle,0x80070a34,g_arena_cursor,u8 *[12][2],Bump cursor of each arena half (rewound by screen_flip),confirmed,screen_alloc / screen_flip
+battle,0x80070a94,g_ot_buf,u_long *[12][2],OT halves per slot,confirmed,screen_clear_ot / screen_draw_ot
+battle,0x80070af4,g_ot_size,int [12],Entries of each OT slot,confirmed,screen_clear_ot
+battle,0x80070b2c,g_screen_overflow_cb,void (*)(void),Called by screen_alloc when an arena is full,confirmed,screen_alloc / screen_set_overflow_callback
+battle,0x80070b30,g_deferred_ptr,void *[48],Buffers waiting for deferred_delete_update,confirmed,deferred_delete_update
+battle,0x80070bf0,g_deferred_count,u8 [48],Frames left before each deferred buffer is freed,confirmed,deferred_delete_update / screen_init
+battle,0x80078f38,battle_load_handler_table,code *[12],Jump table of battle_run's load-list dispatch (index 0 music pack .. 11 second intro voice); entries are case bodies inside battle_run,confirmed,disassembly 0x80071994
+battle,0x80078f68,stage_code_block_table,code *[45],Jump table of battle_run's stage-id switch (stage 0xd-0x39 -> #1984 block index),confirmed,disassembly 0x80071bfc
+battle,0x80079020,stage_op_table,code *[17],Jump table of load_stage opcodes 1-17 (case bodies inside load_stage),confirmed,disassembly 0x800722cc
+battle,0x80079068,party_banter_voice_table_cases,code *[12],Jump table of party_banter_voice_table,confirmed,disassembly 0x80074990
+battle,0x80079098,vtable_BattleProgram,vtable[3],BattleProgram: [1] battle_run [2] program_set_system,confirmed,battle_program_create
+battle,0x800790e0,enemy_type_table,code *[207],Jump table of enemy_create_by_type (types 1-0xcf): one case per monster family (constructor + vtable + size),confirmed,disassembly 0x80075ad8 (sltiu 0xcf)
+battle,0x800799d4,party_banter_voices,s16 [12][42],Per-character 0x54-byte voice table returned by party_banter_voice_table (14 triples; self triple 0),likely,0x80074980 + dump
+battle,0x80079dc4,music_pack_1969_encounters,s16 [31],[dead module data] Encounters that use the #1969 music pack (battle_build_load_list copy),likely,0x800753bc
+battle,0x80079e04,music_pack_overrides,s16 [15][2],[dead module data] {encounter; archive entry} music pack overrides,likely,0x800753bc
+battle,0x80079e40,encounter_levels,u16 [],[dead module data] Encounter level per encounter id (bit 15 = boss) for the intro voice tier,likely,0x8007553c
+battle,0x80084e9c,vtable_PartyLoader,vtable,PartyLoader (0x54-byte party-data loader task created by battle_main_loop): [1] party_loader_update 0x80082cdc; no other virtuals (dtor party_loader_destroy is called directly). Until state 1,confirmed,party_loader_create 0x80082bd8
+battle,0x80084ea8,g_char_battle_entries,s16[13][2],Archive entry of a character's battle data by [character][weapon variant] (variant = item field 0x2a of the equipped weapon rec+0xc; 7 counts as 0): Claude 0x852/0x854; Rena 0x856; Celine 0x858; Bowman 0x85a; Dias 0x85e/0x860; Precis 0x86a; Ashton 0x862/0x864; Leon 0x85c; Opera 0x868; Ernest 0x866; Noel 0x86c; Chisato 0x86e. Loaded with group 6 = this entry (data) + the next one (code: 4 SLZ blocks one per party slot),confirmed,party_loader_update 0x80082cdc
+battle,0x80084ed8,g_char_reach,s16[13][2],Unit +0x142 per [character][weapon variant != 0]: Claude 0x30/0x70; Rena 0x40; Celine 0x28; Bowman 0x30; Dias 0xc/0x50; Precis 0x40; Ashton 0x40/0x60; Leon 0x80; Opera 0x64; Ernest 0xc0; Noel 0x20; Chisato 0x60 (likely attack reach),likely,party_loader_update 0x80082cdc
+battle,0x80084f0c,g_km_entries_opera,s16[10],Killer-move data archive entries (move id -> entry) for Opera: 0x89a-0x8a3,confirmed,killer_move_data_entry 0x80083db0
+battle,0x80084f20,g_km_entries_bowman,s16[10],Bowman: 0x87c-0x885,confirmed,killer_move_data_entry
+battle,0x80084f34,g_km_entries_dias,s16[10],Dias (weapon variant 0): 0x8cb-0x8d4,confirmed,killer_move_data_entry
+battle,0x80084f48,g_km_entries_dias_alt,s16[10],Dias (weapon variant != 0): 0x886-0x88f,confirmed,killer_move_data_entry
+battle,0x80084f5c,g_km_entries_precis,s16[10],Precis: 0x8a4-0x8ad,confirmed,killer_move_data_entry
+battle,0x80084f70,g_km_entries_ashton_alt,s16[10],Ashton (weapon variant != 0): 0x890-0x899,confirmed,killer_move_data_entry
+battle,0x80084f84,g_km_entries_ashton,s16[10],Ashton (weapon variant 0): 0x8d5-0x8de,confirmed,killer_move_data_entry
+battle,0x80084f98,g_km_entries_ernest,s16[10],Ernest: 0x8ae-0x8b7,confirmed,killer_move_data_entry
+battle,0x80084fa8,g_km_entries_chisato,s16[8],Chisato: 0x8b6-0x8bd (entries 8/9 would read the next table),confirmed,killer_move_data_entry
+battle,0x80084fb8,g_member_tex_x,s16[4],VRAM x of each party slot's body texture page area: 320 384 448 512 (y table 0x80084fc0: 256 x4),confirmed,party_loader_update
+battle,0x80084fc8,g_member_weapon_tex_x,s16[4],VRAM x of each slot's weapon texture: 576 608 576 608 (y table 0x80084fd0: 256 256 384 384),confirmed,party_loader_update
+battle,0x80084fd8,g_party_formations,s32[13][4][2],Start positions per formation (config+0x40) and party slot: x and z as fractions /0x1004 of the stage box 0x8006d4fc (x 1100..1700 = right side; z -1500..1500); 13 formations,confirmed,pc_construct_slot 0x80083fc8
+battle,0x80085178,g_statcalc_record,Character *,Character record whose 7 equipment ids (+0xc..+0x18) the equip_* helpers read,confirmed,pc_calc_equipment_stats 0x80081728
+battle,0x8008517c,g_statcalc_inventory,Inventory *,Inventory used by the equip_* helpers (inventory_item_data),confirmed,pc_calc_equipment_stats
+battle,0x80085180,g_km_entries_claude_alt,s16[12],Claude (weapon variant != 0) killer-move entries 0x870-0x87b (slot 1 patched to 0x872 at proficiency >= 200; slot 7 to 0x878 at >= 100),confirmed,killer_move_data_entry
+battle,0x80085198,g_km_entries_claude,s16[12],Claude (weapon variant 0): 0x8be-0x8ca (slot 1 -> 0x8c0 at proficiency >= 200; slot 7 -> 0x8c7 at >= 100),confirmed,killer_move_data_entry
+battle,0x800851b0,g_pc_code_slot,void *[4],Load / entry address of each party slot's character code: 0x801ee000 0x801f2000 0x801f6000 0x801fa000 (inside g_fixed_buf_801ee000); offset 0 = the PartyUnit subclass ctor,confirmed,party_loader_update + pc_construct_slot
+battle,0x80088014,vtable_SpellCast,vtable,SpellCast (0x248 bytes): [1] spellcast_update 0x80085b0c. Until result,confirmed,spellcast_init 0x80085760
+battle,0x80088020,g_spell_kind_handlers,void (*[60])(SpellCast *),Per spell kind (SpellCast +8) handler when no code module is attached: 1 spell_kind1_update 0x80087730; 2 spell_kind2_update 0x80087c98; 0x36 0x800885d8; 0x3b 0x80089c80; the rest 0x8008cc00 (spell module area). Extends to 0x8008810c (before enemy slot A),likely,spellcast_update 0x80085b0c
+battle,0x80089df0,vtable_EnemyModA,vtable,Default enemy module A (EnemyUnit subclass; 37 entries): overrides slots 24-31 and 36 (on_hit dying think attack1-5 dtor),confirmed,enemy_moda_create 0x80088110
+battle,0x8008b0c8,vtable_EnemyModB,vtable,Default enemy module B: overrides 25 26 27 28 32 36,confirmed,enemy_modb_create 0x80089f18
+battle,0x8008c0c4,vtable_EnemyModC,vtable,Default enemy module C: overrides 4 23-29 32 36 and adds slot 37 (release swallowed),confirmed,enemy_modc_create 0x8008b1f0
+battle,0x8008cc00,g_spell_module0,code,Spell code module area for cast slot 0 (SLZ block 0 of the spell data's op-6 block); slot 1 uses 0x8008e600 (block 1),confirmed,spellcast_create 0x80085560
+battle_ovl1981,0x80087dd0,learn_table_claude,u8[][2],{level; killer move} pairs ending in 0: (3 1)(7 2)(13 4)(20 6)(28 8)(38 7)(45 5)(53 9)(62 10)(70 11); message base 5000. Others: Bowman 0x80087de8 (5150) Opera 0x80087e00 (5400) Ashton 0x80087e10 (5300) Precis 0x80087e24 (5250) Dias 0x80087e34 (5200) Ernest 0x80087e4c (5450) Chisato 0x80087e60 (5550),confirmed,levelup_learn_skills + data dump
+battle_ovl1981,0x80087e74,learn_table_rena,u8[][2],{level; spell} pairs (Rena); Celine 0x80087ea4; Noel 0x80087ed0; Leon 0x80087efc; message base 1000,confirmed,levelup_learn_skills
+battle_ovl1981,0x80087f4c,vtable_BattleFadeTask,vtable,[1] battle_fade_task_update 0x8008741c (no further slots),confirmed,battle_fade_task_ctor
+battle_ovl1981,0x80087f5c,vtable_ResultScreen,vtable,Window subclass: [1] result_screen_update 0x80086000; [2] result_screen_dtor 0x80087d60; [3] window_open 0x80067960; [4] window_release 0x800679ac; [5] 0x80069170 (nop); [6] result_screen_open 0x80085f94,confirmed,result_screen_ctor + data dump
+battle_ovl1981,0x80087f94,levelup_growth,u8[12][6][2],Per character (id-1) 6 {range; base} pairs: gain = rng_range(range) + base for attr3 / attr7 / attr6 / attr4 / attr8 / record attr9. Claude (4 3)(2 1)(2 2)(3 2)(2 0)(2 0); casters (2 1)(3 1)(2 1)(3 0)(0 0)(1 0),confirmed,levelup_apply + data dump
+battle_ovl1981,0x80088024,g_learned_list,u16[24],0-terminated message ids of skills learned in the last levelup_learn_skills call,confirmed,learn_from_table
+battle_ovl1984_0,0x80080dc8,ovl0_ctor_list,void (*[1])(void),.ctors-style entry holding bsfx_emitters_init (0x8008016c); no code found that walks it,likely,word at 0x80080dc8
+battle_ovl1984_0,0x80080dcc,jt_frame_director_stage,void *[50],Jump table of battle_frame_director's g_stage_id switch (stages 8..0x39),confirmed,disassembly of 0x800715d0
+battle_ovl1984_0,0x80080e94,s_no_mp_cost,char[4],'---' shown when the selected spell has no cost,confirmed,spell_menu_draw_items
+battle_ovl1984_0,0x80080e98,s_mp,char[3],'MP' label of the spell menu,confirmed,spell_menu_draw_items
+battle_ovl1984_0,0x80080e9c,vtable_SpellMenu,vtable[10],[1] list_menu_update [2] spell_menu_destroy [3] window_open [4] spell_menu_release [5] list_menu_draw_scrollbar [6] spell_menu_draw_items [7] spell_menu_draw_frame [8] spell_menu_item_pos [9] spell_menu_confirm,confirmed,spell_menu_create 0x80072c5c
+battle_ovl1984_0,0x80080eec,jt_item_menu_confirm,void *[6],Jump table of item_menu_confirm (target classes 0-5),confirmed,disassembly of 0x8007398c
+battle_ovl1984_0,0x80080f04,vtable_ItemMenu,vtable[10],[1] list_menu_update [2] item_menu_destroy [3] window_open [4] item_menu_release [5] list_menu_draw_scrollbar [6] item_menu_draw_items [7] list_menu_draw_frame [8] item_menu_item_pos [9] item_menu_confirm,confirmed,item_menu_create 0x80073560
+battle_ovl1984_0,0x80080f54,jt_lens_flare_type,void *[6],Jump table of lens_flare_render (element types 0-5),confirmed,disassembly of 0x80074558
+battle_ovl1984_0,0x80080f6c,s_message,char[8],'MESSAGE' then '(' (0x80080f74) and ')\n' (0x80080f78): debug print of battle_message_update,confirmed,battle_message_update
+battle_ovl1984_0,0x80080f7c,vtable_MessageWindow,vtable[6],[1] battle_message_update [2] message_window_destroy [3] window_open 0x80067960 [4] window_release 0x800679ac [5] 0x80069170 (empty draw-contents hook),confirmed,battle_message_show 0x80074ca4
+battle_ovl1984_0,0x80080fac,vtable_LineTrail,vtable[2],[1] line_trail_update (dtor line_trail_destroy is called directly),confirmed,line_trail_create 0x80076454
+battle_ovl1984_0,0x80080fbc,vtable_RibbonTrail,vtable[2],[1] ribbon_trail_update,confirmed,ribbon_trail_create 0x80075944
+battle_ovl1984_0,0x80080fcc,vtable_Ghost,vtable[2],[1] ghost_update,confirmed,ghost_create 0x800756e0
+battle_ovl1984_0,0x80080fdc,vtable_Afterimage,vtable[2],[1] afterimage_update,confirmed,afterimage_create 0x80075080
+battle_ovl1984_0,0x80080fec,vtable_ListMenu,vtable[10],Base of the battle list menus: [1] list_menu_update [2] list_menu_destroy [3] window_open [4] window_release [5] list_menu_draw_scrollbar [6] pure 0x8006a5fc (draw items) [7] list_menu_draw_frame [8] pure (item position) [9] pure (confirm),confirmed,list_menu_create 0x8007e644
+battle_ovl1984_0,0x8008103c,vtable_TacticsMenu,vtable[10],[1] list_menu_update [2] tactics_menu_destroy [3] window_open [4] window_release [5] list_menu_draw_scrollbar [6] tactics_menu_draw_items [7] list_menu_draw_frame [8] tactics_menu_item_pos [9] tactics_menu_confirm,confirmed,tactics_menu_create 0x800801c0
+battle_ovl1984_0,0x8008108c,jt_battle_voice_table,void *[13],Jump table of battle_voice_table (characters 1-12),confirmed,disassembly of 0x80080b88
+battle_ovl1984_0,0x800810bc,g_camera_idle_frames,s16,Frames since the camera director last changed the shot (reset when a shot is requested; thresholds 60 / 90),confirmed,battle_frame_director
+battle_ovl1984_0,0x800810c0,lens_flare_set_a,FlareSet,11-element lens flare: s16 pos[11] at 0x800810c0 (0 0 0x190 0x4b0 0x578 0x7d0 0x960 0xb22 0xc80 0xd48 0xf3c; position along the sun-centre axis in 1/4096) / s16 size[11] at 0x800810d8 (0xe0 0x8c 0x48 0x54 0x90 0xa0 0x90 0x50 0x60 0x6c 0x40; [0] patched = size*7) / u8 type[11] at 0x800810f0 (0 1 4 4 0 0 5 2 0 1 3) / u8 radius[11] at 0x800810fc (0 0 0xa0 0x2a 4 8 0x18 0x12 0x18 0x38 0x58; [0][1] patched) / u8 inner[11] at 0x80081108 (0 8 0...),likely,lens_flare_draw 0x8007443c
+battle_ovl1984_0,0x80081114,lens_flare_set_b,FlareSet,4-element lens flare: s16 pos 0x4b0 0xbb8 0xe10 0x1194 / s16 size 0x20 0x30 0x60 0x40 (0x8008111c) / u8 type 1 2 3 5 (0x80081124) / u8 radius 0x18 0x10 0x20 0x30 (0x80081128) / u8 inner 4 0 4 8 (0x8008112c),likely,lens_flare_draw_small 0x800744cc
+battle_ovl1984_0,0x80081130,g_parent_matrix,MATRIX,Parent rotation + translation (t at 0x80081144/48/4c = parent position >> 12) kept by obj_set_matrix_parent for obj_set_matrix_child (bss),likely,0x800779c4 + 0x80077dcc
+battle_ovl1984_0,0x80081150,g_sfx_emitters,BObj[8],8 internal 0x88-byte sound emitters (bss) used by bsfx_play mode 2 (slot n -> 0x80081150 + 0x88*(n-1)); only the position +8 is set (bsfx_play_at_pos),confirmed,bsfx_play + bsfx_play_at_pos + bsfx_emitters_init
+battle_ovl1984_0,0x8008158c,victory_voice_table,u32[13],Per character (index 1..12 at 0x80081590): u16 first voice entry + u16 counts (nibbles: >>8 tier 0 count; >>4 tier 1; &0xf tier 2). All 3/3/3: 9 victory lines per character (entries 0x988.. Claude; 0x993 Rena; 0x99e; 0x9a9 (4/3/3); ...),confirmed,voice_pick_victory 0x800804d4
+battle_ovl1984_0,0x800815c0,result_voice_base,u16[12],Per character first entry of 5 lines used by voice_play_result (0xa11 0xa16 ... 0xa43),confirmed,voice_play_result 0x800807c8
+battle_ovl1984_0,0x800815d8,extra_voice_base,u16[12],Per character first entry of 2 lines (0x991 0x99c 0x9a7 ...; right after the 9 victory lines),confirmed,voice_play_extra 0x80080878
+battle_ovl1984_0,0x800815f0,battle_voice_bank_base,u16[12],Per character first entry of the battle voice bank (0x246 0x279 0x2b2 0x2e9 0x320 0x359 0x392 0x3cc 0x403 0x439 0x474 0x4ad); voice_play_battle_line picks base + rng(4),confirmed,voice_play_battle_line 0x800808e8
+battle_ovl1984_0,0x80081608,healer_name_voice_table,u16[12][12],Per speaking character (0x18 bytes each; through 0x80081728): voice entry of the line naming each other character (0 for self); e.g. Claude 0 0x23f 0x241 0x243 ...,confirmed,battle_voice_table 0x80080b88 (matched field 0x80078d18)
+battle_ovl1984_1,0x80085340,clash_opposed_mask,u16[12],Element bit -> opposed element mask {8 4 2 1 0x40 0x200 0x10 0x100 0x80 0x20 0 0} (pairs 0-3 1-2 4-6 5-9 7-8),confirmed,clash_resolve
+battle_ovl1984_1,0x80085358,element_opposed,u8[12],Element -> opposed element {3 2 1 0 6 9 4 8 7 5},confirmed,spell_clash_check
+battle_ovl1984_1,0x80085364,element_allied,u8[10][2],Element -> two allied elements,confirmed,spell_clash_check
+battle_ovl1984_1,0x8008536c,item_effect_jump_table,void *[98],item_use_battle switch (kinds 1-0x62),confirmed,data dump
+battle_ovl1984_1,0x80085504,skill_no_clash,u8[7],Skill ids that never clash {3 0x26 0x13 0x14 0x24 0x25 0x19},confirmed,spell_clash_check
+battle_ovl1984_1,0x8008550c,g_item_iter,u8,Target iterator for item_next_party_target / item_next_enemy_target (0xff = before the first),confirmed,item_use_battle
+battle_ovl1984_1,0x80085510,g_item_user,Unit *,Unit using the item,confirmed,item_use_battle
+battle_ovl1984_1,0x80085514,g_item_target,Unit *,Current item target (changed by the iterators),confirmed,item_use_battle
+boot,0x8002a9b4,sound_pitch_table,u16[86],"SPU pitch per note 0-83 (C at 133 to B at 16180; each lower octave is the top one >> n), +2 entries for the bend / vibrato neighbour; index -1 (0x8002a9b2) is the half-word before it",confirmed,sound_voice_pitch; read at run time from SCUS_944.21 (runtime/boot_exe)
+boot,0x8002aa8c,sound_lfo_table,s16[64],Vibrato LFO: round(256 * sin(2 pi i / 64)),confirmed,sound_track_vibrato / sound_voice_vibrato
 boot,0x8002b464,g_rng_index,int,ran3 position,confirmed,rng_next
+boot,0x8002b468,g_rng_table,int[56],ran3 state (index 1..55 used),confirmed,rng_seed
 boot,0x8002b544,g_rng_seed,int,Last seed passed to rng_seed (0x4e421714 at boot),confirmed,rng_seed
+boot,0x8002b550,g_system,System *,"Resident System object (0x8e5c bytes on the heap). +0x1 SLZ context, +0x4 graphics, +0x10 Loader (table of contents at +4 / +0x4804), +0x5a20 handoff registry, +0x5aa4 sound system",confirmed,boot_main
 boot,0x8002b568,g_cd_bytes_left,int,Bytes still to read for the current load,confirmed,cd_sector_ready_callback
 boot,0x8002b56c,g_cd_dest,u8 *,Destination pointer for the next sector,confirmed,cd_sector_ready_callback
 boot,0x8002b57c,g_loader_busy,u8,Nonzero while a read is active,confirmed,loader_load_sync
+boot,0x8002b584,g_cd_slot_bytes,int,Streaming: bytes per ring slot (the movie player uses 0x5000: ten sectors),confirmed,loader_start_stream
+boot,0x8002b58c,g_cd_slot_count,s16,Streaming: slots in the ring (2 for movies),confirmed,loader_start_stream
+boot,0x8002b58e,g_cd_slot,s16,Streaming: slot being filled; loader_stream_slot returns the one before it,confirmed,cd_sector_ready_callback
+boot,0x8002b592,g_cd_stream_headers,u8,Streaming: each sector's 32-byte STR header goes to the slot's header table (0x8002b570) and the rest to 0x8002b574,confirmed,cd_sector_ready_callback
+boot,0x8002b594,g_cd_defer_sectors,u8,Sectors wait while set (24-bit MDEC transfers); see loader_defer_sectors,likely,movie_update
+boot,0x8002b595,g_cd_sector_deferred,u8,A sector is waiting; movie_dma_callback then calls cd_sector_ready_callback,likely,movie_dma_callback
 boot,0x8002b59c,g_cd_target_loc,CdlLOC,BCD position the drive seeks to,confirmed,loader_select_entry
+boot,0x8002b6c0,sound_bank_order,u8[2][12],Bank slots in instrument-search order: 8 9 10 11 4 5 6 7 0 1 2 3; the second table swaps 4 and 5 (Sound + 0x74 picks),confirmed,sound_find_instrument
+boot,0x8002b6d8,g_sound_transfer_notify,void *,Object told when a bank transfer ends (sound_load_bank's 3rd argument; vtable +0x18 / +0x1c),confirmed,sound_transfer_done
+boot,0x8002b6dc,g_sound_transfer_notify_arg,int,Its argument,confirmed,sound_transfer_done
+boot,0x8002b6e0,g_sound,Sound *,The Sound object (System + 0x5aa4) the root counter handler and the SPU callbacks use; set by sound_start,confirmed,sound_start / sound_interrupt
+boot,0x8002b77c,_spu_tsa,u16,libspu: transfer start address / 8,confirmed,SpuSetTransferStartAddr
+boot,0x8002bc04,_spu_rev_startaddr,u32[10],libspu: reverb work-area start (/ 8) per mode (0xfffe 0xfb28 0xfc18 0xf6f8 0xf204 0xea44 0xe128 0xcff8 0xcff8 0xf880),confirmed,SpuSetReverbModeParam; read at run time from SCUS_944.21
+boot,0x8002bc34,_spu_rev_param,u8[10][0x44],"libspu: reverb presets, a u32 register mask then the 32 reverb registers (dAPF1 .. vRIN)",confirmed,_spu_setReverbAttr; read at run time from SCUS_944.21
+field,0x1f800000,vm_args,int[16],Scratchpad buffer vm_fetch_args fills,confirmed,vm_fetch_args
+field,0x800750cc,music_table,s16[100],Script music numbers (< 100) map through this table,likely,music opcodes
+field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
+field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
+field,0x8007525c,f_loader,Loader *,System + 0x10,likely,usage with loader_* calls
+field,0x80075270,config,u8 *,"Config block (handoff 2, 0x2a0): +0/+2/+4/+6 confirm / cancel / menu / PA buttons, +0x14 / +0x1c..+0x2c counters, +0x18 money (clamped 0..999999999), +0x45 hero, +0x4c disc 2, +0x58 / +0xe8 12x12 relation tables (was game_counters)",confirmed,"field_bind_system; VM ext 0xd3/0xd4, table A 0x05-0x0d, table B 0x10-0x13"
+field,0x80075274,f_sound,Sound *,Sound system (music / effects),likely,music opcodes
+field,0x80075278,inventory,u16[],"Item entries: bits 0-9 item id, bits 10-14 count",likely,table A 0x39
+field,0x8007527c,party_table,PartySlot[8],"0x60 bytes per slot. +0x00 s16 character id + 1 (negative = inactive?), +0x22 s16 maximum, +0x24 s16 current (HP?)",likely,table A 0x1e / 0x1f
+field,0x80075280,character_records,Character[8],"0xd0 bytes each. +0x0c..+0x18 seven s16 equipment slots, +0x1a s16 capped at 999, +0x3c / +0x5c byte arrays, +0xcc two bytes",likely,equipment functions
+field,0x80075284,field_system,Field *,Map / field system object,likely,field_load_map
+field,0x80075288,message_system,Msg *,Message system,likely,msg_window_open
+field,0x800752ac,g_script_vm,ScriptCtx *,"The event-script VM (class ScriptVM, 0x11cc bytes, vtable 0x80074028): one thread + 58 trigger regions",confirmed,vm_ctx_create / vm_init; port script_vm.h
+field,0x800752b0,g_load_queue,LoadQueue *,"Async CD load queue (0x160 bytes, vtable 0x80072dfc, task prio 1): 16-entry ring of {entry, active, bytes, dest, done*} at +8, head +0x148, tail +0x14c, callback +0x150, in-flight done* +0x154, busy +0x158, entry +0x15c",confirmed,load_queue_* decompilation
+field,0x800752b8,g_battle_setup,u8[0xc0],"Battle setup built by the encounter code (+0 encounter, +4 stage, +8 / +0x3c entry list, +0x70 count, +0x74 preloaded data pointers, +0xa8 free flags); handed to the battle program as handoff 5",likely,field_run; field_exit_to_program 0x80051c9c; battle_run
+field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending
+field,0x8007533d,g_battle_preload_requested,u8,An encounter's battle data is being preloaded (set by 0x80050f64),likely,0x80050f64; preload_release_pending
+field,0x80075355,g_field_active,u8,Actors update while set (field_load_map sets it; scripts toggle it),likely,field_load_map; actor_sys_update
+field,0x80075360,field_actors,Actor *[],Field actors indexed by script actor number; +0x00/+0x04/+0x08 position (<<12 fixed point),likely,table A / ext actor opcodes
+field,0x80075668,message_windows,MsgWindow *[],Message windows indexed by window number,likely,message opcodes
+field,0x800756d8,g_scripted_battle,u8,A script battle is pending (ext 0xb7 / 0xc2 set it; field_load_map clears it); enables voice-clip streaming,likely,vm_exec_ext 0xb7; load_queue_set_streaming
+field,0x800756f8,g_map_script,u8 *,"Section 1 block 0 of the current map: the script header, code, string table and text vm_init binds",confirmed,vm_init
+field,0x80075704,script_flags,u8 *,"Script global flag bits (bit n = byte n>>3, bit n&7). Event / chest state lives here",confirmed,vm_thread_update
+field,0x80075708,script_globals,u8 *,"Script global variable memory, byte-addressed. Word 0 is the VM return register",confirmed,vm_thread_update
+field,0x8007570c,field_state,u8 *,"Field state block = script variables (handoff 9 + 0x180): +4..+0xc / +0x34 / +0x36 saved VM offsets, +0xe camera target, +0x10 controlled actor (-1 = an event has control), +0x24 returning, +0x26 input lock, +0x28 saved sprite packs, +0x32/+0x33 countdown, +0x68 3D/world map, +0x6b/+0x6c saved party, +0x7e battle param, +0x81/+0x83, +0x93 menu disabled (was field_flags)",confirmed,VM port engine/src/game/field/script_*.cpp
+field,0x80075710,game_state,GameState *,"+0x08/+0x0c/+0x10 arrival position for map transfer, +0x1c current music, +0x24 leader actor index, +0x180 48 words of script-visible values, +0x248/+0x24a/+0x24c 16-bit counters (0x248 changed by add_money)",likely,table A + map_transfer
+field,0x80075728,g_bg_anim_save,u8 *,"bg_suspend's heap copy of the BG animation state: u32 size, then the first 16 bytes of each 0xa0-byte animation record; handed over in slot 0x10 and restored by bg_resume",confirmed,overlay 0x800895e0 / 0x800897bc
+field,0x80075734,g_music_sequence,u8 *,"The current map music's sequence, unpacked by field_install_music; scripts start it with sound_play_sequence / sound_resume_sequence",confirmed,field_install_music 0x8004b2b4
+field,0x80075738,g_load_buffer,u8 *,field_load_entry's buffer (mem_alloc_b); size 0x8007573c. Callers prefer preload_find's buffer when the entry was preloaded,confirmed,field_load_entry 0x8004a654
+field,0x80075740,g_music_bank,u8 *,The music entry kept while the sound driver uses its bank (the load buffer handed over by field_install_music),confirmed,field_install_music 0x8004b2b4
+field,0x80075768,g_preloads,PreloadSlot[12],"Preload table, 0x14 bytes each: +0 kind (1 battle data, 2 map transfer), +1 done, +2 owned, +4 tag (s16), +8 entry, +0xc bytes, +0x10 buffer. Saved to a heap copy (0x80075858) around menus",confirmed,preload_* decompilation
+field,0x80075998,g_voice_stream_budget,s32,Voice-clip queue budget (voice_queue_build_field result),likely,load_queue_update
+field,0x8007599c,g_voice_stream_enabled,u8,Idle-time voice-clip streaming is on (load_queue_set_streaming),confirmed,load_queue_update
+field,0x800759a0,g_voice_stream_state,s32,"Voice-clip streaming: 0 idle, 1 build the queue, 2 loading, 3 done. Random encounters wait for 3",confirmed,load_queue_update; field_update
+field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
+field,0x8007622c,g_inventory_stashed,u8,The stash holds the inventory (set by A 0x10 and when taken from handoff 0x11),confirmed,field_run; overlay 0x8008ea0c
+field,0x80076278,g_show_battle_results,u8,Set when the field restarts after a battle (and by script item gifts): field_update opens the post-battle stat / item window,likely,field_run; field_update state 0; table B
+field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
+field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
+title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
 title,0x8004ebdc,t_system,System *,System object as seen by program #1,confirmed,title_program_main
+title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main
 title,0x8004ebe4,t_loader,Loader *,System + 0x10,confirmed,title_program_main
 title,0x8004ebe8,t_slz_ctx,void *,System + 1 (first argument of slz_unpack),confirmed,title_program_main
 title,0x8004ebf8,t_sound,Sound *,System + 0x5aa4,confirmed,title_program_main
-title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main
-field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
-field,0x8007525c,f_loader,Loader *,System + 0x10,likely,usage with loader_* calls
-field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
-field,0x80075274,f_sound,Sound *,Sound system (music / effects),likely,music opcodes
-field,0x80075708,script_globals,u8 *,"Script global variable memory, byte-addressed. Word 0 is the VM return register",confirmed,vm_thread_update
-field,0x80075704,script_flags,u8 *,"Script global flag bits (bit n = byte n>>3, bit n&7). Event / chest state lives here",confirmed,vm_thread_update
-field,0x80075710,game_state,GameState *,"+0x08/+0x0c/+0x10 arrival position for map transfer, +0x1c current music, +0x24 leader actor index, +0x180 48 words of script-visible values, +0x248/+0x24a/+0x24c 16-bit counters (0x248 changed by add_money)",likely,table A + map_transfer
-field,0x80075270,game_counters,Counters *,"+0x14 program-swap counter, +0x18 counter clamped 0..999999999, +0x1c/+0x20/+0x24/+0x28/+0x2c readable counters, +0xe8 12-byte rows",likely,table A / ext 0xd3-0xd4
-field,0x8007527c,party_table,PartySlot[8],"0x60 bytes per slot. +0x00 s16 character id + 1 (negative = inactive?), +0x22 s16 maximum, +0x24 s16 current (HP?)",likely,table A 0x1e / 0x1f
-field,0x80075280,character_records,Character[8],"0xd0 bytes each. +0x0c..+0x18 seven s16 equipment slots, +0x1a s16 capped at 999, +0x3c / +0x5c byte arrays, +0xcc two bytes",likely,equipment functions
-field,0x80075278,inventory,u16[],"Item entries: bits 0-9 item id, bits 10-14 count",likely,table A 0x39
-field,0x80075360,field_actors,Actor *[],"Field actors indexed by script actor number; +0x00/+0x04/+0x08 position (<<12 fixed point)",likely,table A / ext actor opcodes
-field,0x80075668,message_windows,MsgWindow *[],Message windows indexed by window number,likely,message opcodes
-field,0x80075284,field_system,Field *,Map / field system object,likely,field_load_map
-field,0x80075288,message_system,Msg *,Message system,likely,msg_window_open
-field,0x8007570c,field_flags,u8 *,"Field-mode flags (+0x10 controlled actor, +0x26 input lock, +0x68 ...)",guess,scattered uses
-field,0x800750cc,music_table,s16[100],Script music numbers (< 100) map through this table,likely,music opcodes
-field,0x80077384,map_transfer_table,s16[],Map ids for map_transfer_table (ext 0xbb),likely,ext 0xbb
-field,0x1f800000,vm_args,int[16],Scratchpad buffer vm_fetch_args fills,confirmed,vm_fetch_args
 title,0x8004ec14,g_prologue_data,u8 *,0x52800-byte buffer: the prologue's first part (#2680 Claude / #2681 Rena) preloaded during name entry,confirmed,new_game_sequence
 title,0x8004ec18,g_text_x,s16,Next free texel column of the New Game text line buffer,confirmed,text_draw
 title,0x8004ec1a,g_text_line,s16,First texel row of the current text line,confirmed,text_draw
@@ -38,16 +479,9 @@ title,0x8004ec1c,g_text_strings,u8 *,New Game string table (entry #14 block 0),c
 title,0x8004ec20,g_text_font,u8 *,New Game font (entry #14 block 1),confirmed,text_draw
 title,0x8004ec24,g_text_pixels,u8 *,0x8000-byte 4-bit text line buffer (uploaded to VRAM 0x3c0; 0x100),confirmed,text_frame_upload
 title,0x8004ec28,g_battle_rank_unlocked,u8,Set by the Voice Collection (over half the voices heard); adds the Battle Rank screen to New Game,likely,voice_collection
-title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
-title,0x8004ecb0,g_load_queue_entry,u16[16],Background load queue: entries,confirmed,async_load
 title,0x8004ec70,g_load_queue_dest,void *[16],Background load queue: destinations,confirmed,async_load
+title,0x8004ecb0,g_load_queue_entry,u16[16],Background load queue: entries,confirmed,async_load
 title,0x8004ecd0,g_load_current,u16,Entry being read by the load queue (0 = idle),confirmed,load_fifo_update
-boot,0x8002b584,g_cd_slot_bytes,int,Streaming: bytes per ring slot (the movie player uses 0x5000: ten sectors),confirmed,loader_start_stream
-boot,0x8002b58c,g_cd_slot_count,s16,Streaming: slots in the ring (2 for movies),confirmed,loader_start_stream
-boot,0x8002b58e,g_cd_slot,s16,Streaming: slot being filled; loader_stream_slot returns the one before it,confirmed,cd_sector_ready_callback
-boot,0x8002b592,g_cd_stream_headers,u8,Streaming: each sector's 32-byte STR header goes to the slot's header table (0x8002b570) and the rest to 0x8002b574,confirmed,cd_sector_ready_callback
-boot,0x8002b594,g_cd_defer_sectors,u8,Sectors wait while set (24-bit MDEC transfers); see loader_defer_sectors,likely,movie_update
-boot,0x8002b595,g_cd_sector_deferred,u8,A sector is waiting; movie_dma_callback then calls cd_sector_ready_callback,likely,movie_dma_callback
 title,0x80050aa8,g_movie_screen_cleared,s32,Both display buffers were cleared before the first frame,confirmed,movie_update
 title,0x80050aac,g_movie_slice_half,s32,Half of the slice buffer the MDEC fills next,confirmed,movie_dma_callback
 title,0x80050ab0,g_movie_slice_rect,RECT,VRAM column (mode * 8 halfwords x height) the finished slice is loaded to,confirmed,movie_dma_callback

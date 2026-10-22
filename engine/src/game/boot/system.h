@@ -2,11 +2,12 @@
 
 #include "core/types.h"
 #include "game/boot/loader.h"
+#include "game/boot/sound.h"
 
 namespace ss::game {
 
 struct Pad {};    // System + 0x04: controller module (state lives in pad.cpp)
-struct Sound {};  // System + 0x5aa4: sound system (not yet ported)
+// System + 0x5aa4: the sound driver (struct Sound, game/boot/sound.h).
 
 // Pointers handed from one program to the next (System + 0x5a20; boot 0x8001206c).
 // Sixteen slots, each a pointer and the tag it was stored under.

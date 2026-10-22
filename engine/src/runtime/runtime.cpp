@@ -59,6 +59,7 @@ void Runtime::present() {
 }
 
 void Runtime::vblank() {
+  if (audio_tick) audio_tick();
   if (vsync_callback) vsync_callback();
   if (window || capture_frames.count(vblank_count_)) present();
   if (window) {

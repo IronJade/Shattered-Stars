@@ -4,6 +4,7 @@
 
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
+#include "game/field/field.h"
 #include "game/title/title_program.h"
 #include "platform/window.h"
 #include "runtime/libgpu.h"
@@ -53,7 +54,7 @@ Program boot_main(int is_reset, disc::Archive* archive) {
   pad_init(&sys->pad);                // 0x80013fb8
   sys->loader.attach(archive);        // loader_init: CdInit + reading the table, done by disc::Archive
   handoff_init(&sys->handoff);        // 0x8001206c
-  // TODO(port): sound system init (0x800144ec on System + 0x5aa4).
+  sound_init(&sys->sound);            // 0x800144ec
   psyq::ResetGraph(0);
   // 0x80014020: SetGraphDebug(0); ClearOTag of the boot's own table; ResetCallback;
   // then the per-vblank handler.
@@ -63,7 +64,8 @@ Program boot_main(int is_reset, disc::Archive* archive) {
     rng_seed(0x4e421714);
   }
   // Loads archive entry #1 (the title program) and runs it; see Program::Title.
-  // TODO(port): sound start (0x80014954); ChangeClearPAD(0); _bu_init().
+  sound_start(&sys->sound);           // 0x80014954: libspu, reverb, the root counter 2 tick
+  // TODO(port): ChangeClearPAD(0); _bu_init().
   return Program::Title;
 }
 
@@ -72,6 +74,8 @@ void run_program(Program program) {
     case Program::Title:
       title_entry(get_system());
       return;
+    case Program::Field:
+      field::field_entry(get_system());
     default:
       std::fprintf(stderr, "[port] program #%d is not ported yet\n", static_cast<int>(program));
       for (;;) psyq::VSync(0);  // hold on a blank screen until the window closes

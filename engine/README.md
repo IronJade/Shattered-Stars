@@ -16,7 +16,7 @@ or data: everything is read at runtime from your own disc images.
 | Window, OpenGL presentation, keyboard and gamepad | done |
 | GTE + libgte | done, bit-exact with PCSX-Redux / Sony's PsyQ 4.2 code |
 | MDEC + STR movies | decoder done, exact against jPSXdec's PS1 mode; player being ported |
-| SPU (sound), memory cards | not started (stubbed; see `docs/CHECKLIST.md`) |
+| SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (title music matches PCSX-Redux); memory cards ported (raw 128 KB images) |
 | Game code | boot, title program (logos, title screen, New Game screens) ported; field program next |
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.

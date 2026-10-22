@@ -87,6 +87,14 @@ MATRIX* CompMatrix(const MATRIX* m0, const MATRIX* m1, MATRIX* m2);       // m2 
 MATRIX* RotMatrix(const SVECTOR* r, MATRIX* m);  // rotation X(r.vx) * Y(r.vy) * Z(r.vz), 4096 = 360 degrees
 MATRIX* TransMatrix(MATRIX* m, const VECTOR* v);
 MATRIX* ScaleMatrix(MATRIX* m, const VECTOR* v);  // column j scaled by v[j] / 4096
+// m = R * m for a rotation about X / Y / Z by r (4096 = 360 degrees); every product is
+// shifted down by 12 before the sum, as PsyQ's C versions do (field 0x8006e71c..).
+MATRIX* RotMatrixX(s32 r, MATRIX* m);
+MATRIX* RotMatrixY(s32 r, MATRIX* m);
+MATRIX* RotMatrixZ(s32 r, MATRIX* m);
+// v1 = (vx^2, vy^2, vz^2) through the GTE (gte_ldlvl / sqr0 / gte_stlvnl): each
+// component is truncated to 16 bits on its way into IR, squared without shift.
+VECTOR* Square0(const VECTOR* v0, VECTOR* v1);
 void PushMatrix();                                 // saves RT and TR (20 deep)
 void PopMatrix();
 

@@ -91,26 +91,38 @@ def parse_script(blob):
     return {"header": header, "code": code, "strings": strings}
 
 
+GLYPHS = {0xb4: "-", 0xb5: ".", 0xed: "?", 0xef: "!", 0xff: "=", 0x100: ":", 0x101: ";",
+          0x103: ",", 0x104: "/", 0x105: " "}
+GLYPHS.update({0xaa + i: str(i) for i in range(10)})
+GLYPHS.update({0xb6 + i: chr(ord("A") + i) for i in range(26)})
+GLYPHS.update({0xd0 + i: chr(ord("a") + i) for i in range(26)})
+# Control codes with the number of parameter bytes that follow them.
+CONTROL = {0x4000: ("\\n", 0), 0x4001: ("{page}", 0), 0x4002: ("{wait}", 0), 0x4003: ("speed", 1),
+           0x4004: ("colour", 1), 0x4005: ("{centre}", 0), 0x4006: ("delay", 2), 0x4007: ("name_var", 1),
+           0x4008: ("item_var", 1), 0x4009: ("choice", 2), 0x400a: ("{block}", 0), 0x400b: ("{/block}", 0),
+           0x400c: ("name", 1), 0x400d: ("space", 1), 0x400e: ("number_var", 1), 0x400f: ("x", 1)}
+
+
 def decode_text(raw):
-    """Render 16-bit character codes; control codes 0x80xx take one parameter byte."""
+    """Render a string: a byte stream of codes (b < 0x80, else (b & 0x7f) | next << 7).
+    Codes < 0x4000 are 1-based glyphs of the map font; 0x4000-0x400f are control codes."""
     out, i = [], 0
-    while i + 1 < len(raw):
-        code = raw[i] | raw[i + 1] << 8
-        i += 2
-        if code & 0x8000:
-            param = raw[i] if i < len(raw) else 0
+    while i < len(raw):
+        b = raw[i]
+        i += 1
+        code = b
+        if b >= 0x80:
+            code = (b & 0x7F) | (raw[i] << 7 if i < len(raw) else 0)
             i += 1
-            out.append(f"{{{code:04x}:{param:02x}}}")
-        elif 0x1B6 <= code <= 0x1CF:
-            out.append(chr(ord("A") + code - 0x1B6))
-        elif 0x1D0 <= code <= 0x1E9:
-            out.append(chr(ord("a") + code - 0x1D0))
-        elif code == 0x285:
-            out.append(" ")
-        elif code == 0:
-            out.append("{end}")
+        if code == 0:
+            break
+        if code in CONTROL:
+            name, n = CONTROL[code]
+            params = raw[i:i + n]
+            i += n
+            out.append(name if n == 0 else "{%s:%s}" % (name, params.hex()))
         else:
-            out.append(f"{{{code:04x}}}")
+            out.append(GLYPHS.get(code, "{%x}" % code))
     return "".join(out)
 
 
