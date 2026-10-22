@@ -105,6 +105,7 @@ class CreationViewer final : public ItemViewer {
   void prepare(Pair& p);              // 0x8008aecc: each vertex of a finds b's nearest
   const Pair& blend(int t);           // 0x8008aa50: the pair and weight for this frame
   void model_blend(Pair& p, int t);   // 0x8008b338
+  void debug_dump(const Pair& p);     // SS_CREATION_DUMP
 
   s16 mode_ = 0;                      // +0x94
   s16 items_[4] = {};                 // +0x96..+0x9c: pending loads (-1 no item, 0 loaded)

@@ -65,7 +65,7 @@ struct SpellCast : Task {
   std::array<s16, 2> clut_y{};                   // +0x10c
   s16 dim_level = 0;          // +0x110: 0..0x20
   s32 centre[4] = {};         // +0x114: the spell's centre (handlers set it)
-  s32 s124 = 0, s128 = 0, s12c = 0, s130 = 0;  // +0x124..+0x130
+  s32 aux_point[4] = {};      // +0x124..+0x130: a second point (modules: e.g. the combo point)
   BObj obj;                   // +0x134: the data's sprite set (obj.animset, +0x190)
   BObj obj2;                  // +0x1bc (pool +0x240)
   SpellModuleFn module = nullptr;  // +0x244: the code module's entry

@@ -10,6 +10,7 @@
 #include "disc/slz.h"
 #include "game/battle/battle.h"
 #include "game/battle/camera.h"
+#include "game/battle/result.h"
 #include "game/battle/unit.h"
 #include "game/boot/sound.h"
 #include "game/boot/rng.h"
@@ -54,10 +55,10 @@ void battle_debug_frame() {
     // end-of-frame tick).
     const BattleGlobals& g = bg();
     const Camera* c = g.camera;
-    std::fprintf(stderr, "[battle] cam v%llu f %d ticks %d st %d fl %d cam %d %d rem %d spd %d ct %d\n",
+    std::fprintf(stderr, "[battle] cam v%llu f %d ticks %d st %d fl %d cam %d %d rem %d spd %d ct %d res %d %d\n",
                  static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), g.battle_frames, g.frame_ticks,
                  g.state, g.flags, c ? c->mode : -1, c ? c->step : -1, c ? c->remaining : 0, c ? c->speed : 0,
-                 c ? c->ticks : 0);
+                 c ? c->ticks : 0, battle_result_screen() != nullptr, g.result_started);
   }
   static int box_lo = -1, box_hi = -1;
   static const bool box_init = [] {

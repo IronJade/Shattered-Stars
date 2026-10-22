@@ -1,6 +1,9 @@
 #include "game/common/menu_viewer.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "disc/slz.h"
 #include "game/common/menu_gfx.h"
@@ -501,6 +504,7 @@ void CreationViewer::update() {
     case 3: {
       spin();
       const Pair& p = blend(frame_ * 0xD);
+      debug_dump(p);
       draw_model(p.blended.data, p.blended.clut, p.blended.tpage);
       if (++frame_ > 300) state_ = 4;
       break;
@@ -597,6 +601,34 @@ void CreationViewer::model_blend(Pair& p, int t) {
     lerp_vec(model_block(b, 1) + ib * 8, model_block(a, 1) + ia * 8, t, 0xFFF - t, out.data() + read_u32(out.data() + 4) + i * 8);
     lerp_vec(model_block(b, 3) + ib * 8, model_block(a, 3) + ia * 8, t, 0xFFF - t, out.data() + read_u32(out.data() + 12) + i * 8);
   }
+}
+
+void CreationViewer::debug_dump(const Pair& p) {
+  // Debugging (SS_CREATION_DUMP=prefix:frame): the first morph pair at that morph frame, as
+  // itemsref.lua's SS_DUMPAT writes the original's.
+  const char* env = std::getenv("SS_CREATION_DUMP");
+  if (env == nullptr || &p != &pairs_[0]) return;
+  const std::string spec = env;
+  const size_t colon = spec.rfind(':');
+  if (colon == std::string::npos || std::atoi(spec.c_str() + colon + 1) != frame_) return;
+  const std::string prefix = spec.substr(0, colon);
+  auto save = [&](const char* name, const u8* data, size_t len) {
+    if (FILE* f = std::fopen((prefix + "_" + name + ".bin").c_str(), "wb")) {
+      std::fwrite(data, 1, len, f);
+      std::fclose(f);
+    }
+  };
+  const std::vector<u8>* ms[3] = {&models_[p.a].data, &models_[p.b].data, &p.blended.data};
+  const char* names[3][2] = {{"a_v", "a_n"}, {"b_v", "b_n"}, {"blend_v", "blend_n"}};
+  for (int i = 0; i < 3; ++i) {
+    const std::vector<u8>& m = *ms[i];
+    if (m.size() < 0x2C) continue;
+    save(names[i][0], model_block(m, 1), static_cast<size_t>(model_count(m, 0x1E)) * 8);
+    save(names[i][1], model_block(m, 3), static_cast<size_t>(model_count(m, 0x22)) * 8);
+  }
+  std::vector<u8> table(p.table.size() * 2);
+  if (!table.empty()) std::memcpy(table.data(), p.table.data(), table.size());
+  save("table", table.data(), table.size());
 }
 
 void CreationViewer::finish() {

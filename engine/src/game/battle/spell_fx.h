@@ -2,6 +2,7 @@
 
 #include "core/types.h"
 #include "game/battle/battle.h"
+#include "game/battle/shot.h"
 
 // Resident effect helpers the spells (and the monsters' spells) use that nothing else
 // ported needed so far.
@@ -13,6 +14,10 @@ namespace ss::game::battle {
 // turns positive. tpage: the blend mode. Returns the task (owned by the task list).
 Task* screen_fade_create(u32 rgb, int tpage, int step, int hold);
 void spell_fx_reset();  // the battle's end: live fades are freed
+// 0x80072724 (#1984.0): stage_colour_set(v, v, v).
+inline void stage_colour_set_grey(s32 v) {
+  stage_colour_set(static_cast<s16>(v), static_cast<s16>(v), static_cast<s16>(v));
+}
 // 0x80072618 (#1984.0): a random point of the arena (its bounds divided by 'shrink') on the
 // ground.
 void stage_random_point(s32 out[4], int shrink);
@@ -29,4 +34,9 @@ void draw_star(s32 r_a, s32 r_b, s16 h, u32 rgb_a, u32 rgb_b);
 // tpage 0x20); 'flat' puts it at the back of its depth band's front (OT index 0x610).
 void draw_quad_g4(const s16 pts[4][4], const u32 colours[4], int flat);
 
+// 0x80063b48: a kind-0x31 Shot (a vortex mesh: draw_vortex, stage grey fading in the last 32
+// ticks) at pos: +0x128 rings, +0x12c segments, +0x130 radius growth, +0x134 life, +0x138
+// width, vel x the step, +0x118 / +0x11c colours, +0x10a 1: held in the 0x40 pause.
+Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
+                          s32 width, s32 step, s16 flag);
 }  // namespace ss::game::battle

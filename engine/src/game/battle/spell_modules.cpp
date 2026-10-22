@@ -16,7 +16,8 @@ struct ModuleDef {
 
 // (Filled as the modules are ported; scratchpad/world/spell/modules/index.txt lists all 55.)
 const ModuleDef kModules[] = {
-    {"feehn", 0xaaf512758b30accfull, 2236, spell_mod_feehn},  // 2a9c041ec7: spell 0xa (0x915 / 0x916)
+    {"feehn", 0xaaf512758b30accfull, 2236, spell_mod_feehn},          // 2a9c041ec7: spell 0xa (0x915 / 0x916)
+    {"starlight", 0x8b58fab70d17cb84ull, 3168, spell_mod_starlight},  // af4ef66c53: spell 0x12 (0x8e7-0x8e9)
 };
 
 u64 fnv1a64(const std::vector<u8>& b) {

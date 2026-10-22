@@ -4,6 +4,8 @@
 #include "game/battle/spells.h"
 
 #include <array>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -288,6 +290,14 @@ void spell_data_cancel_owner(Unit* owner) {
 
 void spell_cast(int spell, Unit* caster, Unit* target, int power) {
   if (spell < 0 || spell > 0x47 || caster == nullptr) return;
+  // Debugging (SS_SPELL_TRACE=1): one line per cast.
+  static const bool trace = std::getenv("SS_SPELL_TRACE") != nullptr;
+  if (trace) {
+    std::fprintf(stderr, "[spell] battle frame %d cast 0x%x by %s%d (type 0x%x) at %s%d power %d mp %d\n",
+                 bg().battle_frames, spell, caster->is_enemy != 0 ? "e" : "p", caster->slot, caster->st()->id,
+                 target == nullptr ? "-" : (target->is_enemy != 0 ? "e" : "p"), target == nullptr ? 0 : target->slot,
+                 power, caster->st()->mp);
+  }
   SpellData data = spell_data_take(spell, caster);
   if (spell_needs_data(spell) == 1 && entry_for(spell, caster) != 0 && data == nullptr) return;
   if (spell < 0x40) {

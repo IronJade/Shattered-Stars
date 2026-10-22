@@ -13,7 +13,7 @@ commit; the coordinator does. Notes for readers: `docs/notes/battle_enemies.md`.
 | `battle/enemy_families.cpp` | the 16 resident families (0x8003e248-0x80041600) |
 | `battle/enemy_modules.{h,cpp}` | module registry: the 40 pack blocks (FNV-1a 64 of the unpacked bytes + size) + 3 image defaults, slot state, the factory switch for module types, `enemy_module_u8/s16/s32` (a module's own tables by link address), the 43 `enemy_mod_<name>_create()` |
 | `battle/enemy_mod_<name>.cpp` | one file per block: guardian, nicolus, jibril (image defaults) and the 40 pack blocks |
-| `battle/enemy_support.{h,cpp}` | resident helpers only the monsters need so far (draw_beam, draw_textured_patch, draw_quad_gt4, gte_set_view_matrix, draw_tri_g3, vec_random_in_disc_xz, bobj_poly_tag, bobj_set_pos, collider_set_attack_box, bobj_front_x, unit_play_anim_ex, unit_throw_weapons, unit_is_disabled, shot_skill_camera_end), logging stand-ins for what the battle agent has not ported (spells, SpellCast, voices, load queue, screen fade, shot_draw_frame_quad), the spell flags and `spellcast_slot0()`, `SS_ENEMY_TRACE` |
+| `battle/enemy_support.{h,cpp}` | resident helpers only the monsters need so far (draw_beam, draw_textured_patch, draw_quad_gt4, gte_set_view_matrix, draw_tri_g3, vec_random_in_disc_xz, bobj_poly_tag, bobj_set_pos, collider_set_attack_box, bobj_front_x, unit_play_anim_ex, unit_throw_weapons, unit_is_disabled, shot_skill_camera_end), logging stand-ins for what the battle agent has not ported (voices, load queue, shot_draw_frame_quad; the spell stand-ins were replaced by the world agent's spells), `SS_ENEMY_TRACE` |
 
 ## Edits to other agents' files (hooks only)
 
@@ -49,24 +49,45 @@ sturdy and left idle, RNG draws and every enemy's state / position / HP / scratc
 10 vsyncs. `run_port.sh` runs the port from the reference's field_exit dump; `cmp.py`
 compares. The original's phase differs between runs (the first frames' tick pattern decides
 when its camera intro ends), so cmp.py tries offsets 0..8 and uses the one with the fewest
-RNG mismatches. Results (1500 vsyncs each, or to the battle's end):
+RNG mismatches (`CMP_D=n` forces one; for the boss fights `CMP_DMAX`, `CMP_R` (RNG draws the
+original makes in its intro voice that the port makes during setup) and `CMP_FROM`). Results
+at HEAD e37c3a5 + the world agent's spells (1500 vsyncs each, or to the battle's end):
 
 - Exact (all RNG samples, all enemy samples): families 315 Bugbear, 47 Sandglass, 412
   Dreamshade, 205 Shielder, 320 Shout, 92 Ooze, 193 Bandit, 19 Landworm, 202 Troll, 21
-  Alraune, 268 Lizardaxe, 352 F-thiefL99; modules 457 Owlbear (guardian), 80 Cockatrice
-  (carlaeagle), 269 Vopalbunny (bunny), 314 Slime, 43 Gerel, 99 Salamander, 50 Scewer
-  (arcmene), 326 Hellhound (hounddog), 34 Stingray, 285 Miel64 (miel), 286 Kidnier
-  (visseyer), 107 Kitty, 282 Rikiha (ricki), 191 Alen-Tax (ogre).
-- 280 Darkcrusader: exact until its sword waves (Shot kind 2, not ported) at b590.
-- 277 Goathead: diverges at b640, its first spell (enemy_try_cast: the battle agent's).
+  Alraune, 268 Lizardaxe, 352 F-thiefL99, 280 Darkcrusader (now that Shot kind 2 is ported),
+  277 Goathead (now that enemy_try_cast and its spell are ported); modules 457 Owlbear
+  (guardian), 80 Cockatrice (carlaeagle), 269 Vopalbunny (bunny), 314 Slime, 43 Gerel, 99
+  Salamander, 50 Scewer (arcmene), 326 Hellhound (hounddog), 34 Stingray, 285 Miel64 (miel),
+  286 Kidnier (visseyer), 107 Kitty, 282 Rikiha (ricki), 191 Alen-Tax (ogre), 563
+  Gelatinblock (gelatin), 240 Controller, 206 Azamgil, 284 Ericodus, 523 Gargoyle, 543
+  Snowman, 153 NiquiaHG (niquia), 186 Weirdavia (xine), 211 Ghost, 204 Dias, 520 Berle, 521
+  Synard, 530 Marsilio, 531 Bark, 533 Shigeo, 536 Ruprecht + Nicolus + Jibril.
+- Exact until a spell code module the port does not have yet takes over ("spell code module
+  ... not ported yet; the cast ends"; the world agent's): 197 Nightmare (succubus) to b700,
+  spell 16; 265 Zand to b1180, spell 12; 430 Weirddevil (shin) to b560, spell 51; 515
+  G-Celesta to b400, spell 22; 528 Lover to b680, spell 28; 538 Cyril to b530, spell 57
+  (original 57 vsyncs later: its boss intro voice); 537 Vesper + Decus to b390, spells 55 /
+  56 (Vesper's attack 3 waits for the kind-0x37 SpellCast's special-move pause); 539
+  Indalecio to b430, spell 22. In each the divergence starts the frame the cast is released.
+- 524 Guardbox / Magicbox / Workbox / Magichand: diverges at b310, when the boxes toss
+  (Shot kind 0x27, not ported: the battle agent's).
 - 420 four Robinfakes: exact to b1110. From b1078 to b1110 the original runs 3-vsync frames
   (slowdown: 4 robins' 5-arrow volleys; per-vsync reference `ref/n420_3`), the port always
   2, so the draws regroup and at b1128 a different robin starts attack 3. Not a code
   difference; the port does not model the console's CPU load.
+- Fixed by the Zand reference: Zand's and Dias's leap step (0x80088760 / 0x80088744) tested
+  the landing the wrong way round (`pos y < ground` instead of `ground < pos y`, i.e. they
+  landed at once); in HEAD since e37c3a5.
+- Not exercised by these references (Claude stands idle and does no damage): Bark's
+  kind-0x36 SpellCast (every tenth of its HP lost) and Indalecio's transformation (kind 0x3b).
 
 ## Committed
 
 - 22ac0e8 (commit point 1): families, enemy_support, enemy_modules registry, Guardian.
+- a56ba4b (commit point 2): all 43 modules, catalog rows, notes.
+- e37c3a5 (the user, unverified): the world agent's spell wiring in enemy_support and seven
+  modules, and the Zand / Dias landing fix. Verified above.
 
 ## Helper reports (all six groups done; helpers finished, none running)
 
@@ -96,43 +117,21 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
 
 ## For the battle agent (missing callees the monsters use)
 
-- Shot kinds 2 (knight sword waves), 0x27 (guardbox tossed item 0x8005b558), 0x2c (thrown
-  weapons, unit_throw_weapons), 0x2d (ghost slash 0x8005b9d0); kinds 0x26 / 0x29 are block
-  handlers (stingray / magichand) spawned as callbacks; shot.cpp could dispatch them while
-  that block is loaded.
+- Shot kinds 0x27 (guardbox tossed item 0x8005b558: enc 524 diverges there) and 0x2d (ghost
+  slash 0x8005b9d0); kinds 0x26 / 0x29 are block handlers (stingray / magichand) spawned as
+  callbacks; shot.cpp could dispatch them while that block is loaded.
 - shot_draw_frame_quad 0x8005b23c (stand-in returns 0: Dias's slash never dies).
-- voice_play_entry 0x8007f818, bload_request 0x800475c0, screen_fade_create 0x8003c3b0.
+- voice_play_entry 0x8007f818 (boss intro voices: the original draws its RNG for them and
+  holds the fight about 57 vsyncs in enc 538), bload_request 0x800475c0.
 
-## For the world agent (owns spells and items now)
+## For the world agent (owns spells and items)
 
-- The spell stand-ins sit in one block of enemy_support.{h,cpp} ("Spell stand-ins"); delete
-  each as its real function lands, keeping the signatures the modules call: spell_cast,
-  spell_data_request/status/cancel_owner, unit_begin_cast, spellcast_create,
-  battle_flash_set, spellcast_wait, spellcast_dim_end, `spell_landed_flag()` (g_spell_landed
-  0x8006fb2f), `spell_effect_started_flag()` (0x8006f6d1), `spellcast_slot0()`
-  (g_spellcasts[0] 0x8006fe08: kind +0x08, step +0x40).
-- Block-resident SpellCast handlers: kind 0x36 `bark_cast_step` (enemy_mod_bark.cpp) and kind
-  0x3b `spellcast_kind3b_transform` (enemy_mod_indalecio.cpp), each on a local view of the
-  SpellCast fields it uses; Indalecio's g_spell_data_entry writes are a local stand-in
-  (`spell_data_entry_set`).
-- enemy_try_cast / enemy_state_chant / enemy_state_cast (the family casters: goat, magius,
-  wizard, beastmaster).
-
-## State at the weekly-limit cutoff (2026-10-22, about 11:10)
-
-- Commit point 2 is committed (a56ba4b): all 43 modules, the README / notes rows, the catalog.
-- At the cutoff the Redux references for gelatin (563), controller (240), azamgil (206),
-  ericodus (284), gargoyle (523), snowman (543) and the boss encounters were running or done:
-  output folders `scratchpad/enemy/ref/m<enc>_3` up to 09:59 (m153 m197 m430 m521 m524 m528 m531
-  m536-m539 ...). They have not been compared with the port yet (`cmp.py`).
-- Since then the world agent wired the spells into this worker's files (committed unverified
-  in e37c3a5): enemy_support's spell stand-in block is gone (the real spells.h / spellcast.h
-  replace it), and enemy_mod_bark / indalecio / cyril / decus / dias / vesper / zand call the
-  real SpellCast API. Re-check those modules' references once the spells are verified.
-- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
-
-Resume: compare the finished references (cmp.py, each at its own CMP_D), rerun any that did
-not finish, then send commit point 3 (results only, unless a fix is needed).
+- The spell stand-ins are gone (spells.h / spellcast.h / spell_fx.h); Bark's kind 0x36 and
+  Indalecio's kind 0x3b handlers are dispatched by spellcast.cpp.
+- Spell code modules the monsters' references reach: 12 (Zand), 16 (Nightmare), 22
+  (G-Celesta, Indalecio), 28 (Lover), 51 (Weirddevil), 55 / 56 (Vesper / Decus), 57
+  (Cyril). The references above (`scratchpad/enemy/ref/m<enc>_3`) can check them: the port
+  matches each fight up to the cast's release.
 
 ## Findings
 

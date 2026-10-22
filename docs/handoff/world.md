@@ -84,13 +84,27 @@ it compared with PCSX-Redux yet:
 - Step 1b, partly: `battle/spellcast.{h,cpp}` (the SpellCast object and its API; a kind with no
   handler logs "not ported yet" and ends the cast), `battle/spell_modules.{h,cpp}` (registry by
   block hash) with one module, `battle/spell_mod_feehn.cpp` (spell 0xa).
-- Callers wired: enemy_ai.cpp (enemy_state_chant, spell_data_cancel_owner, unit_begin_cast);
-  the enemy agent's spell stand-ins removed from enemy_support.{h,cpp}; enemy_mod_bark /
-  indalecio / cyril / decus / dias / vesper / zand call the real SpellCast API.
-- Step 2, started: `battle/command_menu.{h,cpp}` (1172 lines): the command ring
-  (input_ring_menu_open / update 0x8004cf5c / 0x8004d178), the member select (0x8004b1ac /
-  0x8004b65c), escape (0x8004d914) and the #1984.0 list menus (spell, item, tactics) with the
-  description balloon. item_use_battle 0x80082dec still logs "not ported".
+- Callers wired (flagged edits in other agents' files): `unit.h` (Unit [3] can_cast is
+  unit_can_cast; PartyUnit [3] can_cast, [11] release_spell, [40] state_cast, [41]
+  state_spell_release, all in spell_units.cpp), `party_states.cpp` (states 0xe / 0xf and
+  command 4 -> unit_begin_cast), `enemy_ai.cpp` (enemy_state_chant, spell_data_cancel_owner
+  in state 0, unit_begin_cast; enemy_try_cast / state_cast / release_spell moved to
+  spell_units.cpp), `combat.cpp` (unit_release_spell_data cancels the spell data),
+  `shot.cpp` / `shot.h` (the spell kinds through spell_shot_update in Shot::update's default;
+  shot_hit_magic 0x800547d4 next to shot_apply_damage), `sprite.cpp` (effect_skill_popup ->
+  skill_notice_show), `battle_program.cpp` (spell_data_update in the main loop,
+  spell_data_clear_all at victory / the common end, spells_reset + spell_windows_reset at
+  init and battle_free_all). The enemy agent's spell stand-ins and screen_fade_create are gone
+  from enemy_support.{h,cpp} (it includes spells.h / spellcast.h / spell_fx.h);
+  enemy_mod_bark's kind-0x36 handler and enemy_mod_indalecio's kind-0x3b handler run on the
+  real SpellCast (spellcast_update dispatches them); cyril / decus / vesper read
+  spellcast_slot0() (dias / zand: the coordinator's follow-ups).
+- Step 2, started: `battle/command_menu.{h,cpp}`: the command ring (input_ring_menu_open /
+  update 0x8004cf5c / 0x8004d178), the member select (0x8004b1ac / 0x8004b65c), escape
+  (0x8004d914) and the #1984.0 list menus (spell, item, tactics) with the description balloon.
+  NOT yet in CMakeLists.txt nor called from input.cpp (written, never compiled);
+  item_use_battle 0x80082dec is a logging stand-in there.
+- No catalog rows for phase 5 yet (the +118 rows in e37c3a5's functions.csv are other agents').
 - HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
 
 ## Next steps

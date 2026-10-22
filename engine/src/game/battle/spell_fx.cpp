@@ -96,6 +96,23 @@ Task* screen_fade_create(u32 rgb, int tpage, int step, int hold) {
   return f;
 }
 
+Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
+                          s32 width, s32 step, s16 flag) {
+  Shot* s = shot_spawn(0x31);
+  if (s == nullptr) return nullptr;
+  s->pos[0] = pos[0], s->pos[1] = pos[1], s->pos[2] = pos[2];
+  s->p128 = rings;
+  s->p12c = segments;
+  s->p130 = grow;
+  s->p134 = life;
+  s->p138 = width;
+  s->vel[0] = step;
+  s->point[0] = static_cast<s32>(rgb_a);
+  s->point[1] = static_cast<s32>(rgb_b);
+  s->power = flag;
+  return s;
+}
+
 void spell_fx_reset() {
   while (!g_fades.empty()) delete g_fades.back();
 }

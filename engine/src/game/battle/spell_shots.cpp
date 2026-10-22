@@ -7,6 +7,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
+#include "game/battle/fx_draw.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
 #include "game/battle/spell_fx.h"
@@ -991,6 +992,42 @@ void shot_k1d_wind_blade(Shot* s) {
   shot_kill(s);
 }
 
+// Kind 0x31 (0x8005d110): a vortex mesh (draw_vortex) round the x axis turned upright,
+// rings +0x128 x segments +0x12c, width +0x138 growing by +0x130, step vel x, colours
+// +0x118 / +0x11c; the stage greys while it lives, back over the last 32 ticks.
+void shot_k31_vortex(Shot* s) {
+  BattleGlobals& g = bg();
+  stage_colour_set_grey(s->p134 < 0x20 ? s->p134 << 3 : 0x100);
+  VortexParams p;
+  p.radius = 0x4000;
+  p.base = 0;
+  p.width = s->p138;
+  p.step = s->vel[0];
+  p.rings = s->p128;
+  p.segments = s->p12c;
+  p.colour_a = static_cast<u32>(s->point[0]);
+  p.colour_b = static_cast<u32>(s->point[1]);
+  p.phase_span = 2;
+  p.phase = (s->point[2] & 0x3F) * -0x80 + 0x1FFF;
+  p.twist_freq = 1;
+  p.twist_amp = 0x1000;
+  p.blend = 2;
+  p.ot_bias = 8;
+  const s32 up[3] = {0, static_cast<s32>(0xFFF9C000), 0};
+  s32 angles[3];
+  vec_to_angles(angles, up);
+  static const s32 kUnitScale[3] = {0x1000, 0x1000, 0x1000};  // g_unit_scale 0x8006e34c
+  obj_set_matrix(s->pos, angles, kUnitScale);
+  draw_vortex(p);
+  stage_colour_restore();
+  if (s->power != 0 && (g.flags & 0x40) != 0) return;
+  if ((g.flags & 0xBF) != 0) return;
+  s->p138 += s->p130;
+  s->p134 -= g.frame_ticks;
+  s->point[2] += g.frame_ticks;
+  if (s->p134 < 1) shot_kill(s);
+}
+
 }  // namespace
 
 bool spell_shot_update(Shot* s) {
@@ -1012,6 +1049,7 @@ bool spell_shot_update(Shot* s) {
     case 0x13: shot_k13_meteor(s); return true;
     case 0x15: shot_k15_heal_orb(s); return true;
     case 0x1D: shot_k1d_wind_blade(s); return true;
+    case 0x31: shot_k31_vortex(s); return true;
     default: return false;
   }
 }
