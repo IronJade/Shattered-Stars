@@ -153,4 +153,33 @@ void bsfx_pan_update(int i) {
   c.distance[i] = d;
 }
 
+bool sound_handle_active(u32 handle) {
+  BattleGlobals& g = bg();
+  if (g.sound == nullptr) return false;
+  // Voice handles: the voice player's entry and slot (0x8006fb6c..0x8006fb75) are not
+  // ported, so none exists.
+  if ((handle & 0xFE000000u) == 0x40000000u) return false;
+  const int slot = static_cast<int>(handle >> 16) & 0xFF;
+  // (The console reads past the 8 effect slots for a bad handle such as 0xffffffff.)
+  if (slot < 1 || 8 < slot) return false;
+  const u32 id = sound_effect_playing(g.sound, slot);
+  return (id & 0xFF00FFFFu) == (handle & 0xFF00FFFFu);
+}
+
+void sound_handle_duck(u32 handle, s32 ticks) {
+  if (sound_handle_active(handle)) sound_clip_duck(bg().sound, static_cast<int>(handle >> 16) & 0xFF, ticks);
+}
+
+void sound_handle_fade_out(u32 handle, s16 frames, s16 delay) {
+  if (sound_handle_active(handle)) sound_clip_fade_out(bg().sound, static_cast<int>(handle >> 16) & 0xFF, frames, delay);
+}
+
+void sound_handle_pitch_up(u32 handle, s16 frames) {
+  if (sound_handle_active(handle)) sound_clip_pitch_rise(bg().sound, static_cast<int>(handle >> 16) & 0xFF, frames);
+}
+
+void sound_handle_pitch_down(u32 handle, s16 frames) {
+  if (sound_handle_active(handle)) sound_clip_pitch_drop(bg().sound, static_cast<int>(handle >> 16) & 0xFF, frames);
+}
+
 }  // namespace ss::game::battle

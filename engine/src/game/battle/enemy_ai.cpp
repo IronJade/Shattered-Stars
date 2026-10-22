@@ -8,6 +8,7 @@
 
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/enemy_support.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -58,6 +59,7 @@ void Unit::update_status_effects() { unit_update_status_effects(this); }
 
 void enemy_think(EnemyUnit* e) {
   BattleGlobals& g = bg();
+  enemy_debug_trace(e);  // SS_ENEMY_TRACE (enemy_support.h)
   if (g.effects_suppressed != 0) return;
   if (e->intro_voice != 0 && g.state != kStateLoading) {
     g.intro_voice_gate = 8;

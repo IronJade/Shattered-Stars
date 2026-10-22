@@ -281,8 +281,8 @@ void cb_storm(Shot* s) {
       if (s->p134 == 0) {
         s->p134 = static_cast<s32>(bsfx_play_at(0x2D, s));
       } else {
-        // sound_handle_fade_out / sound_handle_duck (#1984.0 0x8007fdec / 0x8007fd98):
-        // the clip handles are not tracked by the port's bsfx.
+        sound_handle_fade_out(static_cast<u32>(s->p134), 0x1E, 8);
+        if (g.flags != 0) sound_handle_duck(static_cast<u32>(s->p134), 8);  // (never: flags are 0 here)
       }
       const s32 left = static_cast<u16>(s->aux) - g.frame_ticks;
       s->aux = static_cast<s16>(left);

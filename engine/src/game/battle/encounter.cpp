@@ -4,13 +4,14 @@
 // Format: docs/notes/battle.md §6.4 and analysis/battle_catalog/parts/p6.md §4.
 //
 // The pack's enemy code blocks (code list, kinds 0-3 -> enemy-code slots A-D) are not
-// loaded: monster classes are native (unit.h). The family a type belongs to is kept in
-// EnemyUnit::family for the per-family behaviour.
+// run: monster classes are native (enemy_classes.h); the blocks only identify the module.
+// The family a type belongs to is kept in EnemyUnit::family.
 #include <cstring>
 #include <memory>
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/battle/enemy_classes.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
@@ -78,21 +79,10 @@ void enemy_create_by_type(int index, int type) {
   const EnemyFamily family = family_of(type);
   EnemyUnit* e = nullptr;
   if (family != EnemyFamily::None) {
-    g_enemies.push_back(std::make_unique<EnemyUnit>());
+    // The family or module class (enemy_classes.h); the base class for modules not ported.
+    g_enemies.push_back(enemy_class_create(type));
     e = g_enemies.back().get();
     e->family = family;
-    // Family constructors (enemy_<family>_create) only change the hit sounds.
-    switch (family) {
-      case EnemyFamily::Beastmaster: e->sfx_hit = 0x4D, e->sfx_crit = 0x4E; break;
-      case EnemyFamily::Wolf: e->sfx_hit = 0x4C, e->sfx_crit = 0x4E; break;
-      case EnemyFamily::Archer: e->sfx_hit = 0x4B; break;
-      default: break;
-    }
-    if (family == EnemyFamily::Module) {
-      runtime::Runtime::get().log_once("battle-enemy-module-" + std::to_string(type),
-                                       "battle: monster type " + std::to_string(type) +
-                                           " uses encounter-pack code (not ported; base behaviour)");
-    }
   }
   g.enemy_units[index] = e;
   // The common tail runs even for unknown types on the console (through a null unit).
@@ -276,8 +266,14 @@ void load_formation(std::span<const u8> pack) {
     psyq::DrawSync(0);
   }
   p += 4;
-  // (3) Code blocks: {kind, offset} until -1. Native classes replace the code.
-  while (p + 4 <= pack.size() && rds32(base + p) != -1) p += 8;
+  // (3) Code blocks: {kind, offset} until -1. Native classes replace the code; the slots
+  // remember which module each block is.
+  enemy_modules_reset();
+  while (p + 4 <= pack.size() && rds32(base + p) != -1) {
+    const u32 off = rd32(base + p + 4);
+    if (off < pack.size()) enemy_modules_load(rds32(base + p), pack.subspan(off));
+    p += 8;
+  }
   // (4) Placements: 12-byte records until type 0.
   int index = 0;
   const s32 span_x = st.bounds[2] - st.bounds[0];

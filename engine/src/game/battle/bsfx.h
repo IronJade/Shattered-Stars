@@ -19,4 +19,13 @@ void bsfx_update();                               // 0x8007ff08 (battle_main_loo
 void bsfx_pan_update(int ch);                     // 0x8007ffa8
 void bsfx_reset();                                // bsfx_emitters_init 0x8008016c + the channel table
 
+// Calls on a sound by the handle bsfx_play returned (slot << 16 | sfx), made only while
+// that sound still plays in its slot (sound_handle_active). Voice handles (0x40 / 0x41 <<
+// 24, from the voice player) are never active in the port: voices are not ported.
+bool sound_handle_active(u32 handle);                       // 0x8007fc54
+void sound_handle_duck(u32 handle, s32 ticks);              // 0x8007fd98: sound_clip_duck
+void sound_handle_fade_out(u32 handle, s16 frames, s16 delay);  // 0x8007fdec: sound_clip_fade_out
+void sound_handle_pitch_up(u32 handle, s16 frames);         // 0x8007fe58: sound_clip_pitch_rise
+void sound_handle_pitch_down(u32 handle, s16 frames);       // 0x8007feb0: sound_clip_pitch_drop
+
 }  // namespace ss::game::battle

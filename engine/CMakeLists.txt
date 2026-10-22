@@ -181,7 +181,11 @@ target_sources(ss_game PRIVATE
   src/game/battle/killer.cpp
   src/game/battle/particle.cpp
   src/game/battle/pc_modules.cpp
-  src/game/battle/pc_claude.cpp)
+  src/game/battle/pc_claude.cpp
+  src/game/battle/enemy_support.cpp
+  src/game/battle/enemy_families.cpp
+  src/game/battle/enemy_modules.cpp
+  src/game/battle/enemy_mod_guardian.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})

@@ -1,0 +1,221 @@
+// The monster factory's class choice (0x80075ad8) and the enemy-code slots.
+//
+// The console unpacks each block of the encounter pack's code list into its slot (kind 0
+// A 0x80088110, 1 B 0x80089f18, 2 C 0x8008b1f0, 3 D 0x80088900); slots the pack leaves
+// alone keep the #2129 image's default modules. The factory then calls a module's
+// constructor (offset 0 of the slot) or stores a vtable at a fixed address inside the
+// module. Here every module is a native class: the slot remembers which module the pack
+// put there (by the block's bytes), and the factory builds that module's class when the
+// type's entry is the one the module provides.
+
+#include <array>
+#include <string>
+#include <vector>
+
+#include "disc/slz.h"
+#include "game/battle/battle.h"
+#include "game/battle/enemy_classes.h"
+#include "game/battle/enemy_modules.h"
+#include "runtime/runtime.h"
+
+namespace ss::game::battle {
+
+std::unique_ptr<EnemyUnit> enemy_family_create(int type);  // enemy_families.cpp
+
+namespace {
+
+using CreateFn = std::unique_ptr<EnemyUnit> (*)();
+
+// A module: its bytes (FNV-1a 64 of the unpacked block and its size; 0 for the image's
+// defaults), the slot it is linked for, the factory entry it serves (the constructor at
+// the slot base or a vtable address) and the native class.
+struct ModuleInfo {
+  const char* name;
+  u64 hash;
+  u32 size;
+  int slot;
+  u32 entry;
+  CreateFn create;
+};
+
+constexpr u32 kCtorA = 0x80088110, kCtorB = 0x80089F18, kCtorC = 0x8008B1F0, kCtorD = 0x80088900;
+
+// The image's defaults (index = slot), then the 40 pack blocks of the two discs.
+const ModuleInfo kModules[] = {
+    {"guardian (#2129 slot A)", 0, 0, kSlotA, kCtorA, enemy_mod_guardian_create},
+    {"nicolus (#2129 slot B)", 0, 0, kSlotB, kCtorB, nullptr},
+    {"jibril (#2129 slot C)", 0, 0, kSlotC, kCtorC, nullptr},
+    {"cyril", 0x5e9f0228d768a083, 0x14E4, kSlotA, kCtorA, nullptr},
+    {"carlaeagle", 0x3085673ee9f0df6e, 0x95A, kSlotA, kCtorA, nullptr},
+    {"gelatin", 0x987b55f3986dcda2, 0x8EC, kSlotA, kCtorA, nullptr},
+    {"arcmene", 0xd1da51dfd3165ca1, 0x6AC, kSlotA, 0x80088694, nullptr},
+    {"hounddog", 0x56bf579329a44fda, 0x7BC, kSlotA, 0x800887A4, nullptr},
+    {"salamander", 0xd3c7c17c8ca0531e, 0x530, kSlotA, 0x80088518, nullptr},
+    {"kitty", 0x27114bae8a0c4b1b, 0x494, kSlotA, kCtorA, nullptr},
+    {"ricki", 0xfa21a69db8cb84bf, 0x4EC, kSlotA, kCtorA, nullptr},
+    {"ogre", 0x769815051fb892a4, 0x1F4, kSlotA, 0x800881DC, nullptr},
+    {"ericodus", 0x848ca7dc10a8ac27, 0xC64, kSlotA, kCtorA, nullptr},
+    {"xine", 0x76948307e927c084, 0xB7C, kSlotA, kCtorA, nullptr},
+    {"succubus", 0xf5bd4c5d85c71b51, 0x7A8, kSlotA, kCtorA, nullptr},
+    {"dias", 0xf457f7ac3a74ec40, 0xC94, kSlotA, kCtorA, nullptr},
+    {"ghost", 0x50bf5ad63036e944, 0x6AC, kSlotA, kCtorA, nullptr},
+    {"zand", 0x7d247f198e139582, 0x8D8, kSlotA, kCtorA, nullptr},
+    {"gargoyle", 0x7a3f3496c0727922, 0x7E0, kSlotA, 0x800887C8, nullptr},
+    {"bark", 0x4d001fd788cd7a13, 0x1588, kSlotA, kCtorA, nullptr},
+    {"synard", 0xf1de66d9da2c48d1, 0xA50, kSlotA, kCtorA, nullptr},
+    {"celesta", 0x5c0b167bedea25cb, 0xE30, kSlotA, kCtorA, nullptr},
+    {"berle", 0x09007c82e2184f1d, 0x6FC, kSlotA, kCtorA, nullptr},
+    {"magichand", 0xda6c5e17a13689c5, 0xE98, kSlotA, 0x80088E78, nullptr},
+    {"lover", 0x71e6ae24d6bc3e4f, 0x674, kSlotA, 0x8008865C, nullptr},
+    {"marsilio", 0xec3ce74cefe14b16, 0xC88, kSlotA, kCtorA, nullptr},
+    {"shigeo", 0xee8bf82079eb0a2c, 0x11B4, kSlotA, kCtorA, nullptr},
+    {"ruprecht", 0xde78c17af123a10d, 0x10D0, kSlotA, kCtorA, nullptr},
+    {"vesper", 0x5582e1faa52b18ed, 0x12CC, kSlotA, kCtorA, nullptr},
+    {"snowman", 0x783a6c2ae02aea3c, 0x430, kSlotA, 0x80088418, nullptr},
+    {"bunny", 0x4e85d23e625f6c89, 0x718, kSlotB, 0x8008A508, nullptr},
+    {"stingray", 0xed5d889c5d4aca7f, 0x958, kSlotB, kCtorB, nullptr},
+    {"gerel", 0xc1d01490e0172da9, 0x748, kSlotB, 0x8008A538, nullptr},
+    {"controller", 0x48f6bbef608e8cb3, 0x3E4, kSlotB, 0x8008A1D4, nullptr},
+    {"niquia", 0xad60263d2f49cbb6, 0x670, kSlotB, kCtorB, nullptr},
+    {"azamgil", 0xe1ec81d431b62619, 0x2D8, kSlotB, 0x8008A0C8, nullptr},
+    {"visseyer", 0x4bd8121ca8a09a13, 0x884, kSlotB, kCtorB, nullptr},
+    {"guardbox", 0x2b82ba5af3224e01, 0x418, kSlotB, 0x8008A208, nullptr},
+    {"decus", 0x5392aebc6640b16b, 0x9C0, kSlotB, kCtorB, nullptr},
+    {"slime", 0x1e81cff0e1778bc3, 0x800, kSlotC, kCtorC, nullptr},
+    {"miel", 0x317eddc8175a087a, 0x754, kSlotC, kCtorC, nullptr},
+    {"shin", 0xe9bed7a34084fb5a, 0xE3C, kSlotC, kCtorC, nullptr},
+    {"indalecio", 0x9ca74aa5e7c894f8, 0x3304, kSlotD, kCtorD, nullptr},
+};
+
+// What each slot holds this battle: a kModules index (-1: a block no table entry knows)
+// and the block's bytes (empty for the image's defaults).
+struct SlotState {
+  int module = 0;
+  std::vector<u8> bytes;
+};
+std::array<SlotState, 4> g_slots;
+
+u64 fnv1a64(const std::vector<u8>& b) {
+  u64 h = 0xcbf29ce484222325ull;
+  for (u8 x : b) {
+    h ^= x;
+    h *= 0x100000001b3ull;
+  }
+  return h;
+}
+
+// The factory's switch (0x80075ad8) for the module types: the slot and the entry (the
+// constructor at the slot base, or the vtable it stores).
+struct FactoryEntry {
+  int slot;
+  u32 entry;
+};
+bool factory_entry(int type, FactoryEntry* out) {
+  auto set = [&](int slot, u32 entry) {
+    *out = {slot, entry};
+    return true;
+  };
+  switch (type) {
+    case 0xA: case 0xB: case 0xC: case 0x80: return set(kSlotB, 0x8008A508);
+    case 0x10: case 0x11: case 0x12: case 0x81: case 0x82: case 0x83: return set(kSlotB, 0x8008A538);
+    case 0x1F: case 0x20: case 0x21: case 0x8A: case 0x8B: return set(kSlotC, kCtorC);
+    case 0x22: case 0x8C: case 0x8D: case 0x8E: return set(kSlotA, kCtorA);
+    case 0x23: case 0x24: case 0x25: case 0x8F: return set(kSlotA, 0x80088694);
+    case 0x26: case 0x27: case 0x28: case 0x90: case 0x91: return set(kSlotA, kCtorA);
+    case 0x2C: case 0x2D: case 0x2E: return set(kSlotB, 0x8008A1D4);
+    case 0x2F: case 0x30: case 0x31: case 0x93: return set(kSlotA, 0x800887A4);
+    case 0x35: case 0x36: case 0x37: return set(kSlotB, kCtorB);
+    case 0x38: case 0x39: case 0x3A: case 0x94: return set(kSlotA, kCtorA);
+    case 0x3B: case 0x3C: case 0x3D: case 0x97: case 0x98: return set(kSlotB, kCtorB);
+    case 0x47: case 0x48: case 0x49: case 0x95: case 0x96: return set(kSlotC, kCtorC);
+    case 0x51: case 0x52: case 0x53: case 0x9E: case 0x9F: case 0xA0: return set(kSlotB, kCtorB);
+    case 0x54: case 0x55: case 0x56: return set(kSlotA, 0x80088E78);
+    case 0x57: case 0x58: case 0x59: return set(kSlotB, 0x8008A208);
+    case 0x5A: case 0x5B: case 0x5C: case 0x5D: case 0x5E: case 0x5F: return set(kSlotA, kCtorA);
+    case 0x63: case 0x64: case 0x65: return set(kSlotA, kCtorA);
+    case 0x66: case 0x67: case 0x68: return set(kSlotA, 0x80088418);
+    case 0x69: case 0x6A: case 0x6B: return set(kSlotB, 0x8008A0C8);
+    case 0x6C: case 0x6D: return set(kSlotA, 0x8008865C);
+    case 0x71: case 0x72: case 0x73: case 0x74: case 0xA3: case 0xA4: case 0xA5: return set(kSlotA, 0x80088518);
+    case 0x75: case 0x76: case 0xA6: return set(kSlotA, 0x800887C8);
+    case 0x77: case 0x78: case 0xA7: case 0xA8: case 0xA9: return set(kSlotA, 0x800881DC);
+    case 0xAA: case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xAF: case 0xB0: case 0xB1: case 0xB2:
+    case 0xB8: case 0xBC: case 0xBD: case 0xBE: case 0xBF: case 0xC0: case 0xC1: case 0xC2: case 0xC3:
+    case 0xC4: case 0xC5: case 0xC6: case 0xC7: case 0xC8: case 0xCB: case 0xCD: return set(kSlotA, kCtorA);
+    case 0xB9: case 0xBA: case 0xBB: case 0xCA: return set(kSlotC, kCtorC);
+    case 0xC9: case 0xCC: return set(kSlotB, kCtorB);
+    case 0xCE: case 0xCF: return set(kSlotD, kCtorD);
+    default: return false;
+  }
+}
+
+void log_once(const std::string& key, const std::string& text) { runtime::Runtime::get().log_once(key, text); }
+
+}  // namespace
+
+void enemy_modules_reset() {
+  for (int i = 0; i < 4; ++i) {
+    g_slots[i].module = i < 3 ? i : -1;  // slot D has no default (Indalecio's encounters load it)
+    g_slots[i].bytes.clear();
+  }
+}
+
+void enemy_modules_load(int kind, std::span<const u8> packed) {
+  if (kind < 0 || kind > 3) return;
+  SlotState& s = g_slots[kind];
+  auto un = disc::slz::unpack_block(packed, 0, 0, nullptr);
+  s.bytes = un ? std::move(*un) : std::vector<u8>{};
+  const u64 h = fnv1a64(s.bytes);
+  s.module = -1;
+  for (size_t i = 0; i < std::size(kModules); ++i)
+    if (kModules[i].hash == h && kModules[i].size == s.bytes.size() && kModules[i].slot == kind)
+      s.module = static_cast<int>(i);
+  if (s.module < 0)
+    log_once("battle-enemy-module-unknown-" + std::to_string(h),
+             "battle: unknown enemy code block for slot " + std::to_string(kind) + " (monsters there use the base class)");
+}
+
+u8 enemy_module_u8(int slot, u32 address) {
+  if (slot < 0 || slot > 3) return 0;
+  const SlotState& s = g_slots[slot];
+  if (s.module >= 0 && kModules[s.module].hash == 0) {
+    const u8* p = battle_data(address);
+    return p != nullptr ? *p : 0;
+  }
+  const u32 off = address - kSlotBase[slot];
+  return off < s.bytes.size() ? s.bytes[off] : 0;
+}
+
+s16 enemy_module_s16(int slot, u32 address) {
+  return static_cast<s16>(enemy_module_u8(slot, address) | enemy_module_u8(slot, address + 1) << 8);
+}
+
+s32 enemy_module_s32(int slot, u32 address) {
+  return static_cast<s32>(static_cast<u32>(enemy_module_u8(slot, address)) |
+                          static_cast<u32>(enemy_module_u8(slot, address + 1)) << 8 |
+                          static_cast<u32>(enemy_module_u8(slot, address + 2)) << 16 |
+                          static_cast<u32>(enemy_module_u8(slot, address + 3)) << 24);
+}
+
+std::unique_ptr<EnemyUnit> enemy_class_create(int type) {
+  if (auto e = enemy_family_create(type)) return e;
+  FactoryEntry fe{};
+  if (!factory_entry(type, &fe)) {
+    // The base types (worms 4-6, saucers 0x3e-0x40) and the types the switch lacks.
+    switch (type) {
+      case 4: case 5: case 6: case 0x3E: case 0x3F: case 0x40: return std::make_unique<EnemyUnit>();
+      default: return nullptr;
+    }
+  }
+  const SlotState& s = g_slots[fe.slot];
+  const ModuleInfo* m = s.module >= 0 ? &kModules[s.module] : nullptr;
+  if (m != nullptr && m->entry == fe.entry && m->create != nullptr) return m->create();
+  const std::string why = m == nullptr ? "an unknown module"
+                          : m->entry != fe.entry ? std::string("module ") + m->name + ", which lacks its class"
+                                                 : std::string("module ") + m->name + " (not ported yet)";
+  log_once("battle-enemy-module-" + std::to_string(type),
+           "battle: monster type " + std::to_string(type) + " uses " + why + "; base behaviour");
+  return std::make_unique<EnemyUnit>();
+}
+
+}  // namespace ss::game::battle
