@@ -876,9 +876,10 @@ void field_main_loop(Field* f) {
     static bool done = false;
     for (const char* p = poke; !done && p != nullptr && *p != 0;) {
       char area[4] = {};
-      unsigned off = 0, size = 0;
+      int off = 0;
+      unsigned size = 0;
       int used = 0;
-      if (std::sscanf(p, "%2[a-z]:%i:%u:%n", area, &off, &size, &used) < 3) break;
+      if (std::sscanf(p, "%2[a-z]:%i:%u:%n", area, &off, &size, &used) < 3 || off < 0) break;
       p += used;
       const bool orr = *p == '|';
       if (orr) ++p;
