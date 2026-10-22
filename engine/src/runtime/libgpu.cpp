@@ -159,8 +159,12 @@ void DrawOTag(P_TAG* ot) {
 
 int DrawSync(int) { return 0; }  // drawing completes synchronously
 
+const void* dma_source(const void* pixels) {
+  return reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(pixels) & ~uintptr_t{3});
+}
+
 int LoadImage(const RECT* r, const void* pixels) {
-  gpu().load_image(psx::Rect{r->x, r->y, r->w, r->h}, static_cast<const u16*>(pixels));
+  gpu().load_image(psx::Rect{r->x, r->y, r->w, r->h}, static_cast<const u16*>(dma_source(pixels)));
   return 0;
 }
 

@@ -110,3 +110,37 @@ TEST(gpu_cpu_to_vram_packet) {
   CHECK(gpu.pixel(10, 20) == 0x001F);
   CHECK(gpu.pixel(11, 20) == 0x7C00);
 }
+
+// Probes from the hardware VRAM dumps of JaCzekanski's ps1-tests (gpu/triangle and
+// gpu/uv-interpolation): attributes come from per-triangle planes with 12-bit gradients
+// and a half-unit round, not from an exact interpolation.
+TEST(gpu_gouraud_and_uv_match_hardware_dumps) {
+  psx::Gpu gpu;
+  // gpu/triangle: a gouraud triangle (red, green, blue) on white, no dithering.
+  const u32 white[] = {0x02FFFFFF, xy(0, 0), xy(320, 240)};
+  gpu.gp0(white);
+  const u32 tri[] = {0x300000FF, xy(40, 223), 0x0000FF00, xy(280, 223), 0x00FF0000, xy(160, 16)};
+  gpu.gp0(tri);
+  struct Probe {
+    int x, y;
+    u16 colour;
+  };
+  constexpr Probe kTriangle[] = {{157, 23, 0x7801}, {166, 44, 0x6C61}, {139, 65, 0x6026}, {166, 65, 0x6083},
+                                 {184, 65, 0x60E0}, {148, 86, 0x5467}, {157, 86, 0x54A5}, {130, 93, 0x5049}};
+  for (const Probe& p : kTriangle) CHECK_EQ(gpu.pixel(p.x, p.y), p.colour);
+  // gpu/uv-interpolation: row i is a quad i pixels wide with u running 0 -> 1 over a
+  // red texel 0 and a green texel 1 (15-bit page at x 512).
+  const u32 red_texel[] = {0xA0000000, xy(512, 0), xy(1, 1), 0x001F};
+  const u32 green_texel[] = {0xA0000000, xy(513, 0), xy(1, 1), 0x03E0};
+  gpu.gp0(red_texel);
+  gpu.gp0(green_texel);
+  for (int i = 0; i < 32; ++i) {
+    const u32 tpage = 2 << 7 | 512 >> 6;
+    const u32 quad[] = {0x2C808080, xy(0, 256 + i), 0x0000, xy(i, 256 + i), tpage << 16 | 1,
+                        xy(0, 257 + i), 0x0000, xy(i, 257 + i), 1};
+    gpu.gp0(quad);
+  }
+  // Hardware: the texel switches to green halfway along the row (3 of 5 pixels, ...).
+  constexpr Probe kUv[] = {{3, 5, 0x03E0}, {6, 10, 0x03E0}, {9, 15, 0x03E0}, {12, 20, 0x03E0}, {2, 5, 0x001F}};
+  for (const Probe& p : kUv) CHECK_EQ(gpu.pixel(p.x, 256 + p.y), p.colour);
+}

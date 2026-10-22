@@ -275,8 +275,18 @@ void Gpu::draw_polygon(std::span<const u32> p) {
   if (!s.gouraud)
     for (int n = 1; n < count; ++n) v[n].r = v[0].r, v[n].g = v[0].g, v[n].b = v[0].b;
 
+  if (count == 3) {
+    draw_triangle(v[0], v[1], v[2], s);
+    return;
+  }
+  // A quad is the triangles 0-1-2 and 2-1-3 (the vertex order matters: the plane
+  // origin is the leftmost vertex, the later one on ties). It is dropped whole when any
+  // of their five edges is too long; 0-3 is an edge of neither, so it may be (PCSX-Redux's
+  // notes: checked on SCPH-1000, -5501 and -7001).
+  auto too_long = [&](int p0, int p1) { return std::abs(v[p0].x - v[p1].x) >= 1024 || std::abs(v[p0].y - v[p1].y) >= 512; };
+  if (too_long(0, 1) || too_long(1, 3) || too_long(3, 2) || too_long(2, 0) || too_long(1, 2)) return;
   draw_triangle(v[0], v[1], v[2], s);
-  if (count == 4) draw_triangle(v[1], v[2], v[3], s);
+  draw_triangle(v[2], v[1], v[3], s);
 }
 
 void Gpu::draw_triangle(Vertex a, Vertex b, Vertex c, const Shading& s) {
@@ -285,15 +295,50 @@ void Gpu::draw_triangle(Vertex a, Vertex b, Vertex c, const Shading& s) {
   const int min_y = std::min({a.y, b.y, c.y}), max_y = std::max({a.y, b.y, c.y});
   if (max_x - min_x >= 1024 || max_y - min_y >= 512) return;
 
+  // Attributes (u, v, gouraud colour) come from planes, as the hardware computes them:
+  // per-triangle gradients with 12 fractional bits (truncated), from the leftmost
+  // vertex's value plus half a unit, 8 bits taken (wrapping). The vertex the planes start
+  // from is chosen before sorting, the later vertex winning ties as the hardware does.
+  // This is Mednafen's / DuckStation's model; it reproduces the hardware VRAM dumps of
+  // JaCzekanski's ps1-tests gpu/triangle and gpu/uv-interpolation exactly, where an exact
+  // rational interpolation (this code before) and PCSX-Redux's edge walker do not.
+  const Vertex* left = &a;
+  if (b.x <= a.x) left = c.x <= b.x ? &c : &b;
+  else if (c.x < a.x) left = &c;
+  const Vertex* sorted[3] = {&a, &b, &c};
+  if (sorted[2]->y < sorted[1]->y) std::swap(sorted[1], sorted[2]);
+  if (sorted[1]->y < sorted[0]->y) std::swap(sorted[0], sorted[1]);
+  if (sorted[2]->y < sorted[1]->y) std::swap(sorted[1], sorted[2]);
+  const Vertex& p0 = *sorted[0];
+  const Vertex& p1 = *sorted[1];
+  const Vertex& p2 = *sorted[2];
+  const s64 det = static_cast<s64>(p1.x - p0.x) * (p2.y - p1.y) - static_cast<s64>(p2.x - p1.x) * (p1.y - p0.y);
+  if (det == 0) return;
+  struct Plane {
+    u32 dx = 0, dy = 0, origin = 0;
+    int at(int x, int y) const { return static_cast<int>((origin + dx * static_cast<u32>(x) + dy * static_cast<u32>(y)) >> 24 & 0xFF); }
+  };
+  auto plane = [&](int Vertex::*attr) {
+    const s64 a0 = p0.*attr, a1 = p1.*attr, a2 = p2.*attr;
+    Plane pl;
+    pl.dx = static_cast<u32>(((a1 - a0) * (p2.y - p1.y) - (a2 - a1) * (p1.y - p0.y)) * 4096 / det) << 12;
+    pl.dy = static_cast<u32>(((p1.x - p0.x) * (a2 - a1) - (p2.x - p1.x) * (a1 - a0)) * 4096 / det) << 12;
+    pl.origin = ((static_cast<u32>(left->*attr) << 12) + 2048) << 12;
+    pl.origin -= pl.dx * static_cast<u32>(left->x) + pl.dy * static_cast<u32>(left->y);
+    return pl;
+  };
+  Plane pr, pg, pb, pu, pv;
+  if (s.gouraud) pr = plane(&Vertex::r), pg = plane(&Vertex::g), pb = plane(&Vertex::b);
+  if (s.textured) pu = plane(&Vertex::u), pv = plane(&Vertex::v);
+
   s64 area = static_cast<s64>(b.x - a.x) * (c.y - a.y) - static_cast<s64>(b.y - a.y) * (c.x - a.x);
-  if (area == 0) return;
   if (area < 0) {
     std::swap(b, c);
     area = -area;
   }
 
-  // Edge functions; pixels are sampled at integer coordinates and edges that are
-  // not top or left are exclusive (the console's fill convention).
+  // Coverage: edge functions; pixels are sampled at integer coordinates and edges that
+  // are not top or left are exclusive (the console's fill convention).
   struct Edge {
     s64 a, b, c;
     bool inclusive;
@@ -319,14 +364,11 @@ void Gpu::draw_triangle(Vertex a, Vertex b, Vertex c, const Shading& s) {
       const s64 w2 = e2.a * x + e2.b * y + e2.c;
       if (w0 < 0 || w1 < 0 || w2 < 0) continue;
       if ((w0 == 0 && !e0.inclusive) || (w1 == 0 && !e1.inclusive) || (w2 == 0 && !e2.inclusive)) continue;
-      auto lerp = [&](int qa, int qb, int qc) {
-        return static_cast<int>((w0 * qa + w1 * qb + w2 * qc) / area);
-      };
-      const int r = s.gouraud ? lerp(a.r, b.r, c.r) : a.r;
-      const int g = s.gouraud ? lerp(a.g, b.g, c.g) : a.g;
-      const int bl = s.gouraud ? lerp(a.b, b.b, c.b) : a.b;
-      const int u = s.textured ? lerp(a.u, b.u, c.u) : 0;
-      const int v = s.textured ? lerp(a.v, b.v, c.v) : 0;
+      const int r = s.gouraud ? pr.at(x, y) : a.r;
+      const int g = s.gouraud ? pg.at(x, y) : a.g;
+      const int bl = s.gouraud ? pb.at(x, y) : a.b;
+      const int u = s.textured ? pu.at(x, y) : 0;
+      const int v = s.textured ? pv.at(x, y) : 0;
       shade_pixel(x, y, r, g, bl, u, v, s, dither);
     }
   }

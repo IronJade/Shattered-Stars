@@ -17,6 +17,7 @@ user's discs); the facts that matter are recorded here or in the catalog.
 | `menu.md` | The menu framework the title and field share (scene, session, pages and overlays, widgets, input), the field's menus (opening, state 3, launcher and runners, camp page 1), the save / load page and the save file format |
 | `field_effects.md` | Field visual effects and the SceneRenderer: OT layers and splicing, the camera block matrices, how the effects were checked, quirks kept |
 | `credits.md` | The credits program #3107 (A 0x2d, map 581): image layout, cue list, frames decoded to RAM, the vblank handler that shows them, the name cards and their GTE blend |
+| `gpu_accuracy.md` | The software GPU against PCSX-Redux and hardware VRAM dumps: interpolation model, dither / blend order, DMA alignment |
 | `battle.md` | Battle program #2129: entry and main loop, field↔battle handoff, classes, data formats, subsystems, port order |
 | `battle_port.md` | The battle port itself: file layout, deliberate deviations, how it was checked against PCSX-Redux, what is missing |
 | `battle_image_map.md` | Which parts of the #2129 image above 0x800715d0 are live code and which are stale copies |

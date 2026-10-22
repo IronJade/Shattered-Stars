@@ -202,14 +202,15 @@ void write_pair_png(const char* tag, int n, const std::vector<u16>& port, const 
 }
 
 // Comparison of a region with a capture. Pixels must match exactly, except that
-// inside 'soft' (a semi-transparent gouraud body) a channel may be one step off:
-// the software GPU's gouraud stepping is not yet exact against PCSX-Redux
-// (docs/CHECKLIST.md section 1).
+// inside 'soft' (a semi-transparent, dithered gouraud body) a channel may be one step
+// off: PCSX-Redux blends the 8-bit colour with the background and dithers the result,
+// the hardware (and this GPU) dithers the colour to 5 bits first and blends 5-bit values
+// (docs/notes/gpu_accuracy.md).
 struct Compare {
   int frames = 0, exact_frames = 0, hard_frames = 0, soft_pixels = 0, worst = 0, excluded = 0;
   // 'skip': a rectangle left out (textured quads whose UVs are scaled or rotated:
-  // the software GPU's texture stepping differs there; the primitives themselves were
-  // checked against the original's RAM).
+  // PCSX-Redux's texture stepping differs from the hardware's there; the primitives
+  // themselves were checked against the original's RAM).
   void add(const char* tag, int vsync, const std::vector<u16>& port, const std::vector<u16>& ref, psyq::RECT area,
            psyq::RECT soft, psyq::RECT skip = {0, 0, 0, 0}) {
     int hard = 0, softn = 0;

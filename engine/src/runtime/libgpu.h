@@ -349,6 +349,12 @@ void DrawOTag(P_TAG* ot);
 int DrawSync(int mode);
 
 int LoadImage(const RECT* r, const void* pixels);
+// The address LoadImage's DMA reads from: the GPU DMA reads words from a word address
+// (D2_MADR bits 0-1 are ignored), so a source that is not word-aligned starts at the
+// halfword below it and the image lands one pixel right. Host buffers keep the console's
+// alignment (allocations start word-aligned). The end screen's logo (#3105, an image 10
+// bytes into its buffer) is uploaded so on the console and in PCSX-Redux.
+const void* dma_source(const void* pixels);
 int StoreImage(const RECT* r, void* pixels);
 int MoveImage(const RECT* r, int x, int y);
 int ClearImage(const RECT* r, u8 red, u8 green, u8 blue);

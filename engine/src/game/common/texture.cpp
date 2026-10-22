@@ -3,11 +3,13 @@
 #include <vector>
 
 #include "disc/slz.h"
+#include "runtime/libgpu.h"
 
 namespace ss::game {
 
 u16 upload_clut256(psx::Gpu& gpu, const u16* clut, int x, int y) {
-  gpu.load_image(psx::Rect{static_cast<s16>(x), static_cast<s16>(y), 256, 1}, clut);
+  gpu.load_image(psx::Rect{static_cast<s16>(x), static_cast<s16>(y), 256, 1},
+                 static_cast<const u16*>(psyq::dma_source(clut)));  // LoadImage
   return static_cast<u16>(y << 6 | x >> 4);
 }
 
@@ -15,9 +17,10 @@ u16 upload_texture(psx::Gpu& gpu, const u16* pixels, int depth, int semi, int x,
   int vram_width = width_px;
   if (depth == 0) vram_width >>= 2;
   if (depth == 1) vram_width >>= 1;
+  // LoadImage (a DMA: see psyq::dma_source).
   gpu.load_image(psx::Rect{static_cast<s16>(x), static_cast<s16>(y), static_cast<s16>(vram_width),
                            static_cast<s16>(height)},
-                 pixels);
+                 static_cast<const u16*>(psyq::dma_source(pixels)));
   return static_cast<u16>((depth & 3) << 7 | (semi & 3) << 5 | (y & 0x100) >> 4 | (x & 0x3FF) >> 6 |
                           (y & 0x200) << 2);
 }

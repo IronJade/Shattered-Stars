@@ -44,24 +44,49 @@ are in `docs/notes/field_effects.md`.
   (`MusicDialog::on_confirm` undefined), so `ss_game_tests` without the disc is still to
   rerun.
 
-## Phase 4 step 2: GPU accuracy (next)
+## Phase 4 step 1 was committed as bc1b341.
 
-1. The end screen's logo 1 px left (15-bit textured quads; `the_end`, map 581 with
-   `SS_SCRIPT_GLOBALS="79c=0x3c000"`, Redux spawn 0x801f9a64 / word 0x27bdff18).
-2. Gouraud / UV interpolation (+-1 LSB) and subtractive blending over modulated
-   sprites (<= 2 LSB): which side is right (read Redux's rasteriser source).
-3. The mirror image's foot-shadow pixels (map 139), if from the GPU.
-4. Rerun test_field_message and the other Redux comparisons (ss_game_tests).
+## Phase 4 step 2: GPU accuracy (done, reported)
 
-## Uncommitted files (phase 4)
+Decided against the hardware VRAM dumps of JaCzekanski's ps1-tests (gpu/triangle,
+uv-interpolation, quad, transparency, lines), replayed on `psx::Gpu` with
+`scratchpad/fx_worker/ps1tests/harness.cpp` (`cmp.py` compares). Findings in
+`docs/notes/gpu_accuracy.md` (new).
 
-- New: `engine/src/game/credits/credits_program.{h,cpp}`,
-  `engine/src/game/field/field_section6.cpp`, `docs/notes/credits.md`.
-- Edited: `engine/CMakeLists.txt`, `boot/system.{h,cpp}`, `boot/pad.{h,cpp}`,
-  `boot/loader.{h,cpp}`, `title/movie.{h,cpp}`, `tests/test_movie.cpp`,
-  `field/field_sub_overlays.h`, `field/vm_services.cpp`, `docs/notes/field_effects.md`,
-  `docs/catalog/{functions,globals}.csv`, `docs/catalog/README.md`,
-  `docs/notes/README.md`, this log.
+- a. End-screen logo 1 px left: not rasterisation. Its image sits 10 bytes into its
+  buffer and the GPU DMA ignores the address's low two bits, so on the console (and
+  Redux: its VRAM dump shows the texture one texel right) it lands one pixel right.
+  `psyq::dma_source` (runtime/libgpu) aligns LoadImage's source; `upload_texture` /
+  `upload_clut256` (game/common/texture.cpp) use it. Probed: no other upload in the
+  title, maps 7/18/139/548/1, battles 1/50/200/500 or the tests is misaligned. End
+  screen now identical to Redux (caption, logo, "fin.").
+- b. Interpolation: neither side was right. The hardware matches Mednafen's /
+  DuckStation's planes (12-bit gradients from the leftmost vertex, half-unit round):
+  `draw_triangle` now uses them and reproduces gpu/triangle (plain, big, dithered) and
+  gpu/uv-interpolation exactly (before: 3244 / 18733 / 4185 / 15860 pixels off; Redux's
+  walker: 310 / 1848 / 162 / 276). Quads are 0-1-2 + 2-1-3 and dropped whole when any of
+  their five edges is too long.
+  Blending: the hardware dithers and saturates to 5 bits and then blends (gpu/lines'
+  transparent dithered polyline); the port already did, Redux blends 8-bit before the
+  dither and with an unsaturated modulated colour. That is the remaining ±1 in
+  test_field_message's window bodies (1287301 body pixels; with Redux's order they would
+  all match its captures) and the New Game portraits' 1-2 LSB. The port is right there.
+- c. Mirror foot shadow (map 139): from the interpolation; now 3 / 0 pixels one step off
+  at the two positions (was 15-28). (The map-name banner in the bottom-right is typed
+  further in the port at map+150: a load-time difference, not the GPU.)
+- Tests: `ss_tests` 77/0 (new `gpu_gouraud_and_uv_match_hardware_dumps`, probes from
+  the dumps) and `ss_game_tests` 74/0, with and without the disc; smoke 16/16.
+  `test_field_message`'s comments and `docs/CHECKLIST.md` (the two GPU items, plus the DMA
+  line) updated; `docs/notes/field_effects.md` table updated.
+
+## Uncommitted files (phase 4 step 2)
+
+- New: `docs/notes/gpu_accuracy.md`.
+- Edited: `engine/src/psx/gpu.cpp` (plane attributes, quad split / drop),
+  `engine/src/runtime/libgpu.{h,cpp}` (`dma_source`, LoadImage),
+  `engine/src/game/common/texture.cpp` (uploads through `dma_source`),
+  `engine/tests/test_gpu.cpp` (new test), `engine/tests/test_field_message.cpp`
+  (comments), `docs/CHECKLIST.md`, `docs/notes/{README,field_effects}.md`, this log.
 
 ## Tooling
 
@@ -74,6 +99,10 @@ are in `docs/notes/field_effects.md`.
   `PC=N` (pc / ra every N vsyncs), `QUIT` (relative to the map), `TMO`.
 - `scratchpad/fx_worker/cmpcred.py REFDIR`: Redux credits captures against
   `portcred/cap` frames.
+- `run_ref*.sh` env `VRAM=1`: VRAM (1024x1024 halfwords) dumped with the RAM dumps.
+- `scratchpad/fx_worker/ps1tests/`: ps1-tests sources and hardware `vram.png`; build
+  `g++ -std=c++20 -O2 -I engine/src harness.cpp engine/src/psx/gpu.cpp`, run
+  `./harness triangle|uv|quad|transparency out.bin`, compare with `cmp.py`.
 
 ## Findings not yet in the catalog
 
