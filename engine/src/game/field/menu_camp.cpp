@@ -916,6 +916,30 @@ void field_menu_check(Field* f) {
   menu_launcher_start(g_launcher, g_menu_request != 0 ? g_menu_request : 1);
 }
 
+namespace {
+
+// Debugging (SS_MENU_DUMP=prefix): the config, inventory, party, record and game_state
+// blocks as the field continues after a menu, for comparisons with the original.
+void dump_menu_state() {
+  const char* dump = std::getenv("SS_MENU_DUMP");
+  if (dump == nullptr || *dump == 0) return;
+  FieldGlobals& g = globals();
+  for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
+                                         std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
+                                         std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
+                                         std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
+                                         std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
+    if (block == nullptr) continue;
+    const std::string path = std::string(dump) + "_" + name + ".bin";
+    if (FILE* out = std::fopen(path.c_str(), "wb")) {
+      std::fwrite(block, 1, size, out);
+      std::fclose(out);
+    }
+  }
+}
+
+}  // namespace
+
 void field_menu_update(Field* f) {
   FieldGlobals& g = globals();
   if (g_launcher == nullptr) {
@@ -958,21 +982,6 @@ void field_menu_update(Field* f) {
     case 5: menu_run_save(g_launcher); break;
     default: result = menu_run_camp(g_launcher); break;
   }
-  if (const char* dump = std::getenv("SS_MENU_DUMP"); dump != nullptr && *dump != 0) {
-    // Debugging: the config, inventory, party and record blocks after each menu.
-    for (const auto& [name, block, size] : {std::tuple<const char*, const u8*, size_t>{"config", g.config, 0x2A0},
-                                           std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
-                                           std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
-                                           std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
-                                           std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
-      if (block == nullptr) continue;
-      const std::string path = std::string(dump) + "_" + name + ".bin";
-      if (FILE* out = std::fopen(path.c_str(), "wb")) {
-        std::fwrite(block, 1, size, out);
-        std::fclose(out);
-      }
-    }
-  }
   // TODO(port): boot 0x800134d8(0): the pad setting back.
   menu_launcher_destroy(g_launcher);
   g_launcher = nullptr;
@@ -1010,6 +1019,7 @@ void field_menu_update(Field* f) {
       preload_release(-1);
       // TODO(port): 0x8007622c = 0 (the stash flag; stash.h has no setter).
       field_load_map(f, f->pending_map, true, 1);
+      dump_menu_state();
       return;
     }
   }
@@ -1063,6 +1073,7 @@ void field_menu_update(Field* f) {
     default:
       break;
   }
+  dump_menu_state();
 }
 
 }  // namespace ss::game::field
