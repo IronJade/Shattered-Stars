@@ -32,11 +32,11 @@ Resume an area from its log.
 
 | Agent | Area | Next steps |
 |---|---|---|
-| Battle | `game/battle/` | pc_state_air_attack, the big character modules (Bowman, Dias, Precis, Ashton, Opera, Ernest, Chisato), party AI, voices |
+| Battle | `game/battle/` | pc_state_air_attack, the character modules Ernest, Bowman and Dias, party AI, voices |
 | Enemy | `game/battle/enemy_*` (new files) | the 16 resident enemy families, the slot A-D default modules, the encounter packs' enemy code; enemy spells wait on the battle agent |
 | Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
 | World | `game/battle/spells*`, `spellcast*` (new) | battle spells: spell_cast and the spell routines, the #2129 spell-cast object, the spell data loader, the unit cast functions, the enemy spell path; then the command ring / item list menus and item use |
-| Effects | `game/field/field_sub_overlays.*`, `effects*`, `runtime/gpu*` | #3107 (the credits program, A 0x2d), then GPU accuracy: textured-quad and gouraud / UV stepping, subtractive blending |
+| Effects | `psx/gpu.cpp`, `game/battle/pc_<name>.cpp` (new) | GPU line stepping (hardware model), then the character modules Precis, Ashton, Opera and Chisato |
 
 Main session: integration and commits, the field program's glue, play-testing the story
 route.
