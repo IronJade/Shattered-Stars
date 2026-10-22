@@ -87,36 +87,61 @@ the finished frame with its in-frame g_battle_frames value. Encounter 10's camer
 the port's sample for sample (`ref/dense10`, `ref/order10` with loop-order breakpoints; port
 `SS_BATTLE_CAM=1`, new in battle_debug.cpp).
 
-## In progress (uncommitted, all build)
+## Verified since e37c3a5 (the user's commit of the unverified work)
 
-- `party_states.cpp`: PartyUnit::state_air_attack (0x80037d08, jump attacks).
-- `killer.{h,cpp}`: `pc_jump_step` (was claude_jump_step; pc_claude.cpp uses it).
-- `shot.cpp`: shot_place_at_unit's y uses the console's u32 wrap.
-- `pc_ernest.cpp` (#2151, vtable 0x801f03e4, 0x370 bytes): moves 0-7 and the five
-  callbacks; registered in pc_modules.cpp (case 10) and CMakeLists. Not run-time tested.
-- `battle_debug.cpp`: `SS_BATTLE_CAM=1`.
-- Verifying the air attack against `ref/enc35` (Carlaeagles, Cross mash, D = 2): RNG equal to
-  b460; at b470 Claude's slash hits an eagle in the original and misses in the port (the
-  eagle walks away in the port). `ref/enc35e` (per-vsync unit log, `BW_ELOG`) is running.
+e37c3a5 also holds SS_BATTLE_BOXES, SS_BATTLE_TICKS, the opening wipe (BurstFx in hud.cpp)
+and the clock-alignment docs, which were on disk at the cutoff. Checked since:
 
-## State at the weekly-limit cutoff (2026-10-22, about 11:10)
-
-The account's weekly limit stopped this worker mid-step. Everything under "In progress"
-above was committed unverified by the user in e37c3a5 (state_air_attack, pc_jump_step,
-the shot_place_at_unit wrap, pc_ernest.cpp, SS_BATTLE_CAM, the docs). HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
-The worker had just started a box trace (port and explore.lua) to chase the enc 35 b470
-miss in the air-attack check; nothing of that trace was written. Resume at step 1 below.
+- **Air attack and encounter 35 (verified).** The b470 miss was clock phase. The original's
+  setup ended mid-way through a 2-vblank period (frames 2, 1, 2, ...). The intro was 5 ticks
+  shorter in its battle frames, so the eagles' walk cels (body boxes) ran half a cycle apart.
+  With `SS_BATTLE_TICKS=1` (D = 6/7, inputs at port vblank 45i):
+  - RNG equal at every sample to the exit (b1048).
+  - Units equal in 925/930 samples; the 5 others are HP caught a frame apart.
+  - Claude's air attack (state 11) at b577 and the party's defeat at b807 match.
+  - Frames under 1% from b160 (`ref/enc35`, `ref/enc35e`, port `scratchpad/battle/port/e35all`).
+- **Opening wipe (verified).** BurstFx (0x8003bf18 / 0x8003c02c / 0x8003bf9c): intro frames
+  b10-b150 went from 99% different to under 9%.
+- **Ernest (verified, all 8 moves).** Refs: `ref/ernest_2_3` (byte 1), `ref/ernest_58`
+  (byte 5), `ref/ernest_l3` (byte 3), `ref/ernest_l2/l4/l6/l7/l8` (bytes 2, 4, 6, 7, 8).
+  - RNG is equal to past the exit in all seven. Units differ in at most 2 samples per run (HP
+    sampling only).
+  - Frames are under 1% through the moves, apart from a few % in the storm's streaks and the end
+    fade.
+  - Port command: `SS_BATTLE_TICKS=1 SS_BATTLE_POKE="3:0x0=10/2,3:0x20=200/2,3:0x22=200/2,3:0x24=200/2,4:0xcc=<byte>/1"`.
+    Input: cross at 45i and l1 at 20 + 90i. Compare with CMP_D=7 rngcmp.py and unitcmp.py D 7.
+  - Redux: `BW_EXTRA_POKE` needs hex values (`0x<byte>/1`). A plain `8/1` is silently
+    skipped, which is why the first l8 / l7 runs did move 2.
+  - R1 presses start no move in either the original or the port.
+- **Bowman (in progress).** `pc_bowman.cpp` (#2139, all 10 moves and 10 callbacks) and
+  `projectile_arc_velocity` 0x8004906c (unit_move.cpp) are written, registered (pc_modules
+  case 4, CMake) and build.
+  - Move 1 (pills, byte 2) is verified against `ref/bowman_l2`: RNG to the exit, units
+    1311/1312.
+  - shot_place_at_unit_thunk 0x800553f0 passes dz 0. A Redux register trace (`BW_REG_BP`)
+    first looked like stale stack, but the thunk sets its own 5th argument.
+  - Refs for bytes 1, 4, 5, 6, 7 are running (`ref/bowman_l<byte>`). Bytes 3, 8, 9, 10
+    come next.
+  - Bowman port command: as Ernest's with `3:0x0=4/2`.
+- New original-bug candidate B9 (to add to original_bugs.md):
+  - projectile_arc_velocity scales the arc's z by a constant 24 instead of the speed.
+  - Bowman's move 3 calls it with speed 10, so his leap overshoots or undershoots in depth.
+  - Kept faithful until the move is verified.
+- On disk, uncommitted: `battle_debug.cpp` (SS_BATTLE_CAM res flags), `pc_bowman.cpp`,
+  `unit_move.{h,cpp}`, `pc_modules.cpp` (case 4), `engine/CMakeLists.txt`, the catalog CSV,
+  and the scratch tools (explore.lua `BW_REG_BP`; per-run cards in the run scripts).
 
 ## Next steps
 
-1. Finish the enc35 check (air attack, the b470 miss), then Ernest's run-time check
-   (SS_BATTLE_POKE party slot id 10 plus killer-move bytes; the same BW_EXTRA_POKE in Redux).
-2. Catalog rows for Ernest and the air attack (gen_catalog.py), battle_port.md layout row.
-3. The bigger character modules (Bowman #2139, Dias #2143, Precis #2155, Ashton #2147, Opera
-   #2153, Chisato #2159), each verified as Claude's was.
-4. Claude's move 5 (Energy Sword) compare.
-5. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
-6. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (leak), and
+1. Bowman: compare refs `bowman_l1/l4/l5/l6/l7` when they finish, then run bytes 3, 8, 9 and
+   10. Then catalog rows (gen_catalog.py NEW, module battle_pc2139). Decompiled sources are
+   in `scratchpad/battle/decomp/` (`decomp1.sh ELF ADDR` uses the private REA CLI's Ghidra).
+2. Dias (#2143, char05, vtable 0x801f11d4: overrides 1, 35-37, 46-49).
+3. Fix the original bugs B1, B2, B3 (B5 decide; B9 decide) as a separate commit point.
+4. Party AI (pc_ai_fighter 0x80038664 / healer 0x80038114 / caster 0x80038328), voices.
+5. Claude's move 5 (Energy Sword) compare.
+6. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
+7. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (leak), and
    `Unit` has no dtor destroying its effects (console unit_destroy 0x8004def0 does). Unit
    +0x1f8 is a RibbonTrail on the console (port: `effects[1]`, unused so far).
 
@@ -131,6 +156,14 @@ miss in the air-attack check; nothing of that trace was written. Resume at step 
   and their symbols split the #1984 functions in Ghidra).
 - `scratchpad/battle/framecmp.py REF PORT [from to step]`: per-frame mismatch, with 4x4
   block means that cancel the dither.
+- `explore.lua`:
+  - `BW_ELOG=LO:HI` logs per-vsync units in the enemy agent's format plus rng; compare with
+    `scratchpad/battle/unitcmp.py REF PORT D` against the port's SS_ENEMY_TRACE=1.
+  - `BW_BOXES=LO:HI` logs boxes and animation fields; the port's counterpart is SS_BATTLE_BOXES.
+  - `BW_DENSE=LO:HI` logs the camera and clock every vsync.
+  - The `[bw] frames` lines give D for rngcmp.py.
+- The run scripts copy the cards and generated scripts into each OUT dir, so several Redux
+  runs can go at once.
 - `explore.lua`: `BW_HIT_BP=ADDR:TAG,...` logs each hit; `run_victory.sh` takes
   `BW_EXTRA_POKE`. Input alignment: Redux mash entry k at vsync 3810 + 45k matches port
   vblank 5 + 45(k - 6).
