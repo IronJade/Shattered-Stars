@@ -1,9 +1,13 @@
 // World-map drawing (overlay #3102): the BG draw (0x800893c0) with its visibility pass
 // (0x8008a880), the terrain block renderer (0x8007f8a8), the curved-world projection
 // helpers (0x8007f1f4 / 0x8007f3e4 / 0x8007f648), texture animations and the sky.
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
+#include "game/field/camera.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/map.h"
@@ -654,6 +658,147 @@ void step_texture_anims() {
   }
 }
 
+// 0x8005ff84 (the field's camera_set_object_matrix) on the world map's camera block:
+// RT = view * Raxis(rot[2]) * Ry(rot[1]) (rot[0] != 0 picks the other axis and is the
+// angle), TR = view * (pos - eye), scaled; H from the zoom.
+void flat_object_matrix(const s32 pos[3], const s32 rot_in[3], const s32 scale[3]) {
+  WorldView& v = view();
+  s32 rot[3] = {rot_in[0], rot_in[1], rot_in[2]};
+  s32 axis[3] = {rcos(rot[1]), 0, -rsin(rot[1])};
+  if (rot[0] != 0) {
+    rot[2] = rot[0];
+    axis[0] = -rsin(rot[1]);
+    axis[2] = -rcos(rot[1]);
+  }
+  psyq::MATRIX ry{}, m{};
+  rot_matrix_y(rot[1], &ry);
+  rot_matrix_axis(axis, rot[2], &m);
+  rot_columns(v.view, &m);  // view * Raxis
+  {
+    const psyq::MATRIX left = m;
+    m = ry;
+    rot_columns(left, &m);  // * Ry
+  }
+  psyq::SetRotMatrix(&v.view);
+  ldv(0, static_cast<s16>((pos[0] - v.eye[0]) >> 12), static_cast<s16>((pos[1] - v.eye[1]) >> 12),
+      static_cast<s16>((pos[2] - v.eye[2]) >> 12));
+  run(G::kRtv0);
+  const psyq::VECTOR t{mac(1), mac(2), mac(3), 0};
+  psyq::TransMatrix(&m, &t);
+  const psyq::VECTOR sc{scale[0], scale[1], scale[2], 0};
+  psyq::ScaleMatrix(&m, &sc);
+  gte().write_ctrl(G::H, static_cast<u32>(mul(map_data().projection_h, v.zoom) >> 12));
+  psyq::SetRotMatrix(&m);
+  psyq::SetTransMatrix(&m);
+}
+
+// Map 2's two whirlwind barrier walls (the middle of 0x800893c0): around (67000, 40000)
+// r 24000 and (0x13023, 0xd4b5) r 8000. When the point of the circle nearest the camera
+// focus is within 0x3000, an arc of 10 segments x 10 rows of additive G4s (red channel
+// only: the terrain light's red times the brightness) stands on that stretch: 11 points
+// 0x33 apart starting 0x100 to one side, at height -250 bent onto the curved ground and
+// converted back to world units, then rows of 450 units up through the flat camera.
+// The brightness grows as the focus gets closer ((0x3000 - d) / 0x18, max 0xff), tapers
+// towards both ends of the arc and fades in over the bottom three rows.
+void draw_walls(WorldBg* bg, s32 cam_yaw) {
+  WorldView& v = view();
+  constexpr int kSegs = 10, kRows = 10;
+  for (int wall = 0; wall < 2; ++wall) {
+    const s32 cx = wall == 0 ? 67000 : 0x13023, cz = wall == 0 ? 40000 : 0xd4b5, r = wall == 0 ? 24000 : 8000;
+    const s32 ang = world_ratan2(bg->centre_z - cz, bg->centre_x - cx);
+    const s32 dx = ((rcos(ang) * r) >> 12) + cx - bg->centre_x;
+    const s32 dz = ((rsin(ang) * r) >> 12) + cz - bg->centre_z;
+    if (std::abs(dx) >= r || std::abs(dz) >= r) continue;
+    const s32 dist = world_sqrt(dx * dx + dz * dz);
+    if (dist >= 0x3000) continue;
+    const s32 fade = std::min<s32>((0x3000 - dist) / 0x18, 0xff);
+    s32 rel = cam_yaw - ang;
+    if (rel >= 0x800) {
+      rel -= 0x1000;
+    } else if (rel < -0x800) {
+      rel += 0x1000;
+    }
+    const s32 step = rel < 0 ? -0x33 : 0x33;
+    s32 a = ang + (rel < 0 ? 0x100 : -0x100);
+    const s32 rise = -0x1194 / kRows;
+    s16 origin[2];
+    world_block_origin(bg, origin);
+    const s32 zero[3] = {0, 0, 0}, one[3] = {0x1000, 0x1000, 0x1000};
+    world_set_object_matrix(zero, v.light_angle, one);
+    s16 pts[kSegs + 1][3];
+    for (int i = 0; i <= kSegs; ++i, a += step) {
+      const s16 p[3] = {static_cast<s16>(static_cast<s16>((rcos(a) * r) >> 12) + static_cast<s16>(cx) - origin[0]), -0xfa,
+                        static_cast<s16>(static_cast<s16>((rsin(a) * r) >> 12) + static_cast<s16>(cz) - origin[1])};
+      world_bend_to_world(p, pts[i]);
+    }
+    flat_object_matrix(zero, v.light_angle, one);
+    s32 rising = 0;
+    constexpr int kHalf = kSegs >> 1;
+    for (int i = 0; i < kSegs; ++i, rising += fade) {
+      s16 q[4][3];
+      for (int k = 0; k < 4; ++k) std::memcpy(q[k], pts[i + (k & 1)], sizeof q[k]);
+      s32 l = i < kHalf ? rising : fade * (kSegs - i - 1);
+      s32 rr = i + 1 < kHalf ? fade * (i + 1) : fade * (kSegs - (i + 1) - 1);
+      l = (l / kHalf) * v.light[0];
+      rr = (rr / kHalf) * v.light[0];
+      if (l < 0) l += 0x7f;
+      if (rr < 0) rr += 0x7f;
+      l >>= 7;
+      rr >>= 7;
+      if (i == kSegs - 1) rr = 0;
+      s32 low_l = 0, low_r = 0, high_l = l, high_r = rr;
+      for (int row = 0; row < kRows; ++row) {
+        u32 c[4];
+        if (row < 3) {
+          c[0] = static_cast<u32>(low_l / 3);
+          c[1] = static_cast<u32>(low_r / 3);
+          c[2] = static_cast<u32>(high_l / 3);
+          c[3] = static_cast<u32>(high_r / 3);
+        } else {
+          c[0] = c[2] = static_cast<u32>(l);
+          c[1] = c[3] = static_cast<u32>(rr);
+        }
+        q[2][1] = static_cast<s16>(q[2][1] + rise);
+        q[3][1] = static_cast<s16>(q[3][1] + rise);
+        ldv(0, q[0][0], q[0][1], q[0][2]);
+        run(G::kRtps);
+        const u32 xy0 = sxy(2);
+        ldv(0, q[1][0], q[1][1], q[1][2]);
+        ldv(1, q[2][0], q[2][1], q[2][2]);
+        ldv(2, q[3][0], q[3][1], q[3][2]);
+        run(G::kRtpt);
+        const u32 xy1 = sxy(0), xy2 = sxy(1), xy3 = sxy(2);
+        run(G::kAvsz4);
+        s32 z = (otz() >> 1) + 2;
+        z = std::clamp(z, 0, 0x7ff);
+        low_l += l;
+        low_r += rr;
+        high_l += l;
+        high_r += rr;
+        q[0][1] = static_cast<s16>(q[0][1] + rise);
+        q[1][1] = static_cast<s16>(q[1][1] + rise);
+        psyq::P_TAG* p = alloc_prim(8);
+        psyq::P_TAG* dm = alloc_prim(2);
+        if (p == nullptr || dm == nullptr) return;
+        put32(p, 4, (c[0] & 0xffffff) | 0x3a000000u);
+        put32(p, 8, xy0);
+        put32(p, 0xc, c[1] & 0xffffff);
+        put32(p, 0x10, xy1);
+        put32(p, 0x14, c[2] & 0xffffff);
+        put32(p, 0x18, xy2);
+        put32(p, 0x1c, c[3] & 0xffffff);
+        put32(p, 0x20, xy3);
+        link(0x820 - z, p);
+        psyq::DR_MODE mode{};
+        psyq::SetDrawMode(&mode, 0, 1, 0x20, nullptr);
+        put32(dm, 4, mode.code[0]);
+        put32(dm, 8, mode.code[1]);
+        link(0x820 - z, dm);
+      }
+    }
+  }
+}
+
 // The sky: three gradient G4 bands above the horizon (OT 0x10) and the additive cloud
 // strip (texture (960, 256), CLUT row 0x1fb; OT 0x11) spanning the field of view, all
 // rotated by the camera roll about the horizon point 9000 units ahead.
@@ -803,6 +948,7 @@ void world_bg_draw(WorldBg* bg) {
   WorldView& v = w.view;
   u16 mask[9];
   visible_cells(bg, mask);
+  const s32 cam_yaw = world_camera_yaw();
   static const s32 off[3] = {-0x1800, 0x1800, 0x4800};
   for (int slot = 0; slot < 9; ++slot) {
     if (w.loaded[slot] == -1 || w.blocks.empty()) continue;
@@ -815,9 +961,7 @@ void world_bg_draw(WorldBg* bg) {
     world_set_object_matrix(pos, v.light_angle, scale);
     world_draw_block(w.blocks.data() + slot * kSlotBytes, mask[idx]);
   }
-  if (read_u16(globals().game_state + 0x1a) == 2) {
-    runtime::Runtime::get().log_once("world:rings", "world: map 2 whirlwind walls (0x800893c0) not ported yet");
-  }
+  if (read_u16(globals().game_state + 0x1a) == 2) draw_walls(bg, cam_yaw);
   step_texture_anims();
   draw_sky(bg);
 }

@@ -13,6 +13,7 @@ namespace {
 
 Host g_host = Host::Title;
 MenuGlobals g_menu;
+int g_page_code_entry = 0;
 
 // Entry cache slots (title 0x8004ddd4: {u32 ptr, u32 entry, u32 size} x 16).
 struct CacheSlot {
@@ -20,6 +21,12 @@ struct CacheSlot {
   int entry = 0;
 };
 CacheSlot g_cache[16];
+EntryCacheSlotRef (*g_cache_table)(int index) = nullptr;
+
+EntryCacheSlotRef cache_slot(int index) {
+  if (g_cache_table) return g_cache_table(index);
+  return {&g_cache[index].data, &g_cache[index].entry};
+}
 
 // Background load state (title 0x8004efb8-0x8004efd0).
 struct BgLoad {
@@ -41,8 +48,25 @@ const u8* table(u32 title_address, u32 field_address) {
     runtime::Runtime::get().log_once("menu_table", "menu: a constant table has no field address yet");
     return nullptr;
   }
-  return program_data(static_cast<int>(Program::Field), field_address);
+  return field_table(field_address);
 }
+
+const u8* field_table(u32 address) {
+  // The library overlay, the page code overlay, else the field program.
+  if (address >= kLibraryBase && address < kLibraryEnd) return program_data_at(kLibraryEntry, kLibraryBase, address);
+  if (address >= kPageCodeBase && address < kLibraryBase) {
+    if (g_page_code_entry == 0) return nullptr;
+    return program_data_at(g_page_code_entry, kPageCodeBase, address);
+  }
+  return program_data(static_cast<int>(Program::Field), address);
+}
+
+const u8* page_table(int entry, u32 address) { return program_data_at(entry, kPageCodeBase, address); }
+
+void set_page_code_entry(int entry) { g_page_code_entry = entry; }
+int page_code_entry() { return g_page_code_entry; }
+
+void set_entry_cache_table(EntryCacheSlotRef (*slot)(int index)) { g_cache_table = slot; }
 
 MenuGlobals& globals() { return g_menu; }
 System* menu_system() { return get_system(); }
@@ -160,31 +184,36 @@ void WindowList::append(const WindowEntry& e) { entries.push_back(e); }
 // ---- Entry cache -----------------------------------------------------------------
 
 void entry_cache_load(const u8* packed, int entry) {
-  for (auto& s : g_cache) {
-    if (!s.data.empty() && s.entry == entry) return;
+  for (int i = 0; i < 16; ++i) {
+    const EntryCacheSlotRef s = cache_slot(i);
+    if (!s.data->empty() && *s.entry == entry) return;
   }
   int slot = 0;
-  while (slot < 16 && !g_cache[slot].data.empty()) ++slot;
+  while (slot < 16 && !cache_slot(slot).data->empty()) ++slot;
   if (slot == 16) slot = 15;  // the original writes past the table; never happens in practice
   // SLZ header: +4 packed size, +8 unpacked size.
   const size_t packed_size = read_u32(packed + 4) + 0x10;
   auto out = disc::slz::unpack_block(std::span<const u8>(packed, packed_size), 0, 0, nullptr);
-  g_cache[slot].data = out ? std::move(*out) : std::vector<u8>{};
-  g_cache[slot].entry = entry;
+  const EntryCacheSlotRef s = cache_slot(slot);
+  *s.data = out ? std::move(*out) : std::vector<u8>{};
+  *s.entry = entry;
 }
 
 void entry_cache_free(int entry) {
-  for (auto& s : g_cache) {
-    if (!s.data.empty() && s.entry == entry) {
-      s.data.clear();
-      s.data.shrink_to_fit();
+  for (int i = 0; i < 16; ++i) {
+    const EntryCacheSlotRef s = cache_slot(i);
+    if (!s.data->empty() && *s.entry == entry) {
+      s.data->clear();
+      s.data->shrink_to_fit();
+      *s.entry = 0;
       return;
     }
   }
 }
 
 const std::vector<u8>* entry_cache_slot(int index) {
-  return g_cache[index].data.empty() ? nullptr : &g_cache[index].data;
+  const EntryCacheSlotRef s = cache_slot(index);
+  return s.data->empty() ? nullptr : s.data;
 }
 
 // ---- Background loads --------------------------------------------------------------

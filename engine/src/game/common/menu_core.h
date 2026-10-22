@@ -35,6 +35,21 @@ Host host();
 // the field image (0 = not located yet).
 const u8* table(u32 title_address, u32 field_address);
 
+// The field links the library from overlays: the class library (entry 0xba5 at
+// 0x800d1b28; the title's copy of each function is at a fixed distance from it, but its
+// data is laid out differently) and the current page's code (at 0x8007e000).
+constexpr int kLibraryEntry = 0xBA5;
+constexpr u32 kLibraryBase = 0x800D1B28;
+constexpr u32 kLibraryEnd = 0x800E14D0;
+constexpr u32 kPageCodeBase = 0x8007E000;
+// A field address: the library overlay, the loaded page code (set_page_code_entry) or
+// the field program.
+const u8* field_table(u32 address);
+// A constant of a page module's code entry (loaded at 0x8007e000).
+const u8* page_table(int entry, u32 address);
+void set_page_code_entry(int entry);   // the page code the field has at 0x8007e000
+int page_code_entry();
+
 // ---- Task base class (title 0x80038228 / field 0x8003872c) -----------------------
 // vtable slots: [1] +0x08 dtor, [2] +0x10 type, [3] +0x18 close, [4] +0x20 on_close,
 // [5] +0x28 update. Window lists drive tasks through these.
@@ -86,7 +101,8 @@ struct MenuGlobals {
   MenuSession* session = nullptr;   // title 0x8004ddc4 / field 0x80074074 g_menu_session
   std::vector<u8> res;              // title 0x8004ddb0 / field 0x80074060 g_menu_res: resource pack (TIMs)
   std::vector<u8> data;             // title 0x8004ddb4 / field 0x80074064 g_menu_data: page data block
-  std::vector<u8> item_data;        // title 0x8004ddb8: item stat table (0x338 x 16 bytes), empty = not loaded
+  std::vector<u8> item_data;        // title 0x8004ddb8 / field 0x80074068: item pack (entry 3000), empty = not loaded
+  const u8* item_table = nullptr;   // field inventory +0x820: the item records (entry 3002, 0x30 bytes each)
   const u8* strings = nullptr;      // title 0x8004de94: string pack the message lookups use (= data)
   // Pointers the session reloads from the handoff registry (menu_session_create).
   u8* config = nullptr;             // title 0x8004ebfc: handoff 2 (0x2a0 bytes)
@@ -113,6 +129,14 @@ const std::vector<u8>* entry_cache_slot(int index);       // slot contents (null
 inline void entry_cache_load_0bd2(const u8* packed) { entry_cache_load(packed, 0xBD2); }  // title 0x80030fa8 / field 0x800328f8
 inline void entry_cache_free_0bd2() { entry_cache_free(0xBD2); }   // title 0x80030fc8 / field 0x8003291c
 inline void entry_cache_free_0bbb() { entry_cache_free(0xBBB); }   // title 0x80031008 / field 0x80032960
+inline void entry_cache_load_0bbb(const u8* packed) { entry_cache_load(packed, 0xBBB); }  // title 0x80030fe8 / field 0x8003293c
+// The field keeps its resident sprite packs in the same 16-slot table (0x8007585c,
+// sprite_pack_register); a field host points the cache at it.
+struct EntryCacheSlotRef {
+  std::vector<u8>* data;
+  s32* entry;
+};
+void set_entry_cache_table(EntryCacheSlotRef (*slot)(int index));  // null = the menu's own table
 
 // ---- Background loads (title 0x80038644-0x80039060 / field 0x80038b48-0x80039418) --
 // Requests (0x14 bytes) owned by a client task; async_load_queue_update starts and

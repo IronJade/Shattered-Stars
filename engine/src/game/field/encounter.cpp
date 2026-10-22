@@ -1,5 +1,7 @@
 #include "game/field/encounter.h"
 
+#include "game/field/worldmap.h"
+
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -12,6 +14,7 @@
 #include "game/field/voice_queue.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/effects.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
@@ -523,11 +526,12 @@ void field_unload_map(Field*, bool free_scene) {
   map.font = {};
   map.script = {};
   field_load_buffer() = {};
-  // TODO(port): the side text (0x800762e8), stat snapshot (0x800761a0), glow
-  // (0x800752dc), extra buffers (0x800752c4), extra packs (0x80076230) and the per-map
-  // objects (0x800752ec) are not created by the port yet.
-  if (BgRenderer* bg = bg_renderer(); bg != nullptr && globals().field_flags[0x68] != 0)
-    todo("world-map BG release (overlay 0x800888e0)");
+  // TODO(port): the side text (0x800762e8), stat snapshot (0x800761a0), extra buffers
+  // (0x800752c4), extra packs (0x80076230) and the per-map objects (0x800752ec) are not
+  // created by the port yet.
+  glow_destroy_current();  // 0x800752dc: glow_destroy(3)
+  if (WorldBg* wbg = world_bg(); wbg != nullptr && globals().field_flags[0x68] != 0)
+    world_bg_release(wbg);  // overlay 0x800888e0
   // The party's sprite packs are remembered so they come back after the battle.
   FieldGlobals& g = globals();
   SpritePackSlot* packs = sprite_pack_slots();
@@ -553,7 +557,11 @@ void field_start_battle(Field* f, int transition) {
   g.system_strings = nullptr;
   g_battle_program.assign(static_cast<size_t>(g.loader->entry_size(kBattleProgramEntry)), 0);
   if (g_script_vm != nullptr) vm_save_state(g_script_vm);  // handoff 0xd
-  if (BgRenderer* bg = bg_renderer()) bg_suspend(bg);
+  if (BgRenderer* bg = bg_renderer()) {
+    bg_suspend(bg);
+  } else if (WorldBg* wbg = world_bg()) {
+    world_bg_suspend(wbg);  // vtable[3] 0x8008ae48
+  }
   map_data().scene = {};
   g_fade_targets.scene = nullptr;
   ActorSystem* sys = actor_system();
@@ -607,6 +615,7 @@ void field_exit_to_program(Field* f, int reason) {
     handoff_store(g.handoff, stash_table(), 0x11);
   if (u8* snapshot = actor_snapshot()) handoff_store(g.handoff, snapshot, 0xB);
   if (u8* anims = bg_take_anim_save()) handoff_store(g.handoff, anims, 0x10);
+  if (u8* regions = world_take_region_save()) handoff_store(g.handoff, regions, 0x10);
   sound_holder_save();  // handoff 0xf
   sound_stop(g.sound);
   psyq::ResetGraph(1);

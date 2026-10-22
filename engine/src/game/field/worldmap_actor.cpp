@@ -2,6 +2,7 @@
 // 0x8008f460. Sprite draw with a terrain-conforming shadow, walking on the terrain
 // (wall slide, water, the encounter area of each 0x1000 square), the follow camera and
 // scripted moves.
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -286,6 +287,20 @@ void wa_draw(Actor* a, int arg) {
     return;
   }
   project(a);
+  // Debugging: SS_WORLD_DBG=N prints the leader's and the camera's state every N vblanks
+  // (the fields the PCSX-Redux world-map script logs, for frame-by-frame comparisons).
+  if (const char* dbg = std::getenv("SS_WORLD_DBG");
+      dbg != nullptr && actor_slot(a) == 0 && (runtime::Runtime::get().vblanks() % std::max(2, std::atoi(dbg))) < 2) {
+    const WorldView& v = view();
+    std::printf("[world] v%llu actor %d pos %d %d %d screen %d %d depth8 %d eye %d %d %d target %d %d %d zoom %d\n",
+                static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), actor_slot(a), a->x >> 12,
+                a->y >> 12, a->z >> 12, a->origin_x, a->origin_y, w->depth8, v.eye[0] >> 12,
+                v.eye[1] >> 12, v.eye[2] >> 12, v.target[0] >> 12, v.target[1] >> 12, v.target[2] >> 12, v.zoom);
+    if (const WorldBg* bg = world_bg())
+      std::printf("[world] v%llu a0 ang %d spd %d walk %d walked %d | bg yaw %d pitch %d turn %d brake %d tspd %d ticks %d\n",
+                  static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), static_cast<u16>(a->angle), a->speed,
+                  a->walk_speed, a->walked, bg->yaw, bg->pitch, bg->turn, bg->turn_brake, bg->turn_speed, ticks());
+  }
   if (w->depth8 < 9) return;
   if (static_cast<u16>(a->origin_x + 0x140) > 0x3c0) return;
   if (static_cast<u16>(a->origin_y + 0xf0) > 0x2d0) return;

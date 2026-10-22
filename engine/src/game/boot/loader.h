@@ -26,4 +26,14 @@ class Loader {
   int selected_ = -1;
 };
 
+// The host's disc drive (port). The console asks the player to swap discs until
+// loader_is_disc agrees (the field's field_prompt_disc_change 0x80052ce8 / insert-disc
+// screen 0x8006f958, the title's 0x8003c5ec); the port registers the archives of the
+// configured images (disc 1 always, disc 2 with --disc2) and swaps them itself.
+void loader_register_disc(int disc, disc::Archive* archive);
+// Attaches the archive of the requested disc (1 or 2: the one holding marker entry
+// 5 + disc, as loader_is_disc tests) if it is not already in the drive. False when
+// no configured image is that disc; the loader keeps its current archive.
+bool loader_insert_disc(Loader& loader, int disc);
+
 }  // namespace ss::game

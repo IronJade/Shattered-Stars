@@ -80,8 +80,12 @@ struct Bent {
 };
 inline u32 curve_word(s32 index) {
   const std::vector<u8>& t = world().curve;
-  const s32 off = 0x800 + index * 4;
-  if (off < 0 || off + 4 > static_cast<s32>(t.size())) return 0x1000;  // cos 1, sin 0
+  if (t.size() < 0x804) return 0x10000000;  // no table yet: cos 1, sin 0
+  // The console reads past the table for points beyond the horizon; the port holds the
+  // last entry (the vertex is far outside the screen either way).
+  s32 off = 0x800 + index * 4;
+  if (off < 0) off = 0;
+  if (off + 4 > static_cast<s32>(t.size())) off = static_cast<s32>(t.size() & ~size_t{3}) - 4;
   return read_u32(t.data() + off);
 }
 inline Bent bend(s32 ir1, s32 ir2, s32 ir3) {

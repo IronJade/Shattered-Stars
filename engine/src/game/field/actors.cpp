@@ -9,10 +9,12 @@
 #include "game/field/actor_field.h"
 #include "game/field/bg.h"
 #include "game/field/camera.h"
+#include "game/field/worldmap.h"
 #include "game/field/collision.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/map.h"
+#include "game/field/scene_renderer.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
 #include "runtime/runtime.h"
@@ -148,12 +150,21 @@ void actor_create(ActorSystem*, int slot, int model, const s32 pos[3], int angle
   if (pickpocket == 0) pickpocket = -1;
   Actor*& a = g_field_actors[slot];
   if (a != nullptr) actor_destroy(a, 3);
+  if (globals().field_flags[0x68] != 0) {  // world map: the 0xc1e class (0x80082e5c)
+    a = worldactor_construct_full(worldactor_new(), static_cast<s16>(model), pos, angle, layer, talk, pickpocket, flags);
+    return;
+  }
   a = fieldactor_construct_full(new_field_actor(), static_cast<s16>(model), pos, angle, layer, talk, pickpocket, flags);
 }
 
 void actor_create_or_place(ActorSystem*, int slot, int model, int x, int y, int layer) {
   Actor*& a = g_field_actors[slot];
   if (a == nullptr) {
+    if (globals().field_flags[0x68] != 0) {  // world map: 0x80082dd4
+      a = worldactor_construct_screen(worldactor_new(), static_cast<s16>(model), static_cast<s16>(x),
+                                      static_cast<s16>(y), layer);
+      return;
+    }
     a = fieldactor_construct_screen(new_field_actor(), static_cast<s16>(model), static_cast<s16>(x), static_cast<s16>(y),
                                   layer);
   } else {
@@ -239,10 +250,16 @@ void actor_sys_draw(ActorSystem* s) {
   if (g_hooks.ot_layer_count == nullptr || g_hooks.ot_layer_count() == 0) {
     for (int i = 0; i < n; ++i) actor_link_prims(g_field_actors[order[i]], 0, 0xFFFFFFFF, nullptr);
   } else {
-    // TODO(port): OT layers (0x800761a8..0x800761e8, SceneRenderer): actors whose layer
-    // matches one of the four layer ids sort into that layer's own table, spliced into
-    // the main OT at id + 0x11. Not ported; actors draw into the main OT.
-    for (int i = 0; i < n; ++i) actor_link_prims(g_field_actors[order[i]], 0, 0xFFFFFFFF, nullptr);
+    // OT layers (0x800761a8..0x800761c4, scene_renderer.h): the layers the effects drew
+    // into are spliced into the main OT at id + 0x11, and actors whose layer matches one
+    // of their ids sort by depth into that layer's table.
+    ot_layers_splice();
+    for (int i = 0; i < n; ++i) {
+      Actor* a = g_field_actors[order[i]];
+      psyq::P_TAG* table = ot_layer_table_for(a->layer);
+      actor_link_prims(a, 0, table != nullptr ? static_cast<u32>(a->layer) + 1 : 0xFFFFFFFF, table);
+    }
+    ot_layers_compact();
   }
   if (fieldactor_globals().children_pass) {
     for (int i = n - 1; i >= 0; --i) actor_link_prims(g_field_actors[order[i]], 1, 0xFFFFFFFF, nullptr);
@@ -443,7 +460,8 @@ void actor_sys_restore_all(ActorSystem*) {
     const u16 slot = read_u16(blob + 4 + i * 2);
     Actor*& a = g_field_actors[slot];
     if (a == nullptr) {
-      a = fieldactor_construct_full(new_field_actor(), 0, zero, 0, 0, -1, -1, 0x1000F);
+      a = globals().field_flags[0x68] != 0 ? worldactor_construct_full(worldactor_new(), 0, zero, 0, 0, -1, -1, 0x1000F)
+                                           : fieldactor_construct_full(new_field_actor(), 0, zero, 0, 0, -1, -1, 0x1000F);
     } else {
       actor_init(a, 0, zero, 0, 0, -1, -1, 0x1000F);
     }

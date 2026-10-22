@@ -355,8 +355,8 @@ void SaveList::show_entry(int index) {
     if (id > 0) box->add_character(static_cast<s16>(id), summary[0x35 + k * 4], 9, 0x1000);
   }
   // "TIME" and hours:minutes, "BATTLES" and the count (ASCII strings, title 0x8006742c..).
-  const char* time_label = reinterpret_cast<const char*>(table(0x8006742C, 0));
-  const char* battles_label = reinterpret_cast<const char*>(table(0x80067450, 0));
+  const char* time_label = reinterpret_cast<const char*>(table(0x8006742C, 0x80082408));
+  const char* battles_label = reinterpret_cast<const char*>(table(0x80067450, 0x8008242C));
   box->pen(0x28, 8, 10);
   box->add_string(time_label ? time_label : "   \x08\x02TIME\x08\x01\n");
   sb.set("");
@@ -681,11 +681,11 @@ void ProgressDialog::start(int slot_, int index_) {
   if (!loading()) {
     b->set_group(0xB);
     length = save_build(card, buffer.data(), slot, index);
-    steps = reinterpret_cast<const s16*>(table(0x80067B74, 0));
+    steps = reinterpret_cast<const s16*>(table(0x80067B74, 0x80082B50));
   } else {
     b->set_group(0xD);
     length = load_start(card, buffer.data(), slot, index);
-    steps = reinterpret_cast<const s16*>(table(0x80067B8C, 0));
+    steps = reinterpret_cast<const s16*>(table(0x80067B8C, 0x80082B68));
   }
   total = 0;
   length += 0x7F;
@@ -832,10 +832,10 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
       sb.put(text);
     }
   };
-  const char* prefix = reinterpret_cast<const char*>(table(0x800674E0, 0));
-  const char* space = reinterpret_cast<const char*>(table(0x800674EC, 0));
-  const char* colon = reinterpret_cast<const char*>(table(0x800674F0, 0));
-  const char* lv = reinterpret_cast<const char*>(table(0x800674F4, 0));
+  const char* prefix = reinterpret_cast<const char*>(table(0x800674E0, 0x800824BC));
+  const char* space = reinterpret_cast<const char*>(table(0x800674EC, 0x800824C8));
+  const char* colon = reinterpret_cast<const char*>(table(0x800674F0, 0x800824CC));
+  const char* lv = reinterpret_cast<const char*>(table(0x800674F4, 0x800824D0));
   sb.set(prefix ? prefix : "");
   s16 number = s.save_map[index];
   if (number < 0) number = static_cast<s16>(-number);
@@ -857,7 +857,7 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
   put_sjis(tmp);
   std::memcpy(file + 4, sb.str(), std::strlen(sb.str()));
   // Icon: CLUT (0x60) and three frames (0x80); zero in the title's copy of the module.
-  if (const u8* icon = table(0x80067B9C, 0)) std::memcpy(file + 0x60, icon, 0x1A0);
+  if (const u8* icon = table(0x80067B9C, 0x80082B78)) std::memcpy(file + 0x60, icon, 0x1A0);
   // Summary.
   u8* summary = file + kSaveSummary;
   static const u8 kMagic[16] = {'S', 'T', 'A', 'R', ' ', 'O', 'C', 'E', 'A', 'N', ' ', '0', '3', '/', '0', '1'};
@@ -1023,7 +1023,7 @@ void zero_unpack(u8* out, const u8* in) {
 }
 
 char* sjis_digit(int digit, char* out) {
-  const u8* t = table(0x80067B5C, 0);
+  const u8* t = table(0x80067B5C, 0x80082B38);
   static const u8 kDigits[20] = {0x82, 0x4F, 0x82, 0x50, 0x82, 0x51, 0x82, 0x52, 0x82, 0x53,
                                  0x82, 0x54, 0x82, 0x55, 0x82, 0x56, 0x82, 0x57, 0x82, 0x58};
   if (!t) t = kDigits;

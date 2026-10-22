@@ -3,6 +3,7 @@
 // as in the VM's unit tests); the rest are stand-ins that log once and return a value
 // that lets scripts run on. Every call reaches the trace sink (vm_svc_set_trace).
 #include "game/field/vm_services.h"
+#include "game/field/worldmap.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -17,14 +18,17 @@
 #include "game/field/voice_queue.h"
 #include "game/field/camera.h"
 #include "game/field/collision.h"
+#include "game/field/effects.h"
 #include "game/field/characters.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_camp.h"
 #include "game/field/message.h"
 #include "game/field/music.h"
 #include "game/field/notice.h"
+#include "game/field/scene_renderer.h"
 #include "game/field/screen.h"
 #include "game/field/special.h"
 #include "game/field/stash.h"
@@ -164,8 +168,15 @@ int vm_svc_sprite_slot_entry(int slot) {
   const SpritePackSlot& p = sprite_pack_slots()[slot];
   return p.data.empty() ? 0 : p.id;
 }
-void vm_svc_field_prompt_disc_change(int disc, int a2) { SVC("disc=%d a2=%d", disc, a2); }
-void vm_svc_field_free_ot_layers() { SVC("%s", ""); }
+void vm_svc_field_prompt_disc_change(int disc, int a2) { field_prompt_disc_change(field_program(), disc, a2); }
+void vm_svc_field_free_ot_layers() {
+  if (scene_renderer() != nullptr) {
+    TRACE("%s", "");
+    field_free_ot_layers();
+    return;
+  }
+  SVC("%s", "");
+}
 void vm_svc_exit_to_program_teardown() { SVC("%s", ""); }
 int vm_svc_field_install_music(int entry) {
   if (Field* f = field_program(); f != nullptr && globals().sound != nullptr) {
@@ -1083,18 +1094,35 @@ void vm_svc_set_loader_cancel_flag(int v) { LOG_ONCE(); }
 
 // ---- Field menus --------------------------------------------------------------------
 void vm_svc_set_menu_request(int menu) {
-  SVC("%d", menu);
-  g_stub.menu_request = 0;  // the menu "closes" at once
+  TRACE("%d", menu);
+  field_menu_request(menu);  // g_menu_request 0x80076196 (menu_camp.cpp)
 }
-void vm_svc_set_menu_param(int param) { SVC("%d", param); }
-int vm_svc_menu_request_pending() { LOG_ONCE(); return g_stub.menu_request; }
+void vm_svc_set_menu_param(int param) { field_menu_set_param(param); }  // g_menu_param 0x8007619a
+int vm_svc_menu_request_pending() { return field_menu_request_pending(); }
 void vm_svc_set_global_76194(int v) { SVC("%d", v); }
 void vm_svc_set_global_76195(int v) { SVC("%d", v); }
 
 // ---- Party / character helpers ------------------------------------------------------
-int vm_svc_party_get_specialty_level(int slot, int n) { LOG_ONCE(); return 0; }
-int vm_svc_party_get_super_specialty6() { LOG_ONCE(); return 0; }
-void vm_svc_party_member_clear_bond(int slot) { SVC("%d", slot); }
+// The party queries run through a temporary menu session (menu_camp.cpp); without a
+// field (VM unit tests) there are no party blocks and the stand-ins answer.
+static bool party_live() {
+  return field_program() != nullptr && globals().config != nullptr && globals().party != nullptr &&
+         globals().records != nullptr && globals().inventory != nullptr;
+}
+int vm_svc_party_get_specialty_level(int slot, int n) {
+  if (party_live()) return menu_member_specialty_level(slot, n);
+  LOG_ONCE();
+  return 0;
+}
+int vm_svc_party_get_super_specialty6() {
+  if (party_live()) return menu_super_specialty_6_level();
+  LOG_ONCE();
+  return 0;
+}
+void vm_svc_party_member_clear_bond(int slot) {
+  TRACE("%d", slot);
+  if (party_live()) menu_member_clear_bond(slot);
+}
 void vm_svc_party_slot_init(int slot, int character_id) {
   TRACE("slot=%d id=%d", slot, character_id);
   FieldGlobals& g = globals();
@@ -1131,7 +1159,14 @@ void vm_svc_sprite_anim_set_loop_frame(int a, int b, int c) {
 }
 
 // ---- Overlay code -------------------------------------------------------------------
-void vm_svc_glow_create(int a0, int a1, int a2, int a3) { SVC("%d,%d,%d,%d", a0, a1, a2, a3); }
+void vm_svc_glow_create(int a0, int a1, int a2, int a3) {
+  if (field_screen() != nullptr) {
+    TRACE("%d,%d,%d,%d", a0, a1, a2, a3);
+    glow_spawn(a0, a1, a2, a3);
+    return;
+  }
+  SVC("%d,%d,%d,%d", a0, a1, a2, a3);
+}
 void vm_svc_overlay_801f9fe8(ScriptCtx* ctx) {
   vm_fetch_args(ctx, 10);
   SVC("%d,%d,%d,...", g_vm_args[0], g_vm_args[1], g_vm_args[2]);
@@ -1180,18 +1215,87 @@ void vm_svc_inventory_clear_all() {
   }
   SVC("%s", "");
 }
-void vm_svc_fx_spawn_burst(int id, const s32 pos[3], int a4) { SVC("id=%d", id); }
-void vm_svc_fx_spawn_ring_textured(int id, const s32 pos[3], const s32 args[8]) { SVC("id=%d", id); }
-void vm_svc_fx_spawn_beam(int id, const s32 a[3], const s32 b[3], const s32 args[4]) { SVC("id=%d", id); }
+// The particle spawners run once the field's SceneRenderer exists (it drives them).
+namespace {
+struct Vec4 {
+  s32 v[4];
+  explicit Vec4(const s32 p[3]) : v{p[0], p[1], p[2], 0} {}
+};
+bool fx_running() { return scene_renderer() != nullptr; }
+}  // namespace
+void vm_svc_fx_spawn_burst(int id, const s32 pos[3], int a4) {
+  if (fx_running()) {
+    TRACE("id=%d pos=%d,%d,%d frames=%d", id, pos[0], pos[1], pos[2], a4);
+    fx_spawn_burst(static_cast<u8>(id), Vec4(pos).v, a4);
+    return;
+  }
+  SVC("id=%d", id);
+}
+void vm_svc_fx_spawn_ring_textured(int id, const s32 pos[3], const s32 args[8]) {
+  if (fx_running()) {
+    TRACE("id=%d pos=%d,%d,%d %d,%d,%d,%d,%d,%d,%d,%d", id, pos[0], pos[1], pos[2], args[0], args[1], args[2], args[3],
+          args[4], args[5], args[6], args[7]);
+    fx_spawn_ring_textured(static_cast<u8>(id), Vec4(pos).v, args[0], args[1], args[2], args[3], args[4], args[5], args[6],
+                           args[7]);
+    return;
+  }
+  SVC("id=%d", id);
+}
+void vm_svc_fx_spawn_beam(int id, const s32 a[3], const s32 b[3], const s32 args[4]) {
+  if (fx_running()) {
+    TRACE("id=%d %d,%d,%d -> %d,%d,%d %#x,%#x,%d,%d", id, a[0], a[1], a[2], b[0], b[1], b[2], args[0], args[1], args[2],
+          args[3]);
+    fx_spawn_beam(static_cast<u8>(id), Vec4(a).v, Vec4(b).v, args[0], args[1], args[2], args[3]);
+    return;
+  }
+  SVC("id=%d", id);
+}
 void vm_svc_fx_spawn_triangle(int id, const s32 a[3], const s32 b[3], const s32 c[3], const s32 args[5]) {
+  if (fx_running()) {
+    TRACE("id=%d %#x,%#x,%#x,%d,%d", id, args[0], args[1], args[2], args[3], args[4]);
+    fx_spawn_triangle(static_cast<u8>(id), Vec4(a).v, Vec4(b).v, Vec4(c).v, args[0], args[1], args[2], args[3],
+                      static_cast<s16>(args[4]));
+    return;
+  }
   SVC("id=%d", id);
 }
-void vm_svc_fx_spawn_orb(int id, const s32 pos[3], const s32 args[6]) { SVC("id=%d", id); }
+void vm_svc_fx_spawn_orb(int id, const s32 pos[3], const s32 args[6]) {
+  if (fx_running()) {
+    TRACE("id=%d pos=%d,%d,%d %d,%d,%d,%d,%#x,%d", id, pos[0], pos[1], pos[2], args[0], args[1], args[2], args[3],
+          args[4], args[5]);
+    fx_spawn_orb(static_cast<u8>(id), Vec4(pos).v, args[0], args[1], args[2], args[3], args[4], args[5]);
+    return;
+  }
+  SVC("id=%d", id);
+}
 void vm_svc_fx_spawn_streak(int id, const s32 a[3], const s32 b[3], int a7, int a8, int a9, int a10, int a11, int a12) {
+  if (fx_running()) {
+    TRACE("id=%d %d,%d,%d -> %d,%d,%d %#x,%#x,%d,%d,%d,%d", id, a[0], a[1], a[2], b[0], b[1], b[2], a7, a8, a9, a10,
+          a11, a12);
+    Vec4 to(b);
+    fx_spawn_streak(static_cast<u8>(id), Vec4(a).v, to.v, a7, a8, a9, a10, a11, a12);
+    return;
+  }
   SVC("id=%d", id);
 }
-void vm_svc_fx_spawn_spark(int id, const s32 a[3], const s32 b[3], const s32 args[4]) { SVC("id=%d", id); }
-void vm_svc_fx_spawn_ring(int id, const s32 pos[3], const s32 args[8]) { SVC("id=%d", id); }
+void vm_svc_fx_spawn_spark(int id, const s32 a[3], const s32 b[3], const s32 args[4]) {
+  if (fx_running()) {
+    TRACE("id=%d %#x,%#x,%d,%d", id, args[0], args[1], args[2], args[3]);
+    fx_spawn_spark(static_cast<u8>(id), Vec4(a).v, Vec4(b).v, args[0], args[1], args[2], args[3]);
+    return;
+  }
+  SVC("id=%d", id);
+}
+void vm_svc_fx_spawn_ring(int id, const s32 pos[3], const s32 args[8]) {
+  if (fx_running()) {
+    TRACE("id=%d pos=%d,%d,%d %d,%d,%d,%d,%#x,%#x,%d,%d", id, pos[0], pos[1], pos[2], args[0], args[1], args[2],
+          args[3], args[4], args[5], args[6], args[7]);
+    fx_spawn_ring(static_cast<u8>(id), Vec4(pos).v, args[0], args[1], args[2], args[3], args[4], args[5], args[6],
+                  args[7]);
+    return;
+  }
+  SVC("id=%d", id);
+}
 int vm_svc_overlay_801f9fb8(int a0) {
   SVC("%d", a0);
   return 0;
@@ -1230,6 +1334,9 @@ int vm_svc_get_global_761ea() { LOG_ONCE(); return 0; }
 int vm_svc_get_global_76214() { LOG_ONCE(); return -1; }
 void vm_svc_set_global_76310(int v) { SVC("%d", v); }
 void vm_svc_set_global_76278(int v) { globals().show_battle_results = static_cast<u8>(v); }
-void vm_svc_worldmap_add_entry(const s32 args[14]) { SVC("%d,%d", args[0], args[1]); }
+void vm_svc_worldmap_add_entry(const s32 args[14]) {
+  TRACE("%d,%d", args[0], args[1]);
+  world_add_light_region(args);  // a lighting region of the world map (0x8007470c / 0x80076284)
+}
 
 }  // namespace ss::game::field

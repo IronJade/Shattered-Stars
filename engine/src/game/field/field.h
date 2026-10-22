@@ -91,6 +91,11 @@ void field_setup_screen(Field* f);            // 0x80049b74
 [[noreturn]] void field_main_loop(Field* f);  // 0x80049bfc
 void field_update(Field* f);                  // 0x8004c334: the state machine
 void field_poison_step(Field* f);              // 0x8004c250
+// 0x80052ce8: puts disc 'disc' (1 / 2) in the drive. The original saves VRAM, runs the
+// insert-disc screen (0x8006f958) until loader_is_disc agrees and restores the display;
+// the port swaps the configured image itself (loader_insert_disc, a no-op when the disc
+// is already in) and otherwise stays on disc 1, which holds the same field / battle data.
+void field_prompt_disc_change(Field* f, int disc, int keep_vram);
 void field_update_encounters(Field* f);       // 0x8004c334 state 0: random encounters
 void field_begin_game_over(Field* f);         // 0x8004b418: state 6 (the title program is read)
 // 0x8005ea54: creates the state block for a new game (or from the load-game snapshot,

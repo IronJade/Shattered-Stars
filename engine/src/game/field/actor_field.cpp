@@ -106,7 +106,9 @@ void draw_shadow(Actor* a, const s32 pos[4], const s16 cam[2], s32 H) {
       *xy[k][1] = static_cast<s16>(sy - (cam[1] - drop));
     }
     if (boxes) {
-      const s16 pts[8] = {p->x0, p->y0, p->x1, p->y1, p->x2, p->y2, p->x3, p->y3};
+      // The original passes &p->x0: the corners are 8 bytes apart in the POLY_FT4, so
+      // fieldactor_build_shadow reads every second (x, y) pair (points 0, 2, 4, 6).
+      const s16 pts[14] = {p->x0, p->y0, 0, 0, p->x1, p->y1, 0, 0, p->x2, p->y2, 0, 0, p->x3, p->y3};
       fieldactor_build_shadow(a, p, pts, 4);
       return;
     }
@@ -350,7 +352,8 @@ void fieldactor_build_shadow(Actor* self, psyq::POLY_FT4* p, const s16* points, 
   }
   p->tpage = 0x56;
   p->clut = 0x7FCD;
-  // Bounding box of the points (4 corners with a stride of two points, or 9 points).
+  // Bounding box of the points: 9 packed (x, y) pairs, or 4 corners read in place from a
+  // POLY_FT4 (points 0, 2, 4, 6 of the pairs from its x0: one corner every 8 bytes).
   const int stride = count == 9 ? 1 : 2;
   const int end = count == 9 ? 9 : count * 2;
   s32 x0 = points[0], x1 = points[0], y0 = points[1], y1 = points[1];

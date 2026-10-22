@@ -369,6 +369,17 @@ void world_create_objects() {
   g_fade_targets.bg_set_tint = [](int r, int g, int b) { world_bg_set_light(r, g, b); };
 }
 
+void world_register_party_sprites(const u8* t) {
+  const u32 leader = fg().game_state[0x24];
+  sprite_pack_register(t + rd32(t + leader * 4), -2, 2);
+  sprite_pack_register(t + rd32(t + (leader ^ 1) * 4 + 8), -3, 2);
+  const u32 mask = party_member_mask_all();
+  s32 id = -4;
+  for (u32 c = 0; c < 12; ++c) {
+    if (c != leader && ((mask >> c) & 1) != 0) sprite_pack_register(t + rd32(t + c * 4 + 8), id--, 2);
+  }
+}
+
 void world_destroy_objects() {
   if (g_bg) {
     // vtable[2] 0x80088894: release the blocks, then the FieldTask.
@@ -508,16 +519,17 @@ void WorldBg::update() {
 
 // vtable[3] 0x8008ae48: the camera yaw into game_state +0x1e; the lighting regions into
 // a blob for handoff 0x10 (bg_take_anim_save hands it over, as on field maps).
-std::vector<u8> g_saved_regions;
+u8* g_saved_regions = nullptr;  // 0x80075728 on the world map
 void world_bg_suspend(WorldBg* bg) {
   WorldGlobals& w = g_world;
   const s16 yaw = static_cast<s16>(bg->yaw >> 12);
   std::memcpy(fg().game_state + 0x1e, &yaw, 2);
-  g_saved_regions.clear();
+  delete[] g_saved_regions;
+  g_saved_regions = nullptr;
   if (w.region_count == 0) return;
   const s32 size = w.region_count * 0x20 + 8;
-  g_saved_regions.assign(static_cast<size_t>(size), 0);
-  u8* out = g_saved_regions.data();
+  g_saved_regions = new u8[static_cast<size_t>(size)]();
+  u8* out = g_saved_regions;
   wr32(out, static_cast<u32>(size));
   wr32(out + 4, static_cast<u32>(w.region_count));
   u8* q = out + 8;
@@ -528,7 +540,11 @@ void world_bg_suspend(WorldBg* bg) {
     q += 0x20;
   }
 }
-const std::vector<u8>& world_saved_regions() { return g_saved_regions; }
+u8* world_take_region_save() {
+  u8* p = g_saved_regions;
+  g_saved_regions = nullptr;
+  return p;
+}
 
 // vtable[4] 0x8008af54: the lighting regions back from handoff 0x10.
 void world_bg_resume(WorldBg*) {
@@ -543,6 +559,7 @@ void world_bg_resume(WorldBg*) {
     std::memcpy(w.region[i], q + 8, 0x18);
     q += 0x20;
   }
+  delete[] blob;
   handoff_clear(fg().handoff, 0x10);
 }
 
@@ -826,7 +843,7 @@ s32 wrap(s32 v, s32 size) {
 
 s32 world_terrain_query(WorldBg* bg, s32 x, s32 z, TerrainHit* hit) {
   FieldGlobals& g = fg();
-  bool outside = false;  // map 2: outside the playable disc (attribute forced to 0xf0)
+  bool outside = false;  // map 2: outside the playable disc (type 0xf, not walkable)
   if (world_map() == 2) {
     const s32 dx = (x >> 12) - 67000, dz = (z >> 12) - 40000;
     if ((std::abs(dx) < 0x5cf8 || std::abs(dz) < 0x5cf8) && world_sqrt(dx * dx + dz * dz) < 0x5cf8) {

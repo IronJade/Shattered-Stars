@@ -10,6 +10,7 @@
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/sprite_pack.h"
+#include "game/field/worldmap.h"
 #include "runtime/libgte.h"
 
 namespace ss::game::field {
@@ -68,6 +69,7 @@ Actor* actor_construct_base(Actor* self) {
 }
 
 void actor_destroy(Actor* self, int flags) {
+  const bool world = is_world_actor(self);  // the 0x44c-byte class of overlay 0xc1e
   self->vtbl = &kActorBaseVtable;
   delete[] self->pushed_state;
   self->pushed_state = nullptr;
@@ -76,7 +78,13 @@ void actor_destroy(Actor* self, int flags) {
     if (child) actor_destroy(child, 3);
   // Afterimages (0x800752ec) whose source is this actor go with it.
   if (actor_hooks().destroyed) actor_hooks().destroyed(self);
-  if (flags & 1) delete self;
+  if (flags & 1) {
+    if (world) {
+      delete static_cast<WorldActor*>(self);
+    } else {
+      delete self;
+    }
+  }
 }
 
 void actor_set_defaults(Actor* self) {
@@ -847,10 +855,12 @@ void actor_link_prims(Actor* self, int children_only, u32 layer_sel, psyq::P_TAG
   for (s32 i = self->prim_count - 1; i >= 0; --i) {
     if (layer_sel != 0xFFFFFFFF && layer_sel == self->prim_ot[i]) {
       // OT layers (0x800761c4): sorted by depth into the layer's own table. The
-      // console links through the entry the table points at; OT layers are not
-      // ported yet, so this path is unverified.
+      // console links the primitive after the first element of entry 0x820 - depth / 2
+      // (it treats the entry's link as the entry: addPrim(ot[i], p), not &ot[i]).
       const s32 d = self->depth >> 1;
-      if (d < 0x800 && alt_ot != nullptr) psyq::addPrim(&alt_ot[0x820 - d], self->prims[i]);
+      if (d < 0x800 && 0x820 - d < 0x82F && alt_ot != nullptr) {
+        if (psyq::P_TAG* first = alt_ot[0x820 - d].next) psyq::addPrim(first, self->prims[i]);
+      }
     } else {
       psyq::addPrim(screen->ot_entry(16 + self->prim_ot[i]), self->prims[i]);
     }
@@ -978,9 +988,8 @@ void actor_load_state(Actor* a, const u8* in, int recreate_attachment) {
 
 void actor_create_attachment(Actor* a) {
   if (a->emote != nullptr) actor_destroy(a->emote, 3);
-  // The world map's class (0x80082d8c, 0x44c bytes) is not ported: the field class
-  // stands in for it.
-  a->emote = fieldactor_construct(new Actor);
+  // The overlay's class: 0x8007e478 on field maps, 0x80082d8c (0x44c bytes) on the world map.
+  a->emote = globals().field_flags[0x68] != 0 ? worldactor_construct(worldactor_new()) : fieldactor_construct(new Actor);
   const s32 pos[3] = {0, 0, 0};
   actor_init(a->emote, 0, pos, 0, 0xFF, 0, -1, 0x1000F);
   Actor* e = a->emote;

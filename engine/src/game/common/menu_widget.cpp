@@ -209,7 +209,9 @@ void TextBox::draw() {
           break;
         case 4: draw_icon(e); break;
         case 5: draw_sprite(e); break;
-        case 6: case 7: case 8: todo("text box number elements (kinds 6-8, title 0x80071810/0x80071aa0/0x80071b74)"); break;
+        case 6: draw_party_status(e); break;
+        case 7: draw_level(e); break;
+        case 8: todo("text box list highlight (kind 8, title 0x80071b74)"); break;
         default: break;
       }
     }
@@ -222,7 +224,7 @@ void TextBox::draw() {
       area(ctx, slot, 0, static_cast<s16>(scroll->v[8] + ry + dys), 0x140, static_cast<s16>(scroll->v[3] * scroll->v[6]));
       draw_scrollbar();
     }
-    if (highlight) todo("text box highlight underline (title 0x8006fe0c, +0x80)");
+    if (highlight) draw_highlight();
     draw_decoration();
     if (!(flags & 0x1000)) {
       if (!(flags & 0x2000)) draw_frame();
@@ -462,6 +464,203 @@ void TextBox::draw_ascii(BoxElement& e) {
     sp->clut = font_clut;
     prim_link(ctx, slot, sp);
   }
+}
+
+// title 0x8007293c / menu_0ba5 0x800def24 (the digits come from boot 0x800100ec).
+void TextBox::draw_number(s32 value, s16 at_x, s16 at_y, int width, int colour_row) {
+  char digits[16];
+  std::memset(digits, ' ', sizeof digits);
+  int at = 0;
+  if (value < 0) digits[at++] = '-', value = -value;
+  // Fixed width: digits from the right, blank padded; extra digits are dropped.
+  for (int i = width - 1, v = value, first = 1; i >= 0; --i) {
+    if (v == 0 && !first) break;
+    digits[at + i] = static_cast<char>('0' + v % 10);
+    v /= 10;
+    first = 0;
+  }
+  u16 px = static_cast<u16>(rx + at_x);
+  const s16 py = static_cast<s16>(ry + at_y);
+  for (int i = 0; i < width; ++i) {
+    auto* sp = prim_alloc<psyq::SPRT>(ctx);
+    if (!sp) return;
+    const u8 c = static_cast<u8>(digits[i]);
+    psyq::setlen(sp, 4);
+    set_word(&sp->r0, colour | 0x64000000u);
+    sp->x0 = static_cast<s16>(px);
+    sp->y0 = py;
+    sp->w = 8;
+    sp->h = 8;
+    sp->clut = static_cast<u16>((colour_row + 0x1E0) * 0x40 | 0x11);
+    sp->u0 = static_cast<u8>(c << 3);
+    sp->v0 = static_cast<u8>(((static_cast<u8>(c - 0x20) >> 5) * 8) - 0x38);
+    prim_link(ctx, slot, sp);
+    px = static_cast<u16>(px + 8);
+  }
+}
+
+// title 0x800727a0 / menu_0ba5 0x800ded88.
+void TextBox::draw_text_at(const char* text_, s16 at_x, s16 at_y) {
+  s16 px = static_cast<s16>(rx + at_x);
+  const s16 py = static_cast<s16>(ry + at_y);
+  for (const char* p = text_; *p; ++p) {
+    auto* sp = prim_alloc<psyq::SPRT>(ctx);
+    if (!sp) return;
+    const u8 c = static_cast<u8>(*p);
+    psyq::setlen(sp, 4);
+    set_word(&sp->r0, colour | 0x64000000u);
+    sp->x0 = px;
+    sp->y0 = py;
+    sp->w = 8;
+    sp->h = 8;
+    sp->u0 = static_cast<u8>(c << 3);
+    sp->v0 = static_cast<u8>(((static_cast<u8>(c - 0x20) >> 5) * 8) - 0x38);
+    sp->clut = font_clut;
+    prim_link(ctx, slot, sp);
+    px = static_cast<s16>(px + 8);
+  }
+}
+
+// title 0x80071e40 / menu_0ba5 0x800de428 and title 0x800721c0 / menu_0ba5 0x800de7a8: a
+// gradient bar for the filled part, a dark tile for the rest and a shadow line along the
+// bottom and right (drawn first).
+void TextBox::draw_gauge(s16 at_x, s16 at_y, int w, int value, int max, bool exp) {
+  const int len = w - 1;
+  const int filled = max != 0 ? static_cast<u16>((len * value) / max) : 0;
+  u32 left, right, rest, shadow;
+  if (!exp) {
+    const int c = max != 0 ? (value * 0xC0) / max : 0;
+    right = static_cast<u32>(c << 8 | (0xC0 - c) | (c / 4) << 16);
+    left = 0xC0C0, rest = 0x102040, shadow = 0x202038;
+  } else {
+    const int c = max != 0 ? (value * 0x70) / max : 0;
+    right = static_cast<u32>((c + 0x70) << 8 | (c / 2 + 0x30) | (c + 0x8F) << 16);
+    left = 0x907030, rest = 0x705020, shadow = 0x302010;
+  }
+  const s16 x0 = static_cast<s16>(rx + at_x), y0 = static_cast<s16>(ry + at_y);
+  auto* g = prim_alloc<psyq::POLY_G4>(ctx);
+  auto* t = prim_alloc<psyq::TILE>(ctx);
+  auto* l = prim_alloc<psyq::LINE_F3>(ctx);
+  if (!g || !t || !l) return;
+  psyq::setlen(g, 8);
+  set_word(&g->r0, menu_colour_code(0x38000000, colour, left));
+  set_word(&g->r1, menu_colour(colour, right));
+  set_word(&g->r2, menu_colour(colour, left));
+  set_word(&g->r3, menu_colour(colour, right));
+  g->x0 = g->x2 = x0;
+  g->x1 = g->x3 = static_cast<s16>(x0 + filled);
+  g->y0 = g->y1 = y0;
+  g->y2 = g->y3 = static_cast<s16>(y0 + 4);
+  prim_link(ctx, slot, g);
+  psyq::setlen(t, 3);
+  set_word(&t->r0, menu_colour_code(0x60000000, colour, rest));
+  t->x0 = static_cast<s16>(x0 + filled);
+  t->y0 = y0;
+  t->w = static_cast<s16>(len - filled);
+  t->h = 4;
+  prim_link(ctx, slot, t);
+  psyq::setLineF3(l);
+  set_word(&l->r0, menu_colour_code(0x48000000, colour, shadow));
+  l->x0 = static_cast<s16>(x0 + 1), l->y0 = static_cast<s16>(y0 + 4);
+  l->x1 = static_cast<s16>(x0 + len + 1), l->y1 = static_cast<s16>(y0 + 4);
+  l->x2 = static_cast<s16>(x0 + len + 1), l->y2 = y0;
+  prim_link(ctx, slot, l);
+}
+
+// title 0x80071810 / menu_0ba5 0x800dddf8: "HP cur/ max" and "MP cur/ max" (current in
+// yellow below a quarter, red at 0) with their gauges.
+void TextBox::draw_party_status(BoxElement& e) {
+  s16 hp, hp_max, mp, mp_max;
+  if (e.state == 0x10) {
+    hp = e.status[0], hp_max = e.status[1], mp = e.status[2], mp_max = e.status[3];
+  } else {
+    const u8* p = party_slots() + e.state * 0x60;
+    hp = static_cast<s16>(read_u16(p + 0x1C));
+    hp_max = static_cast<s16>(read_u16(p + 0x18));
+    mp = static_cast<s16>(read_u16(p + 0x24));
+    mp_max = static_cast<s16>(read_u16(p + 0x22));
+  }
+  const char* slash = reinterpret_cast<const char*>(table(0x800749A8, 0x800E0FC8));
+  if (!slash) slash = "/";
+  auto value_colour = [](s16 v, s16 max) {
+    int c = 1;
+    if (v < max / 4) c = v != 0 ? 5 : 6;
+    return c;
+  };
+  const s16 px = e.x;
+  s16 py = e.y;
+  draw_number(hp, px, py, 4, value_colour(hp, hp_max));
+  draw_text_at(slash, static_cast<s16>(px + 0x20), py);
+  draw_number(hp_max, static_cast<s16>(px + 0x28), py, 4, 1);
+  py = static_cast<s16>(e.y + 8);
+  draw_number(mp, px, py, 4, value_colour(mp, mp_max));
+  draw_text_at(slash, static_cast<s16>(px + 0x20), py);
+  draw_number(mp_max, static_cast<s16>(px + 0x28), py, 4, 1);
+  draw_gauge(e.x, static_cast<s16>(e.y + 3), 0x48, hp, hp_max, false);
+  draw_gauge(e.x, static_cast<s16>(e.y + 0xB), 0x48, mp, mp_max, false);
+}
+
+// title 0x80071aa0 / menu_0ba5 0x800de088.
+void TextBox::draw_level(BoxElement& e) {
+  if (e.n1a < 0xFF) {
+    draw_number(e.number, e.x, e.y, 9, 1);
+    draw_gauge(e.x, static_cast<s16>(e.y + 3), 0x48, e.n18, 100, true);
+  } else {
+    const u16 saved = font_clut;
+    font_clut = 0x78D1;
+    const char* master = reinterpret_cast<const char*>(table(0x800749AC, 0x800E0FCC));
+    draw_text_at(master ? master : "MASTER", e.x, e.y);
+    font_clut = saved;
+  }
+}
+
+int TextBox::add_party_status(s16 index) {
+  BoxElement e;
+  e.kind = 6;
+  e.flags = 4;
+  e.state = static_cast<u16>(index);
+  e.x = pen_x;
+  e.y = pen_y;
+  add_element(std::move(e));
+  return static_cast<int>(elements.size()) - 1;
+}
+
+int TextBox::add_level(s16 level, s32 exp_to_next, s16 percent) {
+  BoxElement e;
+  e.kind = 7;
+  e.flags = 4;
+  e.x = pen_x;
+  e.y = pen_y;
+  e.number = exp_to_next;
+  e.n18 = percent;
+  e.n1a = level;
+  add_element(std::move(e));
+  return static_cast<int>(elements.size()) - 1;
+}
+
+// title 0x8006fe0c / menu_0ba5 0x800dc3f4: a white underline with a dark shadow below
+// the highlighted text line.
+void TextBox::draw_highlight() {
+  if (!text) return;
+  const int index = *highlight + unknown7c;
+  if (index < 0 || index >= text->line_count()) return;
+  const TextLine* line = text->line(index);
+  if (!line || line->width == 0) return;
+  const s16 x0 = static_cast<s16>(rx + static_cast<u16>(line->x));
+  const s16 y0 = static_cast<s16>(ry + static_cast<u16>(line->y));
+  const s16 w = static_cast<s16>(line->width - 1);
+  auto* a = prim_alloc<psyq::LINE_F2>(ctx);
+  auto* b = prim_alloc<psyq::LINE_F2>(ctx);
+  if (!a || !b) return;
+  psyq::setlen(a, 3);
+  set_word(&a->r0, menu_colour_code(0x40000000, colour, 0xFFFFFF));
+  a->x0 = x0, a->y0 = static_cast<s16>(y0 + 0xC), a->x1 = static_cast<s16>(x0 + w), a->y1 = a->y0;
+  prim_link(ctx, slot, a);
+  psyq::setlen(b, 3);
+  set_word(&b->r0, menu_colour_code(0x40000000, colour, 0x010101));
+  b->x0 = static_cast<s16>(x0 + 1), b->y0 = static_cast<s16>(y0 + 0xD), b->x1 = static_cast<s16>(x0 + 1 + w), b->y1 = b->y0;
+  prim_link(ctx, slot, b);
+  unknown7a = 0;
 }
 
 void TextBox::draw_icon(BoxElement& e) {
@@ -1161,6 +1360,17 @@ void Widget::set_result(s16 code) {
     result = code;
   }
   close();
+}
+
+Cursor* Widget::push_cursor() {
+  Cursor* old = cursor;
+  cursor = new Cursor;
+  return old;
+}
+
+void Widget::pop_cursor(Cursor* old) {
+  cursor->on_close();
+  cursor = old;
 }
 
 // ==== Dialog ======================================================================================

@@ -40,11 +40,14 @@ struct MenuSession {
   MenuScene* scene = nullptr;  // +0x04
   std::vector<u8> buffer; // +0x08
   u16 help_flags = 0;     // +0x0c: the focused panel's help-bar flags
+  s16 member = 0;         // +0x0e: party slot picked in the camp menu
+  s16 member_scroll = 0;  // +0x10: its list scroll (quarter rows)
   s16 arg = 0;            // +0x12: argument of script-opened menus
   s8 page_id = 0;         // +0x14: current page (menu_pages_publish_id)
   s8 load_mode = 0;       // +0x15: page 0x11 loads (1) or saves (0)
   s8 result = 0;          // +0x16: 1 = a game was loaded (handoff 0xe is kept)
   s8 single_member = 0;   // +0x17
+  s8 command = 0;         // +0x18: the camp menu's last command
   u8 cached_0bd2 = 0;     // +0x19: free entry 0xbd2 on destruction
   u8 cached_0bbb = 0;     // +0x1a
   s8 unknown1b = 0;       // +0x1b
@@ -116,9 +119,16 @@ class MenuPageLoader {
   s16 loads_on = 0;           // +0x6c
 };
 
-// Page handlers (title 0x80035940-0x80035a94). The title links only pages 0 and
-// 0x11; the field's are listed in docs/catalog (menu_page*_update).
+// Page handlers (title 0x80035940-0x80035a94 / field 0x80035334-0x80035f0c). The
+// title links only pages 0 and 0x11; the field registers its own (game/field/menu_camp).
+// A page without a handler logs and goes back to the page below it.
 void menu_page00_start(MenuPageLoader* p);   // title 0x80035940 / field 0x80035334
-void menu_page11_update(MenuPageLoader* p);  // title 0x800359b8 / field 0x800358e8
+void menu_page11_update(MenuPageLoader* p);  // title 0x800359b8
+using PageHandler = void (*)(MenuPageLoader* p);
+void set_page_handler(int page, PageHandler handler);  // null restores the default
+
+// Called once per menu frame after the background loads (field 0x800300dc: the Callways
+// walking effects keep running while the field's menus are open).
+void set_menu_frame_hook(void (*hook)());
 
 }  // namespace ss::game::menu

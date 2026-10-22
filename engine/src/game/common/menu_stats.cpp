@@ -226,15 +226,14 @@ void stat_mod_attr_3e(u8* slot, int pct) {
 }
 
 s32 item_data_get(int item, int field) {
-  const auto& data = globals().item_data;
-  if (data.empty()) {
+  // field 0x80034100 -> 0x8003c538: the records the inventory points at (+0x820), once
+  // the item data is in.
+  if (globals().item_data.empty()) {
     std::fprintf(stderr, "ERROR ReduceGetItemData %d %d\n", item, field);
     return 0;
   }
-  if (item == 0) return 0;
-  const size_t off = static_cast<size_t>(item - 1) * 0x30;
-  if (off + 0x30 > data.size()) return 0;
-  const u8* p = data.data() + off;
+  if (item == 0 || globals().item_table == nullptr) return 0;
+  const u8* p = globals().item_table + static_cast<size_t>(item - 1) * 0x30;
   if (field == 0) return get32(p, 0);
   if (static_cast<u32>(field - 4) < 0xF) return get16(p, field);
   return p[field];

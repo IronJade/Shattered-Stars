@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "disc/slz.h"
@@ -15,24 +16,27 @@
 #include "game/field/callways.h"
 #include "game/field/camera.h"
 #include "game/boot/rng.h"
-#include "game/field/actors.h"
+#include "game/field/effects.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/music.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
+#include "game/field/menu_camp.h"
 #include "game/field/message.h"
 #include "game/field/notice.h"
 #include "game/field/post_battle.h"
 #include "game/field/voice_queue.h"
-#include "game/field/music.h"
+#include "game/field/scene_renderer.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/stash.h"
 #include "game/field/tasks.h"
 #include "game/field/text_panel.h"
+#include "game/field/worldmap.h"
 #include "runtime/libgpu.h"
+#include "runtime/libgte.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::field {
@@ -165,6 +169,16 @@ void field_create_state_block() {
         gs[0x1A] = static_cast<u8>(m);
         gs[0x1B] = static_cast<u8>(m >> 8);
         runtime::Runtime::get().debug_start_map = -1;
+        // SS_SCRIPT_GLOBALS="a0=6,a4=0x834": script globals G[off] (s32, block +0x180) for
+        // this start, to enter a story scene directly.
+        if (const char* s = std::getenv("SS_SCRIPT_GLOBALS")) {
+          for (char* end = nullptr; *s != 0; s = *end != 0 ? end + 1 : end) {
+            const unsigned long off = std::strtoul(s, &end, 16);
+            if (*end != '=') break;
+            const s32 v = static_cast<s32>(std::strtol(end + 1, &end, 0));
+            if (0x180 + off + 4 <= 0xA40) std::memcpy(block + 0x180 + off, &v, 4);
+          }
+        }
       }
       block[0x8C0] |= 2;
       std::strcpy(reinterpret_cast<char*>(block + 0x248), entered);
@@ -263,7 +277,7 @@ void field_create_subsystems(Field*) {
   load_queue_construct(new LoadQueue);
   notice_create(new Notice);
   task_register(callways_create(new Callways), 1);
-  // TODO(port): SceneRenderer (scene_renderer_create 0x8005f5c8).
+  scene_renderer_create(new SceneRenderer);  // 0x800752d8 (8 bytes, task prio 1); 0x800752dc (glow) = 0
 }
 
 // 0x8004b418: the party fell (a lost script battle). The VM stops, encounters stop, the
@@ -400,11 +414,15 @@ void field_destroy_subsystems(Field*) {
   if (LoadQueue* q = load_queue()) load_queue_destruct(q);
   delete g_notice_object();  // ~Notice: notice_destroy
   bg_destroy();
+  world_destroy_objects();  // the world map's BG (0x8007528c) and WorldCam (0x800752c4)
   if (CamScript* c = camscript()) camscript_destroy(c, 3);
   field_destroy_battle_transition(nullptr);
   if (Callways* c = callways()) callways_destroy(c);
   post_battle_destroy_panels();
-  // TODO(port): FieldPanel, SceneRenderer, the glow and overlay objects.
+  scene_renderer_destroy();  // 0x800752d8
+  glow_destroy_all();        // 0x800752dc: glow_destroy(3)
+  field_free_ot_layers();    // 0x80053158: particle pool and OT layers
+  // TODO(port): FieldPanel and the overlay objects.
 }
 
 void field_update_encounters(Field* f) {
@@ -533,7 +551,7 @@ void field_update(Field* f) {
   // out, close the windows, state 3 (camp menu).
   FieldGlobals& g = g_field;
   trace_leader(f);
-  if (f->state == 0 && (g.pressed[0] & read_u16(g.config + 4)) != 0) todo("field_update: camp menu");
+  field_menu_check(f);  // menu_camp.cpp
   switch (f->state) {
     case 0:
       // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects
@@ -570,6 +588,9 @@ void field_update(Field* f) {
       }
       return;
     }
+    case 3:  // a menu (camp menu, shop, save point): menu_camp.cpp
+      field_menu_update(f);
+      return;
     case 2:  // forced battle: wait for the battle's voice clips too
       if (voice_stream().state < 3) return;
       [[fallthrough]];
@@ -724,6 +745,13 @@ void party_restore_slot_ids(Field*) {
   }
 }
 
+void field_prompt_disc_change(Field*, int disc, int) {
+  if (loader_insert_disc(*g_field.loader, disc)) return;
+  runtime::Runtime::get().log_once("disc_prompt_" + std::to_string(disc),
+                                   "field: disc " + std::to_string(disc) +
+                                       " is needed but not configured (--disc2); continuing with disc 1's archive");
+}
+
 void field_run(Field* f) {
   FieldGlobals& g = g_field;
   psyq::DrawSync(0);
@@ -736,8 +764,10 @@ void field_run(Field* f) {
     }
   }
   field_bind_state_block(f);
-  // A loaded game checks the disc in the drive against the save's (config +0x4c);
-  // the host's disc is whichever the save needs. TODO(port): disc 2 (field_prompt_disc_change 0x80052ce8).
+  // A loaded game (or a return from another program) checks the disc in the drive
+  // against the state's (config +0x4c: 0 disc 1, 1 disc 2).
+  if (g.returning != 0 && g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0)
+    field_prompt_disc_change(f, g.config[0x4C] + 1, 0);
   if (g.field_flags[0x24] != 0) {
     // Back from another program (a battle).
     g.show_battle_results = 1;  // 0x80076278
@@ -766,7 +796,9 @@ void field_main_loop(Field* f) {
   field_load_system_data();
   screen_alloc_arena(&g_screen);
   screen_layout_arena(&g_screen, 1);
-  // 0x8006ff3c: GTE setup (as the title's new_game_gte_setup).
+  // 0x8006ff3c: GTE setup (as the title's new_game_gte_setup): ZSF3 / ZSF4 (the world
+  // map's AVSZ3 / AVSZ4), H, DQA / DQB, offset 0.
+  psyq::InitGeom();
   field_setup_screen(f);
   screen_set_clear_colour(&g_screen, 0, 0, 0);
   for (int i = 0; i < 2; ++i) {
@@ -778,7 +810,19 @@ void field_main_loop(Field* f) {
   pad_set_port_mask(g.pad, 3);
   pad_set_repeat_delay(g.pad, 12);
   const s16 map = static_cast<s16>(rd16(g.game_state + 0x1A));
-  field_load_map(f, map, g.returning != 0, g.returning != 0);
+  // --map-pos X,Y,Z[,FACING[,CAMERA]] (debug): the first map loaded (a --map start or a
+  // loaded game, not a return from a battle) puts the leader there instead of the map's
+  // default spawn or the saved spot.
+  bool keep_position = g.returning != 0;
+  if (auto& rt = runtime::Runtime::get(); rt.debug_start_pos_set && g.field_flags[0x24] == 0) {
+    std::memcpy(g.game_state + 8, rt.debug_start_pos, 12);
+    const s16 facing = static_cast<s16>(rt.debug_start_pos[3]), camera = static_cast<s16>(rt.debug_start_pos[4]);
+    std::memcpy(g.game_state + 0x18, &facing, 2);
+    std::memcpy(g.game_state + 0x1E, &camera, 2);
+    rt.debug_start_pos_set = false;
+    keep_position = true;
+  }
+  field_load_map(f, map, keep_position, g.returning != 0);
   f->present = 1;
   g_vsync_counter.frames();
   for (;;) {

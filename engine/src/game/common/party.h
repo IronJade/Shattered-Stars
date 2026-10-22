@@ -55,6 +55,13 @@ int party_find_bonded(int character);       // field 0x8003446c: front member wh
 int inventory_find(const u8* inventory, int item);  // field 0x8003c820: index of the item (low 10 bits), -1
 int inventory_count(int item);              // field 0x800335d8: count bits 10-14 of its entry
 u8 party_selected_status();                 // field 0x80039e08: slot +2 (& 7: cannot be healed)
+// title 0x80034ef8 / field 0x80034000: experience needed to finish 'level': the sum over
+// i = 1..level of (i * i + 1) * ((i - 1) / 10 + 5) (15 from level 100); 0 at level 0,
+// 1000000000 from level 255.
+s32 exp_for_level(int level);
+// title 0x80034fb4 / field 0x800340bc: exp_for_level(level) minus the selected member's
+// experience (slot +0x10), at least 0.
+s32 exp_to_next_level(int level);
 
 // ---- StatChange (6 bytes; field 0x800397a4-0x80039f6c) --------------------------------
 // Values of the selected member: 1 HP base (+0x14), 2 HP max (+0x18), 3 HP (+0x1c),

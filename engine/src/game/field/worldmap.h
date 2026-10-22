@@ -174,12 +174,16 @@ const u8* world_ovl_data(u32 address);
 // ---- Map loading (field_load_map's world branches) ----
 // 0x80088814 + 0x8007e000: creates WorldBg and WorldCam (replacing the previous ones).
 void world_create_objects();
+// field_register_party_sprites (field 0x8004b5cc): the world party pack's offset table:
+// the leader (-2), the other protagonist (-3), then each party member (-4, -5, ...).
+void world_register_party_sprites(const u8* table);
 void world_destroy_objects();               // BG vtable delete + __builtin_delete(0x800752c4)
 void world_bg_release(WorldBg* bg);         // 0x800888e0: cancel the read, free the blocks
 void world_cancel_block_load();             // 0x80089368
 void world_parse_section3(WorldBg* bg, const u8* data);  // 0x80088a3c
 void world_bg_suspend(WorldBg* bg);         // vtable[3] 0x8008ae48 (handoff 0x10 blob)
 void world_bg_resume(WorldBg* bg);          // vtable[4] 0x8008af54
+u8* world_take_region_save();               // world_bg_suspend's blob, for handoff 0x10
 void world_bg_set_light(int r, int g, int b);  // vtable[6] 0x8008b044
 void world_bg_set_angle(WorldBg* bg, s32 angle);       // 0x8008f404: +0x30 = angle << 12
 void world_bg_set_centre(WorldBg* bg, s32 x, s32 z);   // 0x8008f410
@@ -199,7 +203,7 @@ void world_camera_reset();                  // camera_reset 0x8005f8d8 (world pa
 void world_camera_update_matrices();        // camera_update_matrices 0x800603a4
 s32 world_camera_yaw();                     // 0x8007ebec: ratan2 of the view direction
 // 0x8008bed8: the camera follows 'a' (vtable[3] of the camera actor, walking).
-void world_camera_follow(WorldBg* bg, Actor* a, s32 turn, s32 pitch_in, int scripted);
+void world_camera_follow(WorldBg* bg, Actor* a, s32 turn, s32 turn_brake, int scripted);
 void world_set_object_matrix(const s32 pos[3], const s32 angles[3], const s32 scale[3]);  // 0x8007ec38
 
 // ---- Drawing ----

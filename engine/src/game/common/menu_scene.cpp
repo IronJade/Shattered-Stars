@@ -15,6 +15,9 @@
 namespace ss::game::menu {
 namespace {
 
+PageHandler g_page_handlers[0x15] = {};
+void (*g_frame_hook)() = nullptr;
+
 // title 0x8004ae2c / field 0x8006ff3c: GTE setup shared with the New Game screens
 // (ZSF3/4, H, DQA/B, screen offset 0).
 void gte_setup() {
@@ -62,6 +65,7 @@ MenuSession::~MenuSession() {
 
 void MenuSession::free_data() {
   globals().item_data.clear();
+  globals().item_table = nullptr;
   if (cached_0bbb) {
     entry_cache_free_0bbb();
     cached_0bbb = 0;
@@ -217,6 +221,7 @@ void MenuScene::frame_begin() {
   screen_flip();
   deferred_delete_update();
   ctx->ot_head = screen_clear_ot(ctx->ot);
+  if (g_frame_hook) g_frame_hook();
   async_load_queue_update();
   if (input_off == 0) {
     held = menu_input_lowest_bit(pad_current(menu_pad(), 0));
@@ -315,6 +320,7 @@ int MenuPageLoader::update() {
       if (!read_buf.empty()) {
         // Page code (native in the port) and its data block: the data replaces g_menu_data.
         if (auto code = disc::slz::unpack_block(read_buf, 0, 0, nullptr)) code_dest = std::move(*code);
+        set_page_code_entry(entry);  // its constants are read from the entry
         if (data_size != 0) {
           auto data = disc::slz::unpack_block(read_buf, static_cast<size_t>(code_size), 0, nullptr);
           globals().data = data ? std::move(*data) : std::vector<u8>{};
@@ -332,17 +338,37 @@ int MenuPageLoader::update() {
     ready = true;
   }
   if (!ready) return 0;
+  if (page == 0x14) return 1;
+  if (page >= 0 && page < 0x14 && g_page_handlers[page] != nullptr) {
+    g_page_handlers[page](this);
+    return 0;
+  }
   switch (page) {
     case 0: menu_page00_start(this); return 0;
     case 0x11: menu_page11_update(this); return 0;
-    case 0x14: return 1;
     default:
-      // The title's other page handlers are empty; the field's are not ported yet.
+      // The title's other page handlers are empty; the field's not ported yet go back to
+      // the page below (as if the page had opened and been cancelled at once).
       runtime::Runtime::get().log_once("menu_page" + std::to_string(page),
                                        "menu: page " + std::to_string(page) + " is not ported yet");
+      if (substate == 1) {
+        depth = static_cast<s16>(depth - 1);
+        if (depth < 0) {
+          depth = 0;
+          goto_page(0x14);
+        } else {
+          goto_page(stack[depth].id);
+        }
+      }
       return 0;
   }
 }
+
+void set_page_handler(int page, PageHandler handler) {
+  if (page >= 0 && page < 0x15) g_page_handlers[page] = handler;
+}
+
+void set_menu_frame_hook(void (*hook)()) { g_frame_hook = hook; }
 
 void MenuPageLoader::goto_page(s16 p) {
   page = p;

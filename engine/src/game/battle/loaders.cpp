@@ -7,6 +7,7 @@
 
 #include "disc/slz.h"
 #include "game/battle/bobj.h"
+#include "game/battle/window.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
 #include "game/title/title_program.h"
@@ -134,7 +135,7 @@ void load_battle_text(const Bytes& data) {
   const Bytes tim = unpack(data, 2);
   upload_clut256(tim, 0x14, 0, 0x1F9);
   psyq::DrawSync(0);
-  // TODO(port): g_text_pixels and the battle text renderer (title text code, 64-row buffer).
+  text_reset();  // g_text_pixels, the #1980 line buffer
 }
 
 void load_item_data(const Bytes& data) {

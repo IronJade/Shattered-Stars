@@ -784,7 +784,7 @@ void sprite_step(Sprite* s) {
   bool changed = false;
   if (s->loaded_anim != s->anim) {
     if (s->anim < 0x24) {
-      const u8* t = table(0x80074B7C, 0);
+      const u8* t = table(0x80074B7C, 0x800E119C);
       mapped = (t ? read_u32(t + (s->anim % 12) * 4) : 0) + static_cast<u32>(s->anim / 12) * 7;
     }
     s->pack = sprite_find_pack(mapped, static_cast<u32>(s->gfx));

@@ -437,8 +437,9 @@ void title_program_main(System* sys) {
     if (g_title.config) g_title.config[0x17F] = static_cast<u8>(choice);
     if (choice == kTitleNewGame) {
       load_queue_reset();
-      if (loader_is_disc(*g_title.loader, 1) != 1) {
-        // TODO(port): the "insert disc 1" prompt (0x8003c5ec), then entries #14-#16 again.
+      if (loader_is_disc(*g_title.loader, 1) != 1 && !loader_insert_disc(*g_title.loader, 1)) {
+        // TODO(port): the "insert disc 1" prompt (0x8003c5ec), then entries #14-#16 again
+        // (the host swaps a configured disc 1 image back in itself: loader_insert_disc).
         runtime::Runtime::get().log_once("disc1_prompt", "New Game needs disc 1; the swap prompt is not ported");
       }
       RenderContext* holder = nullptr;  // the original's 4-byte object

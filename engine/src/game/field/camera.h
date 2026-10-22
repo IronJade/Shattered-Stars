@@ -21,12 +21,39 @@ struct CameraBlock {
   s16 distance = 0;      // 0x80075ab8
   u8 ambient[3] = {};    // 0x80075b30
   s16 offset[3] = {};    // 0x80075b28: camera offset vector
-  s16 angles[4] = {};    // 0x80075b34..0x80075b3a: yaw / pitch
+  s16 angles[4] = {};    // 0x80075b34..0x80075b3a: pitch, yaw, roll (0)
+  s16 pitch2 = 0;        // 0x80075b3c
+  s16 yaw2 = 0;          // 0x80075b3e
   s16 distance2 = 0;     // 0x80075b40
+  // The matrices of the 3D effects (effects.h; camera_update_matrices in effects_camera.cpp).
+  s16 light_rgb[3] = {};          // 0x80075ac0..0x80075ac4: light colour (world map terrain light)
+  psyq::MATRIX view{};            // 0x80075ac8: camera rotation (camera_compute_view)
+  psyq::MATRIX rot{};             // 0x80075b44: view * Rot(offset): what the particles draw with
+  psyq::MATRIX fx_colour{};       // 0x80075b64: particles' GTE colour matrix (fx_setup_light)
+  psyq::MATRIX fx_light{};        // 0x80075b84: particles' GTE light matrix
+  psyq::MATRIX colour{};          // 0x80075ba4: light colour << 5 in column 0
+  psyq::MATRIX light{};           // 0x80075bc4: L12 = 0x1000
+  s16 light_dir[3][4] = {};       // 0x80075be4: three light directions (nothing on disc sets them)
+  s16 light_col[3][4] = {};       // 0x80075bfc: their colours
+  u8 light_mask = 0;              // 0x80075c14: lights in use (bit i)
+  s32 light_angles[3] = {};       // 0x80075c3c..0x80075c44
+  s32 fx_light_params[3] = {};    // 0x800746ec: particle light rotation {flag, yaw, angle}; 0 at reset
+  s32 fx_scale[3] = {0x1000, 0x1000, 0x1000};  // 0x800746fc: object scale (camera_set_object_matrix)
 };
 CameraBlock& camera_block();
 void camera_reset();            // 0x8005f8d8
-void camera_update_matrices();  // 0x800603a4 (light matrices: not ported; sprites don't use them)
+void camera_update_matrices();  // 0x800603a4: camera_compute_view, light matrices, rot (effects_camera.cpp)
+void camera_init_light_matrices(const s32 angles[3]);  // 0x8005fa54
+s32 camera_compute_view();      // 0x8005fb2c: view from the eye / target (or the angles)
+// 0x8005ff84: GTE RT / TR for an object at 'pos' (20.12): view * Raxis(rot[2]) * Ry(rot[1])
+// (rot[0] != 0 picks the other axis and becomes the angle) and view * (pos - eye); scaled;
+// H from the zoom. rot[2] is written when rot[0] != 0.
+void camera_set_object_matrix(const s32 pos[3], s32 rot[3], const s32 scale[3]);
+void gte_set_back_colour();     // 0x800617d8: BK = ambient * BG tint / 128
+// The field program's own matrix helpers.
+void field_rot_matrix(const psyq::SVECTOR* r, psyq::MATRIX* m);         // 0x8006e52c (C RotMatrix; m21 differs from libgte's)
+void rot_matrix_y(s32 angle, psyq::MATRIX* m);                         // 0x8006ecf0
+void rot_matrix_axis(const s32 axis[3], s32 angle, psyq::MATRIX* m);  // 0x8006ed5c (Rodrigues)
 
 struct CamMove {             // 0x24 bytes at +0xc
   s32 x = 0, y = 0, z = 0;      // BG point (mode 0) or world point 20.12 (mode 1)

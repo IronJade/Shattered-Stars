@@ -936,10 +936,4 @@ void camera_end_scheduled() {
 
 const s32 kZeroVector[4] = {0, 0, 0, 0};
 
-void battle_message_show(int id) {
-  // TODO(port): the banner window (#1984.0 0x80074ca4) and the #1980 text renderer.
-  runtime::Runtime::get().log_once("battle-banner", "battle: message banner not ported yet (string " +
-                                                        std::to_string(id) + ")");
-}
-
 }  // namespace ss::game::battle

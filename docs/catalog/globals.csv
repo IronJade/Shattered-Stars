@@ -436,9 +436,31 @@ boot,0x8002b77c,_spu_tsa,u16,libspu: transfer start address / 8,confirmed,SpuSet
 boot,0x8002bc04,_spu_rev_startaddr,u32[10],libspu: reverb work-area start (/ 8) per mode (0xfffe 0xfb28 0xfc18 0xf6f8 0xf204 0xea44 0xe128 0xcff8 0xcff8 0xf880),confirmed,SpuSetReverbModeParam; read at run time from SCUS_944.21
 boot,0x8002bc34,_spu_rev_param,u8[10][0x44],"libspu: reverb presets, a u32 register mask then the 32 reverb registers (dAPF1 .. vRIN)",confirmed,_spu_setReverbAttr; read at run time from SCUS_944.21
 field,0x1f800000,vm_args,int[16],Scratchpad buffer vm_fetch_args fills,confirmed,vm_fetch_args
+field,0x800717b0,k_menu_button_icons,u16[8],Field copy of title 0x8004b410,confirmed,same bytes
+field,0x80071968,k_stat_kinds,u8[32],Field copy of title 0x8004b5d0,confirmed,field stat_get; same bytes
+field,0x8007197c,k_specialty_skills,u8[][3],Field copy of title 0x8004b5e4,confirmed,char_specialty_info 0x80033d1c
+field,0x800719ae,k_super_specialty_pairs,u8[9][2],The two specialties of each super specialty,confirmed,party_super_specialty_info 0x80033ea0
+field,0x80071cd8,k_card_code_pairs,char[2][255],Field copy of title 0x8004b8c8,confirmed,same bytes
+field,0x80072134,k_item_stats_packed,SLZ,Field copy of title 0x8004bcc4,confirmed,field stat_calc_load_items; same bytes
+field,0x8007405c,g_menu_scene,MenuScene *,Field copy of title 0x8004dd94,confirmed,menu_scene_create 0x8002f9f8
+field,0x80074060,g_menu_res,u8 *,"Resource pack of the menu kind (0xba4, ...); freed by menu_scene_create",confirmed,menu_launcher_finish
+field,0x80074064,g_menu_data,u8 *,Page data (0xba7 for the camp page; replaced by each page's entry + 1),confirmed,"menu_launcher_finish, menu_pages_update"
+field,0x80074068,g_menu_item_data,u8 *,"Item pack (entry 3000) once the camp page closed; block 7 item icons, word 6 size kept",confirmed,"camp_menu_on_close, item_data_get"
+field,0x8007406c,g_menu_member_slot,u8 *,Cleared by menu_scene_create,likely,menu_scene_create 0x8002f9f8
+field,0x80074074,g_menu_session,MenuSession *,"Field session: also +0xe camp member, +0x10 member list scroll, +0x18 last camp command, +0x1b game over, +0x30 / +0x35 results 5 / 6",confirmed,"menu_run_camp, camp page"
+field,0x80074078,g_party_selected,int,Selected party slot; slot / record pointers at 0x8007407c / 0x80074080,confirmed,party_select 0x800331c8
+field,0x8007408c,g_menu_field_query,u8,Session +0x31 (page 0xf query): play time drawn by the Panel frame,confirmed,menu_field_query_begin
+field,0x80074090,g_menu_field_query_time,void *,Play-time draw object of the query page,confirmed,menu_field_query_begin
+field,0x80074094,g_menu_pages_debug_step,int,Progress marker in menu_pages_update; never read,confirmed,menu_pages_update
+field,0x800740c4,g_menu_frame_unused_a,int,0x90 every menu frame (title 0x8004decc),confirmed,menu_scene_frame_begin 0x800300dc
+field,0x800740c8,g_menu_frame_unused_b,int,8 or 0xf8 by draw buffer (title 0x8004ded0),confirmed,menu_scene_frame_begin 0x800300dc
+field,0x80074628,g_field_option_a,u16,"What the menu may offer: bit 0 saving (world map or save point), bit 1 field_flags +0x25",confirmed,"field_update state 3, data_menu_create"
+field,0x8007462a,g_field_option_b,u16,Cleared before a menu; read back (unused) after it,confirmed,field_update state 3
+field,0x800746ec,g_fx_light_params,int[3],"Particle light rotation {flag, yaw, angle} for fx_setup_light (0 at camera_reset; nothing else writes it)",confirmed,decomp
+field,0x800746fc,g_object_scale,VECTOR,Object scale for camera_set_object_matrix (0x1000 each at camera_reset),confirmed,decomp
 field,0x80074cf0,g_encounter_barred_a,s16[],"0-terminated list: with ability bit 8 an encounter roll whose list INDEX appears here is re-rolled (field_prepare_encounter compares the index, not the id)",confirmed,assembly 0x800510cc
 field,0x80074d70,g_encounter_barred_b,s16[],"As 0x80074cf0, for ability bit 0x10",confirmed,assembly 0x80051134
-field,0x800750cc,music_table,s16[100],Script music numbers (< 100) map through this table,likely,music opcodes
+field,0x800750cc,k_music_ids,s16[],Music ids in save order (-1 ends); game_state +0x1c holds the index while a menu runs (saves store the index),confirmed,field_update state 3
 field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
 field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
 field,0x8007525c,f_loader,Loader *,System + 0x10,likely,usage with loader_* calls
@@ -453,6 +475,9 @@ field,0x800752ac,g_script_vm,ScriptCtx *,"The event-script VM (class ScriptVM, 0
 field,0x800752b0,g_load_queue,LoadQueue *,"Async CD load queue (0x160 bytes, vtable 0x80072dfc, task prio 1): 16-entry ring of {entry, active, bytes, dest, done*} at +8, head +0x148, tail +0x14c, callback +0x150, in-flight done* +0x154, busy +0x158, entry +0x15c",confirmed,load_queue_* decompilation
 field,0x800752b8,g_battle_setup,u8[0xc0],"Battle setup built by the encounter code (+0 encounter, +4 stage, +8 / +0x3c entry list, +0x70 count, +0x74 preloaded data pointers, +0xa8 free flags); handed to the battle program as handoff 5",likely,field_run; field_exit_to_program 0x80051c9c; battle_run
 field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
+field,0x800752d4,g_menu_launcher,MenuLauncher *,The launcher of the menu being opened (field_update state 3),confirmed,field_update 0x8004c334
+field,0x800752d8,g_scene_renderer,SceneRenderer *,SceneRenderer task (8 bytes; field_create_subsystems),confirmed,decomp
+field,0x800752dc,g_glow,GlowFx *,Edge glow of script ext 0x79 (overlay glow_create); destroyed on map loads / unloads,confirmed,decomp
 field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
 field,0x800752e4,g_report_panels,TextPanel *,4 TextPanels (array new with count at -8) of the Equipment Wizard columns; frame hidden,confirmed,field_update state 0; field_destroy_subsystems
 field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
@@ -487,9 +512,23 @@ field,0x800759a8,g_battle_preload_entry,s32[13],First archive entry of each batt
 field,0x800759dc,g_battle_preload_bytes,s32[13],Total bytes of each group,confirmed,field_prepare_encounter
 field,0x80075a10,g_battle_preload_pieces,s32[13],Entries in each group,confirmed,field_prepare_encounter; field_exit_to_program
 field,0x80075a44,g_battle_preload_order,s32[13],Load-list slot of each sorted id,confirmed,field_prepare_encounter; field_exit_to_program
+field,0x80075ac8,g_camera_view,MATRIX,Camera rotation (camera_compute_view),confirmed,decomp
+field,0x80075b44,g_camera_rot,MATRIX,View * Rot(offset): the effects' rotation,confirmed,decomp
+field,0x80075b64,g_fx_lcm,MATRIX,Effects' GTE colour matrix (fx_setup_light),confirmed,asm
+field,0x80075b84,g_fx_llm,MATRIX,Effects' GTE light matrix (fx_setup_light),confirmed,asm
+field,0x80075be4,g_light_dirs,s16[3][4],Light directions read by fx_setup_light (no writer found),likely,asm; no references in field / 0xc1d / 0xc1e
+field,0x80075bfc,g_light_colours,s16[3][4],Light colours read by fx_setup_light (no writer found),likely,asm
+field,0x80075c14,g_light_mask,u8,Lights in use (bit i); 0 on disc (no writer found),likely,asm
 field,0x80076190,g_ability_bits,u32,"party_scan_equip_effects mask after a battle / gift: 1 encounters -20%, 2 -50%, 4 +20% (encounter distance), 8 / 0x10 re-roll indexes in 0x80074cf0 / 0x80074d70",confirmed,field_update; field_prepare_encounter
+field,0x80076196,g_menu_request,s16,"Menu a script asked for: 1 camp, 2 shop (B 0x6d), 3 query (B 0x7f or script flag 0x14), 4 member (B 0x7a), 5 save (B 0x69); opens like the menu button",confirmed,"field_update 0x8004c334, script table B"
+field,0x8007619a,g_menu_param,s16,"Its argument (shop id, party slot)",confirmed,field_update 0x8004c334
 field,0x8007619e,g_auto_equipped,u8,party_auto_equip result (anything equipped),confirmed,field_update state 0
 field,0x800761a0,g_equip_report,u8 *,"8 x 0x30: attributes before (+0) / after (+0xa), equipment before (+0x14) / after (+0x22)",confirmed,stat_calc_auto_equip; field_equip_report_draw
+field,0x800761a8,g_fx_count,int,"Particle pool size: 0x400 once fx_pool_create ran, 0 = no pool (also gates the OT-layer path of actor_sys_draw)",confirmed,decomp
+field,0x800761ac,g_fx_pool,Particle *,"0x400 x 0x50-byte particles {u16 type; s16 flag; OtLayer *layer; VECTOR pos (+8), vel (+0x18), target (+0x28); int +0x38..+0x48; s16 +0x4c}",confirmed,decomp
+field,0x800761b0,g_fx_origin,s16[2],BG view origin of this frame (scene_renderer_update): subtracted from particle screen coordinates,confirmed,decomp
+field,0x800761b4,g_fx_layer_ids,u32[4],"OT layer ids (= the OT layer / actor layer they are spliced at, + 0x11)",confirmed,decomp
+field,0x800761c4,g_fx_layers,OtLayer *[4],"0x4184-byte layers: u8 half, u8 dirty, u32 ot[2][0x830]",confirmed,decomp
 field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
 field,0x8007622c,g_inventory_stashed,u8,The stash holds the inventory (set by A 0x10 and when taken from handoff 0x11),confirmed,field_run; overlay 0x8008ea0c
 field,0x80076274,g_report_showing,u8,A member page of the Equipment Wizard is up,confirmed,field_update state 0xf
@@ -503,6 +542,7 @@ field,0x800762e8,g_side_buffer,u8 *,Side-loaded entry (0xfc2 strings + font) unt
 field,0x800762ec,g_side_entry,s16,Entry of the side load,confirmed,field_side_load
 field,0x80076314,g_poison_next_step,s32,"Step count (field_flags +0x18 >> 12) at which the next poison tick happens; reset to 1 by field_load_map, advanced by 400 steps (scaled by scene +0x68 on field maps) after each tick",confirmed,field_update state 0; field_load_map
 field,0x80077384,mapobj_table,s16[],"Archive entries ext 0xbb preloads (0xfc9..) for map objects, then waits on them (wait state 6); not map ids (was map_transfer_table)",confirmed,vm_exec_ext case 0xbb
+field,0x8007884c,g_menu_input_lock,u8,Field copy of title 0x8004ece4,confirmed,menu_scene_frame_begin 0x800300dc
 field,0x8007b692,voice_field_clip_base,s16[13],Per character: archive entry of the first field voice clip bank (clip index added),confirmed,voice_queue_build_field
 field,0x8007bf0e,voice_caster_banks,s16[],Voice bank entry per class (party slot +3 >= 9: casters),confirmed,voice_queue_build_battle
 field,0x8007bfa0,g_voice_entries,s16[24],"Voice queue: archive entries to read (-1 = copy a bank another member already loaded), sorted ascending",confirmed,voice_queue_build_battle / _field / _update
@@ -511,6 +551,71 @@ field,0x8007c000,g_voice_reading,u8,The head entry has been read (or a copy is d
 field,0x8007c001,g_voice_field_mode,u8,The queue holds field clips (sound_load_effect_bank) rather than battle banks (sound_add_effect_bank),confirmed,voice_queue_build_field; voice_queue_update
 field,0x8007c004,g_voice_read_buf,u8 *,Buffer of the entry being read,confirmed,voice_queue_update
 field,0x8007c008,g_voice_held_buf,u8 *,Buffer the sound driver is still uploading (freed once sound_bank_busy != 1),confirmed,voice_queue_update; voice_queue_abort
+field_ovl_c1e,0x8007462c,world_anim_dest,s32[24][2],"Texture-animation groups (section 3 tag 3): destination x, y of each group",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x8007470c,world_region_pos,s32[16][2],"Lighting regions (script table A 0x24): centre x, z",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x800756e4,world_tri_normal,s32[4],Normal of the last polygon a height query hit (floor normal of the walkers),confirmed,world_tri_height 0x8008da50
+field_ovl_c1e,0x80075728,world_region_save,u8 *,"Lighting regions saved by worldbg_suspend: {u32 size, u32 count, {s32 x, z; s16 params[12]}[]} (handoff 0x10)",confirmed,worldbg_suspend 0x8008ae48
+field_ovl_c1e,0x80075a80,world_cam_block,CameraBlock,"On the world map the field camera block (eye 0x80075a84, target 0x80075a90, interpolated eye / target 0x80075a9c / 0x80075aa8, zoom 0x80075ab4, roll 0x80075ab8, terrain light 0x80075ac0, view 0x80075ac8, bend-pass matrix 0x80075ae8, projection matrix 0x80075b08, pitch2 / yaw2 0x80075b3c / 0x80075b3e) is driven by WorldCam; points are relative to the focus block row / column",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80075ae8,world_bend_matrix,MATRIX,Ry(yaw2) + (pos - eye) with absolute y: first pass of every world-map vertex before the curvature bend,confirmed,world_set_object_matrix 0x8007ec38
+field_ovl_c1e,0x80075b08,world_proj_matrix,MATRIX,"Rx(pitch2) Rz(roll) + (0, -eye.y, 0): the projection pass after the bend",confirmed,world_set_object_matrix 0x8007ec38
+field_ovl_c1e,0x80075c18,world_fog_base,u8[3],"Fog colour (0x30, 0x60, 0x60); 0x80075c15 = this frame after lighting regions and tint",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80075c1c,world_sky_colours,u8[2][3],"Sky colours r / g / b at 0x80075c1c / c20 / c24 (band 0 top, 1 horizon); 0x80075c28.. after lighting",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80075c3c,world_light_angle,s32[3],"Object rotation passed to world_set_object_matrix for terrain, sky and actors",likely,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80075c4c,world_anim_frames,s16[0x83][4],"Texture-animation frames: source x, y, w, h (durations 0x8007606c, group ends 0x800760f0, first 0x80076108, current 0x80076120, timers 0x80076138)",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80076150,world_blocks_wanted,s16[9],"Blocks around the focus, nearest first (entries)",confirmed,worldbg_stream_blocks 0x80089198
+field_ovl_c1e,0x80076164,world_blocks_loaded,s16[9],"Block entry in each 0xd000 buffer slot, -1 free",confirmed,worldbg_stream_blocks 0x80089198
+field_ovl_c1e,0x80076176,world_streaming,u8,Block streaming enabled (1 at construction),likely,worldbg_construct 0x80088814
+field_ovl_c1e,0x80076178,world_block_buffer,u8 *,9 x 0xd000 terrain block buffer (worldbg_init_blocks),confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x8007617c,world_curve_table,u8 *,"Curvature table (section 3 tag 4, SLZ): sin / cos pairs at +0x800",confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80076180,world_block_pending,s16,"Block entry being read (-1 none); 0x80076182 its slot, 0x80076184 done flag",confirmed,worldbg_stream_blocks 0x80089198
+field_ovl_c1e,0x80076188,world_curve_offset,s32,Curvature offset from the camera pitch (world_set_object_matrix),confirmed,world_set_object_matrix 0x8007ec38
+field_ovl_c1e,0x8007618c,world_pitch_copy,s32,Camera pitch << 12 used for the curvature offset,confirmed,world_camera_manual 0x8008c644
+field_ovl_c1e,0x80076258,world_leader_hit,TerrainHit,The leader's last terrain query (0x1c bytes),confirmed,worldactor_walk 0x80086488
+field_ovl_c1e,0x8007627c,world_cam_pitch_deg,s16,Camera pitch in degrees (21; 18 in vehicles),confirmed,worldbg_construct 0x80088814
+field_ovl_c1e,0x80076280,world_cam_frames,s16,Frames of the follow camera's scripted orbit move (0 = snap),likely,world_camera_follow 0x8008bed8
+field_ovl_c1e,0x80076282,world_region_count,s16,Number of lighting regions (max 16),confirmed,analysis/decomp/ovl3102; engine/src/game/field/worldmap.h
+field_ovl_c1e,0x80076284,world_region_params,s16[16][12],"Lighting region parameters: radius, light rings 1-3, fog / sky rings (5-7 / 9-11)",confirmed,worldbg_update_lighting 0x8008e9b4
+field_ovl_c1e,0x800762fd,world_in_region,u8,"0 outside every lighting region, 1 within 90% of its radius, 2 in its core (encounter stage / kind use it)",confirmed,worldbg_update_lighting 0x8008e9b4
+menu_0ba5,0x800e0cd0,vt_dialog,vtable,Dialog (title 0x800746e8),confirmed,dialog destructor 0x800d47b4
+menu_0ba5,0x800e0eb0,vt_panel,vtable,Panel (title 0x80074898); StatCalc part 0x800e0ea0,confirmed,panel_create 0x800d49ec
+menu_0ba5,0x800e0fc8,k_status_slash,char[],"""/"" (title 0x800749a8)",confirmed,text_box_draw_party_status
+menu_0ba5,0x800e0fcc,k_level_master,char[],"""   MASTER"" (title 0x800749ac)",confirmed,text_box_draw_level
+menu_0ba5,0x800e119c,k_sprite_anim_map,u32[12],Field copy of title 0x80074b7c,confirmed,same bytes
+menu_0ba6,0x80080084,k_camp_member_text,char[],"ASCII pieces of a member box: 0x80080088 ""HP"" line, 0x80080098 step 8 + newline, 0x8008009c ""MP"" line, 0x800800b0 step 0xc + newline, 0x800800b4 ""LV"", 0x800800bc ""%3d"", 0x800800c0 ""NEXT"", 0x800800cc step 4 + newline (name follows)",confirmed,camp_menu_create
+menu_0ba6,0x800800d0,k_camp_time_text,char[],"Play-time strip: ""TIME"", 0x800800dc "":"", 0x8008010c "" "" (colon blink), 0x800800e0 ""%02d"", 0x800800e8 ""FOL"", 0x800800f4 ""%9d"", 0x800800f8 ""BATTLES"", 0x80080108 ""%6d""",confirmed,camp_menu_update_time
+menu_0ba6,0x80080144,vt_menu3,vtable,Third dialog: [1] 0x80080004 [13] 0x8007ffbc (never created by page 1),confirmed,vtable dump
+menu_0ba6,0x800801ec,vt_data_menu,vtable,DataMenu: [1] 0x8008002c [13] 0x8007fdf0,confirmed,vtable dump
+menu_0ba6,0x80080294,vt_combat_menu,vtable,CombatMenu: [1] 0x80080054 [13] 0x8007fc64,confirmed,vtable dump
+menu_0ba6,0x8008034c,vt_camp_menu,vtable,"CampMenu: [1] 0x8007ead0 [3] 0x8007ed54 [4] 0x8007eb30 [9] 0x8007ed74 [10] 0x8007fa58 [13] 0x8007f7c4 [14] 0x8007f9ac, Panel / Widget slots otherwise; StatCalc part 0x8008033c",confirmed,vtable dump
+menu_0ba6,0x8008041c,g_camp_frame_counter,int,Frames of the camp page (wraps at 0xa00); never read,confirmed,camp_menu_frame
+menu_0bb6,0x80082408,k_save_time_label,char[],"Field save page copy of title 0x8006742c (the page 0x11 constants sit 0x1afdc above the title's: 0x8008242c, 0x800824bc..0x800824d0, 0x80082b38, 0x80082b50, 0x80082b68, 0x80082b78)",confirmed,same bytes
+title,0x8004b410,k_menu_button_icons,u16[8],Pad masks in the order of the button icon cells (0x20 0x40 0x10 0x80 4 8 1 2); field copy 0x800717b0,confirmed,menu_session_build_button_map; same bytes in the field image
+title,0x8004b5d0,k_stat_kinds,u8[32],"Stat group kinds: bit 0 the record (else the party slot), bit 1 32-bit; field copy 0x80071968",confirmed,stat_get; same bytes in the field image
+title,0x8004b5e4,k_specialty_skills,u8[][3],Skills of each specialty (1-based); field copy 0x8007197c,confirmed,char_specialty_info; same bytes in the field image
+title,0x8004b8c8,k_card_code_pairs,char[2][255],Name character pairs (letter + ' ' or a voiced mark); code = index + 1; field copy 0x80071cd8,confirmed,text_to_card_codes; same bytes in the field image
+title,0x8004bcc4,k_item_stats_packed,SLZ,"0x338 items x 14 bytes, unpacked by stat_calc_load_items; field copy 0x80072134",confirmed,stat_calc_load_items; same bytes in the field image
+title,0x8004dd90,g_menu_debug_step,int,Progress marker set through the scene's frame and destructor (1-0xe); never read,confirmed,menu_scene_*
+title,0x8004dd94,g_menu_scene,MenuScene *,The running menu scene,confirmed,menu_scene_create
+title,0x8004dd98,g_menu_system,System *,get_system() for the menu code,confirmed,load_game_screen_run
+title,0x8004dd9c,g_menu_slz,void *,SLZ context (System + 1) the menu code unpacks with,confirmed,load_game_screen_run
+title,0x8004dda0,g_menu_pad,Pad *,System + 4,confirmed,load_game_screen_run
+title,0x8004dda4,g_menu_inventory,u8 *,Handoff 6 (0xc28 bytes),confirmed,menu_session_create
+title,0x8004dda8,g_menu_party,u8 *,Handoff 3 (8 x 0x60),confirmed,menu_session_create
+title,0x8004ddac,g_menu_records,u8 *,Handoff 4 (8 x 0xd0),confirmed,menu_session_create
+title,0x8004ddb0,g_menu_res,u8 *,Unpacked resource pack (window art TIMs); freed by menu_scene_create after the upload,confirmed,"load_game_screen_run, menu_scene_create"
+title,0x8004ddb4,g_menu_data,u8 *,"Page data pack: block 0 messages, 1 font, 4 name table, 5 size kept, 6 slot badges TIM (page 0x11)",confirmed,save_menu_create
+title,0x8004ddb8,g_menu_item_data,u8 *,Item data (0x30 bytes an item) when resident; 0 in the title,confirmed,"item_data_get, stat_calc_create"
+title,0x8004ddbc,g_menu_unknown_ddbc,int,Cleared by menu_scene_create,guess,menu_scene_create
+title,0x8004ddc4,g_menu_session,MenuSession *,"The menu session (0x38 bytes): +0xc help flags, +0x14 page id, +0x15 load mode, +0x16 loaded, +0x19 0xbd2 cached, +0x1a 0xbbb cached, +0x1c variant, +0x1d start page, +0x20 button icon map",confirmed,menu_session_create
+title,0x8004ddc8,g_menu_member,int,Selected party slot,confirmed,party_select
+title,0x8004ddcc,g_menu_member_slot,u8 *,Party slot of the selected member,confirmed,party_select
+title,0x8004ddd0,g_menu_member_record,u8 *,Record of the selected member,confirmed,party_select
+title,0x8004ddd4,g_entry_cache,{void *ptr; int entry; int size}[16],"Unpacked archive entries kept resident (0xbd2 sprites, 0xbbb)",confirmed,entry_cache_load
+title,0x8004de94,g_menu_strings,u8 *,Pack the strings_word / strings_block lookups read,confirmed,strings_set
+title,0x8004de9c,g_menu_pages_debug_step,int,Progress marker in menu_pages_update (2-8); never read,confirmed,menu_pages_update
+title,0x8004deb8,k_save_magic,char[16],"""STAR OCEAN 03/01"": first bytes of a save's summary",confirmed,save_summary_check
+title,0x8004decc,g_menu_frame_unused_a,int,0x90 every menu frame; never read in the title,confirmed,menu_scene_frame_begin
+title,0x8004ded0,g_menu_frame_unused_b,int,8 or 0xf8 by draw buffer every menu frame; never read in the title,confirmed,menu_scene_frame_begin
 title,0x8004eb18,g_sound_demo_state,int,new_game_sound_update step (1 wait; 2 bank; 3 busy; 4 play; 0xff playing),confirmed,new_game_sound_update
 title,0x8004ebdc,t_system,System *,System object as seen by program #1,confirmed,title_program_main
 title,0x8004ebe0,t_handoff,Registry *,System + 0x5a20,confirmed,title_program_main
@@ -527,6 +632,17 @@ title,0x8004ec28,g_battle_rank_unlocked,u8,Set by the Voice Collection (over hal
 title,0x8004ec70,g_load_queue_dest,void *[16],Background load queue: destinations,confirmed,async_load
 title,0x8004ecb0,g_load_queue_entry,u16[16],Background load queue: entries,confirmed,async_load
 title,0x8004ecd0,g_load_current,u16,Entry being read by the load queue (0 = idle),confirmed,load_fifo_update
+title,0x8004ece4,g_menu_input_lock,u8,Frames the menu ignores the pad after a press (4),confirmed,menu_scene_frame_begin
+title,0x8004ece8,g_text_default_font,u8 *,Font a new text renderer starts with (page data block 1),confirmed,text_set_default_font
+title,0x8004ecec,g_text_default_strings,u8 *,Message pack a new text renderer starts with (block 0),confirmed,text_set_default_font
+title,0x8004ecf0,g_text_fg_tables,u16[6][16],"Glyph expansion tables of colour sets 1-6 (1-bpp nibble -> four 4-bit pixels); shadow tables 0x8004edb0, masks 0x8004ee70",confirmed,"text_build_colour_tables, text_set_tables"
+title,0x8004ef30,g_text_expansions,{u8 *font; u8 *strings; int group; int index}[8],Messages code 0x4009 draws in place,confirmed,text_draw_text
+title,0x8004efb0,g_text_expansion_next,int,Next 0x4009 entry,confirmed,text_draw_text
+title,0x8004efb8,g_bgload_state,s16,"Background loader step (0 idle, 1-6)",confirmed,async_load_queue_update
+title,0x8004efbc,g_bgload_capacity,s16,Request table size,confirmed,bgload_add
+title,0x8004efc0,g_bgload_current,s16,Request being read,confirmed,async_load_queue_update
+title,0x8004efc4,g_bgload_requests,LoadRequest *,"0x14-byte requests: +0 flags (1 used, 2 pending, 4 reading, 8 owns buffer, 0x20 cancel), +2 entry, +4 dest, +0xc sector offset, +0xe sectors, +0x10 owner",confirmed,bgload_queue
+title,0x8004efd0,g_bgload_timer,int,0x3c after each finished request,confirmed,async_load_queue_update
 title,0x80050aa8,g_movie_screen_cleared,s32,Both display buffers were cleared before the first frame,confirmed,movie_update
 title,0x80050aac,g_movie_slice_half,s32,Half of the slice buffer the MDEC fills next,confirmed,movie_dma_callback
 title,0x80050ab0,g_movie_slice_rect,RECT,VRAM column (mode * 8 halfwords x height) the finished slice is loaded to,confirmed,movie_dma_callback
@@ -538,3 +654,45 @@ title,0x80050ac8,g_movie_draw_buffer,s32,0: frames are decoded to y; 1: to y + 2
 title,0x80050acc,g_movie_rect,s16[4],x; y; width; height from movie_create,confirmed,movie_create
 title,0x80050ad4,g_movie_mode,s16,3 = 24-bit output; 2 = 15-bit (VRAM halfwords per two pixels),confirmed,movie_create
 title,0x80050ad6,g_movie_frames_in_ram,u8,Decode whole frames to RAM instead of VRAM; cleared by movie_create and never set,confirmed,movie_create
+title,0x8006742c,k_save_time_label,char[],"""   \x08\x02TIME\x08\x01\n"" (ASCII element: palette 2, back to 1)",confirmed,save_list_show_entry
+title,0x80067450,k_save_battles_label,char[],"""\x08\x02BATTLES\x08\x01\n""",confirmed,save_list_show_entry
+title,0x800674e0,k_save_title_prefix,char[],"Shift-JIS ""ＳＯ２　"" (save title); 0x800674ec ""　"", 0x800674f0 ""："", 0x800674f4 ""　ＬＶ""",confirmed,save_build
+title,0x800674fc,vt_format_dialog,vtable,FormatDialog,confirmed,format_dialog_create
+title,0x800675a4,vt_progress_dialog,vtable,ProgressDialog,confirmed,progress_dialog_create
+title,0x8006764c,vt_progress_box,vtable,"ProgressBox (TextBox, [6] draws the bar)",confirmed,progress_box_create
+title,0x8006768c,vt_notice_dialog,vtable,Dialog with ConfirmDialog's confirm / cancel,confirmed,vtable dump
+title,0x80067734,vt_check_dialog,vtable,CheckDialog,confirmed,check_dialog_create
+title,0x800677dc,vt_load_flow,vtable,LoadFlow,confirmed,load_flow_create
+title,0x80067884,vt_format_flow,vtable,FormatFlow,confirmed,format_flow_create
+title,0x8006792c,vt_save_list,vtable,SaveList,confirmed,save_list_create
+title,0x800679d4,vt_save_menu_statcalc,vtable,SaveMenu's StatCalc part (this - 0x48),confirmed,save_menu_create
+title,0x800679e4,vt_save_menu,vtable,"SaveMenu (Panel with [9] frame, [10] child done, [11] input, [13] confirm, [22] help)",confirmed,save_menu_create
+title,0x80067ab4,vt_notice_dialog2,vtable,"Same handlers as 0x8006768c, its own destructor",confirmed,vtable dump
+title,0x80067b5c,k_sjis_digits,char[10][2],Full-width digits ０-９,confirmed,sjis_digit
+title,0x80067b74,k_save_progress_steps,s16[],"Bar step per driver state while writing (0x16..): 0x4c x5, -1 (file length), 0x4c x3, -1, 0x4c, 0",confirmed,progress_dialog_start
+title,0x80067b8c,k_load_progress_steps,s16[],"Bar step per driver state while reading (7..): 0x4c, 0x4c, -1, 0x4c, 0",confirmed,progress_dialog_start
+title,0x80067b98,g_save_name_table,u8 *,Card code -> Shift-JIS (3 bytes a code): page data block 4,confirmed,"save_menu_create, sjis_name"
+title,0x80067b9c,k_save_icon,u8[0x1a0],Save icon CLUT (0x20) and three 16x16 frames (0x180); all zero in the title's copy (the title never saves),confirmed,save_build
+title,0x80067d3c,g_save_newest_counter,int,Highest save counter (summary +0x54) on the listed card,confirmed,save_list_show_entry
+title,0x80067d40,g_save_newest_index,int,Its position,confirmed,save_list_show_entry
+title,0x80067d44,g_save_slot,s16,Card slot chosen on page 0x11 (0 / 1),confirmed,save_menu_create
+title,0x80074570,vt_cursor,vtable,Cursor,confirmed,cursor_create
+title,0x800745a0,vt_scroll_grid_group,vtable,Scrolling grid group (0x8006a710),likely,cursor_add_grid
+title,0x800745c8,vt_grid_group,vtable,GridGroup (at +0x14 of the group),confirmed,cursor_add_grid
+title,0x800745f0,vt_list_group,vtable,ListGroup,confirmed,list_group_create
+title,0x80074618,vt_cursor_group,vtable,CursorGroup base,confirmed,cursor_group_create
+title,0x80074640,vt_confirm_dialog,vtable,ConfirmDialog,confirmed,vtable dump
+title,0x800746e8,vt_dialog,vtable,Dialog,confirmed,dialog_create
+title,0x80074888,vt_panel_statcalc,vtable,Panel's StatCalc part (this - 0x48),confirmed,panel_create
+title,0x80074898,vt_panel,vtable,Panel: [21] member changed [22] draw help [23] draw member [24] nop [25] build members,confirmed,panel_create
+title,0x800749b8,vt_message_box,vtable,MessageBox,confirmed,message_box_create
+title,0x800749f8,vt_titled_box,vtable,TitledBox,confirmed,titled_box_create
+title,0x80074a38,vt_header_box,vtable,HeaderBox (help bar),confirmed,panel_create_help
+title,0x80074a78,vt_text_box,vtable,TextBox: [6] background [7] decoration,confirmed,text_box_create
+title,0x80074ad0,vt_widget,vtable,Widget: [1] destroy [2] type [3] close [4] on_close [5] update [6] draw [7] draw_list [8] draw_item [9] frame [10] child done [11] input [12] cursor moved [13] confirm [14] cancel [15] button 2 [16] button 3 [17] held [18] pressed [19] left/right [20] shoulder,confirmed,widget_create + vtable dump
+title,0x80074b78,g_sprite_shared_timer,s16,"Shared animation of the frame (-1 none); frame 0x80074bb0, direction 0x80074bb4, open 0x80074bb8, anim 0x80074bbc",confirmed,"sprite_draw, sprite_sync_shared"
+title,0x80074b7c,k_sprite_anim_map,u32[12],Pose -> pattern for animations < 0x24 (+ 7 per direction),confirmed,sprite_step
+title,0x80074bac,g_sprite_cell_caches,SpriteCellCache *,"8 regions of 0x284 bytes: rect, pen, 48 cells {u0 v0 u1 v1}, keys, used flags, row height, next, refs",confirmed,sprite_cache_*
+title,0x80074bc0,g_sprite_clut_loaded,u8[12],CLUT row uploaded for graphics 0-11 (indexed past the end for higher numbers),confirmed,sprite_draw
+title,0x80074bcc,g_cvram,VramRect *,"CVram table: 12-byte {flags (1 used, 2 free, 4 4-bit, 8 8-bit, 0x10 to free), x, y, w, h, tpage}; capacity 0x80074bd0, count 0x80074bd4",confirmed,cvram_*
+title,0x80074bd8,g_upload_count,s16,VRAM upload queue: count; capacity 0x80074bdc; table 0x80074be0 (0x18-byte entries),confirmed,upload_*

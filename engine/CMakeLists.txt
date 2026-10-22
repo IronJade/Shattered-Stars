@@ -83,6 +83,7 @@ add_library(ss_game STATIC
   src/game/common/menu_stats.cpp
   src/game/common/menu_save.cpp
   src/game/title/load_screen.cpp
+  src/game/field/menu_camp.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
   src/game/title/title_program.cpp
@@ -100,6 +101,10 @@ add_library(ss_game STATIC
   src/game/field/field_input.cpp
   src/game/field/callways.cpp
   src/game/field/camera.cpp
+  src/game/field/effects.cpp
+  src/game/field/effects_draw.cpp
+  src/game/field/effects_camera.cpp
+  src/game/field/scene_renderer.cpp
   src/game/field/bg.cpp
   src/game/field/field_program.cpp
   src/game/field/map.cpp
@@ -152,7 +157,9 @@ target_sources(ss_game PRIVATE
   src/game/battle/party_states.cpp
   src/game/battle/enemy_ai.cpp
   src/game/battle/input.cpp
-  src/game/battle/director.cpp)
+  src/game/battle/director.cpp
+  src/game/battle/window.cpp
+  src/game/battle/hud.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})
@@ -191,6 +198,8 @@ add_executable(ss_game_tests
   tests/test_field_actors.cpp
   tests/test_field_party.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_battle.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_field_effects.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

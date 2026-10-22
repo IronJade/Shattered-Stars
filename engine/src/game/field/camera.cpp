@@ -7,6 +7,7 @@
 #include "game/field/actor_field.h"
 #include "game/field/actors.h"
 #include "game/field/bg.h"
+#include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/map.h"
 #include "game/field/script_vm.h"
@@ -33,17 +34,18 @@ void camera_reset() {
   g_camera.look_at = 0;
   for (int i = 0; i < 3; ++i) g_camera.eye[i] = g_camera.target[i] = 0;
   g_camera.zoom = world ? 0xCCC : 0x1000;
-  // 0x80075aba..0x80075abe (the BG tint colour) are reset to 0x80 here too; the fade
-  // module owns them in the port.
+  // 0x80075aba..0x80075abe: the BG tint colour (the fade module's copy).
+  for (s16& t : g_fade_targets.bg_tint) t = 0x80;
   for (u8& c : g_camera.ambient) c = 0x1E;
   g_camera.distance = 0;
+  for (int i = 0; i < 3; ++i) {
+    g_camera.fx_scale[i] = 0x1000;     // 0x800746fc
+    g_camera.fx_light_params[i] = 0;   // 0x800746ec
+  }
 }
 
-void camera_update_matrices() {
-  // TODO(port): camera_compute_view (0x8005fb2c) and the light / colour matrices
-  // (0x8005fa54); they run inside PushMatrix / PopMatrix and leave the view matrix the
-  // actors project with unchanged.
-}
+// camera_update_matrices (0x800603a4) is in effects_camera.cpp with the rest of the
+// camera block's matrix code.
 
 CamScript* camscript() { return g_script.get(); }
 

@@ -402,4 +402,18 @@ void party_heal_all(StatChange* sc, int is_mp, int amount) {
   party_select(saved);
 }
 
+s32 exp_for_level(int level) {
+  if (level >= 0xFF) return 1000000000;
+  s32 total = 0;
+  for (int i = 1; i <= level; ++i) total += (i * i + 1) * (i < 100 ? (i - 1) / 10 + 5 : 15);
+  return total;
+}
+
+s32 exp_to_next_level(int level) {
+  s32 v;
+  std::memcpy(&v, party_selected_slot() + 0x10, 4);
+  const s32 left = exp_for_level(level) - v;
+  return left < 0 ? 0 : left;
+}
+
 }  // namespace ss::game

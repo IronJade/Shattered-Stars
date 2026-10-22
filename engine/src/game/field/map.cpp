@@ -9,13 +9,16 @@
 #include "game/field/actors.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
+#include "game/field/effects.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
 #include "game/field/music.h"
 #include "game/field/notice.h"
+#include "game/field/scene_renderer.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
+#include "game/field/worldmap.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
 
@@ -234,7 +237,8 @@ void field_load_map_sections(Field*, int container_entry) {
         sprite_pack_register(data, -1, 2);
         break;
       case 3:
-        todo("world-map terrain (overlay 0xc1e 0x80088a3c)");
+        if (WorldBg* wbg = world_bg()) world_parse_section3(wbg, data);  // overlay 0xc1e 0x80088a3c
+        if (g.field_flags[0x24] != 0) actor_sys_restore_all(actor_system());  // 0x800456f0 (handoff 0xb)
         break;
       default:
         // Sections 5-12 are copies of code overlays and data (0x801e9000 / 0x801f9800 /
@@ -250,9 +254,9 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   u8* flags = g.field_flags;
   u8* gs = g.game_state;
   // TODO(port): preload table cleanup (0x800570e8), per-map globals of the effects /
-  // overlay objects (0x80076310 ...), extra packs, afterimages, scene objects, OT layers,
-  // side text.
+  // overlay objects (0x80076310 ...), extra packs, afterimages, side text.
   if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
+  field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744
   flags[0x32] = 2;
@@ -265,11 +269,14 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     gs[0x24] = 0;  // ... or slot 0 (Claude)
     gs[0x25] = 1;
   }
-  // TODO(port): disc check (loader_is_disc config+0x4c + 1) and the LoadQueue drain.
+  // The disc check (loader_is_disc(config +0x4c + 1)): the original prompts for the
+  // state's disc further down (keep_vram 1). TODO(port): the LoadQueue drain it does first.
+  if (g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0) field_prompt_disc_change(f, g.config[0x4C] + 1, 1);
   if (flags[0x27] != 0) {
     todo("sprite_packs_restore_palettes");
     flags[0x27] = 0;
   }
+  if (flags[0x24] == 0 && flags[0x68] != 0 && world_bg() != nullptr) world_bg_release(world_bg());  // overlay 0x800888e0
   flags[0x68] = static_cast<u32>(map - 1) < 3;
   std::memcpy(gs + 0x1A, &map, 2);
   preload_prune_for_map(map);  // 0x8005711c
@@ -280,7 +287,20 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     map_resolve_entries(&files, which, 0, 0);
     first_free_pack = 2;
   } else {
-    todo("world map placement");
+    // World map: a fresh arrival without a position takes the default spot (camera yaw
+    // game_state +0x1e); in a vehicle (script flag bits 11 + 12) the vehicle's spot.
+    if (flags[0x24] == 0 && !keep_position) {
+      const s32 spot[3] = {0x15026, -0x102, 0x6485};
+      std::memcpy(gs + 8, spot, 12);
+      const s16 yaw = 0xE98;
+      std::memcpy(gs + 0x1E, &yaw, 2);
+    }
+    if (((g.script_flags[1] >> 3) & 1) != 0 && ((g.script_flags[1] >> 4) & 1) != 0) {
+      const bool m1 = rd16s(gs + 0x1A) == 1;
+      const s32 spot[3] = {rd32(gs + (m1 ? 0x26C : 0x274)), rd32(gs + (m1 ? 0x28C : 0x290)),
+                           rd32(gs + (m1 ? 0x270 : 0x278))};
+      std::memcpy(gs + 8, spot, 12);
+    }
     map_resolve_entries(&files, which, static_cast<u32>(rd32(gs + 8)), static_cast<u32>(rd32(gs + 0x10)));
   }
   actor_sys_reset_sprite_cache(actor_system());  // 0x80043840
@@ -292,8 +312,9 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   g_map.script.clear();
   for (int i = first_free_pack; i < 16; ++i) g_packs[i] = SpritePackSlot{};
   bg_destroy();
-  // TODO(port): helper objects 0x800752dc / 0x800752c4 / 0x800752b4 teardown, the disc
-  // prompt.
+  glow_destroy_current();   // 0x800752dc: glow_destroy(3)
+  world_destroy_objects();  // world BG (vtable delete) and WorldCam (0x800752c4)
+  // TODO(port): helper object 0x800752b4 teardown, the disc prompt.
   // Music. A loaded game (mode 1) restarts game_state +0x1c; coming back from a battle,
   // its reload list (handoff 0xc) says whether the map music was kept there (-entry,
   // field maps) or the preloaded one plays (mode 2).
@@ -348,7 +369,12 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
       }
     }
   } else {
-    todo("world map sprite packs");
+    // World maps: the vehicle packs (script flag bits 11 / 15 / 16; not ported), then the
+    // world party pack (files[3]: sprite packs, the map music, a copy of #3102).
+    if (rd16s(gs + 0x1A) < 4 && ((g.script_flags[1] >> 3 & 1) != 0 || (g.script_flags[1] >> 7) != 0 ||
+                                 (g.script_flags[2] & 1) != 0))
+      todo("world map vehicle packs 0x10e2-0x10e4 (field_load_extra_pack)");
+    field_load_entry(f, files.pack_a);
   }
   // The code overlay (#3101 field / #3102 world) is native code in the port; only the
   // mode matters.
@@ -358,7 +384,30 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     bg_construct();       // overlay 0x8008672c (0x128-byte BG renderer)
     bg_helper_create();  // overlay 0x8008e100 (0x17c) and 0x8008e1c0
   } else {
-    todo("world map BG renderer (overlay 0x80088814)");
+    // field_register_party_sprites (0x8004b5cc) from the world party pack, its music
+    // (mode 2: entry 0xa8a on map 1, 0xa89 otherwise), then WorldBg (0x80088814) and
+    // WorldCam (0x8007e000).
+    const u8* pack = field_entry_data(files.pack_a);
+    std::vector<u8> world_music;
+    if (flags[0x24] == 0) {
+      world_register_party_sprites(pack + rd32(pack));
+      world_music.assign(pack + rd32(pack + 4), pack + rd32(pack + 8));
+    } else {
+      world_register_party_sprites(pack);
+      preload_remove(files.pack_a);
+      field_load_entry(f, files.music);
+      const u8* m = field_entry_data(files.music);
+      world_music.assign(m, m + g.loader->entry_size(files.music));
+    }
+    if (music_mode == 2 && ((g.script_flags[1] >> 4) & 1) == 0) {
+      g_load_buffer = world_music;
+      field_load_music_sync(f, 0);
+      const s16 entry = static_cast<s16>(rd16s(gs + 0x1A) == 1 ? 0xA8A : 0xA89);
+      std::memcpy(gs + 0x1C, &entry, 2);
+    }
+    g_load_buffer.clear();
+    preload_remove(files.pack_a);
+    world_create_objects();
   }
   // The map container.
   field_start_pending_music(false);  // 0x80052bf4
@@ -367,7 +416,13 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   preload_release(-1);
   g_load_buffer.clear();
   field_start_pending_music(true);
-  if (flags[0x24] != 0) bg_resume(bg_renderer());
+  if (flags[0x24] != 0) {
+    if (flags[0x68] == 0) {
+      bg_resume(bg_renderer());
+    } else if (WorldBg* wbg = world_bg()) {
+      world_bg_resume(wbg);  // vtable[4] 0x8008af54
+    }
+  }
 
   // Leader placement.
   if (flags[0x24] == 0) {
@@ -432,7 +487,8 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
         bg->vertical_scroll = rd16(g_map.scene.data() + 6) > 0xF0;
       }
     } else {
-      todo("world map vehicles");
+      if ((g.script_flags[1] >> 3 & 1) != 0 || (g.script_flags[2] & 1) != 0)
+        todo("world map vehicles (actors 0xd / 0xe, field_load_map)");
     }
   } else {
     // Back from another program: fade in (unless a script holds the screen), and
@@ -444,6 +500,11 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
       // !(flags[0x89 + i] & 0x80)).
       todo("walk_set_group_enabled (overlay 0x8008df74)");
     }
+  }
+  // World map: the camera yaw (game_state +0x1e) and centre (the leader's spot).
+  if (WorldBg* wbg = world_bg(); wbg != nullptr && flags[0x68] != 0) {
+    world_bg_set_angle(wbg, rd16s(gs + 0x1E));
+    world_bg_set_centre(wbg, rd32(gs + 8), rd32(gs + 0x10));
   }
   if (flags[0x7F] == 0) {
     flags[0x26] = 0;
@@ -488,7 +549,13 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
     screen_set_clear_colour(screen, scene[0x6F], scene[0x70], scene[0x71]);
     // TODO(port): field_update_screen_clamp_flag (0x80055c08).
   } else {
+    if (Actor* l = field_actor(gs[0x24])) actor_or_flags(l, 0, 0x1000000);  // smoothed turning
     g.vsync_mode = 2;
+    // Debugging: the console rarely makes 30 fps here; PCSX-Redux runs the world map at
+    // 20 (frame_ticks 3), and the follow camera's turn acceleration depends on the frame
+    // rate. SS_WORLD_VSYNC=3 reproduces that pacing for reference comparisons.
+    if (const char* v = std::getenv("SS_WORLD_VSYNC"); v != nullptr && std::atoi(v) > 0)
+      g.vsync_mode = static_cast<u8>(std::atoi(v));
     screen_layout_arena(screen, 0);
     screen_set_clear_colour(screen, 0, 0, 0);
   }

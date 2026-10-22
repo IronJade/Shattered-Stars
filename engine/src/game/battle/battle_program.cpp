@@ -13,6 +13,7 @@
 #include "game/battle/input.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
+#include "game/battle/hud.h"
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
@@ -217,7 +218,7 @@ void battle_init_objects() {
   g.sprite_set_a = std::make_unique<BObj>();
   g.sprite_set_b = std::make_unique<BObj>();
   g.sprite_set_c = std::make_unique<BObj>();
-  // TODO(port): the HUD window g_hud (BattleHud, vtable 0x8006d130) and the debug window.
+  battle_windows_create();  // g_hud (BattleHud) and the debug window
 }
 
 void battle_separate_units() {
@@ -268,8 +269,8 @@ void battle_scene_start() {
     mode = modes != nullptr ? modes[g.intro_type & 3] : 1;
   }
   camera_set_mode(g.camera, mode, nullptr);
-  // TODO(port): the HUD window_open(0, 0, 0x140, 0x28), the debug window, the start burst
-  // (battle_start_burst_create 0x8003c02c: the white radial wipe).
+  battle_windows_open();  // the HUD at (0, 0, 0x140, 0x28), the debug window below it
+  // TODO(port): the start burst (battle_start_burst_create 0x8003c02c: the white radial wipe).
   ot_layer_to_front(g.prim_pool_b);
 }
 
@@ -473,11 +474,12 @@ void battle_main_loop() {
   task_register(party_loader_create(), 0);
   battle_separate_units();
   battle_scene_start();
-  // TODO(port): hud_init(g_hud).
+  hud_init(battle_hud());
   for (;;) {
     if (g.state > kStateResult) battle_exit_to_field();
     screen_flip();
-    // text_frame_begin; the clash masks (12 words at 0x8006fe10); deferred deletes.
+    text_frame_begin();
+    // TODO(port): the clash masks (12 words at 0x8006fe10); deferred deletes.
     pool_a_bytes_used() = 0;
     for (RenderContext* layer : g.ot_layers)
       if (layer != nullptr) layer->ot_head = screen_clear_ot(layer->ot);
@@ -587,7 +589,8 @@ void battle_main_loop() {
         }
       }
     }
-    // text_frame_upload; screen_compact_ot(layer 0).
+    text_frame_upload();
+    // screen_compact_ot(layer 0).
     psyq::DrawSync(0);
     psyq::VSync(2);
     // VsyncCounter (vsync_counter_tick 0x80047578): vblanks since the last frame, capped
@@ -627,6 +630,7 @@ void battle_main_loop() {
 
 void battle_free_all() {
   BattleGlobals& g = g_battle;
+  battle_windows_free();  // the debug window and the HUD release themselves
   g.tasks.fill(nullptr);
   g.task_count = 0;
   for (auto& rc : g.render_contexts) {

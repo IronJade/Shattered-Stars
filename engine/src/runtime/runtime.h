@@ -47,6 +47,11 @@ class Runtime {
   // Debug: start a new game (Claude) directly on this field map, skipping the title
   // and prologue (--map N); -1 = normal start.
   int debug_start_map = -1;
+  // Debug: the leader's position on the first map loaded (--map or a loaded game;
+  // --map-pos X,Y,Z[,FACING[,CAMERA]]: map units; facing / camera yaw 4096 = 360
+  // degrees, game_state +0x18 / +0x1e).
+  bool debug_start_pos_set = false;
+  int debug_start_pos[5] = {0, 0, 0, 0, 0};
   u16 host_buttons() const;
 
   u64 vblanks() const { return vblank_count_; }

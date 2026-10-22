@@ -5,6 +5,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/hud.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -226,7 +227,10 @@ void input_hide_member_cursor(BattleInput* in) {
   in->member_t2 = 0;
   sprite_free(in->member_cursor);
   in->member_cursor = nullptr;
-  // TODO(port): the HUD window's member sprite (g_hud +0x28).
+  if (BattleHud* h = battle_hud(); h != nullptr && h->member_cursor != nullptr) {
+    sprite_free(h->member_cursor);
+    h->member_cursor = nullptr;
+  }
 }
 
 void input_hide_target_arrows(BattleInput* in) {

@@ -311,6 +311,7 @@ struct PartyUnit : Unit {
   virtual void state_knockback();     // [32] pc_state_knockback 0x800377ac (3 / 4)
   virtual void state_victory();       // [33] pc_state_victory 0x8003785c
   virtual void state_flee();          // [34] pc_state_flee 0x800378c0
+  virtual int killer_move_cost(int) { return 0; }  // [35] MP cost of killer move 0 / 1 (character module)
   virtual void killer_move_state(int) {}  // [37] (the character module's killer moves)
   virtual void camera_follow_start(); // [38] pc_camera_follow_start 0x80037b9c
   virtual void play_voice(int) {}     // [43] pc_play_voice 0x8003ac38 (voice clips: TODO)

@@ -37,6 +37,10 @@ struct BoxElement {      // 0x24 bytes
   u16 c = 0;             // +0x14: kind 5 flags
   s16 line_step = 0;     // +0x12 for kind 1 (line spacing)
   void* prims = nullptr; // +0x1c / +0x20 (kind 1: first / end of its sprites)
+  s32 number = 0;        // +0x14: kind 7 experience to the next level
+  s16 n18 = 0;           // +0x18: kind 7 percent of the level done
+  s16 n1a = 0;           // +0x1a: kind 7 level
+  s16 status[4] = {};    // +0x14..+0x1a: kind 6 HP, max HP, MP, max MP (state 0x10)
 };
 
 struct ListScroll {  // the list state a box can show (+0x5c); s16 fields
@@ -82,11 +86,30 @@ class TextBox : public MenuTask {
   int add_icon(const PolyFT4Raw& poly);                 // title 0x8006fa58
   int add_icon_anim(const PolyFT4Raw& poly, s16 frames, s16 delay);  // title 0x8006fa7c
   int add_element(BoxElement e);                        // title 0x8006fd10
+  // title 0x8006fb68 / menu_0ba5 0x800dc150: HP and MP of party slot 'slot' with gauges.
+  int add_party_status(s16 slot);
+  // title 0x8006fbc8 / menu_0ba5 0x800dc1b0: experience to the next level with a gauge of
+  // 'percent' (or MASTER from level 255).
+  int add_level(s16 level, s32 exp_to_next, s16 percent);
+  // title 0x800733d0 / menu_0ba5 0x800df9b8: underline text line *value + base.
+  void set_highlight(s32 base, s16* value) { unknown7c = base, highlight = value; }
+  // title 0x800733dc / menu_0ba5 0x800df9c4: the same from the next text line on.
+  void set_highlight_next(s16* value) { unknown7c = text ? text->line_count() : 0, highlight = value; }
 
   // Element drawers.
   void draw_ascii(BoxElement& e);                       // title 0x80072538 (kind 1)
   void draw_icon(BoxElement& e);                        // title 0x800715bc (kind 4)
   void draw_sprite(BoxElement& e);                      // title 0x80071344 (kind 5)
+  void draw_party_status(BoxElement& e);                // title 0x80071810 (kind 6)
+  void draw_level(BoxElement& e);                       // title 0x80071aa0 (kind 7)
+  void draw_highlight();                                // title 0x8006fe0c (+0x80)
+  // title 0x8007293c: 'value' right-aligned in 'width' 8x8 digits from (x, y), blank
+  // padded, palette row 'colour'.
+  void draw_number(s32 value, s16 at_x, s16 at_y, int width, int colour);
+  // title 0x800727a0: an ASCII string in 8x8 glyphs with the box's font palette.
+  void draw_text_at(const char* s, s16 at_x, s16 at_y);
+  // title 0x80071e40 (HP / MP) and 0x800721c0 (experience): a gauge 'w' pixels wide.
+  void draw_gauge(s16 at_x, s16 at_y, int w, int value, int max, bool exp);
 
   u16 flags_unused = 0;      // +0x08
   Widget* owner = nullptr;   // +0x0c
@@ -257,6 +280,10 @@ class Widget : public MenuTask {
   void finish(s16 code);                       // title 0x8007439c: confirm with a result
   void cancel();                               // title 0x800743e8
   void set_result(s16 code);                   // title 0x80074438
+  // title 0x80074494 / menu_0ba5 0x800e0a7c: a fresh hand cursor; returns the old one.
+  Cursor* push_cursor();
+  // title 0x800744dc / menu_0ba5 0x800e0ac4: closes the current cursor and restores 'old'.
+  void pop_cursor(Cursor* old);
 
   Widget* parent = nullptr;          // +0x08: the focused window when it was created
   RenderContext* ctx = nullptr;      // +0x0c

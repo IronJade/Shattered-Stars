@@ -8,6 +8,8 @@
 // PCSX-Redux's software renderer (gouraud only) for comparisons, not remembered.
 // Testing options: --headless (no window), --frames N (stop after N vblanks),
 // --map N (debug: new game as Claude, straight onto field map N),
+// --map-pos X,Y,Z[,FACING[,CAMERA]] (debug: the leader's spot on the first map loaded,
+// with --map or a loaded game),
 // --battle ENC[:STAGE] [--battle-end FRAMES[:OUTCOME]] (debug: straight into a battle with a
 // new game's party; see game/battle/battle_debug.h),
 // --capture DIR --capture-frames A,B,... (save the display on those vblanks),
@@ -85,7 +87,7 @@ void save_config(const std::map<std::string, std::string>& config) {
 int usage(const char* argv0) {
   std::fprintf(stderr,
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
-               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
+               "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
                "       [--audio|--no-audio] [--audio-wav FILE]\n",
                argv0);
   return 2;
@@ -143,6 +145,10 @@ int main(int argc, char** argv) {
       battle_end = next();
     } else if (arg == "--map" && has_value) {
       runtime::Runtime::get().debug_start_map = std::atoi(next());
+    } else if (arg == "--map-pos" && has_value) {  // X,Y,Z[,FACING[,CAMERA]] on the first map loaded
+      auto& rt = runtime::Runtime::get();
+      rt.debug_start_pos_set = std::sscanf(next(), "%d,%d,%d,%d,%d", &rt.debug_start_pos[0], &rt.debug_start_pos[1],
+                                           &rt.debug_start_pos[2], &rt.debug_start_pos[3], &rt.debug_start_pos[4]) >= 3;
     } else if (arg == "--frames" && has_value) {
       frames = std::strtoull(next(), nullptr, 10);
     } else if (arg == "--capture" && has_value) {
@@ -180,6 +186,17 @@ int main(int argc, char** argv) {
   // The sound driver's tables (and libspu's reverb presets) are read from the boot executable.
   if (std::string exe_error; !runtime::boot_exe_open(*disc, &exe_error))
     std::fprintf(stderr, "%s: %s (no sound)\n", config["disc1"].c_str(), exe_error.c_str());
+  // Disc 2 (optional, --disc2): the loader swaps to it when a save or the story needs it
+  // (game::loader_insert_disc); without it the game stays on disc 1, whose archive holds
+  // the same field and battle data.
+  std::unique_ptr<disc::DiscImage> disc2;
+  disc::Archive archive2;
+  game::loader_register_disc(1, &archive);
+  if (!config["disc2"].empty()) {
+    disc2 = disc::DiscImage::open(config["disc2"], &error);
+    if (disc2 && archive2.open(*disc2, &error)) game::loader_register_disc(2, &archive2);
+    else std::fprintf(stderr, "%s: %s (disc 2 not available)\n", config["disc2"].c_str(), error.c_str());
+  }
   if (!dump_dir.empty()) return tools::dump_textures(archive, entry, dump_dir);
   if (viewer) return tools::run_viewer(archive, entry, static_cast<int>(frames));
 
