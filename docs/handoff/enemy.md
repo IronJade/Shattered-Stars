@@ -159,4 +159,18 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   `ghd_modules.sh` + `ghidra_scripts/` (block decompiles in `decomp/`), `show.py`.
 - `redux/run.sh ENC STAGE OUT` (+ `BW_DENSE=lo:hi` per-vsync camera / tick / appear lines,
   `BW_BATTLE_EVERY=1` per-vsync enemy lines), `batch.sh`, `run_port.sh`, `run_port2.sh`
-  (`SS_ENEMY_TRACE=2`), `cmp.py` (`CMP_D=n` forces the offset), `verify_all.sh`, `sweep.sh`.
+  (`SS_ENEMY_TRACE=2`), `cmp.py` (`CMP_D=n` forces the offset; `CMP_DMAX`, `CMP_R`,
+  `CMP_FROM` for the boss fights), `verify_all.sh [PATTERN]` (reruns the port when the binary
+  is newer and prints one line per reference), `sweep.sh FRAMES ENC...` (copy
+  engine/build-enemy/shattered-stars to `bin/` first, or set SWEEP_BIN).
+
+## State and next step (2026-10-22, after commit point 3)
+
+- Nothing running (no helpers, no emulators); all work on disk; nothing of mine uncommitted
+  except docs/notes/battle_enemies.md (the extended verification table).
+- The enemy code is done as far as Redux can check it now. Next: when the world agent ports
+  spell modules 12 / 16 / 22 / 28 / 51 / 55 / 56 / 57, or the battle agent Shot kind 0x27 /
+  the voices, rerun `scratchpad/enemy/verify_all.sh m` (boss fights: `CMP_FROM=60 CMP_R=1`,
+  537 `CMP_R=2`, `CMP_DMAX=80`) and extend the table. Bark's kind 0x36 and Indalecio's
+  transformation still need a reference where the monster loses HP (poke its HP low in both
+  the Redux run and the port).
