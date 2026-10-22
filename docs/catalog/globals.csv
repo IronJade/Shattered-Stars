@@ -524,7 +524,10 @@ field,0x80075be4,g_light_dirs,s16[3][4],Light directions read by fx_setup_light 
 field,0x80075bfc,g_light_colours,s16[3][4],Light colours read by fx_setup_light (no writer found),likely,asm
 field,0x80075c14,g_light_mask,u8,Lights in use (bit i); 0 on disc (no writer found),likely,asm
 field,0x80076190,g_ability_bits,u32,"party_scan_equip_effects mask after a battle / gift: 1 encounters -20%, 2 -50%, 4 +20% (encounter distance), 8 / 0x10 re-roll indexes in 0x80074cf0 / 0x80074d70",confirmed,field_update; field_prepare_encounter
+field,0x80076194,g_bg_animated_on,u8,BG animated sprites are drawn (script ext 0xe1); field_load_map sets 1,confirmed,bg_draw 0x80086f00; field_load_map
+field,0x80076195,g_bg_animate_all,u8,"When 0, BG animated sprites are drawn even outside their scroll windows (script B 0x67); field_load_map sets 1",confirmed,bg_draw 0x80086f00; field_load_map
 field,0x80076196,g_menu_request,s16,"Menu a script asked for: 1 camp, 2 shop (B 0x6d), 3 query (B 0x7f or script flag 0x14), 4 member (B 0x7a), 5 save (B 0x69); opens like the menu button",confirmed,"field_update 0x8004c334, script table B"
+field,0x80076198,g_bg_windows_on,u8,BG scrolling windows on (special command 8 / 9); field_load_map sets 1,confirmed,field_special_command; field_load_map
 field,0x8007619a,g_menu_param,s16,"Its argument (shop id, party slot)",confirmed,field_update 0x8004c334
 field,0x8007619e,g_auto_equipped,u8,party_auto_equip result (anything equipped),confirmed,field_update state 0
 field,0x800761a0,g_equip_report,u8 *,"8 x 0x30: attributes before (+0) / after (+0xa), equipment before (+0x14) / after (+0x22)",confirmed,stat_calc_auto_equip; field_equip_report_draw
@@ -533,6 +536,8 @@ field,0x800761ac,g_fx_pool,Particle *,"0x400 x 0x50-byte particles {u16 type; s1
 field,0x800761b0,g_fx_origin,s16[2],BG view origin of this frame (scene_renderer_update): subtracted from particle screen coordinates,confirmed,decomp
 field,0x800761b4,g_fx_layer_ids,u32[4],"OT layer ids (= the OT layer / actor layer they are spliced at, + 0x11)",confirmed,decomp
 field,0x800761c4,g_fx_layers,OtLayer *[4],"0x4184-byte layers: u8 half, u8 dirty, u32 ot[2][0x830]",confirmed,decomp
+field,0x80076224,g_bg_parallax_x,s16,Forced BG parallax x (script ext 0xb4; 30000 = follow the camera); field_load_map sets 30000,confirmed,bg_draw 0x80086f00; vm_exec_ext 0xb4
+field,0x80076226,g_bg_parallax_y,s16,Forced BG parallax y (script ext 0xb4),confirmed,bg_draw 0x80086f00; vm_exec_ext 0xb4
 field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
 field,0x8007622c,g_inventory_stashed,u8,The stash holds the inventory (set by A 0x10 and when taken from handoff 0x11),confirmed,field_run; overlay 0x8008ea0c
 field,0x80076274,g_report_showing,u8,A member page of the Equipment Wizard is up,confirmed,field_update state 0xf

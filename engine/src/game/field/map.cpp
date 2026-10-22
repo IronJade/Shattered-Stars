@@ -261,6 +261,14 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744
+  // The BG renderer's script switches back to their defaults: parallax follows
+  // (0x80076224 = 30000), scrolling windows, animated sprites drawn and windowed
+  // (0x80076198 / 0x80076195 / 0x80076194), colour records at full speed (0x8007535c).
+  bg_globals().parallax_x = 30000;
+  bg_globals().windows_on = 1;
+  bg_globals().animate_all = 1;
+  bg_globals().animated_on = 1;
+  bg_globals().colour_speed = 100;
   flags[0x32] = 2;
   g.frame_ticks = 1;
   for (int p = 0; p < 2; ++p) g.held[p] = g.pressed[p] = g.repeat[p] = 0;

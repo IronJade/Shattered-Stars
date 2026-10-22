@@ -1003,7 +1003,7 @@ void vm_svc_voice_queue_reset() {
 }
 int vm_svc_voice_queue_build_battle(int budget) { return voice_live() ? voice_queue_build_battle(budget) : budget; }
 void vm_svc_set_voice_budget(int v) { voice_stream().budget = v; }
-void vm_svc_set_force_streaming(int v) { LOG_ONCE(); }
+void vm_svc_set_force_streaming(int v) { globals().scripted_battle = static_cast<u8>(v); }  // 0x800756d8
 void vm_svc_field_prepare_encounter(int a, int b) {
   if (Field* f = field_program(); f != nullptr && load_queue() != nullptr) {
     TRACE("%d,%d", a, b);
@@ -1097,8 +1097,8 @@ void vm_svc_set_menu_request(int menu) {
 }
 void vm_svc_set_menu_param(int param) { field_menu_set_param(param); }  // g_menu_param 0x8007619a
 int vm_svc_menu_request_pending() { return field_menu_request_pending(); }
-void vm_svc_set_global_76194(int v) { SVC("%d", v); }
-void vm_svc_set_global_76195(int v) { SVC("%d", v); }
+void vm_svc_set_global_76194(int v) { bg_globals().animated_on = static_cast<u8>(v); }  // 0x80076194
+void vm_svc_set_global_76195(int v) { bg_globals().animate_all = static_cast<u8>(v); }  // 0x80076195
 
 // ---- Party / character helpers ------------------------------------------------------
 // The party queries run through a temporary menu session (menu_camp.cpp); without a
@@ -1331,7 +1331,10 @@ int vm_svc_overlay_801ea_loaded() { LOG_ONCE(); return 0; }
 int vm_svc_overlay_801ea_value() { LOG_ONCE(); return -1; }
 
 // ---- Other field globals ------------------------------------------------------------
-void vm_svc_set_global_76224(int a, int b) { SVC("%d,%d", a, b); }
+void vm_svc_set_global_76224(int a, int b) {  // 0x80076224 / 0x80076226: forced BG parallax
+  bg_globals().parallax_x = static_cast<s16>(a);
+  bg_globals().parallax_y = static_cast<s16>(b);
+}
 void vm_svc_set_global_76220(int a, int b) { SVC("%d,%d", a, b); }
 void vm_svc_set_global_7621d(int a, int b) { SVC("%d,%d", a, b); }
 int vm_svc_get_global_761ea() { LOG_ONCE(); return 0; }
