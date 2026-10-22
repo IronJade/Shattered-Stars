@@ -12,5 +12,7 @@ constexpr u32 kProgramBase = 0x8002F810;
 
 // Byte at 'address' of program 'entry', or null outside the image (or with no disc).
 const u8* program_data(int entry, u32 address);
+// The same for an image loaded at 'base' (code overlays: #3101 / #3102 at 0x8007e000).
+const u8* program_data_at(int entry, u32 base, u32 address);
 
 }  // namespace ss::game

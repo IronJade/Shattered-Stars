@@ -15,6 +15,7 @@
 #include "game/field/bg.h"
 #include "game/field/camera.h"
 #include "game/field/collision.h"
+#include "game/field/characters.h"
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
@@ -23,6 +24,7 @@
 #include "game/field/music.h"
 #include "game/field/notice.h"
 #include "game/field/screen.h"
+#include "game/field/special.h"
 #include "game/field/stash.h"
 #include "game/field/script_vm.h"
 #include "game/field/sprite_pack.h"
@@ -1084,15 +1086,15 @@ int vm_svc_party_get_specialty_level(int slot, int n) { LOG_ONCE(); return 0; }
 int vm_svc_party_get_super_specialty6() { LOG_ONCE(); return 0; }
 void vm_svc_party_member_clear_bond(int slot) { SVC("%d", slot); }
 void vm_svc_party_slot_init(int slot, int character_id) {
-  SVC("slot=%d id=%d", slot, character_id);
-  // Stand-in for the per-character starting data: an empty slot holding the character.
+  TRACE("slot=%d id=%d", slot, character_id);
   FieldGlobals& g = globals();
   if (g.party == nullptr || g.records == nullptr || slot < 0 || slot > 7) return;
-  std::memset(g.party + slot * 0x60, 0, 0x60);
-  std::memset(g.records + slot * 0xD0, 0, 0xD0);
-  vm_wr16(g.party + slot * 0x60, static_cast<u32>(character_id));
+  party_slot_init(g.party + slot * 0x60, g.records + slot * 0xD0, character_id);  // 0x8007a20c
 }
-void vm_svc_party_move_character_to_slot(int character, int slot) { SVC("%d,%d", character, slot); }
+void vm_svc_party_move_character_to_slot(int character, int slot) {
+  TRACE("%d,%d", character, slot);
+  if (globals().party != nullptr && globals().records != nullptr) party_move_character_to_slot(character, slot);
+}
 void vm_svc_party_swap_characters(int a, int b) { SVC("%d,%d", a, b); }
 
 // ---- Map objects / sprite packs -----------------------------------------------------
@@ -1132,7 +1134,10 @@ void vm_svc_overlay_801f9bb4(ScriptCtx* ctx) {
   vm_fetch_args(ctx, 5);
   SVC("%d,%d,%d,%d,%d", g_vm_args[0], g_vm_args[1], g_vm_args[2], g_vm_args[3], g_vm_args[4]);
 }
-void vm_svc_field_special_command(int a0) { SVC("%d", a0); }
+void vm_svc_field_special_command(int a0) {
+  TRACE("%d", a0);
+  if (globals().game_state != nullptr) field_special_command(g_script_vm, a0);
+}
 void vm_svc_walk_set_group_enabled(int a0, int a1) {
   if (!map_data().scene.empty()) {
     TRACE("%d,%d", a0, a1);

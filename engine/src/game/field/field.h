@@ -54,6 +54,7 @@ struct FieldGlobals {
   u8 field_active = 0;                 // 0x80075355: actors update (set by field_load_map, scripts)
   s32 poison_next_step = 0;            // 0x80076314: step count (field_flags +0x18 >> 12) of the next poison tick
   u8 show_battle_results = 0;          // 0x80076278: open the post-battle / item-gained window
+  u8 sub_overlay_hook = 0;             // 0x80076279: run the sub-overlay's per-frame hook (0x801ead88)
   BattleSetup battle_setup;            // 0x800752b8: becomes handoff 5 for the battle program
   u8* system_data = nullptr;           // 0x80075720: entry #3110 unpacked (strings, window art)
   u8* system_strings = nullptr;        // 0x8007571c

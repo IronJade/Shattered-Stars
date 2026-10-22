@@ -16,6 +16,7 @@
 #include "game/field/music.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
+#include "game/field/special.h"
 #include "game/field/stash.h"
 #include "runtime/libgpu.h"
 #include "runtime/libgte.h"
@@ -435,7 +436,7 @@ void party_validate_before_battle() {
   if (slot == 4) {
     for (; slot < 8; ++slot) {
       if (static_cast<u16>(slot_character(slot) - 1) < 12) {
-        todo("party_move_character_to_slot (0x800531dc)");
+        party_move_character_to_slot(slot_character(slot) - 1, 0);
         break;
       }
     }

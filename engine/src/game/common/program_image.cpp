@@ -8,7 +8,9 @@
 
 namespace ss::game {
 
-const u8* program_data(int entry, u32 address) {
+const u8* program_data(int entry, u32 address) { return program_data_at(entry, kProgramBase, address); }
+
+const u8* program_data_at(int entry, u32 base, u32 address) {
   static std::map<int, std::vector<u8>> images;
   auto it = images.find(entry);
   if (it == images.end()) {
@@ -20,7 +22,7 @@ const u8* program_data(int entry, u32 address) {
     }
     it = images.emplace(entry, std::move(image)).first;
   }
-  const u32 offset = address - kProgramBase;
+  const u32 offset = address - base;
   return offset < it->second.size() ? it->second.data() + offset : nullptr;
 }
 

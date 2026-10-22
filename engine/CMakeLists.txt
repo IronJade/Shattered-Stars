@@ -121,6 +121,8 @@ add_library(ss_game STATIC
   src/game/field/music.cpp
   src/game/field/stash.cpp
   src/game/field/encounter.cpp
+  src/game/field/characters.cpp
+  src/game/field/special.cpp
   src/tools/viewer.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
@@ -157,7 +159,8 @@ add_executable(ss_game_tests
   tests/test_script_vm.cpp
   tests/test_field_message.cpp
   tests/test_menu.cpp
-  tests/test_field_actors.cpp)
+  tests/test_field_actors.cpp
+  tests/test_field_party.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)
