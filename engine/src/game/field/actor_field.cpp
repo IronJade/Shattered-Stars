@@ -8,6 +8,7 @@
 #include "game/field/collision.h"
 #include "game/field/field.h"
 #include "game/field/field_input.h"
+#include "game/field/field_sub_overlays.h"
 #include "game/field/map.h"
 #include "game/field/message.h"
 #include "game/field/screen.h"
@@ -819,7 +820,7 @@ void fieldactor_draw(Actor* self, int arg) {
     self->walked_last = self->walked;
     self->walked = 0;
   }
-  // (0x800761e8: the 0x801f9800 overlay sees the actor first; not ported.)
+  if (g_globals.children_pass != 0) mirror_update(self);  // 0x801f9800 (#3106: mirror images)
   const s32 old_sprite_anim = self->sprite_anim;
   actor_resolve_anim(self);
   s16 cam[2] = {0, 0};
@@ -1461,7 +1462,7 @@ void fieldactor_player_control(Actor* self, int camera) {
     }
   }
   if (g_globals.vehicle_control != 0) {
-    // TODO(port): vehicles are steered by the 0x801f9800 overlay.
+    path_control(self, ax, ay);  // 0x801f9800 (#3108: walking along a scripted path)
     return;
   }
   actor_anim_advance(self);

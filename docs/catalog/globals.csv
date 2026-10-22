@@ -497,12 +497,14 @@ field,0x800752ac,g_script_vm,ScriptCtx *,"The event-script VM (class ScriptVM, 0
 field,0x800752b0,g_load_queue,LoadQueue *,"Async CD load queue (0x160 bytes, vtable 0x80072dfc, task prio 1): 16-entry ring of {entry, active, bytes, dest, done*} at +8, head +0x148, tail +0x14c, callback +0x150, in-flight done* +0x154, busy +0x158, entry +0x15c",confirmed,load_queue_* decompilation
 field,0x800752b8,g_battle_setup,u8[0xc0],"Battle setup built by the encounter code (+0 encounter, +4 stage, +8 / +0x3c entry list, +0x70 count, +0x74 preloaded data pointers, +0xa8 free flags); handed to the battle program as handoff 5",likely,field_run; field_exit_to_program 0x80051c9c; battle_run
 field,0x800752c8,g_sub_program,Movie *,"The movie (#3103) playing: Movie from B 0x50, Prologue inside B 0x6f; the main loop's movie branch runs while set; bg_draw and scene_renderer_update skip (BG not with PiP)",confirmed,decomp
+field,0x800752cc,g_rainbow,Rainbow *,#3104's task (special 0),confirmed,decomp
 field,0x800752d0,g_battle_transition,BattleTransition *,"Encounter screen effect (0x18 bytes, vtable 0x80072e84, prio 1): +8 type (0 swirl 0x5f frames, 1 split 0x41, 2 long swirl 0xf0), +0xc timer, +0x10 done, +0x14 angle",confirmed,battle_transition_construct 0x80045c8c
 field,0x800752d4,g_menu_launcher,MenuLauncher *,The launcher of the menu being opened (field_update state 3),confirmed,field_update 0x8004c334
 field,0x800752d8,g_scene_renderer,SceneRenderer *,SceneRenderer task (8 bytes; field_create_subsystems),confirmed,decomp
 field,0x800752dc,g_glow,GlowFx *,Edge glow of script ext 0x79 (overlay glow_create); destroyed on map loads / unloads,confirmed,decomp
 field,0x800752e0,g_callways,Callways *,"Callways (0x24 bytes, task priority 1): camp-menu songs and walking item effects; created by field_create_subsystems",confirmed,field_create_subsystems 0x800494dc; callways_* callers
 field,0x800752e4,g_report_panels,TextPanel *,4 TextPanels (array new with count at -8) of the Equipment Wizard columns; frame hidden,confirmed,field_update state 0; field_destroy_subsystems
+field,0x800752e8,g_gauge,Gauge *,#3109's gauge (A 0x35); the main loop calls 0x801f999c while set,confirmed,decomp
 field,0x80075324,g_frame_counter,s32,Vblanks since field_construct (vsync_counter_tick 0x800521e8 increments it every vblank); the Private Action / trigger prompts blink from it,confirmed,field_construct; vsync_counter_tick; pa_draw_prompt
 field,0x80075328,g_ui_atlas,const u8 *,#3110's icon block + 0xc: UV rectangles of the field UI art (+0x1ba..+0x1bd the GAME OVER logo),confirmed,field_load_system_data 0x8004a428; field_update state 7
 field,0x8007533c,g_battle_preloaded,u8,"The next encounter's battle data (preload kind 1, list 0x800759a8 / sizes 0x800759dc, count 0x8007534c) is preloaded",likely,field_update state 0; preload_release_pending
@@ -523,6 +525,7 @@ field,0x800756bc,g_section5,u8 *,Copy of section 5 (#3103 packed) until field_lo
 field,0x800756c0,g_sub801f9800_area,void *,0x801f9800 reserved (0x4800) while the map carries section 7-10 or 12,confirmed,decomp
 field,0x800756c4,g_section7_12,u8 *,Copy of section 7-10 / 12 until unpacked to 0x801f9800,confirmed,decomp
 field,0x800756c8,g_section11,u8 *,Copy of section 11 (entry #2's data),confirmed,decomp
+field,0x800756cc,g_item_records,u8 *,Section 11 (entry #2) unpacked: 0x30-byte item records; inventory +0x820 points at it,confirmed,decomp
 field,0x800756d8,g_scripted_battle,u8,A script battle is pending (ext 0xb7 / 0xc2 set it; field_load_map clears it); enables voice-clip streaming,likely,vm_exec_ext 0xb7; load_queue_set_streaming
 field,0x800756dc,g_map_preload_x,s32,Script ext 0xa5: x of the last map-transfer preload spot (a new spot restarts the preload),confirmed,vm_exec_ext 0xa5
 field,0x800756e0,g_map_preload_z,s32,Script ext 0xa5: z of that spot,confirmed,vm_exec_ext 0xa5
@@ -568,6 +571,18 @@ field,0x800761ac,g_fx_pool,Particle *,"0x400 x 0x50-byte particles {u16 type; s1
 field,0x800761b0,g_fx_origin,s16[2],BG view origin of this frame (scene_renderer_update): subtracted from particle screen coordinates,confirmed,decomp
 field,0x800761b4,g_fx_layer_ids,u32[4],"OT layer ids (= the OT layer / actor layer they are spliced at, + 0x11)",confirmed,decomp
 field,0x800761c4,g_fx_layers,OtLayer *[4],"0x4184-byte layers: u8 half, u8 dirty, u32 ot[2][0x830]",confirmed,decomp
+field,0x800761d4,g_mirrors,u8[2][10],"#3106 mirror slots: used, OT layer, x0, z0, x1, z1 (s16)",confirmed,listing
+field,0x800761e8,g_children_pass,u8,Set by ext 0xbf (#3106): fieldactor_draw calls 0x801f9800 and children draw in a second pass,confirmed,listing
+field,0x800761ea,g_path_count,s16,#3108: segments of the leader's path; non-zero hands player control to 0x801f9800,confirmed,listing
+field,0x800761ec,g_path_points,s16[3][4],"#3108: x (0x800761ec), y (0x800761f4), z (0x800761fc), up to four points",confirmed,listing
+field,0x80076204,g_path_lengths,s32[],#3108: running length to each point; 0x80076210 total,confirmed,listing
+field,0x80076214,g_path_anim_flag,s16,#3108 ext 0x9c arg 6; ext 0xea reports path && it != -1,confirmed,listing
+field,0x80076216,g_path_anim,s16,#3108: animation set on the leader,confirmed,listing
+field,0x80076218,g_path_pos,s32,"#3108: position along the path, 20.12",confirmed,listing
+field,0x8007621c,g_path_mode,u8,#3108: pad direction mode 0-7,confirmed,listing
+field,0x8007621d,g_path_hold,u8[2],#3108: the start / end holds the leader (A 0x2b),confirmed,listing
+field,0x8007621f,g_path_start_pct,u8,"#3108: start position, percent of the length",confirmed,listing
+field,0x80076220,g_path_scripts,u16[2],#3108: script entries run at the start / end (A 0x2a; 0xffff none),confirmed,listing
 field,0x80076224,g_bg_parallax_x,s16,Forced BG parallax x (script ext 0xb4; 30000 = follow the camera); field_load_map sets 30000,confirmed,bg_draw 0x80086f00; vm_exec_ext 0xb4
 field,0x80076226,g_bg_parallax_y,s16,Forced BG parallax y (script ext 0xb4),confirmed,bg_draw 0x80086f00; vm_exec_ext 0xb4
 field,0x80076228,g_inventory_stash,u8 *,"Inventory stash (0xc28 bytes, inventory format): scripts empty the inventory into it (A 0x10) and give it back (A 0x11); kept across programs in handoff 0x11",confirmed,field_run; overlay 0x8008ea0c / 0x8008ead8
@@ -773,3 +788,4 @@ title,0x80074bcc,g_cvram,VramRect *,"CVram table: 12-byte {flags (1 used, 2 free
 title,0x80074bd8,g_upload_count,s16,VRAM upload queue: count; capacity 0x80074bdc; table 0x80074be0 (0x18-byte entries),confirmed,upload_*
 menu_0bbe,0x80081740,k_specialty_listed,code *[17],"Jump table of specialty_choice_list: which of specialties 1-17 the Items page offers (1, 4-7, 10, 11, 13, 14, 16, 17)",confirmed,disassembly
 menu_0bbe,0x80081cc8,g_sort_loop,s32[4],"item_sorter_merge_sort's loop variables (right index, temp index, output index, temp count) kept in globals across the recursion",confirmed,item_sorter_merge_sort
+field_sub3105,0x801fa558,end_music,void *,#3105: the 0x4000-byte music the final screen starts,confirmed,listing

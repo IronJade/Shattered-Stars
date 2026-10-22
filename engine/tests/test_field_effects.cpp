@@ -186,6 +186,11 @@ TEST(fx_beam_into_layer_and_splice) {
 }
 
 TEST(fx_streak_reaches_target) {
+  // The streak's step reads the overlay's tables from the field image: needs the disc.
+  if (std::getenv("SS_DISC1") == nullptr) {
+    std::printf("  (skipped: SS_DISC1 not set)\n");
+    return;
+  }
   test_screen();
   field_free_ot_layers();
   test_camera();

@@ -26,6 +26,7 @@
 #include "game/field/field.h"
 #include "game/field/field_input.h"
 #include "game/field/field_movie.h"
+#include "game/field/field_sub_overlays.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
 #include "game/field/menu_camp.h"
@@ -917,6 +918,7 @@ void field_main_loop(Field* f) {
     // TODO(port): field_update_encounter_streaming (0x80050dec).
     if (field_sub_program() != nullptr && !field_movie_main_loop(f)) continue;
     task_run_all();
+    if (gauge_exists()) gauge_update();  // 0x800752e8: 0x801f999c (#3109)
     psyq::DrawSync(0);
     psyq::VSync(g.vsync_mode);
     g.frame_ticks = g_vsync_counter.frames();

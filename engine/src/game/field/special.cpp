@@ -10,6 +10,7 @@
 #include "game/field/characters.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
+#include "game/field/field_sub_overlays.h"
 #include "game/field/map.h"
 #include "game/field/script_vm.h"
 #include "runtime/runtime.h"
@@ -72,7 +73,13 @@ void field_special_command(ScriptCtx* ctx, int op) {
   u8* gs = g.game_state;
   switch (op) {
     case 0:
-      todo("sub-overlay object 0x801f9800 (embedded map code)");
+      // 0x800752cc = 0x801f9800(new 0xd4): the constructor of the map's 0x801f9800
+      // overlay. Only map 143 uses it, with #3104 (section 10): the rainbow.
+      if (field_map_sub_sections() & (1u << 10)) {
+        rainbow_create();
+      } else {
+        todo("special 0 without #3104 at 0x801f9800");
+      }
       break;
     case 1:
     case 2: {

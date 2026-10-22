@@ -279,6 +279,7 @@ Movie* movie_create(Movie* self, int x, int y, int w, int h, int interlace, int 
   g.decoding = 0;
   g.screen_cleared = 0;
   g.frames_in_ram = 0;
+  g.loop_vblanks = 0;
   g.slice_buffers.clear();
   self->ring.clear();
   self->rl_buffers.clear();
@@ -399,7 +400,9 @@ int movie_update(Movie* self) {
   }
   // Host: with nothing to do the console keeps polling until the drive delivers more
   // or the MDEC finishes.
-  if (!busy) {
+  if (g.loop_vblanks > 0) {
+    console_spend(g.loop_vblanks);  // host: the caller's loop runs on while the player waits
+  } else if (!busy) {
     if (g.frame_ready != 0 && console_now() < g_frame_done_at) {
       console_idle_until(std::min(g_frame_done_at, stream_next_event()));
     } else if (g.frame_ready == 0 && loader_stream_busy(self->loader)) {
@@ -427,6 +430,8 @@ s32 movie_frame_count() { return g.frame_count; }
 MovieGlobals& movie_globals() { return g; }
 
 bool movie_frame_ready() { return g.frame_ready != 0 && console_now() >= g_frame_done_at; }
+
+void movie_console_spend(double vblanks) { console_spend(vblanks); }
 
 // ---- Prologue --------------------------------------------------------------------------
 

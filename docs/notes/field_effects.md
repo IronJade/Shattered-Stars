@@ -53,10 +53,34 @@ The field's own RotMatrix (0x8006e52c) adds cz·sx + B·cx in m21 where libgte s
 field call site the original routes through it now calls `field_rot_matrix` (actor view,
 battle swirl, world-map camera); map 129 (scene roll 3882) matches Redux.
 
+## Embedded map code at 0x801f9800 (sections 6-12)
+
+`game/field/field_sub_overlays.cpp`. Each map that needs one carries a small overlay
+linked at 0x801f9800. The port runs the native code only when the map carries the
+section (`field_map_sub_sections()`); otherwise the old stand-ins run, so the VM unit
+tests see no difference.
+
+| Section | Entry | Maps | What it is | Checked against Redux |
+|---|---|---|---|---|
+| 8 | #3108 | 384, 598-602 | Walking along a scripted path (ladders, stairs): ext 0x9c / 0x9e, a player-control hook while 0x800761ea is set, the A 0x2a / 0x2b / ext 0xea globals, no encounters on a path | map 384: the leader's position equal at every 40th vblank to 1360 |
+| 9 | #3106 | 139 | Mirror images: ext 0xbf adds a mirror line; a `fieldactor_draw` hook places each actor's reflected child | images match; 15-28 near-black pixels differ in the foot shadow |
+| 10 | #3104 | 143 | The rainbow (special command 0): 24 rays x 8 bands of additive POLY_G4 | within one 5-bit step from +2 to +400 frames |
+| 7, 11 | #3109, entry #2 | 688 | The Cooking Master TIME / PRESS gauge (A 0x33 / 0x35 / 0x37; updated after `task_run_all`); section 11 is the 0x30-byte item records A 0x33 reads | TIME row pixel-identical at +200 / +800 |
+| 12 | #3105 | 581 | The final "fin." screen (A 0x40, never returns): the caption typed in, then the logo and "fin." at 640x480 with music | caption within one step; the logo 1 px left |
+| 6 | #3107 | (A 0x2d) | The credits: an 85 KB program at 0x8002f810 with its own movie decoder, played between the private endings and the final screen | not ported; A 0x2d is a stub |
+
 ## Known differences / open
 
 - `psyq::SetDrawMode(..., nullptr)` writes 0xe2000000 as the second word where libgpu
   writes 0; the effects write their DR_MODE words directly.
-- The B_16 / B_70 preload always reads the whole entry (the console's size depends on free
-  heap; a partial preload decides whether the sequence gets its sound bank) and the main loop
-  runs once per vblank during movies — both still to be checked against Redux.
+- The B_16 / B_70 preload chooses whole or partial as the console does, against the free
+  heap measured in PCSX-Redux on map 576 (897444 bytes) less the preload table's buffers.
+  Map 576 preloads whole and map 685 partially (so its sequence loads the music bank), but
+  the figure was measured on one map only.
+- During a movie the field's main loop runs about as many passes per vblank as the console
+  (28 before the first frame, then 20 / 0 / 1 / 6 per frame against Redux's 18 / 0 / 1 / 5):
+  each pass costs 1/28 vblank of host time and the compose 0.86 vblank per ~990 pixels,
+  calibrated on map 548.
+- #3107 (the credits program) is not ported; the end screen's logo is 1 px left of Redux
+  (probably the GPU's rasterisation of 15-bit textured quads); the mirror image's shadow
+  differs by a few pixels.

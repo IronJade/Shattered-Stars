@@ -30,9 +30,9 @@ using psyq::RECT;
 game::Movie* g_sub = nullptr;  // 0x800752c8
 u8 g_stop = 0;                 // 0x800762ff
 s16 g_sound_entry = 0;         // 0x8007627a: sound entry B 0x16 preloaded for the next sequence
-// 0x800761a4: heap the console keeps free when it measures room for a preload. The
-// sequence sets it to 0x14000; the host does not measure its heap (see preload_bytes).
-s32 g_heap_reserve = 0;
+// 0x800761a4: heap the console keeps free when it measures room for a preload; every
+// map load sets 0x14000, and so does the sequence.
+s32 g_heap_reserve = 0x14000;
 
 // The scratchpad (0x1f800000) compose fetches CLUTs into; it keeps what the last
 // fetch left, as the console's does.
@@ -104,15 +104,26 @@ void preload_forget(int entry) {
 
 // B 0x16 / 0x70: how much of the cue list to preload. The console takes its free heap
 // (0x80013428) and preloads all of the entry when it fits with 0x800761a4 to spare,
-// otherwise as much as fits, at most 0x80000 bytes, in whole sectors.
-// TODO(port): the console's heap. The host has room, so it preloads the whole entry.
+// otherwise as much as fits, at most 0x80000 bytes, in whole sectors. Which way it goes
+// matters: only a partial preload loads the sequence's music bank (B 0x6f).
+// The host keeps no console heap. Its free space is taken as measured in PCSX-Redux
+// with a map loaded (map 576 at its B 0x70: 897444 bytes free before the preload) less
+// what the preload table holds now (B 0x16's music, preloaded just before).
+// TODO(port): the free heap depends on the map's data; measured on one map only.
+constexpr s32 kConsoleFieldHeapFree = 897444;
 s32 preload_bytes(int entry_bytes) {
-  const s32 free_bytes = 0x7FFFFFFF - g_heap_reserve;
+  s32 free_bytes = kConsoleFieldHeapFree;
+  const PreloadSlot* t = preload_table();
+  for (int i = 0; i < 12; ++i)
+    if (t[i].kind != 0) free_bytes -= static_cast<s32>(t[i].data.size()) + 0x10;
   if (free_bytes < entry_bytes + g_heap_reserve) return std::min(free_bytes - g_heap_reserve, 0x80000) & ~0x7FF;
   return 0;
 }
 
 // ---- compose (0x801e9000) ---------------------------------------------------------
+
+// Host: console time per pixel blended (see field_movie_compose).
+constexpr double kComposeVblanksPerPixel = 0.86 / 990.0;
 
 // One textured quad of the field's ordering table blended into the movie frame at
 // (movie_x halfwords, frame_y) in VRAM. Only quads whose corners form an axis-aligned
@@ -120,19 +131,20 @@ s32 preload_bytes(int entry_bytes) {
 // and scaled ones 4-bit; only some blend modes are handled; a depth-1 CLUT is rewritten
 // with green and blue taken from the wrong bits; a quad clipped by the screen's left or
 // right edge writes all its rows onto its top row.
-void compose_quad(const psyq::POLY_FT4& q, int movie_x, int frame_y) {
+// Returns the pixels it blended in (0 when the quad is skipped), for the host's timing.
+s32 compose_quad(const psyq::POLY_FT4& q, int movie_x, int frame_y) {
   int dx = q.x0 - q.x1;
-  if (q.x2 - q.x3 != dx) return;
+  if (q.x2 - q.x3 != dx) return 0;
   int dy = q.y0 - q.y2;
-  if (q.y1 - q.y3 != dy) return;
+  if (q.y1 - q.y3 != dy) return 0;
   // Visible: the centre within half the size of the 320x240 screen's.
   {
     const int cx = (q.x0 + q.x1) / 2;
     const int ax = cx - 0xA0 >= 0 ? cx - 0xA0 : 0xA0 - cx;
-    if ((dx >= 0 ? dx + 1 : q.x1 - q.x0 + 1) / 2 + 0xA0 < ax) return;
+    if ((dx >= 0 ? dx + 1 : q.x1 - q.x0 + 1) / 2 + 0xA0 < ax) return 0;
     const int cy = (q.y0 + q.y2) / 2;
     const int ay = cy - 0x78 >= 0 ? cy - 0x78 : 0x78 - cy;
-    if ((dy >= 0 ? dy + 1 : q.y2 - q.y0 + 1) / 2 + 0x78 < ay) return;
+    if ((dy >= 0 ? dy + 1 : q.y2 - q.y0 + 1) / 2 + 0x78 < ay) return 0;
   }
   int du = q.u0 - q.u1;
   int dv = q.v0 - q.v2;
@@ -324,6 +336,7 @@ void compose_quad(const psyq::POLY_FT4& q, int movie_x, int frame_y) {
       }
     }
   }
+  return dx * dy;
 }
 
 }  // namespace
@@ -340,12 +353,17 @@ void field_movie_compose(Screen* s) {
   screen_compact_ot(s);
   // The ordering table from entry 0 in drawing order (the console stops at the last
   // entry's terminator word).
+  s32 pixels = 0;
   for (psyq::P_TAG* p = s->current->ot.data(); p != nullptr; p = p->next) {
     if (p->len < 9) continue;
     const auto* q = reinterpret_cast<const psyq::POLY_FT4*>(p);
     if ((q->code & 0xFC) != 0x2C) continue;
-    compose_quad(*q, movie_x, frame_y);
+    pixels += compose_quad(*q, movie_x, frame_y);
   }
+  // Host: the console's time for this, which the field's loop and the movie wait out.
+  // Calibrated on map 548 (two sprites, ~1000 pixels: 0.86 vblank) from PCSX-Redux's
+  // main-loop passes per vblank while the movie plays.
+  movie_console_spend(pixels * kComposeVblanksPerPixel);
 }
 
 void field_movie_to_15bit(const RECT& disp, int y) {
@@ -441,6 +459,9 @@ void field_movie_start(ScriptCtx* ctx) {
     psyq::PutDispEnv(&s->current->disp);
     psyq::PutDrawEnv(&s->current->draw);
   }
+  // Host: the field's main loop polls the movie; in PCSX-Redux it runs 28 passes a vblank
+  // while the movie waits for the drive (field_update each time, frame ticks 1).
+  movie_globals().loop_vblanks = 1.0 / 28.0;
   movie_open(g_sub, movie_entry(g_vm_args[0]));
   runtime::Runtime::get().trace("field_movie_start");
   vm_set_r(1);

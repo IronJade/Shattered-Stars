@@ -8,6 +8,7 @@
 #include "game/common/texture.h"
 #include "game/field/actor_field.h"
 #include "game/field/actors.h"
+#include "game/field/field_sub_overlays.h"
 #include "game/field/bg.h"
 #include "game/field/callways.h"
 #include "game/field/effects.h"
@@ -266,6 +267,9 @@ void field_load_map_sections(Field*, int container_entry) {
         // 12 #3105 (0x801f9800), 11 entry #2's data. Their code is native in the port;
         // field_load_map only needs to know which the map carries (0x800756bc ...).
         if (id >= 5 && id <= 12) g_sub_sections |= 1u << id;
+        // Section 11 (entry #2): the item records, unpacked when the map loads
+        // (0x800756cc) and pointed at by the inventory (+0x820).
+        if (id == 11) sub_set_item_records(unpack(data, 0));
         break;
     }
   }
@@ -280,6 +284,7 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
   field_set_gauge_clock(-1);  // 0x80076310, the menu's query gauge
   if (callways_song_active(callways()) != 0) callways_stop_song(callways(), true);
   field_free_ot_layers();  // particle pool (0x800761a8 / 0x800761ac) and OT layers (0x80053158)
+  sub_overlays_map_reset();  // mirror slots (0x800761d4), 0x800761e8, path count 0x800761ea
   world_load_map_reset();  // world globals: regions, leader hit, vehicle models (0x800519d4)
   if ((g.script_flags[1] >> 6) & 1) music_mode = 0;
   field_music().pending = 0;  // 0x80075744

@@ -23,6 +23,7 @@
 #include "game/field/encounter.h"
 #include "game/field/fade.h"
 #include "game/field/field_movie.h"
+#include "game/field/field_sub_overlays.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
 #include "game/field/menu_camp.h"
@@ -1178,15 +1179,35 @@ void vm_svc_glow_create(int a0, int a1, int a2, int a3) {
   }
   SVC("%d,%d,%d,%d", a0, a1, a2, a3);
 }
+// The 0x801f9800 overlays (field_sub_overlays.cpp) run when the map carries their
+// section (VM unit tests load none).
+static bool sub_live(int section) {
+  return field_program() != nullptr && (field_map_sub_sections() & (1u << section)) != 0;
+}
 void vm_svc_overlay_801f9fe8(ScriptCtx* ctx) {
+  if (sub_live(8)) {
+    path_start(ctx);  // #3108
+    TRACE("%d,%d,%d,...", g_vm_args[0], g_vm_args[1], g_vm_args[2]);
+    return;
+  }
   vm_fetch_args(ctx, 10);
   SVC("%d,%d,%d,...", g_vm_args[0], g_vm_args[1], g_vm_args[2]);
 }
 void vm_svc_overlay_801fa120(ScriptCtx* ctx) {
+  if (sub_live(8)) {
+    path_add_point(ctx);  // #3108
+    TRACE("%d,%d,%d", g_vm_args[0], g_vm_args[1], g_vm_args[2]);
+    return;
+  }
   vm_fetch_args(ctx, 3);
   SVC("%d,%d,%d", g_vm_args[0], g_vm_args[1], g_vm_args[2]);
 }
 void vm_svc_overlay_801f9bb4(ScriptCtx* ctx) {
+  if (sub_live(9)) {
+    mirror_add(ctx);  // #3106
+    TRACE("%d,%d,%d,%d,%d", g_vm_args[0], g_vm_args[1], g_vm_args[2], g_vm_args[3], g_vm_args[4]);
+    return;
+  }
   vm_fetch_args(ctx, 5);
   SVC("%d,%d,%d,%d,%d", g_vm_args[0], g_vm_args[1], g_vm_args[2], g_vm_args[3], g_vm_args[4]);
 }
@@ -1307,21 +1328,47 @@ void vm_svc_fx_spawn_ring(int id, const s32 pos[3], const s32 args[8]) {
   }
   SVC("id=%d", id);
 }
+// #3109 (section 7, map 688): the TIME / PRESS gauge (field_sub_overlays.cpp).
 int vm_svc_overlay_801f9fb8(int a0) {
+  if (sub_live(7)) return item_record_byte_19(a0);
   SVC("%d", a0);
   return 0;
 }
-bool vm_svc_overlay_801f9800_exists() { LOG_ONCE(); return g_stub.overlay_object; }
+bool vm_svc_overlay_801f9800_exists() {
+  if (sub_live(7)) return gauge_exists();
+  LOG_ONCE();
+  return g_stub.overlay_object;
+}
 void vm_svc_overlay_801f9800_create(int a1, int a2) {
+  if (sub_live(7)) {
+    TRACE("%d,%d", a1, a2);
+    gauge_create(a1, a2);
+    return;
+  }
   SVC("%d,%d", a1, a2);
   g_stub.overlay_object = true;
 }
 void vm_svc_overlay_801f9800_destroy() {
+  if (sub_live(7)) {
+    TRACE("%s", "");
+    gauge_destroy();
+    return;
+  }
   SVC("%s", "");
   g_stub.overlay_object = false;
 }
-int vm_svc_overlay_801f9f54() { LOG_ONCE(); return 0; }
-void vm_svc_overlay_801f9a64(int a0) { SVC("%d", a0); }
+int vm_svc_overlay_801f9f54() {
+  if (sub_live(7)) return gauge_seconds_left();
+  LOG_ONCE();
+  return 0;
+}
+void vm_svc_overlay_801f9a64(int a0) {
+  if (sub_live(12) && field_screen() != nullptr && globals().sound != nullptr) {
+    TRACE("%d", a0);
+    the_end(a0);  // #3105 (section 12, map 581): never returns
+  }
+  SVC("%d", a0);
+}
 // #3103, the movie player (field_movie.cpp), runs with a field (VM unit tests have no
 // field program, loader, screen or sound driver).
 static bool movie_live() {
@@ -1362,10 +1409,11 @@ void vm_svc_set_global_76224(int a, int b) {  // 0x80076224 / 0x80076226: forced
   bg_globals().parallax_x = static_cast<s16>(a);
   bg_globals().parallax_y = static_cast<s16>(b);
 }
-void vm_svc_set_global_76220(int a, int b) { SVC("%d,%d", a, b); }
-void vm_svc_set_global_7621d(int a, int b) { SVC("%d,%d", a, b); }
-int vm_svc_get_global_761ea() { LOG_ONCE(); return 0; }
-int vm_svc_get_global_76214() { LOG_ONCE(); return -1; }
+// #3108's path globals (field_sub_overlays.cpp), set and read by field code.
+void vm_svc_set_global_76220(int a, int b) { path_set_end_scripts(a, b); }
+void vm_svc_set_global_7621d(int a, int b) { path_set_end_stops(a, b); }
+int vm_svc_get_global_761ea() { return path_count(); }
+int vm_svc_get_global_76214() { return path_anim_flag(); }
 void vm_svc_set_global_76310(int v) { field_set_gauge_clock(v); }  // the query gauge's clock
 void vm_svc_set_global_76278(int v) { globals().show_battle_results = static_cast<u8>(v); }
 void vm_svc_worldmap_add_entry(const s32 args[14]) {

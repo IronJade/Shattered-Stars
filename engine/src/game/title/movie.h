@@ -70,12 +70,20 @@ struct MovieGlobals {
   // 0x80050ad6: decode whole frames to RAM instead of VRAM. movie_create clears it and
   // nothing sets it, so its paths are not ported.
   u8 frames_in_ram = 0;
+  // Host: console time one pass of the caller's loop takes when the caller polls the
+  // player from its own loop (the field: ~1/28 vblank, measured in PCSX-Redux). Each
+  // movie_update then spends it instead of idling to the next event. 0 (movie_create)
+  // for callers that only wait on the player, as the title does.
+  double loop_vblanks = 0;
 };
 MovieGlobals& movie_globals();
 // frame_ready as the console's code sees it. The host decodes a frame at once and sets
 // the flag then; the console's MDEC sets it only when the frame is done, which
 // movie_present waits for. Code outside the player tests this instead of the flag.
 bool movie_frame_ready();
+// Host: the console spends 'vblanks' of CPU time (code outside the player whose cost
+// matters to the movie's timing, such as the field's compose).
+void movie_console_spend(double vblanks);
 
 // The scripted movie player title_program_main uses after New Game (0x8004fa98-
 // 0x8004ffb4; 0x70 bytes, vtable 0x80050a20): a Movie driven by a cue list

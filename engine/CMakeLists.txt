@@ -112,6 +112,7 @@ add_library(ss_game STATIC
   src/game/field/effects_camera.cpp
   src/game/field/scene_renderer.cpp
   src/game/field/field_movie.cpp
+  src/game/field/field_sub_overlays.cpp
   src/game/field/bg.cpp
   src/game/field/field_program.cpp
   src/game/field/map.cpp
