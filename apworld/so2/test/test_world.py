@@ -438,6 +438,29 @@ class OpenWorldChecks:
             allowed["any" if tele else "expel keys"] += tele or late
         self.assertGreater(sum(allowed.values()), 50)
 
+    def test_teleporter_islands(self):
+        """The teleporter's party (chapter 38, landing in Arlia) walks the Cross continent and
+        sails the Herlie ferry to the Lacour continent; the El continent and Hoffmann Ruins'
+        island are reached only by the story's ships (chapters 23-28) or by Virtual Expel's
+        Synard (tools/ap_walkmap.py, tools/ap_late_proof.py TELEPORTER_ISLANDS). So no
+        location there counts as reached through the teleporter, and none may hold a key the
+        story needs after the disc switch."""
+        from ..items import EVENT_TELEPORTER
+        from ..rules import open_world_access, proven_teleporter
+        nede = self.world.create_item("Red Crystal Pass")   # chapter 40, where the Synard is won
+        islands = {"El Beach", "Eluria Colony", "Eluria Tower", "Hoffmann Ruins", "map 231"}
+        tested = 0
+        for loc in own_locations(self):
+            row = ROW[loc.name]
+            if row["region"] != "Expel" or row.get("group") not in islands or row.get("boss") == "story":
+                continue    # (a story boss is fought by the story itself)
+            self.assertFalse(proven_teleporter(row, self.side), loc.name)
+            modes = open_world_access(row, self.side, self.teleporter)
+            self.assertNotIn(EVENT_TELEPORTER, [ev for ev, _ in modes], loc.name)
+            self.assertFalse(loc.can_fill(self.multiworld.state, nede, False), loc.name)
+            tested += 1
+        self.assertGreater(tested, 30)
+
     def test_seed_doors(self):
         fill(self)
         seed = self.world.seed_data()

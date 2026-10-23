@@ -14,6 +14,7 @@
 #include "game/boot/stubs.h"
 #include "game/common/math.h"
 #include "game/common/texture.h"
+#include "game/common/text_rules.h"
 #include "game/title/load_queue.h"
 #include "game/title/text.h"
 #include "game/title/title_program.h"
@@ -240,7 +241,8 @@ void sound_select_screen(Sequence& s) {
       }
     }
     new_game_draw_sprite(s.main, 8, 0x0C, 0x90, 0x20, 0, 0x80, 5, 0x7801, 0x80, false);       // "Sound Select"
-    new_game_draw_sprite(s.main, 0x8C, 0x1C, 0xD8, 0x10, 0, 0xC0, 0x25, 0x7806, 0x70, true);  // "Select your audio system."
+    new_game_draw_sprite(s.main, text::layout(text::lang()).sound_subtitle_x, 0x1C, 0xD8, 0x10, 0, 0xC0, 0x25, 0x7806, 0x70,
+                         true);  // "Select your audio system." (NA x 0x8c)
     draw_choice_icons(s, 0x28, 0x50, 3, 5, 1, w->selection);
     // The demo: wait for the load, send the bank to the SPU, play, then sweep the pan.
     if (demo == 2) {
@@ -333,7 +335,8 @@ void vibration_screen(Sequence& s) {
     }
     if (rumble != 0 && --rumble < 1) pad_vibrate(s.t.pad, 0, 0, 0);
     new_game_draw_sprite(s.main, 8, 0x0C, 0x98, 0x20, 0, 0x80, 6, 0x7801, 0x80, false);
-    new_game_draw_sprite(s.main, 0x98, 0x1C, 0xD8, 0x10, 0, 0xC0, 0x26, 0x7806, 0x70, true);
+    new_game_draw_sprite(s.main, text::layout(text::lang()).screen2_subtitle_x, 0x1C, 0xD8, 0x10, 0, 0xC0, 0x26, 0x7806,
+                         0x70, true);  // NA x 0x98
     draw_choice_icons(s, 0x40, 0x68, 2, 6, 1, w->selection);
     w->draw();
     queue_backdrop(w->ctx, 0x303000, 0, 0x606000, 0x303000);
@@ -438,7 +441,8 @@ void character_screen(Sequence& s) {
       }
     }
     new_game_draw_sprite(s.main, 8, 0x0C, 0x80, 0x20, 0, 0xA0, 5, 0x7801, 0x80, false);
-    new_game_draw_sprite(s.main, 0x80, 0x1C, 0xD8, 0x10, 0, 0xD0, 0x25, 0x7806, 0x70, true);
+    new_game_draw_sprite(s.main, text::layout(text::lang()).screen3_subtitle_x, 0x1C, 0xD8, 0x10, 0, 0xD0, 0x25, 0x7806,
+                         0x70, true);  // NA x 0x80
     for (int c = 0; c < 2; ++c) {
       bright[c] = c == w->selection ? std::min(bright[c] + 0x20, 0x100) : std::max(bright[c] - 0x20, 0);
     }
@@ -556,12 +560,14 @@ void name_screen(Sequence& s) {
         }
       } else {
         if (pressed & kPadCircle) name_box_backspace(box);
-        if (repeat & (kPadR2 | kPadR1)) {
+        // FR / DE: one character set, no switch (text_rules.h NameKeyboard).
+        const bool charset_switch = text::name_keyboard(text::lang()).charset_switch;
+        if (charset_switch && (repeat & (kPadR2 | kPadR1))) {
           kb->selection = (kb->selection + 1) & 1;
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);
           if (rows[kb->selection] <= kb->row) kb->row = rows[kb->selection];
         }
-        if (repeat & (kPadL2 | kPadL1)) {
+        if (charset_switch && (repeat & (kPadL2 | kPadL1))) {
           if (--kb->selection < 0) kb->selection = 1;
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);
         }
@@ -576,8 +582,9 @@ void name_screen(Sequence& s) {
       }
     }
     if (rows[kb->selection] <= kb->row) kb->row = rows[kb->selection];
-    new_game_draw_sprite(s.main, 8, 0x0C, 0x80, 0x20, 0, 0xA0, 6, 0x7801, 0x80, false);
-    new_game_draw_sprite(s.main, 0x80, 0x1C, 0xA8, 0x10, 0, 0xD0, 0x26, 0x7806, 0x70, true);
+    const text::Layout& lay = text::layout(text::lang());
+    new_game_draw_sprite(s.main, 8, 0x0C, lay.name_heading_w, 0x20, 0, 0xA0, 6, 0x7801, 0x80, false);  // NA w 0x80
+    new_game_draw_sprite(s.main, lay.name_subtitle_x, 0x1C, 0xA8, 0x10, 0, 0xD0, 0x26, 0x7806, 0x70, true);  // NA x 0x80
     kb->draw();
     box->draw();
     new_game_draw_sprite(s.main, 0, 0, widths[character], 0xF0, 0, 0, ((character * 0x100 + 0x140) & 0x3FF) >> 6 | 0x110,
@@ -631,8 +638,9 @@ void combat_mode_screen(Sequence& s) {
       }
       move_choice(s, w->selection, repeat, 3);
     }
-    new_game_draw_sprite(s.main, 8, 0x0C, 0x86, 0x20, 0, 0x80, 7, 0x7801, 0x80, false);
-    new_game_draw_sprite(s.main, 0x88, 0x10, 0xDC, 0x20, 0, 0xB8, 0x27, 0x7806, 0x70, true);
+    const text::Layout& lay = text::layout(text::lang());
+    new_game_draw_sprite(s.main, 8, 0x0C, lay.tpage7_heading_w, 0x20, 0, 0x80, 7, 0x7801, 0x80, false);  // NA w 0x86
+    new_game_draw_sprite(s.main, lay.tpage7_subtitle_x, 0x10, 0xDC, 0x20, 0, 0xB8, 0x27, 0x7806, 0x70, true);  // NA x 0x88
     draw_choice_icons(s, 0x28, 0x50, 3, 7, 1, w->selection);
     // The original reaches this window (and its table below) through the Vibration
     // window's stale pointer; the allocator hands this window the same memory.
@@ -683,9 +691,11 @@ void battle_rank_screen(Sequence& s) {
       }
       move_choice(s, w->selection, repeat, 3);
     }
-    new_game_draw_sprite(s.main, 8, 0x0C, 0x96, 0x20, 0, 0x80, 8, 0x7801, 0x80, false);
-    new_game_draw_sprite(s.main, 0x90, 0x1C, 0xDC, 0x20, 0, 0xB8, 0x28, 0x7806, 0x70, true);
-    draw_choice_icons(s, 0x28, 0x50, 3, 8, 0, w->selection);  // this art is lit when not selected
+    const text::Layout& lay = text::layout(text::lang());
+    new_game_draw_sprite(s.main, 8, 0x0C, lay.tpage8_heading_w, 0x20, 0, 0x80, 8, 0x7801, 0x80, false);  // NA w 0x96
+    new_game_draw_sprite(s.main, lay.tpage8_subtitle_x, 0x1C, 0xDC, 0x20, 0, 0xB8, 0x28, 0x7806, 0x70, true);  // NA x 0x90
+    // NA's art is lit when not selected; the FR / DE art when selected.
+    draw_choice_icons(s, 0x28, 0x50, 3, 8, lay.tpage8_lit_selected ? 1 : 0, w->selection);
     w->draw();
     queue_backdrop(w->ctx, 0x606000, 0x303000, 0, 0x303000);
     new_game_sound_update(s.bank.data(), s.sequence.data());

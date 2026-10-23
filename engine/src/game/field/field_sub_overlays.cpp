@@ -8,6 +8,7 @@
 #include "game/boot/sound.h"
 #include "game/common/math.h"
 #include "game/common/menu_core.h"
+#include "game/common/text_rules.h"
 #include "game/common/texture.h"
 #include "game/field/actor_base.h"
 #include "game/field/actor_field.h"
@@ -476,8 +477,10 @@ void the_end(int n) {
         psyq::addPrim(entry, p);
       }
       if (auto* p = end_ft4(s, grey, kLogoTpage)) {
-        set_xy(p, 0x16D, 0x16D, 0x26C, 0x1BD);
-        set_uv(p, 0, 0xA8, 0x88, 0xF8);
+        // The release's own "fin." art (NA x1 0x26c, u1 0x88).
+        const text::Layout& lay = text::layout(text::lang());
+        set_xy(p, 0x16D, 0x16D, lay.end_logo3_x1, 0x1BD);
+        set_uv(p, 0, 0xA8, lay.end_logo3_u1, 0xF8);
         psyq::addPrim(entry, p);
       }
     }

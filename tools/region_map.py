@@ -33,6 +33,14 @@ boot executable):
     value; the region's value is the one the port then reads). Words only one side has are
     unmapped. A tail of 1-3 bytes after the last word follows the last word when both
     images end alike.
+ 3b. Near matches: diff maximises equal words, so inside a changed table it can pair a value
+    with an equal value a few entries on (France's name-keyboard column map 0,0,1,1,2,2,...
+    -> 0,0,0,1,1,1,...: a 4-word run 12 bytes off). A changed stretch of at most
+    REALIGN_MAX_WORDS between two trusted runs (>= NEAR_WORDS words) at the same delta keeps
+    its size, so it is mapped word for word, the short runs the diff found inside it dropped.
+ 3c. Tables the port indexes by position (TABLES: the ASCII tables, whose French / German
+    entries NA never reads) are mapped word for word from their start over their whole
+    extent; fatal if the start is a near match or the table changed size.
  4. The region's load address is the one its aligned, relinked jal targets into itself (or,
     in an image without any, its aligned relinked self-pointers) agree on; an image with
     neither loads at NA's address. (Words equal on both sides don't vote: a data table can
@@ -47,6 +55,12 @@ boot executable):
     - every NA address the port reads (--reads: "image na_address" lines, recorded by the
       port with SS_REGION_READ_LOG over the suites and sweeps) lies in a segment of its
       image;
+    - no read lies in a near match left after 3b (a short run at a delta of its own, inside
+      a stretch that changed size): the place it maps to is a guess;
+    - a read logged within CROSS_WINDOW bytes before a layout change, with no later read
+      before the change, may start a block the port reads past it: its extent must be in
+      READ_EXTENTS (checked by hand against the port's reader) and must end before the
+      change ("suspicious" otherwise);
     - every pointer the port follows (a read address that is the value of a listed pointer
       word) maps;
     - the region image's FNV-1a 64 is recorded, so the port refuses a different revision of
@@ -67,6 +81,7 @@ such a map must map to the same instruction (fatal otherwise; reported if it doe
 """
 
 import argparse
+import bisect
 import collections
 import difflib
 import hashlib
@@ -134,6 +149,47 @@ SPELL_BASE = 0x8008CC00
 MODULE_LINKS = ["battle", "7c0.0", "7c0.1", "7bd", "boot"]
 
 POINTER_LO, POINTER_HI = 0x80010000, 0x80200000
+
+# Step 3b / 6: a run of equal words shorter than this, at a delta other than its neighbours',
+# is a near match (values that happen to recur), not a place the release moved data to.
+NEAR_WORDS = 16
+# A longer changed stretch is not realigned: so little of it matches that its place says
+# nothing (the battle program's stale overlay area, for one); its near matches stay, and a
+# read in one is fatal.
+REALIGN_MAX_WORDS = 64
+
+# Step 6: a read the port starts within this many bytes before a layout change (the next
+# NA words map at another delta, or not at all), with no later read logged before the change,
+# may be the start of a block the port reads past the change. Each such read must have its
+# extent here (checked against the port's reader by hand): (image, NA address) -> (bytes the
+# port reads from there, the reader). A read whose extent crosses the change is fatal; one
+# without an extent is fatal too ("suspicious"), until someone checks its reader.
+CROSS_WINDOW = 1024
+READ_EXTENTS = {
+    ("title", 0x8004D37C): (12, "CombatModeWindow::draw: icon x, 3 s32"),
+    ("title", 0x8004D388): (12, "CombatModeWindow::draw: icon y, 3 s32"),
+    ("title", 0x8004E274): (8, "title_screen menu_rect: one 8-byte rect per read"),
+    ("title", 0x80063198): (40, "roll_talents: 10 entries of u16 bit + u16 chance"),
+    ("battle", 0x8008519C): (2, "party.cpp battle_s16 (0x80085198 + idx * 2)"),
+}
+
+# Step 3c: tables the port indexes by position, including entries NA never reads (a French or
+# German character's entry in an ASCII table): image -> [(NA address, NA's extent in bytes,
+# reader)]. The extent is mapped word for word from the table's start, which must lie in a
+# trusted run (fatal otherwise); words around it whose region place falls inside the table
+# lose their mapping, and if NEAR_WORDS or more do, the table shrank (fatal). A release's
+# table may be longer than NA's: the port reads these tables from their translated start in
+# the release's own layout (a pointer to the start, indexed), never entry by entry through
+# the map past NA's extent. A table may end at the image's end (the rest is bss).
+TABLES = {
+    "title": [(0x8004EAF8, 0x28, "name keyboard column map (title window.cpp, new_game.cpp)"),
+              (0x8004EAFC, 0x100, "title text_from_ascii: the ASCII table, by character")],
+    # NA's table ends at 0xe0 (variables follow, at +0x100 in France / Germany, whose table is
+    # 0x100 long: the port reads it from its start in the release's layout, window.cpp).
+    "battle": [(0x8006E7C0, 0xE0, "battle text_from_ascii: the ASCII table, by character")],
+    "bce": [(0x80082B70, 0x28, "rename page column map (menu_rename.cpp)"),
+            (0x80082B78, 0x100, "rename page text_from_ascii: the ASCII table, by character")],
+}
 
 # ---- Reading the images --------------------------------------------------------------------
 
@@ -412,23 +468,99 @@ class ImageMap:
                         kind[kn[a_lo + k]] = "chg"
                 i, j = a_hi, b_hi
         self.m, self.kind = m, kind
-        # Segments: runs of NA words mapped at a constant word delta.
-        segs = []
-        for i in sorted(m):
-            d = m[i] - i
-            if segs and segs[-1][1] == i and segs[-1][2] == d:
-                segs[-1][1] = i + 1
-                segs[-1][3][kind[i]] += 1
-            else:
-                segs.append([i, i + 1, d, collections.Counter({kind[i]: 1})])
-        self.segs = segs
+        self.realigned = []  # [(NA word lo, hi, {NA word index: diff's region index or None})]
+        self.tables, self.table_fatal = [], []
+        if not self.identical:
+            self.realign(set(trap_kept(nw)))
+            for base, size, why in TABLES.get(key, ()):
+                self.force_table(base, size, why)
+        self.segs = self.segments()
         self.na_size, self.rg_size = len(na), len(rg)
         # The tail bytes of an image whose size isn't a multiple of 4: mapped with the last
         # word when both images end alike (same tail length, last words aligned to each other).
         nt, rt = len(na) - 4 * len(nw), len(rg) - 4 * len(rw)
         self.tail = nt if nt and nt == rt and m.get(len(nw) - 1) == len(rw) - 1 else 0
-        if self.tail and segs and segs[-1][1] == len(nw):
-            segs[-1].append(self.tail)  # extra bytes after the segment's last word
+        if self.tail and self.segs and self.segs[-1][1] == len(nw):
+            self.segs[-1].append(self.tail)  # extra bytes after the segment's last word
+
+    def segments(self):
+        """Runs of NA words mapped at a constant word delta: [lo, hi, delta, Counter(kinds)]."""
+        segs = []
+        for i in sorted(self.m):
+            d = self.m[i] - i
+            k = self.kind[i]
+            if segs and segs[-1][1] == i and segs[-1][2] == d:
+                segs[-1][1] = i + 1
+                segs[-1][3][k] += 1
+            else:
+                segs.append([i, i + 1, d, collections.Counter({k: 1})])
+        return segs
+
+    def realign(self, kept):
+        """Step 3b: a changed stretch of the same length on both sides, between two runs at the
+        same delta, is mapped word for word even when the diff matched a few of its words
+        elsewhere (near matches: short runs at another delta inside it, such as a changed table
+        whose new values happen to equal its old ones a few entries on). A table keeps its
+        indexing when its values change, so the place, not the value, says which word is which.
+        Only runs shorter than NEAR_WORDS count as near matches; a longer one is a real move and
+        stays. 'kept' are the NA word indices outside the division traps."""
+        segs = self.segments()
+        n = 0
+        while n < len(segs):
+            d = segs[n][2]
+            if segs[n][1] - segs[n][0] < NEAR_WORDS:  # brackets are runs long enough to trust
+                n += 1
+                continue
+            k = n + 1
+            while k < len(segs) and segs[k][2] != d and segs[k][1] - segs[k][0] < NEAR_WORDS:
+                k += 1
+            if (k < len(segs) and k > n + 1 and segs[k][2] == d and segs[k][1] - segs[k][0] >= NEAR_WORDS
+                    and segs[k][0] - segs[n][1] <= REALIGN_MAX_WORDS):
+                lo, hi = segs[n][1], segs[k][0]
+                before = {}
+                for i in range(lo, hi):
+                    if i not in kept:
+                        continue
+                    before[i] = self.m.get(i)
+                    self.m[i] = i + d
+                    self.kind[i] = "eq" if normalize([self.nw[i]]) == normalize([self.rw[i + d]]) else "chg"
+                self.realigned.append((lo, hi, before))
+                n = k
+            else:
+                n += 1
+
+    def force_table(self, base, size, why):
+        """Step 3c: map a table the port indexes by position word for word from its start."""
+        lo = (base - self.na_base) >> 2
+        hi = min(len(self.nw), (base + size - self.na_base + 3) >> 2)
+        name = f"{self.key} table {base:#010x}+{size:#x} ({why})"
+        if lo not in self.m:
+            self.table_fatal.append(f"{name}: its start has no counterpart")
+            return
+        d = self.m[lo] - lo
+        run = [s for s in self.segments() if s[0] <= lo < s[1]][0]
+        realigned = any(a <= lo < b for a, b, _ in self.realigned)
+        if run[1] - run[0] < NEAR_WORDS and not realigned:
+            self.table_fatal.append(f"{name}: its start is in a near match ({4 * (run[1] - run[0])} bytes at "
+                                    f"delta {4 * d}), so its place in the release is unknown")
+            return
+        if hi + d > len(self.rw):
+            self.table_fatal.append(f"{name}: runs past the end of the release's image")
+            return
+        changed = 0
+        for i in range(lo, hi):
+            if self.m.get(i) != i + d:
+                changed += 1
+                self.m[i] = i + d
+                self.kind[i] = "tbl"
+        dropped = [i for i, r in self.m.items() if (i < lo and r >= lo + d) or (i >= hi and r < hi + d)]
+        for i in dropped:
+            del self.m[i]
+            del self.kind[i]
+        if len(dropped) >= NEAR_WORDS:
+            self.table_fatal.append(f"{name}: {len(dropped)} words around it map into its extent in the release: "
+                                    f"the table changed size")
+        self.tables.append((base, size, changed, len(dropped)))
 
     def map_off(self, off):
         """NA byte offset -> region byte offset, or None."""
@@ -576,7 +708,51 @@ def build(na, rg, tmp, log):
     # Pointer words (step 5).
     for key, im in maps.items():
         find_pointers(im, maps)
+        code_references(im)
     return maps, problems
+
+
+REF_LO_OPS = {0x09, 0x20, 0x21, 0x23, 0x24, 0x25, 0x28, 0x29, 0x2B, 0x22, 0x26, 0x2A, 0x2E, 0x32, 0x3A}
+
+
+def code_references(im):
+    """Step 6b: the release's own code as a witness for the data map. Each NA instruction pair
+    lui + load / store / addiu that forms an address inside the image, where both instructions
+    are unchanged code (equal after normalisation) and the release relocated the constant, says
+    where the release keeps that byte. im.refs: {NA address: (release address, votes)} where the
+    map disagrees with every vote, im.refs_ok: how many referenced addresses it agrees with."""
+    im.refs, im.refs_ok = {}, 0
+    if im.identical or im.rg_base is None:
+        return
+    def sx(v):
+        return v - 0x10000 if v & 0x8000 else v
+    hi = {}
+    votes = collections.defaultdict(collections.Counter)
+    for i, w in enumerate(im.nw):
+        op = w >> 26
+        if op == 0xF:
+            hi[(w >> 16) & 31] = (i, (w & 0xFFFF) << 16)
+            continue
+        if op not in REF_LO_OPS or ((w >> 21) & 31) not in hi:
+            continue
+        li, base = hi[(w >> 21) & 31]
+        t = (base + sx(w & 0xFFFF)) & 0xFFFFFFFF
+        if i - li >= 24 or not (im.na_base <= t < im.na_base + im.na_size):
+            continue
+        ri, rl = im.m.get(i), im.m.get(li)
+        if ri is None or rl is None or im.kind.get(i) != "eq" or im.kind.get(li) != "eq":
+            continue
+        rv = (((im.rw[rl] & 0xFFFF) << 16) + sx(im.rw[ri] & 0xFFFF)) & 0xFFFFFFFF
+        if rv == t and im.map_addr(t) != t:
+            continue  # an absolute address the release kept (a buffer the image overlaps)
+        votes[t][rv] += 1
+    for t, c in votes.items():
+        mv = im.map_addr(t)
+        if c.get(mv):
+            im.refs_ok += 1
+        else:
+            rv, n = c.most_common(1)[0]
+            im.refs[t] = (rv, n)
 
 
 def find_pointers(im, maps):
@@ -637,7 +813,7 @@ def to_na(im, v):
 # ---- Output --------------------------------------------------------------------------------
 
 # Segment evidence (step 3): words equal after normalisation / a same-size changed run.
-EVIDENCE = {"eq": "equal", "chg": "same-size change"}
+EVIDENCE = {"eq": "equal", "chg": "same-size change", "tbl": "table by position"}
 
 
 def runs(items):
@@ -906,6 +1082,7 @@ def main():
     # Checks (step 6).
     reads = load_reads(a.reads)
     fatal = []
+    unmapped = 0
     for key, addrs in sorted(reads.items()):
         im = maps.get(key)
         if im is None:
@@ -914,10 +1091,82 @@ def main():
         # A read outside NA's image gets nothing on NA either (and nothing in the region).
         outside = [x for x in addrs if not (im.na_base <= x < im.na_base + im.na_size)]
         miss = sorted(x for x in addrs if x not in outside and im.map_addr(x) is None)
+        unmapped += len(miss)
         for x in miss:
             fatal.append(f"{key} {x:#010x}: the port reads it, but it is not mapped")
         log(f"reads {key}: {len(addrs)} addresses, {len(addrs) - len(miss) - len(outside)} mapped"
             + (f", {len(outside)} outside NA's image (nothing there either)" if outside else ""))
+    # Near matches and layout changes around what the port reads (step 6): a read in a short
+    # run at a delta of its own (a near match the realignment couldn't resolve, because the
+    # stretch around it changed size) is fatal; so is a read whose block may run past a
+    # layout change (see READ_EXTENTS).
+    suspicious = 0
+    for key, addrs in sorted(reads.items()):
+        im = maps.get(key)
+        if im is None:
+            continue
+        segs = im.segs
+        rd = sorted(x for x in addrs if im.na_base <= x < im.na_base + im.na_size)
+        starts = [s[0] for s in segs]
+        for n, x in enumerate(rd):
+            w = (x - im.na_base) >> 2
+            k = bisect.bisect_right(starts, w) - 1
+            if k < 0 or w >= segs[k][1]:
+                continue  # unmapped: fatal above
+            lo, hi, d = segs[k][0], segs[k][1], segs[k][2]
+            if (hi - lo < NEAR_WORDS and 0 < k < len(segs) - 1
+                    and segs[k - 1][2] != d and segs[k + 1][2] != d):
+                suspicious += 1
+                fatal.append(f"{key} {x:#010x}: read in a near match ({4 * (hi - lo)} bytes at delta {4 * d}, "
+                             f"between {4 * segs[k - 1][2]} and {4 * segs[k + 1][2]}): the data around it changed size")
+                continue
+            end = im.na_base + 4 * hi
+            change = k + 1 >= len(segs) and hi < len(im.nw) or (
+                k + 1 < len(segs) and (segs[k + 1][2] != d or segs[k + 1][0] != hi))
+            nxt = rd[n + 1] if n + 1 < len(rd) else None
+            in_table = any(b <= x < b + s for b, s, _w in TABLES.get(key, ()))
+            if change and end - x <= CROSS_WINDOW and (nxt is None or nxt >= end) and not in_table:
+                ext = READ_EXTENTS.get((key, x))
+                if ext is None:
+                    suspicious += 1
+                    fatal.append(f"{key} {x:#010x}: suspicious: a layout change {end - x} bytes on, and the port's "
+                                 f"read extent from here is unknown (check its reader; add it to READ_EXTENTS)")
+                elif x + ext[0] > end:
+                    suspicious += 1
+                    fatal.append(f"{key} {x:#010x}: the port reads {ext[0]} bytes from here ({ext[1]}), past a "
+                                 f"layout change {end - x} bytes on")
+                else:
+                    log(f"reads {key} {x:#x}: a layout change {end - x} bytes on; the port reads {ext[0]} ({ext[1]})")
+        for lo, hi, before in im.realigned:
+            moved = [x for x in rd if im.na_base + 4 * lo <= x < im.na_base + 4 * hi
+                     and before.get((x - im.na_base) >> 2) != im.m.get((x - im.na_base) >> 2)]
+            if moved:
+                log(f"reads {key}: {len(moved)} in the realigned stretch {im.na_base + 4 * lo:#x}+{4 * (hi - lo):#x} "
+                    f"(a near match before): " + " ".join(f"{x:#x}" for x in moved[:8]))
+    refs_ok = refs_bad = refs_read = 0
+    for key, im in maps.items():
+        refs_ok += im.refs_ok
+        refs_bad += len(im.refs)
+        words = collections.defaultdict(list)
+        for t, (rv, n) in im.refs.items():
+            words[t & ~3].append((t, rv, n))
+        for x in sorted(reads.get(key, ())):
+            for t, rv, n in words.get(x & ~3, ()):
+                refs_read += 1
+                mv = im.map_addr(t)
+                fatal.append(f"{key} {x:#010x}: the release's code keeps NA {t:#x} at {rv:#x} ({n} references), "
+                             f"the map says " + (f"{mv:#x}" if mv is not None else "nothing"))
+    log(f"code references (unchanged code, relocated): {refs_ok} addresses agree with the map, {refs_bad} don't "
+        f"(zero-filled variables the port never reads, where the alignment can't tell the words apart); "
+        f"{refs_read} of those the port reads")
+    suspicious += refs_read
+    for key, im in maps.items():
+        for base, size, changed, dropped in im.tables:
+            log(f"table {key} {base:#x}+{size:#x}: by position; {changed} words placed otherwise than the diff did, "
+                f"{dropped} neighbouring words unmapped")
+        fatal += im.table_fatal
+    nreal = sum(len(im.realigned) for im in maps.values())
+    log(f"near matches realigned: {nreal} stretches; suspicious reads: {suspicious}")
     # What the port will read that differs from NA (after pointer relocation): the region's
     # own data (text, PAL changes). Reported as ranges for review, not fatal.
     for key, addrs in sorted(reads.items()):
@@ -959,7 +1208,8 @@ def main():
     nseg = sum(len(im.segs) for im in maps.values())
     nptr = sum(len(runs(im.ptrs)) for im in maps.values())
     log(f"total: {len(maps)} images, {nseg} segments, {nptr} pointer runs "
-        f"({sum(len(im.ptrs) for im in maps.values())} words), {len(scripts)} script maps, {len(fatal)} fatal, "
+        f"({sum(len(im.ptrs) for im in maps.values())} words), {len(scripts)} script maps; reads "
+        f"{sum(len(v) for v in reads.values())}: {unmapped} unmapped, {suspicious} suspicious; {len(fatal)} fatal, "
         f"{len(problems)} problems")
     if a.report:
         with open(a.report, "w", newline="\n") as f:

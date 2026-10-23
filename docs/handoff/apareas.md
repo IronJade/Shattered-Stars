@@ -7,7 +7,68 @@ the APWorld logic and the port; decide whether any location's open-world require
 fix at the source (real hazard: regenerate, full battery, world_version 0.1.1, changelog) or,
 if cosmetic, fix the labels and show the logic and seeds are byte-identical.
 
-## Status (14:30)
+## Session 2 (started 13:57; the first session ended at ~13:54 and its work is in checkpoint a123cbd)
+- Found: e2e run 2 passed 25/25; late proof Claude finished (proven/checks/maps/nodes same as
+  docs, routes/edges order differs); late Rena was killed mid-run (616 nodes) with the session.
+- New rule: every game run under tools/memcap.py (4 GB). The proofs and e2e above ran uncapped,
+  so they are rerun: first wrap ap_late_proof.py / ap_e2e_so2.sh launches with the cap.
+- Done 14:20: tools/ap_late_proof.py runs every game under memcap (capped/Watch/hit_cap; a
+  run at the cap raises MemoryCapHit, the proof exits 3, never retried); tools/ap_e2e_so2.sh
+  runs both games through run_game (memcap.run_capped; $W/memcap.txt; two new checks, so
+  27 checks) and takes AP_E2E_WORK (must be under scratchpad/). e2e run 3 under the cap
+  (bin/tele = build-enemy, work scratchpad/apareas/e2e/work3): 27/27, both runs rc 0, not at cap.
+- Running since 14:22: scratchpad/apareas/late_proof2/run_all.sh (setsid; pid in driver.pid):
+  late claude+rena at --jobs 2 each, then teleporter claude+rena; per-game work dirs and
+  JSONs late_proof2/{late,teleporter}_{claude,rena}.json; status.txt, all.done at the end.
+  Compare with docs/ap/late_proof.json (proven/checks/maps/nodes).
+- Teleporter lead: REAL (14:50). scratchpad/apareas/tele/walkmap.py rasterises the Expel world
+  map's walkable polygons (blocks 0xfd4+i, block_query's formats) and flood-fills: Arlia's
+  exit is on the Cross continent (Arlia, Salva, Cross, Clik, Mars, Herlie, Mountain Palace,
+  Lasguss, Cross Cave); the Lacour continent (Hilton, Linga, Lacour, Sanctuary, Front Line) is
+  another, reached by the Herlie ferry (map 144 sailor 0x7298: chapter >= 16, pays Fol; the
+  sweep's K23 fails only for lack of Fol); El continent (229, 232, 557, 625), Hoffmann island
+  (231, 478) and the Cave of Trials island (704) are islands reached only by the story ships
+  (Hilton 0x79c0: chapters 23-27 / 28 step 0; 169 -> 548: chapter 28 step 0) or by flight
+  (flag 11, set only on Nede maps 417 / 588; Expel's Synard spot gs+0x26c is set only by
+  map 18 0x5a4 under chapter >= 60 && flag 730). The teleporter proof fired map 1's T21/T23/
+  T49/T51/T53/... directly, so 26 Hoffmann chests + 2 Eluria Colony gifts are `tele` and may
+  hold ANY progression in open world: a Nede-story key there is lost if skipped before the
+  switch. Fix plan: ap_late_proof.py teleporter state drops map-1 exits to those 6 maps;
+  rerun teleporter proof; regenerate; battery.
+- Fix done (~14:40, real clock; earlier times in this section were guesses): tools/ap_walkmap.py
+  (the terrain tool; --check agrees with ap_late_proof.py TELEPORTER_ISLANDS = {229, 231, 232,
+  478, 557, 704}; same at --step 32 and chapter 60). ap_late_proof.py: teleporter state drops
+  map 1's exits to those maps (a note on node 1). The docs' teleporter result is exactly a
+  --reparse of scratchpad/late_proof/teleporter's logs (checked with the HEAD tool), so the new
+  docs/ap/late_proof.json = the filtered --reparse of copies of those logs
+  (scratchpad/apareas/tele_reparse): late part byte-identical; teleporter Claude 418 maps / 153
+  locations, Rena 418 / 153 (was 583/265, 470/187); 498 surviving routes unchanged.
+  data.py regenerated: 28 rows lose `tele` (Hoffmann 26 chests, Eluria Colony 2 gifts) + cave
+  rows (unused). Logic (scratchpad/apareas/classdiff.py + logicdiff.py vs pre_tele/so2):
+  story mode unchanged; open world with teleporter + expel_progression: those 28 go "any" ->
+  "expel keys" and lose the teleporter access mode. Nothing else.
+- Hazard seed (scratchpad/apareas/hazard2, gen.sh WORLD OUT): plando Red Crystal Pass in
+  "Hoffmann Ruins: Cure Stone chest": pre world accepts (sphere 10, early mode); fixed world
+  refuses (falls back to Eluria Tower: Berle boss). Batch 0.1.1-pre (batch/new): 43 of 45
+  open-world slots with teleporter+expel_progression put a Nede-story key (65) or another
+  player's progression (78) there (tele/islandcount.py; check.py with new data: 43 errors).
+- Test: test_teleporter_islands (OpenWorldChecks, x3): world tests 101 passed, 7986 subtests;
+  it fails on the pre-fix world (pre_tele_test).
+- 14:29: AP general tests 379 passed (116977 subtests; was 116984 before, 0 failures).
+  Running: scratchpad/apareas/battery2.sh (batch seeds 1-96 -> batch/tele; status in
+  battery2.status, battery2.done). docs/ap/apworld.md updated (teleporter proof text, known
+  limits, Files/proof notes, 0.1.1 changelog bullet); Testing results still to update.
+- NEW LEAD, not fixed (design decision): the El voyage (Hilton -> 548 at chapter 28 step 0) is
+  one way: El maps' only exits are their own world-map component and the disc switch (625).
+  So the Cross/Lacour continents and Hoffmann close from chapter 28 to the switch; our
+  stage-11/12 keys (El Beach, Eluria, Eluria Tower Passes) placed there are lost if not
+  picked up before the voyage. Batch 0.1.1-pre: 112 of 114 open-world slots have one off El
+  (tele/elcount.py; Hoffmann 111, Salva 43, Cross Cave 42...). El's own locations can't hold
+  them (El Beach rows need the El Beach Pass, Eluria's the Eluria Pass, Eluria Tower's chests
+  are not late-proven), so a placement rule alone would fail solo fills: options are making
+  them starting keys, a port-side warning or ferry back, etc. Same in 0.1.0.
+
+## Status (first session, written 12:59)
 - **Verdict:** the labels are cosmetic (no logic reads them), fixed anyway with names kept.
   Checking every requirement turned up a **real, unrelated hazard: two ship landings missing
   from the open-world logic**, which leaves about 4 in 10 open-world 0.1.0 seeds

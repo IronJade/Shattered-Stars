@@ -236,12 +236,21 @@ the player skipped must be reachable again before then. The disc switch closes E
 teleporter reopens it from chapter 38, and the **teleporter proof** (`tools/ap_late_proof.py
 --state teleporter`: the late save at chapter 38 step 0, flag 730 cleared, the proof seed's
 expel_teleporter on, root Energy Nede's world map; result in late_proof.json's `teleporter`,
-the rows' `tele`) says which Expel locations it reaches. **Result** (2026-10-23): Claude's
-game 583 maps, 265 locations; Rena's 470 maps, 187 (the difference is the Cave of Trials'
-floors only); in both games all 129 Expel locations the late proof proves, so every Expel
-location that may hold progression in story mode may in open world too. So in open world:
+the rows' `tele`) says which Expel locations it reaches. The sweep fires a world map's entrance
+triggers wherever they lie, but the teleporter's party lands in Arlia with no flight on Expel
+(Expel's Synard spot, game_state +0x26c, is set only by Virtual Arlia's arrival, map 18 0x5a4,
+chapter 60 with flag 730; the Synard flag 11 only on Energy Nede): it walks the Cross
+continent and sails the Herlie ferry (map 144's sailor, chapter 16 on, for a fare) to the
+Lacour continent. The El continent (El Beach, Eluria Colony, Eluria Tower), Hoffmann Ruins'
+island (with map 231) and the Cave of Trials' island are reached only by the story's ships
+(Port Hilton: chapters 23-27 to map 231, chapter 28 to El) or by Virtual Expel's Synard, so
+the teleporter search does not follow their entrances (`TELEPORTER_ISLANDS`;
+`tools/ap_walkmap.py` reads the world map's walkable terrain, finds those islands and
+`--check`s the list). **Result** (2026-10-23, 0.1.1): both games 418 maps, 153 locations; 101
+of the 129 Expel locations the late proof proves (not Hoffmann Ruins' 26 chests or Eluria
+Colony's 2 gifts, which hold only our Expel-story keys in open world). So in open world:
 - an Expel location may hold any progression when the teleporter proof reached it (in the
-  protagonist's game, both under "any");
+  protagonist's game, both under "any"): the Cross and Lacour continents;
 - where only the late proof reached it, only our own Expel-story keys (stages 1-12): the
   player can't pass the disc switch without them, so they are picked up before Expel closes;
 - with the teleporter off, or with `expel_progression` off, Expel holds only our Expel-story
@@ -255,12 +264,11 @@ so it is used for Expel's maps only. **Known limits** (accepted, conservative el
 that opens later in the story than its area's first visit, or closes for a while in the middle
 of it, is not modelled (Lacour's fifth entrance in chapters 25-59 and Mars's second at chapter
 15 have open siblings; the arena's route is shut in chapter 57, where only the Fun City Pass,
-a starting key, is needed). Open questions (docs/handoff/apareas.md, "Leads"): the proofs fire
-the world map's entrance triggers without walking there, which Virtual Expel's Synard (flight
-anywhere, Prima p. 130) justifies after the Final Save Point but nothing yet shows for the
-teleporter's chapter-38 trip (El and Hoffmann Ruins are reached only by ships of chapters
-23-28); and Central City at chapters 36-37 (the party is brought in by a scene; leaving before
-the mayor's scene would need the Central City Pass, first required at stage 17).
+a starting key, is needed). The late proof fires the world maps' entrance triggers without
+walking there too, which Virtual Expel's Synard (flight anywhere, Prima p. 130) justifies after
+the Final Save Point. Open question (docs/handoff/apareas.md, "Leads"): Central City at
+chapters 36-37 (the party is brought in by a scene; leaving before the mayor's scene would need
+the Central City Pass, first required at stage 17).
 
 ## Shop slots (`shuffle_shops`, phase 4)
 
@@ -383,7 +391,10 @@ game after the other; logs in scratchpad/late_proof/, `--resume` reuses finished
 
 and the teleporter proof the same way with `--state teleporter` (work dir
 scratchpad/late_proof/teleporter; about 15 minutes per game at --jobs 3; its reparse writes
-late_proof.json's `teleporter` key).
+late_proof.json's `teleporter` key). Every game run is under the memory cap (tools/memcap.py,
+SS_MEM_CAP_GB, 4 GB): a run that dies at it fails the proof (exit status 3), never retried.
+`tools/ap_walkmap.py --check` confirms the teleporter's islands (`TELEPORTER_ISLANDS`) from
+the world map's terrain.
 
 It needs SS_DISC1 (disc 2 next to it) and a memory card with a save at the Final Save Point
 (`--save`, default `scratchpad/latesave/card.mcd`, `--save-frame 13`).
@@ -449,6 +460,21 @@ names and ids are unchanged.
     entering Lacour from the world map (stage 7, the tournament, needs Lacour's);
   - an area reached by ship needs the landing's key too (data.KEY_GROUPS `landing`): Lacour's
     locations the Hilton Pass, Hoffmann Ruins' the Map 231 Pass.
+- *Fixed: the teleporter does not reach Expel's islands* (docs/handoff/apareas.md). The
+  teleporter proof fired the Expel world map's entrance triggers wherever they lie, so it
+  counted Hoffmann Ruins' 26 chests and Eluria Colony's 2 gifts as reachable again after the
+  disc switch, and 0.1.0 let them hold any progression, a key the story needs after the switch
+  among it. But the party the teleporter lands in Arlia can only walk the Cross continent and
+  take the Herlie ferry to the Lacour continent: Hoffmann Ruins' island and the El continent
+  are reached only by the ships of chapters 23-28, and Expel's Synard only after the Final Save
+  Point (tools/ap_walkmap.py reads the walkable terrain). A key there that the player had not
+  picked up before the switch was lost (the Red Crystal Pass, say: the Synard is won with it);
+  43 of the 45 open-world slots with the teleporter and expel_progression on in the same
+  96-seed batch put a post-switch key (65) or another player's progression (78) there. Now the
+  teleporter proof does not follow those entrances (`TELEPORTER_ISLANDS`), and those 28
+  locations hold only our Expel-story keys in open world, as other Expel locations the
+  teleporter does not reach; their teleporter access is gone (the story's visit and the Final
+  Save Point remain).
 - Area labels: field.json's `map_areas` agrees with docs/modding/reference/map_names.csv for 158
   more maps (tools/ap_extract.py `AREA_FIXES`; field.md "Place names"). The logic never read
   them; location names keep their 0.1.0 labels.

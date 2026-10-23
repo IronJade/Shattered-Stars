@@ -21,16 +21,16 @@
 // tables the original keeps in its images (the title / battle ASCII tables, the keyboard
 // characters, the 0x400d widths) stay there and are read through the region maps.
 //
-// Wiring (by the region profile's owner; nothing here is called by the game yet):
-//   text_layout_line (field/message_text.cpp)  -> layout_line(lang(), ...)
-//   text_render_line                            -> map_glyphs(lang()).space
-//   msg_window_print (field/message.cpp)       -> map_glyphs(lang()).push_*
-//   text_ascii_to_glyph                         -> ascii_to_glyph(lang(), ...)
-//   text_format_number / text_number_width      -> format_number / number_width
-//   title text_from_ascii, battle text_from_ascii -> ascii_high_bias(lang(), program)
-//   the name keyboards (title/window.cpp, field/menu_rename.cpp) -> name_keyboard(lang())
-//   cvram_alloc (common/menu_gfx.cpp)           -> cvram_choose(lang(), ...)
-//   the layouts listed in Layout                -> layout(lang()).<field>
+// Where the game asks it (docs/notes/regions_text.md section 8):
+//   text_layout_line, text_ascii_to_glyph (field/message_text.cpp)  -> layout_line / ascii_to_glyph
+//     for France / Germany (NA keeps its ported body)
+//   text_number_width / text_format_number / text_render_line          -> map_glyphs
+//   msg_window_print (field/message.cpp)                               -> map_glyphs push range
+//   title / battle text_from_ascii                                     -> ascii_high_bias
+//   the name keyboards (title/window.cpp, title/new_game.cpp, field/menu_rename.cpp)
+//                                                                      -> name_keyboard, keyboard_button
+//   cvram_alloc (common/menu_gfx.cpp)                                  -> cvram_choose
+//   the layouts listed in Layout                                       -> layout(lang()).<field>
 namespace ss::game::text {
 
 using Lang = region::Text;
@@ -58,6 +58,16 @@ const MapGlyphs& map_glyphs(Lang lang);
 // Returns the extra bytes consumed (1 when a voiced mark was folded in). FR / DE map
 // ' ' ! , . / 0-9 : ; = ? A-Z a-z and leave every other byte unchanged (NA: 0xfe).
 int ascii_to_glyph(Lang lang, s32* code, int next, int kana);
+
+// Port-only text (Archipelago messages: item and player names from other worlds, plain
+// ASCII). France and Germany's ascii_to_glyph passes the bytes it doesn't map through as
+// glyph numbers, which are letters in their map font ('-' 0x2d would show 'f', '(' an 'a').
+// The map-font glyph of the closest character for such a byte: '-' 0x0b, brackets / braces /
+// angle brackets 0x65-0x6c, '"' 0x7b, # $ % & * + 0x75-0x7a, '_' 0x7d, '|' 0x7e, '~' 0x7f,
+// '`' as the apostrophe 0x27, '\' as '/', '@' and '^' (no such glyph) as a space; -1 for a
+// byte ascii_to_glyph maps itself, and always -1 for North America / Europe (whose AP text
+// keeps NA's behaviour: those bytes show NA's blank 0xfe).
+s32 port_symbol_glyph(Lang lang, s32 code);
 
 // text_format_number's digits: 'value' (already narrowed to s16 when the 0xfc2 strings are
 // loaded) as glyph codes, '-' first when negative, 0-terminated; returns the glyph count.

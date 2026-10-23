@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "game/common/screen.h"
+#include "game/common/text_rules.h"
 #include "runtime/libgpu.h"
 
 namespace ss::game::battle {
@@ -217,6 +218,7 @@ int window_draw_small_text(BWindow* w, int x, int y, const char* s, int palette)
 }
 
 void text_from_ascii(const char* in, u8* out) {
+  const int high_bias = text::ascii_high_bias(text::lang(), text::Program::kBattle);
   const auto* s = reinterpret_cast<const u8*>(in);
   int kana = 0;
   for (;;) {
@@ -227,7 +229,9 @@ void text_from_ascii(const char* in, u8* out) {
       continue;
     }
     u32 glyph;
-    if (kana == 0 || 0x37 < c - 0xA6) glyph = c - 0x61 < 0x1A ? c - 0x20 : *battle_data(0x8006E7C0 + c);
+    if ((kana == 0 || 0x37 < c - 0xA6) && high_bias >= 0 && c >= 0x81)
+      glyph = *battle_data(0x8006E7C0 + c) + static_cast<u32>(high_bias);  // FR / DE (text_rules.h)
+    else if (kana == 0 || 0x37 < c - 0xA6) glyph = c - 0x61 < 0x1A ? c - 0x20 : *battle_data(0x8006E7C0 + c);
     else glyph = *battle_data(0x8006E7C0 + c) + 0x38u;
     const u32 code = (glyph + 1) & 0xFF;
     if (code < 0x80) {

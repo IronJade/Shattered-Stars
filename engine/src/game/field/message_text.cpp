@@ -1,8 +1,11 @@
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <span>
 #include <vector>
 
 #include "disc/slz.h"
+#include "game/common/text_rules.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
@@ -14,6 +17,8 @@
 // and the 0xfc2 side text (field 0x8005c21c-0x8005e1a4, 0x8005e808-0x8005ea4c,
 // 0x80053b44).
 namespace ss::game::field {
+
+namespace tr = ss::game::text;
 
 const u8* g_side_font = nullptr;     // 0x800762f0
 const u8* g_side_glyphs = nullptr;   // 0x800762f4
@@ -48,6 +53,22 @@ const u8* side_string(int id) {
   }
 }
 
+// text_rules' view of the field's message system, for the releases whose text rules differ
+// from NA's (France, Germany: text_rules.h).
+struct FieldLayoutHost final : tr::LayoutHost {
+  MsgWindow* w;
+  explicit FieldLayoutHost(MsgWindow* window) : w(window) {}
+  int glyph_width(u32 c) override { return msg_glyph_width(c); }
+  s32 message_variable(int var) override { return field::message_variable(var); }
+  int char_name_width(int ch, s32* n) override { return text_char_name_width(ch, n); }
+  int item_name_width(int var, s32* n) override { return text_item_name_width(w, var, n); }
+  int number_width(int var, s32* n) override { return text_number_width(w, var, n); }
+  int measure_block(const u8** p) override { return text_measure_block(w, p); }
+  int fixed_space_width(int i) override { return field_data(0x80076318)[i]; }
+};
+
+bool latin_text() { return tr::map_glyphs(tr::lang()).digit0 != tr::map_glyphs(tr::Lang::kNorthAmerica).digit0; }
+
 }  // namespace
 
 void msg_window_set_text_colour(MsgWindow* w, int colour) {
@@ -73,7 +94,60 @@ void msg_window_init_shadow_lut(MsgWindow* w) {
   }
 }
 
+namespace {
+
+int layout_line(MsgWindow* w, const u8* text, TextLine* out);
+
+// SS_TEXT_LOG=<file> (debug, default off): one line per laid-out line, in the format of the
+// PCSX-Redux logger of docs/notes/regions_text.md section 9 ("L vblank map w word_wrap
+// continuing line_height text_hex -> height glyphs width 0 ruby ended - centred"), to compare
+// the port's line breaks with the original's.
+std::FILE* text_log() {
+  static std::FILE* f = [] {
+    const char* path = std::getenv("SS_TEXT_LOG");
+    return path && *path ? std::fopen(path, "w") : nullptr;
+  }();
+  return f;
+}
+
+}  // namespace
+
 int text_layout_line(MsgWindow* w, const u8* text, TextLine* out) {
+  std::FILE* log = text_log();
+  if (log == nullptr) return layout_line(w, text, out);
+  TextLine local;
+  if (out == nullptr) out = &local;
+  const int h = layout_line(w, text, out);
+  std::fprintf(log, "L 0 0 %d %d %d %d ", w->w, w->word_wrap != 0, w->continuing != 0, w->line_height);
+  // The text up to its end code (parameter bytes skipped: a parameter may be 0).
+  for (const u8* p = text; *p != 0 && p - text < 400;) {
+    const u8* start = p;
+    const u32 c = next_code(p);
+    int params = 0;
+    if (c == 0x4003 || c == 0x4004 || c == 0x4007 || c == 0x4008 || (c >= 0x400C && c <= 0x400F)) params = 1;
+    if (c == 0x4006) params = 2;
+    p += params;
+    for (const u8* q = start; q < p; ++q) std::fprintf(log, "%02x", *q);
+  }
+  std::fprintf(log, " -> %d %d %d %d %d %d %d %d\n", h, out->v[0], out->v[1], out->v[2], out->v[3], out->v[4], out->v[5],
+               out->v[6]);
+  std::fflush(log);
+  return h;
+}
+
+namespace {
+
+int layout_line(MsgWindow* w, const u8* text, TextLine* out) {
+  if (latin_text()) {
+    // France / Germany (0x8005c24c): the Latin font's word-wrap classes (text_rules.h).
+    tr::LayoutWindow lw;
+    lw.w = w->w;
+    lw.word_wrap = w->word_wrap != 0;
+    lw.continuing = w->continuing != 0;
+    lw.line_height = w->line_height;
+    FieldLayoutHost host(w);
+    return tr::layout_line(tr::lang(), lw, host, text, out ? out->v : nullptr);
+  }
   int count = 0;        // glyphs on the line (s4)
   int x = 0;            // pixel width (s1)
   int ruby = 0;         // ruby glyphs and fixed spaces (s3)
@@ -295,20 +369,23 @@ done:
   return height;
 }
 
+}  // namespace
+
 int text_number_width(MsgWindow*, int var, s32* digits) {
   const u8* font = msg_font_ref();
+  const tr::MapGlyphs& g = tr::map_glyphs(tr::lang());
   u32 v = static_cast<u32>(message_variable(var));
   if (g_side_strings != nullptr) v = static_cast<u32>(static_cast<s32>(static_cast<s16>(v)));
   int width = 0;
   const bool negative = static_cast<s32>(v) < 0;
   if (negative) {
     v = 0u - v;
-    width = font[0xBB] + 1;  // '-' (glyph 0xb4)
+    width = font[g.minus + 7] + 1;  // '-' (NA glyph 0xb4)
   }
   int n = negative ? 1 : 0;
   do {
     ++n;
-    width += 1 + font[v % 10 + 0xB1];  // digit glyphs 0xaa-0xb3
+    width += 1 + font[v % 10 + g.digit0 + 7];  // digit glyphs (NA 0xaa-0xb3)
     v /= 10;
   } while (v != 0);
   if (digits) *digits = n;
@@ -343,17 +420,18 @@ int text_copy_char_name(MsgWindow*, int ch, u8* out) {
 }
 
 int text_format_number(MsgWindow*, int var, u8* out) {
+  const tr::MapGlyphs& g = tr::map_glyphs(tr::lang());
   u32 v = static_cast<u32>(message_variable(var));
   if (g_side_strings != nullptr) v = static_cast<u32>(static_cast<s32>(static_cast<s16>(v)));
   const bool negative = static_cast<s32>(v) < 0;
   if (negative) {
-    *out++ = 0xB4;
+    *out++ = static_cast<u8>(g.minus);  // NA 0xb4
     v = 0u - v;
   }
   u8 digits[12];
   int n = 0;
   do {
-    digits[n++] = static_cast<u8>(v % 10 + 0xAA);
+    digits[n++] = static_cast<u8>(v % 10 + g.digit0);  // NA 0xaa
     v /= 10;
   } while (v != 0);
   for (int i = n - 1; i >= 0; --i) *out++ = digits[i];
@@ -481,6 +559,7 @@ void text_render_line(MsgWindow* w, const u8* text, int line, int height, TextLi
   int ei = 0;  // extra index
   int ended = 0;
   bool skip = w->continuing != 0;
+  const u32 space = tr::map_glyphs(tr::lang()).space;
   const u8* p = text;
   // One glyph drawn at x; advances x and records its end.
   auto put_glyph = [&](u32 glyph) {
@@ -508,7 +587,7 @@ void text_render_line(MsgWindow* w, const u8* text, int line, int height, TextLi
       if (remaining <= 0) break;
       if (marker == 1) x += static_cast<u32>(info->v[marker_k + 5]);
       const u32 start = x;
-      if (!skip || c != 0x105) {  // a wrapped line drops its leading space
+      if (!skip || c != space) {  // a wrapped line drops its leading space (NA 0x105)
         text_blit_glyph(w, static_cast<int>(c), pitch, buf + (x >> 2), x);
         skip = false;
         x = x + 1 + static_cast<u32>(msg_glyph_width(c));
@@ -817,6 +896,7 @@ int text_char_name_width(int ch, s32* count) {
 }
 
 int text_ascii_to_glyph(s32* code, int next, int kana) {
+  if (latin_text()) return tr::ascii_to_glyph(tr::lang(), code, next, kana);  // FR / DE 0x8005e704
   s32 c = *code;
   int consumed = 0;
   if (static_cast<u32>(c - 0xA6) >= 0x3A) {

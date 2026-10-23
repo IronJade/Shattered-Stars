@@ -9,6 +9,7 @@
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_scene.h"
+#include "game/common/text_rules.h"
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
 #include "game/common/screen.h"
@@ -163,7 +164,12 @@ void text_frame_upload() {
 // 0x80081408: ASCII (with '@' toggling the kana mode) to glyph codes (the title's
 // 0x80049f40, with the overlay's copy of its table at 0x80082b78).
 void text_from_ascii(const char* in, u8* out) {
-  const u8* table = ovl(0x80082B78);
+  // Entry by entry through the region map (the table's head overlaps the column map, which
+  // differs in France and Germany; see title/text.cpp).
+  const auto table = [](u32 c) {
+    const u8* p = ovl(0x80082B78 + c);
+    return p ? *p : u8{0};
+  };
   const auto* s = reinterpret_cast<const u8*>(in);
   int kana = 0;
   for (;;) {
@@ -180,9 +186,9 @@ void text_from_ascii(const char* in, u8* out) {
     }
     u32 glyph;
     if (kana == 0 || c - 0xA6 > 0x37) {
-      glyph = c - 0x61 <= 0x19 ? c - 0x20 : table[c];
+      glyph = c - 0x61 <= 0x19 ? c - 0x20 : table(c);
     } else {
-      glyph = table[c] + 0x38u;
+      glyph = table(c) + 0x38u;
     }
     // Voiced (0xde) and semi-voiced (0xdf) marks fold into the kana before them.
     const bool row_ka_ta = c - 0xB6 < 5 || c - 0xBB < 5 || c - 0xC0 < 5;
@@ -413,14 +419,22 @@ s32 keyboard_rows(int set) { return ovl_s32(0x800824D8 + static_cast<u32>(set) *
 const char* keyboard_chars(int set) {
   return reinterpret_cast<const char*>(ovl(set == 0 ? 0x800824E0 : 0x8008260C));
 }
-s32 keyboard_column_map(int i) { return ovl_s32(0x80082B70 + static_cast<u32>(i) * 4); }
+// Read from the table's start: France and Germany changed its values (three row-0 buttons),
+// and the region map may align the changed words apart from it (tools/region_map.py).
+s32 keyboard_column_map(int i) {
+  const u8* table = ovl(0x80082B70);
+  if (!table) return 0;
+  s32 v;
+  std::memcpy(&v, table + static_cast<size_t>(i) * 4, 4);
+  return v;
+}
 
 class NameBox;
 
 class Keyboard final : public Window {
  public:
   Keyboard() : Window(0x200) {
-    column = 2;
+    column = text::name_keyboard(text::lang()).first_column;  // NA 2 (OK), FR / DE 1 (Delete)
     row = 0;
     selection = 0;   // the character set: 0 capitals, 1 lower case
     moving = 0;
@@ -438,11 +452,12 @@ class Keyboard final : public Window {
 };
 
 int keyboard_x(int column, int row) {
-  if (row < 1) return column * 0x2A + 0x0C;
+  if (row < 1) return column * text::name_keyboard(text::lang()).button_step + 0x0C;  // NA 0x2a
   return column * 0x13 + (column > 4 ? 0x14 : 0x0C);
 }
 
 void Keyboard::draw() {
+  const text::NameKeyboard& keys = text::name_keyboard(text::lang());
   int cx = keyboard_x(column, row);
   int cy = row * 0x0E;
   if (moving != 0) {
@@ -454,11 +469,12 @@ void Keyboard::draw() {
       row = next_row;
     }
   }
-  queue_sprite(this, x + cx - 8, y + cy + 0x0E, 0x80, 0x10, 0x7807, 0x10, 0x18);   // the hand
+  queue_sprite(this, x + cx - 8, y + cy + 0x0E, text::layout(text::lang()).rename_hand_u, 0x10, 0x7807, 0x10,
+               0x18);  // the hand (NA u 0x80)
   queue_draw_mode(this, 0, 0, 5);
   window_text_begin(this);
   const int rows = keyboard_rows(selection);
-  const char* chars = keyboard_chars(selection);
+  const char* chars = keyboard_chars(keys.charset_switch ? selection : 0);  // FR / DE: set 0 only
   int line_y = 0x0E;
   int cell_x = 0x0C;
   for (int r = 0; cell_x = 0x0C, r < rows; ++r) {
@@ -471,9 +487,9 @@ void Keyboard::draw() {
     }
     line_y += 0x0E;
   }
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < keys.buttons; ++i) {  // NA 5 buttons, step 0x2a
     text_draw_id(this, cell_x, 0, i + 0x78, row == 0 && column == i ? 0x8004 : 4);
-    cell_x += 0x2A;
+    cell_x += keys.button_step;
   }
   window_text_end(this);
   draw_shade_frame(this);
@@ -592,7 +608,8 @@ void NameBox::draw() {
   const int count = text_glyph_offsets(glyphs, xs);
   for (int i = count, pos = xs[count]; i < 8; ++i, pos += 10) xs[i] = pos;
   if (length < 7) {
-    queue_sprite(this, x + (xs[length] + xs[length + 1]) / 2 - 4, y + 0x13, 0xA0, 0x10, 0x7808, 0x18, 0x0D);
+    queue_sprite(this, x + (xs[length] + xs[length + 1]) / 2 - 4, y + 0x13, text::layout(text::lang()).rename_cursor_u,
+                 0x10, 0x7808, 0x18, 0x0D);  // NA u 0xa0
     // The glowing box behind the next character.
     u32 colours[4];
     for (int k = 0; k < 4; ++k) {
@@ -614,7 +631,8 @@ void NameBox::draw() {
   window_text_begin(this);
   int pos = xs[count];
   for (int i = count; i < 7; ++i) {
-    queue_sprite(this, x + pos + 8, y + 0x11, 0x90, 0x10, 0x7802, 10, 3);  // blanks still to fill
+    queue_sprite(this, x + pos + 8, y + 0x11, text::layout(text::lang()).rename_blank_u, 0x10, 0x7802, 10,
+                 3);  // blanks still to fill (NA u 0x90)
     pos += 10;
   }
   queue_draw_mode(this, 0, 0, 5);
@@ -627,17 +645,18 @@ void NameBox::draw() {
 void keyboard_move(Keyboard* kb, NameBox* box, int dx, int dy) {
   if (kb->moving != 0) return;
   const s32 rows = keyboard_rows(kb->selection);
+  const int last_button = text::name_keyboard(text::lang()).buttons - 1;  // NA 4
   int row = kb->row;
   int column = kb->column + dx;
   if (column < 0) {
     column = 9;
     if (row < 1) {
-      column = 4;
+      column = last_button;
     } else {
       dy = -1;
     }
   }
-  if ((column > 9 || (column > 4 && row == 0))) {
+  if ((column > 9 || (column > last_button && row == 0))) {
     column = 0;
     if (row < rows) dy = 1;
   }
@@ -683,7 +702,8 @@ void keyboard_jump_full(Keyboard* kb) {
   // ORIGINAL BUG (original_bugs.md M2): the overlay sends the cursor to column 3, Delete
   // (the Japanese layout's OK), so the next Cross deletes the last character.
   // kb->next_column = 3;
-  kb->next_column = 2;   // OK, as the title's copy does
+  // OK, as the title's copy does (NA 2; France / Germany's overlay sends it to their OK, column 0).
+  kb->next_column = text::name_keyboard(text::lang()).ok_column;
   kb->next_row = 0;
   kb->moving = 4;
 }
@@ -691,25 +711,26 @@ void keyboard_jump_full(Keyboard* kb) {
 // 0x8007fb98: Cross on the keyboard; returns 1 for OK, 2 for Return, else 0.
 int keyboard_confirm(Keyboard* kb, NameBox* box) {
   if (kb->row < 1) {
-    switch (kb->column) {
-      case 0:
-      case 1:
+    // NA: Capital, Lower, OK, Delete, Return; FR / DE: OK, Delete, Return.
+    switch (text::keyboard_button(text::lang(), kb->column)) {
+      case text::KeyAction::kCapital:
+      case text::KeyAction::kLower:
         kb->selection = kb->column;
         sound_play_sfx(sound(), 3, 0, 0x7F40);
         return 0;
-      case 2:
+      case text::KeyAction::kOk:
         return 1;
-      case 3:
+      case text::KeyAction::kDelete:
         name_box_backspace(box);
         return 0;
-      case 4:
+      case text::KeyAction::kReturn:
         return 2;
       default:
         return 0;
     }
   }
   if (box->length >= 7) return 0;
-  const char* chars = keyboard_chars(kb->selection);
+  const char* chars = keyboard_chars(text::name_keyboard(text::lang()).charset_switch ? kb->selection : 0);
   if (name_box_append(box, chars + (kb->column + (kb->row - 1) * 10) * 6)) keyboard_jump_full(kb);
   sound_play_sfx(sound(), 3, 0, 0x7F40);
   return 0;
@@ -880,12 +901,14 @@ void rename_screen(char* name, int character, std::span<const u8> pack, std::vec
         }
       } else {
         if (pressed & button(1)) name_box_backspace(box);
-        if (repeat & (button(5) | button(7))) {
+        // FR / DE: one character set, no switch (text_rules.h NameKeyboard).
+        const bool charset_switch = text::name_keyboard(text::lang()).charset_switch;
+        if (charset_switch && (repeat & (button(5) | button(7)))) {
           kb->selection = (kb->selection + 1) & 1;
           sound_play_sfx(g.sound, 1, 0, 0x7F40);
           if (keyboard_rows(kb->selection) <= kb->row) kb->row = keyboard_rows(kb->selection);
         }
-        if (repeat & (button(4) | button(6))) {
+        if (charset_switch && (repeat & (button(4) | button(6)))) {
           if (--kb->selection < 0) kb->selection = 1;
           sound_play_sfx(g.sound, 1, 0, 0x7F40);
         }
@@ -901,8 +924,11 @@ void rename_screen(char* name, int character, std::span<const u8> pack, std::vec
       }
     }
     if (keyboard_rows(kb->selection) <= kb->row) kb->row = keyboard_rows(kb->selection);
-    screen_sprite(ctx, 8, 0x0C, 0x80, 0x20, 0, 0, 5, 0x7801, 0x80, false);        // the heading
-    screen_sprite(ctx, 0x88, 0x1C, 0x80, 0x10, 0x80, 0, 0x25, 0x7806, 0x70, true);
+    // The heading (NA w 0x80) and the subtitle (NA x 0x88, w 0x80, u 0x80, tpage 0x25).
+    const text::Layout& lay = text::layout(text::lang());
+    screen_sprite(ctx, 8, 0x0C, lay.rename_heading_w, 0x20, 0, 0, 5, 0x7801, 0x80, false);
+    screen_sprite(ctx, lay.rename_subtitle[0], 0x1C, lay.rename_subtitle[1], 0x10, lay.rename_subtitle[2], 0,
+                  lay.rename_subtitle[3], 0x7806, 0x70, true);
     kb->draw();
     box->draw();
     const int width = character >= 0 && character < 12 && widths ? widths[character] : 0;
@@ -943,16 +969,21 @@ void rename_screen(char* name, int character, std::span<const u8> pack, std::vec
 
 // 0x8007e308: keeps the menu's VRAM the screen uses and puts it back afterwards.
 void rename_run(char* name, int character, std::span<const u8> pack, std::vector<u8>& picture) {
-  static constexpr psyq::RECT kAreas[4] = {
-      {0x140, 0, 0x40, 0x100}, {0x140, 0x100, 0xE8, 0xF0}, {0x100, 0x1E0, 0x100, 2}, {0, 0x1C8, 0x140, 0x18}};
-  std::vector<u16> saved[4];
-  for (int i = 0; i < 4; ++i) {
+  // France / Germany's art is wider: their copy also keeps (0x180, 0, 0x40, 0x40).
+  static constexpr psyq::RECT kAreas[5] = {{0x140, 0, 0x40, 0x100},
+                                           {0x140, 0x100, 0xE8, 0xF0},
+                                           {0x100, 0x1E0, 0x100, 2},
+                                           {0, 0x1C8, 0x140, 0x18},
+                                           {0x180, 0, 0x40, 0x40}};
+  const int areas = text::layout(text::lang()).rename_extra_vram ? 5 : 4;
+  std::vector<u16> saved[5];
+  for (int i = 0; i < areas; ++i) {
     saved[i].assign(static_cast<size_t>(kAreas[i].w) * kAreas[i].h, 0);
     psyq::StoreImage(&kAreas[i], saved[i].data());
   }
   psyq::DrawSync(0);
   rename_screen(name, character, pack, picture);
-  for (int i = 0; i < 4; ++i) psyq::LoadImage(&kAreas[i], saved[i].data());
+  for (int i = 0; i < areas; ++i) psyq::LoadImage(&kAreas[i], saved[i].data());
   psyq::DrawSync(0);
 }
 

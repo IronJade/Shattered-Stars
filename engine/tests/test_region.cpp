@@ -109,7 +109,11 @@ TEST(region_profiles_by_serial) {
   CHECK(std::string(region::profile(region::Id::kFrance).product) == "BESCES-02160");
   CHECK(std::string(region::profile(region::Id::kGermany).product) == "BESCES-02161");
   CHECK(na->supported && eu->supported);
+  CHECK(region::profile(region::Id::kFrance).supported && region::profile(region::Id::kGermany).supported);
+  CHECK(region::playable(region::profile(region::Id::kFrance)) && !region::profile(region::Id::kJapan).supported);
   CHECK(eu->text == region::Text::kNorthAmerica);
+  CHECK(region::profile(region::Id::kFrance).text == region::Text::kFrench);
+  CHECK(region::profile(region::Id::kGermany).text == region::Text::kGerman);
   CHECK(region::profiles().front().id == region::Id::kNorthAmerica);
   CHECK(region::is_na());
   CHECK(!region::has_maps());  // NA reads its own addresses

@@ -275,8 +275,8 @@ TEST(launcher_identify_the_discs) {
 
 // Other releases (runtime/region.h), each given by its disc 1 image in SS_DISC1_EU /
 // SS_DISC1_FR / SS_DISC1_DE / SS_DISC1_JP (disc 2 is looked for next to it); skipped when
-// unset. Europe plays; France and Germany wait for their text system; Japan is refused
-// clearly; the two discs must be the same release.
+// unset. Europe, France and Germany play; Japan is refused clearly; the two discs must be
+// the same release.
 TEST(launcher_identify_other_releases) {
   auto env_path = [](const char* name) {
     const char* p = std::getenv(name);
@@ -307,7 +307,33 @@ TEST(launcher_identify_other_releases) {
       }
     }
   }
-  for (const char* name : {"SS_DISC1_FR", "SS_DISC1_DE", "SS_DISC1_JP"}) {
+  struct Expect {
+    const char* env;
+    region::Id id;
+    const char* disc1;
+    const char* disc2;
+  };
+  for (const Expect& e : {Expect{"SS_DISC1_FR", region::Id::kFrance, "Disc 1, French release: OK", "Disc 2, French release: OK"},
+                          Expect{"SS_DISC1_DE", region::Id::kGermany, "Disc 1, German release: OK", "Disc 2, German release: OK"}}) {
+    const std::string path = env_path(e.env);
+    if (path.empty()) {
+      std::printf("  (%s not set: skipped)\n", e.env);
+      continue;
+    }
+    const launcher::DiscInfo one = launcher::identify_disc(launcher::utf8_path(path));
+    CHECK(one.kind == launcher::DiscKind::kDisc1);
+    CHECK(one.region != nullptr && one.region->id == e.id && one.region->supported);
+    CHECK(launcher::describe(one, 1) == e.disc1);
+    CHECK_EQ(launcher::disc_number(launcher::utf8_path(path)), 1);
+    const std::string two_path = launcher::find_disc2_near(launcher::utf8_path(path));
+    CHECK(!two_path.empty());
+    if (two_path.empty()) continue;
+    const launcher::DiscInfo two = launcher::identify_disc(launcher::utf8_path(two_path));
+    CHECK(two.kind == launcher::DiscKind::kDisc2);
+    CHECK(launcher::describe(two, 2) == e.disc2);
+    CHECK(launcher::describe_pair(one, two).empty());
+  }
+  for (const char* name : {"SS_DISC1_JP"}) {
     const std::string path = env_path(name);
     if (path.empty()) {
       std::printf("  (%s not set: skipped)\n", name);
@@ -330,21 +356,22 @@ TEST(launcher_identify_other_releases) {
     const launcher::DiscInfo info = launcher::identify_disc(launcher::utf8_path(jp));
     CHECK(launcher::describe(info, 1) ==
           "Star Ocean: The Second Story, Japanese release (SLPM-86105): not supported yet. Shattered Stars plays "
-          "the North American (SCUS-94421 / SCUS-94422) and European (SCES-02159 / SCES-12159) releases.");
+          "the North American (SCUS-94421 / SCUS-94422), European (SCES-02159 / SCES-12159), French (SCES-02160 / "
+          "SCES-12160) and German (SCES-02161 / SCES-12161) releases.");
   }
 }
 
-// The game on the European discs: a new game on Arlia (map 18) reads every table it needs
-// through the address maps (no "region:" complaint).
-TEST(game_runs_the_european_release) {
-  const char* eu = std::getenv("SS_DISC1_EU");
-  if (eu == nullptr || *eu == 0 || launcher::sibling_program(launcher::kGameProgram).empty()) {
-    std::printf("  (skipped: SS_DISC1_EU not set or the game not built)\n");
+// The game on the European, French and German discs: a new game on Arlia (map 18) reads
+// every table it needs through the address maps (no "region:" complaint).
+void check_game_runs(const char* env_name, const char* tag) {
+  const char* disc = std::getenv(env_name);
+  if (disc == nullptr || *disc == 0 || launcher::sibling_program(launcher::kGameProgram).empty()) {
+    std::printf("  (skipped: %s not set or the game not built)\n", env_name);
     return;
   }
-  const fs::path home = scratch("game_eu");
+  const fs::path home = scratch(tag);
   auto env = test_env(home);
-  env.emplace_back("SS_DISC1", eu);
+  env.emplace_back("SS_DISC1", disc);
   env.emplace_back("SS_MEMCARD1", launcher::path_utf8(home / "card.mcd"));
   GameRun run = run_game({"--headless", "--frames", "400", "--map", "18"}, env);
   CHECK_EQ(run.code, 0);
@@ -352,9 +379,11 @@ TEST(game_runs_the_european_release) {
   CHECK(!contains(run.output, "region:"));
   CHECK(!contains(run.output, "disc 1 image expected"));
 }
+TEST(game_runs_the_european_release) { check_game_runs("SS_DISC1_EU", "game_eu"); }
+TEST(game_runs_the_french_release) { check_game_runs("SS_DISC1_FR", "game_fr"); }
+TEST(game_runs_the_german_release) { check_game_runs("SS_DISC1_DE", "game_de"); }
 
-// The Japanese release is recognised and refused, with the reason and what the game plays
-// (France and Germany the same, until their text system is in).
+// The Japanese release is recognised and refused, with the reason and what the game plays.
 TEST(game_refuses_the_japanese_release) {
   const char* jp = std::getenv("SS_DISC1_JP");
   if (jp == nullptr || *jp == 0 || launcher::sibling_program(launcher::kGameProgram).empty()) {

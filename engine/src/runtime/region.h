@@ -47,8 +47,8 @@ struct Profile {
 };
 
 // Whether the port plays this release: a supported one, or one named in SS_REGION_TRY
-// ("fr,de": development runs of a release whose support is in progress, e.g. France and
-// Germany before their text system is wired; never set for players).
+// ("jp": development runs of a release whose support is in progress; never set for
+// players). North America, Europe, France and Germany are supported.
 bool playable(const Profile& p);
 
 // Every release the port recognises, NA first.

@@ -159,6 +159,11 @@ class App {
   const SeedInfo& seed_info(const std::string& path);
   Level disc_level(int n);
   bool disc1_ok() { return disc_info(settings_.disc1).kind == launcher::DiscKind::kDisc1; }
+  // Why the chosen discs can't be played together (Disc 2 of another release than Disc 1's),
+  // or empty.
+  std::string pair_error() {
+    return launcher::describe_pair(disc_info(settings_.disc1), disc_info(settings_.disc2));
+  }
   Settings read(const launcher::Config& c) const;
   // 'base' with the settings on screen written into it (the keys setup doesn't show stay).
   launcher::Config compose(const launcher::Config& base) const;

@@ -134,8 +134,64 @@ from tools/regions/na_reads.txt). Europe: 149 images, ~1357 segments, ~4336 poin
   defaults); 71 jal votes against its load address come from calls into that area.
 - FR / DE: reads whose bytes differ from NA (text agent's area): battle 0x8006d118-0x8006d11c
   (near the HUD), title 0x8004d37c, 0x8004e264.
+- (regions-text agent 3, 14:55) `region_map.py` can align a same-size table whose values
+  changed a few words off: FR / DE title NA 0x8004eaf8-0x8004eb08 (the name keyboard's column
+  map, values 0,0,1,1,2,2,3,3,4,4 -> 0,0,0,1,1,1,1,2,2,2) became a 16-byte segment with delta
+  -340 (FR; -364 DE) inside -352 (-376), and the 0xbce overlay the same at 0x80082b78 (entries
+  6-9 of its column map at 0x80082b70 unmapped). The text code now reads around it (the
+  ASCII tables entry by entry, the column map from its start), but a positional alignment for
+  equal-length changed runs would be the general fix (then regenerate fr.inc / de.inc).
 - Don't rebuild engine/build-regions while a test runs its binary from there (copy it to
   `scratchpad/regions/bin/` for long runs, as the sweeps do).
+
+## Phase 3: the 0.02.00 finish list (agent 4, `regions-finish`, from 14:33)
+
+Rules as above (budget: -j4, 4 game processes, 2 PCSX-Redux; memcap on every run; NA suites
+after every engine change; AP files are another agent's: only run its tools; no commits).
+Finish list: (1) region_map.py near matches, (2) full sweeps EU / FR / DE disc 1 + 2 vs NA,
+(3) NA vs EU battle comparison, (4) saves per release in Redux, (5) Redux: French battle
+result, German Scan, rename page FR / DE, (6) AP messages in FR / DE + AP e2e on EU and FR/DE,
+(7) mod_verify on EU, (8) setup: release shown, mixed pairs refused; then a "0.02.00
+readiness" section here.
+
+- 14:40 item 1 started: analysis in `scratchpad/regions/rmap/` (islands.py, stretch.py,
+  cross.py). Only near-match island the port reads: the FR / DE title column map (NA
+  0x8004eaf8, 4 words at -340 inside -352). Reads within 1 KB before a layout change: EU 3,
+  FR 5, DE 6 (title 0x8004eafc ASCII table, 0x8004d388 icon y, 0x8004e274 menu rects,
+  0x80063198 talents (DE), battle 0x8006e83a byte table, 0x8008519c s16): all readers checked,
+  none crosses.
+- 14:50 item 1 done (code; suites map1 green: ss_tests 98/0, ss_game_tests 128/0, smoke 86/0,
+  ref_regress quick 28/28). `tools/region_map.py`:
+  - step 3b `realign`: a changed stretch of <= REALIGN_MAX_WORDS (64) between two trusted runs
+    (>= NEAR_WORDS = 16 words) at the same delta is mapped word for word; the diff's short
+    runs at other deltas inside it (near matches) are dropped (EU 3 stretches, FR 15, DE 16;
+    incl. the title column map 0x8004eaf8 and the 0xbce one 0x80082b78).
+  - step 3c `TABLES` / `force_table`: tables indexed by position over their whole extent
+    (title / 0xbce column maps, the title / battle / 0xbce ASCII tables, 0x100 bytes) mapped
+    word for word from the start; fatal if the start is a near match or the table changed
+    size. Found: the FR / DE **battle** ASCII table (0x8006e7c0) had its accented half
+    (c >= 0x84) in near matches / unmapped (wrong glyphs for accented names in battle); the
+    title's the same from c = 0xa0. Both now positional (27 words each).
+  - step 6 checks: a read in a near match = fatal; a read within CROSS_WINDOW (1 KB) before a
+    layout change with no later read = "suspicious" unless READ_EXTENTS gives its extent and
+    it ends before the change (5 reviewed entries). Summary line: "reads N: U unmapped, S
+    suspicious". Now EU / FR / DE: 6690 reads, 0 unmapped, 0 suspicious, 0 fatal.
+  - maps regenerated (engine/data/regions/{eu,fr,de}.inc; na_modules.inc unchanged). Scratch:
+    `scratchpad/regions/rmap/` (show.py REGION [image lo hi] prints segments / realigned).
+- 14:55 item 8 done (code): setup refuses a mixed pair: Save / Save & Play disabled, bottom
+  bar shows "Disc 2 is the European release and Disc 1 the French one. Both discs must be the
+  same release.", tooltip, error dot on Discs; `save()` refuses too; the Discs note lists
+  the four releases. Screens `scratchpad/regions/setup/{mixed,fr}.png` (scratch XDG).
+- 14:55 item 6 code: `text::port_symbol_glyph` (text_rules) maps ASCII symbols FR / DE's
+  ascii_to_glyph passes through as letters to the map font's own glyphs ('-' 0x0b, ( ) [ ] { }
+  < > 0x65-0x6c, '"' 0x7b, # $ % & * + 0x75-0x7a, _ | ~ 0x7d-0x7f, ` -> apostrophe 0x27, \ ->
+  '/', @ ^ -> space); `ap.cpp` message_glyph uses it (banner + message windows). NA / EU keep
+  NA's mapping (unmapped bytes = NA's blank 0xfe). Unit test text_rules_port_symbol_glyphs.
+  AP e2e on EU / FR still to run.
+- 14:56 sweep queue started: `scratchpad/regions/q/queue.sh` (3 jobs, binary copy
+  `scratchpad/regions/bin/ss_q`; progress `q/queue.log`): event sweeps EU/NA/FR/DE disc 1 + 2,
+  then battle sweeps NA/EU/FR/DE (--god --strong 20:30:4, SS_BATTLE_UNITS=1200, read logs in
+  `q/reads/`). Rerun it to resume: finished steps (results.json) are skipped.
 
 ## Next steps
 

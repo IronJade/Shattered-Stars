@@ -14,6 +14,7 @@
 #include "game/battle/voice.h"
 #include "game/boot/rng.h"
 #include "game/common/screen.h"
+#include "game/common/text_rules.h"
 #include "game/field/post_battle.h"
 #include "game/field/script_vm.h"
 #include "runtime/libgpu.h"
@@ -322,6 +323,12 @@ void draw_drops(ResultScreen* rs) {  // 0x80086bdc
   for (int row = rs->drop_row; row < rs->drop_row + 4 && row < rs->drop_count; ++row) {
     const int y = (row - rs->drop_row) * 0xE - rs->scroll;
     if (0x1C <= y) break;
+    if (text::layout(text::lang()).result_prefix_order) {
+      // France: message 5 first, then the item's name.
+      const u32 end = text_draw_id(rs, 8, y, 5, 0);
+      text_draw_id(rs, end_x(end) + 4, end_y(end), static_cast<s16>(rs->drops[row]) + 2999, 0);
+      continue;
+    }
     const u32 end = text_draw_id(rs, 8, y, static_cast<s16>(rs->drops[row]) + 2999, 0);
     text_draw_id(rs, end_x(end) + 4, end_y(end), 5, 0);
   }
@@ -395,6 +402,11 @@ void draw_levelups(ResultScreen* rs) {  // 0x80086ec8
     } else if (line == 1) {
       end = draw_number(rs, 8, y, rs->sp[m], 0);
       suffix = 0x32;
+    } else if (text::layout(text::lang()).result_prefix_order) {
+      // France: message 8 first, then the skill's name.
+      end = text_draw_id(rs, 8, y, 8, 0);
+      text_draw_id(rs, end_x(end) + 6, end_y(end), rs->learned[m][line - 2], 0);
+      continue;
     } else {
       end = text_draw_id(rs, 8, y, rs->learned[m][line - 2], 0);
       suffix = 8;

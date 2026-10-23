@@ -10,6 +10,7 @@
 #include "game/common/menu_scene.h"
 #include "game/common/menu_stats.h"
 #include "game/common/party.h"
+#include "game/common/text_rules.h"
 #include "game/field/callways.h"
 #include "game/field/fade.h"
 #include "game/field/load_queue.h"
@@ -190,11 +191,12 @@ void report_draw(int x, int y) {
   if (!g_panels) return;
   MsgSystem* msg = msg_system();
   const u8* sys = g.system_strings;
+  const text::Layout& lay = text::layout(text::lang());  // FR / DE widen the heading (NA 0x14 cells)
   if (g_report_member != g_report_drawn) {
     const s32 character = rd16s(g.party + g_report_member * 0x60) - 1;
     std::memcpy(g.field_flags + 0x38, &character, 4);
     msg_window_open(msg, -x, -(y + 0xD), 0x24, 1, sys + rd32(sys + 0xC), 8, 1);
-    msg_window_open(msg, -x, -(y + 0x1A), 0x14, 1, sys + rd32(sys + 0x38), 9, 1);
+    msg_window_open(msg, -x, -(y + 0x1A), lay.report_heading_w, 1, sys + rd32(sys + 0x38), 9, 1);
     for (int n = 8; n < 10; ++n)
       if (MsgWindow* w = msg_window(n)) quiet_window(w);
   }
@@ -202,12 +204,13 @@ void report_draw(int x, int y) {
   if (g_side_font != nullptr && g_report_member != g_report_drawn) {
     for (int i = 0; i < 10; ++i) {
       const s16 item = i < 5 ? at(10 + i) : at(0xC + i);
-      const int dx = i < 5 ? 0 : 0x86;
+      const int dx = i < 5 ? lay.report_items_dx : 0x86;  // NA 0
       const u8* p = names;
       if (p == nullptr || read_u16(p) == 0xFFFF) continue;
       while (read_u16(p) != 0xFFFF && static_cast<int>(read_u16(p) - 2999) != item) p += 4;
       if (read_u16(p) == 0xFFFF) continue;
-      msg_window_open(msg, -(x + dx + 0x1E), -((i % 5) * 0xD + y + 0x2B), 0x14, 1, names + read_u16(p + 2), 10 + i, 1);
+      msg_window_open(msg, -(x + dx + 0x1E), -((i % 5) * 0xD + y + 0x2B), lay.report_item_w, 1, names + read_u16(p + 2),
+                      10 + i, 1);  // NA width 0x14
       MsgWindow* w = msg_window(10 + i);
       if (w == nullptr) continue;
       if (i > 4) msg_window_set_text_colour(w, at(10 + i % 5) == at(0x11 + i % 5) ? 3 : 0xF);

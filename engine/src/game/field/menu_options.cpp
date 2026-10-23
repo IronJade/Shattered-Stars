@@ -8,6 +8,7 @@
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
+#include "game/common/text_rules.h"
 #include "game/common/menu_scene.h"
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
@@ -387,14 +388,16 @@ void OptionsPage::draw_screen1() {
   b->set_group(3);
   b->add_message(0);
   r->set_colour(1);
+  // France / Germany move a few columns for the longer words (text_rules.h Layout).
+  const text::Layout& lay = text::layout(text::lang());
   b->set_group(5);
   b->pen(0x88, 0x16, 0xE);
   b->add_message(0);
-  b->pen_move(0x70, -0xE);
+  b->pen_move(lay.options_s1_mono_dx, -0xE);  // NA 0x70
   b->add_message(1);
   b->set_group(6);
   b->add_list_highlight(&values_[0], 8);
-  b->pen(0xA8, 0x16, 0xE);
+  b->pen(lay.options_s1_values_x, 0x16, 0xE);  // NA 0xa8
   for (int i = 0; i < 8; ++i) {
     b->add_message(static_cast<s16>(i));
     b->pen_move(10, -0xE);
@@ -408,10 +411,10 @@ void OptionsPage::draw_screen1() {
       b->add_message(static_cast<s16>(i));
     }
   };
-  row(8, 0x2B, &values_[1], 3, {{0x38, -0xE}, {0x38, -0xE}, {0, 0}});
+  row(8, 0x2B, &values_[1], 3, {{lay.options_s1_row8_dx, -0xE}, {0x38, -0xE}, {0, 0}});  // NA 0x38
   row(10, 0x47, &values_[2], 4, {{0x70, -0xE}, {-0x70, 4}, {0x70, -0xE}});
   row(0xB, 0x70, &values_[3], 3, {{0x30, -0xE}, {0x40, -0xE}, {0, 0}});
-  row(0xC, 0x85, &values_[4], 2, {{0x50, -0xE}, {0, 0}, {0, 0}});
+  row(0xC, 0x85, &values_[4], 2, {{lay.options_s1_rowc_dx, -0xE}, {0, 0}, {0, 0}});  // NA 0x50
   row(0xD, 0x9A, &values_[5], 2, {{0x50, -0xE}, {0, 0}, {0, 0}});
 }
 
@@ -430,7 +433,8 @@ void OptionsPage::draw_screen2() {
   b->set_group(0xF);
   b->pen(0x88, 0x16, 0xE);
   for (int i = 0; i < 8; ++i) b->add_message(static_cast<s16>(i));
-  s16 ix = 0xB8, iy = 0x14;
+  const text::Layout& lay = text::layout(text::lang());
+  s16 ix = lay.options_s2_icon_x, iy = 0x14;  // NA 0xb8
   for (int i = 0; i < 8; ++i) {
     b->pen_at(ix, iy);
     const u8 u0 = static_cast<u8>(button_icon(config_get_button(i)) * 0x10);
@@ -441,13 +445,13 @@ void OptionsPage::draw_screen2() {
     q.x3 = 0x10, q.y3 = 0x10, q.u3 = static_cast<u8>(u0 + 0x10), q.v3 = 0x10;
     b->add_icon(q);
     iy = static_cast<s16>(iy + 0xE);
-    ix = static_cast<s16>(ix + 0xE);
+    ix = static_cast<s16>(ix + lay.options_s2_icon_dx);  // NA 0xe
   }
   b->set_group(0x10);
   b->pen_at(0x88, 0x8C);
   b->add_list_highlight(&values_[7], 2);
   b->add_message(0);
-  b->pen_move(0x40, -0xE);
+  b->pen_move(lay.options_s2_vib_dx, -0xE);  // NA 0x40
   b->add_message(1);
   if (dualshock_ != 0) {
     b->set_group(0x11);

@@ -9,6 +9,7 @@
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
+#include "game/common/text_rules.h"
 #include "game/common/menu_scene.h"
 #include "game/common/menu_stats.h"
 #include "game/common/menu_widget.h"
@@ -418,9 +419,9 @@ LinkComboDialog::LinkComboDialog() {
   box_->add_message(1);
   r->set_colour(1);
   box_->add_list_highlight(&choice_, 2);
-  box_->pen_at(0xA0, 0x1C);
+  box_->pen_at(text::layout(text::lang()).link_combo_on_x, 0x1C);  // NA 0xa0
   box_->add_message(2);
-  box_->pen_at(0xC0, 0x1C);
+  box_->pen_at(text::layout(text::lang()).link_combo_off_x, 0x1C);  // NA 0xc0
   box_->add_message(3);
 }
 
@@ -1350,7 +1351,7 @@ void SpecialtyPage::show_costs(menu::TextBox* box, int uses, u32 cost) {
     r->set_pen(0x50, 0x40, 0xC);
     r->add_number(uses, 4);
   }
-  box->pen(0x88, 0x40, 0xE);
+  box->pen(text::layout(text::lang()).specialty_mp_x, 0x40, 0xE);  // NA 0x88
   r->set_colour(2);
   box->add_message(0);
   r->set_colour(1);

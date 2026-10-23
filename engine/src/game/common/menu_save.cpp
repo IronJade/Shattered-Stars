@@ -10,6 +10,7 @@
 #include "game/common/party.h"
 #include "game/common/menu_scene.h"
 #include "game/common/save_icon.h"
+#include "game/common/text_rules.h"
 #include "game/title/title_program.h"
 #include "runtime/runtime.h"
 
@@ -116,7 +117,8 @@ SaveMenu::SaveMenu() {
   slot_box->set_rect(0, 0xA2, 0x138, 0x26, 0);
   no_card = nullptr;
   g_slot = 0;
-  cursor->add_grid(&g_slot, 1, 2, 1, 0xA8, 0xC, 0x40, 0, slot_box);
+  const text::Layout& lay = text::layout(text::lang());  // DE moves the slots (NA x 0xa8, step 0x40)
+  cursor->add_grid(&g_slot, 1, 2, 1, lay.save_slot_x, 0xC, lay.save_slot_dx, 0, slot_box);
   rebuild_slots();
 }
 
@@ -235,7 +237,7 @@ void SaveMenu::rebuild_slots() {
   b->pen_move(0, -1);
   b->add_message_lines(0, 1);
   for (int i = 0; i < 2; ++i) {
-    b->pen_at(i == 0 ? 0xB8 : 0xF8, 8);
+    b->pen_at(text::layout(text::lang()).save_slot_label_x[i == 0 ? 0 : 1], 8);  // NA 0xb8 / 0xf8
     b->text->set_colour(usable[i] ? 1 : 4);
     b->add_message(static_cast<s16>(i + 1));
   }
@@ -580,7 +582,7 @@ void CheckDialog::on_confirm(int n) {
 
 void CheckDialog::setup() {
   TextBox* b = box;
-  b->set_rect_centered(200, 0x40, 1);
+  b->set_rect_centered(text::layout(text::lang()).check_dialog_w, 0x40, 1);  // NA 200
   b->pen_at(10, 5);
   b->set_group(loading() ? 0xC : 0xA);
   b->add_message(0);  // the title ("Data Load Check")

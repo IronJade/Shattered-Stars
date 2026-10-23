@@ -41,8 +41,8 @@ constexpr Profile kProfiles[] = {
     {Id::kNorthAmerica, "na", "North America", "North American", {"SCUS_944.21", "SCUS_944.22"}, "BASCUS-94421",
      Text::kNorthAmerica, 60, true},
     {Id::kEurope, "eu", "Europe", "European", {"SCES_021.59", "SCES_121.59"}, "BASCES-02159", Text::kNorthAmerica, 50, true},
-    {Id::kFrance, "fr", "France", "French", {"SCES_021.60", "SCES_121.60"}, "BESCES-02160", Text::kFrench, 50, false},
-    {Id::kGermany, "de", "Germany", "German", {"SCES_021.61", "SCES_121.61"}, "BESCES-02161", Text::kGerman, 50, false},
+    {Id::kFrance, "fr", "France", "French", {"SCES_021.60", "SCES_121.60"}, "BESCES-02160", Text::kFrench, 50, true},
+    {Id::kGermany, "de", "Germany", "German", {"SCES_021.61", "SCES_121.61"}, "BESCES-02161", Text::kGerman, 50, true},
     {Id::kJapan, "jp", "Japan", "Japanese", {"SLPM_861.05", "SLPM_861.06"}, "BISLPM-86105", Text::kJapanese, 60, false},
 };
 

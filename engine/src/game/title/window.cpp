@@ -4,6 +4,7 @@
 
 #include "game/boot/pad.h"
 #include "game/boot/stubs.h"
+#include "game/common/text_rules.h"
 #include "game/title/text.h"
 #include "game/title/title_program.h"
 #include "runtime/libgpu.h"
@@ -192,14 +193,14 @@ void MemcardNoticeWindow::draw() {
 SoundWindow::SoundWindow() : Window(0x80) { runtime::Runtime::get().trace("0x8004711c"); selection = sound_output_mode(title_globals().sound); }
 
 void SoundWindow::draw() {
-  draw_text_lines(this, selection == 2 ? 5 : 7, 0x50, 8, 0);
+  draw_text_lines(this, selection == 2 ? text::layout(text::lang()).sound_lines_stereo : 7, 0x50, 8, 0);  // NA 5
   window_draw_frame(this);
 }
 
 VibrationWindow::VibrationWindow() : Window(0x80) { runtime::Runtime::get().trace("0x80047788"); selection = pad_is_dualshock(title_globals().pad, 0) ? 0 : 1; }
 
 void VibrationWindow::draw() {
-  draw_text_lines(this, selection == 1 ? 5 : 7, 0x54, 8, 0x2E);
+  draw_text_lines(this, selection == 1 ? 5 : 7, text::layout(text::lang()).vibration_heading_x, 8, 0x2E);  // NA x 0x54
   window_draw_frame(this);
 }
 
@@ -218,7 +219,7 @@ void CharacterWindow::draw() {
 }
 
 NameKeyboardWindow::NameKeyboardWindow() : Window(0x200) { runtime::Runtime::get().trace("0x800478e8");
-  column = 2;
+  column = text::name_keyboard(text::lang()).first_column;  // NA 2 (OK), FR / DE 1 (Delete)
   row = 0;
   selection = 0;
   moving = 0;
@@ -229,7 +230,7 @@ NameKeyboardWindow::NameKeyboardWindow() : Window(0x200) { runtime::Runtime::get
 namespace {
 
 int keyboard_x(int column, int row) {
-  if (row < 1) return column * 0x2A + 0x0C;
+  if (row < 1) return column * text::name_keyboard(text::lang()).button_step + 0x0C;  // NA 0x2a
   return column * 0x13 + (column > 4 ? 0x14 : 0x0C);
 }
 
@@ -250,8 +251,9 @@ void NameKeyboardWindow::draw() {
   queue_sprite(this, x + cx - 8, y + cy + 0x0E, 0, 0xE0, 0x7807, 0x10, 0x18);
   queue_draw_mode(this, 0, 0, 5);
   window_text_begin(this);
+  const text::NameKeyboard& keys = text::name_keyboard(text::lang());
   const int rows = keyboard_rows()[selection];
-  const char* chars = keyboard_chars(selection);
+  const char* chars = keyboard_chars(keys.charset_switch ? selection : 0);  // FR / DE: set 0 only
   int line_y = 0x0E;
   int cell_x = 0x0C;
   for (int r = 0; cell_x = 0x0C, r < rows; ++r) {
@@ -264,9 +266,9 @@ void NameKeyboardWindow::draw() {
     }
     line_y += 0x0E;
   }
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < keys.buttons; ++i) {  // NA 5 buttons, step 0x2a
     text_draw_id(this, cell_x, 0, i + 0x6E, row == 0 && column == i ? 0x8004 : 4);
-    cell_x += 0x2A;
+    cell_x += keys.button_step;
   }
   window_text_end(this);
   window_draw_shade_frame(this);
@@ -276,17 +278,18 @@ void keyboard_move(NameKeyboardWindow* kb, NameBoxWindow* box, int dx, int dy) {
   if (kb->moving != 0) return;
   const s32 rows = keyboard_rows()[kb->selection];
   const s32* column_map = keyboard_column_map();
+  const int last_button = text::name_keyboard(text::lang()).buttons - 1;  // NA 4
   int row = kb->row;
   int column = kb->column + dx;
   if (column < 0) {
     column = 9;
     if (row < 1) {
-      column = 4;
+      column = last_button;
     } else {
       dy = -1;
     }
   }
-  if ((column > 9 || (column > 4 && row == 0))) {
+  if ((column > 9 || (column > last_button && row == 0))) {
     column = 0;
     if (row < rows) dy = 1;
   }
@@ -328,28 +331,30 @@ void keyboard_move(NameKeyboardWindow* kb, NameBoxWindow* box, int dx, int dy) {
 
 int keyboard_confirm(NameKeyboardWindow* kb, NameBoxWindow* box) {
   Sound* sound = title_globals().sound;
+  const text::NameKeyboard& keys = text::name_keyboard(text::lang());
   if (kb->row < 1) {
-    switch (kb->column) {
-      case 0:
-      case 1:
+    // NA: Capital, Lower, OK, Delete, Return; FR / DE: OK, Delete, Return.
+    switch (text::keyboard_button(text::lang(), kb->column)) {
+      case text::KeyAction::kCapital:
+      case text::KeyAction::kLower:
         kb->selection = kb->column;
         sound_play_sfx(sound, 3, 0, 0x7F40);
         return 0;
-      case 2:
+      case text::KeyAction::kOk:
         return 1;
-      case 3:
+      case text::KeyAction::kDelete:
         name_box_backspace(box);
         return 0;
-      case 4:
+      case text::KeyAction::kReturn:
         return 2;
       default:
         return 0;
     }
   }
   if (box->length >= 7) return 0;
-  const char* chars = keyboard_chars(kb->selection);
+  const char* chars = keyboard_chars(keys.charset_switch ? kb->selection : 0);
   if (name_box_append(box, chars + (kb->column + (kb->row - 1) * 10) * 6)) {
-    kb->next_column = 2;  // full: jump to OK
+    kb->next_column = keys.ok_column;  // full: jump to OK (NA 2, FR / DE 0)
     kb->next_row = 0;
     kb->moving = 4;
   }

@@ -16,6 +16,7 @@
 #include "game/battle/battle.h"
 #include "game/battle/unit.h"
 #include "game/boot/system.h"
+#include "game/common/text_rules.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
@@ -177,13 +178,20 @@ void put_code(std::vector<u8>& out, u32 g) {
     out.push_back(static_cast<u8>(g >> 7));
   }
 }
+// One ASCII character of an Archipelago message as a map-font glyph: the release's own
+// mapping, except the symbols France / Germany's leaves as letters (text_rules.h
+// port_symbol_glyph). Bytes past ASCII (UTF-8 names) show '?'.
+s32 message_glyph(char ch) {
+  s32 code = static_cast<u8>(ch);
+  if (code >= 0x80) code = '?';
+  const s32 symbol = text::port_symbol_glyph(text::lang(), code);
+  if (symbol >= 0) return symbol;
+  field::text_ascii_to_glyph(&code, 0, 0);
+  return code;
+}
+
 void put_glyphs(std::vector<u8>& out, const std::string& ascii) {
-  for (const char ch : ascii) {
-    s32 code = static_cast<u8>(ch);
-    if (code >= 0x80) code = '?';
-    field::text_ascii_to_glyph(&code, 0, 0);
-    put_code(out, static_cast<u32>(code));
-  }
+  for (const char ch : ascii) put_code(out, static_cast<u32>(message_glyph(ch)));
 }
 
 // A message window's text as the map scripts write it (the "N Fol acquired." string 0x122):
@@ -210,10 +218,7 @@ std::vector<u8> window_text(const std::vector<std::string>& lines) {
 std::vector<u8> map_text(const std::string& ascii) {
   std::vector<u8> out;
   for (const char ch : ascii) {
-    s32 code = static_cast<u8>(ch);
-    if (code >= 0x80) code = '?';
-    field::text_ascii_to_glyph(&code, 0, 0);
-    const u32 g = static_cast<u32>(code);
+    const u32 g = static_cast<u32>(message_glyph(ch));
     if (g < 0x80) {
       out.push_back(static_cast<u8>(g));
     } else {

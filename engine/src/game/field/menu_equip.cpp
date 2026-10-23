@@ -5,6 +5,7 @@
 
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
+#include "game/common/text_rules.h"
 #include "game/common/menu_scene.h"
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
@@ -406,7 +407,8 @@ void EquipPicker::on_button3(int n) {
 EquipOptions::EquipOptions(EquipmentPage* page) : page_(page) {
   menu::strings_set(menu::globals().data.data());
   box_ = new menu::TitledBox;
-  box_->set_rect_centered(0xD0, 0x40, 1);
+  const text::Layout& lay = text::layout(text::lang());
+  box_->set_rect_centered(lay.equip_options_w, 0x40, 1);  // NA 0xd0
   box_->set_font_group(menu::strings_block(1), menu::strings_block(0), 3);
   menu::TextRenderer* r = box_->text;
   box_->pen_at(10, 5);
@@ -419,9 +421,9 @@ EquipOptions::EquipOptions(EquipmentPage* page) : page_(page) {
   r->set_colour(1);
   box_->set_group(4);
   box_->add_list_highlight(&ew_, 2);
-  box_->pen_at(0x80, 0x2A);
+  box_->pen_at(lay.equip_options_x[0], 0x2A);  // NA 0x80
   box_->add_message(0);   // ON
-  box_->pen_at(0xA0, 0x2A);
+  box_->pen_at(lay.equip_options_x[1], 0x2A);  // NA 0xa0
   box_->add_message(1);   // OFF
   box_->set_highlight(first, &choice_);
   ew_ = (party_selected_record()[0x3A] & 1) != 0 ? 1 : 0;

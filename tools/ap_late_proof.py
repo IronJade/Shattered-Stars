@@ -48,8 +48,12 @@ the same save at chapter 38 step 0 (the Nede story's first free walk on the worl
 the disc switch) with flag 730 cleared, and the proof seed's expel_teleporter on, so the Fun
 City arena's old man (map 303) takes the party to Arlia from chapter 36 (the port's three
 patch lines, docs/ap/seed_format.md "The Expel teleporter"). The only root is Energy Nede's
-world map. A location proven there can be reached between the disc switch and the Final
-Save Point through the teleporter. Its result goes to the output's "teleporter" key.
+world map. The party has no flight on Expel then (its Synard spot is set only by Virtual
+Arlia's arrival, after the Final Save Point), so the search does not follow Expel's world-map
+entrances to the islands the teleporter's party can neither walk nor sail to
+(TELEPORTER_ISLANDS, from tools/ap_walkmap.py). A location proven there can be reached between
+the disc switch and the Final Save Point through the teleporter. Its result goes to the
+output's "teleporter" key.
 
 Usage:
   tools/ap_late_proof.py --bin BIN --save CARD.mcd --save-frame 13 [--game claude --game rena]
@@ -58,6 +62,10 @@ SS_DISC1 / SS_DISC2 give the discs (or --disc1 / --disc2). --reparse rebuilds th
 the logs in --work; --resume reuses the finished node logs there. A game takes about an hour
 with 6 jobs; run both games at --jobs 3 each (or one after the other), so the machine never
 has more than 6 game processes from it.
+
+Every game process runs under the memory cap (tools/memcap.py: SS_MEM_CAP_GB, default 4 GB of
+address space). A run that dies at the cap fails the proof (exit status 3, "at the memory cap"
+in its node log); it is never retried or resumed past.
 """
 import argparse
 import collections
@@ -74,6 +82,9 @@ import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from memcap import Watch, cap_bytes, capped, hit_cap  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORLD = os.path.join(ROOT, "apworld", "so2")
 # The Final Save Point, and Energy Nede's world map: from the save the party walks back down out
@@ -82,6 +93,16 @@ WORLD = os.path.join(ROOT, "apworld", "so2")
 ROOTS = [671, 2]
 TELEPORTER_ROOTS = [2]
 TELEPORTER_CHAPTER = 38   # the Nede story's first walk on the world map (chapter 38 is stored at map 246)
+# Expel's world map (map 1) entrances the teleporter state does not follow: the sweep fires
+# every entrance trigger wherever it lies, but the teleporter's party lands in Arlia, walks the
+# Cross continent and sails to the Lacour continent on the Herlie ferry (map 144's sailor,
+# chapter >= 16); these lie on islands reached only by the story's ships (Port Hilton:
+# chapters 23-27 to map 231, chapter 28 to El) or by Virtual Expel's Synard (after the Final
+# Save Point): El Beach 229, Eluria Colony 232, Eluria Tower 557 (the El continent), map 231
+# and Hoffmann Ruins 478 (their island), the Cave of Trials 704. tools/ap_walkmap.py derives
+# them from the terrain (--check compares). The late state follows them all (the Synard).
+EXPEL_WORLD_MAP = 1
+TELEPORTER_ISLANDS = frozenset({229, 231, 232, 478, 557, 704})
 SCRIPT_FLAGS = 0x170 * 8
 KEEP_FLAGS = {1, 2, 4, 730} | set(range(66, 94))  # the game, Private Action mode, the save, key items
 PARTY = "1,10"   # Rena and Noel join the --map start's Claude (both are in every party at chapter 60)
@@ -213,6 +234,10 @@ def proof_seed(path, teleporter=False):
 
 # ---- Runs ----
 
+class MemoryCapHit(RuntimeError):
+    """A game run died at the memory cap: the proof fails (never a retry)."""
+
+
 def run_map(args, state, target, route, seed, logpath):
     """Replays route (root, steps) from its root and sweeps the map it ends on (resuming after a
     crash or hang). Returns the kept lines of every run."""
@@ -238,8 +263,12 @@ def run_map(args, state, target, route, seed, logpath):
             env["SS_EVENT_SWEEP_SKIP"] = str(skip)
             cmd = [args.bin, "--headless", "--no-memcard", "--frames", "2000000", "--map", str(root),
                    "--ap-seed", seed]
-            p = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT, text=True, errors="replace", bufsize=1)
+            # Under the memory cap (tools/memcap.py), each run its own.
+            run_cmd, preexec = capped(cmd, args.bin)
+            p = subprocess.Popen(run_cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT, text=True, errors="replace", bufsize=1,
+                                 preexec_fn=preexec)
+            watch = Watch(p.pid)
             last, start, lines, reloads = [time.time()], time.time(), [], [0]
 
             def reader():
@@ -257,6 +286,7 @@ def run_map(args, state, target, route, seed, logpath):
             why = ""
             while p.poll() is None:
                 time.sleep(0.5)
+                watch.poll()
                 now = time.time()
                 # A map whose main script moves on after every reload (map 413 -> 416) would
                 # loop in the sweep's settle forever: stop it and go on after the entry.
@@ -266,6 +296,12 @@ def run_map(args, state, target, route, seed, logpath):
                     break
             p.wait()
             t.join(timeout=5)
+            if hit_cap(p.returncode, lines, killed=bool(why), watch=watch):
+                log.write(f"[driver] exit {p.returncode} (at the memory cap: peak {watch.peak_kb // 1024} MB "
+                          f"of {cap_bytes() >> 20} MB)\n")
+                log.write("\n".join(lines[-20:]) + "\n")
+                raise MemoryCapHit(f"map {target} (route {env.get('SS_SWEEP_PLAY', '(none)')}): a run died at "
+                                   f"the memory cap, peak {watch.peak_kb // 1024} MB; see {logpath}")
             keep = [x for x in lines if x.startswith(("[sweep]", "[ap] check", "[port]"))]
             log.write("\n".join(keep) + "\n")
             log.write(f"[driver] exit {p.returncode}{' (' + why + ': killed)' if why else ''}\n")
@@ -396,6 +432,11 @@ def bfs(args, game, state, seed, stateful, root_maps=ROOTS):
             node = other
         swept_of[node] = swept
         exits = {((swept if to == -1 else to), kind, index): st for (to, kind, index), st in exits.items()}
+        if args.state == "teleporter" and swept == EXPEL_WORLD_MAP:
+            off = sorted({to for to, _, _ in exits if to in TELEPORTER_ISLANDS})
+            if off:
+                notes.setdefault(node, []).append(f"island entrances not followed (no ship or flight): {off}")
+            exits = {k: st for k, st in exits.items() if k[0] not in TELEPORTER_ISLANDS}
         edges.setdefault(swept, set()).update(to for to, _, _ in exits if to != swept)
         new = []
         for (to, kind, index), st in sorted(exits.items()):
@@ -434,7 +475,13 @@ def bfs(args, game, state, seed, stateful, root_maps=ROOTS):
                 finished, _ = wait(running, return_when=FIRST_COMPLETED)
                 for fut in finished:
                     k = running.pop(fut)
-                    new = done(k, fut.result())
+                    try:
+                        lines = fut.result()
+                    except MemoryCapHit:
+                        # Fail: start nothing more (the runs in progress end by their timeout).
+                        pool.shutdown(wait=False, cancel_futures=True)
+                        raise
+                    new = done(k, lines)
                     print(f"[{game}] {k}: -> {sorted(edges.get(swept_of.get(k), []))} checks {len(checks[k])} "
                           f"(nodes {len(swept_of)}, maps {len(edges)}, running {len(running) + len(new)})", flush=True)
                     for x in new:
@@ -508,7 +555,11 @@ def main():
     roots = TELEPORTER_ROOTS if tele else ROOTS
     for game in games:
         glob_text, flag_text, summary = build_state(snap, field, game, args.state)
-        result = bfs(args, game, (glob_text, flag_text), seed, stateful, roots)
+        try:
+            result = bfs(args, game, (glob_text, flag_text), seed, stateful, roots)
+        except MemoryCapHit as e:
+            print(f"[{game}] FAILED at the memory cap: {e}", file=sys.stderr, flush=True)
+            return 3
         result["state"] = dict(summary, roots=roots, disc=2, frames=args.frames, seed_locations=count,
                                expel_teleporter=tele,
                                stateful_maps={str(m): sorted(v) for m, v in sorted(stateful.items())})

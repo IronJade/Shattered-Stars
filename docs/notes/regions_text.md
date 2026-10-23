@@ -221,31 +221,44 @@ asks the game (glyph widths of the current font, message variables, name / item 
 widths, the ruby measure, the 0x400d widths), so it is the same code for every release and
 testable without a running field.
 
-### Wiring (for the region profile's owner)
+### Wiring (done; France and Germany are supported releases)
 
-Nothing in the game calls the module yet. To plug it in (each a small change at the NA
-literal; NA behaviour is unchanged by construction, and `ss_game_tests` proves `layout_line`
-equals the current NA function):
+Every ported function that knows a glyph number, a moved constant or a keyboard rule asks the
+module for the release being played (`text::lang()`, from the region profile). North America
+and Europe get NA's values by construction (`map_glyphs`, `layout`, `name_keyboard` return
+NA's literals for `Text::kNorthAmerica`); the two functions whose whole rule set changed keep
+their ported NA body and hand France / Germany to the module:
 
-1. `field/message_text.cpp`: `text_layout_line` -> `text::layout_line(text::lang(), ...)` with a
-   `LayoutHost` over the MsgWindow (the test's `FieldHost` is that adapter); `text_render_line`'s
-   0x105 -> `map_glyphs(lang).space`; `text_format_number` / `text_number_width` ->
-   `format_number` / `number_width`; `text_ascii_to_glyph` -> `ascii_to_glyph`.
-2. `field/message.cpp` `msg_window_print`: `code - 0xF7 < 7` -> the push range.
-3. `title/text.cpp` and `battle/window.cpp` `text_from_ascii`: when `ascii_high_bias` >= 0 and
-   `c >= 0x81` outside kana mode, `glyph = table[c] + bias`.
-4. `title/window.cpp` and `field/menu_rename.cpp`: `NameKeyboard` (buttons, step, first column,
-   OK column), `keyboard_button` in the confirm functions, `charset_switch` in
-   `title/new_game.cpp` / the rename screen's input loop; only set 0 is drawn. The character
-   table, the row counts and the column map keep NA's layout (both sets, five rows each), so
-   they are read at NA's addresses through the region map as they are now.
-5. `common/menu_gfx.cpp` `cvram_alloc` -> `cvram_choose`.
-6. Every row of section 6: the literal -> `text::layout(text::lang()).<field>`.
-7. Launcher: France and Germany become supported releases once 1-6 are in and their address
-   maps pass `region_map.py --check` (the three differing read bytes it reports are text
-   data).
+| Port site | What it asks |
+|---|---|
+| `field/message_text.cpp` `text_layout_line` | France / Germany: `layout_line` over `FieldLayoutHost` (the MsgWindow's font, names, items, numbers, ruby, 0x400d widths); NA: its ported body |
+| `field/message_text.cpp` `text_ascii_to_glyph` | France / Germany: `ascii_to_glyph`; NA: its ported body |
+| `text_number_width`, `text_format_number`, `text_render_line` | `map_glyphs`: digits, '-', the space a wrapped line drops |
+| `field/message.cpp` `msg_window_print` | `map_glyphs` push range (opening brackets / quotes) |
+| `title/text.cpp`, `battle/window.cpp` `text_from_ascii` | `ascii_high_bias` |
+| `title/window.cpp` keyboard, `title/new_game.cpp` name screen; `field/menu_rename.cpp` keyboard and rename screen | `name_keyboard`, `keyboard_button`: first column, buttons, step, OK column, set 0 only, no L / R switch |
+| `common/menu_gfx.cpp` `cvram_alloc` | `cvram_choose` |
+| every row of section 6 | `layout(lang)` fields (each site keeps the NA value in a comment) |
 
-The European (English) discs keep using every NA path (`Text::kNorthAmerica`).
+The launcher plays France and Germany (`region.cpp` `supported`); `SS_REGION_TRY` is no longer
+needed for them.
+
+Two reads changed for every release while wiring: the title's and the rename page's ASCII
+tables are read entry by entry (`title_data(0x8004eafc + c)`, the overlay's 0x80082b78 + c)
+and the rename page's column map from its start. The tables' first 0x20 entries overlap the
+keyboard column map, which France and Germany changed (three buttons); the address map
+(`tools/region_map.py`) aligned those changed words 12 bytes off in a 16-byte segment, so a
+base pointer translated inside it was off (the French keyboard showed "<=>?" for "0123" and
+"Olaude"). Read entry by entry, every table byte lies in a correctly mapped segment. On NA
+nothing is translated, so the result is the same.
+
+### Port-only text
+
+The port's own messages (Archipelago: "received ...", the banner) go through
+`text_ascii_to_glyph`, so they use the release's glyphs. In France and Germany a character
+outside the original's table (an apostrophe, '-', brackets) stays its ASCII byte, as in the
+original, which in the Latin font is another glyph; the port's texts avoid them or show that
+glyph.
 
 ## 9. Verification
 
@@ -262,7 +275,26 @@ The European (English) discs keep using every NA path (`Text::kNorthAmerica`).
   (width, word wrap, continuing, line height), the text, the current font's widths, the names,
   the message variables and the result while a script mashes into a new game and through the
   opening's dialogue (`scratchpad/regions_text/redux/`); every logged line is replayed through
-  `layout_line`. Results: see the continuation log (filled in as the runs finish).
+  `layout_line`: French (Claude, Rena) 88 + 56, German 59 + 84 lines, **287 of 287 identical**
+  (137 of them wrapped), maps 7 and 18. None of them is decided by the " ?" / " !" rule; the
+  unit tests cover it.
+- **The wired port against the original**: the port's `SS_TEXT_LOG` (every line the game lays
+  out, same format) over the same opening with the Redux script's input
+  (`scratchpad/regions_text/work/mash.py`, `cmp_lines.py`): France 88 of 88 lines identical to
+  the original's, Germany 84 of 84. French map 18 (Mr. Hearn): "aider ?" stays on one line.
+- **Name entry**: the French and German title keyboards match the original's screens (three
+  buttons OK / Delete / Return, the cursor on Delete, digits, capitals and punctuation, the
+  headings); moving down from Delete lands on '3' (the column map), a full name sends the
+  cursor to OK, Left / Right wrap over the three buttons.
+- **Menus**: the camp menu and both screens of the Options page (the page with most of the
+  moved columns), French and German, the same keys after the same opening in the port and
+  in PCSX-Redux (`scratchpad/regions_text/work/menukeys.py`, `redux/menus.sh`): every label,
+  value column and button icon in the same place (the German "Halbauto." / "Nur" columns and
+  icon column, the French "Son 3D" / "DÉSACTIVER ACTIVER" rows). The rename page (overlay
+  0xbce) shares the title keyboard's rules; it was not opened in a run.
+- **Suites** (NA disc; the EU / FR / DE / JP disc variables set): ss_tests 98 / 0,
+  ss_game_tests 128 / 0 (with `game_runs_the_french_release` / `_german_release` and the
+  launcher's French / German disc checks), smoke 86 / 0, `ref_regress --quick` 28 / 28.
 - **Unit tests** (`ss_tests`, `text_rules_*`, no disc): glyph tables, the ASCII conversion
   (French / German / NA, the kana path equal everywhere), numbers, the classes, word wrap on
   synthetic fonts (spaced punctuation, apostrophe, digits, German 0x62, continued lines, NA's

@@ -137,6 +137,33 @@ TEST(text_rules_ascii_to_glyph) {
   CHECK_EQ(text::ascii_to_glyph(Lang::kFrench, &ka, 0xDE, 1), 1);
 }
 
+TEST(text_rules_port_symbol_glyphs) {
+  // Every printable ASCII byte of an Archipelago message ends on a glyph of the right
+  // character (or a space) in France / Germany, never on a letter the byte happens to number.
+  for (Lang l : {Lang::kFrench, Lang::kGerman}) {
+    for (s32 c = 0x20; c < 0x7F; ++c) {
+      s32 g = text::port_symbol_glyph(l, c);
+      if (g < 0) {
+        g = c;
+        text::ascii_to_glyph(l, &g, 0, 0);
+      }
+      const bool alnum = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+      // Letters and digits are 0x01-0x41 (and 0x0b '-', 0x0c '.', 0x27 the apostrophe).
+      if (!alnum) CHECK(g == 0x0B || g == 0x0C || g == 0x27 || g >= 0x63);
+      CHECK(g >= 0x01 && g <= 0x81);
+    }
+    CHECK_EQ(text::port_symbol_glyph(l, '-'), 0x0B);
+    CHECK_EQ(text::port_symbol_glyph(l, '\''), 0x27);
+    CHECK_EQ(text::port_symbol_glyph(l, '('), 0x69);
+    CHECK_EQ(text::port_symbol_glyph(l, ')'), 0x65);
+    CHECK_EQ(text::port_symbol_glyph(l, 'a'), -1);
+  }
+  // North America and Europe keep NA's mapping (the blank 0xfe for these bytes).
+  for (Lang l : {Lang::kNorthAmerica}) {
+    for (s32 c = 0x20; c < 0x7F; ++c) CHECK_EQ(text::port_symbol_glyph(l, c), -1);
+  }
+}
+
 TEST(text_rules_numbers) {
   u8 out[16];
   CHECK_EQ(text::format_number(Lang::kFrench, -105, out), 4);

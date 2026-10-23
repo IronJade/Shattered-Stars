@@ -291,7 +291,7 @@ launcher::Config App::compose(const launcher::Config& base) const {
 
 bool App::save() {
   const bool cards_clash = settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]);
-  if (!disc1_ok() || cards_clash) return false;
+  if (!disc1_ok() || cards_clash || !pair_error().empty()) return false;
   // Start from the file as it is now: keys this version doesn't know (or that the game
   // wrote meanwhile) stay as they are.
   launcher::Config c = compose(launcher::Config::load(config_.path()));
@@ -861,7 +861,10 @@ void App::sidebar() {
     if (selected) dl->AddRectFilled(a, ImVec2(a.x + em() * 0.22f, b.y), ImGui::GetColorU32(kAccent), 2.0f);
     // A dot for what needs attention.
     ImU32 dot = 0;
-    if (page == Page::kDiscs) dot = disc1_ok() ? (disc_level(2) == Level::kWarning ? kWarning : kOk) : kError;
+    if (page == Page::kDiscs) {
+      const Level l2 = disc_level(2);
+      dot = disc1_ok() && l2 != Level::kError ? (l2 == Level::kWarning ? kWarning : kOk) : kError;
+    }
     if (page == Page::kMemoryCards) {
       for (int s = 0; s < 2; ++s)
         if (settings_.card_inserted[s] && !settings_.card[s].empty()) {
@@ -899,13 +902,18 @@ void App::bottom_bar() {
   ImGui::GetWindowDrawList()->AddLine(p0, ImVec2(p0.x + ImGui::GetWindowWidth(), p0.y), IM_COL32(44, 52, 72, 255), 1.0f);
 
   const bool clash = settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]);
-  const bool can_save = disc1_ok() && !clash;
+  // Both discs must be the same release (the game would drop the other release's Disc 2).
+  const std::string mixed = pair_error();
+  const bool can_save = disc1_ok() && !clash && mixed.empty();
   const bool dirty = settings_ != saved_;
   Level level;
   std::string text;
   if (!disc1_ok()) {
     level = Level::kError;
     text = "Choose your Disc 1 image to continue.";
+  } else if (!mixed.empty()) {
+    level = Level::kError;
+    text = mixed;
   } else if (clash) {
     level = Level::kError;
     text = "Both memory card slots use the same file.";
@@ -941,15 +949,17 @@ void App::bottom_bar() {
   if (ImGui::Button("Save")) save();
   ImGui::EndDisabled();
   if (!can_save && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    ImGui::SetTooltip(clash ? "Choose a different file for one of the memory card slots first."
-                            : "Choose a valid Disc 1 image first.");
+    ImGui::SetTooltip("%s", !disc1_ok()      ? "Choose a valid Disc 1 image first."
+                            : !mixed.empty() ? "Choose Disc 2 of the same release as Disc 1 (or no Disc 2) first."
+                                             : "Choose a different file for one of the memory card slots first.");
   ImGui::SameLine();
   ImGui::BeginDisabled(!can_save);
   if (primary_button(play_label, ImVec2(button_width(play_label) + em() * 1.6f, 0))) play();
   ImGui::EndDisabled();
   if (!can_save && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    ImGui::SetTooltip(clash ? "Choose a different file for one of the memory card slots first."
-                            : "Choose a valid Disc 1 image first.");
+    ImGui::SetTooltip("%s", !disc1_ok()      ? "Choose a valid Disc 1 image first."
+                            : !mixed.empty() ? "Choose Disc 2 of the same release as Disc 1 (or no Disc 2) first."
+                                             : "Choose a different file for one of the memory card slots first.");
   ImGui::EndChild();
   ImGui::PopStyleVar();
   ImGui::PopStyleColor();
@@ -969,8 +979,9 @@ void App::popups() {
   ImGui::SetNextWindowSize(ImVec2(em() * 26, 0));
   if (ImGui::BeginPopupModal("Unsaved changes", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
     ImGui::TextWrapped("You changed some settings without saving them.");
-    const bool can_save = disc1_ok();
-    if (!can_save) note("They can't be saved yet: Disc 1 isn't a valid image.");
+    const bool can_save = disc1_ok() && pair_error().empty();
+    if (!disc1_ok()) note("They can't be saved yet: Disc 1 isn't a valid image.");
+    else if (!can_save) note("They can't be saved yet: Disc 1 and Disc 2 are different releases.");
     ImGui::Dummy(ImVec2(0, em() * 0.6f));
     ImGui::BeginDisabled(!can_save);
     if (primary_button("Save and quit")) {
@@ -1087,8 +1098,9 @@ void App::page_discs() {
     ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, em() * 0.2f));
   }
-  note("Shattered Stars plays Star Ocean: The Second Story from images of your own discs, North American "
-       "or European release (both discs the same one): cue sheets with their bin files, or iso / img images.");
+  note("Shattered Stars plays Star Ocean: The Second Story from images of your own discs, the North American, "
+       "European (English), French or German release (both discs the same one): cue sheets with their bin files, "
+       "or iso / img images.");
   disc_field(1);
   disc_field(2);
   if (disc_info(settings_.disc2).kind == DiscKind::kNone)

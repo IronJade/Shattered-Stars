@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "game/common/screen.h"
+#include "game/common/text_rules.h"
 #include "game/title/title_program.h"
 #include "game/title/window.h"
 #include "runtime/libgpu.h"
@@ -75,7 +76,11 @@ void text_frame_upload() {
 }
 
 void text_from_ascii(Window*, const char* in, u8* out) {
-  const u8* table = title_data(0x8004EAFC);
+  // The ASCII table (0x8004eafc; its first 0x20 entries overlap the keyboard's column map):
+  // read entry by entry through the region map, which may place the overlapped words apart
+  // from the table in a release whose column map differs (France, Germany).
+  const auto table = [](u32 c) { return *title_data(0x8004EAFC + c); };
+  const int high_bias = text::ascii_high_bias(text::lang(), text::Program::kTitle);
   const auto* s = reinterpret_cast<const u8*>(in);
   int kana = 0;
   for (;;) {
@@ -91,10 +96,12 @@ void text_from_ascii(Window*, const char* in, u8* out) {
       continue;
     }
     u32 glyph;
-    if (kana == 0 || c - 0xA6 > 0x37) {
-      glyph = c - 0x61 <= 0x19 ? c - 0x20 : table[c];
+    if ((kana == 0 || c - 0xA6 > 0x37) && high_bias >= 0 && c >= 0x81) {
+      glyph = table(c) + static_cast<u32>(high_bias);  // France: Latin-1 letters (text_rules.h)
+    } else if (kana == 0 || c - 0xA6 > 0x37) {
+      glyph = c - 0x61 <= 0x19 ? c - 0x20 : table(c);
     } else {
-      glyph = table[c] + 0x38u;
+      glyph = table(c) + 0x38u;
     }
     // Voiced (0xde) and semi-voiced (0xdf) marks fold into the kana before them.
     const bool row_ka_ta = c - 0xB6 < 5 || c - 0xBB < 5 || c - 0xC0 < 5;

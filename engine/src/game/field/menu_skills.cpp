@@ -4,6 +4,7 @@
 
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
+#include "game/common/text_rules.h"
 #include "game/common/menu_scene.h"
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
@@ -208,7 +209,7 @@ void SpecialtyDetail::show() {
   r->set_colour(2);
   b->pen_at(0xA0, 0x20);
   b->add_message(5);
-  b->pen_at(0xE0, 0x20);
+  b->pen_at(text::layout(text::lang()).skill_detail_x, 0x20);  // NA 0xe0
   b->add_message(6);
   r->set_colour(1);
   b->set_group(6);
@@ -400,11 +401,21 @@ void SkillsPage::refresh_list() {
   box->clear();
   box->set_font_group(menu::strings_block(1), menu::strings_block(0), 1);
   menu::TextRenderer* r = box->text;
+  const text::Layout& lay = text::layout(text::lang());
   r->set_colour(2);
-  box->pen_at(0x38, 8);
-  box->add_ascii_text(skills_text(0x80080AC0));   // SKILL LV SP
-  box->pen_at(0xCC, 8);
-  box->add_ascii_text(skills_text(0x80080AC0));
+  if (lay.skills_heading_message) {
+    // France / Germany: the translated heading, group 0xf message 0 of the strings.
+    box->set_group(0xF);
+    box->pen_at(lay.skills_heading_x[0], 8);
+    box->add_message(0);
+    box->pen_at(lay.skills_heading_x[1], 8);
+    box->add_message(0);
+  } else {
+    box->pen_at(lay.skills_heading_x[0], 8);  // NA 0x38
+    box->add_ascii_text(skills_text(0x80080AC0));   // SKILL LV SP
+    box->pen_at(lay.skills_heading_x[1], 8);  // NA 0xcc
+    box->add_ascii_text(skills_text(0x80080AC0));
+  }
   r->set_colour(1);
   box->set_group(6);
   int rows = (build_list() + 1) / 2;

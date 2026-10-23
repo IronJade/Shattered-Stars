@@ -13,6 +13,7 @@
 #include "game/battle/unit.h"
 #include "game/battle/window.h"
 #include "game/common/screen.h"
+#include "game/common/text_rules.h"
 #include "game/field/post_battle.h"
 #include "game/title/new_game.h"
 #include "runtime/libgpu.h"
@@ -276,6 +277,9 @@ void ScanWindow::draw() {
   char digits[24];
   const Stats* st = unit->st();
   auto glyphs = [&](const std::string& ascii) { text_from_ascii(ascii.c_str(), text); };
+  // Germany skips the enemy-name page (its first page is HP; text_rules.h Layout).
+  const s32 first_page = text::layout(text::lang()).scan_first_page;
+  if (page < first_page) page = first_page;
   switch (page) {
     case 0: {
       char name[17] = {};
@@ -361,7 +365,7 @@ void ScanWindow::draw() {
       if (7 < x) {
         x = 8;
         step = 2;
-        if (page == 0) bsfx_play_ui(0xE);
+        if (page == first_page) bsfx_play_ui(0xE);  // NA page 0
       }
     }
   }

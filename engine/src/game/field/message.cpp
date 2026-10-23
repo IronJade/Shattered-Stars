@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "game/common/text_rules.h"
 #include "game/field/field.h"
 #include "game/field/message_internal.h"
 #include "game/field/notice.h"
@@ -591,6 +592,7 @@ void msg_window_step_open_anim(MsgWindow* w) {
 }
 
 void msg_window_print(MsgWindow* w, int chars) {
+  const text::MapGlyphs& push = text::map_glyphs(text::lang());  // opening brackets / quotes
   const u8* p = w->pages[w->page_read] + w->page_offset;
   int left = chars;    // characters this call may still reveal
   int synced = chars;  // 'left' when the current line's count was last updated
@@ -631,7 +633,7 @@ void msg_window_print(MsgWindow* w, int chars) {
     }
     if (code < 0x4000) {
       --left;
-      if (line_left < 2 && (line_left < 1 || code - 0xF7 < 7)) {
+      if (line_left < 2 && (line_left < 1 || code - push.push_first < push.push_count)) {  // NA 0xf7, 7
         // The line is used up: lay out and render the next one before this glyph.
         current_line(w).shown = static_cast<u16>(current_line(w).shown + (synced - left) - 1);
         w->page_offset = static_cast<u16>(w->page_offset - (code < 0x80 ? 1 : 2));

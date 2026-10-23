@@ -33,6 +33,37 @@ Lang lang() { return region::current().text; }
 
 const MapGlyphs& map_glyphs(Lang lang) { return latin(lang) ? kLatinGlyphs : kNaGlyphs; }
 
+s32 port_symbol_glyph(Lang lang, s32 code) {
+  if (!latin(lang)) return -1;
+  // The FR / DE map font's symbols (the same glyphs in every 132- / 136-glyph map font of
+  // both releases; maps 1113 / 1114 use a 492-glyph font of their own).
+  switch (code) {
+    case '-': return 0x0B;
+    case '\'': case '`': return 0x27;
+    case ')': return 0x65;
+    case ']': return 0x66;
+    case '>': return 0x67;
+    case '}': return 0x68;
+    case '(': return 0x69;
+    case '[': return 0x6A;
+    case '<': return 0x6B;
+    case '{': return 0x6C;
+    case '\\': return 0x71;  // as '/'
+    case '"': return 0x7B;
+    case '#': return 0x75;
+    case '$': return 0x76;
+    case '%': return 0x77;
+    case '&': return 0x78;
+    case '*': return 0x79;
+    case '+': return 0x7A;
+    case '_': return 0x7D;
+    case '|': return 0x7E;
+    case '~': return 0x7F;
+    case '@': case '^': return 0x72;  // no such glyph: a space
+    default: return -1;
+  }
+}
+
 int ascii_to_glyph(Lang lang, s32* code, int next, int kana) {
   s32 c = *code;
   if (static_cast<u32>(c - 0xA6) >= 0x3A) {

@@ -844,9 +844,7 @@ constexpr Segment kbattle_seg[] = {
     {0x15b04, 0x4, 376},  // equal 1
     {0x15b18, 0x1668, 408},  // same-size change 4, equal 1430
     {0x17188, 0xc, 520},  // equal 3
-    {0x17194, 0x27c, 528},  // same-size change 1, equal 158
-    {0x17414, 0x8, 524},  // equal 2
-    {0x1741c, 0x70, 528},  // same-size change 1, equal 27
+    {0x17194, 0x2f8, 528},  // same-size change 5, equal 185
     {0x1748c, 0x59e0, 536},  // same-size change 3, equal 5749
     {0x1ce70, 0x4, 556},  // equal 1
     {0x1ce7c, 0x8, 564},  // equal 2
@@ -888,8 +886,8 @@ constexpr Segment kbattle_seg[] = {
     {0x3b634, 0x14, 584},  // equal 5
     {0x3b66c, 0x2c, 584},  // equal 11
     {0x3b6bc, 0x14, 584},  // equal 5
-    {0x3b6f4, 0x3998, 584},  // same-size change 3, equal 3683
-    {0x3f090, 0xbc14, 588},  // same-size change 4, equal 12033
+    {0x3b6f4, 0x39bc, 584},  // same-size change 3, equal 3683, table by position 9
+    {0x3f0b0, 0xbbf4, 588},  // same-size change 4, equal 12025
     {0x4afbc, 0x4, -204},  // equal 1
     {0x4afc8, 0x4, -212},  // equal 1
     {0x4b360, 0x4, -1108},  // equal 1
@@ -2717,9 +2715,7 @@ constexpr Pointers kc1d_ptr[] = {
 };
 // c1e: NA 0x8007e000 + 0x11600, region 0x8007e000 + 0x116e4 (load address by jal, 49 votes)
 constexpr Segment kc1e_seg[] = {
-    {0x0, 0x6e04, 0},  // equal 7041
-    {0x6e0c, 0xc, -8},  // equal 3
-    {0x6e18, 0x120, 0},  // same-size change 4, equal 68
+    {0x0, 0x6f38, 0},  // same-size change 9, equal 7109
     {0x6f38, 0x4, 8},  // equal 1
     {0x6f40, 0x4, 36},  // equal 1
     {0x6f54, 0xe14, 40},  // same-size change 61, equal 840
@@ -2836,9 +2832,7 @@ constexpr Segment kba6_seg[] = {
     {0xb5c, 0x1a8, 48},  // same-size change 1, equal 105
     {0xd04, 0x4, 64},  // equal 1
     {0xd0c, 0x1b4, 68},  // same-size change 2, equal 107
-    {0xec0, 0x64, 72},  // same-size change 2, equal 23
-    {0xf24, 0x1c, 76},  // same-size change 2, equal 5
-    {0xf48, 0x14d8, 72},  // equal 1334
+    {0xec0, 0x1560, 72},  // same-size change 11, equal 1357
 };
 constexpr Pointers kba6_ptr[] = {
     {0x2114, 8, 15},
@@ -6526,10 +6520,10 @@ constexpr ImageMap kImages[] = {
     {ImageKind::kBoot, -1, 0, 0x80010000u, 0x80010000u, 0x1f800u, 0x20000u, 0xe78cae36168daa96ull, 0x5bcbed11050adf66ull, 0x6a072800b879d4d7ull, kboot_seg, 41, kboot_ptr, 34},  // boot
     {ImageKind::kEntry, 1, 0, 0x8002f810u, 0x8002f9c0u, 0x453d4u, 0x45370u, 0x62eb4792a6d87f52ull, 0xd5f97da6c686bac8ull, 0x189b17f772e0e766ull, ktitle_seg, 40, ktitle_ptr, 468},  // title
     {ImageKind::kEntry, 3100, 0, 0x8002f810u, 0x8002f9c0u, 0x4c7fcu, 0x4c420u, 0x2b1cf106f3915762ull, 0xf72674233fb87b64ull, 0xa1df4387ac8d09f0ull, kfield_seg, 82, kfield_ptr, 120},  // field
-    {ImageKind::kEntry, 2129, 0, 0x8002f810u, 0x8002f9c0u, 0x5d0dcu, 0x5cfd0u, 0xd54b17c32acdb32eull, 0xcb063a27632d66f1ull, 0xe88af0b092e39d79ull, kbattle_seg, 909, kbattle_ptr, 900},  // battle
+    {ImageKind::kEntry, 2129, 0, 0x8002f810u, 0x8002f9c0u, 0x5d0dcu, 0x5cfd0u, 0xd54b17c32acdb32eull, 0xcb063a27632d66f1ull, 0xe88af0b092e39d79ull, kbattle_seg, 907, kbattle_ptr, 900},  // battle
     {ImageKind::kEntry, 3107, 0, 0x8002f810u, 0x8002f9c0u, 0x14eb4u, 0x14e68u, 0x8f85fbd3ff3ed721ull, 0xa774237e258a171aull, 0xd946d19ca934c0f6ull, kcredits_seg, 16, kcredits_ptr, 9},  // credits
     {ImageKind::kEntry, 3101, 0, 0x8007e000u, 0x8007e000u, 0x10d70u, 0x10ddcu, 0xa582359001be46a4ull, 0x2d1b1758ed400bf0ull, 0x87c98450b0f5ad20ull, kc1d_seg, 42, kc1d_ptr, 18},  // c1d
-    {ImageKind::kEntry, 3102, 0, 0x8007e000u, 0x8007e000u, 0x11600u, 0x116e4u, 0x6b0fbea6cea094e0ull, 0xfab4d030c44f4acbull, 0xd975aa8a71bdd25eull, kc1e_seg, 16, kc1e_ptr, 9},  // c1e
+    {ImageKind::kEntry, 3102, 0, 0x8007e000u, 0x8007e000u, 0x11600u, 0x116e4u, 0x6b0fbea6cea094e0ull, 0xfab4d030c44f4acbull, 0xd975aa8a71bdd25eull, kc1e_seg, 14, kc1e_ptr, 9},  // c1e
     {ImageKind::kEntry, 3103, 0, 0x801e9000u, 0x801e9000u, 0x14d2cu, 0x14d30u, 0xd1d8ddf0dc2030c2ull, 0x27da9641cb7f630bull, 0x1ed9fafa1eaa71d5ull, kc1f_seg, 2, kc1f_ptr, 6},  // c1f
     {ImageKind::kEntry, 3104, 0, 0x801f9800u, 0x801f9800u, 0x77cu, 0x77cu, 0xd8009f5a3620faceull, 0x10337fca45ed6a9bull, 0x5fad81a055380eccull, kc20_seg, 1, kc20_ptr, 0},  // c20
     {ImageKind::kEntry, 3105, 0, 0x801f9800u, 0x801f9800u, 0xd5cu, 0xd5cu, 0x0e40096bf8bc4b61ull, 0xd8487547c781ba02ull, 0x347f2d756e1ae646ull, kc21_seg, 1, kc21_ptr, 0},  // c21
@@ -6538,7 +6532,7 @@ constexpr ImageMap kImages[] = {
     {ImageKind::kEntry, 3109, 0, 0x801f9800u, 0x801f9800u, 0x824u, 0x824u, 0x3c866f3c60a9f1d0ull, 0xc54c514df0b17b01ull, 0x93ca5aad613c80a4ull, kc25_seg, 1, kc25_ptr, 0},  // c25
     {ImageKind::kEntry, 2981, 0, 0x800d1b28u, 0x800d1b28u, 0xf9a8u, 0xf9a8u, 0x6d6325b16602d8f5ull, 0xa15640317ba75469ull, 0x87d57ed3477dc877ull, kba5_seg, 5, kba5_ptr, 2},  // ba5
     {ImageKind::kEntry, 3001, 0, 0x80088000u, 0x80088000u, 0x5315u, 0x5379u, 0x590db1b68e82ba5bull, 0x1608efd5b73c64e6ull, 0xf9ba9c168f000f02ull, kbb9_seg, 5, kbb9_ptr, 10},  // bb9
-    {ImageKind::kEntry, 2982, 0, 0x8007e000u, 0x8007e000u, 0x2420u, 0x2468u, 0xa4be7a43a2f9db9bull, 0x6bfb0c7f3298f18cull, 0xee9a5f4dd5603d2aull, kba6_seg, 11, kba6_ptr, 12},  // ba6
+    {ImageKind::kEntry, 2982, 0, 0x8007e000u, 0x8007e000u, 0x2420u, 0x2468u, 0xa4be7a43a2f9db9bull, 0x6bfb0c7f3298f18cull, 0xee9a5f4dd5603d2aull, kba6_seg, 9, kba6_ptr, 12},  // ba6
     {ImageKind::kEntry, 2986, 0, 0x8007e000u, 0x8007e000u, 0x3e2cu, 0x3e70u, 0xee864bd0fce1d0b1ull, 0x592b079195f99b27ull, 0xb533bc51acb09750ull, kbaa_seg, 7, kbaa_ptr, 27},  // baa
     {ImageKind::kEntry, 2990, 0, 0x8007e000u, 0x8007e000u, 0x4c28u, 0x4c6cu, 0xcb4effbe39c009d6ull, 0x0ea0852c01dbe003ull, 0xc37efa81feda55c7ull, kbae_seg, 8, kbae_ptr, 96},  // bae
     {ImageKind::kEntry, 2994, 0, 0x8007e000u, 0x8007e000u, 0x3671u, 0x36b5u, 0x61cc4954b88b7959ull, 0x1722d39ca54b36eeull, 0xa689ac1e1843a736ull, kbb2_seg, 9, kbb2_ptr, 17},  // bb2

@@ -6,6 +6,7 @@
 
 #include "game/common/menu_core.h"
 #include "game/common/menu_scene.h"
+#include "game/common/text_rules.h"
 
 namespace ss::game::menu {
 namespace {
@@ -155,15 +156,13 @@ int cvram_add(int x, int y, int w, int h) {
 }
 
 int cvram_alloc(int w, int h) {
-  int best = 0;
-  s16 best_h = 0x400;
-  for (size_t i = 0; i < g_vram.size(); ++i) {
-    const VramRect& r = g_vram[i];
-    if ((r.flags & 2) && static_cast<s16>(w) <= r.w && static_cast<s16>(h) <= r.h && r.h < best_h) {
-      best = static_cast<int>(i) + 1;
-      best_h = r.h;
-    }
-  }
+  // The free block it takes is the release's choice (text_rules.h cvram_choose): NA the
+  // fitting block of least height, France / Germany (title 0x8006d918) the last fitting
+  // block no wider and no taller than the best so far.
+  std::vector<text::FreeBlock> blocks(g_vram.size());
+  for (size_t i = 0; i < g_vram.size(); ++i)
+    blocks[i] = {(g_vram[i].flags & 2) != 0, g_vram[i].w, g_vram[i].h};
+  const int best = text::cvram_choose(text::lang(), blocks, w, h);
   if (best == 0) {
     std::fprintf(stderr, "CVram::Valloc Error\n");
     return 0;

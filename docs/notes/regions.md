@@ -391,10 +391,11 @@ How the port plays the other releases, following the decisions above. Code:
 `region::Profile` per release: key, names, the two serials, the save product code, the text
 system (`Text`: NA's for North America and Europe; French, German, Japanese), the rate its
 data counts in (`data_hz`: 50 for the PAL releases) and `supported`. The launcher recognises
-a disc by its SYSTEM.CNF serial (`launcher/discs.cpp`): a supported release's disc 1 / 2, a
-known release the port can't play yet (`kUnsupportedRelease`: Japan, and for now France and
-Germany, until their text system is in; the message names the releases it plays), or
-another game. Both discs must be the same release. `main.cpp` selects the profile from the
+a disc by its SYSTEM.CNF serial (`launcher/discs.cpp`): a supported release's disc 1 / 2
+(North America, Europe, France, Germany), a known release the port can't play yet
+(`kUnsupportedRelease`: Japan; the message names the releases it plays), or another game.
+France and Germany use their own text system (`Text::kFrench` / `kGerman`,
+`game/common/text_rules.h`, `docs/notes/regions_text.md`). Both discs must be the same release. `main.cpp` selects the profile from the
 boot disc's serial before anything reads the discs.
 
 ### Address maps

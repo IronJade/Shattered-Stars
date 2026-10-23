@@ -38,13 +38,16 @@
 #      the client status 30 (goal).
 # The server runs with release / collect off, so the checked locations are exactly what was
 # sent. Output, logs and captures (frames 700: the window, 850: the first banner) in
-# scratchpad/ap_e2e_so2/. Exit status 0 when every step is seen.
+# scratchpad/ap_e2e_so2/ (AP_E2E_WORK to put them elsewhere). Every game run is under the
+# memory cap (tools/memcap.py: SS_MEM_CAP_GB, default 4 GB); a run that dies at it fails.
+# Exit status 0 when every step is seen.
 set -u
 cd "$(dirname "$0")/.."
 P=$PWD
 BIN=${1:-$P/engine/build/shattered-stars}
 : "${SS_DISC1:?set SS_DISC1 to disc 1 (.cue)}"
-W=$P/scratchpad/ap_e2e_so2
+W=${AP_E2E_WORK:-$P/scratchpad/ap_e2e_so2}
+case "$W" in "$P"/scratchpad/?*) ;; *) echo "AP_E2E_WORK must be a directory under $P/scratchpad" >&2; exit 1 ;; esac
 AP=$P/scratchpad/ap
 PORT=${AP_E2E_PORT:-38292}
 SEED=${AP_E2E_SEED:-4242}
@@ -182,6 +185,25 @@ async def main():
 asyncio.run(main())
 TRACKER
 
+# The port under the memory cap (tools/memcap.py), with the environment the caller sets:
+# run_game LOG TIMEOUT ARGS... runs "$BIN" ARGS (no stdin), output to LOG, killed after TIMEOUT
+# seconds; a line per run goes to $W/memcap.txt ("at_cap True" when it died at the cap).
+run_game() {
+  python3 - "$BIN" "$@" <<'PY' >> "$W/memcap.txt"
+import os, subprocess, sys
+sys.path.insert(0, os.path.join(os.getcwd(), "tools"))
+from memcap import cap_bytes, hit_cap, run_capped
+binary, log, timeout, args = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4:]
+with open(log, "w") as f:
+    rc, timed_out, at_cap = run_capped([binary] + args, binary, timeout, stdin=subprocess.DEVNULL,
+                                       stdout=f, stderr=subprocess.STDOUT)
+text = open(log, errors="replace").read()
+at_cap = at_cap or (not timed_out and hit_cap(rc, text, killed=timed_out))
+print(f"{os.path.basename(log)} rc {rc} timed_out {timed_out} at_cap {at_cap} cap_mb {cap_bytes() >> 20}")
+PY
+}
+: > "$W/memcap.txt"
+
 # The server in its own session and process group (MultiServer starts a child process).
 (cd "$AP/Archipelago" && exec setsid "$AP/ap-venv/bin/python" MultiServer.py "$zip" --host 127.0.0.1 \
    --port "$PORT" --disable_save --loglevel info --release_mode disabled --collect_mode disabled) \
@@ -198,24 +220,24 @@ bob=$!
 # battle frames), each followed by the result screen's pages.
 presses=""
 for v in 600 760 1100 $(seq 2200 200 4000) $(seq 5000 200 7400); do presses="$presses,$v:cross,$((v + 6)):none"; done
-env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
   SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" \
   SS_TRACE_LEADER=60 SS_DEBUG_INPUT="730:fol 10000;1500:ap_status;1600:battle 110;4400:battle 539;7900:ap_status" \
-  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$seed_file" --frames 8000 --map 18 \
+  run_game "$W/game.log" 600 --headless --debug --no-memcard --ap-seed "$seed_file" --frames 8000 --map 18 \
   --battle-end 60:0 \
   --input "200:up,439:none,450:left,554:none,560:up,572:none$presses" \
-  --capture "$W/cap" --capture-frames 700,850 < /dev/null > "$W/game.log" 2>&1
+  --capture "$W/cap" --capture-frames 700,850
 wait $bob
 # Session 2: Hearn's shop (the walk and purchases of smoke_field_events.sh's ap_p4_shop, 1200
 # frames later, after the banners of the four items the server sends again to the new game):
 # one Sandals (slot 0) and three Lavenders (slot 2, Claude's Spectacles).
 walk="200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1600:right,1606:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1800:right,1806:none,1850:right,1856:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none"
 walk=$(echo "$walk" | tr ',' '\n' | awk -F: '{printf "%s%d:%s", (NR > 1 ? "," : ""), $1 + 1200, $2}')
-env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
   SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" \
   SS_DEBUG_INPUT="50:fol 50000;3500:ap_status" \
-  timeout 300 "$BIN" --headless --debug --no-memcard --ap-seed "$seed_file" --frames 3700 --map 18 \
-  --input "$walk" < /dev/null > "$W/game2.log" 2>&1
+  run_game "$W/game2.log" 300 --headless --debug --no-memcard --ap-seed "$seed_file" --frames 3700 --map 18 \
+  --input "$walk"
 "$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" > "$W/tracker.log" 2>&1
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
 
@@ -227,6 +249,12 @@ check_not() {  # FILE what pattern (must not appear)
   if grep -qE "$3" "$1"; then echo "FAIL $2"; fails=$((fails + 1)); else echo "PASS $2"; fi
 }
 check "$W/generate.log" "the multiworld generates (SO2 + ChecksFinder)" 'Creating final archive'
+if [ "$(grep -cE '^game2?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 2 ]; then
+  echo "PASS both game runs ran under the memory cap"
+else
+  echo "FAIL both game runs ran under the memory cap"; fails=$((fails + 1))
+fi
+check_not "$W/memcap.txt" "... and neither died at it" 'at_cap True'
 check "$seed_file" "the crate holds Bob's Map Width" '"name": "Map Width"'
 check_not "$W/generate.log" "plando found every item in the pool" 'Could not remove'
 check "$seed_file" "the seed's party holds Celine (character_items)" '"Celine"'

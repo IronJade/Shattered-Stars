@@ -10,6 +10,7 @@
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/memcard.h"
+#include "game/common/text_rules.h"
 #include "game/common/texture.h"
 #include "game/title/title_program.h"
 #include "platform/window.h"
@@ -203,7 +204,8 @@ void draw_number(TitleIntro* self, int x, int y, int value, int digits, int clut
     const int d = value % 10;
     const s16 u = strip != nullptr ? static_cast<s16>(read_u16(strip + d * 2)) : 0;
     const s16 end = strip != nullptr ? static_cast<s16>(read_u16(strip + d * 2 + 2)) : 0;
-    add_quad(self, x, y, end - u, 0xB, u, 0x32, 0x8C, clut_row, brightness, false);
+    add_quad(self, x, y, end - u, 0xB, u, text::layout(text::lang()).digit_strip_v, 0x8C, clut_row, brightness,
+             false);  // NA v 0x32
     x -= 10;
     value /= 10;
   }
@@ -470,10 +472,13 @@ void voice_collection(TitleIntro* self) {
     int clut_rows[5] = {0x1E1, 0x1E1, 0x1E1, 0x1E1, 0x1E1};
     clut_rows[cursor] = 0x1E2;
     add_quad(self, 0x10, 0x10, 0xAE, 0x12, 4, 6, 0x8C, 0x1E1, 0x80, false);           // VOICE COLLECTION
-    add_quad(self, 0x10, 0x28, 0x2D, 0xC, 4, 0x40, 0x8C, clut_rows[0], 0x80, false);  // VOICE
+    // The label quads fit the release's texture (NA: VOICE w 0x2d, EXIT 0x1f / v 0x50, BGM 0x2e x 0xc / v 0x32,
+    // RANDOM 0x3f / u 5, STOP 0x24 x 0xd / u 4 v 0x60).
+    const text::Layout& lay = text::layout(text::lang());
+    add_quad(self, 0x10, 0x28, lay.voice_label_w, 0xC, 4, 0x40, 0x8C, clut_rows[0], 0x80, false);  // VOICE
     draw_number(self, 0x40, 0x28, voice, 4, heard(config, voice) ? 0x1E2 : 0x1E1, 0x80);
     if (!bgm_unlocked) {
-      add_quad(self, 0x10, 0x36, 0x1F, 0xB, 4, 0x50, 0x8C, clut_rows[1], 0x80, false);  // EXIT
+      add_quad(self, 0x10, 0x36, lay.exit_label[0], 0xB, 4, lay.exit_label[1], 0x8C, clut_rows[1], 0x80, false);  // EXIT
     } else {
       // The music rows fade in while EXIT slides down to its new place.
       const bool sliding = slide <= 0x2A;
@@ -484,10 +489,14 @@ void voice_collection(TitleIntro* self) {
         ++slide;
         bgm_brightness += 3;
       }
-      add_quad(self, 0x10, 0x36, 0x2E, 0xC, 3, 0x32, 0xAC, clut_rows[1], bgm_brightness, sliding);  // BGM
-      add_quad(self, 0x10, 0x44, 0x3F, 0xB, 5, 0x70, 0xAC, clut_rows[2], bgm_brightness, sliding);  // RANDOM
-      add_quad(self, 0x10, 0x52, 0x24, 0xD, 4, 0x60, 0xAC, clut_rows[3], bgm_brightness, sliding);  // STOP
-      add_quad(self, 0x10, slide + 0x36, 0x1F, 0xB, 4, 0x50, 0x8C, clut_rows[4], 0x80, false);      // EXIT
+      add_quad(self, 0x10, 0x36, lay.bgm_label[0], lay.bgm_label[1], 3, lay.bgm_label[2], 0xAC, clut_rows[1],
+               bgm_brightness, sliding);  // BGM
+      add_quad(self, 0x10, 0x44, lay.random_label[0], 0xB, lay.random_label[1], 0x70, 0xAC, clut_rows[2],
+               bgm_brightness, sliding);  // RANDOM
+      add_quad(self, 0x10, 0x52, lay.stop_label[0], lay.stop_label[1], lay.stop_label[2], lay.stop_label[3], 0xAC,
+               clut_rows[3], bgm_brightness, sliding);  // STOP
+      add_quad(self, 0x10, slide + 0x36, lay.exit_label[0], 0xB, 4, lay.exit_label[1], 0x8C, clut_rows[4], 0x80,
+               false);  // EXIT
       draw_number(self, 0x40, 0x36, track, 4, 0x1E1, bgm_brightness);
     }
     grid->current = voice;
