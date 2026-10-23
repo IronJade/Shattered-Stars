@@ -1,0 +1,1024 @@
+id,hex,name,category,type,use,price,atk,def,effect,effect_kind,amount,sell_pct,equip
+1,0x1,Magic Canvas,item,0,,1000,0,0,,0,0,25,
+2,0x2,'Spring',usable item,0,field,300,0,0,special effect 10,10,0,25,
+3,0x3,'The Scream',usable item,0,battle,500,0,0,special effect 11,11,0,25,
+4,0x4,'Judgement Day',usable item,0,battle,400,0,0,special effect 12,12,0,25,
+5,0x5,'The Last Supper',usable item,0,battle,650,0,0,special effect 13,13,0,25,
+6,0x6,Portrait A,usable item,0,field,1000,0,0,,0,0,25,
+7,0x7,Portrait B,usable item,0,field,2000,0,0,,0,0,80,
+8,0x8,Portrait C,usable item,0,field,3000,0,0,,0,0,60,
+9,0x9,Portrait G,usable item,0,field,1600,0,0,,0,0,50,
+10,0xa,Portrait I,usable item,0,field,3000,0,0,,0,0,80,
+11,0xb,Portrait D,usable item,0,field,800,0,0,,0,0,25,
+12,0xc,Portrait F,usable item,0,field,2000,0,0,,0,0,80,
+13,0xd,Portrait J,usable item,0,field,1500,0,0,,0,0,25,
+14,0xe,Portrait H,usable item,0,field,1500,0,0,,0,0,50,
+15,0xf,Portrait E,usable item,0,field,3000,0,0,,0,0,60,
+16,0x10,Portrait L,usable item,0,field,2000,0,0,,0,0,60,
+17,0x11,Portrait K,usable item,0,field,1600,0,0,,0,0,25,
+18,0x12,Scribbles,item,0,,3,0,0,,0,0,25,
+19,0x13,Victorial Card,usable item,0,battle,120,0,0,special effect 14,14,0,25,
+20,0x14,Mortalial Card,usable item,0,battle,120,0,0,special effect 15,15,0,25,
+21,0x15,Revival Card,usable item,0,battle,200,0,0,special effect 16,16,0,25,
+22,0x16,Fol Up Card,usable item,0,battle,500,0,0,special effect 17,17,0,25,
+23,0x17,Discovery Card,usable item,0,battle,500,0,0,special effect 18,18,0,25,
+24,0x18,Extension Card,usable item,0,battle,600,0,0,special effect 19,19,0,25,
+25,0x19,Fairies Card,usable item,0,battle,200,0,0,special effect 20,20,0,25,
+26,0x1a,Fountain Card,usable item,0,field,1000,0,0,special effect 21,21,0,25,
+27,0x1b,Silence Card,usable item,0,battle,300,0,0,special effect 22,22,0,25,
+28,0x1c,Hexagram Card,usable item,0,battle,350,0,0,special effect 23,23,0,25,
+29,0x1d,Magic Rock,usable item,0,battle,110,0,0,special effect 24,24,0,25,
+30,0x1e,Weird Lump,item,0,,5,0,0,,0,0,25,
+31,0x1f,Tri-ball,usable item,0,battle,300,0,0,special effect 25,25,0,25,
+32,0x20,Hyperball,usable item,0,battle,200,0,0,special effect 26,26,0,25,
+33,0x21,Super Ball,usable item,0,battle,200,0,0,special effect 27,27,0,25,
+34,0x22,Angel's Statue,usable item,0,"battle, field",160,0,0,"restores HP (%), whole party",2,30,25,
+35,0x23,Fairy's Statue,usable item,0,battle,400,0,0,special effect 28,28,0,25,
+36,0x24,Goddess Statue,usable item,0,"battle, field",300,0,0,"restores MP (%), whole party",4,30,25,
+37,0x25,Dummy Doll,usable item,0,battle,300,0,0,special effect 29,29,0,25,
+38,0x26,Idol,usable item,0,battle,800,0,0,special effect 30,30,0,25,
+39,0x27,Skanda,usable item,0,battle,420,0,0,special effect 31,31,0,25,
+40,0x28,Treasure Chest,usable item,0,field,3000,0,0,special effect 32,32,0,25,
+41,0x29,Jack-in-the-box,usable item,0,field,2100,0,0,special effect 33,33,0,25,
+42,0x2a,Mirror of Wisdom,usable item,0,battle,1200,0,0,special effect 34,34,0,25,
+43,0x2b,Magical Clay,item,0,,600,0,0,,0,0,25,
+44,0x2c,Feather Pen,item,0,,20,0,0,,0,0,25,
+45,0x2d,Piano,item,0,,30000,0,0,,0,0,5,
+46,0x2e,Cembalo,item,0,,8000,0,0,,0,0,5,
+47,0x2f,Illusive Shamisen,item,0,,550000,0,0,,0,0,100,
+48,0x30,Silver Trumpet,item,0,,30000000,0,0,,0,0,100,
+49,0x31,Harmonica,item,0,,500,0,0,,0,0,15,
+50,0x32,Lyre,item,0,,5000,0,0,,0,0,20,
+51,0x33,Violin,item,0,,21000,0,0,,0,0,10,
+52,0x34,Organ,item,0,,12000,0,0,,0,0,10,
+53,0x35,Conductor's Baton,item,0,,85,0,0,,0,0,25,
+54,0x36,Spectacles,usable item,0,battle,8,0,0,special effect 97,97,0,25,
+55,0x37,Magical Drops,usable item,0,battle,8500,0,0,special effect 95,95,0,25,
+56,0x38,Moonlight,accessory,12,,5200,0,0,special effect 111,111,0,25,all
+57,0x39,Silver Idol,accessory,12,,3000,0,0,,0,0,40,all
+58,0x3a,Golden Idol,accessory,12,,3500,0,0,,0,0,40,all
+59,0x3b,Pretty Idol,accessory,12,,5000,0,0,,0,0,50,all
+60,0x3c,Weird Doll,accessory,12,,32,0,0,,0,0,10,all
+61,0x3d,Reverse Doll,accessory,12,,5650,0,0,special effect 112,112,0,5,all
+62,0x3e,Silver Pendant,accessory,12,,1000,0,0,,0,0,25,all
+63,0x3f,Sturm Ring,accessory,12,,2000,0,0,,0,0,25,all
+64,0x40,Green Bracelet,accessory,12,,600,0,0,,0,0,25,all
+65,0x41,Frog,headgear,10,,256,0,1,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+66,0x42,Glass Slippers,footwear,11,,120,0,1,,0,0,25,Rena Celine Precis Opera Chisato
+67,0x43,Regeneration Ring,accessory,12,,6500,0,2,special effect 113,113,0,25,all
+68,0x44,Useless Decoration,accessory,12,,20,0,0,,0,0,25,all
+69,0x45,Luna Tablet,accessory,12,,3400,0,0,special effect 114,114,0,25,all
+70,0x46,Poison Check,accessory,12,,5000,0,0,special effect 115,115,0,25,all
+71,0x47,Paralysis Check,accessory,12,,6000,0,0,special effect 116,116,0,25,all
+72,0x48,Stone Check,accessory,12,,7000,0,0,special effect 117,117,0,25,all
+73,0x49,Purple Mist,accessory,12,,14000,0,0,special effect 118,118,0,15,all
+74,0x4a,Magic Mist,accessory,12,,26000,0,0,special effect 119,119,0,20,all
+75,0x4b,Necklace,accessory,12,,1200,0,0,,0,0,25,all
+76,0x4c,Might Chain,accessory,12,,1200,0,0,special effect 120,120,0,25,all
+77,0x4d,Surrender Pendant,accessory,12,,4000,0,0,special effect 121,121,0,100,all
+78,0x4e,Leaf Pendant,accessory,12,,6000,0,0,special effect 122,122,0,40,Rena Celine Leon Noel
+79,0x4f,Ruby Pendant,accessory,12,,1000,0,0,,0,0,40,all
+80,0x50,Star Necklace,accessory,12,,16000,0,0,special effect 123,123,0,30,Rena Celine Leon Noel
+81,0x51,Fairy Tear,accessory,12,,10000,0,0,special effect 124,124,0,50,all
+82,0x52,Pyre Tear,accessory,12,,10000,0,0,special effect 125,125,0,50,all
+83,0x53,Silver Charm,accessory,12,,20000,0,0,special effect 126,126,0,50,Rena Celine Leon Noel
+84,0x54,Blue Talisman,accessory,12,,6000,0,0,special effect 127,127,0,50,Claude Bowman Dias Precis Ashton Opera Ernest Chisato
+85,0x55,Talisman,accessory,12,,3000,0,0,special effect 128,128,0,25,all
+86,0x56,Luna Talisman,accessory,12,,6000,0,0,special effect 129,129,0,25,all
+87,0x57,Gold Ring,accessory,12,,2000,0,0,special effect 130,130,0,25,all
+88,0x58,Princess Ring,accessory,12,,7000,0,0,special effect 131,131,0,55,Rena Celine Leon Noel
+89,0x59,Healing Ring,accessory,12,,4400,0,0,special effect 132,132,0,55,all
+90,0x5a,Mental Ring,accessory,12,,8800,0,0,special effect 133,133,0,25,all
+91,0x5b,Wisdom Ring,accessory,12,,5300,0,0,special effect 134,134,0,25,all
+92,0x5c,Weighty Ring,accessory,12,,10,0,2,,0,0,25,all
+93,0x5d,Hard Ring,accessory,12,,800,0,0,special effect 135,135,0,25,all
+94,0x5e,Heavy Ring,accessory,12,,600,0,0,,0,0,25,all
+95,0x5f,Atlas Ring,accessory,12,,30000,0,0,special effect 136,136,0,25,all
+96,0x60,Eclipse Ring,accessory,12,,3400,0,0,special effect 137,137,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Chisato
+97,0x61,Insanity Ring,accessory,12,,1200,0,0,special effect 138,138,0,25,all
+98,0x62,Infinity Ring,accessory,12,,20000,0,0,special effect 139,139,0,25,all
+99,0x63,Battalia Ring,accessory,12,,8500,0,30,special effect 140,140,0,25,all
+100,0x64,Demonslayer Ring,accessory,12,,8200,0,0,special effect 141,141,0,30,all
+101,0x65,Reflection Ring,accessory,12,,2000,0,0,special effect 142,142,0,25,all
+102,0x66,Protection Ring,accessory,12,,2000,0,6,special effect 143,143,0,25,all
+103,0x67,Ring of Happiness,accessory,12,,10000,0,0,special effect 144,144,0,60,Rena
+104,0x68,Ring of Sadness,accessory,12,,8200,0,0,special effect 145,145,0,40,all
+105,0x69,Promised Ring,accessory,12,,10000,0,0,special effect 146,146,0,25,all
+106,0x6a,Stardust Ring,accessory,12,,5000,0,0,special effect 147,147,0,25,all
+107,0x6b,Peep Half,accessory,12,,18000,0,0,special effect 148,148,0,25,all
+108,0x6c,Peep Non,accessory,12,,24000,0,0,special effect 149,149,0,25,all
+109,0x6d,Slayer's Ring,accessory,12,,28000,0,0,special effect 151,151,0,25,all
+110,0x6e,Meteor Ring,accessory,12,,28000,0,0,special effect 172,172,0,25,all
+111,0x6f,Lunatic Ring,accessory,12,,3510,0,0,special effect 152,152,0,25,all
+112,0x70,Berserk Ring,accessory,12,,3600,0,0,special effect 153,153,0,25,all
+113,0x71,Shield Ring,accessory,12,,1000,0,0,special effect 154,154,0,25,all
+114,0x72,Resistance Ring,accessory,12,,1000,0,0,special effect 155,155,0,25,all
+115,0x73,Aqua Ring,accessory,12,,3000,0,0,special effect 156,156,0,25,all
+116,0x74,Flare Ring,accessory,12,,3000,0,0,special effect 157,157,0,25,all
+117,0x75,General's Ring,accessory,12,,3500,0,0,special effect 158,158,0,25,all
+118,0x76,Prism Ring,accessory,12,,6200,0,0,special effect 159,159,0,35,all
+119,0x77,Holy Ring,accessory,12,,1500,0,0,special effect 160,160,0,25,all
+120,0x78,Emerald Ring,accessory,12,,64800,0,0,special effect 161,161,0,25,all
+121,0x79,Water Ring,accessory,12,,8000,0,0,special effect 162,162,0,25,Rena Celine Leon Noel
+122,0x7a,Fire Ring,accessory,12,,8000,0,0,special effect 163,163,0,25,Rena Celine Leon Noel
+123,0x7b,Thunder Ring,accessory,12,,8000,0,0,special effect 164,164,0,25,Rena Celine Leon Noel
+124,0x7c,Fairy Ring,accessory,12,,78200,0,0,special effect 165,165,0,25,all
+125,0x7d,Black Earring,accessory,12,,45000,0,0,special effect 166,166,0,25,Celine Opera Chisato
+126,0x7e,Golden Earring,accessory,12,,2500,0,0,special effect 167,167,0,25,Celine Opera Chisato
+127,0x7f,Ruby Earring,accessory,12,,6000,0,1,,0,0,40,Celine Opera Chisato
+128,0x80,Blood Earring,accessory,12,,2800,0,0,special effect 168,168,0,25,Celine Opera Chisato
+129,0x81,Shield Earring,accessory,12,,5000,0,0,special effect 169,169,0,25,Celine Opera Chisato
+130,0x82,Zephyr Earring,accessory,12,,5000,0,0,special effect 170,170,0,25,Celine Opera Chisato
+131,0x83,Flash Earring,accessory,12,,5000,0,0,special effect 171,171,0,25,Celine Opera Chisato
+132,0x84,Gaudy Earring,accessory,12,,98,0,0,,0,0,25,Celine Opera Chisato
+133,0x85,Gale Earring,accessory,12,,30000,0,0,special effect 172,172,0,25,Celine Opera Chisato
+134,0x86,Hard Earring,accessory,12,,1200,0,0,special effect 173,173,0,25,Celine Opera Chisato
+135,0x87,Emerald Earring,accessory,12,,6000,0,0,special effect 174,174,0,25,Celine
+136,0x88,Star Earring,accessory,12,,3000,0,0,special effect 175,175,0,25,Celine
+137,0x89,Attack Earring,accessory,12,,3000,20,0,special effect 176,176,0,25,Celine
+138,0x8a,First Earring,accessory,12,,5000,0,0,special effect 177,177,0,25,Rena Celine Opera Chisato
+139,0x8b,Lunatic Earring,accessory,12,,5000,0,0,special effect 178,178,0,25,Celine Opera Chisato
+140,0x8c,Silver Cross,accessory,12,,3000,0,0,special effect 179,179,0,25,all
+141,0x8d,Golden Cross,accessory,12,,6000,0,0,,0,0,25,all
+142,0x8e,Magic Cross,accessory,12,,2000,0,0,special effect 181,181,0,25,all
+143,0x8f,Silver Ring,accessory,12,,2800,0,2,,0,0,25,all
+144,0x90,Right Cross,accessory,12,,10000,0,20,special effect 238,238,0,25,all
+145,0x91,Left Cross,accessory,12,,10000,0,0,special effect 239,239,0,25,all
+146,0x92,Silver Barrette,accessory,12,,1300,0,3,,0,0,25,Rena Celine Precis Opera Chisato
+147,0x93,Angel Hair,accessory,12,,500,0,0,,0,0,25,Rena Celine Precis Opera Chisato
+148,0x94,Golden Bracelet,accessory,12,,2000,0,10,,0,0,25,all
+149,0x95,Anklet,accessory,12,,400,0,3,,0,0,25,all
+150,0x96,Lot Bracelet,accessory,12,,10000,0,0,special effect 182,182,0,25,all
+151,0x97,Recoil Bracelet,accessory,12,,1200,0,0,special effect 183,183,0,25,all
+152,0x98,Dream Bracelet,accessory,12,,2000,0,0,special effect 184,184,0,25,all
+153,0x99,Golden Crown,headgear,10,,5000,0,0,special effect 185,185,0,25,all
+154,0x9a,Shiny Earring,accessory,12,,1500,0,0,,0,0,25,Celine Opera Chisato
+155,0x9b,Moon Earring,accessory,12,,1500,0,0,special effect 186,186,0,25,Rena Celine Precis Opera Chisato
+156,0x9c,Mind Ring,accessory,12,,8000,0,0,special effect 187,187,0,50,all
+157,0x9d,Feet Symbol,accessory,12,,3000,0,0,special effect 188,188,0,25,all
+158,0x9e,Silver Earring,accessory,12,,30000,0,0,special effect 114,114,0,25,Rena Celine Precis Opera Chisato
+159,0x9f,Misty Symbol,accessory,12,,3000,0,0,special effect 190,190,0,25,all
+160,0xa0,Crown,headgear,10,,1600,0,0,,0,0,25,all
+161,0xa1,Dream Crown,headgear,10,,100000,0,0,,0,0,25,Rena Celine Leon Noel
+162,0xa2,Moon Tiara,headgear,10,,100000,0,0,special effect 191,191,0,25,Rena Celine
+163,0xa3,Crumpled Paper,item,0,,1,0,0,,0,0,100,
+164,0xa4,Fountain Pen,item,0,,460,0,0,,0,0,25,
+165,0xa5,Beret,headgear,10,,40000,0,0,special effect 192,192,0,25,all
+166,0xa6,Pose Collection,usable item,0,field,600,0,0,special effect 35,35,0,25,
+167,0xa7,Today's Dish,usable item,0,field,600,0,0,special effect 36,36,0,25,
+168,0xa8,Musical Theory,usable item,0,field,600,0,0,,0,0,25,
+169,0xa9,Operation Manual,usable item,0,field,600,0,0,,0,0,25,
+170,0xaa,Engineering,usable item,0,field,600,0,0,,0,0,25,
+171,0xab,Choose Ingredients,usable item,0,field,600,0,0,,0,0,25,
+172,0xac,Cook from the Heart,usable item,0,field,600,0,0,,0,0,25,
+173,0xad,Mystical Beings,usable item,0,field,600,0,0,,0,0,25,
+174,0xae,Heart Barriers,usable item,0,field,600,0,0,,0,0,25,
+175,0xaf,Nature's Life Force,usable item,0,field,600,0,0,,0,0,25,
+176,0xb0,The Land's Secret,usable item,0,field,600,0,0,,0,0,25,
+177,0xb1,Pocket Encyclopedia,usable item,0,field,600,0,0,,0,0,25,
+178,0xb2,Gold/Silversmith,usable item,0,field,600,0,0,,0,0,25,
+179,0xb3,Pieces for Learners,usable item,0,field,600,0,0,,0,0,25,
+180,0xb4,No Need For Words,usable item,0,field,600,0,0,,0,0,25,
+181,0xb5,Grammar,usable item,0,field,600,0,0,,0,0,25,
+182,0xb6,The Hermes Theory,usable item,0,field,600,0,0,,0,0,25,
+183,0xb7,Forest Friends,usable item,0,field,600,0,0,,0,0,25,
+184,0xb8,All About Herbs,usable item,0,field,600,0,0,,0,0,25,
+185,0xb9,On Revenge,usable item,0,field,600,0,0,,0,0,25,
+186,0xba,On Training,usable item,0,field,600,0,0,,0,0,25,
+187,0xbb,Before Tea's Ready,usable item,0,field,600,0,0,,0,0,25,
+188,0xbc,Fanzine ?,item,0,,200,0,0,,0,0,25,
+189,0xbd,Fanzine ,item,0,,573,0,0,,0,0,25,
+190,0xbe,Fanzine,item,0,,800,0,0,,0,0,25,
+191,0xbf,Fanzine ,item,0,,3000,0,0,,0,0,25,
+192,0xc0,Fanzine ,item,0,,10000,0,0,,0,0,25,
+193,0xc1,Fanzine ,item,0,,50000,0,0,,0,0,25,
+194,0xc2,Fanzine,item,0,,10000,0,0,,0,0,25,
+195,0xc3,Fanzine ,item,0,,10000,0,0,,0,0,25,
+196,0xc4,Planet of the Winds,usable item,0,field,5000,0,0,,0,0,25,
+197,0xc5,I Can Only See You,usable item,0,field,5000,0,0,,0,0,25,
+198,0xc6,The World is Mine,usable item,0,field,5000,0,0,,0,0,25,
+199,0xc7,Advanced Heraldry,usable item,0,field,5000,0,0,,0,0,25,
+200,0xc8,The Bloody Road,usable item,0,field,5000,0,0,,0,0,25,
+201,0xc9,New Civilization,usable item,0,field,5000,0,0,,0,0,25,
+202,0xca,Cat House Murder,usable item,0,field,5000,0,0,,0,0,25,
+203,0xcb,Mr. 'No',usable item,0,field,5000,0,0,,0,0,25,
+204,0xcc,Buy it... OK?,usable item,0,field,5000,0,0,,0,0,25,
+205,0xcd,Living with Animals,usable item,0,field,5000,0,0,,0,0,25,
+206,0xce,But One Truth!,usable item,0,field,5000,0,0,,0,0,25,
+207,0xcf,Countdown,usable item,0,field,5000,0,0,,0,0,25,
+208,0xd0,Ocean of Stars,usable item,0,field,5000,0,0,,0,0,25,
+209,0xd1,Falling in Love,usable item,0,field,5000,0,0,,0,0,25,
+210,0xd2,Lady in Red,usable item,0,field,5000,0,0,,0,0,25,
+211,0xd3,Special Heraldry,usable item,0,field,5000,0,0,,0,0,25,
+212,0xd4,To Live,usable item,0,field,5000,0,0,,0,0,25,
+213,0xd5,Historic Greats,usable item,0,field,5000,0,0,,0,0,25,
+214,0xd6,Wax Doll Murders,usable item,0,field,5000,0,0,,0,0,25,
+215,0xd7,Never Turn Back,usable item,0,field,5000,0,0,,0,0,25,
+216,0xd8,A Maiden's Secret,usable item,0,field,5000,0,0,,0,0,25,
+217,0xd9,Principles of Nature,usable item,0,field,5000,0,0,,0,0,25,
+218,0xda,Killer's book,usable item,0,field,5000,0,0,,0,0,25,
+219,0xdb,Lost Sanctuary,usable item,0,field,5000,0,0,,0,0,25,
+220,0xdc,Mandrake,usable item,0,"battle, field",150,0,0,special effect 37,37,0,25,
+221,0xdd,Rose Hips,usable item,0,"battle, field",230,0,0,restores HP (%),1,2,25,
+222,0xde,Artemis Leaf,usable item,0,"battle, field",720,0,0,special effect 93,93,10,25,
+223,0xdf,Wolfsbane,usable item,0,"battle, field",360,0,0,special effect 39,39,0,25,
+224,0xe0,Lavender,usable item,0,"battle, field",490,0,0,restores HP (%),1,3,25,
+225,0xe1,Aceras,usable item,0,"battle, field",660,0,0,restores HP (%),1,2,25,
+226,0xe2,Skanda Compress,usable item,0,battle,200,0,0,special effect 40,40,0,25,
+227,0xe3,Attack Vial,usable item,0,battle,230,0,0,special effect 41,41,0,25,
+228,0xe4,Energy Tonic,usable item,0,"battle, field",1000,0,0,special effect 42,42,0,25,
+229,0xe5,Kamikaze Tonic,usable item,0,battle,1000,0,0,special effect 43,43,0,25,
+230,0xe6,Smelling Salts,usable item,0,"battle, field",200,0,0,special effect 44,44,0,25,
+231,0xe7,Shock Oil,usable item,0,battle,200,0,0,special effect 45,45,0,25,
+232,0xe8,Smoke Oil,usable item,0,battle,180,0,0,special effect 46,46,0,25,
+233,0xe9,Twin's Tonic,usable item,0,field,100000,0,0,special effect 47,47,0,25,
+234,0xea,Herbal Oil,usable item,0,"battle, field",300,0,0,special effect 48,48,0,25,
+235,0xeb,Bubble Lotion,usable item,0,battle,500,0,0,special effect 49,49,0,25,
+236,0xec,Paralysis Oil,usable item,0,battle,500,0,0,special effect 50,50,0,25,
+237,0xed,Bitter Lotion,usable item,0,battle,500,0,0,special effect 51,51,0,25,
+238,0xee,Fairy Glass,usable item,0,battle,10000,0,0,special effect 52,52,0,25,
+239,0xef,Fairy's Cologne,usable item,0,"battle, field",450,0,0,special effect 53,53,0,25,
+240,0xf0,Merlin Drink,usable item,0,"battle, field",500,0,0,restores MP (%),3,100,25,
+241,0xf1,Medical Rinse,usable item,0,battle,120,0,0,special effect 55,55,0,25,
+242,0xf2,Melting Lotion,usable item,0,battle,120,0,0,special effect 56,56,0,25,
+243,0xf3,Resurrection Mist,usable item,0,"battle, field",6000,0,0,"revives, restores HP (%)",6,100,25,
+244,0xf4,Risky Liquid,usable item,0,"battle, field",80,0,0,special effect 57,57,0,25,
+245,0xf5,Lilith Tonic,usable item,0,battle,150,0,0,special effect 58,58,0,25,
+246,0xf6,Danger Pot,usable item,0,"battle, field",220,0,0,special effect 59,59,0,25,
+247,0xf7,Nightmare Pot,usable item,0,"battle, field",190,0,0,special effect 60,60,0,25,
+248,0xf8,Flash Pot,usable item,0,field,300,0,0,special effect 61,61,0,25,
+249,0xf9,Mint Pot,item,0,,0,0,0,,0,0,25,
+250,0xfa,Mental Pot,usable item,0,battle,300,0,0,special effect 63,63,0,25,
+251,0xfb,Sour Syrup,usable item,0,"battle, field",300,0,0,restores MP (%),3,30,25,
+252,0xfc,Sweet Syrup,usable item,0,"battle, field",300,0,0,restores HP (%),1,30,25,
+253,0xfd,Maple Syrup,usable item,0,"battle, field",200,0,0,restores HP (%),1,20,25,
+254,0xfe,Fruit Syrup,usable item,0,"battle, field",600,0,0,restores HP and MP (%),5,45,25,
+255,0xff,Fresh Syrup,usable item,0,"battle, field",800,0,0,restores HP (%),1,100,25,
+256,0x100,Hot Syrup,usable item,0,"battle, field",300,0,0,special effect 64,64,0,25,
+257,0x101,Mixed Syrup,usable item,0,"battle, field",500,0,0,restores HP and MP (%),5,30,25,
+258,0x102,Cure Poison,usable item,0,"battle, field",140,0,0,special effect 65,65,0,25,
+259,0x103,Cure Paralysis,usable item,0,"battle, field",180,0,0,special effect 66,66,0,25,
+260,0x104,Wonder Drug,usable item,0,"battle, field",800,0,0,special effect 67,67,10,25,
+261,0x105,Natural High,usable item,0,battle,550,0,0,special effect 68,68,0,25,
+262,0x106,Crush Pill,usable item,0,battle,140,0,0,special effect 69,69,0,25,
+263,0x107,Care Tablet,usable item,0,battle,400,0,0,special effect 70,70,0,25,
+264,0x108,Violence Pill,usable item,0,"battle, field",140,0,0,special effect 71,71,0,25,
+265,0x109,Marionette Pill,usable item,0,battle,140,0,0,special effect 72,72,0,25,
+266,0x10a,Skanda Ointment,usable item,0,battle,500,0,0,special effect 73,73,0,25,
+267,0x10b,Stink Gel,usable item,0,battle,300,0,0,special effect 74,74,0,25,
+268,0x10c,Succubus Cologne,usable item,0,"battle, field",500,0,0,special effect 75,75,0,25,
+269,0x10d,Aphrodisiac,usable item,0,field,100000,0,0,special effect 76,76,0,25,
+270,0x10e,Pixie Cologne,usable item,0,battle,1000,0,0,special effect 77,77,0,25,
+271,0x10f,Smoke Mist,usable item,0,battle,300,0,0,special effect 78,78,0,25,
+272,0x110,Paralysis Mist,usable item,0,battle,300,0,0,special effect 79,79,0,25,
+273,0x111,Fairy Mist,usable item,0,battle,13000,0,0,special effect 80,80,0,25,
+274,0x112,Blanking Mist,item,0,,3000,0,0,,0,0,25,
+275,0x113,Holy Mist,usable item,0,"battle, field",3200,0,0,"restores HP (%), whole party",2,60,25,
+276,0x114,Madness Mist,usable item,0,battle,500,0,0,special effect 81,81,0,25,
+277,0x115,Resurrection Bottle,usable item,0,"battle, field",3600,0,0,"revives, restores HP (%)",6,60,25,
+278,0x116,Spring Water,usable item,0,"battle, field",120,0,0,special effect 82,82,0,25,
+279,0x117,Seafood,item,0,,500,0,0,,0,0,25,
+280,0x118,Fruit,item,0,,80,0,0,,0,0,25,
+281,0x119,Grain,item,0,,145,0,0,,0,0,25,
+282,0x11a,Meat,item,0,,300,0,0,,0,0,25,
+283,0x11b,Vegetables,item,0,,30,0,0,,0,0,25,
+284,0x11c,Egg/Dairy Products,item,0,,10,0,0,,0,0,25,
+285,0x11d,Sashimi,usable item,0,field,2800,0,0,restores HP (%),1,70,40,
+286,0x11e,?MACHINE,item,0,,0,0,0,,0,0,50,
+287,0x11f,Sole & Wine Sauce,usable item,0,field,1900,0,0,restores HP (%),1,60,50,
+288,0x120,?MACHINE,item,0,,0,0,0,,0,0,25,
+289,0x121,Cracked Gem,item,0,,0,0,0,,0,0,25,
+290,0x122,Shark Potstickers,usable item,0,field,3000,0,0,restores HP (%),1,70,50,
+291,0x123,Shark Fin Soup,usable item,0,field,600,0,0,restores MP (%),3,40,50,
+292,0x124,Bird's Nest Soup,usable item,0,field,5000,0,0,restores MP (%),3,70,50,
+293,0x125,Broth,usable item,0,field,300,0,0,restores MP (%),3,30,50,
+294,0x126,Mushroom Soup,usable item,0,field,2200,0,0,restores MP (%),3,66,50,
+295,0x127,Steamed Aspic,usable item,0,field,2100,0,0,"restores HP (%), whole party",2,50,50,
+296,0x128,?MACHINE,item,0,,0,0,0,,0,0,25,
+297,0x129,Orangeade,usable item,0,field,110,0,0,restores MP (%),3,10,40,
+298,0x12a,Pear Compote,usable item,0,field,5000,0,0,special effect 67,67,40,50,
+299,0x12b,Strawberry Mochi,usable item,0,field,2250,0,0,restores HP (%),1,55,40,
+300,0x12c,?MACHINE,item,0,,0,0,0,,0,0,25,
+301,0x12d,?MACHINE,item,0,,0,0,0,,0,0,25,
+302,0x12e,Muscat Grape Jelly,usable item,0,field,4200,0,0,special effect 65,65,50,50,
+303,0x12f,Konyaku Jelly,usable item,0,field,3300,0,0,restores HP (%),1,40,50,
+304,0x130,?MACHINE,item,0,,0,0,0,,0,0,25,
+305,0x131,?MACHINE,item,0,,0,0,0,,0,0,25,
+306,0x132,Coconut Milk,usable item,0,field,2000,0,0,special effect 67,67,55,50,
+307,0x133,Sharpness,weapon,1,,20000,500,0,,0,0,100,Dias
+308,0x134,Fruit Sandwich,usable item,0,field,1800,0,0,"restores MP (%), whole party",4,50,40,
+309,0x135,Sole & Fruit Sauce,usable item,0,field,600,0,0,restores HP (%),1,22,50,
+310,0x136,Sweet Rice Cakes,usable item,0,field,2000,0,0,restores HP (%),1,80,50,
+311,0x137,Fried Rice,usable item,0,field,300,0,0,restores HP (%),1,26,40,
+312,0x138,Meat Fried Rice,usable item,0,field,2000,0,0,"restores HP (%), whole party",2,60,50,
+313,0x139,Sake Lees Pickles,usable item,0,field,2000,0,0,special effect 66,66,70,50,
+314,0x13a,?JEWELRY,item,0,,0,0,0,,0,0,25,
+315,0x13b,French Toast,usable item,0,field,1800,0,0,restores MP (%),3,55,40,
+316,0x13c,Israfil's Tear,accessory,12,,0,60,30,,0,0,50,Rena Celine
+317,0x13d,Red Lotus Gem,item,0,,0,0,0,,0,0,25,
+318,0x13e,Shrimp Shu-mai,usable item,0,field,2000,0,0,restores MP (%),3,60,50,
+319,0x13f,Hamburger,usable item,0,field,200,0,0,restores HP (%),1,19,40,
+320,0x140,Sirloin Steak,usable item,0,field,2000,0,0,"restores HP (%), whole party",2,80,50,
+321,0x141,Tri-emplem,accessory,12,,31419,10,12,,0,0,1,all
+322,0x142,Peking Duck,usable item,0,field,2000,0,0,"restores HP (%), whole party",2,70,50,
+323,0x143,Creamed Stew,usable item,0,field,2000,0,0,restores MP (%),3,70,50,
+324,0x144,Lezard Flask,item,0,,120000,0,0,,0,0,25,
+325,0x145,Fish Squash Salad,usable item,0,field,2000,0,0,special effect 67,67,68,50,
+326,0x146,Valkyrie's Garb,armor,8,,900000,0,480,special effect 107,107,0,100,Rena Celine Precis Opera Chisato
+327,0x147,Daikon Radish,usable item,0,field,1300,0,0,restores HP (%),1,10,40,
+328,0x148,Happo-sai,usable item,0,field,6500,0,0,restores HP (%),1,20,50,
+329,0x149,Fried Vegetables,usable item,0,field,4000,0,0,"restores HP (%), whole party",2,50,50,
+330,0x14a,Missing Number,item,0,,0,0,0,,0,0,25,
+331,0x14b,Missing Number,item,0,,0,0,0,,0,0,25,
+332,0x14c,Yogurt Salad,usable item,0,field,2000,0,0,special effect 65,65,80,50,
+333,0x14d,Missing Number,item,0,,0,0,0,,0,0,25,
+334,0x14e,Tea Cloth Sushi,usable item,0,field,5000,0,0,restores MP (%),3,70,50,
+335,0x14f,Plain Omelet,usable item,0,field,2420,0,0,restores HP (%),1,66,50,
+336,0x150,Missing Number,item,0,,0,0,0,,0,0,25,
+337,0x151,Toro Tuna,usable item,0,field,2000,0,0,"restores HP (%), whole party",2,20,40,
+338,0x152,Missing Number,item,0,,0,0,0,,0,0,25,
+339,0x153,Seaweed Miso Soup,usable item,0,field,190,0,0,"restores MP (%), whole party",4,20,50,
+340,0x154,Shu-mai,usable item,0,field,280,0,0,"restores HP (%), whole party",2,10,40,
+341,0x155,Amoeba Soup,usable item,0,field,370,0,0,restores MP (%),3,68,50,
+342,0x156,Sacred Tear,weapon,1,,0,1250,20,special effect 165,165,0,50,Claude
+343,0x157,Fallen Hope,weapon,1,,0,1000,50,special effect 165,165,0,50,Rena
+344,0x158,Shrimp au Gratin,usable item,0,field,500,0,0,restores HP (%),1,26,50,
+345,0x159,Big Tuna,usable item,0,field,3000,0,0,restores HP (%),1,45,50,
+346,0x15a,Salmon Omelet,usable item,0,field,500,0,0,restores HP (%),1,29,50,
+347,0x15b,Shrimp Pilaf,usable item,0,field,400,0,0,restores HP (%),1,30,50,
+348,0x15c,Link Combo,accessory,12,,0,0,0,special effect 249,249,0,50,Claude Bowman Dias Precis Ashton Opera Ernest Chisato
+349,0x15d,Root Beer,usable item,0,field,300,0,0,restores MP (%),3,35,40,
+350,0x15e,'Ishidaya' Tea,usable item,0,field,15000,0,0,"restores MP (%), whole party",4,60,50,
+351,0x15f,Yukiyucho Tea,usable item,0,field,12000,0,0,restores MP (%),3,55,50,
+352,0x160,Hassaku Tea,usable item,0,field,2800,0,0,restores MP (%),3,40,50,
+353,0x161,Yaegaki Tea,usable item,0,field,10000,0,0,restores MP (%),3,50,50,
+354,0x162,'Usunigori' Tea,usable item,0,field,4000,0,0,restores MP (%),3,45,50,
+355,0x163,Sambai Tea,usable item,0,field,50,0,0,restores MP (%),3,3,50,
+356,0x164,Sweet Dumpling,usable item,0,field,140,0,0,restores HP (%),1,12,40,
+357,0x165,Levantine Sword,weapon,1,,0,3000,0,special effect 105,105,0,100,Claude Dias Ashton
+358,0x166,Daikon Miso Soup,usable item,0,field,300,0,0,restores MP (%),3,10,40,
+359,0x167,Gruel,usable item,0,field,400,0,0,restores HP (%),1,10,50,
+360,0x168,Rice Cakes,usable item,0,field,110,0,0,restores HP (%),1,19,50,
+361,0x169,Pancakes,usable item,0,field,340,0,0,restores HP (%),1,23,40,
+362,0x16a,Holy Sword Farwell,weapon,1,,4000000,1900,70,special effect 106,106,0,100,Claude Dias Ashton
+363,0x16b,Soda-Pop,usable item,0,field,230,0,0,"restores MP (%), whole party",4,30,50,
+364,0x16c,Seraphic Garb,armor,8,,1800000,0,400,special effect 107,107,0,100,all
+365,0x16d,Shrimp Doria,usable item,0,field,550,0,0,restores HP (%),1,21,50,
+366,0x16e,Rice Omelet,usable item,0,field,400,0,0,restores HP (%),1,20,50,
+367,0x16f,Million Staff,weapon,1,,8000000,800,0,special effect 108,108,0,100,Celine Leon Noel
+368,0x170,Berry Juice,usable item,0,field,200,0,0,restores MP (%),3,5,40,
+369,0x171,Seltzer,usable item,0,field,100,0,0,restores HP and MP (%),5,90,30,
+370,0x172,Orange Sherbet,usable item,0,field,16,0,0,restores HP (%),1,10,40,
+371,0x173,Banana Crepes,usable item,0,field,90,0,0,restores HP (%),1,18,40,
+372,0x174,Apple Cider,usable item,0,field,5000,0,0,restores MP (%),3,40,50,
+373,0x175,Pickled Plum,usable item,0,field,1000,0,0,restores HP (%),1,2,50,
+374,0x176,Strawberry Mousse,usable item,0,field,120,0,0,restores HP (%),1,14,50,
+375,0x177,Apple Crepes,usable item,0,field,200,0,0,restores HP (%),1,15,40,
+376,0x178,Peach Ice Cream,usable item,0,field,150,0,0,restores HP (%),1,10,50,
+377,0x179,Aged Berry Juice,usable item,0,field,10000,0,0,special effect 67,67,60,50,
+378,0x17a,Orange Au Gratin,usable item,0,field,170,0,0,restores HP (%),1,21,50,
+379,0x17b,Bitter Juice,usable item,0,field,7,0,0,restores MP (%),3,1,50,
+380,0x17c,Meat Dumpling,usable item,0,field,360,0,0,restores HP (%),1,22,40,
+381,0x17d,Potstickers,usable item,0,field,280,0,0,restores HP (%),1,19,40,
+382,0x17e,Beef Croquettes,usable item,0,field,420,0,0,restores HP (%),1,30,40,
+383,0x17f,Chicken Skewers,usable item,0,field,500,0,0,restores HP (%),1,5,40,
+384,0x180,Jambalaya,usable item,0,field,480,0,0,restores HP (%),1,46,50,
+385,0x181,Angel Armband,accessory,12,,15000000,60,60,special effect 198,198,0,100,all
+386,0x182,Chicken Doria,usable item,0,field,520,0,0,restores HP (%),1,48,40,
+387,0x183,Steak,usable item,0,field,600,0,0,restores HP (%),1,50,40,
+388,0x184,Baby Rabbit Risotto,usable item,0,field,600,0,0,restores HP (%),1,35,50,
+389,0x185,Ground Lamb Steak,usable item,0,field,500,0,0,restores HP (%),1,40,50,
+390,0x186,Gelatin Steak,usable item,0,field,350,0,0,restores MP (%),3,60,50,
+391,0x187,Bad Tasting Stew,usable item,0,field,3,0,0,restores MP (%),3,1,25,
+392,0x188,Weird Slayer,weapon,1,,0,1000,0,special effect 109,109,0,100,Rena Bowman Precis Chisato
+393,0x189,Bunny Shoes,footwear,11,,200000,0,10,special effect 110,110,0,50,all
+394,0x18a,Squash Croquettes,usable item,0,field,400,0,0,restores HP (%),1,22,50,
+395,0x18b,Corn Potage,usable item,0,field,300,0,0,restores MP (%),3,20,50,
+396,0x18c,Funny Slayer,weapon,1,,300,1,0,special effect 250,250,0,100,all
+397,0x18d,Spring Rolls,usable item,0,field,300,0,0,restores HP (%),1,20,50,
+398,0x18e,Carrot Juice,usable item,0,field,220,0,0,restores MP (%),3,13,50,
+399,0x18f,Cabbage Roll,usable item,0,field,280,0,0,restores HP (%),1,26,50,
+400,0x190,Squash Spring Rolls,usable item,0,field,300,0,0,restores HP (%),1,28,50,
+401,0x191,Vegetable Juice,usable item,0,field,200,0,0,restores MP (%),3,26,50,
+402,0x192,Green Potage,usable item,0,field,300,0,0,restores MP (%),3,25,50,
+403,0x193,Wilted Salad,usable item,0,field,10,0,0,restores HP (%),1,2,50,
+404,0x194,Fried Eggs,usable item,0,field,200,0,0,restores HP (%),1,18,50,
+405,0x195,Slime Jelly,usable item,0,field,110,0,0,restores MP (%),3,60,50,
+406,0x196,Fruit Smoothie,usable item,0,field,120,0,0,restores MP (%),3,8,50,
+407,0x197,Yogurt,usable item,0,field,200,0,0,restores HP (%),1,5,50,
+408,0x198,Egg Sandwich,usable item,0,field,250,0,0,restores HP (%),1,19,40,
+409,0x199,Chocolate Crepes,usable item,0,field,115,0,0,restores HP (%),1,22,40,
+410,0x19a,Bacon & Eggs,usable item,0,field,190,0,0,restores HP (%),1,20,50,
+411,0x19b,Vanilla Ice Cream,usable item,0,field,30,0,0,restores HP (%),1,10,40,
+412,0x19c,Shortcake,usable item,0,field,180,0,0,restores HP (%),1,16,50,
+413,0x19d,Custard Pudding,usable item,0,field,103,0,0,restores HP (%),1,15,50,
+414,0x19e,Macaroni Au Gratin,usable item,0,field,150,0,0,restores HP (%),1,10,50,
+415,0x19f,Spicy Cake,usable item,0,field,10,0,0,restores HP (%),1,1,50,
+416,0x1a0,Raw Milk,usable item,0,field,1,0,0,restores MP (%),3,1,50,
+417,0x1a1,Fruit Nectar,usable item,0,field,100000,0,0,restores HP and MP (%),5,100,100,
+418,0x1a2,Pet Food,item,0,,10,0,0,restores HP (%),1,0,25,
+419,0x1a3,Iron,accessory,12,,200,0,0,,0,0,25,all
+420,0x1a4,Gold,accessory,12,,300,0,0,,0,0,25,all
+421,0x1a5,Silver,accessory,12,,200,0,1,,0,0,25,all
+422,0x1a6,Moonite,accessory,12,,1500,0,0,,0,0,25,all
+423,0x1a7,Orichalcum,accessory,12,,10000,0,0,,0,0,25,all
+424,0x1a8,Meteorite,accessory,12,,5200,0,0,,0,0,25,all
+425,0x1a9,Mithril,accessory,12,,15000,0,0,,0,0,25,all
+426,0x1aa,Damascus,accessory,12,,6400,0,0,,0,0,25,all
+427,0x1ab,Rune Metal,accessory,12,,7000,0,0,,0,0,25,all
+428,0x1ac,Rock,item,0,,10,0,0,,0,0,25,
+429,0x1ad,Green Beryl,accessory,12,,500,0,0,,0,0,25,all
+430,0x1ae,Sapphire,accessory,12,,800,0,0,,0,0,25,all
+431,0x1af,Ruby,accessory,12,,400,0,0,,0,0,25,all
+432,0x1b0,Star Ruby,accessory,12,,10000,0,0,,0,0,25,all
+433,0x1b1,Crystal,accessory,12,,500,0,0,,0,0,25,all
+434,0x1b2,Sage's Stone,accessory,12,,50000,0,0,,0,0,100,all
+435,0x1b3,Diamond,accessory,12,,9000,0,0,,0,0,25,all
+436,0x1b4,Rainbow Diamond,accessory,12,,14000,0,0,,0,0,25,all
+437,0x1b5,Bandit's Gloves,accessory,12,,40000,0,0,,0,0,25,all
+438,0x1b6,Blurry Photo,item,0,,20,0,0,,0,0,25,
+439,0x1b7,Magical Camera,item,0,,9800,0,0,,0,0,25,
+440,0x1b8,Magical Film,item,0,,900,0,0,,0,0,25,
+441,0x1b9,Music Box,usable item,0,field,2150,0,0,,0,0,100,
+442,0x1ba,Element Analyzer,item,0,,12000,0,0,,0,0,100,
+443,0x1bb,Graphic Software,item,0,,6500,0,0,,0,0,100,
+444,0x1bc,Magician's Hand,accessory,12,,3000,0,0,,0,0,100,all
+445,0x1bd,Ririca,item,0,,5800,0,0,,0,0,100,
+446,0x1be,Killer Poison,usable item,0,battle,300,0,0,special effect 83,83,0,40,
+447,0x1bf,Peep-peep Bomb,usable item,0,battle,500,0,0,special effect 84,84,0,80,
+448,0x1c0,Mind Bomb,usable item,0,battle,400,0,0,special effect 85,85,0,80,
+449,0x1c1,Flare Bomb,usable item,0,battle,450,0,0,special effect 86,86,0,40,
+450,0x1c2,Tetra-bomb,usable item,0,battle,600,0,0,special effect 87,87,0,80,
+451,0x1c3,Assault Bomb,usable item,0,battle,1000,0,0,special effect 88,88,0,80,
+452,0x1c4,Protection Bomb,usable item,0,battle,2000,0,0,special effect 89,89,0,80,
+453,0x1c5,Half-dead Bomb,usable item,0,battle,2500,0,0,special effect 90,90,0,80,
+454,0x1c6,Soul Trap,item,0,,0,0,0,,0,0,80,
+455,0x1c7,Nuclear Bomb,usable item,0,battle,4000,0,0,special effect 92,92,0,80,
+456,0x1c8,Material Kit,item,0,,1200,0,0,,0,0,80,
+457,0x1c9,Musical Software,item,0,,8000,0,0,,0,0,50,
+458,0x1ca,Erlenmeyer Flask,item,0,,12200,0,0,,0,0,100,
+459,0x1cb,Magical Rasp,item,0,,350000,0,0,,0,0,25,
+460,0x1cc,Soldering Iron,item,0,,1800,0,0,,0,0,100,
+461,0x1cd,Survival Kit,item,0,,6000,0,0,,0,0,100,
+462,0x1ce,Text Software,item,0,,4000,0,0,,0,0,100,
+463,0x1cf,Antiseptic Gloves,item,0,,5000,0,0,,0,0,100,
+464,0x1d0,Holoprojector,usable item,0,field,0,0,0,,0,0,25,
+465,0x1d1,Plasma Zap-stick,usable item,0,field,0,0,0,,0,0,25,
+466,0x1d2,Mech Launcher,usable item,0,field,0,0,0,,0,0,25,
+467,0x1d3,White System,usable item,0,field,0,0,0,,0,0,25,
+468,0x1d4,Black System,usable item,0,field,0,0,0,,0,0,25,
+469,0x1d5,Green System,usable item,0,field,0,0,0,,0,0,25,
+470,0x1d6,Smith's Hammer,item,0,,250,0,0,,0,0,25,
+471,0x1d7,Odd Medicine,usable item,0,"battle, field",200,0,0,special effect 71,71,0,25,
+472,0x1d8,Lady Fingers,usable item,0,field,80,0,0,restores HP and MP (%),5,8,100,
+473,0x1d9,Vellum Paper,item,0,,150,0,0,,0,0,25,
+474,0x1da,Bounced Check,item,0,,1000,0,0,,0,0,25,
+475,0x1db,Fill-up,usable item,0,field,800,0,0,,0,0,25,
+476,0x1dc,Forged Bills,item,0,,5000,0,0,,0,0,100,
+477,0x1dd,Forged Checks,item,0,,20000,0,0,,0,0,100,
+478,0x1de,Forged Documents,item,0,,50000,0,0,,0,0,100,
+479,0x1df,Second Ledger,usable item,0,field,1200,0,0,,0,0,25,
+480,0x1e0,Stock Certificates,item,0,,10000,0,0,,0,0,100,
+481,0x1e1,Forged Medals,usable item,0,field,1200,0,0,,0,0,25,
+482,0x1e2,Lien,usable item,0,field,1200,0,0,,0,0,25,
+483,0x1e3,Contract,usable item,0,field,1200,0,0,,0,0,25,
+484,0x1e4,Life Insurance,usable item,0,field,1200,0,0,,0,0,25,
+485,0x1e5,Dull Sword,weapon,1,,5,2,0,,0,0,100,Claude Dias
+486,0x1e6,Worn-out Sword,weapon,1,,200,3,0,,0,0,25,Claude Dias
+487,0x1e7,Golden Fangs,weapon,1,,10000,10,0,,0,0,100,Claude
+488,0x1e8,Silver Fangs,weapon,1,,8000,12,0,,0,0,100,Claude
+489,0x1e9,Broad Sword,weapon,1,,400,60,0,,0,0,25,Claude
+490,0x1ea,Long Sword,weapon,1,,200,30,0,,0,0,25,Claude Dias
+491,0x1eb,Sinclair Sabre,weapon,1,,860,100,0,,0,0,25,Claude
+492,0x1ec,Flame Blade,weapon,1,,4800,160,0,,0,0,25,Claude Dias
+493,0x1ed,Walloon Sword,weapon,1,,3900,240,0,,0,0,25,Claude Dias
+494,0x1ee,Gusguine,weapon,1,,4500,250,0,,0,0,25,Claude
+495,0x1ef,Long Edge,weapon,1,,12300,285,0,special effect 172,172,0,40,Claude
+496,0x1f0,Sharp Edge,weapon,1,,5000,222,0,,0,0,70,Claude Dias
+497,0x1f1,Veil Piercer,weapon,1,,8000,480,0,,0,0,25,Claude
+498,0x1f2,Grand Stinger,weapon,1,,50000,620,0,special effect 196,196,0,100,Claude Dias
+499,0x1f3,Ignite Sword,weapon,1,,17000,720,0,,0,0,25,Claude Dias
+500,0x1f4,Heart Breaker,weapon,1,,50000,550,0,special effect 197,197,0,100,Claude
+501,0x1f5,Marvel Sword,weapon,1,,350000,1100,10,,0,0,25,Claude Dias
+502,0x1f6,Minus Sword,weapon,1,,40000,599,0,special effect 196,196,0,100,Claude Dias
+503,0x1f7,Sawed,weapon,1,,200000,990,0,,0,0,50,Claude
+504,0x1f8,Force Sword,weapon,1,,50000,908,0,special effect 199,199,0,25,Claude
+505,0x1f9,Windsley Sword,weapon,1,,600000,1400,0,,0,0,100,Claude
+506,0x1fa,Silvance,weapon,1,,180000,1210,20,,0,0,100,Claude Dias
+507,0x1fb,Eternal Sphere,weapon,1,,1000000,1600,0,special effect 198,198,0,100,Claude
+508,0x1fc,Aura Blade,weapon,1,,260000,1200,0,,0,0,100,Claude
+509,0x1fd,All-Purpose Knife,weapon,1,,12000,160,0,special effect 246,246,0,40,all
+510,0x1fe,Bastard Sword,weapon,1,,1000,150,0,,0,0,25,Dias
+511,0x1ff,Baselard,weapon,1,,900,180,0,,0,0,25,Dias
+512,0x200,Oriental Blade,weapon,1,,5000,448,0,,0,0,25,Dias
+513,0x201,Murasame Sword,weapon,1,,20000,552,0,special effect 211,211,0,25,Dias
+514,0x202,Soul Slayer,weapon,1,,50000,982,0,special effect 199,199,0,100,Dias
+515,0x203,Whirlwind,weapon,1,,40000,780,0,,0,0,100,Dias
+516,0x204,The Hope of Breeze,weapon,1,,40000,770,0,special effect 211,211,0,100,Dias
+517,0x205,Hard Cleaver,weapon,1,,220000,1100,0,special effect 197,197,0,25,Dias
+518,0x206,Ruins' Fate,weapon,1,,190000,1000,0,,0,0,25,Dias
+519,0x207,Pleiad Sword,weapon,1,,280000,1200,0,special effect 197,197,0,100,Dias
+520,0x208,Crimson Diablos,weapon,1,,880000,1100,0,special effect 200,200,0,100,Dias
+521,0x209,Cromlea Sword,weapon,1,,580000,1399,0,,0,0,100,Dias
+522,0x20a,Wobbly Sword,weapon,1,,20,3,0,,0,0,25,Ashton
+523,0x20b,Twin Swords,weapon,1,,320,40,0,,0,0,25,Ashton
+524,0x20c,Guard Sword,weapon,1,,8000,160,0,,0,0,100,Ashton
+525,0x20d,Both Shaver,weapon,1,,850,120,0,,0,0,25,Ashton
+526,0x20e,Smaller,weapon,1,,2000,180,0,,0,0,25,Ashton
+527,0x20f,Twin-edge,weapon,1,,3000,340,0,,0,0,25,Ashton
+528,0x210,Pair Nuts,weapon,1,,10000,380,0,special effect 247,247,0,100,Ashton
+529,0x211,Shield Sword,weapon,1,,10000,490,0,,0,0,25,Ashton
+530,0x212,Twin Picks,weapon,1,,20000,500,0,,0,0,100,Ashton
+531,0x213,Scyther,weapon,1,,18000,820,0,special effect 202,202,0,25,Ashton
+532,0x214,Doubledemon Sword,weapon,1,,580000,700,0,special effect 203,203,0,25,Ashton
+533,0x215,Double Masher,weapon,1,,82050,799,8,,0,0,25,Ashton
+534,0x216,Lotus Eater,weapon,1,,188000,1150,0,,0,0,25,Ashton
+535,0x217,Gemini,weapon,1,,200000,1200,10,special effect 204,204,0,100,Ashton
+536,0x218,Holy Cross,weapon,1,,280000,1240,20,,0,0,100,Ashton
+537,0x219,Melufa,weapon,1,,1200000,1320,25,special effect 205,205,0,100,Ashton
+538,0x21a,Worn Knuckles,weapon,1,,10,1,0,,0,0,25,Rena Bowman Noel
+539,0x21b,Knuckles,weapon,1,,110,30,0,,0,0,25,Rena Bowman Noel
+540,0x21c,Hard Knuckles,weapon,1,,300,58,0,,0,0,25,Rena Bowman Noel
+541,0x21d,Cestus,weapon,1,,1400,140,0,,0,0,25,Rena Bowman
+542,0x21e,Fellper Nails,weapon,1,,500000,1200,0,special effect 206,206,0,25,Rena
+543,0x21f,Metal Fangs,weapon,1,,5000,400,0,,0,0,25,Rena Noel
+544,0x220,Magical Gloves,weapon,1,,35526,688,0,special effect 207,207,0,100,Rena Bowman
+545,0x221,Braised Knuckles,weapon,1,,15000,599,0,,0,0,50,Rena Bowman
+546,0x222,Pain Cestus,weapon,1,,15000,580,0,,0,0,40,Rena
+547,0x223,Dragon's Claws,weapon,1,,20850,450,0,special effect 208,208,0,100,Rena Noel
+548,0x224,Rune Full Moon,weapon,1,,50000,900,0,special effect 209,209,0,25,Rena Bowman
+549,0x225,Sorceress Knuckles,weapon,1,,90000,1000,0,special effect 210,210,0,25,Rena Bowman
+550,0x226,Kaiser Knuckles,weapon,1,,186000,1100,0,,0,0,100,Rena Bowman Noel
+551,0x227,Empresia,weapon,1,,300000,1220,0,,0,0,100,Rena
+552,0x228,Bagh Nakh,weapon,1,,1400,165,0,,0,0,25,Bowman
+553,0x229,Giant Fists,weapon,1,,8000,470,0,special effect 114,114,0,58,Bowman
+554,0x22a,Hecatoncheire,weapon,1,,16200,630,0,special effect 211,211,0,25,Bowman
+555,0x22b,Asura,weapon,1,,60000,750,0,special effect 211,211,0,100,Bowman
+556,0x22c,Titan's Fists,weapon,1,,70000,1000,0,special effect 114,114,0,100,Bowman
+557,0x22d,Flare Burst,weapon,1,,386000,1300,0,,0,0,100,Bowman
+558,0x22e,Moon Fists,weapon,1,,220000,1200,10,special effect 212,212,0,100,Bowman
+559,0x22f,Cat's Fangs,weapon,1,,60000,120,0,special effect 211,211,0,100,Rena Noel
+560,0x230,Eagle's Claws,weapon,1,,20000,760,0,special effect 208,208,0,40,Noel
+561,0x231,Serpent's Tooth,weapon,1,,180000,900,0,special effect 197,197,0,100,Noel
+562,0x232,Death Fangs,weapon,1,,250000,1350,0,special effect 197,197,0,100,Noel
+563,0x233,Grizzly Claps,weapon,1,,140000,840,0,,0,0,25,Noel
+564,0x234,Tiger's Fangs,weapon,1,,80000,600,0,,0,0,100,Noel
+565,0x235,Platinum Nails,weapon,1,,199000,850,0,special effect 211,211,0,100,Noel
+566,0x236,Bent Rod,weapon,1,,90,5,0,,0,0,25,Celine
+567,0x237,Silver Rod,weapon,1,,9800,350,0,,0,0,25,Celine
+568,0x238,Rod,weapon,1,,10,10,0,,0,0,25,Celine
+569,0x239,Ruby Wand,weapon,1,,600,70,0,,0,0,40,Celine
+570,0x23a,Tongue Twister,weapon,1,,25000,300,0,special effect 161,161,0,100,Celine
+571,0x23b,Crest Rod,weapon,1,,1200,100,0,,0,0,40,Celine
+572,0x23c,Holy Rod,weapon,1,,50000,520,0,special effect 113,113,0,100,Celine
+573,0x23d,Silvermoon,weapon,1,,80000,1000,0,special effect 187,187,0,100,Celine
+574,0x23e,Prime Prayer,weapon,1,,400000,1000,20,special effect 240,240,0,100,Celine
+575,0x23f,Magical Rod,weapon,1,,2000,150,30,,0,0,100,Celine
+576,0x240,Rod of Snakes,weapon,1,,250000,700,10,special effect 165,165,0,100,Celine
+577,0x241,Dragon's Tusk,weapon,1,,260000,990,0,special effect 241,241,0,100,Celine
+578,0x242,Ruby Rod,weapon,1,,80000,680,0,special effect 242,242,0,25,Celine
+579,0x243,Clap Rod,weapon,1,,5000,280,0,special effect 213,213,0,25,Celine
+580,0x244,Scrap Iron,item,0,,5,0,0,,0,0,100,
+581,0x245,Booster Box,weapon,1,,150,128,0,,0,0,25,Opera
+582,0x246,Radio Box,weapon,1,,280,162,0,,0,0,25,Opera
+583,0x247,Black Box,weapon,1,,10000,200,0,,0,0,100,Opera
+584,0x248,Light Box,weapon,1,,600,490,0,,0,0,25,Opera
+585,0x249,Seventh Ray,weapon,1,,52500,280,0,special effect 214,214,0,100,Opera
+586,0x24a,X Box,weapon,1,,12200,500,0,,0,0,80,Opera
+587,0x24b,Magic Box,weapon,1,,65000,650,0,special effect 161,161,0,100,Opera
+588,0x24c,Alpha Box,weapon,1,,139900,690,0,special effect 248,248,0,25,Opera
+589,0x24d,Burst Box,weapon,1,,230000,780,0,special effect 215,215,0,100,Opera
+590,0x24e,Psycho Box,weapon,1,,199000,1050,0,,0,0,100,Opera
+591,0x24f,Beta Box,weapon,1,,150000,690,0,special effect 248,248,0,100,Opera
+592,0x250,Gamma Box,weapon,1,,200000,750,0,special effect 248,248,0,100,Opera
+593,0x251,Pulse Box,weapon,1,,295000,1000,0,special effect 216,216,0,100,Opera
+594,0x252,Magic Hand,weapon,1,,200,125,0,,0,0,25,Precis
+595,0x253,Iron Punch,weapon,1,,300,165,0,,0,0,25,Precis
+596,0x254,One-two Punch,weapon,1,,800,280,0,,0,0,25,Precis
+597,0x255,Straight Punch,weapon,1,,500,400,0,,0,0,25,Precis
+598,0x256,Fire Punch,weapon,1,,21300,699,0,,0,0,80,Precis
+599,0x257,Ice Punch,weapon,1,,21300,380,0,,0,0,80,Precis
+600,0x258,Thunder Punch,weapon,1,,18500,420,0,,0,0,100,Precis
+601,0x259,Ultra Punch,weapon,1,,2000,650,0,,0,0,25,Precis
+602,0x25a,Great Punch,weapon,1,,14000,850,0,,0,0,25,Precis
+603,0x25b,Hyper Punch,weapon,1,,300000,1250,0,,0,0,100,Precis
+604,0x25c,Burning Hand,weapon,1,,40000,600,0,,0,0,100,Precis
+605,0x25d,Atomic Punch,weapon,1,,170000,1120,0,,0,0,25,Precis
+606,0x25e,Spark Hand,weapon,1,,50000,650,0,,0,0,100,Precis
+607,0x25f,SD Punch,weapon,1,,80000,1150,0,,0,0,100,Precis
+608,0x260,UGA Punch,weapon,1,,200000,1300,0,,0,0,100,Precis
+609,0x261,SDUGA Punch,weapon,1,,400000,1600,0,,0,0,100,Precis
+610,0x262,Limp Whip,weapon,1,,110,2,0,,0,0,25,Ernest
+611,0x263,Leather Whip,weapon,1,,150,60,0,,0,0,25,Ernest
+612,0x264,Splinter,weapon,1,,1300,460,0,,0,0,25,Ernest
+613,0x265,Hard Whip,weapon,1,,3000,550,0,,0,0,25,Ernest
+614,0x266,Twin-tail,weapon,1,,182500,860,0,special effect 172,172,0,100,Ernest
+615,0x267,Rose Whip,weapon,1,,23000,600,0,,0,0,50,Ernest
+616,0x268,Flare Whip,weapon,1,,50000,800,0,,0,0,100,Ernest
+617,0x269,Light Whip,weapon,1,,14000,820,0,,0,0,25,Ernest
+618,0x26a,Cat o' 9 Tails,weapon,1,,292500,1280,0,special effect 211,211,0,100,Ernest
+619,0x26b,Freeze Whip,weapon,1,,50000,800,0,,0,0,100,Ernest
+620,0x26c,Spark Whip,weapon,1,,160000,1080,0,special effect 218,218,0,25,Ernest
+621,0x26d,Molecule Wire,weapon,1,,156000,799,10,,0,0,100,Ernest
+622,0x26e,Dark Whip,weapon,1,,2800000,1100,0,special effect 197,197,0,100,Ernest
+623,0x26f,Invisible Whip,weapon,1,,260000,950,0,,0,0,100,Ernest
+624,0x270,Thick Book,weapon,1,,1100,180,0,,0,0,25,Leon
+625,0x271,Treatise,weapon,1,,2300,280,0,special effect 219,219,0,25,Leon
+626,0x272,Brain Structure,weapon,1,,120000,890,0,special effect 220,220,0,100,Leon
+627,0x273,Illustrated Book,weapon,1,,3100,320,0,,0,0,100,Leon
+628,0x274,Reference Book,weapon,1,,200000,50,0,,0,0,100,Leon
+629,0x275,Mental Revolution,weapon,1,,60000,680,0,special effect 161,161,0,100,Leon
+630,0x276,Heraldry,weapon,1,,7000,290,0,,0,0,25,Leon
+631,0x277,Dictionary,weapon,1,,20000,340,0,,0,0,25,Leon
+632,0x278,All About ESP,weapon,1,,100000,780,0,special effect 161,161,0,40,Leon
+633,0x279,Heraldry Book,weapon,1,,120000,500,0,special effect 220,220,0,100,Leon
+634,0x27a,Holy Scriptures,weapon,1,,150000,920,0,special effect 113,113,0,100,Leon
+635,0x27b,Book of Awakening,weapon,1,,203000,50,20,,0,0,25,Leon
+636,0x27c,Encyclopedia,weapon,1,,50000,500,0,,0,0,25,Leon
+637,0x27d,Ancient Wisdom,weapon,1,,250000,800,0,special effect 221,221,0,100,Leon
+638,0x27e,Book of Darkness,weapon,1,,80000,700,0,special effect 243,243,0,100,Leon
+639,0x27f,Book of Chaos,weapon,1,,190000,950,0,special effect 245,245,0,100,Leon
+640,0x280,10 Volt Stun Gun,weapon,1,,120,10,0,,0,0,25,Chisato
+641,0x281,Stun Gun,weapon,1,,5000,200,0,,0,0,25,Chisato
+642,0x282,Electric,weapon,1,,6000,280,0,,0,0,100,Chisato
+643,0x283,Shock Gun,weapon,1,,13000,380,0,special effect 222,222,0,100,Chisato
+644,0x284,Voltage,weapon,1,,12000,460,0,,0,0,100,Chisato
+645,0x285,Freeze,weapon,1,,100000,600,0,,0,0,100,Chisato
+646,0x286,Electro Gun,weapon,1,,15000,410,0,,0,0,25,Chisato
+647,0x287,Flame Gun,weapon,1,,100000,550,0,,0,0,100,Chisato
+648,0x288,Lightning Gun,weapon,1,,158000,650,0,,0,0,25,Chisato
+649,0x289,Cracker,weapon,1,,100000,660,0,special effect 223,223,0,100,Chisato
+650,0x28a,Aero Gun,weapon,1,,276000,800,0,,0,0,100,Chisato
+651,0x28b,Spark,weapon,1,,60000,750,0,special effect 211,211,0,100,Chisato
+652,0x28c,Flare Gun,weapon,1,,220000,920,0,,0,0,100,Chisato
+653,0x28d,Electron,weapon,1,,100000,830,0,,0,0,100,Chisato
+654,0x28e,Psychic Gun,weapon,1,,220000,980,0,special effect 224,224,0,100,Chisato
+655,0x28f,Leather Helm,headgear,10,,50,0,3,,0,0,25,all
+656,0x290,Odd Helmet,headgear,10,,120,0,6,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+657,0x291,Odd Hat,headgear,10,,10,0,1,,0,0,25,Rena Celine Leon
+658,0x292,Banded Helm,headgear,10,,120,0,6,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+659,0x293,Magical Hat,headgear,10,,600,0,10,,0,0,25,Rena Celine Leon
+660,0x294,Fame Helm,headgear,10,,500,0,12,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+661,0x295,Iron Helm,headgear,10,,1200,0,25,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+662,0x296,Rune Cap,headgear,10,,20000,0,26,special effect 161,161,0,25,Rena Celine Leon
+663,0x297,Plate Helm,headgear,10,,7000,0,38,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+664,0x298,Isis Tiara,headgear,10,,50000,0,50,special effect 225,225,0,25,Rena Celine Leon
+665,0x299,Steel Helm,headgear,10,,16000,0,50,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+666,0x29a,Jeanne's Helm,headgear,10,,8600,0,56,,0,0,25,Precis Opera Chisato
+667,0x29b,Wizard's Hat,headgear,10,,65200,0,29,,0,0,40,Rena Celine Leon Noel
+668,0x29c,Mithril Helm,headgear,10,,83400,0,65,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+669,0x29d,Sylvan Helm,headgear,10,,100000,0,50,,0,0,100,Precis Opera Chisato
+670,0x29e,Duel Helm,headgear,10,,100000,0,100,,0,0,25,Claude Bowman Dias Ashton Ernest Noel
+671,0x29f,Hermit's Helm,headgear,10,,20000,0,35,,0,0,30,Rena Celine Leon
+672,0x2a0,Odin's Helm,headgear,10,,160000,0,50,,0,0,100,Claude Dias Ashton
+673,0x2a1,Bloody Helm,headgear,10,,333,0,33,special effect 226,226,0,100,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+674,0x2a2,Salamander Helmet,accessory,12,,6000,0,12,,0,0,30,Ashton
+675,0x2a3,Sacknoth's Helmet,accessory,12,,12000,0,40,,0,0,40,Ashton
+676,0x2a4,Perforated Armor,armor,8,,50,0,1,,0,0,25,
+677,0x2a5,Leather Armor,armor,8,,300,0,6,,0,0,25,all
+678,0x2a6,Flashy Armor,armor,8,,150,0,1,,0,0,25,all
+679,0x2a7,Banded Mail,armor,8,,600,0,12,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+680,0x2a8,Odd Clothes,armor,8,,80,0,2,,0,0,25,all
+681,0x2a9,Robe,armor,8,,10,0,3,,0,0,25,Rena Celine Leon
+682,0x2aa,Ringed Mail,armor,8,,1200,0,20,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+683,0x2ab,Silk Robe,armor,8,,1800,0,12,,0,0,25,Rena Celine Leon
+684,0x2ac,Brigandine,armor,8,,3500,0,30,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+685,0x2ad,Amber Robe,armor,8,,4000,0,30,,0,0,25,Rena Celine Leon
+686,0x2ae,Evening Dress,armor,8,,5000,0,30,,0,0,25,Rena Celine Precis Opera Chisato
+687,0x2af,Plate Mail,armor,8,,13400,0,90,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+688,0x2b0,Silver Robe,armor,8,,10000,0,70,,0,0,25,Rena Celine Leon
+689,0x2b1,Flying Hawk Robes,armor,8,,80000,0,170,special effect 227,227,0,100,Rena Celine Leon
+690,0x2b2,Mirage Robe,armor,8,,200000,0,230,special effect 117,117,0,100,Rena Celine Leon
+691,0x2b3,Mithril Coat,armor,8,,15000,0,88,special effect 228,228,0,25,Rena Celine Bowman Precis Leon Opera Ernest Noel Chisato
+692,0x2b4,Holy Cloak,armor,8,,30000,0,100,,0,0,25,Rena Celine Leon
+693,0x2b5,Mithril Dress,armor,8,,120000,0,20,,0,0,100,Rena Celine Precis Opera Chisato
+694,0x2b6,Star Cloak,armor,8,,120000,0,220,,0,0,100,Rena Celine Leon
+695,0x2b7,Jeanne's Armor,armor,8,,100000,0,180,,0,0,50,Precis Opera Chisato
+696,0x2b8,Steel Armor,armor,8,,52000,0,150,,0,0,25,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+697,0x2b9,Battle Suit,armor,8,,20000000,0,500,,0,0,100,all
+698,0x2ba,Wizard's Mail,armor,8,,240000,0,200,,0,0,40,Rena Celine Leon Noel
+699,0x2bb,Ishtar's Robe,armor,8,,290000,0,230,,0,0,100,Rena Celine Leon
+700,0x2bc,Core Plate,armor,8,,35000,0,100,special effect 229,229,0,100,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+701,0x2bd,Mithril Mesh,armor,8,,250000,0,200,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+702,0x2be,Barrier Armor,armor,8,,24000,0,92,,0,0,50,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+703,0x2bf,Sylvan Mail,armor,8,,200000,0,240,special effect 117,117,0,100,Precis Opera Chisato
+704,0x2c0,Valiant Mail,armor,8,,5000000,0,500,special effect 230,230,0,100,Claude Bowman Dias Ashton Leon Ernest Noel
+705,0x2c1,Duel Suit,armor,8,,180000,0,300,special effect 117,117,0,100,Claude Dias Ashton
+706,0x2c2,Reflective Armor,armor,8,,220000,10,290,special effect 133,133,0,100,Claude Bowman Dias Precis Ashton Opera Noel Chisato
+707,0x2c3,Chaos Mail,armor,8,,1999,9,99,special effect 245,245,0,100,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+708,0x2c4,Bloody Armor,armor,8,,1444,44,144,special effect 231,231,0,100,Claude Bowman Dias Ashton Opera Ernest Noel Chisato
+709,0x2c5,Wooden Shield,shield,9,,120,0,2,,0,0,25,Claude Dias Precis Ernest
+710,0x2c6,Round Shield,shield,9,,500,0,4,,0,0,25,Claude Dias Precis Ernest
+711,0x2c7,Knight's Shield,shield,9,,1000,0,10,,0,0,25,Claude Dias
+712,0x2c8,Odd Shield,shield,9,,400,0,5,,0,0,25,Claude Dias Precis
+713,0x2c9,Odd Gauntlets,shield,9,,50,0,0,,0,0,25,Claude Dias Precis
+714,0x2ca,Buckler,shield,9,,650,0,1,,0,0,25,all
+715,0x2cb,Fine Shield,shield,9,,6800,0,15,,0,0,25,Claude Dias
+716,0x2cc,Rune Buckler,shield,9,,9200,0,5,special effect 116,116,0,60,Rena Celine Leon Noel
+717,0x2cd,Crestier Guard,shield,9,,36600,0,20,special effect 232,232,0,25,Claude Dias Precis Ernest
+718,0x2ce,The Armband of Kali,shield,9,,198500,70,30,,0,0,100,Rena Celine Precis Opera Chisato
+719,0x2cf,Star Guard,shield,9,,262000,0,33,special effect 233,233,0,100,Claude Bowman Dias Precis Ashton Opera Ernest Chisato
+720,0x2d0,Rare Gauntlets,shield,9,,105000,0,20,,0,0,25,all
+721,0x2d1,Jeanne's Shield,shield,9,,200000,0,30,special effect 116,116,0,100,Precis Chisato
+722,0x2d2,Algol,shield,9,,180000,0,40,special effect 234,234,0,100,Precis Chisato
+723,0x2d3,Mithril Shield,shield,9,,199000,0,31,special effect 116,116,0,25,Claude Dias Precis Ernest
+724,0x2d4,Valiant Guard,shield,9,,4900000,0,120,special effect 233,233,0,100,Claude Bowman Dias Ashton Leon Ernest Noel
+725,0x2d5,Valkyrie Guard,shield,9,,4990000,0,100,special effect 232,232,0,100,Rena Celine Precis Opera Chisato
+726,0x2d6,Barrier Shield,shield,9,,19000,0,24,,0,0,30,Claude Dias Precis Ernest
+727,0x2d7,Pallas Athena,shield,9,,260000,0,20,,0,0,100,Claude Dias Precis Ernest
+728,0x2d8,Sandals,footwear,11,,10,0,1,,0,0,25,all
+729,0x2d9,Leather Greaves,footwear,11,,50,0,5,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+730,0x2da,Boots,footwear,11,,40,0,3,,0,0,25,all
+731,0x2db,Secret Boots,footwear,11,,80,0,3,,0,0,25,all
+732,0x2dc,Suede Boots,footwear,11,,200,0,5,,0,0,25,all
+733,0x2dd,Iron Greaves,footwear,11,,110,0,10,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+734,0x2de,Original Boots,footwear,11,,150,0,3,,0,0,25,Rena Celine Precis Opera Chisato
+735,0x2df,Leather Boots,footwear,11,,105,0,6,,0,0,25,all
+736,0x2e0,Plate Greaves,footwear,11,,800,0,18,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+737,0x2e1,High Heels,footwear,11,,120,2,5,,0,0,25,Celine Opera Chisato
+738,0x2e2,High-laced Shoes,footwear,11,,4100,0,25,,0,0,25,Rena Celine Leon
+739,0x2e3,Silver Greaves,footwear,11,,5200,0,30,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+740,0x2e4,Odd Shoes,footwear,11,,50,0,1,,0,0,25,all
+741,0x2e5,Pin Heels,footwear,11,,300,6,3,,0,0,25,Celine Opera Chisato
+742,0x2e6,Santa's Boots,accessory,12,,10000000,0,0,,0,0,25,all
+743,0x2e7,Mud Boots,footwear,11,,0,0,0,,0,0,25,all
+744,0x2e8,Valkyrie Boots,footwear,11,,3000000,0,250,special effect 110,110,0,100,Rena Celine Precis Opera Chisato
+745,0x2e9,Steel-toed Boots,footwear,11,,3200,0,8,,0,0,25,all
+746,0x2ea,Rune Shoes,footwear,11,,30000,0,20,special effect 236,236,0,100,Rena Celine Leon Noel
+747,0x2eb,Mithril Greaves,footwear,11,,76000,0,45,,0,0,25,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+748,0x2ec,Witch's Boots,footwear,11,,40000,0,34,,0,0,90,Rena Celine Leon
+749,0x2ed,Valiant Boots,footwear,11,,2200000,0,260,special effect 110,110,0,25,Claude Bowman Dias Ashton Leon Ernest Noel
+750,0x2ee,Sylvan Boots,footwear,11,,110000,0,60,,0,0,100,Precis Opera Chisato
+751,0x2ef,Neo Greaves,footwear,11,,18400,0,20,,0,0,50,Claude Bowman Dias Precis Ashton Opera Ernest Noel Chisato
+752,0x2f0,Star Greaves,footwear,11,,80000,0,60,,0,0,100,Claude Bowman Dias Precis Ashton Opera Ernest Chisato
+753,0x2f1,Neumann Boots,footwear,11,,2980,0,4,special effect 110,110,0,80,Precis
+754,0x2f2,Cinderella Glass,usable item,0,field,1200,0,0,,0,0,25,
+755,0x2f3,Aquaberry,usable item,0,"battle, field",105,0,0,special effect 93,93,10,25,
+756,0x2f4,Blackberry,usable item,0,"battle, field",200,0,0,restores MP (%),3,22,25,
+757,0x2f5,Blueberry,usable item,0,"battle, field",60,0,0,restores HP (%),1,22,25,
+758,0x2f6,Strawberry Jam,usable item,0,field,50,0,0,restores HP (%),1,10,25,
+759,0x2f7,Raspberry Jam,usable item,0,field,60,0,0,restores HP (%),1,11,25,
+760,0x2f8,Apple Jam,usable item,0,field,70,0,0,restores HP (%),1,12,25,
+761,0x2f9,Aloe Jam,usable item,0,field,80,0,0,special effect 94,94,0,25,
+762,0x2fa,Missing Number,item,0,,0,0,0,,0,0,25,
+763,0x2fb,Tri-emblem,accessory,12,,5000000,200,50,,0,0,1,all
+764,0x2fc,Rice Croquettes,usable item,0,field,120,0,0,restores HP (%),1,12,25,
+765,0x2fd,Soy Milk,usable item,0,field,80,0,0,restores MP (%),3,10,25,
+766,0x2fe,Smelly Rice Cakes,usable item,0,field,10,0,0,restores HP (%),1,1,25,
+767,0x2ff,Quick Pickles,usable item,0,field,20,0,0,restores HP (%),1,5,25,
+768,0x300,Rice-bran Pickles,usable item,0,field,30,0,0,restores HP (%),1,6,25,
+769,0x301,Carrot Ice Cream,usable item,0,field,40,0,0,restores HP (%),1,12,25,
+770,0x302,Cure Stone,usable item,0,"battle, field",450,0,0,special effect 98,98,0,25,
+771,0x303,Mischief,accessory,12,,1200,0,0,,0,0,25,all
+772,0x304,Trickster,accessory,12,,2200,0,0,,0,0,25,all
+773,0x305,Fortune,accessory,12,,3200,0,0,,0,0,25,all
+774,0x306,Rotten Sashimi,usable item,0,field,1,0,0,special effect 39,39,0,25,
+775,0x307,Go-home Frog,usable item,0,field,300001,0,0,special effect 96,96,0,25,
+776,0x308,?HERB,item,0,,0,0,0,,0,0,0,
+777,0x309,?HERB,item,0,,0,0,0,,0,0,0,
+778,0x30a,?HERB,item,0,,0,0,0,,0,0,0,
+779,0x30b,?HERB,item,0,,0,0,0,,0,0,0,
+780,0x30c,?HERB,item,0,,0,0,0,,0,0,0,
+781,0x30d,?HERB,item,0,,0,0,0,,0,0,0,
+782,0x30e,Purity Leaf,item,0,,1500,0,0,,0,0,50,
+783,0x30f,Juicy Beef,item,0,,3000,0,0,,0,0,50,
+784,0x310,Prime Tuna,item,0,,4000,0,0,,0,0,50,
+785,0x311,Ganze Sea Urchin,item,0,,3200,0,0,,0,0,50,
+786,0x312,Magical Rice,item,0,,900,0,0,,0,0,50,
+787,0x313,Creamy Cheese,item,0,,300,0,0,,0,0,50,
+788,0x314,Sweet Fruit,item,0,,250,0,0,,0,0,50,
+789,0x315,Slippery Slime,item,0,,10,0,0,,0,0,10,
+790,0x316,Jiggly Slime,item,0,,10,0,0,,0,0,10,
+791,0x317,Milky Potage,usable item,0,field,2000,0,0,restores MP (%),3,80,100,
+792,0x318,Special Stir-fry,usable item,0,field,4000,0,0,"restores MP (%), whole party",4,70,100,
+793,0x319,Magical Salad,usable item,0,field,5200,0,0,restores MP (%),3,100,100,
+794,0x31a,Golden Stew,usable item,0,field,12000,0,0,"restores MP (%), whole party",4,90,100,
+795,0x31b,Fine Saute,usable item,0,field,9700,0,0,restores HP (%),1,70,100,
+796,0x31c,Exciting Tenderloin,usable item,0,field,6500,0,0,"restores HP (%), whole party",2,70,100,
+797,0x31d,Prime Sirloin,usable item,0,field,24000,0,0,"restores HP (%), whole party",2,80,100,
+798,0x31e,Inviting Filet,usable item,0,field,20000,0,0,restores HP (%),1,100,100,
+799,0x31f,Tuna Skewers,usable item,0,field,20000,0,0,"restores MP (%), whole party",4,70,100,
+800,0x320,Prime Tuna Steak,usable item,0,field,18000,0,0,restores HP (%),1,80,100,
+801,0x321,Fish of Happiness,usable item,0,field,12000,0,0,restores HP (%),1,70,100,
+802,0x322,Special Tuna,usable item,0,field,30000,0,0,restores HP and MP (%),5,70,100,
+803,0x323,Ichigoni,usable item,0,field,5000,0,0,restores MP (%),3,90,100,
+804,0x324,Ichigoni Supreme,usable item,0,field,15000,0,0,"restores MP (%), whole party",4,90,100,
+805,0x325,Prince's Zoni Stew,usable item,0,field,7700,0,0,restores HP and MP (%),5,60,100,
+806,0x326,Sea Urchin on Rice,usable item,0,field,26000,0,0,restores HP and MP (%),5,100,100,
+807,0x327,Deluxe Doria,usable item,0,field,8000,0,0,restores HP (%),1,88,100,
+808,0x328,Miracle Fried Rice,usable item,0,field,7200,0,0,restores HP (%),1,75,100,
+809,0x329,Risotto Ecstasy,usable item,0,field,20000,0,0,restores HP and MP (%),5,80,100,
+810,0x32a,Heavenly Doria,usable item,0,field,30000,0,0,restores HP and MP (%),5,100,100,
+811,0x32b,Au Gratin Climax,usable item,0,field,10000,0,0,restores HP (%),1,68,100,
+812,0x32c,Cheese Pizza,usable item,0,field,4000,0,0,restores HP (%),1,68,100,
+813,0x32d,Assorted Cheeses,usable item,0,field,8000,0,0,restores HP (%),1,70,100,
+814,0x32e,Gorgonzola,usable item,0,field,19000,0,0,restores HP (%),1,78,100,
+815,0x32f,Gateau Marjolaine,usable item,0,field,5000,0,0,restores HP (%),1,100,100,
+816,0x330,1-up Pudding,usable item,0,field,30000,0,0,"revives, restores HP (%)",6,100,100,
+817,0x331,Beautiful Ice Cream,usable item,0,field,28000,0,0,restores HP and MP (%),5,80,100,
+818,0x332,Ginger Ale,usable item,0,field,80000,0,0,restores HP and MP (%),5,100,100,
+819,0x333,Genie's Veggie Soup,usable item,0,field,40000,0,0,"restores MP (%), whole party",4,90,100,
+820,0x334,Genie's Steak,usable item,0,field,50000,0,0,"restores HP (%), whole party",2,90,100,
+821,0x335,Energy Drink,usable item,0,field,30000,0,0,special effect 67,67,100,100,
+822,0x336,Yarma Cooking Set,item,0,,1000,0,0,,0,0,100,
+823,0x337,Missing Number,item,0,,100,0,0,,0,0,0,
+824,0x338,?MINERAL,item,0,,0,0,0,,0,0,0,
+825,0x339,?MINERAL,item,0,,0,0,0,,0,0,0,
+826,0x33a,?MINERAL,item,0,,0,0,0,,0,0,0,
+827,0x33b,?MINERAL,item,0,,0,0,0,,0,0,0,
+828,0x33c,?MINERAL,item,0,,0,0,0,,0,0,0,
+829,0x33d,?MINERAL,item,0,,0,0,0,,0,0,0,
+830,0x33e,?MINERAL,item,0,,0,0,0,,0,0,0,
+831,0x33f,?MINERAL,item,0,,0,0,0,,0,0,0,
+832,0x340,?MINERAL,item,0,,0,0,0,,0,0,0,
+833,0x341,?MINERAL,item,0,,0,0,0,,0,0,0,
+834,0x342,?WEAPON,item,0,,0,0,0,,0,0,0,
+835,0x343,?WEAPON,item,0,,0,0,0,,0,0,0,
+836,0x344,?WEAPON,item,0,,0,0,0,,0,0,0,
+837,0x345,?WEAPON,item,0,,0,0,0,,0,0,0,
+838,0x346,?WEAPON,item,0,,0,0,0,,0,0,0,
+839,0x347,?WEAPON,item,0,,0,0,0,,0,0,0,
+840,0x348,?WEAPON,item,0,,0,0,0,,0,0,0,
+841,0x349,?WEAPON,item,0,,0,0,0,,0,0,0,
+842,0x34a,?WEAPON,item,0,,0,0,0,,0,0,0,
+843,0x34b,?WEAPON,item,0,,0,0,0,,0,0,0,
+844,0x34c,?WEAPON,item,0,,0,0,0,,0,0,0,
+845,0x34d,?WEAPON,item,0,,0,0,0,,0,0,0,
+846,0x34e,?WEAPON,item,0,,0,0,0,,0,0,0,
+847,0x34f,?WEAPON,item,0,,0,0,0,,0,0,0,
+848,0x350,?WEAPON,item,0,,0,0,0,,0,0,0,
+849,0x351,?WEAPON,item,0,,0,0,0,,0,0,0,
+850,0x352,?WEAPON,item,0,,0,0,0,,0,0,0,
+851,0x353,?WEAPON,item,0,,0,0,0,,0,0,0,
+852,0x354,?WEAPON,item,0,,0,0,0,,0,0,0,
+853,0x355,?WEAPON,item,0,,0,0,0,,0,0,0,
+854,0x356,?WEAPON,item,0,,0,0,0,,0,0,0,
+855,0x357,?WEAPON,item,0,,0,0,0,,0,0,0,
+856,0x358,?WEAPON,item,0,,0,0,0,,0,0,0,
+857,0x359,?WEAPON,item,0,,0,0,0,,0,0,0,
+858,0x35a,?WEAPON,item,0,,0,0,0,,0,0,0,
+859,0x35b,?WEAPON,item,0,,0,0,0,,0,0,0,
+860,0x35c,?WEAPON,item,0,,0,0,0,,0,0,0,
+861,0x35d,?WEAPON,item,0,,0,0,0,,0,0,0,
+862,0x35e,?WEAPON,item,0,,0,0,0,,0,0,0,
+863,0x35f,?WEAPON,item,0,,0,0,0,,0,0,0,
+864,0x360,?WEAPON,item,0,,0,0,0,,0,0,0,
+865,0x361,?WEAPON,item,0,,0,0,0,,0,0,0,
+866,0x362,?WEAPON,item,0,,0,0,0,,0,0,0,
+867,0x363,?WEAPON,item,0,,0,0,0,,0,0,0,
+868,0x364,?WEAPON,item,0,,0,0,0,,0,0,0,
+869,0x365,?WEAPON,item,0,,0,0,0,,0,0,0,
+870,0x366,?WEAPON,item,0,,0,0,0,,0,0,0,
+871,0x367,?WEAPON,item,0,,0,0,0,,0,0,0,
+872,0x368,?WEAPON,item,0,,0,0,0,,0,0,0,
+873,0x369,?WEAPON,item,0,,0,0,0,,0,0,0,
+874,0x36a,?WEAPON,item,0,,0,0,0,,0,0,0,
+875,0x36b,?WEAPON,item,0,,0,0,0,,0,0,0,
+876,0x36c,?WEAPON,item,0,,0,0,0,,0,0,0,
+877,0x36d,?GUARD,item,0,,0,0,0,,0,0,0,
+878,0x36e,?GUARD,item,0,,0,0,0,,0,0,0,
+879,0x36f,?GUARD,item,0,,0,0,0,,0,0,0,
+880,0x370,?GUARD,item,0,,0,0,0,,0,0,0,
+881,0x371,?GUARD,item,0,,0,0,0,,0,0,0,
+882,0x372,?GUARD,item,0,,0,0,0,,0,0,0,
+883,0x373,?GUARD,item,0,,0,0,0,,0,0,0,
+884,0x374,?GUARD,item,0,,0,0,0,,0,0,0,
+885,0x375,?GUARD,item,0,,0,0,0,,0,0,0,
+886,0x376,?GUARD,item,0,,0,0,0,,0,0,0,
+887,0x377,?GUARD,item,0,,0,0,0,,0,0,0,
+888,0x378,?GUARD,item,0,,0,0,0,,0,0,0,
+889,0x379,?GUARD,item,0,,0,0,0,,0,0,0,
+890,0x37a,?GUARD,item,0,,0,0,0,,0,0,0,
+891,0x37b,?GUARD,item,0,,0,0,0,,0,0,0,
+892,0x37c,?GUARD,item,0,,0,0,0,,0,0,0,
+893,0x37d,?GUARD,item,0,,0,0,0,,0,0,0,
+894,0x37e,?GUARD,item,0,,0,0,0,,0,0,0,
+895,0x37f,?GUARD,item,0,,0,0,0,,0,0,0,
+896,0x380,?GUARD,item,0,,0,0,0,,0,0,0,
+897,0x381,?GUARD,item,0,,0,0,0,,0,0,0,
+898,0x382,?GUARD,item,0,,0,0,0,,0,0,0,
+899,0x383,?GUARD,item,0,,0,0,0,,0,0,0,
+900,0x384,?GUARD,item,0,,0,0,0,,0,0,0,
+901,0x385,?GUARD,item,0,,0,0,0,,0,0,0,
+902,0x386,?GUARD,item,0,,0,0,0,,0,0,0,
+903,0x387,?GUARD,item,0,,0,0,0,,0,0,0,
+904,0x388,?GUARD,item,0,,0,0,0,,0,0,0,
+905,0x389,?GUARD,item,0,,0,0,0,,0,0,0,
+906,0x38a,?GUARD,item,0,,0,0,0,,0,0,0,
+907,0x38b,?GUARD,item,0,,0,0,0,,0,0,0,
+908,0x38c,?JEWELRY,item,0,,0,0,0,,0,0,0,
+909,0x38d,?JEWELRY,item,0,,0,0,0,,0,0,0,
+910,0x38e,?JEWELRY,item,0,,0,0,0,,0,0,0,
+911,0x38f,?JEWELRY,item,0,,0,0,0,,0,0,0,
+912,0x390,?JEWELRY,item,0,,0,0,0,,0,0,0,
+913,0x391,?JEWELRY,item,0,,0,0,0,,0,0,0,
+914,0x392,?JEWELRY,item,0,,0,0,0,,0,0,0,
+915,0x393,?JEWELRY,item,0,,0,0,0,,0,0,0,
+916,0x394,?JEWELRY,item,0,,0,0,0,,0,0,0,
+917,0x395,?JEWELRY,item,0,,0,0,0,,0,0,0,
+918,0x396,?JEWELRY,item,0,,0,0,0,,0,0,0,
+919,0x397,?JEWELRY,item,0,,0,0,0,,0,0,0,
+920,0x398,?JEWELRY,item,0,,0,0,0,,0,0,0,
+921,0x399,?JEWELRY,item,0,,0,0,0,,0,0,0,
+922,0x39a,?JEWELRY,item,0,,0,0,0,,0,0,0,
+923,0x39b,?JEWELRY,item,0,,0,0,0,,0,0,0,
+924,0x39c,?JEWELRY,item,0,,0,0,0,,0,0,0,
+925,0x39d,?JEWELRY,item,0,,0,0,0,,0,0,0,
+926,0x39e,?JEWELRY,item,0,,0,0,0,,0,0,0,
+927,0x39f,?JEWELRY,item,0,,0,0,0,,0,0,0,
+928,0x3a0,?JEWELRY,item,0,,0,0,0,,0,0,0,
+929,0x3a1,?JEWELRY,item,0,,0,0,0,,0,0,0,
+930,0x3a2,?JEWELRY,item,0,,0,0,0,,0,0,0,
+931,0x3a3,?JEWELRY,item,0,,0,0,0,,0,0,0,
+932,0x3a4,?JEWELRY,item,0,,0,0,0,,0,0,0,
+933,0x3a5,?JEWELRY,item,0,,0,0,0,,0,0,0,
+934,0x3a6,?JEWELRY,item,0,,0,0,0,,0,0,0,
+935,0x3a7,?JEWELRY,item,0,,0,0,0,,0,0,0,
+936,0x3a8,?JEWELRY,item,0,,0,0,0,,0,0,0,
+937,0x3a9,?JEWELRY,item,0,,0,0,0,,0,0,0,
+938,0x3aa,?JEWELRY,item,0,,0,0,0,,0,0,0,
+939,0x3ab,?JEWELRY,item,0,,0,0,0,,0,0,0,
+940,0x3ac,?JEWELRY,item,0,,0,0,0,,0,0,0,
+941,0x3ad,?JEWELRY,item,0,,0,0,0,,0,0,0,
+942,0x3ae,?JEWELRY,item,0,,0,0,0,,0,0,0,
+943,0x3af,?JEWELRY,item,0,,0,0,0,,0,0,0,
+944,0x3b0,?JEWELRY,item,0,,0,0,0,,0,0,0,
+945,0x3b1,?JEWELRY,item,0,,0,0,0,,0,0,0,
+946,0x3b2,?JEWELRY,item,0,,0,0,0,,0,0,0,
+947,0x3b3,?JEWELRY,item,0,,0,0,0,,0,0,0,
+948,0x3b4,?JEWELRY,item,0,,0,0,0,,0,0,0,
+949,0x3b5,?JEWELRY,item,0,,0,0,0,,0,0,0,
+950,0x3b6,?JEWELRY,item,0,,0,0,0,,0,0,0,
+951,0x3b7,?ITEM,item,0,,0,0,0,,0,0,0,
+952,0x3b8,?ITEM,item,0,,0,0,0,,0,0,0,
+953,0x3b9,?ITEM,item,0,,0,0,0,,0,0,0,
+954,0x3ba,?ITEM,item,0,,0,0,0,,0,0,0,
+955,0x3bb,?ITEM,item,0,,0,0,0,,0,0,0,
+956,0x3bc,?BOOK,item,0,,0,0,0,,0,0,0,
+957,0x3bd,?BOOK,item,0,,0,0,0,,0,0,0,
+958,0x3be,?BOOK,item,0,,0,0,0,,0,0,0,
+959,0x3bf,?BOOK,item,0,,0,0,0,,0,0,0,
+960,0x3c0,?BOOK,item,0,,0,0,0,,0,0,0,
+961,0x3c1,?BOOK,item,0,,0,0,0,,0,0,0,
+962,0x3c2,?FOOD,item,0,,0,0,0,,0,0,0,
+963,0x3c3,?FOOD,item,0,,0,0,0,,0,0,0,
+964,0x3c4,?FOOD,item,0,,0,0,0,,0,0,0,
+965,0x3c5,?FOOD,item,0,,0,0,0,,0,0,0,
+966,0x3c6,?FOOD,item,0,,0,0,0,,0,0,0,
+967,0x3c7,?FOOD,item,0,,0,0,0,,0,0,0,
+968,0x3c8,?FOOD,item,0,,0,0,0,,0,0,0,
+969,0x3c9,?FOOD,item,0,,0,0,0,,0,0,0,
+970,0x3ca,?FOOD,item,0,,0,0,0,,0,0,0,
+971,0x3cb,?FOOD,item,0,,0,0,0,,0,0,0,
+972,0x3cc,?FOOD,item,0,,0,0,0,,0,0,0,
+973,0x3cd,?FOOD,item,0,,0,0,0,,0,0,0,
+974,0x3ce,?FOOD,item,0,,0,0,0,,0,0,0,
+975,0x3cf,?FOOD,item,0,,0,0,0,,0,0,0,
+976,0x3d0,?FOOD,item,0,,0,0,0,,0,0,0,
+977,0x3d1,?FOOD,item,0,,0,0,0,,0,0,0,
+978,0x3d2,?FOOD,item,0,,0,0,0,,0,0,0,
+979,0x3d3,?FOOD,item,0,,0,0,0,,0,0,0,
+980,0x3d4,?FOOD,item,0,,0,0,0,,0,0,0,
+981,0x3d5,?FOOD,item,0,,0,0,0,,0,0,0,
+982,0x3d6,?FOOD,item,0,,0,0,0,,0,0,0,
+983,0x3d7,?FOOD,item,0,,0,0,0,,0,0,0,
+984,0x3d8,?FOOD,item,0,,0,0,0,,0,0,0,
+985,0x3d9,?FOOD,item,0,,0,0,0,,0,0,0,
+986,0x3da,?FOOD,item,0,,0,0,0,,0,0,0,
+987,0x3db,?FOOD,item,0,,0,0,0,,0,0,0,
+988,0x3dc,?FOOD,item,0,,0,0,0,,0,0,0,
+989,0x3dd,?FOOD,item,0,,0,0,0,,0,0,0,
+990,0x3de,?FOOD,item,0,,0,0,0,,0,0,0,
+991,0x3df,?FOOD,item,0,,0,0,0,,0,0,0,
+992,0x3e0,?FOOD,item,0,,0,0,0,,0,0,0,
+993,0x3e1,?FOOD,item,0,,0,0,0,,0,0,0,
+994,0x3e2,?FOOD,item,0,,0,0,0,,0,0,0,
+995,0x3e3,?FOOD,item,0,,0,0,0,,0,0,0,
+996,0x3e4,?FOOD,item,0,,0,0,0,,0,0,0,
+997,0x3e5,?FOOD,item,0,,0,0,0,,0,0,0,
+998,0x3e6,?FOOD,item,0,,0,0,0,,0,0,0,
+999,0x3e7,?FOOD,item,0,,0,0,0,,0,0,0,
+1000,0x3e8,?FOOD,item,0,,0,0,0,,0,0,0,
+1001,0x3e9,?FOOD,item,0,,0,0,0,,0,0,0,
+1002,0x3ea,?FOOD,item,0,,0,0,0,,0,0,0,
+1003,0x3eb,?FOOD,item,0,,0,0,0,,0,0,0,
+1004,0x3ec,?FOOD,item,0,,0,0,0,,0,0,0,
+1005,0x3ed,?FOOD,item,0,,0,0,0,,0,0,0,
+1006,0x3ee,?FOOD,item,0,,0,0,0,,0,0,0,
+1007,0x3ef,?FOOD,item,0,,0,0,0,,0,0,0,
+1008,0x3f0,?FOOD,item,0,,0,0,0,,0,0,0,
+1009,0x3f1,?FOOD,item,0,,0,0,0,,0,0,0,
+1010,0x3f2,?FOOD,item,0,,0,0,0,,0,0,0,
+1011,0x3f3,?FOOD,item,0,,0,0,0,,0,0,0,
+1012,0x3f4,?FOOD,item,0,,0,0,0,,0,0,0,
+1013,0x3f5,?FOOD,item,0,,0,0,0,,0,0,0,
+1014,0x3f6,?FOOD,item,0,,0,0,0,,0,0,0,
+1015,0x3f7,?FOOD,item,0,,0,0,0,,0,0,0,
+1016,0x3f8,?FOOD,item,0,,0,0,0,,0,0,0,
+1017,0x3f9,?FOOD,item,0,,0,0,0,,0,0,0,
+1018,0x3fa,?FOOD,item,0,,0,0,0,,0,0,0,
+1019,0x3fb,?FOOD,item,0,,0,0,0,,0,0,0,
+1020,0x3fc,?MACHINE,item,0,,0,0,0,,0,0,0,
+1021,0x3fd,?MACHINE,item,0,,0,0,0,,0,0,0,
+1022,0x3fe,?MACHINE,item,0,,0,0,0,,0,0,0,
+1023,0x3ff,?MACHINE,item,0,,0,0,0,,0,0,0,

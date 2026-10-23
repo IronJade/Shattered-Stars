@@ -17,6 +17,7 @@
 #include "launcher/title_art.h"
 #include "platform/window.h"
 #include "psx/memory_card.h"
+#include "runtime/region.h"
 
 namespace ss::setup {
 namespace {
@@ -37,8 +38,13 @@ constexpr const char* kPageNames[] = {"Discs", "Display", "Sound", "Controls", "
 constexpr const char* kPageIds[] = {"discs", "display", "sound", "controls", "memcards", "mods", "archipelago"};
 static_assert(std::size(kPageNames) == static_cast<size_t>(Page::kCount));
 
-// The North American game's save names on a card: "BASCUS-94421S02-Snn".
-constexpr const char* kSavePrefix = "BASCUS-94421S02";
+// The game's save names on a card: "<product code>S02-Snn", the product code of each
+// release (runtime/region.h: "BASCUS-94421" North America, "BASCES-02159" Europe, ...).
+bool is_game_save(const std::string& name) {
+  for (const ss::region::Profile& p : ss::region::profiles())
+    if (name.rfind(std::string(p.product) + "S02", 0) == 0) return true;
+  return false;
+}
 
 float em() { return ImGui::GetFontSize(); }
 
@@ -198,7 +204,7 @@ const App::CardInfo& App::card_info(const std::string& path) {
     } else {
       info.kind = gme ? CardInfo::kDexDrive : CardInfo::kReady;
       for (const auto& f : card.files())
-        if (f.name.rfind(kSavePrefix, 0) == 0) ++info.saves;
+        if (is_game_save(f.name)) ++info.saves;
       info.free_blocks = card.free_blocks();
     }
   }
@@ -208,6 +214,9 @@ const App::CardInfo& App::card_info(const std::string& path) {
 App::Level App::disc_level(int n) {
   const std::string& path = n == 1 ? settings_.disc1 : settings_.disc2;
   const DiscKind kind = disc_info(path).kind;
+  // Disc 2 of another release than disc 1's: the game doesn't use it.
+  if (n == 2 && !launcher::describe_pair(disc_info(settings_.disc1), disc_info(settings_.disc2)).empty())
+    return Level::kError;
   if (kind == (n == 1 ? DiscKind::kDisc1 : DiscKind::kDisc2)) return Level::kOk;
   if (kind == DiscKind::kNone) return n == 1 ? Level::kWarning : Level::kInfo;
   return n == 1 ? Level::kError : Level::kWarning;
@@ -484,8 +493,10 @@ void App::apply_dialog_results() {
         }
         (wanted == 1 ? settings_.disc1 : settings_.disc2) = chosen;
         notice_.clear();
-        // Disc 1 chosen: disc 2 is often right beside it.
-        if (wanted == 1 && kind == DiscKind::kDisc1 && disc_info(settings_.disc2).kind != DiscKind::kDisc2) {
+        // Disc 1 chosen: disc 2 (of the same release) is often right beside it.
+        const bool disc2_fits = disc_info(settings_.disc2).kind == DiscKind::kDisc2 &&
+                                launcher::describe_pair(disc_info(chosen), disc_info(settings_.disc2)).empty();
+        if (wanted == 1 && kind == DiscKind::kDisc1 && !disc2_fits) {
           const std::string disc2 = launcher::find_disc2_near(launcher::utf8_path(chosen));
           if (!disc2.empty()) {
             settings_.disc2 = disc2;
@@ -1058,7 +1069,8 @@ void App::disc_field(int n) {
   ImGui::BeginDisabled(dialog_open_);
   if (ImGui::Button(browse_label)) browse(n == 1 ? Target::kDisc1 : Target::kDisc2);
   ImGui::EndDisabled();
-  status_line(disc_level(n), launcher::describe(disc_info(path), n));
+  const std::string pair = n == 2 ? launcher::describe_pair(disc_info(settings_.disc1), disc_info(settings_.disc2)) : "";
+  status_line(disc_level(n), pair.empty() ? launcher::describe(disc_info(path), n) : pair);
   ImGui::PopID();
 }
 
@@ -1076,7 +1088,7 @@ void App::page_discs() {
     ImGui::Dummy(ImVec2(0, em() * 0.2f));
   }
   note("Shattered Stars plays Star Ocean: The Second Story from images of your own discs, North American "
-       "release: cue sheets with their bin files, or iso / img images.");
+       "or European release (both discs the same one): cue sheets with their bin files, or iso / img images.");
   disc_field(1);
   disc_field(2);
   if (disc_info(settings_.disc2).kind == DiscKind::kNone)

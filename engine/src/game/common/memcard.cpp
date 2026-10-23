@@ -7,13 +7,17 @@
 
 #include "game/boot/system.h"
 #include "runtime/libcard.h"
+#include "runtime/region.h"
 
 namespace ss::game {
 namespace {
 
 using namespace psyq;
 
-constexpr const char* kSaveName = "BASCUS-94421S02-S";  // title 0x8004dea0
+// "BASCUS-94421S02-S" (title 0x8004dea0): the release's product code (runtime/region.h:
+// Europe "BASCES-02159", France "BESCES-02160", ...), so a card stays readable by that
+// release's console.
+std::string save_name() { return std::string(region::current().product) + "S02-S"; }
 
 // "bu" "%1d" "0:" (0x8004b760..68) [+ "BASCUS-94421S02-S" "%02d" (0x8004b76c)]
 std::string device_path(const MemcardSlot* s) {
@@ -24,7 +28,7 @@ std::string device_path(const MemcardSlot* s) {
 
 std::string save_path(const MemcardSlot* s, int number) {
   char name[48];
-  std::snprintf(name, sizeof name, "%s%s%02d", device_path(s).c_str(), kSaveName, number);
+  std::snprintf(name, sizeof name, "%s%s%02d", device_path(s).c_str(), save_name().c_str(), number);
   return name;
 }
 
@@ -72,7 +76,7 @@ void scan_directory(MemcardSlot* s) {
 // title 0x80037b60: maps this game's saves to the fifteen positions; positions with
 // no save are either free (while blocks remain) or filled by a later save.
 void scan_saves(MemcardSlot* s) {
-  const std::string pattern = device_path(s) + kSaveName + "*";  // 0x8004b804
+  const std::string pattern = device_path(s) + save_name() + "*";  // 0x8004b804
   DIRENTRY entries[16];
   s16 count = 0;
   if (firstfile(pattern.c_str(), &entries[0]) == &entries[0]) {
@@ -81,7 +85,7 @@ void scan_saves(MemcardSlot* s) {
   }
   s->save_count = count;
   for (int i = 0; i < 15; ++i) s->save_map[i] = static_cast<s16>(-(i + 1));
-  const size_t prefix = std::strlen(kSaveName);
+  const size_t prefix = save_name().size();
   for (int i = 0; i < count; ++i) {
     const int n = (entries[i].name[prefix] - '0') * 10 + (entries[i].name[prefix + 1] - '0');
     if (n >= 1 && n <= 15) s->save_map[n - 1] = static_cast<s16>(n);

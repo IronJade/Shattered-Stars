@@ -40,6 +40,15 @@ assets outside `docs/images/`). The patch lines are the four commands `script`, 
 `tools/so2_mod.py` from your own disc, which fills in the value each line expects to
 find. Limits: 32 patch files, 256 KiB each, 1 MiB per package.
 
+To find the numbers, use the modder's reference: `docs/modding/reference/` (CSV tables of
+every item, map, door, chest, shop and enemy type with its ID and name, made by
+`tools/mod_reference.py`) and the wiki's
+[Modding Reference](https://github.com/IronJade/Shattered-Stars/wiki/Modding-Reference).
+`so2_mod.py` also takes names (`--to "Cross: Skill Guild"`, `--item "Blueberry"`) and
+searches them (`so2_mod.py find DISC.cue TEXT`); `so2_mod.py reference DISC.cue --out DIR`
+builds a local, searchable page with item descriptions and map pictures from your own disc,
+for you only (it holds the game's text: don't commit or share it).
+
 `mod.json`:
 
 ```json

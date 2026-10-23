@@ -348,8 +348,8 @@ WorldGlobals& world() { return g_world; }
 WorldBg* world_bg() { return g_bg.get(); }
 
 const u8* world_ovl_data(u32 address) {
-  // program_data serves images placed at 0x8002f810; the overlay sits at 0x8007e000.
-  return program_data(0xc1e, address - 0x8007e000 + kProgramBase);
+  // The overlay sits at 0x8007e000.
+  return program_data_at(0xc1e, 0x8007e000, address);
 }
 
 // field_load_map, world branch: new WorldBg (0x80088814), new WorldCam (0x8007e000).

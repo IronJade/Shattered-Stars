@@ -21,6 +21,7 @@
 #include "game/battle/unit.h"
 #include "game/boot/loader.h"
 #include "game/boot/rng.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
@@ -42,6 +43,7 @@ void entry_table_load() {
 }
 
 std::vector<u8> g_ovl1984b1;  // #1984 block 1 (0x80081728..0x80085518)
+const region::ImageMap* g_ovl1984b1_map = nullptr;  // another release's map of it (runtime/region.h)
 bool g_ovl1984b1_loaded = false;
 
 // The cache (g_spell_req_* 0x8006fc7c.., g_spell_slot_* 0x8006fcec..).
@@ -141,9 +143,11 @@ const u8* ovl1984b1_data(u32 address) {
         if (auto b = disc::slz::unpack_block(packed, 0, 1, nullptr)) g_ovl1984b1 = std::move(*b);
       }
     }
+    g_ovl1984b1_map = region::entry_map(1984, 1);
+    if (!region::is_na() && !(g_ovl1984b1_map != nullptr && region::prepare(g_ovl1984b1_map, g_ovl1984b1)))
+      g_ovl1984b1.clear();
   }
-  const u32 off = address - 0x80081728u;
-  return off < g_ovl1984b1.size() ? g_ovl1984b1.data() + off : nullptr;
+  return region::image_byte(g_ovl1984b1_map, g_ovl1984b1, 0x80081728u, address, "7c0.1");
 }
 
 u8& spell_landed_flag() { return g_spell_landed; }

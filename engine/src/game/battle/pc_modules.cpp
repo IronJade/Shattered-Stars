@@ -1,10 +1,12 @@
 #include "game/battle/pc_modules.h"
 
 #include <array>
+#include <string>
 #include <vector>
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
@@ -30,6 +32,8 @@ constexpr std::array<int, 13> kCodeEntry = {0, 2131, 2135, 2137, 2139, 2143, 215
 constexpr u32 kModuleBase = 0x801EE000;
 
 std::array<std::vector<u8>, 13> g_images;  // block 0 (slot-0 link) by character
+std::array<const region::ImageMap*, 13> g_maps{};  // another release's map of it (runtime/region.h)
+std::array<std::string, 13> g_keys;               // SS_REGION_READ_LOG keys ("853", ...)
 std::array<bool, 13> g_loaded{};
 
 const std::vector<u8>* module_image(int character) {
@@ -43,6 +47,10 @@ const std::vector<u8>* module_image(int character) {
       g.loader->load_sync(packed.data(), entry, 0);
       if (auto un = disc::slz::unpack_block(packed, 0, 0, nullptr)) g_images[character] = std::move(*un);
     }
+    g_maps[character] = region::entry_map(entry, 0);
+    g_keys[character] = region::entry_key(entry, 0);
+    if (!region::is_na() && !(g_maps[character] != nullptr && region::prepare(g_maps[character], g_images[character])))
+      g_images[character].clear();
   }
   return &g_images[character];
 }
@@ -73,12 +81,14 @@ std::unique_ptr<PartyUnit> pc_module_create(int character) {
 
 u8 pc_module_u8(int character, u32 address) {
   const std::vector<u8>* img = module_image(character);
-  const u32 off = address - kModuleBase;
-  return img != nullptr && off < img->size() ? (*img)[off] : 0;
+  if (img == nullptr) return 0;
+  const u8* p = region::image_byte(g_maps[character], *img, kModuleBase, address, g_keys[character].c_str());
+  return p != nullptr ? *p : 0;
 }
 
 void pc_modules_reset() {
   for (auto& i : g_images) i.clear();
+  g_maps.fill(nullptr);
   g_loaded.fill(false);
 }
 

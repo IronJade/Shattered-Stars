@@ -6,7 +6,8 @@
 //
 // Settings live in config.ini (launcher/config.h: XDG_CONFIG_HOME, %APPDATA%\ShatteredStars
 // or ~/.config/shattered-stars), written by the setup program and by the remembered
-// options below. Disc 1 must be a North American disc 1 image; when it isn't, the game
+// options below. Disc 1 must be disc 1 of a release the port plays (North American or
+// European; runtime/region.h; disc 2 the same release); when it isn't, the game
 // looks in the `discs` folders (next to the game, next to config.ini), and then, on a
 // windowed run, opens setup and carries on once a disc 1 is chosen. Headless runs and
 // SS_DISC1 / SS_DISC2 runs never open setup and never write config.ini.
@@ -85,6 +86,7 @@
 #include "platform/audio.h"
 #include "platform/window.h"
 #include "runtime/boot_exe.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 #include "tools/viewer.h"
 #include "util/png.h"
@@ -307,6 +309,14 @@ int main(int argc, char** argv) {
         write_back = true;
       }
     }
+    // Both discs must be the same release (runtime/region.h): a disc 2 of another one is
+    // not used.
+    const std::string pair = launcher::describe_pair(launcher::identify_disc(launcher::utf8_path(config.get("disc1"))),
+                                                     launcher::identify_disc(launcher::utf8_path(config.get("disc2"))));
+    if (!pair.empty()) {
+      launcher::report("%s Disc 2 is not used.\n", pair.c_str());
+      config.set("disc2", launcher::find_disc2_near(launcher::utf8_path(config.get("disc1"))));
+    }
     if (write_back && may_write) saved.save();
   }
 
@@ -317,6 +327,8 @@ int main(int argc, char** argv) {
     launcher::fatal(config.get("disc1") + ": " + error);
     return 1;
   }
+  // The release (its address maps, save product code, text): from the boot disc's serial.
+  if (const region::Profile* release = region::from_serial(runtime::boot_exe_name(*disc))) region::select(release->id);
   // The sound driver's tables (and libspu's reverb presets) are read from the boot executable.
   if (std::string exe_error; !runtime::boot_exe_open(*disc, &exe_error))
     launcher::report("%s: %s (no sound)\n", config.get("disc1").c_str(), exe_error.c_str());

@@ -6,6 +6,7 @@
 #include <cctype>
 #include <fstream>
 #include <system_error>
+#include <utility>
 
 #include "disc/archive.h"
 #include "disc/disc_image.h"
@@ -31,6 +32,25 @@ std::string ext_of(const fs::path& p) { return lower(path_utf8(p.extension())); 
 bool is_image(const fs::path& p) {
   const std::string ext = ext_of(p);
   return ext == ".cue" || ext == ".bin" || ext == ".iso" || ext == ".img";
+}
+
+// "North American", "European", ... (the release of a disc the port knows).
+std::string release_name(const DiscInfo& info) { return info.region != nullptr ? info.region->adjective : "unknown"; }
+
+// "the North American (SCUS-94421 / SCUS-94422) and European (SCES-02159 / SCES-12159)
+// releases": what this build plays.
+std::string serial(const std::string& game_id);
+std::string supported_releases() {
+  std::vector<std::string> parts;
+  for (const region::Profile& p : region::profiles())
+    if (p.supported)
+      parts.push_back(std::string(p.adjective) + " (" + serial(p.serial[0]) + " / " + serial(p.serial[1]) + ")");
+  std::string out = "the ";
+  for (size_t i = 0; i < parts.size(); ++i) {
+    if (i > 0) out += i + 1 == parts.size() ? " and " : ", ";
+    out += parts[i];
+  }
+  return out + (parts.size() == 1 ? " release" : " releases");
 }
 
 // "SCUS_944.21" -> "SCUS-94421", the way the serial is printed on the case.
@@ -129,16 +149,22 @@ DiscInfo identify_disc(const fs::path& image) {
   info.game_id = runtime::boot_exe_name(*disc);
   disc::Archive archive;
   const bool so2 = archive.open(*disc, &error) && archive.toc_word0() == kTocWord0;
-  const std::string id = lower(info.game_id);
-  if (so2 && id == "scus_944.21" && archive.entry_size(6) != 0) info.kind = DiscKind::kDisc1;
-  else if (so2 && id == "scus_944.22" && archive.entry_size(7) != 0) info.kind = DiscKind::kDisc2;
+  // The release, by the serial (runtime/region.h); every release numbers its archive the
+  // same, entry 6 only on disc 1 and entry 7 only on disc 2.
+  int n = 0;
+  info.region = so2 ? region::from_serial(info.game_id, &n) : nullptr;
+  if (so2 && info.region != nullptr && !info.region->supported) info.kind = DiscKind::kUnsupportedRelease;
+  else if (so2 && info.region != nullptr && n == 1 && archive.entry_size(6) != 0) info.kind = DiscKind::kDisc1;
+  else if (so2 && info.region != nullptr && n == 2 && archive.entry_size(7) != 0) info.kind = DiscKind::kDisc2;
   else if (so2) info.kind = DiscKind::kOtherRelease;
   else info.kind = DiscKind::kNotSo2;
   return info;
 }
 
-int disc_number(const fs::path& image) {
-  switch (identify_disc(image).kind) {
+int disc_number(const fs::path& image, const region::Profile** region) {
+  const DiscInfo info = identify_disc(image);
+  if (region != nullptr) *region = info.region;
+  switch (info.kind) {
     case DiscKind::kDisc1: return 1;
     case DiscKind::kDisc2: return 2;
     default: return 0;
@@ -161,18 +187,31 @@ std::string describe(const DiscInfo& info, int wanted) {
     case DiscKind::kNotSo2:
       return "Not a Star Ocean: The Second Story disc image" + id + ".";
     case DiscKind::kOtherRelease:
-      return "Star Ocean: The Second Story, but another release" + id +
-             ". Shattered Stars needs the North American discs (SCUS-94421 / SCUS-94422).";
+      return "Star Ocean: The Second Story, but a release Shattered Stars doesn't know" + id + ". It plays " +
+             supported_releases() + ".";
+    case DiscKind::kUnsupportedRelease:
+      return "Star Ocean: The Second Story, " + std::string(info.region->adjective) + " release" + id +
+             ": not supported yet. Shattered Stars plays " + supported_releases() + ".";
     case DiscKind::kDisc1:
-      return wanted == 1 ? "Disc 1, North American release: OK" : "That is Disc 1. Please choose Disc 2 here.";
+      return wanted == 1 ? "Disc 1, " + release_name(info) + " release: OK" : "That is Disc 1. Please choose Disc 2 here.";
     case DiscKind::kDisc2:
-      return wanted == 2 ? "Disc 2, North American release: OK" : "That is Disc 2. Please choose Disc 1 here.";
+      return wanted == 2 ? "Disc 2, " + release_name(info) + " release: OK" : "That is Disc 2. Please choose Disc 1 here.";
   }
   return {};
 }
 
+std::string describe_pair(const DiscInfo& disc1, const DiscInfo& disc2) {
+  const bool both = (disc1.kind == DiscKind::kDisc1 || disc1.kind == DiscKind::kDisc2) &&
+                    (disc2.kind == DiscKind::kDisc1 || disc2.kind == DiscKind::kDisc2);
+  if (!both || disc1.region == nullptr || disc2.region == nullptr || disc1.region->id == disc2.region->id) return {};
+  return "Disc 2 is the " + release_name(disc2) + " release and Disc 1 the " + release_name(disc1) +
+         " one. Both discs must be the same release.";
+}
+
 FoundDiscs find_discs(const std::vector<fs::path>& folders) {
   FoundDiscs found;
+  const region::Profile* disc1_region = nullptr;
+  std::vector<std::pair<std::string, const region::Profile*>> disc2s;
   for (const fs::path& folder : folders) {
     std::error_code ec;
     if (!fs::is_directory(folder, ec)) continue;
@@ -182,11 +221,21 @@ FoundDiscs find_discs(const std::vector<fs::path>& folders) {
     std::sort(dirs.begin() + 1, dirs.end());
     for (const fs::path& dir : dirs) {
       for (const fs::path& image : images_in(dir)) {
-        if (!found.disc1.empty() && !found.disc2.empty()) return found;
-        const int n = disc_number(image);
-        if (n == 1 && found.disc1.empty()) found.disc1 = normal(image);
-        if (n == 2 && found.disc2.empty()) found.disc2 = normal(image);
+        const region::Profile* r = nullptr;
+        const int n = disc_number(image, &r);
+        if (n == 1 && found.disc1.empty()) {
+          found.disc1 = normal(image);
+          disc1_region = r;
+        }
+        if (n == 2) disc2s.emplace_back(normal(image), r);
       }
+    }
+  }
+  // Disc 2 of disc 1's release (without a disc 1: the first disc 2).
+  for (const auto& [path, r] : disc2s) {
+    if (found.disc1.empty() || r == disc1_region) {
+      found.disc2 = path;
+      break;
     }
   }
   return found;
@@ -208,11 +257,14 @@ std::string find_disc2_near(const fs::path& disc1) {
     name[at] = '2';
     dirs.push_back(disc1.parent_path().parent_path() / utf8_path(name));
   }
+  const region::Profile* release = identify_disc(disc1).region;
   for (const fs::path& dir : dirs) {
     std::error_code ec;
     if (!fs::is_directory(dir, ec)) continue;
-    for (const fs::path& image : images_in(dir))
-      if (disc_number(image) == 2) return normal(image);
+    for (const fs::path& image : images_in(dir)) {
+      const region::Profile* r = nullptr;
+      if (disc_number(image, &r) == 2 && (release == nullptr || r == release)) return normal(image);
+    }
   }
   return {};
 }

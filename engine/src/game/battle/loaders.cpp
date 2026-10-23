@@ -13,10 +13,14 @@
 #include "game/field/mods.h"
 #include "game/title/title_program.h"
 #include "runtime/libgpu.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
 namespace {
+
+const region::ImageMap* g_ovl1981_map = nullptr;  // the release's maps of #1981 / #1984 block 0
+const region::ImageMap* g_ovl1984_map = nullptr;
 
 u32 rd32(const u8* p) {
   u32 v;
@@ -173,16 +177,13 @@ void load_intro_voice(int which, Bytes data) {
 
 }  // namespace
 
+// Another release's #1981 / #1984 are read through its address maps (runtime/region.h).
 const u8* ovl1984_data(u32 address) {
-  const Bytes& b = bg().ovl1984;
-  const u32 off = address - 0x800715D0u;
-  return off < b.size() ? b.data() + off : nullptr;
+  return region::image_byte(g_ovl1984_map, bg().ovl1984, 0x800715D0u, address, "7c0.0");
 }
 
 const u8* ovl1981_data(u32 address) {
-  const Bytes& b = bg().ovl1981;
-  const u32 off = address - 0x80085518u;
-  return off < b.size() ? b.data() + off : nullptr;
+  return region::image_byte(g_ovl1981_map, bg().ovl1981, 0x80085518u, address, "7bd");
 }
 
 void battle_load_entry(int index, s32 entry, StageLoadCtx* ctx, Bytes data) {
@@ -202,6 +203,8 @@ void battle_load_entry(int index, s32 entry, StageLoadCtx* ctx, Bytes data) {
       // #1981 (the result screen) is native; the console keeps the packed entry and unpacks
       // it at state 4. Its level-up tables are read from the image.
       g.ovl1981 = unpack(data, 0);
+      g_ovl1981_map = region::entry_map(1981, 0);
+      if (!region::is_na() && !(g_ovl1981_map != nullptr && region::prepare(g_ovl1981_map, g.ovl1981))) g.ovl1981.clear();
       g.have_result_code = true;
       break;
     case 6: load_item_data(data); break;
@@ -210,6 +213,8 @@ void battle_load_entry(int index, s32 entry, StageLoadCtx* ctx, Bytes data) {
     case 9:
       // #1984 (the battle code chain) is native; its data tables are read from block 0.
       g.ovl1984 = unpack(data, 0);
+      g_ovl1984_map = region::entry_map(1984, 0);
+      if (!region::is_na() && !(g_ovl1984_map != nullptr && region::prepare(g_ovl1984_map, g.ovl1984))) g.ovl1984.clear();
       g.have_battle_code = true;
       break;
     case 10: load_intro_voice(0, std::move(data)); break;

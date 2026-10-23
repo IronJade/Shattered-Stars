@@ -1,0 +1,649 @@
+shop,where,index,item,item_name,command
+1,map 26 Arlia Village: Hearn's General Store (inside),0,0x2d8,Sandals,python3 tools/so2_mod.py shop DISC.cue 1 0 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),1,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 1 1 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),2,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 1 2 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),3,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 1 3 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),4,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 1 4 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),5,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 1 5 ITEM
+1,map 26 Arlia Village: Hearn's General Store (inside),6,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 1 6 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,0,0x1ea,Long Sword,python3 tools/so2_mod.py shop DISC.cue 2 0 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,1,0x20d,Both Shaver,python3 tools/so2_mod.py shop DISC.cue 2 1 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,2,0x21b,Knuckles,python3 tools/so2_mod.py shop DISC.cue 2 2 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,3,0x28f,Leather Helm,python3 tools/so2_mod.py shop DISC.cue 2 3 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,4,0x2a5,Leather Armor,python3 tools/so2_mod.py shop DISC.cue 2 4 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,5,0x2d8,Sandals,python3 tools/so2_mod.py shop DISC.cue 2 5 ITEM
+2,map 59 Town of Salva: Jewelry Store Fairy Tear,6,0x2d9,Leather Greaves,python3 tools/so2_mod.py shop DISC.cue 2 6 ITEM
+3,map 56 Town of Salva: Jam Store Dolphin Kick,0,0x2f6,Strawberry Jam,python3 tools/so2_mod.py shop DISC.cue 3 0 ITEM
+3,map 56 Town of Salva: Jam Store Dolphin Kick,1,0x2f7,Raspberry Jam,python3 tools/so2_mod.py shop DISC.cue 3 1 ITEM
+3,map 56 Town of Salva: Jam Store Dolphin Kick,2,0x2f8,Apple Jam,python3 tools/so2_mod.py shop DISC.cue 3 2 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,0,0x4b,Necklace,python3 tools/so2_mod.py shop DISC.cue 4 0 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,1,0x7f,Ruby Earring,python3 tools/so2_mod.py shop DISC.cue 4 1 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,2,0x92,Silver Barrette,python3 tools/so2_mod.py shop DISC.cue 4 2 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,3,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 4 3 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,4,0x1a5,Silver,python3 tools/so2_mod.py shop DISC.cue 4 4 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,5,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 4 5 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,6,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 4 6 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,7,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 4 7 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,8,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 4 8 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,9,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 4 9 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,10,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 4 10 ITEM
+4,map 59 Town of Salva: Jewelry Store Fairy Tear,11,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 4 11 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),0,0x1e9,Broad Sword,python3 tools/so2_mod.py shop DISC.cue 7 0 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),1,0x20e,Smaller,python3 tools/so2_mod.py shop DISC.cue 7 1 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),2,0x238,Rod,python3 tools/so2_mod.py shop DISC.cue 7 2 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),3,0x28f,Leather Helm,python3 tools/so2_mod.py shop DISC.cue 7 3 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),4,0x292,Banded Helm,python3 tools/so2_mod.py shop DISC.cue 7 4 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),5,0x2a7,Banded Mail,python3 tools/so2_mod.py shop DISC.cue 7 5 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),6,0x2a9,Robe,python3 tools/so2_mod.py shop DISC.cue 7 6 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),7,0x2c5,Wooden Shield,python3 tools/so2_mod.py shop DISC.cue 7 7 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),8,0x2da,Boots,python3 tools/so2_mod.py shop DISC.cue 7 8 ITEM
+7,map 79 Town of Cross: Weapons Shop Royal Hunt (inside),9,0x2dd,Iron Greaves,python3 tools/so2_mod.py shop DISC.cue 7 9 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 8 0 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 8 1 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 8 2 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",3,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 8 3 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",4,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 8 4 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",5,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 8 5 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",6,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 8 6 ITEM
+8,"map 75 Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",7,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 8 7 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 9 0 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 9 1 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 9 2 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 9 3 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 9 4 ITEM
+9,map 82 Town of Cross: Restaurant Forum (inside),5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 9 5 ITEM
+12,map 113 Port of Clik: International Trading,0,0x1eb,Sinclair Sabre,python3 tools/so2_mod.py shop DISC.cue 12 0 ITEM
+12,map 113 Port of Clik: International Trading,1,0x21c,Hard Knuckles,python3 tools/so2_mod.py shop DISC.cue 12 1 ITEM
+12,map 113 Port of Clik: International Trading,2,0x238,Rod,python3 tools/so2_mod.py shop DISC.cue 12 2 ITEM
+12,map 113 Port of Clik: International Trading,3,0x2a7,Banded Mail,python3 tools/so2_mod.py shop DISC.cue 12 3 ITEM
+12,map 113 Port of Clik: International Trading,4,0x2a9,Robe,python3 tools/so2_mod.py shop DISC.cue 12 4 ITEM
+12,map 113 Port of Clik: International Trading,5,0x2c5,Wooden Shield,python3 tools/so2_mod.py shop DISC.cue 12 5 ITEM
+12,map 113 Port of Clik: International Trading,6,0x2c6,Round Shield,python3 tools/so2_mod.py shop DISC.cue 12 6 ITEM
+12,map 113 Port of Clik: International Trading,7,0x2da,Boots,python3 tools/so2_mod.py shop DISC.cue 12 7 ITEM
+12,map 113 Port of Clik: International Trading,8,0x2db,Secret Boots,python3 tools/so2_mod.py shop DISC.cue 12 8 ITEM
+12,map 113 Port of Clik: International Trading,9,0x2dd,Iron Greaves,python3 tools/so2_mod.py shop DISC.cue 12 9 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 13 0 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 13 1 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 13 2 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,3,0x95,Anklet,python3 tools/so2_mod.py shop DISC.cue 13 3 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,4,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 13 4 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,5,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 13 5 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,6,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 13 6 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,7,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 13 7 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,8,0x31,Harmonica,python3 tools/so2_mod.py shop DISC.cue 13 8 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,9,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 13 9 ITEM
+13,map 114 Port of Clik: Antique Shop Milly's Shop,10,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 13 10 ITEM
+14,,0,0xbc,Fanzine ?,python3 tools/so2_mod.py shop DISC.cue 14 0 ITEM
+14,,1,0xbd,Fanzine ,python3 tools/so2_mod.py shop DISC.cue 14 1 ITEM
+15,"map 105 Port of Clik: market square (stairs, fountain statue); map 106 Port of Clik: market square (stairs, fountain statue)",0,0x173,Banana Crepes,python3 tools/so2_mod.py shop DISC.cue 15 0 ITEM
+15,"map 105 Port of Clik: market square (stairs, fountain statue); map 106 Port of Clik: market square (stairs, fountain statue)",1,0x199,Chocolate Crepes,python3 tools/so2_mod.py shop DISC.cue 15 1 ITEM
+16,"map 105 Port of Clik: market square (stairs, fountain statue); map 106 Port of Clik: market square (stairs, fountain statue)",0,0x172,Orange Sherbet,python3 tools/so2_mod.py shop DISC.cue 16 0 ITEM
+16,"map 105 Port of Clik: market square (stairs, fountain statue); map 106 Port of Clik: market square (stairs, fountain statue)",1,0x19b,Vanilla Ice Cream,python3 tools/so2_mod.py shop DISC.cue 16 1 ITEM
+17,map 121 Port of Clik: Bakery The Clik Bakery,0,0x169,Pancakes,python3 tools/so2_mod.py shop DISC.cue 17 0 ITEM
+17,map 121 Port of Clik: Bakery The Clik Bakery,1,0x198,Egg Sandwich,python3 tools/so2_mod.py shop DISC.cue 17 1 ITEM
+17,map 121 Port of Clik: Bakery The Clik Bakery,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 17 2 ITEM
+17,map 121 Port of Clik: Bakery The Clik Bakery,3,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 17 3 ITEM
+17,map 121 Port of Clik: Bakery The Clik Bakery,4,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 17 4 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,0,0x1ec,Flame Blade,python3 tools/so2_mod.py shop DISC.cue 22 0 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,1,0x21d,Cestus,python3 tools/so2_mod.py shop DISC.cue 22 1 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,2,0x239,Ruby Wand,python3 tools/so2_mod.py shop DISC.cue 22 2 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,3,0x294,Fame Helm,python3 tools/so2_mod.py shop DISC.cue 22 3 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,4,0x293,Magical Hat,python3 tools/so2_mod.py shop DISC.cue 22 4 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,5,0x2aa,Ringed Mail,python3 tools/so2_mod.py shop DISC.cue 22 5 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,6,0x2ab,Silk Robe,python3 tools/so2_mod.py shop DISC.cue 22 6 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,7,0x2c6,Round Shield,python3 tools/so2_mod.py shop DISC.cue 22 7 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,8,0x2dc,Suede Boots,python3 tools/so2_mod.py shop DISC.cue 22 8 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,9,0x2dd,Iron Greaves,python3 tools/so2_mod.py shop DISC.cue 22 9 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,10,0x1be,Killer Poison,python3 tools/so2_mod.py shop DISC.cue 22 10 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,11,0x1c1,Flare Bomb,python3 tools/so2_mod.py shop DISC.cue 22 11 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,12,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 22 12 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,13,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 22 13 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,14,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 22 14 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,15,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 22 15 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,16,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 22 16 ITEM
+22,map 128 Mars Village: Tool Shop Roof's,17,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 22 17 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 23 0 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 23 1 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 23 2 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 23 3 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 23 4 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 23 5 ITEM
+23,map 140 Mars Village: Grocery Store Golden Spoon,6,0x166,Daikon Miso Soup,python3 tools/so2_mod.py shop DISC.cue 23 6 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,0,0x239,Ruby Wand,python3 tools/so2_mod.py shop DISC.cue 26 0 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,1,0x2ab,Silk Robe,python3 tools/so2_mod.py shop DISC.cue 26 1 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,2,0x2c7,Knight's Shield,python3 tools/so2_mod.py shop DISC.cue 26 2 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,3,0x2db,Secret Boots,python3 tools/so2_mod.py shop DISC.cue 26 3 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,4,0x2e0,Plate Greaves,python3 tools/so2_mod.py shop DISC.cue 26 4 ITEM
+26,map 150 Town of Herlie: Weapons Shop Premia,5,0x2ac,Brigandine,python3 tools/so2_mod.py shop DISC.cue 26 5 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 27 0 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 27 1 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 27 2 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,3,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 27 3 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,4,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 27 4 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,5,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 27 5 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,6,0x95,Anklet,python3 tools/so2_mod.py shop DISC.cue 27 6 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,7,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 27 7 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,8,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 27 8 ITEM
+27,map 149 Town of Herlie: Antique Dealer The Grasping Hand,9,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 27 9 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,0,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 28 0 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,1,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 28 1 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,2,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 28 2 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,3,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 28 3 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,4,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 28 4 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,5,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 28 5 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,6,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 28 6 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,7,0x164,Sweet Dumpling,python3 tools/so2_mod.py shop DISC.cue 28 7 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,8,0x17d,Potstickers,python3 tools/so2_mod.py shop DISC.cue 28 8 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,9,0x154,Shu-mai,python3 tools/so2_mod.py shop DISC.cue 28 9 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,10,0x151,Toro Tuna,python3 tools/so2_mod.py shop DISC.cue 28 10 ITEM
+28,map 151 Town of Herlie: Delicatessen Red Dragon Manor,11,0x11d,Sashimi,python3 tools/so2_mod.py shop DISC.cue 28 11 ITEM
+31,map 167 Port Hilton: Food Store Munchies,0,0x20e,Smaller,python3 tools/so2_mod.py shop DISC.cue 31 0 ITEM
+31,map 167 Port Hilton: Food Store Munchies,1,0x21d,Cestus,python3 tools/so2_mod.py shop DISC.cue 31 1 ITEM
+31,map 167 Port Hilton: Food Store Munchies,2,0x264,Splinter,python3 tools/so2_mod.py shop DISC.cue 31 2 ITEM
+31,map 167 Port Hilton: Food Store Munchies,3,0x295,Iron Helm,python3 tools/so2_mod.py shop DISC.cue 31 3 ITEM
+31,map 167 Port Hilton: Food Store Munchies,4,0x2aa,Ringed Mail,python3 tools/so2_mod.py shop DISC.cue 31 4 ITEM
+31,map 167 Port Hilton: Food Store Munchies,5,0x2ab,Silk Robe,python3 tools/so2_mod.py shop DISC.cue 31 5 ITEM
+31,map 167 Port Hilton: Food Store Munchies,6,0x2c6,Round Shield,python3 tools/so2_mod.py shop DISC.cue 31 6 ITEM
+31,map 167 Port Hilton: Food Store Munchies,7,0x2df,Leather Boots,python3 tools/so2_mod.py shop DISC.cue 31 7 ITEM
+31,map 167 Port Hilton: Food Store Munchies,8,0x2e1,High Heels,python3 tools/so2_mod.py shop DISC.cue 31 8 ITEM
+31,map 167 Port Hilton: Food Store Munchies,9,0x2ac,Brigandine,python3 tools/so2_mod.py shop DISC.cue 31 9 ITEM
+32,map 167 Port Hilton: Food Store Munchies,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 32 0 ITEM
+32,map 167 Port Hilton: Food Store Munchies,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 32 1 ITEM
+32,map 167 Port Hilton: Food Store Munchies,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 32 2 ITEM
+32,map 167 Port Hilton: Food Store Munchies,3,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 32 3 ITEM
+32,map 167 Port Hilton: Food Store Munchies,4,0x1a5,Silver,python3 tools/so2_mod.py shop DISC.cue 32 4 ITEM
+32,map 167 Port Hilton: Food Store Munchies,5,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 32 5 ITEM
+32,map 167 Port Hilton: Food Store Munchies,6,0x1af,Ruby,python3 tools/so2_mod.py shop DISC.cue 32 6 ITEM
+32,map 167 Port Hilton: Food Store Munchies,7,0x1ae,Sapphire,python3 tools/so2_mod.py shop DISC.cue 32 7 ITEM
+32,map 167 Port Hilton: Food Store Munchies,8,0x1ad,Green Beryl,python3 tools/so2_mod.py shop DISC.cue 32 8 ITEM
+32,map 167 Port Hilton: Food Store Munchies,9,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 32 9 ITEM
+32,map 167 Port Hilton: Food Store Munchies,10,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 32 10 ITEM
+32,map 167 Port Hilton: Food Store Munchies,11,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 32 11 ITEM
+32,map 167 Port Hilton: Food Store Munchies,12,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 32 12 ITEM
+32,map 167 Port Hilton: Food Store Munchies,13,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 32 13 ITEM
+32,map 167 Port Hilton: Food Store Munchies,14,0xde,Artemis Leaf,python3 tools/so2_mod.py shop DISC.cue 32 14 ITEM
+32,map 167 Port Hilton: Food Store Munchies,15,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 32 15 ITEM
+32,map 167 Port Hilton: Food Store Munchies,16,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 32 16 ITEM
+32,map 167 Port Hilton: Food Store Munchies,17,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 32 17 ITEM
+32,map 167 Port Hilton: Food Store Munchies,18,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 32 18 ITEM
+32,map 167 Port Hilton: Food Store Munchies,19,0x102,Cure Poison,python3 tools/so2_mod.py shop DISC.cue 32 19 ITEM
+32,map 167 Port Hilton: Food Store Munchies,20,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 32 20 ITEM
+32,map 167 Port Hilton: Food Store Munchies,21,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 32 21 ITEM
+33,map 167 Port Hilton: Food Store Munchies,0,0x31,Harmonica,python3 tools/so2_mod.py shop DISC.cue 33 0 ITEM
+33,map 167 Port Hilton: Food Store Munchies,1,0x2e,Cembalo,python3 tools/so2_mod.py shop DISC.cue 33 1 ITEM
+33,map 167 Port Hilton: Food Store Munchies,2,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 33 2 ITEM
+33,map 167 Port Hilton: Food Store Munchies,3,0x35,Conductor's Baton,python3 tools/so2_mod.py shop DISC.cue 33 3 ITEM
+34,map 167 Port Hilton: Food Store Munchies,0,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 34 0 ITEM
+34,map 167 Port Hilton: Food Store Munchies,1,0x17c,Meat Dumpling,python3 tools/so2_mod.py shop DISC.cue 34 1 ITEM
+34,map 167 Port Hilton: Food Store Munchies,2,0x164,Sweet Dumpling,python3 tools/so2_mod.py shop DISC.cue 34 2 ITEM
+34,map 167 Port Hilton: Food Store Munchies,3,0x17f,Chicken Skewers,python3 tools/so2_mod.py shop DISC.cue 34 3 ITEM
+34,map 167 Port Hilton: Food Store Munchies,4,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 34 4 ITEM
+34,map 167 Port Hilton: Food Store Munchies,5,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 34 5 ITEM
+34,map 167 Port Hilton: Food Store Munchies,6,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 34 6 ITEM
+34,map 167 Port Hilton: Food Store Munchies,7,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 34 7 ITEM
+34,map 167 Port Hilton: Food Store Munchies,8,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 34 8 ITEM
+34,map 167 Port Hilton: Food Store Munchies,9,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 34 9 ITEM
+34,map 167 Port Hilton: Food Store Munchies,10,0x15d,Root Beer,python3 tools/so2_mod.py shop DISC.cue 34 10 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,0,0x1eb,Sinclair Sabre,python3 tools/so2_mod.py shop DISC.cue 37 0 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,1,0x297,Plate Helm,python3 tools/so2_mod.py shop DISC.cue 37 1 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,2,0x2ac,Brigandine,python3 tools/so2_mod.py shop DISC.cue 37 2 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,3,0x2ca,Buckler,python3 tools/so2_mod.py shop DISC.cue 37 3 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,4,0x2e3,Silver Greaves,python3 tools/so2_mod.py shop DISC.cue 37 4 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,5,0xfc,Sweet Syrup,python3 tools/so2_mod.py shop DISC.cue 37 5 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,6,0x101,Mixed Syrup,python3 tools/so2_mod.py shop DISC.cue 37 6 ITEM
+37,map 210 Town of Lacour: Weapons Shop Counterpunch,7,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 37 7 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,0,0x1ef,Long Edge,python3 tools/so2_mod.py shop DISC.cue 38 0 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,1,0x28f,Leather Helm,python3 tools/so2_mod.py shop DISC.cue 38 1 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,2,0x2a5,Leather Armor,python3 tools/so2_mod.py shop DISC.cue 38 2 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,3,0x2c5,Wooden Shield,python3 tools/so2_mod.py shop DISC.cue 38 3 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,4,0x2d9,Leather Greaves,python3 tools/so2_mod.py shop DISC.cue 38 4 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,5,0xfc,Sweet Syrup,python3 tools/so2_mod.py shop DISC.cue 38 5 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,6,0x101,Mixed Syrup,python3 tools/so2_mod.py shop DISC.cue 38 6 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,7,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 38 7 ITEM
+38,map 210 Town of Lacour: Weapons Shop Counterpunch,8,0x20f,Twin-edge,python3 tools/so2_mod.py shop DISC.cue 38 8 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,0,0x1ee,Gusguine,python3 tools/so2_mod.py shop DISC.cue 39 0 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,1,0x292,Banded Helm,python3 tools/so2_mod.py shop DISC.cue 39 1 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,2,0x2a7,Banded Mail,python3 tools/so2_mod.py shop DISC.cue 39 2 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,3,0x2c7,Knight's Shield,python3 tools/so2_mod.py shop DISC.cue 39 3 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,4,0x2e0,Plate Greaves,python3 tools/so2_mod.py shop DISC.cue 39 4 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,5,0xfc,Sweet Syrup,python3 tools/so2_mod.py shop DISC.cue 39 5 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,6,0x101,Mixed Syrup,python3 tools/so2_mod.py shop DISC.cue 39 6 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,7,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 39 7 ITEM
+39,map 210 Town of Lacour: Weapons Shop Counterpunch,8,0x23b,Crest Rod,python3 tools/so2_mod.py shop DISC.cue 39 8 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,0,0x1ed,Walloon Sword,python3 tools/so2_mod.py shop DISC.cue 40 0 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,1,0x295,Iron Helm,python3 tools/so2_mod.py shop DISC.cue 40 1 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,2,0x2aa,Ringed Mail,python3 tools/so2_mod.py shop DISC.cue 40 2 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,3,0x2c6,Round Shield,python3 tools/so2_mod.py shop DISC.cue 40 3 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,4,0x2dd,Iron Greaves,python3 tools/so2_mod.py shop DISC.cue 40 4 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,5,0xfe,Fruit Syrup,python3 tools/so2_mod.py shop DISC.cue 40 5 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,6,0xff,Fresh Syrup,python3 tools/so2_mod.py shop DISC.cue 40 6 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,7,0xe3,Attack Vial,python3 tools/so2_mod.py shop DISC.cue 40 7 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,8,0x108,Violence Pill,python3 tools/so2_mod.py shop DISC.cue 40 8 ITEM
+40,map 220 Town of Lacour: Weapons Shop Slayer,9,0x265,Hard Whip,python3 tools/so2_mod.py shop DISC.cue 40 9 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 41 0 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 41 1 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 41 2 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,3,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 41 3 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,4,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 41 4 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,5,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 41 5 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,6,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 41 6 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,7,0xde,Artemis Leaf,python3 tools/so2_mod.py shop DISC.cue 41 7 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,8,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 41 8 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,9,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 41 9 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,10,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 41 10 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,11,0xe3,Attack Vial,python3 tools/so2_mod.py shop DISC.cue 41 11 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,12,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 41 12 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,13,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 41 13 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,14,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 41 14 ITEM
+41,map 215 Town of Lacour: Food Store Carnival,15,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 41 15 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,0,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 42 0 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,1,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 42 1 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,2,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 42 2 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,3,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 42 3 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,4,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 42 4 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,5,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 42 5 ITEM
+42,map 215 Town of Lacour: Food Store Carnival,6,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 42 6 ITEM
+43,map 215 Town of Lacour: Food Store Carnival,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 43 0 ITEM
+43,map 215 Town of Lacour: Food Store Carnival,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 43 1 ITEM
+43,map 215 Town of Lacour: Food Store Carnival,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 43 2 ITEM
+43,map 215 Town of Lacour: Food Store Carnival,3,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 43 3 ITEM
+44,map 215 Town of Lacour: Food Store Carnival,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 44 0 ITEM
+44,map 215 Town of Lacour: Food Store Carnival,1,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 44 1 ITEM
+45,,0,0x1ee,Gusguine,python3 tools/so2_mod.py shop DISC.cue 45 0 ITEM
+45,,1,0x1ef,Long Edge,python3 tools/so2_mod.py shop DISC.cue 45 1 ITEM
+45,,2,0x20f,Twin-edge,python3 tools/so2_mod.py shop DISC.cue 45 2 ITEM
+45,,3,0x10f,Smoke Mist,python3 tools/so2_mod.py shop DISC.cue 45 3 ITEM
+45,,4,0x265,Hard Whip,python3 tools/so2_mod.py shop DISC.cue 45 4 ITEM
+45,,5,0x295,Iron Helm,python3 tools/so2_mod.py shop DISC.cue 45 5 ITEM
+45,,6,0x297,Plate Helm,python3 tools/so2_mod.py shop DISC.cue 45 6 ITEM
+45,,7,0x2aa,Ringed Mail,python3 tools/so2_mod.py shop DISC.cue 45 7 ITEM
+45,,8,0x2ac,Brigandine,python3 tools/so2_mod.py shop DISC.cue 45 8 ITEM
+45,,9,0x2c7,Knight's Shield,python3 tools/so2_mod.py shop DISC.cue 45 9 ITEM
+45,,10,0x2ca,Buckler,python3 tools/so2_mod.py shop DISC.cue 45 10 ITEM
+45,,11,0x2e0,Plate Greaves,python3 tools/so2_mod.py shop DISC.cue 45 11 ITEM
+45,,12,0x2e3,Silver Greaves,python3 tools/so2_mod.py shop DISC.cue 45 12 ITEM
+45,,13,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 45 13 ITEM
+45,,14,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 45 14 ITEM
+45,,15,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 45 15 ITEM
+45,,16,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 45 16 ITEM
+45,,17,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 45 17 ITEM
+46,map 206 Town of Linga: Pharmacy Tsuyoshi Takemoto,0,0x2f8,Apple Jam,python3 tools/so2_mod.py shop DISC.cue 46 0 ITEM
+46,map 206 Town of Linga: Pharmacy Tsuyoshi Takemoto,1,0x2f9,Aloe Jam,python3 tools/so2_mod.py shop DISC.cue 46 1 ITEM
+46,map 206 Town of Linga: Pharmacy Tsuyoshi Takemoto,2,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 46 2 ITEM
+46,map 206 Town of Linga: Pharmacy Tsuyoshi Takemoto,3,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 46 3 ITEM
+46,map 206 Town of Linga: Pharmacy Tsuyoshi Takemoto,4,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 46 4 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,0,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 47 0 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,1,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 47 1 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,2,0xde,Artemis Leaf,python3 tools/so2_mod.py shop DISC.cue 47 2 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,3,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 47 3 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,4,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 47 4 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,5,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 47 5 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,6,0x102,Cure Poison,python3 tools/so2_mod.py shop DISC.cue 47 6 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,7,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 47 7 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,8,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 47 8 ITEM
+47,map 191 Town of Linga: Pharmacy Jean Medicine Home,9,0xe3,Attack Vial,python3 tools/so2_mod.py shop DISC.cue 47 9 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,0,0x1c8,Material Kit,python3 tools/so2_mod.py shop DISC.cue 48 0 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,1,0x271,Treatise,python3 tools/so2_mod.py shop DISC.cue 48 1 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,2,0x2ad,Amber Robe,python3 tools/so2_mod.py shop DISC.cue 48 2 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,3,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 48 3 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,4,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 48 4 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,5,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 48 5 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,6,0x1b7,Magical Camera,python3 tools/so2_mod.py shop DISC.cue 48 6 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,7,0x1b8,Magical Film,python3 tools/so2_mod.py shop DISC.cue 48 7 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,8,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 48 8 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,9,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 48 9 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,10,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 48 10 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,11,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 48 11 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,12,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 48 12 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,13,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 48 13 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,14,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 48 14 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,15,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 48 15 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,16,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 48 16 ITEM
+48,map 187 Town of Linga: University Co-op Academy Co-op,17,0x1d9,Vellum Paper,python3 tools/so2_mod.py shop DISC.cue 48 17 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,0,0x1ed,Walloon Sword,python3 tools/so2_mod.py shop DISC.cue 50 0 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,1,0x1ee,Gusguine,python3 tools/so2_mod.py shop DISC.cue 50 1 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,2,0x228,Bagh Nakh,python3 tools/so2_mod.py shop DISC.cue 50 2 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,3,0x265,Hard Whip,python3 tools/so2_mod.py shop DISC.cue 50 3 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,4,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 50 4 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,5,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 50 5 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,6,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 50 6 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,7,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 50 7 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,8,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 50 8 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,9,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 50 9 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,10,0x1b1,Crystal,python3 tools/so2_mod.py shop DISC.cue 50 10 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,11,0x1ad,Green Beryl,python3 tools/so2_mod.py shop DISC.cue 50 11 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,12,0x1ae,Sapphire,python3 tools/so2_mod.py shop DISC.cue 50 12 ITEM
+50,map 445 Lacour Front Line: General Store Lacour Store,13,0x1af,Ruby,python3 tools/so2_mod.py shop DISC.cue 50 13 ITEM
+51,,0,0x180,Jambalaya,python3 tools/so2_mod.py shop DISC.cue 51 0 ITEM
+51,,1,0x18b,Corn Potage,python3 tools/so2_mod.py shop DISC.cue 51 1 ITEM
+51,,2,0x15d,Root Beer,python3 tools/so2_mod.py shop DISC.cue 51 2 ITEM
+51,,3,0x15e,'Ishidaya' Tea,python3 tools/so2_mod.py shop DISC.cue 51 3 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,0,0x1ef,Long Edge,python3 tools/so2_mod.py shop DISC.cue 52 0 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,1,0x23b,Crest Rod,python3 tools/so2_mod.py shop DISC.cue 52 1 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,2,0x297,Plate Helm,python3 tools/so2_mod.py shop DISC.cue 52 2 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,3,0x2ac,Brigandine,python3 tools/so2_mod.py shop DISC.cue 52 3 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,4,0x2c7,Knight's Shield,python3 tools/so2_mod.py shop DISC.cue 52 4 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,5,0x2ca,Buckler,python3 tools/so2_mod.py shop DISC.cue 52 5 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,6,0x2e3,Silver Greaves,python3 tools/so2_mod.py shop DISC.cue 52 6 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,7,0x2af,Plate Mail,python3 tools/so2_mod.py shop DISC.cue 52 7 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,8,0x2cb,Fine Shield,python3 tools/so2_mod.py shop DISC.cue 52 8 ITEM
+52,map 446 Lacour Front Line: Lacour front line Arsenal,9,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 52 9 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 53 0 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 53 1 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 53 2 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 53 3 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),4,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 53 4 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),5,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 53 5 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),6,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 53 6 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),7,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 53 7 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),8,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 53 8 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),9,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 53 9 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),10,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 53 10 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),11,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 53 11 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),12,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 53 12 ITEM
+53,map 233 Eluria Colony: Weapons Shop (Arsenal),13,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 53 13 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,0,0x1f3,Ignite Sword,python3 tools/so2_mod.py shop DISC.cue 54 0 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,1,0x213,Scyther,python3 tools/so2_mod.py shop DISC.cue 54 1 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,2,0x222,Pain Cestus,python3 tools/so2_mod.py shop DISC.cue 54 2 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,3,0x22a,Hecatoncheire,python3 tools/so2_mod.py shop DISC.cue 54 3 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,4,0x237,Silver Rod,python3 tools/so2_mod.py shop DISC.cue 54 4 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,5,0x25a,Great Punch,python3 tools/so2_mod.py shop DISC.cue 54 5 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,6,0x269,Light Whip,python3 tools/so2_mod.py shop DISC.cue 54 6 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,7,0x276,Heraldry,python3 tools/so2_mod.py shop DISC.cue 54 7 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,8,0x286,Electro Gun,python3 tools/so2_mod.py shop DISC.cue 54 8 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,9,0x299,Steel Helm,python3 tools/so2_mod.py shop DISC.cue 54 9 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,10,0x2b0,Silver Robe,python3 tools/so2_mod.py shop DISC.cue 54 10 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,11,0x2af,Plate Mail,python3 tools/so2_mod.py shop DISC.cue 54 11 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,12,0x2cb,Fine Shield,python3 tools/so2_mod.py shop DISC.cue 54 12 ITEM
+54,map 259 Central City: Weapons Shop Hyper-on-Hyper,13,0x2e3,Silver Greaves,python3 tools/so2_mod.py shop DISC.cue 54 13 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,0,0x144,Lezard Flask,python3 tools/so2_mod.py shop DISC.cue 55 0 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,1,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 55 1 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,2,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 55 2 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,3,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 55 3 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,4,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 55 4 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,5,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 55 5 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,6,0xde,Artemis Leaf,python3 tools/so2_mod.py shop DISC.cue 55 6 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,7,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 55 7 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,8,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 55 8 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,9,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 55 9 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,10,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 55 10 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,11,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 55 11 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,12,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 55 12 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,13,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 55 13 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,14,0xa5,Beret,python3 tools/so2_mod.py shop DISC.cue 55 14 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,15,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 55 15 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,16,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 55 16 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,17,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 55 17 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,18,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 55 18 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,19,0x1d9,Vellum Paper,python3 tools/so2_mod.py shop DISC.cue 55 19 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,20,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 55 20 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,21,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 55 21 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,22,0x35,Conductor's Baton,python3 tools/so2_mod.py shop DISC.cue 55 22 ITEM
+55,map 249 Central City: Tool Shop Reverse Edge,23,0x1b8,Magical Film,python3 tools/so2_mod.py shop DISC.cue 55 23 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 56 0 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 56 1 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 56 2 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 56 3 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 56 4 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 56 5 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,6,0x183,Steak,python3 tools/so2_mod.py shop DISC.cue 56 6 ITEM
+56,map 257 Central City: Restaurant Weight Lawyer,7,0x170,Berry Juice,python3 tools/so2_mod.py shop DISC.cue 56 7 ITEM
+60,map 276 North City: Account Weapons,0,0x230,Eagle's Claws,python3 tools/so2_mod.py shop DISC.cue 60 0 ITEM
+60,map 276 North City: Account Weapons,1,0x222,Pain Cestus,python3 tools/so2_mod.py shop DISC.cue 60 1 ITEM
+60,map 276 North City: Account Weapons,2,0x22a,Hecatoncheire,python3 tools/so2_mod.py shop DISC.cue 60 2 ITEM
+60,map 276 North City: Account Weapons,3,0x269,Light Whip,python3 tools/so2_mod.py shop DISC.cue 60 3 ITEM
+60,map 276 North City: Account Weapons,4,0x299,Steel Helm,python3 tools/so2_mod.py shop DISC.cue 60 4 ITEM
+60,map 276 North City: Account Weapons,5,0x29a,Jeanne's Helm,python3 tools/so2_mod.py shop DISC.cue 60 5 ITEM
+60,map 276 North City: Account Weapons,6,0x2b3,Mithril Coat,python3 tools/so2_mod.py shop DISC.cue 60 6 ITEM
+60,map 276 North City: Account Weapons,7,0x2b8,Steel Armor,python3 tools/so2_mod.py shop DISC.cue 60 7 ITEM
+60,map 276 North City: Account Weapons,8,0x2cd,Crestier Guard,python3 tools/so2_mod.py shop DISC.cue 60 8 ITEM
+60,map 276 North City: Account Weapons,9,0x2e2,High-laced Shoes,python3 tools/so2_mod.py shop DISC.cue 60 9 ITEM
+60,map 276 North City: Account Weapons,10,0x2e3,Silver Greaves,python3 tools/so2_mod.py shop DISC.cue 60 10 ITEM
+60,map 276 North City: Account Weapons,11,0x2e9,Steel-toed Boots,python3 tools/so2_mod.py shop DISC.cue 60 11 ITEM
+61,map 265 North City: Tool Shop Blue Flask,0,0x144,Lezard Flask,python3 tools/so2_mod.py shop DISC.cue 61 0 ITEM
+61,map 265 North City: Tool Shop Blue Flask,1,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 61 1 ITEM
+61,map 265 North City: Tool Shop Blue Flask,2,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 61 2 ITEM
+61,map 265 North City: Tool Shop Blue Flask,3,0xde,Artemis Leaf,python3 tools/so2_mod.py shop DISC.cue 61 3 ITEM
+61,map 265 North City: Tool Shop Blue Flask,4,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 61 4 ITEM
+61,map 265 North City: Tool Shop Blue Flask,5,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 61 5 ITEM
+61,map 265 North City: Tool Shop Blue Flask,6,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 61 6 ITEM
+61,map 265 North City: Tool Shop Blue Flask,7,0xe3,Attack Vial,python3 tools/so2_mod.py shop DISC.cue 61 7 ITEM
+61,map 265 North City: Tool Shop Blue Flask,8,0x2e,Cembalo,python3 tools/so2_mod.py shop DISC.cue 61 8 ITEM
+61,map 265 North City: Tool Shop Blue Flask,9,0x31,Harmonica,python3 tools/so2_mod.py shop DISC.cue 61 9 ITEM
+61,map 265 North City: Tool Shop Blue Flask,10,0x34,Organ,python3 tools/so2_mod.py shop DISC.cue 61 10 ITEM
+61,map 265 North City: Tool Shop Blue Flask,11,0x2d,Piano,python3 tools/so2_mod.py shop DISC.cue 61 11 ITEM
+61,map 265 North City: Tool Shop Blue Flask,12,0x32,Lyre,python3 tools/so2_mod.py shop DISC.cue 61 12 ITEM
+61,map 265 North City: Tool Shop Blue Flask,13,0x33,Violin,python3 tools/so2_mod.py shop DISC.cue 61 13 ITEM
+61,map 265 North City: Tool Shop Blue Flask,14,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 61 14 ITEM
+61,map 265 North City: Tool Shop Blue Flask,15,0x35,Conductor's Baton,python3 tools/so2_mod.py shop DISC.cue 61 15 ITEM
+61,map 265 North City: Tool Shop Blue Flask,16,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 61 16 ITEM
+61,map 265 North City: Tool Shop Blue Flask,17,0x1c8,Material Kit,python3 tools/so2_mod.py shop DISC.cue 61 17 ITEM
+61,map 265 North City: Tool Shop Blue Flask,18,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 61 18 ITEM
+61,map 265 North City: Tool Shop Blue Flask,19,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 61 19 ITEM
+61,map 265 North City: Tool Shop Blue Flask,20,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 61 20 ITEM
+61,map 265 North City: Tool Shop Blue Flask,21,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 61 21 ITEM
+61,map 265 North City: Tool Shop Blue Flask,22,0x1a5,Silver,python3 tools/so2_mod.py shop DISC.cue 61 22 ITEM
+61,map 265 North City: Tool Shop Blue Flask,23,0x1ad,Green Beryl,python3 tools/so2_mod.py shop DISC.cue 61 23 ITEM
+61,map 265 North City: Tool Shop Blue Flask,24,0x1ae,Sapphire,python3 tools/so2_mod.py shop DISC.cue 61 24 ITEM
+61,map 265 North City: Tool Shop Blue Flask,25,0x1af,Ruby,python3 tools/so2_mod.py shop DISC.cue 61 25 ITEM
+61,map 265 North City: Tool Shop Blue Flask,26,0x1b1,Crystal,python3 tools/so2_mod.py shop DISC.cue 61 26 ITEM
+61,map 265 North City: Tool Shop Blue Flask,27,0x1b3,Diamond,python3 tools/so2_mod.py shop DISC.cue 61 27 ITEM
+62,map 275 North City: Smiley's Grocery,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 62 0 ITEM
+62,map 275 North City: Smiley's Grocery,1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 62 1 ITEM
+62,map 275 North City: Smiley's Grocery,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 62 2 ITEM
+62,map 275 North City: Smiley's Grocery,3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 62 3 ITEM
+62,map 275 North City: Smiley's Grocery,4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 62 4 ITEM
+62,map 275 North City: Smiley's Grocery,5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 62 5 ITEM
+62,map 275 North City: Smiley's Grocery,6,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 62 6 ITEM
+62,map 275 North City: Smiley's Grocery,7,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 62 7 ITEM
+62,map 275 North City: Smiley's Grocery,8,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 62 8 ITEM
+65,map 334 Giveaway: Giveaway University,0,0x277,Dictionary,python3 tools/so2_mod.py shop DISC.cue 65 0 ITEM
+65,map 334 Giveaway: Giveaway University,1,0x2b4,Holy Cloak,python3 tools/so2_mod.py shop DISC.cue 65 1 ITEM
+65,map 334 Giveaway: Giveaway University,2,0xa5,Beret,python3 tools/so2_mod.py shop DISC.cue 65 2 ITEM
+65,map 334 Giveaway: Giveaway University,3,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 65 3 ITEM
+65,map 334 Giveaway: Giveaway University,4,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 65 4 ITEM
+65,map 334 Giveaway: Giveaway University,5,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 65 5 ITEM
+65,map 334 Giveaway: Giveaway University,6,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 65 6 ITEM
+65,map 334 Giveaway: Giveaway University,7,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 65 7 ITEM
+65,map 334 Giveaway: Giveaway University,8,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 65 8 ITEM
+65,map 334 Giveaway: Giveaway University,9,0x35,Conductor's Baton,python3 tools/so2_mod.py shop DISC.cue 65 9 ITEM
+65,map 334 Giveaway: Giveaway University,10,0x1b7,Magical Camera,python3 tools/so2_mod.py shop DISC.cue 65 10 ITEM
+65,map 334 Giveaway: Giveaway University,11,0x1b8,Magical Film,python3 tools/so2_mod.py shop DISC.cue 65 11 ITEM
+65,map 334 Giveaway: Giveaway University,12,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 65 12 ITEM
+65,map 334 Giveaway: Giveaway University,13,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 65 13 ITEM
+65,map 334 Giveaway: Giveaway University,14,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 65 14 ITEM
+65,map 334 Giveaway: Giveaway University,15,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 65 15 ITEM
+65,map 334 Giveaway: Giveaway University,16,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 65 16 ITEM
+65,map 334 Giveaway: Giveaway University,17,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 65 17 ITEM
+65,map 334 Giveaway: Giveaway University,18,0x1d9,Vellum Paper,python3 tools/so2_mod.py shop DISC.cue 65 18 ITEM
+65,map 334 Giveaway: Giveaway University,19,0x1c8,Material Kit,python3 tools/so2_mod.py shop DISC.cue 65 19 ITEM
+65,map 334 Giveaway: Giveaway University,20,0x5d,Hard Ring,python3 tools/so2_mod.py shop DISC.cue 65 20 ITEM
+66,,0,0x13f,Hamburger,python3 tools/so2_mod.py shop DISC.cue 66 0 ITEM
+66,,1,0x137,Fried Rice,python3 tools/so2_mod.py shop DISC.cue 66 1 ITEM
+66,,2,0x16e,Rice Omelet,python3 tools/so2_mod.py shop DISC.cue 66 2 ITEM
+66,,3,0x169,Pancakes,python3 tools/so2_mod.py shop DISC.cue 66 3 ITEM
+66,,4,0x194,Fried Eggs,python3 tools/so2_mod.py shop DISC.cue 66 4 ITEM
+66,,5,0x19a,Bacon & Eggs,python3 tools/so2_mod.py shop DISC.cue 66 5 ITEM
+66,,6,0x18e,Carrot Juice,python3 tools/so2_mod.py shop DISC.cue 66 6 ITEM
+66,,7,0x196,Fruit Smoothie,python3 tools/so2_mod.py shop DISC.cue 66 7 ITEM
+66,,8,0x197,Yogurt,python3 tools/so2_mod.py shop DISC.cue 66 8 ITEM
+66,,9,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 66 9 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,0,0x1fd,All-Purpose Knife,python3 tools/so2_mod.py shop DISC.cue 69 0 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,1,0x2c,Feather Pen,python3 tools/so2_mod.py shop DISC.cue 69 1 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,2,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 69 2 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,3,0x1b7,Magical Camera,python3 tools/so2_mod.py shop DISC.cue 69 3 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,4,0x1b8,Magical Film,python3 tools/so2_mod.py shop DISC.cue 69 4 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,5,0x1d9,Vellum Paper,python3 tools/so2_mod.py shop DISC.cue 69 5 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,6,0x1c8,Material Kit,python3 tools/so2_mod.py shop DISC.cue 69 6 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,7,0x35,Conductor's Baton,python3 tools/so2_mod.py shop DISC.cue 69 7 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,8,0xa5,Beret,python3 tools/so2_mod.py shop DISC.cue 69 8 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,9,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 69 9 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,10,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 69 10 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,11,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 69 11 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,12,0xa0,Crown,python3 tools/so2_mod.py shop DISC.cue 69 12 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,13,0x31,Harmonica,python3 tools/so2_mod.py shop DISC.cue 69 13 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,14,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 69 14 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,15,0x2ae,Evening Dress,python3 tools/so2_mod.py shop DISC.cue 69 15 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,16,0x2e5,Pin Heels,python3 tools/so2_mod.py shop DISC.cue 69 16 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,17,0x102,Cure Poison,python3 tools/so2_mod.py shop DISC.cue 69 17 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,18,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 69 18 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,19,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 69 19 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,20,0x2f6,Strawberry Jam,python3 tools/so2_mod.py shop DISC.cue 69 20 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,21,0x2f7,Raspberry Jam,python3 tools/so2_mod.py shop DISC.cue 69 21 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,22,0x2f8,Apple Jam,python3 tools/so2_mod.py shop DISC.cue 69 22 ITEM
+69,map 290 Fun City: Gift Shop Gift Box,23,0x2f9,Aloe Jam,python3 tools/so2_mod.py shop DISC.cue 69 23 ITEM
+70,map 291 Fun City: Restaurant Light Step,0,0x171,Seltzer,python3 tools/so2_mod.py shop DISC.cue 70 0 ITEM
+70,map 291 Fun City: Restaurant Light Step,1,0x182,Chicken Doria,python3 tools/so2_mod.py shop DISC.cue 70 1 ITEM
+70,map 291 Fun City: Restaurant Light Step,2,0x129,Orangeade,python3 tools/so2_mod.py shop DISC.cue 70 2 ITEM
+70,map 291 Fun City: Restaurant Light Step,3,0x177,Apple Crepes,python3 tools/so2_mod.py shop DISC.cue 70 3 ITEM
+70,map 291 Fun City: Restaurant Light Step,4,0x169,Pancakes,python3 tools/so2_mod.py shop DISC.cue 70 4 ITEM
+70,map 291 Fun City: Restaurant Light Step,5,0x17f,Chicken Skewers,python3 tools/so2_mod.py shop DISC.cue 70 5 ITEM
+70,map 291 Fun City: Restaurant Light Step,6,0x137,Fried Rice,python3 tools/so2_mod.py shop DISC.cue 70 6 ITEM
+70,map 291 Fun City: Restaurant Light Step,7,0x17d,Potstickers,python3 tools/so2_mod.py shop DISC.cue 70 7 ITEM
+70,map 291 Fun City: Restaurant Light Step,8,0x12b,Strawberry Mochi,python3 tools/so2_mod.py shop DISC.cue 70 8 ITEM
+70,map 291 Fun City: Restaurant Light Step,9,0x15d,Root Beer,python3 tools/so2_mod.py shop DISC.cue 70 9 ITEM
+71,map 292 Fanzine Spot Sale: Fanzine Spot Sale,0,0xbe,Fanzine,python3 tools/so2_mod.py shop DISC.cue 71 0 ITEM
+71,map 292 Fanzine Spot Sale: Fanzine Spot Sale,1,0xbf,Fanzine ,python3 tools/so2_mod.py shop DISC.cue 71 1 ITEM
+71,map 292 Fanzine Spot Sale: Fanzine Spot Sale,2,0xc0,Fanzine ,python3 tools/so2_mod.py shop DISC.cue 71 2 ITEM
+71,map 292 Fanzine Spot Sale: Fanzine Spot Sale,3,0xc3,Fanzine ,python3 tools/so2_mod.py shop DISC.cue 71 3 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,0,0x1f8,Force Sword,python3 tools/so2_mod.py shop DISC.cue 74 0 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,1,0x206,Ruins' Fate,python3 tools/so2_mod.py shop DISC.cue 74 1 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,2,0x216,Lotus Eater,python3 tools/so2_mod.py shop DISC.cue 74 2 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,3,0x224,Rune Full Moon,python3 tools/so2_mod.py shop DISC.cue 74 3 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,4,0x233,Grizzly Claps,python3 tools/so2_mod.py shop DISC.cue 74 4 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,5,0x242,Ruby Rod,python3 tools/so2_mod.py shop DISC.cue 74 5 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,6,0x25d,Atomic Punch,python3 tools/so2_mod.py shop DISC.cue 74 6 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,7,0x26c,Spark Whip,python3 tools/so2_mod.py shop DISC.cue 74 7 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,8,0x27c,Encyclopedia,python3 tools/so2_mod.py shop DISC.cue 74 8 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,9,0x288,Lightning Gun,python3 tools/so2_mod.py shop DISC.cue 74 9 ITEM
+74,map 310 Town of Armlock: Weapons and Tool Shop Milword's,10,0x24c,Alpha Box,python3 tools/so2_mod.py shop DISC.cue 74 10 ITEM
+75,map 312 Town of Armlock: Inn Elation,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 75 0 ITEM
+75,map 312 Town of Armlock: Inn Elation,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 75 1 ITEM
+75,map 312 Town of Armlock: Inn Elation,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 75 2 ITEM
+75,map 312 Town of Armlock: Inn Elation,3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 75 3 ITEM
+75,map 312 Town of Armlock: Inn Elation,4,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 75 4 ITEM
+75,map 312 Town of Armlock: Inn Elation,5,0x1c8,Material Kit,python3 tools/so2_mod.py shop DISC.cue 75 5 ITEM
+75,map 312 Town of Armlock: Inn Elation,6,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 75 6 ITEM
+75,map 312 Town of Armlock: Inn Elation,7,0x1a5,Silver,python3 tools/so2_mod.py shop DISC.cue 75 7 ITEM
+75,map 312 Town of Armlock: Inn Elation,8,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 75 8 ITEM
+75,map 312 Town of Armlock: Inn Elation,9,0x1af,Ruby,python3 tools/so2_mod.py shop DISC.cue 75 9 ITEM
+75,map 312 Town of Armlock: Inn Elation,10,0x1ae,Sapphire,python3 tools/so2_mod.py shop DISC.cue 75 10 ITEM
+75,map 312 Town of Armlock: Inn Elation,11,0x1ad,Green Beryl,python3 tools/so2_mod.py shop DISC.cue 75 11 ITEM
+75,map 312 Town of Armlock: Inn Elation,12,0x1b1,Crystal,python3 tools/so2_mod.py shop DISC.cue 75 12 ITEM
+75,map 312 Town of Armlock: Inn Elation,13,0x1b3,Diamond,python3 tools/so2_mod.py shop DISC.cue 75 13 ITEM
+75,map 312 Town of Armlock: Inn Elation,14,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 75 14 ITEM
+75,map 312 Town of Armlock: Inn Elation,15,0x2b,Magical Clay,python3 tools/so2_mod.py shop DISC.cue 75 15 ITEM
+75,map 312 Town of Armlock: Inn Elation,16,0x1b5,Bandit's Gloves,python3 tools/so2_mod.py shop DISC.cue 75 16 ITEM
+75,map 312 Town of Armlock: Inn Elation,17,0xa4,Fountain Pen,python3 tools/so2_mod.py shop DISC.cue 75 17 ITEM
+75,map 312 Town of Armlock: Inn Elation,18,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 75 18 ITEM
+75,map 312 Town of Armlock: Inn Elation,19,0xf5,Lilith Tonic,python3 tools/so2_mod.py shop DISC.cue 75 19 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 76 0 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 76 1 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 76 2 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 76 3 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 76 4 ITEM
+76,map 309 Town of Armlock: Restaurant Yamato-Ya,5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 76 5 ITEM
+79,,0,0xfb,Sour Syrup,python3 tools/so2_mod.py shop DISC.cue 79 0 ITEM
+79,,1,0xfc,Sweet Syrup,python3 tools/so2_mod.py shop DISC.cue 79 1 ITEM
+79,,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 79 2 ITEM
+79,,3,0x102,Cure Poison,python3 tools/so2_mod.py shop DISC.cue 79 3 ITEM
+79,,4,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 79 4 ITEM
+79,,5,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 79 5 ITEM
+79,,6,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 79 6 ITEM
+79,,7,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 79 7 ITEM
+79,,8,0x7e,Golden Earring,python3 tools/so2_mod.py shop DISC.cue 79 8 ITEM
+79,,9,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 79 9 ITEM
+79,,10,0x1d6,Smith's Hammer,python3 tools/so2_mod.py shop DISC.cue 79 10 ITEM
+79,,11,0x1a3,Iron,python3 tools/so2_mod.py shop DISC.cue 79 11 ITEM
+80,,0,0x26e,Dark Whip,python3 tools/so2_mod.py shop DISC.cue 80 0 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 81 0 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,1,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 81 1 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,2,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 81 2 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,3,0x13f,Hamburger,python3 tools/so2_mod.py shop DISC.cue 81 3 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,4,0x17e,Beef Croquettes,python3 tools/so2_mod.py shop DISC.cue 81 4 ITEM
+81,map 331 Giveaway: Dining Hall Fresh Meat,5,0x183,Steak,python3 tools/so2_mod.py shop DISC.cue 81 5 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,0,0x102,Cure Poison,python3 tools/so2_mod.py shop DISC.cue 82 0 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,1,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 82 1 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,2,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 82 2 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,3,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 82 3 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,4,0x23,Fairy's Statue,python3 tools/so2_mod.py shop DISC.cue 82 4 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,5,0x2a,Mirror of Wisdom,python3 tools/so2_mod.py shop DISC.cue 82 5 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,6,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 82 6 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,7,0x47,Paralysis Check,python3 tools/so2_mod.py shop DISC.cue 82 7 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,8,0x48,Stone Check,python3 tools/so2_mod.py shop DISC.cue 82 8 ITEM
+82,map 323 Giveaway: Rokumondo's Secondhand Shop,9,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 82 9 ITEM
+83,map 126 Mars Village: village street (shops),0,0x1a5,Silver,python3 tools/so2_mod.py shop DISC.cue 83 0 ITEM
+83,map 126 Mars Village: village street (shops),1,0x1a4,Gold,python3 tools/so2_mod.py shop DISC.cue 83 1 ITEM
+83,map 126 Mars Village: village street (shops),2,0x1ae,Sapphire,python3 tools/so2_mod.py shop DISC.cue 83 2 ITEM
+83,map 126 Mars Village: village street (shops),3,0x1af,Ruby,python3 tools/so2_mod.py shop DISC.cue 83 3 ITEM
+83,map 126 Mars Village: village street (shops),4,0x1ad,Green Beryl,python3 tools/so2_mod.py shop DISC.cue 83 4 ITEM
+83,map 126 Mars Village: village street (shops),5,0x1b1,Crystal,python3 tools/so2_mod.py shop DISC.cue 83 5 ITEM
+83,map 126 Mars Village: village street (shops),6,0x8c,Silver Cross,python3 tools/so2_mod.py shop DISC.cue 83 6 ITEM
+83,map 126 Mars Village: village street (shops),7,0x46,Poison Check,python3 tools/so2_mod.py shop DISC.cue 83 7 ITEM
+83,map 126 Mars Village: village street (shops),8,0x47,Paralysis Check,python3 tools/so2_mod.py shop DISC.cue 83 8 ITEM
+83,map 126 Mars Village: village street (shops),9,0x3d,Reverse Doll,python3 tools/so2_mod.py shop DISC.cue 83 9 ITEM
+83,map 126 Mars Village: village street (shops),10,0x43,Regeneration Ring,python3 tools/so2_mod.py shop DISC.cue 83 10 ITEM
+83,map 126 Mars Village: village street (shops),11,0x49,Purple Mist,python3 tools/so2_mod.py shop DISC.cue 83 11 ITEM
+83,map 126 Mars Village: village street (shops),12,0x76,Prism Ring,python3 tools/so2_mod.py shop DISC.cue 83 12 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,0,0xc4,Planet of the Winds,python3 tools/so2_mod.py shop DISC.cue 88 0 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,1,0xc5,I Can Only See You,python3 tools/so2_mod.py shop DISC.cue 88 1 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,2,0xc6,The World is Mine,python3 tools/so2_mod.py shop DISC.cue 88 2 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,3,0xc7,Advanced Heraldry,python3 tools/so2_mod.py shop DISC.cue 88 3 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,4,0xc8,The Bloody Road,python3 tools/so2_mod.py shop DISC.cue 88 4 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,5,0xc9,New Civilization,python3 tools/so2_mod.py shop DISC.cue 88 5 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,6,0xca,Cat House Murder,python3 tools/so2_mod.py shop DISC.cue 88 6 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,7,0xcb,Mr. 'No',python3 tools/so2_mod.py shop DISC.cue 88 7 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,8,0xcc,Buy it... OK?,python3 tools/so2_mod.py shop DISC.cue 88 8 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,9,0xcd,Living with Animals,python3 tools/so2_mod.py shop DISC.cue 88 9 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,10,0xce,But One Truth!,python3 tools/so2_mod.py shop DISC.cue 88 10 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,11,0xcf,Countdown,python3 tools/so2_mod.py shop DISC.cue 88 11 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,12,0xd0,Ocean of Stars,python3 tools/so2_mod.py shop DISC.cue 88 12 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,13,0xd1,Falling in Love,python3 tools/so2_mod.py shop DISC.cue 88 13 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,14,0xd2,Lady in Red,python3 tools/so2_mod.py shop DISC.cue 88 14 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,15,0xd3,Special Heraldry,python3 tools/so2_mod.py shop DISC.cue 88 15 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,16,0xd4,To Live,python3 tools/so2_mod.py shop DISC.cue 88 16 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,17,0xd5,Historic Greats,python3 tools/so2_mod.py shop DISC.cue 88 17 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,18,0xd6,Wax Doll Murders,python3 tools/so2_mod.py shop DISC.cue 88 18 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,19,0xd7,Never Turn Back,python3 tools/so2_mod.py shop DISC.cue 88 19 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,20,0xd8,A Maiden's Secret,python3 tools/so2_mod.py shop DISC.cue 88 20 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,21,0xd9,Principles of Nature,python3 tools/so2_mod.py shop DISC.cue 88 21 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,22,0xda,Killer's book,python3 tools/so2_mod.py shop DISC.cue 88 22 ITEM
+88,map 215 Town of Lacour: Food Store Carnival,23,0xdb,Lost Sanctuary,python3 tools/so2_mod.py shop DISC.cue 88 23 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,0,0x29b,Wizard's Hat,python3 tools/so2_mod.py shop DISC.cue 89 0 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,1,0x29c,Mithril Helm,python3 tools/so2_mod.py shop DISC.cue 89 1 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,2,0x2bd,Mithril Mesh,python3 tools/so2_mod.py shop DISC.cue 89 2 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,3,0x2ba,Wizard's Mail,python3 tools/so2_mod.py shop DISC.cue 89 3 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,4,0x2b8,Steel Armor,python3 tools/so2_mod.py shop DISC.cue 89 4 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,5,0x2cd,Crestier Guard,python3 tools/so2_mod.py shop DISC.cue 89 5 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,6,0x2d0,Rare Gauntlets,python3 tools/so2_mod.py shop DISC.cue 89 6 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,7,0x2eb,Mithril Greaves,python3 tools/so2_mod.py shop DISC.cue 89 7 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,8,0x141,Tri-emplem,python3 tools/so2_mod.py shop DISC.cue 89 8 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,9,0x2a3,Sacknoth's Helmet,python3 tools/so2_mod.py shop DISC.cue 89 9 ITEM
+89,map 463 Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,10,0x1cb,Magical Rasp,python3 tools/so2_mod.py shop DISC.cue 89 10 ITEM
+90,,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 90 0 ITEM
+90,,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 90 1 ITEM
+90,,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 90 2 ITEM
+90,,3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 90 3 ITEM
+91,,0,0xdd,Rose Hips,python3 tools/so2_mod.py shop DISC.cue 91 0 ITEM
+91,,1,0xdf,Wolfsbane,python3 tools/so2_mod.py shop DISC.cue 91 1 ITEM
+91,,2,0xe0,Lavender,python3 tools/so2_mod.py shop DISC.cue 91 2 ITEM
+91,,3,0x1c1,Flare Bomb,python3 tools/so2_mod.py shop DISC.cue 91 3 ITEM
+92,,0,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 92 0 ITEM
+92,,1,0x1c0,Mind Bomb,python3 tools/so2_mod.py shop DISC.cue 92 1 ITEM
+92,,2,0xdc,Mandrake,python3 tools/so2_mod.py shop DISC.cue 92 2 ITEM
+92,,3,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 92 3 ITEM
+92,,4,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 92 4 ITEM
+93,,0,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 93 0 ITEM
+93,,1,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 93 1 ITEM
+93,,2,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 93 2 ITEM
+93,,3,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 93 3 ITEM
+93,,4,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 93 4 ITEM
+93,,5,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 93 5 ITEM
+94,,0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 94 0 ITEM
+94,,1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 94 1 ITEM
+94,,2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 94 2 ITEM
+94,,3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 94 3 ITEM
+94,,4,0x116,Spring Water,python3 tools/so2_mod.py shop DISC.cue 94 4 ITEM
+94,,5,0xe1,Aceras,python3 tools/so2_mod.py shop DISC.cue 94 5 ITEM
+94,,6,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 94 6 ITEM
+94,,7,0x1,Magic Canvas,python3 tools/so2_mod.py shop DISC.cue 94 7 ITEM

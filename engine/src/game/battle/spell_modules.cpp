@@ -74,21 +74,11 @@ const ModuleDef kModules[] = {
     {"daemons_gate", 0x688cd2aa8e7fb3abull, 3493, spell_mod_daemons_gate},  // a6a642e880: spells 0x24 / 0x41 (0x971-0x973)
 };
 
-u64 fnv1a64(const std::vector<u8>& b) {
-  u64 h = 0xcbf29ce484222325ull;
-  for (u8 x : b) {
-    h ^= x;
-    h *= 0x100000001b3ull;
-  }
-  return h;
-}
-
 }  // namespace
 
-int spell_module_find(const std::vector<u8>& block) {
-  const u64 h = fnv1a64(block);
+int spell_module_find(u64 na_fnv) {
   for (size_t i = 0; i < std::size(kModules); ++i)
-    if (kModules[i].fn != nullptr && kModules[i].hash == h && kModules[i].size == block.size()) return static_cast<int>(i);
+    if (na_fnv != 0 && kModules[i].fn != nullptr && kModules[i].hash == na_fnv) return static_cast<int>(i);
   return -1;
 }
 

@@ -50,7 +50,8 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 | Catalog | `docs/handoff/catalog.md`, `effects.md` | complete: 5429 rows, gap scan 0 missing over 32 programs (`tools/catalog_gaps.py`, `docs/catalog/gaps_explained.csv`), port column 0 empty; left: confidence pass (699 likely, 166 guess) |
 | Confidence pass | `docs/handoff/confidence_field.md`, `confidence_battle.md`, `confidence_boot.md`, `port_leads.md` | done (2026-10-23): all 5452 rows confirmed; the leads it raised are closed (B16-B20, the courier's voice streaming, the save page's Callways stop) |
 | Save page | `docs/handoff/savepage.md`, `port_leads.md` | done: sprite pack 0xbd2 and the Callways stop both match Redux |
-| Release (AP phase 5) | `docs/handoff/release.md` | prepared (09:20): `tools/build_apworld.sh` -> `dist/so2.apworld` + template YAML (packaged world: 4 seed sets, e2e 25/25), player docs, both bundles rebuilt, AP's general tests pass with the world in place; `docs/ap/release_checklist.md`. Open: the user's choices (maintainer, licence, port version), the DeathLink wording; publishing is the user's call |
+| Release (AP phase 5) | `docs/handoff/release.md`, `docs/ap/release_checklist.md` | **0.01.00 released 2026-10-23** (https://github.com/IronJade/Shattered-Stars/releases/tag/v0.01.00, tag on c773d54): both bundles, `so2.apworld`, the template; notes `docs/release_notes/0.01.00.md`. Open: the upstream Archipelago PR (the user's call); other regions next |
+| Regions (0.02.00) | `docs/handoff/regions.md`, `regions_text.md` | Europe, France, Germany on one build with region profiles (NA logic at 60 Hz, own text and data); decisions in `docs/notes/regions.md`; Japan later |
 | Spell | `docs/handoff/spell.md` | re-recording the 12 lenient world_spell refs with `BW_TICK_LOG` |
 | World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
 | Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
@@ -167,7 +168,10 @@ blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
   `~/.config/pcsx-redux`; run PCSX-Redux only with `-cli` and a scratch HOME, on scratch
   memory-card copies — never the user's saves.
 - Kill processes only by exact PID.
-- Machine budget (20 cores): at most 3 PCSX-Redux instances per agent at once, builds with -j8.
+- Machine budget (20 cores, 62 GB RAM): at most 3 agents running at once; builds with -j8 when
+  one or two agents build, -j4 when three do (big C++ files take about 1 GB per compile job);
+  at most 4 game processes and 3 PCSX-Redux instances per agent. Four agents building -j8 with
+  game, Redux and Wine runs on top filled RAM and swap on 2026-10-23 and ended the session.
 - `/tmp` is RAM-backed (tmpfs): keep large scratch (captures, dumps, extra builds) on disk under
   the git-ignored `scratchpad/<name>/` in the repo, and delete finished scratch promptly.
 - Catalogue every reversed function in `docs/catalog` (LF line endings; write CSVs with

@@ -73,6 +73,7 @@ add_library(ss_core STATIC
   src/runtime/libspu.cpp
   src/runtime/libapi.cpp
   src/runtime/boot_exe.cpp
+  src/runtime/region.cpp
   src/runtime/libcard.cpp
   src/util/png.cpp)
 target_include_directories(ss_core PUBLIC src)
@@ -506,7 +507,8 @@ add_executable(ss_tests
   tests/test_memcard.cpp
   tests/test_spu.cpp
   tests/test_sound.cpp
-  tests/test_game.cpp)
+  tests/test_game.cpp
+  tests/test_region.cpp)
 target_link_libraries(ss_tests PRIVATE ss_core)
 target_compile_options(ss_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_tests COMMAND ss_tests)

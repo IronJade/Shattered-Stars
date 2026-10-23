@@ -9,6 +9,7 @@
 // type's entry is the one the module provides.
 
 #include <array>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "game/battle/battle.h"
 #include "game/battle/enemy_classes.h"
 #include "game/battle/enemy_modules.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
@@ -92,17 +94,10 @@ const ModuleInfo kModules[] = {
 struct SlotState {
   int module = 0;
   std::vector<u8> bytes;
+  const region::ImageMap* map = nullptr;  // another release's map of the block (runtime/region.h)
+  std::string key;                        // its SS_REGION_READ_LOG key, "enemy.<NA FNV-1a 64>"
 };
 std::array<SlotState, 4> g_slots;
-
-u64 fnv1a64(const std::vector<u8>& b) {
-  u64 h = 0xcbf29ce484222325ull;
-  for (u8 x : b) {
-    h ^= x;
-    h *= 0x100000001b3ull;
-  }
-  return h;
-}
 
 // The factory's switch (0x80075ad8) for the module types: the slot and the entry (the
 // constructor at the slot base, or the vtable it stores).
@@ -157,6 +152,7 @@ void enemy_modules_reset() {
   for (int i = 0; i < 4; ++i) {
     g_slots[i].module = i < 3 ? i : -1;  // slot D has no default (Indalecio's encounters load it)
     g_slots[i].bytes.clear();
+    g_slots[i].map = nullptr;
   }
 }
 
@@ -165,13 +161,18 @@ void enemy_modules_load(int kind, std::span<const u8> packed) {
   SlotState& s = g_slots[kind];
   auto un = disc::slz::unpack_block(packed, 0, 0, nullptr);
   s.bytes = un ? std::move(*un) : std::vector<u8>{};
-  const u64 h = fnv1a64(s.bytes);
+  // The module is known by its normalised instructions (any release's link addresses); the
+  // table's key is NA's FNV-1a 64 of the block.
+  const u64 h = region::module_identity(region::ImageKind::kEnemy, s.bytes, &s.map);
   s.module = -1;
   for (size_t i = 0; i < std::size(kModules); ++i)
-    if (kModules[i].hash == h && kModules[i].size == s.bytes.size() && kModules[i].slot == kind)
-      s.module = static_cast<int>(i);
+    if (h != 0 && kModules[i].hash == h && kModules[i].slot == kind) s.module = static_cast<int>(i);
+  char key[32];
+  std::snprintf(key, sizeof key, "enemy.%016llx", static_cast<unsigned long long>(h));
+  s.key = key;
+  if (!region::is_na() && !(s.map != nullptr && region::prepare(s.map, s.bytes))) s.bytes.clear();
   if (s.module < 0)
-    log_once("battle-enemy-module-unknown-" + std::to_string(h),
+    log_once("battle-enemy-module-unknown-" + std::to_string(region::fnv1a64(s.bytes)),
              "battle: unknown enemy code block for slot " + std::to_string(kind) + " (monsters there use the base class)");
 }
 
@@ -182,8 +183,8 @@ u8 enemy_module_u8(int slot, u32 address) {
     const u8* p = battle_data(address);
     return p != nullptr ? *p : 0;
   }
-  const u32 off = address - kSlotBase[slot];
-  return off < s.bytes.size() ? s.bytes[off] : 0;
+  const u8* p = region::image_byte(s.map, s.bytes, kSlotBase[slot], address, s.key.c_str());
+  return p != nullptr ? *p : 0;
 }
 
 s16 enemy_module_s16(int slot, u32 address) {

@@ -1,0 +1,965 @@
+map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_from
+0,,(system): world-transfer script (unused map slot),(system),world-transfer script (unused map slot),special,35,0,,,"0-3, 826",map_names.csv
+1,"1, 2",Expel: overworld,Expel,overworld,world,35,0,,,"0-3, 826",map_names.csv
+2,2,Energy Nede: overworld,Energy Nede,overworld,world,35,0,,,"0-3, 826",map_names.csv
+3,,world map 3: overworld,world map 3,overworld,world,35,0,,,"0-3, 826",map_names.csv
+4,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,1,0,,yes,,map_names.csv
+5,1,"Arlia Village: interior room, about 2 doors in from the entrance",Arlia Village,"interior room, about 2 doors in from the entrance",town,1,0,,,,map_names.csv
+6,1,"Arlia Village: interior room, about 3 doors in from the entrance",Arlia Village,"interior room, about 3 doors in from the entrance",town,1,0,,,,map_names.csv
+7,1,Planet Milocinia: Planet Milocinia,Planet Milocinia,Planet Milocinia,interior,1,0,,,,map_names.csv
+8,1,Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
+9,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,2,0,,yes,,map_names.csv
+10,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,4,0,,,,map_names.csv
+11,1,Lacour Front Line: world-map entrance,Lacour Front Line,world-map entrance,field,3,0,,,,map_names.csv
+12,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,3,0,,,,map_names.csv
+13,1,Lacour Front Line: unidentified part (not connected to the rest of the cluster by any two-way door found),Lacour Front Line,unidentified part (not connected to the rest of the cluster by any two-way door found),field,0,0,,,,map_names.csv
+14,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,5,0,,,,map_names.csv
+15,1,"Arlia Village: interior room, about 2 doors in from the entrance",Arlia Village,"interior room, about 2 doors in from the entrance",town,1,0,,,,map_names.csv
+16,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
+17,"1, 2",Arlia Village: south: bridge and forest path,Arlia Village,south: bridge and forest path,town,8,0,,,,map_names.csv
+18,"1, 2",Arlia Village: north: fountain square,Arlia Village,north: fountain square,town,7,3,,,,map_names.csv
+19,"1, 2",Arlia Village: side yard off the south square (planet-gate ornament),Arlia Village,side yard off the south square (planet-gate ornament),town,1,0,,,,map_names.csv
+20,1,"Arlia Village: south: bridge and forest path, at night",Arlia Village,"south: bridge and forest path, at night",cutscene,3,0,,,,map_names.csv
+21,1,"Arlia Village: north: fountain square, at night",Arlia Village,"north: fountain square, at night",cutscene,7,3,,,,map_names.csv
+22,1,"Arlia Village: bridge path, at night",Arlia Village,"bridge path, at night",cutscene,2,0,,,,map_names.csv
+23,"1, 2",Arlia Village: Belding Church (inside),Arlia Village,Belding Church (inside),interior,1,0,,,,map_names.csv
+24,"1, 2","Arlia Village: villager's house, living room",Arlia Village,"villager's house, living room",interior,2,0,,,,map_names.csv
+25,"1, 2","Arlia Village: villager's house, bedroom",Arlia Village,"villager's house, bedroom",interior,1,2,,,,map_names.csv
+26,"1, 2",Arlia Village: Hearn's General Store (inside),Arlia Village,Hearn's General Store (inside),interior,1,0,1,,,map_names.csv
+27,"1, 2",Arlia Village: Rena's House (inside),Arlia Village,Rena's House (inside),interior,7,0,,,,map_names.csv
+28,1,Arlia Village: (unused map slot),Arlia Village,(unused map slot),special,0,0,,,,map_names.csv
+29,1,"Arlia Village: Rena's House (inside), at night",Arlia Village,"Rena's House (inside), at night",cutscene,4,0,,,,map_names.csv
+30,2,Field of Power: Rena's opening dream (vision of the four Fields),Field of Power,Rena's opening dream (vision of the four Fields),cutscene,5,0,,,,map_names.csv
+31,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,2,0,,,,map_names.csv
+32,1,"Arlia Village: Rena's House (inside), at night, variant",Arlia Village,"Rena's House (inside), at night, variant",cutscene,3,0,,,,map_names.csv
+33,"1, 2",Arlia Village: villager's house near the square,Arlia Village,villager's house near the square,interior,1,1,,,,map_names.csv
+34,"1, 2","Arlia Village: Mayor Regis's House, 1F",Arlia Village,"Mayor Regis's House, 1F",interior,2,0,,,,map_names.csv
+35,1,"Arlia Village: Mayor Regis's House, 1F, at night",Arlia Village,"Mayor Regis's House, 1F, at night",cutscene,4,0,,,,map_names.csv
+36,"1, 2",Arlia Village: waterside path behind the Mayor's house,Arlia Village,waterside path behind the Mayor's house,town,3,0,,,,map_names.csv
+37,1,"Arlia Village: Mayor's house, back porch, at night",Arlia Village,"Mayor's house, back porch, at night",cutscene,2,0,,,,map_names.csv
+38,"1, 2",Arlia Village: Rena's Room,Arlia Village,Rena's Room,interior,3,1,,,,map_names.csv
+39,1,Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
+40,1,Rena's Room: entrance / threshold area,Rena's Room,entrance / threshold area,interior,1,1,,,,map_names.csv
+41,1,Arlia Village: villager's house (unidentified owner),Arlia Village,villager's house (unidentified owner),interior,3,0,,,,map_names.csv
+42,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,3,0,,,,map_names.csv
+43,"1, 2","Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",Town of Salva,"square, outer half (path to Salva Drift and Alen's Mansion)",town,10,0,,,,map_names.csv
+44,"1, 2","Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",Town of Salva,"square, shop half (Inn, Jam Store, Jewelry Store)",town,9,0,,,,map_names.csv
+45,"1, 2",Town of Salva: side alley between the square's two halves,Town of Salva,side alley between the square's two halves,town,2,0,,,,map_names.csv
+46,"1, 2",Alen's Mansion: Alen's Mansion (inside),Alen's Mansion,Alen's Mansion (inside),interior,9,0,,,,map_names.csv
+47,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+48,1,Town of Salva: gate toward Alen's Mansion,Town of Salva,gate toward Alen's Mansion,town,3,0,,,,map_names.csv
+49,"1, 2",Alen's Mansion: grounds / path to the mansion,Alen's Mansion,grounds / path to the mansion,town,1,0,,,,map_names.csv
+50,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,1,,,,map_names.csv
+51,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+52,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,3,0,,,,map_names.csv
+53,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,3,0,,,,map_names.csv
+54,"1, 2",Town of Salva: Inn The Hopping Penguin,Town of Salva,Inn The Hopping Penguin,interior,2,0,,,,map_names.csv
+55,"1, 2","Town of Salva: interior room, about 1 door in from the entrance",Town of Salva,"interior room, about 1 door in from the entrance",town,1,0,,,,map_names.csv
+56,"1, 2",Town of Salva: Jam Store Dolphin Kick,Town of Salva,Jam Store Dolphin Kick,interior,1,0,3,,,map_names.csv
+57,"1, 2",Town of Salva: House,Town of Salva,House,interior,1,0,,,,map_names.csv
+58,"1, 2",Town of Salva: Tavern Rough & Tumble,Town of Salva,Tavern Rough & Tumble,interior,1,0,,,,map_names.csv
+59,"1, 2",Town of Salva: Jewelry Store Fairy Tear,Town of Salva,Jewelry Store Fairy Tear,interior,2,1,2 4,,,map_names.csv
+60,"1, 2",Town of Salva: rocky dockside edge of the square,Town of Salva,rocky dockside edge of the square,town,3,0,,,,map_names.csv
+61,"1, 2","Salva Drift: interior room, about 4 doors in from the entrance",Salva Drift,"interior room, about 4 doors in from the entrance",field,2,0,,,,map_names.csv
+62,"1, 2",Salva Drift: mine tunnel entrance,Salva Drift,mine tunnel entrance,dungeon,2,0,,yes,,map_names.csv
+63,"1, 2",Town of Salva: Salva Drift,Town of Salva,Salva Drift,field,5,0,,,,map_names.csv
+64,"1, 2","Salva Drift: mine tunnel, deeper",Salva Drift,"mine tunnel, deeper",dungeon,2,2,,,,map_names.csv
+65,"1, 2","Salva Drift: interior room, about 1 door in from the entrance",Salva Drift,"interior room, about 1 door in from the entrance",field,3,2,,,,map_names.csv
+66,"1, 2","Salva Drift: interior room, about 2 doors in from the entrance",Salva Drift,"interior room, about 2 doors in from the entrance",field,3,1,,,,map_names.csv
+67,"1, 2","Salva Drift: interior room, about 3 doors in from the entrance",Salva Drift,"interior room, about 3 doors in from the entrance",field,2,2,,,,map_names.csv
+68,"1, 2","Salva Drift: interior room, about 3 doors in from the entrance",Salva Drift,"interior room, about 3 doors in from the entrance",field,4,3,,yes,,map_names.csv
+69,"1, 2","Salva Drift: interior room, about 2 doors in from the entrance",Salva Drift,"interior room, about 2 doors in from the entrance",field,2,3,,,,map_names.csv
+70,"1, 2","Salva Drift: interior room, about 1 door in from the entrance",Salva Drift,"interior room, about 1 door in from the entrance",field,4,1,,,,map_names.csv
+71,"1, 2","Salva Drift: dark cave bridge, dead end off the tunnel",Salva Drift,"dark cave bridge, dead end off the tunnel",dungeon,2,2,,yes,,map_names.csv
+72,"1, 2","Salva Drift: interior room, about 2 doors in from the entrance",Salva Drift,"interior room, about 2 doors in from the entrance",field,2,1,,,,map_names.csv
+73,"1, 2","Town of Cross: town entrance, by the clock-tower square",Town of Cross,"town entrance, by the clock-tower square",town,1,0,,,,map_names.csv
+74,"1, 2",Town of Cross: main plaza (roundabout),Town of Cross,main plaza (roundabout),town,7,0,,,,map_names.csv
+75,"1, 2","Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",Town of Cross,"shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",town,6,0,8,,,map_names.csv
+76,"1, 2",Town of Cross: back street near the plaza,Town of Cross,back street near the plaza,town,4,0,,,,map_names.csv
+77,"1, 2",Town of Cross: street toward the castle bridge,Town of Cross,street toward the castle bridge,town,2,0,,,,map_names.csv
+78,"1, 2",Town of Cross: castle gate bridge,Town of Cross,castle gate bridge,town,3,0,,,,map_names.csv
+79,"1, 2",Town of Cross: Weapons Shop Royal Hunt (inside),Town of Cross,Weapons Shop Royal Hunt (inside),interior,1,0,7,,,map_names.csv
+80,"1, 2",Town of Cross: Skill Guild (Skillie),Town of Cross,Skill Guild (Skillie),interior,1,0,,,,map_names.csv
+81,"1, 2",Town of Cross: Bar Mikado (inside),Town of Cross,Bar Mikado (inside),interior,2,0,,,,map_names.csv
+82,"1, 2",Town of Cross: Restaurant Forum (inside),Town of Cross,Restaurant Forum (inside),interior,3,0,9,,,map_names.csv
+83,"1, 2",Town of Cross: Inn Kingdom Hotel (inside),Town of Cross,Inn Kingdom Hotel (inside),interior,6,0,,,,map_names.csv
+84,"1, 2","Inn Kingdom Hotel: interior room, about 1 door in from the entrance",Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
+85,"1, 2","Inn Kingdom Hotel: interior room, about 1 door in from the entrance",Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,2,0,,,,map_names.csv
+86,"1, 2",Town of Cross: Cross Cathedral (inside),Town of Cross,Cross Cathedral (inside),interior,2,0,,,,map_names.csv
+87,1,"Town of Cross: main plaza (roundabout), story-state variant",Town of Cross,"main plaza (roundabout), story-state variant",town,3,0,,,,map_names.csv
+88,1,"Town of Cross: shop plaza, story-state variant",Town of Cross,"shop plaza, story-state variant",town,2,0,,,,map_names.csv
+89,1,"Town of Cross: back street, story-state variant",Town of Cross,"back street, story-state variant",town,1,0,,,,map_names.csv
+90,"1, 2","Cross Castle, First Floor: Cross Castle, First Floor","Cross Castle, First Floor","Cross Castle, First Floor",interior,6,0,,,,map_names.csv
+91,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,5,0,,,,map_names.csv
+92,"1, 2",Armory: Armory,Armory,Armory,interior,1,2,,,,map_names.csv
+93,"1, 2",Waiting Room: Waiting Room,Waiting Room,Waiting Room,interior,1,0,,,,map_names.csv
+94,"1, 2",The King's Private Chambers: The King's Private Chambers,The King's Private Chambers,The King's Private Chambers,interior,1,0,,,,map_names.csv
+95,"1, 2",Throne Room: Throne Room,Throne Room,Throne Room,interior,11,0,,,,map_names.csv
+96,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,3,0,,,,map_names.csv
+97,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,3,0,,,,map_names.csv
+98,"1, 2",Cross Castle Kitchen: Cross Castle Kitchen,Cross Castle Kitchen,Cross Castle Kitchen,interior,1,0,,,,map_names.csv
+99,"1, 2",Soldiers' Compartment: Soldiers' Compartment,Soldiers' Compartment,Soldiers' Compartment,interior,1,0,,,,map_names.csv
+100,"1, 2",The Prince's Chambers: entrance / threshold area,The Prince's Chambers,entrance / threshold area,interior,2,1,,,,map_names.csv
+101,"1, 2",The Princess' Chamber: The Princess' Chamber,The Princess' Chamber,The Princess' Chamber,interior,1,0,,,,map_names.csv
+102,"1, 2",The Prince's Chambers: entrance / threshold area,The Prince's Chambers,entrance / threshold area,interior,4,0,,,,map_names.csv
+103,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,2,0,,,,map_names.csv
+104,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,2,0,,,,map_names.csv
+105,1,"Port of Clik: market square (stairs, fountain statue)",Port of Clik,"market square (stairs, fountain statue)",town,8,0,15 16,,,map_names.csv
+106,1,"Port of Clik: market square (stairs, fountain statue)",Port of Clik,"market square (stairs, fountain statue)",town,2,0,15 16,,,map_names.csv
+107,1,Port of Clik: harbor plaza (canal),Port of Clik,harbor plaza (canal),town,8,0,,,,map_names.csv
+108,"1, 2","Port of Clik: hillside path (secluded, stairs up)",Port of Clik,"hillside path (secluded, stairs up)",town,1,0,,,,map_names.csv
+109,1,Port of Clik: docks (boats moored),Port of Clik,docks (boats moored),town,6,0,,,,map_names.csv
+110,1,"Port of Clik: pier, far end (life rings)",Port of Clik,"pier, far end (life rings)",town,1,0,,,,map_names.csv
+111,1,"Port of Clik: alley (barrels, ladder)",Port of Clik,"alley (barrels, ladder)",town,1,0,,,,map_names.csv
+112,1,Port of Clik: garden gate,Port of Clik,garden gate,town,1,0,,,,map_names.csv
+113,1,Port of Clik: International Trading,Port of Clik,International Trading,interior,1,0,12,,,map_names.csv
+114,1,Port of Clik: Antique Shop Milly's Shop,Port of Clik,Antique Shop Milly's Shop,interior,1,0,13,,,map_names.csv
+115,1,Port of Clik: Henry's Happy Barrel,Port of Clik,Henry's Happy Barrel,interior,1,0,,,,map_names.csv
+116,1,Port of Clik: Inn Waterfront,Port of Clik,Inn Waterfront,interior,2,0,,,,map_names.csv
+117,1,Port of Clik: The House on the Hill,Port of Clik,The House on the Hill,field,1,1,,,,map_names.csv
+118,1,Port of Clik: Clothing Store Golgo,Port of Clik,Clothing Store Golgo,interior,1,0,,,,map_names.csv
+119,1,Port of Clik: Restaurant The Big Potato,Port of Clik,Restaurant The Big Potato,interior,2,3,,,,map_names.csv
+120,1,"Port of Clik: Restaurant The Big Potato, dining room (piano lounge)",Port of Clik,"Restaurant The Big Potato, dining room (piano lounge)",interior,1,0,,,,map_names.csv
+121,1,Port of Clik: Bakery The Clik Bakery,Port of Clik,Bakery The Clik Bakery,interior,1,0,17,,,map_names.csv
+122,1,Fanzine Convention Hall Oates Hall: Fanzine Convention Hall Oates Hall,Fanzine Convention Hall Oates Hall,Fanzine Convention Hall Oates Hall,interior,1,0,,,,map_names.csv
+123,1,Port of Clik: Skill Guild Clik Skills,Port of Clik,Skill Guild Clik Skills,interior,1,0,,,,map_names.csv
+124,"1, 2",Mars Village: village green (entrance),Mars Village,village green (entrance),town,11,0,,,,map_names.csv
+125,"1, 2",Mars Village: bridge over the millpond,Mars Village,bridge over the millpond,town,3,0,,,,map_names.csv
+126,"1, 2",Mars Village: village street (shops),Mars Village,village street (shops),town,8,0,83,,,map_names.csv
+127,"1, 2",Mars Village: stepping-stone path,Mars Village,stepping-stone path,town,2,0,,,,map_names.csv
+128,"1, 2",Mars Village: Tool Shop Roof's,Mars Village,Tool Shop Roof's,interior,1,0,22,,,map_names.csv
+129,"1, 2",Mars Village: Bar O'Shane,Mars Village,Bar O'Shane,interior,2,0,,,,map_names.csv
+130,"1, 2","Mars Village: Inn Finn's, guest room",Mars Village,"Inn Finn's, guest room",interior,4,0,,,,map_names.csv
+131,"1, 2",Elder's House: entrance / threshold area,Elder's House,entrance / threshold area,interior,5,0,,,,map_names.csv
+132,"1, 2","Elder's House: interior room, about 1 door in from the entrance",Elder's House,"interior room, about 1 door in from the entrance",interior,1,3,,,,map_names.csv
+133,"1, 2","Mars Village: Celine's House, hallway (to Celine's Room)",Mars Village,"Celine's House, hallway (to Celine's Room)",interior,2,0,,,,map_names.csv
+134,1,Mars Village: village house interior (dim room),Mars Village,village house interior (dim room),interior,1,0,,,,map_names.csv
+135,"1, 2",Mars Village: Celine's House,Mars Village,Celine's House,interior,3,0,,,,map_names.csv
+136,1,Mars Village: village house interior (fireplace living room),Mars Village,village house interior (fireplace living room),interior,2,0,,,,map_names.csv
+137,"1, 2","Mars Village: Celine's House, bedroom",Mars Village,"Celine's House, bedroom",interior,1,0,,,,map_names.csv
+138,1,"Mars Village: village house, bedroom",Mars Village,"village house, bedroom",interior,1,0,,,,map_names.csv
+139,"1, 2",Mars Village: Celine's Room,Mars Village,Celine's Room,interior,1,1,,,,map_names.csv
+140,"1, 2",Mars Village: Grocery Store Golden Spoon,Mars Village,Grocery Store Golden Spoon,interior,1,0,23,,,map_names.csv
+141,1,Mars Village: porch (potted plants),Mars Village,porch (potted plants),town,2,0,,,,map_names.csv
+142,"1, 2","Town of Herlie: town plaza / shop row (Weapons Premia, Antique Dealer, Tavern, Skill Guild, Eleanor's House, Delicatessen, Inn all open off it)",Town of Herlie,"town plaza / shop row (Weapons Premia, Antique Dealer, Tavern, Skill Guild, Eleanor's House, Delicatessen, Inn all open off it)",town,11,0,,,,map_names.csv
+143,"1, 2","Zand's Mansion: front gate / grounds (hilltop, north end of Port of Herlie)",Zand's Mansion,"front gate / grounds (hilltop, north end of Port of Herlie)",town,3,0,,,,map_names.csv
+144,"1, 2","Town of Herlie: market street (shop stalls, signposted)",Town of Herlie,"market street (shop stalls, signposted)",town,8,0,,,,map_names.csv
+145,"1, 2",Town of Herlie: back alley (signpost; side route toward Zand's Mansion),Town of Herlie,back alley (signpost; side route toward Zand's Mansion),town,4,0,,,,map_names.csv
+146,"1, 2",Town of Herlie: Warehouse (south Port of Herlie),Town of Herlie,Warehouse (south Port of Herlie),interior,2,0,,,,map_names.csv
+147,"1, 2",Town of Herlie: Skill Guild Giono Vallon,Town of Herlie,Skill Guild Giono Vallon,interior,1,0,,,,map_names.csv
+148,"1, 2",Town of Herlie: Tavern Wild Man,Town of Herlie,Tavern Wild Man,interior,1,0,,,,map_names.csv
+149,"1, 2",Town of Herlie: Antique Dealer The Grasping Hand,Town of Herlie,Antique Dealer The Grasping Hand,interior,1,0,27,,,map_names.csv
+150,"1, 2",Town of Herlie: Weapons Shop Premia,Town of Herlie,Weapons Shop Premia,interior,1,0,26,,,map_names.csv
+151,"1, 2",Town of Herlie: Delicatessen Red Dragon Manor,Town of Herlie,Delicatessen Red Dragon Manor,interior,1,0,28,,,map_names.csv
+152,"1, 2",Town of Herlie: Inn Ocean View,Town of Herlie,Inn Ocean View,interior,3,0,,,,map_names.csv
+153,"1, 2","Town of Herlie: Inn Ocean View, upstairs hallway (west wing)",Town of Herlie,"Inn Ocean View, upstairs hallway (west wing)",interior,4,0,,,,map_names.csv
+154,"1, 2","Town of Herlie: Inn Ocean View, upstairs hallway (east wing)",Town of Herlie,"Inn Ocean View, upstairs hallway (east wing)",interior,4,0,,,,map_names.csv
+155,"1, 2","Town of Herlie: Inn Ocean View, guest room",Town of Herlie,"Inn Ocean View, guest room",interior,6,0,,,,map_names.csv
+156,"1, 2",Town of Herlie: Eleanor's House,Town of Herlie,Eleanor's House,interior,6,0,,,,map_names.csv
+157,"1, 2","Town of Herlie: Eleanor's House, upstairs",Town of Herlie,"Eleanor's House, upstairs",interior,7,1,,,,map_names.csv
+158,"1, 2",Zand's Mansion: dining room,Zand's Mansion,dining room,interior,2,0,,,,map_names.csv
+159,"1, 2",Zand's Mansion: grand foyer (double staircase),Zand's Mansion,grand foyer (double staircase),interior,5,0,,,,map_names.csv
+160,"1, 2",Zand's Mansion: parlor (checkerboard floor),Zand's Mansion,parlor (checkerboard floor),interior,2,0,,,,map_names.csv
+161,"1, 2",Zand's Mansion: back stairwell,Zand's Mansion,back stairwell,interior,2,0,,,,map_names.csv
+162,"1, 2","Zand's Mansion: back stairwell, second flight",Zand's Mansion,"back stairwell, second flight",interior,2,0,,,,map_names.csv
+163,"1, 2","Zand's Mansion: parlor (checkerboard floor), front room",Zand's Mansion,"parlor (checkerboard floor), front room",interior,3,2,,,,map_names.csv
+164,"1, 2",Zand's Mansion: gallery hall (horse statue),Zand's Mansion,gallery hall (horse statue),interior,2,0,,,,map_names.csv
+165,"1, 2","Zand's Mansion: gallery hall, second passage",Zand's Mansion,"gallery hall, second passage",interior,2,0,,,,map_names.csv
+166,"1, 2",Zand's Mansion: storage room (barrels),Zand's Mansion,storage room (barrels),interior,2,2,,,,map_names.csv
+167,"1, 2",Port Hilton: Food Store Munchies,Port Hilton,Food Store Munchies,interior,5,0,31 32 33 34,,,map_names.csv
+168,"1, 2","Inn Hilton Island: harbor street outside the Inn, night",Inn Hilton Island,"harbor street outside the Inn, night",town,2,0,,,,map_names.csv
+169,"1, 2","Port Hilton: harbor entrance (city gate, cargo crane)",Port Hilton,"harbor entrance (city gate, cargo crane)",town,5,0,,,,map_names.csv
+170,"1, 2","Inn Hilton Island: street beside the Inn, night",Inn Hilton Island,"street beside the Inn, night",town,1,0,,,,map_names.csv
+171,"1, 2",Port Hilton: pier (boat docks),Port Hilton,pier (boat docks),town,1,0,,,,map_names.csv
+172,"1, 2","Inn Hilton Island: market street, night",Inn Hilton Island,"market street, night",town,1,0,,,,map_names.csv
+173,"1, 2",Skill Guild Skill Power: Skill Guild Skill Power,Skill Guild Skill Power,Skill Guild Skill Power,interior,1,0,,,,map_names.csv
+174,"1, 2",Tavern Stone: Tavern Stone,Tavern Stone,Tavern Stone,interior,1,0,,,,map_names.csv
+175,"1, 2",Port Hilton: Inn Hilton Island,Port Hilton,Inn Hilton Island,interior,5,0,,,,map_names.csv
+176,"1, 2","Inn Hilton Island: lobby, reception desk (night, Tournament Eve)",Inn Hilton Island,"lobby, reception desk (night, Tournament Eve)",interior,5,0,,,,map_names.csv
+177,"1, 2","Port Hilton: Inn Hilton Island, guest hallway (A)",Port Hilton,"Inn Hilton Island, guest hallway (A)",interior,4,0,,,,map_names.csv
+178,"1, 2","Inn Hilton Island: guest hallway (A), night",Inn Hilton Island,"guest hallway (A), night",interior,5,0,,,,map_names.csv
+179,"1, 2","Port Hilton: Inn Hilton Island, guest hallway (B)",Port Hilton,"Inn Hilton Island, guest hallway (B)",interior,6,0,,,,map_names.csv
+180,"1, 2","Inn Hilton Island: guest hallway (B), night",Inn Hilton Island,"guest hallway (B), night",interior,4,0,,,,map_names.csv
+181,"1, 2","Port Hilton: Inn Hilton Island, guest room",Port Hilton,"Inn Hilton Island, guest room",interior,7,0,,,,map_names.csv
+182,"1, 2","Inn Hilton Island: guest room, night",Inn Hilton Island,"guest room, night",interior,7,0,,,,map_names.csv
+183,"1, 2",Town of Linga: town plaza (University district; most shops open off it),Town of Linga,town plaza (University district; most shops open off it),town,15,0,,,,map_names.csv
+184,"1, 2",Town of Linga: canal bridge (path to the Academy and Bowman's house),Town of Linga,canal bridge (path to the Academy and Bowman's house),town,6,0,,,,map_names.csv
+185,"1, 2",Town of Linga: Keith Klasner's House,Town of Linga,Keith Klasner's House,interior,7,0,,,,map_names.csv
+186,"1, 2","Town of Linga: Keith Klaser's House, study",Town of Linga,"Keith Klaser's House, study",interior,2,0,,,,map_names.csv
+187,"1, 2",Town of Linga: University Co-op Academy Co-op,Town of Linga,University Co-op Academy Co-op,interior,1,0,48,,,map_names.csv
+188,"1, 2",Town of Linga: Inn Pension Chie,Town of Linga,Inn Pension Chie,interior,2,0,,,,map_names.csv
+189,"1, 2",Town of Linga: Academy Library,Town of Linga,Academy Library,interior,1,0,,,,map_names.csv
+190,"1, 2",Town of Linga: Skill Guild Le Skill,Town of Linga,Skill Guild Le Skill,interior,1,0,,,,map_names.csv
+191,"1, 2",Town of Linga: Pharmacy Jean Medicine Home,Town of Linga,Pharmacy Jean Medicine Home,interior,1,0,47,,,map_names.csv
+192,"1, 2",Town of Linga: Bowman's House,Town of Linga,Bowman's House,interior,3,0,,,,map_names.csv
+193,1,Bowman's House: Bowman's House,Bowman's House,Bowman's House,interior,1,0,,,,map_names.csv
+194,"1, 2","Town of Linga: Bowman's House, Bedroom",Town of Linga,"Bowman's House, Bedroom",interior,1,0,,,,map_names.csv
+195,1,"Bowman's House, Bedroom: Bowman's House, Bedroom","Bowman's House, Bedroom","Bowman's House, Bedroom",interior,3,0,,,,map_names.csv
+196,"1, 2",Town of Linga: Precis's Living Room,Town of Linga,Precis's Living Room,interior,4,0,,,,map_names.csv
+197,"1, 2",Town of Linga: Precis' House The Lab,Town of Linga,Precis' House The Lab,interior,6,0,,,,map_names.csv
+198,"1, 2",Town of Linga: Precis' House Engine Room,Town of Linga,Precis' House Engine Room,interior,1,0,,,,map_names.csv
+199,"1, 2",Town of Linga: Lacour Academy Reception,Town of Linga,Lacour Academy Reception,interior,3,0,,,,map_names.csv
+200,"1, 2","Town of Linga: Lacour Academy, ground floor hallway (reception to Hall 1 / cafe)",Town of Linga,"Lacour Academy, ground floor hallway (reception to Hall 1 / cafe)",interior,4,0,,,,map_names.csv
+201,"1, 2","Town of Linga: Lacour Academy, hallway (reception to Hall 2 / lab, stairs up)",Town of Linga,"Lacour Academy, hallway (reception to Hall 2 / lab, stairs up)",interior,4,0,,,,map_names.csv
+202,"1, 2",Town of Linga: Lacour Academy Student Cafe,Town of Linga,Lacour Academy Student Cafe,interior,1,0,,,,map_names.csv
+203,"1, 2",Town of Linga: Lacour Academy Hall 1,Town of Linga,Lacour Academy Hall 1,interior,1,0,,,,map_names.csv
+204,"1, 2",Town of Linga: Lacour Academy Hall 2,Town of Linga,Lacour Academy Hall 2,interior,1,0,,,,map_names.csv
+205,"1, 2",Town of Linga: Lacour Academy Laboratory,Town of Linga,Lacour Academy Laboratory,dungeon,1,0,,,,map_names.csv
+206,"1, 2",Town of Linga: Pharmacy Tsuyoshi Takemoto,Town of Linga,Pharmacy Tsuyoshi Takemoto,interior,3,0,46,,,map_names.csv
+207,"1, 2",Town of Linga: path to Keith Klaser's House (yard),Town of Linga,path to Keith Klaser's House (yard),town,5,0,,,,map_names.csv
+208,1,Town of Linga: lakeside street (shop signs),Town of Linga,lakeside street (shop signs),town,2,0,,,,map_names.csv
+209,"1, 2",Town of Linga: gate / archway at the edge of the plaza,Town of Linga,gate / archway at the edge of the plaza,town,2,0,,,,map_names.csv
+210,"1, 2",Town of Lacour: Weapons Shop Counterpunch,Town of Lacour,Weapons Shop Counterpunch,interior,3,0,37 38 39,,,map_names.csv
+211,"1, 2",Town of Lacour: main plaza (round garden),Town of Lacour,main plaza (round garden),town,7,0,,,,map_names.csv
+212,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
+213,"1, 2",Town of Lacour: statued path to the castle gate,Town of Lacour,statued path to the castle gate,town,4,0,,,,map_names.csv
+214,"1, 2",Town of Lacour: side alley off the plaza,Town of Lacour,side alley off the plaza,town,4,0,,,,map_names.csv
+215,"1, 2",Town of Lacour: Food Store Carnival,Town of Lacour,Food Store Carnival,interior,2,0,41 42 43 44 88,,,map_names.csv
+216,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
+217,"1, 2","Town of Lacour: interior room, about 2 doors in from the entrance",Town of Lacour,"interior room, about 2 doors in from the entrance",interior,2,0,,,,map_names.csv
+218,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,2,0,,,,map_names.csv
+219,"1, 2",Town of Lacour: Skill Guild Lacour Skills,Town of Lacour,Skill Guild Lacour Skills,interior,1,0,,,,map_names.csv
+220,"1, 2",Town of Lacour: Weapons Shop Slayer,Town of Lacour,Weapons Shop Slayer,interior,1,0,40,,,map_names.csv
+221,"1, 2",Town of Lacour: Inn The Lacour Hotel,Town of Lacour,Inn The Lacour Hotel,interior,5,0,,,,map_names.csv
+222,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,4,0,,,,map_names.csv
+223,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,5,0,,,,map_names.csv
+224,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,9,0,,,,map_names.csv
+225,"1, 2",Town of Lacour: Tavern La Coeur of Lacour,Town of Lacour,Tavern La Coeur of Lacour,interior,3,0,,,,map_names.csv
+226,"1, 2",Town of Lacour: House Red Roof,Town of Lacour,House Red Roof,interior,2,0,,,,map_names.csv
+227,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+228,"1, 2",Town of Lacour: Blacksmith Gamgee's Forge,Town of Lacour,Blacksmith Gamgee's Forge,interior,1,0,,,,map_names.csv
+229,"1, 2",El Beach: entrance / threshold area,El Beach,entrance / threshold area,field,6,0,,,,map_names.csv
+230,"1, 2","El Beach: interior room, about 1 door in from the entrance",El Beach,"interior room, about 1 door in from the entrance",field,1,0,,,,map_names.csv
+231,"1, 2",Eluria Colony: shipwreck beach (opening cutscene),Eluria Colony,shipwreck beach (opening cutscene),special,0,0,,,,map_names.csv
+232,"1, 2",Eluria Colony: outpost clearing (entrance),Eluria Colony,outpost clearing (entrance),field,3,0,,,,map_names.csv
+233,"1, 2",Eluria Colony: Weapons Shop (Arsenal),Eluria Colony,Weapons Shop (Arsenal),interior,1,0,53,,,map_names.csv
+234,"1, 2",Eluria Colony: Leader's House,Eluria Colony,Leader's House,interior,1,0,,,,map_names.csv
+235,2,Central City: central plaza (garden roundabout),Central City,central plaza (garden roundabout),town,7,0,,,,map_names.csv
+236,2,Central City: plaza courtyard (garden corner),Central City,plaza courtyard (garden corner),town,1,0,,,,map_names.csv
+237,2,Central City: garden courtyard (steps to Tavern & Inn Brandywine),Central City,garden courtyard (steps to Tavern & Inn Brandywine),town,3,0,,,,map_names.csv
+238,2,Central City: City Hall plaza (statues),Central City,City Hall plaza (statues),town,3,0,,,,map_names.csv
+239,2,Central City: City Hall,Central City,City Hall,interior,3,0,,,,map_names.csv
+240,2,Central City: City Hall Receptionist,Central City,City Hall Receptionist,interior,3,0,,,,map_names.csv
+241,2,"Central City: Nede Chronicle, newsroom floor (receptionist side)",Central City,"Nede Chronicle, newsroom floor (receptionist side)",interior,3,0,,,,map_names.csv
+242,2,Central City: Nede Chronicle,Central City,Nede Chronicle,interior,2,0,,,,map_names.csv
+243,2,"Central City: Nede Chronicle, newsroom floor (publishing side)",Central City,"Nede Chronicle, newsroom floor (publishing side)",interior,3,0,,,,map_names.csv
+244,2,"Central City: Nede Chronicle, editor's office",Central City,"Nede Chronicle, editor's office",interior,0,0,,,,map_names.csv
+245,2,Central City: Nede Publishing Company,Central City,Nede Publishing Company,interior,1,0,57,,,map_names.csv
+246,2,"Central City: City Hall, foyer (stairs to the Mayor's Office)",Central City,"City Hall, foyer (stairs to the Mayor's Office)",interior,2,0,,,,map_names.csv
+247,2,Central City: Mayor's Office,Central City,Mayor's Office,interior,6,0,,,,map_names.csv
+248,2,Central City: Transporter,Central City,Transporter,interior,2,0,,,,map_names.csv
+249,2,Central City: Tool Shop Reverse Edge,Central City,Tool Shop Reverse Edge,interior,1,0,55,,,map_names.csv
+250,2,Central City: Tavern & Inn Brandywine,Central City,Tavern & Inn Brandywine,interior,3,0,,,,map_names.csv
+251,2,"Central City: Tavern & Inn Brandywine, bar room (ground floor)",Central City,"Tavern & Inn Brandywine, bar room (ground floor)",interior,3,0,,,,map_names.csv
+252,2,"Central City: Inn Brandywine , 2nd Floor",Central City,"Inn Brandywine , 2nd Floor",interior,3,0,,,,map_names.csv
+253,2,"Central City: Inn Brandywine, stairwell (1st to 2nd floor)",Central City,"Inn Brandywine, stairwell (1st to 2nd floor)",interior,1,0,,,,map_names.csv
+254,2,"Central City: Inn Brandywine , 3rd Floor",Central City,"Inn Brandywine , 3rd Floor",interior,2,0,,,,map_names.csv
+255,2,"Central City: Inn Brandywine , 4th Floor",Central City,"Inn Brandywine , 4th Floor",interior,2,0,,,,map_names.csv
+256,2,"Central City: Inn Brandywine , 5th Floor",Central City,"Inn Brandywine , 5th Floor",interior,1,0,,,,map_names.csv
+257,2,Central City: Restaurant Weight Lawyer,Central City,Restaurant Weight Lawyer,interior,2,0,56,,,map_names.csv
+258,2,Central City: Skill Guild,Central City,Skill Guild,interior,1,0,,,,map_names.csv
+259,2,Central City: Weapons Shop Hyper-on-Hyper,Central City,Weapons Shop Hyper-on-Hyper,interior,1,0,54,,,map_names.csv
+260,2,"North City: town plaza (round garden, shops around)",North City,"town plaza (round garden, shops around)",town,13,0,,,,map_names.csv
+261,2,"North City: plaza, garden edge (notice board)",North City,"plaza, garden edge (notice board)",town,3,0,,,,map_names.csv
+262,2,North City: park path (toward the Four Fields transporter),North City,park path (toward the Four Fields transporter),town,4,0,,,,map_names.csv
+263,2,Synard Office: Synard Office,Synard Office,Synard Office,interior,2,0,,,,map_names.csv
+264,2,North City: Synard Reception Area,North City,Synard Reception Area,interior,6,0,,,,map_names.csv
+265,2,North City: Tool Shop Blue Flask,North City,Tool Shop Blue Flask,interior,2,0,61,,,map_names.csv
+266,2,North City: Library Encyclopedia,North City,Library Encyclopedia,interior,1,0,,,,map_names.csv
+267,2,Transporter: Transporter,Transporter,Transporter,special,2,0,,,,map_names.csv
+268,2,"North City: Tool Shop Blue Flask, upstairs room",North City,"Tool Shop Blue Flask, upstairs room",interior,1,0,,,,map_names.csv
+269,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,5,0,,,,map_names.csv
+270,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,2,0,,,,map_names.csv
+271,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,3,0,,,,map_names.csv
+272,2,Director's Office: Director's Office,Director's Office,Director's Office,interior,5,0,,,,map_names.csv
+273,2,North City: Inn Landscape,North City,Inn Landscape,interior,2,0,,,,map_names.csv
+274,2,"North City: Inn Landscape, guest room",North City,"Inn Landscape, guest room",interior,1,0,,,,map_names.csv
+275,2,North City: Smiley's Grocery,North City,Smiley's Grocery,interior,1,0,62,,,map_names.csv
+276,2,North City: Account Weapons,North City,Account Weapons,interior,1,0,60,,,map_names.csv
+277,2,Noel's House: entrance / threshold area,Noel's House,entrance / threshold area,interior,1,3,,,,map_names.csv
+278,2,Noel's House: Transporter,Noel's House,Transporter,interior,2,0,,,,map_names.csv
+279,2,Fun City: entrance gate (ticket booths),Fun City,entrance gate (ticket booths),town,5,0,,,,map_names.csv
+280,2,Fun City: Fun City Central Square,Fun City,Fun City Central Square,town,11,0,,,,map_names.csv
+281,2,Fun City: Fun City Fighting Arena Square,Fun City,Fun City Fighting Arena Square,town,6,0,,,,map_names.csv
+282,2,Fun City: amusement plaza (carnival games),Fun City,amusement plaza (carnival games),town,3,0,,,,map_names.csv
+283,2,Fun City: Inn Fun City Hotel,Fun City,Inn Fun City Hotel,interior,2,0,,,,map_names.csv
+284,2,"Fun City: Inn Fun City Hotel, lobby (grand staircase)",Fun City,"Inn Fun City Hotel, lobby (grand staircase)",interior,6,0,,,,map_names.csv
+285,2,"Fun City: Inn Fun City Hotel, guest room",Fun City,"Inn Fun City Hotel, guest room",interior,3,0,,,,map_names.csv
+286,2,"Fun City: Inn Fun City Hotel, guest room (upper floor)",Fun City,"Inn Fun City Hotel, guest room (upper floor)",interior,2,0,,,,map_names.csv
+287,2,Fun City: Information Center,Fun City,Information Center,interior,1,0,,,,map_names.csv
+288,2,Fun City: Tavern Playgirl,Fun City,Tavern Playgirl,interior,1,0,,,,map_names.csv
+289,2,Fun City: arcade shop row (booths),Fun City,arcade shop row (booths),town,5,0,,,,map_names.csv
+290,2,Fun City: Gift Shop Gift Box,Fun City,Gift Shop Gift Box,interior,2,0,69,,,map_names.csv
+291,2,Fun City: Restaurant Light Step,Fun City,Restaurant Light Step,interior,2,0,70,,,map_names.csv
+292,2,Fanzine Spot Sale: Fanzine Spot Sale,Fanzine Spot Sale,Fanzine Spot Sale,interior,1,0,71,,,map_names.csv
+293,2,"Fun City: lounge (dim, round tables)",Fun City,"lounge (dim, round tables)",interior,1,0,,,,map_names.csv
+294,2,BUNNY RACE WINDOW: BUNNY RACE WINDOW,BUNNY RACE WINDOW,BUNNY RACE WINDOW,special,3,0,,,,map_names.csv
+295,2,BUNNY RACETRACK: BUNNY RACETRACK,BUNNY RACETRACK,BUNNY RACETRACK,special,3,0,,,,map_names.csv
+296,2,Fun City Fighting Arena: arena floor (south entrance),Fun City Fighting Arena,arena floor (south entrance),interior,3,0,,,,map_names.csv
+297,2,Fun City Fighting Arena: registration desk,Fun City Fighting Arena,registration desk,interior,4,0,,yes,,map_names.csv
+298,2,Fun City Fighting Arena: equipment room,Fun City Fighting Arena,equipment room,interior,3,0,,,,map_names.csv
+299,2,"Fun City Fighting Arena: gallery corridor (crest tapestry, A)",Fun City Fighting Arena,"gallery corridor (crest tapestry, A)",interior,4,0,,,,map_names.csv
+300,2,"Fun City Fighting Arena: gallery corridor (crest tapestry, B)",Fun City Fighting Arena,"gallery corridor (crest tapestry, B)",interior,3,0,,,,map_names.csv
+301,2,"Fun City: stairwell (wooden planks, dim)",Fun City,"stairwell (wooden planks, dim)",interior,1,0,,,,map_names.csv
+302,2,"Fun City: stairwell (wooden planks, dim, 2nd flight)",Fun City,"stairwell (wooden planks, dim, 2nd flight)",interior,1,0,,,,map_names.csv
+303,2,Fun City Fighting Arena: arena floor (north entrance),Fun City Fighting Arena,arena floor (north entrance),interior,3,0,,,,map_names.csv
+304,2,"Fun City Fighting Arena: gallery corridor (crest rug, antechamber)",Fun City Fighting Arena,"gallery corridor (crest rug, antechamber)",interior,3,0,,,,map_names.csv
+305,2,"Fun City: Fighting Arena, forecourt ring",Fun City,"Fighting Arena, forecourt ring",interior,4,0,,yes,,map_names.csv
+306,2,Town of Armlock: town plaza (terracotta rooftops),Town of Armlock,town plaza (terracotta rooftops),town,13,0,,,,map_names.csv
+307,2,Town of Armlock: side street (toward the restaurant),Town of Armlock,side street (toward the restaurant),town,4,0,,,,map_names.csv
+308,2,Town of Armlock: stairway alley (toward the Transporter Portal of Sealing),Town of Armlock,stairway alley (toward the Transporter Portal of Sealing),town,1,0,,,,map_names.csv
+309,2,Town of Armlock: Restaurant Yamato-Ya,Town of Armlock,Restaurant Yamato-Ya,interior,1,0,76,,,map_names.csv
+310,2,Town of Armlock: Weapons and Tool Shop Milword's,Town of Armlock,Weapons and Tool Shop Milword's,interior,2,0,74,,,map_names.csv
+311,2,Town of Armlock: Tavern Home Brew 54,Town of Armlock,Tavern Home Brew 54,interior,2,0,,,,map_names.csv
+312,2,Town of Armlock: Inn Elation,Town of Armlock,Inn Elation,interior,1,0,75,,,map_names.csv
+313,2,Transporter Portal of Sealing: Transporter Portal of Sealing,Transporter Portal of Sealing,Transporter Portal of Sealing,special,2,0,,,,map_names.csv
+314,2,Town of Armlock: Mansion Mirage's House,Town of Armlock,Mansion Mirage's House,interior,3,0,,,,map_names.csv
+315,2,"Town of Armlock: Mirage's House, workshop",Town of Armlock,"Mirage's House, workshop",interior,1,0,,,,map_names.csv
+316,2,Town of Armlock: Skill Guild Skill World,Town of Armlock,Skill Guild Skill World,interior,1,0,,,,map_names.csv
+317,2,"Giveaway: town square (snowy, gothic rooftops)",Giveaway,"town square (snowy, gothic rooftops)",town,7,0,,,,map_names.csv
+318,2,Giveaway: snowy courtyard (snowman),Giveaway,snowy courtyard (snowman),town,1,0,,,,map_names.csv
+319,2,"Giveaway: foyer (west wing, statue alcoves)",Giveaway,"foyer (west wing, statue alcoves)",interior,2,0,,,,map_names.csv
+320,2,"Giveaway: foyer (east wing, stairs)",Giveaway,"foyer (east wing, stairs)",interior,4,0,,,,map_names.csv
+321,2,Giveaway: foyer (research wing),Giveaway,foyer (research wing),interior,4,0,,,,map_names.csv
+322,2,Giveaway: foyer (library wing),Giveaway,foyer (library wing),interior,4,0,,,,map_names.csv
+323,2,Giveaway: Rokumondo's Secondhand Shop,Giveaway,Rokumondo's Secondhand Shop,interior,2,0,82,,,map_names.csv
+324,2,"Giveaway: Library, stacks",Giveaway,"Library, stacks",interior,1,0,,,,map_names.csv
+325,2,Giveaway: Library,Giveaway,Library,interior,2,0,,,,map_names.csv
+326,2,Giveaway: Classroom 1,Giveaway,Classroom 1,interior,1,0,,,,map_names.csv
+327,2,Giveaway: Classroom 2,Giveaway,Classroom 2,interior,1,0,,,,map_names.csv
+328,2,Giveaway: Classroom 3,Giveaway,Classroom 3,interior,1,0,,,,map_names.csv
+329,2,Giveaway: Inn Mandarin,Giveaway,Inn Mandarin,interior,2,0,,,,map_names.csv
+330,2,"Giveaway: Inn Mandarin, common room (fireplace)",Giveaway,"Inn Mandarin, common room (fireplace)",interior,1,0,,,,map_names.csv
+331,2,Giveaway: Dining Hall Fresh Meat,Giveaway,Dining Hall Fresh Meat,interior,1,0,81,,,map_names.csv
+332,2,Giveaway: Nede History Research Lab,Giveaway,Nede History Research Lab,dungeon,1,1,,,,map_names.csv
+333,2,Giveaway: Dean's Office,Giveaway,Dean's Office,interior,1,0,,,,map_names.csv
+334,2,Giveaway: Giveaway University,Giveaway,Giveaway University,interior,4,0,65,,,map_names.csv
+335,2,Giveaway: main foyer (grand staircase),Giveaway,main foyer (grand staircase),interior,3,0,,,,map_names.csv
+336,2,Giveaway: snowy path (town to University),Giveaway,snowy path (town to University),town,2,0,,,,map_names.csv
+337,2,Giveaway: Noel's House,Giveaway,Noel's House,interior,3,0,,,,map_names.csv
+338,2,"Giveaway: Noel's House, workshop",Giveaway,"Noel's House, workshop",interior,1,0,,,,map_names.csv
+339,2,Giveaway: Tavern Tackle,Giveaway,Tavern Tackle,interior,1,0,,,,map_names.csv
+340,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+341,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,6,0,,,,map_names.csv
+342,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",dungeon,6,0,,yes,,map_names.csv
+343,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",dungeon,10,0,,,,map_names.csv
+344,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,12,0,,,,map_names.csv
+345,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+346,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+347,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+348,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+349,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,,map_names.csv
+350,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+351,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",dungeon,2,2,,,,map_names.csv
+352,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+353,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+354,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+355,"1, 2",Mountain Palace: entrance (guard post),Mountain Palace,entrance (guard post),dungeon,1,2,,,,map_names.csv
+356,"1, 2",Mountain Palace: unidentified interior (no doors found in the script),Mountain Palace,unidentified interior (no doors found in the script),dungeon,0,0,,,"340, 345-346, 352-354, 356",map_names.csv
+357,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,12,0,,,,map_names.csv
+358,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",Mountain Palace,"Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",dungeon,1,2,,,,map_names.csv
+359,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): boss room (Flarelizards x2)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): boss room (Flarelizards x2)",dungeon,2,0,,,,map_names.csv
+360,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 6 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 6 doors in from the entrance",dungeon,2,0,,yes,,map_names.csv
+361,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+362,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+363,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 4 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 4 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+364,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+365,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+366,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+367,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",Mountain Palace,"Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",dungeon,1,2,,,,map_names.csv
+368,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,6,0,,,,map_names.csv
+369,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+370,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+371,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",dungeon,1,3,,,,map_names.csv
+372,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+373,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",dungeon,1,3,,,,map_names.csv
+374,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+375,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (?HERB)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (?HERB)",dungeon,1,1,,,,map_names.csv
+376,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",dungeon,2,2,,,,map_names.csv
+377,"1, 2","Mountain Palace: Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+378,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+379,"1, 2",Mountain Palace: the fork (corridor splits toward both quest paths),Mountain Palace,the fork (corridor splits toward both quest paths),dungeon,3,0,,,,map_names.csv
+380,"1, 2","Mountain Palace: Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",Mountain Palace,"Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",dungeon,1,2,,,,map_names.csv
+381,"1, 2",Lasguss Mountain: entrance / threshold area,Lasguss Mountain,entrance / threshold area,field,1,0,,,,map_names.csv
+382,"1, 2",Lasguss Mountain: entrance / threshold area,Lasguss Mountain,entrance / threshold area,field,2,0,,,,map_names.csv
+383,"1, 2","Lasguss Mountain: interior room, about 1 door in from the entrance",Lasguss Mountain,"interior room, about 1 door in from the entrance",field,2,0,,,,map_names.csv
+384,"1, 2","Lasguss Mountain: interior room, about 1 door in from the entrance",Lasguss Mountain,"interior room, about 1 door in from the entrance",field,2,0,,,,map_names.csv
+385,"1, 2",Lasguss Mountain: entrance / threshold area,Lasguss Mountain,entrance / threshold area,field,1,0,,yes,,map_names.csv
+386,2,Heraldry Weapons Laboratory: derelict workshop (broken machinery),Heraldry Weapons Laboratory,derelict workshop (broken machinery),dungeon,1,0,,,,map_names.csv
+387,2,"Heraldry Weapons Laboratory: derelict quarters (piano, chest)",Heraldry Weapons Laboratory,"derelict quarters (piano, chest)",dungeon,1,1,,,,map_names.csv
+388,2,Heraldry Weapons Laboratory: pipe trench,Heraldry Weapons Laboratory,pipe trench,dungeon,1,0,,,,map_names.csv
+389,2,Heraldry Weapons Laboratory: ruined hallway (overgrown),Heraldry Weapons Laboratory,ruined hallway (overgrown),dungeon,3,0,,,,map_names.csv
+390,2,Heraldry Weapons Laboratory: ruined interior (broken beams),Heraldry Weapons Laboratory,ruined interior (broken beams),dungeon,2,0,,,,map_names.csv
+391,2,"Heraldry Weapons Laboratory: pipe trench, second passage",Heraldry Weapons Laboratory,"pipe trench, second passage",dungeon,1,0,,,,map_names.csv
+392,2,Heraldry Weapons Laboratory: overgrown garden path,Heraldry Weapons Laboratory,overgrown garden path,field,3,0,,,,map_names.csv
+393,2,Heraldry Weapons Laboratory: collapsed corridor (scaffolding),Heraldry Weapons Laboratory,collapsed corridor (scaffolding),dungeon,3,0,,,,map_names.csv
+394,2,Heraldry Weapons Laboratory: derelict storage room,Heraldry Weapons Laboratory,derelict storage room,dungeon,1,0,,,,map_names.csv
+395,2,Heraldry Weapons Laboratory: ruined corridor (directional sign),Heraldry Weapons Laboratory,ruined corridor (directional sign),dungeon,4,0,,,,map_names.csv
+396,2,Heraldry Weapons Laboratory: collapsed structure (exposed pipes),Heraldry Weapons Laboratory,collapsed structure (exposed pipes),dungeon,2,0,,,,map_names.csv
+397,2,Heraldry Weapons Laboratory: overgrown approach (fenced gate),Heraldry Weapons Laboratory,overgrown approach (fenced gate),field,2,0,,yes,,map_names.csv
+398,2,Heraldry Weapons Laboratory: machine hall,Heraldry Weapons Laboratory,machine hall,dungeon,4,0,,,,map_names.csv
+399,2,Heraldry Weapons Laboratory: equipment storage,Heraldry Weapons Laboratory,equipment storage,dungeon,1,0,,,,map_names.csv
+400,2,Heraldry Weapons Laboratory: stone archway (forest gate),Heraldry Weapons Laboratory,stone archway (forest gate),field,3,0,,,,map_names.csv
+401,2,Heraldry Weapons Laboratory: forest entrance (hollow tree),Heraldry Weapons Laboratory,forest entrance (hollow tree),field,1,0,,,,map_names.csv
+402,"1, 2",Sanctuary of Linga: cave entrance (ledge fork),Sanctuary of Linga,cave entrance (ledge fork),dungeon,5,2,,,,map_names.csv
+403,"1, 2",Sanctuary of Linga: carved stairway ledge (chest),Sanctuary of Linga,carved stairway ledge (chest),dungeon,6,2,,,,map_names.csv
+404,"1, 2",Sanctuary of Linga: winding crossover ledge (chest),Sanctuary of Linga,winding crossover ledge (chest),dungeon,5,1,,,,map_names.csv
+405,"1, 2",Sanctuary of Linga: crossover bridge (ledges winding over the chasm),Sanctuary of Linga,crossover bridge (ledges winding over the chasm),dungeon,3,0,,,,map_names.csv
+406,"1, 2","Sanctuary of Linga: herb alcove (dead end, off the entrance fork)",Sanctuary of Linga,"herb alcove (dead end, off the entrance fork)",dungeon,1,0,,,,map_names.csv
+407,"1, 2","Sanctuary of Linga: herb alcove (dead end, off the inner fork)",Sanctuary of Linga,"herb alcove (dead end, off the inner fork)",dungeon,1,0,,,,map_names.csv
+408,"1, 2",Sanctuary of Linga: stairway up (bone-strewn ledge),Sanctuary of Linga,stairway up (bone-strewn ledge),dungeon,6,1,,,,map_names.csv
+409,"1, 2",Sanctuary of Linga: deep fork (final choice of paths),Sanctuary of Linga,deep fork (final choice of paths),dungeon,5,2,,yes,,map_names.csv
+410,"1, 2",Sanctuary of Linga: skeletal beast lair (dead end),Sanctuary of Linga,skeletal beast lair (dead end),dungeon,2,0,,,,map_names.csv
+411,"1, 2",Sanctuary of Linga: herb alcove (deepest dead end),Sanctuary of Linga,herb alcove (deepest dead end),dungeon,1,0,,,,map_names.csv
+412,"1, 2","Sanctuary of Linga: grassy chamber (two chests, skull) -- near the heart of the Sanctuary",Sanctuary of Linga,"grassy chamber (two chests, skull) -- near the heart of the Sanctuary",dungeon,1,3,,,,map_names.csv
+413,2,Cave of Red Crystal: entrance / threshold area,Cave of Red Crystal,entrance / threshold area,dungeon,4,1,,,,map_names.csv
+414,2,"Cave of Red Crystal: interior room, about 1 door in from the entrance",Cave of Red Crystal,"interior room, about 1 door in from the entrance",dungeon,2,1,,,,map_names.csv
+415,2,"Cave of Red Crystal: interior room, about 2 doors in from the entrance",Cave of Red Crystal,"interior room, about 2 doors in from the entrance",dungeon,2,1,,,,map_names.csv
+416,2,"Cave of Red Crystal: interior room, about 1 door in from the entrance",Cave of Red Crystal,"interior room, about 1 door in from the entrance",dungeon,1,3,,,,map_names.csv
+417,2,"Cave of Red Crystal: interior room, about 3 doors in from the entrance",Cave of Red Crystal,"interior room, about 3 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+418,2,"Cave of Red Crystal: interior room, about 4 doors in from the entrance",Cave of Red Crystal,"interior room, about 4 doors in from the entrance",dungeon,3,2,,yes,,map_names.csv
+419,2,Cave of Red Crystal: entrance / threshold area,Cave of Red Crystal,entrance / threshold area,dungeon,1,0,,,,map_names.csv
+420,"1, 2",Lacour Castle Registration: Registration desk,Lacour Castle Registration,Registration desk,interior,4,0,,,,map_names.csv
+421,"1, 2","Lacour Castle Registration: Registration, entrance hall (from the castle grounds)",Lacour Castle Registration,"Registration, entrance hall (from the castle grounds)",interior,5,0,,,,map_names.csv
+422,"1, 2","Lacour Castle Throne Room: Throne Room, main chamber",Lacour Castle Throne Room,"Throne Room, main chamber",interior,6,0,,,,map_names.csv
+423,"1, 2","Lacour Castle Throne Room: Throne Room, side chamber",Lacour Castle Throne Room,"Throne Room, side chamber",interior,2,0,,,,map_names.csv
+424,"1, 2","Lacour Castle Throne Room: Throne Room, other side chamber",Lacour Castle Throne Room,"Throne Room, other side chamber",interior,2,0,,,,map_names.csv
+425,"1, 2","King's Room: King's Room, main chamber",King's Room,"King's Room, main chamber",interior,4,0,,,,map_names.csv
+426,"1, 2","Lacour Castle: grand staircase (up from the Conference Room wing, toward the coliseum)",Lacour Castle,"grand staircase (up from the Conference Room wing, toward the coliseum)",interior,2,0,,,,map_names.csv
+427,"1, 2","Lacour Castle: corridor (Conference Room, Great Dining Hall, Arsenal and Main Library wing)",Lacour Castle,"corridor (Conference Room, Great Dining Hall, Arsenal and Main Library wing)",interior,8,0,,,,map_names.csv
+428,"1, 2",Laboratory: entrance / threshold area,Laboratory,entrance / threshold area,dungeon,2,0,,,,map_names.csv
+429,2,"King's Room: King's Room, antechamber",King's Room,"King's Room, antechamber",interior,1,1,,,,map_names.csv
+430,"1, 2",Rosalia's Room: Rosalia's Room,Rosalia's Room,Rosalia's Room,interior,1,1,,,,map_names.csv
+431,"1, 2",Lacour Castle Conference Room: Lacour Castle Conference Room,Lacour Castle Conference Room,Lacour Castle Conference Room,interior,1,0,,,,map_names.csv
+432,"1, 2",Lacour Castle Great Dining Hall: Lacour Castle Great Dining Hall,Lacour Castle Great Dining Hall,Lacour Castle Great Dining Hall,interior,1,0,,,,map_names.csv
+433,"1, 2",Lacour Castle Arsenal: Lacour Castle Arsenal,Lacour Castle Arsenal,Lacour Castle Arsenal,interior,1,0,,,,map_names.csv
+434,"1, 2",Lacour Castle: courtyard walkway (castle to coliseum wing),Lacour Castle,courtyard walkway (castle to coliseum wing),town,2,0,,,,map_names.csv
+435,"1, 2",Lacour Castle Main Library: Lacour Castle Main Library,Lacour Castle Main Library,Lacour Castle Main Library,interior,1,0,,,,map_names.csv
+436,"1, 2","Laboratory: interior room, about 1 door in from the entrance",Laboratory,"interior room, about 1 door in from the entrance",dungeon,2,0,,,,map_names.csv
+437,"1, 2",Laboratory: entrance / threshold area,Laboratory,entrance / threshold area,dungeon,1,0,,,,map_names.csv
+438,"1, 2",Lacour Front Line: forward position,Lacour Front Line,forward position,field,1,0,,yes,,map_names.csv
+439,"1, 2",Lacour Front Line: camp (hub),Lacour Front Line,camp (hub),field,4,0,,,,map_names.csv
+440,"1, 2",Lacour Front Line: path to the command tents,Lacour Front Line,path to the command tents,field,2,0,,,,map_names.csv
+441,"1, 2",Meeting Room: Meeting Room (Lacour Front Line command tent),Meeting Room,Meeting Room (Lacour Front Line command tent),interior,1,0,,,,map_names.csv
+442,"1, 2",Lacour Front Line Field Hospital: Lacour Front Line Field Hospital,Lacour Front Line Field Hospital,Lacour Front Line Field Hospital,field,1,0,,,,map_names.csv
+443,"1, 2",Commander's Office: Commander's Office,Commander's Office,Commander's Office,interior,1,0,,,,map_names.csv
+444,"1, 2","Meeting Room: Meeting Room, second tent",Meeting Room,"Meeting Room, second tent",interior,8,0,,,,map_names.csv
+445,"1, 2",Lacour Front Line: General Store Lacour Store,Lacour Front Line,General Store Lacour Store,interior,2,0,50,,,map_names.csv
+446,"1, 2",Lacour Front Line: Lacour front line Arsenal,Lacour Front Line,Lacour front line Arsenal,field,1,0,52,,,map_names.csv
+447,"1, 2","Meeting Room: Meeting Room, third tent",Meeting Room,"Meeting Room, third tent",interior,6,0,,,,map_names.csv
+448,1,"Meeting Room: interior room, about 1 door in from the entrance",Meeting Room,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+449,2,Mihne Cavern: entrance / threshold area,Mihne Cavern,entrance / threshold area,dungeon,2,2,,,,map_names.csv
+450,2,"Mihne Cavern: interior room, about 1 door in from the entrance",Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,3,3,,,,map_names.csv
+451,2,"Mihne Cavern: interior room, about 1 door in from the entrance",Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,3,4,,,,map_names.csv
+452,2,"Mihne Cavern: interior room, about 2 doors in from the entrance",Mihne Cavern,"interior room, about 2 doors in from the entrance",dungeon,1,4,,,,map_names.csv
+453,2,"Mihne Cavern: interior room, about 2 doors in from the entrance",Mihne Cavern,"interior room, about 2 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+454,2,"Mihne Cavern: interior room, about 3 doors in from the entrance",Mihne Cavern,"interior room, about 3 doors in from the entrance",dungeon,2,0,,yes,,map_names.csv
+455,2,"Mihne Cavern: interior room, about 3 doors in from the entrance",Mihne Cavern,"interior room, about 3 doors in from the entrance",dungeon,1,0,,yes,,map_names.csv
+456,"1, 2","Mars Village: Heraldry Forest, path (just past the entrance)",Mars Village,"Heraldry Forest, path (just past the entrance)",field,2,0,,,,map_names.csv
+457,"1, 2","Mars Village: Heraldry Forest, twisting trail",Mars Village,"Heraldry Forest, twisting trail",field,2,0,,,,map_names.csv
+458,"1, 2","Mars Village: Heraldry Forest, fork (item marker)",Mars Village,"Heraldry Forest, fork (item marker)",field,3,0,,,,map_names.csv
+459,"1, 2","Mars Village: Heraldry Forest, mossy hollow",Mars Village,"Heraldry Forest, mossy hollow",field,2,1,,,,map_names.csv
+460,"1, 2","Mars Village: Heraldry Forest, fallen-log crossing",Mars Village,"Heraldry Forest, fallen-log crossing",field,2,1,,,,map_names.csv
+461,"1, 2","Mars Village: Heraldry Forest, path (monster den)",Mars Village,"Heraldry Forest, path (monster den)",field,2,2,,,,map_names.csv
+462,"1, 2","Mars Village: Heraldry Forest, clearing behind Celine's House",Mars Village,"Heraldry Forest, clearing behind Celine's House",field,4,1,,,,map_names.csv
+463,2,Secret Charity/Fake Gallery: Secret Charity/Fake Gallery,Secret Charity/Fake Gallery,Secret Charity/Fake Gallery,special,1,0,89,,,map_names.csv
+464,"1, 2","Mars Village: Heraldry Forest, junction (back toward the village)",Mars Village,"Heraldry Forest, junction (back toward the village)",field,3,0,,yes,,map_names.csv
+465,"1, 2",Mars Village: Heraldry Forest,Mars Village,Heraldry Forest,field,2,1,,yes,,map_names.csv
+466,"1, 2","Mars Village: Heraldry Forest, narrow trail",Mars Village,"Heraldry Forest, narrow trail",field,2,0,,,,map_names.csv
+467,"1, 2","Lacour Castle: coliseum, arena floor (gallery-side entrance)",Lacour Castle,"coliseum, arena floor (gallery-side entrance)",interior,3,0,,,,map_names.csv
+468,"1, 2",Lacour Castle: coliseum registration desk,Lacour Castle,coliseum registration desk,interior,6,0,,,,map_names.csv
+469,"1, 2",Lacour Castle: coliseum equipment storage,Lacour Castle,coliseum equipment storage,interior,2,0,,,,map_names.csv
+470,"1, 2",Lacour Castle: coliseum gallery corridor (tournament signage),Lacour Castle,coliseum gallery corridor (tournament signage),interior,4,0,,,,map_names.csv
+471,"1, 2",Lacour Castle: coliseum gallery corridor (crest tapestry),Lacour Castle,coliseum gallery corridor (crest tapestry),interior,3,0,,,,map_names.csv
+472,1,Lacour Castle: coliseum stairwell,Lacour Castle,coliseum stairwell,interior,1,0,,,,map_names.csv
+473,1,Lacour Castle: coliseum stairwell (lower flight),Lacour Castle,coliseum stairwell (lower flight),interior,1,0,,,,map_names.csv
+474,"1, 2","Lacour Castle: coliseum, spectator balcony",Lacour Castle,"coliseum, spectator balcony",interior,20,0,,,,map_names.csv
+475,"1, 2",Lacour Castle: coliseum waiting room (crest dais),Lacour Castle,coliseum waiting room (crest dais),interior,3,0,,,,map_names.csv
+476,"1, 2","Lacour Castle: coliseum, red carpet corridor",Lacour Castle,"coliseum, red carpet corridor",interior,3,0,,,,map_names.csv
+477,1,"Lacour Castle: coliseum, arena floor (equipment-side entrance)",Lacour Castle,"coliseum, arena floor (equipment-side entrance)",interior,24,0,,,,map_names.csv
+478,"1, 2",Hoffmann Ruins: entrance (exterior ruins facade),Hoffmann Ruins,entrance (exterior ruins facade),dungeon,3,0,,,,map_names.csv
+479,"1, 2",Hoffmann Ruins: entrance & approach: boss room (Ghost (possessing Ernest)),Hoffmann Ruins,entrance & approach: boss room (Ghost (possessing Ernest)),dungeon,1,0,,,,map_names.csv
+480,"1, 2","Hoffmann Ruins: entrance & approach, about 1 door in from the entrance",Hoffmann Ruins,"entrance & approach, about 1 door in from the entrance",dungeon,3,0,,,,map_names.csv
+481,"1, 2","Hoffmann Ruins: entrance & approach, about 2 doors in from the entrance",Hoffmann Ruins,"entrance & approach, about 2 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+482,"1, 2","Hoffmann Ruins: entrance & approach, about 2 doors in from the entrance",Hoffmann Ruins,"entrance & approach, about 2 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+483,"1, 2",Hoffmann Ruins: the elevator down into the mines,Hoffmann Ruins,the elevator down into the mines,dungeon,5,0,,,,map_names.csv
+484,"1, 2","Hoffmann Ruins: upper tunnels, about 4 doors in from the entrance",Hoffmann Ruins,"upper tunnels, about 4 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+485,"1, 2",Hoffmann Ruins: upper tunnels: chest room (Cure Stone),Hoffmann Ruins,upper tunnels: chest room (Cure Stone),dungeon,1,1,,,,map_names.csv
+486,"1, 2",Hoffmann Ruins: upper tunnels: chest room (Recoil Bracelet),Hoffmann Ruins,upper tunnels: chest room (Recoil Bracelet),dungeon,1,1,,,,map_names.csv
+487,"1, 2","Hoffmann Ruins: upper tunnels: chest room (Angel Hair, Light Box)",Hoffmann Ruins,"upper tunnels: chest room (Angel Hair, Light Box)",dungeon,1,2,,,,map_names.csv
+488,"1, 2","Hoffmann Ruins: upper tunnels, about 4 doors in from the entrance",Hoffmann Ruins,"upper tunnels, about 4 doors in from the entrance",dungeon,2,0,,yes,,map_names.csv
+489,"1, 2","Hoffmann Ruins: upper tunnels, about 5 doors in from the entrance",Hoffmann Ruins,"upper tunnels, about 5 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+490,"1, 2","Hoffmann Ruins: upper tunnels: chest room (Green Beryl, Holy Mist)",Hoffmann Ruins,"upper tunnels: chest room (Green Beryl, Holy Mist)",dungeon,2,2,,,,map_names.csv
+491,"1, 2",Hoffmann Ruins: mine-cart tunnels: chest room (Cure Paralysis),Hoffmann Ruins,mine-cart tunnels: chest room (Cure Paralysis),dungeon,5,1,,,,map_names.csv
+492,"1, 2",Hoffmann Ruins: mine-cart tunnels: chest room (Aquaberry),Hoffmann Ruins,mine-cart tunnels: chest room (Aquaberry),dungeon,7,1,,,,map_names.csv
+493,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 6 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 6 doors in from the entrance",dungeon,5,1,,,,map_names.csv
+494,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 7 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 7 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+495,"1, 2","Hoffmann Ruins: mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",Hoffmann Ruins,"mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",dungeon,3,2,,,,map_names.csv
+496,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 7 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 7 doors in from the entrance",dungeon,2,2,,,,map_names.csv
+497,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 8 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+498,"1, 2",Hoffmann Ruins: mine-cart tunnels: chest room (Hexagram Card),Hoffmann Ruins,mine-cart tunnels: chest room (Hexagram Card),dungeon,3,1,,,,map_names.csv
+499,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 8 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,6,0,,,,map_names.csv
+500,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 8 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+501,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 9 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 9 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+502,"1, 2","Hoffmann Ruins: mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",Hoffmann Ruins,"mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",dungeon,1,4,,,,map_names.csv
+503,"1, 2",Hoffmann Ruins: mine-cart tunnels: chest room (Hyperball),Hoffmann Ruins,mine-cart tunnels: chest room (Hyperball),dungeon,4,1,,,,map_names.csv
+504,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 9 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 9 doors in from the entrance",dungeon,3,1,,,,map_names.csv
+505,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 10 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 10 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+506,"1, 2","Hoffmann Ruins: mine-cart tunnels: chest room (Spring Water, Diamond)",Hoffmann Ruins,"mine-cart tunnels: chest room (Spring Water, Diamond)",dungeon,5,2,,,,map_names.csv
+507,"1, 2","Hoffmann Ruins: mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",Hoffmann Ruins,"mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",dungeon,4,3,,,,map_names.csv
+508,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 11 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 11 doors in from the entrance",dungeon,2,3,,,,map_names.csv
+509,"1, 2","Hoffmann Ruins: mine-cart tunnels, about 12 doors in from the entrance",Hoffmann Ruins,"mine-cart tunnels, about 12 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+510,"1, 2","Hoffmann Ruins: mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",Hoffmann Ruins,"mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",dungeon,2,2,,,,map_names.csv
+511,"1, 2","Hoffmann Ruins: lower passages, about 8 doors in from the entrance",Hoffmann Ruins,"lower passages, about 8 doors in from the entrance",dungeon,4,0,,,,map_names.csv
+512,"1, 2","Hoffmann Ruins: lower passages, about 9 doors in from the entrance",Hoffmann Ruins,"lower passages, about 9 doors in from the entrance",dungeon,2,0,,,,map_names.csv
+513,"1, 2","Hoffmann Ruins: lower passages: chest room (Green Beryl, Blackberry)",Hoffmann Ruins,"lower passages: chest room (Green Beryl, Blackberry)",dungeon,3,2,,,,map_names.csv
+514,"1, 2",Hoffmann Ruins: lower passages: chest room (Sturm Ring),Hoffmann Ruins,lower passages: chest room (Sturm Ring),dungeon,2,1,,,,map_names.csv
+515,"1, 2",Hoffmann Ruins: lower passages: chest room ('Spring'),Hoffmann Ruins,lower passages: chest room ('Spring'),dungeon,3,1,,yes,,map_names.csv
+516,"1, 2","Hoffmann Ruins: lower passages, about 10 doors in from the entrance",Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+517,"1, 2",Hoffmann Ruins: lower passages: chest room (Paralysis Check),Hoffmann Ruins,lower passages: chest room (Paralysis Check),dungeon,7,1,,,,map_names.csv
+518,"1, 2","Hoffmann Ruins: lower passages, about 9 doors in from the entrance",Hoffmann Ruins,"lower passages, about 9 doors in from the entrance",dungeon,4,1,,,,map_names.csv
+519,"1, 2","Hoffmann Ruins: lower passages, about 10 doors in from the entrance",Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,5,0,,,,map_names.csv
+520,"1, 2","Hoffmann Ruins: lower passages: chest room (Sour Syrup, ?HERB)",Hoffmann Ruins,"lower passages: chest room (Sour Syrup, ?HERB)",dungeon,4,2,,,,map_names.csv
+521,"1, 2","Hoffmann Ruins: lower passages, about 10 doors in from the entrance",Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,2,2,,,,map_names.csv
+522,"1, 2","Hoffmann Ruins: lower passages, about 11 doors in from the entrance",Hoffmann Ruins,"lower passages, about 11 doors in from the entrance",dungeon,3,0,,,,map_names.csv
+523,"1, 2",Hoffmann Ruins: the Energy Stone chamber: boss room (Harfainx),Hoffmann Ruins,the Energy Stone chamber: boss room (Harfainx),dungeon,1,0,,,,map_names.csv
+524,"1, 2","Cross Cave: entrance, cave mouth",Cross Cave,"entrance, cave mouth",dungeon,1,0,,,,map_names.csv
+525,"1, 2",Cross Cave: passage (two chests),Cross Cave,passage (two chests),dungeon,3,0,,,,map_names.csv
+526,"1, 2",Cross Cave: passage (single chest),Cross Cave,passage (single chest),dungeon,1,1,,,,map_names.csv
+527,"1, 2","Cross Cave: passage (scattered item, chest)",Cross Cave,"passage (scattered item, chest)",dungeon,4,0,,,,map_names.csv
+528,"1, 2",Cross Cave: pool alcove (chest),Cross Cave,pool alcove (chest),dungeon,1,2,,,,map_names.csv
+529,"1, 2","Cross Cave: treasure nook (four chests, skeleton)",Cross Cave,"treasure nook (four chests, skeleton)",dungeon,3,1,,,,map_names.csv
+530,"1, 2",Cross Cave: chest hollow (two chests),Cross Cave,chest hollow (two chests),dungeon,3,0,,,,map_names.csv
+531,"1, 2",Cross Cave: passage (distant chest),Cross Cave,passage (distant chest),dungeon,1,2,,,,map_names.csv
+532,"1, 2",Cross Cave: chest alcove (two chests),Cross Cave,chest alcove (two chests),dungeon,3,3,,,,map_names.csv
+533,"1, 2",Cross Cave: open ledge (bright clearing),Cross Cave,open ledge (bright clearing),dungeon,2,0,,,,map_names.csv
+534,"1, 2",Cross Cave: narrow winding passage,Cross Cave,narrow winding passage,dungeon,3,0,,,,map_names.csv
+535,"1, 2",Cross Cave: chest hollow (two chests),Cross Cave,chest hollow (two chests),dungeon,1,2,,,,map_names.csv
+536,"1, 2",Cross Cave: passage (green hollow),Cross Cave,passage (green hollow),dungeon,4,0,,,,map_names.csv
+537,"1, 2",Cross Cave: blue grotto (pool),Cross Cave,blue grotto (pool),dungeon,2,0,,,,map_names.csv
+538,"1, 2",Cross Cave: Ancient Writings marker (chest nearby),Cross Cave,Ancient Writings marker (chest nearby),dungeon,2,1,,,,map_names.csv
+539,"1, 2",Cross Cave: overgrown passage (vines),Cross Cave,overgrown passage (vines),dungeon,2,0,,,,map_names.csv
+540,"1, 2",Cross Cave: Ancient Writings marker (fork),Cross Cave,Ancient Writings marker (fork),dungeon,2,5,,,,map_names.csv
+541,"1, 2",Cross Cave: Ancient Writings marker (chest),Cross Cave,Ancient Writings marker (chest),dungeon,2,1,,,,map_names.csv
+542,"1, 2",Cross Cave: passage (cave hollow),Cross Cave,passage (cave hollow),dungeon,3,0,,,,map_names.csv
+543,"1, 2",Cross Cave: chest chamber (ghost enemy),Cross Cave,chest chamber (ghost enemy),dungeon,1,2,,,,map_names.csv
+544,"1, 2",Cross Cave: mushroom-ring clearing,Cross Cave,mushroom-ring clearing,dungeon,4,0,,,,map_names.csv
+545,"1, 2",Cross Cave: root chamber (monster encounter),Cross Cave,root chamber (monster encounter),dungeon,3,0,,yes,,map_names.csv
+546,"1, 2",Cross Cave: root pillar (light ahead),Cross Cave,root pillar (light ahead),dungeon,2,0,,yes,,map_names.csv
+547,"1, 2","Cross Cave: innermost chamber (star-shaped dais, 5 chests)",Cross Cave,"innermost chamber (star-shaped dais, 5 chests)",dungeon,1,4,,,,map_names.csv
+548,1,Ship to El: Ship to El,Ship to El,Ship to El,special,4,0,,,,map_names.csv
+549,2,Field of Intelligence: Mirror Room (west),Field of Intelligence,Mirror Room (west),field,2,0,,,,map_names.csv
+550,2,Field of Intelligence: Mirror Room (east),Field of Intelligence,Mirror Room (east),field,3,2,,,,map_names.csv
+551,2,"Field of Intelligence: main floor, transporter-block maze",Field of Intelligence,"main floor, transporter-block maze",field,5,5,,,,map_names.csv
+552,2,"Field of Intelligence: main floor, spinning-switch chamber (1 of 2)",Field of Intelligence,"main floor, spinning-switch chamber (1 of 2)",field,7,0,,,,map_names.csv
+553,2,"Field of Intelligence: main floor, spinning-switch chamber (2 of 2)",Field of Intelligence,"main floor, spinning-switch chamber (2 of 2)",field,9,0,,,,map_names.csv
+554,2,"Field of Intelligence: Boss-area transporter chamber, A",Field of Intelligence,"Boss-area transporter chamber, A",special,1,0,,,,map_names.csv
+555,2,"Field of Intelligence: Boss-area transporter chamber, B",Field of Intelligence,"Boss-area transporter chamber, B",special,2,0,,,,map_names.csv
+556,2,"Field of Intelligence: Boss-area transporter chamber, C",Field of Intelligence,"Boss-area transporter chamber, C",special,1,0,,,,map_names.csv
+557,"1, 2",Eluria Tower: entrance walkway (locked gate),Eluria Tower,entrance walkway (locked gate),dungeon,1,0,,,,map_names.csv
+558,"1, 2","Eluria Tower: entrance hall (red light, statue)",Eluria Tower,"entrance hall (red light, statue)",dungeon,3,5,,,,map_names.csv
+559,"1, 2",Eluria Tower: picture gallery (eerie frescoes),Eluria Tower,picture gallery (eerie frescoes),dungeon,4,3,,,,map_names.csv
+560,"1, 2",Eluria Tower: overgrown chamber (light shaft),Eluria Tower,overgrown chamber (light shaft),dungeon,2,0,,yes,,map_names.csv
+561,"1, 2",Eluria Tower: vine chamber (floating chests),Eluria Tower,vine chamber (floating chests),dungeon,1,3,,,,map_names.csv
+562,"1, 2","Eluria Tower: statue garden, crystal pool (1 of 6)",Eluria Tower,"statue garden, crystal pool (1 of 6)",dungeon,3,2,,,,map_names.csv
+563,"1, 2","Eluria Tower: statue garden, crystal pool (2 of 6)",Eluria Tower,"statue garden, crystal pool (2 of 6)",dungeon,3,0,,,,map_names.csv
+564,"1, 2","Eluria Tower: statue garden, crystal pool (3 of 6)",Eluria Tower,"statue garden, crystal pool (3 of 6)",dungeon,2,2,,,,map_names.csv
+565,"1, 2","Eluria Tower: statue garden, crystal pool (4 of 6)",Eluria Tower,"statue garden, crystal pool (4 of 6)",dungeon,2,3,,,,map_names.csv
+566,"1, 2","Eluria Tower: statue garden, crystal pool (5 of 6)",Eluria Tower,"statue garden, crystal pool (5 of 6)",dungeon,3,0,,,,map_names.csv
+567,"1, 2","Eluria Tower: statue garden, crystal pool (6 of 6)",Eluria Tower,"statue garden, crystal pool (6 of 6)",dungeon,5,0,,,,map_names.csv
+568,"1, 2",Eluria Tower: inscribed chamber (floor emblems),Eluria Tower,inscribed chamber (floor emblems),dungeon,2,0,,yes,,map_names.csv
+569,"1, 2",Eluria Tower: corridor (enemy encounter),Eluria Tower,corridor (enemy encounter),dungeon,2,0,,,,map_names.csv
+570,"1, 2",Eluria Tower: triple archway hall,Eluria Tower,triple archway hall,dungeon,4,0,,,,map_names.csv
+571,"1, 2","Eluria Tower: chamber (chests, spirit enemy)",Eluria Tower,"chamber (chests, spirit enemy)",dungeon,1,2,,,,map_names.csv
+572,"1, 2",Eluria Tower: crystal chamber (chests),Eluria Tower,crystal chamber (chests),dungeon,2,2,,,,map_names.csv
+573,"1, 2",Eluria Tower: statue hall (archways),Eluria Tower,statue hall (archways),dungeon,3,1,,,,map_names.csv
+574,"1, 2",Eluria Tower: ascending shaft (root pillars),Eluria Tower,ascending shaft (root pillars),dungeon,2,0,,,,map_names.csv
+575,"1, 2",Eluria Tower: summit chamber (glowing dome),Eluria Tower,summit chamber (glowing dome),dungeon,2,0,,,,map_names.csv
+576,1,Eluria Tower: tower summit (Berle confrontation),Eluria Tower,tower summit (Berle confrontation),dungeon,0,0,,,,map_names.csv
+577,2,L'Aqua: building plaza (reception entrance),L'Aqua,building plaza (reception entrance),town,3,0,,,,map_names.csv
+578,2,L'Aqua: seaside terrace (overlook),L'Aqua,seaside terrace (overlook),town,1,0,,,,map_names.csv
+579,2,L'Aqua: street intersection (crosswalk),L'Aqua,street intersection (crosswalk),town,3,0,,,,map_names.csv
+580,2,L'Aqua: stairway (vending kiosks),L'Aqua,stairway (vending kiosks),town,1,0,,,,map_names.csv
+581,2,L'Aqua: overgrown garden path (former aquarium grounds),L'Aqua,overgrown garden path (former aquarium grounds),field,1,0,,,,map_names.csv
+582,2,L'Aqua: L'Aqua Tours Reception,L'Aqua,L'Aqua Tours Reception,interior,4,0,,,,map_names.csv
+583,2,L'Aqua: Defense Force General's Office,L'Aqua,Defense Force General's Office,interior,2,0,,,,map_names.csv
+584,2,L'Aqua: Dispensary,L'Aqua,Dispensary,interior,3,0,,,,map_names.csv
+585,2,L'Aqua: tank room (old aquarium stairwell),L'Aqua,tank room (old aquarium stairwell),interior,4,0,,,,map_names.csv
+586,2,L'Aqua: L'Aqua Transporter,L'Aqua,L'Aqua Transporter,interior,2,0,,,,map_names.csv
+587,2,L'Aqua: aquarium tanks (drained pools),L'Aqua,aquarium tanks (drained pools),interior,7,0,,,,map_names.csv
+588,2,Field of Love: arrival platform (flying mount landing),Field of Love,arrival platform (flying mount landing),field,1,0,,,,map_names.csv
+589,2,Field of Love: star-platform walkway (entrance),Field of Love,star-platform walkway (entrance),field,2,1,,,,map_names.csv
+590,2,Field of Love: star platforms over the sea (bridges),Field of Love,star platforms over the sea (bridges),field,3,0,,,,map_names.csv
+591,2,Field of Love: star platform (approach to switch 1),Field of Love,star platform (approach to switch 1),field,5,0,,,,map_names.csv
+592,2,Field of Love: star platform (approach to switch 2),Field of Love,star platform (approach to switch 2),field,5,0,,,,map_names.csv
+593,2,"Field of Love: floating star platforms (rotating-bridge switch, 1 of 2)",Field of Love,"floating star platforms (rotating-bridge switch, 1 of 2)",field,5,3,,,,map_names.csv
+594,2,"Field of Love: floating star platforms (rotating-bridge switch, 2 of 2)",Field of Love,"floating star platforms (rotating-bridge switch, 2 of 2)",field,5,3,,,,map_names.csv
+595,2,"Field of Love: Temple of Love, entrance (glowing gate)",Field of Love,"Temple of Love, entrance (glowing gate)",field,3,0,,yes,,map_names.csv
+596,2,North City: transporter platform (to the Four Fields),North City,transporter platform (to the Four Fields),special,3,0,,,,map_names.csv
+597,2,Field of Power: entrance passage (narrow cavern),Field of Power,entrance passage (narrow cavern),field,6,0,,,,map_names.csv
+598,2,Field of Power: junction passage (ladder up),Field of Power,junction passage (ladder up),field,10,1,,,,map_names.csv
+599,2,"Field of Power: junction passage (ladder, second)",Field of Power,"junction passage (ladder, second)",field,6,0,,,,map_names.csv
+600,2,Field of Power: rocky passage (toward the bridge),Field of Power,rocky passage (toward the bridge),field,3,0,,,,map_names.csv
+601,2,Field of Power: ladder climb,Field of Power,ladder climb,field,2,1,,,,map_names.csv
+602,2,Field of Power: long wooden bridge (lower span),Field of Power,long wooden bridge (lower span),field,2,0,,yes,,map_names.csv
+603,2,Field of Power: long wooden bridge (upper span),Field of Power,long wooden bridge (upper span),field,2,0,,,,map_names.csv
+604,2,"Field of Power: Temple of Power, entrance",Field of Power,"Temple of Power, entrance",field,3,0,,,,map_names.csv
+605,2,Field of Power: promontory overlook,Field of Power,promontory overlook,field,2,0,,,,map_names.csv
+606,2,Field of Power: mountainside (NPC encounter),Field of Power,mountainside (NPC encounter),field,0,0,,,,map_names.csv
+607,2,"Field of Power: Yeti cavern, switch guard (A)",Field of Power,"Yeti cavern, switch guard (A)",field,4,1,,,,map_names.csv
+608,2,"Field of Power: Yeti cavern, switch guard (A, far side)",Field of Power,"Yeti cavern, switch guard (A, far side)",field,3,1,,,,map_names.csv
+609,2,Field of Power: cavern passage (item cache),Field of Power,cavern passage (item cache),field,3,1,,,,map_names.csv
+610,2,"Field of Power: cavern passage (item cache, far side)",Field of Power,"cavern passage (item cache, far side)",field,2,1,,,,map_names.csv
+611,2,Field of Power: cavern passage (quiet),Field of Power,cavern passage (quiet),field,4,1,,,,map_names.csv
+612,2,"Field of Power: cavern passage (quiet, far side)",Field of Power,"cavern passage (quiet, far side)",field,3,1,,,,map_names.csv
+613,2,"Field of Power: Yeti cavern, switch guard (B)",Field of Power,"Yeti cavern, switch guard (B)",field,3,0,,yes,,map_names.csv
+614,2,"Field of Power: Yeti cavern, switch guard (B, far side)",Field of Power,"Yeti cavern, switch guard (B, far side)",field,2,0,,yes,,map_names.csv
+615,2,"Field of Power: Yeti cavern, switch guard (C)",Field of Power,"Yeti cavern, switch guard (C)",field,2,3,,,,map_names.csv
+616,2,"Field of Power: Yeti cavern, switch guard (C, far side)",Field of Power,"Yeti cavern, switch guard (C, far side)",field,1,3,,,,map_names.csv
+617,2,The Outer Wall: flower-lined path (to the Transporter),The Outer Wall,flower-lined path (to the Transporter),field,1,0,,,,map_names.csv
+618,2,The Outer Wall: flower-lined path (switchback),The Outer Wall,flower-lined path (switchback),field,2,0,,,,map_names.csv
+619,2,"The Outer Wall: stone gazebo, cliff edge (Transporter)",The Outer Wall,"stone gazebo, cliff edge (Transporter)",special,1,0,,,,map_names.csv
+620,2,Field of Power: transit corridor (directional floor markers),Field of Power,transit corridor (directional floor markers),special,2,0,,,,map_names.csv
+621,2,Field of Power: transit corridor (console panels),Field of Power,transit corridor (console panels),special,2,0,,,,map_names.csv
+622,2,Field of Power: transporter hub (to the Temple of Power / map 625),Field of Power,transporter hub (to the Temple of Power / map 625),special,5,0,,,,map_names.csv
+623,2,Field of Power: transporter hub (to Eluria Tower),Field of Power,transporter hub (to Eluria Tower),special,2,0,,,,map_names.csv
+624,2,Field of Power: transit corridor (starfield view),Field of Power,transit corridor (starfield view),special,1,0,,,,map_names.csv
+625,,disc-swap trigger,,disc-swap trigger,special,6,0,,,,map_names.csv
+626,"1, 2","Eluria Tower: transporter terminal (to Field of Power), A",Eluria Tower,"transporter terminal (to Field of Power), A",special,4,0,,,,map_names.csv
+627,"1, 2","Eluria Tower: transporter terminal (to Field of Power), B",Eluria Tower,"transporter terminal (to Field of Power), B",special,3,0,,,,map_names.csv
+628,2,Field of Intelligence: tech office (purpose unclear),Field of Intelligence,tech office (purpose unclear),special,1,0,,,,map_names.csv
+629,2,Field of Courage: entrance cavern (warning sign),Field of Courage,entrance cavern (warning sign),field,4,0,,,,map_names.csv
+630,2,Field of Courage: crystal-pillar cavern (chest),Field of Courage,crystal-pillar cavern (chest),field,5,1,,,,map_names.csv
+631,2,Field of Courage: cavern passage,Field of Courage,cavern passage,field,5,0,,,,map_names.csv
+632,2,Field of Courage: cavern passage (junction),Field of Courage,cavern passage (junction),field,6,1,,,,map_names.csv
+633,2,Field of Courage: cavern passage,Field of Courage,cavern passage,field,6,1,,,,map_names.csv
+634,2,Field of Courage: central cave junction (multi-way),Field of Courage,central cave junction (multi-way),field,8,0,,,,map_names.csv
+635,2,Field of Courage: cavern passage,Field of Courage,cavern passage,field,6,1,,,,map_names.csv
+636,2,"Field of Courage: crystal-pillar cavern (chest, pool)",Field of Courage,"crystal-pillar cavern (chest, pool)",field,4,1,,,,map_names.csv
+637,2,Field of Courage: cavern passage (toward the Warrior Statue),Field of Courage,cavern passage (toward the Warrior Statue),field,5,0,,,,map_names.csv
+638,2,Field of Courage: Warrior Statue altar (northwest corner),Field of Courage,Warrior Statue altar (northwest corner),field,1,0,,,,map_names.csv
+639,2,Field of Courage: looped tunnel (chest),Field of Courage,looped tunnel (chest),field,4,1,,,,map_names.csv
+640,2,Field of Courage: cavern passage (toward the teleporter),Field of Courage,cavern passage (toward the teleporter),field,4,0,,,,map_names.csv
+641,2,Field of Courage: teleporter (to the Temple of Courage),Field of Courage,teleporter (to the Temple of Courage),field,2,0,,,,map_names.csv
+642,2,Field of Courage: transporter threshold (to the Temple of Courage),Field of Courage,transporter threshold (to the Temple of Courage),special,2,0,,yes,,map_names.csv
+643,,(unidentified),,(unidentified),special,0,0,,,,map_names.csv
+644,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,1,0,,,,map_names.csv
+645,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,1,0,,,,map_names.csv
+646,1,"Arlia Village: interior room, about 2 doors in from the entrance",Arlia Village,"interior room, about 2 doors in from the entrance",town,1,0,,,,map_names.csv
+647,2,"Fienal: bonus treasure vault (many chests, near the lobby)",Fienal,"bonus treasure vault (many chests, near the lobby)",dungeon,6,20,,,,map_names.csv
+648,2,"Fienal: lower floors (lobby approach), about 2 doors in from the lobby",Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,4,0,,,,map_names.csv
+649,2,"Fienal: lower floors (lobby approach), about 4 doors in from the lobby",Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+650,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,10,0,,,,map_names.csv
+651,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,8,0,,,,map_names.csv
+652,2,Fienal: transporter hub,Fienal,transporter hub,dungeon,17,0,,,,map_names.csv
+653,2,Fienal: transporter hub,Fienal,transporter hub,dungeon,17,0,,,,map_names.csv
+654,2,"Fienal: lower floors (lobby approach), about 2 doors in from the lobby",Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+655,2,"Fienal: lower floors (lobby approach), about 1 door in from the lobby",Fienal,"lower floors (lobby approach), about 1 door in from the lobby",dungeon,5,0,,,,map_names.csv
+656,2,"Fienal: lower floors (lobby approach), about 2 doors in from the lobby",Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+657,2,"Fienal: the lobby: boss room (Ruprecht, Nicolus & Jibril; also where Marsilio ambushes the first trip)",Fienal,"the lobby: boss room (Ruprecht, Nicolus & Jibril; also where Marsilio ambushes the first trip)",dungeon,5,0,,,,map_names.csv
+658,2,"Fienal: lower floors (lobby approach), about 2 doors in from the lobby",Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+659,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,4,0,,,,map_names.csv
+660,2,"Fienal: lower floors (lobby approach), about 3 doors in from the lobby",Fienal,"lower floors (lobby approach), about 3 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+661,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",Fienal,"mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",dungeon,1,2,,,,map_names.csv
+662,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,1,2,,,,map_names.csv
+663,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+664,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+665,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,4,0,,,,map_names.csv
+666,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+667,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,4,0,,,,map_names.csv
+668,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+669,2,Fienal: Floor 5: boss room (Vesper & Decus),Fienal,Floor 5: boss room (Vesper & Decus),dungeon,2,0,,,,map_names.csv
+670,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,3,0,,yes,,map_names.csv
+671,2,"Fienal: the final ascent, toward Indalecio (Floor 8), about 6 doors in from the lobby",Fienal,"the final ascent, toward Indalecio (Floor 8), about 6 doors in from the lobby",dungeon,3,0,,yes,,map_names.csv
+672,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+673,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",Fienal,"mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",dungeon,6,3,,,,map_names.csv
+674,2,Fienal: Floor 7: boss room (Cyril),Fienal,Floor 7: boss room (Cyril),dungeon,2,0,,,,map_names.csv
+675,2,"Fienal: lower floors (lobby approach), about 4 doors in from the lobby",Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+676,2,"Fienal: upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",Fienal,"upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+677,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+678,2,"Fienal: upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",Fienal,"upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",dungeon,2,0,,yes,,map_names.csv
+679,2,"Fienal: upper floors, toward Cyril (Floor 7): chest room (Clap Rod)",Fienal,"upper floors, toward Cyril (Floor 7): chest room (Clap Rod)",dungeon,2,1,,,,map_names.csv
+680,2,"Fienal: lower floors (lobby approach), about 4 doors in from the lobby",Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+681,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+682,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,3,0,,,,map_names.csv
+683,2,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,2,0,,,,map_names.csv
+684,2,"Fienal: the final ascent, toward Indalecio (Floor 8), about 7 doors in from the lobby",Fienal,"the final ascent, toward Indalecio (Floor 8), about 7 doors in from the lobby",dungeon,4,0,,,,map_names.csv
+685,2,Fienal: Floor 8: Indalecio's chamber -- final boss (Indalecio Celesta),Fienal,Floor 8: Indalecio's chamber -- final boss (Indalecio Celesta),dungeon,2,0,,,,map_names.csv
+686,2,"L'Aqua: ritual chamber (fire, wall symbols)",L'Aqua,"ritual chamber (fire, wall symbols)",special,3,0,,,,map_names.csv
+687,,(unidentified),,(unidentified),special,2,0,,,,map_names.csv
+688,2,"Fun City: Cooking Master, contest hall",Fun City,"Cooking Master, contest hall",special,7,0,,,,map_names.csv
+689,2,"Fun City: Cooking Master, registration hall",Fun City,"Cooking Master, registration hall",special,3,0,,,,map_names.csv
+690,2,"Central City: Ten Wise Men flashback, 1 of 7: ancient Nede dinner hall",Central City,"Ten Wise Men flashback, 1 of 7: ancient Nede dinner hall",special,1,0,,,,map_names.csv
+691,2,"Central City: Ten Wise Men flashback, 2 of 7: their rise",Central City,"Ten Wise Men flashback, 2 of 7: their rise",special,1,0,,,,map_names.csv
+692,2,"Central City: Ten Wise Men flashback, 3 of 7: the attack on Nede",Central City,"Ten Wise Men flashback, 3 of 7: the attack on Nede",special,1,0,,,,map_names.csv
+693,2,"Central City: Ten Wise Men flashback, 4 of 7: the massacre",Central City,"Ten Wise Men flashback, 4 of 7: the massacre",special,1,0,,,,map_names.csv
+694,2,"Central City: Ten Wise Men flashback, 5 of 7: resistance begins",Central City,"Ten Wise Men flashback, 5 of 7: resistance begins",special,1,0,,,,map_names.csv
+695,2,"Central City: Ten Wise Men flashback, 7 of 7: starfield epilogue",Central City,"Ten Wise Men flashback, 7 of 7: starfield epilogue",special,2,0,,,,map_names.csv
+696,2,"Central City: Ten Wise Men flashback, 6 of 7: the final struggle",Central City,"Ten Wise Men flashback, 6 of 7: the final struggle",special,1,0,,,,map_names.csv
+697,,(unidentified),,(unidentified),special,0,0,,,,map_names.csv
+698,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+699,1,"Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,1,0,,,,map_names.csv
+700,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+701,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+702,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+703,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): chest room (Fruit Nectar),Cave of Trials,Level 1 (Heraldic Ruins): chest room (Fruit Nectar),dungeon,3,1,,,,map_names.csv
+704,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): entrance area,Cave of Trials,Level 1 (Heraldic Ruins): entrance area,dungeon,1,0,,,,map_names.csv
+705,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): boss room (Darkfeather),Cave of Trials,Level 1 (Heraldic Ruins): boss room (Darkfeather),dungeon,3,0,,,,map_names.csv
+706,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",dungeon,3,1,,,,map_names.csv
+707,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",Cave of Trials,"Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",dungeon,1,2,,,,map_names.csv
+708,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",dungeon,4,0,,,,map_names.csv
+709,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): chest room (Tri-emplem),Cave of Trials,Level 1 (Heraldic Ruins): chest room (Tri-emplem),dungeon,3,1,,,,map_names.csv
+710,"1, 2","Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",Cave of Trials,"bonus treasure vault (many chests, reachable from several levels)",dungeon,0,11,,,,map_names.csv
+711,"1, 2","Cave of Trials: Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",Cave of Trials,"Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",dungeon,1,2,,,,map_names.csv
+712,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): chest room (Dream Crown),Cave of Trials,Level 1 (Heraldic Ruins): chest room (Dream Crown),dungeon,0,1,,,,map_names.csv
+713,"1, 2","Cave of Trials: Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",Cave of Trials,"Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",dungeon,0,3,,,,map_names.csv
+714,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),dungeon,6,0,,,,map_names.csv
+715,"1, 2",Cave of Trials: Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),dungeon,2,0,,,,map_names.csv
+716,"1, 2",Cave of Trials: Cave of Trials Level 2,Cave of Trials,Cave of Trials Level 2,dungeon,4,0,,,,map_names.csv
+717,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,4,0,,,,map_names.csv
+718,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,1,0,,,,map_names.csv
+719,"1, 2",Cave of Trials: Level 2 (Love Alley): chest room (Purity Leaf),Cave of Trials,Level 2 (Love Alley): chest room (Purity Leaf),dungeon,3,1,,,,map_names.csv
+720,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+721,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,1,0,,,,map_names.csv
+722,"1, 2","Cave of Trials: Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",Cave of Trials,"Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",dungeon,2,2,,,,map_names.csv
+723,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+724,"1, 2",Cave of Trials: Level 2 (Love Alley): chest room (Fruit Nectar),Cave of Trials,Level 2 (Love Alley): chest room (Fruit Nectar),dungeon,2,1,,,,map_names.csv
+725,"1, 2",Cave of Trials: Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+726,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+727,"1, 2",Cave of Trials: Cave of Trials Level 3,Cave of Trials,Cave of Trials Level 3,dungeon,6,0,,,,map_names.csv
+728,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+729,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+730,"1, 2",Cave of Trials: Level 3 (Single Path Cave): chest room (Sylvan Mail),Cave of Trials,Level 3 (Single Path Cave): chest room (Sylvan Mail),dungeon,4,1,,,,map_names.csv
+731,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,4,0,,,,map_names.csv
+732,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 4 doors in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 4 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+733,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+734,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+735,"1, 2","Cave of Trials: Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",Cave of Trials,"Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",dungeon,2,3,,,,map_names.csv
+736,"1, 2","Cave of Trials: Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+737,"1, 2",Cave of Trials: Cave of Trials Level 4,Cave of Trials,Cave of Trials Level 4,dungeon,2,0,,,,map_names.csv
+738,"1, 2","Cave of Trials: Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+739,"1, 2","Cave of Trials: Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+740,"1, 2",Cave of Trials: Cave of Trials Level 4,Cave of Trials,Cave of Trials Level 4,dungeon,6,2,,,,map_names.csv
+741,"1, 2","Cave of Trials: Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",Cave of Trials,"Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",dungeon,3,2,,,,map_names.csv
+742,"1, 2","Cave of Trials: Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",dungeon,1,0,,,,map_names.csv
+743,"1, 2","Cave of Trials: Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+744,"1, 2",Cave of Trials: Cave of Trials Level 5,Cave of Trials,Cave of Trials Level 5,dungeon,5,2,,,,map_names.csv
+745,"1, 2",Cave of Trials: Level 5 (Lady's Revenge): chest room (Juicy Beef),Cave of Trials,Level 5 (Lady's Revenge): chest room (Juicy Beef),dungeon,4,1,,,,map_names.csv
+746,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+747,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",Cave of Trials,"Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",dungeon,1,2,,,,map_names.csv
+748,"1, 2",Cave of Trials: Level 5 (Lady's Revenge): chest room (Seraphic Garb),Cave of Trials,Level 5 (Lady's Revenge): chest room (Seraphic Garb),dungeon,2,1,,,,map_names.csv
+749,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+750,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+751,"1, 2",Cave of Trials: Cave of Trials Level 5,Cave of Trials,Cave of Trials Level 5,dungeon,2,0,,,,map_names.csv
+752,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 3 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+753,"1, 2","Cave of Trials: Level 5 (Lady's Revenge): Puffy's ambush (Weird Beast ambushes her, per the thumbnail's dialogue box)",Cave of Trials,"Level 5 (Lady's Revenge): Puffy's ambush (Weird Beast ambushes her, per the thumbnail's dialogue box)",dungeon,2,0,,,,map_names.csv
+754,"1, 2",Cave of Trials: Level 5 (Lady's Revenge): boss room (Weird Beast),Cave of Trials,Level 5 (Lady's Revenge): boss room (Weird Beast),dungeon,1,0,,,,map_names.csv
+755,"1, 2",Cave of Trials: Level 5 (Lady's Revenge): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 5 (Lady's Revenge): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+756,"1, 2",Cave of Trials: Cave of Trials Level 6,Cave of Trials,Cave of Trials Level 6,dungeon,3,0,,,,map_names.csv
+757,"1, 2","Cave of Trials: Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+758,"1, 2","Cave of Trials: Level 6 (Burglar's Nest): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 2 doors in from the level entrance",dungeon,3,0,99,,,map_names.csv
+759,"1, 2","Cave of Trials: Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+760,"1, 2",Cave of Trials: Cave of Trials Level 6,Cave of Trials,Cave of Trials Level 6,dungeon,2,0,,,,map_names.csv
+761,"1, 2",Cave of Trials: Level 6 (Burglar's Nest): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 6 (Burglar's Nest): interior room (near the level boundary; door graph ties it to more than one level),dungeon,4,0,,,,map_names.csv
+762,"1, 2",Cave of Trials: Level 6 (Burglar's Nest): chest room (Weird Slayer),Cave of Trials,Level 6 (Burglar's Nest): chest room (Weird Slayer),dungeon,2,1,,,,map_names.csv
+763,"1, 2",Cave of Trials: Cave of Trials Level 7,Cave of Trials,Cave of Trials Level 7,dungeon,2,3,,,,map_names.csv
+764,"1, 2","Cave of Trials: Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",dungeon,4,0,,,,map_names.csv
+765,"1, 2","Cave of Trials: Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+766,"1, 2",Cave of Trials: Cave of Trials Level 7,Cave of Trials,Cave of Trials Level 7,dungeon,3,0,,,,map_names.csv
+767,"1, 2",Cave of Trials: Level 7 (Goddess's Altar): chest room (Tri-emplem),Cave of Trials,Level 7 (Goddess's Altar): chest room (Tri-emplem),dungeon,2,1,,,,map_names.csv
+768,"1, 2","Cave of Trials: Level 7 (Goddess's Altar): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 3 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+769,"1, 2",Cave of Trials: Level 7 (Goddess's Altar): chest room (Fresh Syrup),Cave of Trials,Level 7 (Goddess's Altar): chest room (Fresh Syrup),dungeon,2,1,,,,map_names.csv
+770,"1, 2","Cave of Trials: Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",Cave of Trials,"Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",dungeon,1,2,,,,map_names.csv
+771,"1, 2",Cave of Trials: Level 7 (Goddess's Altar): chest room (Cracked Gem),Cave of Trials,Level 7 (Goddess's Altar): chest room (Cracked Gem),dungeon,1,1,,,,map_names.csv
+772,"1, 2",Cave of Trials: Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+773,"1, 2","Cave of Trials: Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",Cave of Trials,"Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",dungeon,3,3,,,,map_names.csv
+774,"1, 2",Cave of Trials: Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),dungeon,2,0,,,,map_names.csv
+775,"1, 2",Cave of Trials: Cave of Trials Level 8,Cave of Trials,Cave of Trials Level 8,dungeon,7,0,,,,map_names.csv
+776,"1, 2","Cave of Trials: Level 8 (Food God): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+777,"1, 2",Cave of Trials: Cave of Trials Level 8,Cave of Trials,Cave of Trials Level 8,dungeon,2,1,,,,map_names.csv
+778,"1, 2","Cave of Trials: Level 8 (Food God): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+779,"1, 2",Cave of Trials: Level 8 (Food God): chest room (Funny Slayer),Cave of Trials,Level 8 (Food God): chest room (Funny Slayer),dungeon,1,1,,,,map_names.csv
+780,"1, 2","Cave of Trials: Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",Cave of Trials,"Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",dungeon,1,2,,,,map_names.csv
+781,"1, 2","Cave of Trials: Level 8 (Food God): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,1,0,,,,map_names.csv
+782,"1, 2",Cave of Trials: Level 8 (Food God): chest room (Resurrection Mist),Cave of Trials,Level 8 (Food God): chest room (Resurrection Mist),dungeon,2,1,,,,map_names.csv
+783,"1, 2",Cave of Trials: Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+784,"1, 2",Cave of Trials: Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,2,0,,,,map_names.csv
+785,"1, 2",Cave of Trials: Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,3,0,,,,map_names.csv
+786,"1, 2",Cave of Trials: Cave of Trials Level 9,Cave of Trials,Cave of Trials Level 9,dungeon,2,0,,,,map_names.csv
+787,"1, 2","Cave of Trials: Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+788,"1, 2",Cave of Trials: Cave of Trials Level 9,Cave of Trials,Cave of Trials Level 9,dungeon,4,0,,,,map_names.csv
+789,"1, 2","Cave of Trials: Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",dungeon,2,0,,,,map_names.csv
+790,"1, 2","Cave of Trials: Level 9 (Sealed Coffin): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+791,"1, 2",Cave of Trials: Cave of Trials Level 9,Cave of Trials,Cave of Trials Level 9,dungeon,2,3,,,,map_names.csv
+792,"1, 2",Cave of Trials: Level 9 (Sealed Coffin): chest room (Bunny Shoes),Cave of Trials,Level 9 (Sealed Coffin): chest room (Bunny Shoes),dungeon,2,1,,,,map_names.csv
+793,"1, 2",Cave of Trials: Level 9 (Sealed Coffin): chest room (Funny Slayer),Cave of Trials,Level 9 (Sealed Coffin): chest room (Funny Slayer),dungeon,3,1,,,,map_names.csv
+794,"1, 2",Cave of Trials: Cave of Trials Level 10,Cave of Trials,Cave of Trials Level 10,dungeon,3,0,,,,map_names.csv
+795,"1, 2","Cave of Trials: Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",dungeon,3,0,,,,map_names.csv
+796,"1, 2","Cave of Trials: Level 10 (Decision Point): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 10 (Decision Point): interior room, about 3 doors in from the level entrance",dungeon,4,0,,,,map_names.csv
+797,"1, 2",Cave of Trials: Level 10 (Decision Point): chest room (Fresh Syrup),Cave of Trials,Level 10 (Decision Point): chest room (Fresh Syrup),dungeon,3,1,,,,map_names.csv
+798,"1, 2",Cave of Trials: Cave of Trials Level 10,Cave of Trials,Cave of Trials Level 10,dungeon,3,1,,,,map_names.csv
+799,"1, 2","Cave of Trials: Level 10 (Decision Point): chest room (Million Staff, Portrait J)",Cave of Trials,"Level 10 (Decision Point): chest room (Million Staff, Portrait J)",dungeon,3,2,,,,map_names.csv
+800,"1, 2",Cave of Trials: Level 10 (Decision Point): chest room (Valiant Boots),Cave of Trials,Level 10 (Decision Point): chest room (Valiant Boots),dungeon,2,1,,,,map_names.csv
+801,"1, 2","Cave of Trials: Level 10 (Decision Point): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 10 (Decision Point): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+802,"1, 2","Cave of Trials: Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",dungeon,6,0,,,,map_names.csv
+803,"1, 2",Cave of Trials: Level 10 (Decision Point): chest room (Valkyrie Boots),Cave of Trials,Level 10 (Decision Point): chest room (Valkyrie Boots),dungeon,4,1,,,,map_names.csv
+804,"1, 2","Cave of Trials: Level 10 (Decision Point): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 10 (Decision Point): interior room, about 1 door in from the level entrance",dungeon,3,0,,,,map_names.csv
+805,"1, 2","Cave of Trials: Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",Cave of Trials,"Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",dungeon,3,3,,,,map_names.csv
+806,"1, 2",Cave of Trials: Level 10 (Decision Point): chest room (Purity Leaf),Cave of Trials,Level 10 (Decision Point): chest room (Purity Leaf),dungeon,3,1,,,,map_names.csv
+807,"1, 2",Cave of Trials: Cave of Trials Level 11,Cave of Trials,Cave of Trials Level 11,dungeon,3,0,,,,map_names.csv
+808,"1, 2",Cave of Trials: Cave of Trials Level 11,Cave of Trials,Cave of Trials Level 11,dungeon,2,0,,,,map_names.csv
+809,"1, 2",Cave of Trials: Level 12 (Hall of Warriors): boss room (Phoenix),Cave of Trials,Level 12 (Hall of Warriors): boss room (Phoenix),dungeon,2,0,,,,map_names.csv
+810,"1, 2","Cave of Trials: Level 12 (Hall of Warriors): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 12 (Hall of Warriors): interior room, about 1 door in from the level entrance",dungeon,4,0,,,,map_names.csv
+811,"1, 2",Cave of Trials: Cave of Trials Level 12,Cave of Trials,Cave of Trials Level 12,dungeon,2,0,,,,map_names.csv
+812,"1, 2","Cave of Trials: Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",Cave of Trials,"Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",dungeon,1,2,,,,map_names.csv
+813,"1, 2","Cave of Trials: Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",Cave of Trials,"Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",dungeon,1,2,,,,map_names.csv
+814,"1, 2",Cave of Trials: Cave of Trials Level 12,Cave of Trials,Cave of Trials Level 12,dungeon,2,0,,,,map_names.csv
+815,"1, 2",Cave of Trials: Level 13 (Holy Nest of Angels): boss room (Indalecio Celesta) -- final boss,Cave of Trials,Level 13 (Holy Nest of Angels): boss room (Indalecio Celesta) -- final boss,dungeon,1,1,,,,map_names.csv
+816,"1, 2",Cave of Trials: Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),dungeon,1,0,,,,map_names.csv
+817,"1, 2",Cave of Trials: Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),Cave of Trials,Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),dungeon,2,0,,,,map_names.csv
+818,"1, 2",Cave of Trials: Level 12 (Hall of Warriors): chest room (Valiant Mail),Cave of Trials,Level 12 (Hall of Warriors): chest room (Valiant Mail),dungeon,2,1,,,,map_names.csv
+819,"1, 2","Cave of Trials: Level 13 (Holy Nest of Angels): interior room, about 1 door in from the level entrance",Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 1 door in from the level entrance",dungeon,4,0,,,,map_names.csv
+820,"1, 2",Cave of Trials: Cave of Trials Level 13,Cave of Trials,Cave of Trials Level 13,dungeon,2,0,,,,map_names.csv
+821,"1, 2","Cave of Trials: Level 13 (Holy Nest of Angels): interior room, about 3 doors in from the level entrance",Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 3 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+822,"1, 2",Cave of Trials: Level 13 (Holy Nest of Angels): chest room (Valiant Guard),Cave of Trials,Level 13 (Holy Nest of Angels): chest room (Valiant Guard),dungeon,2,1,,,,map_names.csv
+823,"1, 2","Cave of Trials: Level 13 (Holy Nest of Angels): interior room, about 5 doors in from the level entrance",Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 5 doors in from the level entrance",dungeon,1,0,,,,map_names.csv
+824,"1, 2","Cave of Trials: Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+825,"1, 2","Cave of Trials: Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",dungeon,2,0,,,,map_names.csv
+826,,(system): world-transfer script (unused map slot),(system),world-transfer script (unused map slot),special,35,0,,,"0-3, 826",map_names.csv
+909,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+910,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+911,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+912,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+913,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+914,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+915,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+916,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+917,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+918,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+919,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+920,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+921,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+922,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+923,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+924,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+925,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+926,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+927,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+928,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+929,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+930,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+931,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+932,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+933,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+934,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+935,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+936,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+937,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+938,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+939,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+940,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+941,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+942,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+943,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+944,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+945,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+946,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+947,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+948,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+949,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+950,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+951,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+952,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+953,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+954,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+955,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+956,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+957,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+958,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+959,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+960,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+961,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+962,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+963,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+964,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+965,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+966,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+967,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+968,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+969,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+970,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+971,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+972,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+973,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+974,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+975,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+976,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+977,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+978,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+979,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+980,1,Expel: overworld terrain chunk (not a separate destination),Expel,overworld terrain chunk (not a separate destination),world,44,0,,,909-980,map_names.csv
+1048,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1049,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1050,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1051,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1052,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1053,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1054,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1055,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1056,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1057,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1058,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1059,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1060,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1061,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1062,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1063,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1064,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1065,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1066,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1067,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1068,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1069,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1070,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1071,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1072,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1073,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1074,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1075,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1076,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1077,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1078,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1079,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1080,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1081,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1082,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1083,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1084,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1085,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1086,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1087,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1088,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1089,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1090,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1091,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1092,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1093,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1094,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1095,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1096,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1097,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1098,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1099,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1100,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1101,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1102,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1103,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1104,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1105,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1106,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1107,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1108,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1109,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1110,2,Energy Nede: overworld terrain chunk (not a separate destination),Energy Nede,overworld terrain chunk (not a separate destination),world,22,0,,,1048-1110,map_names.csv
+1113,,world map 3: overworld terrain chunk (not a separate destination),world map 3,overworld terrain chunk (not a separate destination),world,0,0,,,1113-1114,map_names.csv
+1114,,world map 3: overworld terrain chunk (not a separate destination),world map 3,overworld terrain chunk (not a separate destination),world,0,0,,,1113-1114,map_names.csv

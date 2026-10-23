@@ -273,6 +273,86 @@ TEST(launcher_identify_the_discs) {
   CHECK_EQ(launcher::disc_number(launcher::utf8_path(d2)), 2);
 }
 
+// Other releases (runtime/region.h), each given by its disc 1 image in SS_DISC1_EU /
+// SS_DISC1_FR / SS_DISC1_DE / SS_DISC1_JP (disc 2 is looked for next to it); skipped when
+// unset. Europe plays; France and Germany wait for their text system; Japan is refused
+// clearly; the two discs must be the same release.
+TEST(launcher_identify_other_releases) {
+  auto env_path = [](const char* name) {
+    const char* p = std::getenv(name);
+    return std::string(p && *p ? p : "");
+  };
+  const std::string eu1 = env_path("SS_DISC1_EU");
+  if (eu1.empty()) {
+    std::printf("  (Europe skipped: SS_DISC1_EU not set)\n");
+  } else {
+    const launcher::DiscInfo one = launcher::identify_disc(launcher::utf8_path(eu1));
+    CHECK(one.kind == launcher::DiscKind::kDisc1);
+    CHECK(one.game_id == "SCES_021.59");
+    CHECK(one.region != nullptr && one.region->id == region::Id::kEurope);
+    CHECK(launcher::describe(one, 1) == "Disc 1, European release: OK");
+    const std::string eu2 = launcher::find_disc2_near(launcher::utf8_path(eu1));
+    CHECK(!eu2.empty());
+    if (!eu2.empty()) {
+      const launcher::DiscInfo two = launcher::identify_disc(launcher::utf8_path(eu2));
+      CHECK(two.kind == launcher::DiscKind::kDisc2);
+      CHECK(launcher::describe(two, 2) == "Disc 2, European release: OK");
+      CHECK(launcher::describe_pair(one, two).empty());
+      if (!disc2_path().empty()) {  // NA disc 1 with Europe's disc 2: not a pair
+        const launcher::DiscInfo na1 = launcher::identify_disc(launcher::utf8_path(disc1_path()));
+        CHECK(launcher::describe_pair(na1, two) ==
+              "Disc 2 is the European release and Disc 1 the North American one. Both discs must be the same release.");
+        // Next to NA's disc 1, only NA's disc 2 is found.
+        CHECK(launcher::find_disc2_near(launcher::utf8_path(disc1_path())) == disc2_path());
+      }
+    }
+  }
+  for (const char* name : {"SS_DISC1_FR", "SS_DISC1_DE", "SS_DISC1_JP"}) {
+    const std::string path = env_path(name);
+    if (path.empty()) {
+      std::printf("  (%s not set: skipped)\n", name);
+      continue;
+    }
+    const launcher::DiscInfo info = launcher::identify_disc(launcher::utf8_path(path));
+    CHECK(info.region != nullptr);
+    if (info.region == nullptr) continue;
+    if (info.region->supported) {
+      CHECK(info.kind == launcher::DiscKind::kDisc1);
+    } else {
+      CHECK(info.kind == launcher::DiscKind::kUnsupportedRelease);
+      CHECK(contains(launcher::describe(info, 1), "release (" ));
+      CHECK(contains(launcher::describe(info, 1), "not supported yet"));
+      CHECK_EQ(launcher::disc_number(launcher::utf8_path(path)), 0);
+    }
+  }
+  const std::string jp = env_path("SS_DISC1_JP");
+  if (!jp.empty()) {
+    const launcher::DiscInfo info = launcher::identify_disc(launcher::utf8_path(jp));
+    CHECK(launcher::describe(info, 1) ==
+          "Star Ocean: The Second Story, Japanese release (SLPM-86105): not supported yet. Shattered Stars plays "
+          "the North American (SCUS-94421 / SCUS-94422) and European (SCES-02159 / SCES-12159) releases.");
+  }
+}
+
+// The game on the European discs: a new game on Arlia (map 18) reads every table it needs
+// through the address maps (no "region:" complaint).
+TEST(game_runs_the_european_release) {
+  const char* eu = std::getenv("SS_DISC1_EU");
+  if (eu == nullptr || *eu == 0 || launcher::sibling_program(launcher::kGameProgram).empty()) {
+    std::printf("  (skipped: SS_DISC1_EU not set or the game not built)\n");
+    return;
+  }
+  const fs::path home = scratch("game_eu");
+  auto env = test_env(home);
+  env.emplace_back("SS_DISC1", eu);
+  env.emplace_back("SS_MEMCARD1", launcher::path_utf8(home / "card.mcd"));
+  GameRun run = run_game({"--headless", "--frames", "400", "--map", "18"}, env);
+  CHECK_EQ(run.code, 0);
+  CHECK(contains(run.output, "stopped after 400 vblanks"));
+  CHECK(!contains(run.output, "region:"));
+  CHECK(!contains(run.output, "disc 1 image expected"));
+}
+
 // The command line the tools use (tools/event_sweep.py, smoke_field_events.sh) still
 // parses, and the boot disc rules hold: SS_DISC1 may be disc 2 (the disc 2 sweep), a bad
 // image says why before the usage text, and headless runs never write config.ini.

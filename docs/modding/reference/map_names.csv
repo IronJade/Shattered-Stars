@@ -1,0 +1,965 @@
+map,disc,area,place,kind,notes,basis
+0,1,(system),world-transfer script (unused map slot),special,"shares the world-map transfer script with maps 1-3, 826",contents;doors
+1,1,Expel,overworld,world,,contents;doors
+2,1,Energy Nede,overworld,world,,contents;doors
+3,1,world map 3,overworld,world,,contents;doors
+4,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+5,1,Arlia Village,"interior room, about 2 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+6,1,Arlia Village,"interior room, about 3 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+7,1,Planet Milocinia,Planet Milocinia,interior,,banner
+8,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+9,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+10,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+11,1,Lacour Front Line,world-map entrance,field,,doors
+12,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+13,1,Lacour Front Line,unidentified part (not connected to the rest of the cluster by any two-way door found),field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+14,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+15,1,Arlia Village,"interior room, about 2 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+16,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+17,1,Arlia Village,south: bridge and forest path,town,,banner;thumbnail;doors
+18,1,Arlia Village,north: fountain square,town,,banner;thumbnail;doors
+19,1,Arlia Village,side yard off the south square (planet-gate ornament),town,,thumbnail;doors
+20,1,Arlia Village,"south: bridge and forest path, at night",cutscene,opening-night story-state copy of map 17; not in late_maps,thumbnail;doors
+21,1,Arlia Village,"north: fountain square, at night",cutscene,opening-night story-state copy of map 18; not in late_maps,thumbnail;doors
+22,1,Arlia Village,"bridge path, at night",cutscene,opening-night-only connector; not in late_maps,thumbnail;doors
+23,1,Arlia Village,Belding Church (inside),interior,,banner;thumbnail
+24,1,Arlia Village,"villager's house, living room",interior,banner just reads 'House',banner;thumbnail;doors
+25,1,Arlia Village,"villager's house, bedroom",interior,back room of map 24's house,thumbnail;doors
+26,1,Arlia Village,Hearn's General Store (inside),interior,,banner;thumbnail
+27,1,Arlia Village,Rena's House (inside),interior,,banner;thumbnail;doors
+28,1,Arlia Village,(unused map slot),special,no doors or chests in the script; not a real place,contents
+29,1,Arlia Village,"Rena's House (inside), at night",cutscene,opening-night story-state copy of map 27; not in late_maps,thumbnail;doors
+30,1,Field of Power,Rena's opening dream (vision of the four Fields),cutscene,reached only from Rena's Room/House in the game's opening dream,doors;contents
+31,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+32,1,Arlia Village,"Rena's House (inside), at night, variant",cutscene,"same room as maps 27/29, a second opening-night script state",thumbnail;doors
+33,1,Arlia Village,villager's house near the square,interior,banner just reads 'House',banner;doors
+34,1,Arlia Village,"Mayor Regis's House, 1F",interior,,banner;thumbnail;doors
+35,1,Arlia Village,"Mayor Regis's House, 1F, at night",cutscene,opening-night story-state copy of map 34; not in late_maps,thumbnail;doors
+36,1,Arlia Village,waterside path behind the Mayor's house,town,,thumbnail;doors
+37,1,Arlia Village,"Mayor's house, back porch, at night",cutscene,likely opening-night story-state copy of map 36; not in late_maps,thumbnail;doors
+38,1,Arlia Village,Rena's Room,interior,the game's opening location,banner;thumbnail;doors
+39,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+40,1,Rena's Room,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+41,1,Arlia Village,villager's house (unidentified owner),interior,"also connects onward to map 644, a distant/late transfer",thumbnail;doors
+42,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+43,1,Town of Salva,"square, outer half (path to Salva Drift and Alen's Mansion)",town,,thumbnail;doors
+44,1,Town of Salva,"square, shop half (Inn, Jam Store, Jewelry Store)",town,,thumbnail;doors
+45,1,Town of Salva,side alley between the square's two halves,town,,thumbnail;doors
+46,1,Alen's Mansion,Alen's Mansion (inside),interior,,banner
+47,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+48,1,Town of Salva,gate toward Alen's Mansion,town,,thumbnail;doors
+49,1,Alen's Mansion,grounds / path to the mansion,town,reached from Arlia Village map 17,doors
+50,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+51,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+52,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+53,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+54,1,Town of Salva,Inn The Hopping Penguin,interior,,banner
+55,1,Town of Salva,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+56,1,Town of Salva,Jam Store Dolphin Kick,interior,,banner
+57,1,Town of Salva,House,interior,,banner
+58,1,Town of Salva,Tavern Rough & Tumble,interior,,banner
+59,1,Town of Salva,Jewelry Store Fairy Tear,interior,,banner
+60,1,Town of Salva,rocky dockside edge of the square,town,,thumbnail;doors
+61,1,Salva Drift,"interior room, about 4 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+62,1,Salva Drift,mine tunnel entrance,dungeon,,thumbnail;doors
+63,1,Town of Salva,Salva Drift,field,,banner
+64,1,Salva Drift,"mine tunnel, deeper",dungeon,late-game accessible (encounter_sites: flag[754]),thumbnail;doors;contents
+65,1,Salva Drift,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+66,1,Salva Drift,"interior room, about 2 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+67,1,Salva Drift,"interior room, about 3 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+68,1,Salva Drift,"interior room, about 3 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+69,1,Salva Drift,"interior room, about 2 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+70,1,Salva Drift,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+71,1,Salva Drift,"dark cave bridge, dead end off the tunnel",dungeon,,thumbnail;doors
+72,1,Salva Drift,"interior room, about 2 doors in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+73,1,Town of Cross,"town entrance, by the clock-tower square",town,,thumbnail;doors
+74,1,Town of Cross,main plaza (roundabout),town,,banner;thumbnail;doors
+75,1,Town of Cross,"shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",town,,banner;thumbnail;doors
+76,1,Town of Cross,back street near the plaza,town,,thumbnail;doors
+77,1,Town of Cross,street toward the castle bridge,town,,doors
+78,1,Town of Cross,castle gate bridge,town,"leads to Cross Castle, First Floor (map 90)",thumbnail;doors
+79,1,Town of Cross,Weapons Shop Royal Hunt (inside),interior,,banner;doors
+80,1,Town of Cross,Skill Guild (Skillie),interior,,banner;thumbnail;doors
+81,1,Town of Cross,Bar Mikado (inside),interior,,banner;doors
+82,1,Town of Cross,Restaurant Forum (inside),interior,,banner;doors
+83,1,Town of Cross,Inn Kingdom Hotel (inside),interior,,banner;doors
+84,1,Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+85,1,Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+86,1,Town of Cross,Cross Cathedral (inside),interior,,banner;thumbnail;doors
+87,1,Town of Cross,"main plaza (roundabout), story-state variant",town,"same plaza as map 74, different signage/lighting; not in late_maps so likely an earlier story state",thumbnail;doors
+88,1,Town of Cross,"shop plaza, story-state variant",town,story-state counterpart of map 75's plaza; not in late_maps,doors
+89,1,Town of Cross,"back street, story-state variant",town,story-state counterpart of map 76; not in late_maps,doors
+90,1,"Cross Castle, First Floor","Cross Castle, First Floor",interior,,banner
+91,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+92,1,Armory,Armory,interior,,banner
+93,1,Waiting Room,Waiting Room,interior,,banner
+94,1,The King's Private Chambers,The King's Private Chambers,interior,,banner
+95,1,Throne Room,Throne Room,interior,,banner
+96,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+97,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+98,1,Cross Castle Kitchen,Cross Castle Kitchen,interior,,banner
+99,1,Soldiers' Compartment,Soldiers' Compartment,interior,,banner
+100,1,The Prince's Chambers,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+101,1,The Princess' Chamber,The Princess' Chamber,interior,,banner
+102,1,The Prince's Chambers,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+103,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+104,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+105,1,Port of Clik,"market square (stairs, fountain statue)",town,"the hub most shops open off (121 Bakery, 118 Clothing Store, 119 Restaurant, 123 Skill Guild); visually identical to map 106, likely a story-state duplicate",doors;thumbnail
+106,1,Port of Clik,"market square (stairs, fountain statue)",town,"renders pixel-identical to map 105; both connect only to the docks (109), so probably the same square reached under two different story flags rather than a distinct place",doors;thumbnail
+107,1,Port of Clik,harbor plaza (canal),town,"own banner is just ""Port of Clik""; the hub most of the named buildings open off (113 International Trading, 115/114/116/117)",banner;thumbnail;doors
+108,1,Port of Clik,"hillside path (secluded, stairs up)",town,dead end off the market square (105),doors;thumbnail
+109,1,Port of Clik,docks (boats moored),town,links the market square (105/106) to the pier (110),doors;thumbnail
+110,1,Port of Clik,"pier, far end (life rings)",town,dead end off the docks (109),doors;thumbnail
+111,1,Port of Clik,"alley (barrels, ladder)",town,dead end off the harbor plaza (107),doors;thumbnail
+112,1,Port of Clik,garden gate,town,dead end off the harbor plaza (107),doors;thumbnail
+113,1,Port of Clik,International Trading,interior,,banner
+114,1,Port of Clik,Antique Shop Milly's Shop,interior,,banner
+115,1,Port of Clik,Henry's Happy Barrel,interior,,banner
+116,1,Port of Clik,Inn Waterfront,interior,,banner
+117,1,Port of Clik,The House on the Hill,field,,banner
+118,1,Port of Clik,Clothing Store Golgo,interior,,banner
+119,1,Port of Clik,Restaurant The Big Potato,interior,,banner
+120,1,Port of Clik,"Restaurant The Big Potato, dining room (piano lounge)",interior,off the restaurant (119),doors;thumbnail
+121,1,Port of Clik,Bakery The Clik Bakery,interior,,banner
+122,1,Fanzine Convention Hall Oates Hall,Fanzine Convention Hall Oates Hall,interior,,banner
+123,1,Port of Clik,Skill Guild Clik Skills,interior,,banner
+124,1,Mars Village,village green (entrance),town,"own banner is just ""Mars Village""; trees, barrels and a cannon-like device near the gate",banner;thumbnail;doors
+125,1,Mars Village,bridge over the millpond,town,"a wooden bridge over green water, off the village green (124)",doors;thumbnail
+126,1,Mars Village,village street (shops),town,"own banner is also just ""Mars Village""; the street most shops/houses open off (129 Bar O'Shane/Inn Finn's, 135 Celine's House, 140 Grocery Store Golden Spoon)",banner;thumbnail;doors
+127,1,Mars Village,stepping-stone path,town,rocky grassy path between the green (124) and street (126),doors;thumbnail
+128,1,Mars Village,Tool Shop Roof's,interior,,banner
+129,1,Mars Village,Bar O'Shane,interior,,banner
+130,1,Mars Village,"Inn Finn's, guest room",interior,cozy upstairs bedroom off Bar O'Shane/Inn Finn's (129),doors;thumbnail
+131,1,Elder's House,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+132,1,Elder's House,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+133,1,Mars Village,"Celine's House, hallway (to Celine's Room)",interior,links Celine's House (135) to Celine's Room (139),doors;thumbnail
+134,1,Mars Village,village house interior (dim room),interior,"off the village green (124) directly; late_maps=False unlike most of the village, possibly a pre-story-flag variant",doors;thumbnail
+135,1,Mars Village,Celine's House,interior,,banner
+136,1,Mars Village,village house interior (fireplace living room),interior,"sofa and fireplace, off the street (125/126) and leading to 138",doors;thumbnail
+137,1,Mars Village,"Celine's House, bedroom",interior,off Celine's House (135); same furniture set as 138,doors;thumbnail
+138,1,Mars Village,"village house, bedroom",interior,"off the village green (124) directly; same room template as 137 but a different entry point, so likely a different household reusing the asset",doors;thumbnail
+139,1,Mars Village,Celine's Room,interior,,banner
+140,1,Mars Village,Grocery Store Golden Spoon,interior,,banner
+141,1,Mars Village,porch (potted plants),town,a small patio off the street (126),doors;thumbnail
+142,1,Town of Herlie,"town plaza / shop row (Weapons Premia, Antique Dealer, Tavern, Skill Guild, Eleanor's House, Delicatessen, Inn all open off it)",town,the plaza that all 7 of the guide's numbered Port of Herlie shops open off,doors;thumbnail;guide p46
+143,1,Zand's Mansion,"front gate / grounds (hilltop, north end of Port of Herlie)",town,"map_areas mislabelled this Town of Herlie; doors connect straight to 159 (banner ""Zand's Mansion"") and the thumbnail is a grand manor facade, not a Herlie street -- guide p46 says ""the mansion at the top of the hill (at the north end of town) is home to the ruthless Zand""; overridden to Zand's Mansion, like the map 427 Port Hilton/Lacour Castle fix",doors;thumbnail;guide p46
+144,1,Town of Herlie,"market street (shop stalls, signposted)",town,"own banner is just ""Town of Herlie"" (same as the area headline); a second outdoor street off the main plaza, not the plaza itself",banner;thumbnail;doors
+145,1,Town of Herlie,back alley (signpost; side route toward Zand's Mansion),town,"connects market street (144) and Eleanor's House (156/157) to map 166, a Zand's Mansion map with no banner -- a second, back-door route to the mansion besides the plaza gate (143)",doors;thumbnail
+146,1,Town of Herlie,Warehouse (south Port of Herlie),interior,"crates/barrels/machinery interior off the market street; matches the guide's Claude Private Action ""Warehouse in south Port of Herlie""",doors;thumbnail;guide p46
+147,1,Town of Herlie,Skill Guild Giono Vallon,interior,,banner
+148,1,Town of Herlie,Tavern Wild Man,interior,,banner
+149,1,Town of Herlie,Antique Dealer The Grasping Hand,interior,,banner
+150,1,Town of Herlie,Weapons Shop Premia,interior,,banner
+151,1,Town of Herlie,Delicatessen Red Dragon Manor,interior,,banner
+152,1,Town of Herlie,Inn Ocean View,interior,,banner
+153,1,Town of Herlie,"Inn Ocean View, upstairs hallway (west wing)",interior,"one of two symmetric hallways off the inn lobby (152), both leading to the shared guest room (155); distinguished from 154 by arrival facing only -- visually near-identical",doors;thumbnail
+154,1,Town of Herlie,"Inn Ocean View, upstairs hallway (east wing)",interior,the other of the two symmetric hallways off the inn lobby (152); see map 153,doors;thumbnail
+155,1,Town of Herlie,"Inn Ocean View, guest room",interior,"twin beds + chest, reached from both upstairs hallways (153/154)",doors;thumbnail
+156,1,Town of Herlie,Eleanor's House,interior,,banner
+157,1,Town of Herlie,"Eleanor's House, upstairs",interior,"furnished bedroom, tightly linked to Eleanor's House (156, 7 shared doors) with its own separate exit to the plaza (142)",doors;thumbnail
+158,1,Zand's Mansion,dining room,interior,"a long table and fireplace, off the back stairwell (161/164)",doors;thumbnail
+159,1,Zand's Mansion,grand foyer (double staircase),interior,"own banner is just ""Zand's Mansion""; the hub most of the mansion's rooms open off, through the front gate (143)",banner;thumbnail;doors
+160,1,Zand's Mansion,parlor (checkerboard floor),interior,off the foyer (159),doors;thumbnail
+161,1,Zand's Mansion,back stairwell,interior,links the parlor (160) to the dining room (158),doors;thumbnail
+162,1,Zand's Mansion,"back stairwell, second flight",interior,links the gallery hall (163) to the storage room (166),doors;thumbnail
+163,1,Zand's Mansion,"parlor (checkerboard floor), front room",interior,off both the foyer (159) and the front gate (143) directly,doors;thumbnail
+164,1,Zand's Mansion,gallery hall (horse statue),interior,"a gilded arched corridor off the foyer (159), leading to the dining room (158)",doors;thumbnail
+165,1,Zand's Mansion,"gallery hall, second passage",interior,"continues the gallery from 164, off the foyer (159) and the storage room (166)",doors;thumbnail
+166,1,Zand's Mansion,storage room (barrels),interior,"the mansion's back/service room; also connects to Town of Herlie's back alley (145), its second route to town",doors;thumbnail
+167,1,Port Hilton,Food Store Munchies,interior,,banner
+168,1,Inn Hilton Island,"harbor street outside the Inn, night",town,"same street as the Port Hilton harbor area but rendered at night; this whole cluster (168/170/172/176/178/180/182) looks like a story-state night duplicate of the Inn Hilton Island building (175/177/179/181), matching the guide's Tournament-Eve inn scene where ""Rena goes on a mysterious errand"" (p59-60) -- not a separate physical place",doors;thumbnail;guide p60
+169,1,Port Hilton,"harbor entrance (city gate, cargo crane)",town,the main dock view with the town wall and a cargo loader; one door goes to 548 (Eluria Tower's own entrance map) -- the sea route there,doors;thumbnail;guide p57
+170,1,Inn Hilton Island,"street beside the Inn, night",town,dead end off 168; see map 168 for the night-duplicate note,doors;thumbnail
+171,1,Port Hilton,pier (boat docks),town,"rows of moored boats along a wooden pier, dead end off the harbor entrance (169)",doors;thumbnail
+172,1,Inn Hilton Island,"market street, night",town,dead end off the lobby (176); see map 168 for the night-duplicate note,doors;thumbnail
+173,1,Skill Guild Skill Power,Skill Guild Skill Power,interior,,banner
+174,1,Tavern Stone,Tavern Stone,interior,,banner
+175,1,Port Hilton,Inn Hilton Island,interior,,banner
+176,1,Inn Hilton Island,"lobby, reception desk (night, Tournament Eve)",interior,"the inn's front desk, night version of 175; see map 168 for the night-duplicate note",doors;thumbnail;guide p60
+177,1,Port Hilton,"Inn Hilton Island, guest hallway (A)",interior,"one of two symmetric chandelier-lit hallways off the inn (175), both leading to the shared guest room (181); distinguished from 179 by arrival facing only",doors;thumbnail
+178,1,Inn Hilton Island,"guest hallway (A), night",interior,"night version of 177, same twin-hallway layout leading to the shared guest room (182)",doors;thumbnail
+179,1,Port Hilton,"Inn Hilton Island, guest hallway (B)",interior,the other of the two symmetric hallways off the inn (175); see map 177,doors;thumbnail
+180,1,Inn Hilton Island,"guest hallway (B), night",interior,night version of 179; see map 178,doors;thumbnail
+181,1,Port Hilton,"Inn Hilton Island, guest room",interior,"sofas and a round rug, reached from both guest hallways (177/179)",doors;thumbnail
+182,1,Inn Hilton Island,"guest room, night",interior,"night version of 181, same furniture layout",doors;thumbnail
+183,1,Town of Linga,town plaza (University district; most shops open off it),town,"the plaza all the guide's numbered Linga shops open off: Pharmacy Jean Medicine Home, Academy Library, Skill Guild Le Skill, Inn Pension Chie, Keith Klaser's House, University Co-op",doors;thumbnail;guide p64
+184,1,Town of Linga,canal bridge (path to the Academy and Bowman's house),town,"a stone bridge over a canal, separate from the main plaza; connects to Lacour Academy Reception (199), Academy Library (189), Bowman's House (192), Pharmacy Jean Medicine Home (191)",doors;thumbnail
+185,1,Town of Linga,Keith Klasner's House,interior,,banner
+186,1,Town of Linga,"Keith Klaser's House, study",interior,bookshelf-lined study off Keith Klaser's House (185); also links to Bowman's House (193) by a back passage,doors;thumbnail
+187,1,Town of Linga,University Co-op Academy Co-op,interior,,banner
+188,1,Town of Linga,Inn Pension Chie,interior,,banner
+189,1,Town of Linga,Academy Library,interior,,banner
+190,1,Town of Linga,Skill Guild Le Skill,interior,,banner
+191,1,Town of Linga,Pharmacy Jean Medicine Home,interior,,banner
+192,1,Town of Linga,Bowman's House,interior,,banner
+193,1,Bowman's House,Bowman's House,interior,,banner
+194,1,Town of Linga,"Bowman's House, Bedroom",interior,,banner
+195,1,"Bowman's House, Bedroom","Bowman's House, Bedroom",interior,,banner
+196,1,Town of Linga,Precis's Living Room,interior,,banner
+197,1,Town of Linga,Precis' House The Lab,interior,,banner
+198,1,Town of Linga,Precis' House Engine Room,interior,,banner
+199,1,Town of Linga,Lacour Academy Reception,interior,,banner
+200,1,Town of Linga,"Lacour Academy, ground floor hallway (reception to Hall 1 / cafe)",interior,"ornate arched hallway linking Academy Reception (199), Hall 1 (203) and the Student Cafe (202)",doors;thumbnail;guide p64
+201,1,Town of Linga,"Lacour Academy, hallway (reception to Hall 2 / lab, stairs up)",interior,"the Academy's other ground-floor hallway, linking Academy Reception (199), Hall 2 (204) and the Laboratory (205); has a staircase up",doors;thumbnail;guide p64
+202,1,Town of Linga,Lacour Academy Student Cafe,interior,,banner
+203,1,Town of Linga,Lacour Academy Hall 1,interior,,banner
+204,1,Town of Linga,Lacour Academy Hall 2,interior,,banner
+205,1,Town of Linga,Lacour Academy Laboratory,dungeon,,banner
+206,1,Town of Linga,Pharmacy Tsuyoshi Takemoto,interior,,banner
+207,1,Town of Linga,path to Keith Klaser's House (yard),town,"open dirt yard off the plaza, with a monster sign; its only non-plaza door goes to Keith Klaser's House (185)",doors;thumbnail
+208,1,Town of Linga,lakeside street (shop signs),town,"a street corner by the water, off the canal bridge (184); signage not legible enough to name the shop",doors;thumbnail
+209,1,Town of Linga,gate / archway at the edge of the plaza,town,"lantern-hung archway with barrels, only connected to the plaza (183)",doors;thumbnail
+210,1,Town of Lacour,Weapons Shop Counterpunch,interior,,banner
+211,1,Town of Lacour,main plaza (round garden),town,,thumbnail;doors
+212,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+213,1,Town of Lacour,statued path to the castle gate,town,,thumbnail;doors
+214,1,Town of Lacour,side alley off the plaza,town,,thumbnail;doors
+215,1,Town of Lacour,Food Store Carnival,interior,,banner
+216,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+217,1,Town of Lacour,"interior room, about 2 doors in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+218,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+219,1,Town of Lacour,Skill Guild Lacour Skills,interior,,banner
+220,1,Town of Lacour,Weapons Shop Slayer,interior,,banner
+221,1,Town of Lacour,Inn The Lacour Hotel,interior,,banner
+222,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+223,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+224,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+225,1,Town of Lacour,Tavern La Coeur of Lacour,interior,,banner
+226,1,Town of Lacour,House Red Roof,interior,,banner
+227,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+228,1,Town of Lacour,Blacksmith Gamgee's Forge,interior,,banner
+229,1,El Beach,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+230,1,El Beach,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+231,1,Eluria Colony,shipwreck beach (opening cutscene),special,"no doors/chests/save point (6003 script instructions but no map_transfer_c calls found), so it was unidentified; the thumbnail is a beach with a wrecked boat and two characters, matching the guide's ""Shipwrecked!"" scene opening Eluria Colony: ""Claude washes up on the beach alone... Rena... is washed up on the shore with the rest of the party"" -- a scripted cutscene map, not reachable by normal doors, so kept kind=special",thumbnail;guide p72;contents
+232,1,Eluria Colony,outpost clearing (entrance),field,"own banner is just ""Eluria Colony""; matches the guide: ""a small outpost in the middle of the forested plot of land near the beach""",banner;thumbnail;guide p72
+233,1,Eluria Colony,Weapons Shop (Arsenal),interior,"weapon racks and barrels; matches the guide's numbered list item 1, ""Weapons Shop (Arsenal)""",doors;thumbnail;guide p72
+234,1,Eluria Colony,Leader's House,interior,,banner
+235,1,Central City,central plaza (garden roundabout),town,"the hub most of Central City's shops and streets open off; own banner is just ""Central City""",banner;thumbnail;doors
+236,1,Central City,plaza courtyard (garden corner),town,"a quieter corner of the same roundabout garden, dead end off the main plaza (235)",doors;thumbnail
+237,1,Central City,garden courtyard (steps to Tavern & Inn Brandywine),town,"lawn with benches and an iron fence, leading up a staircase toward the Tavern & Inn Brandywine (250)",doors;thumbnail
+238,1,Central City,City Hall plaza (statues),town,a row of statues in front of City Hall (239),doors;thumbnail
+239,1,Central City,City Hall,interior,,banner
+240,1,Central City,City Hall Receptionist,interior,,banner
+241,1,Central City,"Nede Chronicle, newsroom floor (receptionist side)",interior,checkerboard-floor office linking City Hall Receptionist (240) and the Nede Chronicle building (242),doors;thumbnail
+242,1,Central City,Nede Chronicle,interior,,banner
+243,1,Central City,"Nede Chronicle, newsroom floor (publishing side)",interior,a second checkerboard-floor office room linking Nede Publishing Company (245) and City Hall's foyer (246),doors;thumbnail
+244,1,Central City,"Nede Chronicle, editor's office",interior,"a private office (sofa, bookcase, desk computer) off the Nede Chronicle building (242); only a one-way door found (242->244), so treated as a dead end",doors;thumbnail
+245,1,Central City,Nede Publishing Company,interior,,banner
+246,1,Central City,"City Hall, foyer (stairs to the Mayor's Office)",interior,"grand checkerboard foyer with a staircase, linking the Nede Chronicle newsroom (243) to the Mayor's Office (247)",doors;thumbnail
+247,1,Central City,Mayor's Office,interior,,banner
+248,1,Central City,Transporter,interior,,banner
+249,1,Central City,Tool Shop Reverse Edge,interior,,banner
+250,1,Central City,Tavern & Inn Brandywine,interior,,banner
+251,1,Central City,"Tavern & Inn Brandywine, bar room (ground floor)",interior,"barstools and tables, off the Tavern & Inn Brandywine (250)",doors;thumbnail
+252,1,Central City,"Inn Brandywine , 2nd Floor",interior,,banner
+253,1,Central City,"Inn Brandywine, stairwell (1st to 2nd floor)",interior,landing with framed pictures between the ground floor and the named 2nd floor (252),doors;thumbnail
+254,1,Central City,"Inn Brandywine , 3rd Floor",interior,,banner
+255,1,Central City,"Inn Brandywine , 4th Floor",interior,,banner
+256,1,Central City,"Inn Brandywine , 5th Floor",interior,,banner
+257,1,Central City,Restaurant Weight Lawyer,interior,,banner
+258,1,Central City,Skill Guild,interior,,banner
+259,1,Central City,Weapons Shop Hyper-on-Hyper,interior,,banner
+260,1,North City,"town plaza (round garden, shops around)",town,"the hub most of North City's named shops open off; own banner is just ""North City""",banner;thumbnail;doors
+261,1,North City,"plaza, garden edge (notice board)",town,dead end off the main plaza (260),doors;thumbnail
+262,1,North City,park path (toward the Four Fields transporter),town,grassy outdoor path leading from the plaza (260) to the transporter platform (596),doors;thumbnail
+263,1,Synard Office,Synard Office,interior,,banner
+264,1,North City,Synard Reception Area,interior,,banner
+265,1,North City,Tool Shop Blue Flask,interior,,banner
+266,1,North City,Library Encyclopedia,interior,,banner
+267,1,Transporter,Transporter,special,"the game's point-to-point teleport mechanic, not a place with its own geography",banner
+268,1,North City,"Tool Shop Blue Flask, upstairs room",interior,a furnished study/bedroom off the shop (265),doors;thumbnail
+269,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+270,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+271,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+272,1,Director's Office,Director's Office,interior,,banner
+273,1,North City,Inn Landscape,interior,,banner
+274,1,North City,"Inn Landscape, guest room",interior,twin beds off the inn (273),doors;thumbnail
+275,1,North City,Smiley's Grocery,interior,,banner
+276,1,North City,Account Weapons,interior,,banner
+277,1,Noel's House,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+278,1,Noel's House,Transporter,interior,,banner
+279,1,Fun City,entrance gate (ticket booths),town,"own banner is just ""Fun City""; the Nedian Funhouse amusement-park gate, guide p108 (""entrance fee is 75 FOL per person"")",banner;thumbnail;guide p108
+280,1,Fun City,Fun City Central Square,town,,banner
+281,1,Fun City,Fun City Fighting Arena Square,town,,banner
+282,1,Fun City,amusement plaza (carnival games),town,"a decorated plaza off the central square (280), game-themed floor decal",doors;thumbnail
+283,1,Fun City,Inn Fun City Hotel,interior,,banner
+284,1,Fun City,"Inn Fun City Hotel, lobby (grand staircase)",interior,off the central square (280),doors;thumbnail
+285,1,Fun City,"Inn Fun City Hotel, guest room",interior,"twin beds, off the lobby (284)",doors;thumbnail
+286,1,Fun City,"Inn Fun City Hotel, guest room (upper floor)",interior,"a second guest room off the lobby (284), different decor from 285",doors;thumbnail
+287,1,Fun City,Information Center,interior,,banner
+288,1,Fun City,Tavern Playgirl,interior,,banner
+289,1,Fun City,arcade shop row (booths),town,"a row of ""SHOP"" booths linking the Gift Shop (290) and Restaurant Light Step (291) to the central square (280)",doors;thumbnail
+290,1,Fun City,Gift Shop Gift Box,interior,,banner
+291,1,Fun City,Restaurant Light Step,interior,,banner
+292,1,Fanzine Spot Sale,Fanzine Spot Sale,interior,,banner
+293,1,Fun City,"lounge (dim, round tables)",interior,a quiet candlelit lounge off the carnival plaza (282),doors;thumbnail
+294,1,BUNNY RACE WINDOW,BUNNY RACE WINDOW,special,Fun City bunny-racing minigame: betting window,banner
+295,1,BUNNY RACETRACK,BUNNY RACETRACK,special,Fun City bunny-racing minigame: track,banner
+296,1,Fun City Fighting Arena,arena floor (south entrance),interior,"sand-floored ring with a spectator rail, like Lacour Castle's coliseum (467/477); reached from the gallery corridors (299/300/304)",doors;thumbnail;guide p108
+297,1,Fun City Fighting Arena,registration desk,interior,"a crest standee on a dais, same layout as Lacour Castle's coliseum registration desk (468); own banner equals the area name (""Fun City Fighting Arena""), so still counted a placeholder by the classifier",doors;thumbnail;guide p108
+298,1,Fun City Fighting Arena,equipment room,interior,"punching bag, crates and a shop sign, off the registration desk (297)",doors;thumbnail
+299,1,Fun City Fighting Arena,"gallery corridor (crest tapestry, A)",interior,"curved arched corridor with a hanging crest tapestry, circling the arena",doors;thumbnail
+300,1,Fun City Fighting Arena,"gallery corridor (crest tapestry, B)",interior,"a second curved gallery corridor, see map 299",doors;thumbnail
+301,1,Fun City,"stairwell (wooden planks, dim)",interior,off the arena forecourt (305),doors;thumbnail
+302,1,Fun City,"stairwell (wooden planks, dim, 2nd flight)",interior,"a second stairwell off the arena forecourt (305), same style as 301",doors;thumbnail
+303,1,Fun City Fighting Arena,arena floor (north entrance),interior,"visually matches 296, reached from a different side of the gallery (299/300); one stray door also points at map 18 (Arlia Village), likely a leftover/unused script reference rather than real navigation",doors;thumbnail
+304,1,Fun City Fighting Arena,"gallery corridor (crest rug, antechamber)",interior,"a red-carpeted corridor with a crest rug, off the registration desk's side (300/299/296)",doors;thumbnail
+305,1,Fun City,"Fighting Arena, forecourt ring",interior,a sand-floored ring like the Fighting Arena's own arena floor (296/303); bridges the entrance (279) to the Fighting Arena cluster (296-304),doors;thumbnail;guide p108
+306,1,Town of Armlock,town plaza (terracotta rooftops),town,"the hub most of Armlock's named shops open off; own banner is just ""Town of Armlock""",banner;thumbnail;doors
+307,1,Town of Armlock,side street (toward the restaurant),town,"barrels and a lamppost, off the plaza (306) near Restaurant Yamato-Ya (309)",doors;thumbnail
+308,1,Town of Armlock,stairway alley (toward the Transporter Portal of Sealing),town,only door besides 306 goes to the Transporter Portal of Sealing (313),doors;thumbnail
+309,1,Town of Armlock,Restaurant Yamato-Ya,interior,,banner
+310,1,Town of Armlock,Weapons and Tool Shop Milword's,interior,,banner
+311,1,Town of Armlock,Tavern Home Brew 54,interior,,banner
+312,1,Town of Armlock,Inn Elation,interior,,banner
+313,1,Transporter Portal of Sealing,Transporter Portal of Sealing,special,teleport mechanic location (sealed portal),banner
+314,1,Town of Armlock,Mansion Mirage's House,interior,,banner
+315,1,Town of Armlock,"Mirage's House, workshop",interior,tech/tool-filled back room off the Mansion (314),doors;thumbnail
+316,1,Town of Armlock,Skill Guild Skill World,interior,,banner
+317,1,Giveaway,"town square (snowy, gothic rooftops)",town,"own banner is just ""Giveaway""; matches the guide: Giveaway lies on the snowy mountain north of the Field of Power. The hub Rokumondo's Secondhand Shop (323), Inn Mandarin (329), Dining Hall Fresh Meat (331), Tavern Tackle (339) and Noel's House (337) open off",banner;thumbnail;guide
+318,1,Giveaway,snowy courtyard (snowman),town,"dead end off the town square (317), with a snowman",doors;thumbnail
+319,1,Giveaway,"foyer (west wing, statue alcoves)",interior,"grand staircase hall off the University entrance (334), leading toward Nede History Research Lab (332) and Classroom 1 (326)",doors;thumbnail
+320,1,Giveaway,"foyer (east wing, stairs)",interior,"a second grand hall off the University entrance (334), leading toward Classroom 2 (327) and the Dean's Office (333)",doors;thumbnail
+321,1,Giveaway,foyer (research wing),interior,links the west foyer (319) to the Nede History Research Lab (332) and Classroom 1 (326),doors;thumbnail
+322,1,Giveaway,foyer (library wing),interior,links the main foyer (335) to the Library (325) and Classroom 3 (328),doors;thumbnail
+323,1,Giveaway,Rokumondo's Secondhand Shop,interior,,banner
+324,1,Giveaway,"Library, stacks",interior,bookshelf alcove off the Library (325),doors;thumbnail
+325,1,Giveaway,Library,interior,,banner
+326,1,Giveaway,Classroom 1,interior,,banner
+327,1,Giveaway,Classroom 2,interior,,banner
+328,1,Giveaway,Classroom 3,interior,,banner
+329,1,Giveaway,Inn Mandarin,interior,,banner
+330,1,Giveaway,"Inn Mandarin, common room (fireplace)",interior,off the Inn (329),doors;thumbnail
+331,1,Giveaway,Dining Hall Fresh Meat,interior,,banner
+332,1,Giveaway,Nede History Research Lab,dungeon,,banner
+333,1,Giveaway,Dean's Office,interior,,banner
+334,1,Giveaway,Giveaway University,interior,,banner
+335,1,Giveaway,main foyer (grand staircase),interior,"the University's central hall, linking the entrance (334) to the library wing (322) and research wing (321)",doors;thumbnail
+336,1,Giveaway,snowy path (town to University),town,a stone archway path linking the town square (317) to Giveaway University's entrance (334),doors;thumbnail
+337,1,Giveaway,Noel's House,interior,,banner
+338,1,Giveaway,"Noel's House, workshop",interior,a dim room with jars and shelves off Noel's House (337),doors;thumbnail
+339,1,Giveaway,Tavern Tackle,interior,,banner
+340,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+341,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+342,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+343,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 2 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+344,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+345,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+346,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+347,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+348,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+349,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+350,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+351,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+352,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+353,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+354,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+355,1,Mountain Palace,entrance (guard post),dungeon,thumbnail-confirmed landmark room,doors;thumbnail;guide p50
+356,1,Mountain Palace,unidentified interior (no doors found in the script),dungeon,"no inbound or outbound doors at all -- the guide notes this dungeon swaps which character (Ashton or Opera) you explore it with and puts the boss in a different spot depending on who's in the party, so this is likely an alternate/flag-gated copy of a room used by the other quest thread rather than a place reachable by walking",doors;guide p50
+357,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+358,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+359,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): boss room (Flarelizards x2)",dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail shows the arena (altar/dais with flanking chests for Nightmare; square chamber for the Flarelizards), cross-checked against the guide",doors;contents;thumbnail;guide p50
+360,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 6 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+361,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+362,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+363,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+364,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+365,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+366,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+367,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+368,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+369,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+370,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 5 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+371,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+372,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+373,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+374,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 4 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+375,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (?HERB)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+376,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+377,1,Mountain Palace,"Ernest's path (east passageway, toward the Flarelizards), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+378,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare), about 3 doors in from the entrance",dungeon,"placeholder; path from the nearest-boss split of the door graph, position from BFS depth from the entrance",doors;guide p50
+379,1,Mountain Palace,the fork (corridor splits toward both quest paths),dungeon,thumbnail-confirmed landmark room,doors;thumbnail;guide p50
+380,1,Mountain Palace,"Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail shows the arena (altar/dais with flanking chests for Nightmare; square chamber for the Flarelizards), cross-checked against the guide",doors;contents;thumbnail;guide p50
+381,1,Lasguss Mountain,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+382,1,Lasguss Mountain,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+383,1,Lasguss Mountain,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+384,1,Lasguss Mountain,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+385,1,Lasguss Mountain,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+386,1,Heraldry Weapons Laboratory,derelict workshop (broken machinery),dungeon,"dead end off 396, broken monitors and lab equipment -- matches the guide: here you ""learn the way to enhance your weapons"" and ""about Rena's mysterious past""",doors;thumbnail;guide p104
+387,1,Heraldry Weapons Laboratory,"derelict quarters (piano, chest)",dungeon,dead end off 389,doors;thumbnail
+388,1,Heraldry Weapons Laboratory,pipe trench,dungeon,dead end off 389,doors;thumbnail
+389,1,Heraldry Weapons Laboratory,ruined hallway (overgrown),dungeon,"a long pillared hallway reclaimed by plants, off 392",doors;thumbnail
+390,1,Heraldry Weapons Laboratory,ruined interior (broken beams),dungeon,"off 392, leading deeper to 393",doors;thumbnail
+391,1,Heraldry Weapons Laboratory,"pipe trench, second passage",dungeon,dead end off 393,doors;thumbnail
+392,1,Heraldry Weapons Laboratory,overgrown garden path,field,continues the approach from 397 toward the ruined interior (390/389),doors;thumbnail
+393,1,Heraldry Weapons Laboratory,collapsed corridor (scaffolding),dungeon,multi-level rubble corridor linking 390 to 391/395,doors;thumbnail
+394,1,Heraldry Weapons Laboratory,derelict storage room,dungeon,dead end off 395,doors;thumbnail
+395,1,Heraldry Weapons Laboratory,ruined corridor (directional sign),dungeon,a surviving signpost arrow; links 393 to 394/396 and the Town of Armlock side door (398),doors;thumbnail
+396,1,Heraldry Weapons Laboratory,collapsed structure (exposed pipes),dungeon,links 395 to the derelict workshop (386),doors;thumbnail
+397,1,Heraldry Weapons Laboratory,overgrown approach (fenced gate),field,"own banner is just ""Heraldry Weapons Laboratory""; matches the guide: ""can be accessed only through the sealed portal in the Town of Armlock"" -- the overgrown path just inside",banner;thumbnail;guide p104
+398,1,Heraldry Weapons Laboratory,machine hall,dungeon,"map_areas mislabels 398/399/401 ""Town of Armlock"" (same nearest-named-map bug as the Herlie/Port Hilton/North City fixes); 401's only non-Armlock-area door is 400, itself inside the Laboratory, and the thumbnails are industrial machinery, not town streets. Overridden to Heraldry Weapons Laboratory, which otherwise still has NO hand-verified rows -- worth a full pass later",doors;thumbnail
+399,1,Heraldry Weapons Laboratory,equipment storage,dungeon,"crates and monitors off the machine hall (398). Area override, see map 398",doors;thumbnail
+400,1,Heraldry Weapons Laboratory,stone archway (forest gate),field,links the hollow-tree entrance (401) to the laboratory gate (397),doors;thumbnail
+401,1,Heraldry Weapons Laboratory,forest entrance (hollow tree),field,"a giant tree concealing the Laboratory's surface entrance, leading down to 400. Area override, see map 398",doors;thumbnail
+402,1,Sanctuary of Linga,cave entrance (ledge fork),dungeon,"fork in the entry passage, three ways on from here (403/405/406); kind corrected from interior to dungeon (classify.py's keyword list doesn't know ""Sanctuary"")",doors;thumbnail;guide p66
+403,1,Sanctuary of Linga,carved stairway ledge (chest),dungeon,,doors;thumbnail;guide p66
+404,1,Sanctuary of Linga,winding crossover ledge (chest),dungeon,mossy path crossing the chasm; forks onward to 407/408,doors;thumbnail;guide p66
+405,1,Sanctuary of Linga,crossover bridge (ledges winding over the chasm),dungeon,"the central 3-way junction tying 402/403/404 together; matches the guide's ""paths wind over and under each other""",doors;thumbnail;guide p66
+406,1,Sanctuary of Linga,"herb alcove (dead end, off the entrance fork)",dungeon,"a visible herb plant; one of the guide's described herb pickups, though which numbered herb isn't determinable from the thumbnail alone",doors;thumbnail;guide p66
+407,1,Sanctuary of Linga,"herb alcove (dead end, off the inner fork)",dungeon,"another herb plant dead end, deeper in than 406",doors;thumbnail;guide p66
+408,1,Sanctuary of Linga,stairway up (bone-strewn ledge),dungeon,"a carved stairway with a skeletal monster nearby, deeper in the cave",doors;thumbnail;guide p66
+409,1,Sanctuary of Linga,deep fork (final choice of paths),dungeon,"branches to the two deepest dead ends (411/412); matches the guide's ""only one path will lead you to the herbs Bowman seeks -- and the Boss as well""",doors;thumbnail;guide p66
+410,1,Sanctuary of Linga,skeletal beast lair (dead end),dungeon,"a large skeleton/beast skull dominates the room; fits the guide's ""skeletons of creatures long since deceased"" warning that you're nearing the heart of the Sanctuary",doors;thumbnail;guide p66
+411,1,Sanctuary of Linga,herb alcove (deepest dead end),dungeon,one of the two deepest branches off the final fork (409),doors;thumbnail;guide p66
+412,1,Sanctuary of Linga,"grassy chamber (two chests, skull) -- near the heart of the Sanctuary",dungeon,"the other deepest branch off 409; matches the guide's description of nearing ""the very heart of the Sanctuary of Linga""",doors;thumbnail;guide p66
+413,1,Cave of Red Crystal,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+414,1,Cave of Red Crystal,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+415,1,Cave of Red Crystal,"interior room, about 2 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+416,1,Cave of Red Crystal,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+417,1,Cave of Red Crystal,"interior room, about 3 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+418,1,Cave of Red Crystal,"interior room, about 4 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+419,1,Cave of Red Crystal,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+420,1,Lacour Castle Registration,Registration desk,interior,,doors
+421,1,Lacour Castle Registration,"Registration, entrance hall (from the castle grounds)",interior,,doors
+422,1,Lacour Castle Throne Room,"Throne Room, main chamber",interior,,doors
+423,1,Lacour Castle Throne Room,"Throne Room, side chamber",interior,,doors
+424,1,Lacour Castle Throne Room,"Throne Room, other side chamber",interior,,doors
+425,1,King's Room,"King's Room, main chamber",interior,,doors
+426,1,Lacour Castle,"grand staircase (up from the Conference Room wing, toward the coliseum)",interior,"map_areas mislabels 426/434/467-477 ""Port Hilton"" (same nearest-named-map bug as map 427); doors chain 426-434-467..477 connects only to the Lacour Castle corridor (427), never to Port Hilton's own cluster. Matches the guide: ""Head up the stairs on the left side of the castle to the desk before the entrance to the coliseum area"" (Tournament of Arms, p60). Overridden to Lacour Castle, like map 427.",doors;thumbnail;guide p60
+427,1,Lacour Castle,"corridor (Conference Room, Great Dining Hall, Arsenal and Main Library wing)",interior,"docs/ap/field.json's map_areas mislabels this 'Port Hilton' -- its nearest-named-map search crossed a long corridor; overridden here from the doors (hub for maps 431-435, plus Registration/Throne Room at 420/422)",doors
+428,1,Laboratory,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+429,1,King's Room,"King's Room, antechamber",interior,,doors
+430,1,Rosalia's Room,Rosalia's Room,interior,,banner
+431,1,Lacour Castle Conference Room,Lacour Castle Conference Room,interior,,banner
+432,1,Lacour Castle Great Dining Hall,Lacour Castle Great Dining Hall,interior,,banner
+433,1,Lacour Castle Arsenal,Lacour Castle Arsenal,interior,,banner
+434,1,Lacour Castle,courtyard walkway (castle to coliseum wing),town,"outdoor tiled path between rooftops, between the staircase (426) and the coliseum's registration desk (468); area override, see map 426",doors;thumbnail;guide p60
+435,1,Lacour Castle Main Library,Lacour Castle Main Library,interior,,banner
+436,1,Laboratory,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+437,1,Laboratory,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+438,1,Lacour Front Line,forward position,field,,doors
+439,1,Lacour Front Line,camp (hub),field,"connects to the Field Hospital, the Store and the Meeting Room camp",doors
+440,1,Lacour Front Line,path to the command tents,field,,doors
+441,1,Meeting Room,Meeting Room (Lacour Front Line command tent),interior,,doors
+442,1,Lacour Front Line Field Hospital,Lacour Front Line Field Hospital,field,kind corrected from an earlier auto-pass (not a dungeon),banner
+443,1,Commander's Office,Commander's Office,interior,,banner
+444,1,Meeting Room,"Meeting Room, second tent",interior,"hub of the Front Line's tents (Meeting Room 441/447, Field Hospital 442, Commander's Office 443)",doors
+445,1,Lacour Front Line,General Store Lacour Store,interior,,banner
+446,1,Lacour Front Line,Lacour front line Arsenal,field,,banner
+447,1,Meeting Room,"Meeting Room, third tent",interior,,doors
+448,1,Meeting Room,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+449,1,Mihne Cavern,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+450,1,Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+451,1,Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+452,1,Mihne Cavern,"interior room, about 2 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+453,1,Mihne Cavern,"interior room, about 2 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+454,1,Mihne Cavern,"interior room, about 3 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+455,1,Mihne Cavern,"interior room, about 3 doors in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
+456,1,Mars Village,"Heraldry Forest, path (just past the entrance)",field,"kept under Mars Village like the Heraldry Forest banner map (465) itself, rather than a separate area -- part of the forest maze beyond 465",doors;thumbnail
+457,1,Mars Village,"Heraldry Forest, twisting trail",field,"part of the forest maze, see map 456",doors;thumbnail
+458,1,Mars Village,"Heraldry Forest, fork (item marker)",field,"a visible item/red marker at a trail fork; part of the forest maze, see map 456",doors;thumbnail
+459,1,Mars Village,"Heraldry Forest, mossy hollow",field,"part of the forest maze, see map 456",doors;thumbnail
+460,1,Mars Village,"Heraldry Forest, fallen-log crossing",field,"part of the forest maze, see map 456",doors;thumbnail
+461,1,Mars Village,"Heraldry Forest, path (monster den)",field,"a monster visible nearby; part of the forest maze, see map 456",doors;thumbnail
+462,1,Mars Village,"Heraldry Forest, clearing behind Celine's House",field,a crossroads tying Celine's House (135) and Celine's Room's hallway (137) to the deeper forest maze (456-461/464/466) and the Secret Charity/Fake Gallery joke room (463),doors;thumbnail
+463,1,Secret Charity/Fake Gallery,Secret Charity/Fake Gallery,special,"a hidden/joke room (name suggests a fan-event or developer in-joke), not regular story content",banner
+464,1,Mars Village,"Heraldry Forest, junction (back toward the village)",field,"ties 460/461 back to the village-side clearing (462); part of the forest maze, see map 456",doors;thumbnail
+465,1,Mars Village,Heraldry Forest,field,,banner
+466,1,Mars Village,"Heraldry Forest, narrow trail",field,"part of the forest maze, see map 456",doors;thumbnail
+467,1,Lacour Castle,"coliseum, arena floor (gallery-side entrance)",interior,"the Tournament of Arms arena; visually identical to 477, reached from a different set of doors (471/475/470) -- likely the same arena floor entered from two sides. Area override, see map 426",doors;thumbnail;guide p60
+468,1,Lacour Castle,coliseum registration desk,interior,"matches the guide: ""the desk before the entrance to the coliseum area... once you've signed in, all of your weapons and equipment will be put in storage."" Area override, see map 426",doors;thumbnail;guide p60
+469,1,Lacour Castle,coliseum equipment storage,interior,"shelves, crates and a punching bag; matches the guide's ""weapons and equipment will be put in storage"" after sign-in. Area override, see map 426",doors;thumbnail;guide p60
+470,1,Lacour Castle,coliseum gallery corridor (tournament signage),interior,"curved arched corridor circling the arena, with a signboard. Area override, see map 426",doors;thumbnail;guide p60
+471,1,Lacour Castle,coliseum gallery corridor (crest tapestry),interior,"another curved arched corridor circling the arena, with a hanging crest banner. Area override, see map 426",doors;thumbnail;guide p60
+472,1,Lacour Castle,coliseum stairwell,interior,"wooden stairs down into the arena level. Area override, see map 426",doors;thumbnail;guide p60
+473,1,Lacour Castle,coliseum stairwell (lower flight),interior,"a second flight of the same stairwell complex as 472. Area override, see map 426",doors;thumbnail;guide p60
+474,1,Lacour Castle,"coliseum, spectator balcony",interior,"railed balcony overlooking the arena floor. Area override, see map 426",doors;thumbnail;guide p60
+475,1,Lacour Castle,coliseum waiting room (crest dais),interior,"formal hall converging on a raised crest display, next to the arena (467); likely the guide's ""specially marked room"" where tournament participants wait to be called. Area override, see map 426",doors;thumbnail;guide p60
+476,1,Lacour Castle,"coliseum, red carpet corridor",interior,"plain red-carpeted processional corridor linking the equipment room (469) and the arena (477). Area override, see map 426",doors;thumbnail;guide p60
+477,1,Lacour Castle,"coliseum, arena floor (equipment-side entrance)",interior,"visually identical to 467, reached from the opposite side of the complex (469/474/476) -- likely the same arena floor entered from two sides. Area override, see map 426",doors;thumbnail;guide p60
+478,1,Hoffmann Ruins,entrance (exterior ruins facade),dungeon,thumbnail-confirmed landmark room,doors;thumbnail;guide p68-69
+479,1,Hoffmann Ruins,entrance & approach: boss room (Ghost (possessing Ernest)),dungeon,"boss encounter per docs/ap/field.json bosses[], cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p68-69
+480,1,Hoffmann Ruins,"entrance & approach, about 1 door in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+481,1,Hoffmann Ruins,"entrance & approach, about 2 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+482,1,Hoffmann Ruins,"entrance & approach, about 2 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+483,1,Hoffmann Ruins,the elevator down into the mines,dungeon,thumbnail-confirmed landmark room,doors;thumbnail;guide p68-69
+484,1,Hoffmann Ruins,"upper tunnels, about 4 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+485,1,Hoffmann Ruins,upper tunnels: chest room (Cure Stone),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+486,1,Hoffmann Ruins,upper tunnels: chest room (Recoil Bracelet),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+487,1,Hoffmann Ruins,"upper tunnels: chest room (Angel Hair, Light Box)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+488,1,Hoffmann Ruins,"upper tunnels, about 4 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+489,1,Hoffmann Ruins,"upper tunnels, about 5 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+490,1,Hoffmann Ruins,"upper tunnels: chest room (Green Beryl, Holy Mist)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+491,1,Hoffmann Ruins,mine-cart tunnels: chest room (Cure Paralysis),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+492,1,Hoffmann Ruins,mine-cart tunnels: chest room (Aquaberry),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+493,1,Hoffmann Ruins,"mine-cart tunnels, about 6 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+494,1,Hoffmann Ruins,"mine-cart tunnels, about 7 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+495,1,Hoffmann Ruins,"mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+496,1,Hoffmann Ruins,"mine-cart tunnels, about 7 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+497,1,Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+498,1,Hoffmann Ruins,mine-cart tunnels: chest room (Hexagram Card),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+499,1,Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+500,1,Hoffmann Ruins,"mine-cart tunnels, about 8 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+501,1,Hoffmann Ruins,"mine-cart tunnels, about 9 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+502,1,Hoffmann Ruins,"mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+503,1,Hoffmann Ruins,mine-cart tunnels: chest room (Hyperball),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+504,1,Hoffmann Ruins,"mine-cart tunnels, about 9 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+505,1,Hoffmann Ruins,"mine-cart tunnels, about 10 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+506,1,Hoffmann Ruins,"mine-cart tunnels: chest room (Spring Water, Diamond)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+507,1,Hoffmann Ruins,"mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+508,1,Hoffmann Ruins,"mine-cart tunnels, about 11 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+509,1,Hoffmann Ruins,"mine-cart tunnels, about 12 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+510,1,Hoffmann Ruins,"mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+511,1,Hoffmann Ruins,"lower passages, about 8 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+512,1,Hoffmann Ruins,"lower passages, about 9 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+513,1,Hoffmann Ruins,"lower passages: chest room (Green Beryl, Blackberry)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+514,1,Hoffmann Ruins,lower passages: chest room (Sturm Ring),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+515,1,Hoffmann Ruins,lower passages: chest room ('Spring'),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+516,1,Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+517,1,Hoffmann Ruins,lower passages: chest room (Paralysis Check),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+518,1,Hoffmann Ruins,"lower passages, about 9 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+519,1,Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+520,1,Hoffmann Ruins,"lower passages: chest room (Sour Syrup, ?HERB)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+521,1,Hoffmann Ruins,"lower passages, about 10 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+522,1,Hoffmann Ruins,"lower passages, about 11 doors in from the entrance",dungeon,"placeholder; zone from the door graph's structure (no in-game ""Level N"" banners here, unlike Cave of Trials), position from BFS depth from the entrance",doors;guide p68-69
+523,1,Hoffmann Ruins,the Energy Stone chamber: boss room (Harfainx),dungeon,"boss encounter per docs/ap/field.json bosses[], cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p68-69
+524,1,Cross Cave,"entrance, cave mouth",dungeon,"own banner is just ""Cross Cave""; matches the guide: ""heading east from the confines of the Town of Cross, the party arrives at the entrance of the fabled Cross Cave""",banner;thumbnail;guide p36
+525,1,Cross Cave,passage (two chests),dungeon,,doors;thumbnail
+526,1,Cross Cave,passage (single chest),dungeon,,doors;thumbnail
+527,1,Cross Cave,"passage (scattered item, chest)",dungeon,,doors;thumbnail
+528,1,Cross Cave,pool alcove (chest),dungeon,,doors;thumbnail
+529,1,Cross Cave,"treasure nook (four chests, skeleton)",dungeon,,doors;thumbnail
+530,1,Cross Cave,chest hollow (two chests),dungeon,,doors;thumbnail
+531,1,Cross Cave,passage (distant chest),dungeon,,doors;thumbnail
+532,1,Cross Cave,chest alcove (two chests),dungeon,,doors;thumbnail
+533,1,Cross Cave,open ledge (bright clearing),dungeon,,doors;thumbnail
+534,1,Cross Cave,narrow winding passage,dungeon,"matches the guide: ""the natural caverns of Cross Cave is confusing at times because some of the passageways blend in very well with the background""",doors;thumbnail;guide p36
+535,1,Cross Cave,chest hollow (two chests),dungeon,,doors;thumbnail
+536,1,Cross Cave,passage (green hollow),dungeon,,doors;thumbnail
+537,1,Cross Cave,blue grotto (pool),dungeon,"a distinctly blue-lit pocket, unlike the mostly green-lit cave elsewhere",doors;thumbnail
+538,1,Cross Cave,Ancient Writings marker (chest nearby),dungeon,"a glowing inscribed signpost; matches the guide's subplot where Celine is searching for Ancient Writings in the cave that ""no member of the party is able to read"" -- one of three such markers found (538/540/541)",doors;thumbnail;guide p36
+539,1,Cross Cave,overgrown passage (vines),dungeon,,doors;thumbnail
+540,1,Cross Cave,Ancient Writings marker (fork),dungeon,"another inscribed signpost at a trail fork; matches the guide: ""the passageway leading down isn't obvious, but the reward at its end is worth the journey"". See map 538",doors;thumbnail;guide p36
+541,1,Cross Cave,Ancient Writings marker (chest),dungeon,a third inscribed signpost. See map 538,doors;thumbnail;guide p36
+542,1,Cross Cave,passage (cave hollow),dungeon,,doors;thumbnail
+543,1,Cross Cave,chest chamber (ghost enemy),dungeon,,doors;thumbnail
+544,1,Cross Cave,mushroom-ring clearing,dungeon,rings of glowing fungus on the floor,doors;thumbnail
+545,1,Cross Cave,root chamber (monster encounter),dungeon,"a large tree-root formation, close to the final chamber",doors;thumbnail
+546,1,Cross Cave,root pillar (light ahead),dungeon,"a bright glow visible beyond, leading into the innermost chamber (547)",doors;thumbnail
+547,1,Cross Cave,"innermost chamber (star-shaped dais, 5 chests)",dungeon,"matches the guide exactly: ""upon opening the secret passageway, the party arrives in the cave's innermost chamber. Five treasure chests are located around the star-shaped dais"" -- opening one releases a pair of Gargoyles",doors;thumbnail;guide p36
+548,1,Ship to El,Ship to El,special,"the ship voyage out of Port Hilton (chapter 29 scripted sequence), not a walkable place",banner
+549,1,Field of Intelligence,Mirror Room (west),field,"own banner is just ""Field of Intelligence""; checkerboard hall with arched mirror panels, matching the guide: ""the strange, reflectionless mirrors in this room transport you in and out of the main floors""",banner;thumbnail;guide p52
+550,1,Field of Intelligence,Mirror Room (east),field,"the second mirror room, two chests; see map 549",doors;thumbnail;guide p52
+551,1,Field of Intelligence,"main floor, transporter-block maze",field,"matches the guide: ""navigate between the floors using the yellow transporter blocks... red blocks mark destination spots""",doors;thumbnail;guide p52
+552,1,Field of Intelligence,"main floor, spinning-switch chamber (1 of 2)",field,"six spinning switch urns around a central panel; matches the guide: ""turn on the spinning switches on the main floor of the dungeon""",doors;thumbnail;guide p52
+553,1,Field of Intelligence,"main floor, spinning-switch chamber (2 of 2)",field,"visually identical to 552, the other of the ""two main floors"" the guide describes",doors;thumbnail;guide p52
+554,1,Field of Intelligence,"Boss-area transporter chamber, A",special,"a round red chamber with a maze emblem and guardian statues; matches the guide: solving the switches ""open a special transporter spot to the Boss area."" Visually identical to 555/556",doors;thumbnail;guide p52
+555,1,Field of Intelligence,"Boss-area transporter chamber, B",special,"visually identical to 554/556; one stray door also points at map 14 (Arlia Village), likely a leftover/unused script reference",doors;thumbnail;guide p52
+556,1,Field of Intelligence,"Boss-area transporter chamber, C",special,visually identical to 554/555,doors;thumbnail;guide p52
+557,1,Eluria Tower,entrance walkway (locked gate),dungeon,"matches the guide: ""the doors are locked and you need an ID Card to enter""",doors;thumbnail;guide p74
+558,1,Eluria Tower,"entrance hall (red light, statue)",dungeon,"own banner is just ""Eluria Tower""",banner;thumbnail;doors
+559,1,Eluria Tower,picture gallery (eerie frescoes),dungeon,,doors;thumbnail
+560,1,Eluria Tower,overgrown chamber (light shaft),dungeon,,doors;thumbnail
+561,1,Eluria Tower,vine chamber (floating chests),dungeon,,doors;thumbnail
+562,1,Eluria Tower,"statue garden, crystal pool (1 of 6)",dungeon,"matches the guide's puzzle: ""read the inscriptions on all the statues in the Tower""; a run of near-identical glowing statue-pillar pool rooms (562-567)",doors;thumbnail;guide p74
+563,1,Eluria Tower,"statue garden, crystal pool (2 of 6)",dungeon,"part of the statue-inscription puzzle run, see map 562",doors;thumbnail;guide p74
+564,1,Eluria Tower,"statue garden, crystal pool (3 of 6)",dungeon,"part of the statue-inscription puzzle run, see map 562",doors;thumbnail;guide p74
+565,1,Eluria Tower,"statue garden, crystal pool (4 of 6)",dungeon,"part of the statue-inscription puzzle run, see map 562",doors;thumbnail;guide p74
+566,1,Eluria Tower,"statue garden, crystal pool (5 of 6)",dungeon,"part of the statue-inscription puzzle run, see map 562; also links onward to 567/568 and the Field of Power shortcut (626/627)",doors;thumbnail;guide p74
+567,1,Eluria Tower,"statue garden, crystal pool (6 of 6)",dungeon,"part of the statue-inscription puzzle run, see map 562; also links to the Field of Power shortcut (626/627)",doors;thumbnail;guide p74
+568,1,Eluria Tower,inscribed chamber (floor emblems),dungeon,"purple-lit room with dark circular floor emblems, past the statue garden",doors;thumbnail
+569,1,Eluria Tower,corridor (enemy encounter),dungeon,a narrow corridor where a dialogue/encounter triggers,doors;thumbnail
+570,1,Eluria Tower,triple archway hall,dungeon,"three glowing archways, a junction to 571/572/573",doors;thumbnail
+571,1,Eluria Tower,"chamber (chests, spirit enemy)",dungeon,dead end off the archway hall (570),doors;thumbnail
+572,1,Eluria Tower,crystal chamber (chests),dungeon,off the archway hall (570),doors;thumbnail
+573,1,Eluria Tower,statue hall (archways),dungeon,"a central pedestal/statue room, continuing up from 570/572",doors;thumbnail
+574,1,Eluria Tower,ascending shaft (root pillars),dungeon,"a vertical shaft lined with twisting root-like pillars, climbing toward the summit",doors;thumbnail
+575,1,Eluria Tower,summit chamber (glowing dome),dungeon,"circular room beneath a glowing green dome, just before the top",doors;thumbnail
+576,1,Eluria Tower,tower summit (Berle confrontation),dungeon,"the dead end at the top of the tower; matches the guide: ""Berle appears to put an end to the rivalry started at the Eluria Tower""",doors;thumbnail;guide p108
+577,1,L'Aqua,building plaza (reception entrance),town,"a modern glass-fronted building facade, off the street (579) and L'Aqua Tours Reception (582)",doors;thumbnail
+578,1,L'Aqua,seaside terrace (overlook),town,"a terrace overlooking the sea, dead end off the street (579)",doors;thumbnail
+579,1,L'Aqua,street intersection (crosswalk),town,"own banner is just ""L'Aqua""; a paved street junction, not a building interior despite the area's placeholder default of kind=interior",banner;thumbnail;doors
+580,1,L'Aqua,stairway (vending kiosks),town,off the street (579),doors;thumbnail
+581,1,L'Aqua,overgrown garden path (former aquarium grounds),field,"matches the guide: ""in days of yore, L'Aqua was an aquarium, open to the public for tours. Now it's the headquarters for the Nedian Defense Force"" -- a leftover garden path, dead end off 587",doors;thumbnail;guide p112
+582,1,L'Aqua,L'Aqua Tours Reception,interior,,banner
+583,1,L'Aqua,Defense Force General's Office,interior,,banner
+584,1,L'Aqua,Dispensary,interior,,banner
+585,1,L'Aqua,tank room (old aquarium stairwell),interior,large cylindrical tanks beside a stairwell; see map 581 for the former-aquarium context,doors;thumbnail;guide p112
+586,1,L'Aqua,L'Aqua Transporter,interior,,banner
+587,1,L'Aqua,aquarium tanks (drained pools),interior,two large drained/sunken tanks and a sea-creature fixture; see map 581,doors;thumbnail;guide p112
+588,1,Field of Love,arrival platform (flying mount landing),field,"own banner is just ""Field of Love""; matches the guide: ""floating high above the islands of Energy Nede is the Field of Love""",banner;thumbnail;guide p46
+589,1,Field of Love,star-platform walkway (entrance),field,the first of the star-marked floating platforms,doors;thumbnail;guide p46
+590,1,Field of Love,star platforms over the sea (bridges),field,"matches the guide: ""the most troublesome parts are the narrow bridges joining all the sections""",doors;thumbnail;guide p46
+591,1,Field of Love,star platform (approach to switch 1),field,one of two parallel approaches leading to the rotating-bridge switches at 593/594,doors;thumbnail;guide p46
+592,1,Field of Love,star platform (approach to switch 2),field,"the other parallel approach, see map 591",doors;thumbnail;guide p46
+593,1,Field of Love,"floating star platforms (rotating-bridge switch, 1 of 2)",field,"map_areas mislabels this ""North City"" (nearest-named-map bug, same class as the map 427/143/426 fixes); the thumbnail shows star-marked platforms over open sea, matching the guide: Field of Love is ""suspended in air above sea"" and its only puzzle is ""two switches that rotate bridges into place"" -- overridden to Field of Love",doors;thumbnail;guide p112
+594,1,Field of Love,"floating star platforms (rotating-bridge switch, 2 of 2)",field,the other switch screen; see map 593 for the area-override reasoning,doors;thumbnail;guide p112
+595,1,Field of Love,"Temple of Love, entrance (glowing gate)",field,"gated portal beyond the switch platforms; the guide's ""when you arrive at the Temple of Love, you're greeted by Lover"". Area override, see map 593",doors;thumbnail;guide p112
+596,1,North City,transporter platform (to the Four Fields),special,"a sci-fi crystal dais, the shared link between North City, Town of Armlock (door to 310) and the Field of Love puzzle screens (595) -- matches the Rune Code transporter the guide describes for entering the Four Fields; kept under North City since it's the civic terminal, not the field itself",doors;thumbnail;guide p112
+597,1,Field of Power,entrance passage (narrow cavern),field,"own banner is just ""Field of Power""; matches the guide: ""climbing up the mountain to the temple at the summit will take you up narrow passageways and through Yety-guarded caverns""",banner;thumbnail;guide p40
+598,1,Field of Power,junction passage (ladder up),field,a central junction tying together several of the Yeti-cavern branches (607-616),doors;thumbnail
+599,1,Field of Power,"junction passage (ladder, second)",field,a second junction similar to 598,doors;thumbnail
+600,1,Field of Power,rocky passage (toward the bridge),field,leads up from the junction (612 branch) toward the summit bridge (602/603),doors;thumbnail
+601,1,Field of Power,ladder climb,field,a ladder between 600 and the bridge (602),doors;thumbnail
+602,1,Field of Power,long wooden bridge (lower span),field,"matches the guide: ""you'll find a Save Point before a long wooden bridge. As you cross over to the temple, the Guardian will swoop down""",doors;thumbnail;guide p40
+603,1,Field of Power,long wooden bridge (upper span),field,continues the bridge from 602 to the temple entrance (604),doors;thumbnail;guide p40
+604,1,Field of Power,"Temple of Power, entrance",field,"a pillared temple facade with a circular emblem, at the far end of the bridge; one stray door also points at map 27 (Arlia Village), likely a leftover/unused script reference",doors;thumbnail;guide p40
+605,1,Field of Power,promontory overlook,field,"matches the guide exactly: ""midway up, you'll find a pleasant promontory overlooking the sea. Be careful not to talk too loudly there lest you cause an avalanche!"" -- Claude's own line here is ""Wow! What exquisite...""",doors;thumbnail;guide p40
+606,1,Field of Power,mountainside (NPC encounter),field,a dead end off 598 where a small creature NPC is found,doors;thumbnail
+607,1,Field of Power,"Yeti cavern, switch guard (A)",field,"a Yeti visible in the dark cavern; matches the guide: ""when you approach one, it attacks in defense of the switch it guards"" -- one of five similar switch caverns (607-616)",doors;thumbnail;guide p40
+608,1,Field of Power,"Yeti cavern, switch guard (A, far side)",field,"paired with 607 (same neighbours, opposite arrival facing), not individually thumbnailed",doors
+609,1,Field of Power,cavern passage (item cache),field,a red canister/item visible in a dark passage,doors;thumbnail
+610,1,Field of Power,"cavern passage (item cache, far side)",field,"paired with 609, not individually thumbnailed",doors
+611,1,Field of Power,cavern passage (quiet),field,an empty dark passage,doors;thumbnail
+612,1,Field of Power,"cavern passage (quiet, far side)",field,"paired with 611, not individually thumbnailed",doors
+613,1,Field of Power,"Yeti cavern, switch guard (B)",field,"a Yeti and crates/barrels in a dark cavern; another of the five switch caverns, see map 607",doors;thumbnail;guide p40
+614,1,Field of Power,"Yeti cavern, switch guard (B, far side)",field,"paired with 613, not individually thumbnailed",doors
+615,1,Field of Power,"Yeti cavern, switch guard (C)",field,"a Yeti and a broken fence in a dark cavern; another of the five switch caverns, see map 607",doors;thumbnail;guide p40
+616,1,Field of Power,"Yeti cavern, switch guard (C, far side)",field,"paired with 615, not individually thumbnailed",doors
+617,1,The Outer Wall,flower-lined path (to the Transporter),field,"map_areas mislabels 617/618/619 ""L'Aqua"" (nearest-named-map bug, same class as the Herlie/Port Hilton/North City/Armlock fixes); these are actually Energy Nede's very first arrival scene. Guide: ""[Rena] leads the group down a flower-lined path to a stone gazebo on the edge of a cliff"" under the heading ""The Outer Wall: Paradise and Beyond"" -- overridden to a new area, The Outer Wall, since nothing closer already exists in map_areas",doors;thumbnail;guide p99
+618,1,The Outer Wall,flower-lined path (switchback),field,"continues the path from 617 toward the gazebo (619). Area override, see map 617",doors;thumbnail;guide p99
+619,1,The Outer Wall,"stone gazebo, cliff edge (Transporter)",special,"the structure the party is told ""identifies the building as a Transporter"" on first arriving on Nede; its only door goes to map 248 (Transporter, Central City). Area override, see map 617",doors;thumbnail;guide p99
+620,1,Field of Power,transit corridor (directional floor markers),special,"a high-tech corridor with starfield windows, very different from the mountain/temple look of the rest of the area -- the Rune Code transporter network linking the Fields (also reaches Eluria Tower via 623/626 and map 625)",doors;thumbnail
+621,1,Field of Power,transit corridor (console panels),special,see map 620,doors;thumbnail
+622,1,Field of Power,transporter hub (to the Temple of Power / map 625),special,"links the temple entrance (604) to the transit corridors (620/621) and to map 625 (the disc-2-swap script map, not a visitable place -- see docs/handoff/mapnames.md)",doors;thumbnail
+623,1,Field of Power,transporter hub (to Eluria Tower),special,links the transit corridors to Eluria Tower's own transporter terminal (626),doors;thumbnail
+624,1,Field of Power,transit corridor (starfield view),special,see map 620,doors;thumbnail
+625,1,,disc-swap trigger,special,"the disc-2 swap script runs here (docs/notes/m8_audit.md: script B 0x6a, word 5608); not a visitable place",contents;doors
+626,1,Eluria Tower,"transporter terminal (to Field of Power), A",special,a glowing sci-fi platform bridging to the Field of Power (doors to 622/623); visually identical to 627,doors;thumbnail
+627,1,Eluria Tower,"transporter terminal (to Field of Power), B",special,"visually identical to 626, see that row",doors;thumbnail
+628,1,Field of Intelligence,tech office (purpose unclear),special,"a modern desk/monitor room, starkly different from the rest of the area's ""high-tech Mayan temple"" look (the guide's own description of the exterior); only door is to 556, kept under this area since no better-fitting area is evident",doors;thumbnail
+629,1,Field of Courage,entrance cavern (warning sign),field,"own banner is just ""Field of Courage""; matches the guide: ""the sign at the beginning says it all. 'You should advance forward,' means that you must always make forward progress through the dungeon, never backtracking""",banner;thumbnail;guide p42
+630,1,Field of Courage,crystal-pillar cavern (chest),field,,doors;thumbnail
+631,1,Field of Courage,cavern passage,field,densely interconnected with the entrance (629) and the central junction (634),doors
+632,1,Field of Courage,cavern passage (junction),field,,doors
+633,1,Field of Courage,cavern passage,field,,doors
+634,1,Field of Courage,central cave junction (multi-way),field,a round chamber with exits in every direction -- the busiest junction in the dungeon by door count,doors;thumbnail
+635,1,Field of Courage,cavern passage,field,,doors
+636,1,Field of Courage,"crystal-pillar cavern (chest, pool)",field,,doors;thumbnail
+637,1,Field of Courage,cavern passage (toward the Warrior Statue),field,the only way into the Warrior Statue room (638),doors;thumbnail
+638,1,Field of Courage,Warrior Statue altar (northwest corner),field,"matches the guide exactly: ""you need a certain statue, the Warrior Statue, before you can take the teleporter to the Temple of Courage. Grab it from a room in the northwest corner""",doors;thumbnail;guide p42
+639,1,Field of Courage,looped tunnel (chest),field,"matches the guide: backtracking ""you'll be transported to the looped tunnel to the left of the entrance"" -- its door list loops back on itself from several directions, consistent with being that dead-end loop",doors;thumbnail;guide p42
+640,1,Field of Courage,cavern passage (toward the teleporter),field,links the main cavern network to the teleporter room (641),doors
+641,1,Field of Courage,teleporter (to the Temple of Courage),field,"a carved disc platform flanked by guardian statues, in the corner opposite the Warrior Statue room; matches the guide: ""you can't use the teleporter unless you have the statue for the temple altar""",doors;thumbnail;guide p42
+642,1,Field of Courage,transporter threshold (to the Temple of Courage),special,"a glowing archway past the teleporter (641); also connects to map 625 (the disc-2-swap script map, not a visitable place), same pattern as Field of Power's 622",doors;thumbnail
+643,1,,(unidentified),special,"no banner, area or doors found; likely unused or a non-field script id",doors;contents
+644,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+645,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+646,1,Arlia Village,"interior room, about 2 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+647,1,Fienal,"bonus treasure vault (many chests, near the lobby)",dungeon,"19 chests at one map id spanning gear from multiple floors -- reads as a shared side-vault rather than part of one floor's main path, same pattern as the Cave of Trials' map 710",doors;contents;guide p115-119
+648,1,Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+649,1,Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+650,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+651,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+652,1,Fienal,transporter hub,dungeon,"very high door-degree (13-14 targets) and the thumbnail shows a circular platform with transfer-glyph signage -- the guide describes Fienal's floors as linked by transporters (""pink/green letter"" pairs on its maps), so this room is almost certainly one of those transporter hubs rather than an ordinary room",doors;thumbnail;guide p117
+653,1,Fienal,transporter hub,dungeon,"very high door-degree (13-14 targets) and the thumbnail shows a circular platform with transfer-glyph signage -- the guide describes Fienal's floors as linked by transporters (""pink/green letter"" pairs on its maps), so this room is almost certainly one of those transporter hubs rather than an ordinary room",doors;thumbnail;guide p117
+654,1,Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+655,1,Fienal,"lower floors (lobby approach), about 1 door in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+656,1,Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+657,1,Fienal,"the lobby: boss room (Ruprecht, Nicolus & Jibril; also where Marsilio ambushes the first trip)",dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail-confirmed arena, cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p115-119
+658,1,Fienal,"lower floors (lobby approach), about 2 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+659,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+660,1,Fienal,"lower floors (lobby approach), about 3 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+661,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+662,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+663,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+664,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+665,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+666,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+667,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+668,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+669,1,Fienal,Floor 5: boss room (Vesper & Decus),dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail-confirmed arena, cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p115-119
+670,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+671,1,Fienal,"the final ascent, toward Indalecio (Floor 8), about 6 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+672,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+673,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+674,1,Fienal,Floor 7: boss room (Cyril),dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail-confirmed arena, cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p115-119
+675,1,Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+676,1,Fienal,"upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+677,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+678,1,Fienal,"upper floors, toward Cyril (Floor 7), about 6 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+679,1,Fienal,"upper floors, toward Cyril (Floor 7): chest room (Clap Rod)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+680,1,Fienal,"lower floors (lobby approach), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+681,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+682,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+683,1,Fienal,"mid floors, toward Vesper & Decus (Floor 5), about 5 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+684,1,Fienal,"the final ascent, toward Indalecio (Floor 8), about 7 doors in from the lobby",dungeon,"placeholder; zone from a nearest-boss split of the door graph (lobby/Floor 5/Floor 7/final ascent anchors), position from BFS depth from the lobby -- note Fienal's floors are linked by transporters as well as doors, so this is a rough guide, not a strict floor number",doors;guide p115-119
+685,1,Fienal,Floor 8: Indalecio's chamber -- final boss (Indalecio Celesta),dungeon,"boss encounter per docs/ap/field.json bosses[], thumbnail-confirmed arena, cross-checked against the guide's walkthrough",doors;contents;thumbnail;guide p115-119
+686,1,L'Aqua,"ritual chamber (fire, wall symbols)",special,"a dramatic firelit room with triangle/circle symbols on the walls, reached from both the old aquarium (587) and Central City's Mayor's Office (247); purpose not identified from the thumbnail alone",doors;thumbnail
+687,1,,(unidentified),special,no banner or area found; doors lead to map(s) [657],doors;contents
+688,1,Fun City,"Cooking Master, contest hall",special,"""COOKING MASTER"" signage on the walls; matches the guide: ""the building on the eastern side of town houses the arena for the big cooking contest called Cooking Master"" (item 9 of Fun City's numbered attractions)",contents;thumbnail;guide p108
+689,1,Fun City,"Cooking Master, registration hall",special,"a formal hall with portraits and a crest banner, off the contest hall (688) and the plaza (282)",doors;thumbnail;guide p108
+690,1,Central City,"Ten Wise Men flashback, 1 of 7: ancient Nede dinner hall",special,"a historical cutscene sequence (690->691->692->693->694->696->695, reached from the Mayor's Office at 247/695): narration begins ""...this was an age when Expel did not yet exist in the universe""",contents;doors
+691,1,Central City,"Ten Wise Men flashback, 2 of 7: their rise",special,"narration introduces ""the 'Ten Wise Men'"" over a burning city illustration; part of the 690-696 flashback sequence",contents;doors
+692,1,Central City,"Ten Wise Men flashback, 3 of 7: the attack on Nede",special,"narration: they ""first tried to capture Nede itself""; part of the 690-696 flashback sequence",contents;doors
+693,1,Central City,"Ten Wise Men flashback, 4 of 7: the massacre",special,"narration: ""they killed off all people who would not obey them... even women and children""; part of the 690-696 flashback sequence",contents;doors
+694,1,Central City,"Ten Wise Men flashback, 5 of 7: resistance begins",special,"narration: ""their violence could not continue any further""; part of the 690-696 flashback sequence",contents;doors
+695,1,Central City,"Ten Wise Men flashback, 7 of 7: starfield epilogue",special,"silent starfield shot of a lone figure, closing the flashback before returning to the Mayor's Office (247)",contents;doors
+696,1,Central City,"Ten Wise Men flashback, 6 of 7: the final struggle",special,"narration: ""at the end of a life-and-death struggle lasting many weeks long""; part of the 690-696 flashback sequence",contents;doors
+697,1,,(unidentified),special,"no banner, area or doors found; likely unused or a non-field script id",doors;contents
+698,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+699,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+700,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+701,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+702,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 4 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+703,1,Cave of Trials,Level 1 (Heraldic Ruins): chest room (Fruit Nectar),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+704,1,Cave of Trials,Level 1 (Heraldic Ruins): entrance area,dungeon,placeholder; room graph puts it at the level's own entry point,doors;guide p130-133
+705,1,Cave of Trials,Level 1 (Heraldic Ruins): boss room (Darkfeather),dungeon,"boss encounter per docs/ap/field.json bosses[]; thumbnail confirms the gate room -- it already shows Level 2's ""Love Alley"" banner (same scene as map 716), so this is where Darkfeather is fought right at the Level 1/2 threshold",doors;contents;thumbnail;guide p130
+706,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+707,1,Cave of Trials,"Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+708,1,Cave of Trials,"Level 1 (Heraldic Ruins): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+709,1,Cave of Trials,Level 1 (Heraldic Ruins): chest room (Tri-emplem),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+710,1,Cave of Trials,"bonus treasure vault (many chests, reachable from several levels)",dungeon,"11 chests at this one map id, naming a mix of items the guide lists under different levels (e.g. Blueberry/Wonder Drug under Level 1, Black Earring/Peep Non/Seraphic Garb/Purity Leaf under Level 4) -- its doors also reach rooms in Levels 2, 6 and 7's clusters, so it reads as a shared side-vault rather than part of one level's main path",doors;contents;guide p130-133
+711,1,Cave of Trials,"Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",dungeon,"scripted Weird Beast encounter (docs/ap/field.json bosses[]); its doors connect to rooms in the Level 5/6/8 clusters, not Level 1's, despite the low id -- almost certainly the unwinnable ""flee"" fight Puffy triggers before the winnable rematch at the Level 5 boss room (map 754)",doors;contents;guide p131
+712,1,Cave of Trials,Level 1 (Heraldic Ruins): chest room (Dream Crown),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+713,1,Cave of Trials,"Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+714,1,Cave of Trials,Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+715,1,Cave of Trials,Level 1 (Heraldic Ruins): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+716,1,Cave of Trials,Cave of Trials Level 2,dungeon,,banner
+717,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+718,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+719,1,Cave of Trials,Level 2 (Love Alley): chest room (Purity Leaf),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+720,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+721,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+722,1,Cave of Trials,"Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+723,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+724,1,Cave of Trials,Level 2 (Love Alley): chest room (Fruit Nectar),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+725,1,Cave of Trials,Level 2 (Love Alley): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+726,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+727,1,Cave of Trials,Cave of Trials Level 3,dungeon,,banner
+728,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+729,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+730,1,Cave of Trials,Level 3 (Single Path Cave): chest room (Sylvan Mail),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+731,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+732,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 4 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+733,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+734,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+735,1,Cave of Trials,"Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+736,1,Cave of Trials,"Level 3 (Single Path Cave): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+737,1,Cave of Trials,Cave of Trials Level 4,dungeon,,banner
+738,1,Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+739,1,Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+740,1,Cave of Trials,Cave of Trials Level 4,dungeon,,banner
+741,1,Cave of Trials,"Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+742,1,Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+743,1,Cave of Trials,"Level 4 (Dancing God's Altar): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+744,1,Cave of Trials,Cave of Trials Level 5,dungeon,,banner
+745,1,Cave of Trials,Level 5 (Lady's Revenge): chest room (Juicy Beef),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+746,1,Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+747,1,Cave of Trials,"Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+748,1,Cave of Trials,Level 5 (Lady's Revenge): chest room (Seraphic Garb),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+749,1,Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+750,1,Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+751,1,Cave of Trials,Cave of Trials Level 5,dungeon,,banner
+752,1,Cave of Trials,"Level 5 (Lady's Revenge): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+753,1,Cave of Trials,"Level 5 (Lady's Revenge): Puffy's ambush (Weird Beast ambushes her, per the thumbnail's dialogue box)",dungeon,"thumbnail shows an active cutscene, Puffy crying for help mid-ambush; docs/ap/field.json tags this trigger as a Dreamshade x3 encounter (probably the monsters accompanying/following the scripted scene)",doors;contents;thumbnail;guide p131
+754,1,Cave of Trials,Level 5 (Lady's Revenge): boss room (Weird Beast),dungeon,"boss encounter per docs/ap/field.json bosses[]; thumbnail shows two party members at a dark archway/portal, consistent with a boss-gate room",doors;contents;thumbnail;guide p131
+755,1,Cave of Trials,Level 5 (Lady's Revenge): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+756,1,Cave of Trials,Cave of Trials Level 6,dungeon,,banner
+757,1,Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+758,1,Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+759,1,Cave of Trials,"Level 6 (Burglar's Nest): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+760,1,Cave of Trials,Cave of Trials Level 6,dungeon,,banner
+761,1,Cave of Trials,Level 6 (Burglar's Nest): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+762,1,Cave of Trials,Level 6 (Burglar's Nest): chest room (Weird Slayer),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+763,1,Cave of Trials,Cave of Trials Level 7,dungeon,,banner
+764,1,Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+765,1,Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+766,1,Cave of Trials,Cave of Trials Level 7,dungeon,,banner
+767,1,Cave of Trials,Level 7 (Goddess's Altar): chest room (Tri-emplem),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+768,1,Cave of Trials,"Level 7 (Goddess's Altar): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+769,1,Cave of Trials,Level 7 (Goddess's Altar): chest room (Fresh Syrup),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+770,1,Cave of Trials,"Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+771,1,Cave of Trials,Level 7 (Goddess's Altar): chest room (Cracked Gem),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+772,1,Cave of Trials,Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+773,1,Cave of Trials,"Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+774,1,Cave of Trials,Level 7 (Goddess's Altar): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+775,1,Cave of Trials,Cave of Trials Level 8,dungeon,,banner
+776,1,Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+777,1,Cave of Trials,Cave of Trials Level 8,dungeon,,banner
+778,1,Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+779,1,Cave of Trials,Level 8 (Food God): chest room (Funny Slayer),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+780,1,Cave of Trials,"Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+781,1,Cave of Trials,"Level 8 (Food God): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+782,1,Cave of Trials,Level 8 (Food God): chest room (Resurrection Mist),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+783,1,Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+784,1,Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+785,1,Cave of Trials,Level 8 (Food God): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+786,1,Cave of Trials,Cave of Trials Level 9,dungeon,,banner
+787,1,Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+788,1,Cave of Trials,Cave of Trials Level 9,dungeon,,banner
+789,1,Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+790,1,Cave of Trials,"Level 9 (Sealed Coffin): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+791,1,Cave of Trials,Cave of Trials Level 9,dungeon,,banner
+792,1,Cave of Trials,Level 9 (Sealed Coffin): chest room (Bunny Shoes),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+793,1,Cave of Trials,Level 9 (Sealed Coffin): chest room (Funny Slayer),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+794,1,Cave of Trials,Cave of Trials Level 10,dungeon,,banner
+795,1,Cave of Trials,"Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+796,1,Cave of Trials,"Level 10 (Decision Point): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+797,1,Cave of Trials,Level 10 (Decision Point): chest room (Fresh Syrup),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+798,1,Cave of Trials,Cave of Trials Level 10,dungeon,,banner
+799,1,Cave of Trials,"Level 10 (Decision Point): chest room (Million Staff, Portrait J)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+800,1,Cave of Trials,Level 10 (Decision Point): chest room (Valiant Boots),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+801,1,Cave of Trials,"Level 10 (Decision Point): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+802,1,Cave of Trials,"Level 10 (Decision Point): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+803,1,Cave of Trials,Level 10 (Decision Point): chest room (Valkyrie Boots),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+804,1,Cave of Trials,"Level 10 (Decision Point): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+805,1,Cave of Trials,"Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+806,1,Cave of Trials,Level 10 (Decision Point): chest room (Purity Leaf),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+807,1,Cave of Trials,Cave of Trials Level 11,dungeon,,banner
+808,1,Cave of Trials,Cave of Trials Level 11,dungeon,,banner
+809,1,Cave of Trials,Level 12 (Hall of Warriors): boss room (Phoenix),dungeon,boss encounter per docs/ap/field.json bosses[]; level and room name cross-checked against the guide's walkthrough,doors;contents;guide p130-133
+810,1,Cave of Trials,"Level 12 (Hall of Warriors): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+811,1,Cave of Trials,Cave of Trials Level 12,dungeon,,banner
+812,1,Cave of Trials,"Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+813,1,Cave of Trials,"Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+814,1,Cave of Trials,Cave of Trials Level 12,dungeon,,banner
+815,1,Cave of Trials,Level 13 (Holy Nest of Angels): boss room (Indalecio Celesta) -- final boss,dungeon,"boss encounter per docs/ap/field.json bosses[] (stage 54, final); thumbnail shows an angel-winged, red-lit chamber matching ""Holy Nest of Angels""",doors;contents;thumbnail;guide p133
+816,1,Cave of Trials,Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+817,1,Cave of Trials,Level 12 (Hall of Warriors): interior room (near the level boundary; door graph ties it to more than one level),dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, but this room's doors reach into the neighbouring level too",doors;guide p130-133
+818,1,Cave of Trials,Level 12 (Hall of Warriors): chest room (Valiant Mail),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+819,1,Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 1 door in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+820,1,Cave of Trials,Cave of Trials Level 13,dungeon,,banner
+821,1,Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 3 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+822,1,Cave of Trials,Level 13 (Holy Nest of Angels): chest room (Valiant Guard),dungeon,chest contents per docs/ap/field.json chests[],doors;contents
+823,1,Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 5 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+824,1,Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+825,1,Cave of Trials,"Level 13 (Holy Nest of Angels): interior room, about 2 doors in from the level entrance",dungeon,"placeholder; level from id-range anchored on the game's own ""Cave of Trials Level N"" banners, position from door-graph depth within that level",doors;guide p130-133
+826,1,(system),world-transfer script (unused map slot),special,shares the world-map transfer script with maps 1-3,contents;doors
+909,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+910,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+911,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+912,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+913,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+914,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+915,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+916,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+917,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+918,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+919,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+920,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+921,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+922,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+923,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+924,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+925,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+926,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+927,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+928,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+929,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+930,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+931,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+932,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+933,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+934,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+935,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+936,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+937,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+938,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+939,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+940,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+941,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+942,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+943,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+944,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+945,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+946,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+947,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+948,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+949,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+950,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+951,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+952,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+953,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+954,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+955,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+956,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+957,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+958,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+959,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+960,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+961,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+962,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+963,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+964,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+965,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+966,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+967,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+968,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+969,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+970,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+971,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+972,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+973,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+974,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+975,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+976,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+977,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+978,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+979,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+980,1,Expel,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1048,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1049,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1050,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1051,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1052,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1053,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1054,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1055,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1056,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1057,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1058,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1059,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1060,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1061,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1062,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1063,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1064,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1065,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1066,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1067,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1068,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1069,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1070,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1071,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1072,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1073,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1074,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1075,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1076,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1077,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1078,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1079,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1080,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1081,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1082,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1083,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1084,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1085,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1086,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1087,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1088,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1089,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1090,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1091,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1092,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1093,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1094,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1095,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1096,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1097,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1098,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1099,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1100,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1101,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1102,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1103,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1104,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1105,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1106,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1107,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1108,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1109,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1110,1,Energy Nede,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1113,1,world map 3,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors
+1114,1,world map 3,overworld terrain chunk (not a separate destination),world,internal subdivision of the overworld; shares its script with the other chunks,contents;doors

@@ -25,6 +25,7 @@
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "runtime/libgpu.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
@@ -218,13 +219,21 @@ SpellCast* spellcast_create(int kind, Unit* caster, Unit* target, int power, Spe
         // The module's block i (linked for slot i) is unpacked to 0x8008cc00 / 0x8008e600;
         // the port knows each module by its block 0.
         sc->module_code = unpack_at(d, rd32le(d, at + 4), 0);
-        const std::vector<u8>& block = sc->module_code;
-        sc->module_index = spell_module_find(block);
+        const size_t block_size = sc->module_code.size();
+        // The module is known by its normalised instructions (any release's link addresses);
+        // another release's tables are read through its address map (runtime/region.h).
+        const u64 na_fnv = region::module_identity(region::ImageKind::kSpell, sc->module_code, &sc->module_map);
+        sc->module_index = spell_module_find(na_fnv);
+        char key[32];
+        std::snprintf(key, sizeof key, "spell.%016llx", static_cast<unsigned long long>(na_fnv));
+        sc->module_key = key;
+        if (!region::is_na() && !(sc->module_map != nullptr && region::prepare(sc->module_map, sc->module_code)))
+          sc->module_code.clear();
         sc->module = spell_module_fn(sc->module_index);
         if (sc->module == nullptr) {
           sc->module_missing = true;
-          log_once("battle-spell-module-" + std::to_string(kind) + "-" + std::to_string(block.size()),
-                   "battle: spell code module of " + std::to_string(block.size()) + " bytes (SpellCast kind " +
+          log_once("battle-spell-module-" + std::to_string(kind) + "-" + std::to_string(block_size),
+                   "battle: spell code module of " + std::to_string(block_size) + " bytes (SpellCast kind " +
                        std::to_string(kind) + ") not ported yet; the cast ends");
           sc->module = spell_module_missing;
         }
@@ -646,8 +655,8 @@ Sprite* spellcast_sprite_spawn2(SpellCast* sc, int anim, int loops) { return spr
 namespace ss::game::battle {
 
 u8 spell_module_u8(const SpellCast* sc, u32 address) {
-  const u32 off = address - 0x8008CC00u;
-  return off < sc->module_code.size() ? sc->module_code[off] : 0;
+  const u8* p = region::image_byte(sc->module_map, sc->module_code, 0x8008CC00u, address, sc->module_key.c_str());
+  return p != nullptr ? *p : 0;
 }
 s16 spell_module_s16(const SpellCast* sc, u32 address) {
   return static_cast<s16>(spell_module_u8(sc, address) | spell_module_u8(sc, address + 1) << 8);

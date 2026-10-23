@@ -10,6 +10,12 @@ on:
       - "tools/mod_check.py"
       - "tools/mod_index.py"
       - "tools/test_mod_check.py"
+      - "tools/so2_mod.py"
+      - "tools/so2_data.py"
+      - "tools/so2_names.py"
+      - "tools/mod_reference.py"
+      - "tools/test_mod_reference.py"
+      - "docs/modding/reference/**"
       - "docs/ap/*.json"
       - ".github/workflows/mods.yml"
   push:
@@ -19,6 +25,12 @@ on:
       - "tools/mod_check.py"
       - "tools/mod_index.py"
       - "tools/test_mod_check.py"
+      - "tools/so2_mod.py"
+      - "tools/so2_data.py"
+      - "tools/so2_names.py"
+      - "tools/mod_reference.py"
+      - "tools/test_mod_reference.py"
+      - "docs/modding/reference/**"
       - "docs/ap/*.json"
       - ".github/workflows/mods.yml"
 
@@ -52,3 +64,6 @@ jobs:
 
       - name: The checker's own tests
         run: python3 tools/test_mod_check.py
+
+      - name: The reference tools' tests (names in so2_mod.py, the CSV writers)
+        run: python3 tools/test_mod_reference.py

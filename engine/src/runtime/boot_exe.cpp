@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "disc/disc_image.h"
+#include "runtime/region.h"
 
 namespace ss::runtime {
 namespace {
@@ -13,6 +14,7 @@ namespace {
 struct Image {
   std::vector<u8> text;  // the executable's loaded bytes
   u32 address = 0;       // where they load (t_addr)
+  const region::ImageMap* map = nullptr;  // another release's address map (runtime/region.h)
 };
 Image g_image;
 
@@ -92,12 +94,17 @@ bool boot_exe_open(disc::DiscImage& disc, std::string* error) {
   const u32 t_addr = read_u32(exe->data() + 0x18), t_size = read_u32(exe->data() + 0x1C);
   g_image.address = t_addr;
   g_image.text.assign(exe->begin() + 0x800, exe->begin() + 0x800 + std::min<size_t>(t_size, exe->size() - 0x800));
+  if (!region::is_na()) {
+    // Ported code reads it at NA's addresses: through the release's map.
+    g_image.map = region::boot_map();
+    if (g_image.map == nullptr || !region::prepare(g_image.map, g_image.text)) g_image.text.clear();
+    if (g_image.map != nullptr) g_image.address = g_image.map->na_base;
+  }
   return true;
 }
 
 const u8* boot_exe_data(u32 address) {
-  const u32 offset = address - g_image.address;
-  return offset < g_image.text.size() ? g_image.text.data() + offset : nullptr;
+  return region::image_byte(g_image.map, g_image.text, g_image.address, address, "boot");
 }
 
 }  // namespace ss::runtime

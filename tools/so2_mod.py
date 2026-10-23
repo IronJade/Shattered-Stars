@@ -7,10 +7,15 @@ config.ini, or --mods DIR); see engine/src/game/field/mods.h. Nothing on the dis
 changed: the engine patches each script in memory as the map loads, and only while
 the original word is still there.
 
+Wherever a command takes a map, an item, a shop or an enemy type, it takes its number
+(decimal or 0x hex) or its name: "Cross: Skill Guild", "Blueberry", "Hearn's", "Armedknight".
+Names are matched without regard to case, punctuation or plurals; a name that fits several
+entries lists them (use one of their numbers), and a misspelt one gets suggestions.
+
   so2_mod.py list  DISC MAP
-      chests (opened flag, contents) and map transfers (index, target) of field map MAP
-  so2_mod.py chest DISC MAP FLAG (--item ID | --fol N) [-o FILE]
-      make the chest with opened-flag FLAG give item ID or N Fol
+      chests (opened flag, contents), map transfers (index, target) and save point of MAP
+  so2_mod.py chest DISC MAP FLAG (--item ITEM | --fol N) [-o FILE]
+      make the chest with opened-flag FLAG give ITEM or N Fol
   so2_mod.py door  DISC MAP INDEX --to MAP2 [--x X] [--y Y] [--z Z] [--dir D] [-o FILE]
       send map transfer INDEX (from `list`) to MAP2 at (X, Y, Z) facing D
 
@@ -19,13 +24,22 @@ the original word is still there.
   so2_mod.py items DISC ITEM
       show item ITEM's record fields
   so2_mod.py shop  DISC SHOP INDEX ITEM [-o FILE]
-      put item ITEM at stock entry INDEX of shop SHOP (INDEX `add` appends, ITEM 0 removes)
+      put ITEM at stock entry INDEX of shop SHOP (INDEX `add` appends, ITEM 0 removes)
   so2_mod.py shops DISC
       list every shop's stock
   so2_mod.py enemy DISC TYPE FIELD VALUE [-o FILE]
-      set a stats field of enemy type TYPE (FIELD: a name below, or OFFSET[:SIZE])
+      set a stats field of enemy type TYPE (FIELD: a name below, or OFFSET[:SIZE]; the value
+      of drop1 / drop2 is an item)
   so2_mod.py enemies DISC [TYPE]
       list the enemy types found in the encounter packs (or one type's stats)
+
+  so2_mod.py find DISC TEXT
+      search the names of maps, items, shops and enemy types
+  so2_mod.py reference DISC --out DIR [--game PATH] [--thumbs MAPS] [--jobs N]
+      build a local reference page (DIR/index.html): every table, searchable, with the item
+      descriptions from your disc and, with --game (the built game), a picture of each map.
+      Made from your disc for you only: don't share it. The facts-only tables are in
+      docs/modding/reference/ (tools/mod_reference.py).
 
 Item fields: price, atk, def, amount (effect amount), effect (kind), type, sell (sell %).
 Enemy fields: hp, mp, exp, fol, speed, drop1, drop2, atk, def, int, level, eva, acc,
@@ -40,122 +54,50 @@ data no longer matches.
 
 import argparse
 import os
-import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from so2_archive import ARCHIVE_LBA, TOC_BYTES, SECTOR, SLZ_MAGIC, decrypt_toc, unpack_block  # noqa: E402
-from so2_script import CODE_START, MAP_ENTRY_BASE, disassemble, parse_script  # noqa: E402
+# The disc readers live in so2_data (shared with mod_reference.py); they stay importable from
+# here for the tools that use so2_mod.X (ap_extract.py, ap_battles.py, ...).
+from so2_archive import ARCHIVE_LBA, TOC_BYTES, SECTOR, SLZ_MAGIC, decrypt_toc, unpack_block  # noqa: E402,F401
+from so2_script import CODE_START, MAP_ENTRY_BASE, disassemble, parse_script  # noqa: E402,F401
+from so2_data import (SYNC, Disc, instructions, push_value, chests, transfers, save_points,  # noqa: E402,F401
+                      ITEM_ENTRY, SHOP_ENTRY, SHOP_TABLE, PAGE_BASE, FORMATION_BASE, ITEM_FIELDS,
+                      ENEMY_FIELDS, field_spec, item_size, enemy_size, le, item_records, shop_lists,
+                      formation_records, enemy_stats, enemy_name, item_type_name, item_effect_name,
+                      item_use_name, equip_names)
+import so2_names  # noqa: E402
 
-SYNC = b"\x00" + b"\xff" * 10 + b"\x00"
-
-
-class Disc:
-    def __init__(self, path):
-        if path.lower().endswith(".cue"):
-            base = os.path.dirname(os.path.abspath(path))
-            for line in open(path, encoding="latin-1"):
-                parts = line.strip().split('"')
-                if line.strip().upper().startswith("FILE") and len(parts) >= 2:
-                    path = os.path.join(base, parts[1])
-                    break
-        self.f = open(path, "rb")
-        # Raw 2352-byte sectors (.bin / .img: the user data after the header, and after the
-        # subheader in mode 2) or a 2048-byte-sector .iso, as engine/src/disc/disc_image.cpp.
-        size = os.path.getsize(path)
-        head = self.f.read(16)
-        if size % 2352 == 0 and head[:12] == SYNC:
-            self.raw, self.data_at = 2352, 24 if head[15] == 2 else 16
-        elif size % 2048 == 0:
-            self.raw, self.data_at = 2048, 0
-        else:
-            raise SystemExit(f"{path}: not a CD image this tool reads (.cue / .bin / .iso)")
-        self.toc = {i: (lba, n) for i, lba, n in decrypt_toc(self.read(ARCHIVE_LBA, (TOC_BYTES + SECTOR - 1) // SECTOR))}
-
-    def read(self, lba, count):
-        out = bytearray()
-        for k in range(count):
-            self.f.seek((lba + k) * self.raw + self.data_at)
-            out += self.f.read(SECTOR)
-        return bytes(out)
-
-    def entry(self, index):
-        lba, n = self.toc.get(index, (None, 0))
-        if lba is None:
-            raise SystemExit(f"archive entry {index} not present")
-        return self.read(lba, n)
-
-    def map_script(self, map_id):
-        data = self.entry(MAP_ENTRY_BASE + map_id)
-        count = struct.unpack_from("<I", data, 0)[0]
-        if not 1 <= count <= 16:
-            raise SystemExit(f"map {map_id} is not a field map")
-        sections = dict(struct.unpack_from("<II", data, 4 + 8 * i) for i in range(count))
-        offset = sections.get(1)
-        if offset is None or data[offset:offset + 3] != SLZ_MAGIC:
-            raise SystemExit(f"map {map_id}: no script section")
-        return bytes(unpack_block(data, offset))
+MAX_CANDIDATES = 25
 
 
-def instructions(blob):
-    script = parse_script(blob)
-    return list(disassemble(script["code"]))  # (offset, words, text, target, problem)
+def names():
+    return so2_names.tables()
 
 
-def push_value(ins):
-    """The constant an instruction pushes, or None: push imm24 (0x12) / push word (0x13)."""
-    words = ins[1]
-    op = words[0] >> 24
-    if op == 0x12:
-        return words[0] & 0xFFFFFF
-    if op == 0x13 and len(words) > 1:
-        v = words[1]
-        return v - (1 << 32) if v & 0x80000000 else v
-    return None
+def resolve(kind, text):
+    """The number 'text' stands for (a number, or a name of a map / item / shop / enemy type);
+    exits with the candidates or suggestions when it isn't one entry's name."""
+    try:
+        return names().resolve(kind, text)
+    except so2_names.LookupFailed as e:
+        lines = [str(e)] + [f"  {c}" for c in e.candidates[:MAX_CANDIDATES]]
+        if len(e.candidates) > MAX_CANDIDATES:
+            lines.append(f"  ... and {len(e.candidates) - MAX_CANDIDATES} more (so2_mod.py find DISC TEXT lists all)")
+        sys.stderr.write("\n".join(lines) + "\n")
+        raise SystemExit(2)
 
 
-def chests(blob):
-    """[(flag, handler_word, value_ins)] for every chest (B 0x6c registration + handler)."""
-    ins = instructions(blob)
-    by_offset = {i[0]: n for n, i in enumerate(ins)}
-    found = []
-    for n, i in enumerate(ins):
-        if not i[2].startswith("B_6c <8 from stack>") or n < 8:
-            continue
-        args = [push_value(ins[n - 8 + k]) for k in range(8)]
-        if None in args:
-            continue
-        flag, handler = args[6], args[7]
-        h = by_offset.get(handler * 4)
-        if h is None:
-            continue
-        # The handler: frame; push actor; push flag; push value; push message; call.
-        pushes = []
-        for j in range(h + 1, min(h + 12, len(ins))):
-            v = push_value(ins[j])
-            if v is not None:
-                pushes.append(ins[j])
-            elif ins[j][2].startswith("call"):
-                break
-        if len(pushes) >= 3 and push_value(pushes[1]) == flag:
-            found.append((flag, handler, pushes[2]))
-    return found
+def map_label(m):
+    return f"map {m} ({names().map_name(m)})"
 
 
-def transfers(blob):
-    """[(index, ins, args)] for every inline map_transfer_c."""
-    out = []
-    for i in instructions(blob):
-        if i[2].startswith("map_transfer_c(") and len(i[1]) == 4:
-            w = i[1]
-            args = [w[0] & 0xFFFF] + [half for pair in w[1:] for half in (pair & 0xFFFF, pair >> 16)]
-            args = [a - 0x10000 if a & 0x8000 else a for a in args[:7]]
-            out.append((len(out), i, args))
-    return out
+def item_label(i):
+    return f"item {i:#x} {names().item_name(i)}" if i else "nothing (0)"
 
 
 def describe_value(v):
-    return f"{-v} Fol" if v < 0 else f"item {v:#x}"
+    return f"{-v} Fol" if v < 0 else item_label(v)
 
 
 def emit(lines, path):
@@ -169,273 +111,243 @@ def emit(lines, path):
 
 
 def cmd_list(a):
-    blob = Disc(a.disc).map_script(a.map)
-    print(f"map {a.map}: chests")
-    for flag, handler, ins in chests(blob):
-        print(f"  flag {flag:#x}  handler word {handler:#x}  {describe_value(push_value(ins))}")
-    print(f"map {a.map}: map transfers (map_transfer_c)")
-    for n, ins, args in transfers(blob):
-        print(f"  {n}: offset {ins[0]:#x} -> map {args[0]} mode {args[1]} at ({args[2]}, {args[3]}, {args[4]}) dir {args[5]}")
+    m = resolve("map", a.map)
+    blob = Disc(a.disc).map_script(m)
+    ins = instructions(blob)
+    print(f"{map_label(m)}: chests")
+    for flag, handler, v in chests(blob, ins):
+        print(f"  flag {flag:#x}  handler word {handler:#x}  {describe_value(push_value(v))}")
+    print(f"{map_label(m)}: map transfers (map_transfer_c)")
+    for n, i, args in transfers(blob, ins):
+        print(f"  {n}: offset {i[0]:#x} -> {map_label(args[0])} mode {args[1]} at ({args[2]}, {args[3]}, {args[4]}) dir {args[5]}")
+    for x, y, z, _ in save_points(blob, ins):
+        print(f"{map_label(m)}: save point at ({x}, {y}, {z})")
 
 
 def cmd_chest(a):
-    blob = Disc(a.disc).map_script(a.map)
+    m = resolve("map", a.map)
+    blob = Disc(a.disc).map_script(m)
+    item = resolve("item", a.item) if a.item is not None else None
     for flag, _, ins in chests(blob):
         if flag != a.flag:
             continue
         words = ins[1]
         word_index = ins[0] // 4
-        new = a.item if a.item is not None else -a.fol
+        new = item if item is not None else -a.fol
         if words[0] >> 24 == 0x12:
             if new < 0 or new > 0xFFFFFF:
                 raise SystemExit("this chest holds an item (24-bit push): it can only be changed to another item")
-            line = f"script {a.map} {word_index:#x} {words[0]:#010x} {(words[0] & 0xFF000000) | new:#010x}"
+            line = f"script {m} {word_index:#x} {words[0]:#010x} {(words[0] & 0xFF000000) | new:#010x}"
         else:
-            line = f"script {a.map} {word_index + 1:#x} {words[1]:#010x} {new & 0xFFFFFFFF:#010x}"
-        emit([f"# map {a.map} chest {a.flag:#x}: {describe_value(push_value(ins))} -> {describe_value(new)}", line], a.output)
+            line = f"script {m} {word_index + 1:#x} {words[1]:#010x} {new & 0xFFFFFFFF:#010x}"
+        emit([f"# {map_label(m)} chest {a.flag:#x}: {describe_value(push_value(ins))} -> {describe_value(new)}", line],
+             a.output)
         return
-    raise SystemExit(f"map {a.map}: no chest with flag {a.flag:#x} (see `list`)")
+    raise SystemExit(f"{map_label(m)}: no chest with flag {a.flag:#x} (see `list`)")
 
 
 def cmd_door(a):
-    blob = Disc(a.disc).map_script(a.map)
+    m = resolve("map", a.map)
+    to = resolve("map", a.to)
+    blob = Disc(a.disc).map_script(m)
     for n, ins, args in transfers(blob):
         if n != a.index:
             continue
         new = list(args)
-        new[0] = a.to
+        new[0] = to
         for k, v in ((2, a.x), (3, a.y), (4, a.z), (5, a.dir)):
             if v is not None:
                 new[k] = v
         h = [v & 0xFFFF for v in new]
         words = [(ins[1][0] & 0xFFFF0000) | h[0], h[1] | h[2] << 16, h[3] | h[4] << 16, h[5] | h[6] << 16]
         base = ins[0] // 4
-        lines = [f"# map {a.map} transfer {n}: map {args[0]} ({args[2]}, {args[3]}, {args[4]}) -> map {new[0]} ({new[2]}, {new[3]}, {new[4]})"]
+        lines = [f"# {map_label(m)} transfer {n}: {map_label(args[0])} ({args[2]}, {args[3]}, {args[4]}) -> "
+                 f"{map_label(new[0])} ({new[2]}, {new[3]}, {new[4]})"]
         for k in range(4):
             if words[k] != ins[1][k]:
-                lines.append(f"script {a.map} {base + k:#x} {ins[1][k]:#010x} {words[k]:#010x}")
+                lines.append(f"script {m} {base + k:#x} {ins[1][k]:#010x} {words[k]:#010x}")
         emit(lines, a.output)
         return
-    raise SystemExit(f"map {a.map}: no map transfer {a.index} (see `list`)")
-
-
-ITEM_ENTRY = 3002      # item records, 1023 x 0x30 (item 1 first)
-SHOP_ENTRY = 0xBAA     # the shop page's code overlay, loaded at 0x8007e000
-SHOP_TABLE = 0x80081C98
-PAGE_BASE = 0x8007E000
-FORMATION_BASE = 0x57D  # encounter N's pack is entry 0x57d + N
-ITEM_FIELDS = {"price": (0x00, 4), "atk": (0x08, 2), "def": (0x10, 2), "amount": (0x19, 1),
-               "effect": (0x28, 1), "type": (0x2A, 1), "sell": (0x2D, 1)}
-ENEMY_FIELDS = {"hp": (0x00, 4), "mp": (0x04, 4), "exp": (0x08, 4), "fol": (0x0C, 4), "speed": (0x16, 2),
-                "drop1": (0x18, 2), "drop2": (0x1A, 2), "atk": (0x1C, 2), "def": (0x1E, 2), "int": (0x20, 2),
-                "level": (0x24, 2), "eva": (0x26, 2), "acc": (0x28, 2), "guts": (0x36, 1),
-                "drop1_odds": (0x37, 1), "drop2_odds": (0x38, 1)}
-
-
-def field_spec(text, names, default_size):
-    if text in names:
-        return names[text]
-    off, _, size = text.partition(":")
-    off = int(off, 0)
-    return off, int(size, 0) if size else default_size(off)
-
-
-def item_size(off):
-    return 4 if off == 0 else 2 if 4 <= off < 0x14 else 1
-
-
-def enemy_size(off):
-    return 4 if off < 0x10 else 2 if off < 0x2A or off == 0x3A else 1
-
-
-def le(data, off, size):
-    return int.from_bytes(data[off:off + size], "little")
-
-
-def item_records(disc):
-    return unpack_block(disc.entry(ITEM_ENTRY), 0)
-
-
-def shop_lists(disc):
-    code = unpack_block(disc.entry(SHOP_ENTRY), 0)
-    out = {}
-    for shop in range(0x60):
-        at = SHOP_TABLE + shop * 4 - PAGE_BASE
-        if at + 4 > len(code):
-            break
-        ptr = le(code, at, 4) - PAGE_BASE
-        if not 0 <= ptr < len(code):
-            continue
-        items = []
-        while ptr + 2 <= len(code) and le(code, ptr, 2) != 0 and len(items) < 64:
-            items.append(le(code, ptr, 2))
-            ptr += 2
-        out[shop] = items
-    return out
-
-
-def formation_records(pack):
-    """[(type, stats record)] of an encounter pack (load_formation 0x8007344c)."""
-    p = 0
-    def s32(at):
-        return struct.unpack_from("<i", pack, at)[0]
-    while p + 4 <= len(pack) and s32(p) != -1:   # (1) sprite sets {offset, kinds}
-        p += 8
-    p += 4
-    for _ in range(2):                            # (2) palettes, (3) code blocks {kind, offset}
-        while p + 4 <= len(pack) and s32(p) != -1:
-            p += 8
-        p += 4
-    types = []
-    while p + 12 <= len(pack) and struct.unpack_from("<h", pack, p)[0] != 0 and len(types) < 8:
-        types.append(struct.unpack_from("<h", pack, p)[0])
-        p += 12
-    r = p + 4
-    out = []
-    for t in types:
-        if r + 0x5C > len(pack):
-            break
-        out.append((t, pack[r:r + 0x5C]))
-        r += 0x5C
-    return out
-
-
-def enemy_stats(disc, wanted=None):
-    """{type: (encounter, record)} from the first encounter pack that holds each type."""
-    found = {}
-    for n in range(0, 0x234):
-        try:
-            pack = disc.entry(FORMATION_BASE + n)
-            records = formation_records(pack)
-        except (SystemExit, struct.error, IndexError):
-            continue
-        for t, rec in records:
-            if t not in found:
-                found[t] = (n, rec)
-        if wanted is not None and wanted in found:
-            break
-    return found
+    raise SystemExit(f"{map_label(m)}: no map transfer {a.index} (see `list`)")
 
 
 def cmd_item(a):
+    item = resolve("item", a.item)
     off, size = field_spec(a.field, ITEM_FIELDS, item_size)
     rec = item_records(Disc(a.disc))
-    at = (a.item - 1) * 0x30 + off
-    if not 1 <= a.item <= len(rec) // 0x30 or off + size > 0x30:
-        raise SystemExit(f"no item {a.item} / field {a.field}")
+    at = (item - 1) * 0x30 + off
+    if not 1 <= item <= len(rec) // 0x30 or off + size > 0x30:
+        raise SystemExit(f"no item {item} / field {a.field}")
     old = le(rec, at, size)
     spec = f"{off:#x}" if size == item_size(off) else f"{off:#x}:{size}"
-    emit([f"# item {a.item:#x} {a.field}: {old} -> {a.value}", f"item {a.item:#x} {spec} {old:#x} {a.value & ((1 << 8 * size) - 1):#x}"], a.output)
+    emit([f"# {item_label(item)} {a.field}: {old} -> {a.value}",
+          f"item {item:#x} {spec} {old:#x} {a.value & ((1 << 8 * size) - 1):#x}"], a.output)
 
 
 def cmd_items(a):
+    item = resolve("item", a.item)
     rec = item_records(Disc(a.disc))
-    r = rec[(a.item - 1) * 0x30:a.item * 0x30]
-    print(f"item {a.item:#x}: " + " ".join(f"{k}={le(r, o, n)}" for k, (o, n) in ITEM_FIELDS.items()))
+    if not 1 <= item <= len(rec) // 0x30:
+        raise SystemExit(f"no item {item} (items are 1-{len(rec) // 0x30})")
+    r = rec[(item - 1) * 0x30:item * 0x30]
+    print(f"{item_label(item)}: " + " ".join(f"{k}={le(r, o, n)}" for k, (o, n) in ITEM_FIELDS.items()))
+    t, use = r[0x2A], r[0x29]
+    words = ["usable item" if t == 0 and use else item_type_name(t)]
+    if use:
+        words.append(f"used in: {item_use_name(use)}")
+    if r[0x28]:
+        words.append(f"effect: {item_effect_name(r[0x28])}")
+    if t:
+        words.append(f"equip: {equip_names(le(r, 4, 2)) or 'nobody'}")
+    print("  " + "; ".join(words))
     print("  raw " + r.hex())
 
 
 def cmd_shop(a):
+    shop = resolve("shop", a.shop)
+    item = resolve("item", a.item)
     lists = shop_lists(Disc(a.disc))
-    if a.shop not in lists:
-        raise SystemExit(f"no shop {a.shop} (see `shops`)")
-    items = lists[a.shop]
+    if shop not in lists:
+        raise SystemExit(f"no shop {shop} (see `shops`)")
+    items = lists[shop]
     if a.index == "add":
         index, old = len(items), 0
     else:
         index = int(a.index, 0)
         if index >= len(items):
-            raise SystemExit(f"shop {a.shop} has {len(items)} entries; use `add` to append")
+            raise SystemExit(f"shop {shop} has {len(items)} entries; use `add` to append")
         old = items[index]
-    emit([f"# shop {a.shop} entry {index}: item {old:#x} -> item {a.item:#x}", f"shop {a.shop} {index} {old:#x} {a.item:#x}"], a.output)
+    emit([f"# {names().shop_name(shop)} entry {index}: {item_label(old)} -> {item_label(item)}",
+          f"shop {shop} {index} {old:#x} {item:#x}"], a.output)
 
 
 def cmd_shops(a):
     for shop, items in shop_lists(Disc(a.disc)).items():
         if items:
-            print(f"shop {shop:#x}: " + " ".join(f"{i:#x}" for i in items))
+            print(f"shop {shop} ({shop:#x}): {names().shop_name(shop)}")
+            for n, i in enumerate(items):
+                print(f"  {n}: {i:#x} {names().item_name(i)}")
 
 
 def cmd_enemy(a):
+    typ = resolve("enemy", a.type)
     off, size = field_spec(a.field, ENEMY_FIELDS, enemy_size)
-    found = enemy_stats(Disc(a.disc), a.type)
-    if a.type not in found:
-        raise SystemExit(f"enemy type {a.type} not found in the encounter packs")
-    n, rec = found[a.type]
+    value = resolve("item", a.value) if a.field in ("drop1", "drop2") else int(a.value, 0)
+    found = enemy_stats(Disc(a.disc), typ)
+    if typ not in found:
+        raise SystemExit(f"enemy type {typ} not found in the encounter packs")
+    n, rec = found[typ]
     old = le(rec, off, size)
     spec = f"{off:#x}" if size == enemy_size(off) else f"{off:#x}:{size}"
-    emit([f"# enemy {a.type} {a.field} (as in encounter {n}): {old} -> {a.value}",
-          f"enemy {a.type} {spec} {old:#x} {a.value & ((1 << 8 * size) - 1):#x}"], a.output)
+    shown = f"{item_label(old)} -> {item_label(value)}" if a.field in ("drop1", "drop2") else f"{old} -> {value}"
+    emit([f"# enemy {typ} {enemy_name(rec)} {a.field} (as in encounter {n}): {shown}",
+          f"enemy {typ} {spec} {old:#x} {value & ((1 << 8 * size) - 1):#x}"], a.output)
 
 
 def cmd_enemies(a):
-    found = enemy_stats(Disc(a.disc), a.type)
+    typ = resolve("enemy", a.type) if a.type is not None else None
+    found = enemy_stats(Disc(a.disc), typ)
     for t in sorted(found):
-        if a.type is not None and t != a.type:
+        if typ is not None and t != typ:
             continue
         n, rec = found[t]
-        name = rec[0x4C:0x5C].split(b"\0")[0].decode("latin-1")
-        print(f"type {t}: encounter {n} " + " ".join(f"{k}={le(rec, o, s)}" for k, (o, s) in ENEMY_FIELDS.items()) + f" name {name}")
+        parts = []
+        for k, (o, s) in ENEMY_FIELDS.items():
+            v = le(rec, o, s)
+            parts.append(f"{k}={v:#x} ({names().item_name(v)})" if k in ("drop1", "drop2") and v else f"{k}={v}")
+        print(f"type {t} {enemy_name(rec)}: encounter {n} " + " ".join(parts))
+
+
+def cmd_find(a):
+    Disc(a.disc)  # the same arguments as every command; the names come from the repo's tables
+    hits = names().find(a.text)
+    if not hits:
+        raise SystemExit(f"nothing named like {a.text!r}")
+    heads = {"map": "maps", "item": "items", "shop": "shops", "enemy": "enemy types"}
+    for kind in ("map", "item", "shop", "enemy"):
+        rows = [h for h in hits if h[0] == kind]
+        if rows:
+            print(f"{heads[kind]}:")
+            for _, _, label in rows:
+                print(f"  {label}")
+
+
+def cmd_reference(a):
+    import mod_reference  # noqa: E402 (only this command needs it)
+    if a.game and not os.access(a.game, os.X_OK):
+        raise SystemExit(f"{a.game}: not the game's executable")
+    mod_reference.build_local(a.disc, a.out, game=a.game, thumbs=a.thumbs, jobs=a.jobs)
 
 
 def main():
     num = lambda s: int(s, 0)  # noqa: E731
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("list")
+    p = sub.add_parser("list", help="a map's chests, doors and save point")
     p.add_argument("disc")
-    p.add_argument("map", type=num)
+    p.add_argument("map", help="map number or name")
     p.set_defaults(run=cmd_list)
-    p = sub.add_parser("chest")
+    p = sub.add_parser("chest", help="change what a chest holds")
     p.add_argument("disc")
-    p.add_argument("map", type=num)
-    p.add_argument("flag", type=num)
+    p.add_argument("map", help="map number or name")
+    p.add_argument("flag", type=num, help="the chest's opened flag (from `list`)")
     g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--item", type=num)
+    g.add_argument("--item", help="item number or name")
     g.add_argument("--fol", type=num)
     p.add_argument("-o", "--output")
     p.set_defaults(run=cmd_chest)
-    p = sub.add_parser("door")
+    p = sub.add_parser("door", help="send a door somewhere else")
     p.add_argument("disc")
-    p.add_argument("map", type=num)
-    p.add_argument("index", type=num)
-    p.add_argument("--to", type=num, required=True)
+    p.add_argument("map", help="map number or name")
+    p.add_argument("index", type=num, help="the transfer's index (from `list`)")
+    p.add_argument("--to", required=True, help="map number or name")
     for k in ("x", "y", "z", "dir"):
         p.add_argument(f"--{k}", type=num)
     p.add_argument("-o", "--output")
     p.set_defaults(run=cmd_door)
-    p = sub.add_parser("item")
+    p = sub.add_parser("item", help="change a field of an item's record")
     p.add_argument("disc")
-    p.add_argument("item", type=num)
+    p.add_argument("item", help="item number or name")
     p.add_argument("field")
     p.add_argument("value", type=num)
     p.add_argument("-o", "--output")
     p.set_defaults(run=cmd_item)
-    p = sub.add_parser("items")
+    p = sub.add_parser("items", help="show an item's record")
     p.add_argument("disc")
-    p.add_argument("item", type=num)
+    p.add_argument("item", help="item number or name")
     p.set_defaults(run=cmd_items)
-    p = sub.add_parser("shop")
+    p = sub.add_parser("shop", help="change a shop's stock")
     p.add_argument("disc")
-    p.add_argument("shop", type=num)
+    p.add_argument("shop", help="shop number or name (of a map that opens it)")
     p.add_argument("index")
-    p.add_argument("item", type=num)
+    p.add_argument("item", help="item number or name (0 removes)")
     p.add_argument("-o", "--output")
     p.set_defaults(run=cmd_shop)
-    p = sub.add_parser("shops")
+    p = sub.add_parser("shops", help="every shop's stock")
     p.add_argument("disc")
     p.set_defaults(run=cmd_shops)
-    p = sub.add_parser("enemy")
+    p = sub.add_parser("enemy", help="change an enemy type's stats")
     p.add_argument("disc")
-    p.add_argument("type", type=num)
+    p.add_argument("type", help="enemy type number or name")
     p.add_argument("field")
-    p.add_argument("value", type=num)
+    p.add_argument("value", help="a number (an item number or name for drop1 / drop2)")
     p.add_argument("-o", "--output")
     p.set_defaults(run=cmd_enemy)
-    p = sub.add_parser("enemies")
+    p = sub.add_parser("enemies", help="enemy types and their stats")
     p.add_argument("disc")
-    p.add_argument("type", type=num, nargs="?")
+    p.add_argument("type", nargs="?", help="enemy type number or name")
     p.set_defaults(run=cmd_enemies)
+    p = sub.add_parser("find", help="search maps, items, shops and enemies by name")
+    p.add_argument("disc")
+    p.add_argument("text", nargs="+")
+    p.set_defaults(run=lambda a: cmd_find(argparse.Namespace(disc=a.disc, text=" ".join(a.text))))
+    p = sub.add_parser("reference", help="build the local reference page from your disc")
+    p.add_argument("disc")
+    p.add_argument("--out", required=True, help="folder for index.html (and thumbs/)")
+    p.add_argument("--game", help="the built game (shattered-stars) to render map thumbnails with")
+    p.add_argument("--thumbs", help="only these maps' thumbnails, e.g. 18,26,80-90 (default all)")
+    p.add_argument("--jobs", type=int, default=4, help="game runs at once for thumbnails (1-6, default 4)")
+    p.set_defaults(run=cmd_reference)
     a = ap.parse_args()
     return a.run(a)
 

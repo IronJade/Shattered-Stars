@@ -1,0 +1,339 @@
+map,map_name,flag,flag_dec,handler_word,contents,item,fol,can_hold,also_on,command
+18,Arlia Village: north: fountain square,0x961,2401,0x81f,Leather Armor,0x2a5,,items,21,python3 tools/so2_mod.py chest DISC.cue 18 0x961 --item ITEM
+18,Arlia Village: north: fountain square,0x962,2402,0x827,200 Fol,,200,items or Fol,21,python3 tools/so2_mod.py chest DISC.cue 18 0x962 --fol N
+18,Arlia Village: north: fountain square,0x963,2403,0x830,Resurrection Bottle,0x115,,items,21,python3 tools/so2_mod.py chest DISC.cue 18 0x963 --item ITEM
+21,"Arlia Village: north: fountain square, at night",0x961,2401,0x28a,Leather Armor,0x2a5,,items,18,python3 tools/so2_mod.py chest DISC.cue 21 0x961 --item ITEM
+21,"Arlia Village: north: fountain square, at night",0x962,2402,0x292,200 Fol,,200,items or Fol,18,python3 tools/so2_mod.py chest DISC.cue 21 0x962 --fol N
+21,"Arlia Village: north: fountain square, at night",0x963,2403,0x29b,Resurrection Bottle,0x115,,items,18,python3 tools/so2_mod.py chest DISC.cue 21 0x963 --item ITEM
+25,"Arlia Village: villager's house, bedroom",0x964,2404,0x17,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x964 --item ITEM
+25,"Arlia Village: villager's house, bedroom",0x965,2405,0x1f,Rose Hips,0xdd,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x965 --item ITEM
+33,Arlia Village: villager's house near the square,0x966,2406,0x447,Strawberry Jam,0x2f6,,items,,python3 tools/so2_mod.py chest DISC.cue 33 0x966 --item ITEM
+38,Arlia Village: Rena's Room,0x960,2400,0x3f,Blackberry,0x2f4,,items,40,python3 tools/so2_mod.py chest DISC.cue 38 0x960 --item ITEM
+40,Rena's Room: entrance / threshold area,0x960,2400,0x17,Blackberry,0x2f4,,items,38,python3 tools/so2_mod.py chest DISC.cue 40 0x960 --item ITEM
+50,"Alen's Mansion: interior room, about 1 door in from the entrance",0x967,2407,0x1a37,Portrait B,0x7,,items,,python3 tools/so2_mod.py chest DISC.cue 50 0x967 --item ITEM
+59,Town of Salva: Jewelry Store Fairy Tear,0x968,2408,0x131a,Heavy Ring,0x5e,,items,,python3 tools/so2_mod.py chest DISC.cue 59 0x968 --item ITEM
+64,"Salva Drift: mine tunnel, deeper",0x969,2409,0xf05,Silver,0x1a5,,items,,python3 tools/so2_mod.py chest DISC.cue 64 0x969 --item ITEM
+64,"Salva Drift: mine tunnel, deeper",0x9c7,2503,0xf0d,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 64 0x9c7 --item ITEM
+65,"Salva Drift: interior room, about 1 door in from the entrance",0x96c,2412,0xf13,Blackberry,0x2f4,,items,,python3 tools/so2_mod.py chest DISC.cue 65 0x96c --item ITEM
+65,"Salva Drift: interior room, about 1 door in from the entrance",0x9cc,2508,0xf1b,Rose Hips,0xdd,,items,,python3 tools/so2_mod.py chest DISC.cue 65 0x9cc --item ITEM
+66,"Salva Drift: interior room, about 2 doors in from the entrance",0x9c8,2504,0xf0c,Iron,0x1a3,,items,,python3 tools/so2_mod.py chest DISC.cue 66 0x9c8 --item ITEM
+67,"Salva Drift: interior room, about 3 doors in from the entrance",0x9c9,2505,0x1acc,Gold,0x1a4,,items,,python3 tools/so2_mod.py chest DISC.cue 67 0x9c9 --item ITEM
+67,"Salva Drift: interior room, about 3 doors in from the entrance",0x9ca,2506,0x1ad4,Maple Syrup,0xfd,,items,,python3 tools/so2_mod.py chest DISC.cue 67 0x9ca --item ITEM
+68,"Salva Drift: interior room, about 3 doors in from the entrance",0x96a,2410,0x19bb,Gold,0x1a4,,items,,python3 tools/so2_mod.py chest DISC.cue 68 0x96a --item ITEM
+68,"Salva Drift: interior room, about 3 doors in from the entrance",0x96b,2411,0x19c3,Spectacles,0x36,,items,,python3 tools/so2_mod.py chest DISC.cue 68 0x96b --item ITEM
+68,"Salva Drift: interior room, about 3 doors in from the entrance",0x9cb,2507,0x19cb,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 68 0x9cb --item ITEM
+69,"Salva Drift: interior room, about 2 doors in from the entrance",0x96e,2414,0xefe,Golden Earring,0x7e,,items,,python3 tools/so2_mod.py chest DISC.cue 69 0x96e --item ITEM
+69,"Salva Drift: interior room, about 2 doors in from the entrance",0x96f,2415,0xf06,Iron,0x1a3,,items,,python3 tools/so2_mod.py chest DISC.cue 69 0x96f --item ITEM
+69,"Salva Drift: interior room, about 2 doors in from the entrance",0x970,2416,0xf0e,Aquaberry,0x2f3,,items,,python3 tools/so2_mod.py chest DISC.cue 69 0x970 --item ITEM
+70,"Salva Drift: interior room, about 1 door in from the entrance",0x9cd,2509,0x1ac1,Cinderella Glass,0x2f2,,items,,python3 tools/so2_mod.py chest DISC.cue 70 0x9cd --item ITEM
+71,"Salva Drift: dark cave bridge, dead end off the tunnel",0x971,2417,0x20a5,Star Ruby,0x1b0,,items,,python3 tools/so2_mod.py chest DISC.cue 71 0x971 --item ITEM
+71,"Salva Drift: dark cave bridge, dead end off the tunnel",0x972,2418,0x20ad,Diamond,0x1b3,,items,,python3 tools/so2_mod.py chest DISC.cue 71 0x972 --item ITEM
+72,"Salva Drift: interior room, about 2 doors in from the entrance",0x96d,2413,0xf05,Brigandine,0x2ac,,items,,python3 tools/so2_mod.py chest DISC.cue 72 0x96d --item ITEM
+92,Armory: Armory,0x9fa,2554,0x1995,Wooden Shield,0x2c5,,items,,python3 tools/so2_mod.py chest DISC.cue 92 0x9fa --item ITEM
+92,Armory: Armory,0x9fb,2555,0x199d,Leather Helm,0x28f,,items,,python3 tools/so2_mod.py chest DISC.cue 92 0x9fb --item ITEM
+100,The Prince's Chambers: entrance / threshold area,0x9fc,2556,0x1a0a,500 Fol,,500,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 100 0x9fc --fol N
+117,Port of Clik: The House on the Hill,0x9f6,2550,0x19f7,Lyre,0x32,,items,,python3 tools/so2_mod.py chest DISC.cue 117 0x9f6 --item ITEM
+119,Port of Clik: Restaurant The Big Potato,0x9f7,2551,0x1a00,Seafood,0x117,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f7 --item ITEM
+119,Port of Clik: Restaurant The Big Potato,0x9f8,2552,0x1a08,Grain,0x119,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f8 --item ITEM
+119,Port of Clik: Restaurant The Big Potato,0x9f9,2553,0x1a10,Vegetables,0x11b,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f9 --item ITEM
+132,"Elder's House: interior room, about 1 door in from the entrance",0x973,2419,0x1d8c,Silence Card,0x1b,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x973 --item ITEM
+132,"Elder's House: interior room, about 1 door in from the entrance",0x974,2420,0x1d94,Sour Syrup,0xfb,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x974 --item ITEM
+132,"Elder's House: interior room, about 1 door in from the entrance",0x975,2421,0x1d9c,Purple Mist,0x49,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x975 --item ITEM
+139,Mars Village: Celine's Room,0x976,2422,0x121e,Silk Robe,0x2ab,,items,,python3 tools/so2_mod.py chest DISC.cue 139 0x976 --item ITEM
+157,"Town of Herlie: Eleanor's House, upstairs",0x97c,2428,0x1282,Ring of Sadness,0x68,,items,,python3 tools/so2_mod.py chest DISC.cue 157 0x97c --item ITEM
+163,"Zand's Mansion: parlor (checkerboard floor), front room",0x97d,2429,0x1204,Ringed Mail,0x2aa,,items,,python3 tools/so2_mod.py chest DISC.cue 163 0x97d --item ITEM
+163,"Zand's Mansion: parlor (checkerboard floor), front room",0x97e,2430,0x120c,Sinclair Sabre,0x1eb,,items,,python3 tools/so2_mod.py chest DISC.cue 163 0x97e --item ITEM
+166,Zand's Mansion: storage room (barrels),0x97f,2431,0x1204,Leather Boots,0x2df,,items,,python3 tools/so2_mod.py chest DISC.cue 166 0x97f --item ITEM
+166,Zand's Mansion: storage room (barrels),0x980,2432,0x120c,1200 Fol,,1200,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 166 0x980 --fol N
+277,Noel's House: entrance / threshold area,0xa36,2614,0x1cbe,Nature's Life Force,0xaf,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa36 --item ITEM
+277,Noel's House: entrance / threshold area,0xa37,2615,0x1cc6,Pet Food,0x1a2,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa37 --item ITEM
+277,Noel's House: entrance / threshold area,0xa38,2616,0x1cce,50000 Fol,,50000,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 277 0xa38 --fol N
+332,Giveaway: Nede History Research Lab,0x9a4,2468,0x1df8,Fairy Glass,0xee,,items,,python3 tools/so2_mod.py chest DISC.cue 332 0x9a4 --item ITEM
+351,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",0x981,2433,0xefb,Cure Stone,0x302,,items,,python3 tools/so2_mod.py chest DISC.cue 351 0x981 --item ITEM
+351,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",0x982,2434,0xf03,Sweet Syrup,0xfc,,items,,python3 tools/so2_mod.py chest DISC.cue 351 0x982 --item ITEM
+355,Mountain Palace: entrance (guard post),0x983,2435,0x1ab5,Luna Tablet,0x45,,items,,python3 tools/so2_mod.py chest DISC.cue 355 0x983 --item ITEM
+355,Mountain Palace: entrance (guard post),0x984,2436,0x1abd,Crystal,0x1b1,,items,,python3 tools/so2_mod.py chest DISC.cue 355 0x984 --item ITEM
+358,"Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",0x985,2437,0xef2,Fairy's Statue,0x23,,items,,python3 tools/so2_mod.py chest DISC.cue 358 0x985 --item ITEM
+358,"Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",0x986,2438,0xefa,Emerald Ring,0x78,,items,,python3 tools/so2_mod.py chest DISC.cue 358 0x986 --item ITEM
+367,"Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",0x987,2439,0xef2,Sour Syrup,0xfb,,items,,python3 tools/so2_mod.py chest DISC.cue 367 0x987 --item ITEM
+367,"Mountain Palace: Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",0x988,2440,0xefa,Walloon Sword,0x1ed,,items,,python3 tools/so2_mod.py chest DISC.cue 367 0x988 --item ITEM
+371,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",0x989,2441,0xef2,Crest Rod,0x23b,,items,,python3 tools/so2_mod.py chest DISC.cue 371 0x989 --item ITEM
+371,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",0x98a,2442,0xefa,Amber Robe,0x2ad,,items,,python3 tools/so2_mod.py chest DISC.cue 371 0x98a --item ITEM
+371,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",0x98b,2443,0xf02,?MINERAL,0x33f,,items,,python3 tools/so2_mod.py chest DISC.cue 371 0x98b --item ITEM
+373,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",0x9a3,2467,0x1a66,Damascus,0x1aa,,items,,python3 tools/so2_mod.py chest DISC.cue 373 0x9a3 --item ITEM
+373,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",0x9ce,2510,0x1a6e,Fairy's Cologne,0xef,,items,,python3 tools/so2_mod.py chest DISC.cue 373 0x9ce --item ITEM
+373,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",0x9cf,2511,0x1a76,Wolfsbane,0xdf,,items,,python3 tools/so2_mod.py chest DISC.cue 373 0x9cf --item ITEM
+375,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (?HERB)",0x98c,2444,0xef2,?HERB,0x30a,,items,,python3 tools/so2_mod.py chest DISC.cue 375 0x98c --item ITEM
+376,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",0x9d0,2512,0xefb,Resurrection Bottle,0x115,,items,,python3 tools/so2_mod.py chest DISC.cue 376 0x9d0 --item ITEM
+376,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",0x9d1,2513,0xf03,?JEWELRY,0x3b4,,items,,python3 tools/so2_mod.py chest DISC.cue 376 0x9d1 --item ITEM
+380,"Mountain Palace: Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",0x98d,2445,0x1b25,Cestus,0x21d,,items,,python3 tools/so2_mod.py chest DISC.cue 380 0x98d --item ITEM
+380,"Mountain Palace: Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",0x98e,2446,0x1b2d,?MINERAL,0x33c,,items,,python3 tools/so2_mod.py chest DISC.cue 380 0x98e --item ITEM
+387,"Heraldry Weapons Laboratory: derelict quarters (piano, chest)",0x9aa,2474,0xef7,Mind Ring,0x9c,,items,,python3 tools/so2_mod.py chest DISC.cue 387 0x9aa --item ITEM
+402,Sanctuary of Linga: cave entrance (ledge fork),0xa0f,2575,0x1a28,Might Chain,0x4c,,items,,python3 tools/so2_mod.py chest DISC.cue 402 0xa0f --item ITEM
+402,Sanctuary of Linga: cave entrance (ledge fork),0xa16,2582,0x1a30,Ruby,0x1af,,items,,python3 tools/so2_mod.py chest DISC.cue 402 0xa16 --item ITEM
+403,Sanctuary of Linga: carved stairway ledge (chest),0xa10,2576,0x1a1b,Mixed Syrup,0x101,,items,,python3 tools/so2_mod.py chest DISC.cue 403 0xa10 --item ITEM
+403,Sanctuary of Linga: carved stairway ledge (chest),0xa17,2583,0x1a23,Bubble Lotion,0xeb,,items,,python3 tools/so2_mod.py chest DISC.cue 403 0xa17 --item ITEM
+404,Sanctuary of Linga: winding crossover ledge (chest),0xa18,2584,0x1b2f,Rainbow Diamond,0x1b4,,items,,python3 tools/so2_mod.py chest DISC.cue 404 0xa18 --item ITEM
+408,Sanctuary of Linga: stairway up (bone-strewn ledge),0xa19,2585,0x1a91,Poison Check,0x46,,items,,python3 tools/so2_mod.py chest DISC.cue 408 0xa19 --item ITEM
+409,Sanctuary of Linga: deep fork (final choice of paths),0xa11,2577,0x19cd,Twin-edge,0x20f,,items,,python3 tools/so2_mod.py chest DISC.cue 409 0xa11 --item ITEM
+409,Sanctuary of Linga: deep fork (final choice of paths),0xa12,2578,0x19d5,Straight Punch,0x255,,items,,python3 tools/so2_mod.py chest DISC.cue 409 0xa12 --item ITEM
+412,"Sanctuary of Linga: grassy chamber (two chests, skull) -- near the heart of the Sanctuary",0xa13,2579,0x1998,?GUARD,0x383,,items,,python3 tools/so2_mod.py chest DISC.cue 412 0xa13 --item ITEM
+412,"Sanctuary of Linga: grassy chamber (two chests, skull) -- near the heart of the Sanctuary",0xa14,2580,0x19a0,Cinderella Glass,0x2f2,,items,,python3 tools/so2_mod.py chest DISC.cue 412 0xa14 --item ITEM
+412,"Sanctuary of Linga: grassy chamber (two chests, skull) -- near the heart of the Sanctuary",0xa15,2581,0x19a8,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 412 0xa15 --item ITEM
+413,Cave of Red Crystal: entrance / threshold area,0xa39,2617,0x19de,Resurrection Bottle,0x115,,items,,python3 tools/so2_mod.py chest DISC.cue 413 0xa39 --item ITEM
+414,"Cave of Red Crystal: interior room, about 1 door in from the entrance",0xa54,2644,0x19d0,Cinderella Glass,0x2f2,,items,,python3 tools/so2_mod.py chest DISC.cue 414 0xa54 --item ITEM
+415,"Cave of Red Crystal: interior room, about 2 doors in from the entrance",0xa3a,2618,0x1a91,Flying Hawk Robes,0x2b1,,items,,python3 tools/so2_mod.py chest DISC.cue 415 0xa3a --item ITEM
+416,"Cave of Red Crystal: interior room, about 1 door in from the entrance",0xa3b,2619,0x19d5,Heraldry,0x276,,items,,python3 tools/so2_mod.py chest DISC.cue 416 0xa3b --item ITEM
+416,"Cave of Red Crystal: interior room, about 1 door in from the entrance",0xa3c,2620,0x19dd,Dream Bracelet,0x98,,items,,python3 tools/so2_mod.py chest DISC.cue 416 0xa3c --item ITEM
+416,"Cave of Red Crystal: interior room, about 1 door in from the entrance",0xa55,2645,0x19e5,?MINERAL,0x33b,,items,,python3 tools/so2_mod.py chest DISC.cue 416 0xa55 --item ITEM
+418,"Cave of Red Crystal: interior room, about 4 doors in from the entrance",0xa3d,2621,0x19ab,?MINERAL,0x33d,,items,,python3 tools/so2_mod.py chest DISC.cue 418 0xa3d --item ITEM
+418,"Cave of Red Crystal: interior room, about 4 doors in from the entrance",0xa3e,2622,0x19b3,Fruit Syrup,0xfe,,items,,python3 tools/so2_mod.py chest DISC.cue 418 0xa3e --item ITEM
+429,"King's Room: King's Room, antechamber",0xa0d,2573,0x19dd,10000 Fol,,10000,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 429 0xa0d --fol N
+430,Rosalia's Room: Rosalia's Room,0xa0e,2574,0x1a11,Star Ruby,0x1b0,,items,,python3 tools/so2_mod.py chest DISC.cue 430 0xa0e --item ITEM
+449,Mihne Cavern: entrance / threshold area,0x9ab,2475,0x1aef,?MINERAL,0x33f,,items,,python3 tools/so2_mod.py chest DISC.cue 449 0x9ab --item ITEM
+449,Mihne Cavern: entrance / threshold area,0x9e5,2533,0x1af7,Fruit Syrup,0xfe,,items,,python3 tools/so2_mod.py chest DISC.cue 449 0x9e5 --item ITEM
+450,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9ac,2476,0xf10,Aceras,0xe1,,items,,python3 tools/so2_mod.py chest DISC.cue 450 0x9ac --item ITEM
+450,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9ad,2477,0xf18,Dummy Doll,0x25,,items,,python3 tools/so2_mod.py chest DISC.cue 450 0x9ad --item ITEM
+450,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9ae,2478,0xf20,Lightning Gun,0x288,,items,,python3 tools/so2_mod.py chest DISC.cue 450 0x9ae --item ITEM
+451,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9af,2479,0xf10,Encyclopedia,0x27c,,items,,python3 tools/so2_mod.py chest DISC.cue 451 0x9af --item ITEM
+451,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9b0,2480,0xf18,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 451 0x9b0 --item ITEM
+451,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9e6,2534,0xf20,Meteorite,0x1a8,,items,,python3 tools/so2_mod.py chest DISC.cue 451 0x9e6 --item ITEM
+451,"Mihne Cavern: interior room, about 1 door in from the entrance",0x9e7,2535,0xf28,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 451 0x9e7 --item ITEM
+452,"Mihne Cavern: interior room, about 2 doors in from the entrance",0x9b1,2481,0xef4,Mithril Mesh,0x2bd,,items,,python3 tools/so2_mod.py chest DISC.cue 452 0x9b1 --item ITEM
+452,"Mihne Cavern: interior room, about 2 doors in from the entrance",0x9b2,2482,0xefc,Smith's Hammer,0x1d6,,items,,python3 tools/so2_mod.py chest DISC.cue 452 0x9b2 --item ITEM
+452,"Mihne Cavern: interior room, about 2 doors in from the entrance",0x9b3,2483,0xf04,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 452 0x9b3 --item ITEM
+452,"Mihne Cavern: interior room, about 2 doors in from the entrance",0x9e8,2536,0xf0c,Smelling Salts,0xe6,,items,,python3 tools/so2_mod.py chest DISC.cue 452 0x9e8 --item ITEM
+459,"Mars Village: Heraldry Forest, mossy hollow",0x977,2423,0x1b06,Smelling Salts,0xe6,,items,,python3 tools/so2_mod.py chest DISC.cue 459 0x977 --item ITEM
+460,"Mars Village: Heraldry Forest, fallen-log crossing",0x978,2424,0x122c,Dummy Doll,0x25,,items,,python3 tools/so2_mod.py chest DISC.cue 460 0x978 --item ITEM
+461,"Mars Village: Heraldry Forest, path (monster den)",0x979,2425,0xf02,Amber Robe,0x2ad,,items,,python3 tools/so2_mod.py chest DISC.cue 461 0x979 --item ITEM
+461,"Mars Village: Heraldry Forest, path (monster den)",0x9e9,2537,0xf0a,Flame Blade,0x1ec,,items,,python3 tools/so2_mod.py chest DISC.cue 461 0x9e9 --item ITEM
+462,"Mars Village: Heraldry Forest, clearing behind Celine's House",0x97a,2426,0x1e44,Mandrake,0xdc,,items,,python3 tools/so2_mod.py chest DISC.cue 462 0x97a --item ITEM
+465,Mars Village: Heraldry Forest,0x97b,2427,0x1a1a,?HERB,0x309,,items,,python3 tools/so2_mod.py chest DISC.cue 465 0x97b --item ITEM
+485,Hoffmann Ruins: upper tunnels: chest room (Cure Stone),0x9d2,2514,0xefa,Cure Stone,0x302,,items,,python3 tools/so2_mod.py chest DISC.cue 485 0x9d2 --item ITEM
+486,Hoffmann Ruins: upper tunnels: chest room (Recoil Bracelet),0x98f,2447,0xefa,Recoil Bracelet,0x97,,items,,python3 tools/so2_mod.py chest DISC.cue 486 0x98f --item ITEM
+487,"Hoffmann Ruins: upper tunnels: chest room (Angel Hair, Light Box)",0x990,2448,0xefa,Angel Hair,0x93,,items,,python3 tools/so2_mod.py chest DISC.cue 487 0x990 --item ITEM
+487,"Hoffmann Ruins: upper tunnels: chest room (Angel Hair, Light Box)",0x991,2449,0xf02,Light Box,0x248,,items,,python3 tools/so2_mod.py chest DISC.cue 487 0x991 --item ITEM
+490,"Hoffmann Ruins: upper tunnels: chest room (Green Beryl, Holy Mist)",0x992,2450,0xf07,Green Beryl,0x1ad,,items,,python3 tools/so2_mod.py chest DISC.cue 490 0x992 --item ITEM
+490,"Hoffmann Ruins: upper tunnels: chest room (Green Beryl, Holy Mist)",0x993,2451,0xf0f,Holy Mist,0x113,,items,,python3 tools/so2_mod.py chest DISC.cue 490 0x993 --item ITEM
+491,Hoffmann Ruins: mine-cart tunnels: chest room (Cure Paralysis),0x9d3,2515,0xf37,Cure Paralysis,0x103,,items,,python3 tools/so2_mod.py chest DISC.cue 491 0x9d3 --item ITEM
+492,Hoffmann Ruins: mine-cart tunnels: chest room (Aquaberry),0x9d4,2516,0xf4a,Aquaberry,0x2f3,,items,493,python3 tools/so2_mod.py chest DISC.cue 492 0x9d4 --item ITEM
+493,"Hoffmann Ruins: mine-cart tunnels, about 6 doors in from the entrance",0x9d4,2516,0xfb2,Aquaberry,0x2f3,,items,492,python3 tools/so2_mod.py chest DISC.cue 493 0x9d4 --item ITEM
+495,"Hoffmann Ruins: mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",0x994,2452,0xf17,Dictionary,0x277,,items,496,python3 tools/so2_mod.py chest DISC.cue 495 0x994 --item ITEM
+495,"Hoffmann Ruins: mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",0x995,2453,0xf1f,Cure Paralysis,0x103,,items,496,python3 tools/so2_mod.py chest DISC.cue 495 0x995 --item ITEM
+496,"Hoffmann Ruins: mine-cart tunnels, about 7 doors in from the entrance",0x994,2452,0xf86,Dictionary,0x277,,items,495,python3 tools/so2_mod.py chest DISC.cue 496 0x994 --item ITEM
+496,"Hoffmann Ruins: mine-cart tunnels, about 7 doors in from the entrance",0x995,2453,0xf8e,Cure Paralysis,0x103,,items,495,python3 tools/so2_mod.py chest DISC.cue 496 0x995 --item ITEM
+498,Hoffmann Ruins: mine-cart tunnels: chest room (Hexagram Card),0x996,2454,0xf17,Hexagram Card,0x1c,,items,,python3 tools/so2_mod.py chest DISC.cue 498 0x996 --item ITEM
+502,"Hoffmann Ruins: mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",0x997,2455,0xef7,1-up Pudding,0x330,,items,,python3 tools/so2_mod.py chest DISC.cue 502 0x997 --item ITEM
+502,"Hoffmann Ruins: mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",0x998,2456,0xeff,Zephyr Earring,0x82,,items,,python3 tools/so2_mod.py chest DISC.cue 502 0x998 --item ITEM
+502,"Hoffmann Ruins: mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",0x9d5,2517,0xf07,Gold,0x1a4,,items,,python3 tools/so2_mod.py chest DISC.cue 502 0x9d5 --item ITEM
+502,"Hoffmann Ruins: mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",0x9d6,2518,0xf0f,Orichalcum,0x1a7,,items,,python3 tools/so2_mod.py chest DISC.cue 502 0x9d6 --item ITEM
+503,Hoffmann Ruins: mine-cart tunnels: chest room (Hyperball),0x999,2457,0xf25,Hyperball,0x20,,items,504,python3 tools/so2_mod.py chest DISC.cue 503 0x999 --item ITEM
+504,"Hoffmann Ruins: mine-cart tunnels, about 9 doors in from the entrance",0x999,2457,0xf94,Hyperball,0x20,,items,503,python3 tools/so2_mod.py chest DISC.cue 504 0x999 --item ITEM
+506,"Hoffmann Ruins: mine-cart tunnels: chest room (Spring Water, Diamond)",0x9d7,2519,0xf37,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 506 0x9d7 --item ITEM
+506,"Hoffmann Ruins: mine-cart tunnels: chest room (Spring Water, Diamond)",0x9d8,2520,0xf3f,Diamond,0x1b3,,items,,python3 tools/so2_mod.py chest DISC.cue 506 0x9d8 --item ITEM
+507,"Hoffmann Ruins: mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",0x99a,2458,0xf1a,Hot Syrup,0x100,,items,508,python3 tools/so2_mod.py chest DISC.cue 507 0x99a --item ITEM
+507,"Hoffmann Ruins: mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",0x99b,2459,0xf22,Peep Half,0x6b,,items,508,python3 tools/so2_mod.py chest DISC.cue 507 0x99b --item ITEM
+507,"Hoffmann Ruins: mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",0x9d9,2521,0xf2a,Fruit Syrup,0xfe,,items,508,python3 tools/so2_mod.py chest DISC.cue 507 0x9d9 --item ITEM
+508,"Hoffmann Ruins: mine-cart tunnels, about 11 doors in from the entrance",0x99a,2458,0xf82,Hot Syrup,0x100,,items,507,python3 tools/so2_mod.py chest DISC.cue 508 0x99a --item ITEM
+508,"Hoffmann Ruins: mine-cart tunnels, about 11 doors in from the entrance",0x99b,2459,0xf8a,Walloon Sword,0x1ed,,items,507,python3 tools/so2_mod.py chest DISC.cue 508 0x99b --item ITEM
+508,"Hoffmann Ruins: mine-cart tunnels, about 11 doors in from the entrance",0x9d9,2521,0xf92,Fruit Syrup,0xfe,,items,507,python3 tools/so2_mod.py chest DISC.cue 508 0x9d9 --item ITEM
+510,"Hoffmann Ruins: mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",0x99c,2460,0xf09,Material Kit,0x1c8,,items,,python3 tools/so2_mod.py chest DISC.cue 510 0x99c --item ITEM
+510,"Hoffmann Ruins: mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",0x99d,2461,0xf11,Peep-peep Bomb,0x1bf,,items,,python3 tools/so2_mod.py chest DISC.cue 510 0x99d --item ITEM
+513,"Hoffmann Ruins: lower passages: chest room (Green Beryl, Blackberry)",0x9da,2522,0xf13,Green Beryl,0x1ad,,items,,python3 tools/so2_mod.py chest DISC.cue 513 0x9da --item ITEM
+513,"Hoffmann Ruins: lower passages: chest room (Green Beryl, Blackberry)",0x9db,2523,0xf1b,Blackberry,0x2f4,,items,,python3 tools/so2_mod.py chest DISC.cue 513 0x9db --item ITEM
+514,Hoffmann Ruins: lower passages: chest room (Sturm Ring),0x99e,2462,0xf05,Sturm Ring,0x3f,,items,,python3 tools/so2_mod.py chest DISC.cue 514 0x99e --item ITEM
+515,Hoffmann Ruins: lower passages: chest room ('Spring'),0x99f,2463,0xf13,'Spring',0x2,,items,,python3 tools/so2_mod.py chest DISC.cue 515 0x99f --item ITEM
+517,Hoffmann Ruins: lower passages: chest room (Paralysis Check),0x9a0,2464,0xf41,Paralysis Check,0x47,,items,518,python3 tools/so2_mod.py chest DISC.cue 517 0x9a0 --item ITEM
+518,"Hoffmann Ruins: lower passages, about 9 doors in from the entrance",0x9a0,2464,0xfa2,Paralysis Check,0x47,,items,517,python3 tools/so2_mod.py chest DISC.cue 518 0x9a0 --item ITEM
+520,"Hoffmann Ruins: lower passages: chest room (Sour Syrup, ?HERB)",0x9a1,2465,0xf1e,Sour Syrup,0xfb,,items,521,python3 tools/so2_mod.py chest DISC.cue 520 0x9a1 --item ITEM
+520,"Hoffmann Ruins: lower passages: chest room (Sour Syrup, ?HERB)",0x9a2,2466,0xf26,?HERB,0x30a,,items,521,python3 tools/so2_mod.py chest DISC.cue 520 0x9a2 --item ITEM
+521,"Hoffmann Ruins: lower passages, about 10 doors in from the entrance",0x9a1,2465,0xf86,Sour Syrup,0xfb,,items,520,python3 tools/so2_mod.py chest DISC.cue 521 0x9a1 --item ITEM
+521,"Hoffmann Ruins: lower passages, about 10 doors in from the entrance",0x9a2,2466,0xf8e,?HERB,0x30a,,items,520,python3 tools/so2_mod.py chest DISC.cue 521 0x9a2 --item ITEM
+526,Cross Cave: passage (single chest),0xa1a,2586,0x1995,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 526 0xa1a --item ITEM
+528,Cross Cave: pool alcove (chest),0xa1b,2587,0x1995,Iron,0x1a3,,items,,python3 tools/so2_mod.py chest DISC.cue 528 0xa1b --item ITEM
+528,Cross Cave: pool alcove (chest),0xa1c,2588,0x199d,Blackberry,0x2f4,,items,,python3 tools/so2_mod.py chest DISC.cue 528 0xa1c --item ITEM
+529,"Cross Cave: treasure nook (four chests, skeleton)",0xa1d,2589,0x19b1,Cure Poison,0x102,,items,,python3 tools/so2_mod.py chest DISC.cue 529 0xa1d --item ITEM
+531,Cross Cave: passage (distant chest),0x9fd,2557,0x1995,Artemis Leaf,0xde,,items,,python3 tools/so2_mod.py chest DISC.cue 531 0x9fd --item ITEM
+531,Cross Cave: passage (distant chest),0xa1e,2590,0x199d,Sweet Syrup,0xfc,,items,,python3 tools/so2_mod.py chest DISC.cue 531 0xa1e --item ITEM
+532,Cross Cave: chest alcove (two chests),0x9fe,2558,0x19b1,?JEWELRY,0x390,,items,,python3 tools/so2_mod.py chest DISC.cue 532 0x9fe --item ITEM
+532,Cross Cave: chest alcove (two chests),0xa1f,2591,0x19b9,Lavender,0xe0,,items,,python3 tools/so2_mod.py chest DISC.cue 532 0xa1f --item ITEM
+532,Cross Cave: chest alcove (two chests),0xa20,2592,0x19c1,?MINERAL,0x341,,items,,python3 tools/so2_mod.py chest DISC.cue 532 0xa20 --item ITEM
+535,Cross Cave: chest hollow (two chests),0x9ff,2559,0x1995,Magic Canvas,0x1,,items,,python3 tools/so2_mod.py chest DISC.cue 535 0x9ff --item ITEM
+535,Cross Cave: chest hollow (two chests),0xa00,2560,0x199d,Tri-ball,0x1f,,items,,python3 tools/so2_mod.py chest DISC.cue 535 0xa00 --item ITEM
+538,Cross Cave: Ancient Writings marker (chest nearby),0xa21,2593,0x19a3,?ITEM,0x3b9,,items,,python3 tools/so2_mod.py chest DISC.cue 538 0xa21 --item ITEM
+540,Cross Cave: Ancient Writings marker (fork),0xa01,2561,0x19a3,Cure Poison,0x102,,items,,python3 tools/so2_mod.py chest DISC.cue 540 0xa01 --item ITEM
+540,Cross Cave: Ancient Writings marker (fork),0xa02,2562,0x19ab,Blackberry,0x2f4,,items,,python3 tools/so2_mod.py chest DISC.cue 540 0xa02 --item ITEM
+540,Cross Cave: Ancient Writings marker (fork),0xa03,2563,0x19b3,Feather Pen,0x2c,,items,,python3 tools/so2_mod.py chest DISC.cue 540 0xa03 --item ITEM
+540,Cross Cave: Ancient Writings marker (fork),0xa04,2564,0x19bb,600 Fol,,600,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 540 0xa04 --fol N
+540,Cross Cave: Ancient Writings marker (fork),0xa05,2565,0x19c4,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 540 0xa05 --item ITEM
+541,Cross Cave: Ancient Writings marker (chest),0xa06,2566,0x19a3,Lavender,0xe0,,items,,python3 tools/so2_mod.py chest DISC.cue 541 0xa06 --item ITEM
+543,Cross Cave: chest chamber (ghost enemy),0xa07,2567,0x1995,Sweet Syrup,0xfc,,items,,python3 tools/so2_mod.py chest DISC.cue 543 0xa07 --item ITEM
+543,Cross Cave: chest chamber (ghost enemy),0xa08,2568,0x199d,Stink Gel,0x10b,,items,,python3 tools/so2_mod.py chest DISC.cue 543 0xa08 --item ITEM
+547,"Cross Cave: innermost chamber (star-shaped dais, 5 chests)",0xa09,2569,0x1998,item 0x2754,0x2754,,items,,python3 tools/so2_mod.py chest DISC.cue 547 0xa09 --item ITEM
+547,"Cross Cave: innermost chamber (star-shaped dais, 5 chests)",0xa0a,2570,0x1aa5,Heart Barriers,0xae,,items,,python3 tools/so2_mod.py chest DISC.cue 547 0xa0a --item ITEM
+547,"Cross Cave: innermost chamber (star-shaped dais, 5 chests)",0xa0b,2571,0x1aad,Green Beryl,0x1ad,,items,,python3 tools/so2_mod.py chest DISC.cue 547 0xa0b --item ITEM
+547,"Cross Cave: innermost chamber (star-shaped dais, 5 chests)",0xa0c,2572,0x1ab5,700 Fol,,700,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 547 0xa0c --fol N
+550,Field of Intelligence: Mirror Room (east),0x9a5,2469,0x12a5,Alpha Box,0x24c,,items,,python3 tools/so2_mod.py chest DISC.cue 550 0x9a5 --item ITEM
+550,Field of Intelligence: Mirror Room (east),0x9a6,2470,0x12ad,Mirror of Wisdom,0x2a,,items,,python3 tools/so2_mod.py chest DISC.cue 550 0x9a6 --item ITEM
+551,"Field of Intelligence: main floor, transporter-block maze",0x9a7,2471,0x133e,Great Punch,0x25a,,items,,python3 tools/so2_mod.py chest DISC.cue 551 0x9a7 --item ITEM
+551,"Field of Intelligence: main floor, transporter-block maze",0x9a8,2472,0x1346,Fairy Glass,0xee,,items,,python3 tools/so2_mod.py chest DISC.cue 551 0x9a8 --item ITEM
+551,"Field of Intelligence: main floor, transporter-block maze",0x9a9,2473,0x134e,Jeanne's Helm,0x29a,,items,,python3 tools/so2_mod.py chest DISC.cue 551 0x9a9 --item ITEM
+551,"Field of Intelligence: main floor, transporter-block maze",0x9dc,2524,0x1356,Rune Metal,0x1ab,,items,,python3 tools/so2_mod.py chest DISC.cue 551 0x9dc --item ITEM
+551,"Field of Intelligence: main floor, transporter-block maze",0x9dd,2525,0x135e,Fruit Syrup,0xfe,,items,,python3 tools/so2_mod.py chest DISC.cue 551 0x9dd --item ITEM
+558,"Eluria Tower: entrance hall (red light, statue)",0xa28,2600,0xf3d,X Box,0x24a,,items,,python3 tools/so2_mod.py chest DISC.cue 558 0xa28 --item ITEM
+558,"Eluria Tower: entrance hall (red light, statue)",0xa29,2601,0xf45,Steel Helm,0x299,,items,,python3 tools/so2_mod.py chest DISC.cue 558 0xa29 --item ITEM
+558,"Eluria Tower: entrance hall (red light, statue)",0xa4b,2635,0xf4d,Holy Mist,0x113,,items,,python3 tools/so2_mod.py chest DISC.cue 558 0xa4b --item ITEM
+558,"Eluria Tower: entrance hall (red light, statue)",0xa4c,2636,0xf55,Stone Check,0x48,,items,,python3 tools/so2_mod.py chest DISC.cue 558 0xa4c --item ITEM
+558,"Eluria Tower: entrance hall (red light, statue)",0xa5f,2655,0xf5d,Meteor Ring,0x6e,,items,,python3 tools/so2_mod.py chest DISC.cue 558 0xa5f --item ITEM
+559,Eluria Tower: picture gallery (eerie frescoes),0xa4d,2637,0xf2b,Cure Paralysis,0x103,,items,,python3 tools/so2_mod.py chest DISC.cue 559 0xa4d --item ITEM
+559,Eluria Tower: picture gallery (eerie frescoes),0xa4e,2638,0xf33,Sapphire,0x1ae,,items,,python3 tools/so2_mod.py chest DISC.cue 559 0xa4e --item ITEM
+559,Eluria Tower: picture gallery (eerie frescoes),0xa4f,2639,0xf3b,Aquaberry,0x2f3,,items,,python3 tools/so2_mod.py chest DISC.cue 559 0xa4f --item ITEM
+561,Eluria Tower: vine chamber (floating chests),0xa2a,2602,0xef4,Trickster,0x304,,items,,python3 tools/so2_mod.py chest DISC.cue 561 0xa2a --item ITEM
+561,Eluria Tower: vine chamber (floating chests),0xa2b,2603,0xefc,Musical Software,0x1c9,,items,,python3 tools/so2_mod.py chest DISC.cue 561 0xa2b --item ITEM
+561,Eluria Tower: vine chamber (floating chests),0xa2c,2604,0xf04,Crestier Guard,0x2cd,,items,,python3 tools/so2_mod.py chest DISC.cue 561 0xa2c --item ITEM
+562,"Eluria Tower: statue garden, crystal pool (1 of 6)",0xa50,2640,0x1567,Cure Stone,0x302,,items,,python3 tools/so2_mod.py chest DISC.cue 562 0xa50 --item ITEM
+562,"Eluria Tower: statue garden, crystal pool (1 of 6)",0xa51,2641,0x156f,Star Ruby,0x1b0,,items,,python3 tools/so2_mod.py chest DISC.cue 562 0xa51 --item ITEM
+564,"Eluria Tower: statue garden, crystal pool (3 of 6)",0xa2d,2605,0x1433,Ultra Punch,0x259,,items,,python3 tools/so2_mod.py chest DISC.cue 564 0xa2d --item ITEM
+564,"Eluria Tower: statue garden, crystal pool (3 of 6)",0xa2e,2606,0x143b,Crystal,0x1b1,,items,,python3 tools/so2_mod.py chest DISC.cue 564 0xa2e --item ITEM
+565,"Eluria Tower: statue garden, crystal pool (4 of 6)",0xa2f,2607,0x1552,Crestier Guard,0x2cd,,items,,python3 tools/so2_mod.py chest DISC.cue 565 0xa2f --item ITEM
+565,"Eluria Tower: statue garden, crystal pool (4 of 6)",0xa30,2608,0x155a,?GUARD,0x37e,,items,,python3 tools/so2_mod.py chest DISC.cue 565 0xa30 --item ITEM
+565,"Eluria Tower: statue garden, crystal pool (4 of 6)",0xa31,2609,0x1562,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 565 0xa31 --item ITEM
+571,"Eluria Tower: chamber (chests, spirit enemy)",0xa32,2610,0xef4,Splinter,0x264,,items,,python3 tools/so2_mod.py chest DISC.cue 571 0xa32 --item ITEM
+571,"Eluria Tower: chamber (chests, spirit enemy)",0xa33,2611,0xefc,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 571 0xa33 --item ITEM
+572,Eluria Tower: crystal chamber (chests),0xa34,2612,0xee6,Giant Fists,0x229,,items,,python3 tools/so2_mod.py chest DISC.cue 572 0xa34 --item ITEM
+572,Eluria Tower: crystal chamber (chests),0xa35,2613,0xeee,Murasame Sword,0x201,,items,,python3 tools/so2_mod.py chest DISC.cue 572 0xa35 --item ITEM
+573,Eluria Tower: statue hall (archways),0xa60,2656,0x1248,Gale Earring,0x85,,items,,python3 tools/so2_mod.py chest DISC.cue 573 0xa60 --item ITEM
+589,Field of Love: star-platform walkway (entrance),0xa49,2633,0xf04,Serpent's Tooth,0x231,,items,,python3 tools/so2_mod.py chest DISC.cue 589 0xa49 --item ITEM
+593,"Field of Love: floating star platforms (rotating-bridge switch, 1 of 2)",0xa4a,2634,0x14e6,Holy Rod,0x23c,,items,594,python3 tools/so2_mod.py chest DISC.cue 593 0xa4a --item ITEM
+593,"Field of Love: floating star platforms (rotating-bridge switch, 1 of 2)",0xa52,2642,0x14ee,Resurrection Mist,0xf3,,items,594,python3 tools/so2_mod.py chest DISC.cue 593 0xa52 --item ITEM
+593,"Field of Love: floating star platforms (rotating-bridge switch, 1 of 2)",0xa53,2643,0x14f6,Hot Syrup,0x100,,items,594,python3 tools/so2_mod.py chest DISC.cue 593 0xa53 --item ITEM
+594,"Field of Love: floating star platforms (rotating-bridge switch, 2 of 2)",0xa4a,2634,0x14e6,Holy Rod,0x23c,,items,593,python3 tools/so2_mod.py chest DISC.cue 594 0xa4a --item ITEM
+594,"Field of Love: floating star platforms (rotating-bridge switch, 2 of 2)",0xa52,2642,0x14ee,Resurrection Mist,0xf3,,items,593,python3 tools/so2_mod.py chest DISC.cue 594 0xa52 --item ITEM
+594,"Field of Love: floating star platforms (rotating-bridge switch, 2 of 2)",0xa53,2643,0x14f6,Hot Syrup,0x100,,items,593,python3 tools/so2_mod.py chest DISC.cue 594 0xa53 --item ITEM
+598,Field of Power: junction passage (ladder up),0xa3f,2623,0x140d,Rune Full Moon,0x224,,items,,python3 tools/so2_mod.py chest DISC.cue 598 0xa3f --item ITEM
+601,Field of Power: ladder climb,0xa40,2624,0x146f,Atlas Ring,0x5f,,items,,python3 tools/so2_mod.py chest DISC.cue 601 0xa40 --item ITEM
+607,"Field of Power: Yeti cavern, switch guard (A)",0xa41,2625,0x12a7,Marvel Sword,0x1f5,,items,608,python3 tools/so2_mod.py chest DISC.cue 607 0xa41 --item ITEM
+608,"Field of Power: Yeti cavern, switch guard (A, far side)",0xa41,2625,0xf4a,Marvel Sword,0x1f5,,items,607,python3 tools/so2_mod.py chest DISC.cue 608 0xa41 --item ITEM
+609,Field of Power: cavern passage (item cache),0xa59,2649,0x1299,Blackberry,0x2f4,,items,610,python3 tools/so2_mod.py chest DISC.cue 609 0xa59 --item ITEM
+610,"Field of Power: cavern passage (item cache, far side)",0xa59,2649,0xf3c,Blackberry,0x2f4,,items,609,python3 tools/so2_mod.py chest DISC.cue 610 0xa59 --item ITEM
+611,Field of Power: cavern passage (quiet),0xa42,2626,0x12a4,?GUARD,0x374,,items,612,python3 tools/so2_mod.py chest DISC.cue 611 0xa42 --item ITEM
+612,"Field of Power: cavern passage (quiet, far side)",0xa42,2626,0xf47,?GUARD,0x374,,items,611,python3 tools/so2_mod.py chest DISC.cue 612 0xa42 --item ITEM
+615,"Field of Power: Yeti cavern, switch guard (C)",0xa43,2627,0x1248,Assault Bomb,0x1c3,,items,616,python3 tools/so2_mod.py chest DISC.cue 615 0xa43 --item ITEM
+615,"Field of Power: Yeti cavern, switch guard (C)",0xa44,2628,0x1250,Melting Lotion,0xf2,,items,616,python3 tools/so2_mod.py chest DISC.cue 615 0xa44 --item ITEM
+615,"Field of Power: Yeti cavern, switch guard (C)",0xa45,2629,0x1258,Jeanne's Armor,0x2b7,,items,616,python3 tools/so2_mod.py chest DISC.cue 615 0xa45 --item ITEM
+616,"Field of Power: Yeti cavern, switch guard (C, far side)",0xa43,2627,0xef7,Assault Bomb,0x1c3,,items,615,python3 tools/so2_mod.py chest DISC.cue 616 0xa43 --item ITEM
+616,"Field of Power: Yeti cavern, switch guard (C, far side)",0xa44,2628,0xeff,Melting Lotion,0xf2,,items,615,python3 tools/so2_mod.py chest DISC.cue 616 0xa44 --item ITEM
+616,"Field of Power: Yeti cavern, switch guard (C, far side)",0xa45,2629,0xf07,Jeanne's Armor,0x2b7,,items,615,python3 tools/so2_mod.py chest DISC.cue 616 0xa45 --item ITEM
+630,Field of Courage: crystal-pillar cavern (chest),0xa56,2646,0xf38,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 630 0xa56 --item ITEM
+632,Field of Courage: cavern passage (junction),0xa57,2647,0xf4c,Stone Check,0x48,,items,,python3 tools/so2_mod.py chest DISC.cue 632 0xa57 --item ITEM
+633,Field of Courage: cavern passage,0xa46,2630,0xf4f,Jeanne's Shield,0x2d1,,items,,python3 tools/so2_mod.py chest DISC.cue 633 0xa46 --item ITEM
+635,Field of Courage: cavern passage,0xa47,2631,0xf4f,Mithril Greaves,0x2eb,,items,,python3 tools/so2_mod.py chest DISC.cue 635 0xa47 --item ITEM
+636,"Field of Courage: crystal-pillar cavern (chest, pool)",0xa48,2632,0xf2d,Scyther,0x213,,items,,python3 tools/so2_mod.py chest DISC.cue 636 0xa48 --item ITEM
+639,Field of Courage: looped tunnel (chest),0xa58,2648,0xf21,Sour Syrup,0xfb,,items,,python3 tools/so2_mod.py chest DISC.cue 639 0xa58 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9b5,2485,0xf7c,Mithril Shield,0x2d3,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9b5 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9b6,2486,0xf84,Heraldry Book,0x279,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9b6 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9b7,2487,0xf8c,Spark Whip,0x26c,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9b7 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9b8,2488,0xf94,Nuclear Bomb,0x1c7,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9b8 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9b9,2489,0xf9c,Left Cross,0x91,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9b9 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9bc,2492,0xfb4,Atomic Punch,0x25d,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9bc --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9bd,2493,0xfbc,Rune Shoes,0x2ea,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9bd --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9be,2494,0xfc4,Sylvan Boots,0x2ee,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9be --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9bf,2495,0xfcc,Mithril,0x1a9,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9bf --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c0,2496,0xfd4,Titan's Fists,0x22c,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c0 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c1,2497,0xfdc,Spark,0x28b,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c1 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c2,2498,0xfe4,Duel Suit,0x2c1,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c2 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c3,2499,0xfec,Goddess Statue,0x24,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c3 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c4,2500,0xff4,Cure Stone,0x302,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c4 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c5,2501,0x100c,Duel Helm,0x29e,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c5 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9c6,2502,0x1014,Sage's Stone,0x1b2,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9c6 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9de,2526,0xfa4,?ITEM,0x3b8,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9de --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9df,2527,0xfac,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9df --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9e3,2531,0xffc,Flash Pot,0xf8,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9e3 --item ITEM
+647,"Fienal: bonus treasure vault (many chests, near the lobby)",0x9e4,2532,0x1004,Aceras,0xe1,,items,,python3 tools/so2_mod.py chest DISC.cue 647 0x9e4 --item ITEM
+661,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",0x9ba,2490,0xef6,Lotus Eater,0x216,,items,662,python3 tools/so2_mod.py chest DISC.cue 661 0x9ba --item ITEM
+661,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",0x9bb,2491,0xefe,Beta Box,0x24f,,items,662,python3 tools/so2_mod.py chest DISC.cue 661 0x9bb --item ITEM
+662,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",0x9ba,2490,0xefc,Lotus Eater,0x216,,items,661,python3 tools/so2_mod.py chest DISC.cue 662 0x9ba --item ITEM
+662,"Fienal: mid floors, toward Vesper & Decus (Floor 5), about 4 doors in from the lobby",0x9bb,2491,0xf04,Beta Box,0x24f,,items,661,python3 tools/so2_mod.py chest DISC.cue 662 0x9bb --item ITEM
+673,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",0x9e0,2528,0xee9,Spring Water,0x116,,items,,python3 tools/so2_mod.py chest DISC.cue 673 0x9e0 --item ITEM
+673,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",0x9e1,2529,0xef1,Pleiad Sword,0x207,,items,,python3 tools/so2_mod.py chest DISC.cue 673 0x9e1 --item ITEM
+673,"Fienal: mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",0x9e2,2530,0xef9,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 673 0x9e2 --item ITEM
+679,"Fienal: upper floors, toward Cyril (Floor 7): chest room (Clap Rod)",0x9b4,2484,0xf04,Clap Rod,0x243,,items,,python3 tools/so2_mod.py chest DISC.cue 679 0x9b4 --item ITEM
+703,Cave of Trials: Level 1 (Heraldic Ruins): chest room (Fruit Nectar),0xa66,2662,0x1067,Fruit Nectar,0x1a1,,items,,python3 tools/so2_mod.py chest DISC.cue 703 0xa66 --item ITEM
+706,"Cave of Trials: Level 1 (Heraldic Ruins): interior room, about 2 doors in from the level entrance",0xa67,2663,0x1073,item 0x276d,0x276d,,items,,python3 tools/so2_mod.py chest DISC.cue 706 0xa67 --item ITEM
+707,"Cave of Trials: Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",0xa63,2659,0x104b,Juicy Beef,0x30f,,items,,python3 tools/so2_mod.py chest DISC.cue 707 0xa63 --item ITEM
+707,"Cave of Trials: Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",0xa64,2660,0x1053,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 707 0xa64 --item ITEM
+709,Cave of Trials: Level 1 (Heraldic Ruins): chest room (Tri-emplem),0xa65,2661,0x1067,Tri-emplem,0x141,,items,,python3 tools/so2_mod.py chest DISC.cue 709 0xa65 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa62,2658,0xf71,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa62 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa6a,2666,0xf79,Reflective Armor,0x2c2,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa6a --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa6b,2667,0xf81,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa6b --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa75,2677,0xf89,Black Earring,0x7d,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa75 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa76,2678,0xf91,Peep Non,0x6c,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa76 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa79,2681,0xf99,Seraphic Garb,0x16c,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa79 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa7c,2684,0xfa1,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa7c --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa83,2691,0xfa9,Peep Non,0x6c,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa83 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa84,2692,0xfb1,Purity Leaf,0x30e,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa84 --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa8e,2702,0xfb9,Special Tuna,0x322,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa8e --item ITEM
+710,"Cave of Trials: bonus treasure vault (many chests, reachable from several levels)",0xa8f,2703,0xfc1,Peep Non,0x6c,,items,,python3 tools/so2_mod.py chest DISC.cue 710 0xa8f --item ITEM
+711,"Cave of Trials: Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",0xa68,2664,0x12ca,Nuclear Bomb,0x1c7,,items,,python3 tools/so2_mod.py chest DISC.cue 711 0xa68 --item ITEM
+711,"Cave of Trials: Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",0xa81,2689,0x12d2,Cure Poison,0x102,,items,,python3 tools/so2_mod.py chest DISC.cue 711 0xa81 --item ITEM
+712,Cave of Trials: Level 1 (Heraldic Ruins): chest room (Dream Crown),0xa82,2690,0xf71,Dream Crown,0xa1,,items,,python3 tools/so2_mod.py chest DISC.cue 712 0xa82 --item ITEM
+713,"Cave of Trials: Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",0xa91,2705,0xf71,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 713 0xa91 --item ITEM
+713,"Cave of Trials: Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",0xa92,2706,0xf79,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 713 0xa92 --item ITEM
+713,"Cave of Trials: Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",0xa93,2707,0xf81,Ganze Sea Urchin,0x311,,items,,python3 tools/so2_mod.py chest DISC.cue 713 0xa93 --item ITEM
+719,Cave of Trials: Level 2 (Love Alley): chest room (Purity Leaf),0xa69,2665,0x1073,Purity Leaf,0x30e,,items,,python3 tools/so2_mod.py chest DISC.cue 719 0xa69 --item ITEM
+722,"Cave of Trials: Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",0xa6c,2668,0x1059,Fruit Nectar,0x1a1,,items,,python3 tools/so2_mod.py chest DISC.cue 722 0xa6c --item ITEM
+722,"Cave of Trials: Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",0xa6d,2669,0x1061,Slayer's Ring,0x6d,,items,,python3 tools/so2_mod.py chest DISC.cue 722 0xa6d --item ITEM
+724,Cave of Trials: Level 2 (Love Alley): chest room (Fruit Nectar),0xa72,2674,0x1059,Fruit Nectar,0x1a1,,items,,python3 tools/so2_mod.py chest DISC.cue 724 0xa72 --item ITEM
+730,Cave of Trials: Level 3 (Single Path Cave): chest room (Sylvan Mail),0xa6e,2670,0x1075,Sylvan Mail,0x2bf,,items,,python3 tools/so2_mod.py chest DISC.cue 730 0xa6e --item ITEM
+735,"Cave of Trials: Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",0xa6f,2671,0x1059,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 735 0xa6f --item ITEM
+735,"Cave of Trials: Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",0xa70,2672,0x1061,Dream Crown,0xa1,,items,,python3 tools/so2_mod.py chest DISC.cue 735 0xa70 --item ITEM
+735,"Cave of Trials: Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",0xa71,2673,0x1069,Juicy Beef,0x30f,,items,,python3 tools/so2_mod.py chest DISC.cue 735 0xa71 --item ITEM
+740,Cave of Trials: Cave of Trials Level 4,0xa73,2675,0x14a4,Portrait F,0xc,,items,,python3 tools/so2_mod.py chest DISC.cue 740 0xa73 --item ITEM
+740,Cave of Trials: Cave of Trials Level 4,0xa74,2676,0x14ad,Fruit Nectar,0x1a1,,items,,python3 tools/so2_mod.py chest DISC.cue 740 0xa74 --item ITEM
+741,"Cave of Trials: Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",0xa77,2679,0x1067,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 741 0xa77 --item ITEM
+741,"Cave of Trials: Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",0xa78,2680,0x106f,Purity Leaf,0x30e,,items,,python3 tools/so2_mod.py chest DISC.cue 741 0xa78 --item ITEM
+744,Cave of Trials: Cave of Trials Level 5,0xa7a,2682,0x1410,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 744 0xa7a --item ITEM
+744,Cave of Trials: Cave of Trials Level 5,0xa7b,2683,0x1418,Slayer's Ring,0x6d,,items,,python3 tools/so2_mod.py chest DISC.cue 744 0xa7b --item ITEM
+745,Cave of Trials: Level 5 (Lady's Revenge): chest room (Juicy Beef),0xa7d,2685,0x1081,Juicy Beef,0x30f,,items,,python3 tools/so2_mod.py chest DISC.cue 745 0xa7d --item ITEM
+747,"Cave of Trials: Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",0xa7e,2686,0x1056,Fairy Ring,0x7c,,items,,python3 tools/so2_mod.py chest DISC.cue 747 0xa7e --item ITEM
+747,"Cave of Trials: Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",0xa7f,2687,0x105e,Fruit Nectar,0x1a1,,items,,python3 tools/so2_mod.py chest DISC.cue 747 0xa7f --item ITEM
+748,Cave of Trials: Level 5 (Lady's Revenge): chest room (Seraphic Garb),0xa80,2688,0x1059,Seraphic Garb,0x16c,,items,,python3 tools/so2_mod.py chest DISC.cue 748 0xa80 --item ITEM
+762,Cave of Trials: Level 6 (Burglar's Nest): chest room (Weird Slayer),0xa85,2693,0x1064,Weird Slayer,0x188,,items,,python3 tools/so2_mod.py chest DISC.cue 762 0xa85 --item ITEM
+763,Cave of Trials: Cave of Trials Level 7,0xa8a,2698,0x140e,'Ishidaya' Tea,0x15e,,items,,python3 tools/so2_mod.py chest DISC.cue 763 0xa8a --item ITEM
+763,Cave of Trials: Cave of Trials Level 7,0xa8b,2699,0x1416,Yukiyucho Tea,0x15f,,items,,python3 tools/so2_mod.py chest DISC.cue 763 0xa8b --item ITEM
+763,Cave of Trials: Cave of Trials Level 7,0xa8c,2700,0x141e,Bunny Shoes,0x189,,items,,python3 tools/so2_mod.py chest DISC.cue 763 0xa8c --item ITEM
+767,Cave of Trials: Level 7 (Goddess's Altar): chest room (Tri-emplem),0xa86,2694,0x1059,Tri-emplem,0x141,,items,,python3 tools/so2_mod.py chest DISC.cue 767 0xa86 --item ITEM
+769,Cave of Trials: Level 7 (Goddess's Altar): chest room (Fresh Syrup),0xa87,2695,0x1059,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 769 0xa87 --item ITEM
+770,"Cave of Trials: Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",0xa88,2696,0x104b,Ganze Sea Urchin,0x311,,items,,python3 tools/so2_mod.py chest DISC.cue 770 0xa88 --item ITEM
+770,"Cave of Trials: Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",0xa89,2697,0x1053,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 770 0xa89 --item ITEM
+771,Cave of Trials: Level 7 (Goddess's Altar): chest room (Cracked Gem),0xa5a,2650,0x104b,Cracked Gem,0x121,,items,,python3 tools/so2_mod.py chest DISC.cue 771 0xa5a --item ITEM
+773,"Cave of Trials: Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",0xa5c,2652,0x1089,Slime Jelly,0x195,,items,,python3 tools/so2_mod.py chest DISC.cue 773 0xa5c --item ITEM
+773,"Cave of Trials: Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",0xa5d,2653,0x1091,Soda-Pop,0x16b,,items,,python3 tools/so2_mod.py chest DISC.cue 773 0xa5d --item ITEM
+773,"Cave of Trials: Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",0xa90,2704,0x1099,Million Staff,0x16f,,items,,python3 tools/so2_mod.py chest DISC.cue 773 0xa90 --item ITEM
+777,Cave of Trials: Cave of Trials Level 8,0xa8d,2701,0x10bf,Lavender,0xe0,,items,,python3 tools/so2_mod.py chest DISC.cue 777 0xa8d --item ITEM
+779,Cave of Trials: Level 8 (Food God): chest room (Funny Slayer),0xa94,2708,0x104b,Funny Slayer,0x18c,,items,,python3 tools/so2_mod.py chest DISC.cue 779 0xa94 --item ITEM
+780,"Cave of Trials: Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",0xa5b,2651,0x1056,Amoeba Soup,0x155,,items,,python3 tools/so2_mod.py chest DISC.cue 780 0xa5b --item ITEM
+780,"Cave of Trials: Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",0xa95,2709,0x105e,Seraphic Garb,0x16c,,items,,python3 tools/so2_mod.py chest DISC.cue 780 0xa95 --item ITEM
+782,Cave of Trials: Level 8 (Food God): chest room (Resurrection Mist),0xa99,2713,0x1059,Resurrection Mist,0xf3,,items,,python3 tools/so2_mod.py chest DISC.cue 782 0xa99 --item ITEM
+791,Cave of Trials: Cave of Trials Level 9,0xa96,2710,0x113b,Artemis Leaf,0xde,,items,,python3 tools/so2_mod.py chest DISC.cue 791 0xa96 --item ITEM
+791,Cave of Trials: Cave of Trials Level 9,0xa97,2711,0x1143,Wonder Drug,0x104,,items,,python3 tools/so2_mod.py chest DISC.cue 791 0xa97 --item ITEM
+791,Cave of Trials: Cave of Trials Level 9,0xa98,2712,0x114b,Valiant Boots,0x2ed,,items,,python3 tools/so2_mod.py chest DISC.cue 791 0xa98 --item ITEM
+792,Cave of Trials: Level 9 (Sealed Coffin): chest room (Bunny Shoes),0xaa4,2724,0x125e,Bunny Shoes,0x189,,items,,python3 tools/so2_mod.py chest DISC.cue 792 0xaa4 --item ITEM
+793,Cave of Trials: Level 9 (Sealed Coffin): chest room (Funny Slayer),0xaa3,2723,0x126e,Funny Slayer,0x18c,,items,,python3 tools/so2_mod.py chest DISC.cue 793 0xaa3 --item ITEM
+797,Cave of Trials: Level 10 (Decision Point): chest room (Fresh Syrup),0xa9a,2714,0x126e,Fresh Syrup,0xff,,items,,python3 tools/so2_mod.py chest DISC.cue 797 0xa9a --item ITEM
+798,Cave of Trials: Cave of Trials Level 10,0xa61,2657,0x1660,Portrait G,0x9,,items,,python3 tools/so2_mod.py chest DISC.cue 798 0xa61 --item ITEM
+799,"Cave of Trials: Level 10 (Decision Point): chest room (Million Staff, Portrait J)",0xaa0,2720,0x126e,Million Staff,0x16f,,items,,python3 tools/so2_mod.py chest DISC.cue 799 0xaa0 --item ITEM
+799,"Cave of Trials: Level 10 (Decision Point): chest room (Million Staff, Portrait J)",0xaa1,2721,0x1276,Portrait J,0xd,,items,,python3 tools/so2_mod.py chest DISC.cue 799 0xaa1 --item ITEM
+800,Cave of Trials: Level 10 (Decision Point): chest room (Valiant Boots),0xa9e,2718,0x125e,Valiant Boots,0x2ed,,items,,python3 tools/so2_mod.py chest DISC.cue 800 0xa9e --item ITEM
+803,Cave of Trials: Level 10 (Decision Point): chest room (Valkyrie Boots),0xaa2,2722,0x127e,Valkyrie Boots,0x2e8,,items,,python3 tools/so2_mod.py chest DISC.cue 803 0xaa2 --item ITEM
+805,"Cave of Trials: Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",0xa9b,2715,0x126e,Sage's Stone,0x1b2,,items,,python3 tools/so2_mod.py chest DISC.cue 805 0xa9b --item ITEM
+805,"Cave of Trials: Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",0xa9c,2716,0x1276,Valkyrie Boots,0x2e8,,items,,python3 tools/so2_mod.py chest DISC.cue 805 0xa9c --item ITEM
+805,"Cave of Trials: Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",0xa9d,2717,0x127e,Rainbow Diamond,0x1b4,,items,,python3 tools/so2_mod.py chest DISC.cue 805 0xa9d --item ITEM
+806,Cave of Trials: Level 10 (Decision Point): chest room (Purity Leaf),0xa9f,2719,0x126e,Purity Leaf,0x30e,,items,,python3 tools/so2_mod.py chest DISC.cue 806 0xa9f --item ITEM
+812,"Cave of Trials: Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",0xaa7,2727,0x104b,Valkyrie Guard,0x2d5,,items,,python3 tools/so2_mod.py chest DISC.cue 812 0xaa7 --item ITEM
+812,"Cave of Trials: Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",0xaa8,2728,0x1053,Battle Suit,0x2b9,,items,,python3 tools/so2_mod.py chest DISC.cue 812 0xaa8 --item ITEM
+813,"Cave of Trials: Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",0xaa5,2725,0x104b,Battle Suit,0x2b9,,items,,python3 tools/so2_mod.py chest DISC.cue 813 0xaa5 --item ITEM
+813,"Cave of Trials: Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",0xaa6,2726,0x1053,Bunny Shoes,0x189,,items,,python3 tools/so2_mod.py chest DISC.cue 813 0xaa6 --item ITEM
+815,Cave of Trials: Level 13 (Holy Nest of Angels): boss room (Indalecio Celesta) -- final boss,0xa5e,2654,0x1d1e,Angel Armband,0x181,,items,,python3 tools/so2_mod.py chest DISC.cue 815 0xa5e --item ITEM
+818,Cave of Trials: Level 12 (Hall of Warriors): chest room (Valiant Mail),0xaa9,2729,0x1059,Valiant Mail,0x2c0,,items,,python3 tools/so2_mod.py chest DISC.cue 818 0xaa9 --item ITEM
+822,Cave of Trials: Level 13 (Holy Nest of Angels): chest room (Valiant Guard),0xaaa,2730,0x1059,Valiant Guard,0x2d4,,items,,python3 tools/so2_mod.py chest DISC.cue 822 0xaaa --item ITEM

@@ -16,13 +16,25 @@ the code wins and this note is corrected.
 | Applying patches in the game | `engine/src/game/field/mods.cpp` |
 | Config key | `mod_order` in config.ini (`engine/src/launcher/settings.h`) |
 | Setup's Mods page | `engine/src/setup/setup_ui.cpp` (`page_mods`) |
-| Writing patches from the disc | `tools/so2_mod.py` |
+| Writing patches from the disc | `tools/so2_mod.py` (disc readers shared in `tools/so2_data.py`, names and lookup in `tools/so2_names.py`) |
+| Modder's reference (IDs and names) | `tools/mod_reference.py` -> `docs/modding/reference/*.csv`; wiki pages `tools/mod_reference_wiki.py`; tests `tools/test_mod_reference.py` |
 | Static check (CI) | `tools/mod_check.py`, tests `tools/test_mod_check.py` (also tests `mod_index.py`) |
 | Runtime verification (maintainer, discs) | `tools/mod_verify.py` |
 | Registry | `mods/` (one folder per mod), `mods/index.json` (`tools/mod_index.py`), `mods/README.md` |
 | Tests (C++) | `engine/tests/test_mods.cpp` (in ss_game_tests) |
 | Screenshots | `tools/setup_screenshots.sh` (the `mods-*` shots) |
 | GitHub | `.github/workflows/mods.yml`, `.github/PULL_REQUEST_TEMPLATE/mod_submission.md`, `.github/CODEOWNERS` |
+
+The modder's reference answers "what does this number stand for": `tools/mod_reference.py`
+reads the disc and the repository's tables (docs/ap, apworld ITEMS, the descriptive map names
+in `docs/modding/reference/map_names.csv`) and writes `docs/modding/reference/` (items, maps,
+doors, chests, shops, enemies; IDs, names, types, prices, stats only, sorted so a rerun only
+changes what changed; `--check` compares them with docs/ap). `so2_mod.py` prints names next
+to numbers, takes a name wherever it takes an item, map, shop or enemy type (ambiguous names
+list candidates and exit 2; misspellings get suggestions), adds `find`, and `reference`
+builds a local HTML page with the item descriptions decoded from the disc and, with
+`--game`, map thumbnails rendered headless through `SS_SHOT`. That page is game text and
+pictures: local only, never committed.
 
 ## 1. What a mod can change
 

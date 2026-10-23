@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <vector>
 
 #include "core/types.h"
@@ -8,6 +9,7 @@
 #include "game/battle/bobj.h"
 #include "game/battle/spells.h"
 #include "runtime/libgpu.h"
+#include "runtime/region.h"
 
 // The SpellCast (#2129 0x80085518-0x80088054, live until the result screen): the object
 // that runs a spell spell_cast does not run itself. 0x248 bytes, vtable 0x80088014, task
@@ -72,6 +74,8 @@ struct SpellCast : Task {
   int module_index = -1;      // (port) the registry entry of the module
   bool module_missing = false;  // (port) the data names a module that is not ported
   std::vector<u8> module_code;  // (port) the module's block 0 (its tables, spell_module_u8)
+  const region::ImageMap* module_map = nullptr;  // (port) another release's map of it
+  std::string module_key;       // (port) its SS_REGION_READ_LOG key, "spell.<NA FNV-1a 64>"
   AnimSet* orb_set = nullptr;   // (port) +0x3c read as an AnimSet by kind 2's orbs
 
   SpellCast();                // spellcast_init 0x80085760
