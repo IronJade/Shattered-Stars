@@ -1,8 +1,10 @@
 #include "game/battle/window.h"
 
 #include <cstring>
+#include <span>
 #include <vector>
 
+#include "game/common/program_image.h"
 #include "game/common/screen.h"
 #include "game/common/text_rules.h"
 #include "runtime/libgpu.h"
@@ -35,6 +37,16 @@ u32 next_code(const u8*& s) {
   u32 c = *s++;
   if (c > 0x7F) c = (c & 0x7F) | static_cast<u32>(*s++) << 7;
   return c;
+}
+
+// The ASCII table (0x8006e7c0, one byte per character), read from its start in the release's
+// own layout: NA's and Europe's hold 0xe0 entries (the program's globals follow, zero in the
+// image), France's and Germany's 0x100 (the accented letters from 0xe0). The region map
+// places only NA's extent (tools/region_map.py TABLES), so the entries past it are indexed
+// from the start, never mapped one by one.
+u8 ascii_table(u32 c) {
+  const std::span<const u8> table = program_run(kBattleProgramEntry, kProgramBase, 0x8006E7C0);
+  return c < table.size() ? table[c] : u8{0};
 }
 
 void add_prim(BWindow* w, void* prim) { psyq::addPrim(w->ctx.ot_head, prim); }
@@ -205,7 +217,7 @@ int window_draw_small_text(BWindow* w, int x, int y, const char* s, int palette)
       p->code = 0x75;
       p->x0 = static_cast<s16>(xy & 0xFFFF);
       p->y0 = static_cast<s16>(xy >> 16);
-      const u8 cell = *battle_data(0x8006E7C0 + c);
+      const u8 cell = ascii_table(c);
       p->u0 = static_cast<u8>((cell & 0x1F) << 3);
       p->v0 = static_cast<u8>((cell >> 5) << 3);
       p->clut = static_cast<u16>(palette + 0x7F80);
@@ -230,9 +242,9 @@ void text_from_ascii(const char* in, u8* out) {
     }
     u32 glyph;
     if ((kana == 0 || 0x37 < c - 0xA6) && high_bias >= 0 && c >= 0x81)
-      glyph = *battle_data(0x8006E7C0 + c) + static_cast<u32>(high_bias);  // FR / DE (text_rules.h)
-    else if (kana == 0 || 0x37 < c - 0xA6) glyph = c - 0x61 < 0x1A ? c - 0x20 : *battle_data(0x8006E7C0 + c);
-    else glyph = *battle_data(0x8006E7C0 + c) + 0x38u;
+      glyph = ascii_table(c) + static_cast<u32>(high_bias);  // FR / DE (text_rules.h)
+    else if (kana == 0 || 0x37 < c - 0xA6) glyph = c - 0x61 < 0x1A ? c - 0x20 : ascii_table(c);
+    else glyph = ascii_table(c) + 0x38u;
     const u32 code = (glyph + 1) & 0xFF;
     if (code < 0x80) {
       *out++ = static_cast<u8>(code);

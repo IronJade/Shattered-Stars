@@ -424,7 +424,16 @@ NA's (Europe: none; France / Germany: 3 bytes, text-related).
 
 Data a release lays out its own way (a list whose length differs) is read from its translated
 start in the release's own order (`program_run`): the credits' card script (Europe's own
-staff, 65 cards to NA's 78).
+staff, 65 cards to NA's 78), and the three ASCII tables the name text is converted with (title
+0x8004eafc, battle 0x8006e7c0, rename page 0x80082b78), which the port indexes by character.
+`region_map.py` maps those tables by position over NA's extent (`TABLES`), never by matching
+values (a changed table's values recur a few entries on, and a diff pairs them wrongly). The
+battle table is the one whose length differs: NA's and Europe's hold 0xe0 entries (the
+program's globals follow), France's and Germany's 0x100 (the accented letters from 0xe0), so
+the entries past NA's extent exist only from the table's start. Step 6b checks the map against
+each release's own code: unchanged lui / load pairs whose constant the release relocated say
+where it keeps that byte; any the port reads must agree (331-426 per release don't, all in
+zero-filled variables the port never reads).
 
 ### Map scripts
 
@@ -452,6 +461,16 @@ saves need no conversion.
 
 Native per release: the card file is `<product>S02-Snn` (Europe `BASCES-02159S02-S`, France
 `BESCES-02160...`, Germany `BESCES-02161...`; the strings are in each release's #1 / #3100), and
-the save writer is NA's (the PAL `save_build` differs only by that string's address), so a card
-written by the port loads on that release's console. The setup program counts saves of every
-release.
+the save writer is NA's (the PAL `save_build` differs only by that string's address). The
+save summary also starts with a 16-byte magic of its own per release (title 0x8004deb8, field
+0x800740b0: NA "STAR OCEAN 03/01", Europe "06/09", France "08/12", Germany "08/13"); a
+console shows a summary with another release's magic as damaged data, so the port reads the
+magic from the running program (`menu_save.cpp` `save_magic`) for both writing and checking.
+The PAL releases also write the header's icon flag as 0x11 (one icon frame) where NA writes
+0x13 (three); the port takes the immediate from the running program's own save writer (title
+0x80066110, field page 0xbb6 0x800810ec). Checked in PCSX-Redux: the NA, European, French and
+German originals each list and load a save the port wrote, and the port loads a save the French
+original wrote (the two files differ only in the slot number, counters, checksums and the
+summary's unused tail, which each release leaves as buffer bytes). An NA save brought to a PAL card therefore needs its product code, magic, icon flag
+and both checksums rewritten (scratch `card_region.py` does). The setup program counts saves of
+every release.

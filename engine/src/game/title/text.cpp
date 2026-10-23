@@ -1,7 +1,9 @@
 #include "game/title/text.h"
 
 #include <cstring>
+#include <span>
 
+#include "game/common/program_image.h"
 #include "game/common/screen.h"
 #include "game/common/text_rules.h"
 #include "game/title/title_program.h"
@@ -76,10 +78,11 @@ void text_frame_upload() {
 }
 
 void text_from_ascii(Window*, const char* in, u8* out) {
-  // The ASCII table (0x8004eafc; its first 0x20 entries overlap the keyboard's column map):
-  // read entry by entry through the region map, which may place the overlapped words apart
-  // from the table in a release whose column map differs (France, Germany).
-  const auto table = [](u32 c) { return *title_data(0x8004EAFC + c); };
+  // The ASCII table (0x8004eafc, 0x100 entries; its first 0x20 overlap the keyboard's column
+  // map, which France and Germany changed): read from its start in the release's own layout,
+  // indexed by character, like the battle program's (battle/window.cpp ascii_table).
+  const std::span<const u8> ascii = program_run(static_cast<int>(Program::Title), kProgramBase, 0x8004EAFC);
+  const auto table = [&ascii](u32 c) { return c < ascii.size() ? ascii[c] : u8{0}; };
   const int high_bias = text::ascii_high_bias(text::lang(), text::Program::kTitle);
   const auto* s = reinterpret_cast<const u8*>(in);
   int kana = 0;

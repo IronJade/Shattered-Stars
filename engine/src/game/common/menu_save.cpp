@@ -818,10 +818,16 @@ bool save_summary_valid(MemoryCard* card, int slot, int index) {
   return save_summary_check(card->slots[slot].summaries[index]);
 }
 
+// The summary's 16-byte magic, read from the running program: "STAR OCEAN 03/01" in NA (title
+// 0x8004deb8, field 0x800740b0). Each release has its own (Europe "06/09", France "08/12",
+// Germany "08/13"), and its console shows a summary with another release's as damaged data.
+namespace {
+const u8* save_magic() { return table(0x8004DEB8, 0x800740B0); }
+}  // namespace
+
 bool save_summary_check(const u8* summary) {
-  // "STAR OCEAN 03/01" (title 0x8004deb8).
-  static const u8 kMagic[16] = {'S', 'T', 'A', 'R', ' ', 'O', 'C', 'E', 'A', 'N', ' ', '0', '3', '/', '0', '1'};
-  if (std::memcmp(summary, kMagic, 16) != 0) return false;
+  const u8* magic = save_magic();
+  if (magic == nullptr || std::memcmp(summary, magic, 16) != 0) return false;
   if (static_cast<u16>(rd16s(summary + 0x18)) != 0x5555) return false;
   u8 copy[0x80];
   std::memcpy(copy, summary, sizeof copy);
@@ -849,7 +855,11 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
   // sheet's bytes where save_build writes nothing (save_icon.h).
   const u8* field_icon = host() == Host::Field ? field_save_prefill(file) : nullptr;
   std::memset(file, 0, 0x200);
-  file[0] = 'S', file[1] = 'C', file[2] = 0x13, file[3] = 0x01;
+  // The icon flag: NA writes 0x13 (three frames), the PAL releases 0x11 (one frame). It is the
+  // immediate of save_build's own store (addiu v0, zero, 0x13 at title 0x80066110, field page
+  // 0xbb6 0x800810ec), read from the running program through the region map.
+  const u8* icon_flag = table(0x80066110, 0x800810EC);
+  file[0] = 'S', file[1] = 'C', file[2] = icon_flag != nullptr ? icon_flag[0] : u8{0x13}, file[3] = 0x01;
   // Title: "ＳＯ２　" + position, play time h:mm, the leader's name, "ＬＶ" + level.
   StrBuf sb;
   char tmp[64];
@@ -892,8 +902,7 @@ int save_build(MemoryCard* card, u8* file, int slot, int index) {
   }
   // Summary.
   u8* summary = file + kSaveSummary;
-  static const u8 kMagic[16] = {'S', 'T', 'A', 'R', ' ', 'O', 'C', 'E', 'A', 'N', ' ', '0', '3', '/', '0', '1'};
-  std::memcpy(summary, kMagic, 16);
+  if (const u8* magic = save_magic()) std::memcpy(summary, magic, 16);
   std::memset(summary + 0x10, 0, 10);
   wr32(summary + 0x1C, static_cast<u32>(rd32s(config + 0x10)));
   wr32(summary + 0x20, static_cast<u32>(rd32s(config + 0x14)));

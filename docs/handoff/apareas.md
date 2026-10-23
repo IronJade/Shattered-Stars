@@ -207,3 +207,14 @@ doors.json: from_area / to_area only.
 - Don't touch region-profile / FR-DE text agents' files; docs/modding/reference/*.csv read-only.
 - No commit / push. One "apareas: " line in scratchpad/checkpoint_notes.txt when done.
 - Don't publish a .apworld; the coordinator asks the user.
+
+## Proofs finished (coordinator, 15:45)
+- The late proofs on 0.1.1 match docs/ap/late_proof.json: Claude and Rena each prove 278 locations
+  with 156 checks over 610 maps. The state block gains the `expel_teleporter` field, and Claude's
+  node count is 731 (it was 732).
+- The teleporter proofs prove the same 153 locations and 85 checks in both games. They reach 423
+  maps instead of 418 (gained 441-444 and one more: the ship-landing routes the fix added).
+- docs/ap/late_proof.json now holds the new results, written in the same JSON format. Running
+  tools/ap_world_tables.py on it gives a data.py byte-identical to the committed 0.1.1 data.py,
+  so the logic is unchanged.
+- 0.1.1 ships with 0.02.00 (the user's decision); there is no separate hotfix release.

@@ -441,10 +441,12 @@ over every field map of the North American disc, plus a margin), the record size
 
 ```
 SS_DISC1=<disc 1 .cue> python3 tools/mod_verify.py mods/<id> [--bin engine/build/shattered-stars]
-    [--out scratchpad/modverify/<id>] [--jobs 3]
+    [--out scratchpad/modverify/<id>] [--jobs 3] [--serial]
 ```
 
-Every run is headless (`--headless`, offscreen video, dummy audio) with a scratch settings
+`--serial` runs one game process at a time (the two sweeps one after the other, the battles
+one by one) for a machine that is busy with other runs. Any supported release's disc 1 works
+(the two samples pass on the European disc). Every run is headless (`--headless`, offscreen video, dummy audio) with a scratch settings
 folder under `--out` (never the player's), `--no-memcard`, and the package copied into a
 scratch mods folder enabled through a scratch config.ini's `mod_order`.
 

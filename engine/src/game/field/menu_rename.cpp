@@ -12,6 +12,7 @@
 #include "game/common/text_rules.h"
 #include "game/common/menu_widget.h"
 #include "game/common/party.h"
+#include "game/common/program_image.h"
 #include "game/common/screen.h"
 #include "game/common/texture.h"
 #include "game/field/field.h"
@@ -164,12 +165,11 @@ void text_frame_upload() {
 // 0x80081408: ASCII (with '@' toggling the kana mode) to glyph codes (the title's
 // 0x80049f40, with the overlay's copy of its table at 0x80082b78).
 void text_from_ascii(const char* in, u8* out) {
-  // Entry by entry through the region map (the table's head overlaps the column map, which
-  // differs in France and Germany; see title/text.cpp).
-  const auto table = [](u32 c) {
-    const u8* p = ovl(0x80082B78 + c);
-    return p ? *p : u8{0};
-  };
+  // From the table's start in the release's own layout, indexed by character (its head
+  // overlaps the column map, which France and Germany changed; see title/text.cpp). The
+  // overlay's image ends 0xf0 bytes in (bss after it: 0 here).
+  const std::span<const u8> ascii = program_run(kCode, menu::kPageCodeBase, 0x80082B78);
+  const auto table = [&ascii](u32 c) { return c < ascii.size() ? ascii[c] : u8{0}; };
   const auto* s = reinterpret_cast<const u8*>(in);
   int kana = 0;
   for (;;) {

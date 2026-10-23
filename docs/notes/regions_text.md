@@ -125,7 +125,9 @@ French title keyboard shows three buttons, the cursor on Delete, and five rows.
 ## 4. Title and battle ASCII conversion
 
 The title's and the battle's `text_from_ascii` (names into the 132-glyph fonts) look each byte
-up in their program's ASCII table (data, read through the region maps). France added a branch
+up in their program's ASCII table (data; the port reads each table from its translated start in
+the release's own layout, because France / Germany's battle table is 0x100 entries to NA's
+0xe0, `docs/notes/regions.md` section 10). France added a branch
 for bytes >= 0x81 outside kana mode, `glyph = table[c] + 4` (title) / `+ 6` (battle); Germany
 only in the battle program, `+ 0xc`. The tables (the same values in both languages) map the
 Latin-1 letters to 0x5c + n, so only the French battle branch lands on the accented glyphs

@@ -3,7 +3,7 @@
 docs/notes/mods.md section 8).
 
   SS_DISC1=<disc 1 .cue> mod_verify.py PACKAGE [--bin engine/build/shattered-stars]
-      [--out scratchpad/modverify/<id>-<time>] [--jobs 3] [--frames 3600]
+      [--out scratchpad/modverify/<id>-<time>] [--jobs 3] [--frames 3600] [--serial]
 
 PACKAGE is a package folder or .zip. Everything runs headless (offscreen video, dummy
 audio) with scratch settings folders under --out (never the player's), no memory card, and
@@ -157,6 +157,8 @@ def main(argv=None):
     ap.add_argument("--frames", type=int, default=3600, help="event sweep frames per entry")
     ap.add_argument("--battle-frames", type=int, default=1200)
     ap.add_argument("--timeout", type=int, default=7200, help="seconds per sweep")
+    ap.add_argument("--serial", action="store_true",
+                    help="one game process at a time (sweeps one after the other, --jobs 1; for a busy machine)")
     args = ap.parse_args(argv)
     if not args.disc1 or not os.path.exists(args.disc1):
         ap.error("set SS_DISC1 (or --disc1) to the disc 1 image")
@@ -164,7 +166,7 @@ def main(argv=None):
         ap.error(f"{args.bin} isn't built")
     args.bin = os.path.abspath(args.bin)
     args.disc1 = os.path.abspath(args.disc1)
-    args.jobs = max(1, min(args.jobs, 3))
+    args.jobs = 1 if args.serial else max(1, min(args.jobs, 3))
 
     # 1. The static check.
     tables = mod_check.Tables()
@@ -221,13 +223,13 @@ def main(argv=None):
 
     # 2-3. Sweeps (with and without the mod, at once) and battles.
     sweeps = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    with ThreadPoolExecutor(max_workers=1 if args.serial else 2) as pool:
         if maps:
             jobs = {"mod": pool.submit(run_sweep, args, maps, os.path.join(out, "sweep_mod"), mods_dir, mod_id),
                     "base": pool.submit(run_sweep, args, maps, os.path.join(out, "sweep_base"), mods_dir, f"-{mod_id}")}
             sweeps = {k: j.result() for k, j in jobs.items()}
     battles = {}
-    with ThreadPoolExecutor(max_workers=min(4, max(1, len(encounters)))) as pool:
+    with ThreadPoolExecutor(max_workers=1 if args.serial else min(4, max(1, len(encounters)))) as pool:
         jobs = {enc: pool.submit(run_battle, args, enc, os.path.join(out, "battles"), mods_dir, mod_id)
                 for enc in sorted(encounters)} if encounters else {}
         os.makedirs(os.path.join(out, "battles"), exist_ok=True)

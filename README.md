@@ -30,9 +30,9 @@
 ## What it is
 
 Shattered Stars is a native Windows and Linux port of *Star Ocean: The Second Story*, the
-PlayStation role-playing game, in its North American release. The game's code was read from
-the disassembly, function by function, and rewritten by hand as ordinary C++20 on top of SDL3
-and OpenGL.
+PlayStation role-playing game, in its North American, European (English), French and German
+releases. The game's code was read from the disassembly, function by function, and rewritten
+by hand as ordinary C++20 on top of SDL3 and OpenGL.
 
 - **It is not an emulator.** No PlayStation code runs. The port replaces the console's
   hardware (graphics, geometry, sound, movies, memory cards) with native code, and the game
@@ -97,10 +97,26 @@ Every image is the port's own OpenGL output, captured from Shattered Stars runni
 | **System** | 64-bit Windows, or 64-bit (x86-64) Linux with glibc 2.36 or newer |
 | **Graphics** | OpenGL 3.3 |
 | **Controls** | A keyboard, or any gamepad SDL recognises |
-| **The game** | Images of your own *Star Ocean: The Second Story* discs, **North American release** (SCUS-94421 and SCUS-94422): a `.cue` with its `.bin`, or an `.iso` / `.img` |
+| **The game** | Images of your own *Star Ocean: The Second Story* discs, from a [supported release](#supported-releases): a `.cue` with its `.bin`, or an `.iso` / `.img` |
 
-Disc 2 is optional until the story asks for it. European and Japanese discs, and compressed
-formats such as CHD or PBP, aren't accepted yet. There is no macOS build.
+Disc 2 is optional until the story asks for it. Compressed formats such as CHD or PBP aren't
+accepted yet. There is no macOS build.
+
+### Supported releases
+
+| Release | Disc 1 | Disc 2 | Text |
+|---|---|---|---|
+| North American | SCUS-94421 | SCUS-94422 | English |
+| European | SCES-02159 | SCES-12159 | English |
+| French | SCES-02160 | SCES-12160 | French |
+| German | SCES-02161 | SCES-12161 | German |
+
+The European, French and German releases are supported from version 0.02.00. They play with
+their own text and data on the North American game logic at 60 Hz: the same gameplay, at the
+full frame rate. The PAL versions' 50 Hz timing is not reproduced. Saves are kept per release,
+as on the console, so a card works with that release's console and emulators. Both discs must
+come from the same release; setup shows the release of each disc and refuses a mixed pair.
+Japanese discs (SLPM-86105 / SLPM-86106) are recognised but not supported yet.
 
 ### Download
 
@@ -281,6 +297,9 @@ is data, never code: lines of text in a small patch format that can change:
 one, and the change is made only while the original value is still there. A line written for
 different data is skipped and logged instead of corrupting anything. `tools/so2_mod.py` reads
 your own disc and writes the lines for you, so the expected values always come from the disc.
+Mods apply to every supported release: the lines name places as they are on the North American
+disc, the game translates them for the disc you play, and a line whose data differs in that
+release is skipped.
 This line, from one of the sample mods, turns a 200 Fol crate in Arlia into 500 Fol:
 
 ```text
@@ -347,7 +366,8 @@ death received from them knocks out your party at the next safe moment.
    your slot name and the password. Press **Save & Play**; the game connects as it starts.
 
 To play a seed on your own, leave the address empty: your locations are still shuffled and
-checked, and items from your own world are given to you.
+checked, and items from your own world are given to you. One seed works with the discs of any
+supported release.
 
 This is a custom world, not yet part of Archipelago itself. The `.apworld` and its YAML
 template are attached to each [release](https://github.com/IronJade/Shattered-Stars/releases/latest) (or build them with `tools/build_apworld.sh`). Every option, the fights you can't win, and troubleshooting are on

@@ -886,8 +886,8 @@ constexpr Segment kbattle_seg[] = {
     {0x3b634, 0x14, 584},  // equal 5
     {0x3b66c, 0x2c, 584},  // equal 11
     {0x3b6bc, 0x14, 584},  // equal 5
-    {0x3b6f4, 0x39bc, 584},  // same-size change 3, equal 3683, table by position 9
-    {0x3f0b0, 0xbbf4, 588},  // same-size change 4, equal 12025
+    {0x3b6f4, 0x399c, 584},  // same-size change 3, equal 3683, table by position 1
+    {0x3f090, 0xbc14, 588},  // same-size change 4, equal 12033
     {0x4afbc, 0x4, -204},  // equal 1
     {0x4afc8, 0x4, -212},  // equal 1
     {0x4b360, 0x4, -1108},  // equal 1

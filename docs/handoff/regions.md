@@ -193,6 +193,173 @@ readiness" section here.
   then battle sweeps NA/EU/FR/DE (--god --strong 20:30:4, SS_BATTLE_UNITS=1200, read logs in
   `q/reads/`). Rerun it to resume: finished steps (results.json) are skipped.
 
+### Agent 5 (`regions-finish-2`, from 15:25): state taken over
+
+Two attempts between agent 4 and this one were stopped by permission refusals after a session
+restart; this is what they left (checked 15:25).
+
+- **Item 1** (`tools/region_map.py`): in place and committed at 0e6683f (15:20): same-size
+  changed tables mapped by position (3b), `TABLES` (3c), short out-of-step matches fatal, reads
+  that may run past a layout change need `READ_EXTENTS`. EU / FR / DE regenerated: 0 unmapped, 0
+  suspicious. The two edits reported as refused are in the file too: the battle ASCII table's
+  `TABLES` extent is NA's 0xE0 (France / Germany's table is 0x100), and step 6b
+  `code_references` (each release's own unchanged code that addresses a byte, relocated, as a
+  witness for the map; disagreements the port reads are fatal; 331-426 per release disagree,
+  all where the port doesn't read).
+  **Real bug left:** France / Germany's battle ASCII table from c = 0xe0 up (accented letters)
+  lies past NA's extent, so the map can't place it; the battle, title and rename text code
+  must read the table from its translated start in the release's own layout, then regenerate
+  `engine/data/regions/*.inc`, build, test. One realigned spot in overlay 0xba5 is contradicted
+  by the release's code; the port doesn't read there.
+- **Item 8** done (above, 14:55).
+- **Item 6:** FR / DE Archipelago messages map symbols to the right glyphs (unit test); the AP
+  e2e passed 27/27 on Europe. Left: the French or German e2e.
+- **Item 4:** the right product codes are written. Open: in PCSX-Redux the French original's
+  title shows Continue in another colour with the port's save on the card (it may not see the
+  save): diagnose, and compare with a save the French original writes itself.
+- **Items 2-3:** sweep queue `scratchpad/regions/q/queue.sh` (PID 1279484, JOBS=3, binary
+  `scratchpad/regions/bin/ss_q` built 14:56, log `q/queue.log`), 12 steps: ev eu/na d1, eu/na
+  d2, fr/de d1, fr/de d2, bt na/eu/fr/de. ev_eu_d1 started 14:56; at 15:25 on map 826 (whose
+  ending entry K21 hangs on NA too), 0 failures so far. The item 1 port change only changes
+  which glyphs French / German text uses (not results, frames, RNG, positions, HP), so these
+  sweeps stay valid; spot-check a few French maps and battles on the new build.
+- **Not started:** item 5 (Redux: French battle result, German Scan, rename page FR / DE),
+  item 7 (`tools/mod_verify.py` on the two sample mods against a Europe disc), the 0.02.00
+  readiness section.
+- Other task's jobs, not ours: `tools/ap_late_proof.py` PIDs 1297126, 1297127 (leave alone).
+
+Agent 5 progress:
+
+- 15:45 **item 1 done.** The committed maps (0e6683f) were made before the 0xE0 extent: they
+  mapped NA 0x8006e8a0+ (the battle program's globals) into France / Germany's table, which
+  happened to give the accented glyphs entry by entry. Port: the battle program's ASCII table is
+  read from its translated start in the release's layout (`battle/window.cpp` `ascii_table`,
+  used by `text_from_ascii` and `window_draw_small_text`), the title's (`title/text.cpp`) and
+  the rename page's (`field/menu_rename.cpp`) the same way (`program_run`, bounded by the
+  image). Maps regenerated (`engine/data/regions/{eu,fr,de}.inc`: 2 segment lines each, the
+  battle table by position over NA's 0xe0 only; na_modules.inc unchanged): 6690 reads, 0
+  unmapped, 0 suspicious, 0 fatal for all three (reports `scratchpad/regions/rmap/report5_*.txt`;
+  table dump `rmap/tables.py REGION`: France / Germany's entries 0xe0-0xff now come from the
+  table, Europe's are zero as NA's). Suites t5a (`work/suites1.sh`, ref_regress with --jobs 1
+  because the queue holds 3 game processes): ss_tests 99/0, ss_game_tests 128/0, smoke 86/0,
+  ref_regress quick 28/28. French spot check, new binary `bin/ss_t5` vs the queue's `bin/ss_q`
+  (`work/spot5.sh` -> `spot5/`): events of maps 7, 18, 65, 120, 240, 331, 500: 80 / 80 entries
+  identical; battles 1, 35, 191, 300 with [bunits]: 4 / 4 identical. No name or keyboard key
+  holds a byte >= 0xe0 (regions_text.md section 4), so nothing visible changes in play.
+  Notes: regions.md section 10 (tables, step 6b), regions_text.md section 4.
+- Item 4 (16:05), two findings:
+  1. The grey "Continuer" was a Redux setup fault: `redux/run.sh` passed a relative
+     `-memcard1`, which Redux resolves against its config dir ("card1.mcd doesn't exist ...
+     failed to load!" in stdout.log), so the original had no card (title clut 0x1E4 = no card
+     ready; NA's own title showed the same with an NA save). Fixed: the script passes absolute
+     paths (`run.sh`, `run5.sh`).
+  2. **Real bug, fixed:** with the card loaded, the French original listed the port's save as
+     "Données Star Ocean 2 endommagées" (damaged). The save summary's 16-byte magic is per
+     release (title 0x8004deb8 / field 0x800740b0: NA "STAR OCEAN 03/01", Europe "06/09", France
+     "08/12", Germany "08/13") and the port hard-coded NA's in `save_summary_check` and
+     `save_build`. Now `menu_save.cpp` `save_magic()` reads it from the running program through
+     the region map (`table(0x8004DEB8, 0x800740B0)`). NA's card is byte-identical to the old
+     binary's (same save input, `runs/save5_na` vs `save5_na_old`). Redux (`redux/runs5/*_new`):
+     the NA, Europe, France and Germany originals each list the port's save (Continue
+     preselected) and load it into map 18. `work/card_region.py` (NA card -> PAL, the EU smoke)
+     now rewrites the magic and both checksums (NA -> NA is byte-identical on two cards).
+  Redux: Start skips the intro movie only once it plays (~v1950); `redux/sheet.py DIR` makes a
+  contact sheet. In progress: the French original writing its own save (poke
+  `*0x80075370 + 0x68 = 1`, field_flags save switch, FR address of NA 0x8007570c), then the port
+  loading it.
+- 16:15 **item 7 done:** `tools/mod_verify.py --serial` (new opt-in flag: one game process at a
+  time, so it fits next to the queue; documented in docs/notes/mods.md section 8) on the Europe
+  disc 1 with `bin/ss_t5b`: arlia-crate-fol PASS (both script lines applied, maps 18 / 21 sweep
+  as without the mod), hearn-store-plus PASS (shop 1 entry 7 applied, map 26). Reports
+  `scratchpad/regions/modverify/<id>/report.md`. Chain `work/chain5.sh` (log
+  `scratchpad/regions/chain5.log`) goes on with the Europe smoke on a converted card and the
+  French AP e2e.
+- Suites t5b (save magic build, 16:10): ss_tests 99/0, ss_game_tests 128/0, smoke 86/0,
+  ref_regress quick 28/28.
+- Item 4, reverse direction: poking field_flags[0x68] to allow a save on map 18 crashes the
+  original (it is the world-map flag; LoadAddressError at 0x80089460). Plan: the port writes a
+  French save on world map 1 (saving allowed there), the French original loads it and saves to
+  #2, the port loads #2. France's field globals (from its own code, `rmap/coderef.py`; the map
+  is 4 bytes off in this zero-filled block, which the port never reads): field_flags pointer
+  0x80075374, game_state pointer 0x80075378 (RX_GSTATE).
+- 16:28 **item 4 done.** Reverse direction: the port wrote a French save on world map 1 holding
+  item 0x61 (`runs/save5w_fr`, also `save5w_de`), the French original loaded it and saved to #2
+  (`redux/runs5/fr_wsave`: S02, magic "08/12"), and the port loaded that save (`runs/load5_fr`,
+  SS_LOAD_SAVE=1: map 1 at the saved position). Byte compare of the two files: only the slot
+  digit in the title, counters, checksums, length, the summary's unused tail (buffer bytes,
+  under each checksum) and **header byte 2, the icon flag: NA 0x13, all three PAL releases
+  0x11** (title 0x80066110 / page 0xbb6 0x800810ec `addiu v0, zero, 0x11`). Fixed: save_build
+  takes that immediate from the running program (`table(0x80066110, 0x800810EC)`); NA's card
+  stays byte-identical (`runs/save6_na` = `save5_na_old`), France now writes 0x11
+  (`runs/save6_fr`). `card_region.py` sets the flag too. Notes: regions.md section 10 Saves.
+- 16:24 **item 5, rename page done:** port (`runs/ren5_fr|de`, camp > Statut / Status > Claude >
+  confirm) against the French and German originals (`redux/runs5/fr_rename|de_rename`; side by
+  side `redux/runs5/rename_cmp.png`): identical heading, subtitle, name box, three buttons, five
+  rows, cursor on Delete, and the Status page before it. **Not done:** the French battle result
+  screen and the German Scan window need a battle in Redux: load `runs/save5w_fr|de/card.mcd`
+  (world map 1, item 0x61 in the bag) in the original, walk until an encounter (PAL vsyncs:
+  hold times x5/6 of the port's), mash Cross to win (result screen), or use item 0x61 from the
+  battle item menu (Scan); do the same from the same card in the port (SS_LOAD_SAVE=0).
+- 16:21 **item 6:** `tools/ap_e2e.sh` (ChecksFinder stand-in slot, 23 checks incl. phases 3-4)
+  on the French disc with `bin/ss_t5b`: 23 PASS, 0 FAIL (`scratchpad/regions/ap_e2e_fr.out`,
+  copy `ap_e2e_fr/`). The Europe 27/27 was `tools/ap_e2e_so2.sh` (the real SO2 slot); the French
+  run of that one is **still to do**: another agent's `ap_e2e_so2.sh` held its server port at
+  16:25. Command: `AP_E2E_WORK=$PWD/scratchpad/regions/ap_e2e_so2_fr SS_DISC1=<FR disc 1>
+  XDG_CONFIG_HOME=$PWD/scratchpad/regions/xdg tools/ap_e2e_so2.sh $PWD/scratchpad/regions/bin/ss_t5c`.
+- 16:16 Europe smoke on the card converted with the new `card_region.py` (Europe magic):
+  85/86, the world-map save cases load and pass; the one failure is the known hearn_talk NA
+  text offset (Europe's string table is 2 bytes longer).
+- Sweeps (queue): ev_eu_d1 and ev_na_d1 done (15:24, 15:51): 827 maps each, the same tallies
+  (1678 transfers, 3640 ok, 2 hang = maps 0 / 826 K21 ending loop, 3 gone, 3 stuck = 591-593
+  T9, NA's M8 baseline); `work/evcmp.py q/ev_na_d1 q/ev_eu_d1`: 5162 identical, 164 same result
+  with other frames (talk text lengths, the restructured world script K19 / K60), 0 other
+  result. ev_eu_d2 running since 15:51 (ended 16:18 with NA's non-ok set:
+  0 / 826 hang, 58 / 139 gone, 591-593 stuck); the queue goes on with ev_na_d2, ev_fr_d1,
+  ev_de_d1, ev_fr_d2, ev_de_d2, then bt_na, bt_eu, bt_fr, bt_de (hours).
+
+## 0.02.00 readiness (agent 5, 16:32)
+
+Verdict: **not yet releasable; close.** Europe, France and Germany boot, play, save and load
+on one build with NA unchanged, but the disc 2 / France / Germany sweeps and the battle
+comparison are still running, and three Redux checks are open.
+
+| | Europe | France | Germany |
+|---|---|---|---|
+| Recognised, both discs, mixed pairs refused (setup) | yes | yes | yes |
+| Address maps: 6690 port reads, unmapped / suspicious / fatal | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| Event sweep disc 1 vs NA (same binary) | 5162 same, 164 frames only, 0 other result | queued | queued |
+| Event sweep disc 2 | done, NA's non-ok set; vs NA pending (ev_na_d2 queued) | queued | queued |
+| Battle sweep vs NA ([bunits] RNG / positions / HP) | queued | queued (spot: 4 / 4 same as the queue binary) | queued |
+| Text | NA's | own system; opening 88 / 88 lines = Redux | own system; 84 / 84 lines = Redux |
+| Title keyboard, camp / Options pages = Redux | n/a | yes | yes |
+| Rename page = Redux | n/a | yes | yes |
+| Battle result screen / Scan window = Redux | n/a | open | open |
+| Saves: written by the port load in the original | yes (Redux) | yes | yes |
+| Saves: written by the original load in the port | (same format) | yes (Redux-written save) | (same format) |
+| Archipelago | e2e_so2 27 / 27 | ap_e2e 23 / 23; e2e_so2 open | (FR covers the text path) |
+| Mods (`mod_verify`, both samples) | PASS | (same maps as EU) | (same maps as EU) |
+| Smoke (converted card) | 85 / 86 (hearn_talk: EU text offset, expected) | - | - |
+
+Known differences (by decision or the release's own data): NA game logic at 60 Hz on every
+release (the PAL 6/5 scaling and the projectile-clash removal are not ported); each release's
+own text, staff cards, rumble lengths, save product code, save magic and icon flag; the
+credits' 50 Hz cue waits converted to 60 Hz.
+
+Suites on the final build (`engine/build-regions`, copy `bin/ss_t5c`; t5c 16:29): ss_tests
+99/0, ss_game_tests 128/0, smoke 86/0, ref_regress quick 28/28.
+
+**Agent 5 ended 16:33 (context budget). Still running:** the sweep queue
+`scratchpad/regions/q/queue.sh` PID 1279484 (binary `bin/ss_q`; ev_na_d2 started 16:18, then
+ev_fr_d1 ... bt_de; rerun it to resume, finished steps are skipped). Not ours (both ended by 16:33): the
+`tools/ap_late_proof.py` runs (PIDs 1297126, 1297127); another agent's `ap_e2e_so2.sh` may still run. The
+queue's binary predates the save fixes (they change no sweep result: sweeps run without a card).
+
+Not done: French battle result screen and German Scan window against Redux (item 5, plan
+above); `ap_e2e_so2.sh` on France (item 6); the rest of the queue and its comparisons (items
+2-3: `work/evcmp.py q/ev_na_dN q/ev_RG_dN`, `work/bcmp.py q/bt_na q/bt_RG`, then delete the
+battle logs); README / wiki "Discs" and the 0.02.00 release notes; optional NA-save import in
+setup (product code, magic, icon flag and both checksums, as `card_region.py`).
+
 ## Next steps
 
 1. Disc 2 sweeps (`ev_sweep.sh eu 2 eu_d2`, `na 2 na_d2`, then evcmp.py) — disc 1 is done.
