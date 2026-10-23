@@ -158,8 +158,8 @@ flowchart LR
 programs and code overlays from the disc's archive as you play: the title, the field (with its
 field-map and world-map overlays), 17 menu overlays, the battle program with 12 overlay
 blocks, 12 party-member modules, 40 enemy code blocks carried inside the encounter data, 55
-spell modules, and the credits. All of them were disassembled and decompiled, with the REA
-reverse-engineering tools and Ghidra. Ghidra's signature matcher identified 406 functions from
+spell modules, and the credits. All of them were disassembled and decompiled, with the
+[REA](https://github.com/morluto/rea) reverse-engineering tools and Ghidra. Ghidra's signature matcher identified 406 functions from
 Sony's PsyQ SDK, and a function matcher finds code shared between programs linked at different
 addresses, so each function only has to be understood once. Project tools read the archive and
 its SLZ compression, and disassemble the field event scripts.
@@ -447,8 +447,10 @@ keep their own licences; the release packages list them in `THIRD-PARTY-LICENSES
 - [Archipelago](https://archipelago.gg), the multiworld framework
 - [Severed Chains](https://github.com/Legend-of-Dragoon-Modding/Severed-Chains), whose hand-port
   method this project follows
-- [Ghidra](https://github.com/NationalSecurityAgency/ghidra) and the REA reverse-engineering
-  tools, for disassembly and decompilation
+- [REA](https://github.com/morluto/rea), the reverse-engineering toolkit used for disassembly,
+  decompilation and analysis
+- [Ghidra](https://github.com/NationalSecurityAgency/ghidra), for decompilation and its PsyQ
+  signature matching
 - [jPSXdec](https://github.com/m35/jpsxdec), the reference for the movie decoder
 - [ps1-tests](https://github.com/JaCzekanski/ps1-tests), whose hardware video-memory dumps check
   the GPU
