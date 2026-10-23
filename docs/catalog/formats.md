@@ -122,6 +122,40 @@ per-frame order (triggers, wait counter, music, wait state, instructions) in
 `analysis/field_catalog/part4.md`; port in `engine/src/game/field/script_*.cpp`, checked
 instruction for instruction against the original's openings of maps 7 and 18.
 
+### Story globals and notable flags
+
+From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
+
+- **Story globals.**
+  - G[0xa0] = game_state +0x00 is the chapter, the main story counter: 3 at a new game as
+    Claude (map 7), 4 as Rena (map 18), 60 at the end. Each value 4-60 is stored in one
+    place.
+  - G[0xa4] = game_state +0x04 is the step inside a chapter, set back to 0 when the chapter
+    changes.
+  - Chapter 35 is set at map 625 just before B 0x6a switches to disc 2 and the party moves
+    to Energy Nede.
+- **Flag 1** is the protagonist: the new game sets it (state block +0x8c0 bit 1) in Claude's
+  game; it is clear in Rena's.
+- **Flags 2 and 4** are Private Action mode: the world-map chunk scripts set both before a
+  town's PA entrance. Towns register their PA events (talk handlers, ext 0xf3, trigger
+  regions) under flag 2, most of them also under B 0x2c saved_party_has(partner).
+- **Flag 745** is set by about 750 routines: scene state, not a one-time guard.
+- **Flags 66-91** are key items: the shared give routine turns an item number of 10000 + n
+  into flag n, with the item fanfare.
+- **Flags 758-769** mean that member n (flag 758 + n) was in the party before a split. The
+  restore routines (maps 195, 447, 469, 474) add the members back by them.
+  - Map 548 (the ship to El, chapter 29 step 30) stores them, then sets flag 765 (Leon).
+  - In Rena's game it clears flag 765 again unless the party was Claude and Rena alone.
+  - Map 229 then adds Leon to Rena's party in that one case.
+- **Flags 145-151** are the Hoffmann Ruins switches. Each is set by its room's switch
+  routine, called with the flag number (maps 494, 497, 501, 505, 509, 519, 522).
+  - Flag 149 (map 509) turns the transfers of maps 506 / 510 from map 507 to its other
+    version, map 508.
+- **Flag 730**: the Final Save Point (map 671) was used. It opens Virtual Expel: Fun City's
+  Fighting Arena, map 303 actor 25, sends the party to Arlia map 18.
+- **Flag 753**: set after the final boss (map 685, chapter 60). Map 18 registers its chests
+  only while it is clear.
+
 ### Text
 
 Strings are **byte streams** (correction: earlier notes read them as u16): a byte below 0x80 is

@@ -177,6 +177,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/battle_debug.cpp
   src/game/battle/loaders.cpp
   src/game/battle/stage.cpp
+  src/game/battle/stage_objects.cpp
   src/game/battle/render.cpp
   src/game/battle/camera.cpp
   src/game/battle/bobj.cpp
@@ -272,6 +273,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/command_menu.cpp
   src/game/battle/items.cpp
   src/game/ap/json.cpp
+  src/game/ap/seed.cpp
   src/game/ap/ap.cpp
   src/game/battle/shatter.cpp
   src/game/battle/spell_mod_deep_freeze.cpp
@@ -389,7 +391,9 @@ if(SS_BUILD_SETUP)
   target_compile_definitions(ss_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
   target_link_libraries(ss_imgui PUBLIC SDL3::SDL3 ${CMAKE_DL_LIBS})
 
-  add_executable(shattered-stars-setup WIN32 src/setup/setup_main.cpp src/setup/setup_ui.cpp)
+  # game/ap/seed.cpp + json.cpp: the game's own seed reader, for the Archipelago page (self-contained).
+  add_executable(shattered-stars-setup WIN32 src/setup/setup_main.cpp src/setup/setup_ui.cpp
+                 src/game/ap/seed.cpp src/game/ap/json.cpp)
   if(WIN32)
     set_target_properties(shattered-stars-setup PROPERTIES OUTPUT_NAME setup)
   endif()
@@ -401,6 +405,73 @@ if(SS_BUILD_SETUP)
               $<TARGET_FILE_DIR:shattered-stars-setup>
       COMMAND_EXPAND_LISTS)
   endif()
+endif()
+
+# The Archipelago network client (port feature; src/ap_net/client.h): apclientpp and its
+# header-only dependencies, fetched and pinned by SHA-256 like Dear ImGui. Compiled as
+# C++17 (websocketpp does not build as C++20). OpenSSL gives wss://, zlib compression;
+# without them (MinGW here: install mingw64-openssl mingw64-zlib) it speaks ws:// only.
+# game/ap uses only the plain interface (ap_net/link.h); the game program links this.
+option(SS_BUILD_AP_NET "Build the Archipelago network client (fetches apclientpp)" ON)
+if(SS_BUILD_AP_NET)
+  include(FetchContent)
+  # SOURCE_SUBDIR none: header-only, nothing to add_subdirectory.
+  FetchContent_Declare(apclientpp
+    URL https://github.com/black-sliver/apclientpp/archive/refs/tags/v0.6.6.tar.gz
+    URL_HASH SHA256=bf5390051c078c9ed43a2e135a315e589ca6e2427b4623a2ad391ae21b5ba1c0
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR none)
+  FetchContent_Declare(wswrap
+    URL https://github.com/black-sliver/wswrap/archive/aeba7ac428028723fb26ce92488f260660f786b1.tar.gz
+    URL_HASH SHA256=3276e3fb143e38189c5bf5eee2b43a34e821c3fa8f7323da965056e73856e2cf
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR none)
+  FetchContent_Declare(websocketpp
+    URL https://github.com/zaphoyd/websocketpp/archive/refs/tags/0.8.2.tar.gz
+    URL_HASH SHA256=6ce889d85ecdc2d8fa07408d6787e7352510750daa66b5ad44aacb47bea76755
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR none)
+  FetchContent_Declare(asio
+    URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-2.tar.gz
+    URL_HASH SHA256=5705a0e403017eba276625107160498518838064a6dd7fd8b00b2e30c0ffbdee
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR none)
+  FetchContent_Declare(nlohmann_json
+    URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
+    URL_HASH SHA256=0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR none)
+  FetchContent_MakeAvailable(apclientpp wswrap websocketpp asio nlohmann_json)
+  add_library(ss_ap_net STATIC src/ap_net/client.cpp)
+  set_target_properties(ss_ap_net PROPERTIES CXX_STANDARD 17)
+  target_include_directories(ss_ap_net PUBLIC src)
+  target_include_directories(ss_ap_net SYSTEM PRIVATE ${apclientpp_SOURCE_DIR} ${wswrap_SOURCE_DIR}/include
+                             ${websocketpp_SOURCE_DIR} ${asio_SOURCE_DIR}/asio/include ${nlohmann_json_SOURCE_DIR}/include)
+  target_compile_definitions(ss_ap_net PRIVATE ASIO_STANDALONE AP_NO_SCHEMA AP_NO_DEFAULT_DATA_PACKAGE_STORE
+                             _WEBSOCKETPP_CPP11_STL_ _WEBSOCKETPP_CPP11_THREAD_)
+  find_package(Threads REQUIRED)
+  target_link_libraries(ss_ap_net PRIVATE Threads::Threads)
+  find_package(OpenSSL QUIET)
+  if(OpenSSL_FOUND)
+    target_link_libraries(ss_ap_net PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    # Static OpenSSL 3's default provider (provider_core.c) calls PathCchRemoveFileSpec to
+    # find its module directory relative to the DLL/exe at run time; on MinGW that symbol
+    # lives in a separate import library, not pulled in automatically.
+    if(WIN32)
+      target_link_libraries(ss_ap_net PRIVATE pathcch)
+    endif()
+  else()
+    message(STATUS "OpenSSL not found: the Archipelago client speaks ws:// only")
+    target_compile_definitions(ss_ap_net PRIVATE WSWRAP_NO_SSL)
+  endif()
+  find_package(ZLIB QUIET)
+  if(ZLIB_FOUND)
+    target_link_libraries(ss_ap_net PRIVATE ZLIB::ZLIB)
+  else()
+    target_compile_definitions(ss_ap_net PRIVATE WSWRAP_NO_COMPRESSION)
+  endif()
+  if(WIN32)
+    target_compile_definitions(ss_ap_net PRIVATE _WIN32_WINNT=0x0601)
+    target_link_libraries(ss_ap_net PRIVATE ws2_32 mswsock crypt32)
+  endif()
+  # The game builds the Client (main.cpp) and hands it to game/ap.
+  target_link_libraries(shattered-stars PRIVATE ss_ap_net)
+  target_compile_definitions(shattered-stars PRIVATE SS_HAVE_AP_NET)
 endif()
 
 enable_testing()
@@ -435,6 +506,10 @@ target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_launcher.cpp)
+if(TARGET ss_ap_net)  # against a local Archipelago server (SS_AP_SERVER), skipped without one
+  target_sources(ss_game_tests PRIVATE tests/test_ap_net.cpp)
+  target_link_libraries(ss_game_tests PRIVATE ss_ap_net)
+endif()
 target_sources(ss_game_tests PRIVATE tests/test_ap.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game ss_launcher)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})

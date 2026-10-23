@@ -319,9 +319,10 @@ void RibbonTrail::update() {
     const s32 s1 = mul32(w, za >> 10) >> 12, s2 = mul32(h, za >> 10) >> 12;
     const s32 e1 = mul32(w, zb >> 10) >> 12, e2 = mul32(h, zb >> 10) >> 12;
     const s32 cs = bcos(static_cast<u32>(start)), ss = bsin(static_cast<u32>(start));
-    // ORIGINAL BUG (original_bugs.md B1): the console takes the start angle's cosine for the
-    // far edge, which skews it:
-    //   const s32 ce = bcos(static_cast<u32>(start));
+    // ORIGINAL BUG (original_bugs.md B1): the console takes the far edge's x offsets from the
+    // cosine of the start angle, and only quad 0 sets that angle (+0x400). Every later quad
+    // reuses quad 0's value, so the ribbon's width wanders along its length:
+    //   const s32 ce = bcos(static_cast<u32>(start of quad 0));
     const s32 ce = bcos(static_cast<u32>(end));
     const s32 se = bsin(static_cast<u32>(end));
     auto* quad = screen_alloc_prims<psyq::POLY_G4>(pool->arena, 1);

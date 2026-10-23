@@ -9,8 +9,11 @@
 #include <sstream>
 #include <string>
 
+#include "ap_net/link.h"
 #include "game/ap/ap.h"
 #include "game/ap/json.h"
+#include "game/field/field.h"
+#include "game/field/script_vm.h"
 #include "test.h"
 
 using namespace ss;
@@ -58,6 +61,29 @@ const char* kSeed = R"seed({
   "patches": ["script 18 0x82c 0xffffff38 0xffffec78", "", "# a comment"],
   "start": {"items": [{"kind": "item", "game_id": 1, "count": 3}], "fol": 100, "flags": [5, "0x10"]}
 })seed";
+
+// A Link that records what the game sends and hands out queued events.
+struct FakeLink : ap_net::Link {
+  std::vector<int64_t>* sent;
+  int* goals;
+  std::vector<std::string>* deaths;
+  std::vector<ap_net::Event>* events;
+  FakeLink(std::vector<int64_t>* s, int* g, std::vector<std::string>* d, std::vector<ap_net::Event>* e)
+      : sent(s), goals(g), deaths(d), events(e) {}
+  void check(const std::vector<int64_t>& l) override { sent->insert(sent->end(), l.begin(), l.end()); }
+  void goal() override { ++*goals; }
+  void deathlink(const std::string& cause) override { deaths->push_back(cause); }
+  void say(const std::string&) override {}
+  std::vector<ap_net::Event> poll() override {
+    std::vector<ap_net::Event> out;
+    out.swap(*events);
+    return out;
+  }
+  ap_net::State state() const override { return ap_net::State::kSlotConnected; }
+  std::string player_name(int slot) const override { return slot == 2 ? "Alice" : "P" + std::to_string(slot); }
+  std::string item_name(int64_t item, int) const override { return "Thing " + std::to_string(item); }
+  std::string location_name(int64_t, int) const override { return ""; }
+};
 
 std::string replace(std::string s, const std::string& from, const std::string& to) {
   const size_t at = s.find(from);
@@ -235,4 +261,157 @@ TEST(ap_sidecar) {
   ap::stop();
   std::error_code ec;
   fs::remove_all(dir, ec);
+}
+
+TEST(ap_server_link) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+                                   "\"options\": {\"deathlink\": true}, \"goal\": {\"encounters\": [7]}"),
+                           &s, &error));
+  CHECK(s.deathlink && s.goal_encounters.size() == 1 && s.goal_encounters[0] == 7);
+  ap::start_with(s);
+  CHECK(ap::deathlink_enabled());
+  CHECK(ap::location_checked(1));  // offline: recorded, sent on connect
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  CHECK(!ap::connected());
+  // Another room's seed: nothing goes out.
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "other";
+  events.push_back(c);
+  ap::vblank();
+  CHECK(!ap::connected() && sent.empty());
+  CHECK(ap::status_text().find("wrong seed") != std::string::npos);
+  // The right one: our checks go out, the server's join ours.
+  c.seed_name = "12345678901234567890";
+  c.checked = {1349650432, 999};
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected());
+  CHECK(sent.size() == 2 && sent[0] == 1 && sent[1] == 1349650432);
+  CHECK(ap::is_checked(1349650432) && !ap::is_checked(999));
+  sent.clear();
+  CHECK(ap::location_checked(1347569665) && sent.size() == 1 && sent[0] == 1347569665);
+  // Items: by index; a resend after a reconnect adds nothing; an unknown AP id still counts.
+  ap_net::Event it;
+  it.kind = ap_net::Event::kItems;
+  it.items = {{5000021, 10, 2, 0, 0}, {5009000, 11, 2, 0, 1}};
+  events.push_back(it);
+  ap::vblank();
+  CHECK_EQ(ap::pending_count(), 2u);
+  it.items = {{5000021, 10, 2, 0, 0}, {5009000, 11, 2, 0, 1}, {42, 12, 3, 0, 2}};
+  events.push_back(it);
+  ap::vblank();
+  CHECK_EQ(ap::pending_count(), 3u);
+  CHECK(ap::state().received_index == 0);
+  // The goal: once, sent at once while connected.
+  ap::on_battle_exit(7, 2);
+  CHECK(goals == 0 && !ap::state().goal_done);
+  ap::on_battle_exit(7, 0);
+  CHECK(goals == 1 && ap::state().goal_done);
+  ap::on_battle_exit(7, 0);
+  CHECK(goals == 1);
+  // A boss location: the victory records it, its own item waits for free play.
+  const size_t before = ap::pending_count();
+  ap::on_battle_exit(0, 0);
+  CHECK(ap::is_checked(1) && ap::pending_count() == before);  // (Cyril's check was already made)
+  // DeathLink: in from the server; out on a game over, but not for a death it caused.
+  ap_net::Event d;
+  d.kind = ap_net::Event::kDeathLink;
+  d.source = "Alice";
+  events.push_back(d);
+  ap::vblank();
+  CHECK(ap::deathlink_pending());
+  ap::on_game_over();
+  CHECK(deaths.size() == 1);
+  // Placeholders: another player's item at a placeholder is sent, with the window's message.
+  CHECK(!ap::on_give_item(0x3FF));  // (a real item number: the game gives it)
+  CHECK(ap::on_give_item(0x2000));  // (no location has it: skipped, nothing given)
+  CHECK(ap::take_message_override() == nullptr);
+  ap::stop();
+}
+
+TEST(ap_placeholders) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  std::string text = replace(kSeed, "\"id\": 1347569664,", "\"id\": 1347569664, \"placeholder\": 1024,");
+  CHECK(ap::load_seed_text(text, &s, &error));
+  CHECK(s.locations[1].placeholder == 1024);
+  CHECK(seed_error(replace(text, "\"placeholder\": 1024", "\"placeholder\": 5"), "placeholder 0x400"));
+  CHECK(seed_error(replace(replace(text, "\"id\": 1349650432,", "\"id\": 1349650432, \"placeholder\": 1024,"), "", ""),
+                   "placeholder 1024 repeated"));
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "12345678901234567890";
+  events.push_back(c);
+  ap::vblank();
+  // The chest's give_item(1024): Alice's Hookshot is sent, the check goes out, and the
+  // message window opening next shows it (once).
+  CHECK(ap::on_give_item(1024));
+  CHECK(ap::is_checked(1347569664) && sent.size() == 1 && sent[0] == 1347569664);
+  const u8* m = ap::take_message_override();
+  CHECK(m != nullptr);
+  CHECK(ap::take_message_override() == nullptr);
+  CHECK(!ap::on_give_money(5000));  // (a real amount: the game adds it)
+  ap::stop();
+  CHECK(!ap::on_give_item(1024));  // (off: the game's own op)
+}
+
+// [world agent] Several placeholders in one vblank (a gift event giving items and Fol, a
+// prize table): one window page each; a loop reaching one placeholder again gives once; the
+// 24-bit Fol range (the money routine's push imm24).
+TEST(ap_placeholders_same_vblank) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  std::string text = replace(kSeed, "\"id\": 1347569664,", "\"id\": 1347569664, \"placeholder\": 1024,");
+  text = replace(text, "\"id\": 1349650432,", "\"id\": 1349650432, \"placeholder\": \"0xf00000\",");
+  CHECK(ap::load_seed_text(text, &s, &error));
+  CHECK(s.locations[2].placeholder == 0xF00000);
+  CHECK(seed_error(replace(text, "\"0xf00000\"", "\"0xeffff0\""), "placeholder 0x400"));
+  // (The own item goes in the inventory: scratch buffers for it.)
+  ss::game::field::FieldGlobals& g = ss::game::field::globals();
+  u8* const old_inventory = g.inventory;
+  std::vector<u8> inventory(0x1000, 0);
+  g.inventory = inventory.data();
+  ap::start_with(s);
+  CHECK(ap::on_give_money(0xF00000));  // the gift's Fol site: its own item (2 Revival Cards)
+  CHECK(ss::game::field::inventory_find(g.inventory, 21) != -1);
+  CHECK(ap::on_give_item(1024));       // the chest: Alice's Hookshot
+  CHECK(ap::on_give_item(1024));       // (a loop: ignored)
+  CHECK(ap::on_give_money(0xFFFFFF));  // (in the range, no location: skipped)
+  CHECK(ap::is_checked(1349650432) && ap::is_checked(1347569664));
+  CHECK(ap::state().checked.size() == 2);
+  const u8* m = ap::take_message_override();
+  CHECK(m != nullptr);
+  int pages = 1;
+  for (size_t i = 0; i < 400;) {  // codes: one byte below 0x80, else two; 0x4003 has a parameter
+    u32 c = m[i];
+    if (c >= 0x80) {
+      c = (c & 0x7F) | static_cast<u32>(m[i + 1]) << 7;
+      i += 2;
+    } else {
+      ++i;
+    }
+    if (c == 0x4003) ++i;
+    if (c == 0x4001) ++pages;  // a new page
+    if (c == 0x4002) break;    // the end: wait for the button
+  }
+  CHECK(pages == 2);
+  CHECK(ap::take_message_override() == nullptr);
+  ap::stop();
+  g.inventory = old_inventory;
 }

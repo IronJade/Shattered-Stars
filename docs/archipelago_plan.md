@@ -167,6 +167,22 @@ The battle side of Phase 1 is in [docs/ap/battle.md](ap/battle.md).
   `battle_party_lost`. First drops go through `roll_drops`; EXP / Fol multipliers through
   `award_exp_money`.
 
+## Field locations and hooks
+
+The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
+- **The tool.** `tools/ap_extract.py` writes `docs/ap/field.json`. It holds:
+  - 338 chests, 109 gift events, 171 prize-table entries, 1 Fol gift, 86 join sites, 62
+    shop sites and 18 item-giving Private Actions, each with a location id and the
+    conditions it runs under;
+  - the story order and the regions.
+- **The point of no return.** It is the disc switch at map 625 (B 0x6a, chapter 35). From
+  there the story stays on Energy Nede (chapters 36-60).
+- **Private Actions.** They run in script flag 2 / 4 mode, set by the world map's chunk
+  scripts. Chisato and Precis join inside Private Actions.
+- **The hooks.** For chests, the treasure counter (A 0x01) with the chest routine's opened
+  flag. For gifts and joins, give_item / add_money / party_add, with the caller's frame as
+  the location. Contents are changed through `mods.cpp` script patches.
+
 ## Keeping every seed finishable
 
 1. **The generator's fill is the proof.** Archipelago only accepts a placement where every
@@ -214,7 +230,10 @@ The battle side of Phase 1 is in [docs/ap/battle.md](ap/battle.md).
    - A disc reader tool, `tools/ap_extract.py`. It writes the location table (chests by flag,
      gifts by call site, shops, bosses by encounter, drops) and the item names as JSON.
    - Region and story-order notes for both protagonists.
-   - The `game/ap` module skeleton, the seed file format and the sidecar save.
+   - The `game/ap` module skeleton, the seed file format and the sidecar save. Done on the
+     port side (2026-10-22): [docs/ap/seed_format.md](ap/seed_format.md) covers the
+     `.apso2` file, the checks and receive queue, and the sidecar; `--ap-seed FILE` or
+     config `ap_seed`; the console commands `ap_status`, `ap_check` and `ap_give`.
 2. **First playable: chest and gift shuffle, story mode.**
    - APWorld: items, locations, regions, goal = final boss.
    - Port: chests, gifts and the goal as checks; receiving with notices; offline solo seeds; the

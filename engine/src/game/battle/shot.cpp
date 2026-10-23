@@ -15,6 +15,7 @@
 #include "game/battle/render.h"
 #include "game/battle/spells.h"
 #include "game/battle/sprite.h"
+#include "game/battle/stage_objects.h"
 #include "game/battle/stage.h"
 #include "game/common/screen.h"
 #include "game/title/new_game.h"
@@ -640,7 +641,8 @@ void Shot::update() {
     default:
       // The spells' kinds (3-0xf, 0x12, 0x13, 0x15, 0x1d: spell_shots.cpp, the world agent's).
       // Kinds 0x27 / 0x2d: enemy_shots.cpp (the enemy agent's).
-      if (!spell_shot_update(this) && !enemy_shot_update(this)) unported_kind(this);
+      // Kinds 0x18-0x2b: the stage code (stage_objects.cpp).
+      if (!spell_shot_update(this) && !enemy_shot_update(this) && !stage_shot_update(this)) unported_kind(this);
       break;
   }
 }

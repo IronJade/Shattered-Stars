@@ -295,6 +295,7 @@ void field_create_subsystems(Field*) {
 // is read in the background and the music fades: state 6.
 void field_begin_game_over(Field* f) {
   FieldGlobals& g = g_field;
+  ap::on_game_over();  // Archipelago (port feature): DeathLink out
   g.game_state[0x20] = 0;
   if (g_script_vm != nullptr) task_unregister(g_script_vm);
   g.field_flags[0x25] = 0;

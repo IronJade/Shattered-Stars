@@ -68,8 +68,12 @@ Python, `ap_battles.build([disc1, disc2])` returns the same dict.
 - **Scripted battle call sites.** There are 89. Five have a computed encounter, all on map
   305: the encounter comes from a script variable, so the Archipelago world has to name
   those by hand.
-- **The final boss.** Indalecio, encounters **539 and 540**, map 685, two call sites (the two
-  forms). This is the goal.
+- **The final boss.** Indalecio, encounters **539 and 540**, map 685. They are not two forms
+  in a row. They are alternatives: routine 28592 tests flag 0x22c (556) at 28900. If it is set,
+  the fight is 540 (type 207, HP 1.5M, level 240; battle at 29444). If it is clear, the fight
+  is 539 (type 206, HP 500k, level 160; battle at 29880). Both paths join at 30116 and go on
+  to the ending. Only map 239's script sets 0x22c, at 30416 in Filia's event. A victory in
+  either one is the goal.
 - **Boss encounters with no scripted call site.** Encounter 0 (Cyril), 263 (Dias), 534
   (FunnyThief) and 561 (Iselia-queen). They are reached another way (a table or a computed
   encounter) and need checking in Phase 2.

@@ -11,6 +11,7 @@
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
+#include "game/ap/seed.h"
 #include "launcher/process.h"
 #include "launcher/title_art.h"
 #include "platform/window.h"
@@ -142,7 +143,33 @@ Settings App::read(const launcher::Config& c) const {
     s.card[slot - 1] = path;
   }
   s.mods = launcher::path_utf8(launcher::mods_folder(c));
+  s.ap_seed = c.get("ap_seed");
+  s.ap_server = c.get("ap_server");
+  s.ap_slot = c.get("ap_slot");
+  s.ap_password = c.get("ap_password");
   return s;
+}
+
+const App::SeedInfo& App::seed_info(const std::string& path) {
+  auto it = seed_cache_.find(path);
+  if (it != seed_cache_.end()) return it->second;
+  // The game's own reader (game/ap/seed.h): what loads here loads in the game.
+  SeedInfo info;
+  game::ap::Seed seed;
+  std::string error;
+  std::error_code ec;
+  if (!fs::exists(launcher::utf8_path(path), ec)) {
+    info.error = "File not found. Was it moved or renamed?";
+  } else if (!game::ap::load_seed_file(launcher::path_utf8(launcher::utf8_path(path)), &seed, &error)) {
+    info.error = "This seed can't be used: " + error;
+  } else {
+    info.ok = true;
+    info.seed = seed.seed;
+    info.slot = seed.slot_name;
+    info.game = seed.game;
+    info.locations = seed.locations.size();
+  }
+  return seed_cache_.emplace(path, info).first->second;
 }
 
 const launcher::DiscInfo& App::disc_info(const std::string& path) {
@@ -239,6 +266,14 @@ launcher::Config App::compose(const launcher::Config& base) const {
   const std::string default_mods = launcher::path_utf8(launcher::config_dir() / "mods");
   if (settings_.mods.empty() || same_file(settings_.mods, default_mods)) c.erase("mods");
   else c.set("mods", settings_.mods);
+  const std::pair<const char*, const std::string*> ap_keys[] = {{"ap_seed", &settings_.ap_seed},
+                                                                {"ap_server", &settings_.ap_server},
+                                                                {"ap_slot", &settings_.ap_slot},
+                                                                {"ap_password", &settings_.ap_password}};
+  for (const auto& [key, value] : ap_keys) {
+    if (value->empty()) c.erase(key);
+    else c.set(key, *value);
+  }
   return c;
 }
 
@@ -362,6 +397,7 @@ void App::browse(Target target) {
     case Target::kCard1: current = settings_.card[0]; break;
     case Target::kCard2: current = settings_.card[1]; break;
     case Target::kMods: current = settings_.mods; break;
+    case Target::kSeed: current = settings_.ap_seed; break;
   }
   auto* call = new DialogCall{this, static_cast<int>(target), {}};
   std::error_code ec;
@@ -383,6 +419,9 @@ void App::browse(Target target) {
     SDL_ShowOpenFolderDialog(on_dialog, call, window_, location, false);
   } else if (target == Target::kDisc1 || target == Target::kDisc2) {
     SDL_ShowOpenFileDialog(on_dialog, call, window_, disc_filters, 2, location, false);
+  } else if (target == Target::kSeed) {
+    static const SDL_DialogFileFilter seed_filters[] = {{"Archipelago seed (.apso2)", "apso2"}, {"All files", "*"}};
+    SDL_ShowOpenFileDialog(on_dialog, call, window_, seed_filters, 2, location, false);
   } else {
     SDL_ShowOpenFileDialog(on_dialog, call, window_, card_filters, 2, location, false);
   }
@@ -437,6 +476,7 @@ void App::apply_dialog_results() {
       case Target::kCard1: settings_.card[0] = chosen; break;
       case Target::kCard2: settings_.card[1] = chosen; break;
       case Target::kMods: settings_.mods = chosen; break;
+      case Target::kSeed: settings_.ap_seed = chosen; break;
     }
   }
 }
@@ -768,7 +808,7 @@ void App::sidebar() {
   for (size_t i = 0; i < static_cast<size_t>(Page::kCount); ++i) {
     const Page page = static_cast<Page>(i);
     const bool selected = page_ == page;
-    const bool placeholder = page == Page::kArchipelago;
+    const bool placeholder = false;  // (the Archipelago page was one before it went live)
     ImGui::PushID(static_cast<int>(i));
     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(40, 70, 130, 150));
@@ -795,6 +835,7 @@ void App::sidebar() {
       if (settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]))
         dot = kError;
     }
+    if (page == Page::kArchipelago && !settings_.ap_seed.empty()) dot = seed_info(settings_.ap_seed).ok ? kOk : kError;
     if (dot) dl->AddCircleFilled(ImVec2(b.x - em() * 0.8f, (a.y + b.y) * 0.5f), em() * 0.26f, dot, 12);
     if (placeholder) {
       const char* tag = "soon";
@@ -1502,33 +1543,60 @@ void App::page_mods() {
 
 void App::page_archipelago() {
   heading("Archipelago");
-  status_line(Level::kInfo, "Coming later: Archipelago multiworld randomizer support is on its way. These settings "
-                            "can't be changed here yet.");
-  ImGui::Dummy(ImVec2(0, em() * 0.4f));
-  // The keys the game will read (the world agent's plan): ap_seed (a .apso2 seed file;
-  // empty: Archipelago off), then ap_server / ap_slot / ap_password. Shown as config.ini
-  // has them; Save keeps them as they are.
-  std::string seed = config_.get("ap_seed"), server = config_.get("ap_server", "archipelago.gg:38281"),
-              slot = config_.get("ap_slot"), password = config_.get("ap_password");
-  ImGui::BeginDisabled();
+  note("Archipelago is a multiworld randomizer: items are shuffled across games, and players find each "
+       "other's. Choose the seed file the generator made for you; with a server, the game sends your "
+       "checks and receives your items as you play.");
+
+  subheading(fonts_.bold, fonts_.size, "Seed");
+  const char* browse_label = "Browse...";
+  const char* clear_label = "Clear";
+  const float reserve = button_width(browse_label) + button_width(clear_label) + ImGui::GetStyle().ItemSpacing.x * 2;
+  path_input("##seed", settings_.ap_seed, "A seed file from the Archipelago generator (.apso2)", reserve);
+  ImGui::SameLine();
+  ImGui::BeginDisabled(dialog_open_);
+  if (ImGui::Button(browse_label)) browse(Target::kSeed);
+  ImGui::EndDisabled();
+  ImGui::SameLine();
+  ImGui::BeginDisabled(settings_.ap_seed.empty());
+  if (ImGui::Button(clear_label)) settings_.ap_seed.clear();
+  ImGui::EndDisabled();
+  if (settings_.ap_seed.empty()) {
+    status_line(Level::kInfo, "No seed: the game plays as the original.");
+  } else {
+    const SeedInfo& seed = seed_info(settings_.ap_seed);
+    if (seed.ok)
+      status_line(Level::kOk, "Seed " + seed.seed + ", slot " + seed.slot + ": " +
+                                  plural(static_cast<int>(seed.locations), "location", "locations") + ".");
+    else
+      status_line(Level::kError, seed.error);
+  }
+
+  subheading(fonts_.bold, fonts_.size, "Server");
   const float label_w = em() * 7;
   const float width = std::min(em() * 22, ImGui::GetContentRegionAvail().x - label_w);
-  field_label("Seed file", label_w);
-  ImGui::SetNextItemWidth(width);
-  ImGui::InputTextWithHint("##seed", "A seed from the Archipelago generator (.apso2)", &seed);
-  ImGui::SameLine();
-  ImGui::Button("Browse...");
-  subheading(fonts_.bold, fonts_.size, "Server");
+  ImGui::BeginDisabled(settings_.ap_seed.empty());
   field_label("Address", label_w);
   ImGui::SetNextItemWidth(width);
-  ImGui::InputText("##server", &server);
+  std::string server = settings_.ap_server;
+  if (ImGui::InputTextWithHint("##server", "archipelago.gg:38281 (empty: play offline)", &server))
+    settings_.ap_server = clean_path(server);
   field_label("Slot name", label_w);
   ImGui::SetNextItemWidth(width);
-  ImGui::InputText("##slot", &slot);
+  const SeedInfo* seed = settings_.ap_seed.empty() ? nullptr : &seed_info(settings_.ap_seed);
+  const std::string slot_hint = seed && seed->ok ? "From the seed: " + seed->slot : std::string("Your slot name");
+  ImGui::InputTextWithHint("##slot", slot_hint.c_str(), &settings_.ap_slot);
   field_label("Password", label_w);
   ImGui::SetNextItemWidth(width);
-  ImGui::InputText("##password", &password, ImGuiInputTextFlags_Password);
+  ImGui::InputTextWithHint("##password", "If the room has one", &settings_.ap_password,
+                           show_password_ ? 0 : ImGuiInputTextFlags_Password);
+  ImGui::SameLine();
+  check("Show", &show_password_);
   ImGui::EndDisabled();
+  ImGui::Dummy(ImVec2(0, em() * 0.2f));
+  if (!settings_.ap_seed.empty())
+    note(settings_.ap_server.empty()
+             ? "Offline: your checks are kept in your save and sent when you play with a server."
+             : "The game connects when it starts. Checks found while it can't reach the server are sent later.");
 }
 
 }  // namespace ss::setup

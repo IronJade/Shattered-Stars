@@ -19,7 +19,18 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] **M5** Events: dialogue, doors, chests, shops — verified through the whole game loop (`tools/smoke_field_events.sh`: Arlia → Hearn's store, the 200-Fol chest, talking to Mr. Hearn, the ruins' shut exit, a patched shop); shops compared with PCSX-Redux at Hearn's store (Fol, inventory, recent list)
 - [x] **M6** Menus (items, equipment, skills, save/load): every camp page (1-11), item creation (0xf / 0x10 / 0x13), renaming (0xe), the query page and save / load, each compared with PCSX-Redux
 - [ ] **M7** Battles — combat, HUD, result screen, every enemy class, Claude's and the casters' moves, the Shot kinds the monsters use are done and compared with PCSX-Redux; left: spells and battle items (in progress), the remaining character modules, party AI, voices
-- [ ] **M8** Disc 2 swap; the game can be finished
+- [ ] **M8** Disc 2 swap; the game can be finished. Audit in `docs/notes/m8_audit.md`:
+  - Every event-script service and opcode is real. 87 services keep a stand-in only for
+    VM unit tests; no shipped script reaches one.
+  - An event sweep ran every trigger, Private Action, talk and pickpocket entry of all
+    827 maps on both discs: 5326 entries each, no crash, no stand-in, no unknown
+    instruction. What remains is 3 trigger walks the sweep cannot place and the
+    endless final screen.
+  - Fixed on the way: music on about 50 maps (SLZ), V1 and V2 (original_bugs.md).
+  - Played through: disc 1 -> disc 2 on map 625 with the disc swap, and the credits and
+    final screen from map 581.
+  - Left: the private endings, and a check against PCSX-Redux from a real late-game
+    save.
 
 ## 0. Foundations
 
@@ -124,7 +135,7 @@ from config+0x45).
 - [x] Battle combat (battle agent, phase 2; `docs/notes/battle_port.md`): 30 fps loop, stage / units / camera (17 modes), the frame director, battle sound front end, movement (swept-box path probe), PartyUnit and EnemyUnit state machines with the enemy AI, player input, `unit_attack_targets` (accuracy, damage, crits, procs, knockback), victory / defeat / escape rules. A forced battle (encounter 2, stage 3) matches a PCSX-Redux run frame for frame (positions, animations, damage numbers, KO frame) apart from the missing HUD and dithering
 - [x] Battle HUD (step 1): window system, #1980 proportional text, the HUD (member HP / MP gauges, item / move icons, target select), the message banner; appears on the same frame as Redux and matches its layouts
 - [x] Battle result screen #1981 (step 2): EXP / Fol award, drops, level-ups with growth and learn tables, the defeat / escape / time-up messages, battle_fade_task, the victory jingle and voice picks (RNG draws; clips not yet); the handoffs at battle_exit_to_field equal the original's byte for byte (party, records; inventory apart from a RAM pointer), and the result pages match Redux frame for frame
-- [ ] Battle, part 2. Done and compared with PCSX-Redux: Claude's module and the killer-move framework, Rena / Celine / Leon / Noel, the Particle pool, Shot kinds 0x10 / 0x11 / 0x16 / 2 / 0x2c / 0x32 and shot_apply_damage, all 16 enemy families and the 43 encounter-pack / image enemy modules (`docs/notes/battle_enemies.md`). Written, not yet verified (e37c3a5): the jump attack (pc_state_air_attack), Ernest; the spell system (spell_cast, the ten built-in spells, SpellCast with one module, the cast states) and the command ring / list menus. Left: ~54 spell modules, battle item use, Bowman / Dias / Precis / Ashton / Opera / Chisato, party AI, voices, stage extras
+- [ ] Battle, part 2. Done and compared with PCSX-Redux: Claude's module and the killer-move framework, Rena / Celine / Leon / Noel, Bowman, Dias, Ernest, the jump attack (pc_state_air_attack), the party AI (fighter / healer / caster, the attack-spell choice), equipment effects (pc_apply_equip_effects, pc_update_effects), the Particle pool, Shot kinds 0x10 / 0x11 / 0x16 / 2 / 0x2c / 0x32 and shot_apply_damage, all 16 enemy families and the 43 encounter-pack / image enemy modules (`docs/notes/battle_enemies.md`), stage 8 lightning and the stage code blocks of stages 0x10 / 0x15 / 0x1a / 0x24 / 0x29. The encounter sweep (`tools/battle_sweep.py`, `docs/notes/battle_sweep.md`) runs all 564 encounters without a crash. Ported, check pending: stages 0xd / 0xe / 0x17 / 0x1f / 0x33, Particle kinds 4 / 5. Left: voices (the victory voice and the opening voices), spells and battle items (world agent), Precis / Ashton / Opera / Chisato (effects agent), the ASan sweep
 
 ## 5. Completion
 
@@ -137,7 +148,7 @@ from config+0x45).
 
 ## 6. Archipelago (plan: `docs/archipelago_plan.md`)
 
-- [ ] Phase 1, foundations: `tools/ap_extract.py` location / item tables, region notes, `game/ap` skeleton, the seed file and the save sidecar
+- [x] Phase 1, foundations: `tools/ap_extract.py` location / item tables (`docs/ap/field.json`, `docs/ap/battles.json`: 785 field locations, story order, regions; `docs/ap/field.md`, `docs/ap/battle.md`), the `game/ap` module (seed loader, checks, receive queue with notices, `--ap-seed`, the `ap_*` debug commands), the seed format (`docs/ap/seed_format.md`) and the save sidecar; smoke ap_seed / ap_save / ap_load
 - [ ] Phase 2, first playable: chest and gift shuffle in story mode, goal = final boss, the native client (apclientpp), receiving with notices, setup's Archipelago section
 - [ ] Phase 3: character items, boss and drop checks, DeathLink, traps, EXP / Fol / encounter options
 - [ ] Phase 4: open world (area keys, the Expel teleporter), shop shuffle, then entrance shuffle

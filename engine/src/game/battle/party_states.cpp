@@ -5,6 +5,8 @@
 // parts/p1.md "PartyUnit".
 
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
@@ -885,6 +887,7 @@ void PartyUnit::state_approach() {
   if (t != nullptr && (t->flying != 0 || t->airborne != 0) && t->pos[1] < jump_threshold + bobj_ground_height(this) &&
       action_kind < 7 && -0x190001 < pos[1])
     jump = true;
+  if (getenv("SS_TMP_JUMP") && t) fprintf(stderr, "[tmpappr] f%u id%d jump%d flags%x fly%d air%d ty%x thr%x ak%d py%x x%x\n", (unsigned)g.battle_frames, (int)st()->id, (int)jump, (unsigned)g.flags, (int)t->flying, (int)t->airborne, t->pos[1], jump_threshold, (int)action_kind, pos[1], pos[0]);
   if (g.flags == 0) {
     camera_follow_start();
     const int r = unit_move_toward_goal(this, 1);
@@ -928,6 +931,7 @@ void PartyUnit::state_approach() {
         }
       }
       const s32 tr = unit_jump_rise_time(this, v234, target->pos);
+      if (getenv("SS_TMP_JUMP")) fprintf(stderr, "[tmpjump] f%u id%d d%x tj%x tr%x last%x straight%d reach%d gh%x ty%x jt%x\n", (unsigned)g.battle_frames, (int)st()->id, d, tj, tr, last_dist, (int)straight, unit_can_reach_target(this, target, 0), bobj_ground_height(this), target->pos[1], jump_threshold);
       if (reached || (d <= tr && tr <= last_dist && straight == 0)) {
         vel[0] = scaled(vel[0], 14);
         vel[1] = scaled(vel[1], 14);

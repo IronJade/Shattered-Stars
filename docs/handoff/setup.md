@@ -1,11 +1,227 @@
 # Setup program (port feature): continuation log
 
-Task: a separate SETUP program for non-technical players (SDL3 + OpenGL + Dear ImGui), a
-shared launcher library, the game's side (validate disc 1, open setup when needed, honour
-the display / sound keys), packaging and README. Build dirs: `engine/build-setup` (Linux),
-`engine/build-win` (Windows). Scratch: `scratchpad/setup/` (scratch configs only:
-always set `XDG_CONFIG_HOME=$PWD/scratchpad/setup/...`; under Wine the settings land in
-the scratch prefix's AppData, Wine ignores a Unix APPDATA).
+Owner area: the setup program, the launcher library, main.cpp's start-up, the platform window /
+audio, the packages, and the Archipelago network client (`engine/src/ap_net/`).
+
+## RESUME HERE (2026-10-23, packaging round: DONE; nothing running)
+
+All four packaging tasks this round are complete and verified; nothing left open for this
+round. If picked up again, re-run the Verification commands below first since other agents
+keep editing shared files.
+
+### Progress this round (all four tasks DONE)
+1. **Linux container + OpenSSL/zlib:** `tools/linux-build/Containerfile` now installs
+   `libssl-dev zlib1g-dev` (Debian 12 ships both the shared and static `.a` archives for
+   both); `tools/build_linux.sh`'s container cmake line adds
+   `-DOPENSSL_USE_STATIC_LIBS=TRUE -DZLIB_USE_STATIC_LIBS=ON`. Rebuilt the podman image and
+   the package: dist tarball **8.1 MB** (was 5.8 MB without ap_net). Verified: `objdump -T`
+   on both programs tops out at GLIBC_2.36; `ldd` shows only `libm.so.6`, `libc.so.6`,
+   `ld-linux-x86-64.so.2` (and vdso); `strings` shows TLS/wss error text and CA-bundle paths,
+   confirming OpenSSL linked statically (not silently skipped, since `find_package(OpenSSL
+   QUIET)` not finding it is not a build error, only a message). smoke_field_events.sh
+   against the unpacked package: **37/37** (grown from 29 since the last round; 0 FAIL). The
+   host build (`engine/build`, which already had system OpenSSL) ss_tests 78/0,
+   ss_game_tests 98/0 including `ap_net_connects_over_tls` against
+   `tools/ap_test_server.sh start-wss`.
+2. **Windows release with wss:** `tools/build_windows.sh` with `MINGW_SSL_SYSROOT=scratchpad/
+   setup/mingw-ssl/usr/x86_64-w64-mingw32/sys-root/mingw`. Two real bugs found and fixed:
+   - CMake's `FindOpenSSL` has a separate MinGW-specific search path that resolves its own
+     `LIB_EAY` / `SSL_EAY` cache variables via a fresh `find_library()`, ignoring whatever
+     `OPENSSL_SSL_LIBRARY` / `OPENSSL_CRYPTO_LIBRARY` were pre-seeded to (and the MinGW
+     toolchain's `CMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY` means a HINTS-based
+     `OPENSSL_ROOT_DIR` just gets the sysroot wrongly prepended onto our already-absolute
+     path). Fix: pre-seed `LIB_EAY` / `SSL_EAY` directly (`tools/build_windows.sh`), which
+     short-circuits the search the same way `ZLIB_LIBRARY` already did.
+   - Once OpenSSL actually linked, the final link failed:
+     `undefined reference to '__imp_PathCchRemoveFileSpec'` (OpenSSL 3's static default
+     provider calls it to find its module directory; MinGW ships it in a separate
+     `libpathcch.a`, not pulled in automatically). Fix: `engine/CMakeLists.txt` links
+     `pathcch` for `ss_ap_net` on `WIN32` when `OpenSSL_FOUND`.
+   - Result: `dist/ShatteredStars-win64.zip` **6.5 MB** (was 4.7 MB without OpenSSL/zlib;
+     `shattered-stars.exe` alone 10.2 MB now, `setup.exe` unchanged at 2.68 MB since it
+     doesn't link `ss_ap_net`). Verified under Wine (scratch prefix
+     `scratchpad/wineprefix`, `HOME`/`XDG_CONFIG_HOME` unset, built
+     `scratchpad/setup/wine/game-release.sh` pointing at `engine/build-win-release`):
+     `ss_tests.exe` **78/0**; `ss_game_tests.exe` **99/0** including `PASS
+     ap_net_connects_over_tls` against `tools/ap_test_server.sh start-wss`; smoke via
+     `game-release.sh` **37/37**. `engine/build-win` (dev, no OpenSSL) and
+     `engine/build-setup` still link after the CMakeLists.txt change (the new `pathcch`
+     line is inside `if(OpenSSL_FOUND)`, so the OpenSSL-less dev build is unaffected).
+3. **Licences:** both `tools/build_linux.sh` and `tools/build_windows.sh` now call
+   `tools/third_party_licenses.sh BUILD_DIR SDL_LICENCE` instead of writing
+   THIRD-PARTY-LICENSES.txt inline. Fixed the zlib gap the previous round flagged: no
+   licence file ships on this host for zlib, so `third_party_licenses.sh` now has a
+   `zlib_section()` that falls back to extracting the licence comment out of the zlib.h the
+   build actually used (via `CMakeCache.txt`'s `ZLIB_INCLUDE_DIR`), finally a note that the
+   zlib licence needs no binary notice. Checked inside both rebuilt packages: all 9 sections
+   present with real text (SDL, Dear ImGui, apclientpp, wswrap, WebSocket++, Asio,
+   nlohmann/json, OpenSSL, zlib).
+4. **README:** `engine/README.md` has a new `## Archipelago` section: setup's page (seed
+   file Browse, offline vs. online with Server / Slot / Password), DeathLink (follows the
+   seed's own option), `--ap-seed`, the debug console commands; `tools/ap_test_server.sh`
+   / `tools/ap_e2e.sh` are called out as a developer-only note, not something a player needs.
+5. `.gitignore`: added `engine/build*.configure.log` (a stray sibling-of-the-build-dir file
+   `tools/build_windows.sh` has always written, not covered by the existing `engine/build*/`
+   pattern).
+
+### Rules (from the coordinator; unchanged all along)
+- Never pop windows: SDL_VIDEO_DRIVER=offscreen, SDL_AUDIO_DRIVER=dummy for every run.
+- Never touch ~/.config/shattered-stars or the user's cards: always a scratch XDG_CONFIG_HOME
+  under scratchpad/setup/ (Wine: the scratch prefix scratchpad/wineprefix, which keeps the
+  settings in its own AppData; unset HOME / XDG_CONFIG_HOME for wine).
+- Disc images: read only. Scratch on disk in scratchpad/ (never /tmp). Builds -j8. Kill only
+  by exact PID (or a process group you started).
+- No commits (the coordinator commits hourly). Log here at least every 20 minutes.
+- Keep engine/build, engine/build-setup and engine/build-win linking; suites green:
+  ss_tests, ss_game_tests (SS_DISC1), tools/smoke_field_events.sh (SS_DISC1).
+- Edit only: main.cpp, launcher/, setup/, ap_net/, platform/window* / audio*, your CMake
+  lines, tools/build_*.sh and your tools, README; flag anything else.
+- Archipelago: localhost servers only; never send anything to archipelago.gg or any
+  public server. Pulling public base images / packages is fine; never push anything.
+- Policy: enhance, don't degrade (docs/notes/original_bugs.md); make player-facing things friendly.
+
+### State: everything builds, suites green at the last run
+engine/build, build-setup, build-win and build-win-release all build every target. Linux
+(host) ss_tests 78/0, ss_game_tests 98/0 (ap_net cases including wss against a local
+server), smoke 37/37 on the packaged container game. Wine (build-win-release): ss_tests.exe
+78/0, ss_game_tests.exe 99/0 (incl. wss), smoke 37/37. Full detail in "Progress this round"
+above.
+
+### 1. Portable Linux package (DONE, including OpenSSL/zlib this round)
+`tools/build_linux.sh --container`: podman, Debian 12 (tools/linux-build/Containerfile,
+FROM debian@sha256:854dd8ab51d62866dbd8f5431d15ce77b12983a2a4a1e1fe43a2395dc7ef9f61, image
+localhost/shattered-stars-linux-build:bookworm), GCC 12.2 / CMake 3.25; SDL 3.4.18 static
+(all backends dlopened) and ImGui from FetchContent; libstdc++ static; libssl-dev /
+zlib1g-dev added, OpenSSL and zlib linked in statically
+(-DOPENSSL_USE_STATIC_LIBS=TRUE -DZLIB_USE_STATIC_LIBS=ON); repo mounted read-only
+(--security-opt label=disable), build in engine/build-linux-container. Result:
+dist/ShatteredStars-linux-x86_64.tar.gz (8.1 MB, up from 5.8 MB pre-ap_net), GLIBC_2.36 max
+(objdump -T), NEEDED libc / libm / ld-linux only (ldd; confirmed via strings that OpenSSL's
+TLS code actually linked in, not silently skipped). Verified: smoke 37/37 from the unpacked
+package; wss works (ss_game_tests' ap_net_connects_over_tls, host build, against
+tools/ap_test_server.sh start-wss). Host mode (no --container) needs
+LIBSTDCXX_STATIC_DIR=scratchpad/setup/static/usr/lib/gcc/x86_64-redhat-linux/16 here and
+gives glibc 2.43 (not touched this round; still has no OpenSSL/zlib flags, since host build
+wasn't asked for and already differs in the glibc floor it reports).
+
+### 2. Archipelago network client (WORKING; integration done; packaging open)
+Interface agreed with the world agent (a4efaa8a3ecfb676d, owner of engine/src/game/ap/):
+- `engine/src/ap_net/link.h` (plain types; game/ap uses only this): ConnectInfo (server,
+  slot, password, game, uuid, items_handling = 0b001 others' items only, deathlink), State,
+  NetItem (item, location, player, flags, index), Event (kStatus, kConnected {slot, team,
+  seed_name, checked, missing, slot_data_json}, kRefused, kItems, kDeathLink {source,
+  text}, kMessage {text, item_send}), abstract Link (check, goal, deathlink, say, poll,
+  state, player_name, item_name, location_name).
+- `engine/src/ap_net/client.{h,cpp}`: `Client : Link` on apclientpp v0.6.6 (+ wswrap
+  aeba7ac, websocketpp 0.8.2, asio 1.28.2, nlohmann/json 3.11.3; FetchContent, SHA-256
+  pinned in CMakeLists; target ss_ap_net, C++17; defines ASIO_STANDALONE AP_NO_SCHEMA
+  AP_NO_DEFAULT_DATA_PACKAGE_STORE _WEBSOCKETPP_CPP11_STL_ _WEBSOCKETPP_CPP11_THREAD_).
+  Own thread, one mutex around APClient, in-memory data package store, own DeathLink echo
+  dropped, Linux CA bundle discovery, OpenSSL / zlib optional (WSWRAP_NO_SSL /
+  WSWRAP_NO_COMPRESSION without them).
+- game/ap (theirs): `connect(unique_ptr<Link>)` installs Runtime::net_poll, polls per
+  vblank, matches seed_name, re-sends checks / goal, gives items by index in free play,
+  DeathLink both ways, notices. `deathlink_enabled()` from the seed's options.
+- main.cpp (mine): after their `ap::start` block, on a windowed run with config ap_server:
+  builds `ap_net::Client` (slot = ap_slot or the seed's slot_name, password, deathlink,
+  uuid = config ap_uuid made once and saved unless a test run; env SS_AP_GAME overrides the
+  game name for tests) and calls `game::ap::connect`. CMake links ss_ap_net into the game
+  and defines SS_HAVE_AP_NET.
+- Setup's Archipelago page is live: seed file (Browse, .apso2, checked with the game's
+  `game::ap::load_seed_file`: setup compiles game/ap/seed.cpp + json.cpp), server, slot
+  (hint: the seed's slot), password (Show). Keys ap_seed, ap_server, ap_slot, ap_password.
+- Verified end to end (scratchpad/setup/e2e): the windowed game (offscreen) with a test
+  seed for slot Alice (seed 13515657874892102023, ChecksFinder ids 81000.. / 80000..,
+  SS_AP_GAME=ChecksFinder) connected, matched the seed, sent `ap_check 81000` (server: "Alice
+  sent Map Width to Bob"), received Bob's items and gave them in free play (5 given, 10
+  waiting behind the banner); ap_status "connected | DeathLink". Tell the world agent.
+**Open (all DONE this round — see "Progress this round" at the top for how):**
+- ~~Windows release with wss~~: done; needed pre-seeding `LIB_EAY` / `SSL_EAY` (not
+  `OPENSSL_SSL_LIBRARY` / `OPENSSL_CRYPTO_LIBRARY`, which CMake's MinGW-specific FindOpenSSL
+  path ignores) and linking `pathcch` for OpenSSL 3's static provider. engine/build-win
+  (dev) still has no OpenSSL: ws:// only, unaffected.
+- ~~Linux container~~: done, see section 1.
+- ~~README~~: done, `## Archipelago` section added.
+- A test of setup's seed check (good seed / bad seed) would still be cheap — not done this
+  round (out of scope: the four packaging tasks only).
+
+### Tools and how to run them
+- `tools/setup_screenshots.sh [PROGRAM] [OUT]`: every setup page and state offscreen as
+  PNGs (scratch settings); PROGRAM may be engine/build-win/setup.exe (Wine). Needs SS_DISC1
+  for most states. Default out: scratchpad/setup/shots/.
+- `tools/ap_test_server.sh start [PORT] | start-wss [PORT] | stop | address`: local
+  MultiServer (127.0.0.1 only; scratchpad/ap: uv Python 3.13, Archipelago 0.6.8 clone, venv,
+  ChecksFinder multiworld Alice / Bob seed 12345 = seed name 13515657874892102023; own
+  process group; --disable_save, fresh at each start; start-wss = self-signed cert
+  scratchpad/ap/cert.pem). Goal announcements happen once per server run.
+- `tools/build_linux.sh [--container]`, `tools/build_windows.sh` (see above),
+  `tools/third_party_licenses.sh BUILD_DIR SDL_LICENCE`.
+- `scratchpad/setup/wine/game.sh`: wraps the Windows game for
+  `tools/smoke_field_events.sh scratchpad/setup/wine/game.sh` (smoke under Wine).
+- `scratchpad/setup/e2e/`: the end-to-end seed, config and bob.py (Python client as Bob).
+
+### Verification commands
+```sh
+D1=".../Star Ocean - The Second Story (Disc 1).cue"   # see the task text for the full path
+export SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy XDG_CONFIG_HOME=$PWD/scratchpad/setup/cfg_x
+SS_DISC1="$D1" engine/build/ss_tests; SS_DISC1="$D1" engine/build/ss_game_tests
+SS_DISC1="$D1" tools/smoke_field_events.sh
+tools/ap_test_server.sh start; tools/ap_test_server.sh start-wss
+SS_AP_SERVER=ws://localhost:38281 SS_AP_SERVER_WSS=wss://localhost:38282 \
+  SS_AP_CERT=$PWD/scratchpad/ap/cert.pem SS_DISC1="$D1" engine/build/ss_game_tests
+tools/ap_test_server.sh stop
+tools/build_linux.sh --container; objdump -T dist/ShatteredStars-linux-x86_64/shattered-stars | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+
+# Windows release (wss-capable): MINGW_SSL_SYSROOT points at the already-unpacked RPMs.
+MINGW_SSL_SYSROOT=$PWD/scratchpad/setup/mingw-ssl/usr/x86_64-w64-mingw32/sys-root/mingw tools/build_windows.sh
+cmake --build engine/build-win-release -j8 --target ss_tests ss_game_tests
+export WINEPREFIX=$PWD/scratchpad/wineprefix WINEDEBUG=-all; unset XDG_CONFIG_HOME
+D1W=$(env -u HOME winepath -w "$D1" 2>/dev/null)   # capture stderr separately: EGL noise corrupts it otherwise
+CERTW=$(env -u HOME winepath -w "$PWD/scratchpad/ap/cert.pem" 2>/dev/null)
+(cd engine/build-win-release && SS_DISC1="$D1W" env -u HOME wine ss_tests.exe)
+tools/ap_test_server.sh start; tools/ap_test_server.sh start-wss
+(cd engine/build-win-release && SS_AP_SERVER=ws://localhost:38281 SS_AP_SERVER_WSS=wss://localhost:38282 \
+  SS_AP_CERT="$CERTW" SS_DISC1="$D1W" env -u HOME wine ss_game_tests.exe)
+tools/ap_test_server.sh stop
+SS_DISC1="$D1" tools/smoke_field_events.sh scratchpad/setup/wine/game-release.sh   # wraps build-win-release
+```
+
+## Round 3 (2026-10-23 ~02:30): portable Linux package, then the Archipelago client
+
+- **Linux package for older systems** (done): `tools/build_linux.sh --container` builds in
+  podman on Debian 12 (`tools/linux-build/Containerfile`, FROM debian@sha256:854dd8ab...,
+  image tag localhost/shattered-stars-linux-build:bookworm; GCC 12.2, CMake 3.25). SDL 3.4.18
+  (static, all backends dlopened) and ImGui come from the project's FetchContent (pinned by
+  SHA-256); libstdc++ / libgcc static; repo mounted read-only (label=disable, no SELinux
+  relabelling), build in engine/build-linux-container. Result: 5.8 MB tarball, both programs
+  need GLIBC_2.36 at most (objdump -T), NEEDED only libc / libm / ld-linux. Checked: the
+  unpacked package passes tools/smoke_field_events.sh (29/29) and renders every setup
+  screenshot (OpenGL) on this machine; inside plain debian:12 (glibc 2.36, no GL, no fonts)
+  the game runs headless and setup renders through the SDL software renderer with the logo.
+  apt packages in the image are Debian 12's current ones (not snapshot-pinned).
+- **Archipelago network client** (in progress, working):
+  - Interface agreed with the world agent: `engine/src/ap_net/link.h` (plain types: Link,
+    ConnectInfo with items_handling 0b001, State, NetItem, Event); `ap_net/client.h`
+    `Client : Link` on apclientpp v0.6.6 + wswrap aeba7ac + websocketpp 0.8.2 + asio 1.28.2
+    + nlohmann/json 3.11.3 (all FetchContent, SHA-256 pinned; target ss_ap_net, C++17;
+    _WEBSOCKETPP_CPP11_THREAD_ for MinGW). Own thread; one mutex around APClient; events
+    drained by poll(); own DeathLink echo dropped; in-memory data package store (nothing
+    written to ~/.cache); Linux finds the distribution's CA bundle itself (static OpenSSL
+    in the release); OpenSSL / zlib optional (MinGW here: ws:// only).
+  - Local server: `tools/ap_test_server.sh start|start-wss|stop` (scratchpad/ap: uv
+    Python 3.13, Archipelago 0.6.8, ChecksFinder slots Alice / Bob, seed 12345, 127.0.0.1
+    only, own process group; start-wss with a self-signed localhost certificate).
+  - Tests `tests/test_ap_net.cpp` (in ss_game_tests, skip without SS_AP_SERVER): connect +
+    names, checks / items 0..24 / reconnect resume, DeathLink (other slot only) + goal +
+    InvalidSlot, wss, unreachable server. Pass on Linux and under Wine (ws).
+  - Setup's Archipelago page is live: seed file (Browse, .apso2 filter, quick check with
+    game/ap/json.cpp), server, slot (hint: the seed's slot), password (Show). Keys ap_seed,
+    ap_server, ap_slot, ap_password (left out when empty). Screenshots archipelago*.png.
+  - Waiting on the world agent: `game::ap::connect(unique_ptr<Link>)` +
+    `deathlink_enabled()` (then main.cpp builds the Client after their ap::start block),
+    and the seed reader split into game/ap/seed.{h,cpp} (asked).
+  - To do: Containerfile + build_linux.sh: libssl-dev / zlib1g-dev, static OpenSSL; the
+    Windows zip without OpenSSL is ws-only (mingw64-openssl needed).
 
 ## Round 2 (coordinator, 2026-10-23 ~00:30): logo header, GUI exe, Controls, Linux package
 

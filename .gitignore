@@ -13,3 +13,7 @@ engine/build*/
 
 # Release packages (tools/build_windows.sh)
 dist/
+engine/build*.configure.log
+
+# Reference books the user supplies (copyrighted; kept locally only)
+*.pdf

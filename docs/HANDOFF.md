@@ -86,6 +86,10 @@ only. Agents run the suites themselves before reporting a step as verified.
 - `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
 - `SS_STATE_DUMP="VBLANK:PATH,..."` the state block, config, party, records and inventory at those vblanks; `SS_MENU_DUMP=prefix` (with `SS_MENU_DUMP_OPEN`, `SS_MENU_DUMP_DELAY=n`) the same blocks around field menus.
 - `SS_DEBUG_INPUT="VBLANK:cmd;VBLANK:cmd"` types debug console commands at set vblanks (with `--debug`).
+- `--ap-seed FILE` loads an Archipelago seed (docs/ap/seed_format.md; console `ap_status`,
+  `ap_check ID`, `ap_give ITEM [FROM]`; `[ap]` log lines). `SS_AP_SERVER=ws://localhost:PORT`
+  (+ `SS_AP_SLOT`, `SS_AP_GAME`) connects any run to a local server, headless ones too;
+  `SS_PACE=1` paces a headless run in real time; `tools/ap_e2e.sh` is the end-to-end check.
 - `SS_TRACE=1` VM milestones, map loads, trigger regions, encounter settings, voice banks;
   `SS_TRACE_LEADER=N` the leader's position, view position, control and Fol every N
   vblanks; `SS_WORLD_DBG=N` world camera / leader; `SS_WORLD_VSYNC=3` the console's 20 fps
@@ -98,6 +102,9 @@ only. Agents run the suites themselves before reporting a step as verified.
   `docs/notes/original_bugs.md`. Save data stays byte-compatible.
   A fix never changes the play state: hit timing, hits, damage, difficulty and pacing stay
   the original's, measured against PCSX-Redux before the fix goes in.
+- Agents keep their `docs/handoff/<area>.md` complete enough to resume from, because each
+  one is replaced by a fresh agent once its context passes ~400k tokens (cost per step
+  grows with context size).
 - No game code or assets in git; data is read from the user's discs at run time.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).

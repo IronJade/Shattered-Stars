@@ -105,7 +105,7 @@ Other "not ported" notes in the field code:
    - **ok**: back to free play on the map;
    - **map M**: the event took the party to map M;
    - **game over**;
-   - **timeout**: no free play within 12000 frames;
+   - **stuck** / **timeout** (below);
    - **gone**;
    - **no free play**: the reload did not settle.
 6. The driver adds **crash** and **hang** (no output for 120 s) and re-runs the map from
@@ -123,7 +123,58 @@ script position, waits and every window's text position.
 - Settling prefers the main thread at the top level (20 frames); a main thread inside a
   function needs 600 frames of free play.
 
-RESULTS_PLACEHOLDER
+### Results
+
+Final runs (`scratchpad/menu/m8/end_d1` and `end_d2`, `--frames 12000`):
+
+| | Disc 1 | Disc 2 |
+|---|---|---|
+| maps | 827 | 827 |
+| maps that reached free play | 789 | 789 |
+| entries run | 5326 | 5326 |
+| ok | 3640 | 3640 |
+| took the party to another map | 1678 | 1678 |
+| gone on a later visit | 3 | 3 |
+| stuck | 3 | 3 |
+| hang (no output) | 2 | 2 |
+| crash | 0 | 0 |
+| stand-in services reached | 0 | 0 |
+| instructions no handler claims | 0 | 0 |
+
+The two discs give the same results. Their scripts are the same, and these runs read no
+disc-specific entry.
+
+The entries that did not end in free play or a map change:
+- **Hang: maps 0 and 826, K21.** The debug room's ending launcher sets the ending flags
+  and goes to map 581. That runs the credits and the final screen, which never returns,
+  so it is not a hang.
+- **Stuck: maps 591, 592 and 593, T9.** The trigger (region x 246..263, z 170..182) asks
+  a question and then has the leader walk. The sweep fires it from the map's entry spot,
+  not from inside the region, so the walk never arrives and the script waits for the
+  leader (wait state 5) or loops. This is a sweep limitation.
+- **Gone: map 58 K19 / S19 and map 139 K40.** After the first visit, the main script
+  sets up these NPCs differently, so the entries no longer exist.
+
+38 maps never reached free play:
+- 35 run a scene that leaves the map (for example 5 and 6 to 12, 7 to 8, 172-182 to
+  175, 690-696 to 695). Those scenes ran, and the next map is swept on its own.
+- Map 185 is a scene chain over maps 207 and 183, and map 576 leads into disc 2's
+  opening on 618 (about 17000 frames). Both were still moving at 12000 frames.
+- Map 295: its main thread waits for actor 27 while the player has control. Most likely
+  the NPC's walk is blocked by the leader standing at the `--map` start spot. Not
+  checked against the original.
+
+What the sweep found and what was fixed:
+- **Music:** 61 "field music: the sequence block does not unpack" lines on about 50 maps.
+  Fixed (SLZ).
+- **V1:** the notice banner crashed when its window was already gone.
+- **V2:** the end of a talk whose NPC deletes itself crashed (map 753 NPC 18). A real
+  player reaches this.
+- Everything else that once timed out or crashed came from the sweep itself:
+  - the snapshot restored under a running thread;
+  - stale entries fired;
+  - blind input started talks again and looped topic menus;
+  - triggers fired into intro scenes that had not locked the player yet.
 
 ## 3. Story stretches
 
@@ -153,14 +204,40 @@ There is no save near either point, so the scripts' own story globals were set f
 ## Fixed
 
 - **SLZ references before the output** (port decoder fault).
-  - Five music banks (#2646, #2661, #2662, #2678, #2733) end with an LZSS reference
-    before the start of the output. In three of them the stream lacks its end marker and
-    runs past the declared size into the bank.
-  - The console copies whatever memory lies before its buffer there. The port rejected
-    the block, so about 50 maps had no music sequence ("field music: the sequence block
-    does not unpack").
-  - `disc/slz.cpp` now reads those bytes as zeros, the compressor's cleared window. The
-    declared bytes match a reference decode.
+  - Five music banks end with an LZSS reference to before the start of the output:
+    - #2646, #2678: within the declared size;
+    - #2661, #2662, #2733: once the stream, which lacks its end marker, has run past the
+      declared size into the bank that follows.
+  - The console copies whatever memory lies before its buffer. The port rejected the
+    block, so these songs had no sequence ("field music: the sequence block does not
+    unpack", 61 lines in the first sweep).
+  - `disc/slz.cpp` now reads those bytes as zeros.
+  - **Checked against the console (PCSX-Redux):** `scratchpad/menu/m8/slz/slzref.lua`
+    breaks in `slz_lzss` when the field unpacks its music into g_music_sequence
+    (0x80075734, a `mem_alloc(0x4800)` made at field start).
+    - It dumps the 8 KB before that buffer, writes the bank's stream over the source, and
+      dumps the result. Three runs from two different saves.
+    - **#2646:** declared bytes 481-485 come from 2591-2587 bytes before the buffer. On the
+      console those are zeros, so all 486 declared bytes match the port.
+    - **#2678:** declared byte 1225 (the last) comes from 407 bytes before the buffer. That
+      is check byte 845 of the inventory stash, allocated just below. Its value is
+      `((~845 & 15) ^ salt) << 4 | salt`, with `salt = rng_range(16)` drawn when the stash
+      is made: the console read 0x02 (salt 2) in both runs, and it holds the real
+      inventory's check bytes while the stash is in use.
+    - So the byte varies with the random generator and the game state, and the port keeps
+      0 there. Every other declared byte matches.
+    - **#2661, #2662, #2733:** every declared byte matches; only bytes past the declared
+      size differ.
+  - **Songs and maps affected** (music number -> entry; maps whose scripts play it):
+
+    | Music | Entry | Maps |
+    |---|---|---|
+    | 6 | #2646 | 108, 247, 251 |
+    | 21 | #2661 | 14, 27, 30, 39, 247, 253, 255, 310, 386-401, 642 |
+    | 22 | #2662 | 43-60, 63, 183-209, 277, 278 |
+    | 38 | #2678 | every map: a shared script routine plays it with a 400-frame window (on map 26 at word 5853) |
+    | 95 | #2733 | 548 |
+
 - **V1, notice banner** (original_bugs.md): the banner's slide-out was queued through a
   null window pointer when its window was already gone. The console writes into low RAM
   there; the port crashed. Fixed in notice.cpp.

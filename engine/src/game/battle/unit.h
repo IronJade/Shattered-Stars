@@ -361,6 +361,9 @@ void unit_update_status_effects(Unit* u);          // 0x80053240 (Unit [10])
 // The party-data loader task (party_loader_create 0x80082bd8) and the end-of-battle reset.
 Task* party_loader_create();
 void party_reset();
+// (Port, original_bugs.md B14) battle_run hands over the raw stage file (load-list entry 2)
+// before it is unpacked: the party units' uninitialised +0x230 reads from it.
+void party_note_stage_file(const std::vector<u8>& raw);
 // Item record field (inventory_item_data 0x800691c4 on the #1983 table): field 0 u32,
 // 4..0x12 s16, else u8; 0 for item 0.
 s32 item_data_field(int item, int field);

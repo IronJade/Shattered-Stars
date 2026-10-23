@@ -26,7 +26,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-START = re.compile(r"\[sweep\] map (\d+) vblank (\d+) entry (\d+) (\w)(\d+) code (\d+) start")
+START = re.compile(r"\[sweep\] map (\d+) vblank (\d+) entry (\d+) (\w)(\d+) code (\d+) start")  # (a region may follow)
 END = re.compile(r"\[sweep\] map (\d+) vblank (\d+) entry (\d+) (\w)(\d+) end (.*?) frames (\d+) standins (\d+)(?: last (\S+))? unknown_ops (\d+)(?: \| (.*))?$")
 ENTRIES = re.compile(r"\[sweep\] map (\d+) vblank \d+ entries (\d+):?(.*)$")
 DONE = re.compile(r"\[sweep\] map (\d+) vblank \d+ done (.*)$")

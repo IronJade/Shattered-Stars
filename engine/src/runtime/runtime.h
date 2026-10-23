@@ -40,6 +40,9 @@ class Runtime {
   std::set<u64> capture_frames;
 
   void (*vsync_callback)() = nullptr;  // VSyncCallback
+  // Port feature: the Archipelago link's events, once per vblank on the game thread
+  // (game/ap installs it while connected). [world agent]
+  void (*net_poll)() = nullptr;
   // Runs once per vblank before the VSync callback: produces the field's sound
   // (44100 / 59.94 samples, clocking the sound driver's root counter) and outputs it.
   void (*audio_tick)() = nullptr;

@@ -6,6 +6,153 @@ Build dirs: `engine/build-battle` (normal) and `engine/build-battle-asan` (ASan;
 `LD_PRELOAD=scratchpad/battle/asan/usr/lib64/libasan.so.8`). Scratch (on disk):
 `scratchpad/battle/`. The worker does not commit; the coordinator does.
 
+## Hand-over (2026-10-23, context rollover): start here
+
+Assignment (coordinator): finish M7 with an encounter sweep.
+
+1. Write `tools/battle_sweep.py`: every encounter, port only, at most 5 jobs,
+   XDG_CONFIG_HOME=<out>/xdg, --no-memcard; one ASan pass. **Done.**
+2. Write `docs/notes/battle_sweep.md`, bosses marked. **Done** (passes 1 and 2).
+3. Port the missing pieces, most-hit first, checking against Redux where it's cheap. **Mostly
+   done**; see the status table in battle_sweep.md.
+4. Update docs/CHECKLIST.md's "Battle, part 2" line. **Done**, 2026-10-23.
+
+### State at hand-over
+
+- **Sweep pass 1** (`scratchpad/battle/sweep/pass1/`):
+  - 564 runs, no crashes; ranked list in battle_sweep.md.
+  - Every piece found is ported except the victory voice, which the enemy agent owns.
+- **Sweep pass 2** (`scratchpad/battle/sweep/pass2/`, `--god --strong 20:30:4`): finished.
+  - Outcomes: 325 victory, 83 defeat, 156 cap. No crashes.
+  - Missing pieces: only the victory voice, plus particle kind 4 from the binary snapshot
+    taken before that port.
+  - The numbers are in battle_sweep.md.
+- **ASan pass: not run yet.** The ASan binary is up to date (built after the particle port).
+  Command:
+
+  ```
+  . scratchpad/battle/discs.sh
+  tools/battle_sweep.py --out scratchpad/battle/sweep/asan --god --strong 20:30:4 \
+      --bin engine/build-battle-asan/shattered-stars
+  ```
+
+  It runs about 5x slower; the sweep script sets ASAN_OPTIONS=detect_leaks=0.
+- **Ported this session and verified against Redux** (the M7 sweep section below has the
+  numbers):
+  - pc_apply_equip_effects 0x800818dc and its helpers;
+  - pc_update_effects 0x8003adc8;
+  - pc_has_effect's +0x135 test;
+  - stage 8 lightning, plus kind 0x12's +0x10c 1 branch in spell_shots.cpp (world agent's
+    file, 3 lines);
+  - the stage code for stages 0x1a (ref stage26), 0x29 (stage41), 0x24 (stage36 and
+    stage36_long, cart included), 0x15 (stage21) and 0x10 (stage16c, with an AI Celine
+    casting).
+- **Ported, check pending**:
+  - Stage 0xe (kind 0x19). Ref stage14c (Claude plus AI Celine, encounter 35):
+    - RNG splits at b960, and a kind-0x16 projectile differs at b970 (ref vel 117285,-83615;
+      port 141960,21840).
+    - The three k19 objects are equal up to there.
+    - Encounter 35's Carlaeagle feathers carry the enemy agent's E9 change, so look there
+      first. Compare `./cmpstage_caster.sh stage14c 4078` with `ref/caster35`.
+  - Stages 0xd (ref stage13), 0x17 (stage23) and 0x1f (stage31): Redux runs were going at
+    hand-over (PIDs 4070602 / 4073635 / 4079043). They end by themselves; then run
+    `./cmpstage.sh stage13` etc.
+  - Stage 0x33: not queued. Run `./queue_stages.sh 51`, then `./cmpstage.sh stage51`.
+  - Particle kinds 4 / 5 (particle.cpp): visual only. XINE (encounter 199, stage 10) spawns
+    kind 4.
+- **Answered for the effects agent**: Opera move 7's trails. The trail state is equal; the
+  difference is the B1 fix, which a faithful build confirms. Reported to main.
+- **Original bugs logged**: B11 fixed (visual), B12 kept (play), B13 decide (the cart's popup
+  shows 50 for 100 damage). B9 is back to the original by the user's decision.
+- **Suites on the current build**: ss_tests 78/0, ss_game_tests 98/0 (SS_DISC1), smoke 37/37.
+
+### Uncommitted files of mine (the coordinator's checkpoints commit them)
+
+- New: `engine/src/game/battle/stage_objects.{h,cpp}`, `docs/notes/battle_sweep.md`.
+- Modified:
+  - battle_program.cpp: stage_objects_create; the unused `todo` removed.
+  - director.cpp: the stage hook, lightning.
+  - killer.cpp: the B1 comment.
+  - particle.cpp: kinds 4 / 5.
+  - shot.cpp: stage_shot_update.
+  - engine/CMakeLists.txt: stage_objects.cpp.
+  - docs: original_bugs.md, CHECKLIST.md, notes/README.md, this file.
+- Already committed by the checkpoints: party.cpp, party_states.cpp, battle_debug.{h,cpp},
+  unit.h, unit_move.{h,cpp}, spell_shots.cpp, tools/battle_sweep.py.
+
+### Tools and scripts (all in `scratchpad/battle/` unless a path is given)
+
+- **Sweep and discs**:
+  - `tools/battle_sweep.py`; see its docstring and battle_sweep.md.
+  - `discs.sh` exports SS_DISC1 / SS_DISC2.
+- **Port compare against a run_victory.sh reference**:
+  - `pcrun.sh CHAR BYTE REF OUT [FRAMES]`.
+  - Env: `PC_IN` (input list), `PC_EXTRA_POKE` (",TAG:OFF=V/S"), `PC_TICKS` ("" for the
+    2-2-2 group, default 1) and `PC_D` (default 7). Other SS_* variables pass through, e.g.
+    SS_BATTLE_SHOTS and SS_BATTLE_COPY.
+- **Special stages**:
+  - `cmpstage.sh NAME [FRAMES]`: port run on ref/NAME, plus RNG with a base fix, units and
+    Shots frame by frame. It finds the tick group and the input offset itself (press = 45i +
+    4082 - S - D, S = the battle-start vsync; `CMP_OFF` overrides).
+  - `cmpstage_caster.sh NAME S`: the same for the Claude + AI Celine refs. S is the vsync in
+    ref/NAME/ram_battle_loop_<S>.bin.
+- **Redux references**:
+  - `run_victory.sh OUT`, with BW_ENC / BW_STAGE / BW_MASH / BW_EXTRA_POKE (hex values) /
+    BW_SHOTS / BW_ELOG / BW_BATTLE_FOR / BW_TRAIL / BW_COPY.
+  - `queue_runs.sh CHAR NAME BYTE...` (killer moves) and `queue_stages.sh STAGE...`.
+  - `run_stage_caster.sh STAGE NAME [ENC]`.
+  - All keep at most 3 of my Redux runs at once (they count `pgrep -af "^timeout [0-9]+
+    .*pcsx-redux -cli.*battle/ref/"`).
+- **Other compare scripts**:
+  - `rngcmp.py` (CMP_D), `unitcmp.py REF PORT D`, `framecmp.py` (FRAMECMP_D);
+  - `trailcmp.py REF PORT` (BW_TRAIL against SS_BATTLE_TRAIL);
+  - `diffmap.py` / `crop.py` (frames to PNG).
+- **Disassembly and catalog**:
+  - `asm.py ADDR` (ASM_ELF picks the ELF) and `decomp1.sh ELF ADDR`, both through the
+    private REA CLI.
+  - Stage-block ELFs: `stage_blocks/blk<n>.elf` (symbols `stage_blocks/syms<n>.txt`; asm in
+    `stage_blocks/asm/`).
+  - `gen_catalog.py`, run from the repo root, writes analysis/battle_catalog/port_updates.csv
+    (622 rows; the stage blocks come from battle_overlays.csv).
+- **Debug variables, new this session** (battle_debug.h):
+  - SS_BATTLE_QUIT_AT_EXIT, SS_BATTLE_PARTY, SS_BATTLE_STRONG=H:A:D (HP capped at 9999),
+    SS_BATTLE_GOD, SS_BATTLE_TRAIL;
+  - explore.lua: BW_TRAIL. A breakpoint object must stay referenced, or Redux drops it.
+
+### Rules (from the coordinator; keep them)
+
+- **Tools and builds**:
+  - REA (the private CLI) for disassembly.
+  - Catalog every function: gen_catalog.py.
+  - Build only in engine/build-battle and engine/build-battle-asan, with -j8.
+- **Runs**:
+  - Headless only: `--headless`, SDL_VIDEO_DRIVER=offscreen, SDL_AUDIO_DRIVER=dummy.
+  - At most 3 Redux instances; kill my own by exact PID.
+  - Every game, test and sweep with XDG_CONFIG_HOME pointed at a scratch dir
+    (scratchpad/battle/xdg), plus --no-memcard unless a card is named.
+  - Never touch ~/.config/shattered-stars/config.ini or the user's saves.
+  - Scratch on disk under scratchpad/battle/ (/tmp is RAM).
+- **Process**:
+  - No commits; the coordinator checkpoints hourly.
+  - Keep this file and the catalog current at least every 20 minutes.
+  - Run ss_tests, ss_game_tests (SS_DISC1) and smoke before calling anything verified.
+- **Enhance, don't degrade**:
+  - No slowdown modelling.
+  - For a real original bug, comment the original as `// ORIGINAL BUG (original_bugs.md
+    <id>): ...` and write the fix below it.
+  - "We are fixing bugs, not breaking the play state": a fix must not change hit timing,
+    the number of hits, damage, difficulty or pacing. If it would, keep the original and log
+    it.
+  - Verify the faithful version first when a bug changes what a Redux comparison measures.
+  - Save data stays byte-compatible.
+  - Visual-only start-point fixes offset the drawing, never the path (the enemy agent's E9
+    pattern in shot.{h,cpp}).
+- **Ownership**:
+  - Enemy agent: enemy classes, voices, Shot kinds 0x27 / 0x2d, tools/ap_extract.py.
+  - World agent: spells and items.
+  - Effects agent: Precis / Ashton / Opera / Chisato and the GPU.
+  - The rest of battle is mine: party AI, Bowman, Dias, Ernest, stage code, the sweep.
+
 ## Done and verified
 
 - **Step 1, HUD / windows / #1980 text / message banner**: `battle/window.{h,cpp}`,
@@ -216,31 +363,58 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
     - The pre-port binary splits at b800 with 416 samples off, so the test is sensitive.
   - Input mapping: a Redux mash at vsync 3810 + 45k is pressed at port vblank 45(k - 6),
     pcrun-style with SS_BATTLE_TICKS=1.
-- **Ported, on disk, Redux pending: pc_update_effects 0x8003adc8**
-  (PartyUnit::update_status_effects): fury, attack boosts, stun, MP / HP drains, the guts /
-  evasion / intelligence boosts, the 300 / 600-tick regenerations and the timed effects.
+- **Verified: pc_update_effects 0x8003adc8** (PartyUnit::update_status_effects): fury, attack
+  boosts, stun, MP / HP drains, the guts / evasion / intelligence boosts, the 300 / 600-tick
+  regenerations and the timed effects.
   - New PartyUnit fields: +0x2fe regen_ticks, +0x300 regen_mp_ticks, +0x302 mp_drain_ticks.
-  - Ref `ref/equip_71_85` (accessories 67 = 0x71 HP regen and 90 = 0x85 MP regen, MP 50 of
-    200) is running.
-- **Ported, Redux pending: stage 8 lightning** (director.cpp): stage_random_point plus
+  - Ref `ref/equip_71_85` (accessories 67 = 0x71 HP regen and 90 = 0x85 MP regen; MP 50 of
+    200): RNG equal to the exit (b1506), 4 of 1855 unit samples off. Claude's +39 HP regen
+    lands at the same frame.
+- **Verified: stage 8 lightning** (director.cpp): stage_random_point and
   effect_spawn_streak_at(from 0x76c up, 0x101010 / 0xffffff, 0x60, 0x1000, 0x1000, puff 1).
-  - It needed kind 0x12's +0x10c 1 branch (the world agent's spell_shots.cpp, a 3-line
-    edit): size 0x10, and the streak ends where unit_check_move(s, vel, 7) is blocked.
-  - Ref `ref/stage8_light` (encounter 2, stage 8) is running.
-- **Opera move 7 trails (the effects agent's question)**: in progress.
-  - New dumps: explore.lua `BW_TRAIL=LO:HI` (the breakpoint object must stay referenced or
-    Redux drops it) and the port's `SS_BATTLE_TRAIL=LO:HI` (battle_debug_trail).
-  - Suspect: the console keeps the trail pointer at Shot +0x134, and the trail's back
-    pointer clears it when the trail dies, possibly in a reused pool slot. The port uses
-    p134 = 1 as a flag, with the back pointer on `s->trail`, so a cleared slot never
-    re-creates a trail.
-  - Ref `ref/op_m8_trail` is running.
-- **Next: the stage code blocks.**
-  - ELFs with each #1984 block 2-10 patched in at 0x8008c1f4 are in
-    `scratchpad/battle/stage_blocks/blk<n>.elf` (`blk0e.elf` holds the image's kind-0x19
-    handler).
-  - Ghidra decompiles go to `scratchpad/battle/decomp/` (stage_blocks/decomp_all.sh).
-  - battle_run's stage objects are in analysis/decomp/battle/8007160c (lines 165-280).
+  - It needed kind 0x12's +0x10c 1 branch (the world agent's spell_shots.cpp, a 3-line edit):
+    size 0x10, and the streak ends where unit_check_move(s, vel, 7) is blocked.
+  - Refs `ref/stage8_light` and `ref/stage8_shots` (BW_SHOTS):
+    - every streak spawns in the same frame at the same point and falls identically;
+    - RNG is equal to b940;
+    - after that, a cross press lands one frame apart (input parity), not a lightning
+      difference.
+  - Those refs are in the 2-2-2 tick group, so use `PC_TICKS="" PC_D=6` and inputs at 45i-1
+    (pcrun.sh now takes PC_TICKS, PC_D, PC_IN and PC_EXTRA_POKE).
+- **Opera move 7 trails (the effects agent's question): answered.** The trail state matches
+  Redux on every update. The b480-500 difference is the B1 fix: the console's far edge uses
+  quad 0's start angle for every quad. A faithful build drops it to 0.06-0.15%. b510-540 is
+  the sphere / blob, not the trails. B1's comment and its row in original_bugs.md are
+  corrected.
+- **Ported: the stage code blocks and stage objects** (new `stage_objects.{h,cpp}`).
+  - The hooks: stage1a_update, stage0d_update, stage15_update, stage24_update, stage29_update
+    (director.cpp calls `stage_code_update()` unless flags & 0xc).
+  - Shot kinds 0x18 / 0x19 / 0x1a / 0x1b / 0x1c / 0x1e / 0x1f / 0x20 / 0x22 / 0x23 / 0x28 /
+    0x2a / 0x2b (shot.cpp's default case calls `stage_shot_update`).
+  - battle_run's stage objects: `stage_objects_create()` after battle_setup_sprite_banks.
+  - Obstacle slot 23 (the rolling objects) and 23 - index (the hanging / stacked pieces) live
+    in StageData::obstacles. 0x8006fb57 is obstacles[23].kind.
+  - Original bugs found:
+    - B11: a hanging object's shadow comes from the wrong slot. Fixed, visual only.
+    - B12: its fall check clears the wrong slot, so the first object never falls. Kept, play.
+    - B13: the cart's popup shows 50 but the cart takes 100 HP. Decide.
+  - Sources: decompiles in `scratchpad/battle/decomp/blk*.c` and disassembly in
+    `scratchpad/battle/stage_blocks/asm/`. The catalog has 18 rows for them.
+  - Redux checks (encounter 2 with BW_SHOTS, `cmpstage.sh`): Shots equal frame by frame,
+    RNG equal to the exit, at most 8 unit samples off (HP sampling):
+    - stage26: 503 frames;
+    - stage41: 660 frames, flakes;
+    - stage36: 525 frames;
+    - stage36_long: 1298 frames, the cart, over the whole 2600 frames;
+    - stage21: 549 frames, drops;
+    - stage16c: 909 frames, Claude + AI Celine casting.
+    - Open: stage14c (see the hand-over).
+- **Debug additions**:
+  - `SS_BATTLE_GOD=1` refills the standing party's HP every frame (for sweeps).
+  - `SS_BATTLE_STRONG=H:A:D` adds a defence factor.
+  - `tools/battle_sweep.py --god`.
+- Sweep pass 2 (god mode, HP:ATK:DEF x20:30:4): see the hand-over at the top.
+- Particle kinds 4 / 5 (particle.cpp, 0x8005ee08 / 0x8005f128) are ported, not yet checked.
 
 ## Next steps
 

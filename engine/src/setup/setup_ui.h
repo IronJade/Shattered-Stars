@@ -19,7 +19,7 @@ union SDL_Event;
 
 // The setup program's window (port feature): every setting a player needs, so the game
 // itself never needs the command line. Pages: Discs, Display, Sound, Memory cards, Mods,
-// and a greyed-out Archipelago placeholder. Save writes config.ini (keeping keys this
+// and Archipelago (seed file, server, slot, password). Save writes config.ini (keeping keys this
 // version doesn't know); Save & Play also starts the game.
 namespace ss::setup {
 
@@ -62,6 +62,7 @@ struct Settings {
   bool card_inserted[2] = {true, false};
   std::string card[2];
   std::string mods;
+  std::string ap_seed, ap_server, ap_slot, ap_password;  // Archipelago (config.ini's ap_* keys)
   bool operator==(const Settings&) const = default;
 };
 
@@ -74,14 +75,23 @@ class App {
   bool done() const { return done_; }
   int exit_code() const { return exit_code_; }
   void request_close();  // the window's close button
-  void forget_file_checks() { disc_cache_.clear(); card_cache_.clear(); }  // focus regained
+  void forget_file_checks() {  // focus regained: files may have changed
+    disc_cache_.clear();
+    card_cache_.clear();
+    seed_cache_.clear();
+  }
   // While a control is being bound: takes the key or gamepad button (true: consumed, not
   // for ImGui). Esc cancels, Delete unbinds; a click elsewhere cancels.
   bool capture_event(const SDL_Event& e);
 
  private:
   enum class Level { kOk, kInfo, kWarning, kError };
-  enum class Target { kDisc1, kDisc2, kCard1, kCard2, kMods };
+  enum class Target { kDisc1, kDisc2, kCard1, kCard2, kMods, kSeed };
+  struct SeedInfo {  // a quick look at an .apso2 seed file (the game reads it in full)
+    bool ok = false;
+    std::string error, seed, slot, game;
+    size_t locations = 0;
+  };
   struct CardInfo {
     enum Kind { kNew, kNotACard, kDexDrive, kUnformatted, kReady } kind = kNew;
     int saves = 0, free_blocks = 0;
@@ -123,6 +133,7 @@ class App {
 
   const launcher::DiscInfo& disc_info(const std::string& path);
   const CardInfo& card_info(const std::string& path);
+  const SeedInfo& seed_info(const std::string& path);
   Level disc_level(int n);
   bool disc1_ok() { return disc_info(settings_.disc1).kind == launcher::DiscKind::kDisc1; }
   Settings read(const launcher::Config& c) const;
@@ -154,6 +165,8 @@ class App {
 
   std::map<std::string, launcher::DiscInfo> disc_cache_;
   std::map<std::string, CardInfo> card_cache_;
+  std::map<std::string, SeedInfo> seed_cache_;
+  bool show_password_ = false;
 
   // File dialogs answer asynchronously (maybe on another thread).
   std::mutex dialog_mutex_;

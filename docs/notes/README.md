@@ -22,5 +22,6 @@ user's discs); the facts that matter are recorded here or in the catalog.
 | `battle_port.md` | The battle port itself: file layout, deliberate deviations, how it was checked against PCSX-Redux, what is missing |
 | `battle_image_map.md` | Which parts of the #2129 image above 0x800715d0 are live code and which are stale copies |
 | `battle_enemies.md` | The monster classes: the 16 resident families, the 40 encounter-pack code blocks and the image's default modules, how the port picks a class, Redux checks, quirks kept |
+| `battle_sweep.md` | The encounter sweep (`tools/battle_sweep.py`): all 564 battles headless, what they hit that is not ported, the bosses, the status of each piece |
 | `encounter_maps.md` | Field maps with random encounters (rate, group, stage), from a sweep of every map |
 | `original_bugs.md` | The original's bugs: the port comments them out and corrects them (each listed with its status), and does not model the original's slowdown |

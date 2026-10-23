@@ -4,6 +4,7 @@
 // equipment and overlay effects.
 #include <cstring>
 
+#include "game/ap/ap.h"
 #include "game/boot/rng.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
@@ -480,7 +481,8 @@ void vm_exec_table_b(ScriptCtx* ctx, u32 instr) {
       break;
     case 0x60:  // give_item
       vm_fetch_args(ctx, 1);
-      inventory_add(g.inventory, a[0], 1, 1);
+      // Archipelago (port feature): a seed's placeholder gives its location's item instead.
+      if (!ap::on_give_item(static_cast<s32>(a[0]))) inventory_add(g.inventory, a[0], 1, 1);
       vm_svc_set_global_76278(1);
       break;
     case 0x61:

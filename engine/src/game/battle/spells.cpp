@@ -3,6 +3,7 @@
 
 #include "game/battle/spells.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -305,28 +306,58 @@ void spell_data_cancel_owner(Unit* owner) {
 // Debugging (SS_BATTLE_CAST="FRAMES:SLOT:SPELL:TARGET;..."): once g_battle_frames reaches
 // FRAMES, party unit SLOT gets command 4 (cast SPELL at TARGET: p0-p3 / e0-e7); called by
 // input_update before input_dispatch, where the world agent's Redux driver applies BW_CAST.
+namespace {
+int g_debug_enemy_cast = -1;  // the last spell a monster cast (debugging: SS_BATTLE_ENEMY_SPELLS)
+}  // namespace
+
 void debug_forced_casts() {
   // SS_BATTLE_ENEMY_ODDS="FRAMES:SLOT:o0,o1,o2,o3,o4": enemy SLOT's AI odds (EnemyUnit
   // +0x24d) set once the battle frames reach FRAMES (a passive target for the spell sweeps;
   // the Redux driver pokes the same bytes during the intro).
-  // SS_BATTLE_ENEMY_SPELLS="FRAMES:SLOT:s0,s1,s2,s3": enemy SLOT's spell list (+0x249), the
-  // same way (the Redux driver pokes those bytes).
-  static bool spells_done = false;
-  if (!spells_done) {
+  // SS_BATTLE_ENEMY_SPELLS="FRAMES:SLOT:s0,s1,s2,s3[:HP[:MP]];...": enemy SLOT's spell list
+  // (+0x249), in order, each once the battle frames reach FRAMES, no SpellCast runs (flags
+  // 0x40) and a monster has cast the previous entry's s0 since it was set (or 1500 frames
+  // passed); with HP / MP (-1: unchanged) those too (a monster casts a spell for its own side
+  // only on an ally below half HP). The Redux driver applies BW_ENEMY_SPELLS the same way at
+  // input_dispatch.
+  static std::vector<std::string> enemy_spells;
+  static size_t enemy_spells_next = 0;
+  static int enemy_spells_last = -100000;
+  static int enemy_spells_wait = -1;  // the spell the last entry set
+  static bool enemy_spells_read = false;
+  if (!enemy_spells_read) {
+    enemy_spells_read = true;
     if (const char* env = std::getenv("SS_BATTLE_ENEMY_SPELLS")) {
-      int frames = 0, slot = 0;
-      unsigned v[4] = {};
-      if (std::sscanf(env, "%d:%d:%i,%i,%i,%i", &frames, &slot, &v[0], &v[1], &v[2], &v[3]) == 6) {
-        if (frames <= bg().battle_frames) {
-          spells_done = true;
-          if (EnemyUnit* e = bg().enemy_units[static_cast<size_t>(slot & 7)])
-            for (int i = 0; i < 4; ++i) e->spells[i] = static_cast<u8>(v[i]);
-        }
-      } else {
-        spells_done = true;
+      std::string list = env;
+      for (size_t at = 0; at <= list.size();) {
+        const size_t end = std::min(list.find(';', at), list.size());
+        if (end > at) enemy_spells.push_back(list.substr(at, end - at));
+        at = end + 1;
       }
-    } else {
-      spells_done = true;
+    }
+  }
+  if (enemy_spells_next < enemy_spells.size()) {
+    BattleGlobals& g = bg();
+    int frames = 0, slot = 0, hp = -1, mp = -1;
+    int v[4] = {};
+    const int n = std::sscanf(enemy_spells[enemy_spells_next].c_str(), "%d:%d:%i,%i,%i,%i:%d:%d", &frames, &slot, &v[0],
+                              &v[1], &v[2], &v[3], &hp, &mp);
+    if (n < 6) {
+      ++enemy_spells_next;
+    } else if (frames <= g.battle_frames && (g.flags & 0x40) == 0 &&
+               (enemy_spells_wait < 0 || g_debug_enemy_cast == enemy_spells_wait ||
+                g.battle_frames - enemy_spells_last >= 1500)) {
+      ++enemy_spells_next;
+      enemy_spells_last = g.battle_frames;
+      enemy_spells_wait = v[0];
+      g_debug_enemy_cast = -1;
+      if (EnemyUnit* e = g.enemy_units[static_cast<size_t>(slot & 7)]) {
+        for (int i = 0; i < 4; ++i) e->spells[i] = static_cast<u8>(v[i]);
+        if (n >= 7 && hp >= 0) e->st()->hp = hp;
+        if (n >= 8 && mp >= 0) e->st()->mp = static_cast<s16>(mp);
+        std::fprintf(stderr, "[spell] battle frame %d enemy spells e%d %x,%x,%x,%x\n", g.battle_frames, slot & 7, v[0], v[1],
+                     v[2], v[3]);
+      }
     }
   }
   static bool odds_done = false;
@@ -406,6 +437,7 @@ void spell_cast(int spell, Unit* caster, Unit* target, int power) {
                  target == nullptr ? "-" : (target->is_enemy != 0 ? "e" : "p"), target == nullptr ? 0 : target->slot,
                  power, caster->st()->mp);
   }
+  if (caster->is_enemy != 0) g_debug_enemy_cast = spell;  // (SS_BATTLE_ENEMY_SPELLS)
   SpellData data = spell_data_take(spell, caster);
   if (spell_needs_data(spell) == 1 && entry_for(spell, caster) != 0 && data == nullptr) return;
   if (spell < 0x40) {

@@ -14,6 +14,7 @@
 #include "game/battle/spell_fx.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
+#include "game/battle/stage_objects.h"
 #include "game/battle/unit.h"
 #include "game/battle/vram.h"
 #include "game/boot/pad.h"
@@ -276,8 +277,9 @@ void battle_frame_director() {
     const s32 from[3] = {to[0], to[1] - 0x76C000, to[2]};
     effect_spawn_streak_at(from, to, 0x101010, 0xFFFFFF, 0x60, 0x1000, 0x1000, 1);
   }
-  // TODO(port): the stage code blocks of stages 0xd / 0x15 / 0x1a / 0x24 / 0x29 / 0x38 /
-  // 0x39 (#1984 blocks 2-10) and the opening voices (0x8006fb31).
+  // The stage code's per-frame hook (#1984 blocks 5 / 7 / 2 / 8 / 9 at 0x8008c1f4).
+  if ((g.flags & 0xC) == 0) stage_code_update();
+  // TODO(port): the opening voices (0x8006fb31).
   if (g.flags == 0) {
     const s32 t = static_cast<u16>(g.item_cooldown) - g.frame_ticks;
     g.item_cooldown = static_cast<s16>(t);

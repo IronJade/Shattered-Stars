@@ -81,15 +81,18 @@ byte), and its test suites pass under Wine (`engine/build-win/ss_tests.exe`,
 ### Linux package
 
 ```sh
-tools/build_linux.sh   # -> dist/ShatteredStars-linux-x86_64.tar.gz: shattered-stars,
-                       #    shattered-stars-setup, libSDL3.so.0, README, discs/
+tools/build_linux.sh --container   # -> dist/ShatteredStars-linux-x86_64.tar.gz: shattered-stars,
+                                   #    shattered-stars-setup, README, discs/
 ```
 
-libstdc++ is linked in (`sudo dnf install libstdc++-static`), and SDL3 is copied beside
-the programs, which load it from there (RUNPATH `$ORIGIN`). The player needs only glibc and
-OpenGL 3.3. The glibc version is that of the system the package was built on (Fedora 44:
-2.43); the script prints it and writes it in the package's `README.txt`. Build on an older
-distribution to support older systems.
+The release is built with podman in a Debian 12 container (`tools/linux-build/Containerfile`,
+pinned by digest), so it runs on any distribution with glibc 2.36 or newer. SDL 3 and Dear
+ImGui are built from source there, by the project's own CMake, pinned by SHA-256. SDL is linked in, and
+it loads its display and sound backends (X11, Wayland, PipeWire, PulseAudio, ALSA) at run
+time. libstdc++ is linked in as well, so the player needs only glibc and OpenGL 3.3. The
+repository is mounted read-only; the build goes to `engine/build-linux-container`. Without
+`--container` the script builds on this machine instead, with the system's SDL3 copied beside
+the programs. That build needs this machine's glibc (Fedora 44: 2.43).
 
 ### Setup program
 
@@ -165,12 +168,41 @@ Item fields: `price`, `atk`, `def`, `amount`, `effect`, `type`, `sell`; enemy fi
 
 Debug console: start with `--debug` and type commands into the terminal (`help` lists
 them): `where`, `warp MAP [X Y Z [DIR]]`, `fol N`, `item ID [COUNT]`, `heal`,
-`flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`. The status line
+`flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`, and with a seed
+`ap_status`, `ap_check ID`, `ap_give ITEM [FROM]`. The status line
 (map, field state, the leader's position, Fol) and the console's last lines are shown
 over the top of the picture and in the window title; without `--debug` neither appears.
 
 Debugging switches (start on a map, battles, traces, headless runs) are listed in
 `docs/HANDOFF.md`.
+
+## Archipelago
+
+Setup's **Archipelago** page loads a seed (*Browse...*, `.apso2` files from the
+Archipelago generator) and, once one is chosen, offline or online play:
+
+- **Offline:** leave Server empty. The seed's patch lines join the world edits; chests
+  record checks; received items are given in free play with a banner; each save's
+  state is kept in a sidecar file next to the memory card (`memcard1.slot03.ap.json`),
+  so the card itself stays console-compatible. See `docs/ap/seed_format.md`.
+- **Online:** fill in Server (`ws://host:port` or `wss://host:port`), Slot (hint:
+  the seed's own slot name) and, if the room has one, Password. The game connects on
+  the next windowed run, sends every check and the goal as they happen, and receives
+  other players' items live instead of only from the seed file. **DeathLink** follows
+  the seed's own option (set when it was generated): if it's on, a party wipe sends a
+  DeathLink and a DeathLink from anyone else ends the current battle or the field
+  session, same as dying.
+- `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
+  server / slot / password, if config.ini already has them (from setup), still apply.
+- Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]`.
+
+`apworld/so2/patches.py` turns a placement into the seed's placeholder patches.
+
+*Developer note:* `tools/ap_test_server.sh` runs a local, 127.0.0.1-only Archipelago
+server (and `start-wss` a TLS one with a self-signed certificate) for testing the
+network client without touching a public server; `tools/ap_e2e.sh` plays a scripted
+multiworld session against it. Neither is needed, or useful, to a player — a real seed
+is hosted by the room the player was given.
 
 ## Tests
 

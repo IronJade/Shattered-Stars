@@ -343,176 +343,246 @@ For each page:
   and compare with `cmpdump.sh`, `cmpnp.py` and `blockcmp.py`. Run at most three Redux
   instances at once, and build with -j8.
 
-## M8: the game can be finished (in progress; resumed 22:20)
+## M8: the game can be finished (audit done; reported)
 
-**Since the resume (22:20), state at about 23:00:**
-- Exit 2: the new launcher (now relaxed by the setup agent), plus ss-sweep3 built
-  mid-rewrite. No flag renamed. Disc 2 is `SS_EVENT_SWEEP_DISC=2` (driver `--disc 2`).
-- All my runs use `XDG_CONFIG_HOME=<scratch>` and `--no-memcard`. Earlier runs probably
-  wrote ~/.config/shattered-stars (19:19, 19:43); this was reported.
-- Step 1 is done; see `docs/notes/m8_audit.md` §1.
-- Step 3 is done for what can be set up without a save; see m8_audit.md §3:
-  - disc 1 -> 2 on map 625 works;
-  - the credits and the final screen from map 581 work;
-  - the last scene from 583 runs.
-  Frames are in `scratchpad/menu/m8/{disc625,ending,ending2}`.
-- Fixes this session:
-  - SLZ zeros for references before the output (music on about 50 maps).
-  - **V1**: notice banner, null window (notice.cpp).
-  - **V2**: actor_pop_state after the update deleted the actor; map 753 NPC 18 crashed
-    at the end of its talk (actor_base.cpp, `g_deleted_by_command`).
-  - Both are in original_bugs.md "Field events".
-- Sweep improvements:
-  - Free play needs the player unlocked (field_flags +0x26).
-  - Settling prefers depth 0 (20 frames, else 600).
-  - "stuck" (no progress for max(1200, frames / 3)) versus "timeout" (10 x frames).
-  - Every third choice in an entry is cancelled.
-  - The reload no longer closes windows.
-- ss-sweep7's `last_d*` runs are void. The top-level idle count was not reset when an
-  entry fired, so many entries ended "ok" after one frame. Fixed in event_sweep.cpp
-  (`s.idle = s.idle_top = 0` at fire).
-- Running: the final full sweeps with `bin/ss-sweep8`, `--frames 12000 --stall 600`
-  (the credits run longer than 120 s with no sweep output), into
-  `scratchpad/menu/m8/end_d1` / `end_d2`. PIDs are in `end_d1.pid` / `end_d2.pid`.
-- Then:
-  1. Analyse with `python3 scratchpad/menu/m8/analyze.py scratchpad/menu/m8/end_d1`
-     (and d2).
-  2. Replace `RESULTS_PLACEHOLDER` in m8_audit.md §2 with the counts and the remaining
-     not-ok entries; fix the "timeout" bullet there.
-  3. Tick the checklist's M8 line (docs/CHECKLIST.md) with the summary.
-  4. Report.
-- Suites on this tree (with a scratch XDG): ss_tests 78/0, ss_game_tests 82/0, smoke
-  21 PASS.
+Write-up: `docs/notes/m8_audit.md`. The checklist's M8 line is updated but not ticked
+(the private endings and a Redux check from a real late-game save are left).
 
-(The notes from before the pause follow.)
+**Code (all mine unless noted):**
+- `engine/src/game/field/event_sweep.{h,cpp}`: the sweep.
+  - `SS_EVENT_SWEEP=1`, with `_FRAMES`, `_SKIP`, `_DISC=2` and `_WATCH=n`.
+  - Free play = control, unlocked, no trigger or talk, wait_state 0, no fade or busy
+    window; 20 frames at depth 0 or 600 inside a function.
+  - Results: ok / map / gone / stuck / timeout / no free play.
+- `tools/event_sweep.py`: the driver.
+  - Runs with `XDG_CONFIG_HOME=<out>/xdg` and `--no-memcard`.
+  - Crash and hang re-runs, `--reparse`, `--disc 2`, `--stall`.
+- `vm_services.{h,cpp}`: `g_vm_standins`.
+- `script_vm.cpp`: `SS_VM_TRACE=1`.
+- `script_triggers.cpp` / `script_vm.h`: `field_start_talk`.
+- Hooks in others' files:
+  - field_program.cpp field_update calls `event_sweep_frame`.
+  - menu_camp.cpp's menu frame hook calls `event_sweep_menu_frame`.
+- Fixes in others' files:
+  - `disc/slz.cpp` and `tests/test_slz.cpp`: references before the output read zeros.
+    This restores music on about 50 maps (banks #2646, #2661, #2662, #2678, #2733).
+  - `field/notice.cpp`: **V1**.
+  - `field/actor_base.cpp`: **V2** (`g_deleted_by_command`).
 
+**Results:** both discs are identical. Each has 5326 entries:
+- 3640 ok, 1678 map changes, 3 gone;
+- 3 stuck (591-593 T9: the sweep can't place the leader in the region);
+- 2 "hangs" (the debug room's ending launcher ends on the final screen);
+- 0 crashes, 0 stand-ins, 0 unknown ops.
+Results are in `scratchpad/menu/m8/end_d1` / `end_d2` (`analyze.py`).
 
-Task (coordinator): classify every event-script stand-in, sweep every map's events on
-both discs, play story stretches (disc 1 -> disc 2, the endings). Results and the method
-go to a new `docs/notes/m8_audit.md` (not written yet) and the checklist's M8 line;
-original bugs go to original_bugs.md "Field events" (V1 on; none found yet).
+**Step 3:**
+- Disc 1 -> 2 on map 625 (`SS_SCRIPT_GLOBALS="a0=0x22,a4=0"`): the scene, the save menu,
+  B 0x6a and the swap without a prompt, then disc 2's opening. Frames are in
+  `scratchpad/menu/m8/disc625`.
+- Map 581 with `79c=0x24000`: the credits, then the final screen (`ending2`).
+- Map 583 with `a0=0x3b,a4=0x7d0`: the last scene (`ending`).
 
-### Step 1, services: classified, no stand-in hit in a live field
+**Suites** (scratch XDG): ss_tests 78/0, ss_game_tests 91/0, smoke 29 PASS.
 
-- `vm_services.cpp` has 247 `vm_svc_*`. 160 are real. The other 87 have a stand-in path
-  that runs only when their subsystem is missing (VM unit tests). The conditions are
-  listed in `scratchpad/menu/m8/svc_classes.txt`, regenerated by a script in this
-  session's log; the most common is `sys() != nullptr`.
-- `g_vm_standins` (vm_services.h/.cpp: `VmStandinStats`) counts stand-in calls.
-- In the disc 1 sweep, no entry hit a stand-in. The one stand-in line in the logs came
-  from the sweep's own bogus pickpocket entry, which is fixed now.
-- Nothing in script_table_a / table_b / script_ext logs "not ported". encounter.cpp and
-  map.cpp have `todo()` helpers with no callers. field_world.cpp covers every world state
-  9-0x20.
-- Static op scan: `scratchpad/menu/m8/opscan.py [OP...]`.
-  - Disc change B 0x6a: map 625, word 5608.
-  - Credits A 0x2d: map 581, word 12845.
-  - The end A 0x40: map 581, words 12880, 12892 and 12895.
+**Tools:**
+- `scratchpad/menu/m8/one.sh MAP SKIP FRAMES [gdb]`: one sweep process, with
+  `GDBF=<script>` for gdb.
+- `dis.py MAP [FROM TO]` and `dis.py MAP strings`: the script.
+- `opscan.py [OPS]`.
 
-### Step 2, the event sweep: tool done; final full run not done yet
+## After M8: SLZ check, endings, late save, map 295 (handed over 2026-10-23)
 
-- Code (all on disk and built in engine/build-menu):
-  - `engine/src/game/field/event_sweep.{h,cpp}`, new and mine.
-  - `tools/event_sweep.py`, the driver: parallel jobs, crash and hang re-runs, and
-    `--reparse` to rebuild results.json from the map logs.
-- Hooks:
-  - field_program.cpp field_update calls `event_sweep_frame(f)`, plus its include.
-  - menu_camp.cpp `field_menu_frame` calls `event_sweep_menu_frame()`.
-  - script_triggers.cpp: `field_start_talk` was split out of field_try_talk (declared in
-    script_vm.h).
-  - script_vm.cpp: `SS_VM_TRACE=1` prints every instruction.
-- Env:
-  - `SS_EVENT_SWEEP=1`.
-  - `SS_EVENT_SWEEP_FRAMES` (frames per entry; the driver passes `--frames`, use 12000).
-  - `SS_EVENT_SWEEP_SKIP=k`.
-  - `SS_EVENT_SWEEP_WATCH=n` (the VM and window state every n frames).
-- Method:
-  - Start with `--map N` and `SS_BATTLE_STUB=1`, then wait for free play. Free play: field
-    state 0, control set, no trigger or talk active, wait_state 0, no fade, no busy window.
-    The main thread may sit inside a function.
-  - Take a snapshot of the state block, party, records, inventory and config.
-  - For each entry (trigger T, Private Action P, talk K, pickpocket S; actors flagged
-    0x20000 are skipped, as field_try_talk does):
-    - Put the snapshot back just before field_update's state 1 loads the map; the script
-      thread is held during the fade. Then wait for free play.
-    - Check the entry still exists; if not, mark it "gone" (the map sets up differently
-      on later visits).
-    - Fire the entry as the VM does and run it.
-  - Input:
-    - Cross when a window waits (state 6/7/8) or a choice is up.
-    - Every 64 frames while the player has no control.
-    - In a menu's own loop, Circle every 8 frames.
-    - Blind presses re-started talks (map 257 K16 seemed to hang); that is fixed.
-  - Results: ok, map M, game over, timeout, gone, no free play; the driver adds crash
-    and hang.
-- Disc 1 runs so far (older binaries, superseded):
-  - `scratchpad/menu/m8/d1`: all maps with ss-sweep1. Results: 3726 ok, 1667 map changes,
-    27 timeouts, 26 crashes.
-  - `d1b`: the problem maps re-run with ss-sweep2.
-  - Every crash so far came from the sweep itself:
-    - A snapshot was restored while the other map's thread was running.
-    - Gone entries were fired: an entry of 0xffff jumped the VM off the code; actor 32's
-      pickpocket entry 0 was fired despite flag 0x20000.
-  - Every timeout examined so far came from the sweep too:
-    - Long cutscenes: map 8 K20 needs 4128 frames.
-    - The blind input re-started talks.
-    - Main threads that loop while the player has control (maps 172-182).
-- Not yet examined (re-check with the final binary): 264/266 K18, 279/297 K16, 285 K17,
-  568 T1, 593 T9, 689 K17, and the settle timeouts 262 / 276 / 562 / 576 (562 / 576:
-  window 0 printing while the main script waits for it).
+**Current task** (from the coordinator, in order):
+1. SLZ zero-fill against the console. **Done.**
+2. The endings:
+   - decode the selection; write `docs/notes/endings.md`;
+   - drive every ending in the port, logging map, script and characters;
+   - compare a handful with Redux using the same pokes;
+   - tick M8 in docs/CHECKLIST.md if they all play, else say what is left.
+   - **In progress.**
+3. The late-game save, `scratchpad/latesave/card.mcd`.
+   - **Never open the `.gme` in the repo root.** Copy the card again for every run.
+   - Load it in the port and in Redux on map 671 (Fienal 9F, the final save point). Walk
+     the three stair rooms, fight the final boss and let the ending play.
+   - Compare RNG, units and frames on the stair maps and at the battle's start.
+   - Record which ending plays in endings.md.
+   - The port-only run may use SS_BATTLE_STRONG or a stub. Keep the Redux comparison on
+     unmodified stats up to the battle start.
+   - **Not started**, apart from the tools below.
+4. Map 295: check in Redux whether the main thread's wait on NPC 27 also stalls from the
+   same start spot. A stall the player can reach would block the game. **Not started.**
 
-### Fixed so far (not an original bug: a port decoder fault)
+**Rules:**
+- Build only in engine/build-menu, with -j8.
+- Every port run uses `XDG_CONFIG_HOME=<scratch>` and `--no-memcard`, unless it names a
+  card (then a scratch card copy).
+- At most 3 PCSX-Redux instances, run with `-cli -interpreter -debugger -stdout`,
+  `HOME=scratchpad/menu/redux/home` and `XDG_CONFIG_HOME=scratchpad/menu/redux/xdg`.
+- No commits. Kill only your own processes, by exact PID: `pgrep -f` matches your own
+  shell.
+- Log here and in the catalogs at least every 20 minutes.
+- The original_bugs.md policy applies: comment out the original line as `// ORIGINAL BUG
+  (id)`, fix below it, and list it in original_bugs.md.
+- The Prima guide (`docs/Star Ocean The Second Story_text.pdf`, OCR text in
+  `scratchpad/guide/guide.txt`) is git-ignored. Never commit or quote it; write facts in
+  our own words with a page reference. When the code and the guide disagree, the disc
+  wins.
 
-- SLZ method 1 failed on a reference before the start of the output
-  (`engine/src/disc/slz.cpp`). Such references now read zeros (the compressor's cleared
-  window). Five music banks have one: #2646, #2661, #2662, #2678 and #2733.
-- Their maps had no music sequence; the logs show "field music: the sequence block does
-  not unpack" on about 50 maps.
-- `engine/tests/test_slz.cpp`: `slz_rejects_bad_reference` became
-  `slz_reference_before_start_reads_zeros`.
-- The bytes within the declared size match a reference decode with a zero window
-  (`scratchpad/menu/m8/slzt`). Not compared against PCSX-Redux RAM.
+### Session 2026-10-23 (second menu agent)
 
-### Build state at the pause
+- Suites rerun after the play mode and ending pokes (build-menu, scratch XDG, logs in
+  `scratchpad/menu/suite/`): ss_tests 78/0, ss_game_tests 98/0, smoke 37 PASS / 0 FAIL.
+- `runall.py` finished: all 32 runs "list ok, played ok, done True"; the 32 runs build and
+  play all 85 ids, and every run's played maps equal the model's. Scenes last 732-24192
+  vblanks (median 3014).
+- **Characters shown:** `SS_ENDING_LOG` now also prints, as each ending map ends, "scene on
+  map M shows key:frames ..." (sprite keys of actors drawn >= 30 frames; party keys are
+  0 Claude .. 11 Chisato). `end/runscenes.py` (binary `bin/ss-end2`) reran the 32 plans
+  without frames: `end/scenes.json`. In all 119 scenes the party keys drawn are exactly the
+  ending's pair (or the one character); keys >= 12 are NPC sprites.
+- **New in event_sweep.cpp:** `SS_SWEEP_GOTO=MAP` (once settled: pending map, state 1, no
+  fade; sweep and input stop; the ending log goes on), and an RNG signature ("rng INDEX
+  FNV32 draws N", FNV-1a over the 56 table words) on the goto and each later map change.
+  Note: map 581 runs the selection only with flag 0x2f1 (753) set, so a goto needs it poked.
+- **Redux side:** `scratchpad/menu/m8/cmp/endref.lua` (boots, loads slot 1's first save,
+  settles, pokes `SS_POKE_CONFIG` / `SS_POKE_FLAGS`, goto `SS_GOTO`, logs maps, the list,
+  RNG and the drawn sprite keys per scene, frames every 600 vblanks after the goto).
+  Port side: `cmp/runport.sh OUT FRAMES ENV...` (late save copy, binary `bin/ss-end3`).
+- **Redux comparison** (`cmp/specs.json` from `cmp/mkspecs.py`: c0_save, c1, c2, c3,
+  c4_tie; the late save's party, both relation tables poked in full, flag 0x2f1 + specials;
+  `cmp/portall.sh`, `cmp/reduxall.sh`, `cmp/compare.py NAMES`). c0/c1/c2: lists = model in
+  both, same maps, every scene's sprite keys the same with drawn frames within 2-22, scene
+  lengths within 0.05-0.89 %. Only map 581's first stretch differs (port 666 vblanks, Redux
+  821-826: CD load time). The port logs the last return to 581 only after the credits (its
+  hook runs in field frames, the credits are the section 6 program), so the last segment is
+  not compared. c3 / c4_tie were still running at 00:40.
+- **Late save route (port):** 671 T5 -> 684 (stair room, G[0x1ce] counts 0..2; T2 at the
+  top goes to 684 again twice, then 685) -> 685: movie 24, map reload (G[a4]=0x1388), scene,
+  battle_c(0x21c, 0x33) at word 7229 (flag 0x22c set in the save; else word 7404), scene,
+  then 581. `SS_SWEEP_PLAY=671:T5,684:T2,684:T2,684:T2` with SS_BATTLE_STUB reaches the
+  ending list 85@144 84@463 75@211 49@381 65@197 41@372 3@625 (`late/pstub`).
+- **Sweep fix:** the late save maps confirm to Circle (config +0 = 0x20, +2 = 0x40); the
+  sweep pressed Cross (cancel) and stalled on 685's first voiced line. It now presses
+  config +0 / +2 (`pad_button`). Flag 0x2f1 is also the auto-text flag (`auto_text()`,
+  byte 0x5e bit 1): with it set, `{wait}` becomes a 300-frame timed wait; 685 sets it after
+  the battle, so the endings need no input.
+- Also new: `SS_SWEEP_PLAY_SWEEP=1` (sweep the map the play ends on), trigger bounding boxes
+  in the "entries" line, call-stack return words in the state digest.
 
-- The `shattered-stars` target builds (`cmake --build engine/build-menu -j8 --target
-  shattered-stars`).
-- `ss_game_tests` fails to link. The main session's in-progress launcher work
-  (`ss_launcher`, CMakeLists.txt) puts libss_platform before libss_core on its link line,
-  so `Window::present` / `sticks` / `rumble` are undefined. This is not my change; tell
-  the coordinator if it persists.
-- `engine/src/main.cpp` is being rewritten by the main session (launcher). The last full
-  sweep attempt exited at once with code 2 (usage text) for every map. Check that the
-  current binary takes `--headless --frames N --map N` before re-running. A direct
-  `ss-sweep3 --headless --frames 10 --map 26` worked; the driver's run did not. Compare
-  the environment: the driver sets SS_DISC1 / SS_DISC2 / SS_MEMCARD1 and passes
-  `--frames 2000000`.
-- Scratch binaries: `scratchpad/menu/m8/bin/ss-sweep{1,2,3}` (ss-sweep3 = the final sweep
-  code, built from the tree with the launcher main.cpp).
+### 1. SLZ (done)
 
-### Next commands (in order)
+- Script: `scratchpad/menu/m8/slz/slzref.lua`, runs `s_*` / `r_*`.
+- #2646 matches the port. #2678's last byte is stash check byte 845 (random salt; 0x02 in
+  Redux), so the port keeps 0. The others differ only past the declared size.
+- Written up in m8_audit.md "Fixed", with the songs and maps; reported.
 
-1. Check the binary runs a map:
-   `scratchpad/menu/m8/one.sh 26 0 3000 | grep sweep` (one.sh wraps one sweep process;
-   add `gdb` as the 4th argument for a backtrace).
-2. Copy the binary to `scratchpad/menu/m8/bin/ss-sweep4` and run both discs, recording the
-   PIDs (never pgrep -f for kills: it matches your own shell):
-   `nohup python3 tools/event_sweep.py --bin scratchpad/menu/m8/bin/ss-sweep4 --disc1
-   "<disc 1 cue>" --disc2 "<disc 2 cue>" --out scratchpad/menu/m8/full_d1 --jobs 5
-   --frames 12000 > scratchpad/menu/m8/full_d1/summary.txt 2>&1 &`. Disc 2 is the same
-   command with the two cues swapped and `--out .../full_d2`.
-   - Copy `cards/base1.mcd` into each out dir as card.mcd first.
-   - The 827 map entries are byte-identical on both discs. Only archive entries 6/7,
-     4504-4522 and 4563-4604 differ (movies), so disc 2 differs only where events read
-     those.
-3. Read the results with `python3 scratchpad/menu/m8/analyze.py scratchpad/menu/m8/full_d1`.
-   Go through every timeout, crash and hang (`SS_EVENT_SWEEP_WATCH`, `SS_VM_TRACE`,
-   `scratchpad/menu/m8/dis.py MAP FROM TO` for the script) and fix real ones.
-4. Step 3: the disc change (map 625, B 0x6a) and the endings (map 581: A 0x2d credits,
-   A 0x40 the end), from scratch copies of the user's saves with the debug console
-   (`--debug`, `SS_DEBUG_INPUT`).
-5. Write `docs/notes/m8_audit.md` and the checklist's M8 line, run the three suites, and
-   report to the coordinator.
+### 2. Endings (in progress)
+
+**Decoded from map 581's script** (`scratchpad/menu/m8/dis.py 581 FROM TO`):
+- 12187 is the selection; 11068 the lookup (a, b) -> (id G[0x3c4], map G[0x3c8]); 11029
+  the partner lookup.
+- The flow on map 581 (`main` 11011 -> 12811):
+  1. With flag 0x2f1 and 0x2ee clear: the selection, then map_transfer to
+     G[0x348 + 4 * G[0x344]] for each listed scene.
+  2. With 0x2ee set and 0x2ef clear: the credits (A 0x2d).
+  3. Then 0x2f0, and the final screen A 0x40 (variant by flags 0x398 / 0x22c / 0xa0).
+- **Rules:**
+  - Gender table G[0x398 + c]: 0,1,1,0,0,1,0,0,1,0,0,1.
+  - Pairs a < b, both in the party (ext 0xb1). Same gender scores with B 0x13 (config
+    +0xe8 + 12a + b, both ways); opposite gender with B 0x11 (config +0x58). Both values
+    >= 10: a candidate, scored by the sum.
+  - Specials: Celine + 12 (Chris) scores 26 with flag 0x1ab; Ashton + 13 (Eleanor) 20 with
+    flag 0x163; Opera + 14 scores 24 when Ernest is not in the party.
+  - An exchange sort by score (not stable). Pairs are coupled in that order if both are
+    free and the lookup has an ending for them.
+  - The list: solo endings (lookup(c, 15)) of unpaired members 11..2; couples of members
+    11..2 whose partner is not Claude or Rena; then the non-hero G[0xc5]'s ending, then
+    the hero G[0xc4]'s; then 0xff@581.
+  - Claude's and Rena's endings always appear, even when Rena is not in the party.
+  - Variants (Claude+Rena 1/2/3, Claude+Precis 8/9, Claude+Opera 6/7, Claude+Chisato
+    15/16, Rena+Dias 25/26, Celine+Ernest 35/36, Opera+Ernest 53/54) compare **B 0x13**
+    (config +0xe8) both ways.
+- **85 ending ids.** Every (pair -> id, map) is in `scratchpad/menu/m8/end/table.json`,
+  printed by `python3 scratchpad/menu/m8/end/endsim.py`.
+- **Differences from the guide** (pp. 133-137) to write up: the guide speaks of 87 endings
+  and of romantic values deciding the variants. The disc has 85 ids, the variants compare
+  the +0xe8 table, and Opera's special scores 24, not 26.
+
+**Tools** (`scratchpad/menu/m8/end/`):
+- `endsim.py`: interprets the lookup on its disassembly (`lookup.s`).
+- `model.py`: the whole selection in Python. `python3 model.py CARD FRAME` predicts a
+  save's endings.
+- `runend.py OUT SPEC.json`: one port run from `--map 581` with the poked party and tables.
+  The env is set inside: `SS_SWEEP_PARTY`, `SS_SWEEP_CONFIG`, `SS_SWEEP_FLAGS`,
+  `SS_ENDING_LOG`; `SS_BIN` picks the binary.
+- `plan.py`: writes `plan.json`, 32 runs covering ids 1-85 (5 added by hand).
+- `runall.py`: runs every run (5 at a time) and compares the port's built list and played
+  maps with the model. Output in `results.json` / `runall.log`, frames in `runs/NN/`.
+
+**Status:**
+- The late save's values give endings 85@144, 84@463, 75@211, 49@381, 65@197, 41@372 and
+  3@625. The port built and played exactly that list (`end/run_late`).
+- `runall.py` was **still running** at hand-over: the shell is in `end/runall.pid` and the Python driver in `end/runall_python.pid` (4076884); binary
+  `scratchpad/menu/m8/bin/ss-end1`. It ends by itself and writes `results.json` and the
+  per-run summary to `runall.log`. If it died, rerun:
+  `SS_BIN=$PWD/scratchpad/menu/m8/bin/ss-end1 python3 scratchpad/menu/m8/end/runall.py`.
+
+**Next:**
+1. Read `runall.log`. Every run should say "list ok, played ok, done True". For "DIFF",
+   look at `runs/NN/log.txt`.
+2. "Characters shown": check the frames in `runs/NN/` (one every 600 vblanks) for a
+   sample, and list each scene's characters in endings.md.
+3. Compare a handful with Redux. That needs a Redux Lua that pokes the same values at map
+   581's load: config through `u32(0x80075270)`, the party slots through
+   `u32(0x8007527c)` (+0 s16 char+1), flags through `u32(0x80075704)`. No script for
+   this exists yet.
+4. Write `docs/notes/endings.md`: rules, table (id, pair, variant, map), the guide
+   cross-check with page refs, run results. Then the checklist.
+
+### 3. The late save (not started)
+
+- Info: `python3 scratchpad/menu/m8/saveinfo.py scratchpad/latesave/card.mcd 13`.
+  - Map 671; G[0xa0] = 0x3c, G[0xa4] = 4000; disc 2; Fol 4.8M.
+  - Party: Ashton, Noel, Claude, Chisato, Leon, Rena, Celine, Precis.
+  - No ending flags set.
+- Route: map 671's exit trigger **T5** leads to map 684 (found by sweeping 671 from the
+  save). From 684, 685 is the final area: its main checks G[0xa0] = 0x3c with G[0xa4] =
+  0xfa0 / 0x1388 / 0xfa1, has `battle_c` at words 7229 and 7404, and sets G[0xa4] = 0x1388
+  before map_transfer_c(685).
+- **Play mode** (new, built, untested):
+  - `SS_SWEEP_PLAY="671:T5,684:Tn,..."` fires the listed entry each time the player gets
+    control on that map, with no snapshots or reloads, and answers windows and choices.
+  - Find 684's exits by sweeping it from the save (as for 671).
+  - Port run:
+    `SS_LOAD_SAVE=0 SS_MEMCARD1=<copy of card.mcd> SS_EVENT_SWEEP=1 SS_SWEEP_PLAY=...
+    SS_ENDING_LOG=1 SS_BATTLE_STUB=1` (or real battles), with SS_DISC1 / SS_DISC2 and
+    `--headless --frames N`.
+- Redux: no script for this yet. Base it on `scratchpad/menu/redux/itemsref.lua`'s boot,
+  which loads slot 1's first save. The save is at directory frame 13. A Redux route would
+  need walking input or field pokes (Field +0x24 pending map, +0x14 state 1).
+
+### 4. Map 295 (not started)
+
+- In the sweep, map 295 never reaches free play: the main thread waits (wait_state 5) on
+  actor 27 at word 324, with the player in control, from the `--map` start spot.
+- Check in Redux from a save near map 295, or with a field poke onto 295, whether it stalls
+  there too.
+
+### Verification
+
+- Suites with a scratch XDG:
+  - `XDG_CONFIG_HOME=$PWD/scratchpad/menu/m8/xdg ./engine/build-menu/ss_tests`;
+  - `SS_DISC1=<cue> ./engine/build-menu/ss_game_tests`;
+  - `SS_DISC1=<cue> TMPDIR=$PWD/scratchpad/menu tools/smoke_field_events.sh
+    engine/build-menu/shattered-stars`.
+- Last results: 78/0, 91/0, 29 PASS. The event sweep's play mode and ending pokes were
+  added after that, so run the suites again.
+- Event sweep:
+  - `python3 tools/event_sweep.py --bin <copy> --disc1 <cue> --disc2 <cue> [--disc 2]
+    --out DIR --frames 12000 --stall 600`, then
+    `python3 scratchpad/menu/m8/analyze.py DIR`;
+  - one map: `scratchpad/menu/m8/one.sh MAP SKIP FRAMES [gdb]`.
 
 ## Findings not yet in the catalog
 

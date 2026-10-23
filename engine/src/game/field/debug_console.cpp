@@ -58,7 +58,8 @@ const char* kHelp =
     "  ap_status                 Archipelago: seed, checks, received items (needs --ap-seed)\n"
     "  ap_check ID               Archipelago: record location ID as checked\n"
     "  ap_give ITEM [FROM]       Archipelago: receive ITEM (AP id / name of the seed, or a game\n"
-    "                            item id); given in free play with a notice";
+    "                            item id); given in free play with a notice\n"
+    "  ap_deathlink [FROM]       Archipelago: a DeathLink as if received (the party falls)";
 
 // The Archipelago commands (game/ap): they work outside the field too (the queue waits).
 bool ap_command(const std::vector<std::string>& w) {
@@ -81,6 +82,13 @@ bool ap_command(const std::vector<std::string>& w) {
     } else {
       say("location " + w[1] + " is not in this seed");
     }
+  } else if (cmd == "ap_deathlink" && (w.size() == 1 || w.size() == 2)) {
+    if (!ap::enabled()) {
+      say("Archipelago is off (start with --ap-seed FILE)");
+      return true;
+    }
+    ap::deathlink_receive(w.size() == 2 ? w[1] : "the console", "");
+    say("DeathLink pending: the party falls at the next safe point");
   } else if (cmd == "ap_give" && (w.size() == 2 || w.size() == 3)) {
     std::string error;
     if (ap::receive_by_name_or_id(w[1], w.size() == 3 ? w[2] : "", &error)) {

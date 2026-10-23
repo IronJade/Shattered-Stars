@@ -5,6 +5,7 @@
 // 0xfd) and anything outside 0x64-0xff do nothing.
 #include <cstdio>
 
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/common/math.h"
 #include "game/field/script_vm.h"
@@ -19,6 +20,13 @@ s32* const a = g_vm_args;
 // A string of the map script by index (u16 offsets into the text).
 const u8* script_string(ScriptCtx* ctx, s32 index) {
   return ctx->text + read_u16(ctx->strings + 2 * static_cast<u32>(index));
+}
+
+// A message window's text: the script's string, or (Archipelago, port feature) the message
+// of a seed placeholder given just before ("Got Blueberries." / "Sent Hookshot to Alice.").
+const u8* message_text(ScriptCtx* ctx, s32 index) {
+  if (const u8* text = ap::take_message_override()) return text;
+  return script_string(ctx, index);
 }
 
 // Two 16-bit inline halves combined (the second argument carries bits 16-31).
@@ -93,7 +101,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
           a[7] = 0;
         }
         a[5] = join(a[5], a[6]);
-        vm_svc_msg_window_open(a[0], a[1], a[2], a[3], script_string(ctx, a[5]), a[7], 1);
+        vm_svc_msg_window_open(a[0], a[1], a[2], a[3], message_text(ctx, a[5]), a[7], 1);
         window = a[7];
       } else {
         if (named) {
@@ -102,7 +110,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
           vm_fetch_args(ctx, 5);
           a[5] = 0;
         }
-        vm_svc_msg_window_open(a[0], a[1], a[2], a[3], script_string(ctx, a[4]), a[5], 1);
+        vm_svc_msg_window_open(a[0], a[1], a[2], a[3], message_text(ctx, a[4]), a[5], 1);
         window = a[5];
       }
       window_style(window, op == 0x68 || op == 0x69, op == 0x6C || op == 0x6D);
@@ -652,6 +660,8 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       } else {
         vm_fetch_args(ctx, 1);
       }
+      // Archipelago (port feature): a seed's placeholder gives its location's item instead.
+      if (ap::on_give_money(static_cast<s32>(a[0]))) break;
       const s32 money = static_cast<s32>(static_cast<u32>(vm_rd32(g.config + 0x18)) + static_cast<u32>(a[0]));
       if (money < 0) {
         vm_wr32(g.config + 0x18, 0);

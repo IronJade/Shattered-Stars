@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/battle/battle.h"
 #include "game/battle/fx_draw.h"
 #include "game/battle/battle_debug.h"
@@ -31,6 +32,7 @@
 #include "game/battle/spells.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
+#include "game/battle/stage_objects.h"
 #include "game/battle/unit.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
@@ -45,9 +47,6 @@ namespace {
 BattleGlobals g_battle;
 BattleDebug g_debug;
 
-void todo(const std::string& what) {
-  runtime::Runtime::get().log_once("battle-" + what, "battle: not ported yet: " + what);
-}
 
 s32 rd32(const u8* p) {
   s32 v;
@@ -372,23 +371,17 @@ void battle_run() {
       data.resize(static_cast<size_t>(g.loader->entry_size(entry)));
       g.loader->load_sync(data.data(), entry, 0);
     }
+    if (i == 2) party_note_stage_file(data);  // (Port, original_bugs.md B14)
     battle_load_entry(i, entry, &ctx, std::move(data));
     if (!g.music_started && g.config[0x180] == 0 && sound_bank_busy(g.sound) != 1 && !g.battle_music.empty()) {
       g.music_started = true;
       sound_play_sequence(g.sound, g.battle_music.data());
     }
   }
-  // The stage code blocks (#1984 blocks 2-10) and the stage objects (Shot kinds 0x19..0x2b)
-  // are not ported yet.
-  switch (g.stage_id) {
-    case 0xD: case 0x38: case 0x39: case 0x10: case 0x15: case 0x28: case 0x17: case 0x1A: case 0x1F:
-    case 0x24: case 0x29: case 0x33: case 0xE:
-      todo("stage code and objects of stage " + std::to_string(g.stage_id));
-      break;
-    default:
-      break;
-  }
+  // The stage code block (#1984 blocks 2-10 by stage) is native (stage_objects.cpp); after
+  // the sprite banks, the stage objects the stage starts with.
   battle_setup_sprite_banks();
+  stage_objects_create();
   // Spell data patches (g_spell_data_entry 0x8006d1f2, spell * 5 + variant; spells.h):
   // config +0x4e picks other effect data for spells 0x13 / 0x14, a random one of three for
   // spell 0x19, and the last fights (encounters 0, 0x219-0x21c) their own versions. (The
@@ -582,6 +575,7 @@ void battle_main_loop() {
     if (g.state == kStateFighting && enemy_count_active(g.enemy_units) < 1 && (g.flags & 0x40) == 0) {
       battle_victory_begin(g.last_attacker);
     }
+    ap::battle_frame();  // Archipelago (port feature): a received DeathLink [world agent]
     if (party_count_standing() == 0 && g.state == kStateFighting && (g.flags & 0x40) == 0) battle_party_lost();
     // The debug end (--battle-end): a run can end the fight with a chosen outcome.
     if (g_debug.auto_end_frames >= 0 && g.state == kStateFighting && g.fight_frames >= g_debug.auto_end_frames) {
@@ -754,6 +748,7 @@ void battle_exit_to_field() {
       if (unit_is_down(u)) ++down;
     if (down == 4 && party_count_fled() == 0) g.outcome = kDefeat;
   }
+  ap::on_battle_exit(g.encounter_id, g.outcome);  // Archipelago (port feature): boss checks, the goal [world agent]
   battle_debug_exit();  // (debug traces; SS_BATTLE_QUIT_AT_EXIT stops the run here)
   pad_vibrate(g.pad, 0, 0, 0);
   const u16 outcome = g.outcome;

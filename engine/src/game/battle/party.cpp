@@ -45,6 +45,36 @@ void todo(const std::string& what) {
 }
 
 std::array<std::unique_ptr<PartyUnit>, 4> g_members;
+
+// (Port, original_bugs.md B14) the raw stage file (load-list entry 2) as the console's heap
+// held it when the party units were built: what an uninitialised field reads.
+std::vector<u8> g_stage_file;
+
+// The size each character's module allocates for its PartyUnit (the 'li a0' before the
+// operator new 0x8001fd94 in the code entry's first function; #2131 .. #2159), ids 1-12.
+constexpr u32 kUnitAllocSize[12] = {0x360, 0x360, 0x360, 0x360, 0x360, 0x364,
+                                    0x388, 0x360, 0x360, 0x370, 0x360, 0x368};
+
+// What the console's heap holds at party slot SLOT's unit +OFF when the unit is built. The
+// units come from mem_alloc_low's high mode (0x80012fec: (size + 0x13) & ~3 bytes per block,
+// a 0x10-byte header first, top down) in slot order, right below the party code area's block
+// (header 0x801edff0). That memory last held the raw stage file: the field's first preload
+// (the lowest archive entry), read into the top of the heap, ending at 0x801fe000. Checked
+// on twelve stages and three units (Claude, Celine, Ernest) in the Redux references.
+// Outside the file: 0.
+s32 heap_word_at_unit(const u8* party, int slot, u32 off) {
+  u32 top = 0x801EDFF0;
+  for (int j = 0; j <= slot; ++j) {
+    const int id = rds16(party + j * 0x60);
+    if (id < 1 || id > 12) continue;
+    top -= (kUnitAllocSize[id - 1] + 0x13) & ~3u;
+  }
+  const u32 at = top + 0x10 + off;
+  const u32 end = 0x801FE000;
+  const u32 size = static_cast<u32>(g_stage_file.size());
+  if (size == 0 || at + 4 > end || end - at > size) return 0;
+  return static_cast<s32>(rd32(g_stage_file.data() + (size - (end - at))));
+}
 std::array<std::vector<u8>, 4> g_member_data;   // g_member_buf / g_member_data: the unpacked phase-0 block
 std::array<std::array<std::vector<u8>, 4>, 4> g_move_blocks;  // g_member_data [slot][1..4]: killer-move data
 // Claude's two upgraded moves: killer_move_data_entry patches its entry table in RAM for
@@ -156,6 +186,11 @@ void pc_construct_slot(int slot) {
   g_members[slot] = pc_module_create(rds16(party + slot * 0x60));
   PartyUnit* u = g_members[slot].get();
   g.party_units[slot] = u;
+  // ORIGINAL BUG (original_bugs.md B14): nothing initialises +0x230 (the approach's last
+  // distance to the approach point), so a member's first jump check on an airborne target
+  // compares with heap garbage. It decides whether that first approach jumps at once, so
+  // the port keeps the console's value (a word of the raw stage file).
+  u->last_dist = heap_word_at_unit(party, slot, 0x230);
   u->stats = party + slot * 0x60;
   u->record = records + slot * 0xD0;
   const int character = u->st()->id;
@@ -581,7 +616,10 @@ Task* party_loader_create() {
   return g.party_loader.get();
 }
 
+void party_note_stage_file(const std::vector<u8>& raw) { g_stage_file = raw; }
+
 void party_reset() {
+  g_stage_file.clear();
   for (auto& m : g_members) m.reset();
   for (auto& d : g_member_data) d.clear();
   for (auto& m : g_move_blocks)

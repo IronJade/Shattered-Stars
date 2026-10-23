@@ -54,6 +54,7 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <map>
 #include <sstream>
 #include <string>
@@ -66,6 +67,9 @@
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
 #include "game/field/debug_console.h"
+#ifdef SS_HAVE_AP_NET
+#include "ap_net/client.h"
+#endif
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/process.h"
@@ -337,6 +341,43 @@ int main(int argc, char** argv) {
       launcher::fatal("Archipelago seed: " + ap_error);
       return 1;
     }
+#ifdef SS_HAVE_AP_NET
+    // The server (ap_net/client.h), from config.ini's ap_server / ap_slot / ap_password (set
+    // in setup), on windowed runs: checks, the goal and DeathLink go out, items come in.
+    // Without a server the seed plays offline and the checks wait in the save.
+    std::string server = headless ? std::string() : config.get("ap_server");
+    // [world agent] Tests: SS_AP_SERVER (+ SS_AP_SLOT) connects any run, headless ones too,
+    // without config.ini (tools/ap_test_server.sh's local server; scratchpad/world/ap/e2e).
+    const char* test_server = std::getenv("SS_AP_SERVER");
+    if (test_server != nullptr && *test_server != 0) server = test_server;
+    if (!server.empty()) {
+      ap_net::ConnectInfo info;
+      info.server = server;
+      info.slot = config.get("ap_slot");
+      if (const char* s = std::getenv("SS_AP_SLOT"); s != nullptr && *s != 0) info.slot = s;
+      if (info.slot.empty() && game::ap::seed()) info.slot = game::ap::seed()->slot_name;
+      info.password = config.get("ap_password");
+      info.deathlink = game::ap::deathlink_enabled();
+      // Tests: log in as another game's slot (SS_AP_GAME=ChecksFinder) until there is a
+      // Star Ocean world to host.
+      if (const char* game_name = std::getenv("SS_AP_GAME"); game_name && *game_name) info.game = game_name;
+      // This install's id for the server, made once (kept unless a test run).
+      info.uuid = config.get("ap_uuid");
+      if (info.uuid.empty()) {
+        std::random_device rd;
+        char hex[33];
+        for (int i = 0; i < 32; ++i) hex[i] = "0123456789abcdef"[rd() & 15];
+        hex[32] = 0;
+        info.uuid = hex;
+        if (may_write) {
+          saved.set("ap_uuid", info.uuid);
+          saved.save();
+        }
+      }
+      launcher::report("Archipelago: connecting to %s as %s\n", info.server.c_str(), info.slot.c_str());
+      game::ap::connect(std::make_unique<ap_net::Client>(info));
+    }
+#endif
   }
 
   auto& rt = runtime::Runtime::get();

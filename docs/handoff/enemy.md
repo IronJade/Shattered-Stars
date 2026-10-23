@@ -247,30 +247,238 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   Claude x200 HP attacking, so attack 1 runs and hits at vblank 576): the log is byte for
   byte the same with the original's line and with the fix.
 
-## Archipelago field tables (resumed 2026-10-22 22:15; 23:40 status)
+## Archipelago phase 2b (new agent, 2026-10-23; read this first, then the section below)
 
-Task: docs/archipelago_plan.md Phase 1, field side: `tools/ap_extract.py` + docs/ap/field.md.
-No port code.
+**Tasks, in order** (from the coordinator):
+1. Finish tools/ap_extract.py and regenerate docs/ap/field.json:
+   - one chest per opened flag (flag 2459 differs on maps 507 / 508);
+   - one id per gift item site;
+   - fallback area names: Fienal 647-685, Mountain Palace 340-380, Lasguss 381-385, and the
+     El beach / Eluria for 229 / 230 / 548.
+2. Check headless: Virtual Expel through map 625 (chests share flags?), and Leon's Rena path.
+3. Write the APWorld in apworld/so2 (AP 0.6.8). It uses scratchpad/ap (uv, Python 3.13,
+   ap-venv; always `SKIP_REQUIREMENTS_UPDATE=1`). Delete scratchpad/ap_venv when done.
+   Tests: seeds with ChecksFinder, AP's world tests, 50 seeds, and one .apso2 in the port.
 
-State (on disk, not committed): tools/ap_extract.py runs in ~70 s per disc (both discs and
-ap_battles.py's tables when given DISC2 and without --no-battles). It writes:
-- chests 338 (with the B 0x6c registration's conditions), gifts 109, Fol gifts 4, prize
-  tables 171 (contest / exchange branches), recruitments 86 (kinds world_script / restore /
-  choice / scene) and a per-character summary, shops 64 + 62 B 0x6d sites;
-- Private Actions: 741 PA-mode events in 136 maps (registered under flag[2]; partner from
-  saved_party_has), 18 give items, 86 set flags other maps test, 1 join (Chisato, map 242);
-  the 16 B 0x0e sites kept as private_action_triggers;
-- story: every chapter store (4..60, one place each), the disc switch (map 625 0x57a0, B 0x6a,
-  chapter 35, then map 618: the Expel to Energy Nede crossing), regions (unconditional
-  two-way doors, with world maps entered / left and chapters), one-way transfers;
-- location ids: 0x50320000 + (type << 21) + (map << 10) + index; "window" / "missable" from
-  the chapter tests in each location's conditions (its own routine, callers, registrations).
-- Findings: flags 2 and 4 = Private Action mode (the world chunk scripts set both before the
-  PA entrance of a town); the world script (maps 0-3, 826) holds a jump list of warps that set
-  chapters (kept apart); map 625 is the hub between the worlds (chapters 33 / 35 / 50).
+**Done so far.**
+- **Leon (task 2b):** done.
+  - Claude-only in the logic, as the user and Prima say. His join is map 230 0x6c58
+    (flag[1]).
+  - Script fact, verified headless: in Rena's game, a party of Claude and Rena alone at the
+    shipwreck gets Leon at map 229 0x73dc. The run: map 548 → 229 → 548 → 229; the slots end
+    as Leon, Rena, Claude (reserve), chapter 31.
+  - Run: `scratchpad/enemy/ap2/run.sh` with `SS_SCRIPT_GLOBALS="a0=29,a4=30" SS_EVENT_SWEEP=1
+    SS_SWEEP_PARTY=1 SS_SWEEP_PLAY=9999:T0 SS_DEBUG_INPUT="60:flag 1 0" --map 548 --debug`.
+  - The coordinator agreed. field.md is updated (Leon and Dias, table and Findings).
+- **Patch helper agreed with the world agent (aa4d2f9448eaa9d2f).** It writes
+  `apworld/so2/patches.py` and records the API in seed_format.md:
+  - `placeholder_for(n, role)`;
+  - `placeholder_patches(sites, placeholder)`;
+  - `placement_patches(locations, start=0)`.
 
-Next: docs/ap/field.md (location types, ids, hooks, story order, regions, PAs, open items);
-check the both-disc run (scratchpad/enemy/ap/field_full.json); report to the coordinator.
+  Each site is `{map, word, expected, form, role}`:
+  - `word` is already resolved: value_at/4 for imm24 / inline give, value_at/4+1 for word
+    and for inline add_money.
+  - The Fol placeholder range is now 0xF00000-0xFFFFFF (it fits imm24).
+  - Key-item flag gifts (value >= 10000) stay vanilla, with no placeholder.
+  - A vanilla gift still needs a placeholder, because the port checks gifts only by
+    placeholder.
+
+- **Task 1: done.** tools/ap_extract.py and docs/ap/field.json are regenerated (43 s; byte-identical
+  with PYTHONHASHSEED=7).
+  - Chests are one record per flag (313), with `sites`. 25 ids are retired.
+  - Gifts have one id per site (133 sites in 109 events; 24 new ids).
+  - Every chest and item / Fol gift site carries `word` / `expected` / `role`; all 735 pass
+    patches.py.
+  - PA gifts are tagged (`private_action`, `pa_partners`).
+  - `GUIDE_AREAS` adds the area names.
+  - 784 ids in all; none changed meaning; the test ids are unchanged.
+  - Flag 2459: map 507 (Peep Half) before map 509's switch sets flag 149, map 508 (Walloon
+    Sword) after. The pool takes Peep Half.
+  - field.md is updated: the JSON fields, the counts, Location ids, Findings, open items 1
+    and 4 closed.
+- **Task 2a, Virtual Expel: done** (field.md Findings).
+  - The route is Fun City's arena (map 303, K25) once flag 730 is set (map 671's save
+    point) → Arlia 18 → the Expel world map. Not map 625.
+  - Chests at chapter 60 open and check on maps 18 / 355 / 495; chests already opened stay
+    shut.
+  - `late_maps` (708 maps) and `late` per record come from a three-valued condition
+    evaluator in ap_extract.py (`tri_eval`, `late_atom`, `late_maps`).
+  - Late: 308 / 313 chests, 105 / 109 gift events. Not late: old Clik 117 / 119 and map
+    387.
+  - The story needs no inventory items besides key flags (field.md).
+- Scratch: scratchpad/enemy/ap2 (run.sh, xdg, logs, field_before.json, vexpel_seed*.json).
+- **Next: task 3, the APWorld.**
+
+## Archipelago phase 2 (context rollover 2026-10-23 ~01:00)
+
+**The coordinator's order.**
+1. **Close field.md's logic items.** Recruit exclusions, shops without a site, map names
+   (map 671 too), PA flags that feed the story. Mostly done; see below.
+2. **The SO2 APWorld.** A Python package in `apworld/so2/` following Archipelago's World API:
+   - `__init__.py`: the World class, the item and location name tables, create_items,
+     create_regions, set_rules, fill_slot_data, and generate_output writing `.apso2` per
+     docs/ap/seed_format.md;
+   - `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py`;
+   - tables generated from docs/ap/field.json + battles.json by a script.
+
+   Story mode first: chests and gifts shuffled, story checkpoints always reachable, missables
+   excluded or handled by an option, goal = the final boss.
+   - **Archipelago install:** in the scratch venv `scratchpad/ap_venv`. Tell the setup agent
+     the path; it needs one for its client tests.
+   - **Seeds:** generate them locally with our world plus a built-in one, and run AP's own
+     generation tests over a batch of seeds.
+   - **Port check:** load one `.apso2` headless with `--ap-seed` and check the patched chests
+     pay what the spoiler says.
+3. **Rules.**
+   - Scratch settings only; no network beyond package downloads; never contact
+     archipelago.gg's servers.
+   - Log here every 20 minutes. No commits.
+   - Headless only, XDG_CONFIG_HOME pointed at scratch, --no-memcard. At most 3 Redux
+     instances. Builds `-j8` in engine/build-enemy.
+
+**Item 1, status: done except the open points below.** The findings are written up in
+docs/ap/field.md, "Findings since Phase 1", with Prima page references.
+- **Exclusions.**
+  - Precis rules out Bowman: flag 763 at map 195, step 4000 vs 5000.
+  - Ashton rules out Opera and Ernest: flag 141 cleared at maps 43 / 44; map 174 needs
+    has(Ashton) == 0.
+  - Ernest only with Opera (map 479, choice 0). Dias only in Rena's game (map 130 choice;
+    map 229).
+  - Leon: Claude's game, plus a possible Rena path at map 229 / flag 765 (unverified).
+  - Chisato: the G[0x214] chain, then the choice at map 242. Precis: the G[0x1e4] PA chain,
+    then map 209.
+  - No join tests the party size.
+- **Shops.** 90-94 are the Familiar order shops (menu_specialty.cpp). 14, 45, 51, 66, 79 and
+  80 are never opened.
+- **Names.** `map_names` / `map_areas` are in field.json (regenerated 2026-10-23 with them).
+  Map 671 is Fienal 9F, the Final Save Point (Prima p. 127, confirmed by the user). It has no
+  banner, so the tool gives it no area yet. To add (open item 4 in field.md) as fallbacks in
+  `areas()` in tools/ap_extract.py:
+  - Fienal = maps 647-685, the final boss on 685, three staircase rooms above 671;
+  - the Mountain Palace = 340-380;
+  - Lasguss Mountain = 381-385.
+- **PA flags.** 17 of 99 PA-set flags gate joins, gifts or shops elsewhere (field.md lists
+  them).
+- **Virtual Expel** (Prima "Filia, Virtual Expel, and the Cave of Trials"): Expel's maps can
+  be revisited late (chapter 50, through map 625). Chests share their flags, so Expel's
+  chests are probably not lost at the disc switch. Verify in play before the logic relies on
+  it.
+- **Not done yet in tools/ap_extract.py** (field.md open items 1 and 4):
+  - one chest location per opened flag: 313 flags; 25 flags sit on two map versions, and
+    flag 2459 pays differently on maps 507 / 508;
+  - one gift id per item site (`sites[]`);
+  - the Prima fallback area names.
+
+  Then regenerate docs/ap/field.json:
+
+      python3 tools/ap_extract.py DISC1.cue DISC2.cue --no-battles -o docs/ap/field.json
+
+  It takes about 2.5 min and is deterministic.
+
+**Item 2, status: just started.**
+- **Archipelago 0.6.8.** A git tag shallow-cloned to `scratchpad/ap_venv/Archipelago`. The
+  venv `scratchpad/ap_venv/venv` uses Python 3.13 (`~/.local/bin/python3.13`; the system
+  3.14 is too new) with requirements.txt installed.
+- **Always `source scratchpad/ap_venv/env.sh` first.** It points HOME, XDG_* and TMPDIR at
+  scratchpad/ap_venv, puts the venv on PATH and cds into the Archipelago tree.
+- **`python Generate.py --help` hung** until the timeout killed it. It is most likely
+  ModuleUpdate waiting at an install prompt for other worlds' requirements. Next try:
+  `python ModuleUpdate.py --yes` (or run `Generate.py` with `--skip_prog_balancing`
+  after the update) with stdin closed.
+- **The plan for the world:**
+  - Put the package at `apworld/so2/` in the repo. Symlink or copy it into
+    `Archipelago/worlds/so2` (or `custom_worlds/`) to run.
+  - Game name: "Star Ocean: The Second Story". Item id = 0x50320000 + game item id; Fol
+    bundles get their own ids. Location ids come from field.json (`location_id`).
+  - **Items:** the vanilla contents of the included locations make the pool. All are
+    filler / useful: story key items are flags (66-91) and are not shuffled.
+  - **Regions:** Menu → Expel → (disc switch, chapter 35) → Energy Nede → Fienal (maps
+    647-685; 625 / 687 nearby). The goal is the final boss event, encounter 540
+    (seed_format's `goal` key; default [540]). The Cave of Trials is postgame and off by
+    default.
+  - **Options:**
+    - `missable_locations` (excluded by default: those with `missable` or partner /
+      `has()` conditions);
+    - `expel_locations`: by default no progression items in Expel locations
+      (`add_item_rule(... not item.advancement)`) until Virtual Expel is verified;
+    - `include_pa_rewards`, `prize_tables` (off), `goal`.
+  - **Patches** follow seed_format.md's new **placeholders**:
+    - items 0x400-0x270f go in an item push; Fol placeholders are 0x7f000000+;
+    - `script MAP WORD EXPECTED VALUE` with word = value_at / 4 for an imm24 push (VALUE =
+      0x12000000 | placeholder);
+    - for a word push the value is the next word (word = value_at / 4 + 1);
+    - inline give_item has the item in bits 0-15 of its word.
+
+    Check against `tools/so2_mod.py chest` and the port's `ap.cpp` before relying on these.
+  - **The test:** generate a seed with our world plus a built-in one (for example
+    "Clique"), run AP's tests (`python -m pytest test/general` with our world installed),
+    then run the port headless with `--ap-seed FILE` (SS_DISC1, XDG scratch, --no-memcard)
+    and open a patched chest: smoke_field_events.sh's `ap_seed` / `ap_placeholder` cases
+    show how.
+
+**The Prima guide.** `docs/Star Ocean The Second Story_text.pdf` (git-ignored: never commit
+it or copy its text). Its OCR text is at `scratchpad/guide/guide.txt`; read pages with the
+Read tool's `pages`. Write facts only, in our own words, with "Prima p. N" (the printed page;
+PDF page = printed + 1). The disc wins over the guide.
+
+**My tools.**
+- `tools/ap_extract.py`.
+- `scratchpad/enemy/ap/ax.py`: a cached loader of every map; `python3 -c "import ax;
+  maps, roles, lib = ax.load()"`. The cache is ax.pkl, about 200 MB: delete it when done.
+- `scratchpad/enemy/ap/trace.py`: `python3 trace.py 113 g0x1bc` lists where a flag or a
+  global is stored, with conditions.
+- `scratchpad/enemy/e9/run35.sh` and `e5run.sh`: the E9 / E5 checks.
+
+**Verification commands.**
+- Suites:
+
+      cd engine/build-enemy && ./ss_tests && SS_DISC1=... ./ss_game_tests
+      tools/smoke_field_events.sh engine/build-enemy/shattered-stars
+
+  Last results: 78/0, 82/0, smoke 21/21, with XDG_CONFIG_HOME=scratchpad/enemy/xdg and SS_DISC1
+  set.
+
+**Nothing of mine is running.** The Redux runs in scratchpad/battle belong to the battle
+agent.
+
+## Archipelago field tables (done 2026-10-23 00:00; uncommitted)
+
+Deliverables (on disk):
+- **tools/ap_extract.py.** It writes deterministic JSON (checked with two hash seeds), about
+  70 s per disc.
+  - `--no-battles` leaves out ap_battles.py's tables; `--full` adds every transfer and
+    story-global store; `--summary` prints a summary.
+  - `docs/ap/field.json` (765 KB, both discs, no battles) is the committed table.
+- **docs/ap/field.md.** The method, the JSON fields, what the discs hold, the recruitment
+  table, Private Actions, the story order and the point of no return, the regions, the
+  location ids, the port hooks and the open items.
+- **Other docs.** docs/archipelago_plan.md has a "Field locations and hooks" section.
+  docs/catalog/formats.md has "Story globals and notable flags". The globals.csv game_state
+  row covers chapter / step / map / treasure count.
+
+Numbers (NA discs; all 820 scripts identical on both):
+- 338 chests (249 Expel / 89 Nede), 109 gift events, 171 prize-table entries, 1 Fol gift
+  (3 fees), 86 join sites, 62 shop sites (55 shop ids, 64 stock lists), 741 PA events
+  (18 give items);
+- 785 location ids;
+- chapters 4-60 stored once each; the disc switch at map 625 0x57a0 (chapter 35, then map
+  618) is the point of no return.
+
+Findings:
+- Flag 1 set = Claude's game.
+- Flags 2 and 4 = Private Action mode.
+- Flags 758-769 = "member n was in the party" (restore after splits).
+- Flags 66-91 = key items (the give routine with item 10000 + n).
+- The world script's jump list = warps (not play).
+- Chisato's and Precis's joins are inside PAs.
+
+Open items (field.md): recruitment exclusions (trace flags 113 / 141 / 243 / 758-769 and
+G[0x1bc] / 0x1be / 0x214 / 0x2e0), the 129 computed reward calls, shops 14 / 45 / 51 / 66 /
+79 / 80 / 90-94, map 463 and the hub map 625, town names, PA flags that feed the story.
+
+Scratch: scratchpad/enemy/ap (ax.py harness, field_full.json); scratchpad/enemy/e9 (E9 / E5
+runs).
 
 ## State and next step (2026-10-22 evening, phase 2 done, part 2 done)
 

@@ -136,10 +136,14 @@ void Runtime::vblank() {
     if (window && debug_status && vblank_count_ % 30 == 0) window->set_title("Shattered Stars — " + debug_status());
   }
   if (audio_tick) audio_tick();
+  if (net_poll) net_poll();  // (Archipelago, game/ap) [world agent]
   if (vsync_callback) vsync_callback();
   if (window || capture_frames.count(vblank_count_)) present();
-  if (window) {
-    if (!window->pump([](const platform::KeyEvent&) {})) throw QuitRequested{};
+  // [world agent] SS_PACE=1: a headless run paced like a windowed one (tests that talk to a
+  // server in real time).
+  static const bool paced = std::getenv("SS_PACE") != nullptr;
+  if (window || paced) {
+    if (window && !window->pump([](const platform::KeyEvent&) {})) throw QuitRequested{};
     const auto now = std::chrono::steady_clock::now();
     if (next_deadline_.time_since_epoch().count() == 0 || now - next_deadline_ > std::chrono::milliseconds(100)) {
       next_deadline_ = now;

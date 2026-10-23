@@ -218,10 +218,15 @@ def library(maps):
     return roles, lib
 
 
-def debug_maps(maps):
-    """Maps to leave out of the locations (none found so far: the scripts that store many
-    chapter values are the world maps' own script, maps 0-3 and 826)."""
-    return set()
+def choice_shapes(maps, lib):
+    """Library routines that ask a choice (ext 0xdc-0xe0) and return its result in R."""
+    out = set()
+    for mp in maps.values():
+        for k, (s_, e_) in enumerate(mp.funcs):
+            h = mp.shapes[k]
+            if h in lib and h not in out and any(re.match(r"^ext_(dc|dd|de|df|e0)\b", i[2]) for i in mp.ins[s_:e_]):
+                out.add(h)
+    return out
 
 
 def args_before(ins, n, count):
@@ -369,16 +374,21 @@ def member(n):
     return CHARACTERS[n] if isinstance(n, int) and 0 <= n < len(CHARACTERS) else str(n)
 
 
-def local_sources(ins, s, e):
+CHOICE_SHAPES = set()   # library routines that put up a choice (ext 0xdc-0xe0) and return it
+
+
+def local_sources(ins, s, e, mp=None):
     """{local offset: what it holds} for locals a routine loads from a choice (ext 0xdc-0xe0:
-    the option picked), the party count (ext 0xd5) or party_has (ext 0xb1)."""
+    the option picked; or the result of a library routine that asks one), the party count
+    (ext 0xd5) or party_has (ext 0xb1)."""
     out = {}
     for p in range(s + 2, e):
         m = re.match(r"^pop_store s32 L\[(0x[0-9a-f]+)\]$", ins[p][2])
         if not m or ins[p - 1][2] != "push s32 G[0x0]":
             continue
         src = ins[p - 2][2]
-        if re.match(r"^ext_(dc|dd|de|df|e0)\b", src):
+        callee = mp.func_at.get(ins[p - 2][3]) if mp is not None and src.startswith("call ") else None
+        if re.match(r"^ext_(dc|dd|de|df|e0)\b", src) or (callee is not None and mp.shapes[callee] in CHOICE_SHAPES):
             out[m.group(1)] = "choice"
         elif src.startswith("ext_d5"):
             out[m.group(1)] = "party_count"
@@ -473,7 +483,7 @@ def requirements(mp, k, n):
     forward jz around it ('if' bodies) and the jmp-skipped 'else' parts."""
     s, e = mp.funcs[k]
     by_offset = {mp.ins[x][0]: x for x in range(s, e)}
-    locals_ = local_sources(mp.ins, s, e)
+    locals_ = local_sources(mp.ins, s, e, mp)
     out = []
     for j in range(s, n):
         i = mp.ins[j]
@@ -586,7 +596,24 @@ def story_window(conds):
     return lo, hi
 
 
-def reward_sites(maps, roles, lib, debug):
+def push_form(ins):
+    """How an instruction holds its value: 'imm24' (push imm24, 0x12: a 24-bit value, so a
+    patch can only put another item there), 'word' (push word, 0x13: the next word, any
+    value) or 'inline' (an instruction with inline arguments)."""
+    op = ins[1][0] >> 24
+    return "imm24" if op == 0x12 else "word" if op == 0x13 else "inline"
+
+
+def patch_word(ins, form, role):
+    """The word a placeholder patch replaces ("word": byte offset / 4, the mods.cpp number) and
+    its value on the disc ("expected"): the push itself for imm24 and for an inline give_item
+    (the item in bits 0-15), the next word for a word push and for an inline add_money (the
+    amount as lo16 | hi16 << 16). apworld/so2/patches.py builds the patch lines from these."""
+    k = 1 if form == "word" or (form == "inline" and role == "fol") else 0
+    return {"word": ins[0] // 4 + k, "expected": ins[1][k], "role": role}
+
+
+def reward_sites(maps, roles, lib):
     """Reward events: in the maps' own code (not the library), every call into the give /
     money / join routines with constant arguments and every inline give_item / add_money /
     party_add, grouped by basic block (one event can give several things)."""
@@ -601,12 +628,14 @@ def reward_sites(maps, roles, lib, debug):
             for n in range(s, e):
                 t = mp.ins[n][2]
                 got = None
+                push = n   # the instruction holding the value (the first argument's push)
                 if t.startswith("call ") and mp.ins[n][3] in mp.func_at:
                     callee = mp.shapes[mp.func_at[mp.ins[n][3]]]
                     if callee not in roles or roles[callee][0] in ("chest", "shop"):
                         continue
                     role, pops = roles[callee]
                     vals = args_before(mp.ins, n, pops)
+                    push = n - pops
                     if vals[0] is None:
                         dynamic.append({"map": mp.id, "offset": mp.ins[n][0], "role": role,
                                         "args": [mp.ins[n - pops + j][2] for j in range(pops)]})
@@ -636,11 +665,21 @@ def reward_sites(maps, roles, lib, debug):
                     ev = {"map": mp.id, "offset": mp.ins[n][0], "routine": mp.ins[s][0], "block": mp.ins[b][0],
                           "items": [], "fol": [], "flags_given": [], "joins": []}
                     ev.update(context(mp, k, n))
-                    if mp.id in debug:
-                        ev["debug_map"] = True
                     blocks[(k, b)] = ev
                 key = {"item": "items", "fol": "fol", "flag": "flags_given", "join": "joins"}[got[0]]
                 ev[key].append(got[1])
+                form = push_form(mp.ins[push])
+                site = {"what": got[0], "value": got[1], "at": mp.ins[n][0], "value_at": mp.ins[push][0],
+                        "form": form}
+                if got[0] in ("item", "fol"):
+                    site.update(patch_word(mp.ins[push], form, got[0]))
+                    held = site["expected"] & (0xFFFFFF if form == "imm24" else 0xFFFF if got[0] == "item" and
+                                               form == "inline" else 0xFFFFFFFF)
+                    want = got[1] & (0xFFFFFF if form == "imm24" else 0xFFFF if got[0] == "item" and
+                                     form == "inline" else 0xFFFFFFFF)
+                    if held != want:
+                        raise SystemExit(f"map {mp.id} {mp.ins[n][0]:#x}: {got} not in word {site['expected']:#x}")
+                ev.setdefault("sites", []).append(site)
         per_routine = collections.Counter(ev["routine"] for ev in blocks.values())
         for (k, b), ev in sorted(blocks.items(), key=lambda kv: kv[1]["offset"]):
             ev.update(conditions(mp, k))
@@ -654,7 +693,7 @@ def reward_sites(maps, roles, lib, debug):
     return events, dynamic
 
 
-def chests(maps, debug):
+def chests(maps):
     """Every chest: B 0x6c chest_create registers the opened flag and the handler that calls
     the chest routine; the conditions are those around the registration (a chest that only
     appears after an event)."""
@@ -663,15 +702,17 @@ def chests(maps, debug):
         regs = registrations(mp)
         for flag, handler, value_ins in so2_mod.chests(mp.blob):
             v = so2_mod.push_value(value_ins)
-            c = {"map": mp.id, "flag": flag, "handler": handler * 4}
+            c = {"map": mp.id, "flag": flag, "handler": handler * 4, "value_at": value_ins[0],
+                 "form": push_form(value_ins)}
+            # A chest's placeholder is always an item one: for a Fol chest it replaces the
+            # negative value, so the chest routine takes its item branch.
+            c.update(patch_word(value_ins, c["form"], "item"))
             if v is None:
                 c["dynamic"] = True
             elif v < 0:
                 c["fol"] = -v
             else:
                 c["item"] = v
-            if mp.id in debug:
-                c["debug_map"] = True
             at = [r for r in regs.get(handler, []) if mp.ins[r][2].startswith("B_6c")]
             if at:
                 c["registered_at"] = mp.ins[at[0]][0]
@@ -682,7 +723,7 @@ def chests(maps, debug):
     return out
 
 
-def shop_sites(maps, debug):
+def shop_sites(maps):
     """B 0x6d menu_request_2 (the shop menu) with its shop id, inline or pushed."""
     out = []
     for mp in maps.values():
@@ -698,12 +739,106 @@ def shop_sites(maps, debug):
                 continue
             k = mp.func_of.get(n)
             s = {"map": mp.id, "offset": i[0], "shop": shop}
-            if mp.id in debug:
-                s["debug_map"] = True
             if k is not None:
                 s.update(conditions(mp, k))
                 s.update(context(mp, k, n))
             out.append(s)
+    return out
+
+
+# ---- Place names -----------------------------------------------------------------------------
+
+def clean_name(text):
+    """A map-name notice as plain text: colour and timing codes dropped, {name:NN} as the
+    character's name, the font's apostrophe (0x106) and ampersand (0x115)."""
+    text = re.sub(r"\{(speed|delay):[0-9a-f]+\}", "", text)
+    text = re.sub(r"\{(fd|f6)\}", " ", text)
+    text = re.sub(r"\{name:([0-9a-f]+)\}", lambda m: member(int(m.group(1), 16)), text)
+    text = text.replace("{106}", "'").replace("{115}", "&")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def place_names(maps):
+    """{map: [names]}: the map-name notices (ext 0xb9 with a string; the banner shown on
+    entering) in each map's script. A shared script's names go to its first map."""
+    from so2_script import decode_text, parse_script
+    out = {}
+    for mp in maps.values():
+        strings = parse_script(mp.blob)["strings"]
+        found = []
+        for i in mp.ins:
+            m = re.match(r"^ext_b9\((-?\d+), (-?\d+), (-?\d+), (-?\d+)\)", i[2])
+            if not m:
+                continue
+            idx = (int(m.group(2)) & 0xFFFF) | (int(m.group(3)) & 0xFFFF) << 16
+            if idx < len(strings):
+                name = clean_name(decode_text(strings[idx]))
+                if name and name not in found:
+                    found.append(name)
+        if found:
+            out[mp.id] = found
+    return out
+
+
+# Area names for maps without a banner of their own, which the nearest-name search gets wrong
+# or misses (docs/ap/field.md, "Place names", has the guide's pages). They take precedence over
+# that search.
+GUIDE_AREAS = [((229, 230), "El Beach"),          # the shipwreck's beach, by the Eluria Colony
+               ((340, 380), "Mountain Palace"),   # entered at map 355
+               ((381, 385), "Lasguss Mountain"),
+               ((548, 548), "Ship to El"),        # the ship out of Port Hilton (chapter 29)
+               ((647, 685), "Fienal")]            # 671 is its 9th floor, the Final Save Point
+
+
+def areas(maps, trs, names, worlds):
+    """{map: area name}: the name shown at the nearest map entered from a world map (a town or
+    dungeon entrance), else at the nearest map with a name. Searched over unconditional
+    two-way doors first, then over any transfer between maps of the same world (story
+    transfers join far places)."""
+    entrances = {t["to"] for t in trs if "from_world" in t}
+    plain, anyway = collections.defaultdict(set), collections.defaultdict(set)
+    for t in trs:
+        if t.get("world_script") or "from_world" in t or t["to"] in WORLD_MAPS or t["from"] in WORLD_MAPS:
+            continue
+        anyway[t["from"]].add(t["to"])
+        if not t.get("requires"):
+            plain[t["from"]].add(t["to"])
+    doors, same = collections.defaultdict(set), collections.defaultdict(set)
+    for a in anyway:
+        for b in anyway[a]:
+            if b in plain.get(a, ()) and a in plain.get(b, ()):
+                doors[a].add(b)
+                doors[b].add(a)
+            if worlds.get(a) == worlds.get(b) and worlds.get(a) is not None:
+                same[a].add(b)
+                same[b].add(a)
+
+    def nearest(m, links, want):
+        seen, frontier = {m}, [m]
+        while frontier:
+            for x in sorted(frontier):
+                if want(x):
+                    return names[x][0]
+            nxt = []
+            for x in frontier:
+                for y in links[x]:
+                    if y not in seen:
+                        seen.add(y)
+                        nxt.append(y)
+            frontier = nxt
+        return None
+
+    out = {}
+    for mp in maps.values():
+        if mp.id in CHUNK_GROUPS or mp.id == WORLD_SCRIPT:
+            continue
+        for m in mp.maps:
+            for links in (doors, same):
+                best = nearest(m, links, lambda x: x in entrances and x in names) or \
+                    nearest(m, links, lambda x: x in names)
+                if best is not None:
+                    out[m] = best
+                    break
     return out
 
 
@@ -738,6 +873,131 @@ def transfers(maps):
                 tr.update(context(mp, k, n, depth=1))
             out.append(tr)
     return out
+
+
+# ---- Late access (Virtual Expel) ---------------------------------------------------------------
+#
+# Saving at Fienal's Final Save Point (map 671) sets flag 730. From then on (chapter 60, before
+# the final boss) the old man in Fun City's Fighting Arena (map 303, actor 25) sends the party
+# to Virtual Expel: Arlia (map 18), then the Expel world map with every town and dungeon, the
+# same maps and opened flags as on disc 1. Energy Nede stays open too. A map the party can
+# still enter then is never lost; any other map is open only for a stretch of the story.
+
+LATE_CHAPTER = 60
+LATE_FLAGS = {730: True, 753: False, 2: False, 4: False}   # 753: set after the final boss; 2 / 4: PA mode
+LATE_STARTS = (18,)                                         # Virtual Expel's arrival (303 -> 18)
+COND_ATOM = re.compile(r"(?:\?|[A-Za-z_]\w*(?:\[[^\]]*\]|\([^()]*\))?)(?:\s*(?:==|!=|>=|<=|<|>)\s*-?(?:0x[0-9a-f]+|\d+))?")
+
+
+def tri_eval(text, atom):
+    """Three-valued truth (True / False / None = unknown) of a decompiled condition (&&, ||,
+    not, parentheses; atoms as COND_ATOM). atom(text) gives each atom's value. Anything the
+    parser doesn't follow is unknown."""
+    pos = 0
+
+    def skip():
+        nonlocal pos
+        while pos < len(text) and text[pos] == " ":
+            pos += 1
+
+    def unary():
+        nonlocal pos
+        skip()
+        if text.startswith("not", pos) and not (text[pos + 3:pos + 4].isalnum() or text[pos + 3:pos + 4] == "_"):
+            pos += 3
+            v = unary()
+            return None if v is None else not v
+        if text.startswith("(", pos):
+            pos += 1
+            v = disj()
+            skip()
+            if not text.startswith(")", pos):
+                raise ValueError(text)
+            pos += 1
+            return v
+        m = COND_ATOM.match(text, pos)
+        if not m or m.end() == pos:
+            raise ValueError(text)
+        pos = m.end()
+        return atom(m.group(0))
+
+    def conj():
+        nonlocal pos
+        v = unary()
+        while True:
+            skip()
+            if not text.startswith("&&", pos):
+                return v
+            pos += 2
+            w = unary()
+            v = False if v is False or w is False else (None if v is None or w is None else True)
+
+    def disj():
+        nonlocal pos
+        v = conj()
+        while True:
+            skip()
+            if not text.startswith("||", pos):
+                return v
+            pos += 2
+            w = conj()
+            v = True if v is True or w is True else (None if v is None or w is None else False)
+
+    try:
+        v = disj()
+        skip()
+        return v if pos == len(text) else None
+    except ValueError:
+        return None
+
+
+def late_atom(a):
+    """An atom's value at chapter LATE_CHAPTER with LATE_FLAGS; everything else unknown."""
+    m = re.fullmatch(r"chapter\s*(==|!=|>=|<=|<|>)\s*(-?(?:0x[0-9a-f]+|\d+))", a)
+    if m:
+        n = int(m.group(2), 0)
+        return {"==": LATE_CHAPTER == n, "!=": LATE_CHAPTER != n, ">=": LATE_CHAPTER >= n,
+                "<=": LATE_CHAPTER <= n, "<": LATE_CHAPTER < n, ">": LATE_CHAPTER > n}[m.group(1)]
+    m = re.fullmatch(r"flag\[(\d+)\](?:\s*(==|!=)\s*(\d+))?", a)
+    if m and int(m.group(1)) in LATE_FLAGS:
+        v = LATE_FLAGS[int(m.group(1))]
+        if m.group(2):
+            v = (v == bool(int(m.group(3)))) if m.group(2) == "==" else (v != bool(int(m.group(3))))
+        return v
+    return None
+
+
+def possible(ctx, atom):
+    """Can this context run (its own conditions, and one of its callers' if it has any)?"""
+    if any(tri_eval(c, atom) is False for c in ctx.get("requires", [])):
+        return False
+    via = ctx.get("via")
+    return not via or any(possible(v, atom) for v in via)
+
+
+def late_maps(trs):
+    """The maps the party can still enter at chapter 60 after the Final Save Point: from the
+    world maps' entrances and Virtual Expel's arrival, over every transfer whose conditions
+    can hold then (unknown flags and steps count as possible; the world script's warps don't
+    count)."""
+    seen = set(LATE_STARTS) | set(WORLD_MAPS)
+    for t in trs:
+        if "from_world" in t and possible(t, late_atom):
+            seen.add(t["to"])
+    out = collections.defaultdict(list)
+    for t in trs:
+        if not t.get("world_script") and "from_world" not in t:
+            out[t["from"]].append(t)
+    frontier = sorted(seen)
+    while frontier:
+        nxt = []
+        for m in frontier:
+            for t in out.get(m, []):
+                if t["to"] not in seen and possible(t, late_atom):
+                    seen.add(t["to"])
+                    nxt.append(t["to"])
+        frontier = nxt
+    return sorted(seen)
 
 
 def chapter_values(mp):
@@ -819,6 +1079,68 @@ def regions(maps, trs):
     return out, region_of, sorted(set(oneway))
 
 
+NEDE_FROM_CHAPTER = 36   # the disc switch moves the party to Energy Nede during chapter 35
+
+
+def map_worlds(maps, trs, region_of, region_list):
+    """{map: world} for every field map: its region's world map when the region touches one
+    only; else the median chapter value its script tests and stores (below 36: Expel, from 36:
+    Energy Nede; the ending's chapter 60 tests in old towns are why it is the median); else
+    the nearest map with a world over any transfer. 0 for the hub map 625 and others whose
+    region touches both."""
+    owner = {}
+    for mp in maps.values():
+        for m in mp.maps:
+            owner[m] = mp
+    out = {}
+    for m, mp in owner.items():
+        if m in WORLD_MAPS:
+            out[m] = m
+            continue
+        if mp.id in CHUNK_GROUPS:
+            out[m] = CHUNK_GROUPS[mp.id]
+            continue
+        if mp.id == WORLD_SCRIPT:
+            continue
+        r = region_of.get(m)
+        worlds = region_list[r]["worlds"] if r is not None else []
+        if len(worlds) == 1:
+            out[m] = worlds[0]
+        elif len(worlds) > 1:
+            out[m] = 0
+        elif mp.id == m:
+            tested, stored = chapter_values(mp)
+            vals = sorted(v for v in tested | stored if v <= 100)
+            if vals:
+                out[m] = 1 if vals[len(vals) // 2] < NEDE_FROM_CHAPTER else 2
+    near = collections.defaultdict(set)
+    for t in trs:
+        if not t.get("world_script") and "from_world" not in t and t["to"] not in WORLD_MAPS:
+            near[t["from"]].add(t["to"])
+            near[t["to"]].add(t["from"])
+    todo = [m for m in owner if m not in out and owner[m].id != WORLD_SCRIPT]
+    for m in todo:
+        seen, frontier = {m}, [m]
+        found = None
+        while frontier and found is None:
+            nxt = []
+            for x in frontier:
+                for y in sorted(near[x]):
+                    if y in seen:
+                        continue
+                    seen.add(y)
+                    if out.get(y) in (1, 2):
+                        found = out[y]
+                        break
+                    nxt.append(y)
+                if found is not None:
+                    break
+            frontier = nxt
+        if found is not None:
+            out[m] = found
+    return out
+
+
 def story(maps, trs, region_of, region_list):
     """The main story's order: every store to the chapter global (outside the world script's
     warp list) with its conditions and region, in chapter order; the disc switch (B 0x6a)
@@ -862,12 +1184,10 @@ def story(maps, trs, region_of, region_list):
             "disc_switch": switches}
 
 
-def story_points(maps, debug):
+def story_points(maps):
     """Every store to the story globals: (global, value, map, routine)."""
     out = []
     for mp in maps.values():
-        if mp.id in debug:
-            continue
         for n, i in enumerate(mp.ins):
             m = STORY_STORE.match(i[2])
             if m:
@@ -988,7 +1308,7 @@ def pa_events(maps, roles, flags_tested):
     return out
 
 
-def private_actions(maps, roles, debug):
+def private_actions(maps, roles):
     """B 0x0e (trigger, entry) sites: a routine (entry * 4) bound to a trigger, with the
     set-up's conditions and what the routine gives or sets (named trigger_set_pa in the
     catalog; see pa_events for the Private Actions themselves)."""
@@ -1006,8 +1326,6 @@ def private_actions(maps, roles, debug):
             else:
                 continue
             pa = {"map": mp.id, "offset": i[0], "routine": entry * 4}
-            if mp.id in debug:
-                pa["debug_map"] = True
             k = mp.func_of.get(n)
             if k is not None:
                 c = conditions(mp, k)
@@ -1074,7 +1392,7 @@ def assign_ids(groups):
     for kind, records in groups:
         per_map = collections.defaultdict(list)
         for r in records:
-            if r.get("world_script"):
+            if r.get("world_script") or r.get("payment"):
                 continue
             per_map[r["map"]].append(r)
         for m, rs in per_map.items():
@@ -1084,14 +1402,103 @@ def assign_ids(groups):
                 r["location_type"] = kind
 
 
+SITE_KEYS = ("map", "handler", "value_at", "form", "item", "fol", "name", "word", "expected", "role", "registered_at",
+             "requires", "window", "region", "world", "area")
+
+
+def merge_chests(records):
+    """One chest location per opened flag. A flag on several maps (the versions of one place:
+    Arlia 18 / 21, Rena's room 38 / 40, Hoffmann Ruins rooms ...) is one chest: whichever
+    version is opened first sets the flag and the others stay shut. The lowest map's record
+    stands for it and keeps its location id; 'sites' lists every version's handler push
+    (each needs the placeholder patch), and the other versions' ids are retired. Returns the
+    merged records and the retired ids."""
+    by_flag = collections.defaultdict(list)
+    for c in records:
+        by_flag[c["flag"]].append(c)
+    out, retired = [], []
+    for c in records:
+        group = by_flag.get(c["flag"])
+        if group is None:
+            continue
+        del by_flag[c["flag"]]
+        group.sort(key=lambda r: r["map"])
+        head = dict(group[0])
+        head["sites"] = []
+        for r in group:
+            for m in r.get("maps", [r["map"]]):
+                s = {k: r[k] for k in SITE_KEYS if k in r}
+                s["map"] = m
+                head["sites"].append(s)
+        if len(group) > 1:
+            head["versions"] = [r["map"] for r in group]
+            if len({(r.get("item"), r.get("fol")) for r in group}) > 1:
+                head["contents_differ"] = True
+            retired += [r["location_id"] for r in group[1:] if "location_id" in r]
+        out.append(head)
+    return out, retired
+
+
+def gift_site_ids(gifts):
+    """One location id per reward site of a gift event (an event may give several items, or
+    an item and Fol). The event's first site keeps the event's id (the id every event had
+    before); the other sites take the next free indices of their map, in offset order."""
+    used = collections.Counter(g["map"] for g in gifts if "location_id" in g)
+    added = 0
+    for g in sorted((g for g in gifts if "location_id" in g), key=lambda g: (g["map"], g["offset"])):
+        for k, s in enumerate(g["sites"]):
+            if k == 0:
+                s["location_id"] = g["location_id"]
+                continue
+            s["location_id"] = LOCATION_BASE + (LOCATION_TYPES["gift"] << 21) + (g["map"] << 10) + used[g["map"]]
+            used[g["map"]] += 1
+            added += 1
+    return added
+
+
+def routines_reached(mp, k, depth=0, seen=None):
+    """Routine k and the map routines (not the library) it calls, two levels down, as rewards_in
+    walks them: their byte offsets."""
+    seen = set() if seen is None else seen
+    if k in seen:
+        return seen
+    seen.add(k)
+    s, e = mp.funcs[k]
+    for n in range(s, e):
+        if mp.ins[n][2].startswith("call ") and mp.ins[n][3] in mp.func_at:
+            ck = mp.func_at[mp.ins[n][3]]
+            if depth < 2 and mp.shapes[ck] not in LIB_SHAPES:
+                routines_reached(mp, ck, depth + 1, seen)
+    return seen
+
+
+def tag_private_action_gifts(maps, pas, records):
+    """Mark the gift / prize records a Private Action gives (its routine or one it calls):
+    'private_action' lists the PA routines (byte offsets), 'pa_partners' their partners. A PA's
+    reward is such a gift's own site, so the gift is the location and the PA its condition."""
+    by_map = collections.defaultdict(list)
+    for r in records:
+        by_map[r["map"]].append(r)
+    for p in pas:
+        mp = maps.get(p["map"])
+        rk = mp.func_at.get(p["routine"]) if mp is not None else None
+        if rk is None or not by_map.get(p["map"]):
+            continue
+        reached = {mp.ins[mp.funcs[k][0]][0] for k in routines_reached(mp, rk)}
+        for r in by_map[p["map"]]:
+            if r["routine"] in reached:
+                r.setdefault("private_action", []).append(p["routine"])
+                r["pa_partners"] = sorted(set(r.get("pa_partners", [])) | set(p.get("partners", [])))
+
+
 def build(paths, battles=True):
     disc, maps = load_maps(paths[0])
     names = read_names(disc)
     roles, lib = library(maps)
     LIB_SHAPES.update(lib)
+    CHOICE_SHAPES.update(choice_shapes(maps, lib))
     COMMON_FLAGS.update(common_flags(maps, lib) | PA_FLAGS)
-    debug = debug_maps(maps)
-    events, dynamic = reward_sites(maps, roles, lib, debug)
+    events, dynamic = reward_sites(maps, roles, lib)
     item_name = lambda n: names.get(ITEM_NAME_KEY + n - 1, "")  # noqa: E731
     gifts, money, joins, prizes = [], [], [], []
     for ev in events:
@@ -1112,8 +1519,10 @@ def build(paths, battles=True):
         elif ev["items"] or ev["flags_given"]:
             gifts.append(ev)
         elif ev["fol"]:
+            if all(f < 0 for f in ev["fol"]):
+                ev["payment"] = True   # a fee (add_money with a negative amount), not a reward
             money.append(ev)
-    ch = chests(maps, debug)
+    ch = chests(maps)
     for c in ch:
         if "item" in c:
             c["name"] = item_name(c["item"])
@@ -1121,10 +1530,10 @@ def build(paths, battles=True):
     shops = so2_mod.shop_lists(disc)
     shop_table = {str(s): {"stock": items, "names": [item_name(x) for x in items]} for s, items in shops.items()
                   if items}
-    sites = shop_sites(maps, debug)
+    sites = shop_sites(maps)
     for x in sites:
         mark_window(x)
-    pa_triggers = private_actions(maps, roles, debug)
+    pa_triggers = private_actions(maps, roles)
     for p in pa_triggers:
         mark_window(p)
     pas = pa_events(maps, roles, flag_index(maps))
@@ -1145,6 +1554,15 @@ def build(paths, battles=True):
                       "only_disc1": sorted(m for m in maps if m not in maps2),
                       "only_disc2": sorted(m for m in maps2 if m not in maps)}
 
+    worlds = map_worlds(maps, trs, region_of, region_list)
+    names_of = place_names(maps)
+    area_of = areas(maps, trs, names_of, worlds)
+    have_script = {m for mp in maps.values() for m in mp.maps}
+    for (lo, hi), name in GUIDE_AREAS:
+        for m in range(lo, hi + 1):
+            if m in have_script and m not in names_of:
+                area_of[m] = name
+
     def with_maps(records):
         for r in records:
             mp = maps.get(r.get("map"))
@@ -1152,21 +1570,43 @@ def build(paths, battles=True):
                 r["maps"] = mp.maps
             if r.get("map") in region_of:
                 r["region"] = region_of[r["map"]]
+            if r.get("map") in worlds:
+                r["world"] = worlds[r["map"]]
+            if r.get("map") in area_of:
+                r["area"] = area_of[r["map"]]
         return records
     for lst in (ch, gifts, money, joins, prizes, sites, pas, pa_triggers):
         with_maps(lst)
     assign_ids([("chest", ch), ("gift", gifts), ("fol_gift", money), ("recruitment", joins), ("prize", prizes),
                 ("shop", sites), ("private_action", pa_rewards)])
+    ch, retired = merge_chests(ch)
+    gift_site_ids(gifts)
+    tag_private_action_gifts(maps, pas, gifts + prizes + money)
+    late = set(late_maps(trs))
+    for c in ch:
+        c["late"] = any(x["map"] in late for x in c["sites"])
+    for lst in (gifts, money, joins, prizes, sites, pas):
+        for r in lst:
+            r["late"] = any(m in late for m in r.get("maps", [r["map"]]))
     out = {
         "source": "tools/ap_extract.py",
         "shared_scripts": [mp.maps for mp in maps.values() if len(mp.maps) > 1],
         "field_maps": sorted(m for mp in maps.values() for m in mp.maps),
         "world_maps": {str(k): v for k, v in WORLD_MAPS.items()},
         "common_flags": sorted(COMMON_FLAGS),
-        "library_routines": {h: r[0] for h, r in roles.items()},
+        "library_routines": {h: r[0] for h, r in sorted(roles.items(), key=lambda kv: kv[1][0])},
+        # Where each map's copy of the reward routines starts (byte offsets): a check hook
+        # inside give_item / add_money / party_add knows it runs in one of these when the
+        # current routine is one, and then takes the location from the caller's frame.
+        "reward_routines": {str(mp.id): {roles[mp.shapes[k]][0]: mp.ins[s_][0]
+                                         for k, (s_, e_) in enumerate(mp.funcs) if mp.shapes[k] in roles}
+                            for mp in maps.values()},
         "location_id": {"base": LOCATION_BASE, "types": LOCATION_TYPES,
                         "formula": "base + (type << 21) + (map << 10) + index"},
         "chests": ch,
+        # Ids of the chest records merged into another map's version of the same chest
+        # (merge_chests): no longer locations.
+        "retired_location_ids": sorted(retired),
         "gifts": gifts,
         "fol_gifts": money,
         "prize_tables": prizes,
@@ -1178,8 +1618,14 @@ def build(paths, battles=True):
         "private_actions": pas,
         "private_action_triggers": pa_triggers,
         "story": story_order,
-        "story_points": story_points(maps, debug),
+        "story_points": story_points(maps),
         "regions": region_list,
+        "map_worlds": {str(m): w for m, w in sorted(worlds.items())},
+        # Maps still open at chapter 60 after the Final Save Point (Virtual Expel and Energy
+        # Nede; late_maps): a location on one of them ('late') is never lost to the story.
+        "late_maps": sorted(late),
+        "map_names": {str(m): v for m, v in sorted(names_of.items())},
+        "map_areas": {str(m): v for m, v in sorted(area_of.items())},
         "one_way_transfers": oneway,
         "transfers": trs,
         "item_names": {str(n): item_name(n) for n in range(1, 1024) if item_name(n)},
@@ -1204,7 +1650,19 @@ def summary(data):
         xs = play(data[key])
         print(f"{key}: {len(xs)} ({miss(xs)} in a closing story window; "
               f"{len(data[key]) - len(xs)} in the world script)")
+    ch = data["chests"]
+    print(f"chest locations (one per opened flag): {len(ch)}; on several maps {sum(1 for c in ch if 'versions' in c)} "
+          f"(contents differ: {[(c['flag'], c['versions']) for c in ch if c.get('contents_differ')]}); "
+          f"retired ids {len(data.get('retired_location_ids', []))}")
+    gs = [g for g in data["gifts"] if "location_id" in g]
+    print(f"gift sites with an id: {sum(len(g['sites']) for g in gs)} in {len(gs)} events "
+          f"({sum(1 for g in gs for s in g['sites'] if s['what'] == 'flag')} key-item flags); "
+          f"given by a Private Action: {sum(1 for g in gs if g.get('private_action'))}")
     print(f"computed reward calls: {len(data['dynamic_reward_calls'])}; shops: {len(data['shops'])}")
+    lm = set(data.get("late_maps", []))
+    print(f"maps open at chapter 60 after the Final Save Point: {len(lm)}; chests on them "
+          f"{sum(1 for c in ch if c.get('late'))} of {len(ch)}; gift events {sum(1 for g in gs if g.get('late'))} "
+          f"of {len(gs)}")
     pas = data["private_actions"]
     print(f"Private Actions: {len(pas)} events in {len({p['map'] for p in pas})} maps; giving items / Fol "
           f"{sum(1 for p in pas if 'location_id' in p)}; setting flags tested in other maps "
@@ -1234,6 +1692,18 @@ def summary(data):
         print(f"battles: error {data['battles_error']}")
 
 
+def dump(data):
+    """JSON with one record per line in the record lists (compact and diff-friendly)."""
+    parts = []
+    for k, v in data.items():
+        if isinstance(v, list) and v and isinstance(v[0], dict):
+            body = ",\n  ".join(json.dumps(x, separators=(",", ":")) for x in v)
+            parts.append(f" {json.dumps(k)}: [\n  {body}\n ]")
+        else:
+            parts.append(f" {json.dumps(k)}: {json.dumps(v, separators=(',', ':'))}")
+    return "{\n" + ",\n".join(parts) + "\n}\n"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("discs", nargs="+", help="disc image(s): DISC1 [DISC2] (.cue / .bin / .iso)")
@@ -1246,11 +1716,17 @@ def main():
     data = build(a.discs, battles=not a.no_battles)
     if a.summary:
         summary(data)
-        return
+        if not a.output:
+            return
     if not a.full:
         for key in ("transfers", "story_points"):
             data.pop(key, None)
-    text = json.dumps(data, indent=1)
+        # Private Actions that only talk are left out: those kept give something, store a
+        # story value or set a flag another map tests.
+        data["private_actions"] = [p for p in data["private_actions"]
+                                   if {"items", "fol", "joins", "story"} & set(p.get("gives", {}))
+                                   or p.get("flags_tested_elsewhere")]
+    text = dump(data)
     if a.output:
         open(a.output, "w").write(text)
     else:

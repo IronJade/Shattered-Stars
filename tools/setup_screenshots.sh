@@ -69,6 +69,13 @@ open(f"{d}/blank.mcd", "wb").write(bytes(128 * 1024))
 open(f"{d}/notes.txt", "w").write("not a disc\n")
 open(f"{d}/mods/10-cheaper-potions.patch", "w").write("# example\n")
 open(f"{d}/mods/20-tougher-bosses.patch", "w").write("# example\n")
+import json
+open(f"{d}/example.apso2", "w").write(json.dumps({
+    "format": "apso2", "version": 1, "seed": "54321012345", "game": "Star Ocean: The Second Story",
+    "slot": {"name": "Claude", "id": 1}, "options": {}, "items": {},
+    "locations": [{"id": 0x50320000 + i, "name": f"Chest {i}", "check": {"type": "chest", "map": 18, "flag": 0x900 + i},
+                   "item": {"player": 2, "player_name": "Rena", "name": "Hookshot", "ap_id": 77}} for i in range(12)],
+    "patches": [], "start": {"items": [], "fol": 0, "flags": []}}))
 EOF
 f=$(winpath "$out/files")
 sep=/; [[ "$bin" == *.exe ]] && sep='\'
@@ -104,6 +111,9 @@ if [ -n "$d1" ]; then
   shot memcards-clash --page memcards --set "disc1=$d1" --set "memcard1=$f${sep}saves.mcd" --set "memcard2=$f${sep}saves.mcd"
   shot mods --page mods --set "disc1=$d1" --set "mods=$f${sep}mods"
   shot archipelago --page archipelago --set "disc1=$d1"
+  shot archipelago-seed --page archipelago --set "disc1=$d1" --set "ap_seed=$f${sep}example.apso2" \
+    --set ap_server=localhost:38281 --set ap_password=secret
+  shot archipelago-bad-seed --page archipelago --set "disc1=$d1" --set "ap_seed=$f${sep}notes.txt"
   shot quit-confirm --set "disc1=$d1" --state quit-confirm
   shot game-missing --set "disc1=$d1" --state game-missing
   shot discs-ok-sdl-renderer --renderer sdl --set "disc1=$d1" --set "disc2=$d2"

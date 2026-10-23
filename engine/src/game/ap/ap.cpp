@@ -12,6 +12,9 @@
 #include <set>
 #include <sstream>
 
+#include "ap_net/link.h"
+#include "game/battle/battle.h"
+#include "game/battle/unit.h"
 #include "game/field/field.h"
 #include "game/field/message.h"
 #include "game/field/notice.h"
@@ -52,43 +55,40 @@ int get_int_or(const Json& j, int fallback) {
   return get_int(j, &v) ? static_cast<int>(v) : fallback;
 }
 
-bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::string& where) {
-  if (!j.is_object()) return fail(error, where + ": an item must be an object");
-  ItemDef it;
-  int64_t v = 0;
-  if (get_int(j["ap_id"], &v)) it.ap_id = v;
-  it.name = j["name"].as_string();
-  it.kind = j["kind"].is_string() ? j["kind"].as_string() : "item";
-  if (it.kind == "item") {
-    if (!get_int(j["game_id"], &v) || v < 1 || v >= 0x400) return fail(error, where + ": game_id 1-1023 expected");
-    it.game_id = static_cast<int>(v);
-    it.count = get_int_or(j["count"], 1);
-    if (it.count < 1 || it.count > 20) return fail(error, where + ": count 1-20 expected");
-  } else if (it.kind == "fol") {
-    if (!get_int(j["amount"], &v) || v < 0) return fail(error, where + ": amount expected");
-    it.amount = static_cast<int>(v);
-  } else if (it.kind != "foreign") {
-    return fail(error, where + ": unknown kind '" + it.kind + "'");
-  }
-  *out = it;
-  return true;
-}
-
 struct Runtime {
   bool on = false;
   Seed seed;
   std::map<int64_t, size_t> by_id;      // location id -> index
   std::map<int, size_t> by_flag;        // chest opened flag -> index
+  std::map<int64_t, size_t> by_placeholder;  // patch placeholder -> index
   SaveState state;
   std::set<int64_t> checked;
   struct Pending {
     ItemDef item;
     std::string from;
+    bool found = false;                 // a boss reward ("Got X"), not a received item
   };
-  std::deque<Pending> pending;
+  std::deque<Pending> pending;          // local items to give (console, boss rewards)
   std::vector<u8> notice_text;          // the notice's map-font text (kept while it shows)
   int notice_frames = 0;                // frames the current notice has shown
   std::deque<std::string> notices;      // notices waiting for the banner
+  // The server.
+  std::unique_ptr<ap_net::Link> link;
+  bool net_ok = false;                  // slot connected, the room's seed is ours
+  bool seed_mismatch = false;
+  std::vector<ItemDef> net_items;       // the server's items for us, by index
+  std::vector<std::string> net_from;
+  // DeathLink.
+  bool deathlink_in = false;            // received, not yet applied
+  std::string deathlink_source;
+  bool dying_from_link = false;         // the next game over was a DeathLink's
+  // Placeholders reached in one vblank: their messages for the window opening in that vblank
+  // (one page each), else a banner each; a placeholder reached again in that vblank (a loop
+  // giving copies, as the prize tables do) is ignored.
+  std::vector<std::string> override_lines;
+  std::vector<u8> override_text;        // the window's text (kept while the window reads it)
+  u64 override_vblank = 0;
+  std::set<int64_t> hit_this_vblank;    // placeholder values reached in override_vblank
 };
 Runtime& rt() {
   static Runtime r;
@@ -98,10 +98,12 @@ Runtime& rt() {
 void index_seed(Runtime& r) {
   r.by_id.clear();
   r.by_flag.clear();
+  r.by_placeholder.clear();
   for (size_t i = 0; i < r.seed.locations.size(); ++i) {
     const Location& l = r.seed.locations[i];
     r.by_id[l.id] = i;
     if (l.type == "chest" && l.flag >= 0) r.by_flag[l.flag] = i;
+    if (l.placeholder >= 0) r.by_placeholder[l.placeholder] = i;
   }
 }
 
@@ -113,7 +115,45 @@ void fresh_state(Runtime& r) {
   r.pending.clear();
 }
 
-// ASCII -> the field's map-font text (glyph codes: one byte below 0x80, else two; 0 ends).
+// ASCII -> the field's map-font glyph codes (one byte below 0x80, else two).
+void put_code(std::vector<u8>& out, u32 g) {
+  if (g < 0x80) {
+    out.push_back(static_cast<u8>(g));
+  } else {
+    out.push_back(static_cast<u8>((g & 0x7F) | 0x80));
+    out.push_back(static_cast<u8>(g >> 7));
+  }
+}
+void put_glyphs(std::vector<u8>& out, const std::string& ascii) {
+  for (const char ch : ascii) {
+    s32 code = static_cast<u8>(ch);
+    if (code >= 0x80) code = '?';
+    field::text_ascii_to_glyph(&code, 0, 0);
+    put_code(out, static_cast<u32>(code));
+  }
+}
+
+// A message window's text as the map scripts write it (the "N Fol acquired." string 0x122):
+// speed 1, the line, speed 0, wait for the button, end. One line of at most 34 characters
+// per page; several lines are pages (0x4001: wait for the button, then empty the window).
+std::vector<u8> window_text(const std::vector<std::string>& lines) {
+  std::vector<u8> out;
+  put_code(out, 0x4003);
+  out.push_back(1);
+  for (size_t i = 0; i < lines.size(); ++i) {
+    std::string ascii = lines[i];
+    if (ascii.size() > 34) ascii = ascii.substr(0, 33) + ".";
+    if (i > 0) put_code(out, 0x4001);
+    put_glyphs(out, ascii);
+  }
+  put_code(out, 0x4003);
+  out.push_back(0);
+  put_code(out, 0x4002);
+  out.push_back(0);
+  return out;
+}
+
+// The banner's text (0 ends).
 std::vector<u8> map_text(const std::string& ascii) {
   std::vector<u8> out;
   for (const char ch : ascii) {
@@ -147,6 +187,13 @@ std::string describe(const ItemDef& it) {
 
 void queue_notice(const std::string& text) { rt().notices.push_back(text); }
 
+// Placeholder messages no window took (the give's message came before it, or much later):
+// a banner each.
+void flush_override_lines(Runtime& r) {
+  for (const std::string& line : r.override_lines) queue_notice(line);
+  r.override_lines.clear();
+}
+
 // The banner: one notice at a time, each shown ~3 seconds; new ones only in free play, and
 // one showing is closed early when an event or a menu starts.
 void notice_update(bool play) {
@@ -154,9 +201,11 @@ void notice_update(bool play) {
   field::Notice* n = field::g_notice_object();
   if (n == nullptr) return;
   if (!r.notice_text.empty()) {
+    // (The game's own notices, the map names, use the same banner: only ours is closed.)
+    const bool ours = n->text == r.notice_text.data() && n->state != 0;
     r.notice_frames += field::globals().frame_ticks;
-    if ((r.notice_frames > 180 || !play) && n->state == 3) field::notice_dismiss(n);
-    if (n->state == 0 && r.notice_frames > 30) {
+    if (ours && ((r.notice_frames > 180 && n->state == 3) || !play)) field::notice_dismiss(n);
+    if (!ours && r.notice_frames > 30) {
       r.notice_text.clear();
       r.notice_frames = 0;
     }
@@ -185,6 +234,16 @@ bool in_free_play() {
   return control != -1;
 }
 
+std::string player_label(const Placement& p) {
+  Runtime& r = rt();
+  if (!p.player_name.empty()) return p.player_name;
+  if (r.link) {
+    const std::string n = r.link->player_name(p.player);
+    if (!n.empty()) return n;
+  }
+  return "player " + std::to_string(p.player);
+}
+
 bool give(const ItemDef& it) {
   field::FieldGlobals& g = field::globals();
   if (it.kind == "fol") {
@@ -202,101 +261,6 @@ bool give(const ItemDef& it) {
 }
 
 }  // namespace
-
-// ---- The seed file ----
-
-bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
-  Json j;
-  std::string perr;
-  if (!Json::parse(text, &j, &perr)) return fail(error, "not JSON: " + perr);
-  if (!j.is_object()) return fail(error, "the seed must be a JSON object");
-  if (j["format"].as_string() != "apso2") return fail(error, "format must be \"apso2\"");
-  Seed s;
-  s.version = get_int_or(j["version"], 0);
-  if (s.version != 1) return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1)");
-  s.seed = j["seed"].as_string();
-  if (s.seed.empty()) return fail(error, "seed (the multiworld's seed id) missing");
-  s.slot_name = j["slot"]["name"].as_string();
-  s.slot = get_int_or(j["slot"]["id"], 0);
-  s.game = j["game"].as_string();
-  s.options = j["options"].is_object() ? j["options"] : Json::object();
-  for (const auto& [key, v] : j["items"].items()) {
-    ItemDef it;
-    if (!parse_item(v, &it, error, "items." + key)) return false;
-    int64_t id = 0;
-    if (!get_int(Json::string(key), &id)) return fail(error, "items: key '" + key + "' is not an AP item id");
-    it.ap_id = id;
-    s.items[id] = it;
-  }
-  std::set<int64_t> seen;
-  const Json& locs = j["locations"];
-  if (!locs.is_array()) return fail(error, "locations must be an array");
-  for (size_t i = 0; i < locs.size(); ++i) {
-    const Json& lj = locs[i];
-    const std::string where = "locations[" + std::to_string(i) + "]";
-    Location l;
-    int64_t v = 0;
-    if (!get_int(lj["id"], &v)) return fail(error, where + ": id missing");
-    l.id = v;
-    if (!seen.insert(l.id).second) return fail(error, where + ": id " + std::to_string(l.id) + " repeated");
-    l.name = lj["name"].as_string();
-    const Json& c = lj["check"];
-    l.type = c["type"].as_string();
-    l.map = get_int_or(c["map"], -1);
-    if (l.type == "chest") {
-      l.flag = get_int_or(c["flag"], -1);
-      if (l.flag < 0 || l.flag >= 0x170 * 8) return fail(error, where + ": a chest needs its opened flag (0-2943)");
-    } else if (l.type == "gift") {
-      l.offset = get_int_or(c["offset"], -1);
-      if (l.map < 0 || l.offset < 0) return fail(error, where + ": a gift needs map and offset");
-    } else if (l.type == "boss") {
-      l.encounter = get_int_or(c["encounter"], -1);
-      if (l.encounter < 0) return fail(error, where + ": a boss needs its encounter");
-    } else if (l.type.empty()) {
-      return fail(error, where + ": check.type missing");
-    }
-    const Json& pj = lj["item"];
-    if (!pj.is_object()) return fail(error, where + ": item missing");
-    Placement p;
-    p.player = get_int_or(pj["player"], s.slot);
-    p.player_name = pj["player_name"].as_string();
-    p.classification = pj["classification"].as_string();
-    p.own = p.player == s.slot;
-    if (p.own) {
-      if (!parse_item(pj, &p.item, error, where + ".item")) return false;
-    } else {
-      p.item.kind = "foreign";
-      p.item.name = pj["name"].as_string();
-      if (get_int(pj["ap_id"], &v)) p.item.ap_id = v;
-    }
-    l.item = p;
-    s.locations.push_back(l);
-  }
-  for (size_t i = 0; i < j["patches"].size(); ++i) {
-    const std::string& line = j["patches"][i].as_string();
-    if (!line.empty()) s.patches.push_back(line);
-  }
-  const Json& st = j["start"];
-  for (size_t i = 0; i < st["items"].size(); ++i) {
-    ItemDef it;
-    if (!parse_item(st["items"][i], &it, error, "start.items[" + std::to_string(i) + "]")) return false;
-    s.start_items.push_back(it);
-  }
-  s.start_fol = get_int_or(st["fol"], 0);
-  for (size_t i = 0; i < st["flags"].size(); ++i) s.start_flags.push_back(get_int_or(st["flags"][i], -1));
-  *out = std::move(s);
-  return true;
-}
-
-bool load_seed_file(const std::string& path, Seed* out, std::string* error) {
-  std::ifstream in(upath(path), std::ios::binary);
-  if (!in) return fail(error, "cannot open " + path);
-  std::stringstream ss;
-  ss << in.rdbuf();
-  std::string err;
-  if (!load_seed_text(ss.str(), out, &err)) return fail(error, path + ": " + err);
-  return true;
-}
 
 // ---- The sidecar ----
 
@@ -316,6 +280,7 @@ Json sidecar_json(const SaveState& s) {
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
   j.set("start_given", Json::boolean(s.start_given));
+  j.set("goal", Json::boolean(s.goal_done));
   Json checked = Json::array();
   for (const int64_t id : s.checked) checked.push(Json::number(id));
   j.set("checked", checked);
@@ -330,6 +295,7 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   r.slot_name = j["slot_name"].as_string();
   r.received_index = j["received_index"].as_int(0);
   r.start_given = j["start_given"].as_bool(false);
+  r.goal_done = j["goal"].as_bool(false);
   for (size_t i = 0; i < j["checked"].size(); ++i) r.checked.push_back(j["checked"][i].as_int(0));
   *s = std::move(r);
   return true;
@@ -397,6 +363,7 @@ bool start(const std::string& seed_path, std::string* error) {
 void stop() {
   Runtime& r = rt();
   r = Runtime{};
+  runtime::Runtime::get().net_poll = nullptr;
 }
 
 const Location* find_location(int64_t id) {
@@ -407,7 +374,10 @@ const Location* find_location(int64_t id) {
 
 bool is_checked(int64_t id) { return rt().checked.count(id) != 0; }
 
-bool location_checked(int64_t id) {
+namespace {
+// Records a check (once); 'banner': another player's item gets a "Sent" notice (not when a
+// placeholder's message window says so already).
+bool record_check(int64_t id, bool banner) {
   Runtime& r = rt();
   if (!r.on) return false;
   const Location* l = find_location(id);
@@ -419,11 +389,14 @@ bool location_checked(int64_t id) {
   r.state.checked.push_back(id);
   const Placement& p = l->item;
   std::string what = p.own ? describe(p.item) : p.item.name;
-  log("check " + std::to_string(id) + " (" + l->name + "): " + what +
-      (p.own ? "" : " for " + (p.player_name.empty() ? "player " + std::to_string(p.player) : p.player_name)));
-  if (!p.own) queue_notice("Sent " + what + " to " + (p.player_name.empty() ? "player " + std::to_string(p.player) : p.player_name));
+  log("check " + std::to_string(id) + " (" + l->name + "): " + what + (p.own ? "" : " for " + player_label(p)));
+  if (!p.own && banner) queue_notice("Sent " + what + " to " + player_label(p));
+  if (r.link && r.net_ok) r.link->check({id});
   return true;
 }
+}  // namespace
+
+bool location_checked(int64_t id) { return record_check(id, true); }
 
 void on_flag_set(int flag) {
   Runtime& r = rt();
@@ -436,7 +409,7 @@ void on_flag_set(int flag) {
 void receive(const ItemDef& item, const std::string& from) {
   Runtime& r = rt();
   if (!r.on) return;
-  r.pending.push_back({item, from});
+  r.pending.push_back({item, from, false});
   log("received " + describe(item) + (from.empty() ? "" : " from " + from) + " (queued, " +
       std::to_string(r.pending.size()) + " waiting)");
 }
@@ -463,7 +436,13 @@ bool receive_by_name_or_id(const std::string& what, const std::string& from, std
   return fail(error, "unknown item '" + what + "' (an AP item id or name of the seed, or a game item id)");
 }
 
-size_t pending_count() { return rt().pending.size(); }
+size_t pending_count() {
+  Runtime& r = rt();
+  const size_t net = r.net_items.size() > static_cast<size_t>(r.state.received_index)
+                         ? r.net_items.size() - static_cast<size_t>(r.state.received_index)
+                         : 0;
+  return r.pending.size() + net;
+}
 
 void free_play_update() {
   Runtime& r = rt();
@@ -486,15 +465,39 @@ void free_play_update() {
       if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
     if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
   }
-  if (!r.pending.empty() && r.notice_text.empty()) {
-    const Runtime::Pending p = r.pending.front();
-    if (give(p.item)) {
-      r.pending.pop_front();
-      ++r.state.received_index;
-      log("given " + describe(p.item) + " (received index " + std::to_string(r.state.received_index) + ")");
-      queue_notice("Received " + describe(p.item) + (p.from.empty() ? "" : " from " + p.from));
-    } else {
-      runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
+  // A received DeathLink: the party falls here (the game over), as in a lost battle.
+  if (r.deathlink_in) {
+    r.deathlink_in = false;
+    r.dying_from_link = true;
+    log("DeathLink from " + r.deathlink_source + ": the party falls");
+    field::field_begin_game_over(field::field_program());
+    return;
+  }
+  // Placeholder messages that no window showed: a banner each instead.
+  if (runtime::Runtime::get().vblanks() != r.override_vblank) flush_override_lines(r);
+  // One item per banner: local ones first (the console, boss rewards), then the server's in
+  // index order (received_index: the next one this save has not had).
+  if (r.notice_text.empty() && r.notices.empty()) {
+    if (!r.pending.empty()) {
+      const Runtime::Pending p = r.pending.front();
+      if (give(p.item)) {
+        r.pending.pop_front();
+        log("given " + describe(p.item));
+        queue_notice((p.found ? "Got " : "Received ") + describe(p.item) + (p.from.empty() ? "" : " from " + p.from));
+      } else {
+        runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
+      }
+    } else if (static_cast<size_t>(r.state.received_index) < r.net_items.size()) {
+      const size_t i = static_cast<size_t>(r.state.received_index);
+      const ItemDef& it = r.net_items[i];
+      if (give(it)) {
+        ++r.state.received_index;
+        log("given " + describe(it) + " (server item " + std::to_string(i) + ")");
+        if (it.kind == "item" || it.kind == "fol")
+          queue_notice("Received " + describe(it) + (r.net_from[i].empty() ? "" : " from " + r.net_from[i]));
+      } else {
+        runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
+      }
     }
   }
   notice_update(true);
@@ -539,21 +542,241 @@ void on_loaded(const std::string& card_image, int save_index) {
     for (const int64_t id : r.state.checked)
       if (have.insert(id).second) s.checked.push_back(id);
   }
+  if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   r.state = s;
   r.checked = std::set<int64_t>(s.checked.begin(), s.checked.end());
-  // Items still waiting stay queued and are given in the loaded game. (Phase 2 resyncs
-  // from the server instead: it sends everything past the save's received index.)
+  // Local items still waiting stay queued; the server's items past the save's received
+  // index are given again (this session keeps the server's whole list).
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
       std::to_string(s.received_index));
+}
+
+// ---- The server ----
+
+namespace {
+
+// A placeholder's location: the item given (ours) or sent (another player's), the check
+// recorded, the message for the window the script opens in this vblank.
+void placeholder_hit(int64_t value, size_t index) {
+  Runtime& r = rt();
+  const u64 now = runtime::Runtime::get().vblanks();
+  if (now != r.override_vblank) {
+    flush_override_lines(r);
+    r.hit_this_vblank.clear();
+    r.override_vblank = now;
+  }
+  const Location& l = r.seed.locations[index];
+  if (!r.hit_this_vblank.insert(value).second) {
+    // A loop giving copies of one item (prize tables): the location's item once.
+    log("placeholder " + std::to_string(value) + " (" + l.name + ") again in this vblank: ignored");
+    return;
+  }
+  const Placement& p = l.item;
+  std::string text;
+  if (p.own) {
+    // Our own item: given whenever the game reaches the give (the game's own flags keep a
+    // chest or a gift from repeating, as with its original item).
+    if (!give(p.item)) {
+      r.pending.push_back({p.item, "", true});  // (inventory full: given later)
+      log("the inventory is full; " + describe(p.item) + " waits");
+    }
+    text = "Got " + describe(p.item) + ".";
+  } else {
+    text = "Sent " + p.item.name + " to " + player_label(p) + ".";
+  }
+  record_check(l.id, false);
+  r.override_lines.push_back(text);
+}
+
+}  // namespace
+
+bool on_give_item(s32 value) {
+  Runtime& r = rt();
+  if (!r.on || value < kItemPlaceholderFirst || value > kItemPlaceholderLast) return false;
+  const auto it = r.by_placeholder.find(value);
+  if (it == r.by_placeholder.end()) {
+    // (No item has such a number: skip it rather than corrupt the inventory.)
+    log("give_item " + std::to_string(value) + ": not a placeholder of this seed; nothing given");
+    return true;
+  }
+  placeholder_hit(value, it->second);
+  return true;
+}
+
+bool on_give_money(s32 amount) {
+  Runtime& r = rt();
+  if (!r.on || !is_fol_placeholder(amount)) return false;
+  const auto it = r.by_placeholder.find(amount);
+  if (it == r.by_placeholder.end()) {
+    log("add money " + std::to_string(amount) + ": not a placeholder of this seed; nothing given");
+    return true;
+  }
+  placeholder_hit(amount, it->second);
+  return true;
+}
+
+const u8* take_message_override() {
+  Runtime& r = rt();
+  if (r.override_lines.empty() || runtime::Runtime::get().vblanks() != r.override_vblank) return nullptr;
+  r.override_text = window_text(r.override_lines);
+  r.override_lines.clear();
+  return r.override_text.data();
+}
+
+void connect(std::unique_ptr<ap_net::Link> link) {
+  Runtime& r = rt();
+  r.link = std::move(link);
+  r.net_ok = false;
+  r.seed_mismatch = false;
+  runtime::Runtime::get().net_poll = r.link ? &vblank : nullptr;
+  if (r.link) log("connecting to the server");
+}
+
+bool deathlink_enabled() { return rt().on && rt().seed.deathlink; }
+bool connected() { return rt().net_ok; }
+bool deathlink_pending() { return rt().deathlink_in; }
+
+void deathlink_receive(const std::string& source, const std::string& cause) {
+  Runtime& r = rt();
+  if (!r.on) return;
+  r.deathlink_in = true;
+  r.deathlink_source = source.empty() ? "someone" : source;
+  log("DeathLink received from " + r.deathlink_source + (cause.empty() ? "" : ": " + cause));
+}
+
+void vblank() {
+  Runtime& r = rt();
+  if (!r.on || !r.link) return;
+  for (ap_net::Event& ev : r.link->poll()) {
+    switch (ev.kind) {
+      case ap_net::Event::kStatus:
+        log("server: " + ev.text);
+        break;
+      case ap_net::Event::kRefused:
+        log("the server refused the slot: " + ev.text);
+        queue_notice("Archipelago: refused (" + ev.text + ")");
+        break;
+      case ap_net::Event::kConnected: {
+        if (ev.seed_name != r.seed.seed) {
+          // Another room: nothing goes out, nothing comes in (playing on offline).
+          r.seed_mismatch = true;
+          r.net_ok = false;
+          log("the server's seed is " + ev.seed_name + ", the seed file's " + r.seed.seed + ": staying offline");
+          queue_notice("Archipelago: the server has another seed");
+          break;
+        }
+        r.seed_mismatch = false;
+        r.net_ok = true;
+        // The server's checks (another session of this slot) count here too; ours go out.
+        int marked = 0;
+        for (const int64_t id : ev.checked) {
+          if (find_location(id) != nullptr && r.checked.insert(id).second) {
+            r.state.checked.push_back(id);
+            ++marked;
+          }
+        }
+        if (!r.state.checked.empty()) r.link->check(r.state.checked);
+        if (r.state.goal_done) r.link->goal();
+        log("connected (slot " + std::to_string(ev.slot) + "): sent " + std::to_string(r.state.checked.size()) +
+            " checks, " + std::to_string(marked) + " checked elsewhere");
+        queue_notice("Archipelago: connected");
+        break;
+      }
+      case ap_net::Event::kItems:
+        if (r.seed_mismatch) break;
+        for (const ap_net::NetItem& ni : ev.items) {
+          if (ni.index < 0) continue;
+          const size_t i = static_cast<size_t>(ni.index);
+          if (i < r.net_items.size()) continue;  // (sent again after a reconnect)
+          if (i > r.net_items.size()) {
+            log("server items " + std::to_string(r.net_items.size()) + ".." + std::to_string(i - 1) + " missing");
+            r.net_items.resize(i);  // (empty kinds: nothing to give)
+            r.net_from.resize(i);
+          }
+          ItemDef it;
+          const auto def = r.seed.items.find(ni.item);
+          if (def != r.seed.items.end()) {
+            it = def->second;
+          } else {
+            it.kind = "unknown";
+            it.ap_id = ni.item;
+            it.name = r.link->item_name(ni.item, r.seed.slot);
+            log("server item " + std::to_string(i) + ": AP item " + std::to_string(ni.item) + " is not in the seed's table");
+          }
+          r.net_items.push_back(it);
+          r.net_from.push_back(ni.player == r.seed.slot ? std::string() : r.link->player_name(ni.player));
+          log("server item " + std::to_string(i) + ": " + describe(it) +
+              (r.net_from.back().empty() ? "" : " from " + r.net_from.back()));
+        }
+        break;
+      case ap_net::Event::kDeathLink:
+        if (r.seed.deathlink && !r.seed_mismatch) deathlink_receive(ev.source, ev.text);
+        break;
+      case ap_net::Event::kMessage:
+        log("server says: " + ev.text);
+        break;
+    }
+  }
+}
+
+// ---- Battles ----
+
+void on_battle_exit(int encounter, int outcome) {
+  Runtime& r = rt();
+  if (!r.on || outcome != 0) return;
+  for (const Location& l : r.seed.locations) {
+    if (l.type != "boss" || l.encounter != encounter || is_checked(l.id)) continue;
+    record_check(l.id, true);
+    if (l.item.own) r.pending.push_back({l.item.item, "", true});
+  }
+  if (!r.state.goal_done &&
+      std::find(r.seed.goal_encounters.begin(), r.seed.goal_encounters.end(), encounter) != r.seed.goal_encounters.end()) {
+    r.state.goal_done = true;
+    log("goal: encounter " + std::to_string(encounter) + " won");
+    if (r.link && r.net_ok) r.link->goal();
+  }
+}
+
+void battle_frame() {
+  Runtime& r = rt();
+  if (!r.on || !r.deathlink_in) return;
+  battle::BattleGlobals& g = battle::bg();
+  // In the fight, between special moves: every standing member falls, as from a lethal hit
+  // (HP 0, death 1); the battle's own check then loses the fight (outcome 2).
+  if (g.state != battle::kStateFighting || (g.flags & 0x40) != 0) return;
+  r.deathlink_in = false;
+  r.dying_from_link = true;
+  for (battle::PartyUnit* u : g.party_units) {
+    if (u == nullptr || battle::unit_is_down(u)) continue;
+    u->st()->hp = 0;
+    u->death = 1;
+  }
+  log("DeathLink from " + r.deathlink_source + ": the party falls in battle");
+}
+
+void on_game_over() {
+  Runtime& r = rt();
+  if (!r.on) return;
+  const bool from_link = r.dying_from_link;
+  r.dying_from_link = false;
+  if (from_link || !r.seed.deathlink) return;
+  if (r.link && r.net_ok) {
+    log("game over: DeathLink sent");
+    r.link->deathlink(r.seed.slot_name + "'s party fell");
+  } else {
+    log("game over: DeathLink not sent (offline)");
+  }
 }
 
 std::string status_text() {
   Runtime& r = rt();
   if (!r.on) return "Archipelago off (no seed)";
-  char buf[256];
-  std::snprintf(buf, sizeof buf, "seed %s | slot %s | checks %zu/%zu | received %lld | waiting %zu",
+  char buf[320];
+  const char* net = !r.link ? "offline" : r.seed_mismatch ? "wrong seed" : r.net_ok ? "connected" : "connecting";
+  std::snprintf(buf, sizeof buf, "seed %s | slot %s | checks %zu/%zu | received %lld | waiting %zu | %s%s%s",
                 r.seed.seed.c_str(), r.seed.slot_name.c_str(), r.checked.size(), r.seed.locations.size(),
-                static_cast<long long>(r.state.received_index), r.pending.size());
+                static_cast<long long>(r.state.received_index), pending_count(), net,
+                r.seed.deathlink ? " | DeathLink" : "", r.state.goal_done ? " | goal" : "");
   return buf;
 }
 

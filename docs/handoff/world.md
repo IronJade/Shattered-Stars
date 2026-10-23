@@ -6,6 +6,273 @@ Worker: world agent (phase 3: closing the field program's remaining gaps). Build
 `gha.sh` on the project `analysis/ghidra_world`). Nothing is committed by the worker; the
 coordinator commits.
 
+## HANDOFF: start here (2026-10-23 about 01:40, after the second world agent's turn)
+
+Both queue items from the coordinator are done; nothing is running (no Redux, no server).
+Suites in engine/build-world with SS_DISC1 and a scratch XDG_CONFIG_HOME: ss_tests 78/0,
+ss_game_tests 99/0, smoke (tools/smoke_field_events.sh engine/build-world/shattered-stars)
+37/37; tools/ap_e2e.sh 7/7. Nothing committed by me; the coordinator commits hourly.
+
+### Item 1, M7's spell part: closed
+
+- docs/notes/spell_coverage.md reads verified for every spell and module, and its Open list is
+  empty. The four party class runs were run in Redux and compared (`sweep_cmp.sh`); the new
+  section "The party class runs" has the numbers:
+  - iLv: exact. RNG 290/290, enemies 290/290, party 288/288.
+  - iCv: enemies 280/280, party 278/278; RNG 277/280, the 3 differences inside the console's
+    3-tick slow runs (Ray b910, Angel Feather b2300), the next sample agreeing.
+  - iNa: enemies 255/255, party 253/253; RNG 254/255 (b850, a 4-tick run under Energy Arrow).
+  - iNb: exact. RNG 280/280, 280/280, 278/278, no slow frames.
+  - Cast and finish frames are identical in all four. No port difference: nothing to fix.
+- gen_cov.py now lists pending runs in Open too, and writes the run table.
+  results.json has the new keys (backup in results.json.bak).
+- The battle agent's sweep (passes 1 and 2, docs/notes/battle_sweep.md and
+  scratchpad/battle/sweep/pass2/missing.json) lists no spell among its "not ported yet" lines:
+  only the victory voice, particle kind 4 and stage code.
+
+### Item 2, AP phase 2 (port side): done
+
+- **Gift cross-check** (seed_format.md "Gifts: the cross-check";
+  scratchpad/world/ap/gifts/xcheck.py over ap_extract's disassembly, cached in maps.pkl):
+  - every reward site in field.json was followed from its give to the next message window;
+  - 94 item + 5 Fol gift sites and the Fol gift: the library routines open their window in
+    the same vblank, so "Got X." / "Sent X to Y." replaces the text;
+  - 1 inline give (map 75, the second Weighty Ring) has its window before it: banner;
+  - 33 key-item flag gifts stay vanilla (agreed with the AP agent: no placeholder in story
+    mode);
+  - the 215 prize-table inline gives come in runs and loops, with the window before them or
+    after a wait.
+- **Port changes for it** (ap.cpp / ap.h):
+  - all placeholders reached in one vblank become pages of that vblank's window (0x4001), or
+    a banner each;
+  - a placeholder reached again in the same vblank is ignored (loops);
+  - Fol placeholders 0xf00000-0xffffff (seed.h `is_fol_placeholder`), because the money
+    routine's push is imm24; 0x7f000000+ still reads;
+  - test `ap_placeholders_same_vblank`.
+- **Goal default [539, 540]** (the battle agent: two versions of the one final fight).
+- **apworld/so2/patches.py** (mine; the API is in seed_format.md):
+  - placeholder_for, placeholder_patches and placement_patches, plus a CLI;
+  - agreed with the enemy / AP agent (ad2e106211b3b492c), which imports it from its
+    apworld/so2/__init__.py;
+  - field.json now carries word / expected / role per site (its regeneration). The CLI reads
+    it: all 585 chest / gift / prize locations give valid lines.
+- **tools/ap_e2e.sh** (new, mine): the scripted multiworld session, 7/7:
+  - it starts a private MultiServer on 127.0.0.1:38291 from ap_test_server.sh's install, so
+    the shared 38281 server, which other agents use, is not disturbed;
+  - Alice's crate sends Bob's Map Width ("Sent Map Width to Bob." captured);
+  - Bob's checks give Alice 3 items in free play (banner captured).
+  - Port switches it added (flagged `[world agent]`): main.cpp `SS_AP_SERVER` / `SS_AP_SLOT`
+    connect any run, headless too; runtime.cpp `SS_PACE=1` paces a headless run.
+- **Still open, later phases:**
+  - DeathLink edge cases as before (no DeathLink from a losable story battle);
+  - first-drop checks and exp / fol multipliers (phase 3);
+  - key-item flags as AP items (phase 4: the AP agent says only for an open-world mode).
+
+### Files of mine changed this turn (none committed)
+
+- engine/src/game/ap/{ap.cpp, ap.h, seed.cpp, seed.h}
+- engine/tests/test_ap.cpp
+- apworld/so2/patches.py (new)
+- tools/ap_e2e.sh (new)
+- docs: ap/seed_format.md, notes/spell_coverage.md (generated), handoff/world.md
+- Flagged edits elsewhere: engine/src/main.cpp (SS_AP_SERVER), engine/src/runtime/runtime.cpp
+  (SS_PACE), docs/HANDOFF.md (the debug-options line), engine/README.md (the AP paragraph)
+- scratchpad/world/cov/{gen_cov.py, results.json}
+
+## Earlier handoff (context rollover, 2026-10-23 about 00:30)
+
+The coordinator's queue (2026-10-22, late) is below. Items 1 and 2 are both partly done, and
+nothing runs in the background (no Redux, no queued jobs). Suites at the handoff, all with a
+scratch XDG_CONFIG_HOME and SS_DISC1: ss_tests 78/0, ss_game_tests 98/0, smoke
+(tools/smoke_field_events.sh engine/build-world/shattered-stars) 37/37. Nothing is committed;
+the last checkpoint is 84becbd, and the coordinator commits hourly.
+
+### Rules (unchanged; given by the coordinator)
+
+- **Build:** in engine/build-world, `ninja -j8`.
+- **Scratch:** on disk in scratchpad/world, never /tmp.
+- **Runs:**
+  - Headless only.
+  - Every game, test and sweep runs with XDG_CONFIG_HOME pointed at a scratch dir
+    (scratchpad/world/xdg; run_port.sh sets scratchpad/world/spell/xdg), plus --no-memcard
+    unless a card is named.
+  - Scratch memory cards only.
+  - Kill processes by exact PID only (never pkill / pgrep -f with a pattern your own shell
+    contains).
+- **Redux:** with -cli and a scratch HOME only, at most 3 instances of mine at once (other
+  agents run their own).
+- **Commits and logging:**
+  - Don't commit.
+  - Log here and in the catalog at least every 20 minutes.
+- **Other agents' files:** keep edits buildable; keep edits there minimal and flagged
+  `[world agent]`.
+- **Enhance policy:**
+  - Don't reproduce original bugs (`// ORIGINAL BUG (original_bugs.md Sn)` with the fix below
+    it) and never model slowdown.
+  - Play-state rule (user): a fix must not change hit timing, the number of hits, damage,
+    difficulty or battle pacing. Each is measured against Redux; if one would change, hold the
+    fix and send the numbers to the user.
+- **Verified** means ss_tests, ss_game_tests (with SS_DISC1) and smoke all pass, plus a Redux
+  match where play is involved.
+
+### Queue item 1: spell coverage (M7's spell part)
+
+- **docs/notes/spell_coverage.md** is generated by `scratchpad/world/cov/gen_cov.py`. Its
+  inputs, all in scratchpad/world/cov:
+  - `spells.json`, from `spells_table.py`: names from the disc's #1980, and from a Redux RAM
+    dump the effect kind 0x8007002f, MP, target class and data entries 0x8006d1f2 × 5 variants.
+  - `class_lists.json`: the class lists 0x8006b1b8 / 1d0 / 1e4 / 1fc.
+  - `enemy_spells.json`, from `enemy_spells.py`: each monster's 4 spell slots, stats record
+    +0x3c.
+  - The verification record: a hard-coded `ver()` list plus `results.json`.
+- **Variants:** monsters 0, Rena 1, Leon 2, Celine 3, Noel 4 (`unit_caster_variant`). The same
+  module code runs with different data per variant.
+- **State:**
+  - Every module and every monster variant is Redux-verified.
+  - New since the rollover-eve: eA-eF, the wizard on encounter 340 casting one spell at a
+    time.
+  - Still pending: 4 party runs for the class variants and the party Shot spells not yet
+    covered. They are configured in sweep_cfg.py and dry-run in the port (every cast plays to
+    its end), but their Redux references are not run:
+
+    | Run | Caster | Spells | FOR |
+    |---|---|---|---|
+    | iLv | Leon | Wounds, Word of Death, Ice Needle, Deep Mist v2, Haste v2, Delay v2, Growth v2, Protection v2 | 2900 |
+    | iCv | Celine | Firebolt, Thunderbolt, Wind Blade, Ray v3, Starlight v3, Anti v3, Angel Feather v3 | 2800 |
+    | iNa | Noel | Wind Blade, Grave, Energy Arrow v4, Mind Absorber v4, Heal, Cure Light, Fairy Light v4, Cure All v4 | 2550 |
+    | iNb | Noel | Fairy Heal v4, Silence v4, Dispel v4, Curse v4, Bless v4, Neutral v4 | 2800 |
+
+- **To run them:** `cd scratchpad/world/spell && ./start_sweep.sh iLv 2900`, then iCv 2800,
+  iNa 2550 (3 at once), then iNb 2800. When each ends:
+  1. `./sweep_cmp.sh RUN`.
+  2. Add `"0xSP:V": ["RUN"]` entries to cov/results.json (V = the variant number, or `p` for a
+     party Shot spell).
+  3. `python3 gen_cov.py`.
+
+  The doc's "Open" list must end empty.
+- **Reading a result:** "verified" = cast and finish frames equal, every enemy sample exact,
+  RNG exact outside the console's slow frames. Inside slow frames (3- and 4-tick runs) a few
+  samples differ transiently and the next sample agrees; that is within-frame sampling.
+  - Known, the battle agent's: a party sample now and then shows the hit reaction (s3) one
+    frame early in the port.
+  - eA-eF all read this way: eC and eE fully exact; eA, eB, eD and eF differ only inside slow
+    frames (Explode, Thundercloud / Meteor Swarm, Extinction, Earthquake).
+- **The battle agent's sweep** (tools/battle_sweep.py): when it lands, take any "not ported
+  yet" spell lines from its ranking rather than duplicating it.
+- **New drivers for enemy casts:**
+  - Port: `SS_BATTLE_ENEMY_SPELLS="F:SLOT:s0,s1,s2,s3[:HP[:MP]];..."` (spells.cpp, mine).
+    Each entry applies in order once battle frames >= F, no SpellCast runs, and the previous
+    entry's s0 has been cast (or 1500 frames have passed).
+  - Redux: `BW_ENEMY_SPELLS`, the same, at input_dispatch (redux/explore.lua).
+  - sweep_cfg.py `ESPELLS` / `EFOR` / `OWN_SIDE`: own-side spells set the wizard to 5000 HP,
+    and MP goes back to 200 at each switch. The wizard's AI odds are `0,255,0,0,0`.
+
+### Queue item 2: Archipelago phase 2, the port side (game side done and tested; parts open)
+
+- **Done:**
+  - **Seed reader:** split into game/ap/seed.{h,cpp} (json.h only), at the setup agent's
+    request. Setup links it; CMake lists src/game/ap/seed.cpp.
+  - **Seed format additions** (docs/ap/seed_format.md updated): a location's `placeholder`,
+    top-level `goal.encounters` (default [540]), `options.deathlink`, sidecar `goal`.
+  - **Placeholders** (chests and gifts, any item, own or another player's):
+    `ap::on_give_item` / `on_give_money`.
+    - Hooked from script_table_b.cpp give_item (B 0x60) and script_ext.cpp ext 0xd4. Own items
+      are given; another player's are sent. Either way the check is recorded.
+    - The next message window (script_ext.cpp `message_text`, ext 0x64 family) shows "Got X." /
+      "Sent X to Y." in place of the script's string. Without a window that vblank, a banner
+      says it.
+    - Verified by capture: map 18's crate shows "Sent Hookshot to Alice." and gives no Fol.
+  - **Boss checks and the goal:** `ap::on_battle_exit(encounter, outcome)` in
+    battle_program.cpp battle_exit_to_field (flagged). Boss locations by encounter; their own
+    items are given in free play ("Got X").
+  - **DeathLink:**
+    - Out: `ap::on_game_over()` in field_program.cpp field_begin_game_over, never for a death a
+      DeathLink caused.
+    - In: `ap::battle_frame()` in battle_program.cpp's loop (flagged). In a fight, with no
+      special move running, every standing member gets HP 0, death 1, and the battle loses as
+      on the console. In field free play it is a game over at once (field_begin_game_over).
+    - Console: `ap_deathlink [FROM]`.
+  - **Server link:**
+    - `ap::connect(std::unique_ptr<ap_net::Link>)`, `deathlink_enabled()`, `vblank()` and
+      `connected()`.
+    - Runtime: `net_poll` hook (runtime.h / runtime.cpp, flagged), called once per vblank.
+    - kConnected with a matching seed re-sends all checks (+ goal) and marks the server's
+      checked; another seed stays offline with a notice.
+    - kItems are kept by server index (net_items); duplicates are dropped and items are given
+      in free play from SaveState::received_index on. Local items (console, boss rewards) go
+      in a separate queue that does not move the index.
+    - kDeathLink sets a pending DeathLink when options.deathlink is on. kRefused shows a
+      notice.
+  - **Tests:** test_ap.cpp gains `ap_server_link` (a FakeLink: wrong seed, resync, items by
+    index, goal, boss, DeathLink in and out) and `ap_placeholders`. Smoke gains ap_placeholder,
+    ap_boss, ap_deathlink_battle and ap_deathlink_field.
+- **Agreed with the setup agent** (ae6c5dd2de7b4fb9f, now handing over to a fresh setup
+  agent: docs/handoff/setup.md):
+  - **Ownership:** it owns engine/src/ap_net/ (link.h: Link, ConnectInfo, State, NetItem, Event;
+    client.h: `Client : Link`, CMake ss_ap_net, C++17 sources) and the setup page. I own the
+    game side.
+  - `items_handling` 0b001, because own items are given offline.
+  - Our own DeathLink bounce is dropped inside ap_net.
+  - `Event::item_send` flags ItemSend lines; I only log kMessage.
+  - main.cpp (theirs) builds the Client when ap_server is set, on windowed non-test runs.
+    - The slot is ap_slot, else `seed()->slot_name`.
+    - deathlink comes from `deathlink_enabled()`.
+    - It then calls `game::ap::connect`.
+    - I told them `connect` exists, so they can drop their SS_AP_CONNECT_READY guard.
+  - End-to-end against a local MultiServer works: connect, a check sent, 15 items received
+    and given in turn. Their files are in scratchpad/setup/e2e.
+- **Open (phase 2 left):**
+  1. **Gift locations:** a gift's check comes from its placeholder (the generator patches the
+     gift's item push). Story / NPC gifts that give through inline give_item or add_money
+     also work, since the hook sits in the op. Nothing keys gifts by offset; Location::offset
+     is only for validation.
+     - To do: cross-check against the enemy agent's ap_extract output (docs/ap/field.json,
+       tools/ap_extract.py): each gift's call site and its routine's message (if the message
+       comes much later, the banner is the fallback).
+     - Not handled: the fanfare branch (value >= 10000: key items setting script flags). It
+       needs the area-key design of phase 4.
+  2. **A generator-side helper** (`tools/so2_mod.py` or the APWorld) that writes
+     `placeholder` patches for chests and gifts. Not written. Chest example: `script 18 0x82c
+     0xffffff38 0x00000400`, with the location's `"placeholder": 1024`.
+  3. **DeathLink edge cases:** a received one during a menu, an event or the title waits for
+     free play or a fight. A death in a losable story battle (field flag 0x7e = 0) is no game
+     over, so no DeathLink is sent. That matches "on a game over"; say so in seed_format.md
+     if the user asks.
+  4. **The rest of phase 2:** the plan's first-drop checks (result.cpp roll_drops, the battle
+     agent's) and exp / fol multipliers are phase 3. Nothing is started.
+- **Files of mine in progress** (all build; none committed since 84becbd):
+  - game/ap/{ap.h, ap.cpp, seed.h, seed.cpp, json.*}
+  - tests/test_ap.cpp, tools/smoke_field_events.sh
+  - docs/ap/seed_format.md, docs/notes/spell_coverage.md
+  - game/battle/spells.cpp (SS_BATTLE_ENEMY_SPELLS)
+  - field: script_table_b.cpp, script_ext.cpp, field_program.cpp, debug_console.cpp
+  - flagged in others' files: battle_program.cpp, runtime.h / runtime.cpp, menu_save.cpp,
+    memcard.*, title_program.cpp, main.cpp (`--ap-seed`)
+
+### Tools and scripts (scratchpad/world)
+
+- **spell/:** the Redux spell sweeps.
+  - **Running:**
+    - `sweep_cfg.py RUN [FOR]` prints the exports for a run. Run kinds: i* idle class casts,
+      s* timed, e* enemy, x*/m* items, clashes and menus.
+    - `start_sweep.sh RUN FOR` starts the Redux reference into ref/RUN_3 (captures in
+      ref/sweep_raw/RUN) and prints its PID.
+    - `run_port.sh` runs the port side. `menu_cmp.sh RUN` (MENU_D=4) is for pad runs;
+      `itemC_cfg.sh` / `item_cfg.py` are for item runs.
+  - **Comparing:** `sweep_cmp.sh RUN [FOR]` runs the port with the reference's slow frames
+    replayed (SS_BATTLE_TICK_MAP) plus `cmp.py`. `sweep_cap.sh RUN D B...` pairs captures.
+  - **Redux driver** (`redux/explore.lua`, `redux/run.sh`): BW_CAST, BW_CAST_IDLE, BW_ITEM,
+    BW_ENEMY_SPELLS, BW_TICK_LOG, BW_SPELL_TRACE, BW_RNG_TRACE, BW_BATTLE_INPUT, BW_CARD_TAG.
+  - **Modules:** `register.py` / `cat_mods.py` register them and add their catalog rows;
+    `modules/index.txt` maps hash -> entries -> spells.
+- **cov/:** spells_table.py, enemy_spells.py, gen_cov.py, results.json, map18.dis (unused).
+- **ap/:** tiny.apso2 and ph.apso2 (the smoke seeds), xdg/, nomods/.
+- **Port debug variables:**
+  - SS_SPELL_TRACE, SS_BATTLE_CAST(_IDLE), SS_BATTLE_ITEM, SS_BATTLE_ENEMY_ODDS,
+    SS_BATTLE_ENEMY_SPELLS
+  - SS_BATTLE_TICK_MAP, SS_HELD_FIXES, SS_ORIGINAL_S1, SS_RNG_SITES
+  - SS_DEBUG_INPUT with --debug
+
 ## Done and verified (committed)
 
 - Phase 1-2: world map overlay 0xc1e, vehicles, bunny, courier, minimap, insert-disc
@@ -267,9 +534,10 @@ it compared with PCSX-Redux yet:
 - S1 fixed visual-only (default; RNG equal on k516 / i12), S3 fixed play-identical (the
   kernel's address-0 bytes as unit_null_target; iC340: RNG 220/220, units exact), S20 fixed
   by the user's decision (menu Fairy Light with no target heals 20000 -> 22200, MP 999 ->
-  959 once; m9b, the with-target comparison, re-running: the first m9b Redux run hung at
-  boot and was stopped).
-- Archipelago Phase 1, port side (23:40, builds; ss_game_tests 91/0 without the disc):
+  959 once; with a target present m9b equals Redux: RNG 240/240, units exact, cast 1612 ->
+  end 2032 on both). Rows updated in original_bugs.md. Still held: S5, S11, S12, S17, S19.
+- Archipelago Phase 1, port side (done 23:55; ss_tests 78/0, ss_game_tests 91/0 with SS_DISC1,
+  smoke 29/29 with the 8 new ap_* checks):
   - engine/src/game/ap/: json.{h,cpp} (reader / writer, 64-bit ids, "0x" strings),
     ap.{h,cpp} (seed loader, location index by id and by chest flag, check API, receive
     queue given in free play with the notice banner, sidecar <card>.slotNN.ap.json).
@@ -290,17 +558,9 @@ it compared with PCSX-Redux yet:
 
 ## Next steps
 
-1. Archipelago Phase 1, the port side (coordinator 19:43 / 22:15; plan docs/archipelago_plan.md;
-   config keys told to the setup agent: ap_seed, later ap_server / ap_slot / ap_password):
-   - docs/ap/seed_format.md (the `.apso2` spec);
-   - engine/src/game/ap/ (json.{h,cpp} reader / writer, seed.{h,cpp}, ap.{h,cpp}: the check
-     API, the receive queue given out in free play with a notice, the sidecar
-     <card>.slotKK.ap.json written after a save / read after a load);
-   - mods.cpp takes the seed's patch lines;
-   - debug console: ap_give, ap_check, ap_status; `--ap-seed FILE` (main.cpp), config ap_seed;
-   - tests: seed loader + sidecar round trip (unit), a smoke case (one chest changed, one
-     check, one item received).
-2. Later: Divine Comedy (enemy agent), spell 0x40 (effects agent).
+Both queue items are done (see "HANDOFF: start here"). Waiting for the coordinator's next
+queue. Candidates: Divine Comedy (enemy agent), spell 0x40 (effects agent), and AP phase 3
+(first-drop checks, exp / Fol multipliers).
 
 ## Findings not yet in the catalog
 

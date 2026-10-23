@@ -95,7 +95,7 @@ lines, `gpu_lines_match_hardware_dump`, CHECKLIST line). Verified after the cuto
 - Suites (coordinator, HEAD): ss_tests 78/0, ss_game_tests 74/0 with and without the
   disc, smoke 21/21; mine the same (smoke 16/16 in tools/smoke_field_events.sh here).
 
-## Phase 5 step 2: party modules (in progress)
+## Phase 5 step 2: party modules (done: Chisato, Precis, Opera, Ashton verified and reported)
 
 Precis #2155, Ashton #2147, Opera #2153, Chisato #2159, each in battle/pc_<name>.cpp,
 registered in pc_modules.cpp (flag the hunk to the coordinator).
@@ -166,7 +166,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 - Catalog: battle_pc2153 rows (33), port columns for the four block-1 functions, MP table
   0x8006b2f3.
 
-### Ashton (#2147): ported, registered (case 7); level 0 moves 0-4 verified, 5-9 pending
+### Ashton (#2147): verified (level 0, max level, weapon variant 1), reported 23:xx
 
 - `engine/src/game/battle/pc_ashton.cpp` (new): AshtonUnit (vtable 0x801f1e4c, 0x388 bytes:
   +0x360 move 4's mark, +0x370 move 7's sparks, +0x384 move 9's glow), 10 moves (pointer
@@ -195,7 +195,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 - Scratch: `scratchpad/fx_worker/faithful` (B1 / B2 reverted, `sync.sh [debug]`), the
   Redux-blend env test in it is obsolete now.
 
-### Original bugs F1, F3, F5, F7, F8 (done, reported with Chisato); F11 avoided, F12 decide (new)
+### Original bugs: F1, F3, F5, F7, F8, F14, F15, F17 fixed; F4, F12 (held), F13 kept; F11, F16 avoided
 
 - F1 `field/effects_draw.cpp` (the line and burst depth: `otz_for_depth`), F3 / F7
   `field/effects.cpp` (glow replaced; clamp), F5 `field/field_movie.cpp` (per-row clipped
@@ -209,7 +209,52 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
 without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
 
-## Current state (22:5x)
+## Phase 6: catalog completion (in progress, started 23:50)
+
+Assignment (coordinator): (1) `tools/catalog_coverage.py` writes `docs/catalog/COVERAGE.md`
+(per module: rows by confidence and by port status) — done; (2) work the 426 empty port
+columns to zero (port file, "(not needed: reason)", "(PsyQ: ...)", or "(unported: ...)"
+listed in COVERAGE.md and ported, verified against Redux where play reaches it); battle
+rows are the battle agent's area: send it the list of unported functions in its files
+before editing them; (3) raise guess / likely rows to confirmed with evidence.
+- Tools: `scratchpad/fx_worker/catalog/empty.json` (each empty row with the source files
+  naming its address / name), `ctx.py MODULE..` (the source lines), `apply.py UPDATES.csv`
+  (in-place row updates, order kept; columns module,address,port[,confidence[,evidence_add
+  [,summary[,force]]]]), updates in `scratchpad/fx_worker/catalog/updates_*.csv`.
+- Build: build-fx reconfigured 23:48 (ss_game_tests 95, smoke 29: all pass).
+- 00:36: empty port columns 426 -> 0 (`updates_battle_stale/misc/ovl1984/voice/field.csv`
+  applied). Scans: `refs.py PROGRAM ADDR..` (jal / j / pointer words) and `luiref.py
+  PROGRAM ADDR..` (lui + addiu/ori pairs) over the archive's code entries; ELFs for REA in
+  `scratchpad/fx_worker/catalog/` (b2129.elf battle init image, f3100.elf field, m2982 /
+  m3006 menu overlays at 0x8007e000, t0001.elf title). New rows go through `append.py`
+  (appended, order kept). COVERAGE.md now also lists "[port partial: ...]" rows.
+- Unported and reached in play (11 rows, "(unported: ...)"), being ported now, approved by
+  the coordinator (one owner: me):
+  - battle (new file `party_talk.{h,cpp}` + flagged hunks): opening voices
+    (battle_frame_director 0x80072228, TODO director.cpp:282), talk pose (pc_start_talk
+    0x8003acac; cleared in pc_update 0x800350cc), provoke line (voice_play_battle_line
+    0x800808e8, input.cpp provoke: rng_range(4), -1 -> buzzer), ally reaction + fury
+    (voice_ally_reaction 0x80080974, pc_start_fury 0x8003acbc, g_member_tables from
+    party_banter_voice_table 0x80074980), flee voice (0x80080878), victory voice
+    (voice_play_entry(victory_voice, this, -1) at 0x800360a8), equipment weapon throws
+    (pc_on_hit 0x8003bb84: status2 0x4000 -> throw(0), 0x2000 -> throw(2);
+    pc_attack_hit_check: status1 0x800000 -> throw(0)).
+  - field (new file `field/menu_voice.{h,cpp}` + hooks in common/menu_core): the field
+    menus' voice streaming (bgload_init / shutdown / update field parts 0x80038bcc /
+    0x80038c70 / 0x80039418) and voice_reload_member 0x80038dfc (g_voice_reload_member is
+    never installed: a killer-move / party change in a menu keeps the old voice bank).
+  - Not needed after all: clash_register / clash_resolve (dead: the only jal is in #2129
+    bytes #1984.1 overwrites); pages 0xc / 0xd and the cheat dialog (only behind the
+    camp menu's third dialog, whose constructor 0x8007fe6c has no caller).
+- Seen, not mine: Weirdaxe debris (enemy_ai.cpp:210, battle agent). The boot executable
+  has uncatalogued functions (e.g. 0x8001446c..0x800144e4); a gap scan (jal targets /
+  procedures vs rows) is the next catalog step after the ports.
+
+## State at the end of phase 5 step 2 (23:xx): no runs active, nothing queued
+
+Scratch: the port captures (port/*/cap) were deleted (regenerable with port_pc.sh); the
+Redux references (redux/ref, 3.2 GB) are kept for re-comparisons.
+
 
 - Ashton level 0, all 10 moves compared: RNG equal to the exit in moves 0-4 and 6-9
   (move 9 = spell 0x40, the world agent's `spell_mod_spell40.cpp`: its first check, equal);
@@ -239,7 +284,17 @@ without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
   Reported.
 - Precis max level `prec_m1..m10`: RNG equal to the exit in all 10; frames differ only in
   the afterimages (moves 1, 2, 4, 7: B2; the faithful build matches). Reported.
-- Queue (`redux/queue_max2.log`, detached): as_m1..m10. Compare
+- Ashton max level `as_m1..m10`: RNG equal to the exit in all 10 (move 5 too at max
+  level; move 9 = spell 0x40 at power 2). Frames: moves 0, 2, 6, 8, 9 differ only in the
+  afterimages (B2; the faithful build matches); move 7 in the homing lines (line walk).
+  asv_m3 / m4 / m10 (variant 1 at max level): RNG equal to the exit; asv_m10's remaining
+  <= 4% (b710) is one-pixel block edges in spell 0x40's blue screen mosaic (UV interpolation,
+  gpu_accuracy.md). Reported: phase 5 step 2 complete (all four modules).
+- Opera op_m8 b510-540 (the battle agent's question): the shard hit explosions sit up to
+  192 units higher in the port: that is F14's fix (the user's decision; visual only). With
+  F14 off (scratch build) the explosions match Redux; what remains there is the trails
+  (my scratch B1 revert used each quad's own angle; the original reuses quad 0's).
+- Queue (`redux/queue_max2.log`): done. Compare
   with `./cmp_run.sh NAME CHAR BYTE [USES] [EXTRA_POKE]` (port run + RNG + frames).
 - Tools: `port_pc.sh` uses XDG_CONFIG_HOME=scratchpad/fx_worker/xdg; `redux/queue.sh` takes
   "VAR=VAL ...|job"; don't SIGSTOP a queue started from the tool shell (it was killed);

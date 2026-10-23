@@ -6,6 +6,7 @@
 
 #include "game/battle/battle.h"
 #include "game/battle/combat.h"
+#include "game/battle/enemy_support.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit_move.h"
@@ -227,6 +228,71 @@ void particle_k3_ring(Particle* p) {
   if (p->p40 < 1) particle_free(p);
 }
 
+// Kind 4 (0x8005ee08): a spinning gouraud triangle (head colour +0x40 at full, its tip at
+// half) between the particle and two points on a sphere of radius +0x28 (growing 0x20 a tick
+// to +0x3c) at yaw +0x34 / pitch +0x38 (turning +0x24 / +0x2c a tick); fades while its life
+// +0x44 is below 0; freed below -0x40.
+void particle_k4_shard(Particle* p) {
+  BattleGlobals& g = bg();
+  s32 origin[3] = {0, 0, 0};
+  obj_set_matrix(origin, origin, kUnitScale);
+  s32 r = p->p24[1];
+  psyq::SVECTOR v[3] = {};
+  for (int i = 0; i < 2; ++i) {
+    const s32 yaw = p->p34 + i * 0x38, pitch = p->p38 + i * 0x38;
+    const s32 cy = bcos(static_cast<u32>(yaw)), cp = bcos(static_cast<u32>(pitch));
+    const s32 sy = bsin(static_cast<u32>(yaw)), sp = bsin(static_cast<u32>(pitch));
+    v[i].vx = static_cast<s16>(((cy * cp >> 12) * r + p->pos[0]) >> 12);
+    v[i].vy = static_cast<s16>((p->pos[1] - sy * r) >> 12);
+    v[i].vz = static_cast<s16>(((cy * sp >> 12) * r + p->pos[2]) >> 12);
+  }
+  v[2].vx = static_cast<s16>(p->pos[0] >> 12);
+  v[2].vy = static_cast<s16>(p->pos[1] >> 12);
+  v[2].vz = static_cast<s16>(p->pos[2] >> 12);
+  s32 full = 0x100, half = 0x80;
+  if (p->p44 < 0) {
+    full = p->p44 * 4 + 0x100;
+    half = p->p44 * 2 + 0x80;
+  }
+  const u32 head = scale_colour(static_cast<u32>(p->p40), full) | 0x32000000u;
+  const u32 c[3] = {head, head, scale_colour(static_cast<u32>(p->p40), half)};
+  draw_tri_g3(v, c, 1);
+  if ((g.flags & 0xC) != 0) return;
+  const s32 t = g.frame_ticks;
+  r += t * 0x20;
+  p->p34 = (p->p34 + p->p24[0] * t) & 0xFFF;
+  p->p44 -= t;
+  p->p38 = (p->p38 + p->p24[2] * t) & 0xFFF;
+  if (p->p3c < r) r = p->p3c;
+  p->p24[1] = r;
+  if (p->p44 < -0x40) particle_free(p);
+}
+
+// Kind 5 (0x8005f128): a falling, turning triangle of size +0x3c round the particle (colour
+// +0x38 fading over the last 16 ticks of life +0x40); gravity 0x800; freed when its life
+// ends or it reaches the ground.
+void particle_k5_confetti(Particle* p) {
+  BattleGlobals& g = bg();
+  particle_set_gte_origin(p);
+  psyq::SVECTOR v[3] = {};
+  for (int i = 0; i < 3; ++i) {
+    const s32 a = (i * 0x78000) / 0x168 + p->p34;
+    v[i].vx = static_cast<s16>((bcos(static_cast<u32>(a)) * p->p3c) >> 12);
+    v[i].vy = static_cast<s16>((bsin(static_cast<u32>(a)) * p->p3c) >> 12);
+  }
+  const s32 level = p->p40 < 0x11 ? p->p40 << 4 : 0x100;
+  const u32 rgb = scale_colour(static_cast<u32>(p->p38), level);
+  const u32 c[3] = {rgb | 0x32000000u, rgb, rgb};
+  draw_tri_g3(v, c, 0);
+  if ((g.flags & 0xC) != 0) return;
+  particle_move(p);
+  const s32 t = g.frame_ticks;
+  p->vel[1] += t * 0x800;
+  p->p34 = (p->p34 + t * 0x14) & 0xFFF;
+  p->p40 -= t;
+  if (p->p40 < 1 || 0 < p->pos[1]) particle_free(p);
+}
+
 void particle_unported(Particle* p) {
   runtime::Runtime::get().log_once("battle-particle-" + std::to_string(p->kind),
                                    "battle: particle kind " + std::to_string(p->kind) + " not drawn yet (removed)");
@@ -239,6 +305,8 @@ void particle_update(Particle* p) {  // 0x8005e1b0
     case 1: particle_k1_homing_line(p); break;
     case 2: particle_k2_spark_line(p); break;
     case 3: particle_k3_ring(p); break;
+    case 4: particle_k4_shard(p); break;
+    case 5: particle_k5_confetti(p); break;
     default: particle_unported(p); break;
   }
 }
