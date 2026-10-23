@@ -9,11 +9,11 @@ reason)`), *PsyQ* (a library routine the port's runtime replaces), *unported*
 (`(unported: ...)`: a real game reaches it, it is not ported yet), *empty* (not yet
 looked at), *bad path* (the named file does not exist).
 
-Total: 4965 rows; confirmed 4379, likely 481, guess 105; ported 4350, not needed 547, PsyQ 68.
+Total: 5376 rows; confirmed 4433, likely 722, guess 221; ported 4360, not needed 862, PsyQ 93, empty 61.
 
 | Module | Rows | Confirmed | Likely | Guess | Ported | Not needed | PsyQ | Unported | Empty | Bad path | Other |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| battle | 932 | 741 | 156 | 35 | 754 | 153 | 25 |  |  |  |  |
+| battle | 944 | 741 | 158 | 45 | 754 | 155 | 25 |  | 10 |  |  |
 | battle_enemy_arcmene | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
 | battle_enemy_azamgil | 3 | 3 | 0 | 0 | 3 |  |  |  |  |  |  |
 | battle_enemy_bark | 10 | 10 | 0 | 0 | 10 |  |  |  |  |  |  |
@@ -133,23 +133,23 @@ Total: 4965 rows; confirmed 4379, likely 481, guess 105; ported 4350, not needed
 | battle_spell_thunderstorm | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
 | battle_spell_tractor_beam | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | battle_spell_wind_of_destruction | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
-| boot | 357 | 255 | 77 | 25 | 213 | 123 | 21 |  |  |  |  |
+| boot | 660 | 287 | 281 | 92 | 213 | 411 | 36 |  |  |  |  |
 | credits_3107 | 65 | 56 | 1 | 8 | 27 | 38 |  |  |  |  |  |
-| field | 736 | 609 | 127 | 0 | 667 | 53 | 16 |  |  |  |  |
+| field | 798 | 632 | 146 | 20 | 677 | 66 | 24 |  | 31 |  |  |
 | field_ovl_c1d | 108 | 81 | 27 | 0 | 92 | 16 |  |  |  |  |  |
 | field_ovl_c1e | 82 | 80 | 2 | 0 | 69 | 13 |  |  |  |  |  |
-| field_sub3103 | 34 | 34 | 0 | 0 | 34 |  |  |  |  |  |  |
+| field_sub3103 | 35 | 34 | 0 | 1 | 34 |  |  |  | 1 |  |  |
 | field_sub3104 | 3 | 3 | 0 | 0 | 3 |  |  |  |  |  |  |
 | field_sub3105 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | field_sub3106 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | field_sub3108 | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
 | field_sub3109 | 8 | 7 | 1 | 0 | 7 | 1 |  |  |  |  |  |
-| menu_0ba5 | 236 | 233 | 2 | 1 | 233 | 3 |  |  |  |  |  |
+| menu_0ba5 | 237 | 233 | 2 | 2 | 233 | 3 |  |  | 1 |  |  |
 | menu_0ba6 | 20 | 19 | 1 | 0 | 16 | 4 |  |  |  |  |  |
 | menu_0baa | 50 | 50 | 0 | 0 | 42 | 8 |  |  |  |  |  |
 | menu_0bae | 77 | 77 | 0 | 0 | 77 |  |  |  |  |  |  |
 | menu_0bb2 | 31 | 30 | 1 | 0 | 28 | 3 |  |  |  |  |  |
-| menu_0bb6 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| menu_0bb6 | 5 | 2 | 0 | 3 | 2 |  |  |  | 3 |  |  |
 | menu_0bb9 | 79 | 78 | 1 | 0 | 79 |  |  |  |  |  |  |
 | menu_0bbc | 115 | 115 | 0 | 0 | 115 |  |  |  |  |  |  |
 | menu_0bbe | 54 | 54 | 0 | 0 | 54 |  |  |  |  |  |  |
@@ -161,7 +161,88 @@ Total: 4965 rows; confirmed 4379, likely 481, guess 105; ported 4350, not needed
 | menu_0bca | 33 | 33 | 0 | 0 | 33 |  |  |  |  |  |  |
 | menu_0bcc | 14 | 14 | 0 | 0 | 14 |  |  |  |  |  |  |
 | menu_0bce | 39 | 39 | 0 | 0 | 39 |  |  |  |  |  |  |
-| title | 712 | 646 | 30 | 36 | 588 | 118 | 6 |  |  |  |  |
+| title | 741 | 645 | 46 | 50 | 588 | 130 | 8 |  | 15 |  |  |
+
+## Rows to resolve
+
+### battle (10)
+
+- 0x8007fe58 `battle_ai_flag_set_178` (guess, empty)
+- 0x8007feb0 `shot_spawn_random_variant_a` (guess, empty)
+- 0x8007ff08 `shot_spawn_random_variant_b` (guess, empty)
+- 0x800872f8 `texture_batch_upload` (guess, empty)
+- 0x80087644 `position_jitter_calc` (guess, empty)
+- 0x800881d0 `alloc_size_fallback_select` (guess, empty)
+- 0x8008829c `particle_system_init_call_a` (guess, empty)
+- 0x80088900 `battle_ui_reset_call` (guess, empty)
+- 0x80089054 `stat_slot_init_default` (guess, empty)
+- 0x80089064 `stat_slot_init_arg` (guess, empty)
+
+### field (31)
+
+- 0x80030ce0 `equip_best_apply_reset` (guess, empty)
+- 0x80031744 `window_list_set_focus_default` (guess, empty)
+- 0x800329c8 `resource_cache_load` (likely, empty)
+- 0x800334a8 `map_sub_select` (guess, empty)
+- 0x800334c0 `map_sub_table_offset_cur` (guess, empty)
+- 0x800334ec `map_sub_table_offset` (likely, empty)
+- 0x80033504 `map_sub_table_entry_cur` (guess, empty)
+- 0x80033530 `map_sub_table_entry` (likely, empty)
+- 0x80033564 `map_sub_table_entry_at_sel` (likely, empty)
+- 0x8003359c `map_sub_select_and_offset` (confirmed, empty)
+- 0x800368a8 `window_list_set_focus` (likely, empty)
+- 0x800393c4 `scdqueue_entry_get` (likely, empty)
+- 0x800398f4 `scdqueue_push_a` (guess, empty)
+- 0x80039918 `scdqueue_push_b` (guess, empty)
+- 0x8003b320 `script_text_table_load` (guess, empty)
+- 0x8003c360 `stat_adjust_percent_clamped` (confirmed, empty)
+- 0x8003d118 `ot_ring_advance` (likely, empty)
+- 0x8003d1b8 `ot_ring_clear` (likely, empty)
+- 0x8003d274 `ot_ring_draw` (likely, empty)
+- 0x80043018 `script_opcode_index_of` (likely, empty)
+- 0x80044754 `actor_sys_update` (guess, empty)
+- 0x800458ec `actor_misc_dist_to_camera` (guess, empty)
+- 0x80045968 `actor_misc_set_rgb` (guess, empty)
+- 0x80045c20 `actor_misc_init_kind_c` (guess, empty)
+- 0x8004872c `actor_misc_set_field_108` (guess, empty)
+- 0x8004b3c4 `inventory_slot_sound_cue` (guess, empty)
+- 0x80053d7c `loader_region_split_sizes` (guess, empty)
+- 0x80053e10 `loader_region_size` (guess, empty)
+- 0x80056bec `loader_entries_total_size` (likely, empty)
+- 0x80057450 `loader_queue_init_c` (guess, empty)
+- 0x8006ec84 `gte_persp_params_init` (guess, empty)
+
+### field_sub3103 (1)
+
+- 0x801ec680 `sub3103_ptr_get` (guess, empty)
+
+### menu_0ba5 (1)
+
+- 0x800d9830 `menu_misc_value_set` (guess, empty)
+
+### menu_0bb6 (3)
+
+- 0x8007e898 `rank_list_widget_init` (guess, empty)
+- 0x8007e9a0 `rank_list_page_create` (guess, empty)
+- 0x8007ef94 `rank_list_row_format` (guess, empty)
+
+### title (15)
+
+- 0x8002ffe4 `title_debug_level_get` (guess, empty)
+- 0x8003161c `equip_dual_weapon_state` (guess, empty)
+- 0x800316f4 `equip_dual_weapon_flags` (guess, empty)
+- 0x800343a0 `title_sub_table_select` (guess, empty)
+- 0x8003445c `title_sub_table_offset` (guess, empty)
+- 0x800344d0 `item_table_attr_get` (guess, empty)
+- 0x80034bac `item_attr_abs_get` (guess, empty)
+- 0x80036bbc `title_dispatch_default_ctx` (guess, empty)
+- 0x8003b5dc `inventory_item_data` (likely, empty)
+- 0x8003b7b0 `recent_value_list_touch` (guess, empty)
+- 0x8003b8c4 `item_table_index_of` (likely, empty)
+- 0x8003bb74 `handle_table_register` (guess, empty)
+- 0x8003c8d8 `record_stream_read_entry` (guess, empty)
+- 0x800505ac `title_global_ptr_get` (guess, empty)
+- 0x80073418 `list_node_field_get` (guess, empty)
 
 ## Partial ports
 
@@ -183,124 +264,137 @@ Ported functions with a part still missing (`[port partial: ...]` in the summary
 
 ## Missing rows
 
-`tools/catalog_gaps.py`: addresses the code calls (jal) or REA's procedure list
-names, inside a program's own known address range, that functions.csv has no row
-for yet. `both` = jal and a non-thunk Ghidra procedure agree (strongest); `jal
-only` / `proc only` = one source found it (weaker: check the decompilation --
-procedure_pseudo_code, or a manual disassembly -- before adding a row). `j only`
-(plain j, no jal, no proc) is listed separately and does not count toward a
-program's missing total: measured against battle_ovl1981, 34/34 of its j-only
-hits were intra-function jumps (loop branches, switch dispatch, epilogues), not
-missing functions; treat it as noise unless the decompilation says otherwise.
-Each address is tagged `[fn]` (a clean `addiu sp,sp,-N` prologue at that
-address), `[leaf]` (a bare `jr ra`, as a trivial no-op leaf would be) or `[?]`
-(neither -- measured against credits_3107, every `[?]` jal hit checked by hand
-was a data table a jal-shaped word happened to point into, not a function; most
-of a program's `[?]` hits are probably not real and the count below excludes
-them). No tag at all means the byte check could not run for that program.
-Programs with no `scratchpad/catalog/<name>_procs.json` dump show jal/j hits only.
-Lists longer than 25 are capped here; the full list (with tags) is in
-`scratchpad/catalog/gaps/<program>.json`.
+`tools/catalog_gaps.py`: addresses the code calls (jal/tail-j), a pointer table
+points at (table), or REA's procedure list names (REA), inside a program's own
+known address range, that functions.csv has no row for yet. Every one of these
+four sources on its own is enough to call an address a candidate -- jal is always
+a real call, tail-j a plain j whose target lands outside the jumping function's
+own range (a tail call), table a run of >=3 consecutive data words that all point
+at plausible code in this program's own range, REA Ghidra's own function-boundary
+analysis. A candidate is tagged with every source that found it (`jal+REA` is the
+strongest). Each address also carries `[fn]` (a clean `addiu sp,sp,-N` prologue),
+`[leaf]` (a bare `jr ra`) or `[?]` (neither) -- informational only: it no longer
+excludes an address from the count (a hand-written PsyQ leaf like memcpy or
+setjmp has no prologue and used to be dropped here for exactly that reason).
+Always check the decompilation (procedure_pseudo_code / a manual disassembly)
+before adding a row, especially for a single-source or `[?]` hit.
 
-### boot (0 + 163 weak j-only, range 0x80010008-0x80026ef8, blocks exe)
+A plain j that is NOT a tail call (lands inside its own function -- a loop
+branch, switch dispatch, the epilogue's jr-ra setup) is listed separately as
+"j only, weak" and does not count toward a program's missing total; measured
+against battle_ovl1981, 34/34 of its hits here were intra-function, not missing
+functions -- treat it as noise unless the decompilation says otherwise.
 
-- both (90): 0x80011a94[?], 0x80011aac[?], 0x80012f8c[?], 0x8001b938[?], 0x8001bc30[?], 0x8001bf54[?], 0x8001c1d4[?], 0x8001c2bc[?], 0x8001c300[?], 0x8001c3e0[?], 0x8001c438[?], 0x8001c460[?], 0x8001c690[?], 0x8001caf0[?], 0x8001d0b0[?], 0x8001f090[?], 0x8001fe50[?], 0x80020060[?], 0x80020090[?], 0x800200c0[?], 0x800201b4[?], 0x800201dc[?], 0x800206fc[?], 0x80020810[?], 0x80020ab8[?] (+65 more)
-- jal only (1): 0x80023e80[?]
-- proc only (212): 0x800131ec[?], 0x8001ba84[?], 0x8001bd40[?], 0x8001bdd4[?], 0x8001bdf0[?], 0x8001be9c[?], 0x8001beac[?], 0x8001c13c[?], 0x8001c1c4[?], 0x8001c244[?], 0x8001c3a4[?], 0x8001c42c[?], 0x8001c4c8[?], 0x8001c5ec[?], 0x8001c7c0[?], 0x8001c890[?], 0x8001c934[?], 0x8001c93c[?], 0x8001ca50[?], 0x8001ca54[?], 0x8001ca70[?], 0x8001ca9c[?], 0x8001cb28[?], 0x8001ccd8[?], 0x8001cce8[?] (+187 more)
-- j only, weak (163): 0x80010170[?], 0x80010218[?], 0x800102c8[?], 0x80010448[?], 0x80010514[?], 0x80010a6c[?], 0x80010b1c[?], 0x80010fc0[?], 0x80011098[?], 0x800110a0[?], 0x80011194[?], 0x8001119c[?], 0x80011298[?], 0x800114e0[?], 0x800114e8[?], 0x80011724[?], 0x80011978[?], 0x80011a7c[?], 0x80011d68[?], 0x80011f58[?], 0x80012030[?], 0x800120d0[leaf], 0x8001213c[leaf], 0x80012198[?], 0x80012294[?] (+138 more)
+Programs with no `scratchpad/catalog/<name>_procs.json` dump show jal/tail-j/table
+hits only (no REA source, and the tail-j boundaries rely only on scanned
+prologues and the catalog's own rows).
+Lists longer than 25 are capped here; the full list (with sources and tags) is
+in `scratchpad/catalog/gaps/<program>.json`.
 
-### title (0 + 596 weak j-only, range 0x8002f810-0x800744dc, blocks 1.0)
+### boot (1 + 285 weak j-only, range 0x80010008-0x80026ef8, blocks exe)
 
-- both (28): 0x8002ffe4[?], 0x8003161c[?], 0x800316f4[?], 0x800343a0[?], 0x8003445c[?], 0x800344d0[?], 0x80034bac[?], 0x8003b5dc[?], 0x8003b7b0[?], 0x8003b8c4[?], 0x8003bb74[?], 0x8003c8d8[?], 0x8004aeb4[?], 0x8004af94[?], 0x8004afa4[?], 0x8004afb4[?], 0x8004afc4[?], 0x8004b014[?], 0x8004b064[?], 0x8004b074[?], 0x8004b084[?], 0x8004b094[?], 0x8004b0a4[?], 0x8004b0b4[?], 0x8004b374[?] (+3 more)
-- jal only (12): 0x80040004[?], 0x80040018[?], 0x80040020[?], 0x80040024[?], 0x80040028[?], 0x8004002c[?], 0x80040030[?], 0x80040034[?], 0x80040ffc[?], 0x80041004[?], 0x80041ffc[?], 0x80042ff0[?]
-- proc only (1): 0x80036bbc[?]
-- j only, weak (596): 0x8002f96c[leaf], 0x8002fa00[leaf], 0x8002ffa4[leaf], 0x800302a0[?], 0x80030634[?], 0x800307b8[?], 0x800307fc[?], 0x800308dc[?], 0x80030dac[?], 0x80030e48[?], 0x80031174[?], 0x80031200[?], 0x800312b8[?], 0x80031350[?], 0x8003152c[?], 0x80031580[?], 0x800316cc[leaf], 0x800317c4[leaf], 0x80031a1c[?], 0x80031ca0[?], 0x80031f08[?], 0x80031f78[?], 0x80031fe0[?], 0x80031fe4[?], 0x80032768[?] (+571 more)
+- candidates (1): 0x80023ec4[tail-j,leaf]
+- j only, weak (285): 0x80010170, 0x80010218, 0x800102c8, 0x80010448, 0x80010514, 0x80010a6c, 0x80010b1c, 0x80010fc0, 0x80011098, 0x800110a0, 0x80011194, 0x8001119c, 0x80011298, 0x800114e0, 0x800114e8, 0x80011724, 0x80011978, 0x80011a7c, 0x80011d68, 0x80011f58, 0x80012030, 0x800120d0, 0x8001213c, 0x80012198, 0x80012294 (+260 more)
 
-### field (0 + 1025 weak j-only, range 0x80020ae0-0x8007b1f0, blocks 3100.0)
+### title (12 + 596 weak j-only, range 0x8002f810-0x800744dc, blocks 1.0)
 
-- both (36): 0x80020e5c[?], 0x80020fe0[?], 0x80021108[?], 0x80021168[?], 0x800211c8[?], 0x80021348[?], 0x80021450[?], 0x800214c0[?], 0x8002168c[?], 0x80021c20[?], 0x80023ed0[?], 0x80023f10[?], 0x80023f40[?], 0x80024a70[?], 0x80024ac0[?], 0x80024ad0[?], 0x80024af0[?], 0x80024b00[?], 0x80024b50[?], 0x80024b60[?], 0x80024b70[?], 0x80024ce8[?], 0x800334a8[?], 0x800334ec[?], 0x80033530[?] (+11 more)
-- jal only (4): 0x80026a94[?], 0x80042ff0[?], 0x80043c10[?], 0x8004400c[?]
-- proc only (32): 0x80030ce0[?], 0x80031744[?], 0x800329c8[?], 0x800334c0[?], 0x80033504[?], 0x8003359c[?], 0x800368a8[?], 0x80038538[?], 0x80038e64[?], 0x80038eb8[?], 0x80039268[?], 0x800393c4[?], 0x800398f4[?], 0x80039918[?], 0x8003c360[?], 0x8003d118[?], 0x8003d1b8[?], 0x8003d274[?], 0x8003f518[?], 0x800410cc[?], 0x80041ce4[?], 0x800452b4[?], 0x800458ec[?], 0x80045968[?], 0x80045c20[?] (+7 more)
-- j only, weak (1025): 0x8002f9a8[?], 0x8002fcc0[?], 0x80030050[?], 0x80030218[?], 0x8003025c[?], 0x8003033c[?], 0x800308f4[?], 0x80030960[?], 0x80030a68[?], 0x80030a78[?], 0x80030eac[?], 0x80030f90[?], 0x8003104c[?], 0x80031064[?], 0x8003111c[?], 0x80031144[leaf], 0x8003118c[?], 0x80031240[?], 0x80031274[?], 0x8003138c[?], 0x80031604[?], 0x800317b8[?], 0x80031838[?], 0x80031b30[?], 0x80031b94[?] (+1000 more)
+- candidates (12): 0x80040004[jal,?], 0x80040018[jal,?], 0x80040020[jal,?], 0x80040024[jal,?], 0x80040028[jal,?], 0x8004002c[jal,?], 0x80040030[jal,?], 0x80040034[jal,?], 0x80040ffc[jal,?], 0x80041004[jal,?], 0x80041ffc[jal,?], 0x80042ff0[jal,?]
+- j only, weak (596): 0x8002f96c, 0x8002fa00, 0x8002ffa4, 0x800302a0, 0x80030634, 0x800307b8, 0x800307fc, 0x800308dc, 0x80030dac, 0x80030e48, 0x80031174, 0x80031200, 0x800312b8, 0x80031350, 0x8003152c, 0x80031580, 0x800316cc, 0x800317c4, 0x80031a1c, 0x80031ca0, 0x80031f08, 0x80031f78, 0x80031fe0, 0x80031fe4, 0x80032768 (+571 more)
+
+### field (26 + 1019 weak j-only, range 0x80020ae0-0x8007b1f0, blocks 3100.0)
+
+- candidates (26): 0x80026a94[jal,?], 0x80031144[tail-j,leaf], 0x8003684c[tail-j,fn], 0x80037ab8[tail-j,fn], 0x80037dac[tail-j,leaf], 0x8003a728[tail-j,leaf], 0x8003c58c[tail-j,fn], 0x8003f518[REA,?], 0x800410cc[REA,?], 0x80041ce4[REA,?], 0x80042ff0[jal,?], 0x80043c10[jal,?], 0x8004400c[jal,?], 0x800444a4[tail-j,leaf], 0x80044c10[tail-j,fn], 0x80044c8c[REA+jal,?], 0x800452b4[REA,?], 0x80047068[table,leaf], 0x80047538[tail-j,leaf], 0x8005a4d0[tail-j,fn], 0x8005b998[tail-j,leaf], 0x80061ca8[tail-j,leaf], 0x80061cf8[REA+jal,?], 0x8006bc4c[tail-j,fn], 0x8006c634[tail-j,leaf] (+1 more)
+- j only, weak (1019): 0x8002f9a8, 0x8002fcc0, 0x80030050, 0x80030218, 0x8003025c, 0x8003033c, 0x800308f4, 0x80030960, 0x80030a68, 0x80030a78, 0x80030eac, 0x80030f90, 0x8003104c, 0x80031064, 0x8003111c, 0x8003118c, 0x80031240, 0x80031274, 0x8003138c, 0x80031604, 0x800317b8, 0x80031838, 0x80031b30, 0x80031b94, 0x80031c88 (+994 more)
 
 ### field_ovl_c1d (0 + 210 weak j-only, range 0x8007e000-0x8008eb60, blocks 3101.0, no procs dump)
 
-- j only, weak (210): 0x8007e22c[?], 0x8007e82c[?], 0x8007e8dc[?], 0x8007eb80[?], 0x8007eca4[?], 0x8007edbc[?], 0x8007f0c0[?], 0x8007f198[?], 0x8007f1e4[?], 0x8007f214[?], 0x8007f3cc[?], 0x8007f424[?], 0x8007f7a8[?], 0x8007f9f8[?], 0x8007fa04[?], 0x8007fa0c[?], 0x8007fab0[?], 0x8007fb68[?], 0x8007fd00[?], 0x8007fd08[?], 0x8007fd90[?], 0x8007fe88[?], 0x8008018c[?], 0x800803f0[?], 0x80080570[?] (+185 more)
+- candidates (0): 
+- j only, weak (210): 0x8007e22c, 0x8007e82c, 0x8007e8dc, 0x8007eb80, 0x8007eca4, 0x8007edbc, 0x8007f0c0, 0x8007f198, 0x8007f1e4, 0x8007f214, 0x8007f3cc, 0x8007f424, 0x8007f7a8, 0x8007f9f8, 0x8007fa04, 0x8007fa0c, 0x8007fab0, 0x8007fb68, 0x8007fd00, 0x8007fd08, 0x8007fd90, 0x8007fe88, 0x8008018c, 0x800803f0, 0x80080570 (+185 more)
 
 ### field_ovl_c1e (0 + 243 weak j-only, range 0x8007e000-0x8008f410, blocks 3102.0, no procs dump)
 
-- j only, weak (243): 0x8007e110[?], 0x8007e274[?], 0x8007e400[?], 0x8007e740[?], 0x8007e750[?], 0x8007f2b8[?], 0x8007f2fc[?], 0x8007f468[?], 0x8007f4e4[?], 0x8007f528[?], 0x8007f5fc[?], 0x8007f724[?], 0x8007f768[?], 0x8007f9d8[?], 0x8007fb10[?], 0x8007fbf8[?], 0x8007fc54[?], 0x8007fcc0[?], 0x8007fd04[?], 0x8007fe7c[?], 0x80080348[?], 0x80080354[?], 0x800803c0[?], 0x80080858[?], 0x80080864[?] (+218 more)
+- candidates (0): 
+- j only, weak (243): 0x8007e110, 0x8007e274, 0x8007e400, 0x8007e740, 0x8007e750, 0x8007f2b8, 0x8007f2fc, 0x8007f468, 0x8007f4e4, 0x8007f528, 0x8007f5fc, 0x8007f724, 0x8007f768, 0x8007f9d8, 0x8007fb10, 0x8007fbf8, 0x8007fc54, 0x8007fcc0, 0x8007fd04, 0x8007fe7c, 0x80080348, 0x80080354, 0x800803c0, 0x80080858, 0x80080864 (+218 more)
 
 ### field_sub3103 (0 + 64 weak j-only, range 0x801e9000-0x801ec74c, blocks 3103.0, no procs dump)
 
-- jal only (1): 0x801ec680[?]
-- j only, weak (64): 0x801e906c[?], 0x801e91b4[?], 0x801e91fc[?], 0x801e92cc[?], 0x801e93b8[?], 0x801e9424[?], 0x801e95ec[?], 0x801e9654[?], 0x801e96f8[?], 0x801e9710[?], 0x801e9854[?], 0x801e9910[?], 0x801e9924[?], 0x801e9974[?], 0x801e99a4[?], 0x801e99d4[?], 0x801e9a30[?], 0x801e9a48[?], 0x801e9b74[?], 0x801e9b8c[?], 0x801e9cf8[?], 0x801e9d30[?], 0x801e9dc0[?], 0x801e9dc8[?], 0x801e9e60[?] (+39 more)
+- candidates (0): 
+- j only, weak (64): 0x801e906c, 0x801e91b4, 0x801e91fc, 0x801e92cc, 0x801e93b8, 0x801e9424, 0x801e95ec, 0x801e9654, 0x801e96f8, 0x801e9710, 0x801e9854, 0x801e9910, 0x801e9924, 0x801e9974, 0x801e99a4, 0x801e99d4, 0x801e9a30, 0x801e9a48, 0x801e9b74, 0x801e9b8c, 0x801e9cf8, 0x801e9d30, 0x801e9dc0, 0x801e9dc8, 0x801e9e60 (+39 more)
 
 ### field_sub3106 (0 + 3 weak j-only, range 0x801f9800-0x801f9bb4, blocks 3106.0, no procs dump)
 
-- j only, weak (3): 0x801f9860[?], 0x801f9b64[?], 0x801f9b6c[?]
+- candidates (0): 
+- j only, weak (3): 0x801f9860, 0x801f9b64, 0x801f9b6c
 
 ### field_sub3108 (0 + 11 weak j-only, range 0x801f9800-0x801fa120, blocks 3108.0, no procs dump)
 
-- j only, weak (11): 0x801f9868[?], 0x801f9a44[?], 0x801f9a50[?], 0x801f9a80[?], 0x801f9a94[?], 0x801f9aa8[?], 0x801f9b9c[?], 0x801f9d14[?], 0x801f9d9c[?], 0x801f9eb0[?], 0x801f9fb4[?]
+- candidates (0): 
+- j only, weak (11): 0x801f9868, 0x801f9a44, 0x801f9a50, 0x801f9a80, 0x801f9a94, 0x801f9aa8, 0x801f9b9c, 0x801f9d14, 0x801f9d9c, 0x801f9eb0, 0x801f9fb4
 
 ### field_sub3109 (0 + 4 weak j-only, range 0x801f9800-0x801f9fe0, blocks 3109.0, no procs dump)
 
-- j only, weak (4): 0x801f9b1c[?], 0x801f9cf8[?], 0x801f9d04[?], 0x801f9fa8[?]
+- candidates (0): 
+- j only, weak (4): 0x801f9b1c, 0x801f9cf8, 0x801f9d04, 0x801f9fa8
 
-### battle (1 + 985 weak j-only, range 0x8002f810-0x8008c1f4, blocks 2129.0)
+### battle (55 + 994 weak j-only, range 0x8002f810-0x8008c1f4, blocks 2129.0)
 
-- both (56): 0x800724f4[?], 0x80072544[?], 0x80072594[?], 0x800725d4[?], 0x80072618[?], 0x80072724[?], 0x80072748[?], 0x80072780[?], 0x80072c5c[?], 0x80073560[?], 0x8007443c[?], 0x800744cc[?], 0x80074ca4[?], 0x80075080[?], 0x8007518c[?], 0x800756e0[?], 0x80075944[?], 0x80075a10[?], 0x80076be8[?], 0x80076ce0[?], 0x80076eec[?], 0x800771d8[?], 0x80077620[?], 0x8007838c[?], 0x8007843c[?] (+31 more)
-- jal only (4): 0x800309c0[?], 0x80042ff0[?], 0x8007bbd8[?], 0x80080974[?]
-- proc only (7): 0x80072e00[?], 0x8007f8d0[fn], 0x8008337c[?], 0x8008829c[?], 0x800882a4[?], 0x80089054[?], 0x80089064[?]
-- j only, weak (985): 0x8002f9a0[?], 0x8002fa20[?], 0x8002faa0[?], 0x8002fb14[?], 0x8002fba0[?], 0x800303b0[?], 0x800305e4[?], 0x800305e8[?], 0x80030774[?], 0x80030848[?], 0x80030a7c[?], 0x80030b58[?], 0x80030b64[?], 0x80030b68[?], 0x80030c00[?], 0x80030e24[?], 0x80030ed4[?], 0x80031108[?], 0x80031280[?], 0x80031298[?], 0x80031340[?], 0x80031348[?], 0x8003147c[?], 0x80031590[?], 0x80032034[?] (+960 more)
+- candidates (55): 0x800309c0[jal,?], 0x80042ff0[jal,?], 0x800724f4[REA+jal,?], 0x80072544[REA+jal,?], 0x80072594[REA+jal,?], 0x800725d4[REA+jal,?], 0x80072618[REA+jal,?], 0x80072724[REA+jal,?], 0x80072748[REA+jal,?], 0x80072780[REA+jal,?], 0x80072c5c[REA+jal,?], 0x80072e00[REA,?], 0x80073560[REA+jal,?], 0x8007443c[REA+jal,?], 0x800744cc[REA+jal,?], 0x80074ca4[REA+jal,?], 0x80075080[REA+jal,?], 0x8007518c[REA+jal,?], 0x800756e0[REA+jal,?], 0x80075944[REA+jal,?], 0x80075a10[REA+jal,?], 0x80076be8[REA+jal,?], 0x80076ce0[REA+jal,?], 0x80076eec[REA+jal,?], 0x800771d8[REA+jal,?] (+30 more)
+- j only, weak (994): 0x8002f9a0, 0x8002fa20, 0x8002faa0, 0x8002fb14, 0x8002fba0, 0x800303b0, 0x800305e4, 0x800305e8, 0x80030774, 0x80030848, 0x80030a7c, 0x80030b58, 0x80030b64, 0x80030b68, 0x80030c00, 0x80030e24, 0x80030ed4, 0x80031108, 0x80031280, 0x80031298, 0x80031340, 0x80031348, 0x8003147c, 0x80031590, 0x80032034 (+969 more)
 
 ### battle_ovl1981 (0 + 34 weak j-only, range 0x80085518-0x80087d60, blocks 1981.0, no procs dump)
 
-- j only, weak (34): 0x80085588[?], 0x8008560c[?], 0x8008566c[?], 0x80085710[?], 0x80085738[?], 0x800858b0[?], 0x800858fc[?], 0x80085920[?], 0x800859e0[?], 0x80085a8c[?], 0x80085b2c[?], 0x800860fc[?], 0x80086174[?], 0x800861a0[?], 0x800861a8[?], 0x80086284[?], 0x8008646c[?], 0x80086568[?], 0x80086858[?], 0x800868a8[?], 0x80086ab4[?], 0x80086ad8[?], 0x80086c30[?], 0x80086d14[?], 0x80086d78[?] (+9 more)
+- candidates (0): 
+- j only, weak (34): 0x80085588, 0x8008560c, 0x8008566c, 0x80085710, 0x80085738, 0x800858b0, 0x800858fc, 0x80085920, 0x800859e0, 0x80085a8c, 0x80085b2c, 0x800860fc, 0x80086174, 0x800861a0, 0x800861a8, 0x80086284, 0x8008646c, 0x80086568, 0x80086858, 0x800868a8, 0x80086ab4, 0x80086ad8, 0x80086c30, 0x80086d14, 0x80086d78 (+9 more)
 
 ### battle_ovl1984_0 (0 + 171 weak j-only, range 0x800715d0-0x80080c7c, blocks 1984.0, no procs dump)
 
-- j only, weak (171): 0x800718e0[?], 0x80071918[?], 0x800719ac[?], 0x80071a2c[?], 0x80071a54[?], 0x80071ad4[?], 0x80071b18[?], 0x80071c64[?], 0x80071cd0[?], 0x80071d3c[?], 0x80071de4[?], 0x80071ed8[?], 0x80072228[?], 0x8007243c[?], 0x80072444[?], 0x80072a6c[?], 0x80072c3c[?], 0x80072d88[?], 0x80072f18[?], 0x80072f20[?], 0x80072f40[?], 0x800730b8[?], 0x80073358[?], 0x800734a8[?], 0x80073518[?] (+146 more)
+- candidates (0): 
+- j only, weak (171): 0x800718e0, 0x80071918, 0x800719ac, 0x80071a2c, 0x80071a54, 0x80071ad4, 0x80071b18, 0x80071c64, 0x80071cd0, 0x80071d3c, 0x80071de4, 0x80071ed8, 0x80072228, 0x8007243c, 0x80072444, 0x80072a6c, 0x80072c3c, 0x80072d88, 0x80072f18, 0x80072f20, 0x80072f40, 0x800730b8, 0x80073358, 0x800734a8, 0x80073518 (+146 more)
 
 ### battle_ovl1984_1 (0 + 68 weak j-only, range 0x80081728-0x800851a8, blocks 1984.1, no procs dump)
 
-- j only, weak (68): 0x8008188c[?], 0x800818f4[?], 0x80081980[?], 0x80081bd0[?], 0x80081d0c[?], 0x80081f44[?], 0x80081f8c[?], 0x80082050[?], 0x80082078[?], 0x80082234[?], 0x800822e0[?], 0x8008264c[?], 0x8008273c[?], 0x8008294c[?], 0x80082990[?], 0x80082ac4[?], 0x80082ad8[?], 0x80082ba0[?], 0x80082c94[?], 0x80082e7c[?], 0x80082ecc[?], 0x80082f0c[?], 0x80082f40[?], 0x80082fa0[?], 0x80082fb8[?] (+43 more)
+- candidates (0): 
+- j only, weak (68): 0x8008188c, 0x800818f4, 0x80081980, 0x80081bd0, 0x80081d0c, 0x80081f44, 0x80081f8c, 0x80082050, 0x80082078, 0x80082234, 0x800822e0, 0x8008264c, 0x8008273c, 0x8008294c, 0x80082990, 0x80082ac4, 0x80082ad8, 0x80082ba0, 0x80082c94, 0x80082e7c, 0x80082ecc, 0x80082f0c, 0x80082f40, 0x80082fa0, 0x80082fb8 (+43 more)
 
 ### menu_0ba5 (0 + 151 weak j-only, range 0x800d1b28-0x800e0ac4, blocks 2981.0, no procs dump)
 
-- jal only (1): 0x800d9830[?]
-- j only, weak (151): 0x800d1da0[?], 0x800d2130[?], 0x800d2138[?], 0x800d21a0[?], 0x800d2248[?], 0x800d2250[?], 0x800d23c8[?], 0x800d23fc[?], 0x800d257c[?], 0x800d262c[?], 0x800d2694[?], 0x800d286c[?], 0x800d2994[?], 0x800d2b08[?], 0x800d2be8[?], 0x800d2c74[?], 0x800d2d00[?], 0x800d2dac[?], 0x800d2dc8[?], 0x800d2e00[leaf], 0x800d2e28[?], 0x800d3044[leaf], 0x800d307c[?], 0x800d338c[?], 0x800d3804[?] (+126 more)
+- candidates (0): 
+- j only, weak (151): 0x800d1da0, 0x800d2130, 0x800d2138, 0x800d21a0, 0x800d2248, 0x800d2250, 0x800d23c8, 0x800d23fc, 0x800d257c, 0x800d262c, 0x800d2694, 0x800d286c, 0x800d2994, 0x800d2b08, 0x800d2be8, 0x800d2c74, 0x800d2d00, 0x800d2dac, 0x800d2dc8, 0x800d2e00, 0x800d2e28, 0x800d3044, 0x800d307c, 0x800d338c, 0x800d3804 (+126 more)
 
 ### menu_0ba6 (0 + 33 weak j-only, range 0x8007e000-0x80080054, blocks 2982.0, no procs dump)
 
-- j only, weak (33): 0x8007e450[?], 0x8007e570[?], 0x8007e5d8[?], 0x8007e640[?], 0x8007e6a8[?], 0x8007e710[?], 0x8007e778[?], 0x8007e82c[?], 0x8007e8f8[?], 0x8007ed00[?], 0x8007efc0[?], 0x8007f02c[?], 0x8007f0d4[?], 0x8007f140[?], 0x8007f1e8[?], 0x8007f250[?], 0x8007f304[?], 0x8007f388[?], 0x8007f3f4[?], 0x8007f49c[?], 0x8007f508[?], 0x8007f5b0[?], 0x8007f618[?], 0x8007f6cc[?], 0x8007f6f8[?] (+8 more)
+- candidates (0): 
+- j only, weak (33): 0x8007e450, 0x8007e570, 0x8007e5d8, 0x8007e640, 0x8007e6a8, 0x8007e710, 0x8007e778, 0x8007e82c, 0x8007e8f8, 0x8007ed00, 0x8007efc0, 0x8007f02c, 0x8007f0d4, 0x8007f140, 0x8007f1e8, 0x8007f250, 0x8007f304, 0x8007f388, 0x8007f3f4, 0x8007f49c, 0x8007f508, 0x8007f5b0, 0x8007f618, 0x8007f6cc, 0x8007f6f8 (+8 more)
 
 ### menu_0baa (0 + 39 weak j-only, range 0x8007e000-0x80080f88, blocks 2986.0, no procs dump)
 
-- j only, weak (39): 0x8007e204[?], 0x8007e280[?], 0x8007e54c[?], 0x8007e600[?], 0x8007e624[?], 0x8007e6f8[?], 0x8007e800[?], 0x8007e8ac[?], 0x8007e8fc[?], 0x8007e9d0[?], 0x8007eb18[?], 0x8007eb4c[?], 0x8007eb84[?], 0x8007eecc[?], 0x8007f0d0[?], 0x8007f0dc[?], 0x8007f1e0[?], 0x8007f244[?], 0x8007f2fc[?], 0x8007f410[?], 0x8007f448[?], 0x8007f480[?], 0x8007f4b8[?], 0x8007f4f0[?], 0x8007f500[?] (+14 more)
+- candidates (0): 
+- j only, weak (39): 0x8007e204, 0x8007e280, 0x8007e54c, 0x8007e600, 0x8007e624, 0x8007e6f8, 0x8007e800, 0x8007e8ac, 0x8007e8fc, 0x8007e9d0, 0x8007eb18, 0x8007eb4c, 0x8007eb84, 0x8007eecc, 0x8007f0d0, 0x8007f0dc, 0x8007f1e0, 0x8007f244, 0x8007f2fc, 0x8007f410, 0x8007f448, 0x8007f480, 0x8007f4b8, 0x8007f4f0, 0x8007f500 (+14 more)
 
 ### menu_0bae (0 + 52 weak j-only, range 0x8007e000-0x80081758, blocks 2990.0, no procs dump)
 
-- j only, weak (52): 0x8007e048[?], 0x8007e13c[?], 0x8007e258[?], 0x8007e2d8[?], 0x8007e2fc[?], 0x8007e320[?], 0x8007e4a4[?], 0x8007e534[?], 0x8007e614[?], 0x8007e6a0[?], 0x8007e7ec[?], 0x8007e924[?], 0x8007e9f8[?], 0x8007ed18[?], 0x8007eda0[?], 0x8007ee18[?], 0x8007eee0[?], 0x8007ef4c[?], 0x8007f150[?], 0x8007f364[?], 0x8007f420[?], 0x8007f70c[?], 0x8007f858[?], 0x8007f9a0[?], 0x8007fb28[?] (+27 more)
+- candidates (0): 
+- j only, weak (52): 0x8007e048, 0x8007e13c, 0x8007e258, 0x8007e2d8, 0x8007e2fc, 0x8007e320, 0x8007e4a4, 0x8007e534, 0x8007e614, 0x8007e6a0, 0x8007e7ec, 0x8007e924, 0x8007e9f8, 0x8007ed18, 0x8007eda0, 0x8007ee18, 0x8007eee0, 0x8007ef4c, 0x8007f150, 0x8007f364, 0x8007f420, 0x8007f70c, 0x8007f858, 0x8007f9a0, 0x8007fb28 (+27 more)
 
 ### menu_0bb2 (0 + 50 weak j-only, range 0x8007e000-0x800811d4, blocks 2994.0, no procs dump)
 
-- j only, weak (50): 0x8007e18c[?], 0x8007e438[?], 0x8007e6b0[?], 0x8007e990[?], 0x8007ebf8[?], 0x8007ed28[?], 0x8007ede8[?], 0x8007ef6c[?], 0x8007f0e0[?], 0x8007f148[?], 0x8007f2d4[?], 0x8007f4a8[?], 0x8007f6d0[?], 0x8007f86c[?], 0x8007f924[?], 0x8007fb04[?], 0x8007fbb8[?], 0x8007fc20[?], 0x8007fcd4[?], 0x8007fd3c[?], 0x8007fdf0[?], 0x8007fe58[?], 0x8007ff0c[?], 0x8007ff74[?], 0x80080028[?] (+25 more)
+- candidates (0): 
+- j only, weak (50): 0x8007e18c, 0x8007e438, 0x8007e6b0, 0x8007e990, 0x8007ebf8, 0x8007ed28, 0x8007ede8, 0x8007ef6c, 0x8007f0e0, 0x8007f148, 0x8007f2d4, 0x8007f4a8, 0x8007f6d0, 0x8007f86c, 0x8007f924, 0x8007fb04, 0x8007fbb8, 0x8007fc20, 0x8007fcd4, 0x8007fd3c, 0x8007fdf0, 0x8007fe58, 0x8007ff0c, 0x8007ff74, 0x80080028 (+25 more)
 
-### menu_0bb6 (0 + 11 weak j-only, range 0x8007e6e4-0x8007f648, blocks 2998.0, no procs dump)
+### menu_0bb6 (2 + 9 weak j-only, range 0x8007e6e4-0x8007f648, blocks 2998.0, no procs dump)
 
-- jal only (3): 0x8007e898[?], 0x8007e9a0[?], 0x8007ef94[?]
-- j only, weak (11): 0x8007e884[?], 0x8007e918[?], 0x8007e924[?], 0x8007e95c[leaf], 0x8007ef84[?], 0x8007f1ec[?], 0x8007f34c[?], 0x8007f3f4[?], 0x8007f460[?], 0x8007f5bc[leaf], 0x8007f608[?]
+- candidates (2): 0x8007e95c[tail-j,leaf], 0x8007f5bc[tail-j,leaf]
+- j only, weak (9): 0x8007e884, 0x8007e918, 0x8007e924, 0x8007ef84, 0x8007f1ec, 0x8007f34c, 0x8007f3f4, 0x8007f460, 0x8007f608
 
 ### menu_0bb9 (0 + 61 weak j-only, range 0x80088000-0x8008ce7c, blocks 3001.0, no procs dump)
 
-- j only, weak (61): 0x80088128[?], 0x800881a8[?], 0x80088468[?], 0x80088548[?], 0x800885c8[?], 0x8008863c[?], 0x800886b8[?], 0x8008872c[?], 0x800889a4[leaf], 0x80088aec[?], 0x80088d84[?], 0x80088e5c[?], 0x80088ff0[?], 0x8008943c[?], 0x80089444[?], 0x80089510[?], 0x800898ac[?], 0x80089a1c[?], 0x80089b18[?], 0x80089ed8[?], 0x8008a4b0[?], 0x8008a5c4[?], 0x8008a650[?], 0x8008a694[?], 0x8008a70c[?] (+36 more)
+- candidates (0): 
+- j only, weak (61): 0x80088128, 0x800881a8, 0x80088468, 0x80088548, 0x800885c8, 0x8008863c, 0x800886b8, 0x8008872c, 0x800889a4, 0x80088aec, 0x80088d84, 0x80088e5c, 0x80088ff0, 0x8008943c, 0x80089444, 0x80089510, 0x800898ac, 0x80089a1c, 0x80089b18, 0x80089ed8, 0x8008a4b0, 0x8008a5c4, 0x8008a650, 0x8008a694, 0x8008a70c (+36 more)
 
-### credits_3107 (0 + 39 weak j-only, range 0x8002f810-0x80043eac, blocks 3107.0, no procs dump)
+### credits_3107 (11 + 39 weak j-only, range 0x8002f810-0x80043eac, blocks 3107.0, no procs dump)
 
-- jal only (11): 0x80040004[?], 0x80040018[?], 0x80040020[?], 0x80040024[?], 0x80040028[?], 0x8004002c[?], 0x80040030[?], 0x80040034[?], 0x80040ffc[?], 0x80041004[?], 0x80041ffc[?]
-- j only, weak (39): 0x8002fa20[leaf], 0x8002fdf0[?], 0x8002feac[?], 0x80030080[?], 0x800302d0[?], 0x80030910[?], 0x8003096c[?], 0x80030d08[?], 0x80030ea0[?], 0x80030eec[?], 0x80030f98[?], 0x800310d4[?], 0x80031154[?], 0x800313a8[?], 0x800313d4[?], 0x80031440[?], 0x8003147c[?], 0x800315a8[?], 0x800315b4[?], 0x80031764[?], 0x800317f8[?], 0x80040008[?], 0x80040014[?], 0x8004001c[?], 0x80040ff8[?] (+14 more)
+- candidates (11): 0x80040004[jal,?], 0x80040018[jal,?], 0x80040020[jal,?], 0x80040024[jal,?], 0x80040028[jal,?], 0x8004002c[jal,?], 0x80040030[jal,?], 0x80040034[jal,?], 0x80040ffc[jal,?], 0x80041004[jal,?], 0x80041ffc[jal,?]
+- j only, weak (39): 0x8002fa20, 0x8002fdf0, 0x8002feac, 0x80030080, 0x800302d0, 0x80030910, 0x8003096c, 0x80030d08, 0x80030ea0, 0x80030eec, 0x80030f98, 0x800310d4, 0x80031154, 0x800313a8, 0x800313d4, 0x80031440, 0x8003147c, 0x800315a8, 0x800315b4, 0x80031764, 0x800317f8, 0x80040008, 0x80040014, 0x8004001c, 0x80040ff8 (+14 more)
 
 ## Unported, reached in play
 
@@ -333,9 +427,50 @@ columns the gap-scan fill left are all settled; none was a real unported functio
   the title program: ...)` with the reference scan in each evidence cell. menu_0ba5's five are
   field copies of ported title Panel / text functions.
 
-Known catalog gaps found on the way (not yet rows): leaf functions without an `addiu sp`
-prologue are tagged `[?]` above and were skipped by the fill, but many are real (boot: memcpy,
-memset, the libapi event / exception stubs, toupper, setjmp ... ; field: 0x8003359c, 0x80038538,
-0x80038e64, 0x80038e8c, 0x80038f38, 0x80039268, 0x8003c360, 0x8003d118; title: 0x80034bac), and
-functions reached only through vtables never show up as jal targets (title 0x8003a208 /
-0x8003a210 / 0x8003a248 were found that way and added).
+Resolved 2026-10-23 (catalog agent): the gap above ("leaf functions without an `addiu sp`
+prologue are tagged `[?]` and skipped") was the scan's own bug, not just a naming backlog.
+`tools/catalog_gaps.py` now treats every jal target as a candidate regardless of prologue,
+adds a `tail-j` source (a plain j whose target lands outside the jumping function's own
+range) and a `table` source (a data pointer-table run landing on a plausible instruction
+boundary), and marks each candidate with every source that found it. Re-running it (no
+arguments) against the pre-fix baseline surfaced 517 real candidates across boot/title/
+field/battle/credits_3107/field_sub3103/menu_0ba5/menu_0bb6 (was reporting ~1); 411 got
+real rows this pass (boot 303, field 62, title 29, battle 12, field_sub3103 1, menu_0ba5 1,
+menu_0bb6 3), including every address named in the prior gap ("boot: memcpy, memset, the
+libapi event / exception stubs, toupper, setjmp ..."; field's 8; title's 0x80034bac) plus
+the "and others" (boot's PRNT_OBJ_*/SYS_OBJ_*/SPU-family internals, title's and field's
+shared-PsyQ-runtime duplicates, field's map/voice-queue/OT-ring helper families). Title's
+3 vtable-only rows (0x8003a208/_210/_248) from the previous pass are unaffected.
+
+107 candidates are left (`tools/catalog_gaps.py`'s next run will keep reporting them --
+expected, not unfinished work):
+- **Confirmed non-functions, not rows** (44): boot 0x80023ec4 and field's 18 containment
+  false positives (a `tail-j`/`jal` hit resolves, via REA's own canonical-entry lookup, into
+  the body of an address functions.csv *already* has a row for -- same class as the
+  precedented battle 0x8007f8d0 -> voice_buffer_slot_acquire case) are real but already-
+  catalogued code; title's 12 and menu_0bb6's 2 are the same; credits_3107's 11 resolved to
+  *no* procedure at all against its own ELF (SO2_boot+credits3107.elf) -- pure data a jal-
+  shaped word happened to point into, confirmed by hand, not by the old "probably not real"
+  heuristic. battle has 4 of its own (0x800309c0, 0x80042ff0, 0x8007f8d0, 0x80080974).
+- **Real, decompiled, deliberately left unnamed** (8 field + 51 battle = 59): field
+  0x8003f518 (141 lines), 0x800410cc (71), 0x80041ce4 (359), 0x80044c8c (230), 0x800452b4
+  (41), 0x80061cf8 (137), 0x80079ee4 (106), 0x80047068 (a `table`-sourced vtable/vtable-list
+  entry) -- each skimmed, not understood well enough to name per
+  `docs/catalog/README.md`'s "names that were never read ... stay out of the catalog until
+  they are". battle's 51 (0x80072000-0x80081000ish) are ONE cohesive, not-yet-identified
+  boss/attack-pattern AI subsystem: shot spawns via FUN_8002fb34/FUN_8002feac/FUN_8002fe88/
+  FUN_800103d4 with hard-coded positions and motion, a stat-init block referencing the
+  string "Bowman", a pause flag DAT_8006fb07 gating most of it. Worth a focused follow-up
+  (search_strings around "Bowman", xrefs to find which encounter loads the block,
+  procedure_callers on the family) rather than assembly-line guessing; see
+  `scratchpad/catalog/fill_battle.py`'s `LEFT_OPEN` set for the exact addresses.
+
+The 411 new rows mostly have an empty port column (confirmed to exist, not yet checked for
+reachability or port status) -- they show up in "Rows to resolve" above. Highest-value
+follow-up there: boot's ~300 PsyQ-runtime internals are almost all `(not needed: ...)`-
+shaped (GPU/DMA packet transfer, printf internals, SPU reverb tables) and were given that
+disposition directly; field's and title's new rows (shared-PsyQ-runtime duplicates, map/
+voice-queue/inventory helpers) mostly need no port (same reasoning as their twins) but
+weren't individually marked `(not needed: ...)` everywhere -- a pass confirming that would
+shrink "empty" a lot cheaply. battle's 12 new rows and the left-open 51 are the real
+candidates for "actually unported, reached in play" once identified.

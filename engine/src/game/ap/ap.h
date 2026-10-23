@@ -116,6 +116,17 @@ void on_program(Scene scene);
 // check, and the member joins only if their item was received). 'at' is the instruction's
 // own byte offset, 'call_at' the innermost call into the running routine (-1: none).
 bool on_party_add(int character, int at, int call_at);
+// Script ext 0xaf party_remove, after the game's remove ('character', 'at', 'call_at' as above).
+// options.character_items: a received member is recruited for good. Where the story parts with a
+// member for good (a parting choice: Celine at Cross Cave, Leon at the Eluria colony, Opera at
+// the Hoffmann Ruins; Mars sending an unrecruited Celine home), a received one rejoins at the
+// next free play. The story's other leaves are temporary and its own scenes bring them back.
+void on_party_remove(int character, int at, int call_at);
+// A global script flag the scripts are clearing (the VM's flag store): true when it stays set.
+// A received Celine keeps flag 112 ("Celine travels with the party", map 131 stores it from
+// party_has): Mars then sends her home only for a while (map 462 / 126) and map 125 (chapter
+// 15, step 3300) brings her back, as for a Celine the player kept at Cross Cave.
+bool keeps_flag(int flag);
 // Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
 // the drop is not given, it was the enemy type's first-drop check). Both leave the game's
 // values alone without a seed or with the options off.

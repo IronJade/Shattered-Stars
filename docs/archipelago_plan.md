@@ -193,7 +193,11 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
 3. **The disc 1 to disc 2 point of no return.** Expel is left behind when the story moves to
    Energy Nede, but the game reopens it as Virtual Expel after Fienal's Final Save Point
    (checked headless; [field.md](ap/field.md), "Virtual Expel"). So the logic keeps Expel's
-   locations, and only the time-limited ones count as missable. Before that was known, two
+   locations, and only the time-limited ones count as missable. A location may hold
+   progression only when the late proof (`tools/ap_late_proof.py`: event sweeps from the
+   Final Save Point in the user's late save, for both games) reached it there, so one that
+   closes for good (Eluria Tower, old Clik, most story-scene gifts) never holds what another
+   world needs ([apworld.md](ap/apworld.md), "Logic"). Before Virtual Expel was known, two
    ways out were planned:
    - **(a) Preferred:** a port-side "return to Expel" teleporter in randomizer mode, so Expel
      stays reachable.
@@ -246,7 +250,17 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
      setup program's Archipelago section.
    - Tests on both sides.
 3. **Characters, bosses, drops.** Character items, boss checks, first-drop checks, DeathLink,
-   traps, EXP / Fol / encounter options.
+   traps, EXP / Fol / encounter options. Done (2026-10-23):
+   - Port side ([seed_format.md](ap/seed_format.md), "Phase 3"): character items and join
+     sites, first-drop checks, ambush / Fol loss / status traps, the multipliers and the
+     encounter rate, DeathLink safe points, the seed's protagonist at New Game.
+   - APWorld ([apworld.md](ap/apworld.md)): the options `boss_checks`, `character_items`,
+     `drops_as_checks`, `traps`, `exp_multiplier`, `fol_multiplier`, `encounter_rate`; 560
+     location rows (41 bosses, 18 join sites, 89 first drops added); a party the story allows;
+     the cave's gems kept in place; progression only where the late proof reaches.
+   - Tests: the world's 66, AP's general 379, 60 seeds over 101 option combinations, and
+     `tools/ap_e2e_so2.sh` 19 / 19 (a received character joins, a trap arrives, a first drop
+     goes out).
 4. **Open world.** Area keys gating doors (map transfer patches), the Expel teleporter, shop
    shuffle. Later, entrance shuffle on the same door patches.
    - Port side (2026-10-23, [seed_format.md](ap/seed_format.md) "Phase 4"): the door table

@@ -84,6 +84,10 @@ struct Field {
 };
 
 Field* field_program();                       // g_current_program 0x8002f8dc (null outside the field)
+// Deletes the field program as it hands over to another program (a battle, the title, the
+// credits): field_program() is null from then on (a debug command typed outside the field once
+// read the deleted one) [world agent].
+void field_program_delete(Field* f);
 [[noreturn]] void field_entry(System* sys);   // 0x8002f810
 [[noreturn]] void field_run(Field* f);        // 0x80048a84
 void field_bind_system(Field* f);             // 0x80048fb4

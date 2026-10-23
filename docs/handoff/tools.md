@@ -224,6 +224,10 @@ battle agents per the task) and the genuinely new leads this pass's own fixes su
 
 ## Caveats worth a second pair of eyes
 
+- [spell agent, 2026-10-23 ~05:00] `m9_3`/`m9b_3`, `s9a_3` and `s11_3` below are resolved
+  (replay shift MENU_D=4 + `SS_ORIGINAL_S20` for m9; s9a / s11 re-recorded with the slow
+  frames logged): all four pass. Details: `docs/handoff/spell.md`.
+
 - `chis_b1` (fx_battle) still shows a real REGRESS just past the ~350-sample tail window
   (b1250) per the prior pass; not rechecked this pass (fx_battle wasn't in this pass's scope
   beyond the full/quick totals).

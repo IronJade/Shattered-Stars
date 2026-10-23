@@ -188,7 +188,7 @@ def late_games(late):
     return out
 
 
-def build(field, battles, late=None):
+def build(field, battles, late=None, doors=None):
     proven = late_games(late or {})
     names = {int(k): v for k, v in field["item_names"].items()}
     count = collections.Counter(names.values())
@@ -225,7 +225,8 @@ def build(field, battles, late=None):
                              "item": s["value"] if s["what"] == "item" else None,
                              "fol": s["value"] if s["what"] == "fol" else None,
                              "region": region_of(g["map"], g.get("world", worlds.get(g["map"]))),
-                             "sites": [site_row(g["map"], s)], "missable": reasons, "protagonist": side})
+                             "sites": [site_row(g["map"], s)], "missable": reasons, "protagonist": side,
+                             "from_chapter": (g.get("window") or [None])[0]})
     # Boss fights: one location per encounter; its sites' contexts decide the protagonist.
     final = set(battles.get("final_boss_encounters", [539, 540]))
     for b in field.get("bosses", []):
@@ -307,7 +308,9 @@ def build(field, battles, late=None):
             places.append(({1: "Expel", 2: "Energy Nede"}[w], True, WORLD_MAP_NAMES[w]))
         region, _, area = min(places, key=lambda p: order.index(p[0]))
         reasons = [] if any(late for _, late, _ in places) else ["time-limited"]
-        locs.append({"id": d["location_id"], "type": "drop", "map": None, "enemy": d["enemy"],
+        drop_maps = sorted({m for m, _ in d["sites"]})
+        locs.append({"id": d["location_id"], "type": "drop", "map": None, "enemy": d["enemy"], "site_maps": drop_maps,
+                     "on_world_map": bool(d["world_maps"]),
                      "area": area or region, "item": d["drops"][0]["item"], "fol": None, "region": region,
                      "sites": [], "missable": reasons, "protagonist": None, "label": d["name"],
                      "regions": sorted({p[0] for p in places}, key=order.index)})
@@ -338,9 +341,206 @@ def build(field, battles, late=None):
     for l in locs:
         if l["type"] in ("chest", "gift", "boss"):
             l["late"] = proven.get(l["id"], [])
+        if l["type"] == "boss" and l.get("boss") == "story":
+            l["chapter"] = STORY_BOSS_CHAPTER[l["encounter"]]
+    # Phase 4: the entrance groups, each location's group and proof routes, the shop slots.
+    groups = key_groups(doors) if doors else []
+    if groups:
+        gmap = map_groups(doors, groups)
+        late_keys, _ = route_keys(late or {}, groups)
+        tele_keys, tele_games = route_keys((late or {}).get("teleporter", {}), groups)
+        for l in locs:
+            if l["map"] is not None:
+                l["group"] = gmap.get(l["map"])
+            if l["type"] == "drop":
+                l["groups"] = sorted({gmap[m] for m in l.pop("site_maps") if m in gmap})
+            if l["type"] in ("chest", "gift", "boss"):
+                l["late_keys"] = sorted(late_keys.get(l["id"], ()))
+                l["tele"] = tele_games.get(l["id"], [])
+                l["tele_keys"] = sorted(tele_keys.get(l["id"], ()))
+        shops = shop_slots(field, items, worlds, gmap)
+        for l in shops:
+            l["group"] = gmap.get(l["map"])
+        names = {l["name"] for l in locs}
+        if any(l["name"] in names for l in shops):
+            raise SystemExit("a shop slot's name repeats a location's")
+        locs += shops
+    for l in locs:
+        l.pop("site_maps", None)
     fol = sorted({l["fol"] for l in locs if l["fol"] is not None})
     goal = battles.get("final_boss_encounters", [539, 540])
-    return {"items": items, "fol": fol, "locations": sorted(locs, key=lambda l: l["id"]), "goal": goal}
+    return {"items": items, "fol": fol, "locations": sorted(locs, key=lambda l: l["id"]), "goal": goal,
+            "groups": groups}
+
+
+# ---- Phase 4: open world (area keys, story stages) and shop slots ----------------------------
+# One key per world-map entrance group (docs/ap/doors.json `key_group`, the world agent's 35
+# groups of the 66 entrances); key N = the group's place in doors.json order.
+KEY_NAMES = {
+    "Arlia Village": "Arlia Pass", "Town of Salva": "Salva Pass", "Mars Village": "Mars Pass",
+    "Town of Herlie": "Herlie Pass", "Lasguss Mountain": "Lasguss Pass", "Mountain Palace": "Mountain Palace Pass",
+    "map 231": "Map 231 Pass", "Hoffmann Ruins": "Hoffmann Pass", "Town of Cross": "Cross Pass",
+    "Port of Clik": "Clik Pass", "Port Hilton": "Hilton Pass", "Town of Lacour": "Lacour Pass",
+    "Town of Linga": "Linga Pass", "Sanctuary of Linga": "Sanctuary Pass", "Cross Cave": "Cross Cave Pass",
+    "Lacour Front Line": "Front Line Pass", "Eluria Tower": "Eluria Tower Pass", "El Beach": "El Beach Pass",
+    "Eluria Colony": "Eluria Pass", "Cave of Trials Level 1": "Cave of Trials Pass", "Giveaway": "Giveaway Pass",
+    "Town of Armlock": "Armlock Pass", "Field of Intelligence": "Intelligence Pass", "Mihne Cavern": "Mihne Pass",
+    "L'Aqua": "L'Aqua Pass", "map 687": "Fienal Pass", "Secret Charity/Fake Gallery": "Gallery Pass",
+    "Central City": "Central City Pass", "North City": "North City Pass", "Noel's House": "Noel's House Pass",
+    "Cave of Red Crystal": "Red Crystal Pass", "Field of Courage": "Courage Pass", "Field of Power": "Power Pass",
+    "Fun City": "Fun City Pass", "Field of Love": "Love Pass",
+}
+# The story's stages for open world (docs/ap/apworld.md, "Open world"): the chapters each one
+# spans and the entrance groups the story walks into while in it, from every store to the
+# chapter / step globals and the area of its map (tools/ap_extract.py story_points with their
+# conditions). A stage is finished when the next one's first chapter is stored. Requiring a
+# key the story does not really need there only makes the logic stricter.
+STAGES = [
+    ("Shingo Forest and Arlia", (3, 4), ["Arlia Village"]),
+    ("Salva and Salva Drift", (5, 8), ["Town of Salva", "Arlia Village"]),
+    ("Cross", (9, 11), ["Town of Cross"]),
+    ("Cross Cave", (12, 13), ["Cross Cave"]),
+    ("Clik and Mars", (14, 15), ["Port of Clik", "Mars Village", "Town of Herlie"]),
+    ("Herlie", (16, 17), ["Town of Herlie"]),
+    ("Lacour's tournament", (18, 19), ["Town of Lacour", "Port Hilton"]),   # maps 434 / 467-477 sit in Lacour
+    ("Linga and its sanctuary", (20, 22), ["Town of Linga", "Sanctuary of Linga"]),
+    ("Hilton and Hoffmann Ruins", (23, 25), ["Port Hilton", "Town of Lacour", "map 231", "Hoffmann Ruins"]),
+    ("Lacour Front Line", (26, 28), ["Lacour Front Line"]),
+    ("El", (29, 31), ["El Beach", "Eluria Colony"]),
+    ("Eluria Tower", (32, 35), ["Eluria Tower"]),
+    ("Energy Nede", (36, 37), []),   # scenes: maps 618, 619, then Central City 248
+    ("Synard", (38, 38), ["North City"]),
+    ("Noel", (39, 39), ["Noel's House"]),
+    ("Cave of Red Crystal", (40, 40), ["Cave of Red Crystal"]),
+    ("Central City", (41, 41), ["Central City"]),
+    ("The four fields", (42, 45), ["Field of Courage", "Field of Power", "Field of Intelligence", "Field of Love",
+                                   "Town of Armlock"]),   # the Field of Love ends at 596, by North City / Armlock
+    ("L'Aqua", (46, 47), ["Central City", "L'Aqua"]),
+    ("Fienal's first visit", (48, 51), ["map 687", "L'Aqua", "Central City"]),
+    ("Armlock and Mihne", (52, 56), ["Town of Armlock", "Mihne Cavern"]),
+    ("Fun City", (57, 57), ["Fun City"]),
+    ("The last chapters", (58, 60), ["Town of Armlock", "L'Aqua", "map 687"]),
+]
+DISC_SWITCH_STAGE = 12      # STAGES[:12] are Expel's; the disc switch ends stage 12
+# Story bosses: the chapter of the fight (its stage must be finished to count it).
+STORY_BOSS_CHAPTER = {191: 6, 194: 15, 195: 15, 209: 21, 210: 24, 516: 27, 519: 33, 520: 33, 521: 38, 522: 40,
+                      524: 42, 525: 42, 527: 42, 528: 42, 531: 55, 532: 57, 533: 57, 535: 58, 536: 60, 537: 60,
+                      538: 60}
+# Shops whose slots are never locations: 0x58 sells back the books sold to it (its list grows
+# with flags 0x194 + item); 0x5a-0x5e are the Familiar's order shops (a specialty).
+SHOPS_LEFT_OUT = {0x58, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E}
+
+
+def stage_of_chapter(ch):
+    for k, (_, (lo, hi), _) in enumerate(STAGES):
+        if lo <= ch <= hi:
+            return k + 1
+    return 1 if ch < 3 else len(STAGES)
+
+
+def key_groups(doors):
+    """The 35 entrance groups in doors.json order: key number, name, world, door ids, target maps."""
+    out = {}
+    for r in doors["doors"]:
+        if r.get("world") in (1, 2) and r.get("key_group"):
+            g = out.setdefault(r["key_group"], {"group": r["key_group"], "world": r["world"], "doors": [], "maps": []})
+            g["doors"].append(r["id"])
+            if r["to"]["map"] not in g["maps"]:
+                g["maps"].append(r["to"]["map"])
+    for n, g in enumerate(out.values(), start=1):
+        g["key"], g["name"] = n, KEY_NAMES[g["group"]]
+        first = [k + 1 for k, (_, _, keys) in enumerate(STAGES) if g["group"] in keys]
+        g["stage"] = first[0] if first else None    # the first stage that needs it (None: not the story's)
+    unknown = {k for _, _, keys in STAGES for k in keys} - set(out)
+    if unknown:
+        raise SystemExit(f"stage keys without an entrance group: {unknown}")
+    return list(out.values())
+
+
+def map_groups(doors, groups):
+    """Map -> the entrance group a player walks in by: the group whose entrances reach the map
+    over unconditional field doors, else the nearest group over any field door (scene-only maps
+    get one too; they rarely hold anything that may carry progression)."""
+    recs = [r for r in doors["doors"] if not r.get("world_script") and not r.get("world")]
+    plain, anyd = collections.defaultdict(set), collections.defaultdict(set)
+    for r in recs:
+        to = r["to"]["map"]
+        if to in (1, 2, 3):
+            continue
+        uncond = not r["requires"] and (not r["via"] or any(not v["requires"] for v in r["via"]))
+        for m in r.get("maps") or [r["map"]]:
+            anyd[m].add(to)
+            if uncond:
+                plain[m].add(to)
+    best = {}
+    for adj, rank in ((plain, 0), (anyd, 1)):
+        for g in groups:
+            dist = {m: 0 for m in g["maps"]}
+            todo = list(g["maps"])
+            while todo:
+                nxt = []
+                for m in todo:
+                    for n in adj[m]:
+                        if n not in dist:
+                            dist[n] = dist[m] + 1
+                            nxt.append(n)
+                todo = nxt
+            for m, d in dist.items():
+                cand = (rank, d, g["key"])
+                if m not in best or cand < best[m][0]:
+                    best[m] = (cand, g["group"])
+    return {m: g for m, (_, g) in best.items()}
+
+
+def route_keys(proof, groups):
+    """Location id -> the entrance groups on the proof routes to the map that checked it (union
+    over the games and over that map's nodes), and the games that proved it."""
+    target = {m: g["group"] for g in groups for m in g["maps"]}
+    keys, games = collections.defaultdict(set), collections.defaultdict(list)
+    for game, res in sorted(proof.get("games", {}).items()):
+        by_map = collections.defaultdict(set)
+        for node, route in res.get("routes", {}).items():
+            m = int(node.split("@")[0])
+            steps = [x.split(":") for x in route.split("|", 1)[1].split(",") if x] if "|" in route else []
+            maps_ = [int(a) for a, _ in steps] + [m]
+            for k, (a, _) in enumerate(steps):
+                if int(a) in (1, 2) and maps_[k + 1] in target:
+                    by_map[m].add(target[maps_[k + 1]])
+            by_map.setdefault(m, set())
+        for m, ids in res.get("checks", {}).items():
+            for lid in ids:
+                keys[lid] |= by_map.get(int(m), set())
+        for lid in res.get("proven", []):
+            games[lid].append(game)
+    return keys, games
+
+
+def shop_slots(field, items, worlds, groups_of_map):
+    """Every entry of the shops a script opens (minus SHOPS_LEFT_OUT), one location each
+    (type 10); `special` when no other of these shops sells the item."""
+    sites = collections.defaultdict(list)
+    for x in field["shop_sites"]:
+        sites[x["shop"]].append(x)
+    shops = {int(k): v for k, v in field["shops"].items() if int(k) in sites and int(k) not in SHOPS_LEFT_OUT}
+    sellers = collections.Counter(i for v in shops.values() for i in set(v["stock"]))
+    out = []
+    for shop, v in sorted(shops.items()):
+        site = sites[shop][0]
+        reasons, side = judge([{"requires": x.get("requires", []), "via": x.get("via")} for x in sites[shop]],
+                              {"missable": all(x.get("missable") for x in sites[shop]),
+                               "late": any(x.get("late", True) for x in sites[shop])})
+        area = site.get("area") or f"Map {site['map']}"
+        for index, item in enumerate(v["stock"]):
+            out.append({"id": LOCATION_BASE + (10 << 21) + (shop << 8) + index, "type": "shop", "shop": shop,
+                        "index": index, "map": site["map"], "area": area, "item": item, "fol": None,
+                        "region": region_of(site["map"], site.get("world", worlds.get(site["map"]))),
+                        "sites": [], "missable": reasons, "protagonist": side, "special": sellers[item] == 1,
+                        "name": f"{area}: shop {shop} {items.get(item, item)}"})
+    taken = collections.Counter(l["name"] for l in out)
+    for l in out:
+        if taken[l["name"]] > 1:
+            l["name"] = f"{l['name']} #{l['index']}"
+    return out
 
 
 FILLER_ITEM = 757          # Blueberry: what a boss or join location adds to the pool
@@ -367,11 +567,22 @@ def write(data, path, sources):
             "LOCATIONS = ["]
     for l in data["locations"]:
         row = {k: l.get(k) for k in ("id", "name", "type", "map", "flag", "offset", "encounter", "character", "enemy",
-                                      "boss", "area", "region", "regions", "item", "fol", "sites", "missable",
-                                      "protagonist", "late")}
+                                      "shop", "index", "special", "boss", "chapter", "from_chapter", "area", "region",
+                                      "regions", "group", "groups", "on_world_map", "item", "fol", "sites", "missable",
+                                      "protagonist", "late", "late_keys", "tele", "tele_keys")}
         row = {k: v for k, v in row.items() if v is not None or k in ("item", "fol", "protagonist")}
         out.append(f"    {row!r},")
-    out += ["]", ""]
+    out += ["]", "",
+            "# Phase 4 (open world): the world-map entrance groups (docs/ap/doors.json key_group), one key",
+            "# each: key number, name, group, world map, door ids (map * 65536 + offset / 4), target maps, the",
+            "# first story stage that needs it (None: not the story's).",
+            "KEY_GROUPS = ["]
+    out += [f"    {g!r}," for g in data.get("groups", [])]
+    out += ["]", "",
+            "# The story's stages: name, chapters, the entrance groups the story walks into in it.",
+            "STAGES = ["]
+    out += [f"    {st!r}," for st in STAGES]
+    out += ["]", f"DISC_SWITCH_STAGE = {DISC_SWITCH_STAGE}", ""]
     with open(path, "w", newline="\n") as f:
         f.write("\n".join(out))
 
@@ -381,6 +592,7 @@ def main():
     ap.add_argument("--field", default=os.path.join(ROOT, "docs/ap/field.json"))
     ap.add_argument("--battles", default=os.path.join(ROOT, "docs/ap/battles.json"))
     ap.add_argument("--late", default=os.path.join(ROOT, "docs/ap/late_proof.json"))
+    ap.add_argument("--doors", default=os.path.join(ROOT, "docs/ap/doors.json"))
     ap.add_argument("-o", "--output", default=os.path.join(ROOT, "apworld/so2/data.py"))
     a = ap.parse_args()
     field = json.load(open(a.field))
@@ -388,8 +600,10 @@ def main():
     late = json.load(open(a.late)) if os.path.exists(a.late) else {}
     if not late:
         print(f"no late proof ({a.late}): no chest, gift or Cave of Trials boss may hold progression")
-    data = build(field, battles, late)
-    write(data, a.output, ["docs/ap/field.json", "docs/ap/battles.json", "docs/ap/late_proof.json"])
+    doors = json.load(open(a.doors)) if os.path.exists(a.doors) else None
+    data = build(field, battles, late, doors)
+    write(data, a.output, ["docs/ap/field.json", "docs/ap/battles.json", "docs/ap/late_proof.json",
+                           "docs/ap/doors.json"])
     locs = data["locations"]
     why = collections.Counter(r for l in locs for r in l["missable"])
     kinds = collections.Counter(l["type"] for l in locs)

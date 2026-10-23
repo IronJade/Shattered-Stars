@@ -45,7 +45,7 @@ bool field_run_section6_program() {
   psyq::SetDispMask(0);
   // The script context is freed; boot_run_main_program unpacks section 6 (0x800756f4)
   // over the field and runs it.
-  delete f;
+  field_program_delete(f);
   boot_run_main_program(g.system, Program::Credits);
 }
 

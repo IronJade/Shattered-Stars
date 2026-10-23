@@ -146,6 +146,12 @@ class SO2World(World):
         patches = placement_patches(locs)
         for entry in locs:
             del entry["sites"]
+        # The port gives a received item from this table, so it lists every item of this
+        # player's, wherever in the multiworld it was placed (a character in another world too).
+        for loc in mw.get_filled_locations():
+            item = loc.item
+            if item.player == player and item.code is not None and str(item.code) not in own_items:
+                own_items[str(item.code)] = items.seed_item(item.name, item.code)
         start_items, start_fol = [], 0
         for item in mw.precollected_items[player]:
             if item.code is None:

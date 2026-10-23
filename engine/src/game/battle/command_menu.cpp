@@ -4,6 +4,7 @@
 #include "game/battle/command_menu.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <utility>
@@ -658,7 +659,11 @@ int SpellMenu::confirm() {
       // spell does nothing:
       //   (u->target left as it is)
       // Fixed (user, 2026-10-22): with no current target the caster stands in.
-      if (u->target == nullptr) u->target = u;
+      // SS_ORIGINAL_S20=1 keeps the original (comparisons against Redux: m9_3).
+      {
+        static const bool original = std::getenv("SS_ORIGINAL_S20") != nullptr;
+        if (u->target == nullptr && !original) u->target = u;
+      }
       return 1;
     default: return 1;
   }

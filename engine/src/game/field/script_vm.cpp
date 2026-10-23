@@ -45,6 +45,9 @@ u32 flag_get(ScriptCtx* ctx, u32 local, u32 addr) { return *flag_ptr(ctx, local,
 void flag_set(ScriptCtx* ctx, u32 local, u32 addr, bool on) {
   u8* p = flag_ptr(ctx, local, addr);
   const u8 bit = static_cast<u8>(1 << (addr & 7));
+  // Archipelago (port feature; character_items) [world agent]: a flag a received member keeps
+  // (a received Celine's flag 112) stays set.
+  if (!on && local == 0 && ap::keeps_flag(static_cast<int>(addr))) on = true;
   // Archipelago (port feature): a global flag turning on may be a location's (a chest's
   // opened flag).
   if (on && local == 0 && (*p & bit) == 0) ap::on_flag_set(static_cast<int>(addr));

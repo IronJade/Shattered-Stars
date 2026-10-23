@@ -23,7 +23,7 @@ so later versions can add to the file.
 | `game` | string | `"Star Ocean: The Second Story"` |
 | `slot` | `{name, id}` | this player's slot name and number |
 | `options` | object | the player's options, as the APWorld names them; the port reads `deathlink` and the phase-3 options ("Phase 3" below) |
-| `items` | object | this game's items by AP item id: the names and what they give (below) |
+| `items` | object | this game's items by AP item id: the names and what they give (below). It lists every item of this player's in the multiworld, wherever it was placed: the port gives a received item from this table, and one missing from it is given as nothing (logged "not in the seed's table") |
 | `locations` | array | this player's locations and what each holds (below) |
 | `patches` | array of strings | world edits, one line each, in the mods syntax (below) |
 | `start` | `{items, fol, flags}` | the starting inventory, Fol and script flags |

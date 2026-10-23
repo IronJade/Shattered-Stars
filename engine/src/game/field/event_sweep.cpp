@@ -63,7 +63,12 @@ struct Sweep {
   int window_wait = 0;      // frames in a row a window waited for the button (state 6 / 7)
   int press_left = 0;       // frames confirm stays held
   int last_state = -1;      // field state last frame
+  int reloads = 0;          // reloads in a row whose main script left the map before settling [world agent]
 };
+// A map whose main script moves on after every reload (map 413 -> 416 in the late proof: the
+// reload is no arrival from the map the route came by) would loop in the settle for ever: after
+// this many reloads in a row the next entry is reported as "loop" and skipped [world agent].
+constexpr int kMaxReloads = 6;
 Sweep g_sweep;
 
 // The random generator for comparing with PCSX-Redux (endref.lua): the index and an
@@ -566,10 +571,28 @@ void event_sweep_frame(Field* f) {
           runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
           return;
         }
+        if (++s.reloads >= kMaxReloads) {  // [world agent]
+          s.reloads = 0;
+          if (s.next < static_cast<int>(s.entries.size())) {
+            const Entry& e = s.entries[static_cast<size_t>(s.next)];
+            say("entry %d %c%d code %d start", s.next, e.kind, e.index, e.code);
+            say("entry %d %c%d end loop frames %d standins 0 unknown_ops 0 | %d reloads in a row left for map %d", s.next,
+                e.kind, e.index, s.timer, kMaxReloads, map);
+            ++s.next;
+          }
+          if (s.next >= static_cast<int>(s.entries.size())) {
+            s.phase = Phase::Done;
+            say("done entries %zu", s.entries.size());
+            schedule_input(0);
+            runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
+            return;
+          }
+        }
         reload(f);
         return;
       }
       if (count(is_idle && map == s.map)) {
+        s.reloads = 0;
         if (s.goto_map >= 0) {
           say("settled after %d frames; goto map %d; %s", s.timer, s.goto_map, rng_signature().c_str());
           schedule_input(0);

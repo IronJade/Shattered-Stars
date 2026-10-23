@@ -67,6 +67,10 @@ def check_seed(test, seed):
         else:
             test.assertIn("ap_id", item)
     test.assertEqual(len(seed["patches"]), sites)
+    # Every item of this player's, wherever it was placed, is in the table the port gives from.
+    for loc in test.multiworld.get_filled_locations():
+        if loc.item.player == test.player and loc.item.code is not None:
+            test.assertIn(str(loc.item.code), seed["items"], loc.item.name)
     by_word = {}
     for line in seed["patches"]:
         m = PATCH.match(line)

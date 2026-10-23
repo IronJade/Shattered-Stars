@@ -25,7 +25,8 @@ and judges the result against the `expected` column.
   passes positionally (the run/compare scripts take it as an argument, not env). Known keys:
   `SS_ENEMY_HP`, `TOUGH` (enemy's own `h_enemy` sets this from the id's tag instead, see
   below), `CMP_FROM`/`CMP_R`/`CMP_DMAX` (`cmp.py`'s boss-fight offset search),
-  `CMP_OFF` (`cmpstage.sh`'s mash-offset override), `FRAMES`.
+  `CMP_OFF` (`cmpstage.sh`'s mash-offset override), `FRAMES`, `SS_ORIGINAL_S20` (m9_3: the
+  port keeps the original's dropped first-action menu Fairy Light, original_bugs.md S20).
 - `expected`:
   - `rng_equal_to_exit` — RNG draws should run even with the reference clear through the
     battle's own end (the last ~350 "b" samples of a killer-move-style reference are the

@@ -126,10 +126,11 @@ games each location was proven in into its row (`late`).
   to the seed). An entry that leaves the player in control on another map is an edge; Private
   Action entries are not followed. A node found later is entered by replaying its route from
   its root entry by entry (`SS_SWEEP_PLAY`), so it has the globals and flags the real
-  transfers leave. Fienal, the Cave of Trials and the maps whose scripts read the floor
-  G[0x1cf] or the previous map G[0x1c0] are one node per arrival state (floor, previous map,
-  Fienal's stair flag 157, printed by `SS_SWEEP_SHOW`); an entry that changes that state
-  without leaving (a stair latch) is an edge too.
+  transfers leave. A map whose script reads the floor G[0x1cf], the previous map G[0x1c0] or
+  Fienal's stair flag 157 (Fienal's stair rooms, the Cave of Trials, a few dungeon rooms) is a
+  node per value of what it reads, which the sweep prints after every entry (`SS_SWEEP_SHOW`);
+  an entry that changes it without leaving (a stair latch) is an edge too. A run whose map
+  reloads into another map over and over is stopped and resumed after the entry.
 - **The roots:** map 671, and Energy Nede's world map: the party walks back out of Fienal
   after saving (Prima p. 130), but the sweep can't follow that through Fienal's stair rooms.
 - **Proven:** the port loads a proof seed with every chest, gift and boss location, and a
@@ -142,7 +143,27 @@ games each location was proven in into its row (`late`).
   switches, puzzles the save had not solved or a choice's other answers stay shut; such
   locations only lose the right to hold progression.
 
-RESULTS_PLACEHOLDER
+**Results** (2026-10-23, `docs/ap/late_proof.json`). Each game's search swept 610 maps (732
+nodes in Claude's game, 731 in Rena's), and both prove the same 278 of the 453 chests, gifts and
+bosses:
+
+| | Rows | Proven |
+|---|---|---|
+| Chests | 311 | 258: Expel 122 / 155, Energy Nede 46 / 52, Fienal 17 / 26, Cave of Trials 73 / 78 |
+| Gift sites | 101 | 9: Expel 6 / 89, Energy Nede 1 / 9, Cave of Trials 2 / 3 |
+| Bosses | 41 | 11: the cave's 10 / 13 and one in Expel (story bosses are exempt anyway) |
+
+- Chests not proven: Eluria Tower's 23 (the tower can't be entered after the disc switch), old
+  Clik's 4 and the Heraldry Weapons Laboratory's 1 (as `late` said), Hoffmann Ruins map 502
+  (4), the Mountain Palace's map 367 (2), North City map 593 (3), the Field of Intelligence map
+  550 (2), Fienal's stair rooms 647 / 673 (9: floor states the search did not reach) and five
+  cave chests behind puzzles (maps 710, 740, 798, 799).
+- Gifts are mostly rewards of story scenes tied to a chapter or step, which no longer run at
+  chapter 60; most were excluded already (window, Private Action, member).
+- So a seed puts progression in at most 258 chests, 9 gifts, the 21 story bosses and 10 cave
+  bosses (fewer with the options): every multiworld in the batch below filled.
+- Rerun the proof after a change to the port's field code, the event sweep or field.json
+  ("Files", below).
 
 **Characters are useful, never progression.** Member-gated logic would not be monotonic
 (Ashton rules out Opera), so every member-gated location is excluded instead.
@@ -197,10 +218,11 @@ Regenerate the tables after `tools/ap_extract.py` or a new late proof:
     tools/ap_world_tables.py          # field.json + battles.json + late_proof.json -> data.py
 
 Rerun the late proof after a change to the port's field code, the event sweep or field.json
-(about an hour per game with 6 jobs; logs in scratchpad/late_proof/):
+(about an hour per game; keep the machine's total at 6 game processes: `--jobs 3` each, or one
+game after the other; logs in scratchpad/late_proof/, `--resume` reuses finished nodes):
 
-    tools/ap_late_proof.py --bin BIN --game claude -o scratchpad/late_proof/claude.json &
-    tools/ap_late_proof.py --bin BIN --game rena -o scratchpad/late_proof/rena.json &
+    tools/ap_late_proof.py --bin BIN --game claude --jobs 3 -o scratchpad/late_proof/claude.json &
+    tools/ap_late_proof.py --bin BIN --game rena --jobs 3 -o scratchpad/late_proof/rena.json &
     wait; tools/ap_late_proof.py --reparse --game claude --game rena   # -> docs/ap/late_proof.json
 
 It needs SS_DISC1 (disc 2 next to it) and a memory card with a save at the Final Save Point
@@ -218,7 +240,28 @@ ModuleUpdate waits at a prompt. Link the world in:
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python Generate.py --player_files_path P --outputpath O --seed N
 
-TESTING_PLACEHOLDER
+Results (2026-10-23):
+- The world's tests: 66 passed (4793 subtests; 17 classes: the defaults, protagonists,
+  missable options, the cave and its gems, Expel without progression, bosses off, characters
+  per protagonist, drops and traps, the late proof per protagonist).
+- AP's general tests with so2 installed: 379 passed (116824 subtests).
+- 60 seeds (`scratchpad/enemy/ap4/batch/run_batch.sh`): two SO2 players (Claude, Rena) with
+  every option random (protagonist, missable_locations, expel_progression, cave_of_trials,
+  boss_checks, character_items, drops_as_checks, traps, both multipliers, encounter_rate,
+  death_link, accessibility) plus ChecksFinder. All generate and fill: 120 `.apso2` files over
+  101 option combinations, 258-560 locations each. `check.py` finds no error: unique ids and
+  placeholders, well-formed patch lines (one per word), the cave's gems in place, a party the
+  story allows with every member in the items table, and each of the 1295 progression items
+  placed in SO2 locations where `may_hold_progression` allows it.
+- In the port (headless, engine/build-enemy):
+  - `tools/ap_e2e_so2.sh`: 19 / 19, twice (the phase-3 steps: a received Celine joins, a Fol
+    Loss Trap takes 10 %, Kitty's first drop goes out as a check);
+  - three batch seeds (Claude's, Rena's and "any"): a received character joins, a Fol Loss
+    trap takes 1000 of 10000 Fol, the rewards scale (EXP x2 / x6 / x8, Fol x6 / x7 / x9), and
+    the first drop of a random-encounter enemy (encounter 110, Kitty, type 90) is withheld
+    and checked (an own item, or "Bloody Helm for Claude" in the other slot);
+  - Ashton's join site (map 71, a sweep at chapter 17 with flag 113): the check goes out, Ashton
+    is held back (not received), and the site's item (a Paralysis Trap) is given.
 
 ## Next
 

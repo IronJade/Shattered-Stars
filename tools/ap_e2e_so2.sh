@@ -21,9 +21,9 @@
 #      4 and 10: in free play the port gives the Resurrection Bottle, Celine joins the party,
 #      and the trap takes 10 % of the 10000 Fol the console gave (`fol 10000`), each with its
 #      banner.
-#   4. The console starts a random encounter with a sure drop (`battle 547`, five
-#      Shadowflowers, enemy type 14); --battle-end wins it after 60 frames, and the result
-#      screen's first drop of type 14 is the check "Shadowflower first drop" instead.
+#   4. The console starts a random encounter that drops (`battle 110`, two Kitties, enemy type
+#      90; this run's draws drop the Mithril Shield); --battle-end wins it after 60 frames, and
+#      the result screen's first drop of type 90 is the check "Kitty first drop" instead.
 #   5. The console starts the final boss (`battle 539`), won the same way: the battle's exit
 #      records the goal (CLIENT_GOAL).
 #   6. After the port has quit, a tracker client logs in to Claude's slot and reads the
@@ -43,7 +43,7 @@ PORT=${AP_E2E_PORT:-38292}
 SEED=${AP_E2E_SEED:-4242}
 CRATE=1347569665   # Arlia Village: 200 Fol chest (docs/ap/field.json)
 TILE1=81000        # ChecksFinder's Tile 1 (Tile n: 81000 + n - 1)
-DROP=1362231310    # Shadowflower first drop: 0x50320000 + (8 << 21) + enemy type 14
+DROP=1362231386    # Kitty first drop: 0x50320000 + (8 << 21) + enemy type 90
 export SKIP_REQUIREMENTS_UPDATE=1
 rm -rf "$W"
 mkdir -p "$W/xdg" "$W/nomods" "$W/players" "$W/out"
@@ -169,17 +169,17 @@ for _ in $(seq 1 300); do
   (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null && break
   sleep 0.1
 done
-"$AP/ap-venv/bin/python" "$W/bob.py" 220 "ws://localhost:$PORT" "$CRATE" "$TILE1" > "$W/bob.log" 2>&1 &
+"$AP/ap-venv/bin/python" "$W/bob.py" 260 "ws://localhost:$PORT" "$CRATE" "$TILE1" > "$W/bob.log" 2>&1 &
 bob=$!
 # 600-766: open the crate and close its window; 730: 10000 Fol for the trap to take; from 850:
-# the received items' banners; 1600: the drop battle, 3600: the final boss (each won after 60
+# the received items' banners; 1600: the drop battle, 4400: the final boss (each won after 60
 # battle frames), each followed by the result screen's pages.
 presses=""
-for v in 600 760 1100 $(seq 2200 200 3200) $(seq 4200 200 5200); do presses="$presses,$v:cross,$((v + 6)):none"; done
+for v in 600 760 1100 $(seq 2200 200 4000) $(seq 5000 200 7400); do presses="$presses,$v:cross,$((v + 6)):none"; done
 env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
   SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" \
-  SS_TRACE_LEADER=60 SS_DEBUG_INPUT="730:fol 10000;1500:ap_status;1600:battle 547;3600:battle 539;5700:ap_status" \
-  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$seed_file" --frames 5800 --map 18 \
+  SS_TRACE_LEADER=60 SS_DEBUG_INPUT="730:fol 10000;1500:ap_status;1600:battle 110;4400:battle 539;7900:ap_status" \
+  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$seed_file" --frames 8000 --map 18 \
   --battle-end 60:0 \
   --input "200:up,439:none,450:left,554:none,560:up,572:none$presses" \
   --capture "$W/cap" --capture-frames 700,850 < /dev/null > "$W/game.log" 2>&1
@@ -205,7 +205,7 @@ check "$W/bob.log" "Bob receives Map Width from the crate" "received item 80000 
 check "$W/game.log" "Bob's Tile 1 gives the Resurrection Bottle" '\[ap\] given Resurrection Bottle'
 check "$W/game.log" "Bob's Tile 4: Celine joins the party" '\[ap\] Celine joins the party \(slot [0-9]+\)'
 check "$W/game.log" "Bob's Tile 10: the Fol Loss Trap takes 1000 Fol" '\[ap\] trap fol_loss: lost 1000 Fol'
-check "$W/game.log" "the first drop of Shadowflower is withheld" '\[ap\] first drop of enemy type 14 \(item [0-9]+\): the check instead'
+check "$W/game.log" "the first drop of Kitty is withheld" '\[ap\] first drop of enemy type 90 \(item [0-9]+\): the check instead'
 check "$W/game.log" "the drop's check" "\[ap\] check $DROP "
 check "$W/game.log" "the goal (encounter 539 won)" '\[ap\] goal: encounter 539 won'
 check "$W/game.log" "the port's status" 'slot Claude \| checks 2/[0-9]+ \| received 3 \| waiting 0 \| connected \| goal'

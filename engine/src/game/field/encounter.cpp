@@ -650,7 +650,7 @@ void field_exit_to_program(Field* f, int reason) {
     }
   }
   handoff_store(g.handoff, setup, 5);
-  delete f;
+  field_program_delete(f);
   boot_run_main_program(g.system, Program::Battle);
 }
 

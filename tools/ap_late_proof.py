@@ -43,13 +43,24 @@ It is conservative: every entry runs from the map's arrival state, so doors behi
 a puzzle the save had not solved stay shut, and a choice takes its first answer. A location
 it does not prove only loses the right to hold progression (apworld/so2/rules.py).
 
+The teleporter state (--state teleporter, for open world; docs/ap/apworld.md "Open world"):
+the same save at chapter 38 step 0 (the Nede story's first free walk on the world map, after
+the disc switch) with flag 730 cleared, and the proof seed's expel_teleporter on, so the Fun
+City arena's old man (map 303) takes the party to Arlia from chapter 36 (the port's three
+patch lines, docs/ap/seed_format.md "The Expel teleporter"). The only root is Energy Nede's
+world map. A location proven there can be reached between the disc switch and the Final
+Save Point through the teleporter. Its result goes to the output's "teleporter" key.
+
 Usage:
   tools/ap_late_proof.py --bin BIN --save CARD.mcd --save-frame 13 [--game claude --game rena]
-                         [--jobs 6] [--work scratchpad/late_proof] [-o docs/ap/late_proof.json]
+                         [--jobs 3] [--resume] [--work scratchpad/late_proof] [-o docs/ap/late_proof.json]
 SS_DISC1 / SS_DISC2 give the discs (or --disc1 / --disc2). --reparse rebuilds the result from
-the logs in --work. A game takes one to two hours with 6 jobs.
+the logs in --work; --resume reuses the finished node logs there. A game takes about an hour
+with 6 jobs; run both games at --jobs 3 each (or one after the other), so the machine never
+has more than 6 game processes from it.
 """
 import argparse
+import collections
 import datetime
 import hashlib
 import importlib.util
@@ -69,6 +80,8 @@ WORLD = os.path.join(ROOT, "apworld", "so2")
 # of Fienal (Prima p. 130 describes leaving it after the save), a way the sweep can't follow
 # through Fienal's stair rooms, whose exits depend on the room the party came from.
 ROOTS = [671, 2]
+TELEPORTER_ROOTS = [2]
+TELEPORTER_CHAPTER = 38   # the Nede story's first walk on the world map (chapter 38 is stored at map 246)
 SCRIPT_FLAGS = 0x170 * 8
 KEEP_FLAGS = {1, 2, 4, 730} | set(range(66, 94))  # the game, Private Action mode, the save, key items
 PARTY = "1,10"   # Rena and Noel join the --map start's Claude (both are in every party at chapter 60)
@@ -131,8 +144,9 @@ def done_flags(field):
     return out - KEEP_FLAGS
 
 
-def build_state(snap, field, game):
-    """(SS_SCRIPT_GLOBALS, SS_SWEEP_FLAGS, summary) for a game from the save's snapshot."""
+def build_state(snap, field, game, kind="late"):
+    """(SS_SCRIPT_GLOBALS, SS_SWEEP_FLAGS, summary) for a game from the save's snapshot. kind
+    "teleporter": chapter 38 step 0, flag 730 cleared (the teleporter state, module doc)."""
     gs, flags = snap[:0x2A0], snap[0x2A0:0x2A0 + 0x170]
     words = {}
     for off in range(0, 0x2A0, 4):
@@ -148,6 +162,9 @@ def build_state(snap, field, game):
     if game == "rena":   # game_state +0x24 / +0x25: 1 / 0 in Rena's game, 0 / 1 in Claude's
         words[0xC4] = (words[0xC4] & ~0xFFFF) | 0x0001
     cleared = done_flags(field)
+    if kind == "teleporter":
+        words[0xA0], words[0xA4] = TELEPORTER_CHAPTER, 0
+        cleared = cleared | {730}
     on = [n for n in range(SCRIPT_FLAGS) if flags[n >> 3] >> (n & 7) & 1 and n not in cleared]
     if game == "claude" and 1 not in on:
         on.append(1)
@@ -160,9 +177,10 @@ def build_state(snap, field, game):
     return glob_text, flag_text, summary
 
 
-def proof_seed(path):
+def proof_seed(path, teleporter=False):
     """A solo seed with every chest, gift and boss location of data.py, each holding a
-    Blueberry (item 757) behind its placeholder."""
+    Blueberry (item 757) behind its placeholder (with the Expel teleporter for the teleporter
+    state)."""
     data, patches = load("data"), load("patches")
     locs = []
     for row in data.LOCATIONS:
@@ -183,7 +201,8 @@ def proof_seed(path):
     for entry in locs:
         del entry["sites"]
     seed = {"format": "apso2", "version": 1, "seed": "late-proof", "game": "Star Ocean: The Second Story",
-            "slot": {"name": "Proof", "id": 1}, "options": {"protagonist": "any"},
+            "slot": {"name": "Proof", "id": 1},
+            "options": {"protagonist": "any", "expel_teleporter": teleporter},
             "items": {str(data.ITEM_BASE + 757): {"name": "Blueberry", "kind": "item", "game_id": 757}},
             "locations": locs, "patches": lines, "start": {"items": [], "fol": 0, "flags": []},
             "goal": {"encounters": list(data.GOAL_ENCOUNTERS)}}
@@ -335,7 +354,7 @@ def stateful_maps(disc1):
     return out
 
 
-def bfs(args, game, state, seed, stateful):
+def bfs(args, game, state, seed, stateful, root_maps=ROOTS):
     """The search. A node is a map, or for a stateful map (stateful_maps) a map with the values
     of the state variables its script reads, which the sweep prints (SHOW) for each entry that
     leads there."""
@@ -354,7 +373,7 @@ def bfs(args, game, state, seed, stateful):
         tag = "" if "@" not in node else "_" + hashlib.md5(node.encode()).hexdigest()[:8]
         return os.path.join(logdir, f"map_{m:03d}{tag}.log")
 
-    roots = [ident(m, "") for m in ROOTS]
+    roots = [ident(m, "") for m in root_maps]
     seen, route = set(roots), {k: (map_of(k), []) for k in roots}
     swept_of, edges, checks, notes = {}, {}, {}, {}
 
@@ -432,7 +451,8 @@ def bfs(args, game, state, seed, stateful):
                    for k in sorted(swept_of, key=lambda x: (map_of(x), x))},
         "checks": {str(m): sorted(by_map[m]) for m in sorted(by_map) if by_map[m]},
         "proven": proven,
-        "notes": {k: notes[k] for k in sorted(notes)},
+        "notes": {k: [f"{n} (x{c})" if c > 1 else n for n, c in collections.Counter(notes[k]).items()]
+                  for k in sorted(notes)},
     }
 
 
@@ -445,7 +465,8 @@ def main():
                     help="a memory card holding a save at the Final Save Point (map 671)")
     ap.add_argument("--save-frame", type=int, default=13, help="the save's directory frame on the card")
     ap.add_argument("--game", action="append", choices=["claude", "rena"])
-    ap.add_argument("--jobs", type=int, default=6)
+    ap.add_argument("--jobs", type=int, default=3,
+                    help="game processes at once (keep the machine's total at 6: two games at 3 each)")
     ap.add_argument("--frames", type=int, default=2400)
     ap.add_argument("--stall", type=float, default=120.0, help="seconds without a sweep line before a run is killed")
     ap.add_argument("--timeout", type=float, default=900.0, help="seconds a run may take at most")
@@ -453,7 +474,12 @@ def main():
     ap.add_argument("--work", default=os.path.join(ROOT, "scratchpad", "late_proof"))
     ap.add_argument("--reparse", action="store_true", help="rebuild the result from the logs in --work")
     ap.add_argument("-o", "--out", default=os.path.join(ROOT, "docs", "ap", "late_proof.json"))
+    ap.add_argument("--state", choices=["late", "teleporter"], default="late",
+                    help="late: the Final Save Point; teleporter: chapter 38 with the Expel teleporter (open world)")
     args = ap.parse_args()
+    tele = args.state == "teleporter"
+    if tele and args.work == os.path.join(ROOT, "scratchpad", "late_proof"):
+        args.work = os.path.join(ROOT, "scratchpad", "late_proof", "teleporter")
     games = args.game or ["claude", "rena"]
     if not args.disc1:
         sys.exit("set SS_DISC1 (or --disc1)")
@@ -466,22 +492,31 @@ def main():
         sys.exit("the save is not at the Final Save Point (map 671)")
     stateful = stateful_maps(args.disc1)
     seed = os.path.join(os.path.abspath(args.work), "proof.apso2")
-    count = proof_seed(seed)
-    out = json.load(open(args.out)) if os.path.exists(args.out) else {}
-    out["about"] = ("Locations proven reachable after the Final Save Point, per game: tools/ap_late_proof.py "
-                    "(docs/ap/apworld.md, 'Logic: the late proof'). apworld/so2/rules.py keeps progression "
-                    "out of every other location.")
+    count = proof_seed(seed, teleporter=tele)
+    full = json.load(open(args.out)) if os.path.exists(args.out) else {}
+    if tele:
+        out = full.setdefault("teleporter", {})
+        out["about"] = ("Locations proven reachable at chapter 38 (after the disc switch) through the Expel "
+                        "teleporter, per game: tools/ap_late_proof.py --state teleporter (docs/ap/apworld.md, "
+                        "'Open world'). Open-world seeds put progression in Expel only where this proves it.")
+    else:
+        out = full
+        out["about"] = ("Locations proven reachable after the Final Save Point, per game: tools/ap_late_proof.py "
+                        "(docs/ap/apworld.md, 'Logic: the late proof'). apworld/so2/rules.py keeps progression "
+                        "out of every other location.")
     out.setdefault("games", {})
+    roots = TELEPORTER_ROOTS if tele else ROOTS
     for game in games:
-        glob_text, flag_text, summary = build_state(snap, field, game)
-        result = bfs(args, game, (glob_text, flag_text), seed, stateful)
-        result["state"] = dict(summary, roots=ROOTS, disc=2, frames=args.frames, seed_locations=count,
+        glob_text, flag_text, summary = build_state(snap, field, game, args.state)
+        result = bfs(args, game, (glob_text, flag_text), seed, stateful, roots)
+        result["state"] = dict(summary, roots=roots, disc=2, frames=args.frames, seed_locations=count,
+                               expel_teleporter=tele,
                                stateful_maps={str(m): sorted(v) for m, v in sorted(stateful.items())})
         result["generated"] = datetime.date.today().isoformat()
         out["games"][game] = result
         print(f"[{game}] {len(result['maps'])} maps, {len(result['proven'])} locations proven", flush=True)
         with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(out, f, indent=1, sort_keys=True)
+            json.dump(full, f, indent=1, sort_keys=True)
             f.write("\n")
     return 0
 

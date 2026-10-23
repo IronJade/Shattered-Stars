@@ -193,3 +193,200 @@ during this session was `a10f166`, which already swept up step 1's work).
    0xba5-0xbb9 are now fully scanned with 0 real gaps each -- no further gap-scan work
    needed there, only the normal "fill in missing rows" cycle if functions.csv gains more
    rows later and someone reruns the scan.
+
+## Step 3: the scan's own prologue-filter bug, and 411 real rows (new catalog agent, 04:40 start)
+
+The coordinator's mandate for this step: the previous step's "Known catalog gaps found on
+the way" note was right that the gap scan was *wrong*, not just incomplete -- it tagged every
+candidate without this compiler's `addiu sp,sp,-N` prologue as `[?]` and then **excluded**
+`[?]` hits from "missing" entirely, so a hand-written PsyQ leaf (memcpy, setjmp, the libapi
+syscall stubs, ...) never got a row no matter how strong its other evidence was. Confirmed by
+hand before touching anything: rerunning the *old*, untouched script reported "1 missing" for
+all 32 programs (just the precedented battle 0x8007f8d0 containment case), while the raw
+`both`/`jal_only`/`proc_only` bucket *lists* in that same run already showed boot alone sitting
+on 303 untouched candidates including memcpy/memset/setjmp/toupper/strncmp by name (Ghidra had
+already resolved them; the script was throwing that signal away).
+
+### tools/catalog_gaps.py rewrite (done)
+
+- Every `jal` or REA-procedure hit now counts as a candidate regardless of prologue; the
+  `[fn]`/`[leaf]`/`[?]` tag is kept but purely informational.
+- New `tail-j` source: a plain `j` whose own address falls inside a function (bounded by
+  scanned prologues + the catalog's own rows + REA's procedure list) but whose *target* lands
+  outside that function's range -- a tail call the old script's blanket "j is noise" rule
+  couldn't see. Gated on the target *also* looking like a function start (`[fn]`/`[leaf]`),
+  or it floods with false positives from stale/merged function boundaries (measured on field
+  before the gate: 1003 raw tail-j hits, 97% `[?]`; after: 14, all plausible).
+- New `table` source: a run of >=3 consecutive data words that are all plausible code
+  pointers into the program's own range *and* land on a plausible instruction boundary at the
+  target (same `[fn]`/`[leaf]` gate -- without it, field alone threw up ~625 three-in-a-row
+  coincidences in ordinary code reinterpreted as data). This is the only source that can find
+  a function reached *only* through a vtable/function-pointer table.
+- Each candidate is tagged with every source that found it (`jal+REA` = strongest). Ran with
+  no arguments (full rescan) after every functions.csv edit, per the existing warning.
+- Full rescan, before any row fill: **517 missing** (was "~1") across boot(304)/
+  title(41)/field(87)/battle(67)/credits_3107(11)/field_sub3103(1)/menu_0ba5(1)/menu_0bb6(5).
+  Every other program: still 0 (field_ovl_c1d/c1e, the embedded map code, the menu overlays,
+  battle_ovl1981/1984_*, credits_3107's own candidates aside, confirmed clean).
+
+### Row fill: 517 -> 107 real candidates left (411 new rows + 1 corrected cell)
+
+| Program | Found | Filled | Left (why) |
+|---|---:|---:|---|
+| boot | 304 | 303 | 1 containment FP (0x80023ec4, inside strncmp's own body) |
+| field | 87 | 62 | 18 containment FPs + 8 real-but-unnamed (see below) |
+| title | 41 | 29 | 12 containment FPs (all land inside already-catalogued giants) |
+| battle | 67 | 12 | 4 containment FPs + 51 one cohesive unidentified boss subsystem |
+| field_sub3103 | 1 | 1 | -- |
+| menu_0ba5 | 1 | 1 | -- |
+| menu_0bb6 | 5 | 3 | 2 containment FPs |
+| credits_3107 | 11 | 0 | all 11 resolve to **no procedure at all** against the credits ELF -- confirmed pure data, not functions |
+
+"Containment FP" = a `tail-j`/`jal`/`table` hit whose target, resolved through REA's own
+procedure lookup, lands *inside* a function functions.csv already has a row for at a
+*different* address (same class as the existing battle 0x8007f8d0 -> voice_buffer_slot_acquire
+precedent). Every one was checked by hand against the live catalog before being left out, not
+assumed; `tools/catalog_gaps.py`'s next run will keep reporting all of these (and the 8+51
+below) as "missing" forever -- expected, not unfinished work (see each `scratchpad/catalog/
+fill_*.py`'s `SKIP` set for the exact mapping, address -> which existing row it's really in).
+
+Mechanics used (same as the Step 2 log, repeated for whoever continues): opened each
+program's own ELF (`analysis/elf/SO2_boot+<x>.elf`; menu_0bb6 has none pre-built, so
+`python3 tools/psxexe2elf.py --raw analysis/archive/disc1/2998.0.unpacked --base 0x8007e000
+--entry 0x8007e000 -o scratchpad/catalog/menu_0bb6.elf` made one from the archive's unpacked
+block -- MIPS isn't accepted by `open_binary`'s own `raw-binary` mode, this sidesteps that),
+`batch_decompile` in ~15-40 address batches (bigger trips the per-call token cap and gets
+saved to a scratch file -- read it with `python3 -c "import json; ..."` pulling just
+`address`/`procedure.name`/`procedure.address` (the canonical entry) and the first ~15
+pseudocode lines, not the whole body, to keep it cheap). Each program's `scratchpad/catalog/
+fill_<name>.py` holds the exact row data, a `SKIP` set (containment FPs with the evidence
+in a comment) and, for field/battle, a `LEFT_OPEN` set (real, decompiled, deliberately not
+named -- see below); all insert into the existing block relative to its current order
+(tolerates the one pre-existing boot inversion, pad_start/pad_driver_start, without touching
+it) and re-read functions.csv immediately before each write.
+
+**boot (303 rows, now 660):** ~81 are exact PsyQ/libapi/libetc/libcard/libpad/C-runtime
+names Ghidra's signature match already gave (memcpy, memset, strncmp + its thunk, toupper,
+tolower, memchr, strlen, setjmp, longjmp, _exit, write, FlushCache, GPU_cw, CdRemove, the
+Deliver/Open/Close/Wait/Test/Enable/DisableEvent + ReturnFromException/ResetEntryInt/
+HookEntryInt kernel syscalls, GetSR, ChangeClearPAD/RCnt, the InitPAD2/StartPAD2/StopPAD2/
+PAD_init2 + SysEnqIntRP/DeqIntRP pad family, VSync + the callback-table family, ClearOTag(R)/
+DrawOTag(2)/DrawSync/GetODE/SetPriority/SetDrawStp (libgpu), InitCARD2/StartCARD2/StopCARD2 +
+the _patch_card/_patch_pad kernel-table-patch family, the _spu_*/Spu* reverb internals) --
+`confirmed`/`likely`, port `(PsyQ: runtime) ...` for the C-runtime ones (the port uses the
+host's C++ standard library) or `(not needed: ...)` for the hardware ones (the port renders
+via OpenGL / reads input via SDL / has no BIOS interrupt layer or CD drive). ~222 are Ghidra's
+own unexported-offset labels (`SYS_OBJ_*` 52: GPU/DMA packet-transfer internals behind
+LoadImage/StoreImage/DrawSync, confirmed by reading ~40 of them -- direct GP0/GP1/DMA_DICR
+register pokes and a callback queue; `PRNT_OBJ_*` 37: one shared tail-chained printf
+%-directive state machine, confirmed by reading the 3 entry states; the rest (`SPU_OBJ_*`,
+`S_SCA_OBJ_*`, `S_SVA_OBJ_*`, `S_SRMP_OBJ_*`, `INTR*_OBJ_*`, `VSYNC_OBJ_*`, `PAD_OBJ_*`,
+`PUTCHAR_OBJ_*`, ~15 more small families) are libspu reverb/voice-attribute internals or the
+VSync/interrupt/pad callback machinery, each family sampled 2-3 members before assigning a
+shared disposition) -- kept their Ghidra label, `likely`/`guess`, `(not needed: ...)` per
+family. The CD-driver subsystem (0x80025298-0x80026a5c) got descriptive
+`cdrom_subsystem_*`/`cdrom_*` names (same disposition as the existing CdInit/CdControl/
+CdControlF rows: no CD drive, the host reads the disc image synchronously). A handful of
+one-off `FUN_` addresses got real names from reading their bodies (strncmp's thunk, strlen,
+GetSR, a tiny C++-runtime `operator new` retry loop + its `set_new_handler`, a heap/pool
+allocator init+gc pair, a BIOS-kernel-jump-table patcher for the GPU/video-mode layer).
+
+**field (62 rows, now 798):** the user's explicit 8 (0x8003359c, 0x80038538, 0x80038e64,
+0x80038e8c, 0x80038f38, 0x80039268, 0x8003c360, 0x8003d118) are all real -- a
+map-sub-table-select/offset family, a leader pad-event-pending poll, a voice-queue push
+family (4 convenience wrappers around one full form), a stat percent-adjust-clamped helper,
+and an ordering-table-ring advance helper. ~23 more addresses (0x80020e5c-0x80026a5c) are
+field's *own* duplicate copy of boot's early PsyQ runtime (DrawSync, memcpy, memset, printf,
+ClearImage/LoadImage/StoreImage/MoveImage, ClearOTagR, DrawOTag, PutDrawEnv, PutDispEnv,
+SetDrawArea, FlushCache, the Open/Close/Test/EnableEvent syscalls, write, ResetRCnt, a CD-
+driver init) -- confirmed byte-identical to boot's bodies at the same addresses, so reused
+boot's name/signature/confidence/port verbatim with a note. The rest are field's own game
+code: a resource cache (SLZ-backed, keyed by id), the map-sub-table family's siblings, a
+ScdQueue accessor + two push wrappers, an OT-ring clear/draw pair, a script-opcode table
+lookup, several `actor_misc_*`/`actor_sys_update` helpers (one, `actor_sys_update`, guessed
+only from its position between two already-named `actor_sys_*` rows -- flagged `guess` with
+that caveat spelled out), loader region-size/dump helpers, and a GTE 3x3-matrix-multiply
+wrapper. **Left open (8, real + decompiled, not named):** 0x8003f518 (141 lines),
+0x800410cc (71), 0x80041ce4 (359), 0x80044c8c (230), 0x800452b4 (41), 0x80061cf8 (137),
+0x80079ee4 (106) -- skimmed, no distinguishing call-site/string evidence found yet; and
+0x80047068, a `table`-sourced hit (the first one the new source type ever found) that
+resolves into 0x80046ae4 `fade_update`'s own body as a containment FP, not a separate row.
+
+**title (29 rows, now 741):** the user's 0x80034bac is `item_attr_abs_get` (abs() of a
+signed per-item byte). ~11 more are the libcard File*/memcard BIOS-syscall-thunk family
+(_card_info, _card_async_load_directory, write_card_sector, allow_new_card, FileOpen/Seek/
+Read/Close, FormatDevice, nextfile, firstfile) plus strcpy and strcmp (both real C-runtime
+bodies, not thunks) -- `(not needed: no physical memory card; ...)` / `(PsyQ: runtime) ...`
+respectively. The remaining ~17 are title's own copies of field-style helpers (two
+dual-weapon-state checks, title's own map_sub_table_select/offset pair, an item-table
+index/attribute pair, a most-recently-used list toucher, a free-slot handle-table
+registrator, a fixed-record stream reader, a BIOS-kernel-jump-table patcher for the
+memcard layer) and `inventory_item_data`, confirmed byte-identical to field's
+0x8003c538. The 12 "jal only, no REA" addresses the previous pass already flagged
+(0x80040004-0x80042ff0) are **all** containment FPs: every one resolves (REA's own
+canonical-entry lookup) into `voice_collection` (0x8003fb78), `title_program_main`
+(0x80041db0) or `new_game_sequence` (0x80042cc8), all three already catalogued -- confirmed
+by decompiling all 12 by hand, not assumed from the address pattern alone (credits_3107 has
+the *same* suspicious address set and it resolves to nothing at all there -- see below).
+
+**battle (12 rows, now 944):** 9 small/clear ones (two empty vtable-slot stubs, a
+texture-batch upload loop, a position-jitter calculator, an alloc-size fallback selector +
+its two fixed-mode callers, a UI-reset vtable call, a stat-slot-init pair) plus a trivial
+flag setter and a byte-identical pair of "pick a random variant, spawn it" shot helpers.
+**Left open (51, one subsystem, not 51 mysteries):** 0x80072000-0x80081000ish is a single
+dense boss/attack-pattern AI block -- every function in it spawns one or more "Shot"
+objects via the same FUN_8002fb34 (allocate) / FUN_8002feac (set position) / FUN_8002fe88
+(set motion) / FUN_800103d4 (pick a sprite range) calls with hard-coded offsets, several
+~256-line bodies are near-identical (one spawn-configuration template reused per attack),
+a stat-init block references the string "Bowman", and a pause/active flag (DAT_8006fb07)
+gates most of the block. This matches the `battle_main_loop` partial-port note's "not the
+Shot/Particle pools" -- these are very likely that pool's content, for one specific
+unique encounter not yet identified. Next step: `search_strings` around "Bowman" and
+`procedure_callers`/xrefs on a couple of the family to find which encounter table loads
+this block, *then* name members -- guessing at 51 near-identical bodies one by one without
+that anchor would mostly produce noise. Exact addresses: `scratchpad/catalog/
+fill_battle.py`'s `LEFT_OPEN` set.
+
+**field_sub3103, menu_0ba5, menu_0bb6 (5 rows total):** trivial getters/setters plus
+menu_0bb6's `rank_list_widget_init`/`_page_create`/`_row_format` (a ranking/score-list
+page builder; the other 2 of its 5 candidates are containment FPs into those same two
+real functions, confirmed via a from-scratch ELF since no pre-built one exists for this
+overlay -- see the `psxexe2elf.py --raw` line above).
+
+**credits_3107 (0 rows):** its 11 "jal only" candidates are the exact same suspicious
+address set (0x80040004-0x80041ffc) that turned out to be title's containment-FP cluster --
+but decompiling all 11 against credits_3107's *own* ELF resolved every one to **no
+procedure at all** (empty canonical address, no pseudocode). Confirmed by hand: not a
+function, data a jal-shaped word happened to point into. No rows; this is the clean,
+verified case the method note at the top of "Missing rows" always warned about.
+
+Other fixes on the way: one bad port path (`leader_pad_event_pending` cited a
+non-existent `engine/src/game/field/input.cpp`; it's actually a BIOS pad hot-plug poll with
+no port need -- fixed to `(not needed: ...)`, confirmed via `tools/catalog_coverage.py
+--check` now exits 0 with 0 bad paths).
+
+**Not done, flagged for whoever's next:** `docs/catalog/COVERAGE.md`'s "Partial ports"
+section still lists battle_ovl1984_0's `sound_handle_active`/`voice_pick_victory`/
+`voice_play_result` as `[port partial: ...]` even though the Step 1 log above says that was
+fixed -- checked against the actual committed baseline (`git show a10f166:docs/catalog/
+functions.csv`) and the stale `[port partial:...]` text is still there, meaning that fix
+was never actually saved to disk (same "lost work" pattern this log's Step 2 preamble
+describes for the gap-scan section). Out of scope for this pass (not part of the
+gap-scan/missing-rows mandate); worth re-doing properly next time someone's in those 3
+rows. The ~411 new rows' port cells are mostly `(not needed: ...)`/`(PsyQ: ...)` for
+boot/field/title (same reasoning as their already-ported twins) but weren't all
+individually re-verified against the engine source; battle's 12 + the still-open 51 are
+the real "reached in play, actually unported" candidates once the boss subsystem is
+identified -- see `docs/catalog/COVERAGE.md`'s "Unported, reached in play" section.
+
+### State
+
+`docs/catalog/functions.csv`: 5376 rows (was 4966 at session start -- 411 new rows, plus
+1 corrected existing cell, `leader_pad_event_pending`'s bad port path). `docs/catalog/COVERAGE.md` regenerated in full
+(`tools/catalog_coverage.py` then `tools/catalog_gaps.py` with no args): confirmed 4433,
+likely 722, guess 221; ported/not-needed/PsyQ cover the rest, empty 61 (new rows awaiting a
+port-reachability check), bad path 0, partial 11 (pre-existing, see above), unported 0.
+Gap-scan total: 517 -> 107 (all 107 explained above: confirmed non-functions or real-but-
+deliberately-left-open). No engine code touched; no suites needed (catalog-only). Not
+committed (coordinator commits hourly). `tools/catalog_gaps.py` itself was rewritten (see
+top of this step) -- diff it against `a10f166`'s copy if anyone wants the exact before/after.

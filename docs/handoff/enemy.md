@@ -247,75 +247,151 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   Claude x200 HP attacking, so attack 1 runs and hits at vblank 576): the log is byte for
   byte the same with the original's line and with the fix.
 
-## Archipelago phase 3: proof, batch, docs (fourth AP agent, 2026-10-23 from ~01:30; read this first)
+## Archipelago phase 4, APWorld side (fifth AP agent, 2026-10-23 from ~05:00; read this first)
 
-Tasks (coordinator): 1 suites; 2 the late reachability proof wired into the logic; 3
-generation tests (50+ seeds, world tests, AP general tests, port spot checks); 4 phase-3 steps
-in tools/ap_e2e_so2.sh; 5 docs (apworld.md, field.md types 8 / 9, plan, CHECKLIST); 6 the
-world agent's two questions (Leon 229 in Rena seeds, Celine 74).
+Assignment: open_world (keys per key group, doors in logic, Expel teleporter, starting keys),
+shuffle_shops specials / full (type 10), entrance-shuffle design note, tests (world, AP
+general, 60+ seeds, checker, port spot checks, ap_e2e_so2.sh key + shop), docs; tick phase 4.
+Scratch: scratchpad/enemy/ap5/ (graph.py / graph2.py door regions, steps.py -> steps.json:
+every chapter / step store with its conditions, build.log). Build engine/build-enemy is
+current (rebuilt 05:10, phase-4 port code in).
 
-- **1. Suites: done.** engine/build-enemy (current tree incl. the "!n" hook): ss_tests 78/0,
-  ss_game_tests 104/0, smoke 62/62 (scratchpad/enemy/ap4/*.log). Env: `source
-  scratchpad/enemy/ap4/env.sh` (discs, scratch XDG, SDL drivers, SKIP_REQUIREMENTS_UPDATE).
-- **New hooks (flagged `[enemy agent, AP late proof]`):**
-  - boot/system.cpp: the SS_BATTLE_STUB stand-in calls `ap::on_battle_exit(encounter, 0)`, so
-    sweeps with a seed log boss checks;
-  - field/event_sweep.cpp: `SS_SWEEP_SHOW="G1cf:1,G1c0:2,F157"` prints a `state` line (script
-    globals / flags) after every entry that ends on another map and at settle.
-  - Built in engine/build-enemy; suites to rerun after them.
-- **2. In progress: `tools/ap_late_proof.py`** (new, mine). Running since 03:46 (both games,
-  6 jobs each; logs scratchpad/late_proof/{claude,rena}/, progress {claude,rena}.run.log, done
-  markers {claude,rena}.done). Findings that shaped it:
-  - A bare chapter-60 `--map` state can't leave Fienal: its stair rooms (647-653) pick exits
-    by G[0x1cf] (floor), G[0x1c0] (previous map) and flag 157 (652 / 653 step the floor down /
-    up once per crossing; another trigger clears the latch). So the state is **the user's save
-    at the Final Save Point** (scratchpad/latesave/card.mcd frame 13: chapter 60, step 4000,
-    flag 730, floor 8, previous map 681, 1406 flags) minus every location's "done" flags (378:
-    chest flags, gift guards, cave boss guards); Rena's game = flag 1 cleared + G[0xc4] bytes
-    swapped; party + Rena + Noel. **Not the save's message speed G[0x1b8]** (game_state
-    +0x118): with it the sweep's presses answered choices wrongly (Fun City's old man K25
-    said no).
-  - Nodes after a root are entered by **replaying the route** (SS_SWEEP_PLAY +
-    SS_SWEEP_PLAY_SWEEP). Fienal / cave / stateful maps are nodes per arrival state
-    (SS_SWEEP_SHOW), and an "ok" entry that changes the state (a stair latch) is an edge.
-  - Even so the search can't get below Fienal 6F (rooms keyed by the previous room), so the
-    **roots are 671 and world map 2** (Prima p. 130: the party walks back out of Fienal).
-  - Map 413's sweep looped forever ("main script left for map 416; settle (reload)": the
-    settle timer restarts on each reload). The driver now kills a run after 6 such reloads and
-    resumes after the entry; run timeout 900 s. `--resume` reuses finished node logs
-    (restarted that way at 03:58, 259 nodes kept). The event sweep itself could give up such a
-    settle (menu agent's file; not changed).
-  - When both finish: `tools/ap_late_proof.py --reparse --game claude --game rena` (needs
-    SS_DISC1; writes docs/ap/late_proof.json), then `tools/ap_world_tables.py`, world tests,
-    the batch, the e2e.
-  - Wiring written: ap_world_tables.py `--late` adds `late` (games proven) to chest / gift /
-    boss rows; rules.py `may_hold_progression` (story bosses exempt; drops / joins never;
-    expel_progression off; else proven in the protagonist's game, both under "any").
-- **4. Written, not run:** tools/ap_e2e_so2.sh phase-3 steps (character_items, first_drop,
-  traps 20; plando Celine / Fol Loss Trap on Bob's Tiles 4 / 10; console `fol 10000`, `battle
-  547` = five Shadowflowers, type 14, drop id 1362231310; checks for the join, the trap's 1000
-  Fol, the withheld drop and its check, status "checks 2 / received 3", the tracker's drop).
-  Needs data.py with the proof first (the crate holds Bob's progression item).
-- **5. Docs written:** apworld.md rewritten (placeholders RESULTS_PLACEHOLDER and
-  TESTING_PLACEHOLDER to fill), field.md "Location ids" (types 8 / 9 / 10, join site ids, the
-  battle tables), seed_format.md "Phase 4: Confirmed by the APWorld". Plan / CHECKLIST: after
-  the results.
-- **Phase 4 fields: confirmed** (see "Phase 4 seed fields" below; no port change).
-- **Found and fixed: the cave's gems.** The Cave of Trials doors on maps 751 / 764 take the Red
-  Lotus Gem (317; gifts on 711 and 754) and test the Cracked Gem (289; chest on 771). Shuffled,
-  a door could need a gem placed behind it. items.PUZZLE_ITEMS: world.create_items locks them
-  at their own locations (test_cave_gems_stay). World tests 56/56.
-- **6. Answered (headless):**
-  - Celine's map 74 join is temporary: in Claude's game the Varmillion scene on map 462
-    (chapter 15 step 2400, T7) puts her in reserve whatever flag 112 is, and in Rena's game map
-    126 (step 1000) does (scratchpad/enemy/ap4/celine/run.sh, party dumps). She comes back at
-    125 (flag 112, listed) or 124. So 74 stays unlisted. Note for the world agent: a received
-    Celine who joined early is sent to reserve there too, and returns only through 125 (flag
-    112) or 124.
-  - Leon's 229 0x73dc is listed in rena / any seeds already (row protagonist "rena").
-- **3. Prepared:** scratchpad/enemy/ap4/batch/ (players Claude / Rena with every phase-3 option
-  random, Alice ChecksFinder; run_batch.sh FIRST LAST; check.py: shape, ids, patches, gems,
-  party, progression only where may_hold_progression allows).
+**Running:** the teleporter proof, both games, --jobs 3 each (6 processes), started 05:12:
+`tools/ap_late_proof.py --state teleporter --bin scratchpad/late_proof/teleporter/bin/shattered-stars
+--game G --jobs 3 --work scratchpad/late_proof/teleporter -o scratchpad/late_proof/teleporter/G.json`
+(done markers scratchpad/late_proof/teleporter/{claude,rena}.done; logs G.run.log, per node
+in G/). Afterwards merge: `tools/ap_late_proof.py --state teleporter --reparse --game claude
+--game rena --work scratchpad/late_proof/teleporter` (writes docs/ap/late_proof.json's
+"teleporter" key). If it must be stopped: kill the two driver PIDs from `ps` (exact PID).
+
+**Done:** tools/ap_late_proof.py `--state teleporter` (chapter 38 step 0, flag 730 cleared,
+proof seed with expel_teleporter on, root map 2 only, result under "teleporter").
+
+**Design (decided; implement in this order):**
+1. Data (tools/ap_world_tables.py -> data.py): KEY_GROUPS (35, doors.json order; key N =
+   1..35, names "<Area> Pass"; their 66 door ids); STAGES (story stages with the keys needed to
+   finish each, from steps.json: the area of every chapter/step store per chapter):
+   1 ch3-4 {Arlia}; 2 ch5-8 {Salva, Arlia}; 3 ch9-11 {Cross}; 4 ch12-13 {Cross Cave};
+   5 ch14-15 {Clik, Mars, Herlie}; 6 ch16-17 {Herlie}; 7 ch18-19 {Lacour, Hilton} (maps 434 /
+   467-477 have "Port Hilton" banners but sit in Lacour); 8 ch20-22 {Linga, Sanctuary of
+   Linga}; 9 ch23-25 {Hilton, Lacour, map 231, Hoffmann}; 10 ch26-28 {Lacour Front Line};
+   11 ch29-31 {El Beach, Eluria Colony}; 12 ch32-35 {Eluria Tower} -> disc switch;
+   13 ch36-37 {} (scenes: 618, 619, Central City 248); 14 ch38 {North City}; 15 ch39
+   {Noel's House}; 16 ch40 {Cave of Red Crystal}; 17 ch41 {Central City}; 18 ch42-45 {Fields of
+   Courage, Power, Intelligence, Love (596 = its end), Armlock}; 19 ch46-47 {Central City,
+   L'Aqua}; 20 ch48-51 {map 687 = Fienal's entrance, L'Aqua, Central City}; 21 ch52-56
+   {Armlock, Mihne}; 22 ch57 {Fun City}; 23 ch58-60 {Armlock, L'Aqua, map 687} -> FSP.
+   Non-story groups (no early access): Lasguss Mountain, Mountain Palace (Ashton's quest,
+   Prima pp. 48-56), Cave of Trials Level 1, Secret Charity/Fake Gallery (463), Giveaway.
+   Rows get `group` (early area: unconditional door region of the map, else nearest group),
+   `tele` (games of the teleporter proof), `late_keys` / `tele_keys` (union over games of
+   the world-map entrances on the proof routes to the location's map: target map -> group),
+   gifts `from_chapter` (window lo), story bosses their chapter. SHOP_SLOTS rows (type
+   "shop", id 0x50320000 + (10 << 21) + (shop << 8) + index): every entry of the shops with a
+   site, minus 0x58 (a buy-back list that grows with sales) and the order shops 0x5a-0x5e
+   (the Familiar specialty); `special` = an item no other of these shops sells; reasons from
+   judge() on the site (Lacour's: window, Clik's: time-limited).
+2. Logic (open world): event "Stage k" needs Stage k-1 + the stage's keys; Disc Switch needs
+   stage 12; Return (teleporter, ch 38) = disc switch + Fun City Pass + teleporter on; FSP needs
+   stage 23. Location access = early (Stage s_G - 1 + key G, s_G = first stage needing G,
+   gifts not before from_chapter; story boss: its stage done) OR tele (Expel only: Return +
+   tele_keys) OR late (FSP + late_keys). Starting keys: Arlia + Fun City (+ North City with the
+   teleporter off).
+3. Progression (open world): Expel location only if tele-proven, except our own Expel-story
+   keys, which may also go where late-proven (they must be picked up before the switch anyway);
+   teleporter off: Expel only our Expel-story keys. Nede / Fienal / cave: late-proven (as story
+   mode). Shops: never progression (no price block; documented). Story mode unchanged.
+   Why: an item skipped in Expel is recoverable after the switch only through the teleporter
+   (Fun City Pass in hand from the start), and the teleporter proof says where. The tele proof
+   state has chapter-60 flags, so it is used for Expel maps only (Nede maps test those flags).
+   Residual risks to document: a location whose map opens later than its area's first story
+   visit; a map closed for a while mid-story (Lacour 25-59 #5 entrance, Mars ch 15, the arena
+   route at ch 57 step 3000 / "chapter != 57": nothing but the Fun City Pass is needed in 57).
+4. Pool: keys (minus starting) replace as many filler items; shop slots add their stock item.
+   Seed: options world_mode / expel_teleporter (false in story) / shuffle_shops; `doors` = the
+   66 entrances with their key (open world); key items {"kind":"key","key":N}; shop checks
+   {type shop, shop, index, item}; validate with doors.validate_doors in the tests.
+
+## Archipelago phase 3: proof, batch, docs (fourth AP agent, 2026-10-23 ~01:30-05:00; read this first)
+
+All six tasks done; phase 3 ticked in CHECKLIST.md. Nothing of mine is running (no server,
+sweeps or builds). Env for everything below: `source scratchpad/enemy/ap4/env.sh` (discs,
+scratch XDG, SDL drivers, SKIP_REQUIREMENTS_UPDATE). Build: engine/build-enemy (current).
+
+- **1. Suites** (engine/build-enemy, current tree with my hooks): ss_tests 78/0, ss_game_tests
+  107/0, smoke 73/73 (scratchpad/enemy/ap4/*.log). Before the hooks: 78 / 104 / 62, all green.
+- **Hooks (flagged `[enemy agent, AP late proof]`):**
+  - boot/system.cpp: the SS_BATTLE_STUB stand-in calls `ap::on_battle_exit(encounter, 0)`;
+  - field/event_sweep.cpp: `SS_SWEEP_SHOW="G1cf:1,G1c0:2,F157"` prints a `state` line after
+    every entry and at settle (script globals hex:bytes, flags).
+- **2. The late proof: done.** `tools/ap_late_proof.py` (new) -> `docs/ap/late_proof.json`
+  (new, 284 KB) -> `tools/ap_world_tables.py --late` (rows get `late`: games proven) ->
+  `apworld/so2/rules.py may_hold_progression` (story bosses exempt; drops / joins never;
+  expel_progression off: no Expel; else proven in the protagonist's game, both under "any").
+  - State: the user's save at the Final Save Point (scratchpad/latesave/card.mcd frame 13;
+    chapter 60, step 4000, flag 730, floor 8, previous map 681), minus 378 "done" flags
+    (chests, gift guards, cave boss guards), minus the save's message speed G[0x1b8] (with it
+    the sweep answered choices wrongly); Rena's game = flag 1 cleared + G[0xc4] swapped;
+    party + Rena + Noel. Roots 671 and world map 2 (the search can't walk below Fienal 6F:
+    stair rooms keyed by the previous room; Prima p. 130: the party walks back out).
+  - Route replay (SS_SWEEP_PLAY + SS_SWEEP_PLAY_SWEEP) from the root; maps that read
+    G1cf / G1c0 / flag 157 are nodes per value read; a run stuck in a settle reload loop
+    (maps 413, 250, 292, 30, 330, 36, 421, 440, 458, 705, 751, 807) is killed after 6 reloads
+    and resumed after the entry; `--resume` reuses finished logs.
+  - **Result:** 610 maps (732 / 731 nodes), both games the same 278 of 453: chests 258 / 311
+    (Expel 122/155, Nede 46/52, Fienal 17/26, cave 73/78), gifts 9 / 101, bosses 11 / 41 (cave
+    10/13). Unproven chests: Eluria Tower 23 (never reached), old Clik 4, map 387, Hoffmann
+    502 x4, Mountain Palace 367 x2, North City 593 x3, Field of Intelligence 550 x2, Fienal
+    647 / 673 x9, cave 710 x2, 740, 798, 799.
+  - Rerun: `--jobs 3` per game (coordinator: total 6 game processes), about an hour; then
+    `--reparse --game claude --game rena` and `tools/ap_world_tables.py`.
+- **Fixed: the cave's gems** (items.PUZZLE_ITEMS = 289, 317): world.create_items locks them at
+  their own locations (doors on 751 / 764 need them).
+- **Fixed: the seed's `items` table** now lists every item of this player's wherever it is
+  placed (`seed_data`): Celine plando'd into Bob's world arrived as "not in the seed's table"
+  and was given as nothing. seed_format.md says so; check_seed tests it.
+- **3. Tests:** world tests 66 passed (4793 subtests; new classes TestLateProofAny / Rena,
+  test_cave_gems_stay); AP general 379 passed (116824 subtests); batch 60 seeds x (Claude,
+  Rena + ChecksFinder) = 120 .apso2, 101 option combinations, 258-560 locations, check.py 0
+  errors, 1295 progression items all at allowed locations (scratchpad/enemy/ap4/batch:
+  run_batch.sh FIRST LAST, check.py OUT; out_v1 = the run before the items fix, which
+  check.py flags). Port spot checks (scratchpad/enemy/ap4/spot/run.sh SEED NAME): 3 seeds:
+  joins, Fol Loss 1000 of 10000, exp x2/x6/x8 and fol x6/x7/x9, Kitty (encounter 110, type
+  90) first drop withheld + checked; join site 71 (Ashton) checked and held back.
+- **4. tools/ap_e2e_so2.sh: 19/19** (twice): character_items / first_drop / traps 20; plando
+  Celine + Fol Loss Trap on Bob's Tiles 4 / 10; `fol 10000` at 730, `battle 110` at 1600
+  (two Kitties, drop id 1362231386; 547 Shadowflowers loses with Claude alone), `battle 539`
+  at 4400, 8000 frames. Checks: plando items in the pool, party has Celine, join, trap 1000,
+  drop withheld + checked, status "checks 2 / received 3", tracker sees crate + drop.
+- **5. Docs:** apworld.md rewritten (locations, ids, the party, logic with the late proof,
+  options, testing); field.md "Location ids" (types 8 / 9 / 10, join site ids, battle tables);
+  seed_format.md (items table rule; Phase 4 "Confirmed by the APWorld"); archipelago_plan.md
+  phase 3 + finishability point 3; CHECKLIST phase 3 ticked.
+- **6. Answered:** Celine's map 74 join is temporary (Claude's game: Varmillion scene 462 T7,
+  chapter 15 step 2400, either flag 112; Rena's game: 126 step 1000; party dumps,
+  scratchpad/enemy/ap4/celine/run.sh), so 74 stays unlisted. Leon 229 0x73dc is listed in
+  rena / any seeds.
+- **Phase 4 seed fields: confirmed**, no port change (seed_format.md "Phase 4").
+- **For the world agent (port), not changed by me:**
+  - a received Celine who joined early is put in reserve by the Mars scene (462 / 126) like
+    the original's, and returns only via 125 (flag 112) or 124; with flag 112 clear she stays
+    in reserve although received;
+  - the debug console's `battle N` typed on the title screen (after a game over) segfaults
+    (seen in an e2e run; debug path only);
+  - `--battle-end F:0` against encounter 547 with Claude alone ends in outcome 2 after the
+    result screen (the party fell before frame 60): a debug-option artifact.
+  - The event sweep's settle reload loop (map 413 -> 416 ...) could be bounded in
+    event_sweep.cpp (menu agent's file).
+
+### Files changed this turn (none committed)
+- New: tools/ap_late_proof.py, docs/ap/late_proof.json.
+- Changed: tools/ap_world_tables.py (--late), tools/ap_e2e_so2.sh (phase 3), apworld/so2/
+  {data.py (regenerated, `late`), items.py (PUZZLE_ITEMS), rules.py (rewritten), world.py
+  (gems, items table), test/test_world.py}, docs/ap/{apworld.md, field.md, seed_format.md},
+  docs/archipelago_plan.md, docs/CHECKLIST.md, docs/handoff/enemy.md.
+- Hooks in others' files: engine/src/game/boot/system.cpp, engine/src/game/field/event_sweep.cpp.
+- Scratch: scratchpad/late_proof/ (bin/, claude/, rena/ logs, proof.apso2, *.run*.log),
+  scratchpad/enemy/ap4/ (env.sh, suites logs, batch/, spot/, celine/, e2e logs).
 
 ## Archipelago phase 2c / 3 (third AP agent, 2026-10-23 ~02:30; read this first)
 

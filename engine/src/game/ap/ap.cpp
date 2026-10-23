@@ -342,6 +342,21 @@ const char* protagonist_refuses(int id) {
   return nullptr;
 }
 
+bool character_received(const Runtime& r, int id) {
+  return std::find(r.state.characters.begin(), r.state.characters.end(), id) != r.state.characters.end();
+}
+
+// A received Celine travels with the party: script flag 112, which map 131 stores from
+// party_has(Celine) as chapter 15 begins and Mars (462 / 125 / 126) reads (keeps_flag).
+constexpr int kCelineKeptFlag = 112;
+constexpr int kCeline = 3;
+void keep_story_flags(const Runtime& r) {
+  field::FieldGlobals& g = field::globals();
+  if (!r.seed.character_items || g.script_flags == nullptr || !character_received(r, kCeline)) return;
+  if (!script_flag(kCelineKeptFlag)) log("Celine received: script flag 112 set (she travels with the party)");
+  g.script_flags[kCelineKeptFlag >> 3] = static_cast<u8>(g.script_flags[kCelineKeptFlag >> 3] | 1 << (kCelineKeptFlag & 7));
+}
+
 // The endings: after the final boss (539 / 540), or the endings flow itself (script flag
 // 0x2f1: map 581 plays the endings and the credits while it is set; docs/notes/endings.md).
 bool in_ending(const Runtime& r) { return r.ending || script_flag(0x2F1); }
@@ -400,6 +415,7 @@ bool give(const ItemDef& it, std::string* note = nullptr) {
     if (std::find(r.state.characters_waiting.begin(), r.state.characters_waiting.end(), it.character) ==
         r.state.characters_waiting.end())
       r.state.characters_waiting.push_back(it.character);
+    keep_story_flags(r);
     return true;
   }
   if (it.kind == "trap") {
@@ -779,6 +795,7 @@ void free_play_update() {
       if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
     if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
   }
+  keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
   // Placeholder messages that no window showed: a banner each instead.
   if (runtime::Runtime::get().vblanks() != r.override_vblank) flush_override_lines(r);
   // One thing per banner: an ambush (once its banner has gone), a received character
@@ -1165,6 +1182,48 @@ bool on_party_add(int character, int at, int call_at) {
     return false;
   }
   return true;
+}
+
+namespace {
+
+// The story's partings for good (docs/ap/field.md "Received members and the story's leaves"):
+// each is a call of the map's leave routine (pop member, pop "unequip"; with "unequip" set the
+// member's accessories, slots 5 / 6, come off first; then ext 0xaf) after which no scene adds the
+// member back. The site is the call (the innermost frame's return - 4), as for join sites.
+struct Parting {
+  int map;
+  int at;
+  int id;  // party id
+  const char* what;
+};
+constexpr Parting kPartings[] = {
+    {524, 0x72BC, 3, "Cross Cave, \"Decide against it\""},       // chapter 13 step 0, choice 1
+    {462, 0x7030, 3, "Mars sends Celine home (flag 112 clear)"},  // chapter 15 step 2400, Claude's game
+    {234, 0x6EB0, 8, "Eluria colony, \"Waiting here is better\""},  // chapter 31 step 1000, choice 0
+    {479, 0x8250, 9, "Hoffmann Ruins, \"This is where we part\""},  // chapter 24 step 3000, choice 1
+};
+}  // namespace
+
+void on_party_remove(int character, int at, int call_at) {
+  Runtime& r = rt();
+  if (!r.on || !r.seed.character_items) return;
+  const int id = character + 1;
+  if (id < 1 || id > kCharacterCount || !character_received(r, id)) return;
+  const field::FieldGlobals& g = field::globals();
+  const int map = g.game_state != nullptr ? rd16s(g.game_state + 0x1A) : -1;
+  for (const Parting& p : kPartings) {
+    if (p.map != map || p.id != id || (p.at != call_at && p.at != at)) continue;
+    auto& w = r.state.characters_waiting;
+    if (std::find(w.begin(), w.end(), id) == w.end()) w.push_back(id);
+    log(std::string(character_name(id)) + " leaves at map " + std::to_string(map) + " (" + p.what +
+        "): received, so they rejoin at the next free play");
+    return;
+  }
+}
+
+bool keeps_flag(int flag) {
+  const Runtime& r = rt();
+  return flag == kCelineKeptFlag && r.on && r.seed.character_items && character_received(r, kCeline);
 }
 
 bool party_has_character(int id) { return slot_of_character(id) >= 0; }

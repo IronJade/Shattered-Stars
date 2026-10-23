@@ -89,6 +89,10 @@ const u8* field_data(u32 address) { return program_data(kFieldProgramEntry, addr
 
 FieldGlobals& globals() { return g_field; }
 Field* field_program() { return g_program; }
+void field_program_delete(Field* f) {
+  if (g_program == f) g_program = nullptr;
+  delete f;
+}
 
 // field_construct (0x8004880c): the field program starts from a clean slate each time
 // it runs (after the title, after a battle).
@@ -766,7 +770,7 @@ void field_update(Field* f) {
       sound_stop(g.sound);
       psyq::ResetGraph(1);
       psyq::SetDispMask(0);
-      delete f;
+      field_program_delete(f);
       boot_restart_title(g.system);
     default:
       // Every state the original's switch has (0-0x21) is handled above.
