@@ -3,6 +3,7 @@
 //   shattered-stars-setup                    (setup.exe on Windows)
 //   shattered-stars-setup --from-game        the game opened it and waits: Save & Play
 //                                            returns to the game (exit 0), Quit exits 1
+//   shattered-stars-setup --version / --help   print the version (or usage) and exit
 //
 // It edits config.ini (launcher/config.h): the disc images, display, sound, memory cards
 // and the mods folder; setup_ui.h has the pages.
@@ -46,8 +47,9 @@ namespace {
 using namespace ss;
 
 int usage() {
+  std::fprintf(stderr, "Shattered Stars Setup %s\n", SS_VERSION);
   std::fprintf(stderr,
-               "usage: shattered-stars-setup [--from-game] [--screenshot FILE] [--frames N] [--page NAME]\n"
+               "usage: shattered-stars-setup [--help] [--version] [--from-game] [--screenshot FILE] [--frames N] [--page NAME]\n"
                "                             [--set KEY=VALUE] [--state NAME] [--do A,B,...] [--renderer gl|sdl]\n");
   return 2;
 }
@@ -207,6 +209,16 @@ constexpr unsigned kGlColorBufferBit = 0x4000, kGlRgba = 0x1908, kGlUnsignedByte
 
 int main(int argc, char** argv) {
   launcher::attach_console(false);  // started from a terminal: messages go there
+  for (int i = 1; i < argc; ++i) {  // --version / --help: print and exit, before anything else
+    if (std::strcmp(argv[i], "--version") == 0) {
+      std::fprintf(stderr, "Shattered Stars Setup %s\n", SS_VERSION);
+      return 0;
+    }
+    if (std::strcmp(argv[i], "--help") == 0) {
+      usage();
+      return 0;
+    }
+  }
   setup::Options options;
   std::string screenshot, renderer_choice = "gl";
   int frames = 0;

@@ -140,7 +140,7 @@ void cb_wave(Shot* s) {
   s->anim = 1;
   s->layer = 2;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  shot_draw_and_box(s, 2, 0x2080);
+  shot_draw_with_shadow(s, 2, 0x2080);
   if (g.flags != 0) return;
   if (shot_image(s) == nullptr && s->power != 0) shot_image_set(s, afterimage_create(s, 6, kTrailRgb, 0));
   if (shot_fade_out(s) != 0) {
@@ -180,7 +180,7 @@ void cb_lunge_wave(Shot* s) {
   s->anim = static_cast<u16>(s->power + 2);
   s->layer = 2;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (shot_image(s) == nullptr) shot_image_set(s, afterimage_create(s, 6, kTrailRgb, 0));
   if (shot_fade_out(s) != 0) {
@@ -213,7 +213,7 @@ void cb_spike(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 1;
   s->size[2] = s->owner->size[2];
-  if (frame_is_end(shot_draw_and_box(s, 6, 0xFFFFFFFF))) {
+  if (frame_is_end(shot_draw_with_shadow(s, 6, 0xFFFFFFFF))) {
     shot_kill(s);
     return;
   }
@@ -230,7 +230,7 @@ void cb_ground_wave(Shot* s) {
   s->anim = 2;
   s->loop_limit = 1;
   s->size[2] = s->owner->size[2];
-  if (frame_is_end(shot_draw_and_box(s, 6, 0xFFFFFFFF))) {
+  if (frame_is_end(shot_draw_with_shadow(s, 6, 0xFFFFFFFF))) {
     shot_kill(s);
     return;
   }
@@ -277,7 +277,7 @@ void cb_slash(Shot* s) {
   s->layer = 2;
   s->loop_limit = 1;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  if (frame_is_end(shot_draw_and_box(s, 0, 0xFFFFFFFF))) {
+  if (frame_is_end(shot_draw_with_shadow(s, 0, 0xFFFFFFFF))) {
     shot_kill(s);
     return;
   }
@@ -298,7 +298,7 @@ void cb_flying_slash(Shot* s) {
   s->anim = 4;
   s->layer = 2;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  shot_draw_and_box(s, 2, 0x2080);
+  shot_draw_with_shadow(s, 2, 0x2080);
   if (g.flags != 0) return;
   bool grow = true;
   if (shot_image(s) == nullptr) {
@@ -539,7 +539,7 @@ void DiasUnit::move3() {
       if (frame == 2) vel[0] = step(0x20);
       if (frame == 3) vel[0] = step(0x40);
       if (frame == 4) {
-        if (Sprite* sp = unit_play_anim_ex(this, 2, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 2, 1)) {
           sprite_set_pos_v(sp, pos);
           sp->layer = 2;
           sp->facing[0] = facing[0];
@@ -743,7 +743,7 @@ void DiasUnit::move6() {
     if (c < 1) {
       counters[0] = c + 6;
       ++counters[3];
-      if (Sprite* sp = unit_play_anim(this, 2)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 2)) {
         sprite_set_pos(sp, bobj_front_x(this, 0x30), pos[1] - 0xB4000, pos[2]);
         sp->layer = 3;
         sp->facing[0] = facing[0];
@@ -785,7 +785,7 @@ void DiasUnit::move7() {
   } else {
     if (counters[1] == 0) {
       counters[1] = 1;
-      if (Sprite* sp = unit_play_anim_ex(this, 4, 1)) sprite_set_pos_v(sp, pos);
+      if (Sprite* sp = unit_spawn_sprite_ex(this, 4, 1)) sprite_set_pos_v(sp, pos);
     }
     if (counters[1] <= lvl + 1 && 2 < frame) {
       counters[2] -= g.frame_ticks;
@@ -830,7 +830,7 @@ void DiasUnit::move8() {
     const int n = collider_attack_overlaps(this, found, pts, 0);
     if (n != 0 && hit_landed == 0) {
       unit_attack_targets(this, n, found, pts, lvl * 0x80 + 0x200, 9999, 0);
-      if (Sprite* sp = unit_play_anim(this, 4)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 4)) {
         sprite_set_pos(sp, pts[0].x, pos[1], pos[2]);
         sprite_set_fade(sp, 0x80, -4, 8);
         sp->layer = 3;
@@ -849,7 +849,7 @@ void DiasUnit::move8() {
     ++counters[1];
     bobj_anim_reset(this);
     if (counters[1] == 2) {
-      if (Sprite* sp = unit_play_anim(this, 5)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 5)) {
         sprite_set_pos(sp, bobj_front_x(this, 0xF0), pos[1] - 0x48000, pos[2]);
         sprite_set_fade(sp, 0x80, -4, 4);
         sp->layer = 3;

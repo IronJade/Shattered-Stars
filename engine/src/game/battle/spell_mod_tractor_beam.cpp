@@ -174,7 +174,7 @@ void tractor_beam(SpellCast* sc) {
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       battle_flash_set(sc, 0x50, 0x50, 0x50);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, u->pos, 0xC00, 0xE3, 0x800, 0x14, 0x80, 5);
         bsfx_play_ui(0x28);
       }
@@ -243,7 +243,7 @@ void tractor_beam(SpellCast* sc) {
         ++moving;
         if (v->pos[1] < g_lift.home_y[i] + v->size[1] * -0x2000) continue;
         if ((v->flags & 0x20) != 0) {
-          screen_shake(6, 4, 0x10);
+          screen_shake_vertical(6, 4, 0x10);
           if (Shot* s = shot_spawn_callback_always(landing_ring)) {
             s->pos[0] = v->pos[0];
             s->pos[1] = bobj_ground_height(v);

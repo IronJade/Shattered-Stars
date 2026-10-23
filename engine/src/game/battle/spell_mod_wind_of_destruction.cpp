@@ -367,7 +367,7 @@ void wind_of_destruction(SpellCast* sc) {
         for (int i = 0; i < 3; ++i) {
           int anim = 0x19;
           if (i == 0) anim = static_cast<int>(rng_range(3)) + 0x16;
-          if (Sprite* sp = unit_play_anim(c, anim)) {
+          if (Sprite* sp = unit_spawn_sprite(c, anim)) {
             sprite_set_pos_v(sp, at);
             sprite_set_fade(sp, 0x80, -2, 8);
             const s32 scale = i == 2 ? 12000 : 0x2000;
@@ -455,7 +455,7 @@ void wind_of_destruction(SpellCast* sc) {
       const s32 at[3] = {0, static_cast<s32>(0xFFC18000), static_cast<s32>(0xFFE0C000)};
       camera_move_to(g.camera, at, 0xB1C, 0x1C7, 0x1000, 0x168, 0x80, 5);
       for (int i = 0; i < 0x38; ++i) {
-        Sprite* sp = unit_play_anim(c, static_cast<int>(rng_range(4)) + 0x10);
+        Sprite* sp = unit_spawn_sprite(c, static_cast<int>(rng_range(4)) + 0x10);
         if (sp == nullptr) continue;
         sprite_set_pos_v(sp, c->pos);
         const Vec4 v = vec_random_around(kZeroVector, 0x18);

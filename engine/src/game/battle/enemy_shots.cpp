@@ -19,7 +19,7 @@ namespace {
 void shot_k27_tossed_item(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = static_cast<u16>(s->p128);
-  shot_draw_and_box_ground(s, 4, 0xFFFFFFFF);
+  shot_draw_with_height_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   shot_fade_out(s);  // (its result is not looked at)
   bobj_move(s, s->vel);

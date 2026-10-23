@@ -1,85 +1,31 @@
 #include "game/field/mods.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
-#include <span>
-#include <sstream>
 #include <string>
 
 #include "game/ap/ap.h"
+#include "mods/catalog.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::field {
 namespace {
 
-enum class Kind { Script, Item, Shop, Enemy };
+using ss::mods::Kind;
+using ss::mods::kEnemyRecord;
+using ss::mods::kItemRecord;
 
-struct Patch {
-  Kind kind = Kind::Script;
-  int target = 0;    // map, item, shop or enemy type
-  u32 where = 0;     // script word, record byte offset, or stock index
-  int size = 4;      // bytes compared and written (records)
-  u32 expected = 0;
-  u32 value = 0;
-  std::string at;    // file:line, for the log
+struct Patch : ss::mods::PatchLine {
+  std::string at;             // file:line (loose), id/file:line (package), seed:N, for the log
+  int source = -1;            // the catalog entry; -1 for the seed
+  int index = 0;              // in the list
+  std::string overridden_by;  // a later mod's line replaces this one (docs/notes/mods.md section 4)
+  std::string same_as;        // an earlier line makes the same change
+  std::vector<int> same_place;  // the other lines at this place, in order
 };
 
-constexpr size_t kItemRecord = 0x30;
-constexpr size_t kEnemyRecord = 0x5C;
-
-bool parse_number(const std::string& s, u32* out) {
-  if (s.empty()) return false;
-  char* end = nullptr;
-  const long long v = std::strtoll(s.c_str(), &end, 0);
-  if (end == nullptr || *end != 0) return false;
-  *out = static_cast<u32>(v);
-  return true;
-}
-
-struct FieldName {
-  const char* name;
-  u32 offset;
-  int size;
-};
-constexpr FieldName kItemFields[] = {{"price", 0x00, 4}, {"atk", 0x08, 2},    {"def", 0x10, 2},  {"amount", 0x19, 1},
-                                     {"effect", 0x28, 1}, {"type", 0x2A, 1}, {"sell", 0x2D, 1}};
-constexpr FieldName kEnemyFields[] = {{"hp", 0x00, 4},     {"mp", 0x04, 4},         {"exp", 0x08, 4},
-                                      {"fol", 0x0C, 4},    {"speed", 0x16, 2},      {"drop1", 0x18, 2},
-                                      {"drop2", 0x1A, 2},  {"atk", 0x1C, 2},        {"def", 0x1E, 2},
-                                      {"int", 0x20, 2},    {"level", 0x24, 2},      {"eva", 0x26, 2},
-                                      {"acc", 0x28, 2},    {"guts", 0x36, 1},       {"drop1_odds", 0x37, 1},
-                                      {"drop2_odds", 0x38, 1}};
-
-// A field name, "OFFSET" or "OFFSET:SIZE"; the default size by record layout.
-bool parse_field(const std::string& s, Kind kind, u32* offset, int* size) {
-  for (const FieldName& f : kind == Kind::Item ? std::span<const FieldName>(kItemFields)
-                                                : std::span<const FieldName>(kEnemyFields)) {
-    if (s == f.name) {
-      *offset = f.offset;
-      *size = f.size;
-      return true;
-    }
-  }
-  const auto colon = s.find(':');
-  if (!parse_number(s.substr(0, colon), offset)) return false;
-  if (colon != std::string::npos) {
-    u32 n = 0;
-    if (!parse_number(s.substr(colon + 1), &n) || (n != 1 && n != 2 && n != 4)) return false;
-    *size = static_cast<int>(n);
-  } else if (kind == Kind::Item) {
-    *size = *offset == 0 ? 4 : (*offset >= 4 && *offset < 0x14) ? 2 : 1;
-  } else {
-    *size = *offset < 0x10 ? 4 : ((*offset < 0x2A) || *offset == 0x3A) ? 2 : 1;
-  }
-  const size_t limit = kind == Kind::Item ? kItemRecord : kEnemyRecord;
-  return *offset + static_cast<u32>(*size) <= limit;
-}
-
-u32 mask(int size) { return size == 4 ? 0xFFFFFFFFu : (1u << (size * 8)) - 1; }
 u32 read_le(const u8* p, int size) {
   u32 v = 0;
   for (int i = 0; i < size; ++i) v |= static_cast<u32>(p[i]) << (8 * i);
@@ -89,41 +35,59 @@ void write_le(u8* p, int size, u32 v) {
   for (int i = 0; i < size; ++i) p[i] = static_cast<u8>(v >> (8 * i));
 }
 
-// One patch line (comment already stripped); false when it is not understood.
-bool parse_line(const std::string& line, const std::string& at, Patch* out) {
-  std::istringstream fields(line);
-  std::string kind, a, b, c, d, extra;
-  if (!(fields >> kind)) return false;
-  Patch p;
-  p.at = at;
-  u32 target = 0;
-  bool ok = static_cast<bool>(fields >> a >> b >> c >> d) && !(fields >> extra) && parse_number(a, &target) &&
-            parse_number(c, &p.expected) && parse_number(d, &p.value);
-  if (ok) {
-    if (kind == "script") {
-      p.kind = Kind::Script;
-      ok = parse_number(b, &p.where);
-    } else if (kind == "item") {
-      p.kind = Kind::Item;
-      ok = parse_field(b, p.kind, &p.where, &p.size) && target >= 1 && target < 0x400;
-    } else if (kind == "shop") {
-      p.kind = Kind::Shop;
-      ok = parse_number(b, &p.where) && p.where < 0x100;
-    } else if (kind == "enemy") {
-      p.kind = Kind::Enemy;
-      ok = parse_field(b, p.kind, &p.where, &p.size);
-    } else {
-      ok = false;
+std::filesystem::path utf8_path(const std::string& s) {
+  return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(s.data()), s.size()));
+}
+
+// The game's log of the load order (only when there are packages: with loose patches
+// alone the log is as it always was).
+void log_order(const ss::mods::Catalog& catalog, const std::vector<ss::mods::Slot>& order) {
+  std::string text;
+  for (const ss::mods::Slot& s : order) {
+    const ss::mods::Entry& e = catalog.entries[static_cast<size_t>(s.entry)];
+    if (!s.enabled) continue;
+    if (!text.empty()) text += ", ";
+    text += e.loose ? std::string(ss::mods::kLooseId) + " " + std::to_string(e.files.size()) + " file(s)"
+                    : e.id + " " + e.manifest.version;
+  }
+  std::fprintf(stderr, "[mods] load order: %s\n", text.empty() ? "(nothing enabled)" : text.c_str());
+  for (const ss::mods::Slot& s : order) {
+    const ss::mods::Entry& e = catalog.entries[static_cast<size_t>(s.entry)];
+    if (e.loose) continue;
+    if (!s.enabled)
+      std::fprintf(stderr, "[mods] %s %s is installed but not enabled (setup's Mods page enables it)\n", e.id.c_str(),
+                   e.manifest.version.c_str());
+    else if (!e.usable())
+      std::fprintf(stderr, "[mods] %s: %s; not loaded\n", e.id.c_str(), e.error.c_str());
+  }
+}
+
+void log_conflicts(const std::vector<ss::mods::Line>& lines, const ss::mods::Analysis& an) {
+  using ss::mods::Relation;
+  for (const ss::mods::Conflict& c : an.conflicts) {
+    const ss::mods::Line& a = lines[c.first];
+    const ss::mods::Line& b = lines[c.second];
+    const std::string place = ss::mods::describe_place(a.patch);
+    switch (c.relation) {
+      case Relation::kOverride:
+        std::fprintf(stderr, "[mods] conflict: %s: %s is overridden by %s (later in the load order)\n", place.c_str(),
+                     a.label.c_str(), b.label.c_str());
+        break;
+      case Relation::kMismatch:
+        std::fprintf(stderr, "[mods] conflict: %s: %s and %s expect different values (%#x, %#x); at most one applies\n",
+                     place.c_str(), a.label.c_str(), b.label.c_str(), a.patch.expected, b.patch.expected);
+        break;
+      case Relation::kOverlap:
+        std::fprintf(stderr, "[mods] conflict: %s (%s) and %s (%s) overlap; the first applies first\n",
+                     a.label.c_str(), place.c_str(), b.label.c_str(), ss::mods::describe_place(b.patch).c_str());
+        break;
+      case Relation::kSeedWins:
+        std::fprintf(stderr, "[mods] conflict: %s: the Archipelago seed changes it too (%s); %s is skipped\n",
+                     place.c_str(), a.label.c_str(), b.label.c_str());
+        break;
+      default: break;  // the same change, a line building on another, two lines of one mod: no news
     }
   }
-  if (!ok) return false;
-  p.target = static_cast<int>(target);
-  if (p.kind == Kind::Item || p.kind == Kind::Enemy) {
-    p.expected &= mask(p.size);
-    p.value &= mask(p.size);
-  }
-  *out = p;
-  return true;
 }
 
 const std::vector<Patch>& patches() {
@@ -131,38 +95,40 @@ const std::vector<Patch>& patches() {
   static bool loaded = false;
   if (loaded) return list;
   loaded = true;
-  auto add = [&](std::string line, const std::string& at) {
-    if (const auto hash = line.find('#'); hash != std::string::npos) line.resize(hash);
-    if (line.find_first_not_of(" \t\r") == std::string::npos) return;
-    Patch p;
-    if (!parse_line(line, at, &p)) {
-      std::fprintf(stderr, "[mods] %s: not understood: %s\n", at.c_str(), line.c_str());
-      return;
-    }
-    list.push_back(p);
-  };
+  std::vector<ss::mods::Line> lines;
+  std::vector<ss::mods::BadLine> bad;
   // An Archipelago seed's edits (game/ap: --ap-seed / config ap_seed) come first.
   const std::vector<std::string>& seed_lines = ap::seed_patch_lines();
-  for (size_t i = 0; i < seed_lines.size(); ++i) add(seed_lines[i], "seed:" + std::to_string(i + 1));
+  for (size_t i = 0; i < seed_lines.size(); ++i)
+    ss::mods::add_line(seed_lines[i], "seed:" + std::to_string(i + 1), -1, &lines, &bad);
+  // Then the mods folder's enabled entries in load order (mods/catalog.h): with no
+  // packages, the loose *.patch files in name order, as always.
   auto& rt = runtime::Runtime::get();
   std::string dir = rt.mods_dir;
   if (const char* env = std::getenv("SS_MODS_DIR"); env && *env) dir = env;
-  std::error_code ec;
-  const bool dir_ok = !dir.empty() && std::filesystem::is_directory(dir, ec);
-  if (dir_ok) {
-    std::vector<std::filesystem::path> files;
-    for (const auto& e : std::filesystem::directory_iterator(dir, ec))
-      if (e.is_regular_file() && e.path().extension() == ".patch") files.push_back(e.path());
-    std::sort(files.begin(), files.end());
-    for (const auto& path : files) {
-      std::ifstream in(path);
-      int line_no = 0;
-      for (std::string line; std::getline(in, line);) {
-        ++line_no;
-        add(line, path.filename().string() + ":" + std::to_string(line_no));
-      }
-    }
+  std::string order_text = rt.mod_order;
+  if (const char* env = std::getenv("SS_MOD_ORDER")) order_text = env;
+  const ss::mods::Catalog catalog = ss::mods::scan(dir.empty() ? std::filesystem::path() : utf8_path(dir), SS_VERSION);
+  const bool dir_ok = catalog.folder_exists;
+  const std::vector<ss::mods::Slot> order = ss::mods::resolve_order(catalog, order_text);
+  if (catalog.has_packages()) log_order(catalog, order);
+  ss::mods::read_lines(catalog, order, &lines, &bad);
+  for (const ss::mods::BadLine& b : bad)
+    std::fprintf(stderr, "[mods] %s: not understood: %s\n", b.label.c_str(), b.text.c_str());
+  const ss::mods::Analysis an = ss::mods::analyse(lines);
+  list.reserve(lines.size());
+  for (size_t i = 0; i < lines.size(); ++i) {
+    Patch p;
+    static_cast<ss::mods::PatchLine&>(p) = lines[i].patch;
+    p.at = lines[i].label;
+    p.source = lines[i].source;
+    p.index = static_cast<int>(i);
+    if (an.overridden_by[i] >= 0) p.overridden_by = lines[static_cast<size_t>(an.overridden_by[i])].label;
+    if (an.redundant_with[i] >= 0) p.same_as = lines[static_cast<size_t>(an.redundant_with[i])].label;
+    p.same_place = an.same_place[i];
+    list.push_back(std::move(p));
   }
+  log_conflicts(lines, an);
   if (!dir_ok && seed_lines.empty()) return list;
   const ModsSummary s = mods_summary();
   std::string from = dir_ok ? dir : "";
@@ -172,11 +138,42 @@ const std::vector<Patch>& patches() {
   return list;
 }
 
+// A line another one replaces (a later mod's change) or makes unnecessary (the same
+// change earlier): logged once, never applied.
+bool resolved_elsewhere(const Patch& p) {
+  if (!p.overridden_by.empty()) {
+    runtime::Runtime::get().log_once("mods:" + p.at, "[mods] " + p.at + ": overridden by " + p.overridden_by +
+                                                         " (later in the load order); not applied");
+    return true;
+  }
+  if (!p.same_as.empty()) {
+    runtime::Runtime::get().log_once("mods:" + p.at, "[mods] " + p.at + ": the same change as " + p.same_as +
+                                                         "; nothing to do");
+    return true;
+  }
+  return false;
+}
+
+// A later line at the same place leaves 'found' there (a chain of mods): applied already.
+bool later_holds(const Patch& p, u32 found) {
+  const std::vector<Patch>& all = patches();
+  for (int j : p.same_place)
+    if (j > p.index && all[static_cast<size_t>(j)].value == found) return true;
+  return false;
+}
+
 void note_skip(const Patch& p, const std::string& what, u32 found) {
+  // Name the earlier line that put the value there, when one did (a conflict between mods).
+  std::string why;
+  const std::vector<Patch>& all = patches();
+  for (int j : p.same_place) {
+    const Patch& q = all[static_cast<size_t>(j)];
+    if (j < p.index && q.value == found && q.overridden_by.empty() && q.same_as.empty())
+      why = ": set by " + q.at + " earlier in the load order";
+  }
   char msg[200];
-  std::snprintf(msg, sizeof msg, "[mods] %s: %s holds %#x, not %#x; skipped", p.at.c_str(), what.c_str(), found,
-                p.expected);
-  runtime::Runtime::get().log_once("mods:" + p.at, msg);
+  std::snprintf(msg, sizeof msg, "[mods] %s: %s holds %#x, not %#x", p.at.c_str(), what.c_str(), found, p.expected);
+  runtime::Runtime::get().log_once("mods:" + p.at, msg + why + "; skipped");
 }
 
 void note_applied(const Patch& p, const std::string& what) {
@@ -197,10 +194,10 @@ ModsSummary mods_summary() {
   ModsSummary s;
   for (const Patch& p : patches()) {
     switch (p.kind) {
-      case Kind::Script: ++s.script; break;
-      case Kind::Item: ++s.item; break;
-      case Kind::Shop: ++s.shop; break;
-      case Kind::Enemy: ++s.enemy; break;
+      case Kind::kScript: ++s.script; break;
+      case Kind::kItem: ++s.item; break;
+      case Kind::kShop: ++s.shop; break;
+      case Kind::kEnemy: ++s.enemy; break;
     }
   }
   return s;
@@ -209,7 +206,8 @@ ModsSummary mods_summary() {
 int mods_apply_script(int map, std::vector<u8>& script) {
   int changed = 0;
   for (const Patch& p : patches()) {
-    if (p.kind != Kind::Script || p.target != map) continue;
+    if (p.kind != Kind::kScript || p.target != map) continue;
+    if (resolved_elsewhere(p)) continue;
     const size_t at = 0x1C + static_cast<size_t>(p.where) * 4;
     if (at + 4 > script.size()) {
       runtime::Runtime::get().log_once("mods:" + p.at, "[mods] " + p.at + ": word past the end of map " +
@@ -218,11 +216,13 @@ int mods_apply_script(int map, std::vector<u8>& script) {
     }
     u32 cur;
     std::memcpy(&cur, script.data() + at, 4);
+    const std::string what = "map " + std::to_string(map) + " word " + std::to_string(p.where);
     if (cur != p.expected) {
-      note_skip(p, "map " + std::to_string(map) + " word " + std::to_string(p.where), cur);
+      note_skip(p, what, cur);
       continue;
     }
     std::memcpy(script.data() + at, &p.value, 4);
+    if (p.source >= 0) note_applied(p, what);  // mods' lines (a seed's are too many to list)
     ++changed;
   }
   if (changed != 0) {
@@ -236,12 +236,14 @@ int mods_apply_script(int map, std::vector<u8>& script) {
 int mods_apply_items(u8* records, size_t bytes) {
   int changed = 0;
   for (const Patch& p : patches()) {
-    if (p.kind != Kind::Item) continue;
+    if (p.kind != Kind::kItem) continue;
+    if (resolved_elsewhere(p)) continue;
     const size_t at = static_cast<size_t>(p.target - 1) * kItemRecord + p.where;
     const std::string what = describe("item", p.target, p.where);
     if (records == nullptr || at + static_cast<size_t>(p.size) > bytes) continue;  // a shorter table
     const u32 cur = read_le(records + at, p.size);
     if (cur == p.value && cur != p.expected) continue;  // applied already
+    if (cur != p.expected && later_holds(p, cur)) continue;  // applied already, and a later mod's line after it
     if (cur != p.expected) {
       note_skip(p, what, cur);
       continue;
@@ -264,7 +266,8 @@ std::vector<u8> mods_shop_stock(int shop, const u8* list) {
   std::vector<bool> removed(items.size() + 0x100, false);
   const size_t original = items.size();
   for (const Patch& p : patches()) {
-    if (p.kind != Kind::Shop || p.target != shop) continue;
+    if (p.kind != Kind::kShop || p.target != shop) continue;
+    if (resolved_elsewhere(p)) continue;
     const std::string what = describe("shop", shop, p.where);
     if (p.where == original && p.expected == 0) {
       items.push_back(static_cast<u16>(p.value));
@@ -297,11 +300,12 @@ const u8* mods_enemy_stats(int type, const u8* record) {
   static u8 copy[kEnemyRecord];
   bool any = false;
   for (const Patch& p : patches()) {
-    if (p.kind != Kind::Enemy || p.target != type) continue;
+    if (p.kind != Kind::kEnemy || p.target != type) continue;
     if (!any) {
       std::memcpy(copy, record, kEnemyRecord);
       any = true;
     }
+    if (resolved_elsewhere(p)) continue;
     const std::string what = describe("enemy", type, p.where);
     const u32 cur = read_le(copy + p.where, p.size);
     if (cur != p.expected) {

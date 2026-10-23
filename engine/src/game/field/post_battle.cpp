@@ -181,9 +181,8 @@ void report_draw(int x, int y) {
   const u8* e = g_report.data() + g_report_member * 0x30;
   auto at = [e](int i) { return rd16s(e + i * 2); };
   if (field_side_strings() == nullptr && g_side_done != 0) {
-    field_install_side_text(g_side_buffer.data(), g_side_buffer.size());  // 0x80053b44
+    field_install_side_text(g_side_buffer.data(), g_side_buffer.size());  // 0x80053b44 (streaming back on)
     g_side_buffer.clear();
-    load_queue_set_streaming(load_queue(), true);
   }
   psyq::RECT clip;
   MsgWindow* window6 = msg_window(6);

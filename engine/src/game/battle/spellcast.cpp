@@ -66,8 +66,8 @@ void spellcast_start(SpellCast* sc, int kind) {
   ++g_spellcast_count;
   g.flags = static_cast<u8>(g.flags | 0x40);
   sc->finished = 0;
-  camera_end_scheduled();
-  camera_reset_mode(g.camera);
+  camera_end_scheduled_now();
+  camera_reset(g.camera);
   sc->s20 = sc->s24 = sc->s28 = sc->s2c = sc->s30 = sc->s34 = sc->s38 = sc->s3c = 0;
   sc->load_state = 0;
   sc->tex_count = 0;
@@ -255,7 +255,7 @@ void spellcast_finish(SpellCast* sc) {
     delete g_spellcasts[static_cast<size_t>(other)];
     g_spellcasts[static_cast<size_t>(other)] = nullptr;
   }
-  camera_reset_mode(g.camera);
+  camera_reset(g.camera);
   g.director_timer = 0x78;
   g_spellcasts[sc->slot] = nullptr;
   delete sc;
@@ -714,7 +714,7 @@ void spell_kind1_update(SpellCast* sc) {
     case 0:
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       if (lead) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, sc->centre, 0xC00, -0x71, 0x800, 0x32, 0x100, 5);
       }
       spellcast_wait(sc, 0x28);

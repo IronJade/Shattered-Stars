@@ -51,7 +51,7 @@ compares. The original's phase differs between runs (the first frames' tick patt
 when its camera intro ends), so cmp.py tries offsets 0..8 and uses the one with the fewest
 RNG mismatches (`CMP_D=n` forces one; for the boss fights `CMP_DMAX`, `CMP_R` (RNG draws the
 original makes in its intro voice that the port makes during setup) and `CMP_FROM`). Results
-at HEAD e37c3a5 + the world agent's spells (1500 vsyncs each, or to the battle's end):
+at HEAD 416d7b2 + the world agent's spells (1500 vsyncs each, or to the battle's end):
 
 - Exact (all RNG samples, all enemy samples): families 315 Bugbear, 47 Sandglass, 412
   Dreamshade, 205 Shielder, 320 Shout, 92 Ooze, 193 Bandit, 19 Landworm, 202 Troll, 21
@@ -78,15 +78,15 @@ at HEAD e37c3a5 + the world agent's spells (1500 vsyncs each, or to the battle's
   difference; the port does not model the console's CPU load.
 - Fixed by the Zand reference: Zand's and Dias's leap step (0x80088760 / 0x80088744) tested
   the landing the wrong way round (`pos y < ground` instead of `ground < pos y`, i.e. they
-  landed at once); in HEAD since e37c3a5.
+  landed at once); in HEAD since 416d7b2.
 - Not exercised by these references (Claude stands idle and does no damage): Bark's
   kind-0x36 SpellCast (every tenth of its HP lost) and Indalecio's transformation (kind 0x3b).
 
 ## Committed
 
-- 22ac0e8 (commit point 1): families, enemy_support, enemy_modules registry, Guardian.
-- a56ba4b (commit point 2): all 43 modules, catalog rows, notes.
-- e37c3a5 (the user, unverified): the world agent's spell wiring in enemy_support and seven
+- 5f04296 (commit point 1): families, enemy_support, enemy_modules registry, Guardian.
+- 3f6ac33 (commit point 2): all 43 modules, catalog rows, notes.
+- 416d7b2 (the user, unverified): the world agent's spell wiring in enemy_support and seven
   modules, and the Zand / Dias landing fix. Verified above.
 
 ## Helper reports (all six groups done; helpers finished, none running)

@@ -42,7 +42,7 @@ int ai_tactic(PartyUnit* u) {
   return u->record[0x38];
 }
 
-// The run toward a random point unit_random_run picked (+0x12b 1, state 1, slot 29).
+// The run toward a random point unit_pick_random_destination picked (+0x12b 1, state 1, slot 29).
 void start_random_run(PartyUnit* u) {
   u->move_mode = 1;
   u->action = 1;
@@ -112,7 +112,7 @@ int pc_ai_assist_leader(PartyUnit* u) {
   }
   if (best < 0) return 0;
   if (g.party_units[best] != u) return 0;
-  if (unit_random_run(u, 0x140, 0)) return 0;
+  if (unit_pick_random_destination(u, 0x140, 0)) return 0;
   start_random_run(u);
   g.assist_request = 0;
   return 1;
@@ -490,7 +490,7 @@ void pc_ai_engage_nearby(PartyUnit* u) {
     d = vec_distance_fx(e->pos, u->pos);
     if (d + u->size[0] * -0x2000 < 0x200000) break;
   }
-  if (i != 8 && !unit_random_run(u, 0x300, d)) start_random_run(u);
+  if (i != 8 && !unit_pick_random_destination(u, 0x300, d)) start_random_run(u);
 }
 
 // 0x8003a740: for another standing member that is a caster or under a quarter of its HP,

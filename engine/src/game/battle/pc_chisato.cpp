@@ -77,7 +77,7 @@ void cb_blade(Shot* s) {
   s->size[2] = 4;
   s->size[1] = 3;
   s->anim = 2;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (g.flags != 0) return;
   s->p130 += g.frame_ticks;
   if (s->p12c == 0 && 0x14 < s->p130) s->p12c = 1;
@@ -112,7 +112,7 @@ void cb_needle(Shot* s) {
   s->size[2] = 0x30;
   s->anim = 2;
   s->loop_limit = 1;
-  if (static_cast<s16>(shot_draw_and_box(s, 3, 0x6090)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 3, 0x6090)) == -1) {
     shot_kill(s);
     return;
   }
@@ -178,7 +178,7 @@ void cb_beam(Shot* s) {
   s->size[2] = 0x30;
   s->anim = 2;
   s->layer = 4;
-  shot_draw_and_box(s, 3, 0x208010);
+  shot_draw_with_shadow(s, 3, 0x208010);
   if (0x18 < s->p128) {
     shot_kill(s);
     return;
@@ -195,7 +195,7 @@ void cb_fan(Shot* s) {
   s->size[2] = 0x30;
   s->anim = 2;
   s->layer = 3;
-  shot_draw_and_box(s, 3, 0x904020);
+  shot_draw_with_shadow(s, 3, 0x904020);
   if (0x30 < s->p128 && s->p12c == 0) {
     s->p12c = 1;
     return;
@@ -227,7 +227,7 @@ void cb_star(Shot* s) {
   s->size[2] = 0x60;
   s->anim = 1;
   s->layer = 3;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (shot_image(s) == nullptr && s->power != 0) shot_image_set(s, afterimage_create(s, s->power, 0x605030, 1));
   if (g.flags != 0) return;
   if (shot_fade_out(s) != 0) {
@@ -238,7 +238,7 @@ void cb_star(Shot* s) {
   s->facing[0] = s->vel[0], s->facing[1] = s->vel[1], s->facing[2] = s->vel[2];
   s->vel[1] += g.frame_ticks * 0x1000;
   if (s->hit_landed == 0 && shot_hit_melee(s, 0x180, 0) != 0) {
-    screen_shake2(6, 6, 4, 4, 0xC);
+    screen_shake(6, 6, 4, 4, 0xC);
     bsfx_play_at(0x21, s);
     const Vec4 at = shot_hit_point(s);
     for (int i = 0; i < 4; ++i) {
@@ -264,7 +264,7 @@ void cb_star(Shot* s) {
       s->vel[0] = s->vel[1] = s->vel[2] = 0;
       return;
     }
-    screen_shake(4, 4, 8);
+    screen_shake_vertical(4, 4, 8);
   }
   bsfx_play_at(0x50, s);
   const s32 spread[3] = {0x180000, 0x180000, 0x180000};
@@ -374,7 +374,7 @@ void ChisatoUnit::strike(bool sweep, bool flash_scale) {
     }
     unit_attack_targets(this, n, found, pts, 0x100, angle, 0);
     wrs16(stats + 0x52, kb);
-    if (Sprite* sp = unit_play_anim(this, 4)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 4)) {
       sprite_set_pos_v(sp, &pts[0].x);
       sprite_set_fade(sp, 0x60, -4, 0xC);
       sp->layer = 3;
@@ -567,7 +567,7 @@ void ChisatoUnit::move3() {
   if (counters[1] == 0) {
     bsfx_play_at(0x50, this);
     counters[1] = 1;
-    if (Sprite* sp = unit_play_anim(this, 4)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 4)) {
       sprite_set_pos(sp, bobj_front_x(this, 0xC), pos[1] - 0xE0000, pos[2]);
       sprite_set_fade(sp, 0x80, -4, 4);
       sp->scale_vel[1] = 0x80;
@@ -580,7 +580,7 @@ void ChisatoUnit::move3() {
   pc_camera_frame_target(this, 0x3C);
   if (target == nullptr) return;
   for (int i = 0; i < 3; ++i) {
-    if (Sprite* sp = unit_play_anim(this, rng_between(6, 9))) {
+    if (Sprite* sp = unit_spawn_sprite(this, rng_between(6, 9))) {
       const s32 dx = rng_between_fixed(-0x180, 0x180);
       const s32 y = rng_between_fixed(-0x258, -0x1F4);
       const s32 dz = rng_between_fixed(-0x180, 0x180);
@@ -621,17 +621,17 @@ void ChisatoUnit::move4() {
   if (counters[1] == 0) {
     if (camera_focus != 0) {
       const s32 ofs[3] = {bobj_facing_fx(this, 0x21C), 0, 0};
-      camera_set_lookat_offset(g.camera, ofs);
+      camera_set_follow_offset(g.camera, ofs);
     }
     counters[1] = 1;
-    summon[0] = unit_play_anim_ex(this, 2, 7);
+    summon[0] = unit_spawn_sprite_ex(this, 2, 7);
     if (summon[0] != nullptr) {
       summon[0]->size[2] = 4;
       sprite_set_pos(summon[0], bobj_front_x(this, 0x100), pos[1], pos[2]);
       summon[0]->layer = 2;
       summon[0]->facing[0] = facing[0];
     }
-    summon[1] = unit_play_anim_ex(this, 5, 7);
+    summon[1] = unit_spawn_sprite_ex(this, 5, 7);
     if (summon[1] != nullptr) {
       sprite_set_pos(summon[1], bobj_front_x(this, 0x100), pos[1], pos[2]);
       summon[1]->layer = 4;
@@ -663,7 +663,7 @@ void ChisatoUnit::move5() {
   pc_attack_anim_step(this);
   if (g.flags != 0 || frame <= 0x13 || counters[1] != 0) return;
   for (int i = 0; i < lvl * 4 + 8; ++i) {
-    if (Sprite* sp = unit_play_anim(this, static_cast<int>(rng_range(5)) + 4)) {
+    if (Sprite* sp = unit_spawn_sprite(this, static_cast<int>(rng_range(5)) + 4)) {
       const s32 x = bobj_front_x(this, 0x60) + rng_spread_fixed(0x20);
       const s32 dy = static_cast<s32>(rng_range(0x80000));
       const s32 y = pos[1];

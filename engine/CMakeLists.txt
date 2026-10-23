@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
-project(ShatteredStars LANGUAGES C CXX)
+# The port's own release version (docs/ap/release_checklist.md section 1), two-digit minor
+# and patch fields so either can go past 9 without ambiguity. CMake keeps the literal string
+# here in PROJECT_VERSION (checked: "0.01.00", not normalized to "0.1.0"), so this one line is
+# the single source: it reaches the code as SS_VERSION (below) and the release scripts read
+# it back out of this file (tools/build_linux.sh, tools/build_windows.sh).
+project(ShatteredStars LANGUAGES C CXX VERSION 0.01.00)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -72,6 +77,9 @@ add_library(ss_core STATIC
   src/util/png.cpp)
 target_include_directories(ss_core PUBLIC src)
 target_compile_options(ss_core PRIVATE ${SS_WARNINGS})
+# SS_VERSION: "0.01.00" (PROJECT_VERSION above), a plain string literal everywhere that
+# links ss_core (the game, setup, both test binaries): --help / --version, setup's header.
+target_compile_definitions(ss_core PUBLIC SS_VERSION="${PROJECT_VERSION}")
 
 add_library(ss_platform STATIC
   src/platform/gl.cpp
@@ -334,7 +342,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/spell_mod_curse.cpp
   src/game/battle/spell_mod_thundercloud.cpp)
 target_include_directories(ss_game PUBLIC src)
-target_link_libraries(ss_game PUBLIC ss_core ss_platform)
+target_link_libraries(ss_game PUBLIC ss_core ss_platform ss_mods)
 target_compile_options(ss_game PRIVATE ${SS_WARNINGS})
 target_include_directories(ss_platform PUBLIC src)
 target_link_libraries(ss_platform PUBLIC SDL3::SDL3)
@@ -355,6 +363,17 @@ target_include_directories(ss_launcher PUBLIC src)
 # list ss_launcher before ss_core (ss_game brings ss_core).
 target_link_libraries(ss_launcher PUBLIC SDL3::SDL3)
 target_compile_options(ss_launcher PRIVATE ${SS_WARNINGS})
+
+# Mods (port feature; docs/notes/mods.md): the patch-line grammar, mod packages and their
+# load order, conflict analysis, and installing packages from .zip archives. Used by the
+# game (game/field/mods.cpp) and the setup program; no dependencies beyond the standard
+# library.
+add_library(ss_mods STATIC
+  src/mods/catalog.cpp
+  src/mods/patch.cpp
+  src/mods/zip.cpp)
+target_include_directories(ss_mods PUBLIC src)
+target_compile_options(ss_mods PRIVATE ${SS_WARNINGS})
 
 # WIN32: a GUI program on Windows (no console window when double-clicked); it attaches
 # to the terminal it was started from (launcher/report.h). No effect elsewhere.
@@ -399,7 +418,7 @@ if(SS_BUILD_SETUP)
   if(WIN32)
     set_target_properties(shattered-stars-setup PROPERTIES OUTPUT_NAME setup)
   endif()
-  target_link_libraries(shattered-stars-setup PRIVATE ss_launcher ss_core ss_platform ss_imgui)
+  target_link_libraries(shattered-stars-setup PRIVATE ss_launcher ss_mods ss_core ss_platform ss_imgui)
   target_compile_options(shattered-stars-setup PRIVATE ${SS_WARNINGS})
   if(WIN32)
     add_custom_command(TARGET shattered-stars-setup POST_BUILD
@@ -508,6 +527,7 @@ target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_launcher.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_mods.cpp)
 if(TARGET ss_ap_net)  # against a local Archipelago server (SS_AP_SERVER), skipped without one
   target_sources(ss_game_tests PRIVATE tests/test_ap_net.cpp)
   target_link_libraries(ss_game_tests PRIVATE ss_ap_net)

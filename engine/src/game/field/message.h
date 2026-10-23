@@ -259,7 +259,7 @@ struct ChoiceState {
 void choice_draw_cursor(ChoiceState* c);                              // 0x8006afd8
 
 // Entry 0xfc2 (menu strings + the second font, used by windows 10-19).
-void field_install_side_text(const u8* entry, size_t size);           // 0x80053b44
+void field_install_side_text(const u8* entry, size_t size);           // 0x80053b44 (then streaming on)
 void field_free_side_text();                                          // part of 0x8004c0cc
 const u8* field_side_strings();                                       // 0x800762f8
 

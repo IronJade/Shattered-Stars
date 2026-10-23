@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -143,6 +144,7 @@ Settings App::read(const launcher::Config& c) const {
     s.card[slot - 1] = path;
   }
   s.mods = launcher::path_utf8(launcher::mods_folder(c));
+  s.mod_order = launcher::read_mod_order(c);
   s.ap_seed = c.get("ap_seed");
   s.ap_server = c.get("ap_server");
   s.ap_slot = c.get("ap_slot");
@@ -266,6 +268,7 @@ launcher::Config App::compose(const launcher::Config& base) const {
   const std::string default_mods = launcher::path_utf8(launcher::config_dir() / "mods");
   if (settings_.mods.empty() || same_file(settings_.mods, default_mods)) c.erase("mods");
   else c.set("mods", settings_.mods);
+  launcher::write_mod_order(c, settings_.mod_order);
   const std::pair<const char*, const std::string*> ap_keys[] = {{"ap_seed", &settings_.ap_seed},
                                                                 {"ap_server", &settings_.ap_server},
                                                                 {"ap_slot", &settings_.ap_slot},
@@ -343,6 +346,18 @@ void App::run_action(const std::string& action) {
   else if (action == "play") play();
   else if (action == "quit") quit();
   else if (action == "close") request_close();
+  else if (action.rfind("mods-install:", 0) == 0) mods_install(action.substr(13));
+  else if (action.rfind("mods-select:", 0) == 0) mods_selected_ = action.substr(12);
+  else if (action.rfind("mods-toggle:", 0) == 0) {
+    std::vector<mods::Slot> order = mods_order();
+    const int entry = mods_catalog().find(action.substr(12));
+    for (mods::Slot& s : order)
+      if (s.entry == entry) s.enabled = !s.enabled;
+    mods_set_order(order);
+  } else if (action == "mods-up") mods_move(-1);
+  else if (action == "mods-down") mods_move(1);
+  else if (action == "mods-remove") open_remove_popup_ = mods_selected_entry() >= 0;
+  else if (action == "mods-show-info") mods_scroll_to_info_ = true;
   else std::fprintf(stderr, "setup: unknown action '%s'\n", action.c_str());
 }
 
@@ -398,6 +413,7 @@ void App::browse(Target target) {
     case Target::kCard2: current = settings_.card[1]; break;
     case Target::kMods: current = settings_.mods; break;
     case Target::kSeed: current = settings_.ap_seed; break;
+    case Target::kModZip: break;
   }
   auto* call = new DialogCall{this, static_cast<int>(target), {}};
   std::error_code ec;
@@ -405,6 +421,9 @@ void App::browse(Target target) {
     const fs::path p = launcher::utf8_path(current);
     const fs::path dir = target == Target::kMods ? p : p.parent_path();
     if (fs::is_directory(dir, ec)) call->location = launcher::path_utf8(dir);
+  }
+  if (call->location.empty() && target == Target::kModZip) {  // where browsers put downloads
+    if (const char* downloads = SDL_GetUserFolder(SDL_FOLDER_DOWNLOADS)) call->location = downloads;
   }
   if (call->location.empty()) {
     for (const fs::path& d : launcher::disc_folders(launcher::config_dir()))
@@ -422,6 +441,9 @@ void App::browse(Target target) {
   } else if (target == Target::kSeed) {
     static const SDL_DialogFileFilter seed_filters[] = {{"Archipelago seed (.apso2)", "apso2"}, {"All files", "*"}};
     SDL_ShowOpenFileDialog(on_dialog, call, window_, seed_filters, 2, location, false);
+  } else if (target == Target::kModZip) {
+    static const SDL_DialogFileFilter zip_filters[] = {{"Mod packages (.zip)", "zip"}, {"All files", "*"}};
+    SDL_ShowOpenFileDialog(on_dialog, call, window_, zip_filters, 2, location, false);
   } else {
     SDL_ShowOpenFileDialog(on_dialog, call, window_, card_filters, 2, location, false);
   }
@@ -477,6 +499,7 @@ void App::apply_dialog_results() {
       case Target::kCard2: settings_.card[1] = chosen; break;
       case Target::kMods: settings_.mods = chosen; break;
       case Target::kSeed: settings_.ap_seed = chosen; break;
+      case Target::kModZip: mods_install(chosen); break;
     }
   }
 }
@@ -782,9 +805,11 @@ void App::header() {
   ImGui::PopFont();
   ImGui::SetCursorScreenPos(ImVec2(text_left, ImGui::GetCursorScreenPos().y - em() * 0.1f));
   ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(176, 190, 225, 255));
-  ImGui::TextUnformatted(options_.from_game ? "Setup  -  the game is waiting for its discs"
-                         : logo             ? "Setup"
-                                            : "Setup for Star Ocean: The Second Story");
+  const std::string subtitle = std::string(options_.from_game ? "Setup  -  the game is waiting for its discs"
+                                            : logo             ? "Setup"
+                                                               : "Setup for Star Ocean: The Second Story") +
+                                "   ·   v" SS_VERSION;
+  ImGui::TextUnformatted(subtitle.c_str());
   ImGui::PopStyleColor();
 
   // Where the settings live, at the bottom right (small; for helping someone over the phone).
@@ -836,6 +861,10 @@ void App::sidebar() {
         dot = kError;
     }
     if (page == Page::kArchipelago && !settings_.ap_seed.empty()) dot = seed_info(settings_.ap_seed).ok ? kOk : kError;
+    if (page == Page::kMods) {
+      mods_analyse();
+      dot = mods_enabled_broken_ ? kError : mods_warnings_ > 0 ? kWarning : 0;
+    }
     if (dot) dl->AddCircleFilled(ImVec2(b.x - em() * 0.8f, (a.y + b.y) * 0.5f), em() * 0.26f, dot, 12);
     if (placeholder) {
       const char* tag = "soon";
@@ -953,6 +982,58 @@ void App::popups() {
     ImGui::TextWrapped("%s", error_message_.c_str());
     ImGui::Dummy(ImVec2(0, em() * 0.6f));
     if (primary_button("OK", ImVec2(em() * 6, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+    ImGui::EndPopup();
+  }
+
+  // The Mods page's questions: replace an installed package, remove one.
+  if (open_replace_popup_) {
+    ImGui::OpenPopup("Replace mod");
+    open_replace_popup_ = false;
+  }
+  if (open_remove_popup_) {
+    ImGui::OpenPopup("Remove mod");
+    open_remove_popup_ = false;
+  }
+  ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+  ImGui::SetNextWindowSize(ImVec2(em() * 28, 0));
+  if (ImGui::BeginPopupModal("Replace mod", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+    const mods::Catalog& catalog = mods_catalog();
+    const int entry = catalog.find(mods_pending_.manifest.id);
+    const std::string installed = entry >= 0 ? catalog.entries[static_cast<size_t>(entry)].manifest.version : "";
+    ImGui::TextWrapped("%s is installed already (version %s).", mods_pending_.manifest.name.c_str(), installed.c_str());
+    ImGui::TextWrapped("Replace it with version %s from %s?", mods_pending_.manifest.version.c_str(),
+                       launcher::path_utf8(launcher::utf8_path(mods_pending_zip_).filename()).c_str());
+    ImGui::Dummy(ImVec2(0, em() * 0.6f));
+    if (primary_button("Replace")) {
+      ImGui::CloseCurrentPopup();
+      mods_finish_install(true);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+      mods_pending_ = {};
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+  ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+  ImGui::SetNextWindowSize(ImVec2(em() * 28, 0));
+  if (ImGui::BeginPopupModal("Remove mod", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+    const mods::Catalog& catalog = mods_catalog();
+    const int entry = mods_selected_entry();
+    if (entry < 0 || catalog.entries[static_cast<size_t>(entry)].loose) {
+      ImGui::CloseCurrentPopup();
+    } else {
+      const mods::Entry& e = catalog.entries[static_cast<size_t>(entry)];
+      ImGui::TextWrapped("Remove %s %s?", e.name().c_str(), e.manifest.version.c_str());
+      note("Its folder is deleted: " + launcher::path_utf8(e.folder));
+      ImGui::Dummy(ImVec2(0, em() * 0.6f));
+      if (primary_button("Remove")) {
+        ImGui::CloseCurrentPopup();
+        if (!options_.screenshot) mods_remove_selected();  // test runs never delete
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+    }
     ImGui::EndPopup();
   }
 }
@@ -1497,15 +1578,364 @@ void App::page_cards() {
   card_field(2);
 }
 
+// ---------------------------------------------------------------------------------------
+// Mods (mods/catalog.h, docs/notes/mods.md)
+
+fs::path App::mods_folder_path() const {
+  return settings_.mods.empty() ? launcher::config_dir() / "mods" : launcher::utf8_path(settings_.mods);
+}
+
+const mods::Catalog& App::mods_catalog() {
+  const fs::path folder = mods_folder_path();
+  if (!mods_scanned_ || folder != mods_scanned_folder_) {
+    mods_catalog_ = mods::scan(folder, SS_VERSION);
+    mods_scanned_folder_ = folder;
+    mods_scanned_ = true;
+    ++mods_generation_;
+  }
+  return mods_catalog_;
+}
+
+std::vector<mods::Slot> App::mods_order() { return mods::resolve_order(mods_catalog(), settings_.mod_order); }
+
+void App::mods_set_order(const std::vector<mods::Slot>& order) {
+  const mods::Catalog& c = mods_catalog();
+  // Back to the list as saved (however config.ini spelled it): not an unsaved change.
+  if (order == mods::resolve_order(c, saved_.mod_order)) settings_.mod_order = saved_.mod_order;
+  else settings_.mod_order = mods::format_order(c, order);
+}
+
+std::string App::mods_name(int source) const {
+  if (source < 0) return "The Archipelago seed";
+  if (static_cast<size_t>(source) >= mods_catalog_.entries.size()) return "?";
+  return "\"" + mods_catalog_.entries[static_cast<size_t>(source)].name() + "\"";  // names may hold punctuation
+}
+
+void App::mods_analyse() {
+  const mods::Catalog& c = mods_catalog();
+  const std::string key = std::to_string(mods_generation_) + "\n" + settings_.mod_order + "\n" + settings_.ap_seed;
+  if (key == mods_analysis_key_) return;
+  mods_analysis_key_ = key;
+  mods_lines_.clear();
+  // An Archipelago seed's edits come first in the game, and a mod never overrides them.
+  if (!settings_.ap_seed.empty()) {
+    auto it = mods_seed_lines_.find(settings_.ap_seed);
+    if (it == mods_seed_lines_.end()) {
+      game::ap::Seed seed;
+      std::string error;
+      std::vector<std::string> lines;
+      if (game::ap::load_seed_file(settings_.ap_seed, &seed, &error)) lines = seed.patches;
+      it = mods_seed_lines_.emplace(settings_.ap_seed, std::move(lines)).first;
+    }
+    for (size_t i = 0; i < it->second.size(); ++i)
+      mods::add_line(it->second[i], "seed:" + std::to_string(i + 1), -1, &mods_lines_, nullptr);
+  }
+  const std::vector<mods::Slot> order = mods::resolve_order(c, settings_.mod_order);
+  mods::read_lines(c, order, &mods_lines_, nullptr);
+  mods_analysis_ = mods::analyse(mods_lines_);
+  mods_warnings_ = 0;
+  for (const mods::Conflict& k : mods_analysis_.conflicts) mods_warnings_ += k.is_warning() ? 1 : 0;
+  mods_enabled_broken_ = false;
+  for (const mods::Slot& s : order)
+    if (s.enabled && !c.entries[static_cast<size_t>(s.entry)].usable()) mods_enabled_broken_ = true;
+}
+
+int App::mods_selected_entry() {
+  const mods::Catalog& c = mods_catalog();
+  int entry = c.find(mods_selected_);
+  if (entry < 0) {  // nothing (or a removed mod) selected: the first in the list
+    const std::vector<mods::Slot> order = mods_order();
+    if (order.empty()) return -1;
+    entry = order.front().entry;
+    mods_selected_ = c.entries[static_cast<size_t>(entry)].id;
+  }
+  return entry;
+}
+
+void App::mods_move(int delta) {
+  std::vector<mods::Slot> order = mods_order();
+  const int entry = mods_selected_entry();
+  for (size_t k = 0; k < order.size(); ++k) {
+    if (order[k].entry != entry) continue;
+    const long to = static_cast<long>(k) + delta;
+    if (to < 0 || to >= static_cast<long>(order.size())) return;
+    std::swap(order[k], order[static_cast<size_t>(to)]);
+    mods_set_order(order);
+    return;
+  }
+}
+
+void App::mods_install(const std::string& zip) {
+  mods_pending_ = {};
+  std::string error;
+  if (!mods::read_zip_package(launcher::utf8_path(zip), &mods_pending_, &error)) {
+    error_message_ = "The mod couldn't be installed from\n" + zip + "\n\n" + error;
+    open_error_popup_ = true;
+    mods_pending_ = {};
+    return;
+  }
+  mods_pending_zip_ = zip;
+  if (mods_catalog().find(mods_pending_.manifest.id) >= 0) {
+    open_replace_popup_ = true;  // asks first; mods_finish_install(true) on Replace
+    return;
+  }
+  mods_finish_install(false);
+}
+
+void App::mods_finish_install(bool replace) {
+  // The list as it is, by id: a replaced package keeps its place, a new one goes last, enabled.
+  std::vector<std::pair<std::string, bool>> ids;
+  for (const mods::Slot& s : mods_order()) ids.emplace_back(mods_catalog_.entries[static_cast<size_t>(s.entry)].id, s.enabled);
+  const std::string name = mods_pending_.manifest.name;
+  mods::InstallResult r;
+  std::string error;
+  const bool ok = mods::install_package(mods_pending_, mods_catalog(), replace, &r, &error);
+  mods_pending_ = {};
+  if (!ok) {
+    error_message_ = "The mod couldn't be installed.\n\n" + error;
+    open_error_popup_ = true;
+    return;
+  }
+  std::fprintf(stderr, "setup: %s %s %s into %s\n", r.replaced ? "replaced" : "installed", r.id.c_str(), r.version.c_str(),
+               launcher::path_utf8(r.folder).c_str());
+  mods_scanned_ = false;
+  const mods::Catalog& after = mods_catalog();
+  std::vector<mods::Slot> order;
+  for (const auto& [id, enabled] : ids)
+    if (const int i = after.find(id); i >= 0) order.push_back({i, enabled});
+  if (!r.replaced)
+    if (const int i = after.find(r.id); i >= 0) order.push_back({i, true});
+  mods_set_order(mods::resolve_order(after, mods::format_order(after, order)));
+  mods_selected_ = r.id;
+  mods_notice_ = r.replaced ? "Replaced " + name + " " + r.previous_version + " with version " + r.version + "."
+                            : "Installed " + name + " " + r.version + ", enabled at the end of the list. Save to keep it enabled.";
+  mods_notice_level_ = Level::kOk;
+}
+
+void App::mods_remove_selected() {
+  const int entry = mods_selected_entry();
+  if (entry < 0) return;
+  const mods::Entry e = mods_catalog().entries[static_cast<size_t>(entry)];
+  std::string error;
+  if (!mods::remove_package(mods_catalog(), entry, &error)) {
+    error_message_ = "The mod couldn't be removed.\n\n" + error;
+    open_error_popup_ = true;
+    return;
+  }
+  std::fprintf(stderr, "setup: removed %s %s from %s\n", e.id.c_str(), e.manifest.version.c_str(),
+               launcher::path_utf8(e.folder).c_str());
+  mods_scanned_ = false;
+  mods_selected_.clear();
+  mods_notice_ = "Removed " + e.name() + " " + e.manifest.version + ".";
+  mods_notice_level_ = Level::kOk;
+}
+
+void App::mods_list(const mods::Catalog& catalog, std::vector<mods::Slot>& order, float height) {
+  const char* labels[] = {"Install from .zip...", "Move up", "Move down", "Remove..."};
+  float button_w = 0;
+  for (const char* l : labels) button_w = std::max(button_w, button_width(l));
+  button_w += em() * 0.8f;
+  const float spacing = ImGui::GetStyle().ItemSpacing.x;
+  const float list_w = std::max(em() * 12, ImGui::GetContentRegionAvail().x - button_w - spacing);
+  // Marks: a warning for an entry in a conflict, an error for one that can't load.
+  std::vector<int> marks(catalog.entries.size(), 0);
+  for (const mods::Conflict& k : mods_analysis_.conflicts) {
+    if (!k.is_warning()) continue;
+    for (size_t line : {k.first, k.second})
+      if (const int s = mods_lines_[line].source; s >= 0) marks[static_cast<size_t>(s)] = 1;
+  }
+  for (size_t i = 0; i < catalog.entries.size(); ++i)
+    if (!catalog.entries[i].usable()) marks[i] = 2;
+  const int selected = mods_selected_entry();
+  bool changed = false;
+
+  ImGui::BeginGroup();
+  // Up to six rows the list takes their height; a longer one scrolls ('height' > 0).
+  const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_PadOuterX |
+                                (height > 0 ? ImGuiTableFlags_ScrollY : 0);
+  if (order.empty()) {
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(16, 21, 33, 255));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(em() * 0.7f, em() * 0.5f));
+    ImGui::BeginChild("##nomods", ImVec2(list_w, ImGui::GetFrameHeightWithSpacing() * 2.5f),
+                      ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
+    note("No mods installed. Install a mod package from a .zip, or put mod folders and .patch files in the "
+         "mods folder.");
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+  } else if (ImGui::BeginTable("##mods", 3, flags, ImVec2(list_w, height))) {
+    const float check_h = em() + em() * 0.32f;
+    ImGui::TableSetupColumn("on", ImGuiTableColumnFlags_WidthFixed, check_h);
+    ImGui::TableSetupColumn("mod", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("mark", ImGuiTableColumnFlags_WidthFixed, em() * 1.2f);
+    const float row_h = ImGui::GetFrameHeight() + em() * 0.45f;  // with the cell padding
+    const float pad_y = ImGui::GetStyle().CellPadding.y;
+    for (mods::Slot& slot : order) {
+      const mods::Entry& e = catalog.entries[static_cast<size_t>(slot.entry)];
+      ImGui::PushID(slot.entry);
+      ImGui::TableNextRow(0, row_h);
+      ImGui::TableSetColumnIndex(0);
+      ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (row_h - 2 * pad_y - check_h) * 0.5f);
+      bool on = slot.enabled;
+      if (check("##on", &on)) {
+        slot.enabled = on;
+        changed = true;
+        mods_selected_ = e.id;
+      }
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+        ImGui::SetTooltip("%s", on ? "Enabled: the game applies it" : "Disabled: installed, but the game leaves it out");
+      ImGui::TableSetColumnIndex(1);
+      const float cell_x = ImGui::GetCursorScreenPos().x, cell_w = ImGui::GetContentRegionAvail().x;
+      if (ImGui::Selectable("##row", slot.entry == selected, ImGuiSelectableFlags_SpanAllColumns,
+                            ImVec2(0, row_h - 2 * pad_y)))
+        mods_selected_ = e.id;
+      const ImVec2 a(cell_x, ImGui::GetItemRectMin().y), b(cell_x + cell_w, ImGui::GetItemRectMax().y);
+      ImDrawList* dl = ImGui::GetWindowDrawList();
+      dl->PushClipRect(a, b, true);
+      const float y = (a.y + b.y - em()) * 0.5f;
+      const ImU32 ink = ImGui::GetColorU32(slot.enabled && e.usable() ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+      const std::string name = e.name();
+      dl->AddText(fonts_.bold, em(), ImVec2(a.x, y), ink, name.c_str());
+      const float x = a.x + fonts_.bold->CalcTextSizeA(em(), FLT_MAX, 0, name.c_str()).x + em() * 0.6f;
+      std::string detail;
+      if (e.loose) {
+        detail = plural(static_cast<int>(e.files.size()), "file", "files") + " in the mods folder";
+      } else {
+        detail = e.manifest.version;
+        if (!e.manifest.author.empty()) detail += "   " + e.manifest.author;
+        for (size_t t = 0; t < e.manifest.tags.size() && t < 3; ++t) detail += (t == 0 ? "   " : ", ") + e.manifest.tags[t];
+      }
+      dl->AddText(ImVec2(x, y), ImGui::GetColorU32(ImGuiCol_TextDisabled), detail.c_str());
+      dl->PopClipRect();
+      ImGui::TableSetColumnIndex(2);
+      if (marks[static_cast<size_t>(slot.entry)] != 0) {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (row_h - 2 * pad_y - ImGui::GetTextLineHeight()) * 0.5f);
+        const bool error = marks[static_cast<size_t>(slot.entry)] == 2;
+        status_icon(error ? Level::kError : Level::kWarning, em() * 0.9f);
+        if (ImGui::IsItemHovered())
+          ImGui::SetTooltip("%s", error ? "It can't be loaded: select it for the reason" : "A conflict: select it for the details");
+      }
+      ImGui::PopID();
+    }
+    ImGui::EndTable();
+  }
+  ImGui::EndGroup();
+
+  ImGui::SameLine();
+  ImGui::BeginGroup();
+  ImGui::BeginDisabled(dialog_open_);
+  if (primary_button(labels[0], ImVec2(button_w, 0))) browse(Target::kModZip);
+  ImGui::EndDisabled();
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("A mod package: a .zip with mod.json, its .patch files and maybe a README.md");
+  long pos = -1;
+  for (size_t k = 0; k < order.size(); ++k)
+    if (order[k].entry == selected) pos = static_cast<long>(k);
+  ImGui::BeginDisabled(pos <= 0);
+  if (ImGui::Button(labels[1], ImVec2(button_w, 0))) {
+    std::swap(order[static_cast<size_t>(pos)], order[static_cast<size_t>(pos - 1)]);
+    changed = true;
+  }
+  ImGui::EndDisabled();
+  ImGui::BeginDisabled(pos < 0 || pos + 1 >= static_cast<long>(order.size()));
+  if (ImGui::Button(labels[2], ImVec2(button_w, 0))) {
+    std::swap(order[static_cast<size_t>(pos)], order[static_cast<size_t>(pos + 1)]);
+    changed = true;
+  }
+  ImGui::EndDisabled();
+  const bool removable = selected >= 0 && !catalog.entries[static_cast<size_t>(selected)].loose;
+  ImGui::BeginDisabled(!removable);
+  if (ImGui::Button(labels[3], ImVec2(button_w, 0))) open_remove_popup_ = true;
+  ImGui::EndDisabled();
+  if (!removable && selected >= 0 && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    ImGui::SetTooltip("Loose patches are files in the mods folder: Open folder shows them.");
+  ImGui::EndGroup();
+  if (changed) mods_set_order(order);
+}
+
+void App::mods_info(const mods::Catalog& catalog, int entry) {
+  const mods::Entry& e = catalog.entries[static_cast<size_t>(entry)];
+  const mods::Manifest& m = e.manifest;
+  ImGui::Dummy(ImVec2(0, em() * 0.2f));
+  ImGui::Separator();
+  subheading(fonts_.bold, fonts_.size, e.name().c_str());
+  if (!e.loose && !m.version.empty()) {
+    ImGui::SameLine(0, em() * 0.6f);
+    note(m.version + (m.author.empty() ? std::string() : "   by " + m.author));
+  }
+  if (e.loose) {
+    note("The mods folder's own *.patch files, applied in name order. Turn them off here, or move the files out of "
+         "the folder (Open folder).");
+  } else {
+    std::string meta = "id " + e.id;
+    if (!m.min_port_version.empty()) meta += "   ·   needs port " + m.min_port_version + " or newer";
+    if (!m.tags.empty()) {
+      meta += "   ·   ";
+      for (size_t t = 0; t < m.tags.size(); ++t) meta += (t ? ", " : "") + m.tags[t];
+    }
+    note(meta);
+    if (!m.homepage.empty() && ImGui::TextLink(m.homepage.c_str()) && !options_.screenshot) SDL_OpenURL(m.homepage.c_str());
+    if (!m.description.empty()) ImGui::TextWrapped("%s", m.description.c_str());
+  }
+  if (!e.error.empty()) status_line(Level::kError, "It can't be loaded: " + e.error + ".");
+  for (size_t w = 0; w < e.warnings.size() && w < 4; ++w) status_line(Level::kWarning, e.warnings[w]);
+
+  std::string files;
+  for (const fs::path& f : e.files) files += (files.empty() ? "" : ", ") + launcher::path_utf8(f.filename());
+  static const char* const kinds[] = {"script", "item", "shop", "enemy"};
+  std::string counts;
+  int total = 0;
+  for (int k = 0; k < 4; ++k) {
+    total += e.counts[k];
+    if (e.counts[k]) counts += (counts.empty() ? "" : ", ") + std::to_string(e.counts[k]) + " " + kinds[k];
+  }
+  if (!files.empty())
+    note("Files: " + files + "  (" + plural(total, "line", "lines") + (counts.empty() ? "" : ": " + counts) + ")");
+  if (e.bad_lines)
+    status_line(Level::kWarning, plural(e.bad_lines, "line", "lines") + " the game doesn't understand (it skips them).");
+
+  // Its conflicts with the other enabled mods (and the seed).
+  bool enabled = false;
+  for (const mods::Slot& s : mods_order())
+    if (s.entry == entry) enabled = s.enabled;
+  int shown = 0, more = 0;
+  for (const mods::Conflict& k : mods_analysis_.conflicts) {
+    if (mods_lines_[k.first].source != entry && mods_lines_[k.second].source != entry) continue;
+    if (shown == 6) {
+      ++more;
+      continue;
+    }
+    status_line(k.is_warning() ? Level::kWarning : Level::kInfo,
+                mods::explain(k, mods_lines_, [this](int s) { return mods_name(s); }));
+    ++shown;
+  }
+  if (more) note("... and " + plural(more, "more", "more") + " (the game's log lists every one).");
+  if (enabled && e.usable() && shown == 0 && !e.files.empty())
+    status_line(Level::kOk, "No conflicts with the other enabled mods.");
+  if (!enabled && e.usable()) note("Enable it to see how it fits with the other enabled mods.");
+
+  if (!e.readme.empty()) {
+    subheading(fonts_.bold, fonts_.size, "README");
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(16, 21, 33, 255));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(em() * 0.7f, em() * 0.5f));
+    ImGui::BeginChild("##readme", ImVec2(0, em() * 8.5f), ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
+    ImGui::TextWrapped("%s", e.readme.c_str());
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+  }
+  if (!e.loose) note("Folder: " + launcher::path_utf8(e.folder));
+}
+
 void App::page_mods() {
   heading("Mods");
-  note("World edits: patch files (*.patch) that change map scripts, items, shops and enemies as the game loads "
-       "them. Your disc images are never modified. tools/so2_mod.py writes them (see the README).");
+  note("Mods change chests, doors, items, shops and enemies as the game loads them; your disc images are never "
+       "modified. The mods on the project's curated list are verified to work. tools/so2_mod.py makes your own.");
   subheading(fonts_.bold, fonts_.size, "Mods folder");
   const char* labels[] = {"Browse...", "Default", "Open folder"};
   float reserve = 0;
   for (const char* l : labels) reserve += button_width(l) + ImGui::GetStyle().ItemSpacing.x;
-  path_input("##mods", settings_.mods, "The folder with your *.patch files", reserve);
+  path_input("##mods", settings_.mods, "The folder with your mods", reserve);
   ImGui::SameLine();
   ImGui::BeginDisabled(dialog_open_);
   if (ImGui::Button(labels[0])) browse(Target::kMods);
@@ -1516,29 +1946,42 @@ void App::page_mods() {
   if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("%s", default_mods.c_str());
   ImGui::SameLine();
   ImGui::BeginDisabled(options_.screenshot || settings_.mods.empty());
-  if (ImGui::Button(labels[2])) open_folder(launcher::utf8_path(settings_.mods));
+  if (ImGui::Button(labels[2])) open_folder(mods_folder_path());
   ImGui::EndDisabled();
 
-  const fs::path folder = launcher::utf8_path(settings_.mods.empty() ? default_mods : settings_.mods);
-  std::error_code ec;
-  if (!fs::is_directory(folder, ec)) {
-    status_line(Level::kInfo, "The folder doesn't exist yet (Open folder makes it). No mods are used.");
-    return;
+  const mods::Catalog& catalog = mods_catalog();
+  mods_analyse();
+  if (!catalog.folder_exists)
+    status_line(Level::kInfo, "The folder doesn't exist yet (Open folder or Install from .zip makes it). No mods are used.");
+
+  subheading(fonts_.bold, fonts_.size, "Installed mods");
+  ImGui::SameLine(0, em() * 0.6f);
+  note("applied top to bottom; a later one wins a conflict");
+  std::vector<mods::Slot> order = mods_order();
+  const float row_h = ImGui::GetFrameHeight() + em() * 0.9f;  // about a row as drawn
+  mods_list(catalog, order, order.size() > 6 ? row_h * 6.5f : 0.0f);
+  order = mods_order();  // as changed by the list
+  if (!mods_notice_.empty()) status_line(mods_notice_level_, mods_notice_);
+
+  int enabled = 0;
+  for (const mods::Slot& s : order) enabled += s.enabled ? 1 : 0;
+  if (catalog.entries.empty()) {
+    if (catalog.folder_exists) status_line(Level::kInfo, "No mods in this folder: the game plays unmodified.");
+  } else if (enabled == 0) {
+    status_line(Level::kInfo, "No mods enabled: the game plays unmodified.");
+  } else if (mods_enabled_broken_) {
+    status_line(Level::kError, "An enabled mod can't be loaded (marked in red): select it for the reason.");
+  } else if (mods_warnings_ > 0) {
+    status_line(Level::kWarning, plural(mods_warnings_, "conflict", "conflicts") +
+                                     " among the enabled mods (marked in yellow): select one for the details.");
+  } else {
+    status_line(Level::kOk, plural(enabled, "mod", "mods") + " enabled, no conflicts.");
   }
-  std::vector<std::string> patches;
-  for (const auto& e : fs::directory_iterator(folder, ec))
-    if (e.is_regular_file(ec) && lower(launcher::path_utf8(e.path().extension())) == ".patch")
-      patches.push_back(launcher::path_utf8(e.path().filename()));
-  std::sort(patches.begin(), patches.end());
-  if (patches.empty()) {
-    status_line(Level::kInfo, "No patch files in this folder: the game plays unmodified.");
-    return;
+  if (mods_scroll_to_info_) {  // a test hook (--do mods-show-info): the info panel at the top
+    ImGui::SetScrollHereY(0.0f);
+    mods_scroll_to_info_ = false;
   }
-  status_line(Level::kOk, plural(static_cast<int>(patches.size()), "patch file", "patch files") +
-                              ", applied in this order:");
-  ImGui::Indent(em() * 1.5f);
-  for (const std::string& p : patches) ImGui::BulletText("%s", p.c_str());
-  ImGui::Unindent(em() * 1.5f);
+  if (const int entry = mods_selected_entry(); entry >= 0) mods_info(catalog, entry);
 }
 
 void App::page_archipelago() {

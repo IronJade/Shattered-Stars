@@ -66,7 +66,7 @@ void arrow(Shot* s) {
     return;
   }
   if (s->aux == 0) {
-    screen_shake2(3, 4, 4, 4, 0xC);
+    screen_shake(3, 4, 4, 4, 0xC);
     bsfx_play_at(0x4B, s);
     const Unit* t = s->target;
     const s32 ground[3] = {t->pos[0], bobj_ground_height(t), t->pos[2]};

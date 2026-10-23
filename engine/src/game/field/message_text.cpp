@@ -4,6 +4,7 @@
 
 #include "disc/slz.h"
 #include "game/field/field.h"
+#include "game/field/load_queue.h"
 #include "game/field/message.h"
 #include "game/field/message_internal.h"
 #include "runtime/libgpu.h"
@@ -887,6 +888,9 @@ void field_install_side_text(const u8* entry, size_t size) {
   g_side_font = g_side_font_data.empty() ? nullptr : g_side_font_data.data();
   g_side_strings = g_side_strings_data.empty() ? nullptr : g_side_strings_data.data();
   g_side_glyphs = g_side_font ? g_side_font + msg_rd32(g_side_font) + 8 : nullptr;
+  // The original ends by turning voice streaming back on (0x8004358c(queue, 1)), which the
+  // side load (field_side_load) turned off; the callers free the source buffer.
+  load_queue_set_streaming(load_queue(), true);
 }
 
 void field_free_side_text() {

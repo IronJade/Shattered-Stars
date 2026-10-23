@@ -53,7 +53,7 @@ void cb_lash(Shot* s) {
   s->anim = 1;
   s->loop_limit = 1;
   s->size[2] = s->owner->size[2];
-  if (static_cast<u16>(shot_draw_and_box(s, 5, 0xFFFFFFFF)) == 0xFFFF) {
+  if (static_cast<u16>(shot_draw_with_shadow(s, 5, 0xFFFFFFFF)) == 0xFFFF) {
     shot_kill(s);
     return;
   }
@@ -151,7 +151,7 @@ void cb_rapid_lash(Shot* s) {
   s->anim = 1;
   s->loop_limit = 1;
   s->size[2] = s->owner->size[2];
-  if (static_cast<u16>(shot_draw_and_box(s, 5, 0xFFFFFFFF)) == 0xFFFF) {
+  if (static_cast<u16>(shot_draw_with_shadow(s, 5, 0xFFFFFFFF)) == 0xFFFF) {
     shot_kill(s);
     return;
   }
@@ -177,7 +177,7 @@ void cb_blade(Shot* s) {
   s->anim = 1;
   s->layer = 3;
   s->size[2] = static_cast<s16>(s->owner->size[2] * 2);
-  shot_draw_and_box(s, 2, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 2, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (shot_fade_out(s) != 0) return;
   if (s->p12c == 0 && 0x18 < s->p134) s->p12c = 1;
@@ -347,7 +347,7 @@ void ErnestUnit::move1() {
     if (5 <= frame) {
       if (counters[1] == 0) {
         counters[1] = 1;
-        if (Sprite* sp = unit_play_anim(this, 5)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 5)) {
           sprite_set_pos(sp, pos[0], pos[1] - 0x60000, pos[2]);
           sprite_set_fade(sp, 0x80, -1, 0x3C);
           sp->layer = 2;
@@ -356,14 +356,14 @@ void ErnestUnit::move1() {
       s32 n = static_cast<s32>(rng_next15()) * (lvl + 1);
       while (0x5DC0 < n) {
         n -= 0x5DC0;
-        if (Sprite* sp = unit_play_anim(this, 2)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 2)) {
           const s32 x = pos[0] + rng_spread_fixed(0x80);
           const s32 z = pos[2] + rng_spread_fixed(0x40);
           sprite_set_pos(sp, x, pos[1], z);
           sprite_set_fade(sp, 0x80, -2, 4);
           sp->layer = 3;
         }
-        if (Sprite* sp = unit_play_anim(this, 4)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 4)) {
           const s32 y = pos[1] - static_cast<s32>(rng_range(0xC0000));
           const s32 z = pos[2] + rng_spread_fixed(0x40);
           sprite_set_pos(sp, pos[0], y, z);
@@ -450,7 +450,7 @@ void ErnestUnit::move2() {
         const int n = collider_attack_overlaps(this, found, pts, 0);
         if (n != 0 && hit_landed == 0) {
           unit_attack_targets(this, n, found, pts, 0x100, 9999, 0);
-          if (Sprite* sp = unit_play_anim_ex(this, static_cast<int>(rng_range(2)) + 4, 1)) {
+          if (Sprite* sp = unit_spawn_sprite_ex(this, static_cast<int>(rng_range(2)) + 4, 1)) {
             sp->layer = 3;
             const s32 at[3] = {pts[0].x, pts[0].y, pts[0].z};
             sprite_set_pos_v(sp, at);
@@ -506,7 +506,7 @@ void ErnestUnit::move3() {
   if (n != 0 && hit_landed == 0) {
     unit_attack_targets(this, n, found, pts, 0x100, 9999, 0);
     for (int i = 0; i < 2; ++i) {
-      if (Sprite* sp = unit_play_anim_ex(this, static_cast<int>(rng_range(3)) + 3, 1)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(this, static_cast<int>(rng_range(3)) + 3, 1)) {
         sp->layer = 3;
         const s32 x = pts[0].x + rng_between_fixed(-0x20, 0x20);
         const s32 y = pts[0].y + rng_between_fixed(-0x20, 0x20);
@@ -613,7 +613,7 @@ void ErnestUnit::move7() {
     if (counters[2] == 0) {
       if (counters[1] == 0 && 3 <= frame) {
         counters[1] = 1;
-        if (Sprite* sp = unit_play_anim_ex(this, 3, 2)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 3, 2)) {
           sprite_set_pos(sp, bobj_front_x(this, -0x40), pos[1] - 0xA0000, pos[2]);
           sp->layer = 3;
         }
@@ -630,7 +630,7 @@ void ErnestUnit::move7() {
       if (counters[3] == 0) {
         if (camera_focus != 0) {
           const s32 ofs[3] = {bobj_facing_fx(this, 0x140), 0, 0};
-          camera_set_lookat_offset(g.camera, ofs);
+          camera_set_follow_offset(g.camera, ofs);
         }
         const s32 c[4] = {bobj_front_x(this, 0x70), pos[1] - 0x60000, pos[2], 0};
         for (int i = 0; i < 0x28; ++i) {
@@ -643,7 +643,7 @@ void ErnestUnit::move7() {
         sound_handle_fade_out(bsfx_play_at(0x2D, this), 0x50, 0);
         if (lvl != 0) {
           for (int k = 0; k < 2; ++k) {
-            if (Sprite* sp = unit_play_anim(this, 4)) {
+            if (Sprite* sp = unit_spawn_sprite(this, 4)) {
               sprite_set_pos(sp, bobj_front_x(this, 0x70), pos[1] - 0x60000, pos[2]);
               sprite_set_fade(sp, 0x80, -2, 8);
               sp->vel[1] = k != 0 ? 0x2000 : -0x2000;

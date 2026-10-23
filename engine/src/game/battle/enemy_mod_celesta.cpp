@@ -176,7 +176,7 @@ void shot_wave(Shot* s) {
   s->loop_limit = 1;
   s->layer = 2;
   s->size[2] = s->owner->size[2];
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }
@@ -224,7 +224,7 @@ void shot_blade(Shot* s) {
   s->loop_limit = 0;
   s->layer = 2;
   s->size[2] = s->owner->size[2];
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) {
     if (g.flags != 0) return;
     if (s->p134 == 0) {
       blade_trails()[s] = afterimage_create(s, 8, 0x208040, 1);

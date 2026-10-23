@@ -86,7 +86,7 @@ void ice_shard(Shot* s) {
     s->pos[0] = s->point[0];
     s->pos[1] = s->point[1];
     s->pos[2] = s->point[2];
-    screen_shake2(3, 1, 2, 2, 10);
+    screen_shake(3, 1, 2, 2, 10);
     bsfx_play_at(0x28, s);
   }
   s->rgb[0] = 0x80;
@@ -166,7 +166,7 @@ void deep_freeze(SpellCast* sc) {
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       battle_flash_set(sc, 0x30, 0x30, 0x90);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, point, 0xC00, 0x71, 0x800, 0x1E, 0x80, 5);
       }
       spellcast_wait(sc, 0x1E);
@@ -275,7 +275,7 @@ void deep_freeze(SpellCast* sc) {
         }
       }
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, point, 0xC00, 0x155, 0x1000, 0x5A, 0x80, 5);
       }
       spellcast_wait(sc, 0x3C);

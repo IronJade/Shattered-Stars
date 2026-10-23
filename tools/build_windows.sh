@@ -1,8 +1,11 @@
 #!/bin/bash
-# Cross-builds the Windows release with MinGW-w64 and packs it as dist/ShatteredStars-win64.zip:
-# shattered-stars.exe (the game), setup.exe (the settings window), SDL3.dll, the README, the
-# third-party licences and an empty discs\ folder for the player's disc images. Needs
-# Fedora's mingw64-gcc-c++ and mingw64-SDL3:
+# Cross-builds the Windows release with MinGW-w64 and packs it as
+# dist/ShatteredStars-<version>-win64.zip (e.g. dist/ShatteredStars-0.01.00-win64.zip):
+# shattered-stars.exe (the game), setup.exe (the settings window), SDL3.dll, the README,
+# this project's own LICENSE, the third-party licences and an empty discs\ folder for the
+# player's disc images. The version is read from engine/CMakeLists.txt's
+# project(... VERSION ...) line (the single source; docs/ap/release_checklist.md section 1).
+# Needs Fedora's mingw64-gcc-c++ and mingw64-SDL3:
 #   sudo dnf install mingw64-gcc-c++ mingw64-SDL3 mingw64-openssl-static mingw64-zlib-static
 # OpenSSL (wss:// for Archipelago servers) and zlib are linked in. Without root, unpack those
 # two packages' RPMs (dnf download; rpm2cpio | cpio -idm) and set MINGW_SSL_SYSROOT to the
@@ -12,6 +15,8 @@
 # and memory cards are the player's own.
 set -eu
 cd "$(dirname "$0")/.."
+version=$(sed -n 's/^project(.*VERSION \([0-9]\+\.[0-9]\+\.[0-9]\+\)).*/\1/p' engine/CMakeLists.txt)
+[ -n "$version" ] || { echo "error: could not read the port version out of engine/CMakeLists.txt" >&2; exit 1; }
 toolchain=/usr/share/mingw/toolchain-mingw64.cmake
 [ -f "$toolchain" ] || { echo "MinGW toolchain not found ($toolchain): install mingw64-gcc-c++" >&2; exit 1; }
 build=engine/build-win-release
@@ -34,7 +39,7 @@ cmake -S engine -B "$build" -G Ninja -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE
   || { cat "$build.configure.log" >&2; exit 1; }
 grep -q "OpenSSL not found" "$build.configure.log" && echo "warning: no OpenSSL: Archipelago will speak ws:// only" >&2
 cmake --build "$build" -j8 --target shattered-stars shattered-stars-setup
-out=dist/ShatteredStars-win64
+out=dist/ShatteredStars-$version-win64
 rm -rf "$out" "$out.zip"
 mkdir -p "$out/discs"
 cp "$build/shattered-stars.exe" "$build/setup.exe" "$build/SDL3.dll" "$out/"
@@ -46,8 +51,10 @@ printf '%s\r\n' \
   "fine. The game finds them here by itself; setup.exe's Auto-detect button looks here too." \
   > "$out/discs/Put your disc images here.txt"
 # Third-party licences: SDL, Dear ImGui and, when the Archipelago client is linked in,
-# apclientpp and its header-only dependencies, OpenSSL and zlib. Windows line ends.
+# apclientpp and its header-only dependencies, OpenSSL and zlib. Shattered Stars' own
+# licence (MIT) sits beside it. Windows line ends.
+cp LICENSE "$out/LICENSE"
 tools/third_party_licenses.sh "$build" /usr/share/licenses/mingw64-SDL3/LICENSE.txt \
   | sed 's/$/\r/' > "$out/THIRD-PARTY-LICENSES.txt"
-(cd dist && zip -qr ShatteredStars-win64.zip ShatteredStars-win64)
-echo "dist/ShatteredStars-win64.zip: $(du -h dist/ShatteredStars-win64.zip | cut -f1)"
+(cd dist && zip -qr "ShatteredStars-$version-win64.zip" "ShatteredStars-$version-win64")
+echo "$out.zip: $(du -h "$out.zip" | cut -f1)"

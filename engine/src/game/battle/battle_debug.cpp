@@ -116,16 +116,39 @@ void battle_debug_frame() {
     const char* v = std::getenv("SS_BATTLE_HP1");
     return v != nullptr ? std::atoi(v) : -1;
   }();
-  if (hp1_from >= 0 && bg().battle_frames >= hp1_from) {
+  // (Deathlink agent) SS_BATTLE_DEBUG_ENC=E,...: SS_BATTLE_HP1 and SS_BATTLE_GOD act only in
+  // those encounters (a story scene's earlier fight won, the one under test left alone).
+  static const std::vector<int> only_enc = [] {
+    std::vector<int> list;
+    if (const char* v = std::getenv("SS_BATTLE_DEBUG_ENC"))
+      for (const char* p = v;; ++p) {  // (p steps over each comma)
+        char* end = nullptr;
+        const long n = std::strtol(p, &end, 0);
+        if (end == p) break;
+        list.push_back(static_cast<int>(n));
+        p = end;
+        if (*p != ',') break;
+      }
+    return list;
+  }();
+  const bool enc_on = only_enc.empty() || std::find(only_enc.begin(), only_enc.end(), bg().encounter_id) != only_enc.end();
+  if (enc_on && hp1_from >= 0 && bg().battle_frames >= hp1_from) {
     for (EnemyUnit* u : bg().enemy_units)
       if (u != nullptr && u->st()->hp > 1) u->st()->hp = 1;
   }
-  static const bool god = std::getenv("SS_BATTLE_GOD") != nullptr;
-  if (god) {
+  static const int god = [] {
+    const char* v = std::getenv("SS_BATTLE_GOD");
+    return v == nullptr ? 0 : std::max(1, std::atoi(v));
+  }();
+  if (god != 0 && enc_on) {
     // Debugging (sweeps): the standing party members' HP back to the maximum every frame,
-    // so long fights run on to their end.
+    // so long fights run on to their end. (Deathlink agent) SS_BATTLE_GOD=HP above 1 also
+    // holds the maximum at HP, so a weak party outlasts one-hit kills.
     for (PartyUnit* u : bg().party_units)
-      if (u != nullptr && u->st()->hp > 0) u->st()->hp = u->st()->hp_max;
+      if (u != nullptr && u->st()->hp > 0) {
+        if (god > 1) u->st()->hp_max = god;
+        u->st()->hp = u->st()->hp_max;
+      }
   }
   static const bool cam_on = std::getenv("SS_BATTLE_CAM") != nullptr;
   if (cam_on) {

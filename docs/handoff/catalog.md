@@ -175,7 +175,7 @@ real gap). Rows touched: 273 new rows (boot 122, title 140 + 1 freebie, battle 1
 menu_0ba5 9) + 1 renamed existing row (boot `CdControl` -> `CdControlF`) + 11 boot rows'
 evidence cells appended with a "no caller found" note. No reordering; each module's block
 re-sorted into itself only. Not committed (coordinator commits hourly; last checkpoint
-during this session was `a10f166`, which already swept up step 1's work).
+during this session was `3cffe28`, which already swept up step 1's work).
 
 ### Next steps for whoever picks this up
 
@@ -368,7 +368,7 @@ no port need -- fixed to `(not needed: ...)`, confirmed via `tools/catalog_cover
 **Not done, flagged for whoever's next:** `docs/catalog/COVERAGE.md`'s "Partial ports"
 section still lists battle_ovl1984_0's `sound_handle_active`/`voice_pick_victory`/
 `voice_play_result` as `[port partial: ...]` even though the Step 1 log above says that was
-fixed -- checked against the actual committed baseline (`git show a10f166:docs/catalog/
+fixed -- checked against the actual committed baseline (`git show 3cffe28:docs/catalog/
 functions.csv`) and the stale `[port partial:...]` text is still there, meaning that fix
 was never actually saved to disk (same "lost work" pattern this log's Step 2 preamble
 describes for the gap-scan section). Out of scope for this pass (not part of the
@@ -389,4 +389,4 @@ port-reachability check), bad path 0, partial 11 (pre-existing, see above), unpo
 Gap-scan total: 517 -> 107 (all 107 explained above: confirmed non-functions or real-but-
 deliberately-left-open). No engine code touched; no suites needed (catalog-only). Not
 committed (coordinator commits hourly). `tools/catalog_gaps.py` itself was rewritten (see
-top of this step) -- diff it against `a10f166`'s copy if anyone wants the exact before/after.
+top of this step) -- diff it against `3cffe28`'s copy if anyone wants the exact before/after.

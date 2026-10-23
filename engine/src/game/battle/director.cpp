@@ -125,10 +125,10 @@ void battle_frame_director() {
       g.director_idle = 1;
       const u32 mode = in.mode;
       if (mode == 1 || mode - 3 < 2) {
-        camera_end_scheduled();
+        camera_end_scheduled_now();
         camera_set_mode(cam, 2, nullptr);
       } else if (mode == 2 && 0xF < in.target_cam_t) {
-        camera_end_scheduled();
+        camera_end_scheduled_now();
         camera_set_mode(cam, 4, nullptr);
       } else if (g.camera_special == nullptr) {
         PartyUnit* c = g.party_units[g.controlled_slot & 3];
@@ -142,7 +142,7 @@ void battle_frame_director() {
               if (unit_is_down(u)) continue;
               if (7 < u->action || (i < 4 && u->action == 3)) {
                 if (0x5A < g.director_timer) {
-                  camera_end_scheduled();
+                  camera_end_scheduled_now();
                   // The console passes the party slot pointer of the same index here.
                   Unit* who = i < 4 ? static_cast<Unit*>(g.party_units[i]) : g.enemy_units[i - 4];
                   camera_set_mode(cam, 5, who);
@@ -153,12 +153,12 @@ void battle_frame_director() {
               }
             }
           } else {
-            camera_end_scheduled();
+            camera_end_scheduled_now();
             camera_set_mode(cam, 5, g.camera_next_target);
             g.camera_next_target = nullptr;
           }
         } else if (0x3C < g.director_timer) {
-          camera_end_scheduled();
+          camera_end_scheduled_now();
           camera_set_mode(cam, 7, c);
           c->camera_focus = 1;
           g.camera_next_target = nullptr;

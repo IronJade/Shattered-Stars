@@ -70,7 +70,7 @@ void fairy(Shot* s) {
   s->layer = 2;
   s->scale_y = 0x1400;
   s->scale_x = 0x1400;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   Afterimage*& trail = g_trail[s];
   if (trail == nullptr) trail = afterimage_create(s, 4, 0x4060, 1);
   if ((g.flags & 0xC) != 0) return;
@@ -160,7 +160,7 @@ void fairy_light(SpellCast* sc) {
             if (++tries >= 0x50) break;  // (80 picks at most)
           }
           if (!unit_is_down(u) && spellcast_leads_camera(sc)) {
-            camera_reset_mode(g.camera);
+            camera_reset(g.camera);
             const s32 yaw = rng_range(2) != 0 ? 0xE38 : 0x9C7;
             camera_move_to(g.camera, u->pos, yaw, 0xE3, 0xC00, 0xF0, 0x80, 5);
           }

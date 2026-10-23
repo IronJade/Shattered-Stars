@@ -50,7 +50,7 @@ struct EnemyXine : EnemyUnit {
     if (action != 1 || bg().flags != 0 || frame != 3 || unit_is_disabled(this) == 1) return 0;
     const s32 n = rng_between(1, 3);
     for (s32 i = 0; i < n; ++i) {
-      Sprite* sp = unit_play_anim(this, 8);
+      Sprite* sp = unit_spawn_sprite(this, 8);
       if (sp == nullptr) continue;
       const u32 a = rng_range(0x1000);
       s32 at[3] = {0, 0, 0};
@@ -102,7 +102,7 @@ struct EnemyXine : EnemyUnit {
     } else if (last_victim() != units[0]) {
       set_last_victim(units[0]);
       unit_attack_targets(this, 1, units, points, 0x100, 9999, 0);
-      if (Sprite* sp = unit_play_anim(this, 9)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 9)) {
         sprite_set_pos_v(sp, points[0].data());
         sprite_set_fade(sp, 0x80, -4, 10);
       }
@@ -122,7 +122,7 @@ struct EnemyXine : EnemyUnit {
       const s32 beak[4] = {pos[0] + (facing[0] > 0 ? 0x70000 : -0x70000), pos[1] - 0x138000, pos[2], 0};
       if (counters[0] == 0) {
         counters[0] = 1;
-        if (Sprite* sp = unit_play_anim(this, 0xD)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 0xD)) {
           sprite_set_pos_v(sp, beak);
           sprite_set_fade(sp, 0x80, -4, 0x14);
           sp->scale_vel[0] = 0x100;
@@ -161,7 +161,7 @@ struct EnemyXine : EnemyUnit {
         }
         bobj_move(this, vel);
         const s32 at[3] = {pos[0], bobj_ground_height(this), pos[2]};
-        if (Sprite* sp = unit_play_anim(this, 8)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 8)) {
           sprite_set_pos_v(sp, at);
           sprite_set_fade(sp, 0x80, -4, 0x14);
           sp->scale_vel[0] = 0x100;
@@ -169,7 +169,7 @@ struct EnemyXine : EnemyUnit {
           sp->vel[0] = (-sp->vel[0]) / 4;
           sp->vel[2] = (-sp->vel[2]) / 4;
         }
-        if (Sprite* sp = unit_play_anim(this, 0xC)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 0xC)) {
           sprite_set_pos_v(sp, at);
           sprite_set_fade(sp, 0x80, -2, 0);
         }

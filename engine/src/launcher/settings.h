@@ -73,5 +73,9 @@ std::filesystem::path default_memcard(int slot);  // config_dir() / "memcardN.mc
 
 // The world-edit folder: the configured one, or mods/ next to config.ini.
 std::filesystem::path mods_folder(const Config& c);
+// The mods' load order and enabled set (config.ini's mod_order; mods/catalog.h has the
+// syntax and the defaults). Empty: the defaults (loose patches on, packages off).
+std::string read_mod_order(const Config& c);
+void write_mod_order(Config& c, const std::string& order);  // an empty order removes the key
 
 }  // namespace ss::launcher

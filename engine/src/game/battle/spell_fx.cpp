@@ -115,7 +115,7 @@ Shot* effect_spawn_streak_at(const s32 pos[3], const s32 target[3], u32 rgb_head
   return s;
 }
 
-Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
+Shot* effect_spawn_vortex_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
                           s32 width, s32 step, s16 flag) {
   Shot* s = shot_spawn(0x31);
   if (s == nullptr) return nullptr;

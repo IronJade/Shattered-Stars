@@ -154,7 +154,7 @@ void explode(SpellCast* sc) {
       // vertices near the centre listed.
       if (sc->data != nullptr) return;
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, kZeroVector, 0xC00, 0x71, 0x1000, 0x3C, 0x80, 5);
       }
       ++sc->step;
@@ -204,7 +204,7 @@ void explode(SpellCast* sc) {
         screen_fade_create(0xFFFFFF, 0x20, 4, 0x1E);
       }
       if (!(0xA0 < sc->s20)) return;
-      screen_shake2(8, 8, 4, 4, 0x78);
+      screen_shake(8, 8, 4, 4, 0x78);
       bsfx_play_ui(0x50);
       bsfx_play_ui(0x52);
       bsfx_play_ui(0x21);
@@ -240,7 +240,7 @@ void explode(SpellCast* sc) {
       effect_spawn_sparks_at(centre, 0x18, 800, 0, 0x28, 0x1E0, 0, 3, 0, 0);
       if (Shot* r2 = effect_spawn_sparks_at(centre, 0x18, 800, 0, 0x28, 0x1E0, 2, 3, 0, 0)) r2->vel[2] = 0x400;
       effect_spawn_sparks_at(centre, 0x10, 0, 0x28, 0x26, 0x1E0, 0xE, 4, 0, 0);
-      effect_spawn_t31_at(centre, 9, 9, 0x38, 0x168, 0x2080FF, 0x40, 0x18, 0x50, 0);
+      effect_spawn_vortex_at(centre, 9, 9, 0x38, 0x168, 0x2080FF, 0x40, 0x18, 0x50, 0);
       return;
     }
     case 3: {
@@ -269,7 +269,7 @@ void explode(SpellCast* sc) {
         sp->layer = 6;
       }
       if (static_cast<u32>(rng_next() & 0x7FFF) < static_cast<u32>(sc->power * 5 + 0x1800)) {
-        screen_shake2(4, 3, 4, 6, 0x3C);
+        screen_shake(4, 3, 4, 6, 0x3C);
         s32 at[4] = {};
         stage_random_point(at, 1);
         at[1] = rng_between_fixed(-1000, -100);

@@ -51,7 +51,7 @@ void cb_shell(Shot* s) {
   s->size[2] = 0x30;
   s->anim = 2;
   if (shot_image(s) == nullptr) shot_image_set(s, afterimage_create(s, 6, kTrailRgb, 1));
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (shot_fade_out(s) == 0) {
     if (s->p12c == 0 && 0x18 < s->p134) s->p12c = 1;
@@ -79,7 +79,7 @@ void cb_shell(Shot* s) {
 void cb_fist(Shot* s) {
   BattleGlobals& g = bg();
   s->size[2] = s->owner->size[2];
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (shot_image(s) == nullptr && s->power != 0) shot_image_set(s, afterimage_create(s, 2, kTrailRgb, 1));
   if (shot_fade_out(s) != 0) {
@@ -108,7 +108,7 @@ void cb_wave(Shot* s) {
   BattleGlobals& g = bg();
   s->layer = 2;
   s->anim = 0xB < s->p134 ? 5 : 4;
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   shot_fade_out(s);
   if (s->p134 < 0xC) bobj_move(s, s->vel);
@@ -173,7 +173,7 @@ void cb_vortex(Shot* s) {
   s->hit_landed = 1;
   unit_attack_targets(s->owner, n, found, pts, s->power * 0x80 + 0x180, s->vel[0] < 0 ? 0x800 : 0, 0x80);
   s->owner->attack_recovery = 0;
-  if (bobj_on_screen(s)) screen_shake2(4, 4, 4, 6, 0xE);
+  if (bobj_on_screen(s)) screen_shake(4, 4, 4, 6, 0xE);
   const s32 spread[3] = {0x80000, 0x80000, 0x80000};
   effect_debris_burst(&pts[0].x, spread, 3, 2, 1, 0x1800, 6);
   bsfx_play_at_pos(0x50, s->pos);
@@ -187,7 +187,7 @@ void cb_cannon(Shot* s) {
   BattleGlobals& g = bg();
   s->layer = 2;
   s->anim = s->p128 != 0 ? 5 : 4;
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }
@@ -219,7 +219,7 @@ void cb_cannon(Shot* s) {
       }
       bsfx_play_at(0x23, s);
       sound_handle_fade_out(static_cast<u32>(bsfx_play_at(0x2D, s)), 0x24, 0);
-      if (bobj_on_screen(s)) screen_shake(4, 2, 10);
+      if (bobj_on_screen(s)) screen_shake_vertical(4, 2, 10);
     }
   }
   face_vel(s);
@@ -244,14 +244,14 @@ void cb_arm(Shot* s) {
       s->pos[1] = bobj_ground_height(s);
       s->anim = 1;
       s->loop_limit = 1;
-      if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) break;
+      if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) break;
       s->p128 = 1;
       bobj_anim_reset(s);
       [[fallthrough]];
     case 1:
       s->anim = 2;
       s->loop_limit = 1;
-      if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) break;
+      if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) break;
       s->p128 = s->power != 0 ? 2 : 3;
       bobj_anim_reset(s);
       if (s->p128 == 3) {
@@ -262,7 +262,7 @@ void cb_arm(Shot* s) {
     case 2:
       s->anim = 3;
       s->loop_limit = 1;
-      if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) break;
+      if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) break;
       s->p128 = 3;
       bobj_anim_reset(s);
       punch = true;
@@ -281,7 +281,7 @@ void cb_arm(Shot* s) {
     }
     s->anim = 4;
     if (s->loops != 0 && s->p12c == 0) s->p12c = 1;
-    shot_draw_and_box(s, 4, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
     if (g.flags != 0) return;
     if (s->p134 == 1) {
       bobj_move(s, s->vel);
@@ -355,7 +355,7 @@ void cb_ball(Shot* s) {
   s->layer = 1;
   if (shot_image(s) == nullptr && s->power != 0) shot_image_set(s, afterimage_create(s, 3, kTrailRgb, 1));
   if (Afterimage* img = shot_image(s)) img->next_kind = 1;
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) {
     if (g.flags != 0) return;
     if (shot_fade_out(s) != 0) {
       shot_image_end(s);
@@ -639,7 +639,7 @@ void PrecisUnit::move3() {
           counters[2] = 0;
           if (camera_focus != 0) {
             const s32 ofs[3] = {bobj_facing_fx(this, 0x21C), 0, 0};
-            camera_set_lookat_offset(g.camera, ofs);
+            camera_set_follow_offset(g.camera, ofs);
           }
           pc_camera_frame_target(this, 0x50);
         }
@@ -794,7 +794,7 @@ void PrecisUnit::move5() {
         hit_landed = 0;
       }
       if (pc_attack_anim_step(this) == 0) return;
-      if (Sprite* sp = unit_play_anim(this, 5)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 5)) {
         sp->facing[0] = facing[0];
         sprite_set_pos_v(sp, pos);
         sprite_set_fade(sp, 0x80, -8, 0);
@@ -959,7 +959,7 @@ void PrecisUnit::move8() {
     if (frame <= 4) return;
     if (camera_focus != 0) {
       const s32 ofs[3] = {bobj_facing_fx(this, 300), 0, 0};
-      camera_set_lookat_offset(g.camera, ofs);
+      camera_set_follow_offset(g.camera, ofs);
     }
     counters[1] = 1;
     bsfx_play_at(0x28, this);

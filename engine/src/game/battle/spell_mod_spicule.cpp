@@ -195,7 +195,7 @@ void spicule(SpellCast* sc) {
       sound_handle_fade_out(bsfx_play_at(0x44, c), 0xB4, 0x3C);
       sc->s28 = 0xC00;
       ++sc->step;
-      if (Sprite* sp = unit_play_anim(c, 0x11)) {
+      if (Sprite* sp = unit_spawn_sprite(c, 0x11)) {
         sprite_set_pos(sp, c->pos[0], -0x1388000, c->pos[2]);
         sprite_set_fade(sp, 0x80, -4, 0xF0);
         sp->layer = 5;
@@ -213,14 +213,14 @@ void spicule(SpellCast* sc) {
       sc->s2c = (sc->s2c + g.frame_ticks * 10) & 0xFFF;
       c->pos[1] -= rise * 0x1000;
       if (-0xFA0000 <= c->pos[1]) {
-        if (Sprite* sp = unit_play_anim_ex(c, 0x12, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(c, 0x12, 1)) {
           const s32 centre[3] = {c->pos[0], c->pos[1] + c->size[1] * -0x2000, c->pos[2]};
           const Vec4 at = vec_random_around(centre, 0x140);
           sprite_set_pos_v(sp, at.data());
           sp->vel[1] = -0x1C000;
           sp->layer = 3;
         }
-        if (Sprite* sp = unit_play_anim_ex(c, 0xE, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(c, 0xE, 1)) {
           const s32 centre[3] = {c->pos[0], c->pos[1] + c->size[1] * -0x2000, c->pos[2]};
           const Vec4 at = vec_random_around(centre, 0x140);
           sprite_set_pos_v(sp, at.data());
@@ -276,7 +276,7 @@ void spicule(SpellCast* sc) {
         sc->s30 = 1;
       }
       if (!(ground - 0x96000 < c->pos[1])) return;
-      screen_shake2(6, 4, 3, 6, 0xB4);
+      screen_shake(6, 4, 3, 6, 0xB4);
       const s32 at[3] = {c->pos[0], -0x12C000, c->pos[2]};
       c->pos[1] = ground;
       ++sc->step;
@@ -294,7 +294,7 @@ void spicule(SpellCast* sc) {
       effect_spawn_sparks_at(at, 0x18, 0x168, 0, 0x18, 0xF0, 5, 3, 0x80, 0);
       effect_spawn_sphere_at_default(at, 8, 8, 0x1E, 0x50, 0x40FF, 0x80, 0);
       sc->s30 = 0;
-      if (Sprite* sp = unit_play_anim_ex(c, 0xF, 1)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(c, 0xF, 1)) {
         sprite_set_pos(sp, c->pos[0], -0xC8000, c->pos[2]);
         sp->layer = 0xC;
       }

@@ -247,7 +247,7 @@ void cb_bolt(Shot* s) {
   s->anim = 2;
   s->size[2] = 0x20;
   if (s->hit_landed == 0 || s->p12c != 0) {
-    shot_draw_and_box(s, 3, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
     if (g.flags != 0) return;
     shot_fade_out(s);
     if (s->p12c == 0 && bobj_outside_arena(s)) s->p12c = 1;
@@ -312,7 +312,7 @@ void cb_bit(Shot* s) {
   s->size[0] = s->size[1] = s->size[2] = 0x14;
   s->layer = 2;
   shot_trail_on(s, 0x9020D0, 0x300890);
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) != -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) != -1) {
     if (g.flags != 0) return;
     s->p130 += g.frame_ticks;
     if (300 < s->p130 && s->p12c == 0) s->p12c = 1;
@@ -380,7 +380,7 @@ void cb_shell(Shot* s) {
   s->layer = 2;
   s->anim = 5;
   s->size[0] = s->size[1] = s->size[2] = 0x14;
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   shot_trail_on(s, 0x9020D0, 0x300890);
   if (shot_fade_out(s) == 0) {
     if (g.flags != 0) return;
@@ -477,7 +477,7 @@ void cb_rock(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 4;
   s->size[2] = 0x30;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (shot_fade_out(s) != 0) {
     shot_kill(s);
     return;
@@ -521,7 +521,7 @@ void cb_rock(Shot* s) {
 void cb_wisp(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = static_cast<u16>(s->p130 + 2);
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (shot_image(s) == nullptr && s->p130 == 0) shot_image_set(s, afterimage_create(s, 6, 0x703080, 1));
   if (shot_fade_out(s) != 0) {
     shot_image_end(s);
@@ -553,7 +553,7 @@ void cb_shard(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 5;
   s->size[0] = s->size[1] = s->size[2] = 0x18;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   shot_trail_on(s, 0xC040F0, 0x4010A0);
   if (shot_fade_out(s) == 0) {
     if (g.flags != 0) return;
@@ -593,7 +593,7 @@ void cb_burst(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 5;
   s->size[0] = s->size[1] = s->size[2] = 0x18;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   shot_trail_on(s, 0x9020D0, 0x300890);
   if (shot_fade_out(s) == 0) {
     if (g.flags != 0) return;
@@ -706,7 +706,7 @@ void cb_ball(Shot* s) {
   s->anim = 1;
   s->size[0] = s->size[1] = s->size[2] = 0x14;
   if (shot_fade_out(s) == 0 && bobj_ground_height(s) >= s->pos[1]) {
-    shot_draw_and_box(s, 4, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
     if (g.flags != 0) return;
     bobj_move(s, s->vel);
     s->vel[1] += g.frame_ticks * 0x1000;
@@ -891,7 +891,7 @@ struct OperaUnit : PartyUnit {
   }
   // 0x801ef894: her effect animation (anim, mode) just behind her, facing her way.
   void effect_behind(int anim_no, int mode) {
-    if (Sprite* sp = unit_play_anim_ex(this, anim_no, mode)) {
+    if (Sprite* sp = unit_spawn_sprite_ex(this, anim_no, mode)) {
       sprite_place_near(sp, this, -0x60, 0, 0);
       sp->layer = 2;
       sp->facing[0] = facing[0];
@@ -989,12 +989,12 @@ void OperaUnit::move1() {
   if (once_at(4)) {
     if (camera_focus != 0) {
       const s32 ofs[3] = {bobj_facing_fx(this, 0xF0), 0, 0};
-      camera_set_lookat_offset(g.camera, ofs);
+      camera_set_follow_offset(g.camera, ofs);
     }
     if (Shot* s = shot_spawn_callback(cb_whirlwind)) {
       shot_place_at_unit(s, this, 0x40, 0x80, 0);
       pc_bind_shot(this, s, static_cast<s16>(lvl));
-      if (Sprite* sp = unit_play_anim(this, 9)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 9)) {
         sprite_set_pos_v(sp, s->pos);
         sprite_set_fade(sp, 0x80, -4, lvl * 8 + 0x28);
         sp->layer = 6;
@@ -1019,7 +1019,7 @@ void OperaUnit::move2() {
   pc_attack_anim_step(this);
   const int lvl = pc_move_charge_level(this, killer_index);
   if (once_at(2)) {
-    if (Sprite* sp = unit_play_anim(this, 2)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 2)) {
       sprite_place_near(sp, this, 0x40, 0x80, 0);
       sprite_set_fade(sp, 0x80, -8, 2);
       sp->layer = 2;
@@ -1095,7 +1095,7 @@ void OperaUnit::move4() {
   if (once_at(8)) {
     face_target(0x40000);
     effect_behind(4, 1);
-    if (Sprite* sp = unit_play_anim(this, 5)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 5)) {
       sprite_place_near(sp, this, 0x70, 0x90, 0);
       sprite_set_fade(sp, 0x80, -4, 4);
       sp->layer = 2;
@@ -1121,7 +1121,7 @@ void OperaUnit::move5() {
     bobj_texcache_reset(this);
     if (counters[2] == 0) {
       counters[2] = 1;
-      if (Sprite* sp = unit_play_anim(this, 5)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 5)) {
         sprite_set_pos_v(sp, pos);
         sprite_set_fade(sp, 0x80, -6, 4);
         sp->layer = 2;
@@ -1158,7 +1158,7 @@ void OperaUnit::move5() {
   } else {
     const s32 x = bobj_front_x(this, 0x70), y = pos[1] - 0x60000, z = pos[2];
     for (int i = 0; i < 3; i += 2) {
-      if (Sprite* sp = unit_play_anim(this, i + 7)) {
+      if (Sprite* sp = unit_spawn_sprite(this, i + 7)) {
         sprite_set_pos(sp, x, y, z);
         sprite_set_fade(sp, 0x80, -2, 0);
         sp->layer = static_cast<s8>(i + 2);
@@ -1354,7 +1354,7 @@ void OperaUnit::move9() {
     if (once_at(0xB)) {
       if (camera_focus != 0) {
         const s32 ofs[3] = {bobj_facing_fx(this, 500), 0, 0};
-        camera_set_lookat_offset(g.camera, ofs);
+        camera_set_follow_offset(g.camera, ofs);
       }
       effect_behind(3, 0xC);
       if (Shot* s = shot_spawn_callback(cb_vortex_area)) {

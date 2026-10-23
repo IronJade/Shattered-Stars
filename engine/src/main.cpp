@@ -1,6 +1,7 @@
 // Shattered Stars: Star Ocean: The Second Story, hand-ported to run natively.
 //
 //   shattered-stars [--disc1 IMAGE] [--disc2 IMAGE]      play (paths are remembered)
+//   shattered-stars --version / --help                   print the version (or usage) and exit
 //   shattered-stars-setup (setup.exe on Windows)         the settings window for players
 //
 // Settings live in config.ini (launcher/config.h: XDG_CONFIG_HOME, %APPDATA%\ShatteredStars
@@ -24,6 +25,12 @@
 // --capture DIR --capture-frames A,B,... (save the display on those vblanks),
 // --input FRAME:buttons,... (scripted controller, e.g. 900:down,906:none,930:cross).
 // SS_VRAM_PNG=file writes VRAM as a 1024x512 PNG when the run ends.
+// SS_SHOT="VBLANK:path.png[,VBLANK:path2.png,...]" (debug, default off; documentation
+// screenshots): writes the frame actually presented at each listed vblank, i.e. what a
+// player's window shows (scaled, letterboxed to 4:3) -- not the raw PS1 display buffer
+// --capture / SS_VRAM_PNG dump. A headless run opens no window otherwise; this opens a
+// second, hidden one just to render into and read back (SDL_VIDEO_DRIVER=offscreen keeps
+// it from appearing).
 //
 // Audio: --audio / --no-audio (remembered; on by default with a window, off when
 // headless unless --audio is given), --audio-wav FILE or SS_AUDIO_WAV=FILE (record
@@ -107,8 +114,9 @@ void print_no_disc(const std::string& disc1) {
 }
 
 int usage(const char* argv0) {
+  launcher::report("Shattered Stars %s\n", SS_VERSION);
   launcher::report(
-               "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
+               "usage: %s [--help] [--version] [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
                "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE]\n",
                argv0);
@@ -216,6 +224,12 @@ int main(int argc, char** argv) {
       config_changed = true;
     } else if (arg == "--audio-wav" && has_value) {
       audio_wav = next();
+    } else if (arg == "--version") {  // prints and exits; never touches config.ini
+      launcher::report("Shattered Stars %s\n", SS_VERSION);
+      return 0;
+    } else if (arg == "--help") {
+      usage(argv[0]);
+      return 0;
     } else {
       return usage(argv[0]);
     }
@@ -381,6 +395,10 @@ int main(int argc, char** argv) {
   }
 
   auto& rt = runtime::Runtime::get();
+  // The mods folder and its load order (mods/catalog.h). config.ini's order describes the
+  // configured folder only: with --mods / SS_MODS_DIR the defaults apply (or SS_MOD_ORDER).
+  const char* mods_env = std::getenv("SS_MODS_DIR");
+  if (rt.mods_dir.empty() && !(mods_env && *mods_env)) rt.mod_order = launcher::read_mod_order(config);
   if (rt.mods_dir.empty()) rt.mods_dir = launcher::path_utf8(launcher::mods_folder(config));
   if (debug_console) {
     game::field::debug_console_install();
@@ -398,6 +416,16 @@ int main(int argc, char** argv) {
   std::stringstream list(capture_frames);
   for (std::string n; std::getline(list, n, ',');)
     if (!n.empty()) rt.capture_frames.insert(std::strtoull(n.c_str(), nullptr, 10));
+
+  // SS_SHOT (see the top of this file): "VBLANK:path.png[,VBLANK:path2.png,...]".
+  if (const char* shot_env = std::getenv("SS_SHOT")) {
+    std::stringstream shots(shot_env);
+    for (std::string step; std::getline(shots, step, ',');) {
+      const auto colon = step.find(':');
+      if (colon == std::string::npos || colon == 0) continue;
+      rt.shot_frames[std::strtoull(step.substr(0, colon).c_str(), nullptr, 10)] = launcher::utf8_path(step.substr(colon + 1));
+    }
+  }
 
   // --input 900:down,906:none,930:cross+start
   const std::map<std::string, u16> button_names = {
@@ -446,6 +474,26 @@ int main(int argc, char** argv) {
     const launcher::ControlSettings controls = launcher::read_controls(config);
     window.set_controls(controls.controls);
     game::pad_set_player_stick(launcher::stick_deadzone_units(controls), controls.stick_dpad ? -1 : 0);
+  }
+
+  // SS_SHOT: a second window, independent of the one above (so a headless run stays
+  // headless -- no real-time pacing, no input polling -- see runtime::Runtime::vblank),
+  // used only to render and read back the listed vblanks. Fixed 1280x960 (4:3, matching
+  // the internal 320x240 at an integer scale of 4) so every screenshot comes out the same
+  // size regardless of config.ini.
+  platform::Window shot_window;
+  if (!rt.shot_frames.empty()) {
+    platform::WindowOptions shot_options;
+    shot_options.mode = platform::WindowMode::kWindowed;
+    shot_options.width = 1280;
+    shot_options.height = 960;
+    shot_options.vsync = false;
+    if (!shot_window.create("Shattered Stars (SS_SHOT)", shot_options, &error)) {
+      std::fprintf(stderr, "SS_SHOT: could not open an offscreen window (%s); no screenshots will be written\n",
+                   error.c_str());
+    } else {
+      rt.shot_window = &shot_window;
+    }
   }
 
   const launcher::SoundSettings sound = launcher::read_sound(config);

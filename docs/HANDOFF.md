@@ -48,12 +48,22 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 | Battle | `docs/handoff/battle.md` | stage references, Weirdaxe debris, final boss first AI draw, B13, M7 tick |
 | Effects | `docs/handoff/effects.md` | battle talk verified; field menu voice Redux check; then the catalog's unported rows |
 | Catalog | `docs/handoff/catalog.md`, `effects.md` | complete: 5429 rows, gap scan 0 missing over 32 programs (`tools/catalog_gaps.py`, `docs/catalog/gaps_explained.csv`), port column 0 empty; left: confidence pass (699 likely, 166 guess) |
+| Confidence pass | `docs/handoff/confidence_field.md`, `confidence_battle.md`, `confidence_boot.md` | done (2026-10-23): 5446 of 5452 rows confirmed; the last 6 are with the port-leads agent (`docs/handoff/port_leads.md`) |
+| Save page | `docs/handoff/savepage.md` | the Callways stop and sprite pack 0xbd2 fixes against Redux, on a scratch card with two saves of different parties |
+| Release (AP phase 5) | `docs/handoff/release.md` | prepared (09:20): `tools/build_apworld.sh` -> `dist/so2.apworld` + template YAML (packaged world: 4 seed sets, e2e 25/25), player docs, both bundles rebuilt, AP's general tests pass with the world in place; `docs/ap/release_checklist.md`. Open: the user's choices (maintainer, licence, port version), the DeathLink wording; publishing is the user's call |
+| Spell | `docs/handoff/spell.md` | re-recording the 12 lenient world_spell refs with `BW_TICK_LOG` |
 | World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
 | Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
 | Tools | `docs/handoff/tools.md` | reference regression suite (`tools/ref_regress.py`, quick set in checkpoints) |
 | Menu, Setup | `docs/handoff/menu.md`, `setup.md` | idle (M8 done; packaging done) |
 
 Main session: coordination, the user's decisions, the hourly commits.
+
+**Hosting (2026-10-23):** `origin` is https://github.com/IronJade/Shattered-Stars (public; the
+maintainer is IronJade); the old repo is the `dgs` remote. The history was rewritten once
+before the first push (commit emails changed to the GitHub noreply address, set repo-locally
+in `.git/config`), so commit ids from before 09:15 that day changed; the docs were updated.
+Commits stay local; push only when the user asks.
 
 **Never losing work:** agents write straight to disk and keep their logs and catalog rows
 current at least every 20 minutes. The main session commits once an hour with
@@ -67,7 +77,7 @@ only. Agents run the suites themselves before reporting a step as verified.
 
 - `cmake --build engine/build`; `SS_DISC1=<disc 1 .cue> engine/build/ss_tests` (76) and
   `engine/build/ss_game_tests` (71); `tools/smoke_field_events.sh` (16 checks; `SS_DISC1` must
-  be set, disc 2 is found next to it). All green at `a10f166` (ss_tests 78, ss_game_tests 104,
+  be set, disc 2 is found next to it). All green at `3cffe28` (ss_tests 78, ss_game_tests 104,
   smoke 62).
 - ASan without root: `dnf download libasan` (x86_64), `rpm2cpio | cpio -idm` into a scratch
   dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
@@ -114,9 +124,18 @@ blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
 - `--debug`: a console on the terminal (`help`; where / warp / fol / item / heal / flag /
   global / battle / noclip) and a status line in the window title.
 - `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;
-  `tools/so2_mod.py` writes them).
+  `tools/so2_mod.py` writes them): loose `*.patch` files and mod packages (`mod.json`;
+  `docs/notes/mods.md`), applied in config.ini's `mod_order` (setup's Mods page). With a
+  folder override the config's order is ignored; `SS_MOD_ORDER="(loose),id,-id"` sets one
+  for a test run. `tools/mod_check.py` / `tools/mod_verify.py` check packages.
 - `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
 - `SS_STATE_DUMP="VBLANK:PATH,..."` the state block, config, party, records and inventory at those vblanks; `SS_MENU_DUMP=prefix` (with `SS_MENU_DUMP_OPEN`, `SS_MENU_DUMP_DELAY=n`) the same blocks around field menus.
+- `SS_SHOT="VBLANK:path.png[,VBLANK:path2.png,...]"` (default off; documentation
+  screenshots, `docs/images/`, `docs/handoff/readme_shots.md`) writes the frame actually
+  presented at each listed vblank -- the OpenGL output a player's window shows (scaled,
+  letterboxed to 4:3) -- not the raw PS1 display buffer `--capture` / `SS_VRAM_PNG` dump. A
+  headless run opens no window otherwise; this opens a second, hidden one just to render
+  into and read back with `glReadPixels`.
 - `SS_DEBUG_INPUT="VBLANK:cmd;VBLANK:cmd"` types debug console commands at set vblanks (with `--debug`).
 - `--ap-seed FILE` loads an Archipelago seed (docs/ap/seed_format.md; console `ap_status`,
   `ap_check ID`, `ap_give ITEM [FROM]`; `[ap]` log lines). `SS_AP_SERVER=ws://localhost:PORT`
@@ -137,7 +156,10 @@ blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
 - Agents keep their `docs/handoff/<area>.md` complete enough to resume from, because each
   one is replaced by a fresh agent once its context passes ~400k tokens (cost per step
   grows with context size).
-- No game code or assets in git; data is read from the user's discs at run time.
+- No game code or assets in git; data is read from the user's discs at run time. One
+  exception, the user's decision (2026-10-23): a handful of documentation screenshots of the
+  port running, in `docs/images/` only, used by the README and wiki. Nothing else from the
+  discs (no extracted textures, sprites, audio, logos or data files).
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).
 - Never touch `~/.config/shattered-stars/config.ini` (no `--audio` / `--no-audio` or other

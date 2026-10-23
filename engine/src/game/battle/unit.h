@@ -242,7 +242,7 @@ int enemy_attack_step(EnemyUnit* e);           // 0x8003df44
 int enemy_nearest_party_index(const Unit* e);  // 0x8003e068
 void enemy_try_cast(EnemyUnit* e);             // 0x8003e3b0
 Unit* enemy_random_party_member(const Unit* e);  // 0x8003e7d4
-bool unit_random_run(Unit* u, s32 range, s32 min_dist);  // 0x800541e8: true when no free spot was found
+bool unit_pick_random_destination(Unit* u, s32 range, s32 min_dist);  // 0x800541e8: true when no free spot was found
 void battle_victory_begin(Unit* last_hitter);  // 0x80048c5c
 
 // Player characters (vtable 0x8006b6d0, ctor 0x80034ed0, 0x360 bytes for Claude). The
@@ -307,7 +307,7 @@ struct PartyUnit : Unit {
 
   PartyUnit();                        // 0x80034ed0
   void update() override;             // [1] pc_update 0x80034fe8
-  int start_reaction() override;      // [5] pc_on_hit 0x8003bb84
+  int start_reaction() override;      // [5] pc_start_reaction 0x8003bb84
   int skill_level(int skill) override;  // [9] pc_skill_level 0x8003b794
   void update_status_effects() override;  // [10] pc_update_effects 0x8003adc8
   void begin_action() override;       // [12] pc_begin_action 0x80037098

@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "id": "arlia-crate-fol",
+  "name": "Arlia crate holds 500 Fol",
+  "version": "1.0.0",
+  "author": "IronJade",
+  "description": "The middle crate in front of Hearn's general store in Arlia holds 500 Fol instead of 200. A sample of a chest-contents mod.",
+  "min_port_version": "0.01.00",
+  "tags": ["chests", "economy"],
+  "homepage": "https://github.com/IronJade/Shattered-Stars",
+  "patches": ["crate.patch"]
+}

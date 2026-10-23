@@ -447,7 +447,7 @@ def main():
 
     jobs = min(max(1, args.jobs), 5)
     ts = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    root_out = args.out or os.path.join(ROOT, 'scratchpad/regress', ts)
+    root_out = os.path.abspath(args.out) if args.out else os.path.join(ROOT, 'scratchpad/regress', ts)  # absolute: the owners' scripts run in their own dirs
     os.makedirs(root_out, exist_ok=True)
 
     results = []

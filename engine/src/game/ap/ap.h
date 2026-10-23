@@ -95,10 +95,17 @@ bool on_give_money(s32 amount);
 // page each), else null. Messages no window takes become banners. A placeholder reached
 // again in the same vblank (a loop giving copies) is ignored.
 const u8* take_message_override();
-// battle_exit_to_field: boss checks and the goal (outcome 0 = victory).
+// battle_exit_to_field: boss checks and the goal. A boss location is checked on a victory
+// (outcome 0), on a time-up (4: a timed survival lasted, 516 / 520) and, when the script let
+// the party lose (the flag battle_frame latched), on the wipe (2: 204 / 517 / 530); never on an
+// escape (1, 3). The goal needs a victory.
 void on_battle_exit(int encounter, int outcome);
-// The battle's frame: a received DeathLink KOs the party (the console's own defeat follows).
+// The battle's frame: latches the lose-allowed flag (field_flags +0x7E = 0) for
+// on_battle_exit; a received DeathLink KOs the party (the console's own defeat follows),
+// except in a fight the script lets the party lose, where it waits for the field.
 void battle_frame();
+// The lose-allowed flag as battle_frame latches it (tests; on_battle_exit clears it).
+void note_battle_lose_allowed(bool lose_allowed);
 // field_begin_game_over: DeathLink out (not for a death a DeathLink caused).
 void on_game_over();
 // A DeathLink as if received (console `ap_deathlink`; the link's kDeathLink).

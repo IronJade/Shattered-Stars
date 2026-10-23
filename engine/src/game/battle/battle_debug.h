@@ -28,7 +28,9 @@ void battle_debug_set_end(const std::string& end);
 // count of rng_next calls). SS_BATTLE_DUMP=<file>: at battle_exit_to_field writes the
 // handoff blocks the field reads back (2 config 0x2a0, 3 party 0x300, 4 records 0x680,
 // 6 inventory 0xc28, in that order) for a comparison with a RAM dump of the original.
-// SS_BATTLE_GOD=1: the standing party members' HP is refilled every frame (sweeps).
+// SS_BATTLE_GOD=1: the standing party members' HP is refilled every frame (sweeps); =HP
+// (above 1) also holds their maximum at HP.
+// SS_BATTLE_DEBUG_ENC=E,...: SS_BATTLE_GOD and SS_BATTLE_HP1 only in those encounters.
 // SS_BATTLE_CAM=1: the camera / clock fields once a frame. SS_BATTLE_BOXES=LO:HI: every
 // unit's box mask, enabled boxes and animation fields once a frame in that frame range.
 void battle_debug_frame();

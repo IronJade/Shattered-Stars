@@ -153,7 +153,7 @@ void shot_wave(Shot* s) {
   s->loop_limit = 1;
   s->layer = 2;
   s->size[2] = s->owner->size[2];
-  if (static_cast<s16>(shot_draw_and_box(s, 6, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 6, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }

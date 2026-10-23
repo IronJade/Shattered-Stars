@@ -134,7 +134,7 @@ struct EnemyMarsilio : EnemyUnit {
       if (frame > 12) kind = 2;
       if (unit_attack_targets(this, n, units, points, kind == 2 ? 0x200 : 0x100, angle, 0) != 0 && kind != 0) {
         for (int i = 0; i < n; ++i) {
-          if (Sprite* sp = unit_play_anim_ex(this, kind + 8, 1)) {
+          if (Sprite* sp = unit_spawn_sprite_ex(this, kind + 8, 1)) {
             sprite_set_pos_v(sp, points[i].data());
             sp->scale_y = 0x2000;
             sp->scale_x = 0x2000;
@@ -179,7 +179,7 @@ struct EnemyMarsilio : EnemyUnit {
     bsfx_play_at(0x21, this);
     s32 deg = 0;
     for (int i = 0; i < 0x18; ++i, deg += 0xF000) {
-      Sprite* sp = unit_play_anim(this, 0xD);
+      Sprite* sp = unit_spawn_sprite(this, 0xD);
       if (sp == nullptr) continue;
       sprite_set_fade(sp, 0x80, -2, 8);
       const s32 at[3] = {victim->pos[0], bobj_ground_height(victim), victim->pos[2]};

@@ -156,7 +156,7 @@ void shadow_bolt(SpellCast* sc) {
     case 3:
       bsfx_play_at(0x4E, t);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, t->pos, 0xC00, 0xE3, 0x1000, 0x3C, 0x80, 5);
       }
       spell_hit_target(sc, 0x100, 0x10);

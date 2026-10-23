@@ -79,8 +79,8 @@ int pc_try_ambush_skill(PartyUnit* u) {
   if (u->approach_side != 0) return 0;
   const Unit* t = u->target;
   if (t != nullptr) {
-    const bool facing_me = t->facing[0] < 0 ? t->pos[0] < u->pos[0] : u->pos[0] < t->pos[0];
-    if (facing_me) return 0;
+    const bool facing_away = t->facing[0] < 0 ? t->pos[0] < u->pos[0] : u->pos[0] < t->pos[0];
+    if (facing_away) return 0;
   }
   const StageData& st = stage();
   s32 room = u->pos[0] - st.bounds[0];
@@ -296,7 +296,7 @@ void unit_update_status_effects(Unit* u) {
 
 int PartyUnit::start_reaction() {
   if (reaction == 2) {
-    // pc_on_hit 0x8003bb84: equipment that throws weapons when the member is knocked back.
+    // pc_start_reaction 0x8003bb84: equipment that throws weapons when the member is knocked back.
     if (status_test(2, 0x4000) != 0) {
       talk_trace("throw", this, 0);
       unit_throw_weapons(this, 0);
@@ -464,7 +464,7 @@ void PartyUnit::model_select(int n) {
 void PartyUnit::camera_follow_start() {
   BattleGlobals& g = bg();
   if (g.flags == 0 && g.controlled_slot == slot && camera_focus == 0 && g.camera_special == nullptr) {
-    camera_end_scheduled();
+    camera_end_scheduled_now();
     camera_request_mode(g.camera, 7, this);
     camera_focus = 1;
   }
@@ -977,7 +977,7 @@ void PartyUnit::state_leap() {
   airborne = 1;
   if (g.flags == 0) {
     if (g.controlled_slot == slot && camera_focus == 0) {
-      camera_end_scheduled();
+      camera_end_scheduled_now();
       camera_set_mode(g.camera, 7, this);
       camera_focus = 1;
     }
@@ -1202,7 +1202,7 @@ void pc_ai_update(PartyUnit* u) {
   } else {
     // Forced to move (+0x11c bit 4): a run to a random point within 0x300.
     u->status_bits &= ~0x10u;
-    if (!unit_random_run(u, 0x300, 0)) {
+    if (!unit_pick_random_destination(u, 0x300, 0)) {
       u->move_mode = 1;
       u->action = 1;
       u->start_approach();

@@ -76,7 +76,7 @@ struct EnemyLover : EnemyUnit {
     }
     if (counters[1] != 0 || bg().flags != 0 || frame < 9) return;
     for (int i = 0; i < 3; ++i) {
-      Sprite* sp = unit_play_anim(this, 8);
+      Sprite* sp = unit_spawn_sprite(this, 8);
       if (sp == nullptr) continue;
       const Vec4 p = vec_random_in_disc_xz(pos, 0x40);
       sprite_set_pos_v(sp, p.data());
@@ -96,7 +96,7 @@ void shot_burst(Shot* s) {
   s->loop_limit = 1;
   s->size[2] = 0x60;
   s->layer = 2;
-  if (static_cast<s16>(shot_draw_and_box(s, 5, 0xFFFFFFFF)) == -1 || g.state != kStateFighting) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 5, 0xFFFFFFFF)) == -1 || g.state != kStateFighting) {
     shot_kill(s);
     return;
   }

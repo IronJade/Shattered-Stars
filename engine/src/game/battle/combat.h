@@ -38,7 +38,7 @@ void damage_popup_spawn_at(const s32 pos[3], s32 value, s32 vx, int is_mp);  // 
 void damage_popups_reset();
 
 // Screen shake + pad vibration (#1984.0): y only (0x80072594) or both axes (0x800725d4).
-void screen_shake(int amp_y, int period_y, int frames);
-void screen_shake2(int amp_x, int amp_y, int period_x, int period_y, int frames);
+void screen_shake_vertical(int amp_y, int period_y, int frames);
+void screen_shake(int amp_x, int amp_y, int period_x, int period_y, int frames);
 
 }  // namespace ss::game::battle

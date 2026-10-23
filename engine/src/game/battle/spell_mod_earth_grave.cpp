@@ -54,7 +54,7 @@ void spike(Shot* s) {
       s->pos[1] = ground;
       s->p12c = 1;
       s->target->shake_amp = 10;
-      screen_shake2(4, 3, 2, 2, 8);
+      screen_shake(4, 3, 2, 2, 8);
       bsfx_play_at(0x4E, s);
     }
   } else if (s->p12c == 1) {
@@ -92,7 +92,7 @@ void earth_grave(SpellCast* sc) {
       spellcast_dim_begin(sc, c->is_enemy);
       battle_flash_set(sc, 0x50, 0x50, 0x50);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = rng_range(2) != 0 ? 0xCE3 : 0xB1C;
         camera_move_to(g.camera, at, yaw, 0x18E, 0x800, 0x1E, 0x80, 5);
       }

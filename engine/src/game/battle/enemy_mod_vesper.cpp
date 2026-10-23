@@ -48,7 +48,7 @@ struct EnemyVesper : EnemyUnit {
   void state_approach() override {
     EnemyUnit::state_approach();
     if (bg().flags != 0) return;
-    Sprite* sp = unit_play_anim(this, 0x16);
+    Sprite* sp = unit_spawn_sprite(this, 0x16);
     if (sp == nullptr) return;
     const s32 feet[3] = {pos[0], bobj_ground_height(this), pos[2]};
     sprite_set_pos_v(sp, feet);
@@ -116,7 +116,7 @@ struct EnemyVesper : EnemyUnit {
     }
     if (counters[0] != 1) return;
     const s32 tip[3] = {bobj_front_x(this, 0xE0), pos[1] - 0x100000, pos[2]};
-    if (Sprite* sp = unit_play_anim(this, 0xE)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 0xE)) {
       const Vec4 r = vec_random_around(tip, static_cast<s32>(rng_range(0x100)));
       sprite_set_pos_v(sp, r.data());
       sprite_set_fade(sp, 0x80, -4, 8);
@@ -152,7 +152,7 @@ struct EnemyVesper : EnemyUnit {
     if (bg().flags != 0) return;
     if (counters[1] == 0 && frame > 6) {
       counters[1] = 1;
-      if (Sprite* sp = unit_play_anim(this, 0x12)) {
+      if (Sprite* sp = unit_spawn_sprite(this, 0x12)) {
         sprite_set_pos_v(sp, hand);
         sprite_set_fade(sp, 0x80, -2, 0x10);
         sp->layer = 3;

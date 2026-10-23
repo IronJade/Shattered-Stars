@@ -12,6 +12,7 @@
 #include "ap_net/link.h"
 #include "game/ap/ap.h"
 #include "game/ap/json.h"
+#include "game/battle/battle.h"
 #include "game/field/field.h"
 #include "game/field/script_vm.h"
 #include "test.h"
@@ -754,6 +755,131 @@ TEST(ap_deathlink_scenes) {
   CHECK(ap::deathlink_pending());
   ap::on_battle_exit(539, 2);  // (a lost final fight is no ending)
   CHECK(ap::deathlink_pending());
+  ap::stop();
+}
+
+// The boss checks of the fights that can't be won [deathlink agent]: a fight the script lets
+// the party lose (field_flags +0x7E = 0; Dias 204, Shin on the ship 517, Marsilio 530) is
+// checked on the scripted defeat, a timed survival (Shin 516, Berle 520) on the time-up; the
+// goal still needs a victory. Outcomes: 0 victory, 1 escaped, 2 wiped out, 3 ran off, 4 time up.
+namespace {
+
+std::string scripted_loss_seed() {
+  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+                          "\"options\": {\"deathlink\": true}, \"goal\": {\"encounters\": [540]}");
+  return replace(t, "{\"id\": 1, \"name\": \"Cyril\",",
+                 "{\"id\": 204, \"name\": \"Dias\", \"check\": {\"type\": \"boss\", \"encounter\": 204},"
+                 " \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 1}},\n"
+                 "    {\"id\": 517, \"name\": \"Shin (ship)\", \"check\": {\"type\": \"boss\", \"encounter\": 517},"
+                 " \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 1}},\n"
+                 "    {\"id\": 516, \"name\": \"Shin (front line)\", \"check\": {\"type\": \"boss\", \"encounter\": 516},"
+                 " \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 1}},\n"
+                 "    {\"id\": 191, \"name\": \"Alen-Tax\", \"check\": {\"type\": \"boss\", \"encounter\": 191},"
+                 " \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 1}},\n"
+                 "    {\"id\": 1, \"name\": \"Cyril\",");
+}
+
+}  // namespace
+
+TEST(ap_boss_checks_scripted_loss) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(scripted_loss_seed(), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  ap::start_with(s);
+  // A fight whose loss is a game over: the wipe checks nothing, nor does an escape.
+  ap::on_battle_exit(191, 2);
+  ap::on_battle_exit(191, 1);
+  ap::on_battle_exit(191, 3);
+  CHECK(!ap::is_checked(191));
+  // A fight the script lets the party lose: an escape or the race lost still checks nothing...
+  ap::note_battle_lose_allowed(true);
+  ap::on_battle_exit(204, 1);
+  ap::note_battle_lose_allowed(true);
+  ap::on_battle_exit(204, 3);
+  CHECK(!ap::is_checked(204));
+  // ... the flag is that battle's only (the exit clears it) ...
+  ap::on_battle_exit(204, 2);
+  CHECK(!ap::is_checked(204));
+  // ... and the scripted defeat checks it, its own item given in free play.
+  const size_t before = ap::pending_count();
+  ap::note_battle_lose_allowed(true);
+  ap::on_battle_exit(204, 2);
+  CHECK(ap::is_checked(204) && ap::pending_count() == before + 1);
+  // A victory there checks it too (the tournament's Dias: a win starts the fight again).
+  ap::on_battle_exit(517, 0);
+  CHECK(ap::is_checked(517));
+  // A timed survival: the time-up is the win, whatever the flag.
+  ap::on_battle_exit(516, 4);
+  CHECK(ap::is_checked(516));
+  // A victory, as before.
+  ap::on_battle_exit(191, 0);
+  CHECK(ap::is_checked(191));
+  // The goal needs the victory: not a scripted loss, not a time-up.
+  ap::note_battle_lose_allowed(true);
+  ap::on_battle_exit(540, 2);
+  ap::on_battle_exit(540, 4);
+  CHECK(!ap::state().goal_done);
+  ap::on_battle_exit(540, 0);
+  CHECK(ap::state().goal_done);
+  ap::stop();
+}
+
+TEST(ap_deathlink_lose_allowed_battle) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(scripted_loss_seed(), &s, &error));
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "12345678901234567890";
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected());
+  // A fight in progress, no party units, no state block (the latch keeps what it was told).
+  battle::BattleGlobals& g = battle::bg();
+  const auto saved_state = g.state;
+  const auto saved_flags = g.flags;
+  auto* const saved_handoff = g.handoff;
+  const auto saved_units = g.party_units;
+  g.state = battle::kStateFighting;
+  g.flags = 0;
+  g.handoff = nullptr;
+  g.party_units.fill(nullptr);
+  ap::on_program(ap::Scene::kBattle);
+  // Shin on the ship (lose-allowed): a DeathLink received in the fight waits for the field;
+  // the scripted defeat checks the boss and sends nothing (no game over follows).
+  ap::note_battle_lose_allowed(true);
+  ap::deathlink_receive("Alice", "");
+  ap::battle_frame();
+  CHECK(ap::deathlink_pending());
+  ap::on_battle_exit(517, 2);
+  CHECK(ap::is_checked(517) && ap::deathlink_pending() && deaths.empty());
+  // Shin at the front line (a loss is a game over): the DeathLink fells the party there; the
+  // loss checks nothing and its game over sends no DeathLink back.
+  ap::on_program(ap::Scene::kBattle);
+  ap::battle_frame();
+  CHECK(!ap::deathlink_pending());
+  ap::on_battle_exit(516, 2);
+  ap::on_game_over();
+  CHECK(!ap::is_checked(516) && deaths.empty());
+  // A wipe of its own there is a game over that sends one.
+  ap::on_program(ap::Scene::kBattle);
+  ap::battle_frame();
+  ap::on_battle_exit(516, 2);
+  ap::on_game_over();
+  CHECK(deaths.size() == 1 && !ap::is_checked(516));
+  g.state = saved_state;
+  g.flags = saved_flags;
+  g.handoff = saved_handoff;
+  g.party_units = saved_units;
   ap::stop();
 }
 

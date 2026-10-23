@@ -335,7 +335,7 @@ void divine_comedy(SpellCast* sc) {
         }
       }
       for (int i = 0; i < g.frame_ticks << 1; ++i) {
-        Sprite* sp = unit_play_anim(c, static_cast<int>(rng_range(8)) + 0x18);
+        Sprite* sp = unit_spawn_sprite(c, static_cast<int>(rng_range(8)) + 0x18);
         if (sp == nullptr) continue;
         const Vec4 at = vec_random_in_disc_xz(kZeroVector, 2000);
         sprite_set_pos_v(sp, at.data());
@@ -350,7 +350,7 @@ void divine_comedy(SpellCast* sc) {
       if (400 < sc->s34 && sc->s38 == 0) {
         sc->s38 = 1;
         screen_fade_create(0, 0x20, -8, 0x3C);
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 at[3] = {0, static_cast<s32>(0xFF448000), 0};
         const s32 yaw = rng_range(2) != 0 ? 0xAAA : 0xD55;
         camera_move_to(g.camera, at, yaw, 0xE3, 0x1BBC, 0xB4, 0x80, 5);
@@ -369,12 +369,12 @@ void divine_comedy(SpellCast* sc) {
           r->anim = 0x12;
           bobj_share_sprite(c, r);
         }
-        screen_shake2(4, 2, 2, 2, 0x1A4);
+        screen_shake(4, 2, 2, 2, 0x1A4);
       }
       return;
     }
     case 3:
-      if (Sprite* sp = unit_play_anim(c, 0x20)) {
+      if (Sprite* sp = unit_spawn_sprite(c, 0x20)) {
         Vec4 at = vec_random_in_disc_xz(kZeroVector, sc->s28);
         at.y = static_cast<s32>(0xFF254000);
         sprite_set_pos_v(sp, at.data());
@@ -383,7 +383,7 @@ void divine_comedy(SpellCast* sc) {
         sprite_set_fade(sp, 0x80, -2, 8);
         sp->layer = 0xC;
       }
-      if (Sprite* sp = unit_play_anim(c, 0x21)) {
+      if (Sprite* sp = unit_spawn_sprite(c, 0x21)) {
         Vec4 at = vec_random_in_disc_xz(kZeroVector, sc->s28);
         at.y = static_cast<s32>(0xFF254000);
         sprite_set_pos_v(sp, at.data());
@@ -428,7 +428,7 @@ void divine_comedy(SpellCast* sc) {
         sp->scale_y = 0x2000;
         sp->scale_x = 0x2000;
       }
-      if (Sprite* sp = unit_play_anim(c, 0x23)) {
+      if (Sprite* sp = unit_spawn_sprite(c, 0x23)) {
         sprite_set_pos_v(sp, centre);
         sp->layer = 0xE;
         sprite_set_fade(sp, 0x80, -2, 0xB4);
@@ -465,7 +465,7 @@ void divine_comedy(SpellCast* sc) {
         bsfx_play_ui(0x21);
         bsfx_play_ui(0x50);
         bsfx_play_ui(0x52);
-        screen_shake2(5, 6, 4, 2, 600);
+        screen_shake(5, 6, 4, 2, 600);
         screen_fade_create(0xFFFFFF, 0x20, 8, 0);
         sc->s34 = 0;
         sc->step = 6;
@@ -486,7 +486,7 @@ void divine_comedy(SpellCast* sc) {
           sp->scale_y = 0x2000;
           sp->scale_x = 0x2000;
         }
-        if (Sprite* sp = unit_play_anim(c, 0x22)) {
+        if (Sprite* sp = unit_spawn_sprite(c, 0x22)) {
           sprite_set_pos_v(sp, centre);
           sp->layer = 0xE;
           sprite_set_fade(sp, 0x80, -2, 0x78);
@@ -510,7 +510,7 @@ void divine_comedy(SpellCast* sc) {
       sc->s34 += g.frame_ticks * 8;
       for (int i = 0; i < 2; ++i) {
         const int anim = rng_range(2) != 0 ? 0x17 : 0x20;
-        Sprite* sp = unit_play_anim_ex(c, anim, 1);
+        Sprite* sp = unit_spawn_sprite_ex(c, anim, 1);
         if (sp == nullptr) continue;
         s32 p[4];
         stage_random_point(p, 1);

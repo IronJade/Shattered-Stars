@@ -20,7 +20,7 @@ u32 rng15() { return static_cast<u32>(rng_next() & 0x7FFF); }
 // unless another of its side is already releasing one.
 void spell_camera_on(Unit* u) {
   BattleGlobals& g = bg();
-  camera_end_scheduled();
+  camera_end_scheduled_now();
   camera_request_mode(g.camera, 7, u);
   g.camera_special = u;
   u->camera_focus = 1;

@@ -76,6 +76,17 @@ void rolling_shadow(Shot* s, s32 rest, s32 base) {
 int rolling_hits(Shot* s, s32 damage, u8 hit_flag) {
   int hits = 0;
   for (int side = 0; side < 2; ++side) {
+    // ORIGINAL BUG (original_bugs.md B17): each block's hit list is a 4-entry stack array,
+    // but collider_attack_overlaps can return 8 enemies. The stage 0x24 cart (block 8
+    // 0x8008c47c, units at sp+0x38): a 5th overwrites the spilled list pointer (sp+0x48) the
+    // loop reloads, so it reads unit pointers out of an enemy's fields (likely a crash), and
+    // 7-8 also the saved s0 / s1. The stage 0xd boulder (block 5 0x8008c2ac: units sp+0x28,
+    // points sp+0x38, frame 0xa0) and the stage 0x1a boulder (block 2 0x8008c2d0: sp+0x40 /
+    // sp+0x50, frame 0xc8): hits 5-8 write units over point 0 (the first spark's position)
+    // and points over the saved registers (boulder 0xd: s0-s2 at 5, ra at 7; boulder 0x1a:
+    // s0-s2 at 6, ra at 8):
+    //   Unit* units[4]; Vec4 points[4];
+    // The port keeps 8 of each; up to 4 hits it plays exactly as the console.
     Unit* units[8] = {};
     Vec4 points[8] = {};
     const int n = collider_attack_overlaps(s, units, points, side);

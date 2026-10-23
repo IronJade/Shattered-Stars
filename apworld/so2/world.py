@@ -24,7 +24,7 @@ class SO2Web(WebWorld):
     tutorials = [Tutorial(
         "Multiworld Setup Guide",
         "Playing Star Ocean: The Second Story in a multiworld on Shattered Stars.",
-        "English", "setup_en.md", "setup/en", ["Shattered Stars"])]
+        "English", "setup_en.md", "setup/en", ["IronJade"])]
 
 
 class SO2World(World):

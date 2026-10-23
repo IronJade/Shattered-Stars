@@ -39,6 +39,15 @@ class Runtime {
   std::filesystem::path capture_dir;
   std::set<u64> capture_frames;
 
+  // Debug (SS_SHOT, default off; docs/HANDOFF.md): a second, separate window -- never
+  // paced, never polled for player input, so it doesn't change a headless run's speed or
+  // behaviour -- used only to render the exact frame a player's window would show (scaled,
+  // letterboxed to 4:3) and read it back with glReadPixels, at each listed vblank. Unlike
+  // capture_dir/capture_frames (the raw PS1 display buffer, before window scaling), this is
+  // the final OpenGL output. main.cpp creates 'shot_window' only when SS_SHOT is set.
+  platform::Window* shot_window = nullptr;
+  std::map<u64, std::filesystem::path> shot_frames;
+
   void (*vsync_callback)() = nullptr;  // VSyncCallback
   // Port feature: the Archipelago link's events, once per vblank on the game thread
   // (game/ap installs it while connected). [world agent]
@@ -58,9 +67,11 @@ class Runtime {
   // degrees, game_state +0x18 / +0x1e).
   bool debug_start_pos_set = false;
   int debug_start_pos[5] = {0, 0, 0, 0, 0};
-  // World edits: directory of *.patch files (mods/ next to config.ini; --mods DIR,
-  // SS_MODS_DIR); see game/field/mods.h.
+  // World edits: directory of *.patch files and mod packages (mods/ next to config.ini;
+  // --mods DIR, SS_MODS_DIR); see game/field/mods.h. 'mod_order' is config.ini's load
+  // order (mods/catalog.h), used only for the configured folder; SS_MOD_ORDER overrides it.
   std::string mods_dir;
+  std::string mod_order;
   // Debug console (--debug): lines typed into the terminal run as commands on the game
   // thread at the next vblank (game code installs the handler), and the window title
   // shows a status line from 'debug_status' twice a second.

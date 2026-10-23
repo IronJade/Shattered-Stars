@@ -225,7 +225,7 @@ void draw_giant(SpellCast* sc, const QuakeState& st) {
 // the third stamp hits every grounded unit of the other side inside the arena (element 1).
 void stamp(SpellCast* sc, QuakeState& st, int k, const Vec4 centres[3]) {
   BattleGlobals& g = bg();
-  screen_shake2(6, 4, 4, 4, 0x20);
+  screen_shake(6, 4, 4, 4, 0x20);
   st.radius[k] = 0xC0;
   bsfx_play_at(0x50, &sc->obj);
   bsfx_play_at(0x4C, &sc->obj);
@@ -403,7 +403,7 @@ void earthquake(SpellCast* sc) {
       spellcast_dim_begin(sc, c->is_enemy);
       battle_flash_set(sc, 0x40, 0x40, 0x40);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         sc->obj.pos[1] = 0x3E8000;
         sc->obj.pos[0] = 0;
         sc->obj.pos[2] = 0;

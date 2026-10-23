@@ -59,7 +59,7 @@ void bolt(Shot* s) {
       if (Shot* r = effect_spawn_sparks_at(at, 0x20, 0x140, 0, 0x10, 0x5A, 4, 3, 0x100, 0)) r->vel[2] = 0x400;
       at[1] = bobj_ground_height(t);
       effect_spawn_sparks_at(at, 0x14, 0xF0, 0, 0x10, 0x3C, 0xB, 4, 0x100, 0);
-      screen_shake2(4, 6, 4, 4, 10);
+      screen_shake(4, 6, 4, 4, 10);
       for (int i = 0; i < 0xC; ++i) {
         const s32 c[3] = {t->pos[0], t->pos[1] + t->size[1] * -0x2000, t->pos[2]};
         const Vec4 end = vec_random_around(c, 1000);

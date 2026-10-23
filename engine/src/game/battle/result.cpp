@@ -371,7 +371,7 @@ void draw_levelups(ResultScreen* rs) {  // 0x80086ec8
   }
   const int m = rs->member;
   PartyUnit* u = g.party_units[m];
-  if (g.camera->mode == 6) camera_reset_mode(g.camera);
+  if (g.camera->mode == 6) camera_reset(g.camera);
   camera_request_mode(g.camera, 5, u);
   window_text_begin(rs);
   if (rs->voice_done[m] == 0) {

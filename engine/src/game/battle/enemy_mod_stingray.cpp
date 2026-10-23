@@ -139,7 +139,7 @@ struct EnemyStingray : EnemyUnit {
 void enemy_mod_stingray_shot_k26(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 7;
-  shot_draw_and_box(s, 5, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 5, 0xFFFFFFFF);
   s->size[2] = 0x24;
   s->size[1] = 0x24;
   s->size[0] = 0x24;

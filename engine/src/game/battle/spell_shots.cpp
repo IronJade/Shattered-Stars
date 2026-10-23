@@ -76,7 +76,7 @@ void shot_skill_camera_start(Shot* s) {
   if (!controlled_is(s->owner) || g.flags != 0) return;
   g.director_timer = 0;
   s->owner->camera_focus = 1;
-  camera_end_scheduled();
+  camera_end_scheduled_now();
   camera_request_mode(g.camera, 7, s->owner);
 }
 
@@ -219,7 +219,7 @@ void shot_k07_firebolt_orbit(Shot* s) {
   BattleGlobals& g = bg();
   shot_use_anims_f920(s);
   s->anim = 0xB;
-  shot_draw_and_box(s, 6, 0x60FF);
+  shot_draw_with_shadow(s, 6, 0x60FF);
   if (g.flags != 0) return;
   const Vec4 p = sphere_point(s->point, s->p12c, s->p130, s->p134);
   s->pos[0] = p.x, s->pos[1] = p.y, s->pos[2] = p.z, s->pos_w = p.w;
@@ -269,7 +269,7 @@ void shot_k08_firebolt(Shot* s) {
   const s32 i8 = int8(s->owner), p16 = div_pow2(s->power, 4);
   s->size[2] = 0x40;
   s->roll = static_cast<s16>(s->roll + static_cast<s16>(g.frame_ticks) * 0x20);
-  if (static_cast<s16>(shot_draw_and_box(s, 6, 0x40FF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 6, 0x40FF)) == -1) {
     shot_skill_camera_end(s);
     shot_kill(s);
     return;
@@ -322,10 +322,10 @@ void shot_k09_ice_needle(Shot* s) {
   shot_use_anims_f920(s);
   s->anim = static_cast<u16>(s->p128 != 0 ? 0xF : 0x10);
   s->loop_limit = s->p128 == 0 ? 1 : 0;
-  if (static_cast<s16>(shot_draw_and_box(s, 5, 0xFFFFFFFF)) == -1 && s->p128 == 0) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 5, 0xFFFFFFFF)) == -1 && s->p128 == 0) {
     bobj_anim_reset(s);
     s->anim = 0xF;
-    shot_draw_and_box(s, 5, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 5, 0xFFFFFFFF);
     s->p128 = 1;
     set_vel(s, vec_velocity_toward_xz(s->pos, s->target->pos, 0x20));
     s->facing[0] = s->vel[0];
@@ -399,7 +399,7 @@ void shot_k0a_thunderbolt(Shot* s) {
   if (0x10 < s->p128) {
     s->anim = 0x12;
     shot_fade_out(s);
-    shot_draw_and_box(s, 8, 0x2000FFFF);
+    shot_draw_with_shadow(s, 8, 0x2000FFFF);
   }
   if (s->p130 == 0 && 0x14 < s->p128) {
     s->p130 = 1;
@@ -418,7 +418,7 @@ void shot_k0a_thunderbolt(Shot* s) {
   if (controlled_is(s->owner)) camera_request_mode(g.camera, 5, s->target);
   if (s->hit_landed != 0) return;
   if (shot_hit_magic(s, i8 + p16 + 0x23, s->owner->is_enemy, 0x4C, 0x10, 0, 0x10) == 0) return;
-  screen_shake(2, 2, 0x10);
+  screen_shake_vertical(2, 2, 0x10);
   shot_skill_camera_end(s);
   shot_hit_burst(s, 0);
   s->p12c = 1;
@@ -457,7 +457,7 @@ void shot_k0b_grave(Shot* s) {
   bobj_anim_draw(s, 1);
   s->anim = 0x19;
   s->layer = 1;
-  const s16 f = static_cast<s16>(shot_draw_and_box(s, 8, 0xFFFFFFFF));
+  const s16 f = static_cast<s16>(shot_draw_with_shadow(s, 8, 0xFFFFFFFF));
   if (f == -1 || s->p12c != 0 || (2 < g.state && g.end_countdown < 0x18)) {
     shot_skill_camera_end(s);
     shot_kill(s);
@@ -469,7 +469,7 @@ void shot_k0b_grave(Shot* s) {
   if (controlled_is(s->owner)) camera_request_mode(g.camera, 5, s->target);
   if (s->hit_landed != 0) return;
   if (shot_hit_magic(s, i8 + p16 + 0x2D, s->owner->is_enemy, 0x48, 1, 0, 0x10) == 0) return;
-  screen_shake(2, 2, 0x10);
+  screen_shake_vertical(2, 2, 0x10);
   shot_skill_camera_end(s);
   s->hit_landed = 1;
 }
@@ -856,7 +856,7 @@ void shot_k13_meteor(Shot* s) {
       g.flash_delay = 2;
       g.flash_speed = 0x10;
     }
-    screen_shake2(3, 1, 2, 2, 4);
+    screen_shake(3, 1, 2, 2, 4);
   }
   shot_kill(s);
 }

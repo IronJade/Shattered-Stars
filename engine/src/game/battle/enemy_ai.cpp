@@ -136,7 +136,7 @@ void enemy_think(EnemyUnit* e) {
   switch (e->action) {
     case 1: e->state_approach(); return;
     case 2: {
-      // enemy_state_hop 0x8003d470.
+      // enemy_state_sidestep 0x8003d470.
       if (g.flags == 0) {
         bobj_move(e, e->vel);
         e->leap_ticks -= g.frame_ticks;
@@ -422,7 +422,7 @@ void enemy_ai_tick(EnemyUnit* e) {
 }
 
 void enemy_wander(EnemyUnit* e) {
-  if (!unit_random_run(e, 0x200, 0)) {
+  if (!unit_pick_random_destination(e, 0x200, 0)) {
     e->move_mode = 1;
     e->action = 1;
     e->action_kind = 0;
@@ -498,7 +498,7 @@ Unit* enemy_random_party_member(const Unit* e) {
   return u;
 }
 
-bool unit_random_run(Unit* u, s32 range, s32 min_dist) {
+bool unit_pick_random_destination(Unit* u, s32 range, s32 min_dist) {
   int tries = 0;
   for (;;) {
     s32 d[3];

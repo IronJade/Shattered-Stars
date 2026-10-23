@@ -181,7 +181,7 @@ struct EnemyDias : EnemyUnit {
     s32 n = counters[1];
     if (n == 0) {
       counters[1] = 1;
-      if (Sprite* sp = unit_play_anim_ex(this, 10, 1)) sprite_set_pos_v(sp, pos);
+      if (Sprite* sp = unit_spawn_sprite_ex(this, 10, 1)) sprite_set_pos_v(sp, pos);
       n = counters[1];
     }
     if (1 < n || frame < 3) return;
@@ -235,7 +235,7 @@ void shot_flash(Shot* s) {
   s->layer = 2;
   s->loop_limit = 1;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  if (static_cast<s16>(shot_draw_and_box(s, 0, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 0, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }
@@ -251,7 +251,7 @@ void shot_wave(Shot* s) {
   s->anim = 10;
   s->layer = 2;
   s->size[2] = static_cast<s16>(s->owner->size[2] << 1);
-  shot_draw_and_box(s, 2, 0x2080);
+  shot_draw_with_shadow(s, 2, 0x2080);
   if (g.flags != 0) return;
   if (s->p130 == 0) {
     wave_trails()[s] = afterimage_create(s, 3, 0x102080, 0);

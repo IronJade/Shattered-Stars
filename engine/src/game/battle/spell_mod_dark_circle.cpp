@@ -124,7 +124,7 @@ void dark_circle(SpellCast* sc) {
       // The data loaded: camera, the vortex's place, the rising hums.
       if (sc->data != nullptr) return;
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = rng_range(2) != 0 ? 0xD55 : 0xAAA;
         camera_move_to(g.camera, c->pos, yaw, 0x111, 0xC00, 0x5A, 0x80, 5);
       }

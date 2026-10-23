@@ -80,7 +80,7 @@ void meteor(Shot* s) {
   const s32 ground = bobj_ground_height(s);
   if (s->pos[1] < ground) return;
   s->pos[1] = ground;
-  screen_shake2(4, 6, 4, 6, 0xE);
+  screen_shake(4, 6, 4, 6, 0xE);
   bsfx_play_at_pos(0x50, s->pos);
   const s32 spread[3] = {0x30000, 0x30000, 0x18000};
   effect_debris_burst(s->pos, spread, 2, 2, 1, 20000, 5);

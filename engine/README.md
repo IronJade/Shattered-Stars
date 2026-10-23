@@ -6,6 +6,10 @@ each game function is rewritten by hand from the decompilation, on top of a nati
 replacement for the PS1 hardware. It is not an emulator, and it contains no game code
 or data: everything is read at runtime from your own disc images.
 
+Shattered Stars itself (this code) is released under the MIT licence; see `LICENSE`
+(bundled alongside this README in each release). Third-party components it links
+against have their own licences, listed in `THIRD-PARTY-LICENSES.txt`.
+
 ## Status
 
 | Layer | State |
@@ -17,7 +21,7 @@ or data: everything is read at runtime from your own disc images.
 | GTE + libgte | done, bit-exact with PCSX-Redux / Sony's PsyQ 4.2 code |
 | MDEC + STR movies | decoder and player done, exact against jPSXdec's PS1 mode |
 | SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (music and effects match PCSX-Redux); memory cards (raw 128 KB images) |
-| Game code | boot, title (logos, movies, menu, New Game, Continue, Voice Collection); field maps (event scripts, messages, actors, doors, chests, shops, encounters, effects, embedded map code, the credits and the end screen); world map (vehicles, bunny, courier, map); every camp menu page, item creation, save / load (byte-compatible with real memory cards); battles (combat, HUD, result screen, every enemy class, Claude, Rena, Celine, Leon, Noel, Ernest, Bowman, Chisato, battle items). Spells, the other character modules and party AI are in progress — see `docs/CHECKLIST.md` |
+| Game code | boot, title (logos, movies, menu, New Game, Continue, Voice Collection); field maps (event scripts, messages, actors, doors, chests, shops, encounters, effects, embedded map code, the credits and the end screen); world map (vehicles, bunny, courier, map); every camp menu page, item creation, save / load (byte-compatible with real memory cards); battles (combat, HUD, result screen, every enemy class, Claude, Rena, Celine, Leon, Noel, Ernest, Bowman, Chisato, battle items), every spell and party member, and the party AI; every one of the 564 encounters runs; the game is finishable on both discs with all 85 endings — see `docs/CHECKLIST.md` |
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
@@ -26,8 +30,9 @@ Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 You need images of your own discs, North American release: each disc's `.cue` file with
 its `.bin`, or an `.iso` / `.img` image. Disc 2 is optional until the story asks for it.
 
-**Windows:** unzip `ShatteredStars-win64.zip` anywhere and run **`setup.exe`**. On the
-Discs page, choose Disc 1 (and Disc 2) with *Browse...*. The other pages are Display,
+**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.01.00-win64.zip`)
+anywhere and run **`setup.exe`**. On the Discs page, choose Disc 1 (and Disc 2) with
+*Browse...*. The other pages are Display,
 Sound, Memory cards and Mods. Then press *Save & Play*. Or just run
 `shattered-stars.exe`: it opens setup by itself while it has no disc.
 
@@ -69,8 +74,8 @@ The Windows build is cross-compiled from Linux with MinGW-w64 (on Fedora:
 `sudo dnf install mingw64-gcc-c++ mingw64-SDL3`):
 
 ```sh
-tools/build_windows.sh   # -> dist/ShatteredStars-win64.zip: shattered-stars.exe, setup.exe,
-                         #    SDL3.dll, this README and an empty discs\ folder
+tools/build_windows.sh   # -> dist/ShatteredStars-<version>-win64.zip: shattered-stars.exe,
+                         #    setup.exe, SDL3.dll, this README, LICENSE and an empty discs\ folder
 ```
 
 The C / C++ runtimes are linked in, so the zip holds everything the game needs (see
@@ -81,8 +86,8 @@ byte), and its test suites pass under Wine (`engine/build-win/ss_tests.exe`,
 ### Linux package
 
 ```sh
-tools/build_linux.sh --container   # -> dist/ShatteredStars-linux-x86_64.tar.gz: shattered-stars,
-                                   #    shattered-stars-setup, README, discs/
+tools/build_linux.sh --container   # -> dist/ShatteredStars-<version>-linux-x86_64.tar.gz:
+                                   #    shattered-stars, shattered-stars-setup, README, LICENSE, discs/
 ```
 
 The release is built with podman in a Debian 12 container (`tools/linux-build/Containerfile`,
@@ -137,7 +142,10 @@ engine/build/shattered-stars --entry 10 --dump analysis/render/entry10
 World edits: patch files change map scripts and game data as they load. Put `*.patch`
 files in `mods/` next to `config.ini` (or pass `--mods DIR`); they apply in name order,
 and every patch carries the value the disc holds, so the game skips (and logs) a patch
-whose data no longer matches. The disc images are never modified. `tools/so2_mod.py`
+whose data no longer matches. The disc images are never modified. Mod packages (a folder
+or .zip with a `mod.json` and its `.patch` files) are installed, enabled and ordered on
+setup's Mods page; the curated, verified ones are in the repository's `mods/` folder
+(`mods/README.md`, design in `docs/notes/mods.md`). `tools/so2_mod.py`
 reads your disc and writes the lines (`-o FILE` appends to a file):
 
 ```sh

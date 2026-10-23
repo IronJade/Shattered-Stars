@@ -2,12 +2,12 @@
 
 Worker: field effects agent. Phase 5 (current): GPU lines, then battle party modules
 Precis #2155, Ashton #2147, Opera #2153, Chisato #2159. Phase 4 (credits, GPU) committed
-as bc1b341 and 155be10.
+as af82a5a and f768d59.
 Build dir: `engine/build-fx`. Scratch (on disk): `scratchpad/fx_worker/`. Nothing here is
 committed by the worker; the coordinator commits.
 
 Phases 1-3 (field effects, RotMatrix sites, #3103 movie player, #3104-#3106 / #3108 /
-#3109 / #3105 embedded map code) are committed (d61a763, docs 9e43364). Their notes
+#3109 / #3105 embedded map code) are committed (728bccc, docs dab5eb1). Their notes
 are in `docs/notes/field_effects.md`.
 
 ## Phase 4 step 1: #3107, the credits (done, reported)
@@ -46,7 +46,7 @@ are in `docs/notes/field_effects.md`.
   (`MusicDialog::on_confirm` undefined), so `ss_game_tests` without the disc is still to
   rerun.
 
-## Phase 4 step 1 was committed as bc1b341.
+## Phase 4 step 1 was committed as af82a5a.
 
 ## Phase 4 step 2: GPU accuracy (done, reported)
 
@@ -83,7 +83,7 @@ uv-interpolation, quad, transparency, lines), replayed on `psx::Gpu` with
 
 ## Phase 5 step 1: GPU lines (done, verified, reported)
 
-Code committed in e37c3a5 (draw_segment, `dither_lines`, `--reference-dither` covering
+Code committed in 416d7b2 (draw_segment, `dither_lines`, `--reference-dither` covering
 lines, `gpu_lines_match_hardware_dump`, CHECKLIST line). Verified after the cutoff:
 - The ps1-tests harness (`harness lines`) against the whole 1024x512 gpu/lines dump:
   identical, with the test's undefined last polyline colour fitted (0x6400d2; with 0 only
@@ -204,7 +204,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
   F8b, 95 dup46 calls accepted as subsets for F8d; the list-4 triangle test expects the
   corrected UVs), `test_field_effects.cpp` (the SS_FX_REF dump tests find lines / burst quads
   in any slot, F1). ss_game_tests 74/0 with the disc; with SS_FX_REF all dump tests pass.
-- F4 (lit sphere): the user agreed it is intended: "keep" (3232b65). Leave the code.
+- F4 (lit sphere): the user agreed it is intended: "keep" (0e05bc7). Leave the code.
 
 Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
 without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
@@ -384,7 +384,7 @@ Field menu voice (scratch `scratchpad/fx_worker/mv/`):
 
 ### Phase 6, third agent (from 03:13): suites after B15, victory_2_3, field menu voice
 
-- Suites on build-fx at a10f166 + tree (B15 and SS_BATTLE_RNG_SKIP in): ss_tests 78/0,
+- Suites on build-fx at 3cffe28 + tree (B15 and SS_BATTLE_RNG_SKIP in): ss_tests 78/0,
   ss_game_tests 104/0 (SS_DISC1), smoke 62/62, `ref_regress --quick` 23 pass / 3 regress /
   2 review (the same as the 03:12 checkpoint). Runner: `scratchpad/fx_worker/run_suites.sh TAG`
   (logs in `logs/suites_TAG`; ref_regress `--out` must be absolute: the world_spell handler
@@ -404,7 +404,7 @@ Field menu voice (scratch `scratchpad/fx_worker/mv/`):
   (exit b1236), talk on and off; D 2 / 5 give +10 at b270, +7 at b300, +10 at b400 and equal
   samples between (sample phase). The talk layer draws nothing in the opening (op1 at rng
   1645 both). refs.csv's victory_2_3 row now names CMP_D=7 and the port command.
-- CHECKLIST: M7 and "Battle, part 2" were ticked by the second agent (committed a10f166).
+- CHECKLIST: M7 and "Battle, part 2" were ticked by the second agent (committed 3cffe28).
   HANDOFF.md: M7 state bullet, Effects row, test counts, debug options (SS_TALK_OFF,
   SS_TALK_FLEE, SS_MENU_VOICE_TRACE, SS_MENU_RNG added next to SS_BLOAD_DRIVE_TIME /
   SS_TALK_TRACE).
@@ -783,7 +783,7 @@ Redux references (redux/ref, 3.2 GB) are kept for re-comparisons.
 - The coordinator commits hourly; everything of mine is on disk (pc_ashton.cpp,
   pc_opera.cpp, pc_precis.cpp, pc_module_util.*, gpu.{h,cpp}, docs, catalog rows).
 
-## Phase 4 step 2 files (committed in 155be10)
+## Phase 4 step 2 files (committed in f768d59)
 
 - New: `docs/notes/gpu_accuracy.md`.
 - Edited: `engine/src/psx/gpu.cpp` (plane attributes, quad split / drop),

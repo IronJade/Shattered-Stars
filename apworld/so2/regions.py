@@ -61,7 +61,8 @@ def stage_rules(world):
         need = [KEY_NAME[g] for g in keys]
         prev = stage_event(k - 1) if k > 1 else None
         world.get_location(f"Story: {name}").access_rule = \
-            lambda state, prev=prev, need=need: (prev is None or state.has(prev, player)) and state.has_all(need, player)
+            lambda state, prev=prev, need=need: (
+                (prev is None or state.has(prev, player)) and state.has_all(need, player))
     world.get_location("Disc Switch (Eluria Tower)").access_rule = \
         lambda state: state.has(stage_event(DISC_SWITCH_STAGE), player)
     world.get_location("Final Save Point (Fienal 9F)").access_rule = \

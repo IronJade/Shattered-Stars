@@ -280,10 +280,10 @@ Assignment (coordinator): finish M7 with an encounter sweep.
 ## Done and verified
 
 - **Step 1, HUD / windows / #1980 text / message banner**: `battle/window.{h,cpp}`,
-  `battle/hud.{h,cpp}`. Committed (1a838d8). Compared with Redux: both HUD layouts,
+  `battle/hud.{h,cpp}`. Committed (b556298). Compared with Redux: both HUD layouts,
   "Phase Gun" in the #1980 font; banner state machine in `battle_message_banner`.
 - **Step 2, #1981 result screen**: `battle/result.{h,cpp}`, `battle/voice.{h,cpp}`
-  (victory and result voice picks with their RNG draws). Committed (aad2b67). Redux
+  (victory and result voice picks with their RNG draws). Committed (c723033). Redux
   victory reference `scratchpad/battle/ref/victory_2_3` (forced fight, Claude poked like
   `SS_BATTLE_STRONG`): RNG draw counts equal at every 10 vsyncs (335), result screen and
   exit on the same vblanks (946 / 1236), handoffs 3 and 4 byte-identical at
@@ -293,7 +293,7 @@ Assignment (coordinator): finish M7 with an encounter sweep.
   kill / fade / draw-and-shadow / hit_melee / place_at_unit, callback kinds 0x21 / 0x33,
   kind 1 (stun stars; `unit_apply_stun` moved here from combat.cpp). Other kinds log once
   and are removed. Camera target / focus widened to `BObj*` (a Shot can be followed).
-  Committed in b906414.
+  Committed in 7fc05c0.
 
 ## Ownership split (from the coordinator, 2026-10-22)
 
@@ -324,17 +324,17 @@ and `PartyUnit` (fields at +0x290..+0x35x, virtual slots 36 / 39 / 45).
     `shot.{h,cpp}`, delete them there, and flag the edit to the coordinator.
 - `fx_draw.*` and `bsfx.*` stay mine; the enemy agent won't edit them.
 
-## Step 3 part 1: committed (403f921)
+## Step 3 part 1: committed (9517cb9)
 
 Claude's module, Particle pool, Afterimage / Ghost, party loader phases 1-4, kind 0x11,
 fx_draw (vortex, lens flares), SS_BATTLE_POKE; verified against Redux (`ref/phasegun_2_3`,
 `ref/phasegun_exit`, `ref/pg_cash`, `ref/moves_9_5`; see docs/notes/battle_port.md).
 
-## Committed since: kind 0x16 + shot_apply_damage + RibbonTrail (162ad2d); sound handles (22ac0e8)
+## Committed since: kind 0x16 + shot_apply_damage + RibbonTrail (ec0d098); sound handles (5f04296)
 
-## Committed since: kinds 2 / 0x2c / 0x32 (3c4509e)
+## Committed since: kinds 2 / 0x2c / 0x32 (086946c)
 
-## Committed since: kind 0x10 / draw_sphere / lights_build_oriented, pc_casters (bbed220)
+## Committed since: kind 0x10 / draw_sphere / lights_build_oriented, pc_casters (ab70773)
 
 ## Queue change (coordinator, 2026-10-22)
 
@@ -358,9 +358,9 @@ the finished frame with its in-frame g_battle_frames value. Encounter 10's camer
 the port's sample for sample (`ref/dense10`, `ref/order10` with loop-order breakpoints; port
 `SS_BATTLE_CAM=1`, new in battle_debug.cpp).
 
-## Verified since e37c3a5 (the user's commit of the unverified work)
+## Verified since 416d7b2 (the user's commit of the unverified work)
 
-e37c3a5 also holds SS_BATTLE_BOXES, SS_BATTLE_TICKS, the opening wipe (BurstFx in hud.cpp)
+416d7b2 also holds SS_BATTLE_BOXES, SS_BATTLE_TICKS, the opening wipe (BurstFx in hud.cpp)
 and the clock-alignment docs, which were on disk at the cutoff. Checked since:
 
 - **Air attack and encounter 35 (verified).** The b470 miss was clock phase. The original's

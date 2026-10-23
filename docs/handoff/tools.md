@@ -209,7 +209,7 @@ All suite setup, confirmed against the battle agent's own hand-over notes
 
 No other line in any agent's script was touched.
 
-## Full-set run at HEAD (a61088c, `engine/build/shattered-stars`, not rebuilt — it postdates
+## Full-set run at HEAD (212bcf4, `engine/build/shattered-stars`, not rebuilt — it postdates
 every agent's last commit point) — prior pass, superseded above
 
 `scratchpad/regress/full_head2/summary.md` (directory since cleaned up; figures stand):

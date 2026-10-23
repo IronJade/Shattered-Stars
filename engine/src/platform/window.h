@@ -91,6 +91,10 @@ class Window {
 
   // Draws an RGBA8888 image scaled into the window, keeping 'aspect' (width / height).
   void present(const u32* pixels, int width, int height, float aspect);
+  // Reads back what 'present' just drew (RGBA8888, top row first) via glReadPixels, at
+  // the window's current pixel size; false without a GL context. Debug use only
+  // (SS_SHOT screenshots): this is the actual OpenGL output, not the PS1 display buffer.
+  bool read_pixels(std::vector<u32>& out, int& width, int& height) const;
   void set_title(const std::string& title);
 
   // DualShock actuators on the open gamepad: 'small' on / off (the high-frequency motor),
@@ -105,6 +109,7 @@ class Window {
   SDL_Window* window_ = nullptr;
   SDL_Gamepad* gamepad_ = nullptr;  // the last one connected
   void* context_ = nullptr;
+  bool initialized_ = false;  // true once this object's 'create' called SDL_Init
   unsigned texture_ = 0, program_ = 0, vao_ = 0;
   int tex_width_ = 0, tex_height_ = 0;
   s16 axes_[4] = {};        // gamepad right X, right Y, left X, left Y

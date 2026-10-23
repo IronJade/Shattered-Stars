@@ -2280,7 +2280,7 @@ void sound_measure_subtick(Sound* s) {
 }
 
 void sound_add_ticks(Sound* s, int n) {
-  if (s->frame_ticks == 0) return;  // the console traps
+  if (s->frame_ticks == 0) return;  // (port) the console's div has no zero check (LO undefined); never 0 in play
   s->extra_ticks = static_cast<s16>(s->extra_ticks + (s->subtick + n) / s->frame_ticks);
 }
 

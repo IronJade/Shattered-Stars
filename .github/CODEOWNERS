@@ -1,0 +1,10 @@
+# Code owners: GitHub asks them to review pull requests touching these paths.
+#
+# The curated mod list: the maintainer reviews every mod submission and is the only one
+# who marks a mod verified (mods/README.md, docs/notes/mods.md).
+/mods/ @IronJade
+# The checks that guard it: a pull request runs its own copy of the workflow and tools,
+# so changes to them need the maintainer's review too.
+/.github/ @IronJade
+/tools/mod_check.py @IronJade
+/tools/mod_index.py @IronJade

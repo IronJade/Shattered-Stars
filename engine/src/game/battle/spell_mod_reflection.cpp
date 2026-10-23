@@ -255,7 +255,7 @@ void reflection(SpellCast* sc) {
     case 0:
       battle_flash_set(sc, 0x40, 0x40, 0x40);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         sc->s3c = static_cast<s32>(rng_range(2));
         camera_move_to(g.camera, sc->centre, sc->s3c != 0 ? 0xCE3 : 0xAAA, 0xE3, 0x800, 0x14, 0x80, 5);
       }

@@ -97,7 +97,7 @@ struct EnemyCyril : EnemyUnit {
   // 8 sparks (anim 0xf) orbiting the body at a random height (radius 'r', growing 'growth').
   void orbit_sparks(s32 r, s32 growth) {
     for (int i = 0; i < 8; ++i) {
-      Sprite* sp = unit_play_anim(this, 0xF);
+      Sprite* sp = unit_spawn_sprite(this, 0xF);
       if (sp == nullptr) continue;
       const s32 h = static_cast<s32>(rng_range(0x40000));
       sprite_set_pos(sp, pos[0], pos[1] - h, pos[2]);
@@ -108,7 +108,7 @@ struct EnemyCyril : EnemyUnit {
   // 8 flecks (anim 'anim') on the ground disc of a random radius below 'r'.
   void ground_flecks(int anim_no, u32 r, s16 hold) {
     for (int i = 0; i < 8; ++i) {
-      Sprite* sp = unit_play_anim(this, anim_no);
+      Sprite* sp = unit_spawn_sprite(this, anim_no);
       if (sp == nullptr) continue;
       const Vec4 p = vec_random_in_disc_xz(pos, static_cast<s32>(rng_range(r)));
       sprite_set_pos_v(sp, p.data());
@@ -144,7 +144,7 @@ struct EnemyCyril : EnemyUnit {
         scale_y += g.frame_ticks * 0x80;
       } else if (step == 0) {
         for (int i = 0; i < 0x10; ++i) {
-          Sprite* sp = unit_play_anim(this, static_cast<int>(rng_range(4)) + 0x10);
+          Sprite* sp = unit_spawn_sprite(this, static_cast<int>(rng_range(4)) + 0x10);
           if (sp == nullptr) continue;
           const Vec4 c = centre_of(this);
           sprite_set_pos_v(sp, c.data());
@@ -164,7 +164,7 @@ struct EnemyCyril : EnemyUnit {
         scale_y -= g.frame_ticks * 0x80;
       } else if (step == 3) {
         for (int i = 0; i < 0x10; ++i) {
-          Sprite* sp = unit_play_anim(this, static_cast<int>(rng_range(4)) + 0x10);
+          Sprite* sp = unit_spawn_sprite(this, static_cast<int>(rng_range(4)) + 0x10);
           if (sp == nullptr) continue;
           const Vec4 c = centre_of(this);
           const Vec4 p = vec_random_around(c.data(), 0x300);
@@ -231,7 +231,7 @@ struct EnemyCyril : EnemyUnit {
       s->owner = this;
       bobj_share_sprite(this, s);
     }
-    if (Sprite* sp = unit_play_anim(this, 0x1C)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 0x1C)) {
       sprite_place_near(sp, target, 0, 0x300, 0);
       sprite_set_fade(sp, 0x80, -4, 4);
       sp->scale_y = 0x1800;
@@ -334,7 +334,7 @@ void shot_strike(Shot* s) {
   s->anim = 0x1A;
   s->loop_limit = 1;
   s->size[2] = s->owner->size[2];
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }

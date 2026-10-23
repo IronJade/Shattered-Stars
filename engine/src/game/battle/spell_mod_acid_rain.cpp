@@ -108,7 +108,7 @@ void acid_rain(SpellCast* sc) {
       g.camera->zoom_speed = 0x1000;
       const s32 deg = rng_spread(0x3C);
       camera_move_to(g.camera, sc->target->pos, ((deg + 0x10E) * 0x1000) / 0x168, 0x18E, 0x1000, 0, 0x80, 5);
-      camera_reset_mode(g.camera);
+      camera_reset(g.camera);
       camera_setup_overview(g.camera, 0x5A, sc->caster->is_enemy ^ 1);
       spellcast_wait(sc, 0x5A);
       return;

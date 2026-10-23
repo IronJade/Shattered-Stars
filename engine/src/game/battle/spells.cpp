@@ -499,7 +499,7 @@ void spell_camera_focus(Unit* caster, Unit* target) {
   PartyUnit* u = g.party_units[g.controlled_slot & 3];
   g.camera_next_target = target;
   if (static_cast<Unit*>(u) != caster) return;
-  camera_end_scheduled();
+  camera_end_scheduled_now();
   camera_end_mode(g.camera, 7, 0, caster);
   camera_request_mode(g.camera, 5, target);
 }

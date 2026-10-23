@@ -29,7 +29,8 @@ class TestDoorValidator(unittest.TestCase):
         # Keys only; then the world entrance sent to town 11's arrival point.
         a = doors.door_id(909, 0x100)
         self.assertEqual(doors.validate_doors([{"id": a, "key": 3}], TABLE), [])
-        self.assertEqual(doors.validate_doors([{"map": 909, "offset": "0x100", "to": {"map": 11, "x": 1, "y": 0, "z": 1}}], TABLE), [])
+        door = {"map": 909, "offset": "0x100", "to": {"map": 11, "x": 1, "y": 0, "z": 1}}
+        self.assertEqual(doors.validate_doors([door], TABLE), [])
 
     def test_problems(self):
         a = doors.door_id(909, 0x100)

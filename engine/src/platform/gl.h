@@ -30,7 +30,7 @@ constexpr GLenum RGBA = 0x1908, RGBA8 = 0x8058, UNSIGNED_BYTE = 0x1401;
 constexpr GLenum VERTEX_SHADER = 0x8B31, FRAGMENT_SHADER = 0x8B30;
 constexpr GLenum COMPILE_STATUS = 0x8B81, LINK_STATUS = 0x8B82;
 constexpr GLenum TRIANGLES = 0x0004, COLOR_BUFFER_BIT = 0x4000;
-constexpr GLenum UNPACK_ALIGNMENT = 0x0CF5;
+constexpr GLenum UNPACK_ALIGNMENT = 0x0CF5, PACK_ALIGNMENT = 0x0D05;
 
 #define SS_GL_FUNCTIONS(X)                                                                       \
   X(void, Viewport, GLint, GLint, GLsizei, GLsizei)                                              \
@@ -44,6 +44,7 @@ constexpr GLenum UNPACK_ALIGNMENT = 0x0CF5;
   X(void, TexImage2D, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void*) \
   X(void, TexSubImage2D, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void*) \
   X(void, PixelStorei, GLenum, GLint)                                                             \
+  X(void, ReadPixels, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void*)                       \
   X(void, DrawArrays, GLenum, GLint, GLsizei)                                                     \
   X(void, GenVertexArrays, GLsizei, GLuint*)                                                      \
   X(void, BindVertexArray, GLuint)                                                                \

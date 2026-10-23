@@ -128,7 +128,7 @@ struct EnemyJibril : EnemyUnit {
       } else if (grab_step[i] == 0) {
         grab_timer[i] = static_cast<u8>(grab_timer[i] + g.frame_ticks);
         if (grab_timer[i] < 7) continue;
-        if (Sprite* sp = unit_play_anim_ex(this, 0xD, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 0xD, 1)) {
           sprite_set_pos(sp, u->pos[0] + bobj_facing_fx(this, -0x80), u->pos[1], u->pos[2]);
           sp->layer = 4;
           sp->facing[0] = facing[0];

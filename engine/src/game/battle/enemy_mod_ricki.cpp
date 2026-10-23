@@ -43,7 +43,7 @@ struct EnemyRicki : EnemyUnit {
     if (n == 0 || hit_landed != 0) return;
     if (unit_attack_targets(this, n, units, points, 0x100, 9999, 0) == 0) return;
     for (int i = 0; i < n; ++i) {
-      Sprite* sp = unit_play_anim_ex(this, 7, 8);
+      Sprite* sp = unit_spawn_sprite_ex(this, 7, 8);
       if (sp == nullptr) continue;
       sprite_attach(sp, units[i], 0, -(units[i]->size[1] << 13), 0);
       sp->layer = -2;

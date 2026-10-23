@@ -56,7 +56,7 @@ void meteor(Shot* s) {
   bobj_move(s, s->vel);
   if (!(bobj_ground_height(s) < s->pos[1])) return;
   s->pos[1] = static_cast<s32>(0xFFF38000);
-  screen_shake2(4, 6, 4, 6, 0x14);
+  screen_shake(4, 6, 4, 6, 0x14);
   for (int i = 0; i < 3; ++i) {
     Sprite* sp = shot_spawn_sprite(s, 4);
     if (sp == nullptr) continue;
@@ -147,7 +147,7 @@ void extinction(SpellCast* sc) {
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       battle_flash_set(sc, 0x40, 0x40, 0x40);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = rng_range(2) != 0 ? 0xAAA : 0xD55;
         camera_move_to(g.camera, kZeroVector, yaw, 0x1C7, 0x1800, 0, 0x80, 5);
         camera_move_to(g.camera, kZeroVector, 0xC00, 0x71, 0x1000, 300, 0x80, 5);
@@ -195,7 +195,7 @@ void extinction(SpellCast* sc) {
         particle_spawn_homing_line(mid, to.data(), head, tail, 0x50, 8, 0x800);
       }
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const u32 r = rng_range(2);
         const s32 at[3] = {r != 0 ? static_cast<s32>(0xFFE0C000) : 0x1F4000, 0, 0x3E8000};
         const s32 yaw = r != 0 ? 0x6AA : 0x155;
@@ -222,7 +222,7 @@ void extinction(SpellCast* sc) {
         sp->vel[0] = v.x, sp->vel[1] = v.y, sp->vel[2] = v.z, sp->extra34 = v.w;
         if (static_cast<u32>(rng_next() & 0x7FFF) < 0x800) {
           bsfx_play_at(0x50, sp);
-          screen_shake2(8, 4, 6, 6, 0xC);
+          screen_shake(8, 4, 6, 6, 0xC);
         }
       }
       return;

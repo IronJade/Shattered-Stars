@@ -124,7 +124,7 @@ void noah(SpellCast* sc) {
       sc->s3c = static_cast<s32>(bsfx_play_ui(0x2D));
       sc->s2c = 0x1388000;
       ++sc->step;
-      screen_shake(2, 2, 0x5A);
+      screen_shake_vertical(2, 2, 0x5A);
       return;
     case 2: {
       // The splashes on the units the wall passes this frame.
@@ -145,7 +145,7 @@ void noah(SpellCast* sc) {
         bsfx_play_at(0x34, u);
         const s32 at[3] = {u->pos[0], bobj_ground_height(u), u->pos[2]};
         effect_spawn_sparks_at(at, 0xC, 0x78, 0xF0, 0x20, 0x3C, 4, 1, 0xC0, 0);
-        screen_shake2(4, 6, 4, 4, 0x1E);
+        screen_shake(4, 6, 4, 4, 0x1E);
       }
       sc->s2c += g.frame_ticks * -0x3C000;
       sc->obj.pos[2] = sc->s2c;
@@ -156,7 +156,7 @@ void noah(SpellCast* sc) {
         sound_handle_fade_out(static_cast<u32>(sc->s3c), 0x3C, 0);
         sound_handle_fade_out(static_cast<u32>(sc->s20), 0x3C, 0);
         sound_handle_fade_out(static_cast<u32>(sc->s30), 0x3C, 0);
-        screen_shake(2, 2, 0x1E);
+        screen_shake_vertical(2, 2, 0x1E);
       }
       return;
     }

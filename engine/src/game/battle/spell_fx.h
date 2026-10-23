@@ -47,7 +47,7 @@ Shot* effect_spawn_streak_at(const s32 pos[3], const s32 target[3], u32 rgb_head
 // 0x80063b48: a kind-0x31 Shot (a vortex mesh: draw_vortex, stage grey fading in the last 32
 // ticks) at pos: +0x128 rings, +0x12c segments, +0x130 radius growth, +0x134 life, +0x138
 // width, vel x the step, +0x118 / +0x11c colours, +0x10a 1: held in the 0x40 pause.
-Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
+Shot* effect_spawn_vortex_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
                           s32 width, s32 step, s16 flag);
 // 0x8007cc5c (#1984.0) draw_disc: a flat fan of POLY_G3 in the x-z plane round the current GTE
 // origin (rgb_centre at the centre, rgb_edge on the rim; blend != 0: semi-transparent mode

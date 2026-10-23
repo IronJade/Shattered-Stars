@@ -82,7 +82,8 @@ def validate_doors(seed_doors, doors_json):
                 problems.append(f"{where}: to needs map, x, y and z")
                 continue
             if spot not in arrivals:
-                problems.append(f"{where}: map {spot[0]} at ({spot[1]}, {spot[2]}, {spot[3]}) is not an arrival point of the game")
+                problems.append(
+                    f"{where}: map {spot[0]} at ({spot[1]}, {spot[2]}, {spot[3]}) is not an arrival point of the game")
                 continue
             targets[did] = spot[0]
     # The map graph with the seed's targets: which maps get back to a world map.

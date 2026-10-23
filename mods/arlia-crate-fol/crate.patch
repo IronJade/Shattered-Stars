@@ -1,0 +1,4 @@
+# map 18 chest 0x962: 200 Fol -> 500 Fol
+script 18 0x82c 0xffffff38 0xfffffe0c
+# map 21 chest 0x962: 200 Fol -> 500 Fol
+script 21 0x297 0xffffff38 0xfffffe0c

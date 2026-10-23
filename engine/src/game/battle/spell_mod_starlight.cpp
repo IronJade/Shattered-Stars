@@ -102,10 +102,10 @@ void falling_beam(Shot* s) {
     if (Shot* r = effect_spawn_sparks_at(at, 0x12, 0x168, 0x3C, 0x24, 0x78, 0xB, 3, 0x60, 0))
       r->vel[0] = static_cast<s32>(0xFFFFFFF5);
     at[1] = ground;
-    effect_spawn_t31_at(at, 6, 7, 0x20, 0x5A, 0xFF4020, 0x403010, 0x78, 0x14, 0);
+    effect_spawn_vortex_at(at, 6, 7, 0x20, 0x5A, 0xFF4020, 0x403010, 0x78, 0x14, 0);
   }
   bsfx_play_at(0x48, s->target);
-  screen_shake2(1, 4, 2, 2, 6);
+  screen_shake(1, 4, 2, 2, 6);
 }
 
 void starlight(SpellCast* sc) {
@@ -153,7 +153,7 @@ void starlight(SpellCast* sc) {
           s->p134 = static_cast<s32>(rng_range(0x2000));
         }
         if (i == 0 && sc->slot == 0) {
-          camera_reset_mode(g.camera);
+          camera_reset(g.camera);
           camera_request_mode(g.camera, 7, c);
           camera_set_lookat_unit(g.camera, c, s);
         }
@@ -197,7 +197,7 @@ void starlight(SpellCast* sc) {
       }
       if (spellcast_leads_camera(sc)) {
         camera_move_to(g.camera, sc->target->pos, 0xC00, 0x1C7, 0x800, 0, 0x80, 5);
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = rng_range(2) != 0 ? 0xCE3 : 0xB1C;
         camera_move_to(g.camera, sc->target->pos, yaw, 0xAA, 0x1000, 0x3C, 0x80, 5);
       }

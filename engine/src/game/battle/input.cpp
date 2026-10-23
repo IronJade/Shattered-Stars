@@ -54,7 +54,7 @@ void end_free_run(BattleInput* in, PartyUnit* u) {
 }
 
 void camera_to_leader(BattleInput* in) {
-  camera_set_lookat_offset(bg().camera, kZeroVector);
+  camera_set_follow_offset(bg().camera, kZeroVector);
   camera_set_mode(bg().camera, 2, nullptr);
   in->camera_return = 0x3C;
 }
@@ -644,7 +644,7 @@ void input_dispatch(BattleInput* in) {
         g.free_run = 1;
         in->camera_return = 0;
         if (cam->mode != 0xE) {
-          camera_set_lookat_offset(cam, kZeroVector);
+          camera_set_follow_offset(cam, kZeroVector);
           camera_set_mode(cam, 2, nullptr);
         }
         pc_record_counter_dec(u, 1);
@@ -658,7 +658,7 @@ void input_dispatch(BattleInput* in) {
       if (cam->mode == 0xE && in->mode != 2) camera_end_mode(cam, 0xE, 1, nullptr);
     } else {
       camera_set_mode(cam, 0xE, nullptr);
-      camera_set_lookat_offset(cam, kZeroVector);
+      camera_set_follow_offset(cam, kZeroVector);
     }
   }
   if (g.flags == 0 && g.free_run != 0 && u->busy == 0 && !unit_is_down(u) && g.state == kStateFighting && u->action == 0 &&
@@ -678,7 +678,7 @@ void input_dispatch(BattleInput* in) {
       const s32 r = static_cast<s32>(rng_range(10));
       g.provoker = u;
       g.provoke_timer = static_cast<s16>(lvl * 0xB4 + r);
-      camera_end_scheduled();
+      camera_end_scheduled_now();
       camera_set_mode(cam, 5, u);
       u->camera_focus = 1;
     }

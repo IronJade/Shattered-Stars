@@ -417,7 +417,12 @@ struct ModelRender {
     if (flag() < 0) return;
     g.execute(Gte::kAvsz3);
     const s32 z = otz();
-    if (z + bias >= 0x600) return;  // (unshifted, unlike the other sections)
+    // ORIGINAL BUG (original_bugs.md B20): section 0 compares the OTZ before its >> 3 (the
+    // shift is scheduled after the compare, 0x80078658-0x80078668), where the other 19
+    // sections compare OTZ >> 3, so lit flat triangles drop out at an eighth of the depth:
+    //   if (z + bias >= 0x600) return;
+    // The depth test is shifted like the other sections'. Drawing only.
+    if ((z >> 3) + bias >= 0x600) return;
     ldv(0, r), ldrgb(r + 8);
     ncs();
     auto* p = alloc<psyq::POLY_F3>(20);

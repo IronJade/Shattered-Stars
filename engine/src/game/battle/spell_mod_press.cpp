@@ -129,7 +129,7 @@ void weight(Shot* s) {
   }
   const s32 at[4] = {s->pos[0], s->pos[1], s->pos[2], s->pos_w};
   particle_spawn_ring(at, 0x10, 0x30, 0x30, 0x1E, 0xC0A0A0, 0x302020, 0x30, 0);
-  screen_shake2(3, 2, 4, 4, 0x1E);
+  screen_shake(3, 2, 4, 4, 0x1E);
   {
     const auto it = g_cast.find(s);
     // (The console writes through the pointer whatever became of the cast.)
@@ -203,7 +203,7 @@ void press(SpellCast* sc) {
       bobj_share_sprite(&sc->obj, s);
       bsfx_play_at(0x38, s);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_orbit_unit(g.camera, s, 0xC00, -0xE3, 0x800, 0, 0x80, 5);
       }
       ++sc->step;

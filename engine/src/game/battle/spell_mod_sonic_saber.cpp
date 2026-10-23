@@ -172,7 +172,7 @@ void blade(Shot* s) {
   }
   if (k == 0) return;
   shot_apply_damage(s, k, list, list_points, s->p128, 0x4B, 8, 0, 0x10);
-  screen_shake2(3, 4, 4, 4, 0xC);
+  screen_shake(3, 4, 4, 4, 0xC);
   s32 bits = static_cast<s16>(s->power / 0x1E) + 4;
   if (8 < bits) bits = 8;
   for (int i = 0; i < bits; ++i) {
@@ -250,7 +250,7 @@ void sonic_saber(SpellCast* sc) {
       spellcast_dim_begin(sc, c->is_enemy);
       battle_flash_set(sc, 0x30, 0x30, 0x30);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = ratan2(c->pos[2] - t->pos[2], c->pos[0] - t->pos[0]);
         const s32 dist = vec_distance_fx(c->pos, t->pos);
         camera_move_to(g.camera, t->pos, yaw + 0x800, 0x71, (dist >> 12) + 0x800, 0, 0x80, 5);

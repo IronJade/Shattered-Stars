@@ -122,7 +122,7 @@ void field_star(Shot* s) {
   bobj_move(s, s->vel);
   if (!(bobj_ground_height(s) < s->pos[1])) return;
   s->pos[1] = static_cast<s32>(0xFFF38000);
-  screen_shake2(0xC, 6, 4, 6, 0x14);
+  screen_shake(0xC, 6, 4, 6, 0x14);
   for (int i = 0; i < 8; ++i) {
     Sprite* sp = shot_spawn_sprite(s, 2);
     if (sp == nullptr) continue;
@@ -216,7 +216,7 @@ void southern_cross(SpellCast* sc) {
       // Dim, the camera pulls far back; the rush sound fades in 80 ticks.
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, kZeroVector, 0x800, 0x400, 0x4000, 0x78, 0x80, 5);
       }
       g_phase[kSlot] = 0;

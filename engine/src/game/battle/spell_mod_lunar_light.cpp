@@ -213,12 +213,12 @@ void lunar_light(SpellCast* sc) {
       particle_spawn_ring(kZeroVector, 0x14, 0x40, 0x30, 0x78, 0, 0x40FF, 600, 0);
       const s32 low[4] = {0, static_cast<s32>(0xFFED4000), 0, 0};
       particle_spawn_ring(low, 0x14, 0x40, 0x2C, 0x78, 0, 0x40FF, 500, 0);
-      screen_shake2(6, 8, 6, 4, 300);
+      screen_shake(6, 8, 6, 4, 300);
       spellcast_wait(sc, 0x118);
       return;
     }
     case 5:
-      screen_shake2(2, 2, 4, 4, 0x3C);
+      screen_shake(2, 2, 4, 4, 0x3C);
       sound_handle_fade_out(static_cast<u32>(sc->s38), 0x3C, 0);
       sound_handle_fade_out(static_cast<u32>(sc->s3c), 0x3C, 0);
       spellcast_wait(sc, 0x1E);

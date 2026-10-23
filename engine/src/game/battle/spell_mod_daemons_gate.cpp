@@ -255,7 +255,7 @@ void daemons_gate(SpellCast* sc) {
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       battle_flash_set(sc, 0x30, 0x30, 0x30);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         // (looks like an original bug: the gate's point is set only by the cast that leads
         // the camera; the second cast of a clash keeps its set's position.)
         const Unit* t = sc->target;

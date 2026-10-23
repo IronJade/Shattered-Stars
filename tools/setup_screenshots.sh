@@ -121,4 +121,58 @@ fi
 shot discs-not-a-disc --set "disc1=$f${sep}notes.txt"
 shot discs-missing-file --set "disc1=$f${sep}gone${sep}Disc 1.cue"
 shot mods-missing --page mods --set "mods=$f${sep}no-mods-here"
+
+# The Mods page as a manager (docs/notes/mods.md), in its own scratch settings folder with
+# the list saved in config.ini (so no unsaved-changes notice): the repository's sample mods,
+# a loose patch, a mod that conflicts with a sample, one that needs a newer port, and .zip
+# packages to install (a new one, a newer version of a sample, and one that isn't allowed).
+if [[ "$bin" != *.exe ]] && [ -n "$d1" ]; then
+  mods_cfg="$out/settings-mods"
+  pkgs="$out/files/mods-packages"
+  rm -rf "$mods_cfg" && mkdir -p "$mods_cfg/shattered-stars" "$pkgs"
+  cp -r mods/arlia-crate-fol mods/hearn-store-plus "$pkgs/"
+  python3 - "$out/files" <<'EOF'
+import sys, os, json, zipfile
+d = sys.argv[1]
+p = f"{d}/mods-packages"
+open(f"{p}/cheaper-bottles.patch", "w").write("# Resurrection Bottles at 2400 Fol\nitem 0x115 price 3600 2400\n")
+def package(folder, manifest, files):
+    os.makedirs(folder, exist_ok=True)
+    json.dump(manifest, open(f"{folder}/mod.json", "w"), indent=2)
+    for name, text in files.items():
+        open(f"{folder}/{name}", "w").write(text)
+base = {"format": 1, "version": "0.3", "author": "A. Modder", "min_port_version": "0.01.00"}
+package(f"{p}/crate-jackpot", dict(base, id="crate-jackpot", name="Crate jackpot", tags=["chests"],
+        description="The crate in front of Hearn's store holds 10000 Fol.", patches=["jackpot.patch"]),
+        {"jackpot.patch": "script 18 0x82c 0xffffff38 0xffffd8f0\nscript 21 0x297 0xffffff38 0xffffd8f0\n"})
+package(f"{p}/tomorrow", dict(base, id="tomorrow", name="Tomorrow's mod", min_port_version="9.0",
+        description="Made for a later version of the port.", patches=["later.patch"]),
+        {"later.patch": "item 0x115 sell 25 30\n"})
+def zip_of(path, root, manifest, files):
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"{root}mod.json", json.dumps(manifest, indent=2))
+        for name, text in files.items():
+            z.writestr(f"{root}{name}", text)
+zip_of(f"{d}/tougher-landworms.zip", "tougher-landworms/", dict(base, id="tougher-landworms", name="Tougher Landworms",
+       version="1.0.0", tags=["enemies", "difficulty"], description="Landworms have twice their HP.",
+       patches=["landworm.patch"]), {"landworm.patch": "enemy 4 hp 0xc8 0x190\n", "README.md": "Twice the HP.\n"})
+m = json.load(open(f"{p}/hearn-store-plus/mod.json")); m["version"] = "1.1.0"
+zip_of(f"{d}/hearn-store-plus-1.1.0.zip", "", m, {"stock.patch": open(f"{p}/hearn-store-plus/stock.patch").read()})
+zip_of(f"{d}/with-picture.zip", "", dict(base, id="with-picture", name="With a picture", description="x",
+       patches=["a.patch"]), {"a.patch": "item 1 price 1 2\n", "preview.png": "not really a picture"})
+EOF
+  printf 'disc1=%s\ndisc2=%s\nmods=%s\nmod_order=(loose),arlia-crate-fol,hearn-store-plus,crate-jackpot,-tomorrow\n' \
+    "$d1" "$d2" "$pkgs" > "$mods_cfg/shattered-stars/config.ini"
+  mshot() { XDG_CONFIG_HOME="$mods_cfg" shot "$@"; }
+  mshot mods-manager --page mods --do mods-select:arlia-crate-fol
+  mshot mods-conflict --page mods --do mods-select:crate-jackpot,mods-show-info
+  mshot mods-readme --page mods --do mods-select:hearn-store-plus,mods-show-info
+  mshot mods-cannot-load --page mods --do mods-select:tomorrow,mods-show-info
+  mshot mods-loose --page mods --do mods-select:"(loose)",mods-show-info
+  mshot mods-reordered --page mods --do mods-select:crate-jackpot,mods-up,mods-up,mods-toggle:hearn-store-plus
+  mshot mods-remove --page mods --do mods-select:crate-jackpot,mods-remove
+  mshot mods-install-refused --page mods --do "mods-install:$f/with-picture.zip"
+  mshot mods-replace --page mods --do "mods-install:$f/hearn-store-plus-1.1.0.zip"
+  mshot mods-installed --page mods --do "mods-install:$f/tougher-landworms.zip"
+fi
 echo "in $out"

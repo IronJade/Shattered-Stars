@@ -80,6 +80,13 @@ std::filesystem::path mods_folder(const Config& c) {
   return v.empty() ? config_dir() / "mods" : utf8_path(v);
 }
 
+std::string read_mod_order(const Config& c) { return c.get("mod_order"); }
+
+void write_mod_order(Config& c, const std::string& order) {
+  if (order.empty()) c.erase("mod_order");
+  else c.set("mod_order", order);
+}
+
 }  // namespace ss::launcher
 
 namespace ss::launcher {

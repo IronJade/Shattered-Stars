@@ -146,7 +146,7 @@ void shot_shockwave(Shot* s) {
   s->anim = 8;
   s->size[2] = s->owner->size[2];
   s->loop_limit = 1;
-  if (static_cast<s16>(shot_draw_and_box(s, 6, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 6, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }

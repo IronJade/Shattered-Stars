@@ -8,9 +8,14 @@
 // map scripts and game data as they load — chest contents, door targets, item records,
 // shop stock, enemy stats — without touching the discs.
 //
-// Patch files are `*.patch` in the mods directory (Runtime::mods_dir: `mods/` next to
-// config.ini, or SS_MODS_DIR), applied in name order. One patch per line; numbers in
-// decimal or 0x hex, `#` starts a comment:
+// Patch files live in the mods directory (Runtime::mods_dir: `mods/` next to config.ini, or
+// SS_MODS_DIR): loose `*.patch` files (applied in name order) and mod packages (folders
+// with a mod.json; mods/catalog.h, docs/notes/mods.md), in the load order config.ini's
+// mod_order sets (Runtime::mod_order, or SS_MOD_ORDER). With no packages and no
+// mod_order, exactly the loose files apply, in name order. When two mods change the same
+// place, the later one in the load order wins (the earlier line is left out and logged).
+// The grammar (parsed by mods/patch.h) is one patch per line; numbers in decimal or 0x
+// hex, `#` starts a comment:
 //
 //   script MAP WORD EXPECTED VALUE
 //       map MAP's script word WORD (the offset tools/so2_script.py prints, from 0x1c,

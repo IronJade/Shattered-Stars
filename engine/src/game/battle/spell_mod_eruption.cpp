@@ -69,7 +69,7 @@ void falling_rock(Shot* s) {
     s->pos[1] = bobj_ground_height(s) + -0x10000;
     effect_debris_burst(s->pos, kZeroVector, 1, 0, 1, 0x2000, 0);
     bsfx_play_at_pos(0x23, s->pos);
-    screen_shake2(3, 2, 2, 2, 10);
+    screen_shake(3, 2, 2, 2, 10);
   }
   shot_kill(s);
 }
@@ -152,7 +152,7 @@ void eruption(SpellCast* sc) {
       spellcast_dim_begin(sc, c->is_enemy);
       battle_flash_set(sc, 0x30, 0x30, 0x30);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, t->pos, 0xC00, 0x71, 0x800, 0, 0x80, 5);
         const s32 yaw = rng_range(2) != 0 ? 0xB1C : 0xCE3;
         camera_move_to(g.camera, t->pos, yaw, 0x155, 0xC00, 0x3C, 0x80, 5);
@@ -179,7 +179,7 @@ void eruption(SpellCast* sc) {
       effect_spawn_sparks_at(at, 0x20, 0x1E0, 0, 0x27, 0x78, 2, 3, 0x10, 0);
       screen_fade_create(0, 0x20, -4, 0x1E);  // (0x8001fd94 allocates its 0x1c bytes)
       battle_flash_set(sc, 0x40, 0x18, 0x18);
-      screen_shake(4, 2, 0x6E);
+      screen_shake_vertical(4, 2, 0x6E);
       spellcast_wait(sc, 0x3C);
       return;
     }

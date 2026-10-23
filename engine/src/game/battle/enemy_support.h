@@ -24,7 +24,7 @@ struct Sprite;
 // 0x80045814: x + dist << 12 in the direction o faces (spawn points in front of a unit).
 s32 bobj_front_x(const BObj* o, s32 dist);
 // 0x80053f0c: an effect sprite of u's set (sprite_spawn_from(anim, loops, u, 0)).
-Sprite* unit_play_anim_ex(const Unit* u, int anim, int loops);
+Sprite* unit_spawn_sprite_ex(const Unit* u, int anim, int loops);
 // 0x800540e0: when 32 Shots are free, 4 (8 above 48 free) kind-0x2c thrown weapons fly off
 // u with random velocities (the Starguarder's knockback).
 void unit_throw_weapons(Unit* u, s32 variant);

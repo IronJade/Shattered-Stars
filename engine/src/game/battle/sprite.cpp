@@ -144,6 +144,9 @@ Sprite* sprite_spawn_from(int anim, int loops, const BObj* src, u8* owner) {
 }
 
 void sprite_set_fade(Sprite* s, u8 level, s32 speed, s16 hold) {
+  // The console's 0x8002fe88 has no null check: a caller whose sprite_spawn_from found the
+  // pool full (shot_k07_firebolt_orbit and others) writes into low RAM. The port skips it.
+  if (s == nullptr) return;
   s->colour_mode = 2;
   s->rgb[0] = level;
   s->fade_speed = static_cast<s8>(speed);

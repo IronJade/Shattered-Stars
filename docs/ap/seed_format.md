@@ -255,9 +255,13 @@ The smoke test's seed (`tools/smoke_field_events.sh`, case `ap_seed`):
     only other worlds' items (`items_handling` 0b001).
 - **Bosses and the goal:** `battle_exit_to_field` calls `ap::on_battle_exit(encounter,
   outcome)`.
-  - A victory checks the seed's `boss` locations for that encounter, and their own items are
-    given in free play.
-  - A goal encounter sets `goal` in the sidecar and sends CLIENT_GOAL.
+  - A victory (outcome 0) checks the seed's `boss` locations for that encounter, and their own
+    items are given in free play. So does a time-up (outcome 4: only ext 0x72's 60-second
+    fights end that way, with a member standing: the timed survivals Shin 516 and Berle 520)
+    and, in a fight the script lets the party lose (field_flags +0x7E = 0, latched by
+    `ap::battle_frame` during the fight), the wipe (outcome 2: Dias 204, Shin 517, Marsilio
+    530; the story goes on). An escape (1, 3) never does.
+  - A goal encounter won (outcome 0 only) sets `goal` in the sidecar and sends CLIENT_GOAL.
 - **DeathLink out:** `field_begin_game_over` sends one, unless a DeathLink caused the death.
 - **DeathLink in:** a received one (or the console's `ap_deathlink`) applies at the next safe
   point.
@@ -423,7 +427,8 @@ locations (a placeholder): it is given then, the join waiting for free play.
 | A ride (vehicle, bunny; field states 9-0x20) | waits for the player to get off | |
 | A battle transition (field states 2 / 4 / 5 / 0x21, the battle's intro) | waits for the fight: every standing member falls, the battle is lost, the game over follows | |
 | A fight | between special moves, the party falls | outcome 2 with a game over |
-| A story battle the script lets the party lose (ext 0xb7's third argument 0, kept in field_flags +0x7e; random and menu battles set it to 1) | waits for the field after it | never: the loss is no game over, the scene goes on |
+| A timed survival (ext 0x72 rule 3: Shin at the Lacour Front Line 516, Berle 520; a loss is a game over) | as in any fight: the party falls, the game over follows | on the wipe's game over |
+| A story battle the script lets the party lose (ext 0xb7's third argument 0, kept in field_flags +0x7e; random and menu battles set it to 1: Dias 204, Shin on the ship 517, Marsilio 530) | waits for the field after it | never: the loss is no game over, the scene goes on |
 | The game over itself | a waiting one is dropped (the party fell anyway) | |
 | The title, a load or a new game | dropped | |
 | The ending (after the final boss 539 / 540, or script flag 0x2f1, the endings flow) and the credits (#3107) | dropped | |

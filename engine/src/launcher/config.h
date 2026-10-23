@@ -15,6 +15,8 @@
 //   disc1, disc2          disc images (.cue / .bin / .iso / .img)
 //   memcard1, memcard2    raw 128 KB card images, "none" for an empty slot
 //   mods                  the world-edit folder (default: mods/ next to config.ini)
+//   mod_order             the Mods page's list in load order: "(loose),id,-id" ('-' =
+//                         disabled; mods/catalog.h). Written by setup only, never the game
 //   window                windowed | borderless | fullscreen
 //   window_scale          windowed size, 320 x 240 times this
 //   resolution            exclusive fullscreen mode, WxH[@Hz], or "desktop"

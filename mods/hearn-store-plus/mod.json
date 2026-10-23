@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "id": "hearn-store-plus",
+  "name": "Hearn's store sells Resurrection Bottles",
+  "version": "1.0.0",
+  "author": "IronJade",
+  "description": "Hearn's general store in Arlia (shop 1) also sells Resurrection Bottles, at their usual price. A sample of a shop-stock mod.",
+  "min_port_version": "0.01.00",
+  "tags": ["shops", "qol"],
+  "homepage": "https://github.com/IronJade/Shattered-Stars",
+  "patches": ["stock.patch"]
+}

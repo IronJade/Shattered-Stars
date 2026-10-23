@@ -1,0 +1,54 @@
+# The curated mod list's static checks (docs/notes/mods.md section 6). Python only, no
+# game discs, no network beyond the checkout and setup-python actions. The runtime
+# verification with the discs is the maintainer's (tools/mod_verify.py).
+name: mods
+
+on:
+  pull_request:
+    paths:
+      - "mods/**"
+      - "tools/mod_check.py"
+      - "tools/mod_index.py"
+      - "tools/test_mod_check.py"
+      - "docs/ap/*.json"
+      - ".github/workflows/mods.yml"
+  push:
+    branches: [main]
+    paths:
+      - "mods/**"
+      - "tools/mod_check.py"
+      - "tools/mod_index.py"
+      - "tools/test_mod_check.py"
+      - "docs/ap/*.json"
+      - ".github/workflows/mods.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the base branch, for the verification guard
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Static check of every mod
+        run: python3 tools/mod_check.py --all --github
+
+      - name: mods/index.json matches mods/
+        run: python3 tools/mod_index.py check
+
+      - name: Only the maintainer marks mods verified
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          ACTOR: ${{ github.actor }}
+        run: python3 tools/mod_index.py guard --base-ref "origin/$BASE_REF" --author "$ACTOR" --maintainer IronJade
+
+      - name: The checker's own tests
+        run: python3 tools/test_mod_check.py

@@ -9,11 +9,11 @@ reason)`), *PsyQ* (a library routine the port's runtime replaces), *unported*
 (`(unported: ...)`: a real game reaches it, it is not ported yet), *empty* (not yet
 looked at), *bad path* (the named file does not exist).
 
-Total: 5429 rows; confirmed 4564, likely 699, guess 166; ported 4461, not needed 880, PsyQ 88.
+Total: 5452 rows; confirmed 5452, likely 0, guess 0; ported 4463, not needed 901, PsyQ 88.
 
 | Module | Rows | Confirmed | Likely | Guess | Ported | Not needed | PsyQ | Unported | Empty | Bad path | Other |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| battle | 932 | 743 | 156 | 33 | 754 | 153 | 25 |  |  |  |  |
+| battle | 932 | 932 | 0 | 0 | 753 | 154 | 25 |  |  |  |  |
 | battle_enemy_arcmene | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
 | battle_enemy_azamgil | 3 | 3 | 0 | 0 | 3 |  |  |  |  |  |  |
 | battle_enemy_bark | 10 | 10 | 0 | 0 | 10 |  |  |  |  |  |  |
@@ -54,9 +54,9 @@ Total: 5429 rows; confirmed 4564, likely 699, guess 166; ported 4461, not needed
 | battle_enemy_visseyer | 9 | 9 | 0 | 0 | 9 |  |  |  |  |  |  |
 | battle_enemy_xine | 7 | 7 | 0 | 0 | 7 |  |  |  |  |  |  |
 | battle_enemy_zand | 8 | 8 | 0 | 0 | 8 |  |  |  |  |  |  |
-| battle_ovl1981 | 32 | 28 | 4 | 0 | 32 |  |  |  |  |  |  |
-| battle_ovl1984_0 | 119 | 89 | 30 | 0 | 107 | 12 |  |  |  |  |  |
-| battle_ovl1984_1 | 19 | 18 | 1 | 0 | 17 | 2 |  |  |  |  |  |
+| battle_ovl1981 | 32 | 32 | 0 | 0 | 32 |  |  |  |  |  |  |
+| battle_ovl1984_0 | 119 | 119 | 0 | 0 | 107 | 12 |  |  |  |  |  |
+| battle_ovl1984_1 | 19 | 19 | 0 | 0 | 17 | 2 |  |  |  |  |  |
 | battle_ovl1984_10 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | battle_ovl1984_2 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | battle_ovl1984_3 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
@@ -133,42 +133,47 @@ Total: 5429 rows; confirmed 4564, likely 699, guess 166; ported 4461, not needed
 | battle_spell_thunderstorm | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
 | battle_spell_tractor_beam | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | battle_spell_wind_of_destruction | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
-| boot | 660 | 287 | 281 | 92 | 213 | 411 | 36 |  |  |  |  |
-| credits_3107 | 65 | 56 | 1 | 8 | 27 | 38 |  |  |  |  |  |
-| field | 796 | 658 | 138 | 0 | 703 | 75 | 18 |  |  |  |  |
-| field_ovl_c1d | 108 | 81 | 27 | 0 | 92 | 16 |  |  |  |  |  |
-| field_ovl_c1e | 82 | 80 | 2 | 0 | 69 | 13 |  |  |  |  |  |
-| field_sub3103 | 35 | 34 | 1 | 0 | 34 |  | 1 |  |  |  |  |
+| boot | 660 | 660 | 0 | 0 | 213 | 411 | 36 |  |  |  |  |
+| credits_3107 | 63 | 63 | 0 | 0 | 27 | 36 |  |  |  |  |  |
+| field | 796 | 796 | 0 | 0 | 703 | 75 | 18 |  |  |  |  |
+| field_ovl_c1d | 108 | 108 | 0 | 0 | 92 | 16 |  |  |  |  |  |
+| field_ovl_c1e | 82 | 82 | 0 | 0 | 69 | 13 |  |  |  |  |  |
+| field_sub3103 | 35 | 35 | 0 | 0 | 34 |  | 1 |  |  |  |  |
 | field_sub3104 | 3 | 3 | 0 | 0 | 3 |  |  |  |  |  |  |
 | field_sub3105 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | field_sub3106 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | field_sub3108 | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
-| field_sub3109 | 8 | 7 | 1 | 0 | 7 | 1 |  |  |  |  |  |
-| menu_0ba5 | 237 | 234 | 2 | 1 | 234 | 3 |  |  |  |  |  |
-| menu_0ba6 | 20 | 19 | 1 | 0 | 16 | 4 |  |  |  |  |  |
+| field_sub3109 | 8 | 8 | 0 | 0 | 7 | 1 |  |  |  |  |  |
+| menu_0ba5 | 252 | 252 | 0 | 0 | 237 | 15 |  |  |  |  |  |
+| menu_0ba6 | 20 | 20 | 0 | 0 | 16 | 4 |  |  |  |  |  |
 | menu_0baa | 50 | 50 | 0 | 0 | 42 | 8 |  |  |  |  |  |
 | menu_0bae | 77 | 77 | 0 | 0 | 77 |  |  |  |  |  |  |
-| menu_0bb2 | 31 | 30 | 1 | 0 | 28 | 3 |  |  |  |  |  |
-| menu_0bb6 | 72 | 63 | 9 | 0 | 71 | 1 |  |  |  |  |  |
-| menu_0bb9 | 79 | 78 | 1 | 0 | 79 |  |  |  |  |  |  |
+| menu_0bb2 | 31 | 31 | 0 | 0 | 28 | 3 |  |  |  |  |  |
+| menu_0bb6 | 72 | 72 | 0 | 0 | 71 | 1 |  |  |  |  |  |
+| menu_0bb9 | 79 | 79 | 0 | 0 | 79 |  |  |  |  |  |  |
 | menu_0bbc | 115 | 115 | 0 | 0 | 115 |  |  |  |  |  |  |
 | menu_0bbe | 54 | 54 | 0 | 0 | 54 |  |  |  |  |  |  |
 | menu_0bc0 | 114 | 114 | 0 | 0 | 114 |  |  |  |  |  |  |
 | menu_0bc2 | 115 | 115 | 0 | 0 | 115 |  |  |  |  |  |  |
 | menu_0bc4 | 34 | 34 | 0 | 0 | 34 |  |  |  |  |  |  |
 | menu_0bc6 | 56 | 56 | 0 | 0 | 56 |  |  |  |  |  |  |
-| menu_0bc8 | 28 | 27 | 1 | 0 | 28 |  |  |  |  |  |  |
+| menu_0bc8 | 28 | 28 | 0 | 0 | 28 |  |  |  |  |  |  |
 | menu_0bca | 33 | 33 | 0 | 0 | 33 |  |  |  |  |  |  |
 | menu_0bcc | 14 | 14 | 0 | 0 | 14 |  |  |  |  |  |  |
 | menu_0bce | 39 | 39 | 0 | 0 | 39 |  |  |  |  |  |  |
-| title | 741 | 667 | 42 | 32 | 593 | 140 | 8 |  |  |  |  |
+| title | 751 | 751 | 0 | 0 | 593 | 150 | 8 |  |  |  |  |
 
 ## Partial ports
 
 Ported functions with a part still missing (`[port partial: ...]` in the summary).
 
+- battle 0x80030950 `effect_skill_popup`: the rising icon; not skill_notice_show
 - battle 0x8003f37c `enemy_axe_knockback`: Weirdaxe debris Shots not ported (base reaction only)
+- battle 0x800459fc `battle_main_loop`: the frame loop, freezes, end checks (victory, defeat, rules 2/3), input, camera, director, sound, tasks, sprite pool, stage, the end countdown with its wait; not the Shot/Particle pools, voices, spell data, lens flare, result screen
 - battle 0x80046be0 `battle_free_party_models`: the buffers stay until battle_free_all; the frame loop stops servicing g_special_obj0 (0x8006f920)
+- battle 0x800654f4 `hud_draw`: the disc-lid and read-error notices (strings 0xc / 0xd) never show; the killer-move MP cost (vtable [35]) comes from the character modules (Claude ported; 0 for the others until theirs are)
+- battle 0x800715d0 `battle_program_create`: palette cycling, camera direction, scheduled camera end, flash, shake / vibration, zoom kick, assist / provoke / item timers, target arrow; not the stage code blocks or the opening voices
+- battle_ovl1984_0 0x8007fc54 `sound_handle_active`: voice handles (0x40 / 0x41 << 24) are never active: the voice player is not ported
 
 <!-- coverage:end -->
 

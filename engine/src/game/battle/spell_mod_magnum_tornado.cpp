@@ -87,7 +87,7 @@ void magnum_tornado(SpellCast* sc) {
       spellcast_dim_begin(sc, sc->caster->is_enemy);
       battle_flash_set(sc, 0x30, 0x30, 0x30);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, centre, 0xC00, 0xE3, 0x800, 0x14, 0x80, 5);
       }
       spellcast_wait(sc, 0x14);
@@ -107,7 +107,7 @@ void magnum_tornado(SpellCast* sc) {
       effect_spawn_sphere_at_default(centre, 6, 8, 5, 300, 0xA06020, 0x14, 0);
       effect_spawn_sphere_at_default(centre, 6, 8, 8, 300, 0xC06040, 0x14, 0);
       bsfx_play_at_pos(0x22, centre);
-      screen_shake(3, 4, 0xF0);
+      screen_shake_vertical(3, 4, 0xF0);
       return;
     case 2: {
       sc->s20 += g.frame_ticks;

@@ -65,9 +65,9 @@ int shot_hit_melee(Shot* s, int power, int vs_party);
 void shot_place_at_unit(Shot* s, const BObj* u, s32 dx, s32 dy, s32 dz);
 // 0x80055434: project, animate and draw (g_battle_flags) and the ground shadow of the
 // cel's half width * size; returns the frame (0xffff at the loop limit).
-int shot_draw_and_box(Shot* s, int size, u32 shadow_colour);
-// 0x800554c0: as shot_draw_and_box with the shadow shrinking with the height (min 0x10).
-int shot_draw_and_box_ground(Shot* s, int size, u32 shadow_colour);
+int shot_draw_with_shadow(Shot* s, int size, u32 shadow_colour);
+// 0x800554c0: as shot_draw_with_shadow with the shadow shrinking with the height (min 0x10).
+int shot_draw_with_height_shadow(Shot* s, int size, u32 shadow_colour);
 // 0x80055c60: once the battle passes state 2 (or +0x12c was set) fades the Shot over 24
 // ticks and kills it; returns 1 when it died.
 int shot_fade_out(Shot* s);

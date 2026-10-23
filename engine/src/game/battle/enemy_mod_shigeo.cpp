@@ -88,7 +88,7 @@ struct EnemyShigeo : EnemyUnit {
     const s32 fx = view_fx < 0 ? -view_fx : view_fx;
     u32 dir = 0;
     if (!(fy < fx)) dir = view_fy < 0 ? 1 : 2;
-    Sprite* sp = unit_play_anim(this, 0x14);
+    Sprite* sp = unit_spawn_sprite(this, 0x14);
     if (sp == nullptr) return;
     if (dir == 1) {
       sprite_place_near(sp, this, 0, 0x90, 0);
@@ -153,7 +153,7 @@ struct EnemyShigeo : EnemyUnit {
       if (counters[1] == 0) counters[2] = static_cast<s32>(bsfx_play_at(0x46, this));
       counters[1] += g.frame_ticks;
       if (counters[1] < 0x23) {
-        if (Sprite* sp = unit_play_anim(this, 7)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 7)) {
           const s32 hand[3] = {bobj_front_x(this, 0x48), pos[1] - 0x1A4000, pos[2]};
           const Vec4 r = vec_random_around(hand, 0x140);
           sprite_set_pos_v(sp, r.data());
@@ -304,7 +304,7 @@ void shot_rock(Shot* s) {
   s->scale_y = 0x1800;
   s->scale_x = 0x1800;
   s->size[2] = s->owner->size[2];
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (s->p130 == 0) {
     rock_trails()[s] = afterimage_create(s, 3, 0x102080, 0);

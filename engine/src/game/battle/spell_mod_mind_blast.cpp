@@ -164,9 +164,9 @@ void mind_blast(SpellCast* sc) {
       sound_handle_fade_out(bsfx_play_at(0x46, c), 0x3C, 0x78);
       bsfx_play_at(0x21, c);
       bsfx_play_at(0x22, c);
-      camera_reset_mode(g.camera);
+      camera_reset(g.camera);
       camera_move_to(g.camera, c->pos, c->facing[0] < 0 ? 0xEAA : 0x955, 0x4F, 0x800, 0xF, 0x80, 5);
-      screen_shake2(4, 4, 4, 4, 0xB4);
+      screen_shake(4, 4, 4, 4, 0xB4);
       return;
     case 3: {
       sc->s20 += g.frame_ticks * 0x10;

@@ -72,7 +72,7 @@ void falling_cross(Shot* s) {
     }
     for (int i = 0; i < 2; ++i) effect_debris_burst(at, kZeroVector, 2, 2, 1, 24000, 4);
     bsfx_play_at_pos(0x50, s->pos);
-    screen_shake2(4, 2, 2, 2, 6);
+    screen_shake(4, 2, 2, 2, 6);
   }
   g_model.erase(s);
   shot_kill(s);
@@ -117,7 +117,7 @@ void light_cross(SpellCast* sc) {
       bsfx_play_ui(0x28);
       bsfx_play_ui(0x29);
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 yaw = rng_range(2) != 0 ? 0xCE3 : 0xB1C;
         camera_move_to(g.camera, c->pos, yaw, 0x1C7, 0x1000, 0x3C, 0x80, 5);
       }

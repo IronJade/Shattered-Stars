@@ -326,7 +326,14 @@ void draw_flare_polygon(const s32 pos[3], int sides, s32 radius, u32 rgb, int ot
   if (tri == nullptr) return;
   psyq::P_TAG* otp = &pool->ot_head[ot];
   const u32 code = rgb | 0x22000000u;
-  s32 x = c[0], y = c[1] + radius;
+  // ORIGINAL BUG (original_bugs.md B19): the fan's first vertex is the angle 0x400 without the
+  // camera roll that every other vertex takes (the last one closes at 0x400 + roll), so with a
+  // roll the first triangle overlaps the last or leaves a wedge open in the additive fan:
+  //   s32 x = c[0], y = c[1] + radius;
+  // The first vertex takes the roll too (the same point when the roll is 0). Drawing only.
+  const s32 a0 = 0x400 + view().camera_roll;
+  s32 x = c[0] + (mul32(bcos(static_cast<u32>(a0)), radius) >> 12);
+  s32 y = c[1] + (mul32(bsin(static_cast<u32>(a0)), radius) >> 12);
   for (int i = 0; i < sides; ++i, ++tri) {
     const s32 px = x, py = y;
     const s32 a = ((i + 1) << 12) / sides + 0x400 + view().camera_roll;

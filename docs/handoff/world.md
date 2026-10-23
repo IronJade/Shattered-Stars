@@ -408,7 +408,7 @@ The coordinator's queue (2026-10-22, late) is below. Items 1 and 2 are both part
 nothing runs in the background (no Redux, no queued jobs). Suites at the handoff, all with a
 scratch XDG_CONFIG_HOME and SS_DISC1: ss_tests 78/0, ss_game_tests 98/0, smoke
 (tools/smoke_field_events.sh engine/build-world/shattered-stars) 37/37. Nothing is committed;
-the last checkpoint is 84becbd, and the coordinator commits hourly.
+the last checkpoint is 93dee59, and the coordinator commits hourly.
 
 ### Rules (unchanged; given by the coordinator)
 
@@ -563,7 +563,7 @@ the last checkpoint is 84becbd, and the coordinator commits hourly.
      if the user asks.
   4. **The rest of phase 2:** the plan's first-drop checks (result.cpp roll_drops, the battle
      agent's) and exp / fol multipliers are phase 3. Nothing is started.
-- **Files of mine in progress** (all build; none committed since 84becbd):
+- **Files of mine in progress** (all build; none committed since 93dee59):
   - game/ap/{ap.h, ap.cpp, seed.h, seed.cpp, json.*}
   - tests/test_ap.cpp, tools/smoke_field_events.sh
   - docs/ap/seed_format.md, docs/notes/spell_coverage.md
@@ -599,15 +599,15 @@ the last checkpoint is 84becbd, and the coordinator commits hourly.
 ## Done and verified (committed)
 
 - Phase 1-2: world map overlay 0xc1e, vehicles, bunny, courier, minimap, insert-disc
-  screen (b906414, 69b33dd, 6c88bd4). Notes: `docs/notes/field_overlay_c1e.md`.
+  screen (7fc05c0, f74aa77, 233756a). Notes: `docs/notes/field_overlay_c1e.md`.
 - Phase 3 step 1 (catalog triage, party_swap_characters, screen clamp flag, draw_list
-  bounds): b32c1a9.
+  bounds): 6eb6afb.
 - Phase 3 step 2 (afterimages, encounter voice streaming, field_load_map /
-  field_unload_map teardown, voice budget floor): 1879d21.
-- Phase 3 steps 3-4 (Voice Collection, readability renames): 6ddcb4d.
+  field_unload_map teardown, voice budget floor): c7c60b4.
+- Phase 3 steps 3-4 (Voice Collection, readability renames): 590b8c3.
 - Phase 4 step 1 (saves byte-compatible: field save icon, buffer leftovers, snapshot
-  refresh; SS_STATE_DUMP; test_save): 4b86443.
-- Phase 4 step 2 (mods item / shop / enemy overrides, debug overlay, smoke cases): 357e64b.
+  refresh; SS_STATE_DUMP; test_save): 6243fd7.
+- Phase 4 step 2 (mods item / shop / enemy overrides, debug overlay, smoke cases): 10da278.
 
 ## Phase 5 plan (coordinator, 2026-10-22): battle spells and items
 
@@ -660,9 +660,9 @@ run_victory.sh) `BW_EXTRA_POKE="4047@0x8009a9c0=0x2/2;4047@0x8009a9e0=0xc8/2"` (
 at 0x8009a9c0, handoff 4 slot-0 record 0x8009acd0); her spell list bytes are in her
 record (to find); D = 2 for that dump.
 
-## State at the weekly-limit cutoff (2026-10-22, about 11:10; committed unverified in e37c3a5)
+## State at the weekly-limit cutoff (2026-10-22, about 11:10; committed unverified in 416d7b2)
 
-The weekly limit stopped this worker before it reported phase 5. What is in e37c3a5, none of
+The weekly limit stopped this worker before it reported phase 5. What is in 416d7b2, none of
 it compared with PCSX-Redux yet:
 - Step 1a, written: `battle/spells.{h,cpp}` (the spell tables, the spell-data cache spell_data_*
   0x800482a8-0x80048c5c, spell_cast 0x80062c24), `battle/spell_shots.cpp` (the ten built-in
@@ -694,8 +694,8 @@ it compared with PCSX-Redux yet:
   (0x8004d914) and the #1984.0 list menus (spell, item, tactics) with the description balloon.
   NOT yet in CMakeLists.txt nor called from input.cpp (written, never compiled);
   item_use_battle 0x80082dec is a logging stand-in there.
-- No catalog rows for phase 5 yet (the +118 rows in e37c3a5's functions.csv are other agents').
-- HEAD (e37c3a5) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
+- No catalog rows for phase 5 yet (the +118 rows in 416d7b2's functions.csv are other agents').
+- HEAD (416d7b2) builds and passes every suite: ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21; encounters 2 10 47 65 277 280 285 315 340 412 457 run 2000 frames headless with no crash and no unported-code line (coordinator, after the cutoff).
 
 ## In progress (since the restart, 2026-10-22 afternoon)
 
@@ -706,8 +706,8 @@ it compared with PCSX-Redux yet:
 - Catalog: the port column of every phase-5 function set (scratchpad/world/spell/cat_port.py),
   rows for the Foehn / Starlight modules (module `battle_spell_<name>`, README updated;
   scratchpad/world/spell/catalog/*.csv + cat_mods.py).
-- New since e37c3a5 (on disk): `battle/spell_mod_starlight.cpp` (spell 0x12, af4ef66c53;
-  in 858a228), kind 0x31 vortex + effect_spawn_t31_at (spell_shots.cpp / spell_fx.{h,cpp}),
+- New since 416d7b2 (on disk): `battle/spell_mod_starlight.cpp` (spell 0x12, af4ef66c53;
+  in a28ca95), kind 0x31 vortex + effect_spawn_t31_at (spell_shots.cpp / spell_fx.{h,cpp}),
   spellcast.h `aux_point[4]` (+0x124), spell_modules.h helpers (spellcast_leads_camera,
   spellcast_model), `SS_SPELL_TRACE=1` (a line per spell_cast) and
   `SS_BATTLE_CAST="FRAMES:SLOT:SPELL:p0|e0;..."` (a forced party cast, spells.cpp); the Redux

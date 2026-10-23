@@ -257,7 +257,7 @@ struct EnemyMagichand : EnemyUnit {
 void shot_rock(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 0xA;
-  shot_draw_and_box_ground(s, 4, 0xFFFFFFFF);
+  shot_draw_with_height_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   shot_fade_out(s);
   bobj_move(s, s->vel);

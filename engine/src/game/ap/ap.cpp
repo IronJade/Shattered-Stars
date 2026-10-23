@@ -84,6 +84,9 @@ struct Runtime {
   bool deathlink_in = false;            // received, not yet applied
   std::string deathlink_source;
   bool dying_from_link = false;         // the next game over was a DeathLink's
+  // The battle in progress is one the script lets the party lose (field_flags +0x7E = 0),
+  // latched by battle_frame for battle_frame's DeathLink wait and on_battle_exit's checks.
+  bool battle_lose_allowed = false;
   // Placeholders reached in one vblank: their messages for the window opening in that vblank
   // (one page each), else a banner each; a placeholder reached again in that vblank (a loop
   // giving copies, as the prize tables do) is ignored.
@@ -1065,22 +1068,68 @@ void vblank() {
 
 // ---- Battles ----
 
+namespace {
+
+// Whether the battle running is one its script lets the party lose: script ext 0xb7's third
+// argument, kept in field_flags +0x7E (the state block, handoff 9, +0x180); random and menu
+// battles set it to 1 (field state 5). 0: the loss is no game over, the scene goes on.
+// -1: no state block (a --battle start, or gone).
+int read_battle_lose_allowed() {
+  const battle::BattleGlobals& g = battle::bg();
+  const u8* block = g.handoff != nullptr ? static_cast<const u8*>(handoff_get(g.handoff, 9)) : nullptr;
+  return block == nullptr ? -1 : block[0x180 + 0x7E] == 0 ? 1 : 0;
+}
+
+// The battle outcomes (battle.h Outcome; config +0x178) that win a boss location. A victory
+// (0) always; a time-up (4) too, which only ext 0x72's rule 3 fights end in and only with a
+// member standing (a wipe ends the fight first): the story's timed survivals, Shin at the
+// Lacour Front Line (516) and Berle in Eluria Tower (520), where the enemy can't be beaten and
+// lasting the minute is the win. A wipe (2) only in a fight the script lets the party lose
+// (Dias at the tournament 204, Shin on the ship 517, Marsilio in Fienal 530): the scripted
+// defeat, after which the story goes on. Never an escape (1) or the escape race lost (3).
+bool outcome_takes_boss_check(int outcome, bool lose_allowed) {
+  return outcome == battle::kVictory || outcome == battle::kTimeUp || (outcome == battle::kDefeat && lose_allowed);
+}
+
+}  // namespace
+
+void note_battle_lose_allowed(bool lose_allowed) { rt().battle_lose_allowed = lose_allowed; }
+
 void on_battle_exit(int encounter, int outcome) {
   Runtime& r = rt();
-  if (!r.on || outcome != 0) return;
-  if (std::find(std::begin(kFinalBoss), std::end(kFinalBoss), encounter) != std::end(kFinalBoss)) {
+  // The flag latched in the fight (the state block may be gone by now); this battle's only.
+  const bool lose_allowed = r.battle_lose_allowed;
+  r.battle_lose_allowed = false;
+  if (!r.on) return;
+  if (lose_allowed) {
+    // No game over follows a fight the script lets the party lose, so nothing else would
+    // clear this; a DeathLink never fells the party there anyway (battle_frame waits).
+    r.dying_from_link = false;
+  }
+  const bool victory = outcome == battle::kVictory;
+  const bool goal = std::find(r.seed.goal_encounters.begin(), r.seed.goal_encounters.end(), encounter) !=
+                    r.seed.goal_encounters.end();
+  const bool boss = std::any_of(r.seed.locations.begin(), r.seed.locations.end(), [&](const Location& l) {
+    return l.type == "boss" && l.encounter == encounter;
+  });
+  if (boss || goal)
+    log("encounter " + std::to_string(encounter) + " ended: outcome " + std::to_string(outcome) +
+        (lose_allowed ? ", the script lets the party lose" : ", a loss is a game over"));
+  if (victory && std::find(std::begin(kFinalBoss), std::end(kFinalBoss), encounter) != std::end(kFinalBoss)) {
     // The ending and the credits follow: no DeathLink ends that.
     r.ending = true;
     if (r.deathlink_in) log("DeathLink from " + r.deathlink_source + " dropped: the final boss is beaten");
     r.deathlink_in = false;
   }
-  for (const Location& l : r.seed.locations) {
-    if (l.type != "boss" || l.encounter != encounter || is_checked(l.id)) continue;
-    record_check(l.id, true);
-    if (l.item.own) r.pending.push_back({l.item.item, "", true});
+  if (outcome_takes_boss_check(outcome, lose_allowed)) {
+    for (const Location& l : r.seed.locations) {
+      if (l.type != "boss" || l.encounter != encounter || is_checked(l.id)) continue;
+      record_check(l.id, true);
+      if (l.item.own) r.pending.push_back({l.item.item, "", true});
+    }
   }
-  if (!r.state.goal_done &&
-      std::find(r.seed.goal_encounters.begin(), r.seed.goal_encounters.end(), encounter) != r.seed.goal_encounters.end()) {
+  // The goal needs the victory.
+  if (victory && goal && !r.state.goal_done) {
     r.state.goal_done = true;
     log("goal: encounter " + std::to_string(encounter) + " won");
     if (r.link && r.net_ok) r.link->goal();
@@ -1089,16 +1138,18 @@ void on_battle_exit(int encounter, int outcome) {
 
 void battle_frame() {
   Runtime& r = rt();
-  if (!r.on || !r.deathlink_in) return;
+  if (!r.on) return;
+  // The lose-allowed flag, for the wait below and for on_battle_exit's boss checks: latched
+  // while the state block is there (the exit reads the latched value).
+  if (const int lose = read_battle_lose_allowed(); lose >= 0) r.battle_lose_allowed = lose != 0;
+  if (!r.deathlink_in) return;
   battle::BattleGlobals& g = battle::bg();
   // In the fight, between special moves: every standing member falls, as from a lethal hit
   // (HP 0, death 1); the battle's own check then loses the fight (outcome 2).
   if (g.state != battle::kStateFighting || (g.flags & 0x40) != 0) return;
   // Not in a story battle the script lets the party lose (script ext 0xb7's third argument,
   // field_flags +0x7e = 0: no game over, the scene goes on): it waits for free play.
-  if (const u8* block = g.handoff != nullptr ? static_cast<const u8*>(handoff_get(g.handoff, 9)) : nullptr;
-      block != nullptr && block[0x180 + 0x7E] == 0)
-    return;
+  if (r.battle_lose_allowed) return;
   r.deathlink_in = false;
   r.dying_from_link = true;
   for (battle::PartyUnit* u : g.party_units) {
@@ -1130,6 +1181,10 @@ void on_game_over() {
 void on_program(Scene scene) {
   Runtime& r = rt();
   r.scene = scene;
+  if (scene == Scene::kBattle) {
+    r.battle_lose_allowed = false;  // (battle_frame latches it)
+    if (r.on) log("a battle at vblank " + std::to_string(runtime::Runtime::get().vblanks()));
+  }
   r.control_frames = 0;  // (counted again in the new program's field frames)
   if (r.on && (scene == Scene::kTitle || scene == Scene::kCredits))
     log(std::string(scene == Scene::kTitle ? "the title" : "the credits") + " at vblank " +

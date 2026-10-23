@@ -683,7 +683,7 @@ void camera_end_mode(Camera* c, int mode, int next, Unit* u) {
   }
 }
 
-void camera_reset_mode(Camera* c) {
+void camera_reset(Camera* c) {
   c->mode = 0;
   std::memset(c->lookat_offset, 0, sizeof c->lookat_offset);
 }
@@ -846,7 +846,7 @@ void camera_setup_overview(Camera* c, s32 ticks, int all_units) {
   c->step = 0;
 }
 
-void camera_set_lookat_offset(Camera* c, const s32 ofs[3]) {
+void camera_set_follow_offset(Camera* c, const s32 ofs[3]) {
   if ((c->lookat_offset[0] != ofs[0] || c->lookat_offset[1] != ofs[1] || c->lookat_offset[2] != ofs[2]) &&
       c->mode == 7) {
     c->lookat_offset[0] = ofs[0];
@@ -926,7 +926,7 @@ void camera_schedule_end(int mode, Unit* u, s16 ticks) {
   }
 }
 
-void camera_end_scheduled() {
+void camera_end_scheduled_now() {
   BattleGlobals& g = bg();
   if (g.state < 3) {
     camera_end_mode(g.camera, g.camera_end_mode, 0, g.camera_end_unit);

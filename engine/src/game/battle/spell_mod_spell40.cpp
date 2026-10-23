@@ -136,7 +136,7 @@ void spell40(SpellCast* sc) {
         sp->scale_x = scale;
         sp->facing[0] = rng_range(2) != 0 ? -0x1000 : 0x1000;
         if (static_cast<u32>(rng_next() & 0x7FFF) < 3000) bsfx_play_at_pos(0x50, at);
-        screen_shake2(6, 6, 4, 4, 10);
+        screen_shake(6, 6, 4, 4, 10);
       }
       sc->s34 += g.frame_ticks;
       if (0x5A < sc->s34 && sc->s38 == 0) {

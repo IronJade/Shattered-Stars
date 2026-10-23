@@ -49,7 +49,7 @@ struct EnemyGhost : EnemyUnit {
     const int n = collider_attack_overlaps(this, units, points, 1);
     if (n == 0 || hit_landed != 0) return;
     if (unit_attack_targets(this, n, units, points, 0x100, 9999, 0) == 0) return;
-    if (Sprite* sp = unit_play_anim_ex(this, 7, 1)) {
+    if (Sprite* sp = unit_spawn_sprite_ex(this, 7, 1)) {
       sprite_set_pos_v(sp, units[0]->pos);
       sp->layer = 2;
     }

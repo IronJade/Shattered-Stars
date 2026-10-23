@@ -90,7 +90,7 @@ void growth(SpellCast* sc) {
       h = bsfx_play_at(0x46, t);
       sound_handle_fade_out(h, 0x3C, 0x96);
       sound_handle_pitch_up(h, 0xB4);
-      camera_reset_mode(g.camera);
+      camera_reset(g.camera);
       camera_move_to(g.camera, t->pos, 0xC00, 0xE3, 0xA00, 0x78, 0x80, 5);
       return;
     }

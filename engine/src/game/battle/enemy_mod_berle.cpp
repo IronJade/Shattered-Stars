@@ -88,7 +88,7 @@ struct EnemyBerle : EnemyUnit {
       const int n = collider_attack_overlaps(this, units, points, 1);
       if (n != 0 && hit_landed == 0 && unit_attack_targets(this, n, units, points, 0x100, 9999, 0) != 0) {
         for (int i = 0; i < n; ++i) {
-          if (Sprite* sp = unit_play_anim_ex(this, 8, 1)) sprite_set_pos_v(sp, points[i].data());
+          if (Sprite* sp = unit_spawn_sprite_ex(this, 8, 1)) sprite_set_pos_v(sp, points[i].data());
         }
       }
     }

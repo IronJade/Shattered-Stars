@@ -49,7 +49,7 @@ struct Camera : Task {
 int camera_set_mode(Camera* c, int mode, BObj* target);      // 0x80031118
 int camera_request_mode(Camera* c, int mode, BObj* target);  // 0x800310b0
 void camera_end_mode(Camera* c, int mode, int next, Unit* u);  // 0x800312b0
-void camera_reset_mode(Camera* c);                           // 0x80031358 (the catalogue's camera_reset)
+void camera_reset(Camera* c);                                // 0x80031358 (0x80076be8 camera_reset() is render.h)
 void camera_set_motion(Camera* c, s32 ticks, s32 speed, s32 accel, s32 min, s32 max);  // 0x800338d8
 int camera_motion_step(Camera* c, u32 snap);                 // 0x8003391c
 void camera_step_eye(Camera* c);                             // 0x80033768
@@ -66,7 +66,7 @@ bool camera_hold_tick(Camera* c);                            // 0x800341ac
 int battle_party_start_appear();                             // 0x80034128
 void camera_setup_follow_target(Camera* c);                  // 0x80032140 (modes 5 / 7 / 15)
 void camera_setup_overview(Camera* c, s32 ticks, int all_units);  // 0x80031e68 (sets mode 11)
-void camera_set_lookat_offset(Camera* c, const s32 ofs[3]);  // 0x80032240 (mode 7 only)
+void camera_set_follow_offset(Camera* c, const s32 ofs[3]);  // 0x80032240 (mode 7 only)
 void camera_move_to(Camera* c, const s32 centre[3], s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
                     s32 accel);                              // 0x80032440 (mode 10)
 void camera_orbit_unit(Camera* c, BObj* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
@@ -79,7 +79,7 @@ void camera_set_zoom(Camera* c, s32 zoom, s32 speed);        // 0x8003434c
 // #1984.0: end 'mode' after 'ticks' (battle_frame_director runs it down; 0x80072544) and
 // end the scheduled mode now (0x800724f4).
 void camera_schedule_end(int mode, Unit* u, s16 ticks);
-void camera_end_scheduled();
+void camera_end_scheduled_now();
 extern const s32 kZeroVector[4];                             // g_zero_vector 0x8006e33c
 
 }  // namespace ss::game::battle

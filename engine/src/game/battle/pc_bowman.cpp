@@ -65,7 +65,7 @@ void set_vel(BObj* o, const Vec4& v) {
 void cb_blast(Shot* s) {
   BattleGlobals& g = bg();
   s->size[2] = s->owner->size[2];
-  if (!frame_is_end(shot_draw_and_box(s, 5, 0xFFFFFFFF))) {
+  if (!frame_is_end(shot_draw_with_shadow(s, 5, 0xFFFFFFFF))) {
     if (g.flags != 0) return;
     shot_fade_out(s);
     if (s->p12c == 0 && 0x14 < s->p134) s->p12c = 1;
@@ -86,10 +86,10 @@ void cb_pill(Shot* s) {
   BattleGlobals& g = bg();
   s->size[2] = 0x18;
   if (s->p130 == 0) {
-    shot_draw_and_box(s, 5, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 5, 0xFFFFFFFF);
   } else {
     s->loop_limit = 1;
-    if (frame_is_end(shot_draw_and_box(s, 5, 0xFFFFFFFF))) {
+    if (frame_is_end(shot_draw_with_shadow(s, 5, 0xFFFFFFFF))) {
       shot_kill(s);
       return;
     }
@@ -127,7 +127,7 @@ void cb_heal(Shot* s) {
   s->pos[0] = o->pos[0] + (0 < s->p130 ? 0x40000 : -0x40000);
   s->anim = 1;
   s->pos[2] = o->pos[2];
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   shot_fade_out(s);
   bobj_move(s, s->vel);
@@ -179,7 +179,7 @@ void cb_orb(Shot* s) {
   BattleGlobals& g = bg();
   s->size[2] = 0x30;
   s->anim = 1;
-  shot_draw_and_box(s, 4, 0x70FF);
+  shot_draw_with_shadow(s, 4, 0x70FF);
   if (g.flags != 0) return;
   shot_fade_out(s);
   bobj_move(s, s->vel);
@@ -255,7 +255,7 @@ void cb_clone(Shot* s) {
     if (g.flags == 0) s->p130 += g.frame_ticks * 4;
     running();
   }
-  if (frame_is_end(shot_draw_and_box(s, 4, 0xFFFFFFFF))) ++s->p12c;
+  if (frame_is_end(shot_draw_with_shadow(s, 4, 0xFFFFFFFF))) ++s->p12c;
   if (g.flags != 0) return;
   const s32 before = vec_distance_fx(s->target->pos, s->pos);
   if (s->p12c != 1) bobj_move(s, s->vel);
@@ -284,10 +284,10 @@ void cb_burst_pill(Shot* s) {
   s->layer = 1;
   s->size[2] = static_cast<s16>((s->power + 1) * 0x30);
   if (s->p130 == 0) {
-    shot_draw_and_box(s, 5, 0xFFFFFFFF);
+    shot_draw_with_shadow(s, 5, 0xFFFFFFFF);
   } else {
     s->loop_limit = 1;
-    if (frame_is_end(shot_draw_and_box(s, 5, 0xFFFFFFFF))) {
+    if (frame_is_end(shot_draw_with_shadow(s, 5, 0xFFFFFFFF))) {
       shot_kill(s);
       return;
     }
@@ -457,7 +457,7 @@ void cb_fist(Shot* s) {
   BattleGlobals& g = bg();
   s->size[1] = 0x30;
   s->size[2] = static_cast<s16>((s->power + 1) * 0x20);
-  if (!frame_is_end(shot_draw_and_box(s, 5, 0xFFFFFFFF))) {
+  if (!frame_is_end(shot_draw_with_shadow(s, 5, 0xFFFFFFFF))) {
     if (g.flags != 0) return;
     shot_fade_out(s);
     if (s->p12c == 0 && 0x14 < s->p134) s->p12c = 1;
@@ -770,7 +770,7 @@ void BowmanUnit::move3() {
           bsfx_play_at(0x53, target);
           hit_landed = 1;
         }
-        if (Sprite* sp = unit_play_anim_ex(this, 6, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 6, 1)) {
           sprite_set_pos(sp, target->pos[0], target->pos[1] + size[1] * -0x4000 + 0x50000, target->pos[2]);
         }
       }
@@ -953,7 +953,7 @@ void BowmanUnit::move6() {
           }
         }
         if (g.controlled_slot == slot && g.camera_special == nullptr) {
-          camera_reset_mode(g.camera);
+          camera_reset(g.camera);
           camera_set_mode(g.camera, 7, target);
           camera_focus = 0;
         }
@@ -1080,13 +1080,13 @@ void BowmanUnit::move9() {
           unit_attack_targets(this, n, found, pts, lvl * 0x80 + 0x200, 9999, 0) != 0) {
         particle_spawn_ring(pts[0].data(), 0x10, 0x38, 0x10, 0x2D, 0x103060, 0x2080FF, 0, 0x400);
         for (int i = 0; i < lvl * 4 + 4; ++i) {
-          if (Sprite* sp = unit_play_anim_ex(this, static_cast<int>(rng_range(4)) + 7, 1)) {
+          if (Sprite* sp = unit_spawn_sprite_ex(this, static_cast<int>(rng_range(4)) + 7, 1)) {
             sprite_set_pos_v(sp, pts[0].data());
             set_vel(sp, vec_random_around(kZero, 8));
           }
         }
         for (int i = 0; i < lvl * 2 + 2; ++i) {
-          if (Sprite* sp = unit_play_anim(this, static_cast<int>(rng_range(2)) + 0xB)) {
+          if (Sprite* sp = unit_spawn_sprite(this, static_cast<int>(rng_range(2)) + 0xB)) {
             sprite_set_fade(sp, 0x80, -4, 8);
             sprite_set_pos(sp, pts[0].x, bobj_ground_height(this) - 0x20000, pts[0].z);
             set_vel(sp, vec_random_in_disc_xz(kZero, 8));

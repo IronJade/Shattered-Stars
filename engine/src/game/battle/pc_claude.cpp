@@ -54,7 +54,7 @@ void big_flash(BObj* at, s32 zoom) {
   g.flash_delay = 2;
   g.flash_speed = 0x20;
   if (bobj_on_screen(at)) {
-    screen_shake2(4, 4, 4, 6, 0xE);
+    screen_shake(4, 4, 4, 6, 0xE);
     g.zoom_kick = zoom;
     g.zoom_kick_decay = 200;
   }
@@ -70,7 +70,7 @@ void cb_wave(Shot* s) {
   s->anim = static_cast<u16>(s->p134);
   const u32 colour = s->power == 0 ? 0x20FFC020u : 0x2010C0FFu;
   s->size[2] = s->owner->size[2];
-  const s16 frame = static_cast<s16>(shot_draw_and_box(s, 8, colour));
+  const s16 frame = static_cast<s16>(shot_draw_with_shadow(s, 8, colour));
   if (frame != -1) {
     if (g.flags != 0) return;
     shot_fade_out(s);
@@ -107,7 +107,7 @@ void cb_slash(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 4;
   s->size[2] = s->owner->size[2];
-  const s16 frame = static_cast<s16>(shot_draw_and_box(s, 5, 0xFFFFFFFF));
+  const s16 frame = static_cast<s16>(shot_draw_with_shadow(s, 5, 0xFFFFFFFF));
   if (frame != -1) {
     if (g.flags != 0) return;
     shot_fade_out(s);
@@ -158,7 +158,7 @@ void cb_thrust(Shot* s) {
   s->anim = 3;
   s->layer = 2;
   s->size[2] = s->owner->size[2];
-  const s16 frame = static_cast<s16>(shot_draw_and_box(s, 5, 0x2050));
+  const s16 frame = static_cast<s16>(shot_draw_with_shadow(s, 5, 0x2050));
   if (frame == -1) {
     shot_kill(s);
     return;
@@ -278,7 +278,7 @@ void cb_storm(Shot* s) {
       }
     }
   }
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (s->p12c != 0) {
     s->scale_x += g.frame_ticks * 0x100;
@@ -293,7 +293,7 @@ void cb_vortex(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 4;
   s->size[2] = 0x30;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (shot_fade_out(s) != 0) {
     shot_kill(s);
     return;
@@ -322,7 +322,7 @@ void cb_vortex(Shot* s) {
     const int hit = shot_hit_melee(s, 0x100, 0);
     wrs16(st + 0x5C, el);
     if (hit != 0) {
-      if (bobj_on_screen(s)) screen_shake2(4, 4, 4, 6, 0xE);
+      if (bobj_on_screen(s)) screen_shake(4, 4, 4, 6, 0xE);
       const s32 spread[3] = {0x80000, 0x80000, 0x80000};
       effect_debris_burst(s->pos, spread, 3, 2, 1, 0x1800, 5);
       landed = true;
@@ -330,7 +330,7 @@ void cb_vortex(Shot* s) {
   }
   if (!landed) {
     if (s->pos[1] <= bobj_ground_height(s)) return;
-    if (bobj_on_screen(s)) screen_shake(2, 2, 10);
+    if (bobj_on_screen(s)) screen_shake_vertical(2, 2, 10);
   }
   bsfx_play_at_pos(0x50, s->pos);
   if (-0x12C000 < s->pos[1]) {
@@ -534,7 +534,7 @@ void ClaudeUnit::move2() {
   if (counters[1] == 0 && 6 < frame) {
     if (camera_focus != 0) {
       const s32 ofs[3] = {bobj_facing_fx(this, 0x140), 0, 0};
-      camera_set_lookat_offset(g.camera, ofs);
+      camera_set_follow_offset(g.camera, ofs);
     }
     counters[1] = 1;
     bsfx_play_at(0x3C, this);
@@ -779,7 +779,7 @@ void ClaudeUnit::move6() {
   if (g.flags == 0) {
     counters[1] -= g.frame_ticks;
     if (3 < frame && counters[1] < 0) {
-      if (counters[2] == 0) screen_shake2(6, 4, 4, 4, 0x10);
+      if (counters[2] == 0) screen_shake(6, 4, 4, 4, 0x10);
       counters[1] += 0x10;
       int first, last;
       if (target_far == 0) {
@@ -1011,7 +1011,7 @@ void ClaudeUnit::move10() {
     if (effects[0] != nullptr) effects[0]->next_kind = 1;
     unit_attack_targets(this, n, units, points, 0x100, angle, 0);
     wrs16(stats + 0x52, kb);
-    if (Sprite* sp = unit_play_anim(this, static_cast<int>(rng_range(2)) + 5)) {
+    if (Sprite* sp = unit_spawn_sprite(this, static_cast<int>(rng_range(2)) + 5)) {
       sp->facing[0] = facing[0];
       sprite_set_pos_v(sp, &points[0].x);
       sprite_set_fade(sp, 0x80, -4, 4);

@@ -42,7 +42,7 @@ void set_vel(BObj* o, const Vec4& v) {
 // The rising mote (anim 0x24) of the second form: a random x within 300, 0x190 up,
 // floating up faster and faster.
 void spawn_mote(Unit* u) {
-  Sprite* sp = unit_play_anim(u, 0x24);
+  Sprite* sp = unit_spawn_sprite(u, 0x24);
   if (sp == nullptr) return;
   const s32 dx = rng_between_fixed(-300, 300);
   const s32 p[3] = {u->pos[0] + dx, u->pos[1] - 0x190000, u->pos[2]};
@@ -383,7 +383,7 @@ struct EnemyIndalecio : EnemyUnit {
         sound_handle_fade_out(h, 0x3C, 0x258);
         sound_handle_pitch_up(h, 0x258);
         bsfx_play_at(0x21, this);
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, pos, 0xC00, 0x155, 0x1000, 0, 0x80, 5);
         camera_move_to(g.camera, pos, 0xC00, 0x71, 0x800, 0x12C, 0x80, 5);
       } else if (counters[0] == 1) {
@@ -581,7 +581,7 @@ void transform_run(SpellCast* sc) {
         bsfx_play_at(0x29, u);
         bsfx_play_at(0x21, u);
         sound_handle_fade_out(bsfx_play_ui(0x2D), 0x1E, 0x1E);
-        screen_shake2(4, 2, 4, 4, 0x1F4);
+        screen_shake(4, 2, 4, 4, 0x1F4);
         const u32 h = bsfx_play_at(0x35, u);
         sound_handle_fade_out(h, 0x3C, 0x168);
         sound_handle_pitch_up(h, 0x168);
@@ -589,7 +589,7 @@ void transform_run(SpellCast* sc) {
         u->effects[0] = nullptr;
         u->pos[1] = gy;
         ++sc->step;
-        if (Sprite* sp = unit_play_anim_ex(u, 0x16, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(u, 0x16, 1)) {
           sprite_set_pos_v(sp, u->pos);
           sp->layer = 0xC;
         }
@@ -612,7 +612,7 @@ void transform_run(SpellCast* sc) {
         const s32 high[3] = {u->pos[0], -0x3E8000, u->pos[2]};
         camera_move_to(g.camera, high, 0xC00, -0x71, 0xC00, 0x258, 0x80, 5);
       }
-      if (Sprite* sp = unit_play_anim(u, 0x17)) {
+      if (Sprite* sp = unit_spawn_sprite(u, 0x17)) {
         const Vec4 p = vec_random_in_disc_xz(u->pos, 800);  // (y 0)
         sprite_set_pos_v(sp, p.data());
         const s32 ground[3] = {u->pos[0], bobj_ground_height(u), u->pos[2]};
@@ -654,7 +654,7 @@ void transform_run(SpellCast* sc) {
         ring->vel[2] = static_cast<s32>(rng_range(0x1000));
         bobj_share_sprite(u, ring);
       }
-      if (Sprite* sp = unit_play_anim_ex(u, 0x15, 1)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(u, 0x15, 1)) {
         const Vec4 p = vec_random_around(top, 0x4B0);
         sprite_set_pos_v(sp, p.data());
         set_vel(sp, vec_velocity_toward(sp->pos, top, 0x24));
@@ -774,7 +774,7 @@ void shot_strike(Shot* s) {
   s->loop_limit = 1;
   s->layer = 8;
   s->size[2] = s->owner->size[2];
-  if (static_cast<s16>(shot_draw_and_box(s, 4, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 4, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     return;
   }

@@ -99,7 +99,7 @@ void falling_block(Shot* s) {
     }
     const s32 at[4] = {s->pos[0], s->pos[1], s->pos[2], s->pos_w};
     particle_spawn_ring(at, 0xC, 0x90, 0x38, 0x3C, 0xD0B090, 0x301010, 0x60, 0);
-    screen_shake2(2, 8, 4, 4, 0x10);
+    screen_shake(2, 8, 4, 4, 0x10);
     return;
   }
   s->p12c += g.frame_ticks;
@@ -211,7 +211,7 @@ void gravity_press(SpellCast* sc) {
     }
     case 3:
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         const s32 at[4] = {sc->centre[0], 0, sc->centre[2], sc->centre[3]};
         camera_move_to(g.camera, at, 0xC00, 0x11C, 0x1000, 600, 0x80, 5);
       }

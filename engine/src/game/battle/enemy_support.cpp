@@ -31,7 +31,7 @@ s32 bobj_front_x(const BObj* o, s32 dist) {
   return o->pos[0] + d;
 }
 
-Sprite* unit_play_anim_ex(const Unit* u, int anim, int loops) { return sprite_spawn_from(anim, loops, u, nullptr); }
+Sprite* unit_spawn_sprite_ex(const Unit* u, int anim, int loops) { return sprite_spawn_from(anim, loops, u, nullptr); }
 
 void unit_throw_weapons(Unit* u, s32 variant) {
   const int free = shot_count_free();

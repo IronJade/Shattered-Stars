@@ -558,7 +558,7 @@ struct EnemyGiant : EnemyUnit {
     s->atk[2] = atk;
     if (counters[1] != 0 || frame <= 1) return;
     counters[1] = 1;
-    Sprite* fx = unit_play_anim_ex(this, 7, 1);
+    Sprite* fx = unit_spawn_sprite_ex(this, 7, 1);
     if (fx == nullptr) return;
     sprite_set_pos(fx, pos[0], pos[1], pos[2] - 0x10000);
     fx->layer = -1;
@@ -763,7 +763,7 @@ struct EnemyWizard : EnemyUnit {
     const s32 from[3] = {bobj_front_x(this, 0x40), pos[1] - 0xA0000, pos[2]};
     shot_spawn_projectile(this, from, d, this);
     counters[1] = 1;
-    Sprite* fx = unit_play_anim(this, 6);
+    Sprite* fx = unit_spawn_sprite(this, 6);
     if (fx == nullptr) return;
     sprite_place_near(fx, this, 0x40, 0xA0, 0);
     sprite_set_fade(fx, 0x80, -2, 8);

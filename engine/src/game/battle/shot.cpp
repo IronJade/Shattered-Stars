@@ -45,7 +45,7 @@ void shot_k02_boomerang(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 7;
   s->size[2] = 0x10;
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   Unit* o = s->owner;
   const s32 home[3] = {o->pos[0], o->pos[1] - (o->size[1] << 13), o->pos[2]};
@@ -341,6 +341,12 @@ void shot_k16_projectile(Shot* s) {
   s->draw_age += g.frame_ticks;
   if ((flags & 0x400000) != 0) s->pos[1] = bobj_ground_height(s);
   if (0xF < s->p12c || s->hit_landed != 0 || (flags & 4) == 0) return;
+  // ORIGINAL BUG (original_bugs.md B16): as in shot_hit_magic, the console's buffers hold 4
+  // units (sp+0x28) and 4 points (sp+0x38) in a 0xd0 frame: hits 5-7 write units over point 0
+  // (the first hit effect lands at a garbage x), an 8th also writes point 7 over the caller's
+  // saved s0-s2:
+  //   Unit* found[4]; Vec4 pts[4];
+  // The port keeps 8 of each; up to 4 hits it plays exactly as the console.
   Unit* found[8] = {};
   Vec4 pts[8] = {};
   const int n = collider_attack_overlaps(s, found, pts, s->owner->is_enemy);
@@ -703,7 +709,7 @@ void shot_kill(Shot* s) {
   s->kind = 0;
   if (g.camera == nullptr) return;
   camera_set_focus_timer(g.camera, s, 0x14);
-  if (g.camera->mode == 0xC && g.camera->target == s) camera_reset_mode(g.camera);
+  if (g.camera->mode == 0xC && g.camera->target == s) camera_reset(g.camera);
 }
 
 void shot_use_anims_f928(BObj* o) { bobj_share_sprite(bg().sprite_set_a.get(), o); }
@@ -732,7 +738,7 @@ void shot_place_at_unit(Shot* s, const BObj* u, s32 dx, s32 dy, s32 dz) {
   s->facing[0] = u->facing[0];
 }
 
-int shot_draw_and_box(Shot* s, int size, u32 shadow_colour) {
+int shot_draw_with_shadow(Shot* s, int size, u32 shadow_colour) {
   bobj_project(s);
   const int frame = bobj_anim_draw(s, bg().flags);
   s32 r = s->ext_x1;
@@ -742,7 +748,7 @@ int shot_draw_and_box(Shot* s, int size, u32 shadow_colour) {
   return frame;
 }
 
-int shot_draw_and_box_ground(Shot* s, int size, u32 shadow_colour) {
+int shot_draw_with_height_shadow(Shot* s, int size, u32 shadow_colour) {
   bobj_project(s);
   const int frame = bobj_anim_draw(s, bg().flags);
   s32 h = bobj_ground_height(s) - s->pos[1];
@@ -942,6 +948,11 @@ Shot* effect_spawn_sphere_at(const s32 pos[3], s32 lat, s32 lon, s32 grow, s32 l
 // damage on whatever the Shot's attack boxes meet (vs_party: the party); +0x6d marks the
 // hit. Returns shot_apply_damage + 1, or 0 when nothing was met.
 int shot_hit_magic(Shot* s, int power, int vs_party, int sfx, u16 element, int spark, int knockback) {
+  // ORIGINAL BUG (original_bugs.md B16): the console's buffers hold 4 units (sp+0x28) and 4
+  // points (sp+0x38) in a 0x98 frame, but collider_attack_overlaps can return 8 enemies: hits
+  // 5-8 write units over point 0 and points over the saved s0-s6 (a likely crash on return):
+  //   Unit* found[4]; Vec4 points[4];
+  // The port keeps 8 of each; up to 4 hits it plays exactly as the console.
   Unit* found[8] = {};
   Vec4 points[8] = {};
   const int n = collider_attack_overlaps(s, found, points, vs_party);
@@ -996,7 +1007,7 @@ int shot_apply_damage(Shot* s, int n, Unit** targets, const Vec4* points, int po
         dmg /= 2;
         unit_show_guts_effect(owner, t, owner->is_enemy != 0);
       }
-      screen_shake(2, 2, 10);
+      screen_shake_vertical(2, 2, 10);
     } else {
       missed = 1;
     }

@@ -67,17 +67,30 @@ void Runtime::present() {
     std::snprintf(name, sizeof name, "frame%05llu.png", static_cast<unsigned long long>(vblank_count_));
     util::write_png(capture_dir / name, pixels, w, h);
   }
-  if (window) {
-    // On a TV the lines outside the display range are border: put them back so the
-    // picture keeps its 4:3 proportions.
-    const auto& d = gpu.display();
-    if (display_enabled && h < d.height) {
-      std::vector<u32> framed(static_cast<size_t>(w) * d.height, 0xFF000000u);
-      const int top = std::clamp(d.top, 0, d.height - h);
-      std::copy(pixels.begin(), pixels.end(), framed.begin() + static_cast<std::ptrdiff_t>(top) * w);
-      window->present(framed.data(), w, d.height, 4.0f / 3.0f);
-    } else {
-      window->present(pixels.data(), w, h, 4.0f / 3.0f);
+  // On a TV the lines outside the display range are border: put them back so the picture
+  // keeps its 4:3 proportions. Shared by the real window and the SS_SHOT window below, so
+  // both present exactly the same image.
+  const auto& d = gpu.display();
+  const u32* present_pixels = pixels.data();
+  int present_w = w, present_h = h;
+  std::vector<u32> framed;
+  if (display_enabled && h < d.height) {
+    framed.assign(static_cast<size_t>(w) * d.height, 0xFF000000u);
+    const int top = std::clamp(d.top, 0, d.height - h);
+    std::copy(pixels.begin(), pixels.end(), framed.begin() + static_cast<std::ptrdiff_t>(top) * w);
+    present_pixels = framed.data();
+    present_h = d.height;
+  }
+  if (window) window->present(present_pixels, present_w, present_h, 4.0f / 3.0f);
+  if (shot_window) {
+    if (auto it = shot_frames.find(vblank_count_); it != shot_frames.end()) {
+      shot_window->present(present_pixels, present_w, present_h, 4.0f / 3.0f);
+      std::vector<u32> shot;
+      int sw = 0, sh = 0;
+      if (shot_window->read_pixels(shot, sw, sh)) {
+        if (it->second.has_parent_path()) std::filesystem::create_directories(it->second.parent_path());
+        util::write_png(it->second, shot, sw, sh);
+      }
     }
   }
 }
@@ -138,7 +151,8 @@ void Runtime::vblank() {
   if (audio_tick) audio_tick();
   if (net_poll) net_poll();  // (Archipelago, game/ap) [world agent]
   if (vsync_callback) vsync_callback();
-  if (window || capture_frames.count(vblank_count_)) present();
+  if (window || capture_frames.count(vblank_count_) || (shot_window && shot_frames.count(vblank_count_)))
+    present();
   // [world agent] SS_PACE=1: a headless run paced like a windowed one (tests that talk to a
   // server in real time).
   static const bool paced = std::getenv("SS_PACE") != nullptr;

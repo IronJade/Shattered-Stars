@@ -250,7 +250,8 @@ def main(argv=None):
         with open(a.out, "w", encoding="utf-8") as f:
             json.dump(seed, f, indent=1)
             f.write("\n")
-        print(f"{len(lines)} patch lines, {sum(1 for l in locs if l.get('placeholder') is not None)} placeholders -> {a.out}")
+        placeholders = sum(1 for l in locs if l.get("placeholder") is not None)
+        print(f"{len(lines)} patch lines, {placeholders} placeholders -> {a.out}")
     else:
         print("\n".join(lines))
     return 0

@@ -68,7 +68,7 @@ void gust(Shot* s) {
     return;
   }
   if (s->aux == 0) {
-    screen_shake2(3, 4, 4, 4, 0xC);
+    screen_shake(3, 4, 4, 4, 0xC);
     bsfx_play_at(0x4B, s);
     if (Sprite* sp = shot_spawn_sprite(s, 2)) {
       const s32 scale = rng_between(0x4000, 24000);
@@ -118,7 +118,7 @@ void tetanus_wind(SpellCast* sc) {
       battle_flash_set(sc, 0x60, 0x60, 0x60);
       sc->s24 = rng_range(2) != 0 ? 300 : 0xF0;
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, t->pos, (sc->s24 * 0x1000) / 0x168, 0x111, 0x1000, 0x1E, 0x80, 5);
       }
       spellcast_wait(sc, 0x1E);

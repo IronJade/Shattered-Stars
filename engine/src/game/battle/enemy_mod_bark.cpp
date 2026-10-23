@@ -54,7 +54,7 @@ struct EnemyBark : EnemyUnit {
     rgb[2] = static_cast<u8>(lvl - 0x80);
     facing[0] = 0x3E8000;
     if (action != 0 || g.flags != 0 || g.state != kStateFighting) return 0;
-    Sprite* sp = unit_play_anim(this, 6);
+    Sprite* sp = unit_spawn_sprite(this, 6);
     if (sp == nullptr) return 0;
     const Vec4 p = vec_random_in_disc_xz(pos, 600);
     sprite_set_pos_v(sp, p.data());
@@ -125,14 +125,14 @@ struct EnemyBark : EnemyUnit {
     if (counters[0] == 0) {
       for (int i = 0; i < 2; ++i) {
         const s32 at[4] = {pos[0] + (i != 0 ? -0x78000 : 0x28000), pos[1] - 0x1CC000, pos[2], 0};
-        if (Sprite* sp = unit_play_anim(this, 0xB)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 0xB)) {
           sprite_set_pos(sp, at[0], at[1], at[2]);
           sp->layer = 0x11;
           sprite_set_fade(sp, 0x80, -2, 8);
           sp->scale_y = 0x1800;
           sp->scale_x = 0x1800;
         }
-        if (Sprite* sp = unit_play_anim(this, 0x11 - i)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 0x11 - i)) {
           sprite_set_pos(sp, at[0], at[1], at[2]);
           sprite_set_fade(sp, 0x80, -2, 8);
           sp->layer = 0x10;
@@ -313,7 +313,7 @@ void bark_cast_run(BarkCast& sc) {
       const s32 far[3] = {caster->pos[0] + 0x3E8000, caster->pos[1], caster->pos[2] - 0x1F4000};
       camera_move_to(g.camera, caster->pos, 0xE38, 0xE3, 0x1000, 0, 0x80, 5);
       camera_move_to(g.camera, far, 0xF1C, 0xE3, 0x2000, 0x140, 0x80, 5);
-      screen_shake2(3, 6, 4, 6, 0x168);
+      screen_shake(3, 6, 4, 6, 0x168);
       sound_handle_fade_out(bsfx_play_ui(0x2D), 0x3C, 400);
       ++sc.step;
       return;

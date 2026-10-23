@@ -748,7 +748,7 @@ void item_use_battle(Unit* user, Unit* target, int index) {
         }
         g_item_target->st()->hp = 0;
         g_item_target->death = 1;
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, g_item_target->pos, 0xC00, 0xE3, 0x1000, 0x14, 0x180, 5);
         s32 at[4];
         unit_ground(g_item_target, at);
@@ -1035,7 +1035,7 @@ void shot_k30_bomb(Shot* s) {
   if (shot_fade_out(s) != 0) return;
   if (s->p134 == 3 && s->p12c == 0 && bobj_outside_arena(s)) s->p12c = 1;
   if (bobj_ground_height(s) <= s->pos[1]) {  // on the ground: it goes off there
-    screen_shake2(4, 6, 4, 6, 0xE);
+    screen_shake(4, 6, 4, 6, 0xE);
     bsfx_play_at_pos(0x50, s->pos);
     effect_debris_burst(s->pos, kDebrisSpread, 4, 2, 1, 0x2000, static_cast<u8>(s->p138));
     effect_spawn_sparks_at(s->pos, 10, 0x30, 0x90, 0xC, 0x50, s->aux, 1, 0x20, 0);
@@ -1070,7 +1070,7 @@ void shot_k30_bomb(Shot* s) {
         sprite_set_pos_v(sp, points[i].data());
         sp->layer = 2;
       }
-      screen_shake2(4, 6, 4, 6, 0xE);
+      screen_shake(4, 6, 4, 6, 0xE);
       bsfx_play_at(0x50, u);
       for (int k = 0; k < 2; ++k) {
         effect_debris_burst(points[i].data(), kDebrisSpread, 4 - k, 2, 1, 0x2000 + k * 0x1000,

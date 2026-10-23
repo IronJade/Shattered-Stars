@@ -12,6 +12,7 @@
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/settings.h"
+#include "mods/catalog.h"
 
 struct SDL_Window;
 struct ImFont;
@@ -34,7 +35,9 @@ struct Options {
   std::string state;
   std::vector<std::pair<std::string, std::string>> sets;  // --set KEY=VALUE before the first frame
   // SS_SETUP_SCRIPT / --do, one per frame: autodetect, save, play, quit, close (the window's
-  // close button), set:KEY=VALUE (as if typed in).
+  // close button), set:KEY=VALUE (as if typed in); on the Mods page mods-install:ZIP,
+  // mods-select:ID, mods-toggle:ID, mods-up, mods-down, mods-remove (asks; never confirmed),
+  // mods-show-info (scrolls to the selected mod's details).
   std::vector<std::string> actions;
 };
 
@@ -62,6 +65,7 @@ struct Settings {
   bool card_inserted[2] = {true, false};
   std::string card[2];
   std::string mods;
+  std::string mod_order;  // config.ini's mod_order: the Mods page's list (mods/catalog.h)
   std::string ap_seed, ap_server, ap_slot, ap_password;  // Archipelago (config.ini's ap_* keys)
   bool operator==(const Settings&) const = default;
 };
@@ -79,6 +83,8 @@ class App {
     disc_cache_.clear();
     card_cache_.clear();
     seed_cache_.clear();
+    mods_scanned_ = false;
+    mods_seed_lines_.clear();
   }
   // While a control is being bound: takes the key or gamepad button (true: consumed, not
   // for ImGui). Esc cancels, Delete unbinds; a click elsewhere cancels.
@@ -86,7 +92,7 @@ class App {
 
  private:
   enum class Level { kOk, kInfo, kWarning, kError };
-  enum class Target { kDisc1, kDisc2, kCard1, kCard2, kMods, kSeed };
+  enum class Target { kDisc1, kDisc2, kCard1, kCard2, kMods, kSeed, kModZip };
   struct SeedInfo {  // a quick look at an .apso2 seed file (the game reads it in full)
     bool ok = false;
     std::string error, seed, slot, game;
@@ -109,6 +115,8 @@ class App {
   void control_cell(int bit, bool gamepad, float width, bool duplicate);
   void page_cards();
   void page_mods();
+  void mods_list(const mods::Catalog& catalog, std::vector<mods::Slot>& order, float height);
+  void mods_info(const mods::Catalog& catalog, int entry);
   void page_archipelago();
   void popups();
   void disc_field(int n);
@@ -130,6 +138,21 @@ class App {
   void apply_dialog_results();
   void run_action(const std::string& action);
   void open_folder(const std::filesystem::path& folder);
+
+  // The Mods page (mods/catalog.h): the folder's packages, rescanned when the folder
+  // changes, after an install or removal, and when the window regains focus; the conflict
+  // analysis of the enabled ones (and an Archipelago seed's edits) for the list on screen.
+  std::filesystem::path mods_folder_path() const;
+  const mods::Catalog& mods_catalog();
+  std::vector<mods::Slot> mods_order();
+  void mods_set_order(const std::vector<mods::Slot>& order);
+  void mods_analyse();
+  std::string mods_name(int source) const;
+  void mods_install(const std::string& zip);
+  void mods_finish_install(bool replace);
+  void mods_remove_selected();
+  int mods_selected_entry();
+  void mods_move(int delta);
 
   const launcher::DiscInfo& disc_info(const std::string& path);
   const CardInfo& card_info(const std::string& path);
@@ -167,6 +190,24 @@ class App {
   std::map<std::string, CardInfo> card_cache_;
   std::map<std::string, SeedInfo> seed_cache_;
   bool show_password_ = false;
+
+  mods::Catalog mods_catalog_;
+  bool mods_scanned_ = false;
+  std::filesystem::path mods_scanned_folder_;
+  int mods_generation_ = 0;          // bumped at each scan
+  std::string mods_selected_;        // the selected entry's id
+  std::string mods_analysis_key_;    // what the analysis below was made for
+  std::vector<mods::Line> mods_lines_;
+  mods::Analysis mods_analysis_;
+  int mods_warnings_ = 0;            // conflicts worth a warning among the enabled entries
+  bool mods_enabled_broken_ = false;  // an enabled package that can't load
+  std::map<std::string, std::vector<std::string>> mods_seed_lines_;  // an Archipelago seed's edits, by path
+  mods::ZipPackage mods_pending_;     // a package waiting for "replace?"
+  std::string mods_pending_zip_;
+  std::string mods_notice_;
+  Level mods_notice_level_ = Level::kInfo;
+  bool open_replace_popup_ = false, open_remove_popup_ = false;
+  bool mods_scroll_to_info_ = false;
 
   // File dialogs answer asynchronously (maybe on another thread).
   std::mutex dialog_mutex_;

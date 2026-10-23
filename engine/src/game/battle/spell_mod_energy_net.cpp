@@ -136,8 +136,8 @@ void energy_net(SpellCast* sc) {
         camera_move_to(g.camera, at, 0xC00, 0x18E, 0x1000, 5, 0x80, 5);
       }
       if (o->pos[1] < -0x190000) return;
-      screen_shake2(6, 3, 2, 2, 0x10);
-      camera_reset_mode(g.camera);
+      screen_shake(6, 3, 2, 2, 0x10);
+      camera_reset(g.camera);
       camera_move_to(g.camera, sc->target->pos, 0xC00, 0xE3, 0xC00, 0x78, 0x80, 5);
       ++sc->step;
       bsfx_play_at_pos(0x50, kZeroVector);

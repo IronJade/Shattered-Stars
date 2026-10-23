@@ -1,0 +1,53 @@
+{
+  "format": 1,
+  "generated_by": "tools/mod_index.py",
+  "about": "The curated mod list: only entries with \"verified\": true are on it (mods/README.md).",
+  "mods": [
+    {
+      "id": "arlia-crate-fol",
+      "name": "Arlia crate holds 500 Fol",
+      "version": "1.0.0",
+      "author": "IronJade",
+      "description": "The middle crate in front of Hearn's general store in Arlia holds 500 Fol instead of 200. A sample of a chest-contents mod.",
+      "tags": [
+        "chests",
+        "economy"
+      ],
+      "min_port_version": "0.01.00",
+      "homepage": "https://github.com/IronJade/Shattered-Stars",
+      "path": "mods/arlia-crate-fol",
+      "files": {
+        "README.md": "19291b7a102bf13ca63febc8d2c1c234ba51d01c0e69891f6078b17275055d35",
+        "crate.patch": "e77d00da4e8969bb5e74c613dc1f3daddfc81a262caaf7764bebdb4c93c5f490",
+        "mod.json": "40e5e4a0f35385611f5464a444de0fe7ecf0ae610680b040b7781bb350497e94"
+      },
+      "verified": true,
+      "verified_by": "IronJade (sample, verified by the port's tooling)",
+      "verified_port_version": "0.01.00",
+      "verified_date": "2026-10-23"
+    },
+    {
+      "id": "hearn-store-plus",
+      "name": "Hearn's store sells Resurrection Bottles",
+      "version": "1.0.0",
+      "author": "IronJade",
+      "description": "Hearn's general store in Arlia (shop 1) also sells Resurrection Bottles, at their usual price. A sample of a shop-stock mod.",
+      "tags": [
+        "shops",
+        "qol"
+      ],
+      "min_port_version": "0.01.00",
+      "homepage": "https://github.com/IronJade/Shattered-Stars",
+      "path": "mods/hearn-store-plus",
+      "files": {
+        "README.md": "7404e0cc33a1b67919424c22c010f676301154282e036216fc4642bc150c7548",
+        "mod.json": "c19151bd775df750a7c4a94b017a11fa0cb6b349364a38949cdf5abaf0082d39",
+        "stock.patch": "bb5c89650c04a7d96a0fe6bd45b516eba82f6f60c6a18b7f01bbf7918e73f2f1"
+      },
+      "verified": true,
+      "verified_by": "IronJade (sample, verified by the port's tooling)",
+      "verified_port_version": "0.01.00",
+      "verified_date": "2026-10-23"
+    }
+  ]
+}

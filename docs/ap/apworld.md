@@ -30,10 +30,13 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
     starts with a constant encounter.
 - **The Cave of Trials** (`cave_of_trials`, off by default) adds its 81 chests and gift sites
   and its 13 bosses.
-- **Bosses** by class: 21 story bosses (the story fights them; a loss is a game over), 13 cave
-  bosses (each floor's door), 4 optional (Flarelizard, Nightmare, XINE, Ghost: side quests
-  other choices rule out) and 3 losable (the script lets the party lose and goes on: Dias at
-  the tournament 204, Shin on the ship 517, Marsilio's first Fienal fight 530).
+- **Bosses** by class: 21 story bosses (the story fights them; a loss is a game over; two are
+  timed survivals the port checks when the minute runs out, Shin at the Lacour Front Line 516
+  and Berle in Eluria Tower 520), 13 cave bosses (each floor's door), 4 optional (Flarelizard,
+  Nightmare, XINE, Ghost: side quests other choices rule out) and 3 losable (the script lets
+  the party lose and goes on: Dias at the tournament 204, Shin on the ship 517, Marsilio's
+  first Fienal fight 530; the port checks them on the scripted defeat as on a win). See
+  "DeathLink and the fights you can't win".
 - **Join sites** (character_items), agreed with the port side: Celine 124 / 125; Bowman 208;
   Dias 130 / 439 / 229 (0x7c9c); Precis 209; Ashton 71 (three states of his quest); Leon 230 /
   229 (0x73dc, the Rena-game exception: listed so he never joins there for free); Opera 374 and
@@ -105,7 +108,7 @@ field.json's conditions (three-valued evaluation with flag 1 fixed per game):
 | optional member | it needs Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest or Chisato | 9 gifts |
 | join | a join site (character_items) | 18 |
 | optional quest | an optional boss | 4 |
-| losable | a fight the story lets the party lose | 3 |
+| losable | a fight the story lets the party lose (the port checks it on the scripted defeat as on a win; the reason and its filler-only rule stay) | 3 |
 | protagonist | only one game runs it (under protagonist "any") | Claude / Rena only: gifts 9 / 2, bosses 1 / 1, joins 2 / 4 |
 
 "window" and "time-limited" are soft: a diligent player avoids them, so `missable_locations:
@@ -235,7 +238,7 @@ location that may hold progression in story mode may in open world too. So in op
 - where only the late proof reached it, only our own Expel-story keys (stages 1-12): the
   player can't pass the disc switch without them, so they are picked up before Expel closes;
 - with the teleporter off, or with `expel_progression` off, Expel holds only our Expel-story
-  keys (besides non-progression);
+  keys (besides non-progression; the user confirmed this default on 2026-10-23);
 - an Energy Nede row whose map is entered through an Expel entrance (Lacour's King's Room, map
   429, a chapter-60 scene) has no early mode: it counts from the Final Save Point;
 - Energy Nede, Fienal and the cave: the late proof, as in story mode; story bosses as before.
@@ -260,7 +263,8 @@ instruments...); **full** is all 550. A slot's site gives its area and missable 
 
 **Never progression.** A slot can cost up to 40,000 Fol, and with `encounter_rate: 0` Fol is
 finite, so a price could block the seed; shop slots hold only useful, filler and trap items
-(of any world). The seed's check is `{type: shop, shop, index, item}`.
+(of any world); the user confirmed this default on 2026-10-23. The seed's check is
+`{type: shop, shop, index, item}`.
 
 ## Entrance shuffle (later: a design note)
 
@@ -289,7 +293,7 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | `shuffle_shops` | off (default) / specials / full | shop slots as locations, never progression |
 | `protagonist` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
-| `expel_progression` | true (default) / false | false: no progression in Expel at all |
+| `expel_progression` | true (default) / false | false: no other world's progression in Expel; in open world our own Expel-story keys still may be there (the user's decision, 2026-10-23) |
 | `cave_of_trials` | false (default) / true | add the Cave of Trials (after the Final Save Point) |
 | `boss_checks` | true (default) / false | the 41 boss fights are locations |
 | `character_items` | false (default) / true | the party's members join through items, their join sites are locations |
@@ -302,6 +306,32 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 slot_data and the seed's `options` repeat them, with `seed_format`, `goal_encounters` and
 `characters` (the party). The port reads the phase-3 ones ([seed_format.md](seed_format.md),
 "Phase 3").
+
+### DeathLink and the fights you can't win
+
+With `death_link` on, the port sends a DeathLink only from the field's game over
+(`field_begin_game_over`), and never for a death a received DeathLink caused. A received one
+waits for a safe point ([seed_format.md](seed_format.md), "DeathLink: the safe points"): in a
+fight it fells the party, unless the script lets the party lose that fight (script ext 0xb7's
+third argument 0, kept in field_flags +0x7E), where it waits for free play. The user's rules
+for the story's fights that can't be won (2026-10-23):
+
+- Shin at the Lacour Front Line (516) and Berle in Eluria Tower (520) are timed endurance
+  battles that must not be lost, and stay DeathLinked both ways (Berle confirmed by the user
+  the same day). A wipe is a real game over and sends a DeathLink. A received DeathLink makes
+  the party fall there.
+- Shin on the ship (517) and Dias at the tournament (204) must not DeathLink in either
+  direction. A loss there sends nothing. A DeathLink received during the fight must not make
+  the party fall; it waits until free play.
+- Marsilio's first Fienal fight (530) is the same kind of scripted loss, treated like 517 and
+  204.
+
+Their boss checks (port side; the classes and the logic above are unchanged): 204, 517 and 530
+are checked on the scripted defeat as on a win (the tournament's Dias can be beaten, but the
+script then starts the fight again until the party loses); 516, and Berle in Eluria Tower
+(520, the same kind of timed fight), on the time-up (battle outcome 4), which is how the story
+wins them; a wipe there is a game over and checks nothing. Escapes never check a boss, and the
+goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.md`.
 
 ## The seed (`generate_output`)
 

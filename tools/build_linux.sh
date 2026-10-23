@@ -1,7 +1,10 @@
 #!/bin/bash
-# Builds the Linux release and packs it as dist/ShatteredStars-linux-x86_64.tar.gz:
-# shattered-stars (the game), shattered-stars-setup (the settings window), the README, the
-# third-party licences and an empty discs/ folder for the player's disc images.
+# Builds the Linux release and packs it as dist/ShatteredStars-<version>-linux-x86_64.tar.gz
+# (e.g. dist/ShatteredStars-0.01.00-linux-x86_64.tar.gz): shattered-stars (the game),
+# shattered-stars-setup (the settings window), the README, this project's own LICENSE, the
+# third-party licences and an empty discs/ folder for the player's disc images. The version
+# is read from engine/CMakeLists.txt's project(... VERSION ...) line (the single source;
+# docs/ap/release_checklist.md section 1), so it never needs updating here by hand.
 #
 #   tools/build_linux.sh --container   the release: built in a Debian 12 container
 #                                      (tools/linux-build/Containerfile, podman), so it runs
@@ -24,6 +27,8 @@ cd "$(dirname "$0")/.."
 repo=$PWD
 mode=host
 [ "${1:-}" = --container ] && mode=container
+version=$(sed -n 's/^project(.*VERSION \([0-9]\+\.[0-9]\+\.[0-9]\+\)).*/\1/p' engine/CMakeLists.txt)
+[ -n "$version" ] || { echo "error: could not read the port version out of engine/CMakeLists.txt" >&2; exit 1; }
 
 if [ "$mode" = container ]; then
   image=localhost/shattered-stars-linux-build:bookworm
@@ -53,7 +58,7 @@ else
   cmake --build "$build" -j8 --target shattered-stars shattered-stars-setup
 fi
 
-out=dist/ShatteredStars-linux-x86_64
+out=dist/ShatteredStars-$version-linux-x86_64
 rm -rf "$out" "$out.tar.gz"
 mkdir -p "$out/discs"
 cp "$build/shattered-stars" "$build/shattered-stars-setup" "$out/"
@@ -79,7 +84,7 @@ glibc=$(objdump -T "${files[@]}" | grep -o 'GLIBC_[0-9.]*' | sort -t. -k1,1 -k2,
 
 cp engine/README.md "$out/README.md"
 printf '%s\n' \
-  "Shattered Stars for Linux (x86-64)" \
+  "Shattered Stars $version for Linux (x86-64)" \
   "" \
   "Run ./shattered-stars-setup to choose your disc images and settings, then press Save & Play;" \
   "or run ./shattered-stars, which opens setup by itself while it has no disc. README.md has more." \
@@ -87,6 +92,7 @@ printf '%s\n' \
   "Needs: glibc $glibc or newer (check with: ldd --version), and a desktop with OpenGL 3.3." \
   "Everything else is included: $sdl_note" \
   "Settings, memory cards and mods/: ~/.config/shattered-stars/ (or \$XDG_CONFIG_HOME)." \
+  "Licence: MIT (LICENSE); third-party components: THIRD-PARTY-LICENSES.txt." \
   > "$out/README.txt"
 printf '%s\n' \
   "Put your Star Ocean: The Second Story disc images in this folder (North American" \
@@ -95,8 +101,10 @@ printf '%s\n' \
   > "$out/discs/Put your disc images here.txt"
 
 # Third-party licences: SDL, Dear ImGui and, when the Archipelago client is linked in,
-# apclientpp and its header-only dependencies, OpenSSL and zlib.
+# apclientpp and its header-only dependencies, OpenSSL and zlib. Shattered Stars' own
+# licence (MIT) sits beside it.
+cp LICENSE "$out/LICENSE"
 tools/third_party_licenses.sh "$build" "$sdl_licence" > "$out/THIRD-PARTY-LICENSES.txt"
 
-tar -C dist -czf "$out.tar.gz" ShatteredStars-linux-x86_64
+tar -C dist -czf "$out.tar.gz" "ShatteredStars-$version-linux-x86_64"
 echo "$out.tar.gz: $(du -h "$out.tar.gz" | cut -f1), needs glibc $glibc+ ($mode build)"

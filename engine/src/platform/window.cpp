@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstring>
 
 #include "platform/gl.h"
 
@@ -106,6 +107,16 @@ void Window::rumble(int small, int large) {
   SDL_RumbleGamepad(gamepad_, low, high, low == 0 && high == 0 ? 0 : 60000);
 }
 
+namespace {
+// How many live Window objects called SDL_Init (normally one; SS_SHOT's second, separate
+// window for screenshots makes it two). SDL_Quit tears every subsystem down regardless of
+// other still-open windows, so it must wait for the last one, not just "a" destructor.
+int& live_windows() {
+  static int n = 0;
+  return n;
+}
+}  // namespace
+
 Window::~Window() {
   if (gamepad_) SDL_CloseGamepad(gamepad_);
   if (context_) {
@@ -115,7 +126,7 @@ Window::~Window() {
     SDL_GL_DestroyContext(static_cast<SDL_GLContext>(context_));
   }
   if (window_) SDL_DestroyWindow(window_);
-  SDL_Quit();
+  if (initialized_ && --live_windows() == 0) SDL_Quit();
 }
 
 std::vector<u32> display_order() {
@@ -136,6 +147,8 @@ bool Window::create(const std::string& title, const WindowOptions& options, std:
     if (error) *error = std::string("SDL_Init: ") + SDL_GetError();
     return false;
   }
+  initialized_ = true;
+  ++live_windows();
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -329,6 +342,20 @@ void Window::present(const u32* pixels, int width, int height, float aspect) {
   gl::BindVertexArray(vao_);
   gl::DrawArrays(gl::TRIANGLES, 0, 3);
   SDL_GL_SwapWindow(window_);
+}
+
+bool Window::read_pixels(std::vector<u32>& out, int& width, int& height) const {
+  if (!context_) return false;
+  SDL_GetWindowSizeInPixels(window_, &width, &height);
+  if (width <= 0 || height <= 0) return false;
+  std::vector<u32> raw(static_cast<size_t>(width) * height);
+  gl::PixelStorei(gl::PACK_ALIGNMENT, 4);
+  gl::ReadPixels(0, 0, width, height, gl::RGBA, gl::UNSIGNED_BYTE, raw.data());
+  out.resize(raw.size());
+  for (int y = 0; y < height; ++y)  // GL rows run bottom-up; PNGs want top row first.
+    std::memcpy(&out[static_cast<size_t>(y) * width], &raw[static_cast<size_t>(height - 1 - y) * width],
+                static_cast<size_t>(width) * 4);
+  return true;
 }
 
 void Window::set_title(const std::string& title) { SDL_SetWindowTitle(window_, title.c_str()); }

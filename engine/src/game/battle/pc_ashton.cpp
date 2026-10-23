@@ -88,12 +88,12 @@ void cb_dart(Shot* s) {
   // ORIGINAL BUG (original_bugs.md F15): the dart's facing is Ashton's x velocity (0 when he
   // throws), so the darts are drawn the way facing 0 points whichever way he faces; the
   // facing also places the attack box (mirrored with the drawing):
-  //   shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  //   shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   // The fix is play-neutral: the drawing follows his facing (kept in +0x128 at the spawn),
   // and the boxes are put back on the side the original facing gives them.
   const s32 box_facing = s->facing[0];
   s->facing[0] = s->p128;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   s->facing[0] = box_facing;
   if (s->p128 != 0) {
     // The facings are x-only, so the view's sign of x is the drawn facing's sign times the
@@ -141,7 +141,7 @@ void cb_clone(Shot* s) {
       return;
     }
   }
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (g.flags != 0) return;
   const PartyUnit* o = static_cast<const PartyUnit*>(s->owner);
   if (o->action == 0x14 && o->removed == 0 && s->p130 == 0) {
@@ -275,7 +275,7 @@ void cb_wave(Shot* s) {
   BattleGlobals& g = bg();
   s->size[2] = 0x30;
   s->layer = 2;
-  shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 3, 0xFFFFFFFF);
   if (g.flags != 0) return;
   if (s->p12c != 0 || s->hit_landed != 0) {
     s->scale_x += g.frame_ticks * 0x80;
@@ -305,7 +305,7 @@ void cb_beam8(Shot* s) {
   s->size[2] = 0x30;
   s->layer = 3;
   s->loop_limit = s->anim != 3 ? 1 : 0;
-  if (static_cast<s16>(shot_draw_and_box(s, 3, 0xFFFFFFFF)) == -1) {
+  if (static_cast<s16>(shot_draw_with_shadow(s, 3, 0xFFFFFFFF)) == -1) {
     shot_kill(s);
     shot_image_end(s);
     return;
@@ -484,7 +484,7 @@ void AshtonUnit::move0() {
       //   if (pts[0].y < -0x90000) k = 2;
       int k = pts[i].y < -0x60000 ? 3 : 1;
       if (pts[i].y < -0x90000) k = 2;
-      if (Sprite* sp = unit_play_anim_ex(this, r != 0 ? k + 3 : k + 6, 1)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(this, r != 0 ? k + 3 : k + 6, 1)) {
         if (strong_at <= frame && r != 0) {
           if (bobj_on_screen(this)) {
             g.zoom_kick = 0x157C;
@@ -527,7 +527,7 @@ void AshtonUnit::move1() {
       if (frame < 8 || (frame < 13 && target_far != 0)) {
         if (r != 0) {
           counters[2] = 1;
-          if (Sprite* sp = unit_play_anim(this, 4)) {
+          if (Sprite* sp = unit_spawn_sprite(this, 4)) {
             sprite_attach(sp, found[0], 0, static_cast<s32>(0xFFFB0000), 0);
             sprite_set_fade(sp, 0x80, -4, 0xC);
             sp->facing[0] = facing[0];
@@ -535,7 +535,7 @@ void AshtonUnit::move1() {
         }
       } else if (counters[2] != 0) {
         bsfx_play_at(0x29, this);
-        if (Sprite* sp = unit_play_anim(this, 3)) {
+        if (Sprite* sp = unit_spawn_sprite(this, 3)) {
           sprite_set_pos_v(sp, &pts[0].x);
           sprite_set_fade(sp, 0x80, -2, 10);
           const s32 sc = lvl * 0x1000 + 0x1000;
@@ -590,7 +590,7 @@ void AshtonUnit::move2() {
       }
       if (fire && weapon_variant != 0) {
         ++counters[2];
-        if (Sprite* sp = unit_play_anim_ex(this, 5, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 5, 1)) {
           sprite_place_near(sp, this, 0, 0x54, 0);
           sp->layer = 2;
         }
@@ -601,7 +601,7 @@ void AshtonUnit::move2() {
     const int n = collider_attack_overlaps(this, found, pts, 0);
     if (n != 0 && hit_landed == 0) {
       if (unit_attack_targets(this, n, found, pts, lvl * 0x80 + 0x100, 9999, 0) != 0) {
-        if (Sprite* sp = unit_play_anim_ex(this, 6 < frame ? 4 : 3, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 6 < frame ? 4 : 3, 1)) {
           const Unit* f = found[0];
           sp->layer = 2;
           const s32 rise = frame < 7 ? 0x58000 : 0x40000;
@@ -910,7 +910,7 @@ void AshtonUnit::move5() {
       }
       if (camera_focus != 0) {
         const s32 ofs[3] = {bobj_facing_fx(this, 300), 0, 0};
-        camera_set_lookat_offset(g.camera, ofs);
+        camera_set_follow_offset(g.camera, ofs);
       }
       pc_camera_frame_target_for(this, 0x104);
       [[fallthrough]];
@@ -987,7 +987,7 @@ void AshtonUnit::move7() {
         step(vel);
         if (1 < frame && counters[2] == 0 && g.state == kStateFighting) {
           counters[2] = 1;
-          if (Sprite* sp = unit_play_anim(this, 7)) {
+          if (Sprite* sp = unit_spawn_sprite(this, 7)) {
             sprite_set_pos_v(sp, pos);
             sprite_set_fade(sp, 0x80, -2, 0x10);
             sp->layer = 2;
@@ -1076,7 +1076,7 @@ void AshtonUnit::move7() {
       if (n != 0 && hit_landed == 0 && unit_attack_targets(this, n, found, pts, 0x100, 9999, 0) != 0 &&
           g.state == kStateFighting) {
         for (int i = 0; i < 0xC; ++i) {
-          if (Sprite* sp = unit_play_anim_ex(this, static_cast<int>(rng_range(4)) + 9, 0x1E)) {
+          if (Sprite* sp = unit_spawn_sprite_ex(this, static_cast<int>(rng_range(4)) + 9, 0x1E)) {
             const s32 dy = rng_between_fixed(-0xE0, 0x60);
             sprite_set_pos(sp, pts[0].x, pts[0].y + dy, pts[0].z);
             const s32 yaw = static_cast<s32>(rng_range(0x1000));
@@ -1173,7 +1173,7 @@ void AshtonUnit::move8() {
     } else {
       if (camera_focus != 0) {
         const s32 ofs[3] = {bobj_facing_fx(this, 300), 0, 0};
-        camera_set_lookat_offset(g.camera, ofs);
+        camera_set_follow_offset(g.camera, ofs);
       }
       shot_place_at_unit(s, this, 0x40, 0x60, 0);
       s->anim = 3;
@@ -1182,7 +1182,7 @@ void AshtonUnit::move8() {
     }
   }
   for (int i = 0; i < lvl * 6 + 0xC; ++i) {
-    if (Sprite* sp = unit_play_anim(this, 6)) {
+    if (Sprite* sp = unit_spawn_sprite(this, 6)) {
       sprite_set_pos_v(sp, at);
       const Vec4 v = vec_random_around(kZero, 10);
       sp->vel[0] = v.x, sp->vel[1] = v.y, sp->vel[2] = v.z, sp->extra34 = v.w;

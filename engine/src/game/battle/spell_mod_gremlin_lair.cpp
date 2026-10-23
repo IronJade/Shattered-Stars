@@ -116,7 +116,7 @@ void imp(Shot* s) {
       if (s->last_hit == units[0]) return;
       Unit* u = units[0];
       s->last_hit = u;
-      screen_shake2(2, 5, 2, 2, 0xC);
+      screen_shake(2, 5, 2, 2, 0xC);
       u->shake_frames = 0x14;
       u->shake_amp = 0x10;
       bsfx_play_at(0x4A, u);
@@ -284,7 +284,7 @@ void gremlin(Shot* s) {
           sp->layer = 2;
         }
         particle_spawn_ring(at, 0x10, 0x30, 0x30, 0x3C, 0x201040, 0xC02060, 0, 0);
-        screen_shake2(4, 2, 2, 2, 0x10);
+        screen_shake(4, 2, 2, 2, 0x10);
         for (int k = 0; k < 2; ++k) {
           const s32 spread[3] = {0x100000, 0x40000, 0x100000};
           effect_debris_burst(at, spread, 4, 1, k ^ 1, k == 0 ? 12000 : 8000, static_cast<u8>(k == 0 ? 0xB : 10));
@@ -425,7 +425,7 @@ void gremlin_lair(SpellCast* sc) {
       // (the console allocates the fade's 0x1c-byte task with 0x8001fd94 and builds it with
       // 0x8003c3b0; the port's screen_fade_create does both)
       screen_fade_create(0xFF18FF, 0x20, 4, 10);
-      screen_shake(3, 2, 0x10);
+      screen_shake_vertical(3, 2, 0x10);
       for (int i = 0; i < 0x40; ++i) {
         const Vec4 to = vec_random_around(sc->centre, 0x640);
         particle_spawn_homing_line(sc->centre, to.data(), 0x402008, 0x80FF40, 0xA0, 0x14000, -0x100);

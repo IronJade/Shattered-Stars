@@ -62,7 +62,7 @@ struct EnemyNicolus : EnemyUnit {
     const s32 hand[3] = {bobj_front_x(this, 0x40), pos[1] - 0x80000, pos[2]};
     if (g.flags != 0) return;
     if (counters[0] == 1) {
-      if (Sprite* sp = unit_play_anim_ex(this, 9, 1)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(this, 9, 1)) {
         const s32 at[3] = {bobj_front_x(this, 0x40), pos[1] - 0x80000, pos[2]};
         const Vec4 p = vec_random_around(at, 0x1E0);
         sprite_set_pos_v(sp, p.data());
@@ -84,7 +84,7 @@ struct EnemyNicolus : EnemyUnit {
       bobj_share_sprite(this, s);
       bsfx_play_at(0x34, s);
     } else if (counters[0] == 0) {
-      if (Sprite* sp = unit_play_anim_ex(this, 0xF, 0)) {
+      if (Sprite* sp = unit_spawn_sprite_ex(this, 0xF, 0)) {
         sprite_set_pos_v(sp, hand);
         sprite_set_fade(sp, 0x80, -4, 0x1E);
       }
@@ -133,7 +133,7 @@ struct EnemyNicolus : EnemyUnit {
     if (3 < counters[3]) {
       counters[3] -= 4;
       for (int i = 0; i < 2; ++i) {
-        Sprite* sp = unit_play_anim(this, 0xD);
+        Sprite* sp = unit_spawn_sprite(this, 0xD);
         if (sp == nullptr) continue;
         sprite_set_pos_v(sp, tip[i]);
         sprite_set_fade(sp, 0x80, -4, 0x10);

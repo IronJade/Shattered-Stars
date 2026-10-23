@@ -96,7 +96,7 @@ struct EnemyDecus : EnemyUnit {
     if (n == 0 || hit_landed != 0) return;
     if (unit_attack_targets(this, n, units, points, 0x100, 9999, 0) != 0) {
       for (int i = 0; i < n; ++i) {
-        if (Sprite* sp = unit_play_anim_ex(this, 0xC, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 0xC, 1)) {
           sprite_set_pos_v(sp, points[i].data());
           sp->layer = 3;
         }
@@ -157,7 +157,7 @@ struct EnemyDecus : EnemyUnit {
       if (counters[1] == 0) return;
     }
     for (int i = 0; i < g.frame_ticks; ++i) {
-      Sprite* sp = unit_play_anim(this, 0x10);
+      Sprite* sp = unit_spawn_sprite(this, 0x10);
       if (sp == nullptr) continue;
       const Vec4 p = vec_random_in_disc_xz(pos, 600);
       sprite_set_pos_v(sp, p.data());

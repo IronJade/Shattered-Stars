@@ -709,7 +709,7 @@ void field_world_update(Field* f) {
       }
       if (!field_side_load_done()) return;
       f->state_timer = 0;
-      field_install_side_text(field_side_buffer().data(), field_side_buffer().size());  // 0x80053b44
+      field_install_side_text(field_side_buffer().data(), field_side_buffer().size());  // 0x80053b44 (streaming back on)
       field_side_buffer().clear();
       if (c != nullptr) actor_set_anim(c, courier_anim(3));
       f->state = 0x1e;

@@ -262,6 +262,7 @@ void RibbonTrail::update() {
   if (lift < 0) lift = 0;
   lift += 0x10000;
   s16 prev1[2] = {}, prev3[2] = {};  // the last quad's xy1 / xy3 (the next one's xy0 / xy2)
+  bool drawn = false;                // (port) a quad is drawn this frame, so prev1 / prev3 are set
   for (int k = 0; k < length; ++k) {
     int idx[4];
     idx[0] = k > 0 ? (head + k) & 0x1F : -1;
@@ -301,7 +302,14 @@ void RibbonTrail::update() {
     if (0x5FE < static_cast<u32>(otz - 7)) continue;
     const s32 a12 = abs_angle(sy[2] - sy[1], sx[2] - sx[1]);
     s32 start = a12;
-    if (k == 0) {
+    // ORIGINAL BUG (original_bugs.md B18): only segment 0 works out its own near edge (and its
+    // start angle, sp+0xe8); every later quad starts from the last drawn quad's far edge
+    // (sp+0xb0..0xc8), which nothing initialises. When segment 0 is culled (its OTZ outside
+    // 7..0x605), the first quad drawn starts from stale stack values (the port's were {0, 0}: a
+    // quad stretched to the screen's top-left corner):
+    //   if (k == 0) { start angle } ... if (k > 0) { xy0 / xy2 = prev1 / prev3 } else { near edge }
+    // The first quad drawn works out its own near edge, as segment 0 does. Drawing only.
+    if (!drawn) {
       if (0 <= idx[0] && alpha[idx[0]] != 0) {
         const s32 s = abs_angle(sy[1] - sy[0], sx[1] - sx[0]) + a12;
         start = (s < 0 ? s + 1 : s) >> 1;
@@ -335,7 +343,7 @@ void RibbonTrail::update() {
     std::memcpy(&quad->r1, &lead, 3);
     std::memcpy(&quad->r2, &trail, 3);
     std::memcpy(&quad->r3, &trail, 3);
-    if (k > 0) {
+    if (drawn) {
       quad->x0 = prev1[0], quad->y0 = prev1[1];
       quad->x2 = prev3[0], quad->y2 = prev3[1];
     } else {
@@ -350,6 +358,7 @@ void RibbonTrail::update() {
     quad->y3 = static_cast<s16>(sy[2] + (mul32(se, e2) >> 13));
     prev1[0] = quad->x1, prev1[1] = quad->y1;
     prev3[0] = quad->x3, prev3[1] = quad->y3;
+    drawn = true;
     psyq::P_TAG* ot = &pool->ot_head[0x616 - otz];
     psyq::addPrim(ot, quad);
     psyq::SetDrawMode(dm, 0, 1, tpage, nullptr);
@@ -396,7 +405,7 @@ int pc_attack_anim_step(PartyUnit* u) {
   u->begin_action();
   if (u->jumping != 0) u->jumping = 0;
   u->release_effects();
-  if (u->camera_focus != 0 && g.camera != nullptr) camera_set_lookat_offset(g.camera, kZeroVector);
+  if (u->camera_focus != 0 && g.camera != nullptr) camera_set_follow_offset(g.camera, kZeroVector);
   return 1;
 }
 
@@ -432,7 +441,7 @@ void pc_camera_frame_target(PartyUnit* u, int speed) {
 void pc_camera_behind_start(PartyUnit* u) {
   BattleGlobals& g = bg();
   if (g.controlled_slot != u->slot || u->camera_focus != 0 || g.camera_special != nullptr) return;
-  camera_end_scheduled();
+  camera_end_scheduled_now();
   camera_request_mode(g.camera, 0xF, u);
   u->camera_focus = 2;
 }

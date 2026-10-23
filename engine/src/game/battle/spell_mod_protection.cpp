@@ -63,7 +63,7 @@ void protection(SpellCast* sc) {
       sc->obj.pos[1] = t->pos[1] - 0x514000;
       sc->obj.pos[2] = t->pos[2];
       if (spellcast_leads_camera(sc)) {
-        camera_reset_mode(g.camera);
+        camera_reset(g.camera);
         camera_move_to(g.camera, t->pos, 0xC00, 0xE3, 0x898, 0x6E, 0x80, 5);
       }
       u32 h = bsfx_play_at(0x44, &sc->obj);

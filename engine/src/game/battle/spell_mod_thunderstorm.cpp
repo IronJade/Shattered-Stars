@@ -52,7 +52,7 @@ void thunderstorm(SpellCast* sc) {
       sc->s20 += g.frame_ticks;
       if ((sc->s24 == 0 && static_cast<u32>(rng_next() & 0x7FFF) < static_cast<u32>(odds)) || 0xB4 < sc->s20) {
         sc->s24 = 0x14;
-        screen_shake(6, 2, 10);
+        screen_shake_vertical(6, 2, 10);
         ViewState& v = view();
         v.stage_colour[2] = 0x180;
         v.stage_colour[1] = 0x180;
@@ -131,7 +131,7 @@ void thunderstorm(SpellCast* sc) {
           bobj_share_sprite(g.sprite_bank_fx.get(), &tmp);
           shot_hit_burst(&tmp, 1);
         }
-        screen_shake2(4, 2, 2, 2, 0xC);
+        screen_shake(4, 2, 2, 2, 0xC);
         bsfx_play_ui(0x4C);
       }
       ++sc->step;

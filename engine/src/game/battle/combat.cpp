@@ -169,7 +169,7 @@ void damage_popup_spawn(Unit* u, s32 value, s32 vx, int is_mp) {
   damage_popup_spawn_at(p, value, vx, is_mp);
 }
 
-void screen_shake(int amp_y, int period_y, int frames) {
+void screen_shake_vertical(int amp_y, int period_y, int frames) {
   BattleGlobals& g = bg();
   g.shake_amp[0] = 0;
   g.shake_amp[1] = static_cast<s8>(amp_y);
@@ -179,7 +179,7 @@ void screen_shake(int amp_y, int period_y, int frames) {
   g.shake_frames = static_cast<s16>(frames);
 }
 
-void screen_shake2(int amp_x, int amp_y, int period_x, int period_y, int frames) {
+void screen_shake(int amp_x, int amp_y, int period_x, int period_y, int frames) {
   BattleGlobals& g = bg();
   g.shake_amp[0] = static_cast<s8>(amp_x);
   g.shake_amp[1] = static_cast<s8>(amp_y);
@@ -511,7 +511,7 @@ int unit_attack_targets(Unit* atk, int count, Unit** targets, const Vec4* points
         }
         landed = 1;
       }
-      if (bobj_on_screen(t)) screen_shake(2, 2, 10);
+      if (bobj_on_screen(t)) screen_shake_vertical(2, 2, 10);
       s32 d = dmg;
       if (dmg != 0 && t->status_test(0, 0x200000) != 0) {
         d = -dmg;
@@ -616,7 +616,7 @@ int unit_attack_targets(Unit* atk, int count, Unit** targets, const Vec4* points
         g.flash_delay = 2;
         g.flash_speed = 0x20;
         if (bobj_on_screen(atk)) {
-          screen_shake2(4, 4, 4, 6, 0xE);
+          screen_shake(4, 4, 4, 6, 0xE);
           g.zoom_kick = 5000;
           g.zoom_kick_decay = 200;
         }
@@ -640,7 +640,7 @@ int unit_start_reaction(Unit* u) {
   BattleGlobals& g = bg();
   if (u->death == 0) {
     if (u->reaction == 0) return 0;
-    if (u->camera_focus != 0 && g.camera != nullptr) camera_set_lookat_offset(g.camera, kZeroVector);
+    if (u->camera_focus != 0 && g.camera != nullptr) camera_set_follow_offset(g.camera, kZeroVector);
     u->interrupt();
     unit_release_spell_data(u);
     u->ignore_units = 0;
@@ -671,7 +671,7 @@ int unit_start_reaction(Unit* u) {
     u->knockback[3] = n.w;
   } else {
     u->target = nullptr;
-    if (u->camera_focus != 0 && g.camera != nullptr) camera_set_lookat_offset(g.camera, kZeroVector);
+    if (u->camera_focus != 0 && g.camera != nullptr) camera_set_follow_offset(g.camera, kZeroVector);
     u->interrupt();
     u->release_effects();
     u->ignore_units = 0;

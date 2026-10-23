@@ -31,7 +31,7 @@ Vec4 centre_of(const Unit* u) { return {u->pos[0], u->pos[1] + u->size[1] * -0x2
 void scatter_debris(Unit* u, int count, const s32 at[3], s32 radius, bool disc, s32 lo, s32 hi, bool fade) {
   for (int i = 0; i < count; ++i) {
     const int anim = static_cast<int>(rng_range(3)) + 0xF;
-    Sprite* sp = fade ? unit_play_anim(u, anim) : unit_play_anim_ex(u, anim, 1);
+    Sprite* sp = fade ? unit_spawn_sprite(u, anim) : unit_spawn_sprite_ex(u, anim, 1);
     if (sp == nullptr) continue;
     const s32 g[3] = {at[0], bobj_ground_height(u), at[2]};
     const Vec4 p = disc ? vec_random_in_disc_xz(g, radius) : vec_random_around(g, radius);
@@ -124,7 +124,7 @@ struct EnemyGuardian : EnemyUnit {
     const int dmg = unit_attack_targets(this, n, units, points, 0x100, 9999, 0);
     for (int i = 0; i < n; ++i) {
       const int flash = dmg == 0 ? 0x12 : (phase == 1 ? 7 : 0xC);
-      if (Sprite* sp = unit_play_anim(this, flash)) {
+      if (Sprite* sp = unit_spawn_sprite(this, flash)) {
         sprite_set_pos_v(sp, points[i].data());
         sprite_set_fade(sp, 0x80, -4, 8);
         sp->layer = 3;
@@ -132,7 +132,7 @@ struct EnemyGuardian : EnemyUnit {
         sp->scale_vel[0] = 0x100;
       }
       if (dmg != 0) {
-        if (Sprite* sp = unit_play_anim_ex(this, 0xF, 1)) {
+        if (Sprite* sp = unit_spawn_sprite_ex(this, 0xF, 1)) {
           sprite_set_pos_v(sp, points[i].data());
           sp->layer = 3;
         }
@@ -269,7 +269,7 @@ struct EnemyGuardian : EnemyUnit {
   // An energy ball's launch flash: 8 sparks round the ball.
   void launch_sparks(const Shot* s) {
     for (int k = 0; k < 8; ++k) {
-      Sprite* sp = unit_play_anim_ex(this, 0xE, 1);
+      Sprite* sp = unit_spawn_sprite_ex(this, 0xE, 1);
       if (sp == nullptr) continue;
       const Vec4 r = vec_random_around(s->pos, 0x3C);
       sprite_set_pos_v(sp, r.data());
@@ -478,7 +478,7 @@ void shot_hit(Shot* s, s32 power) {
 void shot_ball(Shot* s) {
   s->anim = 0x18;
   shot_move(s);
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (bg().flags != 0 || shot_fade_out(s) != 0) return;
   if (s->p12c == 0 && 0x18 < s->p134) s->p12c = 1;
   if (Sprite* sp = shot_spawn_sprite(s, 0xD)) {
@@ -494,7 +494,7 @@ void shot_ball(Shot* s) {
 // 0x80089c28: attack 5's balls; 24 ticks or the ground.
 void shot_twin_ball(Shot* s) {
   shot_move(s);
-  shot_draw_and_box(s, 4, 0xFFFFFFFF);
+  shot_draw_with_shadow(s, 4, 0xFFFFFFFF);
   if (bg().flags != 0 || shot_fade_out(s) != 0) return;
   if (s->p12c == 0 && (0x18 < s->p134 || bobj_ground_height(s) <= s->pos[1])) s->p12c = 1;
   shot_hit(s, 0x201);
