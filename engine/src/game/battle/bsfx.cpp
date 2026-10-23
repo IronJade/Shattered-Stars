@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "game/battle/voice_player.h"
 #include "game/battle/render.h"
 #include "game/boot/sound.h"
 
@@ -156,9 +157,8 @@ void bsfx_pan_update(int i) {
 bool sound_handle_active(u32 handle) {
   BattleGlobals& g = bg();
   if (g.sound == nullptr) return false;
-  // Voice handles: the voice player's entry and slot (0x8006fb6c..0x8006fb75) are not
-  // ported, so none exists.
-  if ((handle & 0xFE000000u) == 0x40000000u) return false;
+  // Voice handles: the voice player's (voice_player.cpp, the enemy agent's).
+  if ((handle & 0xFE000000u) == 0x40000000u) return voice_handle_active(handle);
   const int slot = static_cast<int>(handle >> 16) & 0xFF;
   // (The console reads past the 8 effect slots for a bad handle such as 0xffffffff.)
   if (slot < 1 || 8 < slot) return false;

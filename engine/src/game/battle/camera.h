@@ -69,7 +69,7 @@ void camera_setup_overview(Camera* c, s32 ticks, int all_units);  // 0x80031e68 
 void camera_set_lookat_offset(Camera* c, const s32 ofs[3]);  // 0x80032240 (mode 7 only)
 void camera_move_to(Camera* c, const s32 centre[3], s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
                     s32 accel);                              // 0x80032440 (mode 10)
-void camera_orbit_unit(Camera* c, Unit* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
+void camera_orbit_unit(Camera* c, BObj* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed,
                        s32 accel);                           // 0x80032544 (mode 12)
 void camera_set_focus_unit(Camera* c, BObj* who, BObj* focus);   // 0x800342cc
 void camera_set_lookat_unit(Camera* c, BObj* who, BObj* focus);  // 0x800342ec

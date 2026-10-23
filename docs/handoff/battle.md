@@ -113,34 +113,41 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
   - Redux: `BW_EXTRA_POKE` needs hex values (`0x<byte>/1`). A plain `8/1` is silently
     skipped, which is why the first l8 / l7 runs did move 2.
   - R1 presses start no move in either the original or the port.
-- **Bowman (in progress; 7 of 10 moves verified).** `pc_bowman.cpp` (#2139, all 10 moves and
-  10 callbacks) and `projectile_arc_velocity` 0x8004906c (unit_move.cpp) are written,
-  registered (pc_modules case 4, CMake) and build.
-  - Verified against `ref/bowman_l<byte>` for bytes 1, 2, 4, 5, 6, 7 (moves 0, 1, 3, 4, 5,
-    6): RNG equal to the exit, units at most 3 sampling differences, frames under 1-2%
-    outside the end fade.
-  - Move 3 matches with B9 kept faithful.
-  - Refs for bytes 3, 8, 9, 0xa (moves 2, 7, 8, 9) are running.
+- **Bowman (verified, all 10 moves).** `pc_bowman.cpp` (#2139, 10 moves and 10
+  callbacks) and `projectile_arc_velocity` 0x8004906c (unit_move.cpp) are registered
+  (pc_modules case 4, CMake).
+  - Refs `ref/bowman_l<byte>` for bytes 1-10. Every run has RNG equal to the exit (or the
+    whole run), at most 3 unit samples off (HP sampling), and frames under 1-2% apart from
+    the end fade.
+  - Suites on this build: ss_tests 78/0, ss_game_tests 74/0 (SS_DISC1), smoke 21/21.
+  - B9 (z * 24 in projectile_arc_velocity) was verified faithful with move 3, then fixed (z *
+    speed). It is "fixed, pending the user's decision". The rebuilt binary passes the suites
+    again (78/0, 74/0, 21/21). Move 3 still matches Redux, because its target stands at the
+    same z.
   - The compare script: `scratchpad/battle/pcrun.sh CHAR BYTE REF OUT` (the port run, rngcmp,
     unitcmp and framecmp in one).
-  - shot_place_at_unit_thunk 0x800553f0 passes dz 0.
-- New original-bug candidate B9 (to add to original_bugs.md):
-  - projectile_arc_velocity scales the arc's z by a constant 24 instead of the speed.
-  - Bowman's move 3 calls it with speed 10, so his leap overshoots or undershoots in depth.
-  - Kept faithful until the move is verified.
 - On disk, uncommitted: `battle_debug.cpp` (SS_BATTLE_CAM res flags), `pc_bowman.cpp`,
   `unit_move.{h,cpp}`, `pc_modules.cpp` (case 4), `engine/CMakeLists.txt`, the catalog CSV,
   and the scratch tools (explore.lua `BW_REG_BP`; per-run cards in the run scripts).
 
 ## Next steps
 
-1. Bowman: compare refs `bowman_l1/l4/l5/l6/l7` when they finish, then run bytes 3, 8, 9 and
-   10. Then catalog rows (gen_catalog.py NEW, module battle_pc2139). Decompiled sources are
-   in `scratchpad/battle/decomp/` (`decomp1.sh ELF ADDR` uses the private REA CLI's Ghidra).
-2. Dias (#2143, char05, vtable 0x801f11d4: overrides 1, 35-37, 46-49).
-3. B1 / B2 / B3 are fixed on disk (killer.cpp, particle.cpp; originals in
-   scratchpad/battle/*.prebugfix). Report them as their own commit point. B5 and B9 are
-   "decide".
+1. Dias (#2143, char05, vtable 0x801f11d4: overrides 1, 35-37, 46-49).
+   - `pc_dias.cpp` is written (all 10 moves and 8 callbacks), registered (pc_modules case
+     5, CMake) and builds clean. Suites 78/0, 74/0, 21/21.
+   - It uses the effects agent's shot_image table (pc_module_util.h) for the Shots'
+     afterimages (the console's +0x130).
+   - Refs `ref/dias_l1`..`l5` are running; bytes 6-10 come next.
+   - Compare with `pcrun.sh 5 <byte> ref/dias_l<byte> port/diasl<byte>`.
+   - Catalog rows still to add.
+2. After Dias, two framework issues reported by the other agents:
+   - The result screen's last fade looks a frame off in every run. I measured it on
+     ernest_58: the band starts in frame 1017 in both, and the band position matches at D 7.
+     The difference is a small global brightness offset in the scene behind it, but recheck.
+   - The world agent's enc 340 item run (scratchpad/world/spell/ref/it340_3, b1290): a
+     party member's hit reaction to the wizard's melee starts one frame early during the
+     battle-over state.
+3. B1 / B2 / B3 fixed and committed. B5 is still "decide".
 4. Party AI (pc_ai_fighter 0x80038664 / healer 0x80038114 / caster 0x80038328), voices.
 5. Claude's move 5 (Energy Sword) compare.
 6. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).

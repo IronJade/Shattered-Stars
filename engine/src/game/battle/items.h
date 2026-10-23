@@ -23,6 +23,13 @@ void shot_k2f_bouncing_ball(Shot* s);
 // (0 the unit's ATK, 1 its DEF, 2 half its HP, 3 500; at most 9999), debris CLUT +0x138,
 // sparks kind +0x10c; +0x134 2 also hits the party.
 void shot_k30_bomb(Shot* s);
+// Debugging: SS_BATTLE_ITEM="FRAMES:SLOT:INDEX:TARGET;..." (TARGET p0-p3 / e0-e7 / n0): once
+// the battle frames reach FRAMES, party unit SLOT uses inventory entry INDEX (as the Redux
+// driver's BW_ITEM, at the start of input_dispatch).
+void debug_forced_items();
+// 0x80084d48 (#1984.1) item_fx_sparkle: a rising sparkle (set A anim 0x3a, 16 loops) above u's
+// head (items and the spells of Anti, Angel Feather, Bless, Deep Mist, Delay, Haste).
+void item_fx_sparkle(const Unit* u);
 // 0x8005c4d4: a sprite of the effect bank (anim) round +0x114's chest, rising.
 void shot_spawn_sparkle_on_target(Shot* s, int anim);
 

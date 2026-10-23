@@ -21,11 +21,6 @@
 namespace ss::game::battle {
 namespace {
 
-void todo(const char* what) {
-  runtime::Runtime::get().log_once(std::string("battle-enemy-support-") + what,
-                                   std::string("battle: not ported yet: ") + what);
-}
-
 u32 svec_xy(s32 x, s32 y) { return static_cast<u32>(static_cast<u16>(x)) | static_cast<u32>(static_cast<u16>(y)) << 16; }
 
 
@@ -57,12 +52,6 @@ void unit_throw_weapons(Unit* u, s32 variant) {
 
 // (The spell stand-ins went: spells.h / spellcast.h / spell_fx.h have the real ones.)
 
-// ---- Other stand-ins (the battle agent's).
-void bload_request(int, void*, s16, int) { todo("bload_request 0x800475c0 (enemy module)"); }
-u32 voice_play_entry(int, Unit*) {
-  todo("voice_play_entry 0x8007f818 (enemy-module voices)");
-  return 0;
-}
 
 void draw_textured_patch(const s32 uv[4], const s32 corners[4][4], u16 clut, u16 tpage, s32 ot_bias, u32 code_rgb,
                          s32 n) {
@@ -382,6 +371,23 @@ void draw_beam(const s32 pos[3], const s32 dir[3], u32 rgb_a, u32 rgb_b, s32 len
 
 
 void enemy_debug_trace(const EnemyUnit* e) {
+  // SS_ENEMY_HP=DELAY:INDEX:VALUE: DELAY vblanks after the battle state first reads 2
+  // (fighting), enemy INDEX's HP is set to VALUE, once (the Redux script's BW_ENEMY_HP).
+  static const char* hp_poke = std::getenv("SS_ENEMY_HP");
+  if (hp_poke != nullptr) {
+    static long long fight_start = -1;
+    static bool poked = false;
+    const long long now = static_cast<long long>(runtime::Runtime::get().vblanks());
+    if (fight_start < 0 && bg().state == kStateFighting) fight_start = now;
+    int delay = 0, index = 0, value = 0;
+    if (!poked && fight_start >= 0 && std::sscanf(hp_poke, "%d:%d:%d", &delay, &index, &value) == 3 &&
+        now >= fight_start + delay) {
+      poked = true;
+      if (index >= 0 && index < 8)
+        if (EnemyUnit* u = bg().enemy_units[static_cast<size_t>(index)]) u->st()->hp = value;
+      std::fprintf(stderr, "[enemy] hp of %d poked to %d at vblank %lld\n", index, value, now);
+    }
+  }
   static const bool on = std::getenv("SS_ENEMY_TRACE") != nullptr;
   if (!on) return;
   const BattleGlobals& g = bg();

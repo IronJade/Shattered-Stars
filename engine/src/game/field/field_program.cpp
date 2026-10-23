@@ -20,6 +20,7 @@
 #include "game/boot/rng.h"
 #include "game/field/effects.h"
 #include "game/field/encounter.h"
+#include "game/field/event_sweep.h"
 #include "game/field/fade.h"
 #include "game/field/field_world.h"
 #include "game/field/music.h"
@@ -628,6 +629,7 @@ void field_update(Field* f) {
   // out, close the windows, state 3 (camp menu).
   FieldGlobals& g = g_field;
   trace_leader(f);
+  event_sweep_frame(f);  // debugging: SS_EVENT_SWEEP (event_sweep.h)
   field_menu_check(f);  // menu_camp.cpp
   switch (f->state) {
     case 0:

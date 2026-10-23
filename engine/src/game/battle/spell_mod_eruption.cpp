@@ -3,8 +3,8 @@
 // the screen and rocks rain on the area for 280 ticks; then everything of the other side
 // within the disc's radius is hit (element 4). Functions 0x8008cc00 (the handler) and
 // 0x8008d918 (a falling rock, a kind-0x21 callback); the jump table of the handler's steps at
-// 0x8008daf8. Resident 0x8007cc5c draw_disc and 0x8007d9e0 draw_wave_grid (#1984.0) are not
-// in the port's shared code and are ported here.
+// 0x8008daf8. Resident 0x8007cc5c draw_disc and 0x8007d9e0 draw_wave_grid (#1984.0):
+// spell_fx.h.
 
 #include <cstring>
 
@@ -39,127 +39,6 @@ namespace {
 
 const s32 kUnitScale[3] = {0x1000, 0x1000, 0x1000};  // 0x8006e34c
 
-s32 mul_lo(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cast<u32>(b)); }
-u32 svec_xy(s32 x, s32 y) { return static_cast<u32>(static_cast<u16>(x)) | static_cast<u32>(static_cast<u16>(y)) << 16; }
-
-// 0x8007cc5c draw_disc (#1984.0): a flat fan of 'segments' gouraud triangles (POLY_G3) in
-// the x-z plane round the current GTE origin, 'radius' units: rgb_centre at the centre (its
-// code 0x30, 0x32 when blend is set), rgb_edge on the rim; blend != 0 adds a DR_MODE (mode
-// blend - 1) after each. A triangle with no vertex inside x 0..319 / y -64..279, or with
-// otz / 8 >= 0x5fa - ot, is skipped; the others go to OT entry 0x616 + ot - otz / 8 of pool
-// A. (The console checks room for all of them, takes the arena's cursor and commits what it
-// used at the end.)
-void draw_disc(s32 segments, s32 radius, u32 rgb_centre, u32 rgb_edge, s32 blend, s32 ot) {
-  BattleGlobals& g = bg();
-  RenderContext* pool = g.prim_pool_a;
-  const s32 size = blend != 0 ? 0x28 : 0x1C;
-  if (pool == nullptr || !arena_has_room(pool, mul_lo(size, segments))) return;
-  const u32 code = rgb_centre | (blend != 0 ? 0x32000000u : 0x30000000u);
-  psx::Gte& q = psyq::gte();
-  s32 used = 0;
-  s32 x = radius, z = 0;
-  for (s32 i = 0; i < segments; ++i) {
-    const s32 ang = ((i + 1) << 12) / segments;
-    const s32 px = x, pz = z;
-    x = mul_lo(bcos(static_cast<u32>(ang)), radius) >> 12;
-    z = mul_lo(bsin(static_cast<u32>(ang)), radius) >> 12;
-    q.write_data(psx::Gte::VXY0, svec_xy(0, 0));
-    q.write_data(psx::Gte::VZ0, 0);
-    q.write_data(psx::Gte::VXY1, svec_xy(px, 0));
-    q.write_data(psx::Gte::VZ1, static_cast<u32>(static_cast<s32>(static_cast<s16>(pz))));
-    q.write_data(psx::Gte::VXY2, svec_xy(x, 0));
-    q.write_data(psx::Gte::VZ2, static_cast<u32>(static_cast<s32>(static_cast<s16>(z))));
-    q.execute(psx::Gte::kRtpt);
-    const u32 s0 = q.read_data(psx::Gte::SXY0), s1 = q.read_data(psx::Gte::SXY1), s2 = q.read_data(psx::Gte::SXY2);
-    q.execute(psx::Gte::kAvsz3);
-    auto x_in = [](u32 xy) { return static_cast<u16>(xy) < 0x140; };
-    auto y_in = [](u32 xy) { return static_cast<u16>(static_cast<u16>(xy >> 16) + 0x40) < 0x158; };
-    if (!(x_in(s0) || x_in(s1) || x_in(s2))) continue;
-    if (!(y_in(s0) || y_in(s1) || y_in(s2))) continue;
-    const s32 otz = static_cast<s32>(q.read_data(psx::Gte::OTZ)) >> 3;
-    if (!(otz < 0x5FA - ot)) continue;
-    auto* p = screen_alloc_prims<psyq::POLY_G3>(pool->arena, 1);
-    if (p == nullptr) return;
-    psyq::setPolyG3(p);
-    std::memcpy(&p->r0, &code, 4);
-    std::memcpy(&p->r1, &rgb_edge, 4);
-    std::memcpy(&p->r2, &rgb_edge, 4);
-    p->x0 = static_cast<s16>(s0), p->y0 = static_cast<s16>(s0 >> 16);
-    p->x1 = static_cast<s16>(s1), p->y1 = static_cast<s16>(s1 >> 16);
-    p->x2 = static_cast<s16>(s2), p->y2 = static_cast<s16>(s2 >> 16);
-    psyq::P_TAG* entry = &pool->ot_head[0x616 + ot - otz];
-    psyq::addPrim(entry, p);
-    used += 0x1C;
-    if (blend != 0) {
-      auto* dm = screen_alloc_prims<psyq::DR_MODE>(pool->arena, 1);
-      if (dm == nullptr) return;
-      psyq::SetDrawMode(dm, 0, 1, (blend - 1) << 5, nullptr);
-      psyq::addPrim(entry, dm);
-      used += 0xC;
-    }
-  }
-  pool_a_bytes_used() += used < 4 ? 4 : used;
-}
-
-// 0x8007d9e0 draw_wave_grid (#1984.0; as spell_mod_star_flare.cpp ports it): an n x n grid
-// of screen-space POLY_FT4 over rect {x0, y0, x1, y1} with the UVs of uv {u0, v0, u1, v1}
-// spread over it, every vertex row shifted in x by wave_x {amp, phase, freq} (amp * sin(phase
-// + freq * row / n) >> 24) and every vertex column in y by wave_y alike; all at OT entry
-// 0x610 - ot of pool A, colour word code_rgb.
-void draw_wave_grid(const s32 uv[4], const s32 rect[4], const s32 wave_x[3], const s32 wave_y[3], u16 clut,
-                    u16 tpage, s32 ot, u32 code_rgb, s32 n) {
-  BattleGlobals& g = bg();
-  RenderContext* pool = g.prim_pool_a;
-  // (screen_alloc 0x80069fd4 of n * n * 0x28 bytes at once; none: nothing is drawn.)
-  const s32 bytes = mul_lo(n, n * 0x28);
-  if (pool == nullptr || !arena_has_room(pool, bytes)) return;
-  pool_a_bytes_used() += bytes;
-  const s32 u0 = static_cast<s16>(uv[0]);  // (the console keeps uv[0] << 16 and shifts it back)
-  const s32 v0 = static_cast<s16>(uv[1]);
-  const s32 du = static_cast<s16>(uv[2]) - u0;
-  const s32 dv = static_cast<s16>(uv[3]) - v0;
-  const s32 w = rect[2] - rect[0];
-  const s32 h = rect[3] - rect[1];
-  const u32 clut_hi = static_cast<u32>(clut) << 16;
-  const u32 tpage_hi = static_cast<u32>(tpage) << 16;
-  s32 xd_low = mul_lo(wave_x[0], bsin(static_cast<u32>(wave_x[1]))) >> 24;
-  s32 v_low = v0 << 8;
-  for (s32 row = 0; row < n; ++row) {
-    const s32 v_high = v_low;
-    v_low = (mul_lo(dv, row + 1) / n + v0) << 8;
-    s32 yd_next = mul_lo(wave_y[0], bsin(static_cast<u32>(wave_y[1]))) >> 24;
-    const s32 xd_high = xd_low;
-    xd_low = mul_lo(wave_x[0], bsin(static_cast<u32>(mul_lo(wave_x[2], row + 1) / n + wave_x[1]))) >> 24;
-    const s32 y_high = mul_lo(h, row) / n + rect[1];
-    const s32 y_low = mul_lo(h, row + 1) / n + rect[1];
-    s32 u_next = u0;
-    for (s32 col = 0; col < n; ++col) {
-      const s32 yd = yd_next;
-      yd_next = mul_lo(wave_y[0], bsin(static_cast<u32>(mul_lo(wave_y[2], col + 1) / n + wave_y[1]))) >> 24;
-      const s32 u = u_next;
-      u_next = mul_lo(du, col + 1) / n + u0;
-      const s32 x_a = mul_lo(w, col) / n + rect[0];
-      const s32 x_b = mul_lo(w, col + 1) / n + rect[0];
-      auto* p = screen_alloc_prims<psyq::POLY_FT4>(pool->arena, 1);
-      if (p == nullptr) return;
-      psyq::setPolyFT4(p);
-      std::memcpy(&p->r0, &code_rgb, 4);
-      p->x0 = static_cast<s16>(x_a + xd_high), p->y0 = static_cast<s16>(y_high + yd);
-      p->x1 = static_cast<s16>(x_b + xd_high), p->y1 = static_cast<s16>(y_high + yd_next);
-      p->x2 = static_cast<s16>(x_a + xd_low), p->y2 = static_cast<s16>(y_low + yd);
-      p->x3 = static_cast<s16>(x_b + xd_low), p->y3 = static_cast<s16>(y_low + yd_next);
-      const u32 uv0 = static_cast<u32>(u | v_high) | clut_hi;
-      const u32 uv1 = static_cast<u32>(u_next | v_high) | tpage_hi;
-      const u32 uv2 = static_cast<u32>(u | v_low);
-      const u32 uv3 = static_cast<u32>(u_next | v_low);
-      p->u0 = static_cast<u8>(uv0), p->v0 = static_cast<u8>(uv0 >> 8), p->clut = static_cast<u16>(uv0 >> 16);
-      p->u1 = static_cast<u8>(uv1), p->v1 = static_cast<u8>(uv1 >> 8), p->tpage = static_cast<u16>(uv1 >> 16);
-      p->u2 = static_cast<u8>(uv2), p->v2 = static_cast<u8>(uv2 >> 8);
-      p->u3 = static_cast<u8>(uv3), p->v3 = static_cast<u8>(uv3 >> 8);
-      psyq::addPrim(&pool->ot_head[0x610 - ot], p);
-    }
-  }
-}
 
 // 0x8008d918: a rock (anims 2-4 of the cast's set, 0x1a-0x1b of the fx bank) falling at 32 a
 // tick toward +0x118 (+0x10c the combo kind: 3 first takes a random point of the area round

@@ -13,6 +13,7 @@
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
 #include "game/battle/input.h"
+#include "game/battle/bload.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
 #include "game/battle/hud.h"
@@ -20,6 +21,7 @@
 #include "game/battle/particle.h"
 #include "game/battle/shot.h"
 #include "game/battle/voice.h"
+#include "game/battle/voice_player.h"
 #include "game/battle/unit_move.h"
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
@@ -209,6 +211,8 @@ void battle_init_objects() {
   bsfx_reset();
   director_reset();
   spells_reset();        // the spell-data cache, the SpellCasts (spells.cpp, spellcast.cpp)
+  bload_reset();         // the load queue (bload.cpp)
+  voice_player_reset();  // the voice slots (voice_player.cpp)
   spell_windows_reset();
   command_menu_reset();  // the list menus and their memory (command_menu.cpp)
   // TODO(port): the other pools: Shot (160 x 0x13c), DamagePopup (16 x 0x2c), PolyShard
@@ -549,7 +553,8 @@ void battle_main_loop() {
       battle_end(g_debug.auto_end_outcome);
     }
     if (g.sprite_bank_fx != nullptr && !g.special_obj_released) bobj_texcache_begin_frame(g.sprite_bank_fx.get());
-    // TODO(port): voice_update, bload_update (voices, the load queue).
+    voice_update();  // 0x8007faa4 (voice_player.cpp)
+    bload_update();  // 0x80047c08 (bload.cpp)
     spell_data_update();
     input_update(&battle_input());
     if (g.camera != nullptr) g.camera->update();
@@ -636,7 +641,8 @@ void battle_main_loop() {
     // screen_compact_ot(layer 0).
     psyq::DrawSync(0);
     // VSync(2); a debug run can shorten the first frames (battle_debug_frame_wait).
-    const int wait = battle_debug_frame_wait(frame_no++);
+    int wait = battle_debug_frame_wait(frame_no++);
+    if (const int t = battle_debug_tick_map(g.battle_frames); t != 0) wait = t;  // (world agent: SS_BATTLE_TICK_MAP)
     psyq::VSync(wait == 1 ? 0 : wait);
     // VsyncCounter (vsync_counter_tick 0x80047578): vblanks since the last frame, capped
     // at 4 (6 during a special move).
@@ -677,6 +683,8 @@ void battle_free_all() {
   BattleGlobals& g = g_battle;
   result_screen_free();
   spells_reset();          // the SpellCasts, their fades and the spell data
+  voice_player_reset();    // the voice slots
+  bload_reset();           // the load queue
   spell_windows_reset();   // the clash / skill-notice / scan windows
   command_menu_reset();    // the command ring's list menus
   battle_windows_free();  // the debug window and the HUD release themselves

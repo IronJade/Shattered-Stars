@@ -126,41 +126,105 @@ it compared with PCSX-Redux yet:
 - 1b modules written: magnum_tornado (0xb, Redux 197 exact), cure_all (0x32), thundercloud
   (0x10) (+ effect_spawn_streak_at in spell_fx); Foehn renamed (was "Feehn"); original_bugs.md
   S1 (Foehn's effects on the wrong side) fixed; catalog rows for all five modules.
-- Running: Redux references `ref/m277_3`, `ref/m111_3` (Goathead, 4000 vsyncs, for
-  Thundercloud / Cure All), queued after `ref/r340_3`. Redux reference `ref/r340_3` (encounter 340, slot 0 poked to Rena: id 2, class 9,
-  MP 200; forced casts Heal / Cure Light / Antidote on herself, Ice Needle / Thunderbolt /
-  Grave / Wounds / Word of Death on the wizard, from battle frame 400 every 200) to verify
-  the built-in spells the monsters never cast.
-
-- Step 2 started in the build: `command_menu.cpp` in CMakeLists.txt and called from input.cpp
-  (flagged edits in the battle agent's input.cpp: modes 1 / 3, the ring on key 2, the member
-  select on key 1, the spell / item targets, cancel back to the menus; the unused todo()
-  removed); command_menu_reset in battle_program.cpp. Not yet exercised with input.
-- 1c helpers (3, started ~17:55; guide `scratchpad/world/spell/GUIDE.md`, write-only new
-  `battle/spell_mod_<name>.cpp` + `scratchpad/world/spell/catalog/<name>.csv`, not in CMake
-  until reviewed): group A (13 modules: Divine Comedy, Gremlin Lair, Tractor Beam, Anti, Raise
-  Dead, Lunar Light, Extinction, Press, Energy Net, Neutral, Deep Mist, Bless, Forget), group B
-  (14: Black Saber, Earthquake, Explode, Fairy Light, Angel Feather, Dark Circle, Energy
-  Arrow, Dispel, Earth Grave, Tetanus Wind, Growth, Shadow Bolt, Protection, Silence), group C
-  (16: Sonic Saber, Meteor Swarm, Eruption, Southern Cross, Gravity Press, Blood Sucker / Mind
-  Absorber, Fairy Heal, Shadow Flare / Judgement Day, Reflection, Delay, Thunderstorm, Haste,
-  Light Cross, spell 0x40, Acid Rain, Curse). The enemy agent ports the other 7 (its list) with
-  at most 3 helpers.
-- Rena test (`ref/r340_3`, `pr340`): RNG equal to b700; at b800 the port has 4 more draws
-  (round the Cure Light cast) and the wizard then chants in the port only. A per-2-vsync
-  Redux run (`ref/r340d_3`, BW_BATTLE_EVERY=2, 900 vsyncs) is queued to find the frame.
+- Step 2, item use: VERIFIED (18:30). `battle/items.{h,cpp}`: item_use_battle 0x80082dec (all
+  effect kinds), its helpers, Shot kinds 0x2e / 0x2f / 0x30, shot_spawn_sparkle_on_target.
+  Redux item tests on encounter 340 (`scratchpad/world/spell/item_cfg.py`: 16 items poked
+  into the inventory, forced uses): `ref/it340_3` (7 items: HP heal, kind 0x40, status 2:
+  0x40000000, petrify all / one (the battle ends: the wizard turned to stone, as on the
+  console), stun, MP drain) and `ref/iu340_3` (11: drain, scan, rolling boulder, 3 balls,
+  bouncing balls, bombs x3 kinds, stun, heal+curse, kind 0x47): every RNG sample and every
+  unit sample exact (one party sample at it340 b1290 differs: a hit reaction one frame early in
+  the over state, the wizard's melee: battle agent's area); captures match (scan window, the
+  boulder, the bomb's dark sphere near the camera). Suites green: ss_tests 78/0,
+  ss_game_tests 74/0 (SS_DISC1), smoke 21/21.
+  - original_bugs.md S2 (kind 0x5c's blasts use the enemy's y as z) fixed; S3 (a monster's
+    counter-cast after an item hit has no target; the Shot spells aim at "address 0") fixed.
+  - spellcast_retarget now reads a null target the way the console does (kernel bytes at
+    0x123 / 0x125: party slot 2), so such a SpellCast spell goes to the first standing member
+    from slot 3 on (it was dropped: found by iu340, the wizard's Foehn after the bombs).
+  - Flagged edits: unit.h / unit.cpp unit_check_move takes `const BObj*`; title/new_game.cpp
+    scale_colour keeps IR0's low 16 bits; input.cpp input_update calls
+    `debug_forced_items()`; spell_fx.h declares voice_thank_healer.
+  - Test drivers: `SS_BATTLE_ITEM="FRAMES:SLOT:INDEX:TARGET;..."` / Redux `BW_ITEM`;
+    `BW_RNG_TRACE=LO:HI` logs every RNG call's site in Redux; run.sh `BW_CARD_TAG`.
+- 1c: ALL 55 modules registered and building (18:30): groups A (13), B (14), C (16) from
+  the helpers + my 5 + the enemy agent's 7. `scratchpad/world/spell/register.py NAME...`
+  registers (kModules key, header, CMake); `cat_mods.py NAME...` adds the catalog rows (all
+  added). Not yet verified against Redux.
+  - Missing: model_shatter 0x8005f30c + the PolyShard pool (0x800600a0-0x800606f8): Southern
+    Cross, Delay and Haste have empty stand-ins (RNG differs from the shatter on). A helper
+    (started 18:32) ports it into new `battle/shatter.{h,cpp}`; then switch the three modules.
+  - Helpers' ORIGINAL BUG? notes to decide after verification (listed in their reports;
+    examples: Black Saber / Sonic Saber 4-entry hit lists overflowing, Gremlin Lair's waits
+    without timer ticks, Press / Gravity Press stars at 0/120/120/240, Deep Mist without the
+    pause check, Lunar Light's second spark ring, Raise Dead's funnel y, Silence / Blood
+    Sucker / Curse heights, Delay / Haste dz bounds, Shadow Flare's shimmer phase).
+  - Port gaps from the helpers: Earthquake / Explode set a stand-in of g_stage_height_fn
+    0x8006fe04 (unit_draw_model's hook, TODO in unit.cpp / stage.cpp: units don't ride the
+    waves yet); Divine Comedy reads Indalecio's +0x2f8 through `caster->flying` (needs an
+    accessor); Raise Dead's music save / restore mapping to check.
+  - Duplicated local helpers to move to spell_fx: item_fx_sparkle (6 copies), draw_disc
+    0x8007cc5c (3), draw_wave_grid 0x8007d9e0 (4), voice_release 0x8007fd54 (2),
+    model_find_vertices_near 0x80061694 + sv_distance_xz 0x800627c0 (2),
+    camera_orbit_object (2; camera_orbit_unit could take a BObj*), line_trail 0x80076454..
+- Rena test redone with the forced casts applied where the port applies them (both at
+  input_dispatch now; the old per-vsync Redux poke landed a frame later than the port's,
+  which was the whole "+4 RNG at Cure Light" of r340): `ref/rn340_3` vs `prn340`: all 240
+  RNG samples and all enemy samples exact over 2400 frames (Heal, Cure Light, Antidote,
+  Grave, Word of Death, the wizard's Foehn and Magnum Tornado); 3 party samples show the
+  hit reaction a frame early in the port (battle agent's area, as in it340).
+- Module sweeps (Redux, encounter 340, max 3 instances): the caster is the class's
+  character (Rena 2 / Leon 8 / Celine 3 / Noel 11, the party loader sets the class from it)
+  with every list spell learned (handoff 4 record +0x3c..), HP 30000, MP 999; the wizard made
+  passive (AI odds 0, SS_BATTLE_ENEMY_ODDS / BW poke during the intro). `sweep_cfg.py RUN
+  [FOR]`; runs i9a i9b i10a i10b i11a i11b i12 cast the class's spells one after another
+  (SS_BATTLE_CAST_IDLE / BW_CAST_IDLE: each waits until the caster is idle, no command
+  pending and no SpellCast runs); `start_sweep.sh RUN FOR` starts one (captures kept in
+  `ref/sweep_raw/RUN`). Port side: `(source sweep_RUN.sh; NO_MASH=1 ./run_port.sh 340 3
+  ref/i340_3 pRUN FOR)`, then cmp.py. All 7 idle runs play every cast to its end in the port.
+  - `ref/s9a_3` (fixed-time casts): exact through Cure All, Fairy Light, Dispel, Silence,
+    Deep Mist, Energy Net (b3310); Growth then differs: the console ran slow (frame ticks 3
+    under Growth's load; the port never slows down).
+  - So the Redux driver now logs the slow frames (`BW_TICK_LOG=1`: "[bw] tick F T" at
+    input_dispatch) and the port can replay them (`SS_BATTLE_TICK_MAP="F:T,..."`, F the
+    battle frame counter before the frame: battle_debug.cpp, flagged); and the spell casts /
+    finishes (`BW_SPELL_TRACE=1`, as SS_SPELL_TRACE).
+  - Running (19:00): i11a, i12, i10a (with the tick log and spell trace).
+- model_shatter + PolyShard ported by the helper (`battle/shatter.{h,cpp}`, in CMake;
+  shatter_reset from spells_reset); Southern Cross / Delay / Haste use it. The task list is
+  now 320 entries (battle.h, flagged: g_tasks is 320 on the console; a shatter adds up to
+  192 tasks).
+- Shared helpers moved: item_fx_sparkle (items.h, 6 local copies gone), draw_disc /
+  draw_wave_grid (spell_fx, 5 + the enemy agent's star_flare copy gone: flagged),
+  g_stage_height_fn 0x8006fe04 (spell_fx; unit_draw_model now lifts grounded units by it:
+  unit.cpp, flagged), enemy_indalecio_transformed (enemy_mod_indalecio.cpp, flagged) for
+  Divine Comedy.
+- Port debug: `SS_RNG_SITES=LO:HI` prints the call site of RNG draws LO..HI (rng.cpp;
+  run under `setarch x86_64 -R`, PORT_WRAP in run_port.sh, then addr2line); Redux
+  `BW_RNG_TRACE=LO:HI` the same on the console.
+- Findings:
+  - Spell data load timing: the port's data is ready one frame after the request; the
+    console's CD read can take longer, so a monster whose chant is short releases its spell a
+    frame or two later on the console (m111 Goathead's Thundercloud: ref b602, port 600; then
+    everything shifts). Not a port bug (no slowdown modelling); verify modules with casts whose
+    data loads in time (the party sweeps).
+  - Rena test r340: resolved (test-driver timing, see above).
+  - Never `pgrep -f` / kill by a pattern that the current shell's own command line contains
+    (it matched the shell itself once); use the PIDs a listing printed.
+  - Redux: `pgrep -f` waits on a pattern also match their own command line (the r340d queue
+    never started); use a pid file or a pattern the waiter does not contain.
 
 ## Next steps
 
-1. Compare r340 with the port (same pokes: SS_BATTLE_POKE "3:0x0=2/2,3:0x3=9/1,3:0x20=200/2,
-   3:0x22=200/2,3:0x24=200/2" + SS_BATTLE_CAST with the same list); fix differences.
-2. 1b: Magnum Tornado 0xb (53455d80ad; ref k197 Nightmare diverges at its cast, b700), Cure All
-   0x32 (95b9fdccfa). (Queue change: the enemy agent ports the spell modules of spells 12, 16,
-   22, 28, 51, 55, 56, 57 decimal = 0xc, 0x10 Thundercloud, 0x16, 0x1c, 0x33, 0x37, 0x38,
-   0x39, registering them in spell_modules.cpp; leave them out of 1c; six helpers in total
-   between us.)
-3. 1c: the other ~50 modules with helpers (guide to write: scratchpad/world/spell/GUIDE.md).
-4. Step 2: command_menu.cpp into CMake + input.cpp, item_use_battle.
+1. Compare the idle sweeps as they finish (i11a, i12, i10a running; then i9a, i9b, i10b,
+   i11b): extract the tick map from the ref log ("[bw] tick F T" -> F - T:T), run the port
+   with SS_BATTLE_TICK_MAP, cmp.py, and the spell timelines ([bw] spell vs [spell]); fix the
+   modules; decide the helpers' ORIGINAL BUG? notes (fix after the faithful version matched;
+   S-entries in original_bugs.md).
+2. Remaining duplicated helpers (earthquake / explode: model_find_vertices_near,
+   sv_distance_xz, obj_set_matrix_parent / child; gremlin_lair / press camera_orbit_object;
+   reflection's line_trail; acid_rain's voice_release copy (enemy_support.h has one)).
+3. W1 (the post-battle report's MAG row under the window clip) when convenient.
 
 ## Findings not yet in the catalog
 

@@ -1,9 +1,9 @@
 // Spell code module 6d3d24cf0b (entries 0x8ec-0x8f2): Blood Sucker (spell 0x2d) and Mind
 // Absorber (spell 0x2e; spell_cast sets SpellCast +0x3c to 1): a sphere of light swells on
-// the target, the drained HP (or MP, when the target fails its resistance roll) flows back to
-// the caster as a stream of projectiles, and the caster gains what was taken. On combo 3 the
+// the target, the drained HP (or MP, when the target's resist roll lets it through) flows back
+// to the caster as a stream of projectiles, and the caster gains what was taken. On combo 3 the
 // caster is the one drained. One function at 0x8008cc00 (block 0, 2928 bytes; its step jump
-// table at 0x8008d73c).
+// table at 0x8008d754).
 
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
@@ -106,8 +106,8 @@ void blood_sucker(SpellCast* sc) {
     }
     case 3: {
       // The drain: HP through a temporary Shot of the gainer's (element 0x40, knockback 8),
-      // or MP when the victim fails its roll (kind 1, power / 16 + 220). Failed or combo 1:
-      // a rising icon and the cast ends.
+      // or MP when the victim's resist_roll (kind 1, power / 16 + 220) returns 1. Otherwise,
+      // or on combo 1: a rising icon and the cast ends.
       const bool lands = (sc->s3c == 0 || victim->resist_roll(1, sc->power / 16 + 0xDC) == 1) && sc->combo != 1;
       if (!lands) {
         battle_flash_set(sc, 0x80, 0x80, 0x80);
@@ -182,7 +182,7 @@ void blood_sucker(SpellCast* sc) {
     }
     case 6:
       // The gainer gets what was taken.
-      if (unit_is_down(gainer) != 1) {
+      if (!unit_is_down(gainer)) {
         if (sc->s3c == 0) {
           damage_popup_spawn(gainer, -sc->s38, 0, 0);
           unit_damage_hp(gainer, -sc->s38);

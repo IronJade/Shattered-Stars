@@ -294,6 +294,15 @@ int field_try_talk(ScriptCtx* ctx, int talk) {
       }
     }
     if (found == -1) continue;
+    field_start_talk(ctx, found, talk);
+    return 1;
+  }
+  return 0;
+}
+
+void field_start_talk(ScriptCtx* ctx, int found, int talk) {
+  const int self = field_state_s16(0x10);
+  {
     u16 entry;
     if (talk == 0) {
       entry = static_cast<u16>(vm_svc_actor_get_pickpocket_entry(found));
@@ -321,9 +330,7 @@ int field_try_talk(ScriptCtx* ctx, int talk) {
     vm_push_frame(ctx);
     ctx->depth = 1;
     ctx->ip = ctx->code + entry;
-    return 1;
   }
-  return 0;
 }
 
 void pa_draw_prompt(ScriptCtx* ctx) {

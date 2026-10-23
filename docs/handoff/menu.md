@@ -238,7 +238,7 @@ the extra partner offered with script flag 0x5d). PartnerDialog sets it; Link Co
 clears it with +0xce / +0xcf (the second set of killer moves). Accessory 0x15c enables
 it.
 
-### Item creation, pages 0xf / 0x10 (ported; verification finishing)
+### Item creation, pages 0xf / 0x10 (done and verified)
 
 **Files:** `engine/src/game/field/menu_creation.{h,cpp}`, `menu_item_list.h`; the
 CreationViewer in `menu_viewer.{h,cpp}` (with `Panel::attach_viewer`); `party_random_alive_slot`
@@ -263,22 +263,11 @@ the menu's frame n, menu still open) and `_rng.bin` / `SS_MENU_RNG`. All on disk
 - The morph data matches byte for byte at a morph frame (`artd`).
 - Frames: the morph plays about 77 frames earlier in the port. A spinning textured model
   drifts up to about a pixel; this is not explained (the vertices and turn match).
-- Not exercised: Cooking's query path (the contest needs its script).
+- Cooking's query path: verified later with pokes (see "The query page and M6 step 5").
 
-**In progress:** Redux runs `s1`-`s8` (the super specialties), via runredux2.log.
+- The super specialties s1-s8 match too (data and the end generator state).
 
-**Catalog:** 1603 function rows (menu_0bc0, menu_0bae, menu_0bc2 and the viewer's
-menu_0bb9 rows) and 169 global rows.
-
-**Next:**
-1. Compare s1-s8 and write the menu.md section.
-2. Report the block to the coordinator.
-3. Page 0xe (0xbce): the rename screen. It is the title's name entry again (keyboard and
-   name box classes copied into the overlay, data from the page pack) with the
-   character's picture from entry 0xbd3 + character. The new name goes to game_state
-   +0x28 + (character - 1) * 0x14 and record +0x24.
-5. Step 5 (the stash setter).
-6. The menu bug list (original_bugs.md, "Menus").
+**Catalog:** menu_0bc0, menu_0bae, menu_0bc2 and the viewer's menu_0bb9 rows.
 
 ### Page 0x13: pictures (done and verified)
 
@@ -294,29 +283,65 @@ R1 / L1 jumps and closing.
 
 **Catalog:** menu_0bcc, 14 rows.
 
-### Not ported yet
+### Page 0xe: renaming (done and verified)
 
-- Pages 0xf / 0x10 (item creation 0xbc0 / 0xbae, super specialty 0xbc2) and page 0x13
-  (0xbcc). The Items page reaches them, and the loader then logs and pops back.
-- The query page (0xf variant 0xb, 0xbae), with the TIME / PRESS gauge.
+**Files:** `engine/src/game/field/menu_rename.{h,cpp}`. It holds RenamePage, the screen
+loop, and the overlay's own copies of the keyboard and name-box windows and of the text
+renderer. The title's versions are left alone. menu_camp.cpp registers page 0xe.
+
+**Verification** (card `items`; Status, Cross on Claude):
+- `ren` (plan `p_ren.txt`): backspace, a digit, both sets, a full name and the jump,
+  Delete, Select, Start.
+- `ren2` (`p_ren2.txt`): Start with "Claude" kept.
+- Results:
+  - Data matches (name, record, game_state, config +0x42).
+  - 4x4 block means match (`blockcmp.py`), apart from the cursor glow and colour-cycle
+    phase.
+  - The per-pixel difference is the subtractive keyboard frame, from the known order of
+    dithering and blending in Redux.
+  - The Status page afterwards matches.
+
+**Original bugs** (original_bugs.md "Menus", new):
+- M1 fixed: the commit compared with "Crawd", so keeping "Claude" set renamed flag
+  config +0x42. Redux `ren2` shows the flag set; the fixed port leaves it 0.
+- M2 fixed: a full name sent the hand to Delete; it now goes to OK (`renf` run).
+- M3 kept (harmless VRAM save mismatch).
+- M4 / M5 avoided.
+
+**Catalog:** menu_0bce, 39 function rows and 12 globals.
+
+### The query page and M6 step 5 (done and verified)
+
+- **The query page** (Cooking in a query session) was run without the contest's script.
+  - `SS_MENU_POKE="flag=0x14,var=0x3c:1,var=0x38:32"` in the port, and itemsref.lua's
+    `SS_POKE` in Redux, set the flag, Claude and PRESS 32 before Triangle.
+  - Run `qry` (card spec2, plan `p_qry.txt`, port with `SS_MENU_RNG=qryr/before_rng.bin`,
+    `OPEN=1`).
+  - Data, PRESS (32 -> 27) and the generator match. field_flags +0x14 already differed
+    before the menu (field state).
+  - The TIME / PRESS gauge's frames match. The rest differs only in sprite animation
+    phase and the morph timing.
+  - Both harnesses now also dump `field_flags` (0xa0 bytes).
+- **Step 5:** `stash_set_holds_items` was added to field/stash.{h,cpp} (a small hook in
+  the field files). field_menu_update calls it with false after a load, as the original
+  clears 0x8007622c there (field 0x8004c334).
+
+### Not ported
+
+- Pages 0xc / 0xd (debug).
 
 ## Next steps
 
-1. The item creation pages 0xf / 0x10 / 0x13 (0xbc0 / 0xbae / 0xbc2 / 0xbcc). 0xbc0,
-   0xbae and 0xbc2 share about 7.3 KB of code (`scratchpad/menu/ovl_match.py` groups
-   functions by normalized code). Page 0xf's ctor 0x8007e790 picks a Panel subclass
-   (0x108 bytes) by the specialty in session +0x1c. Then page 0xe (0xbce, after Status)
-   and the query page.
+- M6 pages are all done. Nothing is open beyond the coordinator's next assignment.
 
 For each page:
 - Decompiles are in `analysis/decomp/menu_0bXX` with `listing.s`.
 - Get the 3001 code from `analysis/decomp/menu_0bb9/listing.s`.
 - Get field library code from `scratchpad/menu/lib_0ba5.s` and `field_lib.s`. Use
   `fn.sh LISTING ADDR` to pull one function.
-- To verify, adapt itemsref.lua's SS_SHOP plan and itemsrun.sh.
-
-After the pages, M6 step 5: add a stash.h setter and clear 0x8007622c after a load. The
-TODO is in field_menu_update.
+- To verify, use `specrun.sh NAME CARD "PLAN" END` (`REDUX_ONLY` / `PORT_ONLY` / `OPEN`)
+  and compare with `cmpdump.sh`, `cmpnp.py` and `blockcmp.py`. Run at most three Redux
+  instances at once, and build with -j8.
 
 ## Findings not yet in the catalog
 

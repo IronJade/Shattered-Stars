@@ -193,8 +193,8 @@ struct BattleGlobals {
   u8 semi_tpage = 0;                  // 0x8006fb2e: DR_MODE tpage of model_render's semi-transparent untextured polygons
 
   // Tasks (64 slots).
-  std::array<Task*, 64> tasks{};      // 0x8006e8dc g_tasks
-  std::array<u8, 64> task_prio{};     // 0x8006eddc g_task_prio
+  std::array<Task*, 320> tasks{};     // 0x8006e8dc g_tasks (320: a shatter adds up to 192; world agent)
+  std::array<u8, 320> task_prio{};    // 0x8006eddc g_task_prio
   u16 task_count = 0;                 // 0x8006ef1c g_task_count
 
   // Owned objects (freed at exit; the console frees them in battle_free_all).

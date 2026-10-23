@@ -18,6 +18,7 @@
 #include "game/battle/killer.h"
 #include "game/battle/particle.h"
 #include "game/battle/render.h"
+#include "game/battle/shatter.h"
 #include "game/battle/shot.h"
 #include "game/battle/spell_fx.h"
 #include "game/battle/spell_modules.h"
@@ -45,14 +46,6 @@ const s32 kUnitScale[3] = {0x1000, 0x1000, 0x1000};  // 0x8006e34c
 
 // A field star's afterimage (Shot +0x134 holds the pointer on the console).
 std::unordered_map<const Shot*, Afterimage*> g_trail;
-
-// 0x8005f30c model_shatter (#2129): MISSING from the port. It breaks a model into PolyShard
-// tasks (shard_alloc 0x800600a0, shard_update 0x800606f8 ...; the PolyShard pool is not
-// ported). Arguments: model, position, orientation, scale, CLUT, tpage, then 2, 0, 4, 0, 0x20.
-// [stand-in: nothing; the console draws rng_between twice per shard in shard_alloc, so the
-// RNG goes out of step with it from here]
-void model_shatter(const u8* /*model*/, const s32* /*pos*/, const s32* /*orient*/, const s32* /*scale*/,
-                   u16 /*clut*/, u16 /*tpage*/, s32 /*a6*/, s32 /*a7*/, s32 /*a8*/, s32 /*a9*/, s32 /*a10*/) {}
 
 // 0x8008d5a8: a star in space (anim 0, 4 times), still until the phase (0x8008dc10) is 1,
 // then flying at the planet (+0x118) for +0x134 ticks, fading within 0x200 units of it

@@ -175,15 +175,15 @@ int main(int argc, char** argv) {
       return usage(argv[0]);
     }
   }
-  if (config["disc1"].empty()) {
-    std::fprintf(stderr, "No disc image yet: run once with --disc1 \"/path/to/Disc 1.cue\" (it is remembered).\n");
-    return usage(argv[0]);
-  }
   if (config_changed) save_config(config);
   // Tests and scripts: SS_DISC1 / SS_DISC2 choose the images for this run only (never saved).
   for (const char* key : {"disc1", "disc2"}) {
     const std::string var = std::string("SS_") + (key[4] == '1' ? "DISC1" : "DISC2");
     if (const char* env = std::getenv(var.c_str()); env && *env) config[key] = env;
+  }
+  if (config["disc1"].empty()) {
+    std::fprintf(stderr, "No disc image yet: run once with --disc1 \"/path/to/Disc 1.cue\" (it is remembered).\n");
+    return usage(argv[0]);
   }
 
   std::string error;

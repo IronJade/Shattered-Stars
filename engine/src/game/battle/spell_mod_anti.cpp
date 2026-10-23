@@ -4,6 +4,7 @@
 // 0x8000 (with a sparkle), the others a rising icon. Functions 0x8008cc00 (the handler;
 // its step jump table at 0x8008dad0) and 0x8008d850 (a unit's ring, a kind-0x21 callback).
 
+#include "game/battle/items.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
@@ -23,19 +24,6 @@ namespace {
 // The SpellCast's fields this module uses: s20 the caster's ring's brightness (0..0x80; the
 // ring is drawn while it is above 0), s24 the ticks of step 3, s2c the ring's turn, s34 the
 // camera's yaw; obj the data's sprite set (anim 7 the ring, 6 the units' rings, 1-5 motes).
-
-// 0x80084d48 item_fx_sparkle (#1984.1): a rising sparkle (set A anim 0x3a, 16 loops) 3
-// units of height above u. (items.cpp has it in its anonymous namespace; a copy.)
-void item_fx_sparkle(const Unit* u) {
-  Sprite* sp = sprite_spawn_a(0x3A, 0x10, nullptr);
-  if (sp == nullptr) return;
-  sprite_set_pos(sp, u->pos[0], u->pos[1] + u->size[1] * -0x3000, u->pos[2]);
-  sp->vel[1] = static_cast<s32>(0xFFFFB000);
-  sp->accel[1] = 0x200;
-  sp->layer = 2;
-  sp->freeze_class = 2;
-  sp->keep_screen = 1;
-}
 
 // A flat square of 'o''s cel ('anim') turned by 'turn', its corners 'r' units (20.12 per
 // unit of the sine) from u on the ground (lifted by the view pitch's sine), as one n x n

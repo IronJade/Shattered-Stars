@@ -16,6 +16,7 @@
 #include "disc/slz.h"
 #include "game/boot/system.h"
 #include "game/field/field.h"
+#include "game/field/message.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
 #include "test.h"
@@ -51,6 +52,10 @@ struct Fixture {
   FieldGlobals saved = globals();  // restored afterwards: other tests bind their own
 
   Fixture() {
+    // The VM tests run without a message system (the stand-ins report windows closed). The
+    // message tests keep theirs between tests, and the test order differs by platform
+    // (MinGW runs the files in the other order), so drop one left behind.
+    delete msg_system();
     handoff_init(&handoff);
     handoff_store(&handoff, config.data(), 2);
     handoff_store(&handoff, party.data(), 3);

@@ -49,10 +49,8 @@ struct BlastState {
 };
 std::unordered_map<const SpellCast*, BlastState> g_state;
 
-// (port) Stand-in for g_stage_height_fn 0x8006fe04, which unit_draw_model adds to grounded
-// units; the port has no such hook yet (unit.cpp's TODO). g_swell_cast is the cast whose
-// swell it reads.
-s32 (*g_stage_height_fn)(s32 x, s32 y, s32 z) = nullptr;
+// g_stage_height_fn 0x8006fe04 (spell_fx.h) is set to ground_swell while the ground swells;
+// g_swell_cast is the cast whose swell it reads.
 const SpellCast* g_swell_cast = nullptr;
 
 u16 rd16(const std::vector<u8>& b, size_t at) { return static_cast<u16>(b[at] | b[at + 1] << 8); }

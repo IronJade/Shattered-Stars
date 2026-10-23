@@ -172,8 +172,8 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
 |---|---|---|---|---|---|
 | 6673c9f485 | 5 Deep Freeze | Zand (m265) | spell_mod_deep_freeze.cpp | enemy agent | done, registered; m265 exact over 1500 vsyncs (RNG and every unit) |
 | 6563c70f92 | 7 Noah | G-Celesta (m515), Indalecio (m539) | spell_mod_noah.cpp | enemy agent | done, registered; m515 / m539 every unit sample exact to the battle's end, RNG only differs while the original slows to 3-vsync frames under the wall (48 draws a frame in both) |
-| cbdc2116f3 | 0x1c Star Flare | Breakwing (m528) | spell_mod_star_flare.cpp | helper C | running |
-| a6a642e880 | 0x24 Daemon's Gate / 0x41 The Scream | Weirddevil (m430) | spell_mod_daemons_gate.cpp | helper C | running |
+| cbdc2116f3 | 0x1c Star Flare | Breakwing (m528) | spell_mod_star_flare.cpp | helper C (done) | registered; m528 exact over 1500 vsyncs; draw_wave_grid 0x8007d9e0 ported in the file |
+| a6a642e880 | 0x24 Daemon's Gate / 0x41 The Scream | Weirddevil (m430) | spell_mod_daemons_gate.cpp | helper C (done) | registered; m430 exact over 1500 vsyncs |
 | c5209066cb | 0x43 Mind Blast | Vesper (m537) | spell_mod_mind_blast.cpp | helper B (done) | registered; m537 exact past the casts to b400, then the original slows to 3-vsync frames; unit states and the party's KO (b1000) still match |
 | c325548547 | 0x44 Spicule | Decus (m537) | spell_mod_spicule.cpp | helper B (done) | registered; as Mind Blast (same fight) |
 | 155b3550d0 | 0x45 Wind of Destruction | Cyril (m538) | spell_mod_wind_of_destruction.cpp | helper A (done) | registered; m538 RNG exact to b920 (the cast b530 on), unit states exact to b1500; Cyril's aura via enemy_cyril_aura() (enemy_modules.h) |
@@ -185,21 +185,49 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
    cases as `.word`s: `scratchpad/enemy/spell/mkelf.py` wraps a block in a MIPS ELF REA
    disassembles fully. Catalog rows: `scratchpad/enemy/spell/catalog/<name>.csv` (merge at the
    commit point). Local port in deep_freeze: voice_release 0x8007fd54 (sound_handle_release).
-2. Original bugs (docs/notes/original_bugs.md): done on disk: E1 E2 E3 E4 E8 fixed, E7 not a
-   bug (stun immunity), E10 = E8's cause, E13 (Noah's swapped lists) fixed, E14 new (decide).
-   Opinions on E5 E6 E9 E14 go to the coordinator with commit point 4. Not yet re-run
-   against the references (E1 changes Arcmene's choices: m50 will differ by design).
-3. Shot kinds 0x27 / 0x2d, shot_draw_frame_quad, bload_request, then the voice player
-   (voice_play_entry, the boss intro voice's RNG and hold).
-4. If time allows: Bark / Indalecio references with their HP poked low (kinds 0x36 / 0x3b).
+2. Original bugs (docs/notes/original_bugs.md): E1 E2 E3 E4 E5 E8 E9 E13 fixed; E7 not a bug
+   (stun immunity); E10 = E8's cause; E6 and E14 kept (the user: intended). The references
+   still match after the fixes (none of the fixed paths runs in them).
+3. Shot kinds 0x27 / 0x2d and shot_draw_frame_quad: done (enemy_shots.cpp; shot.cpp's
+   default case asks enemy_shot_update). m524 (the boxes' toss) now runs on to b530, where the
+   rock kills Claude in the port but not in the old reference; a fresh per-vsync reference
+   (`ref/n524_3`, BW_SHOT_KINDS=29) shows the original killing him on the same frame with the
+   same 73 draws, and the port matches it exactly to b570: two Redux runs of the same setup
+   differ there.
+   The load queue (bload.{h,cpp}: 0x800475c0-0x80047c98; a read is over by the next frame,
+   or with SS_BLOAD_DRIVE_TIME=1 timed as Redux's drive: seek 3 us a sector + 31 ms, single
+   speed) and the voice player (voice_player.{h,cpp}: 0x8007f76c-
+   0x8007fc54) are in, with hooks in battle_program.cpp (voice_update / bload_update, resets),
+   enemy_ai.cpp (the intro voice, the wait), bsfx.cpp (sound_handle_active's voice half) and
+   voice.cpp (victory / result clips). SS_VOICE_TRACE=1 logs the slots. Measured on 538
+   (Cyril): the clip streams 256 vsyncs in both (b61-b317 on the console, 24-280 in the
+   port); the load takes 22 vsyncs vs 16-18 (the drive head differs). What still differs:
+   battle state 1 starts at b43 on the console (the party loader's reads, entries 0x852 /
+   0x8c1 for Claude, then state 1) but at vblank 2 in the port (party.cpp reads at once), so
+   the boss's voice starts ~41 vsyncs early. The coordinator: keep it (no-slowdown rule: the
+   port may load faster and start earlier; no waits that exist only for the console's CD);
+   comparisons line up per reference. E15 kept for now (the user decides).
+4. Bark / Indalecio with their HP poked (BW_ENEMY_HP / SS_ENEMY_HP = DELAY:INDEX:VALUE, DELAY
+   vsyncs after the state first reads 2). Bark (ref/h531_3, HP to 130000 at fight + 60):
+   kind 0x36 casts at b440; RNG exact to b440, then the original slows down under the
+   vortex; every unit sample exact to the battle's end (Claude's KO at the same sample).
+   Indalecio (ref/h539_3, HP to 300000 at fight start) still casts Noah first and Claude
+   dies before a transform; a tough-Claude reference (ref/t539_3, 3000 vsyncs) is running.
 
-## State and next step (2026-10-22, after commit point 3)
+## State and next step (2026-10-22 evening, phase 2)
 
-- Nothing running (no helpers, no emulators); all work on disk; nothing of mine uncommitted
-  except docs/notes/battle_enemies.md (the extended verification table).
-- The enemy code is done as far as Redux can check it now. Next: when the world agent ports
-  spell modules 12 / 16 / 22 / 28 / 51 / 55 / 56 / 57, or the battle agent Shot kind 0x27 /
-  the voices, rerun `scratchpad/enemy/verify_all.sh m` (boss fights: `CMP_FROM=60 CMP_R=1`,
-  537 `CMP_R=2`, `CMP_DMAX=80`) and extend the table. Bark's kind 0x36 and Indalecio's
-  transformation still need a reference where the monster loses HP (poke its HP low in both
-  the Redux run and the port).
+- Helpers: none running. Emulators: none of mine except the disc-1 sweep of the spell-module
+  binary (`scratchpad/enemy/sweep_p2.txt`, 4 at a time; it predates the voice player).
+- On disk, not committed: the seven spell_mod_*.cpp, enemy_shots.cpp, bload.{h,cpp},
+  voice_player.{h,cpp}; hunks in spell_modules.{h,cpp}, CMakeLists.txt, shot.cpp,
+  bsfx.cpp, battle_program.cpp, enemy_ai.cpp, voice.cpp; enemy_support.{h,cpp} (stand-ins
+  gone, sound_handle_release, SS_ENEMY_TRACE=3); enemy_modules.h + enemy_mod_cyril.cpp
+  (enemy_cyril_aura); the bug fixes; original_bugs.md; catalog rows (functions +14, globals
+  +15, port columns).
+- Verified (ss_tests 78/0, ss_game_tests 74/0, smoke 21/21; every reference re-run): all
+  48 exact references stay exact; the spell modules as in the table above.
+- Next: the battle state 1 timing (party loader reads through the queue: owner to be
+  decided), then the catalog rows for bload / voice_player, then step 4.
+- Comparisons: `scratchpad/enemy/verify_all.sh [PATTERN]`; boss fights need `CMP_FROM=60
+  CMP_R=1 CMP_DMAX=80` (537: `CMP_R=2`); where the original slows to 3-vsync frames (Noah,
+  Spicule / Mind Blast, Wind of Destruction) only the unit samples can still match.

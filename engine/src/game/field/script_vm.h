@@ -160,6 +160,8 @@ void trigger_check_regions(ScriptCtx* ctx);                   // 0x80068810
 bool trigger_contains_leader(ScriptCtx* ctx, int slot);       // 0x8006ad40
 void worldmap_trigger_add(ScriptCtx* ctx, u32 op);            // overlay #3102 0x800829fc (ext 0x76 / 0x77)
 int field_try_talk(ScriptCtx* ctx, int talk);                 // 0x80069d8c
+// The tail of field_try_talk: starts actor 'found''s talk (talk != 0) or pickpocket entry.
+void field_start_talk(ScriptCtx* ctx, int found, int talk);
 void pa_draw_prompt(ScriptCtx* ctx);                          // 0x8006b630
 void choice_draw_cursor(ScriptCtx* ctx);                      // 0x8006afd8
 

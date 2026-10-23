@@ -9,7 +9,6 @@
 // strike. Her normal attack can add sparks and thrown weapons (status bits) and a
 // skill-46 knock-back.
 #include <cstring>
-#include <unordered_map>
 
 #include "game/battle/battle.h"
 #include "game/battle/bobj.h"
@@ -18,6 +17,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
 #include "game/battle/killer.h"
+#include "game/battle/pc_module_util.h"
 #include "game/battle/pc_modules.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
@@ -54,34 +54,8 @@ struct ElementBits {
   ~ElementBits() { wrs16(st + 0x5C, saved); }
 };
 
-// The console keeps a callback Shot's afterimage at its +0x130 and the ribbon trail of
-// move 2's blades at +0x134; the port keeps the afterimages here, keyed by the Shot (the
-// task clears the entry through its back pointer when it goes).
-std::unordered_map<const Shot*, Afterimage*> g_shot_images;
-
-Afterimage* shot_image(const Shot* s) {
-  auto it = g_shot_images.find(s);
-  return it == g_shot_images.end() ? nullptr : it->second;
-}
-void shot_image_set(const Shot* s, Afterimage* a) {
-  Afterimage*& slot = g_shot_images[s];
-  slot = a;
-  if (a != nullptr) a->back = &slot;
-}
-// A Shot spawned for one of these callbacks starts without an afterimage; one left from
-// the slot's previous use ends.
-void shot_image_reset(const Shot* s) {
-  auto it = g_shot_images.find(s);
-  if (it == g_shot_images.end()) return;
-  if (it->second != nullptr) {
-    it->second->back = nullptr;
-    it->second->ending = 1;
-  }
-  g_shot_images.erase(it);
-}
-void shot_image_end(const Shot* s) {
-  if (Afterimage* a = shot_image(s)) a->ending = 1;
-}
+// (The console keeps a callback Shot's afterimage at its +0x130 and the ribbon trail of
+// move 2's blades at +0x134; the port's afterimages are in pc_module_util's table.)
 void shot_trail_end(Shot* s) {
   if (s->trail != nullptr) s->trail->stop = 1;
 }

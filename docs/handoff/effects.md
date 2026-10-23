@@ -100,26 +100,77 @@ lines, `gpu_lines_match_hardware_dump`, CHECKLIST line). Verified after the cuto
 Precis #2155, Ashton #2147, Opera #2153, Chisato #2159, each in battle/pc_<name>.cpp,
 registered in pc_modules.cpp (flag the hunk to the coordinator).
 
-### Chisato (#2159): ported, verifying
+### Chisato (#2159): verified, reported (18:3x)
 
 - `engine/src/game/battle/pc_chisato.cpp` (new): ChisatoUnit (vtable 0x801f0904), 8 moves,
   6 Shot callbacks, the normal attack (slot 30), slots 4 / 6 / 33 / 35 / 36 / 39.
 - Small hunks in the battle agent's files (to flag): `pc_modules.cpp` (case 12),
   `unit.h` (`Unit::jump_time`, vtable slot 6, virtual), `unit_move.cpp` (its body:
   unit_jump_time), `party_states.cpp` (the leap calls `jump_time`), CMakeLists.
-- Verified against Redux (moves 0-3 at charge level 0): RNG draws equal at every sample
-  through the battle and the result screen (to the field's 1024 draws after the exit);
-  frames under 0.8% through the fights (b160-b900).
-- Running: Redux `chis_b5..b8` (moves 4-7, level 0); then all 8 at USES=999 (max level).
+- Verified against Redux, all 8 moves at charge level 0 (`chis_b1..b8`): RNG draws equal at
+  every sample through the battle and the result screen (to the field's 1024 draws after
+  the exit); frames under ~1% through the fights (one b780 frame of b7: 10% one-LSB pixels,
+  0.3% blocks, a flat brightness step).
+- Not the module: in every run (b1-b8) the result screen's last fade (about 180 frames
+  after state 4) differs up to 8-10% for ~7 samples; D 5 halves it, so the port's fade runs
+  about one 30 Hz frame early. Battle framework (result.cpp), to tell the coordinator.
+- Max level (`chis_m1..m8`, USES 999): RNG equal to the exit in all 8. m2 / m6 frames
+  differ in the afterimages: the battle agent's B2 fix; a scratch build with the faithful
+  order (`scratchpad/fx_worker/faithful/`, killer.cpp line 60 reverted) brings them to
+  <= 1.6%. m4 (move 3 level 2) is equal to b479, where the console runs a 3-vblank frame
+  (BW_DENSE: f 471 three times, then ticks 3; again at b488): the original's slowdown, not
+  modelled; the scene then runs a tick or two apart (RNG totals still meet).
 - Tools: `scratchpad/fx_worker/battle/redux/run_pc.sh NAME CHAR L1BYTE [R1] [USES]` (Redux,
-  scratch HOME) and `port_pc.sh NAME CHAR L1BYTE [USES]` (port on the same field_exit dump);
-  compare with `scratchpad/battle/rngcmp.py REFLOG PORTLOG` and
-  `FRAMECMP_D=7 scratchpad/battle/framecmp.py REFDIR PORTDIR/cap 160 1100 10`.
+  scratch HOME) and `port_pc.sh NAME CHAR L1BYTE [USES] [FRAMES]` (env `OUTNAME`, `CAPS`)
+  (port on the same field_exit dump); compare with `scratchpad/battle/rngcmp.py REFLOG
+  PORTLOG` and `FRAMECMP_D=7 scratchpad/battle/framecmp.py REFDIR PORTDIR/cap 160 1100 10`;
+  `pair.py REFDIR PORTDIR/cap OUT.png N..` (ref | port | diff x4).
 - Disassembly: `scratchpad/fx_worker/battle/char{06,07,09,12}.elf`; decompiles through the
   MCP REA session (batch_decompile, open_binary with the CLI snapshot
-  `battle/<name>/snapshot`); listings with `dump_asm.py` (one CLI process).
+  `battle/<name>/snapshot` right before each call: other agents switch the shared session);
+  listings with `dump_asm.py` (one CLI process).
 
-### Original bugs F1, F3, F5, F7, F8 (done, on disk, uncommitted): one commit point
+### Precis (#2155): ported, registered (case 6), level 0 verified; max level queued
+
+- `engine/src/game/battle/pc_precis.cpp` (new): PrecisUnit (vtable 0x801f1754, +0x360 the
+  arm), 10 moves (vtable slots 47-56 through the table 0x801f191c), 8 Shot callbacks, slots
+  31 (state 10: a projectile; 11: the base jump attack), 33, 35, 36, 37. MP table 0x8006b28b.
+- `engine/src/game/battle/pc_module_util.{h,cpp}` (new, mine): the per-Shot afterimage
+  table (moved out of pc_chisato.cpp), `pc_camera_frame_target_for` (0x8003aad8, not ported
+  before), `gte_origin_at`, `WeaponElementBits`. (draw_disc is the world agent's, spell_fx.)
+- Hunk in `pc_modules.cpp` (battle agent's, to flag): case 6 (and case 9 Opera).
+- Level 0, all 10 moves (`prec_b1..b10`): RNG equal at every sample to the exit. Frames:
+  b2 (move 1) differs in the afterimages (B2; the faithful scratch build matches); b4
+  (move 3) had the camera's mode-3 return missing: move 3 calls pc_camera_frame_target
+  (0x8003aa30), not _for (fixed; Redux breakpoints `prec_b4_cam` showed it); now only the
+  vortex's last faint fade differs (b518-530, up to 4%: faint additive gouraud, see the GPU
+  check below); b10 (move 9) the sphere is up to 2 steps redder (b960-980; same question).
+- Max level: Redux `prec_m1..m10` queued after Opera's (`redux/queue.sh`, 3 at a time).
+
+### Opera (#2153): ported, registered (case 9), smoke-run; Redux references running
+
+- `engine/src/game/battle/pc_opera.cpp` (new): OperaUnit (vtable 0x801f1e10), 10 moves
+  (pointer table 0x801f1f88), slots 31 / 35 / 36 / 37 / 45, 14 Shot callbacks including
+  #1984 block 1's shot_spiral_ring / shot_falling_rock / shot_vortex_area and
+  shot_draw_ring_bands (not ported before; only her moves use them). Move 0 starts
+  spellcast kind 2 (sets `s3c` and `orb_set` to her AnimSet).
+- Port smoke: all 10 moves run (`port/opsmoke_N`).
+- Redux `op_b1..b10` queued (level 0); compare with `port_pc.sh op_bN 9 N 0 1500`.
+- New bugs: F13 (burst's last shard velocity written to the burst: fix after the faithful
+  check), F14 (shard hit sprites' raw y jitter: decide).
+- Catalog: battle_pc2153 rows (33) and port columns for the four block-1 functions.
+
+### Low priority after the modules: GPU check (coordinator)
+
+Result-screen fade: the subtractive gouraud band (POLY_G4, abr 2, dithered, DR_MODE tpage
+0x40) drifts from b-7 to b-5 in the best-matching port frame from ~b1040; the whole scene
+~2.5% brighter in the port from b850 (ref ernest_58). Check against the hardware model:
+dither-then-blend order / Redux brightness. Document in gpu_accuracy.md (change nothing) if
+the port follows hardware; fix if the port is wrong. Suggested test: two G4 quads, white to
+a colour, DR_MODE tpage 0x40 over a scene. Precis b4 (faint additive vortex) and b10
+(sphere) differences may be the same thing.
+
+### Original bugs F1, F3, F5, F7, F8 (done, reported with Chisato); F11 avoided, F12 decide (new)
 
 - F1 `field/effects_draw.cpp` (the line and burst depth: `otz_for_depth`), F3 / F7
   `field/effects.cpp` (glow replaced; clamp), F5 `field/field_movie.cpp` (per-row clipped
@@ -128,15 +179,19 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
   F8b, 95 dup46 calls accepted as subsets for F8d; the list-4 triangle test expects the
   corrected UVs), `test_field_effects.cpp` (the SS_FX_REF dump tests find lines / burst quads
   in any slot, F1). ss_game_tests 74/0 with the disc; with SS_FX_REF all dump tests pass.
-- F4 (lit sphere): recommendation "intended" (only caller passes hemi 1, the other path is
-  dead). Docs: original_bugs.md rows, field_effects.md, field_overlay_c1d.md.
+- F4 (lit sphere): the user agreed it is intended: "keep" (3232b65). Leave the code.
 
-Next: finish Chisato (b5-b8, max-level runs), report Chisato + the bug commit point; then
-Precis (char06), Opera (char09), Ashton (char07).
+Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
+without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
+
+Next: compare Opera (op_b1..b10) as they finish, then Precis / Opera max level; report
+Precis, then Opera (run the three suites first); then Ashton (char07: vtable 0x801f1e4c,
+object 0x388, killer table 0x801f1fd0 of 10 direct pointers; slots 4, 6, 33, 35, 36, 37,
+46); then the GPU check. Redux cap: 3 instances at a time (`redux/queue.sh`), builds -j8.
 
 ## Uncommitted files
 
-- `docs/notes/gpu_accuracy.md` (Lines section), this log.
+- Everything so far is in the WIP checkpoints (96aa11d); this log.
 
 ## Phase 4 step 2 files (committed in 155be10)
 

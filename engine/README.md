@@ -17,7 +17,7 @@ or data: everything is read at runtime from your own disc images.
 | GTE + libgte | done, bit-exact with PCSX-Redux / Sony's PsyQ 4.2 code |
 | MDEC + STR movies | decoder and player done, exact against jPSXdec's PS1 mode |
 | SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (music and effects match PCSX-Redux); memory cards (raw 128 KB images) |
-| Game code | boot, title (logos, movies, menu, New Game, Continue); field maps (event scripts, messages, actors, doors, chests, encounters, effects); world map; camp menu (first page, save / load); battles (combat, HUD). Result screen, shops, most menu pages and vehicles are in progress — see `docs/CHECKLIST.md` |
+| Game code | boot, title (logos, movies, menu, New Game, Continue, Voice Collection); field maps (event scripts, messages, actors, doors, chests, shops, encounters, effects, embedded map code, the credits and the end screen); world map (vehicles, bunny, courier, map); every camp menu page, item creation, save / load (byte-compatible with real memory cards); battles (combat, HUD, result screen, every enemy class, Claude, Rena, Celine, Leon, Noel, Ernest, Bowman, Chisato, battle items). Spells, the other character modules and party AI are in progress — see `docs/CHECKLIST.md` |
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
@@ -32,6 +32,21 @@ if your system has the PipeWire, PulseAudio or ALSA development headers.
 cmake -S engine -B engine/build -G Ninja
 cmake --build engine/build
 ```
+
+### Windows
+
+The Windows build is cross-compiled from Linux with MinGW-w64 (on Fedora:
+`sudo dnf install mingw64-gcc-c++ mingw64-SDL3`):
+
+```sh
+tools/build_windows.sh   # -> dist/ShatteredStars-win64.zip: shattered-stars.exe, SDL3.dll, this README
+```
+
+The C / C++ runtimes are linked in, so the zip holds everything the game needs; unpack it
+anywhere and run `shattered-stars.exe --disc1 "C:\path\to\Disc 1.cue"` once. On Windows
+the settings, the memory cards and `mods/` live in `%APPDATA%\ShatteredStars\`. The
+Windows build renders the same frames as the Linux one (checked byte for byte), and its test
+suites pass under Wine (`engine/build-win/ss_tests.exe`, `ss_game_tests.exe`).
 
 ## Run
 

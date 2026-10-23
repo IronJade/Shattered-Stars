@@ -384,7 +384,7 @@ void wind_of_destruction(SpellCast* sc) {
       sc->s24 += g.frame_ticks;
       if (0x3C < sc->s24 && sc->s3c == 0) {
         sc->s3c = 1;
-        voice_play_entry(static_cast<int>(rng_range(4)) + 0x4DA, nullptr);  // (entry, 0, -1)
+        voice_play_entry(static_cast<int>(rng_range(4)) + 0x4DA, nullptr, -1);
       }
       if (sc->s24 < 0x79) return;
       ++sc->step;
@@ -429,7 +429,7 @@ void wind_of_destruction(SpellCast* sc) {
       sc->s24 = 0;
       ++sc->step;
       c->anim = 6;
-      voice_play_entry(static_cast<int>(rng_range(4)) + 0x4DF, nullptr);  // (entry, 0, -1)
+      voice_play_entry(static_cast<int>(rng_range(4)) + 0x4DF, nullptr, -1);
       u32 h = bsfx_play_ui(0x2D);
       sound_handle_fade_out(h, 0x78, 0x3C);
       h = bsfx_play_ui(0x2D);

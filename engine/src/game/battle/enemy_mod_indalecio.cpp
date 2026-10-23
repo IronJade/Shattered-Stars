@@ -164,7 +164,7 @@ struct EnemyIndalecio : EnemyUnit {
       counters[3] = 0;
       battle_message_show(0x42D);
       const int voice = transformed != 0 ? static_cast<int>(rng_range(3)) + 0x518 : static_cast<int>(rng_range(3)) + 0x4EF;
-      voice_play_entry(voice, this);  // (third argument -1)
+      voice_play_entry(voice, this, -1);
       action_kind = 2;
       begin_action();
       return;
@@ -414,14 +414,14 @@ struct EnemyIndalecio : EnemyUnit {
     if (counters[3] == 0 && 0x3C < counters[1]) {
       counters[3] = 1;
       const int voice = transformed != 0 ? static_cast<int>(rng_range(2)) + 0x523 : static_cast<int>(rng_range(2)) + 0x4FA;
-      voice_play_entry(voice, this);  // (third argument 0)
+      voice_play_entry(voice, this, 0);
     }
     if (0x208 < counters[1] && counters[2] == 0) {
       counters[2] = 1;
       screen_fade_create(0, 0x20, -4, 0x14);
     }
     if (counters[1] <= 600) return;
-    voice_play_entry(transformed != 0 ? 0x525 : 0x4FC, this);  // (third argument 0)
+    voice_play_entry(transformed != 0 ? 0x525 : 0x4FC, this, 0);
     counters[0] = 0;
     bsfx_play_at(0x50, this);
     sound_handle_fade_out(bsfx_play_at(0x2D, this), 0x3C, 0x14);
@@ -560,7 +560,7 @@ void transform_run(SpellCast* sc) {
         const Vec4 from = centre_of(u);
         particle_spawn_homing_line(from.data(), d.data(), 0x800000, 0xFFFF00, 0x140, 0x14000, -0x100);
       }
-      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4F8, u);  // (third argument -1)
+      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4F8, u, -1);
       camera_move_to(g.camera, u->pos, 0xA38, 0xE3, 0xC00, 0, 0x80, 5);
       const s32 ground[3] = {u->pos[0], bobj_ground_height(u), u->pos[2]};
       camera_move_to(g.camera, ground, 0xC00, 0x71, 0x800, 0x294, 0x80, 5);
@@ -712,7 +712,7 @@ void transform_run(SpellCast* sc) {
         }
       }
       sound_play_sequence(g.sound, g.battle_music.data());
-      voice_play_entry(static_cast<int>(rng_range(2)) + 0x515, u);  // (third argument -1)
+      voice_play_entry(static_cast<int>(rng_range(2)) + 0x515, u, -1);
       const u32 h = bsfx_play_at(0x44, u);
       sound_handle_fade_out(h, 0x3C, 0x78);
       sound_handle_pitch_down(h, 0x78);
@@ -906,5 +906,11 @@ void shot_burst(Shot* s) {
 void spellcast_kind3b_transform(SpellCast* sc) { transform_run(sc); }
 
 std::unique_ptr<EnemyUnit> enemy_mod_indalecio_create() { return std::make_unique<EnemyIndalecio>(); }
+
+// (World agent) Divine Comedy's module (spell 0x46) reads the second-form flag +0x2f8.
+bool enemy_indalecio_transformed(const Unit* u) {
+  const auto* e = dynamic_cast<const EnemyIndalecio*>(u);
+  return e != nullptr && e->transformed != 0;
+}
 
 }  // namespace ss::game::battle

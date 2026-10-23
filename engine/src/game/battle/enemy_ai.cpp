@@ -65,9 +65,8 @@ void enemy_think(EnemyUnit* e) {
   if (e->intro_voice != 0 && g.state != kStateLoading) {
     g.intro_voice_gate = 8;
     --g.special_voice_set;
-    rng_range(e->voice_variants);
-    // TODO(port): voice_play_entry 0x8007f818 (voice clips); no handle, so it never waits.
-    e->voice_handle = 0;
+    const int variant = static_cast<int>(rng_range(e->voice_variants));
+    e->voice_handle = static_cast<s32>(voice_play_entry(e->intro_voice + variant, nullptr, 0));
     e->intro_voice = 0;
   }
   if (e->st()->id == 0x94 && e->animset != nullptr) e->animset->layout = e->model_layout + 0x44;
@@ -79,7 +78,7 @@ void enemy_think(EnemyUnit* e) {
   }
   if (e->voice_handle != 0) {
     e->special_timer = 8;
-    e->voice_handle = 0;  // voice_is_playing: no clips play yet
+    if (!sound_handle_active(static_cast<u32>(e->voice_handle))) e->voice_handle = 0;
     e->anim = 0;
     e->animate(0);
     return;

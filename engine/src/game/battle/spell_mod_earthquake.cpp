@@ -54,10 +54,9 @@ struct QuakeState {
 };
 std::unordered_map<const SpellCast*, QuakeState> g_state;
 
-// (port) Stand-in for g_stage_height_fn 0x8006fe04, which unit_draw_model adds to grounded
-// units; the port has no such hook yet (unit.cpp's TODO). g_wave_cast is the cast whose
-// waves it reads (the module copy the console's pointer leads to).
-s32 (*g_stage_height_fn)(s32 x, s32 y, s32 z) = nullptr;
+// g_stage_height_fn 0x8006fe04 (spell_fx.h) is set to ground_wave while the waves run;
+// g_wave_cast is the cast whose waves it reads (the module copy the console's pointer leads
+// to).
 const SpellCast* g_wave_cast = nullptr;
 
 // The parent matrix obj_set_matrix_parent keeps for obj_set_matrix_child (0x80081130).

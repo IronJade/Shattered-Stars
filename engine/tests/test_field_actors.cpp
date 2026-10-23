@@ -742,7 +742,7 @@ TEST(field_actor_light_split_matches_redux) {
           ok = true;
         }
       }
-      if (!ok && ++bad <= 5) std::fprintf(stderr, "  %s: mismatch: %s\n", file.path().filename().c_str(), line.c_str());
+      if (!ok && ++bad <= 5) std::fprintf(stderr, "  %s: mismatch: %s\n", file.path().filename().string().c_str(), line.c_str());
     }
   }
   std::printf("  %d calls, %d pieces compared, %d with fewer pieces (F8d), %d mismatches\n", calls, pieces, fewer, bad);

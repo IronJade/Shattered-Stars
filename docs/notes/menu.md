@@ -651,9 +651,12 @@ moved to the middle of the screen:
 - It blends them over 300 frames (model_blend): material 1 to the result and back, then
   the other result to the result and back.
 
-Verified against PCSX-Redux runs of every specialty and super specialty except Cooking's
-query path: config, inventory, party, records, game_state and the generator state after
-the run match.
+Verified against PCSX-Redux runs of every specialty and super specialty: config,
+inventory, party, records, game_state and the generator state after the run match.
+Cooking's query path was run without the contest's script (`SS_POKE` / `SS_MENU_POKE`:
+script flag 0x14, field variable +0x3c = Claude, PRESS +0x38 = 32). The query page
+opens on Cooking for him, and PRESS (32 -> 27), the data and the generator match. The
+TIME / PRESS gauge's frames match.
 - The port runs start from the original's generator state (`SS_MENU_RNG`) and dump with
   the menu open (`SS_MENU_DUMP_FRAME`).
 - The morph data matches byte for byte.
@@ -678,6 +681,45 @@ page leaves the menu's frame loop and shows the picture in its own loop (picture
 Verified against PCSX-Redux: scrolling, the jumps and closing match frame for frame
 once the strips are in. The port reads the strips at once, so they fade in sooner. Data
 unchanged.
+
+## Page 0xe: renaming (overlay 0xbce)
+
+Cross on the Status page opens it for the character shown. It is the title's New Game
+name entry again: the overlay carries its own copy of the keyboard and name-box windows
+and of the text renderer, with data from the page pack (entry 0xbcf: strings, font, a TIM
+whose CLUT is the text palettes, and the 4-bit art).
+- The page loads the character's picture (entry 0xbd3 + character, 15-bit, 192-232 x 240)
+  first. It then leaves the menu's frame loop for its own (rename_screen) on a 320 x 240
+  double buffer at y 0 / 0xf0, and fades in from black by subtracting a full-screen tile.
+- Layout: the "Naming" heading sprites, the picture on the left, a cyan-to-black gradient
+  behind, the name box at (0xa0, 0x30) and the keyboard at (0x50, 0x6e).
+- The name box starts from the stored name, parsed into seven slots ('@' toggles kana; a
+  voiced mark joins the character before it).
+- Keyboard: a top row of Capital / Lower / OK / Delete / Return, then five rows of ten keys
+  in two sets (digits, letters, punctuation). The hand slides between keys over 3 frames.
+- Controls:
+  - Cross presses the key under the hand; a full name sends the hand to the top row.
+  - Circle deletes.
+  - L1 / R1 (buttons 4-7) switch the set.
+  - Select puts the stored name back.
+  - Start or OK commits the name; an empty name is refused (sfx 7).
+  - Return puts the stored name back and leaves.
+- Committing writes the name to record +0x24 and game_state +0x28 + (character - 1) *
+  0x14. For the first two characters it also sets config +0x42 / +0x43, the renamed
+  flags that pick battle voices without their names.
+- Four VRAM areas are saved before and put back after, along with the menu's screen setup.
+- Original bugs (docs/notes/original_bugs.md):
+  - M1 (fixed): the original compares Claude's name with "Crawd".
+  - M2 (fixed): a full name sends the hand to Delete rather than OK.
+  - M3 (kept, harmless): the VRAM it saves is not all the VRAM it overwrites.
+
+Verified against PCSX-Redux before the fixes. Two runs: one typing (backspace, digits,
+both sets, a full name and Delete, Select, Start), and one keeping "Claude".
+- The data (config with +0x42, records, game_state) matches.
+- Frames: 4x4 block means match, apart from the cursor glow and colour-cycle phase (the
+  screen opens at a different frame). Pixel by pixel, the subtractive keyboard frame
+  differs by the known order of dithering and blending (docs/notes/gpu_accuracy.md).
+- The Status page afterwards matches.
 
 ## The item viewer (entry 3001 at 0x80088000)
 
@@ -785,20 +827,25 @@ by design).
   known GPU item in docs/CHECKLIST.md.
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
-- The field's pages other than 1-0xb, 0xf-0x11 and 0x13 are not ported: the page loader logs them and
+- The field's pages other than 1-0xb, 0xe-0x11 and 0x13 are not ported: the page loader logs them and
   goes back to the page below (the camp page reopens; a shop or member menu closes).
   Field results 4 (warp) and 5 (bunny call) go to `field_world_menu_result`
-  (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594),
-  but it is drawn only on page 0xf.
+  (field_world.cpp). The query page's TIME / PRESS gauge is ported (field 0x80034594)
+  and drawn only on page 0xf.
 - `SS_SAVE_ANYWHERE=1` sets option a bit 0 (saving allowed) for testing the camp menu's
   Save. For comparisons, `SS_MENU_DUMP=prefix` writes the config, inventory, party,
-  records and game_state blocks after each field menu (`prefix_config.bin` and so on).
+  records, game_state and field_flags blocks after each field menu (`prefix_config.bin`
+  and so on).
   `SS_MENU_DUMP_DELAY=n` writes them n field frames later instead, after the equipment
   rescan. `SS_MENU_DUMP_FRAME=n` writes them at the menu's frame n, with the menu still
   open. `SS_MENU_DUMP_OPEN=prefix` writes them as a menu opens. Each dump has a
   `_rng.bin` with the random generator as the original keeps it (index at 0x8002b464, then
   the table). `SS_MENU_RNG=file` loads such a state as a menu opens, since the field before
   the menu draws differently from PCSX-Redux.
+- `SS_MENU_POKE="flag=N,var=OFF:VALUE,clock=N"` sets script flags, field variables
+  (field_flags + OFF) and the query gauge's clock when the menu button is pressed. Flag
+  0x14 with var 0x3c set to a character opens that member's query page (Cooking) without
+  the contest's script. itemsref.lua's `SS_POKE` does the same in PCSX-Redux.
 - The original stalls a few vblanks while unpacking the item data or rendering text; the
   port does not, so fades and loads run a few frames earlier.
 - Background loads with a sector offset read straight from the archive entry

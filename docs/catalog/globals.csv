@@ -17,6 +17,8 @@ battle,0x8006b1d0,spells_leon,u8[19],Leon class spell list,confirmed,levelup_lea
 battle,0x8006b1e4,spells_celine,u8[21],Celine class spell list,confirmed,levelup_learn_skills
 battle,0x8006b1fc,spells_noel,u8[21],Noel class spell list,confirmed,levelup_learn_skills
 battle,0x8006b220,g_km_params_claude,s16[][2],Killer-move s16 pair per move (1-based) copied to unit+0x2de/+0x2e0 (likely the move's distance window); other characters: Bowman 0x8006b258 Dias 0x8006d4b8 Precis 0x8006b298 Ashton 0x8006b2cc Opera 0x8006b300 Ernest 0x8006b330 Chisato 0x8006b358,likely,pc_setup_killer_moves 0x80084874 / pc_killer_move_table 0x800849c0
+battle,0x8006b28b,g_killer_mp_precis,u8[],Precis's killer-move MP costs by move byte (1-based; read by her module's cost functions through unit_mp_cost),confirmed,#2155 0x801ee0fc / 0x801ee194
+battle,0x8006b34f,g_killer_mp_chisato,u8[],Chisato's killer-move MP costs by move byte (1-based; unit_mp_cost),confirmed,#2159 0x801ee1ac / 0x801ee244; Redux (MP 200 -> 195 after move 1)
 battle,0x8006b377,item_target_class,u8[],Item effect class -> menu action (0/1/5 member select 3/4/5; 2 enemy target; 3/4 immediate),likely,item_menu_confirm
 battle,0x8006b3dc,camera_set_mode_jt,u32[17],Jump table of camera_set_mode (mode-1 -> setup),confirmed,camera_set_mode
 battle,0x8006b424,camera_update_jt,u32[17],Jump table of camera_update (mode-1 -> updater),confirmed,camera_update
@@ -109,8 +111,8 @@ battle,0x8006e8c8,g_fixed_buf_801ee000,u8 *,0x10000-byte buffer forced to addres
 battle,0x8006e8cc,g_vsync_counter,VsyncCounter *,"12-byte vblank counter object (vtable 0x8006cd50, pad vblank handler); +8 = vblanks since last frame",confirmed,battle_init_objects 0x80074168 + battle_main_loop
 battle,0x8006e8d4,b_config,Config *,"Handoff 2 (config / counters block, 0x2a0 bytes). +0x41 controlled party slot, +0x4e (voice/sfx option), +0x178 battle outcome written at exit, +0x17e, +0x180 (no-music flag), +0x181 battle rule (2 escape race, 3 timed)",likely,"battle_run, battle_init_state, battle_main_loop, battle_exit_to_field"
 battle,0x8006e8d8,b_inventory,Inventory *,"Handoff 6 (inventory, 0xc28 bytes); +0x820 receives a pointer to a battle buffer (0x8006faf8)",likely,battle_run + battle_main_loop
-battle,0x8006e8dc,g_tasks,Task *[64],"Battle task list objects (vtable+8 = per-frame update), run by priority 0..4 in battle_main_loop",likely,battle_main_loop + task_register 0x80046f70
-battle,0x8006eddc,g_task_prio,u8 [64],Priority of each task list entry,likely,battle_main_loop
+battle,0x8006e8dc,g_tasks,Task *[320],"Battle task list objects (vtable+8 = per-frame update), run by priority 0..4 in battle_main_loop; 320 entries (to 0x8006eddc), task_register 0x80046f70 has no bound (a model shatter registers up to 192 shards)",confirmed,battle_main_loop + task_register 0x80046f70
+battle,0x8006eddc,g_task_prio,u8 [320],Priority of each task list entry,confirmed,battle_main_loop
 battle,0x8006ef1c,g_task_count,u16,Number of task list entries,likely,battle_main_loop
 battle,0x8006ef20,g_ot_layers,OtLayer *[8],"Eight OT layer objects (+8 screen OT slot, +0xc OT head after screen_clear_ot); drawn from 7 down to 0 each frame",likely,battle_main_loop
 battle,0x8006ef40,g_stage_tex_count,u16,Number of op-1 stage textures (index into g_stage_tex_clut),confirmed,load_stage
@@ -318,7 +320,7 @@ battle,0x8006ffcc,g_hit_scatter_tables,s16[4] + s16[4] + s16[3][2],Hit-sprite pl
 battle,0x8006ffe8,g_particle_kind_table,PMF[5],Particle (Pool48) handlers as g++ pointer-to-member entries {s16 delta 0; s16 index -1 (non-virtual); fn}: 1 0x8005e618 homing line 2 0x8005e7d8 spark line 3 0x8005e8f0 ring 4 0x8005ee08 shard 5 0x8005f128 confetti,confirmed,particle_update 0x8005e1b0 + table read
 battle,0x80070010,g_shard_cursor,int,Round-robin allocation cursor over the 192 PolyShards (wraps at 0xbe),confirmed,shard_alloc 0x800600a0
 battle,0x80070014,g_shatter_flags,u16,Flags given to new PolyShards (+0xc): 1 gravity + upward kick 2 run in the 0x40 pause 4 semi-transparent,confirmed,model_shatter 0x8005f30c + shard_update
-battle,0x80070016,g_shatter_abr,u16,Semi-transparency tpage bits ORed into textured shards' tpage and used as the DR_MODE tpage of untextured ones (+0xb),likely,model_shatter + shard_alloc
+battle,0x80070016,g_shatter_abr,u16,Semi-transparency tpage bits ORed into textured shards' tpage and used as the DR_MODE tpage of untextured ones (+0xb),confirmed,model_shatter + shard_alloc
 battle,0x80070018,g_shatter_fade,s16,Colour fade per frame of new shards (+0xe) = speed/4 (min 2),confirmed,model_shatter
 battle,0x8007001c,g_shatter_ot_bias,int,OT depth bias of new shards (+0xa),confirmed,model_shatter + shard_update
 battle,0x8007002f,g_spell_effect_kind,u8 [0x48],SpellEffect kind passed to spell_effect_create (0x80085560) for the spells spell_cast does not handle itself; 0 = none,confirmed,spell_cast
@@ -896,3 +898,30 @@ menu_0bc0,0x80083f98,k_alchemy_divisors,u8[],"Alchemy: by item index, the chance
 menu_0bc0,0x80083fa8,k_survival_tables,u8[] / s16[],"Survival: weights by place (0x80083fa8), divisors (0x80084000), lists with scales (0x8008400c / 0x8008403c, 0x80084098 / 0x800840c4)",confirmed,survival_compute
 menu_0bc0,0x80084124,k_machinery_tables,s16[] / u8[],Machinery: items and divisors (0x80084124 / 0x8008414c; character 9 0x80084160 / 0x80084170; character 6 0x80084178 / 0x80084188),confirmed,machinery_compute
 menu_0bc0,0x80084190,g_creation_viewer,CreationViewer *,The creation page's viewer,confirmed,"creation_page_frame, creation_anim_*"
+battle_spell_deep_freeze,0x8008dbe4,spell_deep_freeze_steps,void *[7],Jump table of spell_deep_freeze_update's steps 0-6 (the last 28 bytes of the block),confirmed,asm of module 6673c9f485
+battle_spell_noah,0x8008d544,spell_noah_row_heights,s16[13],The wall's height at each of its 13 row edges (minus 100 and added to the column lift),confirmed,decompilation + asm of module 6563c70f92
+battle_spell_noah,0x8008d560,spell_noah_column_lift,s16[6],Added to the wall's height at each of its 6 column edges,confirmed,decompilation + asm of module 6563c70f92
+battle_spell_star_flare,0x8008d738,spell_star_flare_steps,void *[9],Jump table of spell_star_flare_update's steps 0-8 (the last 36 bytes of the block): 0x8008cf98 0x8008d054 0x8008d0ec 0x8008d288 0x8008d2e4 0x8008d3cc 0x8008d3f8 0x8008d41c 0x8008d440 (labels inside 0x8008cc00),confirmed,asm of module cbdc2116f3
+battle_spell_daemons_gate,0x8008d968,spell_daemons_gate_steps,void *[9],Jump table of spell_daemons_gate_update's steps 0-8: 0x8008cef4 0x8008cfe8 0x8008d008 0x8008d038 0x8008d0f4 0x8008d17c 0x8008d1dc 0x8008d22c 0x8008d248 (labels inside 0x8008cc00; a zero pad word follows at 0x8008d98c),confirmed,asm of module a6a642e880
+battle_spell_daemons_gate,0x8008d990,spell_daemons_gate_daemon_states,void *[5],Jump table of spell_daemons_gate_daemon's states 0-4: 0x8008d314 0x8008d39c 0x8008d49c 0x8008d7e0 0x8008d874 (labels inside 0x8008d27c),confirmed,asm of module a6a642e880
+battle_spell_daemons_gate,0x8008d9a4,spell_daemons_gate_daemon_gone,u8,"The daemon is gone (set by the callback when it dies, cleared by step 0; step 4 waits for it). The block's last byte (initially 0); each slot's copy of the block has its own",confirmed,asm of module a6a642e880
+battle_spell_mind_blast,0x8008d740,spell_mind_blast_steps,void *[7],Jump table of spell_mind_blast_update's steps 0-6 (the last 28 bytes of the block): 0x8008d028 0x8008d08c 0x8008d220 0x8008d3d4 0x8008d4e8 0x8008d524 0x8008d540 (labels inside 0x8008cc00; step 1 falls into step 2),confirmed,asm of module c5209066cb
+battle_spell_spicule,0x8008dfe8,spell_spicule_steps,void *[10],Jump table of spell_spicule_update's steps 0-9 (the last 40 bytes of the block): 0x8008d540 0x8008d5a4 0x8008d5e4 0x8008d6a8 0x8008d8d0 0x8008d9d0 0x8008dd90 0x8008ddf0 0x8008de64 0x8008de80 (labels inside 0x8008cc00),confirmed,asm of module c325548547
+battle_spell_wind_of_destruction,0x8008ea14,spell_wind_of_destruction_steps,void *[10],Jump table of spell_wind_of_destruction_update's steps 0-9,confirmed,asm of module 155b3550d0
+battle_spell_wind_of_destruction,0x8008ea3c,spell_wind_of_destruction_ring_y,s16[3],"Step 5's spark rings: height (units, << 12) of each ring at the field's centre: -400, -700, -100",confirmed,asm of module 155b3550d0
+battle_spell_wind_of_destruction,0x8008ea44,spell_wind_of_destruction_ring_width,s16[3],"Step 5's spark rings: quad width (effect_spawn_sparks_at p118, Shot +0x118): 600, 600, 400",confirmed,asm of module 155b3550d0
+battle_spell_wind_of_destruction,0x8008ea4c,spell_wind_of_destruction_ring_radius,s16[3],"Step 5's spark rings: radius (p138, Shot +0x138): 800, 960, 480",confirmed,asm of module 155b3550d0
+battle_spell_wind_of_destruction,0x8008ea54,spell_wind_of_destruction_ring_growth,u8[3],"Step 5's spark rings: growth a tick (p130, Shot +0x130): 68, 64, 24",confirmed,asm of module 155b3550d0
+battle_spell_wind_of_destruction,0x8008ea58,spell_wind_of_destruction_ring_clut,u8[3],"Step 5's spark rings: CLUT offset (p12c, Shot +0x12c): 11, 11, 4",confirmed,asm of module 155b3550d0
+menu_0bce,0x800822fc,k_rename_picture_widths,u8[12],By character - 1: the width of its picture (entry 0xbd3 + character),confirmed,rename_screen
+menu_0bce,0x800824c4,k_rename_underline_colours,u32[5],Underline colours by palette,confirmed,rename_text_draw
+menu_0bce,0x800824d8,k_rename_keyboard_rows,s32[2],"Rows of each character set (5, 5)",confirmed,"rename_keyboard_move, rename_keyboard_draw, rename_screen"
+menu_0bce,0x800824e0,k_rename_keys_capital,char[50][6],"The capitals set: digits, A-Z, punctuation",confirmed,"rename_keyboard_draw, rename_keyboard_confirm"
+menu_0bce,0x8008260c,k_rename_keys_lower,char[50][6],The lower-case set,confirmed,"rename_keyboard_draw, rename_keyboard_confirm"
+menu_0bce,0x80082b70,k_rename_column_map,s32[10],"Character column to top-row column (0,0,1,1,2,2,3,3,4,4)",confirmed,rename_keyboard_move
+menu_0bce,0x80082b78,k_rename_ascii_glyphs,u8[256],ASCII to glyph index (overlaps the column map below 0x20),confirmed,rename_text_from_ascii
+menu_0bce,0x80082c58,g_rename_text_x,s16,Next free texel column of the text line buffer,confirmed,"rename_text_draw, rename_text_frame_begin"
+menu_0bce,0x80082c5a,g_rename_text_line,s16,First texel row of the current text line,confirmed,"rename_text_draw, rename_text_frame_upload"
+menu_0bce,0x80082c5c,g_rename_strings,u8 *,"Page pack block 0: {u16 id, u16 offset} pairs (100-111 family names, 0x78-0x7c the keyboard labels)",confirmed,"rename_screen, rename_text_find"
+menu_0bce,0x80082c60,g_rename_font,u8 *,"Page pack block 1: the 1-bit font (100 glyphs, 12 rows)",confirmed,"rename_screen, rename_text_draw"
+menu_0bce,0x80082c64,g_rename_text_pixels,u8 *,"The 4-bit line buffer (0x6c00 bytes), uploaded to VRAM (0x140, 0x28)",confirmed,"rename_text_draw, rename_text_frame_upload"

@@ -6,7 +6,11 @@
 
 #include "game/battle/items.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include "game/battle/battle.h"
 #include "game/battle/bsfx.h"
@@ -91,18 +95,6 @@ void item_spawn_heal(s32 hp_pct, s32 mp_pct, u32 flags) {
     s->target = g_item_target;
   }
   voice_thank_healer(g_item_user, g_item_target);
-}
-
-// 0x80084d48: a rising sparkle (set A anim 0x3a, 16 loops) above u's head.
-void item_fx_sparkle(const Unit* u) {
-  Sprite* sp = sprite_spawn_a(0x3A, 0x10, nullptr);
-  if (sp == nullptr) return;
-  sprite_set_pos(sp, u->pos[0], u->pos[1] + u->size[1] * -0x3000, u->pos[2]);
-  sp->vel[1] = static_cast<s32>(0xFFFFB000);
-  sp->accel[1] = 0x200;
-  sp->layer = 2;
-  sp->freeze_class = 2;
-  sp->keep_screen = 1;
 }
 
 // 0x80084a24: n debris bursts (CLUT clut) at the target's chest, n - 1 spark rings (kind
@@ -246,6 +238,18 @@ void set_vel(Shot* s, const Vec4& v) {
 }
 
 }  // namespace
+
+// 0x80084d48: a rising sparkle (set A anim 0x3a, 16 loops) above u's head.
+void item_fx_sparkle(const Unit* u) {
+  Sprite* sp = sprite_spawn_a(0x3A, 0x10, nullptr);
+  if (sp == nullptr) return;
+  sprite_set_pos(sp, u->pos[0], u->pos[1] + u->size[1] * -0x3000, u->pos[2]);
+  sp->vel[1] = static_cast<s32>(0xFFFFB000);
+  sp->accel[1] = 0x200;
+  sp->layer = 2;
+  sp->freeze_class = 2;
+  sp->keep_screen = 1;
+}
 
 // ---- item_use_battle ----
 
@@ -1077,6 +1081,46 @@ void shot_k30_bomb(Shot* s) {
       effect_spawn_sparks_at(at, 10, 0x30, 0x90, 0xC, 0x50, s->aux, 1, 0x20, 0);
       shot_kill(s);
     }
+  }
+}
+
+// ---- Debugging ----
+
+void debug_forced_items() {
+  struct Use {
+    s32 frames;
+    int slot, index, target;
+    char side;
+    bool done;
+  };
+  static std::vector<Use> uses;
+  static bool parsed = false;
+  BattleGlobals& g = bg();
+  if (!parsed) {
+    parsed = true;
+    if (const char* env = std::getenv("SS_BATTLE_ITEM")) {
+      std::string list(env);
+      size_t at = 0;
+      while (at < list.size()) {
+        size_t stop = list.find(';', at);
+        if (stop == std::string::npos) stop = list.size();
+        Use c{};
+        if (std::sscanf(list.substr(at, stop - at).c_str(), "%d:%d:%i:%c%d", &c.frames, &c.slot, &c.index, &c.side,
+                        &c.target) == 5)
+          uses.push_back(c);
+        at = stop + 1;
+      }
+    }
+  }
+  for (Use& c : uses) {
+    if (c.done || g.battle_frames < c.frames) continue;
+    c.done = true;
+    Unit* t = nullptr;
+    if (c.side == 'p') t = g.party_units[static_cast<size_t>(c.target & 3)];
+    if (c.side == 'e') t = g.enemy_units[static_cast<size_t>(c.target & 7)];
+    std::fprintf(stderr, "[item] forced item %d by p%d at %c%d, battle frames %d\n", c.index, c.slot, c.side, c.target,
+                 g.battle_frames);
+    item_use_battle(g.party_units[static_cast<size_t>(c.slot & 3)], t, c.index);
   }
 }
 

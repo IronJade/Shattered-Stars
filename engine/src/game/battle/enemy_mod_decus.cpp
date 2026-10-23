@@ -62,7 +62,7 @@ struct EnemyDecus : EnemyUnit {
       counters[2] = 0;
       counters[3] = 0;
       battle_message_show(0x42B);
-      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4D0, this);  // (tag -1)
+      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4D0, this, -1);
       action_kind = 3;
       begin_action();
       return;
@@ -189,7 +189,7 @@ struct EnemyDecus : EnemyUnit {
       effect_spawn_sparks_at(c.data(), 0x14, 0x60, 0, 0x60, 0x3C, 5, 3, 0x40, 1);
       const s32 feet[3] = {pos[0], bobj_ground_height(this), pos[2]};
       effect_spawn_sparks_at(feet, 0x14, 0x100, 0x40, 0x10, 0x5A, 5, 0, 0x40, 1);
-      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4C5, this);  // (tag 0)
+      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4C5, this, 0);
       bsfx_play_at(0x21, this);
       bsfx_play_at(0x22, this);
     }

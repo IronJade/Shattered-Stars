@@ -4,8 +4,7 @@
 // and dropped: it bounces where it lands (a ring, dust, a puff) and all of them are hit at
 // once (element 0x20). Functions 0x8008cc00 (the handler; its step jump table at
 // 0x8008df6c) and 0x8008dce4 (the landing ring, a kind-0x21 callback); the lifted units'
-// list at 0x8008df8c-0x8008dff4. Resident 0x8007cc5c draw_disc (#1984.0) is not in the
-// port's shared code and is ported here (as spell_mod_eruption.cpp ports it).
+// list at 0x8008df8c-0x8008dff4. Resident 0x8007cc5c draw_disc (#1984.0): spell_fx.h.
 
 #include <cstring>
 
@@ -49,66 +48,6 @@ Lifted g_lift;
 
 const s32 kUnitScale[3] = {0x1000, 0x1000, 0x1000};  // 0x8006e34c
 
-s32 mul_lo(s32 a, s32 b) { return static_cast<s32>(static_cast<u32>(a) * static_cast<u32>(b)); }
-u32 svec_xy(s32 x, s32 y) { return static_cast<u32>(static_cast<u16>(x)) | static_cast<u32>(static_cast<u16>(y)) << 16; }
-
-// 0x8007cc5c draw_disc (#1984.0): a flat fan of 'segments' gouraud triangles (POLY_G3) in
-// the x-z plane round the current GTE origin, 'radius' units: rgb_centre at the centre (its
-// code 0x30, 0x32 when blend is set), rgb_edge on the rim; blend != 0 adds a DR_MODE (mode
-// blend - 1) after each. A triangle with no vertex inside x 0..319 / y -64..279, or with
-// otz / 8 >= 0x5fa - ot, is skipped; the others go to OT entry 0x616 + ot - otz / 8 of pool
-// A. (A copy of spell_mod_eruption.cpp's port.)
-void draw_disc(s32 segments, s32 radius, u32 rgb_centre, u32 rgb_edge, s32 blend, s32 ot) {
-  BattleGlobals& g = bg();
-  RenderContext* pool = g.prim_pool_a;
-  const s32 size = blend != 0 ? 0x28 : 0x1C;
-  if (pool == nullptr || !arena_has_room(pool, mul_lo(size, segments))) return;
-  const u32 code = rgb_centre | (blend != 0 ? 0x32000000u : 0x30000000u);
-  psx::Gte& q = psyq::gte();
-  s32 used = 0;
-  s32 x = radius, z = 0;
-  for (s32 i = 0; i < segments; ++i) {
-    const s32 ang = ((i + 1) << 12) / segments;
-    const s32 px = x, pz = z;
-    x = mul_lo(bcos(static_cast<u32>(ang)), radius) >> 12;
-    z = mul_lo(bsin(static_cast<u32>(ang)), radius) >> 12;
-    q.write_data(psx::Gte::VXY0, svec_xy(0, 0));
-    q.write_data(psx::Gte::VZ0, 0);
-    q.write_data(psx::Gte::VXY1, svec_xy(px, 0));
-    q.write_data(psx::Gte::VZ1, static_cast<u32>(static_cast<s32>(static_cast<s16>(pz))));
-    q.write_data(psx::Gte::VXY2, svec_xy(x, 0));
-    q.write_data(psx::Gte::VZ2, static_cast<u32>(static_cast<s32>(static_cast<s16>(z))));
-    q.execute(psx::Gte::kRtpt);
-    const u32 s0 = q.read_data(psx::Gte::SXY0), s1 = q.read_data(psx::Gte::SXY1), s2 = q.read_data(psx::Gte::SXY2);
-    q.execute(psx::Gte::kAvsz3);
-    auto x_in = [](u32 xy) { return static_cast<u16>(xy) < 0x140; };
-    auto y_in = [](u32 xy) { return static_cast<u16>(static_cast<u16>(xy >> 16) + 0x40) < 0x158; };
-    if (!(x_in(s0) || x_in(s1) || x_in(s2))) continue;
-    if (!(y_in(s0) || y_in(s1) || y_in(s2))) continue;
-    const s32 otz = static_cast<s32>(q.read_data(psx::Gte::OTZ)) >> 3;
-    if (!(otz < 0x5FA - ot)) continue;
-    auto* p = screen_alloc_prims<psyq::POLY_G3>(pool->arena, 1);
-    if (p == nullptr) return;
-    psyq::setPolyG3(p);
-    std::memcpy(&p->r0, &code, 4);
-    std::memcpy(&p->r1, &rgb_edge, 4);
-    std::memcpy(&p->r2, &rgb_edge, 4);
-    p->x0 = static_cast<s16>(s0), p->y0 = static_cast<s16>(s0 >> 16);
-    p->x1 = static_cast<s16>(s1), p->y1 = static_cast<s16>(s1 >> 16);
-    p->x2 = static_cast<s16>(s2), p->y2 = static_cast<s16>(s2 >> 16);
-    psyq::P_TAG* entry = &pool->ot_head[0x616 + ot - otz];
-    psyq::addPrim(entry, p);
-    used += 0x1C;
-    if (blend != 0) {
-      auto* dm = screen_alloc_prims<psyq::DR_MODE>(pool->arena, 1);
-      if (dm == nullptr) return;
-      psyq::SetDrawMode(dm, 0, 1, (blend - 1) << 5, nullptr);
-      psyq::addPrim(entry, dm);
-      used += 0xC;
-    }
-  }
-  pool_a_bytes_used() += used < 4 ? 4 : used;
-}
 
 // A phase 0..0x1fff folded to a triangle 0..0xfff.
 u32 fold(u32 t) { return 0xFFF < t ? 0x1FFF - t : t; }

@@ -11,6 +11,7 @@ namespace ss::game::field {
 
 u8* stash_table();          // 0x80076228
 bool stash_holds_items();   // 0x8007622c: the stash holds the inventory
+void stash_set_holds_items(bool on);  // sets 0x8007622c (field_menu_update clears it after a load)
 // field_run: take the stash from handoff 0x11, or make an empty one.
 void stash_init();
 void inventory_stash();     // overlay 0x8008ea0c

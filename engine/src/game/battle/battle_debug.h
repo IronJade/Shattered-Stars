@@ -34,5 +34,8 @@ void battle_debug_exit();
 // whose setup ended mid-way through a 2-vblank period: "1" gives the original's 2, 1, 2,
 // 2, ... tick pattern (frame 1 runs with 1 tick; g_battle_frames odd from then on).
 int battle_debug_frame_wait(int n);
+// SS_BATTLE_TICK_MAP="F:T,..." (world agent): the wait after a frame that leaves g_battle_frames
+// at F (0: none given).
+int battle_debug_tick_map(s32 battle_frames);
 
 }  // namespace ss::game::battle

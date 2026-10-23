@@ -239,7 +239,7 @@ void spicule(SpellCast* sc) {
         sc->s30 = 1;
         int voice = 0x4D2;
         if (rng_range(2) == 0) voice = static_cast<int>(rng_range(3)) + 0x4C7;
-        voice_play_entry(voice, c);  // (third argument -1)
+        voice_play_entry(voice, c, -1);
       }
       sc->s34 -= g.frame_ticks;
       if (-1 < sc->s34) return;

@@ -6,6 +6,7 @@
 #include "game/battle/loaders.h"
 #include "game/battle/sprite.h"
 #include "game/battle/unit.h"
+#include "game/battle/voice_player.h"
 #include "game/boot/rng.h"
 #include "runtime/runtime.h"
 
@@ -37,7 +38,7 @@ bool member_down(int i) {
 
 void voice_pick_victory() {
   BattleGlobals& g = bg();
-  // voice_stop_all 0x8007f76c: the voice slots are not ported.
+  voice_stop_all();  // 0x8007f76c (voice_player.cpp)
   int standing = 0, present = 0;
   for (PartyUnit* u : g.party_units) {
     if (!unit_is_down(u)) ++standing;
@@ -84,8 +85,7 @@ void voice_pick_victory() {
     }
     PartyUnit* u = g.party_units[m];
     u->victory_voice = static_cast<s16>(rng_between(static_cast<s32>(base), static_cast<s32>(base + n)));
-    // TODO(port): voice_preload_entry 0x8007f9bc (the clip itself).
-    runtime::Runtime::get().log_once("battle-victory-voice", "battle: victory voice clips not ported (lines picked)");
+    voice_preload_entry(u->victory_voice);  // 0x8007f9bc (voice_player.cpp)
     if (first != -1) return;
     first = m;
     if (g.single_victory_voice != 0) return;
@@ -103,8 +103,7 @@ int voice_play_result(PartyUnit* u) {
   const s16 id = slot_s16(u->stats, 0);
   const u32 base = ovl_u16(0x800815BE + static_cast<u32>(id) * 2);
   const int entry = static_cast<int>(base + rng_range(lines));
-  // TODO(port): voice_play_entry 0x8007f818 (entry, u, 0).
-  runtime::Runtime::get().log_once("battle-result-voice", "battle: result voice clips not ported (lines picked)");
+  voice_play_entry(entry, u, 0);  // 0x8007f818 (voice_player.cpp)
   return entry;
 }
 

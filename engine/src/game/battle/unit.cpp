@@ -4,6 +4,7 @@
 
 #include "game/battle/camera.h"
 #include "game/battle/render.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/stage.h"
 #include "game/boot/rng.h"
 #include "runtime/runtime.h"
@@ -173,7 +174,9 @@ void unit_draw_model(Unit* u) {
     u->pos[0] += u->shake_amp * 0x1000;
     u->shake_amp = static_cast<s16>(-u->shake_amp);
   }
-  // TODO(port): g_stage_height_fn (stage code blocks) lifts grounded units.
+  // g_stage_height_fn 0x8006fe04 (Earthquake / Explode) lifts grounded units (world agent).
+  if (g_stage_height_fn != nullptr && u->flying == 0 && u->airborne != 1)
+    u->pos[1] += g_stage_height_fn(u->pos[0] >> 12, 0, u->pos[2] >> 12);
   bobj_project(u);
   u->pos[1] = y;
   u->pos[0] = x;

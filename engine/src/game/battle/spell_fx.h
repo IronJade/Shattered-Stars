@@ -44,6 +44,18 @@ Shot* effect_spawn_streak_at(const s32 pos[3], const s32 target[3], u32 rgb_head
 // width, vel x the step, +0x118 / +0x11c colours, +0x10a 1: held in the 0x40 pause.
 Shot* effect_spawn_t31_at(const s32 pos[3], s32 rings, s32 segments, s32 grow, s32 life, u32 rgb_a, u32 rgb_b,
                           s32 width, s32 step, s16 flag);
+// 0x8007cc5c (#1984.0) draw_disc: a flat fan of POLY_G3 in the x-z plane round the current GTE
+// origin (rgb_centre at the centre, rgb_edge on the rim; blend != 0: semi-transparent mode
+// blend - 1), OT 0x616 + ot - otz / 8 of pool A.
+void draw_disc(s32 segments, s32 radius, u32 rgb_centre, u32 rgb_edge, s32 blend, s32 ot);
+// 0x8007d9e0 (#1984.0) draw_wave_grid: an n x n grid of screen-space POLY_FT4 over rect with the
+// uv rectangle spread over it, rows / columns shifted by the sine waves wave_x / wave_y.
+void draw_wave_grid(const s32 uv[4], const s32 rect[4], const s32 wave_x[3], const s32 wave_y[3], u16 clut,
+                    u16 tpage, s32 ot, u32 code_rgb, s32 n);
+// 0x8006fe04 g_stage_height_fn: set by Earthquake / Explode while the ground moves;
+// unit_draw_model lifts grounded units (not flying, not airborne 1) by fn(x >> 12, 0, z >> 12)
+// (20.12) for the draw.
+extern s32 (*g_stage_height_fn)(s32 x, s32 y, s32 z);
 // 0x80080c7c (#1984.0) voice_thank_healer: a healed member may thank the healer (an RNG draw
 // when it likes the healer enough; spell_shots.cpp).
 void voice_thank_healer(Unit* healer, Unit* target);

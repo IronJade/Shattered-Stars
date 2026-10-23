@@ -40,6 +40,9 @@
 #include "runtime/runtime.h"
 
 namespace ss::game::field {
+
+VmStandinStats g_vm_standins;
+
 namespace {
 
 VmTraceSink g_sink = nullptr;
@@ -48,6 +51,8 @@ VmTraceSink g_sink = nullptr;
 __attribute__((format(printf, 2, 3)))
 #endif
 void note(const char* name, const char* fmt, ...) {
+  ++g_vm_standins.calls;
+  g_vm_standins.last = name;
   runtime::Runtime::get().log_once(std::string("vm_svc:") + name,
                                    std::string("field VM: service not wired yet: ") + name);
   if (g_sink == nullptr) return;
@@ -90,6 +95,8 @@ static_assert(sizeof(MapFiles) == 17 * sizeof(s16), "MapFiles mirrors the s16 fi
 
 // Stand-ins of reads (and of writes whose arguments add nothing to a trace) only log.
 void note_once(const char* name) {
+  ++g_vm_standins.calls;
+  g_vm_standins.last = name;
   runtime::Runtime::get().log_once(std::string("vm_svc:") + name,
                                    std::string("field VM: service not wired yet: ") + name);
 }

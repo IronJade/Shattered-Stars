@@ -23,6 +23,13 @@ struct ScriptCtx;
 // Tests can watch every service call: 'service' is the function name without the
 // vm_svc_ prefix, 'args' its arguments as text.
 using VmTraceSink = void (*)(const char* service, const char* args);
+// Instrumentation (not in the original): calls that took a stand-in path (the subsystem
+// was missing), for the event sweep (event_sweep.h) and tests.
+struct VmStandinStats {
+  u32 calls = 0;
+  const char* last = nullptr;
+};
+extern VmStandinStats g_vm_standins;
 void vm_svc_set_trace(VmTraceSink sink);
 void vm_svc_reset();  // clears the stand-ins' state (tests)
 

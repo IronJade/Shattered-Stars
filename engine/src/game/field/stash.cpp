@@ -24,6 +24,7 @@ void clear_entries(u8* inv) {
 
 u8* stash_table() { return g_stash; }
 bool stash_holds_items() { return g_stashed; }
+void stash_set_holds_items(bool on) { g_stashed = on; }
 
 void stash_init() {
   FieldGlobals& g = globals();

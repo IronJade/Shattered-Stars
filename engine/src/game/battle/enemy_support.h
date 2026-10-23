@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/types.h"
+#include "game/battle/bload.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/shot.h"
 #include "game/battle/spell_fx.h"
@@ -8,6 +9,7 @@
 #include "game/battle/spells.h"
 #include "game/battle/unit.h"
 #include "game/battle/unit_move.h"
+#include "game/battle/voice_player.h"
 #include "runtime/libgte.h"
 
 // Resident helpers the monster classes (the families and the encounter packs' modules)
@@ -66,9 +68,6 @@ void sound_handle_release(u32 handle);
 // ---- Spells: the world agent's spells.h / spellcast.h / spell_fx.h (included above) have
 // the spell API, the SpellCast and the screen fade the stand-ins here stood for.
 
-// ---- Other stand-ins (the battle agent's load queue, voices and resident effects).
-void bload_request(int entry, void* dest, s16 group, int priority);           // 0x800475c0 [stand-in]
-u32 voice_play_entry(int entry, Unit* speaker);                              // 0x8007f818 [stand-in: 0]
 
 // ---- Resident Shot kinds and helpers only the monsters use (enemy_shots.cpp).
 // 0x8005b23c: steps o's animation (no sprite drawn) and draws the frame as a free quad from

@@ -51,11 +51,8 @@ BObj* body_of(const SpellCast* sc) {
   return it != g_body.end() ? it->second.get() : nullptr;
 }
 
-// Indalecio's +0x2f8 (EnemyIndalecio::transformed: the second form). The class lives in
-// enemy_mod_indalecio.cpp's anonymous namespace, out of reach here.
-// PORT GAP (to review): needs an accessor there; the form change also sets 'flying' (and
-// nothing else does), so that stands in for now. Only the voice entry depends on it.
-bool caster_second_form(const Unit* u) { return u->flying != 0; }
+// Indalecio's +0x2f8 (EnemyIndalecio::transformed: the second form; enemy_mod_indalecio.cpp).
+bool caster_second_form(const Unit* u) { return enemy_indalecio_transformed(u); }
 
 // 0x8008eadc: a light (the caster's anim 0x14 at scale 4, turning 20 a tick) rising at its
 // velocity; above -0x9c4 it sheds shards (one frame in two); gone above -0x1770.

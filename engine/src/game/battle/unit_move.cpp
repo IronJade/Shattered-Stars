@@ -68,10 +68,10 @@ s32 projectile_arc_velocity(s32 out[4], const BObj* from, const BObj* to, s32 sp
   const Vec4 dir = vec_direction_xz(from->pos, to->pos);
   out[0] = static_cast<s32>(static_cast<u32>(dir.x) * static_cast<u32>(speed));
   out[1] = vy;
-  // ORIGINAL BUG (original_bugs.md B9): z is scaled by a constant 24 instead of 'speed'
-  // (x * speed, z * 24), so the arc bends toward or away from the target in depth unless
-  // speed is 24. Kept for now; see the entry.
-  out[2] = dir.z * 24;
+  // ORIGINAL BUG (original_bugs.md B9): z is scaled by a constant 24 instead of 'speed', so
+  // the jump lands short of or past the target in depth unless speed is 24:
+  //   out[2] = dir.z * 24;
+  out[2] = static_cast<s32>(static_cast<u32>(dir.z) * static_cast<u32>(speed));
   out[3] = dir.w;
   return t;
 }

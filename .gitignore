@@ -10,3 +10,6 @@ engine/build*/
 *.mcd
 *.mcr
 /scratchpad/
+
+# Release packages (tools/build_windows.sh)
+dist/

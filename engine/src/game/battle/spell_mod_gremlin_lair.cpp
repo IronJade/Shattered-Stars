@@ -77,26 +77,6 @@ void damage_unit(Unit* owner, Unit* u, int power) {
   shot_apply_damage(&tmp, 1, list, nullptr, power, 0, 0x200, 0, 4);
 }
 
-// 0x80032544 camera_orbit_unit (mode 12) for any object: the port's takes a Unit*, and this
-// module orbits its gremlin (a Shot). The same body as camera.cpp's.
-void camera_orbit_object(Camera* c, BObj* o, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed, s32 accel) {
-  ViewState& v = view();
-  v.view_mode = 1;
-  c->target = o;
-  camera_set_eye_orbit(c, o->pos, yaw, pitch, dist);
-  camera_set_lookat_dest(c, o->pos);
-  camera_request_mode(c, 0xC, nullptr);
-  c->step = 0;
-  if (ticks == 0) {
-    std::memcpy(v.cam_eye, c->eye_dest, 12);
-    std::memcpy(v.cam_lookat, c->lookat_dest, 12);
-  } else {
-    camera_set_motion(c, ticks, speed, accel, 0, 0x10000);
-    camera_eye_velocity(c, ticks);
-    camera_lookat_velocity(c, ticks);
-  }
-}
-
 // 0x8008e0c0: an imp (anim 7, a 4-copy afterimage) whirling out round +0x118 (angle +0x128
 // turning 40 a tick, radius +0x12c growing 12, spinning and growing) at its rising
 // velocity, gone at radius 0x961; it hits (+0x10c the power) the first unit of side +0x134
@@ -490,7 +470,7 @@ void gremlin_lair(SpellCast* sc) {
       Shot* s = it != g_gremlin.end() ? it->second : nullptr;
       if (sc->s30 == 1) {
         if (spellcast_leads_camera(sc) && s != nullptr) {
-          camera_orbit_object(g.camera, s, 0xC00, 0x155, 0x800, 0x1E, 0x80, 5);
+          camera_orbit_unit(g.camera, s, 0xC00, 0x155, 0x800, 0x1E, 0x80, 5);
         }
         sc->s30 = 0;
       }
@@ -501,7 +481,7 @@ void gremlin_lair(SpellCast* sc) {
           s->pos[2] = sc->centre[2];
         }
         if (spellcast_leads_camera(sc) && s != nullptr) {
-          camera_orbit_object(g.camera, s, 0xC00, 0x155, 0x800, 0x1E, 0x80, 5);
+          camera_orbit_unit(g.camera, s, 0xC00, 0x155, 0x800, 0x1E, 0x80, 5);
         }
         sc->s30 = 0;
       }

@@ -205,7 +205,7 @@ struct EnemyCyril : EnemyUnit {
       counters[2] = 0;
       counters[3] = 0;
       battle_message_show(0x42C);
-      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4E8, this);
+      voice_play_entry(static_cast<int>(rng_range(2)) + 0x4E8, this, -1);
       action_kind = 2;
       begin_action();
       return;
@@ -313,7 +313,7 @@ struct EnemyCyril : EnemyUnit {
         ring->vel[2] = 0x400;
       const s32 ground[3] = {pos[0], bobj_ground_height(this), pos[2]};
       effect_spawn_sparks_at(ground, 0x14, 0x200, 0x140, 0x10, 0x5A, 5, 0, 0x40, 1);
-      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4D7, this);
+      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4D7, this, 0);
       bsfx_play_at(0x50, this);
       bsfx_play_at(0x21, this);
       bsfx_play_at(0x22, this);

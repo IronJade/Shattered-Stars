@@ -874,7 +874,7 @@ void camera_move_to(Camera* c, const s32 centre[3], s32 yaw, s32 pitch, s32 dist
   }
 }
 
-void camera_orbit_unit(Camera* c, Unit* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed, s32 accel) {
+void camera_orbit_unit(Camera* c, BObj* u, s32 yaw, s32 pitch, s32 dist, s32 ticks, s32 speed, s32 accel) {  // (world agent: any BObj)
   ViewState& v = view();
   v.view_mode = 1;
   c->target = u;

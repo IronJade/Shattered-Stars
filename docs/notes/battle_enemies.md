@@ -112,16 +112,21 @@ matches at an offset of 5-6 vsyncs or of 0-2.
 | 153 / 186 / 211 / 204 | 3 NiquiaHG (niquia), Weirdavia (xine), Ghost, Dias | exact |
 | 520 / 521 / 530 / 531 / 533 | Berle, Synard, Marsilio, Bark, Shigeo | exact |
 | 536 | Ruprecht (pack slot A) with the image's Nicolus (B) and Jibril (C) | exact to the battle's end |
-| 197 / 265 / 430 / 515 / 528 | Nightmare (succubus), Zand, Weirddevil (shin), G-Celesta, Lover + 2 Breakwing | exact until the first cast of a spell whose code module is not ported yet (spells 16, 12, 51, 22, 28) |
-| 537 / 538 / 539 | Vesper + Decus, Cyril, Indalecio | the same, to vsyncs 390, 530, 430 (spells 55 / 56, 57, 22); the original also draws RNG for the boss's intro voice and, in 538, holds the fight 57 vsyncs for it |
-| 524 | Guardbox, 2 Magicbox, Workbox, Magichand | exact until the boxes toss (Shot kind 0x27, not ported) |
+| 265 / 430 / 528 | Zand (Deep Freeze), 2 Weirddevil (shin: Daemon's Gate), Lover + 2 Breakwing (Star Flare) | exact, the monsters' spells included |
+| 197 | Nightmare (succubus) | exact, its spell (Magnum Tornado, the world agent's module) included |
+| 515 / 539 | G-Celesta, Indalecio (Noah) | every unit sample exact to the battle's end; the RNG only differs while the original slows to 3-vsync frames under Noah's wall (both draw 48 a frame) |
+| 537 / 538 | Vesper + Decus (Mind Blast, Spicule), Cyril (Wind of Destruction) | exact past their casts until the original slows to 3-vsync frames (537 b400, 538 b920); the unit samples, Claude's KO included, still match; the original also draws RNG for the boss's intro voice and, in 538, holds the fight 57 vsyncs for it (voices are not ported yet) |
+| 524 | Guardbox, 2 Magicbox, Workbox, Magichand | exact to vsync 520 (the boxes' toss, Shot kind 0x27, included); there two Redux runs of the same setup differ (Magichand's rock kills Claude in one, not in the other), and the port matches the per-vsync one exactly to vsync 570 |
 
-Bark's SpellCast (kind 0x36, every tenth of its HP lost) and Indalecio's transformation (kind
-0x3b) are not reached in these fights: Claude stands idle and does no damage.
+Bark's SpellCast (kind 0x36, every tenth of its HP lost): with its HP poked to 130000 a minute
+into the fight (both sides: scratchpad/enemy BW_ENEMY_HP / the port's SS_ENEMY_HP) it casts at
+vsync 440; the RNG matches until the original slows down under the vortex, every unit sample
+to the battle's end. Indalecio's transformation (kind 0x3b) is not reached yet: he casts Noah
+first, which kills an idle Claude.
 
 A sweep of every disc-1 encounter (0-563, 3000 frames, Claude idle) runs without a crash.
-What the monsters still miss: spell code modules (the world agent's), Shot kinds 0x27 and
-0x2d, shot_draw_frame_quad and the voices (the battle agent's).
+What the monsters still miss: the voices (voice_play_entry and the load queue), and the
+spell modules of their second and third spells (the world agent's list).
 
 ## Findings
 

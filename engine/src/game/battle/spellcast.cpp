@@ -2,6 +2,9 @@
 
 #include "game/battle/spellcast.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 #include <cstring>
 #include <string>
 
@@ -235,6 +238,8 @@ SpellCast* spellcast_create(int kind, Unit* caster, Unit* target, int power, Spe
 void spellcast_finish(SpellCast* sc) {
   // 0x800859e0.
   BattleGlobals& g = bg();
+  static const bool trace = std::getenv("SS_SPELL_TRACE") != nullptr;
+  if (trace) std::fprintf(stderr, "[spell] battle frame %d spellcast slot %d (spell 0x%x) finished\n", g.battle_frames, sc->slot, sc->spell);
   task_unregister(sc);
   for (int k = 0; k < 2; ++k) {
     sc->clut_saved[k].clear();
@@ -307,11 +312,16 @@ void spellcast_step_when_dim_done(SpellCast* sc) {
 
 Unit* spellcast_retarget(SpellCast* sc, Unit* target) {
   BattleGlobals& g = bg();
-  if (target == nullptr || sc->caster == nullptr) return target;
-  if (target->is_enemy == sc->caster->is_enemy) return target;
+  if (sc->caster == nullptr) return target;
+  // A null target (a monster's counter-cast at a last attacker that was an item's Shot) is
+  // read as a unit at address 0: the kernel bytes there (+0x123 0, +0x125 2) make it a party
+  // unit of slot 2, which is down, so a monster's spell goes to the first standing member
+  // from slot 3 on; a party caster's spell is dropped.
+  const u8 t_enemy = target != nullptr ? target->is_enemy : 0;
+  if (t_enemy == sc->caster->is_enemy) return target;
   Unit* t = target;
-  int idx = target->slot;
-  if (target->is_enemy == 0) {
+  int idx = target != nullptr ? target->slot : 2;
+  if (t_enemy == 0) {
     for (int n = 0; n < 5; ++n) {
       if (!unit_is_down(t)) return t;
       if (3 < ++idx) idx = 0;

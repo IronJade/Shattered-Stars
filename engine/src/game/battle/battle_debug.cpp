@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "disc/slz.h"
@@ -89,6 +90,26 @@ void battle_debug_frame() {
   if (!on) return;
   std::fprintf(stderr, "[battle] vblank %llu state %d rng %u\n",
                static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), bg().state, rng_draws());
+}
+
+// (World agent) SS_BATTLE_TICK_MAP="F:T,...": after a frame that leaves g_battle_frames at F,
+// wait T vblanks (the frames the console ran slow, from the Redux driver's BW_TICK_LOG), so
+// a reference with slowdown can be followed exactly. Returns 0 when F is not in the map.
+int battle_debug_tick_map(s32 battle_frames) {
+  static const std::unordered_map<s32, int> map = [] {
+    std::unordered_map<s32, int> m;
+    if (const char* s = std::getenv("SS_BATTLE_TICK_MAP")) {
+      for (const char* p = s; *p != 0;) {
+        int f = 0, t = 0;
+        if (std::sscanf(p, "%d:%d", &f, &t) == 2) m[f] = t;
+        while (*p != 0 && *p != ',') ++p;
+        if (*p == ',') ++p;
+      }
+    }
+    return m;
+  }();
+  const auto it = map.find(battle_frames);
+  return it != map.end() ? it->second : 0;
 }
 
 int battle_debug_frame_wait(int n) {

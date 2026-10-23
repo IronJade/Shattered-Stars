@@ -105,4 +105,6 @@ void shot_handle_command(Shot* s, int stationary);
 // Battle start / end.
 void spells_reset();
 
+// Debugging: SS_BATTLE_CAST="FRAMES:SLOT:SPELL:p0|e0;..." forced party casts (input_update).
+void debug_forced_casts();
 }  // namespace ss::game::battle

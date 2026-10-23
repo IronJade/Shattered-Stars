@@ -29,6 +29,13 @@ if(NOT SDL3_FOUND)
   FetchContent_MakeAvailable(SDL3)
 endif()
 
+# MinGW (the Windows build): the C / C++ runtimes are linked in, so the game ships as
+# shattered-stars.exe plus SDL3.dll (copied next to each program after the build).
+if(MINGW)
+  add_link_options(-static-libgcc -static-libstdc++
+                   -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive,-Bdynamic)
+endif()
+
 if(MSVC)
   set(SS_WARNINGS /W4 /permissive-)
 else()
@@ -98,6 +105,8 @@ add_library(ss_game STATIC
   src/game/field/menu_combat.cpp
   src/game/field/menu_creation.cpp
   src/game/field/menu_picture.cpp
+  src/game/field/menu_rename.cpp
+  src/game/field/event_sweep.cpp
   src/game/common/menu_viewer.cpp
   src/game/title/intro.cpp
   src/game/title/movie.cpp
@@ -195,10 +204,16 @@ target_sources(ss_game PRIVATE
   src/game/battle/pc_casters.cpp
   src/game/battle/pc_claude.cpp
   src/game/battle/pc_bowman.cpp
+  src/game/battle/pc_dias.cpp
   src/game/battle/pc_ernest.cpp
   src/game/battle/pc_chisato.cpp
+  src/game/battle/pc_module_util.cpp
+  src/game/battle/pc_precis.cpp
+  src/game/battle/pc_opera.cpp
   src/game/battle/enemy_support.cpp
   src/game/battle/enemy_shots.cpp
+  src/game/battle/bload.cpp
+  src/game/battle/voice_player.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp
   src/game/battle/enemy_mod_guardian.cpp
@@ -253,6 +268,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/spell_modules.cpp
   src/game/battle/command_menu.cpp
   src/game/battle/items.cpp
+  src/game/battle/shatter.cpp
   src/game/battle/spell_mod_deep_freeze.cpp
   src/game/battle/spell_mod_noah.cpp
   src/game/battle/spell_mod_mind_blast.cpp
@@ -264,6 +280,49 @@ target_sources(ss_game PRIVATE
   src/game/battle/spell_mod_starlight.cpp
   src/game/battle/spell_mod_magnum_tornado.cpp
   src/game/battle/spell_mod_cure_all.cpp
+  src/game/battle/spell_mod_black_saber.cpp
+  src/game/battle/spell_mod_earthquake.cpp
+  src/game/battle/spell_mod_explode.cpp
+  src/game/battle/spell_mod_fairy_light.cpp
+  src/game/battle/spell_mod_angel_feather.cpp
+  src/game/battle/spell_mod_dark_circle.cpp
+  src/game/battle/spell_mod_energy_arrow.cpp
+  src/game/battle/spell_mod_dispel.cpp
+  src/game/battle/spell_mod_earth_grave.cpp
+  src/game/battle/spell_mod_tetanus_wind.cpp
+  src/game/battle/spell_mod_growth.cpp
+  src/game/battle/spell_mod_shadow_bolt.cpp
+  src/game/battle/spell_mod_protection.cpp
+  src/game/battle/spell_mod_silence.cpp
+  src/game/battle/spell_mod_divine_comedy.cpp
+  src/game/battle/spell_mod_gremlin_lair.cpp
+  src/game/battle/spell_mod_tractor_beam.cpp
+  src/game/battle/spell_mod_anti.cpp
+  src/game/battle/spell_mod_raise_dead.cpp
+  src/game/battle/spell_mod_lunar_light.cpp
+  src/game/battle/spell_mod_extinction.cpp
+  src/game/battle/spell_mod_press.cpp
+  src/game/battle/spell_mod_energy_net.cpp
+  src/game/battle/spell_mod_neutral.cpp
+  src/game/battle/spell_mod_deep_mist.cpp
+  src/game/battle/spell_mod_bless.cpp
+  src/game/battle/spell_mod_forget.cpp
+  src/game/battle/spell_mod_sonic_saber.cpp
+  src/game/battle/spell_mod_meteor_swarm.cpp
+  src/game/battle/spell_mod_eruption.cpp
+  src/game/battle/spell_mod_southern_cross.cpp
+  src/game/battle/spell_mod_gravity_press.cpp
+  src/game/battle/spell_mod_blood_sucker.cpp
+  src/game/battle/spell_mod_fairy_heal.cpp
+  src/game/battle/spell_mod_shadow_flare.cpp
+  src/game/battle/spell_mod_reflection.cpp
+  src/game/battle/spell_mod_delay.cpp
+  src/game/battle/spell_mod_thunderstorm.cpp
+  src/game/battle/spell_mod_haste.cpp
+  src/game/battle/spell_mod_light_cross.cpp
+  src/game/battle/spell_mod_spell40.cpp
+  src/game/battle/spell_mod_acid_rain.cpp
+  src/game/battle/spell_mod_curse.cpp
   src/game/battle/spell_mod_thundercloud.cpp)
 target_include_directories(ss_game PUBLIC src)
 target_link_libraries(ss_game PUBLIC ss_core ss_platform)
@@ -275,6 +334,12 @@ target_compile_options(ss_platform PRIVATE ${SS_WARNINGS})
 add_executable(shattered-stars src/main.cpp)
 target_link_libraries(shattered-stars PRIVATE ss_game)
 target_compile_options(shattered-stars PRIVATE ${SS_WARNINGS})
+if(WIN32)
+  add_custom_command(TARGET shattered-stars POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:shattered-stars>
+            $<TARGET_FILE_DIR:shattered-stars>
+    COMMAND_EXPAND_LISTS)
+endif()
 
 enable_testing()
 add_executable(ss_tests

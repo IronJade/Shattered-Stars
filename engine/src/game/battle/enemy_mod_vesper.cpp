@@ -81,7 +81,7 @@ struct EnemyVesper : EnemyUnit {
       counters[2] = 0;
       counters[3] = 0;
       battle_message_show(0x42A);
-      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4BA, this);  // (tag -1)
+      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4BA, this, -1);
       return;
     }
     if (enemy_try_approach(this, 500, 0x2000, 2, 0x1E0) == 0) EnemyUnit::choose_target();
@@ -232,7 +232,7 @@ struct EnemyVesper : EnemyUnit {
       effect_spawn_sparks_at(c.data(), 0x14, 0x60, 0, 0x60, 0x3C, 4, 3, 0x40, 1);
       const s32 feet[3] = {pos[0], bobj_ground_height(this), pos[2]};
       effect_spawn_sparks_at(feet, 0x14, 0x100, 0x40, 0x10, 0x5A, 4, 0, 0x40, 1);
-      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4B3, this);  // (tag 0)
+      voice_play_entry(static_cast<int>(rng_range(3)) + 0x4B3, this, 0);
       bsfx_play_at(0x21, this);
       bsfx_play_at(0x22, this);
     }

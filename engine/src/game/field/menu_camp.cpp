@@ -22,6 +22,7 @@
 #include "game/field/callways.h"
 #include "game/field/fade.h"
 #include "game/field/field_world.h"
+#include "game/field/event_sweep.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/map.h"
@@ -31,6 +32,7 @@
 #include "game/field/menu_items.h"
 #include "game/field/menu_options.h"
 #include "game/field/menu_picture.h"
+#include "game/field/menu_rename.h"
 #include "game/field/menu_shop.h"
 #include "game/field/menu_skills.h"
 #include "game/field/menu_specialty.h"
@@ -38,6 +40,7 @@
 #include "game/field/mods.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
+#include "game/field/stash.h"
 #include "game/field/worldmap.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
@@ -608,6 +611,7 @@ void field_menu_frame() {
   // field 0x800300dc: the Callways task keeps ticking (songs, money per second).
   if (Callways* c = callways()) c->update();
   count_menu_frame();
+  event_sweep_menu_frame();  // debugging: SS_EVENT_SWEEP
 }
 
 // The library and the field's page handlers for one menu run.
@@ -627,6 +631,7 @@ struct FieldMenuHost {
     menu::set_page_handler(9, &menu_page09_update);
     menu::set_page_handler(10, &menu_page0a_update);
     menu::set_page_handler(0xB, &menu_page0b_update);
+    menu::set_page_handler(0xE, &menu_page0e_update);
     menu::set_page_handler(0xF, &menu_page0f_update);
     menu::set_page_handler(0x10, &menu_page10_update);
     menu::set_page_handler(0x13, &menu_page13_update);
@@ -646,6 +651,7 @@ struct FieldMenuHost {
     menu::set_page_handler(9, nullptr);
     menu::set_page_handler(10, nullptr);
     menu::set_page_handler(0xB, nullptr);
+    menu::set_page_handler(0xE, nullptr);
     menu::set_page_handler(0xF, nullptr);
     menu::set_page_handler(0x10, nullptr);
     menu::set_page_handler(0x13, nullptr);
@@ -879,7 +885,8 @@ void dump_menu_state(const char* var = "SS_MENU_DUMP") {
                                          std::tuple<const char*, const u8*, size_t>{"inventory", g.inventory, 0xC28},
                                          std::tuple<const char*, const u8*, size_t>{"party", party_slots(), 0x300},
                                          std::tuple<const char*, const u8*, size_t>{"records", party_records(), 0x680},
-                                         std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0}}) {
+                                         std::tuple<const char*, const u8*, size_t>{"game_state", g.game_state, 0x2A0},
+                                         std::tuple<const char*, const u8*, size_t>{"field_flags", g.field_flags, 0xA0}}) {
     if (block == nullptr) continue;
     const std::string path = std::string(dump) + "_" + name + ".bin";
     if (FILE* out = std::fopen(path.c_str(), "wb")) {
@@ -925,6 +932,35 @@ void schedule_menu_dump() {
   if (g_menu_dump_delay <= 0) dump_menu_state();
 }
 
+// Debugging (SS_MENU_POKE="flag=N,var=OFF:VALUE,clock=N", applied once when the menu button
+// is pressed): sets script flags, field variables (field_flags + OFF, 32-bit) and the gauge
+// clock before the menu opens, as itemsref.lua's SS_POKE does in the original. Flag 0x14
+// with var 0x3c (a character) opens that member's query page.
+void apply_menu_poke() {
+  static bool done = false;
+  const char* spec = std::getenv("SS_MENU_POKE");
+  if (done || spec == nullptr) return;
+  done = true;
+  FieldGlobals& g = globals();
+  for (const char* p = spec; *p != 0;) {
+    const char* end = std::strchr(p, ',');
+    const std::string item(p, end ? static_cast<size_t>(end - p) : std::strlen(p));
+    if (item.rfind("flag=", 0) == 0) {
+      const long bit = std::strtol(item.c_str() + 5, nullptr, 0);
+      if (bit >= 0 && bit < 0x170 * 8) g.script_flags[bit >> 3] = static_cast<u8>(g.script_flags[bit >> 3] | 1 << (bit & 7));
+    } else if (item.rfind("var=", 0) == 0) {
+      char* colon = nullptr;
+      const long off = std::strtol(item.c_str() + 4, &colon, 0);
+      if (colon != nullptr && *colon == ':' && off >= 0 && off + 4 <= 0xA0)
+        wr32(g.field_flags + off, static_cast<s32>(std::strtol(colon + 1, nullptr, 0)));
+    } else if (item.rfind("clock=", 0) == 0) {
+      field_set_gauge_clock(static_cast<s32>(std::strtol(item.c_str() + 6, nullptr, 0)));
+    }
+    std::fprintf(stderr, "[menu] poke %s\n", item.c_str());
+    p = end ? end + 1 : p + item.size();
+  }
+}
+
 }  // namespace
 
 void field_menu_check(Field* f) {
@@ -938,6 +974,7 @@ void field_menu_check(Field* f) {
   if (f->on_save_point != 0 && was_on == 0) sound_play_sfx(g.sound, 0xC, 0, 0x7F40);
   if (f->state != 0) return;
   const bool button = (g.pressed[0] & read_u16(g.config + 4)) != 0;
+  if (button) apply_menu_poke();
   if (!(button || g_menu_request != 0) || g.field_flags[0x93] != 0) return;
   bool allowed = true;
   if (g_script_vm != nullptr) {
@@ -1089,7 +1126,7 @@ void field_menu_update(Field* f) {
       preload_restore_table();
       load_queue_reset(load_queue());
       preload_release(-1);
-      // TODO(port): 0x8007622c = 0 (the stash flag; stash.h has no setter).
+      stash_set_holds_items(false);   // 0x8007622c = 0: the loaded game has no stashed items
       field_load_map(f, f->pending_map, true, 1);
       schedule_menu_dump();
       return;

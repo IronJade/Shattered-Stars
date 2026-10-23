@@ -14,6 +14,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/shot.h"
 #include "game/battle/spell_fx.h"
+#include "game/battle/shatter.h"
 #include "game/battle/spellcast.h"
 #include "game/battle/sprite.h"
 #include "game/battle/unit.h"
@@ -157,6 +158,7 @@ void spells_reset() {
   g_spell_effect_started = 0;
   spellcast_reset();
   spell_fx_reset();
+  shatter_reset();  // the PolyShard pool (shatter.cpp)
 }
 
 // ---- The spell-data cache ----
@@ -167,7 +169,17 @@ int unit_caster_variant(const Unit* u) {
   return 8 < klass ? klass - 8 : 0;
 }
 
+namespace {
+bool cache_trace() {
+  static const bool on = std::getenv("SS_SPELL_CACHE_TRACE") != nullptr;
+  return on;
+}
+}  // namespace
+
 void spell_data_request(int spell, int priority, Unit* caster) {
+  if (cache_trace())
+    std::fprintf(stderr, "[cache] frame %d request 0x%x prio %d entry 0x%x\n", bg().battle_frames, spell, priority,
+                 entry_for(spell, caster));
   if (entry_for(spell, caster) == 0) return;
   SpellCache& c = g_cache;
   const s16 prio = static_cast<s16>(priority);
@@ -190,54 +202,7 @@ void spell_data_request(int spell, int priority, Unit* caster) {
   c.req_caster[static_cast<size_t>(at)] = caster;
 }
 
-namespace {
-
-// Debugging (SS_BATTLE_CAST="FRAMES:SLOT:SPELL:TARGET;..."): once g_battle_frames reaches
-// FRAMES, party unit SLOT gets command 4 (cast SPELL at TARGET: p0-p3 / e0-e7), as the
-// world agent's Redux driver does with BW_CAST.
-void debug_forced_casts() {
-  struct Cast {
-    s32 frames;
-    int slot, spell, index;
-    char side;
-    bool done;
-  };
-  static std::vector<Cast> casts;
-  static bool parsed = false;
-  BattleGlobals& g = bg();
-  if (!parsed) {
-    parsed = true;
-    if (const char* env = std::getenv("SS_BATTLE_CAST")) {
-      std::string list(env);
-      size_t at = 0;
-      while (at < list.size()) {
-        size_t stop = list.find(';', at);
-        if (stop == std::string::npos) stop = list.size();
-        Cast c{};
-        if (std::sscanf(list.substr(at, stop - at).c_str(), "%d:%d:%i:%c%d", &c.frames, &c.slot, &c.spell, &c.side, &c.index) == 5)
-          casts.push_back(c);
-        at = stop + 1;
-      }
-    }
-  }
-  for (Cast& c : casts) {
-    if (c.done || g.battle_frames < c.frames) continue;
-    c.done = true;
-    PartyUnit* u = g.party_units[static_cast<size_t>(c.slot & 3)];
-    if (u == nullptr) continue;
-    u->target = c.side == 'p' ? static_cast<Unit*>(g.party_units[static_cast<size_t>(c.index & 3)])
-                              : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(c.index & 7)]);
-    u->spell = static_cast<u8>(c.spell);
-    u->command = 4;
-    std::fprintf(stderr, "[spell] forced cast 0x%x by p%d at %c%d, battle frames %d\n", c.spell, c.slot, c.side, c.index,
-                 g.battle_frames);
-  }
-}
-
-}  // namespace
-
 void spell_data_update() {
-  debug_forced_casts();
   BattleGlobals& g = bg();
   SpellCache& c = g_cache;
   for (int i = 0; i < 16; ++i) {
@@ -266,6 +231,7 @@ void spell_data_update() {
   for (int i = 0; i < 16; ++i) {
     if (c.slot_spell[static_cast<size_t>(i)] != 0) continue;
     c.slot_buffer[static_cast<size_t>(i)] = load_entry(entry);
+    if (cache_trace()) std::fprintf(stderr, "[cache] frame %d load 0x%x into %d\n", bg().battle_frames, c.req_spell[0], i);
     c.slot_ready[static_cast<size_t>(i)] = 0;
     c.slot_reading[static_cast<size_t>(i)] = 1;
     c.slot_spell[static_cast<size_t>(i)] = c.req_spell[0];
@@ -298,6 +264,7 @@ SpellData spell_data_take(int spell, Unit* caster) {
   SpellCache& c = g_cache;
   for (int i = 0; i < 16; ++i) {
     if (c.slot_spell[static_cast<size_t>(i)] != static_cast<u8>(spell) || c.slot_owner[static_cast<size_t>(i)] != caster) continue;
+    if (cache_trace()) std::fprintf(stderr, "[cache] frame %d take 0x%x from %d\n", bg().battle_frames, spell, i);
     SpellData d = std::move(c.slot_buffer[static_cast<size_t>(i)]);
     c.slot_spell[static_cast<size_t>(i)] = 0;
     cache_compact();
@@ -320,6 +287,7 @@ void spell_data_clear_all() {
 
 void spell_data_cancel_owner(Unit* owner) {
   SpellCache& c = g_cache;
+  if (cache_trace()) std::fprintf(stderr, "[cache] frame %d cancel owner %s%d\n", bg().battle_frames, owner->is_enemy ? "e" : "p", owner->slot);
   for (int i = 0; i < 16; ++i) {
     if (c.slot_owner[static_cast<size_t>(i)] != owner) continue;
     c.slot_buffer[static_cast<size_t>(i)].reset();
@@ -331,6 +299,78 @@ void spell_data_cancel_owner(Unit* owner) {
     if (c.req_caster[static_cast<size_t>(i)] != owner) continue;
     c.req_spell[static_cast<size_t>(i)] = 0;
     cache_compact();
+  }
+}
+
+// Debugging (SS_BATTLE_CAST="FRAMES:SLOT:SPELL:TARGET;..."): once g_battle_frames reaches
+// FRAMES, party unit SLOT gets command 4 (cast SPELL at TARGET: p0-p3 / e0-e7); called by
+// input_update before input_dispatch, where the world agent's Redux driver applies BW_CAST.
+void debug_forced_casts() {
+  // SS_BATTLE_ENEMY_ODDS="FRAMES:SLOT:o0,o1,o2,o3,o4": enemy SLOT's AI odds (EnemyUnit
+  // +0x24d) set once the battle frames reach FRAMES (a passive target for the spell sweeps;
+  // the Redux driver pokes the same bytes during the intro).
+  static bool odds_done = false;
+  if (!odds_done) {
+    if (const char* env = std::getenv("SS_BATTLE_ENEMY_ODDS")) {
+      int frames = 0, slot = 0;
+      unsigned o[5] = {};
+      if (std::sscanf(env, "%d:%d:%u,%u,%u,%u,%u", &frames, &slot, &o[0], &o[1], &o[2], &o[3], &o[4]) == 7) {
+        if (frames <= bg().battle_frames) {
+          odds_done = true;
+          if (EnemyUnit* e = bg().enemy_units[static_cast<size_t>(slot & 7)])
+            for (int i = 0; i < 5; ++i) e->odds[i] = static_cast<u8>(o[i]);
+        }
+      } else {
+        odds_done = true;
+      }
+    } else {
+      odds_done = true;
+    }
+  }
+  struct Cast {
+    s32 frames;
+    int slot, spell, index;
+    char side;
+    bool done;
+  };
+  static std::vector<Cast> casts;
+  static bool parsed = false;
+  BattleGlobals& g = bg();
+  if (!parsed) {
+    parsed = true;
+    if (const char* env = std::getenv("SS_BATTLE_CAST")) {
+      std::string list(env);
+      size_t at = 0;
+      while (at < list.size()) {
+        size_t stop = list.find(';', at);
+        if (stop == std::string::npos) stop = list.size();
+        Cast c{};
+        if (std::sscanf(list.substr(at, stop - at).c_str(), "%d:%d:%i:%c%d", &c.frames, &c.slot, &c.spell, &c.side, &c.index) == 5)
+          casts.push_back(c);
+        at = stop + 1;
+      }
+    }
+  }
+  // SS_BATTLE_CAST_IDLE=1: in order, each cast also waits until its caster is idle (action 0)
+  // and no SpellCast runs (flags 0x40), as the Redux driver's BW_CAST_IDLE.
+  static const bool idle = std::getenv("SS_BATTLE_CAST_IDLE") != nullptr;
+  for (Cast& c : casts) {
+    if (c.done) continue;
+    if (g.battle_frames < c.frames) {
+      if (idle) break;
+      continue;
+    }
+    PartyUnit* u = g.party_units[static_cast<size_t>(c.slot & 3)];
+    if (idle && u != nullptr && (u->action != 0 || u->command != 0 || (g.flags & 0x40) != 0)) break;
+    c.done = true;
+    if (u == nullptr) continue;
+    u->target = c.side == 'p' ? static_cast<Unit*>(g.party_units[static_cast<size_t>(c.index & 3)])
+                              : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(c.index & 7)]);
+    u->spell = static_cast<u8>(c.spell);
+    u->command = 4;
+    std::fprintf(stderr, "[spell] forced cast 0x%x by p%d at %c%d, battle frames %d\n", c.spell, c.slot, c.side, c.index,
+                 g.battle_frames);
+    if (idle) break;  // one a frame (the command is taken on the member's next update)
   }
 }
 
@@ -365,6 +405,22 @@ void spell_cast(int spell, Unit* caster, Unit* target, int power) {
       return;
     }
     s->mp = static_cast<s16>(mp - cost);
+  }
+  // ORIGINAL BUG (original_bugs.md S3): a monster's counter-cast can have no target (its last
+  // attacker was an item's Shot); the Shot spells below then aim at the unit "at address 0"
+  // (kernel memory) and fly at a fixed point of the arena:
+  //   spell_firebolt(caster, nullptr, power) ...
+  // Fixed: they take the member the SpellCast spells fall back to (spellcast_retarget: the
+  // first standing member from slot 3 on).
+  const bool shot_spell = spell == 1 || spell == 4 || spell == 8 || spell == 0xD || spell == 0x17 || spell == 0x1E ||
+                          spell == 0x2B || spell == 0x2F || spell == 0x30 || spell == 0x35;
+  if (target == nullptr && shot_spell && caster->is_enemy != 0) {
+    BattleGlobals& g = bg();
+    for (int n = 0, idx = 3; n < 4 && target == nullptr; ++n, idx = (idx + 1) & 3) {
+      Unit* u = g.party_units[static_cast<size_t>(idx)];
+      if (!unit_is_down(u)) target = u;
+    }
+    if (target == nullptr) return;
   }
   switch (spell) {
     case 1: spell_firebolt(caster, target, power); break;

@@ -48,7 +48,7 @@ Resume an area from its log.
 |---|---|---|
 | Battle | `game/battle/` | pc_state_air_attack, the character modules Ernest, Bowman and Dias, party AI |
 | Enemy | `game/battle/enemy_*`, `spell_mod_<name>.cpp` (new) | the eight monster spell modules (12, 16, 22, 28, 51, 55, 56, 57) checked against its boss references, then Shot kinds 0x27 / 0x2d, shot_draw_frame_quad, bload_request and the battle voice player |
-| Menu | `game/common/menu_*`, `game/field/menu_camp.*`, `game/common/party.*` | the camp pages: Items (0xbbe) next, then Equipment, Status, Skills, Specialty, Options, Combat |
+| Menu | `game/field/vm_services*`, `script_*`, M8 audit | the game can be finished: every event-script stand-in classified and ported, an event sweep over every map on both discs, story stretches from save copies |
 | World | `game/battle/spells*`, `spellcast*`, `command_menu*` | verify the spell system and command menus, the test casters' modules, the other ~45 spell modules, battle item use |
 | Effects | `psx/gpu.cpp`, `game/battle/pc_<name>.cpp` (new) | GPU line stepping (hardware model), then the character modules Precis, Ashton, Opera and Chisato |
 
@@ -104,6 +104,7 @@ only. Agents run the suites themselves before reporting a step as verified.
   `~/.config/pcsx-redux`; run PCSX-Redux only with `-cli` and a scratch HOME, on scratch
   memory-card copies — never the user's saves.
 - Kill processes only by exact PID.
+- Machine budget (20 cores): at most 3 PCSX-Redux instances per agent at once, builds with -j8.
 - `/tmp` is RAM-backed (tmpfs): keep large scratch (captures, dumps, extra builds) on disk under
   the git-ignored `scratchpad/<name>/` in the repo, and delete finished scratch promptly.
 - Catalogue every reversed function in `docs/catalog` (LF line endings; write CSVs with

@@ -1,4 +1,6 @@
 #include "game/battle/input.h"
+#include "game/battle/items.h"
+#include "game/battle/spells.h"
 
 #include <cstring>
 
@@ -217,6 +219,8 @@ void input_update(BattleInput* in) {
   in->pressed = pad_pressed(g.pad, 0);
   pad_clear(g.pad, 0);
   if (g.flags & 4) in->held = in->repeat = in->pressed = 0;
+  debug_forced_casts();  // (world agent) SS_BATTLE_CAST / SS_BATTLE_ITEM, as the Redux driver's
+  debug_forced_items();  // BW_CAST / BW_ITEM at input_dispatch
   input_dispatch(in);
 }
 
