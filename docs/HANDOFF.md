@@ -11,10 +11,10 @@ this file is the quick orientation.
   0 crashes, 0 stand-ins), all 85 endings play, and the user's late-game save (map 671,
   Fienal 9F) matches PCSX-Redux through the final battle and its endings
   (`docs/notes/m8_audit.md`, `docs/notes/endings.md`).
-- **M7 nearly done:** every character module, enemy module, spell (70) and spell module (55) is
-  verified; all 564 encounters run without crashes (`docs/notes/battle_sweep.md`). Left: the
-  battle talk layer's last Redux checks, a few stage references, the Weirdaxe debris, the
-  final boss's first AI draw (frame 0 vs 102), then the tick.
+- **M7 done:** every character module, enemy module, spell (70) and spell module (55) is
+  verified; all 564 encounters run without crashes (`docs/notes/battle_sweep.md`); the battle
+  talk layer (`battle/party_talk.cpp`) matches Redux (RNG equal to the exit; the talk pose is
+  shorter by the clip's CD load time, accepted).
 - **Archipelago:** phase 1 and the port side of phase 2 are done; the APWorld
   (`apworld/so2`, `docs/ap/apworld.md`) generates and fills story-mode seeds, the native
   client works end to end against a local server. In progress: a real SO2-slot end to end,
@@ -46,7 +46,7 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 | Area | Log | Now |
 |---|---|---|
 | Battle | `docs/handoff/battle.md` | stage references, Weirdaxe debris, final boss first AI draw, B13, M7 tick |
-| Effects | `docs/handoff/effects.md` | battle talk Redux checks (provoke, throws, ally fury, flee), field menu voice |
+| Effects | `docs/handoff/effects.md` | battle talk verified; field menu voice Redux check; then the catalog's unported rows |
 | Catalog | `docs/handoff/catalog.md` | stale notes, gap scan per program, missing rows (`docs/catalog/COVERAGE.md`) |
 | World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
 | Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
@@ -67,7 +67,8 @@ only. Agents run the suites themselves before reporting a step as verified.
 
 - `cmake --build engine/build`; `SS_DISC1=<disc 1 .cue> engine/build/ss_tests` (76) and
   `engine/build/ss_game_tests` (71); `tools/smoke_field_events.sh` (16 checks; `SS_DISC1` must
-  be set, disc 2 is found next to it). All green at `e37c3a5` (ss_tests 78, ss_game_tests 74).
+  be set, disc 2 is found next to it). All green at `a10f166` (ss_tests 78, ss_game_tests 104,
+  smoke 62).
 - ASan without root: `dnf download libasan` (x86_64), `rpm2cpio | cpio -idm` into a scratch
   dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
   `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>`. `gdb.minimal` is installed.
@@ -79,10 +80,13 @@ only. Agents run the suites themselves before reporting a step as verified.
 effects agent's party-module moves, plus menu/world-map/legacy-effects refs not yet wired
 up) with how its port side is reproduced, how it's compared, and the expected result.
 `tools/ref_regress.py --all|--quick|--area X|--id A,B [--build DIR]` replays the automatable
-ones (222 of 339) through the owning agent's own scripts — never PCSX-Redux — judges each
-against its documented expectation, and writes `scratchpad/regress/<timestamp>/summary.md`;
-`--quick` (~28 refs, under 10 minutes) runs after smoke in `tools/checkpoint.sh` and its
-total goes into the commit message, same as the other suites (a failure is reported, never
+ones (223 of 339) through the owning agent's own scripts — never PCSX-Redux — judges each
+against its documented expectation (plus a `resync` column for references that cross a
+CD-timed load or a boss-intro-voice draw), and writes
+`scratchpad/regress/<timestamp>/summary.md`: 219 pass, 3 regress, 1 review, 116 skip at HEAD
+(`docs/handoff/tools.md`). `--quick` (~28 refs, under 10 minutes; in practice ~35s) runs
+after smoke in `tools/checkpoint.sh` and its total goes into the commit message, same as the
+other suites (a failure is reported, never
 blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
 
 ## Debug options
@@ -96,7 +100,17 @@ blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
   console drive's time (seek + single-speed sectors). The port normally loads at once, so a
   voice line's talk pose (the clip's load and upload) is shorter than the original's (6
   frames vs 10-16); with the switch it matches Redux. `SS_TALK_TRACE=1` logs the party's
-  talk events (lines, talk pose, ally reaction, fury, weapon throws) with the rng count.
+  talk events (lines, talk pose, ally reaction, fury, weapon throws) with the rng count;
+  `SS_TALK_OFF=1` skips the opening lines (A/B checks); `SS_TALK_FLEE=F` makes the party
+  flee at battle frame F.
+- `SS_MENU_VOICE_TRACE=1` logs the field menus' voice streaming (init, reload after a
+  killer-move / party change, battle banks and field clips queued, done, shutdown) with the
+  menu / field state, budget and the sound slots; `SS_MENU_RNG=<dump>` loads the original's
+  random generator (a Redux `rng_open.bin`) when a field menu opens; `SS_FIELD_CLIP_RNG=<dump>`
+  the same before the field's first voice-clip pick. `SS_MENU_SOUND_DUMP=<prefix>` (each menu
+  voice step) and `SS_TALK_SOUND_DUMP=<path>` (battle start) write the sound driver's voice
+  slots 0-3 in the console's layout, for a byte compare with a Redux dump of the driver
+  (`scratchpad/fx_worker/mv/cmp_snd.py`).
 - `--debug`: a console on the terminal (`help`; where / warp / fol / item / heal / flag /
   global / battle / noclip) and a status line in the window title.
 - `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;

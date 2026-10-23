@@ -341,6 +341,36 @@ std::string vm_state(const Field* f) {
   return out;
 }
 
+// SS_SWEEP_SHOW="G1cf:1,G1c0:2,F157": script globals (hex offset : bytes) and flags printed
+// as " G1cf=8 G1c0=681 F157=0" on a "state" line when an entry ends and when the map settles,
+// so a search can tell the ways into a map apart (tools/ap_late_proof.py)
+// [enemy agent, AP late proof]. Empty without the variable.
+std::string shown_state() {
+  static const char* spec = std::getenv("SS_SWEEP_SHOW");
+  if (spec == nullptr) return "";
+  std::string out;
+  for_each_item("SS_SWEEP_SHOW", [&](const char* v) {
+    char* end = nullptr;
+    if (*v == 'F') {
+      const long n = std::strtol(v + 1, &end, 10);
+      if (n < 0 || n >= 0x170 * 8) return;
+      out += " F" + std::to_string(n) + "=" + std::to_string(globals().script_flags[n >> 3] >> (n & 7) & 1);
+    } else if (*v == 'G') {
+      const long off = std::strtol(v + 1, &end, 16);
+      const long bytes = end != nullptr && *end == ':' ? std::strtol(end + 1, nullptr, 10) : 4;
+      if (off < 0 || off + bytes > 0x8C0 || (bytes != 1 && bytes != 2 && bytes != 4)) return;
+      const u8* p = globals().script_globals + off;
+      const long value = bytes == 1 ? static_cast<long>(static_cast<s8>(p[0]))
+                         : bytes == 2 ? static_cast<long>(static_cast<s16>(p[0] | p[1] << 8))
+                                      : static_cast<long>(static_cast<s32>(p[0] | p[1] << 8 | p[2] << 16 | static_cast<u32>(p[3]) << 24));
+      char key[16];
+      std::snprintf(key, sizeof key, "%lx", off);
+      out += std::string(" G") + key + "=" + std::to_string(value);
+    }
+  });
+  return out;
+}
+
 void finish_entry(const Field* f, const char* result) {
   const u32 standins = g_vm_standins.calls - g_sweep.standins;
   const u32 unknown = g_vm_stats.unknown_ops - g_sweep.unknown;
@@ -348,6 +378,7 @@ void finish_entry(const Field* f, const char* result) {
   say("entry %d %c%d end %s frames %d standins %u%s%s unknown_ops %u%s", g_sweep.next, e.kind, e.index, result,
       g_sweep.timer, standins, standins ? " last " : "", standins && g_vm_standins.last ? g_vm_standins.last : "", unknown,
       std::strcmp(result, "timeout") == 0 || std::strcmp(result, "stuck") == 0 ? (" | " + vm_state(f)).c_str() : "");
+  if (std::getenv("SS_SWEEP_SHOW") != nullptr) say("entry %d state%s", g_sweep.next, shown_state().c_str());
   ++g_sweep.next;
 }
 
@@ -549,6 +580,7 @@ void event_sweep_frame(Field* f) {
         }
         if (!s.have_snapshot) {
           say("settled after %d frames", s.timer);
+          if (std::getenv("SS_SWEEP_SHOW") != nullptr) say("settled state%s", shown_state().c_str());
           snapshot();
           collect_entries();
           s.next = s.skip;

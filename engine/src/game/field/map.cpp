@@ -5,6 +5,7 @@
 #include <string>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/common/texture.h"
 #include "game/field/actor_field.h"
 #include "game/field/actors.h"
@@ -253,6 +254,7 @@ void field_load_map_sections(Field*, int container_entry) {
         g_map.glyph_rows = g_map.font.data() + rd32(g_map.font.data()) + 8;
         g_map.script = unpack(data, 0);
         mods_apply_script(container_entry - 0xC87, g_map.script);  // world edits (mods.h)
+        ap::on_script_loaded(container_entry - 0xC87, g_map.script);  // Archipelago doors [world agent]
         if (g_hooks.font_loaded) g_hooks.font_loaded(g_map.font.data());
         if (g_hooks.script_loaded) g_hooks.script_loaded();
         if (g.field_flags[0x24] != 0 && g_script_vm != nullptr) vm_restore_state(g_script_vm);  // 0x80069aac (handoff 0xd)

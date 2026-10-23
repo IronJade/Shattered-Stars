@@ -7,6 +7,7 @@
 #include "game/boot/pad.h"
 #include "game/boot/sound.h"
 #include "game/common/memcard.h"
+#include "game/common/party.h"
 #include "game/common/menu_scene.h"
 #include "game/common/save_icon.h"
 #include "game/title/title_program.h"
@@ -206,6 +207,10 @@ void SaveMenu::on_child_done(int id, int state, int) {
       pad_set_stick_range(menu_pad(), 0, 0x50, 0x50, 0x50, 0x50);
       pad_set_stick_dpad(menu_pad(), 0, 1);
     }
+    // The field's copy (overlay 0xbb6, 0x8007e6e4) also has the four party slots' voice banks
+    // reloaded (voice_reload_member 0-3: the loaded party's banks stream in after the load).
+    if (host() == Host::Field && g_voice_reload_member != nullptr)
+      for (int i = 0; i < 4; ++i) g_voice_reload_member(i);
     finish(0);
   } else if (id == 2 && state == 3) {
     open_child(1, new SaveList);

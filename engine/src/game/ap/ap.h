@@ -38,6 +38,8 @@ struct SaveState {
   std::vector<int> characters_waiting;  // received, not joined yet (no room, a Private Action...)
   std::vector<int> first_drops;         // enemy types whose first drop was taken as a check
   int ambushes = 0;                     // ambush traps received, not fought yet
+  // Phase 4.
+  std::vector<int> keys;                // area keys received (their numbers, in the order they came)
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -126,6 +128,26 @@ bool party_has_character(int id);         // in a party slot, active or in reser
 // New Game's choice of protagonist (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
 // seed's options.protagonist; the locations the seed holds are that protagonist's game's).
 int required_protagonist();
+
+// ---- Phase 4: the open world (doors and keys, the Expel teleporter), shop slots ----
+
+// field/map.cpp: map 'map''s script was loaded (on the world maps, a chunk's). The seed's doors
+// on it are checked: a door whose word is not a map transfer is ignored (and logged).
+void on_script_loaded(int map, const std::vector<u8>& script);
+// A trigger region about to start the routine at byte offset 'routine' of the loaded script:
+// true when it is a door routine the open world keeps shut (every seed door in it needs a key
+// not received). Nothing of it runs; a banner names the key.
+bool door_blocked_at_trigger(int routine);
+// A map transfer (script ext 0x7d / 0xa4 / 0xda) at byte offset 'offset'; args = map,
+// transition, x, y, z, dir (as fetched). True: a locked door, the transfer is skipped. A seed
+// door with a target rewrites args (map, x, y, z, dir).
+bool on_map_transfer(int offset, s32* args);
+bool has_key(int key);
+// Shops (menu_shop.cpp settle): 'count' copies of entry 'index' (item 'item') of shop 'shop'
+// bought or ordered. Returns the copies the game itself gives: count - 1 when the first copy
+// was a shop slot's check (its item given, or sent), else count.
+int on_shop_buy(int shop, int index, int item, int count);
+bool shop_slot_open(int shop, int index, int item);  // an unchecked shop-slot location there
 
 std::string status_text();
 

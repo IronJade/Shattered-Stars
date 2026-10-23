@@ -249,6 +249,11 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
    traps, EXP / Fol / encounter options.
 4. **Open world.** Area keys gating doors (map transfer patches), the Expel teleporter, shop
    shuffle. Later, entrance shuffle on the same door patches.
+   - Port side (2026-10-23, [seed_format.md](ap/seed_format.md) "Phase 4"): the door table
+     (`tools/ap_doors.py`, `docs/ap/doors.json`: 2529 doors, 66 world-map entrances), key
+     items and locked doors (`world_mode: open_world`), seed door targets for the entrance
+     shuffle with a validator (`apworld/so2/doors.py`), the Expel teleporter (Virtual Expel's
+     arena old man and Arlia's guide from chapter 36), shop slots as locations.
 5. **Release.**
    - First, a custom `.apworld` (custom_worlds; with the `archipelago.json` manifest Archipelago
      0.7 requires) and a port release.

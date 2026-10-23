@@ -320,11 +320,37 @@ be matched to these map numbers.
 
     id = 0x50320000 + (type << 21) + (map << 10) + index
 
-- `type`: 1 chest, 2 gift, 3 Fol gift, 4 recruitment, 5 shop, 6 Private Action (with an item
-  or Fol), 7 prize-table entry.
+- `type`: 1 chest, 2 gift, 3 Fol gift, 4 recruitment, 5 shop site, 6 Private Action (with an
+  item or Fol), 7 prize-table entry. Types 8-10 carry no map (below).
 - `map`: the record's map. A shared script uses its first map; maps run up to 1113, which
   fits the 11 bits.
 - `index`: the map's locations of that type in offset order (chests by handler, then flag).
+
+**Types without a map (2026-10-23).**
+
+| Type | What | Id | Records |
+|---|---|---|---|
+| 8 | an enemy type's first drop | `0x50320000 + (8 << 21) + enemy type` (the stats record's +0 id, battles.json `enemy_types`) | `enemy_drops`: 89 types that random encounters meet and that drop something (Armedknight, type 1: 1362231297) |
+| 9 | a boss fight | `0x50320000 + (9 << 21) + encounter` | `bosses`: 47 boss encounters (Alen-Tax, 191: 1364328639) |
+| 10 | a shop slot (phase 4) | `0x50320000 + (10 << 21) + (shop << 8) + index` | none: the APWorld makes them from the shop lists ([seed_format.md](seed_format.md), "Phase 4") |
+
+**Join sites.** A recruitment record's first join site keeps the record's id; every other join
+site of the record takes the map's next free type-4 index (`sites[].location_id`), as gift
+sites do. For example map 479 (Hoffmann Ruins): Opera at 0x6b8c is 1354333184 (the record's
+id), and Ernest's site at 0x7c30 is 1354333187. The APWorld uses these per-site ids for the
+join locations of `character_items`.
+
+**The battle tables in field.json** (for drops and bosses):
+- `bosses`: per encounter, its constant scripted sites (map, offset, routine, stage, param:
+  0 means the story lets the party lose) with their conditions, window, `late`, region and
+  area;
+- `enemy_drops`: per enemy type, its drops (item, odds out of 256), the encounter groups it is
+  in, the set-encounter sites of those groups and the world maps whose grids use them;
+- `encounter_groups`: the field program's group table (0x80074fe0), groups 1-28 and 30;
+- `world_map_groups`: the two 9 x 7 grids of the world maps (0x80074ef0 / 0x80074f70; +1 on
+  terrain 5, +2 on Nede's terrains 10-12);
+- `encounter_sites`: the 306 calls to a map's set-encounters library routine (rate to
+  G[0x25], stage to G[0x12], group to G[0x14]).
 
 The tool assigns 784 ids, all unique. The world script's records and the Fol payments get
 none.
@@ -358,7 +384,8 @@ unchanged.
 Type 6 ids stay in `private_actions` for reference; the APWorld doesn't use them.
 
 **Stability.** The ids stay stable as long as the discs and the tool's rules stay the same.
-A new location type gets a new type number rather than renumbering.
+A new location type gets a new type number rather than renumbering (8, 9 and 10 were added
+that way).
 
 ## Hooks in the port
 
@@ -382,7 +409,8 @@ The table lists every hook point the field tables need, including those not wire
 | Recruitment | `party_add_member` (script_party.cpp) | Called from ext 0xae with the same frame rule. With character items, the hook records the check and skips the join; the receive path calls party_add_member. |
 | Shops | B 0x6d menu_request_2 (shop id) | Stock comes from the overlay's table; `mods.cpp` `shop` lines already patch it (`so2_mod.py shop`). |
 | Private Actions | the events under flag[2] | Check through the same give_item hook. "Mark as seen" for missables can hook the registration (ext 0x70 / 0xf3 / thread_start) of a listed routine. |
-| The point of no return | B 0x6a (script_table_b.cpp, `disc_change_2`) | Where a "return to Expel" option or the logic's Expel cut-off hooks in. |
+| The point of no return | B 0x6a (script_table_b.cpp, `disc_change_2`) | Where a "return to Expel" option or the logic's Expel cut-off hooks in. Phase 4 leaves it alone: the Expel teleporter opens Virtual Expel's route from chapter 36 instead ([seed_format.md](seed_format.md) "Phase 4"). |
+| Doors | trigger fire (script_triggers.cpp) and the transfer itself (script_ext.cpp ext 0x7d / 0xa4 / 0xda) | Phase 4: a seed door (id = map * 65536 + offset / 4, `docs/ap/doors.json` from `tools/ap_doors.py`) can need a key (open world) or have a new target (entrance shuffle). |
 
 Notes on these hooks:
 - **Receiving and safe moments.** Received items wait for free play (field state 0, no

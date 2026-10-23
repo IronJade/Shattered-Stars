@@ -2245,6 +2245,35 @@ void sound_end_loops(Sound* s, int track_mask) {
 u8 sound_bank_loaded(Sound* s, int slot) { return s->bank_loaded[slot]; }
 void sound_set_bank_loaded(Sound* s, int slot, u8 value) { s->bank_loaded[slot] = value; }
 
+void sound_debug_dump_voice_slots(Sound* s, const char* path) {
+  FILE* out = std::fopen(path, "wb");
+  if (out == nullptr) return;
+  auto put = [out](u32 v) {
+    const u8 b[4] = {static_cast<u8>(v), static_cast<u8>(v >> 8), static_cast<u8>(v >> 16), static_cast<u8>(v >> 24)};
+    std::fwrite(b, 1, 4, out);
+  };
+  // A pointer into the driver as its offset there (the console's address minus the driver's).
+  auto off = [s](const u8* p) -> u32 {
+    if (p == nullptr) return 0;
+    if (p >= s->bank_area && p <= s->bank_area + sizeof s->bank_area) return static_cast<u32>(p - s->bank_area) + 0x1580;
+    if (p >= &s->remap[0][0] && p <= &s->remap[0][0] + sizeof s->remap) return static_cast<u32>(p - &s->remap[0][0]) + 0x3338;
+    return 0xFFFFFFFF;
+  };
+  for (int i = 0; i < 4; ++i) {
+    const SoundBankSlot& b = s->banks[i];
+    for (const u8* p : {b.instruments, b.instruments_base}) put(off(p));
+    put(b.spu);
+    put(b.spu_base);
+    for (const u8* p : {b.index, b.scripts, b.scripts_base, b.sequence_offsets, b.sequence_offsets_base, b.sequences,
+                        b.sequences_base, b.remap})
+      put(off(p));
+  }
+  std::fwrite(s->bank_loaded, 1, sizeof s->bank_loaded, out);
+  std::fwrite(s->bank_area, 1, sizeof s->bank_area, out);
+  std::fwrite(s->remap, 1, sizeof s->remap, out);
+  std::fclose(out);
+}
+
 void sound_measure_subtick(Sound* s) {
   const s32 position = (static_cast<s32>(GetRCnt(RCntCNT2)) << 16) / (s->rcnt_target ? s->rcnt_target : 1);
   s->subtick = static_cast<s16>((s->frame_ticks * position) >> 16);

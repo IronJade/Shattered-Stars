@@ -126,7 +126,29 @@ def main():
         for mod, addr, name, note in partial:
             lines.append(f"- {mod} {addr} `{name}`: {note}")
         lines.append("")
-    open(OUT, "w").write("\n".join(lines))
+
+    # Read existing file and replace only between markers
+    block = "\n".join(lines)
+    text = open(OUT).read() if os.path.exists(OUT) else ""
+    marker_begin = "<!-- coverage:begin -->"
+    marker_end = "<!-- coverage:end -->"
+    start = text.find(marker_begin)
+
+    if start == -1:
+        # No markers found; insert generated block at the top
+        text = marker_begin + "\n" + block + "\n" + marker_end + "\n\n" + text
+    else:
+        # Replace between markers
+        end = text.find(marker_end, start + len(marker_begin))
+        if end == -1:
+            # Missing end marker; append end marker
+            text = text[:start] + marker_begin + "\n" + block + "\n" + marker_end + "\n"
+        else:
+            # Replace between markers
+            tail = text[end + len(marker_end):]
+            text = text[:start] + marker_begin + "\n" + block + "\n" + marker_end + tail
+
+    open(OUT, "w").write(text)
     print(f"{OUT}: {total['rows']} rows, empty {total['empty']}, unported {total['unported']}, "
           f"partial {len(partial)}, bad path {total['bad path']}, likely {total['likely']}, guess {total['guess']}")
     if args.check and total["bad path"]:

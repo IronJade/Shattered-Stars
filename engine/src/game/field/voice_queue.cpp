@@ -1,6 +1,7 @@
 #include "game/field/voice_queue.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -37,6 +38,24 @@ const u8* slot_of(int i) { return globals().party + i * 0x60; }
 const u8* record_of(int i) { return globals().records + i * 0xD0; }
 
 // Entries sorted by archive entry (copies, -1, first), info alongside.
+// Debugging (SS_FIELD_CLIP_RNG=file, a Redux dump of the generator at the field's first
+// voice_queue_build_field, 57 words: index, table): the port's boot path draws differently
+// before the field, so its first clip picks differ from a Redux run's; this lines them up
+// for a byte compare of the sound slots (sound_debug_dump_voice_slots).
+void debug_first_clip_rng() {
+  static bool done = false;
+  if (done) return;
+  done = true;
+  const char* path = std::getenv("SS_FIELD_CLIP_RNG");
+  if (path == nullptr || *path == 0) return;
+  u32 w[57];
+  FILE* in = std::fopen(path, "rb");
+  if (in == nullptr) return;
+  const size_t n = std::fread(w, 4, 57, in);
+  std::fclose(in);
+  if (n == 57) rng_restore(w + 1, static_cast<s32>(w[0]));
+}
+
 void sort_queue(int n) {
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
@@ -183,6 +202,7 @@ int voice_queue_build_battle(int budget) {
 }
 
 int voice_queue_build_field(int budget) {
+  debug_first_clip_rng();
   g_reading = 0;
   g_field_mode = 1;
   if (voice_queue_pending()) return -1;

@@ -692,3 +692,139 @@ TEST(ap_deathlink_scenes) {
   CHECK(ap::deathlink_pending());
   ap::stop();
 }
+
+// ---- Phase 4: the open world (doors, keys, the Expel teleporter), shop slots ----
+
+namespace {
+
+// kSeed with phase-4 options, a key item (Salva Pass, key 3), a chest placeholder holding it,
+// two shop slots (one ours, one Alice's) and three doors: the Expel world map's Salva entrance
+// (chunk script 909 0x3c78, routine 0x3c6c) needing key 3; Arlia's door to map 18 (17 0x2054)
+// sent to map 23; and a door on a word that is no map transfer.
+std::string phase4_seed(const std::string& options) {
+  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  t = replace(t, "\"5009000\":", "\"5300003\": {\"name\": \"Salva Pass\", \"kind\": \"key\", \"key\": 3},\n    \"5009000\":");
+  t = replace(t, "  \"locations\": [\n",
+              "  \"locations\": [\n"
+              "    {\"id\": 9101, \"name\": \"key chest\", \"placeholder\": 1105, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 105},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"key\", \"key\": 3, \"name\": \"Salva Pass\"}},\n"
+              "    {\"id\": 1365246466, \"name\": \"Arlia shop: Lavender\", \"check\": {\"type\": \"shop\", \"shop\": 1, \"index\": 2, \"item\": 224},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"item\", \"game_id\": 21, \"name\": \"Revival Card\"}},\n"
+              "    {\"id\": 1365246464, \"name\": \"Arlia shop: Sandals\", \"check\": {\"type\": \"shop\", \"shop\": 1, \"index\": 0},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Hookshot\"}},\n");
+  t = replace(t, "  \"patches\":",
+              "  \"doors\": [\n"
+              "    {\"id\": 59576094, \"routine\": \"0x3c6c\", \"key\": 3, \"name\": \"Expel -> Salva\"},\n"
+              "    {\"map\": 17, \"offset\": \"0x2054\", \"routine\": \"0x204c\", \"to\": {\"map\": 23, \"x\": 224, \"y\": 0, \"z\": 106, \"dir\": 198}},\n"
+              "    {\"map\": 17, \"offset\": \"0x2060\", \"key\": 3}\n"
+              "  ],\n"
+              "  \"patches\":");
+  return t;
+}
+
+// A map script with map_transfer_c words at the given byte offsets of its code.
+std::vector<u8> script_with_transfers(std::initializer_list<int> offsets) {
+  std::vector<u8> s(0x1C + 0x4000, 0);
+  for (const int at : offsets) {
+    const u32 w = 0xDA000011u;
+    std::memcpy(s.data() + 0x1C + at, &w, 4);
+  }
+  return s;
+}
+
+}  // namespace
+
+TEST(ap_phase4_seed) {
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  CHECK(!s.open_world && !s.expel_teleporter && s.shuffle_shops == 0 && s.doors.empty());
+  CHECK(ap::load_seed_text(phase4_seed("{\"world_mode\": \"open_world\", \"shuffle_shops\": \"specials\"}"), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  CHECK(s.open_world && s.expel_teleporter && s.shuffle_shops == 1);
+  CHECK(s.items[5300003].kind == "key" && s.items[5300003].key == 3);
+  CHECK(s.locations[1].type == "shop" && s.locations[1].shop == 1 && s.locations[1].index == 2 && s.locations[1].shop_item == 224);
+  CHECK(s.locations[2].shop_item == -1);
+  CHECK(s.doors.size() == 3);
+  // A door by id: map 909, offset 0x3c78 (909 * 65536 + 0x3c78 / 4); by map and offset: its id.
+  CHECK(s.doors[0].map == 909 && s.doors[0].offset == 0x3C78 && s.doors[0].routine == 0x3C6C && s.doors[0].key == 3);
+  CHECK(s.doors[1].id == ap::door_id(17, 0x2054) && s.doors[1].has_target && s.doors[1].to.map == 23 && s.doors[1].to.dir == 198);
+  CHECK(ap::load_seed_text(phase4_seed("{\"world_mode\": \"open_world\", \"expel_teleporter\": false}"), &s, &error) &&
+        s.open_world && !s.expel_teleporter);
+  CHECK(ap::load_seed_text(phase4_seed("{\"world_mode\": 1, \"shuffle_shops\": 2}"), &s, &error) && s.open_world && s.shuffle_shops == 2);
+  CHECK(seed_error(phase4_seed("{\"world_mode\": \"chaos\"}"), "options.world_mode"));
+  CHECK(seed_error(phase4_seed("{\"shuffle_shops\": \"all\"}"), "options.shuffle_shops"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "\"kind\": \"key\", \"key\": 3}", "\"kind\": \"key\", \"key\": 256}"), "key 1-255"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "\"shop\": 1, \"index\": 2", "\"shop\": 1"), "a shop slot needs"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "{\"id\": 59576094,", "{\"id\": 59576094, \"map\": 18,"), "is not map * 65536"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "\"offset\": \"0x2060\"", "\"offset\": \"0x2054\""), "repeated"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "\"offset\": \"0x2060\"", "\"offset\": \"0x2061\""), "a door needs"));
+  CHECK(seed_error(replace(phase4_seed("{}"), "{\"map\": 23, ", "{"), "to needs map"));
+}
+
+TEST(ap_doors_and_keys) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(phase4_seed("{\"world_mode\": \"open_world\"}"), &s, &error));
+  ap::start_with(s);
+  // The Expel teleporter's edits join the seed's patch lines.
+  int teleporter = 0;
+  for (const std::string& l : ap::seed_patch_lines()) teleporter += l.rfind("script 303 0x1307", 0) == 0 || l.rfind("script 18 0x996", 0) == 0;
+  CHECK(teleporter == 2);
+  // The world map: chunk 915 runs script 909. The Salva entrance is locked without key 3.
+  ap::on_script_loaded(915, script_with_transfers({0x3C78}));
+  CHECK(ap::door_blocked_at_trigger(0x3C6C));
+  CHECK(!ap::door_blocked_at_trigger(0x3C18));  // (another routine)
+  s32 args[7] = {43, 128, -1960, 0, 906, 315, 128};
+  CHECK(ap::on_map_transfer(0x3C78, args));     // (reached another way: skipped too)
+  // The key (a chest's placeholder): the door opens; its arguments stay the game's.
+  CHECK(ap::on_give_item(1105) && ap::has_key(3) && ap::is_checked(9101));
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C));
+  CHECK(!ap::on_map_transfer(0x3C78, args) && args[0] == 43 && args[2] == -1960);
+  CHECK(ap::status_text().find("keys Salva Pass") != std::string::npos);
+  // Map 17: a door with a target is sent there; a door on a word that is no transfer is ignored.
+  ap::on_script_loaded(17, script_with_transfers({0x2054}));
+  s32 b[7] = {18, 0, 230, 0, -133, 0, 128};
+  CHECK(!ap::on_map_transfer(0x2054, b) && b[0] == 23 && b[2] == 224 && b[4] == 106 && b[5] == 198 && b[6] == 128);
+  CHECK(!ap::door_blocked_at_trigger(0x204C));
+  CHECK(ap::status_text().find("(1 ignored)") != std::string::npos);
+  // (A door elsewhere does not apply here.)
+  s32 c[7] = {43, 128, -1960, 0, 906, 315, 128};
+  CHECK(!ap::on_map_transfer(0x3C78, c) && c[0] == 43);
+  // The sidecar keeps the keys.
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.keys == std::vector<int>{3});
+  ap::stop();
+  // Story mode: keys never lock a door, and no teleporter edits.
+  CHECK(ap::load_seed_text(phase4_seed("{}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::seed_patch_lines().size() == s.patches.size());
+  ap::on_script_loaded(909, script_with_transfers({0x3C78}));
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C));
+  s32 d[7] = {43, 128, -1960, 0, 906, 315, 128};
+  CHECK(!ap::on_map_transfer(0x3C78, d) && d[0] == 43);
+  ap::stop();
+  // No seed: nothing changes.
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) && ap::on_shop_buy(1, 2, 224, 3) == 3);
+}
+
+TEST(ap_shop_slots) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(phase4_seed("{\"shuffle_shops\": \"full\"}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::shop_slot_open(1, 2, 224) && !ap::shop_slot_open(1, 2, 225) && !ap::shop_slot_open(1, 1, 221));
+  // Another item at the entry (the seed expected Lavender): not the slot.
+  CHECK(ap::on_shop_buy(1, 2, 225, 2) == 2 && !ap::is_checked(1365246466));
+  // Three Lavender: the first is the check (our Revival Card), the game gives two.
+  CHECK(ap::on_shop_buy(1, 2, 224, 3) == 2 && ap::is_checked(1365246466));
+  CHECK(field::inventory_find(sg.g.inventory, 21) >= 0);
+  CHECK(!ap::shop_slot_open(1, 2, 224) && ap::on_shop_buy(1, 2, 224, 1) == 1);
+  // Alice's slot: one copy bought, none given, the check sent.
+  CHECK(ap::on_shop_buy(1, 0, 728, 1) == 0 && ap::is_checked(1365246464));
+  ap::stop();
+}

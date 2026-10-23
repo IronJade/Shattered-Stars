@@ -382,6 +382,199 @@ Field menu voice (scratch `scratchpad/fx_worker/mv/`):
 - Running (01:20): `run_mv.sh mvA` (MV_OPEN=1500, the kms-style plan 60/100/230/290 cross,
   330 down, 360 cross, circles 700/760/820, MV_AFTER=300).
 
+### Phase 6, third agent (from 03:13): suites after B15, victory_2_3, field menu voice
+
+- Suites on build-fx at a10f166 + tree (B15 and SS_BATTLE_RNG_SKIP in): ss_tests 78/0,
+  ss_game_tests 104/0 (SS_DISC1), smoke 62/62, `ref_regress --quick` 23 pass / 3 regress /
+  2 review (the same as the 03:12 checkpoint). Runner: `scratchpad/fx_worker/run_suites.sh TAG`
+  (logs in `logs/suites_TAG`; ref_regress `--out` must be absolute: the world_spell handler
+  runs with cwd = scratchpad/world/spell).
+- The 3 regressions are not the talk layer (identical with SS_TALK_OFF=1):
+  - e10_3 / f10_3 (b450): suite setup. Those refs were recorded with Cross mash (Claude walks
+    from b330), but `h_enemy` sets NO_MASH=1 for every enemy ref. Without NO_MASH
+    (`scratchpad/enemy/run_port.sh 10 3 REF OUT`) both are RNG-equal within a frame to the
+    exit (b870). For the tools agent (ref_regress.py / refs.csv).
+  - m111_3 (b610): the world agent's documented spell-data CD load time (world.md: Goathead's
+    Thundercloud, console b602 / port 600); SS_BLOAD_DRIVE_TIME does not move it (not a bload
+    read). refs.csv expects rng_equal_to_exit: wrong expectation.
+  - m524_3 / m538_3 (review): the battle agent's party-load RNG offset (SS_BATTLE_RNG_SKIP).
+- victory_2_3 rerun on this tree (`vic/log2_on.txt`, `log2_off.txt`; port: SS_BATTLE_TICKS=1
+  SS_BATTLE_STRONG=1 SS_BATTLE_RNG=1 SS_BATTLE_RAM=ref/ram_field_exit_004046.bin
+  --reference-dither --battle 2:3, cross every 45 from 45): CMP_D=6 / 7 first mismatch b1250
+  (exit b1236), talk on and off; D 2 / 5 give +10 at b270, +7 at b300, +10 at b400 and equal
+  samples between (sample phase). The talk layer draws nothing in the opening (op1 at rng
+  1645 both). refs.csv's victory_2_3 row now names CMP_D=7 and the port command.
+- CHECKLIST: M7 and "Battle, part 2" were ticked by the second agent (committed a10f166).
+  HANDOFF.md: M7 state bullet, Effects row, test counts, debug options (SS_TALK_OFF,
+  SS_TALK_FLEE, SS_MENU_VOICE_TRACE, SS_MENU_RNG added next to SS_BLOAD_DRIVE_TIME /
+  SS_TALK_TRACE).
+- Field menu voice: Redux refs exist from the second agent (not in its log): `mv/mvA` (camp
+  menu at MV_OPEN=1500, kms plan 60/100/230/290 cross, 330 down, 360 cross, circles
+  700/760/820), `mvB` (the same plus MV_TIMER and a forced battle after the close: pokes
+  0x8009c72c=0x7d, 0x8009c43a=2, 0x8009c25c=0x21, L1 mash; `rng_open.bin`), `mvC` (circles
+  at 375/390/405: closes while streaming; never quit, exit 1), `mvD` (MV_OPEN=200: the menu
+  did not open). Port run `mv/pB` (log only). Redux mvA/mvB: init m+0 (state 3), reload m+361
+  (from 0x800802a0) + abort + invalidate slot 0, timer 60 repeats once at 3941 (a 2-vsync
+  frame), build_battle m+423 (budget 466 -> 226, entries 23 / 28 to slot 0 at m+436 / m+441),
+  build_field m+443 (clip 262, 1 draw), state 3 m+459, shutdown m+841; battle starts with
+  banks 1:2900 1:51c0 1:3a40 1:0. Slot 3's flag 1 vs the port's 0 is F18 (avoided).
+- **Field menu voice: verified against Redux (03:50).** REA re-read of bgload_init /
+  bgload_shutdown / voice_reload_member / bgload_update (#3100) and their helpers
+  (voice_queue_busy 0x80078fd4, voice_stream_set_state 0x80055eb0 (< 4 only), set_budget,
+  field_get_option_a): the port's menu_voice.cpp / menu_core.cpp do the same.
+  New debug: `sound_debug_dump_voice_slots` (boot/sound.{h,cpp}, flagged hunk: slots 0-3 in
+  the console layout), written by `SS_TALK_SOUND_DUMP=path` at the battle start
+  (party_talk.cpp) and `SS_MENU_SOUND_DUMP=prefix` at each menu voice step
+  (menu_voice.cpp; the trace also prints the rng count); `SS_FIELD_CLIP_RNG=file`
+  (field/voice_queue.cpp, flagged hunk) loads a Redux generator dump before the field's first
+  clip pick. Redux side: `mv/mvref2.lua` (+ driver dumps `snd_*.bin`, `rng_build_field.bin`),
+  `run_mv2.sh` (MV_LUA), `queue_efg.sh` / `queue_h.sh` / `queue_i.sh`; port `mv/port_mv.sh NAME`
+  (TRI, M, PLAN, BATTLE, MASH, FRAMES; stdin from /dev/null: --debug waits on it at exit);
+  compare `mv/cmp_snd.py REDUX.bin 80095ab4 PORT.bin` (slot words, loaded flags and each
+  slot's instrument / index / script / sequence / remap bytes).
+  - Killer-move reload + battle (Redux mvE / mvH / mvI, port pE3 / pH3, same plan relative to
+    menu_scene_create; port M = 1518 for TRI 1500): init m+0 state 3, reload m+361 (both),
+    build_battle m+422 port / m+423 Redux (the console's timer repeats once at 3941: a
+    2-vsync frame, not modelled), budget 466 -> 226 in both, banks 23 / 28 to slot 0, field
+    clip 262 with one draw (SS_MENU_RNG; without it the port picks 266), done, shutdown writes
+    field 3 0 in both. Port loads are instant (23 / 28 / 262 at m+424 / 425 / 429 vs Redux
+    m+436 / 441 / 456: CD timing). The close takes 19 vblanks vs 21: it waits for a menu
+    disc read in Redux (timer back to 60 just before the shutdown).
+  - Bytes (pH3 with SS_FIELD_CLIP_RNG=mvH/rng_build_field.bin, so the field picks 269 / 293 /
+    417 like Redux): slots 0-3 identical at every step (menu open, reload, battle banks
+    queued, clips queued, done) and at the battle start; the one difference is slot 3's
+    loaded flag (F18). Redux's slots stay the same at b+100 and b+880. Without the field RNG
+    (pE3) slot 0 is identical from the rebuild on; slots 1 / 2 differ in 5-6 effect-index
+    bytes (the field-load clips 290 / 412 vs 293 / 417, boot-path RNG).
+  - Next battle (encounter 125 stage 2, L1 every 60 from b+100): Claude's killer-move voice
+    (slot 0, id 0) plays 3 times in 900 frames on both sides, from the slot that now holds
+    bank 23 (Air Slash) instead of 29 (Dragon Howl); no voice loads in either battle.
+  - Menu opened while the field still streams (Redux mvF: Triangle at 2298, mvG: 2328; port
+    pF9 / pF19): the press aborts the field's read (load_queue_set_streaming 0x80043628 in
+    Redux; the port's same path), bgload_init copies state 1 with the budget (Redux 5250,
+    port 5416) or state 2 without it, the menu resumes the queue after its idle (145 / 146 /
+    280, build_field -678, clips, done) and the shutdown writes the state and budget back
+    (mvF field 3 4572 / pF9 3 4738; mvG / pF19 3 0). The field budgets differ because the
+    field's budget comes from the distance to the next encounter (field_flags +0x1C, an RNG
+    draw: boot path), not from the menu.
+  - Backing out during the idle (Redux mvC, port pC): a menu read at m+393 aborts the queue
+    and restarts the timer when it ends: Redux m+400 (7-vsync read), the port at once, so
+    the build comes at m+454 vs m+461; the steps after are the same.
+- **Field load from the data menu (new, 03:50, verified 04:00):** entry 2998 (field save page, menu_0bb6)
+  FUN_8007e6e4 (load done: clock, vibration, sound mode, stick centre, session result, then
+  voice_reload_member 0-3, finish) was not catalogued; the port's SaveMenu::on_child_done
+  (common/menu_save.cpp, the title copy) lacked the reload, so after a load in the field the
+  old party's banks stayed marked loaded. Added for Host::Field (flagged hunk, menu agent's
+  file). Verified: Redux mvL (camp menu, 7 x Down, Cross, Down, Cross, Cross slot 1, Cross
+  save 0, Cross yes) calls voice_reload_member 0-3 from 0x8007e828-0x8007e840 at the load
+  (m+693), the shutdown writes field state 0 / budget 0, the reloaded map streams 28 / 29 /
+  145 / 146 / 280 and clips 271 / 285 / 417 (field budget 8783 -> 7505). Port pL / pL2 / pL3
+  (same PLAN, both RNG switches): the four reloads at the load (m+634: the card read is
+  instant), shutdown field 0 0, the same banks and clips; slots byte-identical at the reload
+  (all four, slot 3 included) and after the map's streaming (field budget 7505 too; slot 3's
+  flag F18 again). Catalog: menu_0bb6 0x8007e6e4 save_menu_child_done (new row); notes:
+  docs/notes/menu.md "Voice streaming while a menu is open" + the save page line.
+- Catalog this session: 7 field globals 0x80078854-0x8007886c (bgload state / capacity /
+  current / requests, g_menu_voice_state, g_menu_voice_budget, g_bgload_timer), the menu_0bb6
+  row above; COVERAGE.md regenerated (4962 rows, unported 0, partial 11; the 123 empty port
+  columns are the catalog agent's new rows). The "(unported: ...)" and "[port partial]"
+  rows from phase 6 were already resolved.
+- Suites after these changes (build-fx, 04:0x): ss_tests 78/0, ss_game_tests 107/0
+  (SS_DISC1), smoke 73/73, ref_regress --quick 25 pass / 2 regress (e10_3, f10_3: NO_MASH
+  setup, above) / 1 review (m538_3, the battle agent's party-load offset).
+- Files touched this session: `engine/src/game/boot/sound.{h,cpp}` (debug dump, flagged),
+  `engine/src/game/field/voice_queue.cpp` (SS_FIELD_CLIP_RNG, flagged),
+  `engine/src/game/common/menu_save.cpp` (field load reload, flagged: menu agent's file),
+  `engine/src/game/battle/party_talk.cpp`, `engine/src/game/field/menu_voice.cpp`,
+  `docs/HANDOFF.md`, `docs/notes/menu.md`, `docs/catalog/{functions,globals}.csv`,
+  `docs/catalog/COVERAGE.md`, `tools/refs/refs.csv` (victory_2_3 row), this log.
+- Next (coordinator's order from phase 6): the per-program gap scan (jal targets and REA
+  procedures against the catalog rows; boot has uncatalogued routines around
+  0x8001446c-0x800144e4), then guess / likely rows to confirmed. No runs active.
+
+## Phase 7: catalog completion, empty port columns (fourth agent, from 04:05)
+
+Assignment (coordinator): the COVERAGE.md "Reached in play" items, the developer screens, the boot
+island, the remaining empty port columns, then guess / likely -> confirmed. Scratch and tools:
+`scratchpad/fx_worker/cat2/` (README at the top of each script):
+- `img.py` program images (boot exe, archive code entries from `code.pickle`, a 78 MB extract of
+  disc1.pickle), `normalize` (instruction words with jal targets, lui immediates and lui/gp-based
+  offsets masked), `code_end` (control-flow end of a function).
+- `match.py` / `classify.py MODULE ROOT`: twins of a module's rows in other programs (same
+  normalized words; `=` when the jal targets also pair up), reach from ROOT, refs.
+- `reach.py MODULE ROOT[,..] [ADDR..]`: reference reachability (jal / j / lui-built addresses /
+  data pointer words owned by the nearest lui-built label); 603 of 741 title functions reached
+  from title_entry; spot-checked: every "unreached" ported title row has no live reference.
+- `who.py MODULE ADDR..` (refs with the containing row), `xref.py [--prog P] ADDR..` (boot exe +
+  all code entries), `jalpairs.py A B` (jal targets of two twins side by side).
+- `apply2.py UPDATES.py` (row updates incl. renames, NEW rows inserted in order, contiguity check);
+  update sets `upd_title.py`, `upd_boot_menu.py`; backup `functions.before.csv`.
+- Redux: `scratchpad/fx_worker/join/` (`run_join.sh NAME`: joinref.lua redirects the CPU at a field
+  function entry to call party_slot_init 0x8007a20c for characters 1-12 and dumps the generator
+  before / slot and record after each call; `joincmp DIR` runs field::party_slot_init on the
+  same generator states; build line in joincmp.cpp's directory: c++ against build-fx's libs).
+
+Done (04:40), all 123 empty port columns resolved (0 left):
+- Join (task 1): title 0x80062330-0x80062e34 are the title's copies of field init_celine ..
+  init_chisato (instruction-identical, same talent tables); party_slot_init 0x80061f80 reaches
+  them only for ids 3-12 and every title call passes 1, 2 or 0. Renamed init_<name>, confirmed,
+  port engine/src/game/field/characters.cpp. Redux check (j2): all 12 characters' slot / record
+  bytes and the generator after each call identical (field rows got the evidence too).
+- menu_stats (task 1): port cells fixed to StatCalc::attr_total / snapshot_attrs /
+  snapshot_equip / can_equip / equip_slot (they named a nonexistent MemberStats); title
+  0x80034714 is char_equip_mask.
+- Debug screens (task 2): title debug_menu_window_create 0x80031aa8 and
+  debug_info_window_create 0x80039068 have no reference anywhere in the title image (so their
+  vtable functions never run): not needed, unreachable in retail. None reachable by a player.
+  The catalog agent's other "debug_screen_create_*" rows were misnamed: 0x80048dcc-0x80048ee4 are
+  the New Game windows' destructors (ported: title/window.h implicit destructors), 0x80048f0c /
+  0x80035ba0 / 0x80042b88 destructors of vtables no constructor stores, 0x8003a174 / 0x8003a1e0
+  / 0x8003a218 the title's Window-over-Task base (window_task_*; only the debug window uses it).
+- Boot island (task 3): the six "boot_text_glyph_slot_*" are sound_set_tracks wrappers like
+  sound_set_pan (renamed sound_set_track_volume3 / volume4 / transpose2 / coarse / fine2 /
+  humanize; no reference in the boot exe or any code entry: not needed); invert_status_flag ->
+  interrupts_disabled (dead); boot_resource_lookup / stream_unpack_step / lz_unpack_bytes /
+  lz_unpack_words are the time-sliced SLZ unpacker (slz_stream_open / step / lzss / lzss_rle),
+  REACHED from battle party_loader_update and spellcast_load_step: port disc/slz.cpp (+ the
+  battle's own pacing).
+- The other title rows: 30 renamed to their field / battle / menu twins' names (inventory_*,
+  party_*, stat_calc_*, RotMatrix, ...), port "(not needed: dead in the title program: ...)" with
+  the who.py evidence; reached ones cited (memcard_close_events, bgload_cancel_owner2,
+  memcard_start_check_true). 3 new title rows (vtable-only leaf functions the gap scan cannot
+  see): 0x8003a208 window_task_type, 0x8003a210 window_task_nop, 0x8003a248 window_task_update_nop.
+- menu_0ba5's five: field copies of title panel_fade_step / panel_darken / panel_help_anim /
+  panel_help_rebuild / text_draw_glyph (0 words differ), reached, ported in menu_widget.cpp /
+  menu_gfx.cpp; renamed *_field.
+
+Task 5 (first pass, 04:50): `raise.py` raised the likely / guess rows whose instruction twin
+(>= 8 words, jal targets pairing) is a confirmed row of the same name or the address the row
+cites (16 rows: battle's stale stat_mod_* / equip_* copies, title text_cat_measure /
+widget_draw_list / _item, field stat_calc_create, credits deferred_delete).
+Totals for phase 7 (diff against `cat2/functions.before.csv`): empty port 123 -> 0 (31 cited
+to port files, 92 not needed); 85 rows raised to confirmed (57 guess, 28 likely), 20 guess ->
+likely; 89 renamed; 3 new rows; 5 port cells corrected (StatCalc); 14 field rows got the Redux
+evidence. COVERAGE.md regenerated (4965 rows; likely 481, guess 105; empty 0, unported 0); its
+hand-written "Unported, reached in play" section rewritten as the resolution summary.
+No engine code changed; no suites needed. No runs active (Redux j2 done; its dumps are small).
+
+Next (whoever continues task 5): the 105 guess / 481 likely rows. Cheapest first: rows whose
+twin differs only in jal targets (`classify.py MODULE ROOT --all`, `~` hits: confirm the jal
+pairs with `jalpairs.py`), then rows the ported code cites by address (grep the address in
+engine/src) read against REA (batch_decompile, ~10 addresses a call: the output carries ~2k
+tokens of boilerplate per call, procedure_pseudo_code doubles it). Then the missing-row list
+below (add rows in address order with apply2.py NEW).
+
+Found, for the coordinator / catalog agent: the gap scan's `[?]` tag (no `addiu sp` prologue)
+hides real leaf functions: boot lacks rows for memcpy 0x80023ed0, memset 0x80023f10,
+0x80023e80 (thunk) / 0x80023e9c (strncmp-like, called by slz_unpack), the PRNT_OBJ internals,
+toupper / tolower / memchr / setjmp / longjmp / _exit / FlushCache / GPU_cw / CdRemove /
+DeliverEvent / OpenEvent / CloseEvent / WaitEvent / TestEvent / EnableEvent / DisableEvent /
+ReturnFromException / ResetEntryInt / HookEntryInt / write / ChangeClearPAD / 0x80024b90
+(GetSR-like) / ChangeClearRCnt (Ghidra names them; boot_procs.json); field lacks 0x8003359c,
+0x80038538, 0x80038e64, 0x80038e8c, 0x80038f38, 0x80039268, 0x8003c360, 0x8003d118 (twins of
+title rows); title lacks 0x80034bac; and functions reached only through vtables are invisible
+to jal-based scans (the three title rows above).
+
 ## State at the end of phase 5 step 2 (23:xx): no runs active, nothing queued
 
 Scratch: the port captures (port/*/cap) were deleted (regenerable with port_pc.sh); the

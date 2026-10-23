@@ -123,6 +123,9 @@ void party_talk_init() {
     for (int i = 0; i < 4; ++i)
       trace("bank", nullptr, static_cast<u32>(i) << 28 | static_cast<u32>(sound_bank_loaded(g.sound, i)) << 24 |
                                  static_cast<u32>(0xF400 - sound_bank_free_space(g.sound, i)));
+  // (SS_TALK_SOUND_DUMP=path: the same slots byte for byte, for a Redux dump of the driver.)
+  if (const char* path = std::getenv("SS_TALK_SOUND_DUMP"); path != nullptr && *path != 0 && g.sound != nullptr)
+    sound_debug_dump_voice_slots(g.sound, path);
   const auto* party = static_cast<const u8*>(handoff_get(g.handoff, 3));
   if (party == nullptr) return;
   for (int i = 0; i < 4; ++i) {

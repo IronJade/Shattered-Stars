@@ -225,6 +225,71 @@ else
   fail=1
 fi
 
+# Archipelago phase 4 [world agent]: the open world. Map 17's door to Arlia (door 1116181,
+# routine 0x204c) needs key 1: walking in shows the banner and nothing transfers; once the key
+# comes (console), walking in again loads map 18. With a target, the same door leads to map 23.
+# The Expel teleporter at chapter 40: the arena's old man (map 303, K25) sends the party to
+# Arlia in an open-world seed and only talks without one.
+cat >"$WORK/p4door.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-4", "slot": {"name": "Claude", "id": 1},
+ "options": {"world_mode": "open_world"},
+ "items": {"5300001": {"name": "Arlia Pass", "kind": "key", "key": 1}}, "locations": [],
+ "doors": [{"id": 1116181, "routine": "0x204c", "key": 1, "name": "Arlia exit -> Arlia"}]}
+SEED
+cat >"$WORK/p4redirect.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-4r", "slot": {"name": "Claude", "id": 1}, "locations": [],
+ "doors": [{"id": 1116181, "to": {"map": 23, "x": 224, "y": 0, "z": 106, "dir": 198}}]}
+SEED
+printf '{"format": "apso2", "version": 1, "seed": "smoke-4s", "slot": {"name": "Claude", "id": 1}, "locations": []}\n' >"$WORK/p4story.apso2"
+sed 's/"smoke-4s"/"smoke-4t"/; s/"locations"/"options": {"world_mode": "open_world"}, "locations"/' "$WORK/p4story.apso2" >"$WORK/p4open.apso2"
+"${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=15 SS_DEBUG_INPUT="400:ap_give key:1 Bob" timeout 900 "$BIN" --headless --debug \
+  --ap-seed "$WORK/p4door.apso2" --frames 800 --map 17 --map-pos 110,0,-457 --input "100:right,200:none,600:left,700:none" \
+  </dev/null >"$WORK/ap_p4_door.log" 2>&1
+check ap_p4_door "the locked door does not transfer" '\[ap\] door 1116181 \(Arlia exit -> Arlia\): locked, needs Arlia Pass'
+check ap_p4_door "the leader walks on" '\[leader\] vblank 180 map 17 state 0 pos 1[6-9][0-9],0,-457 .* control 0 '
+check ap_p4_door "the key opens it" 'trigger 9 fires \(code word 2067\) at leader 5[01][0-9],0,11[0-9] at vblank 6[0-9][0-9]'
+check ap_p4_door "map 18 loads" 'field_load_map\(map=18 keep=1 flags=0\) at vblank 6[0-9][0-9]'
+if grep -q 'field_load_map(map=18 keep=1 flags=0) at vblank [1-5][0-9][0-9]$' "$WORK/ap_p4_door.log"; then echo "FAIL ap_p4_door: transferred while locked"; fail=1; fi
+"${AP_RUN[@]}" SS_TRACE=1 timeout 900 "$BIN" --headless --ap-seed "$WORK/p4redirect.apso2" --frames 170 --map 17 \
+  --map-pos 110,0,-457 --input "100:right,200:none" </dev/null >"$WORK/ap_p4_redirect.log" 2>&1
+check ap_p4_redirect "the door's target is the seed's" '\[ap\] door 1116181: map 18 \(230, 0, -133\) -> map 23 \(224, 0, 106\)'
+check ap_p4_redirect "map 23 loads" 'field_load_map\(map=23 keep=1'
+for v in open story; do
+  SS_DISC2="${SS_DISC2:-${SS_DISC1//Disc 1/Disc 2}}" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
+    timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
+done
+check ap_p4_tele_open "the teleporter's edits apply" '\[mods\] 3 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
+check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
+check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+
+# Archipelago phase 4 [world agent]: shop shuffle. Hearn's store (map 26, shop 1): entry 0
+# (Sandals, item 728) is Alice's; entry 2 (Lavender, item 224) is our own Revival Card. Talk
+# to Hearn (up to his counter, confirm the Yes/No prompt), Buy, add 1 Sandal and 3 Lavenders,
+# settle: the first copy of each is the check (Sandals sent to Alice, nothing given; Lavender
+# gives the Revival Card), the other 2 Lavenders are the shop's own item (menu_shop.cpp settle,
+# draw_row colours an unchecked slot's name 2; ap_shop_slots unit-tests the colour logic).
+cat >"$WORK/p4shop.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-4shop", "slot": {"name": "Claude", "id": 1},
+ "options": {"shuffle_shops": "full"},
+ "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21}},
+ "locations": [
+   {"id": 1365246466, "name": "Arlia shop: Lavender", "check": {"type": "shop", "shop": 1, "index": 2, "item": 224},
+    "item": {"player": 1, "kind": "item", "game_id": 21, "name": "Revival Card"}},
+   {"id": 1365246464, "name": "Arlia shop: Sandals", "check": {"type": "shop", "shop": 1, "index": 0},
+    "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}}
+ ]}
+SEED
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;1620:where;2300:where" timeout 900 "$BIN" --headless --debug \
+  --ap-seed "$WORK/p4shop.apso2" --frames 2400 --map 18 \
+  --input "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1600:right,1606:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1800:right,1806:none,1850:right,1856:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none" \
+  </dev/null >"$WORK/ap_p4_shop.log" 2>&1
+check ap_p4_shop "the Buy list opens (shop 1, Hearn's)" '\[debug\] map 26 \| state 3 '
+check ap_p4_shop "another slot's item is sent" '\[ap\] check 1365246464 \(Arlia shop: Sandals\): Hookshot for Alice'
+check ap_p4_shop "and none of it is given" '\[ap\] shop 1 entry 0 \(item 728\): the slot.s check took the first copy of 1'
+check ap_p4_shop "our own slot's first copy is the check" '\[ap\] check 1365246466 \(Arlia shop: Lavender\): Revival Card'
+check ap_p4_shop "the other 2 copies are the shop's own item" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 3'
+check ap_p4_shop "Fol paid for all 4 (1x10 + 3x490)" '\[debug\] map 26 \| state 0 .* Fol 48520 '
+
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
 SAVE=analysis/saves/dex_north_city.mcd
@@ -275,6 +340,17 @@ if [ -f "$SAVE" ]; then
   check ap_p3_enc100 "encounter rate 100%: first battle as the original" '\[leader\] vblank 1150 map 2 state 4 '
   check ap_p3_enc200 "encounter rate 200%: sooner" '\[leader\] vblank 630 map 2 state 4 '
   if grep -qE 'map 2 state 4 ' "$WORK/ap_p3_enc0.log"; then echo "FAIL ap_p3_enc0: a random battle at 0%"; fail=1; else echo "PASS ap_p3_enc0: no random battle at 0%"; fi
+  # Archipelago phase 4 [world agent]: North City's world-map entrance (door 68685998) needs
+  # key 2: the leader starts in its region and nothing runs; with the key, re-entering it loads
+  # the town.
+  printf '{"format": "apso2", "version": 1, "seed": "smoke-4w", "slot": {"name": "Claude", "id": 1}, "options": {"world_mode": "open_world"}, "items": {"5300002": {"name": "North City Pass", "kind": "key", "key": 2}}, "locations": [], "doors": [{"id": 68685998, "routine": "0x42ac", "key": 2, "name": "Nede -> North City"}]}\n' >"$WORK/p4w.apso2"
+  cp "$SAVE" "$WORK/world.mcd"
+  rm -f "$WORK/world.slot01.ap.json"
+  SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE=1 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/world.mcd" \
+    SS_DEBUG_INPUT="300:ap_give key:2 Bob" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p4w.apso2" --frames 520 \
+    --map-pos 57219,-300,28622 --input "${NC_INPUT},100:down,160:none,400:up,470:none" </dev/null >"$WORK/ap_p4_world.log" 2>&1
+  check ap_p4_world "the locked entrance does not run" '\[ap\] door 68685998 \(Nede -> North City\): locked, needs North City Pass'
+  check ap_p4_world "with the key the town loads" 'field_load_map\(map=260 keep=1 flags=2\) at vblank 4[0-9][0-9]'
 else
   echo "SKIP north_city: $SAVE not present"
 fi

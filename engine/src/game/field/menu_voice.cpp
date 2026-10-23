@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/party.h"
 #include "game/field/field.h"
@@ -26,8 +27,16 @@ bool streaming() {
   return flags != nullptr && flags[0x25] != 0;
 }
 
-// Debugging: SS_MENU_VOICE_TRACE=1 logs each step with the vblank.
+// Debugging: SS_MENU_VOICE_TRACE=1 logs each step with the vblank and the rng count;
+// SS_MENU_SOUND_DUMP=prefix also writes the voice slots at each step (prefix_VBLANK_STEP.bin,
+// sound_debug_dump_voice_slots) for a byte compare with Redux dumps of the driver.
 void trace(const char* what) {
+  if (const char* dump = std::getenv("SS_MENU_SOUND_DUMP"); dump != nullptr && *dump != 0 && globals().sound != nullptr) {
+    char path[512];
+    std::snprintf(path, sizeof path, "%s_%llu_%c.bin", dump,
+                  static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), what[0]);
+    sound_debug_dump_voice_slots(globals().sound, path);
+  }
   static const bool on = std::getenv("SS_MENU_VOICE_TRACE") != nullptr;
   if (!on) return;
   // The sound driver's slots 0-3: loaded flag and SPU bytes used (mvref.lua's "banks").
@@ -38,8 +47,9 @@ void trace(const char* what) {
       at += std::snprintf(banks + at, sizeof banks - static_cast<size_t>(at), " %d:%x", sound_bank_loaded(s, i),
                           0xF400 - sound_bank_free_space(s, i));
   }
-  std::fprintf(stderr, "[menu voice] vblank %llu %s state %d budget %d (field %d %d) banks%s\n",
-               static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), what, g_menu_voice.state,
+  std::fprintf(stderr, "[menu voice] vblank %llu rng %llu %s state %d budget %d (field %d %d) banks%s\n",
+               static_cast<unsigned long long>(runtime::Runtime::get().vblanks()),
+               static_cast<unsigned long long>(rng_draws()), what, g_menu_voice.state,
                g_menu_voice.budget, voice_stream().state, voice_stream().budget, banks);
 }
 

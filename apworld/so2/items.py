@@ -43,6 +43,12 @@ ITEM_NAME_GROUPS = {
     "Traps": set(TRAPS),
 }
 
+# Items a script tests, so they stay at their own locations (locked there, never in the pool):
+# the Cave of Trials' doors on maps 751 and 764 take the Red Lotus Gem (317; gifts on maps 711
+# and 754) and test the Cracked Gem (289; the chest on map 771). Shuffled, a door could need
+# a gem placed behind it (docs/ap/apworld.md, "Logic").
+PUZZLE_ITEMS = (289, 317)
+
 # Events (no id): story milestones the regions hang on, and the goal.
 EVENT_ENERGY_NEDE = "Arrived on Energy Nede"
 EVENT_FINAL_SAVE_POINT = "Saved at the Final Save Point"

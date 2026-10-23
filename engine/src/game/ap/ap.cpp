@@ -97,10 +97,26 @@ struct Runtime {
   Scene scene = Scene::kField;           // (tests run without programs: as in the field)
   bool ending = false;                   // the final boss is beaten: the ending and credits
   int control_frames = 0;                // field frames the player has had the controls in a row
+  // Phase 4.
+  std::map<int, std::vector<size_t>> doors_by_script;  // the script's map (canonical) -> seed doors
+  int script_map = -1;                   // the loaded script's map (canonical), -1 none yet
+  std::set<int64_t> bad_doors;           // seed doors whose word is not a map transfer: ignored
+  std::map<int, size_t> by_shop_slot;    // (shop << 8 | index) -> shop location index
 };
 Runtime& rt() {
   static Runtime r;
   return r;
+}
+
+// Maps that run one shared script (docs/ap/field.md "How it reads the scripts"): a door is
+// listed under the lowest map (above 0), as tools/ap_doors.py writes it.
+int script_group(int map) {
+  if (map == 0 || map == 2 || map == 3 || map == 826) return 1;             // the world script
+  if (map >= 909 && map <= 980) return 909;                                 // Expel's world-map chunks
+  if (map >= 1048 && map <= 1110) return 1048;                              // Energy Nede's
+  if (map == 1114) return 1113;                                             // world map 3's
+  if (map == 345 || map == 346 || (map >= 352 && map <= 354) || map == 356) return 340;  // one dungeon's rooms
+  return map;
 }
 
 void index_seed(Runtime& r) {
@@ -109,6 +125,9 @@ void index_seed(Runtime& r) {
   r.by_placeholder.clear();
   r.join_sites.clear();
   r.by_enemy.clear();
+  r.doors_by_script.clear();
+  r.by_shop_slot.clear();
+  r.bad_doors.clear();
   for (size_t i = 0; i < r.seed.locations.size(); ++i) {
     const Location& l = r.seed.locations[i];
     r.by_id[l.id] = i;
@@ -116,6 +135,12 @@ void index_seed(Runtime& r) {
     if (l.placeholder >= 0) r.by_placeholder[l.placeholder] = i;
     if (l.type == "join") r.join_sites[static_cast<int64_t>(l.map) << 32 | static_cast<u32>(l.offset)] = i;
     if (l.type == "drop") r.by_enemy[l.enemy] = i;
+    if (l.type == "shop") r.by_shop_slot[l.shop << 8 | l.index] = i;
+  }
+  for (size_t i = 0; i < r.seed.doors.size(); ++i) {
+    std::set<int> scripts;
+    for (const int m : r.seed.doors[i].maps) scripts.insert(script_group(m));
+    for (const int m : scripts) r.doors_by_script[m].push_back(i);
   }
 }
 
@@ -197,6 +222,7 @@ std::string describe(const ItemDef& it) {
   if (it.kind == "fol") return std::to_string(it.amount) + " Fol";
   if (it.kind == "character") return character_name(it.character);
   if (it.kind == "trap") return it.name.empty() ? "a trap" : it.name;
+  if (it.kind == "key") return it.name.empty() ? "Key " + std::to_string(it.key) : it.name;
   std::string name = it.name.empty() ? "item " + std::to_string(it.game_id) : it.name;
   if (it.count > 1) name = std::to_string(it.count) + " x " + name;
   return name;
@@ -382,6 +408,12 @@ bool give(const ItemDef& it, std::string* note = nullptr) {
     if (note != nullptr) *note = what;
     return true;
   }
+  if (it.kind == "key") {
+    // An area key (open world): the doors that name it open from now on.
+    if (std::find(r.state.keys.begin(), r.state.keys.end(), it.key) == r.state.keys.end()) r.state.keys.push_back(it.key);
+    log("key " + std::to_string(it.key) + " (" + describe(it) + ") received");
+    return true;
+  }
   if (it.kind != "item") return true;  // (nothing to give for another player's item)
   int added = 0;
   for (int i = 0; i < it.count; ++i) added += field::inventory_add(g.inventory, it.game_id, 1, 1) != 0;
@@ -428,6 +460,7 @@ Json sidecar_json(const SaveState& s) {
   j.set("characters_waiting", ints(s.characters_waiting));
   j.set("first_drops", ints(s.first_drops));
   j.set("ambushes", Json::number(static_cast<int64_t>(s.ambushes)));
+  j.set("keys", ints(s.keys));  // phase 4
   return j;
 }
 
@@ -448,6 +481,7 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   ints("characters_waiting", &r.characters_waiting);
   ints("first_drops", &r.first_drops);
   r.ambushes = static_cast<int>(j["ambushes"].as_int(0));
+  ints("keys", &r.keys);
   *s = std::move(r);
   return true;
 }
@@ -494,6 +528,15 @@ const std::vector<std::string>& seed_patch_lines() {
 void start_with(Seed s) {
   Runtime& r = rt();
   r.seed = std::move(s);
+  if (r.seed.expel_teleporter) {
+    // The Expel teleporter (open world; docs/ap/seed_format.md "Phase 4"): Virtual Expel's two
+    // ways from chapter 36 on. The Fun City arena's old man (map 303, actor 25) offers the trip
+    // to Arlia when flag 730 is set (the Final Save Point): his test becomes chapter >= 36. Arlia's
+    // guide back to the arena (map 18, actor 26) stands there from chapter 60: from 36.
+    r.seed.patches.push_back("script 303 0x1307 0x3b0302da 0x430000a0  # old man: flag[730] == 1 -> chapter >= 36");
+    r.seed.patches.push_back("script 303 0x1308 0x00000001 0x00000024");
+    r.seed.patches.push_back("script 18 0x996 0x0000003c 0x00000024  # Arlia's guide: chapter >= 60 -> 36");
+  }
   r.on = true;
   index_seed(r);
   fresh_state(r);
@@ -593,6 +636,16 @@ bool receive_by_name_or_id(const std::string& what, const std::string& from, std
     it.name = what;
     receive(it, from);
     return true;
+  }
+  if (what.rfind("key:", 0) == 0) {  // (phase 4: key:N, an area key)
+    it.kind = "key";
+    it.key = std::atoi(what.c_str() + 4);
+    if (it.key >= 1 && it.key <= 255) {
+      for (const auto& [id, def] : r.seed.items)
+        if (def.kind == "key" && def.key == it.key) it = def;
+      receive(it, from);
+      return true;
+    }
   }
   if (what.rfind("trap:", 0) == 0) {
     std::string rest = what.substr(5), arg;
@@ -755,7 +808,7 @@ void free_play_update() {
       if (give(it, &note)) {
         ++r.state.received_index;
         log("given " + describe(it) + " (server item " + std::to_string(i) + ")");
-        if (it.kind == "item" || it.kind == "fol" || it.kind == "character" || it.kind == "trap")
+        if (it.kind == "item" || it.kind == "fol" || it.kind == "character" || it.kind == "trap" || it.kind == "key")
           queue_notice(received_text(it, r.net_from[i], false, note));
       } else {
         runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
@@ -1157,6 +1210,140 @@ s32 scale_encounter_distance(s32 distance) {
   return static_cast<s32>(static_cast<s64>(distance) * 100 / r.seed.encounter_rate);
 }
 
+// ---- Phase 4 ----
+
+namespace {
+
+const char* key_name(int key) {
+  static std::string name;
+  for (const auto& [id, it] : rt().seed.items) {
+    if (it.kind == "key" && it.key == key) {
+      name = describe(it);
+      return name.c_str();
+    }
+  }
+  name = "Key " + std::to_string(key);
+  return name.c_str();
+}
+
+// A seed door that applies to the loaded script (its word checked at load).
+const Door* door_at(int offset) {
+  Runtime& r = rt();
+  const auto it = r.doors_by_script.find(r.script_map);
+  if (it == r.doors_by_script.end()) return nullptr;
+  for (const size_t i : it->second) {
+    const Door& d = r.seed.doors[i];
+    if (d.offset == offset && r.bad_doors.count(d.id) == 0) return &d;
+  }
+  return nullptr;
+}
+
+bool door_locked(const Door& d) { return rt().seed.open_world && d.key != 0 && !has_key(d.key); }
+
+void door_refused(const Door& d) {
+  const char* key = key_name(d.key);
+  log("door " + std::to_string(d.id) + (d.name.empty() ? "" : " (" + d.name + ")") + ": locked, needs " + key);
+  queue_notice(std::string(key) + " needed");
+}
+
+}  // namespace
+
+bool has_key(int key) {
+  const Runtime& r = rt();
+  return std::find(r.state.keys.begin(), r.state.keys.end(), key) != r.state.keys.end();
+}
+
+void on_script_loaded(int map, const std::vector<u8>& script) {
+  Runtime& r = rt();
+  if (!r.on) return;
+  r.script_map = script_group(map);
+  const auto it = r.doors_by_script.find(r.script_map);
+  if (it == r.doors_by_script.end()) return;
+  for (const size_t i : it->second) {
+    const Door& d = r.seed.doors[i];
+    const size_t at = 0x1C + static_cast<size_t>(d.offset);
+    u32 word = 0;
+    if (at + 4 <= script.size()) std::memcpy(&word, script.data() + at, 4);
+    const u32 op = word >> 24;
+    if (op == 0x7D || op == 0xA4 || op == 0xDA) {
+      r.bad_doors.erase(d.id);
+      continue;
+    }
+    if (r.bad_doors.insert(d.id).second) {
+      char msg[160];
+      std::snprintf(msg, sizeof msg, "door %lld: map %d offset %#x holds %#010x, not a map transfer; ignored",
+                    static_cast<long long>(d.id), map, d.offset, word);
+      log(msg);
+    }
+  }
+}
+
+bool door_blocked_at_trigger(int routine) {
+  Runtime& r = rt();
+  if (!r.on || !r.seed.open_world || routine < 0) return false;
+  const auto it = r.doors_by_script.find(r.script_map);
+  if (it == r.doors_by_script.end()) return false;
+  const Door* locked = nullptr;
+  for (const size_t i : it->second) {
+    const Door& d = r.seed.doors[i];
+    if (d.routine != routine || r.bad_doors.count(d.id) != 0) continue;
+    if (!door_locked(d)) return false;  // (a door of this routine is open: the transfer decides)
+    locked = &d;
+  }
+  if (locked == nullptr) return false;
+  door_refused(*locked);
+  return true;
+}
+
+bool on_map_transfer(int offset, s32* args) {
+  Runtime& r = rt();
+  if (!r.on) return false;
+  const Door* d = door_at(offset);
+  if (d == nullptr) return false;
+  if (door_locked(*d)) {
+    door_refused(*d);
+    return true;
+  }
+  if (d->has_target) {
+    char msg[160];
+    std::snprintf(msg, sizeof msg, "door %lld: map %d (%d, %d, %d) -> map %d (%d, %d, %d)", static_cast<long long>(d->id),
+                  args[0], args[2], args[3], args[4], d->to.map, d->to.x, d->to.y, d->to.z);
+    log(msg);
+    args[0] = d->to.map;
+    args[2] = d->to.x;
+    args[3] = d->to.y;
+    args[4] = d->to.z;
+    if (d->to.dir >= 0) args[5] = d->to.dir;
+  }
+  return false;
+}
+
+bool shop_slot_open(int shop, int index, int item) {
+  const Runtime& r = rt();
+  if (!r.on) return false;
+  const auto it = r.by_shop_slot.find(shop << 8 | index);
+  if (it == r.by_shop_slot.end()) return false;
+  const Location& l = r.seed.locations[it->second];
+  return !is_checked(l.id) && (l.shop_item < 0 || l.shop_item == item);
+}
+
+int on_shop_buy(int shop, int index, int item, int count) {
+  Runtime& r = rt();
+  if (!r.on || count <= 0 || !shop_slot_open(shop, index, item)) return count;
+  const Location& l = r.seed.locations[r.by_shop_slot.at(shop << 8 | index)];
+  record_check(l.id, true);  // (another player's item: "Sent X to Y")
+  if (l.item.own) {
+    if (give(l.item.item)) {
+      queue_notice("Got " + describe(l.item.item));
+    } else {
+      r.pending.push_back({l.item.item, "", true});  // (the inventory is full: given later)
+    }
+  }
+  log("shop " + std::to_string(shop) + " entry " + std::to_string(index) + " (item " + std::to_string(item) +
+      "): the slot's check took the first copy of " + std::to_string(count));
+  return count - 1;
+}
+
 std::string status_text() {
   Runtime& r = rt();
   if (!r.on) return "Archipelago off (no seed)";
@@ -1184,6 +1371,14 @@ std::string status_text() {
     }
   }
   if (r.state.ambushes > 0) out += "\n  ambushes waiting " + std::to_string(r.state.ambushes);
+  if (sd.open_world || !sd.doors.empty() || sd.shuffle_shops != 0) {
+    std::snprintf(buf, sizeof buf, "\n  world %s | Expel teleporter %s | doors %zu (%zu ignored) | shops %s | keys",
+                  sd.open_world ? "open" : "story", sd.expel_teleporter ? "on" : "off", sd.doors.size(), r.bad_doors.size(),
+                  sd.shuffle_shops == 2 ? "full" : sd.shuffle_shops == 1 ? "specials" : "off");
+    out += buf;
+    if (r.state.keys.empty()) out += " none";
+    for (const int k : r.state.keys) out += std::string(" ") + key_name(k);
+  }
   return out;
 }
 

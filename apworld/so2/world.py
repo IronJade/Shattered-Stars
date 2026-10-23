@@ -74,14 +74,21 @@ class SO2World(World):
     def create_items(self):
         # The pool is the vanilla contents of this world's locations (a boss or join location
         # adds a Blueberry), with the party's characters in place of the join sites' filler,
-        # then the traps option's share of the filler turned into traps.
+        # then the traps option's share of the filler turned into traps. The cave's gems are
+        # locked at their own locations instead.
         names = [items.item_name(row["item"], row["fol"]) for row, _ in self.chosen]
         joins = [k for k, (row, _) in enumerate(self.chosen) if row["type"] == "join"]
         if len(joins) < len(self.party):
             raise Exception(f"{self.player_name}: {len(self.party)} characters but {len(joins)} join locations")
         for k, who in zip(joins, self.party):
             names[k] = who
-        pool = [self.create_item(n) for n in names]
+        pool = []
+        for (row, _), name in zip(self.chosen, names):
+            if row["type"] in ("chest", "gift") and row["item"] in items.PUZZLE_ITEMS:
+                # A cave door's gem stays where the cave puts it (items.PUZZLE_ITEMS).
+                self.get_location(row["name"]).place_locked_item(self.create_item(name))
+            else:
+                pool.append(self.create_item(name))
         filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
         count = len(filler) * self.options.traps.value // 100
         trap_names = sorted(items.TRAPS)

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
@@ -312,7 +313,9 @@ int Shop::settle() {
     for (const ItemList::Entry& e : buy.entries) {
       if (e.cart == 0) continue;
       bought = 1;
-      inventory_add(g.inventory, e.item, e.cart, 1);
+      // Archipelago (port feature; shop slots) [world agent]: a slot's first copy is its check.
+      const int copies = ap::on_shop_buy(shop, e.index, e.item, e.cart);
+      if (copies > 0) inventory_add(g.inventory, e.item, copies, 1);
     }
   } else {
     // Orders arrive later: up to ten in game_state +0x250, due at the clock in +0x294
@@ -323,8 +326,9 @@ int Shop::settle() {
     for (const ItemList::Entry& e : buy.entries) {
       if (e.cart == 0) continue;
       ordered = 1;
-      if (n < 10) {
-        const u16 v = static_cast<u16>(e.cart << 10 | e.item);
+      const int copies = ap::on_shop_buy(shop, e.index, e.item, e.cart);  // Archipelago [world agent]
+      if (copies > 0 && n < 10) {
+        const u16 v = static_cast<u16>(copies << 10 | e.item);
         std::memcpy(gs + 0x250 + n * 2, &v, 2);
         ++n;
       }
@@ -669,7 +673,11 @@ void ShopList::draw_row(menu::TextRenderer* r, s16 x, int index) {
   if (index < 0 || index >= list_->count()) return;
   const ItemList::Entry& e = list_->entries[static_cast<size_t>(index)];
   r->set_pen_x(x);
+  // Archipelago (port feature) [world agent]: an unchecked shop slot's name in colour 2.
+  const bool slot = ap::shop_slot_open(menu::globals().session->arg, e.index, e.item);
+  if (slot) r->set_colour(2);
   r->draw_current(r->message(e.item));
+  if (slot) r->set_colour(1);
   r->set_pen_x(x + 0x78);
   r->draw_number(price(e.item), 8);
   r->set_pen_x(x + 0xA8);

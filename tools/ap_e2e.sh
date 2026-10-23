@@ -27,6 +27,15 @@
 #      no DeathLink goes back (it was the link's death).
 #   5. Alice loses a battle (--battle-end 60:2): the game over sends a DeathLink that Bob
 #      receives (source Alice).
+# Phase 4 [world agent], two more sessions, same server and multiworld:
+#   6. An open-world seed with one gated door (map 17's door to Arlia, id 1116181, key 1,
+#      "Arlia Pass"): the port walks in and is refused ("Arlia Pass needed"). Bob (a second
+#      Python client) checks his Tile 7, which holds Alice's Map Width (relabelled here as the
+#      key); once the port receives it over the network, walking in again opens the door and
+#      map 18 loads.
+#   7. A shuffle_shops seed where Hearn's store (map 26, shop 1) entry 2 (Lavender, item 224)
+#      is Alice's Tile 3, holding Bob's Map Bombs: the port buys one, the shop check goes to
+#      the server, and Bob receives the item in free play.
 # Output, logs and captures (frames 700: the window, 850: the first banner) in
 # scratchpad/ap_e2e/. Exit status 0 when every step is seen.
 set -u
@@ -146,6 +155,91 @@ async def main():
 asyncio.run(main())
 BOB
 
+# Phase 4 [world agent]. The real multiworld's spoiler (scratchpad/ap/out/*_Spoiler.txt) gives
+# the raw ids reused here: Alice's Tile 7 (id 81006) holds her own "Map Width" (id 80000, the
+# same item session 1 sent Bob from Tile 1); relabelled "Arlia Pass" in this seed, it is the
+# key door 1116181 (map 17 -> Arlia) needs in open_world. Alice's Tile 3 (id 81002) holds Bob's
+# Map Bombs; here it is Hearn's shop (shop 1, entry 2, item 224, Lavender).
+cat > "$W/seed_p4door.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "13515657874892102023",
+ "game": "Star Ocean: The Second Story",
+ "slot": {"name": "Alice", "id": 1},
+ "options": {"world_mode": "open_world"},
+ "items": {"80000": {"name": "Arlia Pass", "kind": "key", "key": 1}},
+ "locations": [],
+ "doors": [{"id": 1116181, "routine": "0x204c", "key": 1, "name": "Arlia exit -> Arlia"}]}
+SEED
+
+cat > "$W/seed_p4shop.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "13515657874892102023",
+ "game": "Star Ocean: The Second Story",
+ "slot": {"name": "Alice", "id": 1},
+ "options": {"shuffle_shops": "full"},
+ "locations": [
+  {"id": 81002, "name": "Arlia shop: Lavender (Tile 3)",
+   "check": {"type": "shop", "shop": 1, "index": 2, "item": 224},
+   "item": {"player": 2, "player_name": "Bob", "name": "Map Bombs", "ap_id": 80001}}
+ ]}
+SEED
+
+cat > "$W/bob_key.py" <<'BOB'
+# Bob for session 6: connects and, without waiting for anything from Alice, checks his Tile 7
+# (location 81006), which the multiworld gives to Alice (her Map Width, this seed's key item).
+import asyncio, json, sys, time, websockets
+async def main():
+    t0 = time.time()
+    log = lambda *a: print(f"[bob {time.time() - t0:6.2f}]", *a, flush=True)
+    async with websockets.connect(sys.argv[2]) as ws:
+        await ws.recv()  # RoomInfo
+        await ws.send(json.dumps([{"cmd": "Connect", "game": "ChecksFinder", "name": "Bob", "password": "",
+                                   "uuid": "bob-ap-e2e-key", "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
+                                   "items_handling": 0b001, "tags": [], "slot_data": False}]))
+        sent = False
+        deadline = time.time() + float(sys.argv[1])
+        while time.time() < deadline:
+            try:
+                msg = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            for p in json.loads(msg):
+                if p["cmd"] == "Connected":
+                    log("connected as Bob, slot", p["slot"])
+                    if not sent:
+                        sent = True
+                        await ws.send(json.dumps([{"cmd": "LocationChecks", "locations": [81006]}]))
+                        log("checked Tile 7 (Alice's Arlia Pass)")
+        log("done")
+asyncio.run(main())
+BOB
+
+cat > "$W/bob_shop.py" <<'BOB'
+# Bob for session 7: connects and logs whatever the server hands him, so Hearn's shop check
+# (Alice's Tile 3, location 81002) shows up as a received item.
+import asyncio, json, sys, time, websockets
+async def main():
+    t0 = time.time()
+    log = lambda *a: print(f"[bob {time.time() - t0:6.2f}]", *a, flush=True)
+    async with websockets.connect(sys.argv[2]) as ws:
+        await ws.recv()  # RoomInfo
+        await ws.send(json.dumps([{"cmd": "Connect", "game": "ChecksFinder", "name": "Bob", "password": "",
+                                   "uuid": "bob-ap-e2e-shop", "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
+                                   "items_handling": 0b001, "tags": [], "slot_data": False}]))
+        deadline = time.time() + float(sys.argv[1])
+        while time.time() < deadline:
+            try:
+                msg = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            for p in json.loads(msg):
+                if p["cmd"] == "Connected":
+                    log("connected as Bob, slot", p["slot"])
+                elif p["cmd"] == "ReceivedItems":
+                    for it in p["items"]:
+                        log(f"received item {it['item']} from player {it['player']} location {it['location']}")
+        log("done")
+asyncio.run(main())
+BOB
+
 python3 apworld/so2/patches.py "$W/seed_in.apso2" --disc "$SS_DISC1" -o "$W/e2e.apso2" || exit 1
 AP=$P/scratchpad/ap
 PORT=${AP_E2E_PORT:-38291}
@@ -196,6 +290,28 @@ env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy S
   timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$W/seed_p3.apso2" --frames 1800 --map 18 \
   --battle-end 60:2 < /dev/null > "$W/game_dl.log" 2>&1
 wait $bob
+
+# Session 6: a key item from Bob unlocks the open-world door (map 17 -> Arlia, id 1116181).
+"$AP/ap-venv/bin/python" "$W/bob_key.py" 60 "ws://localhost:$PORT" > "$W/bob_key.log" 2>&1 &
+bob=$!
+env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Alice SS_AP_GAME=ChecksFinder SS_MODS_DIR="$W/nomods" \
+  SS_TRACE=1 SS_TRACE_LEADER=15 \
+  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$W/seed_p4door.apso2" --frames 900 --map 17 \
+  --map-pos 110,0,-457 --input "100:right,200:none,600:left,700:none" \
+  < /dev/null > "$W/game_p4door.log" 2>&1
+wait $bob
+
+# Session 7: Hearn's shop (map 26, shop 1, entry 2, Lavender) sends a check; Bob gets the item.
+"$AP/ap-venv/bin/python" "$W/bob_shop.py" 60 "ws://localhost:$PORT" > "$W/bob_shop.log" 2>&1 &
+bob=$!
+env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Alice SS_AP_GAME=ChecksFinder SS_MODS_DIR="$W/nomods" \
+  SS_DEBUG_INPUT="50:fol 50000" \
+  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$W/seed_p4shop.apso2" --frames 2300 --map 18 \
+  --input "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none" \
+  < /dev/null > "$W/game_p4shop.log" 2>&1
+wait $bob
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
 
 fails=0
@@ -222,5 +338,15 @@ else
 fi
 check "$W/game_dl.log" "phase 3: Alice's game over sends a DeathLink" '\[ap\] game over: DeathLink sent'
 check "$W/bob_dl.log" "phase 3: Bob receives it" 'DeathLink received from Alice'
+check "$W/game_p4door.log" "phase 4: the locked door refuses" '\[ap\] door 1116181 \(Arlia exit -> Arlia\): locked, needs Arlia Pass'
+check "$W/bob_key.log" "phase 4: Bob sends the key" 'checked Tile 7'
+check "$W/game_p4door.log" "phase 4: the key arrives over the network" '\[ap\] key 1 \(Arlia Pass\) received'
+check "$W/game_p4door.log" "phase 4: the door opens and map 18 loads" 'field_load_map\(map=18 keep=1 flags=0\)'
+if grep -q 'field_load_map(map=18 keep=1 flags=0) at vblank [1-5][0-9][0-9]$' "$W/game_p4door.log"; then
+  echo "FAIL phase 4: the door transferred while still locked"; fails=$((fails + 1))
+fi
+check "$W/game_p4shop.log" "phase 4: the shop slot's check is sent" '\[ap\] check 81002 .*: Map Bombs for Bob'
+check "$W/game_p4shop.log" "phase 4: the shop entry is consumed" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 1'
+check "$W/bob_shop.log" "phase 4: Bob receives the shop item" 'received item [0-9]+ from player 1 location 81002'
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails

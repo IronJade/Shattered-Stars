@@ -32,8 +32,9 @@ REFS_CSV = os.path.join(ROOT, "tools/refs/refs.csv")
 # A ~28-ref set covering every area, most of the battle cast (Bowman, Dias, Ernest, Chisato,
 # Precis, Opera, Ashton), a handful of enemy families/modules (including known "spell not
 # ported" and "console slowdown" exceptions, to make sure those don't silently start passing
-# for the wrong reason) and the four party-class spell sweeps. No menu/world_map/fx_legacy ref
-# has a confirmed automated recipe yet (see docs/handoff/tools.md), so none is in this set.
+# for the wrong reason) and the four party-class spell sweeps. world_map/fx_legacy still have
+# no confirmed automated recipe (docs/handoff/tools.md); menu has exactly one (combref2, left
+# out here to keep this set lean - it's covered by --all).
 QUICK_IDS = [
     # battle: a stage-object ref, plus one move each of Bowman / Dias / Ernest
     "stage13", "bowman_l1", "dias_l1", "ernest_2_3",
@@ -93,14 +94,43 @@ def job_env(build, out):
     return env
 
 
-def h_enemy(ref_id, build, out):
+# refs.csv's "resync" column: "KEY=VALUE;KEY=VALUE..." for a reference that needs a
+# re-sync point (a CD-timed load, a boss-intro-voice RNG draw, an enemy HP poked mid-fight,
+# or a run that needs more than a handler's default frame count) to compare correctly -
+# "compare from a named sync point, the way the agents' compare scripts take D" (the task
+# that added this). Most keys are passed straight through as env vars to both the port run
+# and the compare step (SS_ENEMY_HP, SS_BATTLE_RNG_SKIP, CMP_FROM/CMP_R/CMP_DMAX/CMP_OFF -
+# cmp.py's and cmpstage.sh's own offset-search overrides); FRAMES is pulled out by each
+# handler and passed positionally, since the run scripts take it as an argument, not env.
+def parse_resync(s):
+    out = {}
+    for part in (s or "").split(";"):
+        part = part.strip()
+        if not part:
+            continue
+        k, _, v = part.partition("=")
+        out[k.strip()] = v.strip()
+    return out
+
+
+def h_enemy(ref_id, build, out, resync=None):
+    resync = resync or {}
     m = re.match(r'^([a-z]+)(\d+)_3$', ref_id)
     tag, enc = m[1], m[2]
     env = job_env(build, out)
-    env["NO_MASH"] = "1"  # every scratchpad/enemy/ref/*_3 reference was recorded idle (batch.sh)
-    if tag == 't':
+    # Most scratchpad/enemy/ref/*_3 references were recorded idle (batch.sh's own
+    # BW_MASH="1:1:45:none" override), but the 'e'/'f' tags were not: they were recorded with
+    # redux/run.sh's default Cross mash (the effects agent's finding, for the suite: e10_3 /
+    # f10_3 are RNG-equal within a frame of the exit with mash, not idle).
+    if tag not in ('e', 'f'):
+        env["NO_MASH"] = "1"
+    if tag in ('t', 'v'):  # "tough Claude" tags per verify_all.sh's own comment
         env["TOUGH"] = "1"
-    rc, run_out = run(f"scratchpad/enemy/run_port.sh {enc} 3 scratchpad/enemy/ref/{ref_id} {out}",
+    for k, v in resync.items():
+        if k != "FRAMES":
+            env[k] = v
+    frames = resync.get("FRAMES", '')
+    rc, run_out = run(f"scratchpad/enemy/run_port.sh {enc} 3 scratchpad/enemy/ref/{ref_id} {out} {frames}",
                        env, timeout=700)
     rc2, cmp_out = run(f"python3 scratchpad/enemy/cmp.py scratchpad/enemy/ref/{ref_id}/log.txt {out}/port.log",
                         env, timeout=120)
@@ -112,7 +142,7 @@ SWEEP_IDS = {'eA', 'eB', 'eC', 'eD', 'eE', 'eF', 'i9a', 'i9b', 'i10a', 'i10b', '
 BOSS_IDS = {'k27': 27, 'k41': 41, 'k197': 197, 'k516': 516, 'm111': 111, 'm277': 277}
 
 
-def h_world_spell(ref_id, build, out):
+def h_world_spell(ref_id, build, out, resync=None):
     ws = os.path.join(ROOT, "scratchpad/world/spell")
     m = re.match(r'^(.+)_3$', ref_id)
     tag = m[1]
@@ -125,6 +155,9 @@ def h_world_spell(ref_id, build, out):
     card = os.path.join(out, "empty_port.mcd")
     shutil.copyfile(os.path.join(ws, "redux/cards/empty_port.mcd"), card)
     env["SS_MEMCARD1"] = card
+    for k, v in (resync or {}).items():
+        if k != "FRAMES":  # this area's FRAMES is computed from SWEEP_FOR, not overridable here
+            env[k] = v
     if tag in SWEEP_IDS:
         cfg = os.path.join(ws, f"sweep_{tag}.sh")
         if not os.path.exists(cfg):
@@ -155,7 +188,7 @@ FB_MANUAL = {'as_b6', 'asv_b4d', 'chis_m4_box', 'op_b1_dense', 'op_b10_dense', '
              'talk_ko2', 'talk_prov2', 'precsmoke', 'prec_b4_box'}
 
 
-def h_fx_battle(ref_id, build, out):
+def h_fx_battle(ref_id, build, out, resync=None):
     m = re.match(r'^(as|asv|chis|prec|op)_(b|m)(\d+)$', ref_id)
     if not m:
         return False, "", "no killer-move naming match; manual ref"
@@ -167,6 +200,8 @@ def h_fx_battle(ref_id, build, out):
     env["OUTNAME"] = ref_id  # port_pc.sh writes to fb/port/<OUTNAME>
     if prefix == 'asv':
         env["EXTRA_POKE"] = "4:0xc=307/2"
+    for k, v in (resync or {}).items():
+        env[k] = v
     rc, run_out = run(f"{fb}/port_pc.sh {ref_id} {ch} {mv} {uses} 1500", env, timeout=700)
     port_log = os.path.join(fb, "port", ref_id, "log.txt")
     ref_log = os.path.join(fb, "redux/ref", ref_id, "log.txt")
@@ -174,9 +209,25 @@ def h_fx_battle(ref_id, build, out):
     return True, run_out + "\n" + cmp_out, ""
 
 
-STAGE_PLAIN = {'stage13', 'stage16c', 'stage21', 'stage23', 'stage26', 'stage31', 'stage36',
+STAGE_PLAIN = {'stage13', 'stage21', 'stage23', 'stage26', 'stage31', 'stage36',
                'stage36_long', 'stage41', 'stage51', 'stage8_light', 'stage8_shots'}
-STAGE_CASTER = {'stage14c', 'caster35', 'caster35s'}
+# stage16c is a caster ref (Claude + AI Celine casting), not a plain stage ref (battle agent's
+# hand-over, docs/handoff/battle.md "Leads for the successor" #1): it needs
+# cmpstage_caster.sh, same as stage14c, not cmpstage.sh.
+STAGE_CASTER = {'stage14c', 'stage16c', 'caster35', 'caster35s'}
+# caster35 / caster35s were recorded in the 2-1-2 tick group (their own "[bw] frames b00010"
+# line reads 3, cmpstage.sh's own convention for that group), which needs cmpstage_caster7.sh
+# (PC_D=7, PC_TICKS=1), not the default cmpstage_caster.sh (PC_D=6, the 2-2-2 group that
+# stage14c / stage16c were recorded in); confirmed empirically (b270 false divergence with
+# the D=6 script, clean to the exit with D=7) and matches docs/handoff/battle.md's "Since the
+# 22:14 resume" B14 recheck ("caster35 (with cmpstage_caster7.sh, the 2-1-2 tick group) has
+# RNG equal to b2060, past the exit").
+STAGE_CASTER_D7 = {'caster35', 'caster35s'}
+# Per docs/handoff/battle.md: stage8_light / stage8_shots' documented b940 split only shows up
+# with the mash offset one frame earlier than cmpstage.sh's generic formula gives ("inputs at
+# 45i-1"); stage36_long's own ref runs 2600 vsyncs but cmpstage.sh's default FRAMES=1400 cuts
+# the port run short, freezing its RNG count well before the ref's end. Both are set via
+# refs.csv's resync column (CMP_OFF=-1 / FRAMES=2650) rather than hardcoded here.
 
 
 def _plus_state_dump(bdir, env, ref_id, port_log, o):
@@ -187,18 +238,24 @@ def _plus_state_dump(bdir, env, ref_id, port_log, o):
     return o + "\n" + extra
 
 
-def h_battle(ref_id, build, out):
+def h_battle(ref_id, build, out, resync=None):
+    resync = resync or {}
     env = job_env(build, out)
     bdir = os.path.join(ROOT, "scratchpad/battle")
     if ref_id in STAGE_PLAIN:
-        rc, o = run(f"./cmpstage.sh {ref_id}", env, cwd=bdir, timeout=700)
+        for k, v in resync.items():
+            if k != "FRAMES":
+                env[k] = v
+        frames = resync.get("FRAMES", '')
+        rc, o = run(f"./cmpstage.sh {ref_id} {frames}", env, cwd=bdir, timeout=700)
         return True, _plus_state_dump(bdir, env, ref_id, f"port/{ref_id}/log.txt", o), ""
     if ref_id in STAGE_CASTER:
         globs = __import__("glob").glob(os.path.join(bdir, "ref", ref_id, "ram_battle_loop_*.bin"))
         if not globs:
             return False, "", "no ram_battle_loop_*.bin to read S from"
         s = re.search(r'ram_battle_loop_(\d+)\.bin', globs[0])[1]
-        rc, o = run(f"./cmpstage_caster.sh {ref_id} {int(s)}", env, cwd=bdir, timeout=700)
+        script = "cmpstage_caster7.sh" if ref_id in STAGE_CASTER_D7 else "cmpstage_caster.sh"
+        rc, o = run(f"./{script} {ref_id} {int(s)}", env, cwd=bdir, timeout=700)
         return True, _plus_state_dump(bdir, env, ref_id, f"port/{ref_id}/log.txt", o), ""
     m = re.match(r'^(bowman|dias|ernest)_l([0-9a])$', ref_id)
     m2 = re.match(r'^ernest_(2_3|58)$', ref_id)
@@ -214,8 +271,45 @@ def h_battle(ref_id, build, out):
     return False, "", "no automated recipe (manual ref; see docs/handoff/battle.md)"
 
 
+# Menu refs need a port --input string translated from the Redux plan.txt that recorded
+# them (docs/handoff/menu.md: "Port frame = Redux frame + 153" for itemsref1/2 and
+# equipref1's plans). combref2 is the one ref with that translation already confirmed and
+# saved (scratchpad/menu/combref2/port_input.txt, verified against port run comb_p2: config/
+# inventory/party/records/game_state all match, docs/handoff/menu.md "Combat, pages 8-10").
+# The other 14 menu refs have a plan.txt but no independently-reconfirmed port_input.txt this
+# pass (tools/refs/README.md); promoting them means translating each one's own plan.txt by
+# the same rule and a human (or the menu agent) checking the dumps once, not just trusting
+# the arithmetic.
+MENU_RUNS = {
+    'combref2': {'card': 'comb', 'frames': 2400},
+}
+
+
+def h_menu(ref_id, build, out, resync=None):
+    if ref_id not in MENU_RUNS:
+        return False, "", "no confirmed port_input translation yet (see tools/refs/README.md)"
+    cfg = MENU_RUNS[ref_id]
+    mdir = os.path.join(ROOT, "scratchpad/menu")
+    port_input = open(os.path.join(mdir, ref_id, "port_input.txt")).read().strip()
+    env = job_env(build, out)
+    # itemsrun.sh builds its own OUT=$N/$1 (relative to scratchpad/menu, not an absolute
+    # path), so this job writes under scratchpad/menu/ itself, named for this ref, rather
+    # than under the suite's own scratchpad/regress/<ts>/<id> like every other handler.
+    name = f"regress_{ref_id}"
+    frames = cfg['frames']
+    # itemsrun.sh always appends --capture-frames $(seq ...); an empty seq range (e.g.
+    # CAPTURE_FROM > FRAMES) makes that flag dangle with no value and the port exits with a
+    # usage error, so ask for just the one last frame instead of trying to capture nothing.
+    capture_from = frames
+    rc, run_out = run(f"./itemsrun.sh {name} \"{port_input}\" {frames} {capture_from} {cfg['card']}",
+                       env, cwd=mdir, timeout=700)
+    rc2, cmp_out = run(f"./cmpdump.sh {ref_id} {name}", env, cwd=mdir, timeout=60)
+    return True, run_out + "\n" + cmp_out, ""
+
+
 HANDLERS = {
     'enemy': h_enemy, 'world_spell': h_world_spell, 'fx_battle': h_fx_battle, 'battle': h_battle,
+    'menu': h_menu,
 }
 
 
@@ -224,15 +318,22 @@ HANDLERS = {
 # area's own compare tool printed, and check it against refs.csv's expected column.
 
 def find_divergence(text):
+    # cmpstage.sh / cmpstage_caster*.sh's own dedicated RNG check ("rng (base at the first
+    # sample): equal throughout" or "...: first difference at bN") is authoritative for the
+    # STAGE_PLAIN/STAGE_CASTER handlers; pcrun.sh also prints its own, unrelated "first
+    # mismatch at b N" summary line internally (its own D-search, run for every battle ref,
+    # not just these), which can go stale when a ref has no "exit at vsync" line for it to
+    # key off (e.g. stage8_shots). Check the unambiguous "no divergence" wordings first so
+    # that an authoritative clean result is never shadowed by that other line's noise.
+    if re.search(r'first (difference|mismatch) at b\s*None', text):
+        return None
+    if re.search(r'equal throughout|no mismatch|rng.*same', text, re.I):
+        return None
     for pat in [r'first difference at b(\d+)', r'first mismatch at b\s*(\d+)',
                 r'first b(\d+)']:
         m = re.search(pat, text)
         if m:
             return int(m[1])
-    if re.search(r'first (difference|mismatch) at b\s*None', text):
-        return None
-    if re.search(r'equal throughout|no mismatch|rng.*same', text, re.I):
-        return None
     return "unknown"
 
 
@@ -256,6 +357,21 @@ def divergence_in_result_screen(div, text):
 def judge(expected, text, ref_id='', area=''):
     if expected in ('manual', 'needs_owner'):
         return 'SKIP', 'no automated recipe'
+    if area == 'menu':
+        # cmpdump.sh prints "<block> diffs N ..." per dump block (config/inventory/party/
+        # records/game_state); no RNG trace, so find_divergence's "first difference at bN"
+        # parsing does not apply here.
+        diffs = {m[1]: int(m[2]) for m in re.finditer(r'^(\w+) diffs (\d+)', text, re.M)}
+        if not diffs:
+            return 'REVIEW', 'could not parse cmpdump.sh output'
+        # cmpdump.sh already drops inventory diffs at/past 0x820 (its own "check bytes are
+        # random by design" convention, docs/handoff/menu.md); records carries one more such
+        # byte (+0x4ea, confirmed on combref2) that cmpdump.sh does not filter itself.
+        tolerance = {'records': 1}
+        bad = {k: v for k, v in diffs.items() if v > tolerance.get(k, 0)}
+        if not bad:
+            return 'PASS', f'all dumps match ({", ".join(diffs)})'
+        return 'REGRESS', f'dump mismatch: {", ".join(f"{k} {v}" for k, v in bad.items())}'
     div = find_divergence(text)
     lenient = 'slowdown' in expected or 'slow run' in expected or 'tick' in expected
     exp_b = None
@@ -284,13 +400,14 @@ def judge(expected, text, ref_id='', area=''):
 
 def one(row, build, root_out, jobs_sem):
     ref_id, area, expected = row['id'], row['area'], row['expected']
+    resync = parse_resync(row.get('resync', ''))
     out = os.path.join(root_out, ref_id)
     os.makedirs(out, exist_ok=True)
     handler = HANDLERS.get(area)
     if handler is None:
         return ref_id, area, 'SKIP', 'no handler for this area', ''
     try:
-        ok, text, note = handler(ref_id, build, out)
+        ok, text, note = handler(ref_id, build, out, resync)
     except Exception as e:
         return ref_id, area, 'ERROR', f'{type(e).__name__}: {e}', ''
     if not ok:

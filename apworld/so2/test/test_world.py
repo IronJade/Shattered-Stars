@@ -171,6 +171,18 @@ class TestCaveOfTrials(SO2TestBase):
         self.assertTrue(cave[0].can_reach(bare))
 
 
+    def test_cave_gems_stay(self):
+        # The cave's doors on maps 751 / 764 take the gems: they stay at their own locations.
+        from ..items import ITEMS, PUZZLE_ITEMS
+        gems = [loc for loc in own_locations(self)
+                if ROW[loc.name]["type"] in ("chest", "gift") and ROW[loc.name]["item"] in PUZZLE_ITEMS]
+        self.assertEqual(len(gems), 3)
+        for loc in gems:
+            self.assertTrue(loc.locked, loc.name)
+            self.assertEqual(loc.item.name, ITEMS[ROW[loc.name]["item"]])
+        self.assertFalse(any(i.name in {ITEMS[n] for n in PUZZLE_ITEMS} for i in own_pool(self)))
+
+
 class TestExpelWithoutProgression(SO2TestBase):
     options = {"expel_progression": False}
 
@@ -181,6 +193,40 @@ class TestExpelWithoutProgression(SO2TestBase):
             if loc.address is not None:
                 self.assertFalse(loc.can_fill(self.multiworld.state, key, False), loc.name)
                 break
+
+
+class LateProofChecks:
+    """Progression goes only where the late proof (docs/ap/late_proof.json, rows' `late`)
+    reached the location in the protagonist's game (both under "any"); story bosses are exempt,
+    drops and join sites never hold it."""
+    side = None
+
+    def test_progression_only_where_proven(self):
+        from ..items import SO2Item
+        from ..rules import may_hold_progression
+        key = SO2Item("test key", ItemClassification.progression, None, self.player)
+        allowed = 0
+        for loc in own_locations(self):
+            row = ROW[loc.name]
+            want = may_hold_progression(row, self.side) and loc.progress_type != LocationProgressType.EXCLUDED
+            self.assertEqual(loc.can_fill(self.multiworld.state, key, False), want, loc.name)
+            allowed += want
+        self.assertGreater(allowed, 100)
+        # Arlia's crate is proven in both games (Virtual Arlia); old Clik's chests (map 117 / 119,
+        # gone after chapter 14) are never.
+        self.assertTrue(may_hold_progression(ROW["Arlia Village: 200 Fol chest"], self.side))
+        for row in LOCATIONS:
+            if row["type"] == "chest" and row["map"] in (117, 119):
+                self.assertFalse(may_hold_progression(row, self.side), row["name"])
+
+
+class TestLateProofAny(SO2TestBase, LateProofChecks):
+    options = {"cave_of_trials": True, "missable_locations": "include", "drops_as_checks": "first_drop"}
+
+
+class TestLateProofRena(SO2TestBase, LateProofChecks):
+    options = {"protagonist": "rena", "cave_of_trials": True, "missable_locations": "include"}
+    side = "rena"
 
 
 class TestBossesOff(SO2TestBase):

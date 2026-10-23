@@ -254,14 +254,16 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       }
       break;
     case 0x7D: case 0xA4: case 0xDA: {  // map_transfer(map, transition, x, y, z, dir[, extra])
+      // Archipelago (port feature; open world, entrance shuffle) [world agent]: a door the
+      // seed keeps locked does not transfer; a seed target replaces map, x, y, z and dir.
+      const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
+      vm_fetch_args(ctx, op == 0x7D ? 6 : 7);
+      if (ap::on_map_transfer(at, a)) break;
       if (op == 0x7D) {
-        vm_fetch_args(ctx, 6);
         ctx->arrival_param = 0x80;
       } else if (op == 0xDA) {
-        vm_fetch_args(ctx, 7);
         ctx->arrival_param = static_cast<u8>(a[6]);
       } else {
-        vm_fetch_args(ctx, 7);
         ctx->arrival_param = 0x80;
         vm_wr16(g.game_state + 0x1E, static_cast<u32>(a[6]));
       }

@@ -17,6 +17,15 @@ and judges the result against the `expected` column.
   `run_port.sh`/`run_port2.sh`, `port_pc.sh`, `sweep_*.sh`), not a re-implementation.
 - `compare_cmd`: the compare tool (`rngcmp.py`, `unitcmp.py`, `framecmp.py`, `cmp.py`), or
   `(builtin: ...)` when the run script already prints the comparison itself.
+- `resync`: `KEY=VALUE;KEY=VALUE...` extra env vars for a reference that needs a re-sync
+  point to compare correctly - a CD-timed load, a boss-intro-voice RNG draw, an enemy HP
+  poked mid-fight, a mash-timing offset, or a run that needs more frames than a handler's
+  default. Empty for most rows. `ref_regress.py`'s `parse_resync()` applies every key as an
+  env var to both the port run and the compare step, except `FRAMES`, which each handler
+  passes positionally (the run/compare scripts take it as an argument, not env). Known keys:
+  `SS_ENEMY_HP`, `TOUGH` (enemy's own `h_enemy` sets this from the id's tag instead, see
+  below), `CMP_FROM`/`CMP_R`/`CMP_DMAX` (`cmp.py`'s boss-fight offset search),
+  `CMP_OFF` (`cmpstage.sh`'s mash-offset override), `FRAMES`.
 - `expected`:
   - `rng_equal_to_exit` — RNG draws should run even with the reference clear through the
     battle's own end (the last ~350 "b" samples of a killer-move-style reference are the
@@ -34,20 +43,30 @@ and judges the result against the `expected` column.
   - `needs_owner` — no run **or** compare recipe is documented anywhere for this id yet
     (`world_map`'s non-spell refs, `fx_legacy`'s phase 1-3 field-effect refs); also `SKIP`.
 
-## Known gaps (as of this pass)
+## Known gaps (as of 2026-10-23, tools agent's resync/skip pass)
 
-- **menu** (15 ids): each has a documented Redux/port pairing in `docs/handoff/menu.md`
-  (`equipref1` / `equip_p1`, `skillref1-4` / `skill_p1-4`, ...), but the literal plan string
-  passed to `itemsrun.sh`/`specrun.sh` for each one was not re-derived with confidence in
-  this pass. `cmpdump.sh` is the compare tool once a port run exists.
+- **menu** (14 of 15 ids): `combref2` is now automated (`h_menu` in `ref_regress.py`,
+  `scratchpad/menu/combref2/port_input.txt` - a port `--input` string already translated and
+  confirmed against port run `comb_p2`, docs/handoff/menu.md "Combat, pages 8-10"); PASS
+  (config/inventory/party/game_state exact, records' one known random check byte at +0x4ea
+  tolerated, matching the "check bytes are random by design" note). The other 14 each have a
+  documented Redux/port pairing and a `plan.txt`, but only `combref2`'s plan was also saved
+  translated into the port's own `FRAME:button,...` form (confirmed rule from
+  `docs/handoff/menu.md`: "Port frame = Redux frame + 153" for `itemsref1/2`/`equipref1`, plus
+  whatever page-opening button presses get from the camp root to that specific page, which
+  combref2's saved `port_input.txt` shows includes one extra `140:triangle,144:none` before
+  the +153-shifted plan - not reverified independently for the other ids this pass).
+  `cmpdump.sh` is the compare tool once a port run exists; `h_menu`'s `MENU_RUNS` table is
+  where to add the next one.
 - **world_map** (28 ids, `scratchpad/world/ref/{cour1,explore1,menu1-3,mov1-3,...}`): recorded
-  2026-10-22 by an earlier world-agent session; no current `docs/handoff/world.md` revision
-  documents how they verify. Needs an owner to characterize before they can be automated.
+  2026-10-22 by an earlier world-agent session; still no `docs/handoff/world.md` revision
+  documents how they verify (reconfirmed this pass - no mention of any of these ids). Needs an
+  owner to characterize before they can be automated.
 - **fx_legacy** (23 ids, `scratchpad/fx_worker/ref129`, `ref548`, `refcred3/4`, ...): phase
   1-3 field-effects / credits references. `run_ref.sh`/`run_ref2.sh` only *record* Redux; no
-  port-run script was found for them. Likely already covered by `ss_game_tests`' `SS_FX_REF`
-  dump tests (`test_field_effects.cpp`) rather than this suite — worth confirming, not
-  duplicating.
+  port-run script was found for them. Reconfirmed this pass: `engine/tests/test_field_effects.cpp`
+  has its own `SS_FX_REF`-driven dump test (already in `ss_game_tests`) - likely the real
+  coverage for these, not duplicated here.
 - **world_spell** (9 of 39 ids: `i340`, `iC340`, `it340`(+`_raw`), `iu340`(+`_raw`), `j340`,
   `r340`, `r340d`, `rn340`, `rt340`): item-use / Rena-cast tests with a `*_cfg.sh` env script
   each, but which cfg matches which id was not confirmed.
@@ -56,32 +75,65 @@ and judges the result against the `expected` column.
   `pg_cash`, `phasegun_*`, `rena_ai*`, `victory_2_3*`): bespoke scenarios, each with its own
   `pcrun.sh` env vars (`PC_IN`, `PC_EXTRA_POKE`, `PC_TICKS`, `PC_D`) documented in prose in
   `docs/handoff/battle.md` but not re-derived into a literal command with full confidence.
+  `victory_2_3`'s row already carries the effects agent's `CMP_D=7` finding in its
+  `compare_cmd` column, for whoever promotes it next.
 - **fx_battle** (14 of 95 ids): `as_b6`, `asv_b4d`, `chis_m4_box`, `op_b1_dense`,
   `op_b10_dense`, `op_m8_trail`, `prec_b4_box`, `prec_b4_cam`, `precsmoke`, `talk_ko`,
   `talk_prov`, `talk_flee`, `talk_ko2`, `talk_prov2`: diagnostic / one-off refs outside the
   killer-move `NAME CHAR BYTE [USES]` convention.
 
-## Open: RNG re-sync points for CD-load-crossing references
+## Resolved this pass: RNG re-sync points for CD-load-crossing / boss-voice references
 
-The battle agent flags (2026-10-23, via the coordinator): a reference whose recording
-crosses a CD-timed load (the field voice queue across a map load; battle state 0, the party
-loader — the console takes ~44 frames per member, the port reaches state 1 at b0) needs an
-explicit resync, or the generator position after the load won't line up at all, which this
-suite would currently score as a hard REGRESS even though nothing ported is wrong. Port side:
-`SS_BATTLE_RNG_SKIP=N` (new in `battle_debug.cpp`) makes N extra draws at the port's state
-0->1 to land on the console's state-1 frame; checked equal to Redux at all 250 samples from
-b102 on the late-save final-boss reference with N=1. Not yet wired into `refs.csv`/
-`ref_regress.py`: add columns (or fold into `run_cmd`) for the sync event, the console frame
-it happens at, and the N (or a Redux dump path, as `SS_ROUTE_RNG` does for route sync) to
-pass as `SS_BATTLE_RNG_SKIP`/equivalent for that reference's handler. No current row in this
-pass's `refs.csv` is known to need it, but any field-voice-queue or battle-state-0-crossing
-reference added later will.
+The coordinator's rule (2026-10-23): a reference whose recording crosses a CD-timed load (the
+field voice queue across a map load; battle state 0, the party loader) needs an explicit
+resync, or the generator position after the load won't line up, which this suite would
+otherwise score as a hard REGRESS even though nothing ported is wrong. This is now `refs.csv`'s
+`resync` column (see above), read generically by `ref_regress.py`'s `parse_resync()`.
 
-Promoting any of these from `manual`/`needs_owner` to automated just means: confirm the
-exact run parameters (grep the id in its area's `docs/handoff/*.md`, or ask that area's
-agent), add a row-specific entry to the small per-area tables in `tools/ref_regress.py`
-(`FB_CHAR`, `STAGE_EXPECT`, `SWEEP_IDS`/`BOSS_IDS`, ...), and flip `expected` in `refs.csv`
-away from `manual`.
+- `SS_BATTLE_RNG_SKIP=N` (`battle_debug.cpp`) makes N extra draws at the port's battle state
+  0->1, to land on the console's state-1 frame after its party loader (~44 frames/member).
+  Checked equal to Redux at all 250 samples from b102 on the late-save final-boss reference
+  with N=1 (the menu agent's `scratchpad/battle/late/p2`). **Tested this pass against the
+  candidates it was suggested for (`v538_3`, `h531_3`, `h539_3`) and found it does not help
+  them** - it made each one's match worse (v538_3 goes from exact to diverging at b330; h531_3
+  from b440 to b60), so none of those three use it. They were a different resync need
+  (`CMP_FROM`/`CMP_R`/`CMP_DMAX`, below, or no override at all for h531_3) or needed a party
+  HP poke (`SS_ENEMY_HP`), not a CD-load skip. **No row in the current `refs.csv` is confirmed
+  to need `SS_BATTLE_RNG_SKIP`** (the effects agent proposed it for `m538_3` too; tested, also
+  made that one worse - b920/b930 without it vs b50/b330 with it). Still correct for any
+  field-voice-queue or battle-state-0-crossing reference added later; wire it through the same
+  `resync` column.
+- `CMP_FROM`/`CMP_R`/`CMP_DMAX` (`scratchpad/enemy/cmp.py`'s own boss-fight offset-search
+  override, `verify_all.sh`'s documented usage: "boss fights need CMP_FROM=60 CMP_R=1
+  CMP_DMAX=80 (537: CMP_R=2)"): the actual fix for the boss-intro-voice encounters (537 Vesper
+  + Decus, 538 Cyril, 539/540 Indalecio) - the console draws RNG for the intro voice that the
+  port draws during setup, and the default 0..8 D-search picks the wrong offset without this.
+  Set on `h539_3`, `t539_3`, `t540_3`, `v538_3` (all `CMP_R=1`) and `m537_3`/`m538_3`/`m539_3`
+  (`m537_3` needs `CMP_R=2`). `h531_3` (Bark) has no intro voice and does **not** use this -
+  the plain default search already lands on its documented split.
+- `SS_ENEMY_HP=DELAY:INDEX:VALUE` (docs/handoff/enemy.md section 4): replicates a mid-fight
+  enemy HP poke the Redux reference was recorded with. Set on `h531_3` (`60:0:130000`) and
+  `h539_3` (`0:0:300000`).
+- `FRAMES=N`: a longer run than a handler's own default. Set on `t539_3` (3050), `t540_3`
+  (2550, both tough-Claude Indalecio runs that need 2500-3000 vsyncs to reach their documented
+  split) and `stage36_long` (2650 - its own reference runs 2600 vsyncs but `cmpstage.sh`'s
+  default FRAMES=1400 cut the port run short, freezing its RNG count well before the end).
+- `CMP_OFF=-1` (`cmpstage.sh`'s own mash-offset override): `stage8_light`/`stage8_shots`'
+  documented b940 split only shows up with the cross-press mash one frame earlier than
+  `cmpstage.sh`'s generic 45i formula gives (docs/handoff/battle.md: "inputs at 45i-1").
+- Tag-driven, not resync-column: `h_enemy` sets `TOUGH=1` for tags `t` and `v` (both "tough
+  Claude" recordings per `verify_all.sh`'s own comment - `v538_3` was missing this before this
+  pass), and does *not* set `NO_MASH=1` for tags `e`/`f` (recorded with Cross mash, not idle -
+  the effects agent's finding for `e10_3`/`f10_3`; every other tag's references were recorded
+  idle via `batch.sh`'s own override). `stage16c` moved from `cmpstage.sh` to
+  `cmpstage_caster.sh` (a caster ref, not a plain stage ref); `caster35`/`caster35s` moved to
+  `cmpstage_caster7.sh` (recorded in the 2-1-2 tick group, not cmpstage_caster.sh's 2-2-2).
+
+Promoting any `manual`/`needs_owner` row to automated just means: confirm the exact run
+parameters (grep the id in its area's `docs/handoff/*.md`, or ask that area's agent), add a
+row-specific entry to the small per-area tables in `tools/ref_regress.py` (`FB_CHAR`,
+`MENU_RUNS`, `SWEEP_IDS`/`BOSS_IDS`, ...) or the `resync` column, and flip `expected` in
+`refs.csv` away from `manual`.
 
 ## Editing the agents' scripts
 

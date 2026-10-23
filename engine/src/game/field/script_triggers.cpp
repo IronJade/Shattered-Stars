@@ -4,6 +4,7 @@
 // overlay code (#3102 0x800829fc) that only touches the trigger table.
 #include <cstdio>
 
+#include "game/ap/ap.h"
 #include "game/common/math.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -142,6 +143,12 @@ void trigger_check_regions(ScriptCtx* ctx) {
     if (!started) {
       if (button) ctx->last_trigger = -1;
       if (i != ctx->last_trigger && i != ctx->active_trigger) {
+        // Archipelago (port feature; open world) [world agent]: a locked door's routine does
+        // not start (nor its music fade); the region fires again only once left.
+        if (ap::door_blocked_at_trigger(static_cast<int>(t.code - ctx->code) * 4)) {
+          ctx->last_trigger = i;
+          return;
+        }
         vm_push_frame(ctx);
         started = true;
         ctx->ip = t.code;

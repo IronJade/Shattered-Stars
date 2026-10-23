@@ -4,7 +4,7 @@ docs/ap/battles.json (docs/ap/field.md, docs/ap/apworld.md). Run it after regene
 field.json:
 
     tools/ap_world_tables.py [--field docs/ap/field.json] [--battles docs/ap/battles.json]
-                             [-o apworld/so2/data.py]
+                             [--late docs/ap/late_proof.json] [-o apworld/so2/data.py]
 
 Story mode's locations are the chests (one per opened flag) and the gift sites that give an
 item or Fol (key-item flags stay in place: the story needs them). Optional ones (by the
@@ -17,7 +17,9 @@ type that random encounters meet (type 8, by enemy type). Each location carries:
   - its region (Expel, Energy Nede, Fienal, Cave of Trials);
   - why it can be missed, if it can ("window", "time-limited", "private action", "optional
     member", "never"), and the protagonist it needs ("claude" / "rena"), from its
-    conditions evaluated with tools/ap_extract.py's three-valued evaluator.
+    conditions evaluated with tools/ap_extract.py's three-valued evaluator;
+  - the games in which tools/ap_late_proof.py proved it reachable after the Final Save Point
+    (`late`: chests, gifts, bosses), which decides whether it may hold progression.
 Nothing but numbers and names (items, places) is written.
 """
 
@@ -177,7 +179,17 @@ def site_row(m, s):
     return [m, s["word"], s["expected"], s["form"], s["role"]]
 
 
-def build(field, battles):
+def late_games(late):
+    """Location id -> the games (claude / rena) whose late proof checked it."""
+    out = collections.defaultdict(list)
+    for game, result in sorted(late.get("games", {}).items()):
+        for lid in result.get("proven", []):
+            out[lid].append(game)
+    return out
+
+
+def build(field, battles, late=None):
+    proven = late_games(late or {})
     names = {int(k): v for k, v in field["item_names"].items()}
     count = collections.Counter(names.values())
     items = {n: (v if count[v] == 1 else f"{v} ({n})") for n, v in sorted(names.items())}
@@ -323,6 +335,9 @@ def build(field, battles):
         l["name"] = name
     if len({l["name"] for l in locs}) != len(locs) or len({l["id"] for l in locs}) != len(locs):
         raise SystemExit("location names or ids repeat")
+    for l in locs:
+        if l["type"] in ("chest", "gift", "boss"):
+            l["late"] = proven.get(l["id"], [])
     fol = sorted({l["fol"] for l in locs if l["fol"] is not None})
     goal = battles.get("final_boss_encounters", [539, 540])
     return {"items": items, "fol": fol, "locations": sorted(locs, key=lambda l: l["id"]), "goal": goal}
@@ -347,12 +362,13 @@ def write(data, path, sources):
             "# One location per line: id, name, type (chest / gift / boss / join / drop), map, flag (chest) /",
             "# offset (gift, join) / encounter (boss) / enemy (drop), character (join), boss class, area,",
             "# region, vanilla item or Fol, patch sites [map, word, expected, form, role], missable",
-            "# reasons, the protagonist it needs (None: both).",
+            "# reasons, the protagonist it needs (None: both), late: the games in which it was proven",
+            "# reachable after the Final Save Point (docs/ap/late_proof.json; chests, gifts, bosses).",
             "LOCATIONS = ["]
     for l in data["locations"]:
         row = {k: l.get(k) for k in ("id", "name", "type", "map", "flag", "offset", "encounter", "character", "enemy",
                                       "boss", "area", "region", "regions", "item", "fol", "sites", "missable",
-                                      "protagonist")}
+                                      "protagonist", "late")}
         row = {k: v for k, v in row.items() if v is not None or k in ("item", "fol", "protagonist")}
         out.append(f"    {row!r},")
     out += ["]", ""]
@@ -364,12 +380,16 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--field", default=os.path.join(ROOT, "docs/ap/field.json"))
     ap.add_argument("--battles", default=os.path.join(ROOT, "docs/ap/battles.json"))
+    ap.add_argument("--late", default=os.path.join(ROOT, "docs/ap/late_proof.json"))
     ap.add_argument("-o", "--output", default=os.path.join(ROOT, "apworld/so2/data.py"))
     a = ap.parse_args()
     field = json.load(open(a.field))
     battles = json.load(open(a.battles)) if os.path.exists(a.battles) else {}
-    data = build(field, battles)
-    write(data, a.output, ["docs/ap/field.json", "docs/ap/battles.json"])
+    late = json.load(open(a.late)) if os.path.exists(a.late) else {}
+    if not late:
+        print(f"no late proof ({a.late}): no chest, gift or Cave of Trials boss may hold progression")
+    data = build(field, battles, late)
+    write(data, a.output, ["docs/ap/field.json", "docs/ap/battles.json", "docs/ap/late_proof.json"])
     locs = data["locations"]
     why = collections.Counter(r for l in locs for r in l["missable"])
     kinds = collections.Counter(l["type"] for l in locs)
@@ -380,6 +400,11 @@ def main():
           f"{dict(why)}; claude-only {sum(1 for l in locs if l['protagonist'] == 'claude')}, rena-only "
           f"{sum(1 for l in locs if l['protagonist'] == 'rena')}; regions "
           f"{dict(collections.Counter(l['region'] for l in locs))}; Fol bundles {len(data['fol'])}")
+    late_rows = [l for l in locs if "late" in l]
+    print(f"proven late: both games {sum(1 for l in late_rows if len(l['late']) == 2)}, Claude's only "
+          f"{sum(1 for l in late_rows if l['late'] == ['claude'])}, Rena's only "
+          f"{sum(1 for l in late_rows if l['late'] == ['rena'])}, neither {sum(1 for l in late_rows if not l['late'])}"
+          f" (of {len(late_rows)} chests, gifts and bosses)")
 
 
 if __name__ == "__main__":

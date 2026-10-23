@@ -6,7 +6,78 @@ Worker: world agent (phase 3: closing the field program's remaining gaps). Build
 `gha.sh` on the project `analysis/ghidra_world`). Nothing is committed by the worker; the
 coordinator commits.
 
-## AP phase 4, port side (fourth world agent, 2026-10-23, from ~03:00): IN PROGRESS
+## AP phase 4, port side (fifth world agent, 2026-10-23 ~04:xx-05:xx): DONE, handed back
+
+Finished the fourth agent's "Open / next" list (all four items). Build `engine/build-world`
+(`ninja -j8`); scratch `scratchpad/world/ap4/shop/` (seeds, trace logs, frame captures,
+`dump2300.bin` an `SS_STATE_DUMP` of the inventory after the shop run). Checked with the
+enemy agent's log (`docs/handoff/enemy.md` "Phase 4 seed fields ... CONFIRMED"): the fourth
+agent's proposal was confirmed as written by the fourth AP agent on 2026-10-23, no port
+change needed, so nothing here adapts to an amendment.
+
+1. **Shop shuffle, a real game run** (Hearn's store, map 26, shop 1). Seed: shop 1 entry 0
+   (Sandals) is Alice's slot holding Bob's Hookshot (no `item` filter); entry 2 (Lavender,
+   item 224) is Claude's own Revival Card. Headless run (`--debug`, console `fol 50000` first):
+   walk to Hearn, confirm his Yes/No prompt (3 presses after the talk opens it), Buy, add 1
+   Sandal, move to entry 2, add 3 Lavenders, confirm, confirm the settle dialog.
+   - Log: `check 1365246464 (Arlia shop: Sandals): Hookshot for Alice` then
+     `shop 1 entry 0 (item 728): the slot's check took the first copy of 1` (nothing given);
+     `check 1365246466 (Arlia shop: Lavender): Revival Card` then
+     `shop 1 entry 2 (item 224): the slot's check took the first copy of 3`.
+   - Fol: 50000 -> 48520 (1x10 + 3x490), proving the purchase itself went through, not just the
+     check.
+   - `SS_STATE_DUMP` of the inventory after settling: item 21 (Revival Card) x1, item 224
+     (Lavender) x2 (the two copies the shop itself still sells), item 728 (Sandals, sent to
+     Alice) absent. Matches `ap_shop_slots` exactly, now proven in situ.
+   - Unchecked-slot colour: a temporary trace in `draw_row` (removed again) confirmed
+     `ap::shop_slot_open` returns true for entries 0 and 2 and false for 1/3-6 while the list is
+     drawn, i.e. `set_colour(2)` does fire for the right rows. Visually the difference is subtle
+     at this resolution (colour 2 in the item list's own CLUT is a muted grey next to colour 1's
+     near-white, not the bright pink colour 2 uses in the money box's different font group) -
+     that is the original game's palette for this CLUT, not a port bug.
+   - Frame capture: `scratchpad/world/ap4/shop/cap2/frame01600.png` (the Buy list open: Sandals,
+     Rose Hips, Lavender, Aquaberry, Blackberry, Blueberry, with the Fol/Purchase/Sales panel).
+   - Smoke case `ap_p4_shop` added to `tools/smoke_field_events.sh` (6 checks: the list opens,
+     the other slot's item is sent, none of it is given, our slot's first copy is the check, the
+     other 2 copies are the shop's own item, the Fol total). Full smoke: 79/79 (73 + 6 new).
+2. **tools/ap_e2e.sh, two new sessions** against the same private MultiServer and ChecksFinder
+   stand-in multiworld, using more of its spoiler (`scratchpad/ap/out/*_Spoiler.txt`): Alice's
+   Tile 7 (location 81006) and Tile 3 (location 81002) were unused by the first five sessions.
+   - **Session 6 (key unlocks a door):** `seed_p4door.apso2` (`world_mode: open_world`, one
+     door: map 17 -> Arlia, id 1116181, key 1, "Arlia Pass"; `items` relabels id 80000, Alice's
+     own "Map Width", as the key). A second Python client (`bob_key.py`) connects and checks
+     Bob's Tile 7 (location 81006, which the multiworld gives to Alice) without waiting for
+     anything first. The port (reusing the smoke test's exact walk: right into the door,
+     refused, idle, left back through it) is refused first (`door 1116181 ... locked, needs
+     Arlia Pass`), then receives the key over the real network (`key 1 (Arlia Pass) received`,
+     no console shortcut), and map 18 loads on the second approach.
+   - **Session 7 (a shop check going out):** `seed_p4shop.apso2` (`shuffle_shops: full`; Hearn's
+     shop 1 entry 2 is location 81002, Alice's Tile 3, holding Bob's "Map Bombs"). The port buys
+     one Lavender (the same walk-and-buy sequence as the smoke case, trimmed to one slot); the
+     check goes out over the network (`check 81002 ...: Map Bombs for Bob`,
+     `shop 1 entry 2 (item 224): the slot's check took the first copy of 1`) and a third Python
+     client (`bob_shop.py`) logs receiving it.
+   - All 7 existing sessions still pass. Full run: 23/23 (16 existing + 7 new), twice.
+3. **The APWorld's confirmation**: read (no port change needed; see above).
+4. **Not done** (left optional, as the fourth agent left it): a disc-backed `--ap-validate` for
+   doors. The port still checks each seed door's word as its map loads and logs/ignores a bad
+   one; no separate pre-flight validator was added this turn.
+
+Suites (engine/build-world, SS_DISC1, scratch XDG_CONFIG_HOME): `ss_tests` 78/0, `ss_game_tests`
+107/0, `tools/smoke_field_events.sh` 79/79, `tools/ap_e2e.sh` 23/23 (run twice, both clean).
+
+### Files changed this turn (none committed)
+- `engine/src/game/field/menu_shop.cpp`: no net change (temporary trace added and removed while
+  investigating the colour; the diff is only the fourth agent's).
+- `tools/smoke_field_events.sh`: new case `ap_p4_shop` (shop shuffle in a real run).
+- `tools/ap_e2e.sh`: sessions 6 (key unlocks a door) and 7 (a shop check out), two new seeds
+  (`seed_p4door.apso2`, `seed_p4shop.apso2` written inline) and two new Python stand-ins
+  (`bob_key.py`, `bob_shop.py` written inline), plus the header comment.
+- `docs/handoff/world.md` (this file).
+- Scratch: `scratchpad/world/ap4/shop/` (seed files, trace/dump logs, `cap2/` frame captures,
+  full-suite logs).
+
+## AP phase 4, port side (fourth world agent, 2026-10-23 ~03:00-04:00): done (port + smoke); its two "Open / next" items are closed above
 
 Assignment (coordinator): open world, port side. (1) area keys gating doors (world_mode =
 open_world), key list and door ids agreed with the APWorld agent (enemy line in
@@ -16,7 +87,56 @@ full); (4) entrance-shuffle groundwork: seed-driven door targets + a validator. 
 smoke cases, ap_e2e.sh where a server matters; prove the no-seed path (suites +
 `python3 tools/ref_regress.py --quick`).
 
-State at the 01:37 usage-limit stop (resumed after): research only, no project file edited.
+Agreed with the APWorld agent (a1e6498ce791a7ac4, provisionally; it rolled over, its successor
+confirms): door ids map * 65536 + offset / 4, docs/ap/doors.json from tools/ap_doors.py; key
+items {"kind": "key", "key": N} (AP id ITEM_BASE + 0x40000 + N), top-level "doors": [{id, key,
+to}]; teleporter as below; shop slots check.type "shop" {shop, index, item}, id type 10 =
+0x50320000 + (10 << 21) + (shop << 8) + index; doors.py validator mine, the shuffle theirs.
+
+Done so far (build engine/build-world, all uncommitted):
+- tools/ap_doors.py -> docs/ap/doors.json: 2529 doors (80 stack form), 66 world entrances in
+  35 key groups, 2044 arrival points.
+- seed.{h,cpp}: kind key, check type shop, options world_mode / expel_teleporter /
+  shuffle_shops, the doors table (id or map+offset; maps; routine; key; to).
+- ap.{h,cpp}: keys (sidecar "keys"), on_script_loaded (canonical script map; a door word that
+  is no transfer is ignored), door_blocked_at_trigger, on_map_transfer (locked: skipped; to:
+  args rewritten), on_shop_buy / shop_slot_open, teleporter patch lines (open world), console
+  `ap_give key:N`, status line.
+- Hooks [world agent]: script_ext.cpp transfer case, script_triggers.cpp (trigger fire),
+  map.cpp (script loaded), menu_shop.cpp (settle buy + order; slot names in colour 2).
+- Unit tests ap_phase4_seed, ap_doors_and_keys, ap_shop_slots: ss_tests 78/0, ss_game_tests
+  107/0.
+- Game runs (scratchpad/world/ap4/runs): map 17 door 1116181 locked ("Arlia Pass needed"),
+  key received, re-entered: map 18 loads; world map 2 door 68685998 (North City, save
+  dex_north_city.mcd) locked then open; redirect 1116181 -> map 23; teleporter at chapter 40:
+  303 K25 -> map 18 (open world) / talk only (story); 18 K26 exists only in open world, its
+  trip branch -> 303 (forced with a test patch, choice1/c.patch).
+
+- Design written: docs/ap/seed_format.md "Phase 4" (options, keys, doors, the teleporter with
+  its three patch lines and why not flag 730, shop slots, the door table and validator);
+  archipelago_plan.md phase 4 status; field.md hook table (doors, point of no return).
+- apworld/so2/doors.py (validate_doors + CLI) and apworld/so2/test/test_doors.py (2 tests, run
+  standalone `python3 apworld/so2/test/test_doors.py`, or in AP's test run). The 66 world
+  entrances mapped to their own targets validate clean.
+- Smoke (tools/smoke_field_events.sh engine/build-world/shattered-stars): 73/73, 11 new
+  (ap_p4_door x4, ap_p4_redirect x2, ap_p4_tele_open x2, ap_p4_tele_story, ap_p4_world x2;
+  the world one needs analysis/saves/dex_north_city.mcd like north_city).
+- No-seed path: every hook returns at once without a seed (unit test ap_doors_and_keys ends
+  with that); the transfer case keeps its fetch counts and side effects in order.
+  `ref_regress.py --quick --build engine/build-world`: 18 pass, 2 regress (e10_3, f10_3: the
+  same at the 03:12 checkpoint with engine/build, enemy area), 8 review (world_spell "could not
+  parse compare output": the same with the 03:12 engine/build binary, which has none of this
+  code, so a harness / scratch issue for the tools agent, not phase 4).
+
+Open / next (for the next world agent): closed by the fifth world agent above (shop slots in a
+real run + the smoke case; the ap_e2e.sh key/shop sessions; the APWorld's confirmation read).
+Still open:
+4. Optional: a disc-backed `--ap-validate` for doors (today the port checks each seed door's
+   word when its map loads and ignores a bad one).
+Scratch: scratchpad/world/ap4/runs (door / wdoor / redirect / ow / story seeds and logs,
+choice1/c.patch forces K26's yes branch), regress/ (the quick run).
+
+Earlier state (01:37 usage-limit stop): research only, no project file edited.
 Scratch in scratchpad/world/ap4: full.json (`ap_extract --full`: 2529 transfers), maps.pkl
 (every map's disassembly, cache_maps.py), dis.py / pdis.py (disassembly helpers).
 

@@ -257,14 +257,65 @@ world agent's two questions (Leon 229 in Rena seeds, Celine 74).
 - **1. Suites: done.** engine/build-enemy (current tree incl. the "!n" hook): ss_tests 78/0,
   ss_game_tests 104/0, smoke 62/62 (scratchpad/enemy/ap4/*.log). Env: `source
   scratchpad/enemy/ap4/env.sh` (discs, scratch XDG, SDL drivers, SKIP_REQUIREMENTS_UPDATE).
-- **New hook (boot/system.cpp, flagged `[enemy agent, AP late proof]`):** the SS_BATTLE_STUB
-  stand-in calls `ap::on_battle_exit(encounter, 0)`, so sweeps with a seed log boss checks.
-  Suites to rerun after it (built, not yet run).
-- **2. In progress:** `tools/ap_late_proof.py` (new, mine): proof seed from data.py (every
-  chest / gift / boss), BFS of chapter-60 event sweeps from map 671 (step 0xfa0 = the
-  user's save at the Final Save Point, flag 730, party + Rena + Noel; Rena's game "730,!1"),
-  edges = T / K / S entries ending in control on another map + "main script left"; proven =
-  `[ap] check` in a reached map. Output docs/ap/late_proof.json; logs scratchpad/late_proof/.
+- **New hooks (flagged `[enemy agent, AP late proof]`):**
+  - boot/system.cpp: the SS_BATTLE_STUB stand-in calls `ap::on_battle_exit(encounter, 0)`, so
+    sweeps with a seed log boss checks;
+  - field/event_sweep.cpp: `SS_SWEEP_SHOW="G1cf:1,G1c0:2,F157"` prints a `state` line (script
+    globals / flags) after every entry that ends on another map and at settle.
+  - Built in engine/build-enemy; suites to rerun after them.
+- **2. In progress: `tools/ap_late_proof.py`** (new, mine). Running since 03:46 (both games,
+  6 jobs each; logs scratchpad/late_proof/{claude,rena}/, progress {claude,rena}.run.log, done
+  markers {claude,rena}.done). Findings that shaped it:
+  - A bare chapter-60 `--map` state can't leave Fienal: its stair rooms (647-653) pick exits
+    by G[0x1cf] (floor), G[0x1c0] (previous map) and flag 157 (652 / 653 step the floor down /
+    up once per crossing; another trigger clears the latch). So the state is **the user's save
+    at the Final Save Point** (scratchpad/latesave/card.mcd frame 13: chapter 60, step 4000,
+    flag 730, floor 8, previous map 681, 1406 flags) minus every location's "done" flags (378:
+    chest flags, gift guards, cave boss guards); Rena's game = flag 1 cleared + G[0xc4] bytes
+    swapped; party + Rena + Noel. **Not the save's message speed G[0x1b8]** (game_state
+    +0x118): with it the sweep's presses answered choices wrongly (Fun City's old man K25
+    said no).
+  - Nodes after a root are entered by **replaying the route** (SS_SWEEP_PLAY +
+    SS_SWEEP_PLAY_SWEEP). Fienal / cave / stateful maps are nodes per arrival state
+    (SS_SWEEP_SHOW), and an "ok" entry that changes the state (a stair latch) is an edge.
+  - Even so the search can't get below Fienal 6F (rooms keyed by the previous room), so the
+    **roots are 671 and world map 2** (Prima p. 130: the party walks back out of Fienal).
+  - Map 413's sweep looped forever ("main script left for map 416; settle (reload)": the
+    settle timer restarts on each reload). The driver now kills a run after 6 such reloads and
+    resumes after the entry; run timeout 900 s. `--resume` reuses finished node logs
+    (restarted that way at 03:58, 259 nodes kept). The event sweep itself could give up such a
+    settle (menu agent's file; not changed).
+  - When both finish: `tools/ap_late_proof.py --reparse --game claude --game rena` (needs
+    SS_DISC1; writes docs/ap/late_proof.json), then `tools/ap_world_tables.py`, world tests,
+    the batch, the e2e.
+  - Wiring written: ap_world_tables.py `--late` adds `late` (games proven) to chest / gift /
+    boss rows; rules.py `may_hold_progression` (story bosses exempt; drops / joins never;
+    expel_progression off; else proven in the protagonist's game, both under "any").
+- **4. Written, not run:** tools/ap_e2e_so2.sh phase-3 steps (character_items, first_drop,
+  traps 20; plando Celine / Fol Loss Trap on Bob's Tiles 4 / 10; console `fol 10000`, `battle
+  547` = five Shadowflowers, type 14, drop id 1362231310; checks for the join, the trap's 1000
+  Fol, the withheld drop and its check, status "checks 2 / received 3", the tracker's drop).
+  Needs data.py with the proof first (the crate holds Bob's progression item).
+- **5. Docs written:** apworld.md rewritten (placeholders RESULTS_PLACEHOLDER and
+  TESTING_PLACEHOLDER to fill), field.md "Location ids" (types 8 / 9 / 10, join site ids, the
+  battle tables), seed_format.md "Phase 4: Confirmed by the APWorld". Plan / CHECKLIST: after
+  the results.
+- **Phase 4 fields: confirmed** (see "Phase 4 seed fields" below; no port change).
+- **Found and fixed: the cave's gems.** The Cave of Trials doors on maps 751 / 764 take the Red
+  Lotus Gem (317; gifts on 711 and 754) and test the Cracked Gem (289; chest on 771). Shuffled,
+  a door could need a gem placed behind it. items.PUZZLE_ITEMS: world.create_items locks them
+  at their own locations (test_cave_gems_stay). World tests 56/56.
+- **6. Answered (headless):**
+  - Celine's map 74 join is temporary: in Claude's game the Varmillion scene on map 462
+    (chapter 15 step 2400, T7) puts her in reserve whatever flag 112 is, and in Rena's game map
+    126 (step 1000) does (scratchpad/enemy/ap4/celine/run.sh, party dumps). She comes back at
+    125 (flag 112, listed) or 124. So 74 stays unlisted. Note for the world agent: a received
+    Celine who joined early is sent to reserve there too, and returns only through 125 (flag
+    112) or 124.
+  - Leon's 229 0x73dc is listed in rena / any seeds already (row protagonist "rena").
+- **3. Prepared:** scratchpad/enemy/ap4/batch/ (players Claude / Rena with every phase-3 option
+  random, Alice ChecksFinder; run_batch.sh FIRST LAST; check.py: shape, ids, patches, gems,
+  party, progression only where may_hold_progression allows).
 
 ## Archipelago phase 2c / 3 (third AP agent, 2026-10-23 ~02:30; read this first)
 
@@ -433,6 +484,32 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
     doors behind story flags may stay shut: those locations become no-progression.
 - **The include fix** above (hard reasons always excluded) is part of task 4. So is "characters
   are useful only": member-gated logic would be non-monotonic, since Ashton rules out Opera.
+
+### Phase 4 seed fields proposed by the world agent (a964190b3651ef72b): CONFIRMED (fourth AP agent)
+Confirmed as written, 2026-10-23 (seed_format.md "Phase 4", "Confirmed by the APWorld"); no
+port change needed. Keys only on the 66 world-map entrances (35 key groups as the default),
+shop slot ids type 10 (type 5 stays the shop-site record), `item` always written for shop
+slots. Phase-4 logic is not built yet (after phase 3). The proposal as it was:
+1. **Doors.** tools/ap_doors.py writes docs/ap/doors.json: every constant map transfer, with
+   id = map * 65536 + word index of the transfer, its target, requires / via,
+   world_entrance (66 chunk-script transfers) and a suggested key_group. Doors are not
+   locations.
+2. **Keys** (options.world_mode = "open_world").
+   - Item kind `{"kind": "key", "key": N, "name": "Salva Pass"}`, AP id ITEM_BASE + 0x40000 +
+     N.
+   - Seed top-level `"doors": [{"id": D, "key": N}]`: a door is blocked at its trigger
+     without the key.
+   - Default plan: one key per world-map area, about 35 groups of the 66 entrances. The
+     APWorld picks the final list and names.
+3. **The Expel teleporter** (options.expel_teleporter, default on in open_world). Two built-in
+   edits make Fun City's arena (303) and Arlia (18) connect both ways from chapter 36. The
+   logic: Expel is reachable from Fun City.
+4. **Shop shuffle** (options.shuffle_shops off / specials / full).
+   - check `{"type": "shop", "shop": S, "index": I, "item": orig}`, type 10, id 0x50320000 +
+     (10 << 21) + (S << 8) + I.
+   - The first copy bought is the check. The APWorld defines "specials".
+5. **Entrance shuffle groundwork.** A seed door may carry `"to": {map, x, y, z, dir}`;
+   apworld/so2/doors.py (theirs) validates it. No shuffle yet.
 
 ### Files changed this turn (none committed)
 - New: tools/ap_e2e_so2.sh.

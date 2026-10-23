@@ -422,3 +422,139 @@ the ambushes still to fight. An older sidecar without them reads as empty.
 `ap_give` also takes a character's name (`ap_give Celine Bob`) and `trap:ambush`,
 `trap:fol_loss[:PERCENT]`, `trap:status[:poison|paralysis|stone]`. `ap_status` adds a line
 with the phase-3 options and one with the received characters.
+
+## Phase 4 (port side, 2026-10-23): the open world, shops, the door table
+
+Agreed with the APWorld agent (a1e6498ce791a7ac4). As before, everything is opt-in: without a
+seed, or with these options at their defaults, the game plays as the original.
+
+### Confirmed by the APWorld (2026-10-23)
+
+The fields below are confirmed as written; the APWorld will emit them when phase 4's logic is
+built. No port change is needed.
+- **Doors** are not locations. Door ids are `map * 65536 + offset / 4`, as doors.json gives them.
+- **Keys** are `{"kind": "key", "key": N}`, N 1-255, AP id `ITEM_BASE + 0x40000 + N`. Our AP item
+  ids are then: game items `ITEM_BASE + n` (1-1023), Fol `+ 0x10000 + amount`, characters
+  `+ 0x20000 + party id`, traps `+ 0x30000 + n`, keys `+ 0x40000 + N`; no range overlaps.
+- The seed's top-level **`doors`**: `[{id, key, to}]` (`routine` and `name` optional).
+- **Which doors get keys:** only the world-map entrances (doors.json `world` 1 / 2, 66 doors),
+  one key per `key_group` (35 groups) as the default list; the APWorld names the keys. Field
+  doors and the world script's warps never get one, so the "a locked door reached another way
+  skips its transfer" rule should not meet a scene.
+- **Shop slots:** check type `shop` `{shop, index, item}`, location type 10, id `0x50320000 +
+  (10 << 21) + (shop << 8) + index`. Type 5 stays field.json's shop *site* record (one per
+  B 0x6d call, reference only). The APWorld always writes `item`, which shop 0x58 (its list
+  grows with flags) needs to find the right entry.
+- **The Expel teleporter** and `to` (entrance shuffle groundwork): as written.
+
+### Options
+
+| Key | Values | Default | What it does |
+|---|---|---|---|
+| `world_mode` | `story`, `open_world` (or 0 / 1) | `story` | `open_world`: the seed's doors with a `key` stay shut until that key is received. |
+| `expel_teleporter` | true / false | true in `open_world`, else false | Virtual Expel's two ways open from chapter 36 (below). |
+| `shuffle_shops` | `off`, `specials`, `full` (or 0-2) | `off` | Read for the status line; which shop slots are locations is the seed's `shop` list. |
+
+### Area keys
+
+- **The item.** `{"kind": "key", "key": N, "name": "Salva Pass"}`, N 1-255 (the APWorld's
+  numbering; AP id ITEM_BASE + 0x40000 + N). It arrives like any item ("Received Salva Pass
+  from Bob"), can be a starting item or sit at one of this player's locations. The sidecar
+  keeps the keys received (`"keys": [3]`); console `ap_give key:N`.
+- **A door.** One map-transfer instruction (script ext 0x7d map_transfer, 0xa4, 0xda) with its
+  id, from `tools/ap_doors.py` (`docs/ap/doors.json`, below). The seed's top-level `doors`:
+
+```json
+"doors": [
+  {"id": 59576094, "routine": "0x3c6c", "key": 3, "name": "Expel -> Salva"},
+  {"map": 17, "offset": "0x2054", "to": {"map": 23, "x": 224, "y": 0, "z": 106, "dir": 198}}
+]
+```
+
+| Key | Meaning |
+|---|---|
+| `id` | `map * 65536 + offset / 4` (either the id, or `map` and `offset`, or both, which must agree) |
+| `map` | the script's map: the lowest map of a shared script (909 for every Expel world-map chunk 909-980, 1048 for Nede's 1048-1110, 1 for the world script, 340 for the shared dungeon rooms) |
+| `maps` | optional: the maps running the script (the port knows the shared groups anyway) |
+| `offset` | the transfer instruction's byte offset in the script code |
+| `routine` | the byte offset of the routine's `frame` (doors.json's `routine`): what a trigger region starts |
+| `key` | open world: the key the door needs (0 / absent: none) |
+| `to` | entrance shuffle: `{map, x, y, z, dir}` sent there instead (`dir` optional) |
+
+- **Locked.** When a trigger region (field doors: thread_start regions; world-map entrances:
+  ext 0x76) is about to start a routine whose seed doors all need a missing key, the routine
+  does not start: nothing of it runs (the world map's music fade included), the leader keeps
+  the controls, the banner says "Salva Pass needed", and the region fires again only after the
+  leader has left it (the triggers' own last-trigger rule). A locked door reached another way
+  (a talk handler, a scene) skips the transfer instruction itself.
+- **Checked as the map loads.** A seed door whose word is not a map transfer on that map's
+  script is ignored and logged (`door D: map M offset X holds W, not a map transfer`), as a
+  patch with the wrong EXPECTED is.
+- **In story mode** keys never lock a door; a door's `to` applies in both modes.
+- **The suggested key list** (doors.json `key_group`): the 66 world-map entrances (Expel 44,
+  Nede 22), grouped by the area they enter (35 groups). Field-internal doors stay open, so the
+  scenes inside towns play as they do. The APWorld picks the final list and names.
+
+### The Expel teleporter
+
+The disc switch (map 625, chapter 35) leaves Expel behind until the Final Save Point opens
+Virtual Expel. In an open-world seed a progression item can sit in Expel, so the teleporter
+uses the game's own two-way route, opened from chapter 36:
+
+- **Out:** the Fun City Fighting Arena's old man (map 303, actor 25, routine 0x4c14) offers the
+  trip to Arlia when `flag[730] == 1 && flag[2] == 0` (flag 730: the Final Save Point). The
+  test becomes `chapter >= 36 && flag[2] == 0`. Yes transfers to Arlia (map 18, 0x4dfc).
+- **Back:** Arlia's guide (map 18, actor 26, registered at 0x2688 under `chapter >= 60 &&
+  flag[2] == 0`, flag 753 clear) offers the trip to the arena (0x1fec -> map 303). His
+  chapter test becomes `chapter >= 36`.
+- **How:** three patch lines the port adds to the seed's own when `expel_teleporter` is on
+  (logged `seed:N` like the seed's, each skipped if the disc's word differs):
+
+      script 303 0x1307 0x3b0302da 0x430000a0   (eq flag 730, 1  ->  ge chapter, ...)
+      script 303 0x1308 0x00000001 0x00000024   (...  36)
+      script 18 0x996 0x0000003c 0x00000024     (ge chapter, 60  ->  36)
+
+- **Why not set flag 730 early:** it is also read by Central City (map 236: Filia's Private
+  Action 0x200 from chapter 58) and Arlia (map 18 0x2738, chapter 60), so setting it would
+  change those events. The two tests above have no other reader.
+- **Untouched:** the disc-swap flow (B 0x6a at map 625), the Final Save Point, and everything
+  at chapter 60. Fun City itself opens with the Nede world map; the logic connects Expel to
+  Fun City (both ways) in open world.
+- **Checked headless** (scratchpad/world/ap4/runs, event sweep at chapter 40 step 0): map 303
+  K25 transfers to map 18 with the teleporter, only talks without it; map 18's K26 exists only
+  with it, and its yes branch transfers to map 303.
+
+### Shop slots (`shuffle_shops`)
+
+| `check.type` | Fields | Where the port checks it |
+|---|---|---|
+| `shop` | `shop` (the B 0x6d shop id), `index` (0-based entry of the shop's list), `item` (optional: the item the entry must sell) | the shop page's settlement (menu_shop.cpp `settle`), bought or ordered |
+
+- Id: type 10, `0x50320000 + (10 << 21) + (shop << 8) + index`.
+- `index` is the entry's place in the list the shop shows: the original stock list with the
+  seed's own `shop` patch lines applied (without them, the original index). For shop 0x58
+  (the stock that grows with flags) it is the place among the entries shown.
+- The list shows an unchecked slot's name in colour 2. Buying it (any count): the first copy
+  is the check. Its item is given at once (an own item: banner "Got X" once the shop closes;
+  inventory full: given later) or sent ("Sent X to Y"); the other copies are the shop's
+  item. After the check the entry is an ordinary one. The price is the entry's own.
+- Order shops (0x5a-0x5e): the order is the purchase; the slot's copy is not delivered.
+- An entry that sells another item than `item` is not the slot (nothing recorded).
+
+### The door table (`tools/ap_doors.py`, `docs/ap/doors.json`)
+
+    tools/ap_doors.py DISC1.cue [--field docs/ap/field.json] [-o docs/ap/doors.json]
+
+- 2529 doors: every map transfer with a constant target map (2449 inline, 80 with their
+  arguments pushed as constants), each with `id`, `map` (+ `maps` for a shared script),
+  `offset`, `routine`, `op`, `form`, `to` {map, transition, x, y, z, dir, extra},
+  `requires` / `via` (as ap_extract writes transfers), `world` (1 / 2 / 3: a world-map
+  entrance from a chunk script), `world_script` (the world script's warps: not play),
+  `from_area` / `to_area`, `key_group` (world entrances).
+- `arrivals`: the 2044 distinct targets (map, x, y, z, dir) with the doors that use them.
+- **The validator** (`apworld/so2/doors.py`, standard library only, so the `.apworld` ships
+  it): `validate_doors(seed_doors, doors_json)` checks that every door id exists, that every
+  `to` is an arrival point of the game (some door's original target), that every key is
+  1-255, and that every target map gets back to a world map over the doors (with the seed's
+  targets applied). It returns the problems, an empty list for a good table. CLI:
+  `python3 apworld/so2/doors.py SEED.apso2 [--doors docs/ap/doors.json]`.

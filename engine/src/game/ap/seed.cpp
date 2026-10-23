@@ -74,6 +74,10 @@ bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::stri
       return fail(error, where + ": trap ambush, fol_loss or status expected");
     }
     if (it.name.empty()) it.name = it.trap == "ambush" ? "Ambush" : it.trap == "fol_loss" ? "Fol loss" : "Status ailment";
+  } else if (it.kind == "key") {
+    it.key = get_int_or(j["key"], 0);
+    if (it.key < 1 || it.key > 255) return fail(error, where + ": key 1-255 expected");
+    if (it.name.empty()) it.name = "Key " + std::to_string(it.key);
   } else if (it.kind != "foreign") {
     return fail(error, where + ": unknown kind '" + it.kind + "'");
   }
@@ -167,6 +171,12 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     } else if (l.type == "drop") {
       l.enemy = get_int_or(c["enemy"], -1);
       if (l.enemy < 0) return fail(error, where + ": a drop needs its enemy type");
+    } else if (l.type == "shop") {
+      l.shop = get_int_or(c["shop"], -1);
+      l.index = get_int_or(c["index"], -1);
+      l.shop_item = get_int_or(c["item"], -1);
+      if (l.shop < 0 || l.shop > 0xFF || l.index < 0 || l.index > 0xFF)
+        return fail(error, where + ": a shop slot needs shop (0-255) and index (0-255)");
     } else if (l.type.empty()) {
       return fail(error, where + ": check.type missing");
     }
@@ -235,6 +245,65 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   if (!option_int(s.options, "exp_multiplier", 1, 10, &s.exp_multiplier, error)) return false;
   if (!option_int(s.options, "fol_multiplier", 1, 10, &s.fol_multiplier, error)) return false;
   if (!option_int(s.options, "encounter_rate", 0, 200, &s.encounter_rate, error)) return false;
+  // Phase 4: the open world (doors need keys, the Expel teleporter), shop slots, the door table.
+  if (const Json& wm = s.options["world_mode"]; wm.is_string()) {
+    if (wm.as_string() != "story" && wm.as_string() != "open_world")
+      return fail(error, "options.world_mode: story or open_world expected");
+    s.open_world = wm.as_string() == "open_world";
+  } else if (!wm.is_null()) {
+    int v = 0;
+    if (!option_int(s.options, "world_mode", 0, 1, &v, error)) return false;
+    s.open_world = v == 1;
+  }
+  s.expel_teleporter = s.options["expel_teleporter"].as_bool(s.open_world);
+  if (const Json& sh = s.options["shuffle_shops"]; sh.is_string()) {
+    const std::string& v = sh.as_string();
+    if (v == "off") s.shuffle_shops = 0;
+    else if (v == "specials") s.shuffle_shops = 1;
+    else if (v == "full") s.shuffle_shops = 2;
+    else return fail(error, "options.shuffle_shops: off, specials or full expected");
+  } else if (!sh.is_null() && !option_int(s.options, "shuffle_shops", 0, 2, &s.shuffle_shops, error)) {
+    return false;
+  }
+  const Json& dj = j["doors"];
+  if (!dj.is_null() && !dj.is_array()) return fail(error, "doors must be an array");
+  std::set<int64_t> door_ids;
+  for (size_t i = 0; i < dj.size(); ++i) {
+    const Json& d = dj[i];
+    const std::string where = "doors[" + std::to_string(i) + "]";
+    if (!d.is_object()) return fail(error, where + ": a door must be an object");
+    Door door;
+    int64_t v = 0;
+    const bool has_id = get_int(d["id"], &v);
+    door.id = v;
+    door.map = get_int_or(d["map"], has_id ? static_cast<int>(v >> 16) : -1);
+    door.offset = get_int_or(d["offset"], has_id ? static_cast<int>(v & 0xFFFF) * 4 : -1);
+    if (door.map < 0 || door.map > 0xFFFF || door.offset < 0 || door.offset >= 0x40000 || (door.offset & 3) != 0)
+      return fail(error, where + ": a door needs its id, or map and offset (a word's byte offset)");
+    if (!has_id) door.id = door_id(door.map, door.offset);
+    if (door.id != door_id(door.map, door.offset))
+      return fail(error, where + ": id " + std::to_string(door.id) + " is not map * 65536 + offset / 4");
+    if (!door_ids.insert(door.id).second) return fail(error, where + ": door " + std::to_string(door.id) + " repeated");
+    for (size_t k = 0; k < d["maps"].size(); ++k) door.maps.push_back(get_int_or(d["maps"][k], -1));
+    if (door.maps.empty()) door.maps.push_back(door.map);
+    door.routine = get_int_or(d["routine"], -1);
+    door.key = get_int_or(d["key"], 0);
+    if (door.key < 0 || door.key > 255) return fail(error, where + ": key 1-255 expected");
+    door.name = d["name"].as_string();
+    if (d.has("to")) {
+      const Json& t = d["to"];
+      door.has_target = true;
+      door.to.map = get_int_or(t["map"], -1);
+      int64_t x = 0, y = 0, z = 0;
+      if (door.to.map < 0 || door.to.map >= 1200 || !get_int(t["x"], &x) || !get_int(t["y"], &y) || !get_int(t["z"], &z))
+        return fail(error, where + ": to needs map (0-1199), x, y and z");
+      door.to.x = static_cast<int>(x);
+      door.to.y = static_cast<int>(y);
+      door.to.z = static_cast<int>(z);
+      door.to.dir = get_int_or(t["dir"], -1);
+    }
+    s.doors.push_back(door);
+  }
   *out = std::move(s);
   return true;
 }

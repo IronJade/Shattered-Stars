@@ -357,6 +357,10 @@ void sound_set_tempo(Sound* s, int adjust);                      // 0x8001a938: 
 void sound_end_loops(Sound* s, int track_mask);                  // 0x8001aac4: the tracks leave their loops at the loop end
 u8 sound_bank_loaded(Sound* s, int slot);                        // 0x8001ab48
 void sound_set_bank_loaded(Sound* s, int slot, u8 value);        // 0x8001ab58
+// Debugging (no original): the party voice slots 0-3 in the console's layout, to compare with
+// a Redux dump of the driver: the 12 words of each slot (+0x12cc + 0x30 i; pointers as offsets
+// into the driver), bank_loaded (+0x1574, 8 bytes), then +0x1580..+0x3388 (bank area, remap).
+void sound_debug_dump_voice_slots(Sound* s, const char* path);
 void sound_measure_subtick(Sound* s);                            // 0x8001ab64: +0x3390 from root counter 2
 void sound_add_ticks(Sound* s, int n);                           // 0x8001abc0: extra passes for the next interrupt
 SoundTrack* sound_tracks(Sound* s);                              // 0x8001ab38

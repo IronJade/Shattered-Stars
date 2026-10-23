@@ -35,6 +35,9 @@ Appends a "## Missing rows" section to docs/catalog/COVERAGE.md (replacing any e
 one), after the sections tools/catalog_coverage.py writes; run that script first. Rerun
 this script whenever functions.csv gains rows, to see what is still missing.
 
+WARNING: Naming specific programs on the command line replaces the "Missing rows"
+section with only those programs' listings; run without arguments to scan all programs.
+
 To add a program: extend PROGRAMS below with its catalog module name(s), its archive
 (entry, block) pairs or {"psxexe": path}, and, if you have dumped one, a procs.json path.
 """
