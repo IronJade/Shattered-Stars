@@ -104,13 +104,8 @@ formats such as CHD or PBP, aren't accepted yet. There is no macOS build.
 
 ### Download
 
-> [!NOTE]
-> No release has been published yet. Until the first one is, you can
-> [build the game from source](#building-from-source).
-
-Each release will have two self-contained packages on the
-[Releases page](https://github.com/IronJade/Shattered-Stars/releases), with no installer and
-nothing else to install:
+Download the [latest release](https://github.com/IronJade/Shattered-Stars/releases/latest). Each release has two self-contained packages, with no
+installer and nothing else to install:
 
 - `ShatteredStars-0.01.00-win64.zip`
 - `ShatteredStars-0.01.00-linux-x86_64.tar.gz`
@@ -355,8 +350,7 @@ To play a seed on your own, leave the address empty: your locations are still sh
 checked, and items from your own world are given to you.
 
 This is a custom world, not yet part of Archipelago itself. The `.apworld` and its YAML
-template will be published with the releases; until then, they can be built from source
-(`tools/build_apworld.sh`). Every option, the fights you can't win, and troubleshooting are on
+template are attached to each [release](https://github.com/IronJade/Shattered-Stars/releases/latest) (or build them with `tools/build_apworld.sh`). Every option, the fights you can't win, and troubleshooting are on
 the [Archipelago](https://github.com/IronJade/Shattered-Stars/wiki/Archipelago) page.
 
 ## Building from source
