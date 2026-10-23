@@ -311,6 +311,92 @@ rm -rf dist/ShatteredStars-linux-x86_64{,.tar.gz} dist/ShatteredStars-win64{,.zi
 All of the above ran this pass and passed; results folded into
 `docs/ap/release_checklist.md` sections 1-3 and 5.
 
+## 0.01.00 release candidate (2026-10-23, prepared by the RC agent)
+
+Scope: prepare the 0.01.00 release candidate for the user's review only — build, verify,
+package, write player-facing release notes, and update the checklist with the exact publish
+command. **Nothing was tagged, released, uploaded, pushed, or committed.** Rules followed:
+build from a clean worktree (not the dirty main tree other agents are using), headless only,
+never touch `~/.config/shattered-stars`/`~/.config/pcsx-redux`/the user's own `~/.wine`, kill
+processes only by exact PID, cap command output, no publishing.
+
+### Steps done
+1. **Clean-tree build.** `git worktree add scratchpad/rc-0.01.00 e0fb27f` (commit `e0fb27f`,
+   `HEAD` at the start of this pass). Ran `tools/build_linux.sh --container` and
+   `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` pointed at the existing
+   `scratchpad/setup/mingw-ssl/...` sysroot) in the worktree, both in the background, both
+   exit 0. `tools/build_apworld.sh` was pointed (`AP_INSTALL=`) at a **fresh copy** of the
+   Archipelago install (`scratchpad/rc-ap-build/Archipelago`, made from `scratchpad/ap/
+   Archipelago` with its `worlds/so2` symlink removed before building, then deleted again
+   afterward) rather than the shared `scratchpad/ap/Archipelago`, whose `worlds/so2` symlink
+   points at the *main tree's* `apworld/so2` (which other agents may be editing) — the
+   `.apworld` had to come from the worktree's clean, committed copy instead. Output written
+   straight to `scratchpad/rc-0.01.00-dist/`.
+   - Worktree removed at the end (`git worktree remove scratchpad/rc-0.01.00`); the scratch
+     AP-install copy deleted too.
+2. **Collected artifacts** in `scratchpad/rc-0.01.00-dist/`: `ShatteredStars-0.01.00-linux-x86_64.tar.gz`
+   (8,651,059 bytes), `ShatteredStars-0.01.00-win64.zip` (6,997,812 bytes), `so2.apworld`
+   (75,675 bytes), `Star Ocean The Second Story.yaml` (9,674 bytes).
+3. **Linux check:** unpacked into `scratchpad/rc-linux-unpack/`. 9-entry archive: versioned top
+   folder, `shattered-stars`, `shattered-stars-setup`, `LICENSE`, `README.md`, `README.txt`,
+   `THIRD-PARTY-LICENSES.txt`, `discs/` placeholder note — no game files, no debug/scratch
+   files. `--version` / `--help` on the packaged binary (scratch `XDG_CONFIG_HOME`) both print
+   `Shattered Stars 0.01.00`, exit 0, write only a log (no `config.ini`). `tools/
+   smoke_field_events.sh` against the packaged binary, `SS_DISC1` set: **73 PASS / 0 FAIL / 1
+   SKIP** (the skip is a dev-only save fixture not shipped in the package — expected). glibc
+   floor via `objdump -T`: `2.36`, matching the README.
+4. **Windows-under-Wine check**, headless: scratch `WINEPREFIX=scratchpad/rc-wine/wineprefix`
+   (new, never the user's `~/.wine`), `WINEDEBUG=-all`, `DISPLAY` unset, `SDL_VIDEO_DRIVER=
+   offscreen`, `SDL_AUDIO_DRIVER=dummy`. `wineboot --init` once to set up the prefix, no window
+   appeared (no `DISPLAY`, no X connection possible). `shattered-stars.exe --version` /
+   `--help`: both print `Shattered Stars 0.01.00`, exit 0 (the text lands on the combined
+   stream rather than cleanly on stdout under Wine — a known Wine console quirk, already
+   documented elsewhere in this file, not a new finding). A 300-vblank headless boot
+   (`--headless --no-memcard --frames 300 --map 18`, `SS_DISC1` converted with `winepath -w`,
+   `SS_TRACE=1`) loaded field map 18 (Arlia): its triggers register with the same code words
+   the Linux smoke test's Arlia case checks (491, 478, ...), and the run exits 0 after
+   "stopped after 300 vblanks" — no crash. **Not done** (out of this pass's scope): the full
+   `ss_tests.exe` / `ss_game_tests.exe` suites under Wine — only the version flags and one
+   headless boot were asked for. Wine processes stopped afterward with `wineserver -k` under
+   the scratch prefix; confirmed none left running (`ps aux | grep -i wine`).
+5. **`.apworld` check:** copied the freshly built `so2.apworld` into the existing
+   `scratchpad/release/Archipelago/custom_worlds/` (replacing the older copy there; no
+   `worlds/so2` present). Loads clean: `AutoWorldRegister.world_types` has the game, no
+   `worlds.failed_world_loads`. Manifest and registry both confirm `authors: ["IronJade"]`
+   and `world_version` `0.1.0`. Generated one seed from the built template YAML
+   (`Generate.py --seed 90100`, into `scratchpad/rc-ap-seed/`): exit 0, `AP_<seed>.zip`
+   written, nothing in the log matching error/traceback.
+6. **sha256sums:** `scratchpad/rc-0.01.00-dist/SHA256SUMS`, all four files.
+7. **Release notes:** [`docs/release_notes/0.01.00.md`](../release_notes/0.01.00.md), written
+   in the main repo (not the worktree) — what it is, the disc requirement, highlights, what's
+   in each file, install steps with wiki links, Archipelago in brief, known limitations, the
+   MIT licence and legal line, and the sha256 sums. Every claim in it traces back to the
+   README, the apworld's own player docs, or this pass's own verification.
+8. **Checklist updated:** `docs/ap/release_checklist.md` section 7, this run's results plus
+   the exact (not run) `gh release create --draft` command, tagging `v0.01.00` at
+   `--target main` (whatever commit is at the tip of `main` once these docs are pushed), the
+   four artifact files (expected to be rebuilt fresh in the main tree's own `dist/` right
+   before that command runs, not reused from `scratchpad/rc-0.01.00-dist/`), and
+   `--notes-file docs/release_notes/0.01.00.md`.
+
+### Not done / blocked
+- Nothing was blocked. The one deliberately narrower check against the original ask: the
+  Windows-under-Wine verification covered `--version`/`--help` and one headless boot (as the
+  task scoped it), not the full `ss_tests.exe`/`ss_game_tests.exe` suites — flagged above and
+  in the checklist's section 6 "to review" list for before an actual publish.
+
+### Rules this pass followed
+Clean-tree build via a disposable worktree; headless only everywhere (no window could appear
+under Wine: no `DISPLAY`, offscreen video driver, dummy audio); never touched
+`~/.config/shattered-stars`, `~/.config/pcsx-redux`, or the user's own `~/.wine` (a fresh
+scratch `WINEPREFIX` was used throughout, and never referenced after this pass);
+processes killed only by exact PID or by `wineserver -k` under the scratch prefix; every wait
+used a bounded deadline, no bare `pgrep -f` of this task's own command; long builds ran in the
+background at `-j8`; no tag, no GitHub release, no upload, no push, and no commit — the
+coordinator commits; the files other agents own (`tools/so2_mod.py`, `tools/
+mod_reference*.py`, `docs/modding/`, the wiki clone) were not touched; the user's email never
+appears anywhere in this pass's output.
+
 ### Still open after this pass
 
 - The Windows bundle's own suites under Wine, not re-run this pass (section 2.6/6 of the

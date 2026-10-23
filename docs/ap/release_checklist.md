@@ -232,3 +232,50 @@ api.md"`, `"docs/world maintainer.md"`, `docs/style.md`, `"docs/apworld specific
 
 - Re-running the Windows package's suites under Wine before actually publishing (section
   2.6) — not done this pass since no engine behavior changed, only a rebuild.
+
+## 7. Release candidate 0.01.00: verification run (2026-10-23)
+
+Built from commit `e0fb27f` (then `HEAD`) in a disposable git worktree
+(`git worktree add scratchpad/rc-0.01.00 e0fb27f`, removed afterward with
+`git worktree remove`), so uncommitted work elsewhere in the main tree could not reach the
+build. Preparation only — nothing was tagged, released, pushed or committed by this run.
+
+| Check | Result |
+|---|---|
+| `tools/build_linux.sh --container` | exit 0. `ShatteredStars-0.01.00-linux-x86_64.tar.gz`, 8.3M. glibc floor `2.36` (`objdump -T` on both binaries). |
+| `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` set) | exit 0. `ShatteredStars-0.01.00-win64.zip`, 6.7M. |
+| `tools/build_apworld.sh` (against a scratch Archipelago install with no pre-existing `worlds/so2`, so it packaged the worktree's clean `apworld/so2`, not the main tree's working copy) | exit 0. `so2.apworld` (76K), `Star Ocean The Second Story.yaml` (9.7K). |
+| Linux archive contents | 9 entries: versioned top folder, `shattered-stars`, `shattered-stars-setup`, `LICENSE`, `README.md`, `README.txt`, `THIRD-PARTY-LICENSES.txt`, `discs/` with its placeholder note. No game files, no debug/scratch files. |
+| Linux `--version` / `--help` (packaged binary, scratch `XDG_CONFIG_HOME`) | Both print `Shattered Stars 0.01.00`, exit 0, no `config.ini` written (only a run log). `shattered-stars-setup --version` prints `Shattered Stars Setup 0.01.00`. |
+| Linux smoke (`tools/smoke_field_events.sh`, packaged binary, `SS_DISC1` set) | **73 PASS / 0 FAIL / 1 SKIP** (the skip is a dev-only fixture, `analysis/saves/dex_north_city.mcd`, not shipped in the package — expected). |
+| Windows under Wine (scratch `WINEPREFIX` under `scratchpad/rc-wine/`, `WINEDEBUG=-all`, `DISPLAY` unset, `SDL_VIDEO_DRIVER=offscreen`, `SDL_AUDIO_DRIVER=dummy`; wine-staging 11.17) | `shattered-stars.exe --version` / `--help`: both print `Shattered Stars 0.01.00`, exit 0. A 300-vblank headless boot onto field map 18 (Arlia) via `--headless --no-memcard --frames 300 --map 18` with `SS_DISC1` (via `winepath -w`) and `SS_TRACE=1`: the map's own triggers register (code words 491/478/etc., matching the Linux smoke test's Arlia case) and the run exits 0 after "stopped after 300 vblanks" — no crash. The *full* Windows test suites (`ss_tests.exe`/`ss_game_tests.exe`) were **not** re-run this pass; only the version flags and a headless boot were in scope. Wine processes stopped by `wineserver -k` with the scratch prefix; confirmed none left running. |
+| `.apworld` install + seed | Installed into `scratchpad/release/Archipelago/custom_worlds/so2.apworld` (replacing the copy already there), with no `worlds/so2` present. Loads clean (`AutoWorldRegister`, no `failed_world_loads`). `archipelago.json`: `"authors": ["IronJade"]`, `world_version` 0.1.0 (confirmed both from the unzipped manifest and from `AutoWorldRegister.world_types[...].world_version == Version(0, 1, 0)`). One seed generated from the built template YAML (`Generate.py --seed 90100`): exit 0, `AP_<seed>.zip` written, nothing in the log matching error/traceback. |
+| sha256sums | `scratchpad/rc-0.01.00-dist/SHA256SUMS`, all four files. |
+
+Artifacts collected at `scratchpad/rc-0.01.00-dist/` (git-ignored, not published):
+`ShatteredStars-0.01.00-linux-x86_64.tar.gz`, `ShatteredStars-0.01.00-win64.zip`,
+`so2.apworld`, `Star Ocean The Second Story.yaml`, `SHA256SUMS`.
+
+Release notes for players: [`docs/release_notes/0.01.00.md`](../release_notes/0.01.00.md).
+
+Nothing was tagged, released, pushed, or committed by this pass; the commit of these docs
+(and the eventual publish) is the coordinator's call. The command below is what publishing
+would run once the docs above are committed and pushed — **not run by this pass**:
+
+```sh
+gh release create v0.01.00 \
+  dist/ShatteredStars-0.01.00-linux-x86_64.tar.gz \
+  dist/ShatteredStars-0.01.00-win64.zip \
+  dist/so2.apworld \
+  "dist/Star Ocean The Second Story.yaml" \
+  --draft --target main \
+  --title "Shattered Stars 0.01.00" \
+  --notes-file docs/release_notes/0.01.00.md
+```
+
+`--target main` ties the new `v0.01.00` tag to whatever commit is then at the tip of `main`
+(the pushed commit with these release docs); `--draft` means nothing goes live until the
+draft is explicitly published. The four files above should be rebuilt fresh in the main
+tree's own `dist/` immediately before running this (section 4's standing advice: source moves
+fast here, re-verify before actually publishing), rather than reusing this pass's
+`scratchpad/rc-0.01.00-dist/` copies, which exist only for this review.
