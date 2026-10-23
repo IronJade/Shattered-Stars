@@ -42,8 +42,14 @@ struct Profile {
   const char* serial[2];  // SYSTEM.CNF boot files of disc 1 and disc 2: "SCUS_944.21", ...
   const char* product;    // the memory-card product code: "BASCUS-94421", ...
   Text text;
+  int data_hz;            // the vblank rate its data counts in: 60, or 50 (the PAL releases)
   bool supported;         // false: recognised, but the port can't play it yet
 };
+
+// Whether the port plays this release: a supported one, or one named in SS_REGION_TRY
+// ("fr,de": development runs of a release whose support is in progress, e.g. France and
+// Germany before their text system is wired; never set for players).
+bool playable(const Profile& p);
 
 // Every release the port recognises, NA first.
 std::span<const Profile> profiles();
@@ -58,6 +64,12 @@ const Profile* from_serial(std::string_view game_id, int* disc = nullptr);
 const Profile& current();
 void select(Id id);
 inline bool is_na() { return current().id == Id::kNorthAmerica; }
+
+// Every release plays at NA's 60 vblanks a second with NA's game logic (the user's decision,
+// docs/notes/regions.md). A PAL release's data that counts vblanks was rescaled to 50 a
+// second (e.g. the credits' cue waits: NA 720, Europe 600); the reader converts such a count
+// with this so the wait lasts as long as on the release's own console (and on NA).
+inline s32 ntsc_vblanks(s32 count) { return current().data_hz == 50 ? count * 6 / 5 : count; }
 
 // ---- Image maps ------------------------------------------------------------------------
 
@@ -128,6 +140,24 @@ std::string entry_key(int entry, int block = 0);
 // same code linked at other addresses.
 u64 module_hash(std::span<const u8> block);
 u64 fnv1a64(std::span<const u8> bytes);
+
+// ---- Map scripts -----------------------------------------------------------------------
+
+// A map script the release laid out otherwise than NA (other code length): segments of its
+// code, NA byte offsets as Segment::na_off (tools/region_map.py, the .inc's kScripts).
+struct ScriptMap {
+  s32 map;
+  const Segment* seg;
+  u32 nseg;
+};
+
+// A place in map 'map''s event-script code (a byte offset from the code's start, as the
+// Archipelago doors and join sites and the mods' script lines name it) in the current
+// release's script; -1 when that release's script has no counterpart. The same offset on NA
+// and in every map the release laid out like NA.
+s64 script_offset(int map, u32 na_offset);
+// The other way: a byte offset in the release's script -> NA's (-1: none).
+s64 script_na_offset(int map, u32 offset);
 
 // SS_REGION_READ_LOG=<path>: every distinct (image, NA address) the readers are asked for,
 // appended to the file at exit (a path ending in '/': a new file in that folder per

@@ -203,13 +203,16 @@ areas the story walks into in it:
 | Stages | Chapters | Keys |
 |---|---|---|
 | 1-4 | 3-13 | Arlia; Salva, Arlia; Cross; Cross Cave |
-| 5-8 | 14-22 | Clik, Mars, Herlie; Herlie; Lacour, Hilton (the tournament maps 434 / 467-477 carry Hilton banners but sit in Lacour); Linga, Sanctuary of Linga |
+| 5-8 | 14-22 | Clik, Mars, Herlie; Herlie, Hilton, Lacour (the Herlie ship lands at Hilton, and chapter 18 is stored entering Lacour from the world map); Lacour (the tournament, in Lacour Castle's coliseum); Linga, Sanctuary of Linga |
 | 9-12 | 23-35 | Hilton, Lacour, Map 231, Hoffmann; Lacour Front Line; El Beach, Eluria Colony; Eluria Tower. The disc switch needs stage 12. |
 | 13-17 | 36-41 | none (the scenes after the switch); North City; Noel's House; Red Crystal; Central City |
 | 18-20 | 42-51 | the four Fields (Courage, Power, Intelligence, Love) and Armlock; Central City, L'Aqua; Fienal, L'Aqua, Central City |
 | 21-23 | 52-60 | Armlock, Mihne; Fun City; Armlock, L'Aqua, Fienal. The Final Save Point needs stage 23. |
 
-A key required a stage early only makes the logic stricter. Not the story's: Lasguss Mountain
+A stage must list every key its story needs, from the stage the story first walks into the
+area: a key listed a stage late leaves the earlier stage passable without it, and one listed a
+stage early moves the area's *early* mode (below) before the story can reach it. Not the
+story's: Lasguss Mountain
 and the Mountain Palace (Ashton's quest, Prima pp. 48-56), Cave of Trials Level 1, Giveaway, and
 map 463's entrance on the Nede map ("Gallery Pass").
 
@@ -217,7 +220,11 @@ map 463's entrance on the Nede map ("Gallery Pass").
 - *early*: the stage before the one that first needs its area's key, plus that key (its area:
   the entrance group whose entrances reach its map over unconditional field doors, else the
   nearest one; a gift not before its window's first chapter; Fienal's floors from stage 23; a
-  story boss once its stage is done);
+  story boss once its stage is done). An area the story reaches by ship also needs the key of
+  the entrance group the ship lands through (data.KEY_GROUPS `landing`): the Lacour continent
+  (Lacour's group) through Port Hilton, its only harbour (the Herlie ship, flag 18, world door
+  59578036), and Hoffmann Ruins through map 231, its beach (the Hilton ship, flag 22, chapters
+  23-27, world door 59578306);
 - *teleporter* (Expel, `expel_teleporter` on): the "Expel Teleporter" event (stage 13 done and the
   Fun City Pass: chapter 38, the old man in the arena) plus the keys of the world-map entrances
   on the teleporter proof's route to its map;
@@ -248,7 +255,12 @@ so it is used for Expel's maps only. **Known limits** (accepted, conservative el
 that opens later in the story than its area's first visit, or closes for a while in the middle
 of it, is not modelled (Lacour's fifth entrance in chapters 25-59 and Mars's second at chapter
 15 have open siblings; the arena's route is shut in chapter 57, where only the Fun City Pass,
-a starting key, is needed).
+a starting key, is needed). Open questions (docs/handoff/apareas.md, "Leads"): the proofs fire
+the world map's entrance triggers without walking there, which Virtual Expel's Synard (flight
+anywhere, Prima p. 130) justifies after the Final Save Point but nothing yet shows for the
+teleporter's chapter-38 trip (El and Hoffmann Ruins are reached only by ships of chapters
+23-28); and Central City at chapters 36-37 (the party is brought in by a scene; leaving before
+the mayor's scene would need the Central City Pass, first required at stage 17).
 
 ## Shop slots (`shuffle_shops`, phase 4)
 
@@ -411,6 +423,35 @@ Results (2026-10-23, phase 4):
 - `tools/ap_e2e_so2.sh`: 25 / 25, twice (Claude in open world with full shops: the Salva Pass
   arrives from Bob's tile, a second session buys in Hearn's shop and the slot's check reaches
   the server).
+
+Results (2026-10-23, 0.1.1; docs/handoff/apareas.md):
+- The world's tests: 98 passed (7986 subtests; new: test_ship_landings in the three open-world
+  classes). AP's general tests: 379 passed (116984 subtests).
+- 96 seeds (the phase-4 batch's players, seeds 1-96): 192 `.apso2`, 189 option combinations,
+  all generate and fill, `check.py` finds no error, `validate_doors` passes on all 192; the 16
+  seeds whose players are both in story mode are byte-identical to 0.1.0's. 0.1.0 put an
+  unreachable landing key (the Hilton Pass in Rosalia's Room, the Map 231 Pass in Hoffmann
+  Ruins) in 44 of these 114 open-world slots; 0.1.1 in none.
+- `tools/ap_e2e_so2.sh`: 25 / 25, twice.
+
+## Changes
+
+**0.1.1** (2026-10-23, not released yet). Open world only; story mode, the item pool, location
+names and ids are unchanged.
+- *Fixed: two ship landings missing from the logic* (docs/handoff/apareas.md). The Lacour
+  continent is reached only by the Herlie ship, which lands in Port Hilton through a door the
+  Hilton Pass opens, and Hoffmann Ruins only by the Hilton ship, which lands on map 231 (the Map
+  231 Pass). 0.1.0 let the Hilton Pass be placed in Rosalia's Room (Lacour Castle) and the Map
+  231 Pass in Hoffmann Ruins' chests, which the player can't reach without them: such a seed
+  can't be finished (44 of the 114 open-world slots of a 96-seed batch, in 38 seeds, had one;
+  the same batch with 0.1.1 has none). Now:
+  - the Herlie stage (chapters 16-17) needs the Hilton and Lacour Passes: chapter 18 is stored
+    entering Lacour from the world map (stage 7, the tournament, needs Lacour's);
+  - an area reached by ship needs the landing's key too (data.KEY_GROUPS `landing`): Lacour's
+    locations the Hilton Pass, Hoffmann Ruins' the Map 231 Pass.
+- Area labels: field.json's `map_areas` agrees with docs/modding/reference/map_names.csv for 158
+  more maps (tools/ap_extract.py `AREA_FIXES`; field.md "Place names"). The logic never read
+  them; location names keep their 0.1.0 labels.
 
 ## Next
 

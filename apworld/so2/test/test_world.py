@@ -375,6 +375,47 @@ class OpenWorldChecks:
                  and ROW[loc.name]["type"] == "chest"]
         self.assertTrue(salva and all(loc.can_reach(state) for loc in salva))
 
+    def test_ship_landings(self):
+        """The Lacour continent is reached by the Herlie ship, which lands in Port Hilton, and
+        Hoffmann Ruins by the Hilton ship, which lands on map 231: before the story's later
+        stages their locations need those keys too, and the Herlie stage (which ends entering
+        Lacour) needs Hilton's and Lacour's."""
+        from ..data import KEY_GROUPS, STAGES
+        from ..items import KEY_NAME
+
+        def state_at(stage, keys):
+            """The stages up to `stage` done, with the keys they need and `keys`; no teleporter, no
+            Final Save Point (so only a location's early mode counts)."""
+            state = CollectionState(self.multiworld)
+            for i in self.multiworld.precollected_items[self.player]:
+                state.collect(i, True)
+            for name, _, need in STAGES[:stage]:
+                state.collect(self.world.get_location(f"Story: {name}").item, True)
+                for g in need:
+                    state.collect(self.world.create_item(KEY_NAME[g]), True)
+            for name in keys:
+                state.collect(self.world.create_item(name), True)
+            return state
+
+        herlie = self.world.get_location("Story: Herlie")
+        self.assertFalse(herlie.can_reach(state_at(5, ["Lacour Pass"])))
+        self.assertFalse(herlie.can_reach(state_at(5, ["Hilton Pass"])))
+        self.assertTrue(herlie.can_reach(state_at(5, ["Hilton Pass", "Lacour Pass"])))
+        tested = 0
+        for g in KEY_GROUPS:
+            if not g.get("landing"):
+                continue
+            locs = [loc for loc in own_locations(self) if ROW[loc.name].get("group") == g["group"]
+                    and ROW[loc.name]["region"] == "Expel" and ROW[loc.name]["type"] == "chest"
+                    and not ROW[loc.name].get("from_chapter")]
+            before = state_at(g["stage"] - 1, [g["name"]])
+            after = state_at(g["stage"] - 1, [g["name"]] + [KEY_NAME[x] for x in g["landing"]])
+            for loc in locs:
+                self.assertFalse(loc.can_reach(before), loc.name)
+                self.assertTrue(loc.can_reach(after), loc.name)
+            tested += len(locs)
+        self.assertGreater(tested, 20)    # Rosalia's Room and Hoffmann Ruins' chests
+
     def test_progression_rules(self):
         from ..items import SO2Item
         from ..rules import proven_late, proven_teleporter

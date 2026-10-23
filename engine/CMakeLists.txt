@@ -74,6 +74,7 @@ add_library(ss_core STATIC
   src/runtime/libapi.cpp
   src/runtime/boot_exe.cpp
   src/runtime/region.cpp
+  src/game/common/text_rules.cpp
   src/runtime/libcard.cpp
   src/util/png.cpp)
 target_include_directories(ss_core PUBLIC src)
@@ -508,7 +509,8 @@ add_executable(ss_tests
   tests/test_spu.cpp
   tests/test_sound.cpp
   tests/test_game.cpp
-  tests/test_region.cpp)
+  tests/test_region.cpp
+  tests/test_text_rules.cpp)
 target_link_libraries(ss_tests PRIVATE ss_core)
 target_compile_options(ss_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_tests COMMAND ss_tests)
@@ -530,6 +532,7 @@ target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_launcher.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_mods.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_text_rules_game.cpp)
 if(TARGET ss_ap_net)  # against a local Archipelago server (SS_AP_SERVER), skipped without one
   target_sources(ss_game_tests PRIVATE tests/test_ap_net.cpp)
   target_link_libraries(ss_game_tests PRIVATE ss_ap_net)

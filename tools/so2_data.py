@@ -21,6 +21,19 @@ from so2_script import GLYPHS, MAP_ENTRY_BASE, disassemble, parse_script  # noqa
 
 SYNC = b"\x00" + b"\xff" * 10 + b"\x00"
 FIELD_MAP_LIMIT = 1200     # map ids scanned for a script (the highest on the discs is 1114)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# The releases (engine/src/runtime/region.cpp kProfiles): SYSTEM.CNF boot file -> region key.
+# Every table here, the patches and the repository's facts use North American numbers
+# (addresses, script words); another release's disc is read through the engine's address
+# maps (engine/data/regions/<key>.inc, tools/region_map.py). Japan has none yet.
+RELEASES = {
+    "SCUS_944.21": "na", "SCUS_944.22": "na",
+    "SCES_021.59": "eu", "SCES_121.59": "eu",
+    "SCES_021.60": "fr", "SCES_121.60": "fr",
+    "SCES_021.61": "de", "SCES_121.61": "de",
+    "SLPM_861.05": "jp", "SLPM_861.06": "jp",
+}
 
 
 class Disc:
@@ -46,6 +59,11 @@ class Disc:
             raise SystemExit(f"{path}: not a CD image this tool reads (.cue / .bin / .iso)")
         self.toc = {i: (lba, n) for i, lba, n in decrypt_toc(self.read(ARCHIVE_LBA, (TOC_BYTES + SECTOR - 1) // SECTOR))}
         self._scripts = {}
+        self.serial = boot_serial(self)
+        self.region = RELEASES.get(self.serial.upper())
+        if self.region not in ("na", None) and not os.path.exists(region_inc_path(self.region)):
+            raise SystemExit(f"{path}: the {self.serial} release has no address map yet "
+                             "(engine/data/regions/); use the North American or European discs")
 
     def close(self):
         self.f.close()
@@ -107,6 +125,98 @@ class Disc:
                 continue
             out.append(m)
         return out
+
+
+def boot_serial(disc):
+    """SYSTEM.CNF's boot file ("SCUS_944.21"), or "" (ISO 9660 at sector 16)."""
+    def file(name):
+        pvd = disc.read(16, 1)
+        if pvd[1:6] != b"CD001":
+            return None
+        lba, size = struct.unpack_from("<I", pvd, 158)[0], struct.unpack_from("<I", pvd, 166)[0]
+        d = disc.read(lba, (size + SECTOR - 1) // SECTOR)
+        pos = 0
+        while pos < size:
+            ln = d[pos]
+            if ln == 0:
+                pos = (pos // SECTOR + 1) * SECTOR
+                continue
+            nm = d[pos + 33:pos + 33 + d[pos + 32]].decode("latin-1").split(";")[0]
+            if nm.upper() == name:
+                flba, fsize = struct.unpack_from("<I", d, pos + 2)[0], struct.unpack_from("<I", d, pos + 10)[0]
+                return disc.read(flba, (fsize + SECTOR - 1) // SECTOR)[:fsize]
+            pos += ln
+        return None
+    cnf = file("SYSTEM.CNF")
+    if not cnf:
+        return ""
+    for line in cnf.decode("latin-1").splitlines():
+        if line.replace(" ", "").upper().startswith("BOOT="):
+            return line.split("\\")[-1].split(":")[-1].split(";")[0].strip()
+    return ""
+
+
+def region_inc_path(key):
+    return os.path.join(ROOT, "engine", "data", "regions", f"{key}.inc")
+
+
+_REGION_TABLES = {}
+
+
+def region_tables(key):
+    """A release's address maps, from the engine's generated engine/data/regions/<key>.inc:
+    {"images": {image key: [(na_off, size, delta)]}, "scripts": {map: [(na_off, size, delta)]}}."""
+    if key in _REGION_TABLES:
+        return _REGION_TABLES[key]
+    import re
+    arrays, images, scripts, cur = {}, {}, {}, None
+    for line in open(region_inc_path(key)):
+        mo = re.match(r"constexpr Segment (\w+)\[\] = \{", line)
+        if mo:
+            cur = arrays.setdefault(mo.group(1), [])
+            continue
+        if line.startswith("};"):
+            cur = None
+            continue
+        mo = re.match(r"\s*\{(0x[0-9a-f]+|0), (0x[0-9a-f]+|0), (-?\d+)\},", line)
+        if cur is not None and mo:
+            cur.append((int(mo.group(1), 16), int(mo.group(2), 16), int(mo.group(3))))
+            continue
+        mo = re.match(r"\s*\{ImageKind::k\w+, .*?(k\w+)_seg, \d+, .*// (\S+)$", line)
+        if mo:
+            images[mo.group(2)] = arrays[mo.group(1) + "_seg"]
+            continue
+        mo = re.match(r"\s*\{(\d+), (kscript_\d+), \d+\},", line)
+        if mo:
+            scripts[int(mo.group(1))] = arrays[mo.group(2)]
+    _REGION_TABLES[key] = {"images": images, "scripts": scripts}
+    return _REGION_TABLES[key]
+
+
+def _seg_map(segs, off, inverse=False):
+    for lo, n, d in segs:
+        start = lo + d if inverse else lo
+        if start <= off < start + n:
+            return off - d if inverse else off + d
+    return None
+
+
+def na_script_offset(disc, map_id, offset):
+    """NA's byte offset (in the script code) of 'offset' in this disc's script of map_id:
+    the same on NA and in every map the release laid out like NA; None when NA has none."""
+    if disc.region in ("na", None):
+        return offset
+    segs = region_tables(disc.region)["scripts"].get(map_id)
+    return offset if segs is None else _seg_map(segs, offset, inverse=True)
+
+
+def image_offset(disc, image, na_offset):
+    """Where NA's byte 'na_offset' of image 'image' ("baa", "title", ...) lies in this disc's
+    image (None: no counterpart)."""
+    if disc.region in ("na", None):
+        return na_offset
+    segs = region_tables(disc.region)["images"].get(image)
+    return None if segs is None else _seg_map(segs, na_offset)
 
 
 def find_disc2(disc1_path):
@@ -327,8 +437,11 @@ def item_names(disc):
 def shop_lists(disc):
     code = unpack_block(disc.entry(SHOP_ENTRY), 0)
     out = {}
+    table = image_offset(disc, f"{SHOP_ENTRY:x}", SHOP_TABLE - PAGE_BASE)  # (another release: moved)
+    if table is None:
+        raise SystemExit(f"{disc.serial}: the shop table has no place in this release's map")
     for shop in range(0x60):
-        at = SHOP_TABLE + shop * 4 - PAGE_BASE
+        at = table + shop * 4
         if at + 4 > len(code):
             break
         ptr = le(code, at, 4) - PAGE_BASE

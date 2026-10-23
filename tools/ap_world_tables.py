@@ -116,6 +116,24 @@ OPTIONAL_BOSSES = {
 SOFT_REASONS = ("window", "time-limited")
 
 
+# Location names (with their name groups and the rows' `area`) are the released datapackage's
+# (so2.apworld 0.1.0), which named each map's locations after field.json's nearest-name area.
+# tools/ap_extract.py AREA_FIXES later corrected these maps' areas; their locations keep the
+# released labels, because renaming a location changes what YAMLs and trackers name and, since
+# Archipelago's fill sorts locations by name, every fixed seed's placements.
+RELEASED_AREAS = {**dict.fromkeys((27, 29, 32), "Rena's House"), 38: "Rena's Room", 81: "Bar Mikado",
+                  83: "Inn Kingdom Hotel", 143: "Town of Herlie",
+                  **dict.fromkeys((398, 399, 401), "Town of Armlock"),
+                  **dict.fromkeys((426, 427, 434, *range(467, 478)), "Port Hilton"),
+                  **dict.fromkeys((593, 594, 595), "North City"), **dict.fromkeys((617, 618, 619), "L'Aqua"),
+                  **dict.fromkeys(range(698, 826), "Cave of Trials Level 1")}
+
+
+def area_label(rec):
+    """A field.json record's area as the location names have it (RELEASED_AREAS)."""
+    return RELEASED_AREAS.get(rec.get("map"), rec.get("area"))
+
+
 def compare(v, op, n):
     if op is None:
         return v
@@ -205,7 +223,7 @@ def build(field, battles, late=None, doors=None):
         contexts = [{"requires": s.get("requires", []), "via": s.get("via")} for s in c["sites"]]
         reasons, side = judge(contexts, c)
         locs.append({"id": c["location_id"], "type": "chest", "map": c["map"], "flag": c["flag"],
-                     "area": c.get("area") or f"Map {c['map']}", "item": c.get("item"), "fol": c.get("fol"),
+                     "area": area_label(c) or f"Map {c['map']}", "item": c.get("item"), "fol": c.get("fol"),
                      "region": region_of(c["map"], c.get("world", worlds.get(c["map"]))),
                      "sites": [site_row(s["map"], s) for s in c["sites"]],
                      "missable": reasons, "protagonist": side})
@@ -221,7 +239,7 @@ def build(field, battles, late=None, doors=None):
                 if lid is None:
                     raise SystemExit(f"map {g['map']} site {s['at']:#x}: no location id")
                 locs.append({"id": lid, "type": "gift", "map": g["map"], "offset": s["at"],
-                             "area": g.get("area") or f"Map {g['map']}",
+                             "area": area_label(g) or f"Map {g['map']}",
                              "item": s["value"] if s["what"] == "item" else None,
                              "fol": s["value"] if s["what"] == "fol" else None,
                              "region": region_of(g["map"], g.get("world", worlds.get(g["map"]))),
@@ -256,7 +274,7 @@ def build(field, battles, late=None, doors=None):
         else:
             reasons = ["optional quest"] + [r for r in reasons if r != "optional member"]
         s0 = b["sites"][0]
-        place = s0.get("area") or f"Map {s0['map']}"
+        place = area_label(s0) or f"Map {s0['map']}"
         if cls == "cave":   # the floor's banner (the nearest map at or below with one)
             banners = field.get("map_names", {})
             m = next((m for m in range(s0["map"], CAVE_OF_TRIALS.start - 1, -1) if banners.get(str(m))), None)
@@ -289,7 +307,7 @@ def build(field, battles, late=None, doors=None):
             reasons, side = judge([{"requires": r.get("requires", []), "via": r.get("via")}], r)
             reasons = ["join"] + [x for x in reasons if x != "optional member"]
             locs.append({"id": lid, "type": "join", "map": r["map"], "offset": site["at"], "character": who,
-                         "area": r.get("area") or f"Map {r['map']}", "item": FILLER_ITEM, "fol": None,
+                         "area": area_label(r) or f"Map {r['map']}", "item": FILLER_ITEM, "fol": None,
                          "region": region_of(r["map"], r.get("world", worlds.get(r["map"]))), "sites": [],
                          "missable": reasons, "protagonist": side})
     if found != set(wanted):
@@ -303,7 +321,7 @@ def build(field, battles, late=None, doors=None):
         places = []
         for m, off in d["sites"]:
             s = esites[(m, off)]
-            places.append((region_of(m, s.get("world", worlds.get(m))), s.get("late", True), s.get("area")))
+            places.append((region_of(m, s.get("world", worlds.get(m))), s.get("late", True), area_label(s)))
         for w in d["world_maps"]:
             places.append(({1: "Expel", 2: "Energy Nede"}[w], True, WORLD_MAP_NAMES[w]))
         region, _, area = min(places, key=lambda p: order.index(p[0]))
@@ -397,16 +415,21 @@ KEY_NAMES = {
 # The story's stages for open world (docs/ap/apworld.md, "Open world"): the chapters each one
 # spans and the entrance groups the story walks into while in it, from every store to the
 # chapter / step globals and the area of its map (tools/ap_extract.py story_points with their
-# conditions). A stage is finished when the next one's first chapter is stored. Requiring a
-# key the story does not really need there only makes the logic stricter.
+# conditions). A stage is finished when the next one's first chapter is stored, so it lists
+# every key its story needs up to that store, from the stage that first walks into the area: a
+# key listed a stage late leaves a stage passable without it, and one listed early moves the
+# area's early mode (rules.py) before the story can reach it.
 STAGES = [
     ("Shingo Forest and Arlia", (3, 4), ["Arlia Village"]),
     ("Salva and Salva Drift", (5, 8), ["Town of Salva", "Arlia Village"]),
     ("Cross", (9, 11), ["Town of Cross"]),
     ("Cross Cave", (12, 13), ["Cross Cave"]),
     ("Clik and Mars", (14, 15), ["Port of Clik", "Mars Village", "Town of Herlie"]),
-    ("Herlie", (16, 17), ["Town of Herlie"]),
-    ("Lacour's tournament", (18, 19), ["Town of Lacour", "Port Hilton"]),   # maps 434 / 467-477 sit in Lacour
+    # Chapter 17 is stored boarding the ship at Herlie (map 144, flag 18), which lands at Hilton
+    # through world door 59578036 (Hilton's group); chapter 18 is stored entering Lacour from the
+    # world map (map 909, the entrance routine at 0x47e8). So this stage needs both.
+    ("Herlie", (16, 17), ["Town of Herlie", "Port Hilton", "Town of Lacour"]),
+    ("Lacour's tournament", (18, 19), ["Town of Lacour"]),   # Lacour Castle's coliseum, maps 426-477
     ("Linga and its sanctuary", (20, 22), ["Town of Linga", "Sanctuary of Linga"]),
     ("Hilton and Hoffmann Ruins", (23, 25), ["Port Hilton", "Town of Lacour", "map 231", "Hoffmann Ruins"]),
     ("Lacour Front Line", (26, 28), ["Lacour Front Line"]),
@@ -426,6 +449,13 @@ STAGES = [
     ("The last chapters", (58, 60), ["Town of Armlock", "L'Aqua", "map 687"]),
 ]
 DISC_SWITCH_STAGE = 12      # STAGES[:12] are Expel's; the disc switch ends stage 12
+# Areas the story reaches only by a ship that lands through another entrance group's door: a
+# location's early mode (rules.py open_world_access) needs that group's key as well. The Lacour
+# continent: the Herlie ship (flag 18, set on map 144 from chapter 16) lands through world door
+# 59578036 in Port Hilton (map 169), the continent's only harbour; Hoffmann Ruins: the Hilton
+# ship (flag 22, set on map 169 in chapters 23-27) lands through world door 59578306 on map 231,
+# the ruins' beach (flag 21 sails back). Later stages need these keys anyway.
+SHIP_LANDINGS = {"Town of Lacour": ["Port Hilton"], "Hoffmann Ruins": ["map 231"]}
 # Story bosses: the chapter of the fight (its stage must be finished to count it).
 STORY_BOSS_CHAPTER = {191: 6, 194: 15, 195: 15, 209: 21, 210: 24, 516: 27, 519: 33, 520: 33, 521: 38, 522: 40,
                       524: 42, 525: 42, 527: 42, 528: 42, 531: 55, 532: 57, 533: 57, 535: 58, 536: 60, 537: 60,
@@ -455,7 +485,10 @@ def key_groups(doors):
         g["key"], g["name"] = n, KEY_NAMES[g["group"]]
         first = [k + 1 for k, (_, _, keys) in enumerate(STAGES) if g["group"] in keys]
         g["stage"] = first[0] if first else None    # the first stage that needs it (None: not the story's)
-    unknown = {k for _, _, keys in STAGES for k in keys} - set(out)
+        if g["group"] in SHIP_LANDINGS:
+            g["landing"] = SHIP_LANDINGS[g["group"]]    # the groups whose keys its ship landing needs
+    unknown = ({k for _, _, keys in STAGES for k in keys} | set(SHIP_LANDINGS)
+               | {v for vs in SHIP_LANDINGS.values() for v in vs}) - set(out)
     if unknown:
         raise SystemExit(f"stage keys without an entrance group: {unknown}")
     return list(out.values())
@@ -534,7 +567,7 @@ def shop_slots(field, items, worlds, groups_of_map):
         reasons, side = judge([{"requires": x.get("requires", []), "via": x.get("via")} for x in sites[shop]],
                               {"missable": all(x.get("missable") for x in sites[shop]),
                                "late": any(x.get("late", True) for x in sites[shop])})
-        area = site.get("area") or f"Map {site['map']}"
+        area = area_label(site) or f"Map {site['map']}"
         for index, item in enumerate(v["stock"]):
             out.append({"id": LOCATION_BASE + (10 << 21) + (shop << 8) + index, "type": "shop", "shop": shop,
                         "index": index, "map": site["map"], "area": area, "item": item, "fol": None,
@@ -580,7 +613,8 @@ def write(data, path, sources):
     out += ["]", "",
             "# Phase 4 (open world): the world-map entrance groups (docs/ap/doors.json key_group), one key",
             "# each: key number, name, group, world map, door ids (map * 65536 + offset / 4), target maps, the",
-            "# first story stage that needs it (None: not the story's).",
+            "# first story stage that needs it (None: not the story's), and `landing`: the groups whose keys",
+            "# the ship there needs (SHIP_LANDINGS).",
             "KEY_GROUPS = ["]
     out += [f"    {g!r}," for g in data.get("groups", [])]
     out += ["]", "",

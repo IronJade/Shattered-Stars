@@ -150,6 +150,9 @@ int required_protagonist();
 
 // ---- Phase 4: the open world (doors and keys, the Expel teleporter), shop slots ----
 
+// The seed names script places (doors, routines, join sites) by NA's code offsets; these
+// hooks take the loaded release's offsets and translate them (runtime/region.h
+// script_offset / script_na_offset), so one seed plays on every release.
 // field/map.cpp: map 'map''s script was loaded (on the world maps, a chunk's). The seed's doors
 // on it are checked: a door whose word is not a map transfer is ignored (and logged).
 void on_script_loaded(int map, const std::vector<u8>& script);

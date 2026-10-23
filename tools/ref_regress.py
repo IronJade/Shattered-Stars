@@ -26,6 +26,9 @@ Exit code: nonzero if any ref's result is judged REGRESS.
 import argparse, csv, datetime, os, re, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import memcap  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REFS_CSV = os.path.join(ROOT, "tools/refs/refs.csv")
 
@@ -69,9 +72,10 @@ def fmt(cmd, **kw):
 
 def run(cmd, env, cwd=None, timeout=900):
     try:
+        # Every game run under the memory cap (tools/memcap.py; RLIMIT_AS is inherited, per process).
         p = subprocess.run(cmd, shell=True, executable="/bin/bash", cwd=cwd or ROOT, env=env,
                             timeout=timeout, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            text=True, errors="replace")
+                            text=True, errors="replace", preexec_fn=memcap.limit_preexec())
         return p.returncode, p.stdout
     except subprocess.TimeoutExpired as e:
         return -1, (e.stdout or "") + "\n[ref_regress] TIMEOUT"

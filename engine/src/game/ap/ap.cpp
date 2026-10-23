@@ -22,6 +22,7 @@
 #include "game/field/notice.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::ap {
@@ -103,12 +104,21 @@ struct Runtime {
   // Phase 4.
   std::map<int, std::vector<size_t>> doors_by_script;  // the script's map (canonical) -> seed doors
   int script_map = -1;                   // the loaded script's map (canonical), -1 none yet
+  int loaded_map = -1;                   // ... and the map itself (for its script offsets)
   std::set<int64_t> bad_doors;           // seed doors whose word is not a map transfer: ignored
   std::map<int, size_t> by_shop_slot;    // (shop << 8 | index) -> shop location index
 };
 Runtime& rt() {
   static Runtime r;
   return r;
+}
+
+// The seed names places in a script by NA's offsets; another release may have laid the map's
+// script out otherwise (runtime/region.h script_offset). The loaded script's offset 'offset'
+// as NA's (-1: no NA counterpart).
+int na_offset(int map, int offset) {
+  if (offset < 0 || region::is_na()) return offset;
+  return static_cast<int>(region::script_na_offset(map, static_cast<u32>(offset)));
 }
 
 // Maps that run one shared script (docs/ap/field.md "How it reads the scripts"): a door is
@@ -1205,7 +1215,8 @@ bool on_party_add(int character, int at, int call_at) {
   const field::FieldGlobals& g = field::globals();
   const int map = g.game_state != nullptr ? rd16s(g.game_state + 0x1A) : -1;
   // The site: an inline party_add's own offset, else the call into the library's join routine.
-  auto find = [&](int offset) -> const Location* {
+  auto find = [&](int at_offset) -> const Location* {
+    const int offset = na_offset(map, at_offset);
     if (offset < 0) return nullptr;
     const auto it = r.join_sites.find(static_cast<int64_t>(map) << 32 | static_cast<u32>(offset));
     return it != r.join_sites.end() ? &r.seed.locations[it->second] : nullptr;
@@ -1352,9 +1363,10 @@ const char* key_name(int key) {
   return name.c_str();
 }
 
-// A seed door that applies to the loaded script (its word checked at load).
+// A seed door that applies to the loaded script (its word checked at load); 'offset' is NA's.
 const Door* door_at(int offset) {
   Runtime& r = rt();
+  if (offset < 0) return nullptr;
   const auto it = r.doors_by_script.find(r.script_map);
   if (it == r.doors_by_script.end()) return nullptr;
   for (const size_t i : it->second) {
@@ -1383,13 +1395,15 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
   Runtime& r = rt();
   if (!r.on) return;
   r.script_map = script_group(map);
+  r.loaded_map = map;
   const auto it = r.doors_by_script.find(r.script_map);
   if (it == r.doors_by_script.end()) return;
   for (const size_t i : it->second) {
     const Door& d = r.seed.doors[i];
-    const size_t at = 0x1C + static_cast<size_t>(d.offset);
+    const s64 code_at = region::script_offset(map, static_cast<u32>(d.offset));
+    const size_t at = 0x1C + static_cast<size_t>(code_at < 0 ? 0 : code_at);
     u32 word = 0;
-    if (at + 4 <= script.size()) std::memcpy(&word, script.data() + at, 4);
+    if (code_at >= 0 && at + 4 <= script.size()) std::memcpy(&word, script.data() + at, 4);
     const u32 op = word >> 24;
     if (op == 0x7D || op == 0xA4 || op == 0xDA) {
       r.bad_doors.erase(d.id);
@@ -1404,9 +1418,11 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
   }
 }
 
-bool door_blocked_at_trigger(int routine) {
+bool door_blocked_at_trigger(int routine_at) {
   Runtime& r = rt();
-  if (!r.on || !r.seed.open_world || routine < 0) return false;
+  if (!r.on || !r.seed.open_world || routine_at < 0) return false;
+  const int routine = na_offset(r.loaded_map, routine_at);
+  if (routine < 0) return false;
   const auto it = r.doors_by_script.find(r.script_map);
   if (it == r.doors_by_script.end()) return false;
   const Door* locked = nullptr;
@@ -1424,7 +1440,7 @@ bool door_blocked_at_trigger(int routine) {
 bool on_map_transfer(int offset, s32* args) {
   Runtime& r = rt();
   if (!r.on) return false;
-  const Door* d = door_at(offset);
+  const Door* d = door_at(na_offset(r.loaded_map, offset));
   if (d == nullptr) return false;
   if (door_locked(*d)) {
     door_refused(*d);

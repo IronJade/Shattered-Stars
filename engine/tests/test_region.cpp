@@ -1,6 +1,6 @@
 // Region profiles and address maps (runtime/region.h). The first tests need no disc; the
-// disc tests need the user's images: SS_DISC1 (North America) and SS_DISC1_EU (Europe,
-// disc 1); each is skipped when its variable is unset.
+// disc tests need the user's images: SS_DISC1 (North America), SS_DISC1_EU / _FR / _DE
+// (Europe, France, Germany, disc 1); each is skipped when its variable is unset.
 
 #include <cstdlib>
 #include <set>
@@ -120,35 +120,71 @@ TEST(region_profiles_by_serial) {
 // to_na_address inverse to each other, every pointer run's target an image of the table.
 TEST(region_europe_maps_are_consistent) {
   RegionGuard guard;
-  region::select(region::Id::kEurope);
-  CHECK(region::has_maps());
-  CHECK(region::boot_map() != nullptr);
-  for (int e : {1, 3100, 2129, 3107, 0xC1D, 0xC1E, 0xBA5, 0xBB9, 1981}) CHECK(region::entry_map(e) != nullptr);
-  CHECK(region::entry_map(1984, 0) != nullptr && region::entry_map(1984, 1) != nullptr);
-  const region::ImageMap* title = region::entry_map(1);
-  CHECK_EQ(title->na_base, 0x8002F810u);
-  CHECK_EQ(title->rg_base, 0x8002F9C0u);  // the PAL programs load 0x1b0 higher
-  for (int e : {1, 3100, 2129, 0xC1D, 1981}) {
-    const region::ImageMap* m = region::entry_map(e);
-    u32 prev_end = 0;
-    s64 prev_rg_end = 0;
-    for (u32 i = 0; i < m->nseg; ++i) {
-      const region::Segment& s = m->seg[i];
-      CHECK(s.na_off >= prev_end);
-      CHECK(static_cast<s64>(s.na_off) + s.delta >= prev_rg_end);  // order kept: the inverse is a search
-      CHECK(static_cast<s64>(s.na_off) + s.delta + s.size <= m->rg_size);
-      prev_end = s.na_off + s.size;
-      prev_rg_end = static_cast<s64>(s.na_off) + s.delta + s.size;
-      for (u32 off : {s.na_off, s.na_off + s.size / 2, s.na_off + s.size - 1}) {
-        const s64 r = region::translate(m, off);
-        CHECK(r == static_cast<s64>(off) + s.delta);
-        CHECK_EQ(region::to_na_address(m, m->rg_base + static_cast<u32>(r)), m->na_base + off);
+  for (region::Id id : {region::Id::kEurope, region::Id::kFrance, region::Id::kGermany}) {
+    region::select(id);
+    CHECK(region::has_maps());
+    CHECK(region::boot_map() != nullptr);
+    for (int e : {1, 3100, 2129, 3107, 0xC1D, 0xC1E, 0xBA5, 0xBB9, 1981}) CHECK(region::entry_map(e) != nullptr);
+    CHECK(region::entry_map(1984, 0) != nullptr && region::entry_map(1984, 1) != nullptr);
+    const region::ImageMap* title = region::entry_map(1);
+    CHECK_EQ(title->na_base, 0x8002F810u);
+    CHECK_EQ(title->rg_base, 0x8002F9C0u);  // the PAL programs load 0x1b0 higher
+    for (int e : {1, 3100, 2129, 0xC1D, 1981}) {
+      const region::ImageMap* m = region::entry_map(e);
+      u32 prev_end = 0;
+      s64 prev_rg_end = 0;
+      for (u32 i = 0; i < m->nseg; ++i) {
+        const region::Segment& s = m->seg[i];
+        CHECK(s.na_off >= prev_end);
+        CHECK(static_cast<s64>(s.na_off) + s.delta >= prev_rg_end);  // order kept: the inverse is a search
+        CHECK(static_cast<s64>(s.na_off) + s.delta + s.size <= m->rg_size);
+        prev_end = s.na_off + s.size;
+        prev_rg_end = static_cast<s64>(s.na_off) + s.delta + s.size;
+        for (u32 off : {s.na_off, s.na_off + s.size / 2, s.na_off + s.size - 1}) {
+          const s64 r = region::translate(m, off);
+          CHECK(r == static_cast<s64>(off) + s.delta);
+          CHECK_EQ(region::to_na_address(m, m->rg_base + static_cast<u32>(r)), m->na_base + off);
+        }
       }
+      CHECK(prev_end <= m->na_size);
     }
-    CHECK(prev_end <= m->na_size);
+    // A byte outside every segment has no counterpart, and reads as nothing.
+    CHECK_EQ(region::translate(title, title->na_size + 4), -1);
   }
-  // A byte outside every segment has no counterpart, and reads as nothing.
-  CHECK_EQ(region::translate(title, title->na_size + 4), -1);
+}
+
+// Map scripts: offsets translate both ways in the maps Europe laid out otherwise (the world
+// script shared by maps 0-3 / 826, maps 688 and 704); every other map, and NA, keep NA's;
+// a PAL release's 50 Hz counts are converted, NA's kept.
+TEST(region_europe_script_offsets) {
+  RegionGuard guard;
+  CHECK_EQ(region::script_offset(688, 0x9684), 0x9684);  // NA: as given
+  CHECK_EQ(region::ntsc_vblanks(600), 600);
+  region::select(region::Id::kEurope);
+  CHECK_EQ(region::ntsc_vblanks(600), 720);
+  CHECK_EQ(region::ntsc_vblanks(1000), 1200);
+  CHECK_EQ(region::script_offset(18, 0x1234), 0x1234);  // laid out like NA
+  CHECK_EQ(region::script_na_offset(18, 0x1234), 0x1234);
+  for (int map : {0, 1, 826, 688, 704}) {
+    int mapped = 0, missing = 0;
+    s64 prev = -1;
+    for (u32 off = 0; off < 0xC400; off += 4) {
+      const s64 at = region::script_offset(map, off);
+      if (at < 0) {
+        ++missing;
+        continue;
+      }
+      ++mapped;
+      CHECK(at > prev);  // the order is kept
+      prev = at;
+      CHECK_EQ(region::script_na_offset(map, static_cast<u32>(at)), static_cast<s64>(off));
+    }
+    CHECK(mapped > 0x1000);
+    if (map == 688) CHECK(missing > 0);  // a few words only NA has (its code is 8 bytes longer)
+  }
+  // Map 688's door transfers (docs/ap/doors.json offsets 0x9684 ...) moved by -8.
+  CHECK_EQ(region::script_offset(688, 0x9684), 0x9684 - 8);
+  CHECK_EQ(region::script_offset(0, 0), region::script_offset(826, 0));  // one shared script
 }
 
 TEST(region_module_hash_ignores_link_addresses) {
@@ -190,15 +226,15 @@ TEST(region_na_modules_identity) {
   CHECK_EQ(spell.size(), 55u);
 }
 
-// Europe: every image the port reads is the one the map was made from, every enemy and
-// spell module is identified (as its NA twin), and the boot executable's tables read at
-// NA addresses.
-TEST(region_europe_disc_images) {
-  auto d = open_disc("SS_DISC1_EU");
+// Europe, France, Germany: every image the port reads is the one the map was made from,
+// every enemy and spell module is identified (as its NA twin), and the boot executable's
+// tables read at NA addresses.
+void check_release_images(const char* env, region::Id release) {
+  auto d = open_disc(env);
   if (!d.ok) return;
   RegionGuard guard;
-  CHECK(region::from_serial(runtime::boot_exe_name(*d.disc))->id == region::Id::kEurope);
-  region::select(region::Id::kEurope);
+  CHECK(region::from_serial(runtime::boot_exe_name(*d.disc))->id == release);
+  region::select(release);
   for (int e : {1, 3100, 2129, 3107, 0xC1D, 0xC1E, 0xC1F, 0xBA5, 0xBB9, 0xBA6, 0xBAA, 0xBB6, 0xBCE, 1981, 2131, 2159}) {
     std::vector<u8> img = unpack(d.archive, e, 0);
     const region::ImageMap* m = region::entry_map(e);
@@ -243,7 +279,7 @@ TEST(region_europe_disc_images) {
   auto na = open_disc("SS_DISC1");
   if (na.ok) {  // the same bytes as NA's at those addresses
     std::vector<u8> eu_table(0x44 * 2), na_table(0x44 * 2);
-    region::select(region::Id::kEurope);
+    region::select(release);
     CHECK(runtime::boot_exe_open(*d.disc));
     for (u32 i = 0; i < eu_table.size(); ++i) eu_table[i] = *runtime::boot_exe_data(0x8002BC34 + i);
     region::select(region::Id::kNorthAmerica);
@@ -252,3 +288,7 @@ TEST(region_europe_disc_images) {
     CHECK(eu_table == na_table);
   }
 }
+
+TEST(region_europe_disc_images) { check_release_images("SS_DISC1_EU", region::Id::kEurope); }
+TEST(region_france_disc_images) { check_release_images("SS_DISC1_FR", region::Id::kFrance); }
+TEST(region_germany_disc_images) { check_release_images("SS_DISC1_DE", region::Id::kGermany); }

@@ -1,6 +1,7 @@
 #include "game/common/program_image.h"
 
 #include <map>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -12,14 +13,17 @@ namespace ss::game {
 
 const u8* program_data(int entry, u32 address) { return program_data_at(entry, kProgramBase, address); }
 
-const u8* program_data_at(int entry, u32 base, u32 address) {
-  // Another release's image is read through its address map (runtime/region.h): 'address'
-  // stays NA's, the byte comes from wherever that release keeps it.
-  struct Image {
-    std::vector<u8> bytes;
-    const region::ImageMap* map = nullptr;
-    std::string key;
-  };
+namespace {
+
+// Another release's image is read through its address map (runtime/region.h): addresses
+// stay NA's, the bytes come from wherever that release keeps them.
+struct Image {
+  std::vector<u8> bytes;
+  const region::ImageMap* map = nullptr;
+  std::string key;
+};
+
+const Image& image_of(int entry) {
   static std::map<int, Image> images;
   auto it = images.find(entry);
   if (it == images.end()) {
@@ -37,7 +41,21 @@ const u8* program_data_at(int entry, u32 base, u32 address) {
     image.key = region::entry_key(entry, 0);
     it = images.emplace(entry, std::move(image)).first;
   }
-  return region::image_byte(it->second.map, it->second.bytes, base, address, it->second.key.c_str());
+  return it->second;
+}
+
+}  // namespace
+
+const u8* program_data_at(int entry, u32 base, u32 address) {
+  const Image& image = image_of(entry);
+  return region::image_byte(image.map, image.bytes, base, address, image.key.c_str());
+}
+
+std::span<const u8> program_run(int entry, u32 base, u32 address) {
+  const Image& image = image_of(entry);
+  const u8* start = region::image_byte(image.map, image.bytes, base, address, image.key.c_str());
+  if (start == nullptr) return {};
+  return {start, static_cast<size_t>(image.bytes.data() + image.bytes.size() - start)};
 }
 
 }  // namespace ss::game

@@ -153,7 +153,7 @@ DiscInfo identify_disc(const fs::path& image) {
   // same, entry 6 only on disc 1 and entry 7 only on disc 2.
   int n = 0;
   info.region = so2 ? region::from_serial(info.game_id, &n) : nullptr;
-  if (so2 && info.region != nullptr && !info.region->supported) info.kind = DiscKind::kUnsupportedRelease;
+  if (so2 && info.region != nullptr && !region::playable(*info.region)) info.kind = DiscKind::kUnsupportedRelease;
   else if (so2 && info.region != nullptr && n == 1 && archive.entry_size(6) != 0) info.kind = DiscKind::kDisc1;
   else if (so2 && info.region != nullptr && n == 2 && archive.entry_size(7) != 0) info.kind = DiscKind::kDisc2;
   else if (so2) info.kind = DiscKind::kOtherRelease;

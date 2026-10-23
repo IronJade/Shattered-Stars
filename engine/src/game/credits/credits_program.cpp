@@ -17,6 +17,7 @@
 #include "psx/gte.h"
 #include "runtime/libgpu.h"
 #include "runtime/libgte.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::credits {
@@ -41,7 +42,9 @@ constexpr u32 kCueList = 0x80044290;
 // Cards: s16 layout (0 centred, 1 top left, 2 top right, 3 bottom left, 4 bottom right),
 // then codes: n > 0 the next n images, stacked; n < 0 colour -n (every second colour
 // code leaves a 16-row gap first); -16 ends the card. The script ends with a card whose
-// layout is -16 (the low half of kColours' first word).
+// layout is -16 (the low half of kColours' first word). Each release has its own cards (its
+// own staff, matching its #4503 name images; Europe 65 cards to NA's 78), so the script is
+// read as a run in the release's own image from where it starts (program_run).
 constexpr u32 kCardScript = 0x80044324;
 constexpr u32 kColours = 0x8004466C;       // u32 0x00BBGGRR by -code; the default is code 1's
 
@@ -67,10 +70,19 @@ u32 image_u32(u32 address) {
   return p != nullptr ? read_u32(p) : 0;
 }
 
+// The card script (see kCardScript); a read past it is the end (-16), so a short or
+// unreadable script ends the credits' cards instead of running on.
+std::span<const u8> g_cards;
+s16 card_s16(u32 offset) {
+  return offset + 2 <= g_cards.size() ? static_cast<s16>(read_u16(g_cards.data() + offset)) : -16;
+}
+// No card of any release has more codes than this; more means the script is misread.
+constexpr int kCardCodesMax = 64;
+
 // The program object (0x28 bytes, vtable 0x80044268; 0x8002f8dc points at it).
 struct Credits {
   System* system = nullptr;   // +0x08 (set_system 0x8002f890; get_system 0x8002f898)
-  u32 card = kCardScript;     // +0x14: the card being shown (an address in the card script)
+  u32 card = 0;               // +0x14: the card being shown (the original: its address; here its offset in the script)
   s32 fade = 0;               // +0x18: 0 fading in, 1 shown or fading out, 2 gone
   s32 level = 0;              // +0x1c: brightness, 0 to 0x1000 in steps of 0x200 a frame
   std::vector<u8> names;      // +0x20: #4503 unpacked
@@ -224,7 +236,7 @@ void compose(Credits* self) {
     if (g.hold == 0) self->fade = 0;
     return;
   }
-  const s16 layout = image_s16(self->card);
+  const s16 layout = card_s16(self->card);
   if (layout == -16) return;  // the end of the script
   struct Placed {
     s32 x, y;
@@ -240,9 +252,14 @@ void compose(Credits* self) {
   u32 colour = image_u32(kColours + 4);
   size_t image = self->next_image;
   for (;;) {
-    const s16 code = image_s16(self->card + static_cast<u32>(at) * 2);
+    const s16 code = card_s16(self->card + static_cast<u32>(at) * 2);
     ++at;
     if (code == -16) break;
+    if (at > kCardCodesMax) {
+      Runtime::get().log_once("credits-card-long", "credits: a card of the script has no end; the cards stop");
+      g_cards = {};
+      break;
+    }
     if (code < 0) {
       colour = image_u32(kColours + static_cast<u32>(-code) * 4);
       second = !second;
@@ -392,7 +409,8 @@ std::vector<u8> unpack(std::span<const u8> data) {
     g.upload_frame = -1;
     g.uploaded = 0xFF;
     g.shown = 0xFF;
-    self->card = kCardScript;
+    self->card = 0;
+    g_cards = program_run(kProgramEntry, kProgramBase, kCardScript);
     self->fade = 0;
     self->level = 0;
     g.hold = 0;
@@ -408,11 +426,13 @@ std::vector<u8> unpack(std::span<const u8> data) {
         if (std::getenv("SS_CREDITS_CUES") != nullptr)
           std::fprintf(stderr, "[credits] cue %d %d at %.3f\n", op, arg, movie_console_now());
         if (op == 0) break;
+        // (A PAL release's waits and fades count 50 Hz vblanks: Europe waits 600 where NA
+        // waits 720. The port runs at 60, so they are converted to last as long.)
         if (op == 2) {
-          g.wait = arg;
+          g.wait = region::ntsc_vblanks(arg);
           cue += 4;
         } else if (op == 3) {
-          sound_fade_out(sound, arg);
+          sound_fade_out(sound, region::ntsc_vblanks(arg));
           cue += 4;
         } else if (op == 1 && g.movie_state == 0) {
           cue += 4;

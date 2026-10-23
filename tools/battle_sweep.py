@@ -34,7 +34,8 @@ in the range, which finds stage-only gaps (stage code blocks, stage ops, the sta
 lightning).
 
 Runs use XDG_CONFIG_HOME=OUT/xdg and --no-memcard, so the user's config and saves are never
-touched. At most 5 jobs run at once.
+touched. At most 5 jobs run at once. Every run is under a memory cap (tools/memcap.py:
+SS_MEM_CAP_GB, default 4 GB); one that dies there is reported as a "memory cap" crash.
 
   tools/battle_sweep.py --out scratchpad/battle/sweep/main [--bin engine/build-battle/shattered-stars]
       [--jobs 5] [--frames 15000] [--encounters 0-563] [--stages 0-63]
@@ -55,6 +56,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
+from memcap import hit_cap, run_capped  # noqa: E402
 
 OUTCOMES = {0: "victory", 1: "escaped", 2: "defeat", 3: "ran off", 4: "time up"}
 # The fourth member, by encounter: the characters other than Claude, Rena and Celine.
@@ -198,10 +200,9 @@ def run_one(job, args, out_dir):
     log_path = os.path.join(out_dir, "logs", f"{name}.txt")
     t0 = time.time()
     with open(log_path, "wb") as log:
-        try:
-            p = subprocess.run(cmd, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=args.timeout)
-            rc = p.returncode
-        except subprocess.TimeoutExpired:
+        # Under the memory cap (tools/memcap.py): a run that dies there is a "memory cap" crash.
+        rc, timed_out, at_cap = run_capped(cmd, args.bin, args.timeout, env=env, stdout=log, stderr=subprocess.STDOUT)
+        if timed_out:
             rc = "timeout"
     secs = round(time.time() - t0, 1)
     text = open(log_path, "rb").read().decode("latin-1")
@@ -232,6 +233,8 @@ def run_one(job, args, out_dir):
     row["sanitizer"] = san[:8]
     if rc == "timeout":
         row["crash"] = "timeout"
+    elif isinstance(rc, int) and (at_cap or hit_cap(rc, text)):
+        row["crash"] = "memory cap"
     elif isinstance(rc, int) and rc < 0:
         try:
             row["crash"] = signal.Signals(-rc).name

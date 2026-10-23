@@ -45,6 +45,10 @@ Item fields: price, atk, def, amount (effect amount), effect (kind), type, sell 
 Enemy fields: hp, mp, exp, fol, speed, drop1, drop2, atk, def, int, level, eva, acc,
 guts, drop1_odds, drop2_odds.
 
+Discs: the North American, European, French or German disc 1 (or 2). Patch lines always use
+NA's script word numbers (the engine translates them for the disc being played), so a mod
+made with any of them applies to every release whose data matches EXPECTED.
+
 Limits: a chest holding an item can only be changed to another item (its value is a
 24-bit push); a chest holding Fol (a full-word push) can take either. Only the
 inline map-transfer form (map_transfer_c with constant arguments) can be retargeted.
@@ -61,7 +65,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # here for the tools that use so2_mod.X (ap_extract.py, ap_battles.py, ...).
 from so2_archive import ARCHIVE_LBA, TOC_BYTES, SECTOR, SLZ_MAGIC, decrypt_toc, unpack_block  # noqa: E402,F401
 from so2_script import CODE_START, MAP_ENTRY_BASE, disassemble, parse_script  # noqa: E402,F401
-from so2_data import (SYNC, Disc, instructions, push_value, chests, transfers, save_points,  # noqa: E402,F401
+from so2_data import (SYNC, Disc, na_script_offset, instructions, push_value, chests, transfers, save_points,  # noqa: E402,F401
                       ITEM_ENTRY, SHOP_ENTRY, SHOP_TABLE, PAGE_BASE, FORMATION_BASE, ITEM_FIELDS,
                       ENEMY_FIELDS, field_spec, item_size, enemy_size, le, item_records, shop_lists,
                       formation_records, enemy_stats, enemy_name, item_type_name, item_effect_name,
@@ -124,15 +128,25 @@ def cmd_list(a):
         print(f"{map_label(m)}: save point at ({x}, {y}, {z})")
 
 
+def na_word(disc, m, offset):
+    """NA's word number of byte 'offset' of this disc's script code of map m."""
+    at = na_script_offset(disc, m, offset)
+    if at is None:
+        raise SystemExit(f"{map_label(m)}: this place of the {disc.serial} script has no counterpart on the "
+                         "North American disc, so no patch line can name it")
+    return at // 4
+
+
 def cmd_chest(a):
     m = resolve("map", a.map)
-    blob = Disc(a.disc).map_script(m)
+    disc = Disc(a.disc)
+    blob = disc.map_script(m)
     item = resolve("item", a.item) if a.item is not None else None
     for flag, _, ins in chests(blob):
         if flag != a.flag:
             continue
         words = ins[1]
-        word_index = ins[0] // 4
+        word_index = na_word(disc, m, ins[0])
         new = item if item is not None else -a.fol
         if words[0] >> 24 == 0x12:
             if new < 0 or new > 0xFFFFFF:
@@ -149,7 +163,8 @@ def cmd_chest(a):
 def cmd_door(a):
     m = resolve("map", a.map)
     to = resolve("map", a.to)
-    blob = Disc(a.disc).map_script(m)
+    disc = Disc(a.disc)
+    blob = disc.map_script(m)
     for n, ins, args in transfers(blob):
         if n != a.index:
             continue
@@ -160,7 +175,7 @@ def cmd_door(a):
                 new[k] = v
         h = [v & 0xFFFF for v in new]
         words = [(ins[1][0] & 0xFFFF0000) | h[0], h[1] | h[2] << 16, h[3] | h[4] << 16, h[5] | h[6] << 16]
-        base = ins[0] // 4
+        base = na_word(disc, m, ins[0])
         lines = [f"# {map_label(m)} transfer {n}: {map_label(args[0])} ({args[2]}, {args[3]}, {args[4]}) -> "
                  f"{map_label(new[0])} ({new[2]}, {new[3]}, {new[4]})"]
         for k in range(4):

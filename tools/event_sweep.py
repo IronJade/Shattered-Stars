@@ -15,6 +15,10 @@ Usage:
 The game always boots disc 1's image; --disc 2 sets the story's disc (config +0x4c) and
 swaps to disc 2's archive at the start, as the script's disc change does.
 Writes DIR/map_NNN.log (raw output) and DIR/results.json, and prints a summary.
+
+Every process runs under a memory cap (tools/memcap.py: SS_MEM_CAP_GB, default 4 GB of
+address space; an ASan build in a systemd scope). A process that dies at the cap is
+recorded as "memory cap" against the entry it was running and the map is not run again.
 """
 import argparse
 import json
@@ -25,6 +29,9 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from memcap import Watch, capped, hit_cap  # noqa: E402
 
 START = re.compile(r"\[sweep\] map (\d+) vblank (\d+) entry (\d+) (\w)(\d+) code (\d+) start")  # (a region may follow)
 END = re.compile(r"\[sweep\] map (\d+) vblank (\d+) entry (\d+) (\w)(\d+) end (.*?) frames (\d+) standins (\d+)(?: last (\S+))? unknown_ops (\d+)(?: \| (.*))?$")
@@ -57,11 +64,12 @@ def run_once(args, m, skip, log):
         env["SS_DISC2"] = args.disc2
     if args.disc == 2:
         env["SS_EVENT_SWEEP_DISC"] = "2"
-    cmd = [args.bin, "--headless", "--no-memcard", "--frames", "2000000", "--map", str(m)]
+    cmd, preexec = capped([args.bin, "--headless", "--no-memcard", "--frames", "2000000", "--map", str(m)])
     p = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         text=True, errors="replace", bufsize=1)
+                         text=True, errors="replace", bufsize=1, preexec_fn=preexec)
     last = [time.time()]
     lines = []
+    watch = Watch(p.pid)
 
     def reader():
         for line in p.stdout:
@@ -74,12 +82,15 @@ def run_once(args, m, skip, log):
     hung = False
     while p.poll() is None:
         time.sleep(0.5)
+        watch.poll()
         if time.time() - last[0] > args.stall:
             hung = True
             p.kill()  # this process only (our own child)
             break
     p.wait()
     t.join(timeout=5)
+    if not hung and p.returncode != 0 and watch.near_cap():
+        lines.append(f"[driver] at the memory cap (address space peak {watch.peak_kb // 1024} MB)")
     log.write("\n".join(lines) + "\n")
     log.write(f"[driver] exit {p.returncode}{' (hang: killed)' if hung else ''}\n")
     log.flush()
@@ -122,15 +133,22 @@ def parse_run(result, lines, code, hung):
                         result.setdefault("port", []).append(line)
             if done:
                 return None
-            # Died or hung: blame the entry in progress and go on after it.
-            what = "hang" if hung else f"crash (exit {code})"
+            # Died or hung: blame the entry in progress and go on after it (at the memory
+            # cap: blame it and stop the map, never run it again).
+            cap = code is not None and hit_cap(code, lines, killed=hung)
+            what = "memory cap" if cap else "hang" if hung else f"crash (exit {code})"
             if current is not None:
                 current.update(result=what, frames=None, standins=None, standin=None, unknown_ops=None, state=None)
                 result["entries"].append(current)
                 skip = current["n"] + 1
+                if cap:
+                    result["notes"].append(f"memory cap in entry {current['n']}: the map is not run again")
+                    return None
             elif last_ended is not None:
                 result["notes"].append(f"{what} reloading the map after entry {last_ended}")
                 skip = last_ended + 1
+                if cap:
+                    return None
             else:
                 result["notes"].append(f"{what} before the map settled")
                 return None

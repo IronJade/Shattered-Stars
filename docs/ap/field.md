@@ -514,6 +514,28 @@ From the scripts, cross-checked with Prima's official guide (page numbers are Pr
   - maps 647-685: Fienal (p. 114). Map 671 is its ninth floor, the Final Save Point (p. 127),
     three staircase rooms below the final boss on map 685.
   - maps 698-825: the Cave of Trials (it has banners).
+- Areas the search got wrong by crossing into another cluster over a story transfer, or by
+  taking a building's own banner for its area (`AREA_FIXES`, 2026-10-23, docs/handoff/
+  apareas.md). Each is settled from the door table and agrees with
+  docs/modding/reference/map_names.csv; they take precedence over the search and the banners:
+  - 27, 29, 32, 38 (Rena's house and room) -> Arlia Village; 81 (Bar Mikado) and 83 (an Inn
+    Kingdom Hotel room) -> Town of Cross: their doors only reach those towns;
+  - 143 -> Zand's Mansion: the gate between Herlie's 142 and the mansion's 159;
+  - 398, 399, 401 -> Heraldry Weapons Laboratory (they were Armlock): chapter-53 rooms between
+    the laboratory's 400 / 395 and the Portal of Sealing 313;
+  - 426, 427, 434, 467-477 -> Lacour Castle (they were Port Hilton): the castle corridor and
+    the tournament's coliseum; Hilton is only the chapter-28 scene 422 -> 169 away;
+  - 593-595 -> Field of Love (they were North City): the switch platforms between 591 / 592
+    and the temple gate 595 -> 596;
+  - 617-619 -> The Outer Wall (they were L'Aqua): the arrival 625 -> 618 -> 617 / 619 -> 248;
+  - 698-825 -> Cave of Trials (they were "Cave of Trials Level 1", the first floor's banner).
+
+  Not taken from the CSV: map 231 (the CSV says Eluria Colony) is its own world-map entrance,
+  the beach where the Hilton ship lands for Hoffmann Ruins (chapters 23-27); map 28 has no
+  doors. The APWorld's logic never reads an area (its entrance groups come from the doors);
+  its location names keep the labels they were released with (tools/ap_world_tables.py
+  `RELEASED_AREAS`), and doors.json's `key_group` is named by the target's banner first, so
+  the groups keep their names.
 - Names starting with `?` (`?JEWELRY`, `?GUARD`) are real: unappraised items. Prima gives the
   item in brackets, for example "?GUARD (Core Plate)".
 

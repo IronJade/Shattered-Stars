@@ -8,6 +8,7 @@
 #include <mutex>
 #include <random>
 #include <set>
+#include <string>
 #include <utility>
 
 
@@ -27,16 +28,22 @@ struct NaModule {
 namespace eu {
 #include "../../data/regions/eu.inc"
 }  // namespace eu
+namespace fr {
+#include "../../data/regions/fr.inc"
+}  // namespace fr
+namespace de {
+#include "../../data/regions/de.inc"
+}  // namespace de
 
 namespace {
 
 constexpr Profile kProfiles[] = {
     {Id::kNorthAmerica, "na", "North America", "North American", {"SCUS_944.21", "SCUS_944.22"}, "BASCUS-94421",
-     Text::kNorthAmerica, true},
-    {Id::kEurope, "eu", "Europe", "European", {"SCES_021.59", "SCES_121.59"}, "BASCES-02159", Text::kNorthAmerica, true},
-    {Id::kFrance, "fr", "France", "French", {"SCES_021.60", "SCES_121.60"}, "BESCES-02160", Text::kFrench, false},
-    {Id::kGermany, "de", "Germany", "German", {"SCES_021.61", "SCES_121.61"}, "BESCES-02161", Text::kGerman, false},
-    {Id::kJapan, "jp", "Japan", "Japanese", {"SLPM_861.05", "SLPM_861.06"}, "BISLPM-86105", Text::kJapanese, false},
+     Text::kNorthAmerica, 60, true},
+    {Id::kEurope, "eu", "Europe", "European", {"SCES_021.59", "SCES_121.59"}, "BASCES-02159", Text::kNorthAmerica, 50, true},
+    {Id::kFrance, "fr", "France", "French", {"SCES_021.60", "SCES_121.60"}, "BESCES-02160", Text::kFrench, 50, false},
+    {Id::kGermany, "de", "Germany", "German", {"SCES_021.61", "SCES_121.61"}, "BESCES-02161", Text::kGerman, 50, false},
+    {Id::kJapan, "jp", "Japan", "Japanese", {"SLPM_861.05", "SLPM_861.06"}, "BISLPM-86105", Text::kJapanese, 60, false},
 };
 
 Id g_current = Id::kNorthAmerica;
@@ -44,13 +51,24 @@ Id g_current = Id::kNorthAmerica;
 struct Maps {
   const ImageMap* images = nullptr;
   size_t count = 0;
+  const ScriptMap* scripts = nullptr;
+  size_t nscripts = 0;
 };
 
 Maps maps_of(Id id) {
   switch (id) {
-    case Id::kEurope: return {eu::kImages, std::size(eu::kImages)};
+    case Id::kEurope: return {eu::kImages, std::size(eu::kImages), eu::kScripts, std::size(eu::kScripts)};
+    case Id::kFrance: return {fr::kImages, std::size(fr::kImages), fr::kScripts, std::size(fr::kScripts)};
+    case Id::kGermany: return {de::kImages, std::size(de::kImages), de::kScripts, std::size(de::kScripts)};
     default: return {};
   }
+}
+
+const ScriptMap* script_map(int map) {
+  const Maps m = maps_of(g_current);
+  for (size_t i = 0; i < m.nscripts; ++i)
+    if (m.scripts[i].map == map) return &m.scripts[i];
+  return nullptr;
 }
 
 // "[port]" lines once per key, as runtime::Runtime::log_once (which this layer can't link:
@@ -60,6 +78,29 @@ void log_once(const std::string& key, const std::string& message) {
   static std::set<std::string> logged;
   std::lock_guard<std::mutex> guard(lock);
   if (logged.insert(key).second) std::fprintf(stderr, "[port] %s\n", message.c_str());
+}
+
+// A read of an NA address the region's image has no counterpart for. The first few per
+// image are named; then one line says the rest are not, so a reader stuck in a loop over
+// unmapped data can't grow the log (or this table) without bound.
+void log_miss(const char* key, u32 address) {
+  constexpr size_t kNamed = 8;
+  struct Misses {
+    std::set<u32> named;
+    bool more = false;
+  };
+  static std::mutex lock;
+  static std::map<std::string, Misses> misses;
+  std::lock_guard<std::mutex> guard(lock);
+  Misses& m = misses[key];
+  if (m.more || m.named.count(address) != 0) return;
+  if (m.named.size() < kNamed) {
+    m.named.insert(address);
+    std::fprintf(stderr, "[port] region: NA address %08x of image %s has no counterpart\n", address, key);
+  } else {
+    m.more = true;
+    std::fprintf(stderr, "[port] region: more NA addresses of image %s have no counterpart (not listed)\n", key);
+  }
 }
 
 bool iequal(std::string_view a, std::string_view b) {
@@ -76,6 +117,7 @@ struct ReadLog {
   std::set<std::pair<std::string, u32>> seen;
   std::string path;
   bool on = false;
+  bool full = false;
   ReadLog() {
     if (const char* p = std::getenv("SS_REGION_READ_LOG"); p != nullptr && *p != 0) {
       path = p;
@@ -102,6 +144,14 @@ ReadLog& read_log() {
 }  // namespace
 
 std::span<const Profile> profiles() { return kProfiles; }
+
+bool playable(const Profile& p) {
+  if (p.supported) return true;
+  const char* t = std::getenv("SS_REGION_TRY");
+  if (t == nullptr) return false;
+  const std::string list = std::string(",") + t + ",";
+  return list.find(std::string(",") + p.key + ",") != std::string::npos;
+}
 
 const Profile& profile(Id id) {
   for (const Profile& p : kProfiles)
@@ -232,12 +282,7 @@ const u8* image_byte(const ImageMap* map, const std::vector<u8>& image, u32 na_b
   if (map == nullptr) return na_off < image.size() ? image.data() + na_off : nullptr;
   const s64 at = translate(map, na_off);
   if (at < 0 || static_cast<size_t>(at) >= image.size()) {
-    if (na_off < map->na_size) {
-      char buf[96];
-      std::snprintf(buf, sizeof buf, "region: NA address %08x of image %s has no counterpart", address,
-                    log_key != nullptr ? log_key : "?");
-      log_once(buf, buf);
-    }
+    if (na_off < map->na_size) log_miss(log_key != nullptr ? log_key : "?", address);
     return nullptr;
   }
   return image.data() + at;
@@ -351,10 +396,40 @@ u64 module_hash(std::span<const u8> block) {
   return h ^ static_cast<u64>(n.size());
 }
 
+s64 script_offset(int map, u32 na_offset) {
+  const ScriptMap* sm = script_map(map);
+  if (sm == nullptr) return na_offset;
+  for (u32 i = 0; i < sm->nseg; ++i) {
+    const Segment& seg = sm->seg[i];
+    if (na_offset >= seg.na_off && na_offset - seg.na_off < seg.size) return static_cast<s64>(na_offset) + seg.delta;
+  }
+  return -1;
+}
+
+s64 script_na_offset(int map, u32 offset) {
+  const ScriptMap* sm = script_map(map);
+  if (sm == nullptr) return offset;
+  for (u32 i = 0; i < sm->nseg; ++i) {
+    const Segment& seg = sm->seg[i];
+    const s64 start = static_cast<s64>(seg.na_off) + seg.delta;
+    if (static_cast<s64>(offset) >= start && static_cast<s64>(offset) - start < seg.size)
+      return static_cast<s64>(offset) - seg.delta;
+  }
+  return -1;
+}
+
 void log_read(const std::string& key, u32 address) {
   ReadLog& log = read_log();
   if (!log.on) return;
   std::lock_guard<std::mutex> guard(log.lock);
+  // Bounded: the images hold a few hundred thousand distinct addresses at most, so more means
+  // a reader running away over unmapped data (it must not take the machine's memory with it).
+  constexpr size_t kMaxReads = 1000000;
+  if (log.seen.size() >= kMaxReads) {
+    if (!log.full) std::fprintf(stderr, "[port] region: SS_REGION_READ_LOG is full; further reads are not logged\n");
+    log.full = true;
+    return;
+  }
   log.seen.emplace(key, address);
 }
 

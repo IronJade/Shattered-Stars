@@ -19,7 +19,8 @@ Each record:
   requires / via (conditions, as tools/ap_extract.py writes them for transfers),
   world (1 / 2 / 3 for a world-map entrance from a chunk script), world_script (the world
   script's warp list: not play), from_area / to_area (field.json map_areas),
-  key_group (world-map entrances: the area the door enters, a suggestion for area keys).
+  key_group (world-map entrances: the place the door enters, named by the target's banner, else
+  its area; a suggestion for area keys).
 
 Also `arrivals`: every distinct target (map, x, y, z, dir) with the doors that use it, so an
 entrance shuffle only sends doors to places the game itself arrives at.
@@ -72,6 +73,7 @@ def routine_of(mp, n):
 def build(disc_path, field):
     _, maps = ap_extract.load_maps(disc_path)
     areas = field.get("map_areas", {}) if field else {}
+    banners = field.get("map_names", {}) if field else {}
     doors = []
     for mp in sorted(maps.values(), key=lambda m: m.id):
         for n, i in enumerate(mp.ins):
@@ -98,7 +100,8 @@ def build(disc_path, field):
             rec["from_area"] = areas.get(str(mp.id))
             rec["to_area"] = areas.get(str(to["map"]))
             if "world" in rec:
-                rec["key_group"] = rec["to_area"] or f"map {to['map']}"
+                banner = (banners.get(str(to["map"])) or [None])[0]
+                rec["key_group"] = banner or rec["to_area"] or f"map {to['map']}"
             doors.append(rec)
     arrivals = collections.OrderedDict()
     for d in doors:

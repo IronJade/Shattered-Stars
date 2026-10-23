@@ -12,7 +12,8 @@ price: never progression. expel_progression off keeps progression out of Expel a
 
 Open world: the story's stages need the keys of the areas they walk into (regions.py
 stage_rules), and a location needs its area's key from the stage the story first enters the
-area (or the teleporter's or the late proof's route keys). Our keys are needed before the
+area, plus the key of the harbour its ship lands at (Lacour, Hoffmann Ruins), or the
+teleporter's or the late proof's route keys. Our keys are needed before the
 Final Save Point, so a skipped Expel location must be reachable again after the disc switch:
 only the teleporter proof (chapter 38, through Fun City's arena; the rows' `tele`) says where,
 so Expel holds progression only there, except the Expel story's own keys, which the player
@@ -27,6 +28,9 @@ from .regions import stage_rules
 
 STAGE_OF_GROUP = {g["group"]: g["stage"] for g in KEY_GROUPS}
 WORLD_OF_GROUP = {g["group"]: g["world"] for g in KEY_GROUPS}
+# Areas the story reaches only by a ship landing through another group's entrance (data.py
+# KEY_GROUPS `landing`: Lacour through Port Hilton, Hoffmann Ruins through map 231).
+LANDING_OF_GROUP = {g["group"]: tuple(g.get("landing", ())) for g in KEY_GROUPS}
 
 
 def in_expel(row):
@@ -90,7 +94,8 @@ def open_world_access(row, side, teleporter):
     if stage and region != "Cave of Trials":
         if row.get("from_chapter"):
             stage = max(stage, stage_of_chapter(row["from_chapter"]))
-        modes.append((stage_event(stage - 1) if stage > 1 else None, (KEY_NAME[group],) if group else ()))
+        keys = (KEY_NAME[group],) + tuple(KEY_NAME[g] for g in LANDING_OF_GROUP.get(group, ())) if group else ()
+        modes.append((stage_event(stage - 1) if stage > 1 else None, keys))
     if teleporter and in_expel(row) and proven_teleporter(row, side):
         modes.append((EVENT_TELEPORTER, tuple(KEY_NAME[g] for g in row.get("tele_keys", ()))))
     if proven_late(row, side):

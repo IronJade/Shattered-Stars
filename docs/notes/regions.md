@@ -379,3 +379,78 @@ address translation exists.
 - **Saves:** native per region (BASCES-02159 Europe, BESCES-02160 France, BESCES-02161 Germany),
   so cards stay compatible with that region's console. Importing an NA save may come later.
 - **Mods** apply to every region by default. Their EXPECTED guards skip lines whose data differs.
+
+## 10. The implementation (phase 2: one build, region profiles)
+
+How the port plays the other releases, following the decisions above. Code:
+`engine/src/runtime/region.{h,cpp}`; generated data: `engine/data/regions/*.inc`
+(`tools/region_map.py`); continuation log: `docs/handoff/regions.md`.
+
+### Profiles
+
+`region::Profile` per release: key, names, the two serials, the save product code, the text
+system (`Text`: NA's for North America and Europe; French, German, Japanese), the rate its
+data counts in (`data_hz`: 50 for the PAL releases) and `supported`. The launcher recognises
+a disc by its SYSTEM.CNF serial (`launcher/discs.cpp`): a supported release's disc 1 / 2, a
+known release the port can't play yet (`kUnsupportedRelease`: Japan, and for now France and
+Germany, until their text system is in; the message names the releases it plays), or
+another game. Both discs must be the same release. `main.cpp` selects the profile from the
+boot disc's serial before anything reads the discs.
+
+### Address maps
+
+The ported code reads the original's tables from the program images at their NA addresses.
+For another release, `tools/region_map.py` aligns each image the port reads (boot
+executable, the four programs, the field / menu / battle overlays, the 12 party modules, the
+40 enemy-code and 55 spell-code modules) with NA's and writes segments (NA offset, size,
+offset delta), the pointer words to relocate, load addresses and hashes, nothing else. Every
+reader goes through one function (`region::image_byte`): `program_data_at`, `boot_exe_data`,
+the battle overlay and module readers. At load, `region::prepare` checks the image is the one
+the map was made from (another revision of a disc is refused, not misread) and rewrites the
+listed pointer words to NA values, so a pointer the port follows stays in NA space. Enemy and
+spell modules are identified by a hash of their normalised instructions (the same NA module
+relinked elsewhere hashes alike). On NA nothing is translated.
+
+Coverage: the port records every (image, NA address) it reads with `SS_REGION_READ_LOG`
+(NA suites and sweeps -> `tools/regions/na_reads.txt`); `region_map.py --check` fails if any
+of them has no counterpart in a release, and lists the read bytes whose value differs from
+NA's (Europe: none; France / Germany: 3 bytes, text-related).
+
+| | Europe | France | Germany |
+|---|---|---|---|
+| Images / segments / pointer runs | 149 / 1357 / 4336 | 149 / 1512 / 5693 | 149 / 1507 / 5665 |
+| Map scripts laid out otherwise | 7 | 24 | 32 |
+
+Data a release lays out its own way (a list whose length differs) is read from its translated
+start in the release's own order (`program_run`): the credits' card script (Europe's own
+staff, 65 cards to NA's 78).
+
+### Map scripts
+
+Archipelago doors, routines and join sites and the mods' `script` lines name places in a map
+script by NA's code offsets. A release whose script for a map has another layout gets a script
+map (instruction alignment, the same segment form); `region::script_offset` /
+`script_na_offset` translate, and `ap.cpp` / `mods.cpp` use them, so one seed and one mod file
+serve every release. `tools/so2_mod.py` / `so2_data.py` read any supported release's disc and
+still write NA word numbers.
+
+### Timing
+
+Every release runs NA's game logic at 60 Hz (the decision): the PAL 6/5 movement scaling, the
+removed projectile clash and the PAL display / timer code are not ported. Data the PAL builds
+rescaled to 50 Hz is converted back where the port reads it (`region::ntsc_vblanks`, x6/5):
+the credits' cue waits and music fade (NA 720, Europe 600, ...). The map scripts' `wait`
+operands are not rescaled in the PAL releases (no same-length map differs in a wait; the
+shared world script was restructured), so they need nothing. Europe's scripts set the
+vibration countdown G[0x358] / G[0x3ac] to 500 frames where NA has 1800 (rumble length, 24
+places): the release's own data, kept. The play clock (`vsync_callback` counts 60 vblanks a
+second on every release) and the save's minutes field mean the same in every release, so
+saves need no conversion.
+
+### Saves
+
+Native per release: the card file is `<product>S02-Snn` (Europe `BASCES-02159S02-S`, France
+`BESCES-02160...`, Germany `BESCES-02161...`; the strings are in each release's #1 / #3100), and
+the save writer is NA's (the PAL `save_build` differs only by that string's address), so a card
+written by the port loads on that release's console. The setup program counts saves of every
+release.

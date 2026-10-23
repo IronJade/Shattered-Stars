@@ -2154,7 +2154,8 @@ LOCATIONS = [
 
 # Phase 4 (open world): the world-map entrance groups (docs/ap/doors.json key_group), one key
 # each: key number, name, group, world map, door ids (map * 65536 + offset / 4), target maps, the
-# first story stage that needs it (None: not the story's).
+# first story stage that needs it (None: not the story's), and `landing`: the groups whose keys
+# the ship there needs (SHIP_LANDINGS).
 KEY_GROUPS = [
     {'group': 'Arlia Village', 'world': 1, 'doors': [59576065, 59576086], 'maps': [17, 19], 'key': 1, 'name': 'Arlia Pass', 'stage': 1},
     {'group': 'Town of Salva', 'world': 1, 'doors': [59576094, 59576115, 59576123, 59576144], 'maps': [43, 60, 44, 45], 'key': 2, 'name': 'Salva Pass', 'stage': 2},
@@ -2163,11 +2164,11 @@ KEY_GROUPS = [
     {'group': 'Lasguss Mountain', 'world': 1, 'doors': [59576242, 59576259], 'maps': [382, 381], 'key': 5, 'name': 'Lasguss Pass', 'stage': None},
     {'group': 'Mountain Palace', 'world': 1, 'doors': [59576276], 'maps': [355], 'key': 6, 'name': 'Mountain Palace Pass', 'stage': None},
     {'group': 'map 231', 'world': 1, 'doors': [59576293, 59578306], 'maps': [231], 'key': 7, 'name': 'Map 231 Pass', 'stage': 9},
-    {'group': 'Hoffmann Ruins', 'world': 1, 'doors': [59576310], 'maps': [478], 'key': 8, 'name': 'Hoffmann Pass', 'stage': 9},
+    {'group': 'Hoffmann Ruins', 'world': 1, 'doors': [59576310], 'maps': [478], 'key': 8, 'name': 'Hoffmann Pass', 'stage': 9, 'landing': ['map 231']},
     {'group': 'Town of Cross', 'world': 1, 'doors': [59576700, 59576705, 59576742], 'maps': [87, 74, 73], 'key': 9, 'name': 'Cross Pass', 'stage': 3},
     {'group': 'Port of Clik', 'world': 1, 'doors': [59576750, 59576771, 59576779], 'maps': [107, 112, 108], 'key': 10, 'name': 'Clik Pass', 'stage': 5},
-    {'group': 'Port Hilton', 'world': 1, 'doors': [59576800, 59576821, 59578036, 59578440], 'maps': [169, 171], 'key': 11, 'name': 'Hilton Pass', 'stage': 7},
-    {'group': 'Town of Lacour', 'world': 1, 'doors': [59576837, 59576856, 59576871, 59576877, 59576959], 'maps': [214, 211], 'key': 12, 'name': 'Lacour Pass', 'stage': 7},
+    {'group': 'Port Hilton', 'world': 1, 'doors': [59576800, 59576821, 59578036, 59578440], 'maps': [169, 171], 'key': 11, 'name': 'Hilton Pass', 'stage': 6},
+    {'group': 'Town of Lacour', 'world': 1, 'doors': [59576837, 59576856, 59576871, 59576877, 59576959], 'maps': [214, 211], 'key': 12, 'name': 'Lacour Pass', 'stage': 6, 'landing': ['Port Hilton']},
     {'group': 'Town of Linga', 'world': 1, 'doors': [59576967, 59576988], 'maps': [183, 209], 'key': 13, 'name': 'Linga Pass', 'stage': 8},
     {'group': 'Sanctuary of Linga', 'world': 1, 'doors': [59576996], 'maps': [402], 'key': 14, 'name': 'Sanctuary Pass', 'stage': 8},
     {'group': 'Cross Cave', 'world': 1, 'doors': [59577013], 'maps': [524], 'key': 15, 'name': 'Cross Cave Pass', 'stage': 4},
@@ -2200,8 +2201,8 @@ STAGES = [
     ('Cross', (9, 11), ['Town of Cross']),
     ('Cross Cave', (12, 13), ['Cross Cave']),
     ('Clik and Mars', (14, 15), ['Port of Clik', 'Mars Village', 'Town of Herlie']),
-    ('Herlie', (16, 17), ['Town of Herlie']),
-    ("Lacour's tournament", (18, 19), ['Town of Lacour', 'Port Hilton']),
+    ('Herlie', (16, 17), ['Town of Herlie', 'Port Hilton', 'Town of Lacour']),
+    ("Lacour's tournament", (18, 19), ['Town of Lacour']),
     ('Linga and its sanctuary', (20, 22), ['Town of Linga', 'Sanctuary of Linga']),
     ('Hilton and Hoffmann Ruins', (23, 25), ['Port Hilton', 'Town of Lacour', 'map 231', 'Hoffmann Ruins']),
     ('Lacour Front Line', (26, 28), ['Lacour Front Line']),

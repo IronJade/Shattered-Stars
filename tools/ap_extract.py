@@ -793,6 +793,29 @@ GUIDE_AREAS = [((229, 230), "El Beach"),          # the shipwreck's beach, by th
                ((548, 548), "Ship to El"),        # the ship out of Port Hilton (chapter 29)
                ((647, 685), "Fienal")]            # 671 is its 9th floor, the Final Save Point
 
+# Areas the nearest-name search gets wrong because it crosses into another cluster over a story
+# transfer, or takes a building's own banner for its area. Each is settled from the door table
+# (docs/ap/doors.json; docs/handoff/apareas.md) and agrees with
+# docs/modding/reference/map_names.csv. They take precedence over the search, GUIDE_AREAS and a
+# map's own banner (map_names keeps the banner). Names only: nothing in the APWorld's logic reads
+# an area (its entrance groups come from the doors), and tools/ap_world_tables.py keeps the
+# location names these maps were released with.
+AREA_FIXES = [
+    ((27, 29, 32, 38), "Arlia Village"),      # Rena's house and room: doors only to Arlia's maps
+    ((81, 83), "Town of Cross"),              # Bar Mikado, an Inn Kingdom Hotel room: doors only to Cross
+    ((143,), "Zand's Mansion"),               # the gate: Herlie 142 <-> 143 -> 159 (the mansion)
+    ((398, 399, 401), "Heraldry Weapons Laboratory"),   # chapter-53 rooms between 400 / 395 and 313
+    ((426, 427, 434) + tuple(range(467, 478)), "Lacour Castle"),   # the castle corridor 427 (rooms
+                                              # 420, 428, 431-435) and the coliseum 434 / 467-477; Port
+                                              # Hilton is only the chapter-28 scene 422 -> 169 away
+    ((593, 594, 595), "Field of Love"),       # the platforms between 591 / 592 (switch flags 516 /
+                                              # 517) and the temple gate 595 -> 596
+    ((617, 618, 619), "The Outer Wall"),      # the arrival: 625 -> 618 -> 617 / 619 -> 248 (Central
+                                              # City); no door reaches L'Aqua
+    (tuple(range(698, 826)), "Cave of Trials"),   # one dungeon, entered at 704 ("Level 1" is its
+                                              # first floor's banner)
+]
+
 
 def areas(maps, trs, names, worlds):
     """{map: area name}: the name shown at the nearest map entered from a world map (a town or
@@ -1718,6 +1741,10 @@ def build(paths, battles=True):
     for (lo, hi), name in GUIDE_AREAS:
         for m in range(lo, hi + 1):
             if m in have_script and m not in names_of:
+                area_of[m] = name
+    for ms, name in AREA_FIXES:
+        for m in ms:
+            if m in have_script:
                 area_of[m] = name
 
     def with_maps(records):

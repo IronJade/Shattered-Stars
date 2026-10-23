@@ -6673,3 +6673,47 @@ constexpr ImageMap kImages[] = {
     {ImageKind::kSpell, -1, 0, 0x8008cc00u, 0x8008cc00u, 0x1e5bu, 0x1e5bu, 0xf32d2833195b97afull, 0x78c3c1c069e70a5dull, 0x194324351b72d054ull, kspell_f32d2833195b97af_seg, 1, kspell_f32d2833195b97af_ptr, 0},  // spell.f32d2833195b97af
     {ImageKind::kSpell, -1, 0, 0x8008cc00u, 0x8008cc00u, 0x2120u, 0x2120u, 0x7bb9338340ef8dbeull, 0xb5539bdc260bd37cull, 0xd29a7e82f56b48b5ull, kspell_7bb9338340ef8dbe_seg, 1, kspell_7bb9338340ef8dbe_ptr, 0},  // spell.7bb9338340ef8dbe
 };
+
+// Map scripts the release laid out otherwise (code offsets: Archipelago doors, join sites,
+// mod script lines): segments of the script code {NA byte offset, byte count, region offset -
+// NA offset}. Other maps keep NA's offsets. Maps sharing a script share its segments.
+constexpr Segment kscript_0[] = {
+    {0x0, 0x7010, 0},
+    {0x7018, 0xe4, 1204},
+    {0x70fc, 0x8, 1228},
+    {0x7114, 0x20, 1212},
+    {0x7134, 0x10, 1240},
+    {0x714c, 0xc, 1432},
+    {0x7158, 0x4, 1536},
+    {0x7164, 0x8, 1568},
+    {0x7170, 0x4, 1704},
+    {0x7180, 0x8, 1696},
+    {0x71c8, 0xa8, 1632},
+    {0x7334, 0x1c, 1436},
+    {0x736c, 0x1c, 1408},
+    {0x73a4, 0x1c, 1380},
+    {0x73dc, 0xc4, 1352},
+    {0x74b4, 0x18, 1408},
+    {0x7554, 0xc, 1272},
+    {0x7578, 0x4, 1272},
+    {0x7588, 0x4, 1284},
+    {0x7ab4, 0xe0, -36},
+    {0x87e8, 0x718, -3192},
+};
+constexpr Segment kscript_688[] = {
+    {0x0, 0x7f24, 0},
+    {0x7f2c, 0x4410, -8},
+};
+constexpr Segment kscript_704[] = {
+    {0x0, 0x75a0, 0},
+    {0x75a0, 0xb18, 28},
+};
+constexpr ScriptMap kScripts[] = {
+    {0, kscript_0, 21},
+    {1, kscript_0, 21},
+    {2, kscript_0, 21},
+    {3, kscript_0, 21},
+    {688, kscript_688, 2},
+    {704, kscript_704, 2},
+    {826, kscript_0, 21},
+};

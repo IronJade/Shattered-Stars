@@ -353,6 +353,23 @@ TEST(game_runs_the_european_release) {
   CHECK(!contains(run.output, "disc 1 image expected"));
 }
 
+// The Japanese release is recognised and refused, with the reason and what the game plays
+// (France and Germany the same, until their text system is in).
+TEST(game_refuses_the_japanese_release) {
+  const char* jp = std::getenv("SS_DISC1_JP");
+  if (jp == nullptr || *jp == 0 || launcher::sibling_program(launcher::kGameProgram).empty()) {
+    std::printf("  (skipped: SS_DISC1_JP not set or the game not built)\n");
+    return;
+  }
+  const fs::path home = scratch("game_jp");
+  auto env = test_env(home);
+  env.emplace_back("SS_DISC1", jp);
+  GameRun run = run_game({"--headless", "--frames", "5"}, env);
+  CHECK_EQ(run.code, 2);
+  CHECK(contains(run.output, "Japanese release (SLPM-86105): not supported yet"));
+  CHECK(contains(run.output, "Shattered Stars plays the North American"));
+}
+
 // The command line the tools use (tools/event_sweep.py, smoke_field_events.sh) still
 // parses, and the boot disc rules hold: SS_DISC1 may be disc 2 (the disc 2 sweep), a bad
 // image says why before the usage text, and headless runs never write config.ini.

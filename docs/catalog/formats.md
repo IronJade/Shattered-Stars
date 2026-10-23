@@ -207,6 +207,18 @@ Message variables are 16 s32 at script globals + 0x38 (when the 0xfc2 strings ar
 punctuation; glyph 1 ('「') always starts a new line. A wrapped line drops a leading space.
 Port: `engine/src/game/field/message*.cpp`, verified against PCSX-Redux captures.
 
+**French and German releases** (`docs/notes/regions_text.md`): the same encoding, control
+codes and font block format, with a 132-glyph Latin map font (962 of 964 maps; per-map
+symbols from 0x82, some maps 136 glyphs) whose numbering differs: digits 0x01-0x0a, '-' 0x0b,
+'.' 0x0c, A-Z 0x0d-0x26, apostrophe 0x27, a-z 0x28-0x41, accented letters 0x42-0x61 (Latin-1
+order), 0x62 German u-umlaut (empty in French), '?' 0x63, '!' 0x64, closing brackets 0x65-0x68,
+opening brackets 0x69-0x6c, '=' ':' ';' ',' '/' 0x6d-0x71, space 0x72, letter-like apostrophe
+0x73, symbols from 0x74. Word wrap: digits and letters (0x0d-0x61, German to 0x62, and 0x73)
+are the classes; 0x63-0x6c and 0x0b-0x0c keep the class; a glyph followed by '?' / '!' is no
+break opportunity; no glyph-1 or squeeze rules. The title (#14 block 1) and battle (#1980
+block 1) fonts have 132 glyphs in ASCII order (code = ASCII - 0x1f), the accented letters from
+0x63; the 0xfc2 side font 132 glyphs in the map font's numbering.
+
 ## Inventory entry
 
 u16: bits 0–9 item id, bits 10–14 count.
@@ -215,7 +227,7 @@ u16: bits 0–9 item id, bits 10–14 count.
 
 - **#14** is a chain of four SLZ blocks:
   - block 0: string table, `{u16 id, u16 offset}` pairs ending in id 0xffff, then the strings as glyph codes (code = glyph index + 1; a byte above 0x7f is followed by a second byte: `(b0 & 0x7f) | b1 << 7`; 0 ends). Glyph *i* is ASCII *i* + 0x20 for the printable range. Ids: 0-18 sound, 32-45 characters, 46-57 vibration, 58-78 combat mode, 100-101 family names, 110-114 keyboard buttons, 150-170 battle rank, 200-207 memory card notices.
-  - block 1: font, `s32 count` (96), `s32 height` (12), `u8 width[count]`, padded to 4, then `u16 rows[height]` per glyph (1 bit per pixel, bit 15 = leftmost).
+  - block 1: font, `s32 count` (96; French / German 132, accented letters from code 0x63), `s32 height` (12), `u8 width[count]`, padded to 4, then `u16 rows[height]` per glyph (1 bit per pixel, bit 15 = leftmost).
   - block 2: a TIM whose palette (at +0x14) is the text CLUT row 0x1f9 (palette *n* = CLUT x 16·*n*).
   - block 3: menu art (texture pack block) uploaded to (0x140, 0), CLUT row 0x1e0.
 - **#15** block 0: window skin; `+0xc` → inner block; `inner + inner[0] + 4` = 256-colour CLUT (row 0x1fe), `inner + inner[1]` = `{u16 w, u16 h, pixels}` 4-bit, uploaded to (0x3c0, 0).

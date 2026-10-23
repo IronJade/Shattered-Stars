@@ -8,6 +8,7 @@
 
 #include "game/ap/ap.h"
 #include "mods/catalog.h"
+#include "runtime/region.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::field {
@@ -208,7 +209,15 @@ int mods_apply_script(int map, std::vector<u8>& script) {
   for (const Patch& p : patches()) {
     if (p.kind != Kind::kScript || p.target != map) continue;
     if (resolved_elsewhere(p)) continue;
-    const size_t at = 0x1C + static_cast<size_t>(p.where) * 4;
+    // WORD is NA's; a release that laid this map's script out otherwise has it elsewhere
+    // (runtime/region.h script_offset), or not at all.
+    const s64 code_at = region::script_offset(map, static_cast<u32>(p.where) * 4);
+    if (code_at < 0) {
+      runtime::Runtime::get().log_once("mods:" + p.at, "[mods] " + p.at + ": map " + std::to_string(map) +
+                                                            "'s script has no such word in this release; skipped");
+      continue;
+    }
+    const size_t at = 0x1C + static_cast<size_t>(code_at);
     if (at + 4 > script.size()) {
       runtime::Runtime::get().log_once("mods:" + p.at, "[mods] " + p.at + ": word past the end of map " +
                                                             std::to_string(map) + "'s script; skipped");
