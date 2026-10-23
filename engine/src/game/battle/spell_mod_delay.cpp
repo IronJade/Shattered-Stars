@@ -162,9 +162,12 @@ void delay(SpellCast* sc) {
         if (sp == nullptr) continue;
         const s32 dx = rng_between_fixed(t->size[0] * -7, t->size[0] * 7);
         const s32 dy = rng_between_fixed(t->size[1] * -7, t->size[1] * -4);
-        // Original quirk (original_bugs.md S16, to decide): both bounds are -4 times the depth (the z spread is
-        // fixed; -4 .. 4 meant?).
-        const s32 dz = rng_between_fixed(t->size[2] * -4, t->size[2] * -4);
+        // ORIGINAL BUG (original_bugs.md S16): both bounds are -4 times the depth, so the z
+        // spread is fixed (and rng_between makes no draw):
+        //   const s32 dz = rng_between_fixed(t->size[2] * -4, t->size[2] * -4);
+        // Fixed (user, 2026-10-22): -4 .. 4 times the depth from the visual-only random
+        // source, so the game's RNG sequence stays the original's.
+        const s32 dz = visual_rng_between_fixed(t->size[2] * -4, t->size[2] * 4);
         sprite_set_pos(sp, t->pos[0] + dx, t->pos[1] + dy, t->pos[2] + dz);
         sprite_set_fade(sp, 0x80, -2, 8);
         sp->vel[1] = rng_between_fixed(0, 2);

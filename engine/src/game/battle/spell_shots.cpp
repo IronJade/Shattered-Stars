@@ -754,10 +754,10 @@ void shot_k12_line_streak(Shot* s) {
   if ((g.flags & 0xC) != 0) return;
   bool arrived = false;
   if (s->aux == 1) {
-    // (The original asks unit_check_move whether the 0x10-unit box runs into something;
-    // the port has no Shot version of it yet.) [port partial]
-    runtime::Runtime::get().log_once("battle-k12-aux1", "battle: not ported yet: Shot kind 0x12 with +0x10c 1 (unit_check_move on a Shot)");
+    // A 0x10-unit box: the streak ends where it runs into a unit, an obstacle or the arena
+    // edge (the stage-8 lightning; battle agent).
     s->size[0] = s->size[1] = s->size[2] = 0x10;
+    arrived = unit_check_move(s, s->vel, 7) != nullptr;
   }
   if (!arrived) {
     s->vel[0] = (s->vel[0] * s->p134) >> 12;

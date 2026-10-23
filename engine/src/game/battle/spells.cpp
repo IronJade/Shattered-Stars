@@ -309,6 +309,26 @@ void debug_forced_casts() {
   // SS_BATTLE_ENEMY_ODDS="FRAMES:SLOT:o0,o1,o2,o3,o4": enemy SLOT's AI odds (EnemyUnit
   // +0x24d) set once the battle frames reach FRAMES (a passive target for the spell sweeps;
   // the Redux driver pokes the same bytes during the intro).
+  // SS_BATTLE_ENEMY_SPELLS="FRAMES:SLOT:s0,s1,s2,s3": enemy SLOT's spell list (+0x249), the
+  // same way (the Redux driver pokes those bytes).
+  static bool spells_done = false;
+  if (!spells_done) {
+    if (const char* env = std::getenv("SS_BATTLE_ENEMY_SPELLS")) {
+      int frames = 0, slot = 0;
+      unsigned v[4] = {};
+      if (std::sscanf(env, "%d:%d:%i,%i,%i,%i", &frames, &slot, &v[0], &v[1], &v[2], &v[3]) == 6) {
+        if (frames <= bg().battle_frames) {
+          spells_done = true;
+          if (EnemyUnit* e = bg().enemy_units[static_cast<size_t>(slot & 7)])
+            for (int i = 0; i < 4; ++i) e->spells[i] = static_cast<u8>(v[i]);
+        }
+      } else {
+        spells_done = true;
+      }
+    } else {
+      spells_done = true;
+    }
+  }
   static bool odds_done = false;
   if (!odds_done) {
     if (const char* env = std::getenv("SS_BATTLE_ENEMY_ODDS")) {
@@ -406,22 +426,15 @@ void spell_cast(int spell, Unit* caster, Unit* target, int power) {
     }
     s->mp = static_cast<s16>(mp - cost);
   }
-  // ORIGINAL BUG (original_bugs.md S3): a monster's counter-cast can have no target (its last
-  // attacker was an item's Shot); the Shot spells below then aim at the unit "at address 0"
-  // (kernel memory) and fly at a fixed point of the arena:
-  //   spell_firebolt(caster, nullptr, power) ...
-  // Fixed: they take the member the SpellCast spells fall back to (spellcast_retarget: the
-  // first standing member from slot 3 on).
+  // A monster's counter-cast can have no target (its last attacker was an item's Shot). The
+  // console then reads the "unit" at address 0 (original_bugs.md S3): low kernel RAM, the same
+  // on every run (121 Redux dumps): position (0, 0, 0), size 0, slot 2, down by
+  // unit_is_down's null test; the Shot spells fly at the arena's centre and hit whatever
+  // they meet on the way. The port gives them that unit (unit_null_target), so they fly
+  // where the console's do, without following address 0.
   const bool shot_spell = spell == 1 || spell == 4 || spell == 8 || spell == 0xD || spell == 0x17 || spell == 0x1E ||
                           spell == 0x2B || spell == 0x2F || spell == 0x30 || spell == 0x35;
-  if (target == nullptr && shot_spell && caster->is_enemy != 0) {
-    BattleGlobals& g = bg();
-    for (int n = 0, idx = 3; n < 4 && target == nullptr; ++n, idx = (idx + 1) & 3) {
-      Unit* u = g.party_units[static_cast<size_t>(idx)];
-      if (!unit_is_down(u)) target = u;
-    }
-    if (target == nullptr) return;
-  }
+  if (target == nullptr && shot_spell) target = unit_null_target();
   switch (spell) {
     case 1: spell_firebolt(caster, target, power); break;
     case 4: spell_ice_needle(caster, target, power); break;

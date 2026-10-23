@@ -166,6 +166,10 @@ UnitGlobals& unit_globals();
 
 // unit_is_down 0x80053e50: missing, status bits 0-2, or removed.
 bool unit_is_down(const Unit* u);
+// (world agent) The "unit at address 0" a null target reads on the console (original_bugs.md
+// S3): low kernel RAM, the same on every run: position (0, 0, 0), size 0, party slot 2, stats
+// pointer 0; unit_is_down calls it down (the console's null test).
+Unit* unit_null_target();
 // 0x80034418 unit_check_move: what blocks moving u by d (flags 1 party, 2 enemies, 4
 // obstacles, 8 skip the arena bounds): a unit, kWallBlock (the original's -1: the arena
 // edge or an obstacle) or null. (World agent: takes any BObj; item kind 0x2f's balls use it.)
@@ -265,6 +269,9 @@ struct PartyUnit : Unit {
   s16 killer_index = 0;               // +0x2f0
   s16 hp_at_voice = 0;                // +0x2fa
   s16 victory_voice = 0;              // +0x2fc
+  s16 regen_ticks = 0;                // +0x2fe: pc_update_effects' 300-tick HP / MP regeneration
+  s16 regen_mp_ticks = 0;             // +0x300: its 600-tick MP regeneration
+  s16 mp_drain_ticks = 0;             // +0x302: the MP drain's tick count (effect 2 / 0x100)
   Sprite* low_hp_marker = nullptr;    // +0x328
   s32 item_value_sum = 0;             // +0x21e (item field 0xa total)
   u16 weapon_clut = 0;                // +0x21c

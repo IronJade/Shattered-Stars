@@ -227,20 +227,172 @@ void pc_calc_equipment_stats(u8* slot, u8* rec) {
   wr16(rec + 0xA, static_cast<s16>(equip_sum_field(rds16(rec + 6), 0x14, 9999)));
 }
 
-// 0x800818dc pc_apply_equip_effects: HP / MP maxima back to the base values, the
-// config's percentage modifiers, then each equipped item's effect id (item field 0x28).
+// The party loader's stat modifiers (0x800823d4-0x800827b4, slot fields): a percentage
+// change, where a negative amount on HP / MP max / +0x4a is a flat increase instead.
+namespace {
+s16 s16_at(const u8* slot, int off) { return rds16(slot + off); }
+void stat_mod_hp_max(u8* slot, int amount) {  // 0x800823d4: +0x18, at most 9999
+  s32 v;
+  std::memcpy(&v, slot + 0x18, 4);
+  v = amount < 0 ? v - amount : v + v * amount / 100;
+  if (9999 < v) v = 9999;
+  std::memcpy(slot + 0x18, &v, 4);
+}
+void stat_reduce_hp_max(u8* slot, int pct) {  // 0x80082444: +0x18 -= pct %, at least 1
+  s32 v;
+  std::memcpy(&v, slot + 0x18, 4);
+  v -= v * pct / 100;
+  if (v < 1) v = 1;
+  std::memcpy(slot + 0x18, &v, 4);
+}
+void stat_mod_mp_max(u8* slot, int amount) {  // 0x8008248c: +0x22, at most 999
+  const s16 v = s16_at(slot, 0x22);
+  wr16(slot + 0x22, static_cast<s16>(amount < 0 ? v - amount : v + static_cast<s16>(v * amount / 100)));
+  if (999 < s16_at(slot, 0x22)) wr16(slot + 0x22, 999);
+}
+void stat_reduce_mp_max(u8* slot, int pct) {  // 0x80082504: +0x22 -= pct %, at least 0
+  const s16 v = s16_at(slot, 0x22);
+  wr16(slot + 0x22, static_cast<s16>(v - v * pct / 100));
+  if (s16_at(slot, 0x22) < 0) wr16(slot + 0x22, 0);
+}
+// 0x80082554 / 0x800825c4 / 0x800826a4 / 0x80082714: +off += pct %, clamped to 0..9999.
+void stat_mod_attr(u8* slot, int off, int pct) {
+  const s16 v = s16_at(slot, off);
+  wr16(slot + off, static_cast<s16>(v + v * pct / 100));
+  if (9999 < s16_at(slot, off)) wr16(slot + off, 9999);
+  if (s16_at(slot, off) < 0) wr16(slot + off, 0);
+}
+void stat_mod_attr_3e(u8* slot, int pct) {  // 0x80082634: changes +0x3e but clamps +0x40
+  const s16 v = s16_at(slot, 0x3E);
+  wr16(slot + 0x3E, static_cast<s16>(v + static_cast<s16>(v * pct / 100)));
+  if (9999 < s16_at(slot, 0x40)) wr16(slot + 0x40, 9999);
+  if (s16_at(slot, 0x40) < 0) wr16(slot + 0x40, 0);
+}
+void stat_add_26(u8* slot, s16 n) {  // 0x80082784: +0x26 += n, at most 255
+  const s16 v = static_cast<s16>(s16_at(slot, 0x26) + n);
+  wr16(slot + 0x26, v);
+  if (0xFF < v) wr16(slot + 0x26, 0xFF);
+}
+void stat_mod_attr_4a(u8* slot, int amount) {  // 0x800827b4: +0x4a, at most 255
+  const s16 v = s16_at(slot, 0x4A);
+  wr16(slot + 0x4A, static_cast<s16>(amount < 0 ? v - amount : v + static_cast<s16>(v * amount / 100)));
+  if (0xFF < s16_at(slot, 0x4A)) wr16(slot + 0x4A, 0xFF);
+}
+
+// The effect ids that only set an ability bit: unit +0x314 + 4 * word.
+struct AbilityBit {
+  u8 effect;
+  u8 word;
+  u32 mask;
+};
+constexpr AbilityBit kAbilityBits[] = {
+    {0x69, 0, 0x1},        {0x6A, 0, 0x2},        {0x6B, 0, 0x4},        {0x6C, 0, 0x8},
+    {0x6D, 0, 0x10},       {0x6E, 0, 0x20},       {0x70, 0, 0x40},       {0x71, 0, 0x80},
+    {0x73, 0, 0x100},      {0x74, 0, 0x200},      {0x75, 0, 0x400},      {0x76, 0, 0x800},
+    {0x77, 0, 0x1000},     {0x7B, 0, 0x2000},     {0x7C, 0, 0x4000},     {0x7D, 0, 0x4000},
+    {0x7E, 0, 0x8000},     {0x85, 0, 0x10000},    {0x86, 0, 0x20000},    {0x89, 0, 0x40000},
+    {0x8C, 0, 0x80000},    {0x8E, 0, 0x100000},   {0x8F, 0, 0x200000},   {0x94, 0, 0x800000},
+    {0x95, 0, 0x1000000},  {0x97, 0, 0x2000000},  {0xD3, 0, 0x2000000},  {0x98, 0, 0x4000000},
+    {0x99, 0, 0x8000000},  {0x9A, 0, 0x10000000}, {0x9B, 0, 0x20000000}, {0x9F, 0, 0x40000000},
+    {0xA0, 0, 0x80000000}, {0xCB, 0, 0x8000000},  {0xA1, 1, 0x1},        {0xA2, 1, 0x2},
+    {0xA3, 1, 0x4},        {0xA4, 1, 0x8},        {0xA5, 1, 0x10},       {0xA6, 1, 0x20},
+    {0xA9, 1, 0x80},       {0xAB, 1, 0x100},      {0xAC, 1, 0x200},      {0xCC, 1, 0x200},
+    {0xD0, 1, 0x200},      {0xAE, 1, 0x400},      {0xB3, 1, 0x1000},     {0xB4, 1, 0x2000},
+    {0xB5, 1, 0x4000},     {0xB6, 1, 0x8000},     {0xB7, 1, 0x10000},    {0xBA, 1, 0x20000},
+    {0xBB, 1, 0x40000},    {0xBF, 1, 0x80000},    {0xC2, 1, 0x100000},   {0xC4, 1, 0x200000},
+    {0xC5, 1, 0x400000},   {0xCB, 1, 0x400000},   {0xC6, 1, 0x800000},   {0xC7, 1, 0x1000000},
+    {0xC8, 1, 0x2000000},  {0xC9, 1, 0x4000000},  {0xCF, 1, 0x8000000},  {0xD2, 1, 0x10000000},
+    {0xD5, 1, 0x20000000}, {0xD6, 1, 0x40000000}, {0xD8, 1, 0x80000000}, {0xD9, 2, 0x1},
+    {0xDA, 2, 0x2},        {0xDC, 2, 0x4},        {0xDD, 2, 0x8},        {0xDE, 2, 0x10},
+    {0xDF, 2, 0x20},       {0xE0, 2, 0x40},       {0xE1, 2, 0x80},       {0xE2, 2, 0x100},
+    {0xE4, 2, 0x200},      {0xE5, 2, 0x400},      {0xE6, 2, 0x800},      {0xE7, 2, 0x1000},
+    {0xE8, 2, 0x2000},     {0xE9, 2, 0x4000},     {0xEA, 2, 0x8000},     {0xEB, 2, 0x10000},
+    {0xED, 2, 0x20000},    {0xF0, 2, 0x40000},    {0xF1, 2, 0x80000},    {0xF2, 2, 0x100000},
+    {0xF3, 2, 0x200000},   {0xF4, 2, 0x400000},   {0xF8, 2, 0x800000},   {0xFA, 2, 0x1000000},
+};
+}  // namespace
+
+// 0x800818dc pc_apply_equip_effects: HP / MP maxima back to the base values, the config's
+// percentage modifiers (config +0x4d), then each equipped item's effect id (item field
+// 0x28): ability bits in unit +0x314.. or stat changes. Each 0x86 item (also bit 0x20000)
+// adds 20 % HP / MP max at the end, keeping the maxima from before in +0x304 / +0x308.
 void pc_apply_equip_effects(PartyUnit* u, u8* slot, u8* rec) {
   BattleGlobals& g = bg();
   Stats* s = stats_of(slot);
   s->hp_max = s->hp_base;
   s->mp_max = s->mp_base;
-  if (g.config[0x4D] != 0) todo("pc_apply_equip_effects: config stat modifiers (config +0x4d)");
+  const u8* cfg = g.config;
+  if (cfg[0x4D] != 0) {
+    const s16 hp = rds16(cfg + 0x184);
+    if (hp < 0) stat_reduce_hp_max(slot, -hp);
+    else stat_mod_hp_max(slot, hp);
+    const s16 mp = rds16(cfg + 0x186);
+    if (mp < 0) stat_reduce_mp_max(slot, -mp);
+    else stat_mod_mp_max(slot, mp);
+    stat_mod_attr(slot, 0x2C, rds16(cfg + 0x188));
+    stat_mod_attr(slot, 0x32, rds16(cfg + 0x18A));
+    stat_mod_attr_3e(slot, rds16(cfg + 0x18C));
+    stat_mod_attr(slot, 0x38, rds16(cfg + 0x18E));
+    const s16 v = s16_at(slot, 0x4A);
+    wr16(slot + 0x4A, static_cast<s16>(v + v * rds16(cfg + 0x192) / 100));
+    if (0xFF < s16_at(slot, 0x4A)) wr16(slot + 0x4A, 0xFF);
+    if (s16_at(slot, 0x4A) < 0) wr16(slot + 0x4A, 0);
+  }
+  int boosts = 0;  // 0x86 items
   u->effect_bits[0] = u->effect_bits[1] = u->effect_bits[2] = u->effect_bits[3] = 0;
   for (int i = 0; i < 7; ++i) {
     const s16 item = rds16(rec + 0xC + 2 * i);
     if (item == 0) continue;
     const s32 effect = item_data_field(item, 0x28);
-    if (effect != 0) todo("pc_apply_equip_effects: equipment effect " + std::to_string(effect));
+    if (effect < 0x69 || 0xFA < effect) continue;
+    for (const AbilityBit& b : kAbilityBits)
+      if (b.effect == effect) u->effect_bits[b.word] |= b.mask;
+    switch (effect) {
+      case 0x6F: stat_mod_hp_max(slot, 0x14); stat_mod_mp_max(slot, 0x14); break;
+      case 0x72: case 0xD1: stat_mod_mp_max(slot, 0x1E); break;
+      case 0x78: stat_mod_attr(slot, 0x2C, 0x1E); break;
+      case 0x7A: case 0x7F: stat_mod_attr(slot, 0x32, 0x1E); break;
+      case 0x80: case 0x9E: stat_mod_attr(slot, 0x32, 10); break;
+      case 0x81: case 0xBD: stat_mod_hp_max(slot, 0x14); break;
+      case 0x83: stat_mod_mp_max(slot, -100); break;
+      case 0x86: ++boosts; break;
+      case 0x87: stat_mod_attr(slot, 0x2C, 0x14); stat_mod_attr_3e(slot, -5); break;
+      case 0x88: stat_mod_attr(slot, 0x2C, 100); break;
+      case 0x91: stat_mod_attr(slot, 0x32, 0x1E); stat_mod_attr(slot, 0x2C, -0x1E); break;
+      case 0x92:
+        // +20 to +0x4a for each other member this one likes (config +0x4b + id * 12 + other
+        // id over 7), among the members loaded so far.
+        for (PartyUnit* m : g.party_units) {
+          if (m == nullptr || m == u) continue;
+          if (7 < cfg[0x4B + s->id * 0xC + m->st()->id]) stat_mod_attr_4a(slot, -0x14);
+        }
+        break;
+      case 0x96: stat_mod_attr(slot, 0x2C, 0x28); stat_mod_attr_3e(slot, 0x14); break;
+      case 0xA7: stat_mod_attr(slot, 0x38, 10); break;
+      case 0xAD: stat_mod_attr(slot, 0x2C, 0x1E); stat_mod_attr_3e(slot, -10); break;
+      case 0xB2: stat_mod_attr(slot, 0x2C, 100); stat_mod_attr_3e(slot, -0x32); break;
+      case 0xB8: stat_add_26(slot, 1); break;
+      case 0xBC: stat_mod_attr(slot, 0x2C, 10); stat_mod_attr_3e(slot, 0x1E); break;
+      case 0xBE: stat_mod_attr(slot, 0x44, 10); break;
+      case 0xCD: case 0xD4: stat_mod_hp_max(slot, 0x1E); break;
+      case 0xDB: stat_mod_hp_max(slot, -10); break;
+      case 0xEC: stat_mod_mp_max(slot, 10); break;
+      case 0xEE: stat_mod_mp_max(slot, 100); break;
+      case 0xEF: stat_mod_hp_max(slot, -1000); break;
+      case 0xF5: wr16(rec + 0xA, 0); break;
+      default: break;
+    }
+  }
+  // Last first: the maxima before each 20 % go to +0x302 + 2n / +0x306 + 2n (n = boosts..1),
+  // i.e. acc_hp_max[n - 1] / acc_mp_max[n - 1]. (Only the two accessories carry 0x86; a
+  // third would overwrite acc_mp_max[0] / effect_timer[0] on the console.)
+  for (; boosts != 0; --boosts) {
+    if (boosts <= 2) {
+      u->acc_hp_max[boosts - 1] = static_cast<s16>(s->hp_max);
+      u->acc_mp_max[boosts - 1] = s->mp_max;
+    }
+    stat_mod_hp_max(slot, 0x14);
+    stat_mod_mp_max(slot, 0x14);
   }
   s->guts[2] = s->guts[1];
   if (s->hp_max < s->hp) s->hp = s->hp_max;
@@ -582,7 +734,9 @@ int PartyUnit::skill_level(int skill) {
 }
 
 int PartyUnit::status_test(int word, u32 mask) {
-  // pc_has_effect 0x8003b8f4: the equipment ability bits.
+  // pc_has_effect 0x8003b8f4: the equipment ability bits; none while +0x135 is clear (the
+  // party AI scores its attacks that way).
+  if (status_enabled == 0) return 0;
   return (effect_bits[word & 3] & mask) != 0;
 }
 

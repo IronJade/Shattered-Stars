@@ -68,6 +68,16 @@ void average12(const s16 a[4], const s16 b[4], s32 pa, s32 pb, s16 out[4]) {
 
 // ---- Shot callbacks ------------------------------------------------------------------------
 
+// Mirrors a collider's boxes about its x position (min / max swapped).
+void mirror_boxes_x(Collider* c) {
+  for (int b = 0; b < 2; ++b) {
+    const s32 bmn = c->body_min[b][0], bmx = c->body_max[b][0];
+    c->body_min[b][0] = 2 * c->pos[0] - bmx, c->body_max[b][0] = 2 * c->pos[0] - bmn;
+    const s32 amn = c->attack_min[b][0], amx = c->attack_max[b][0];
+    c->attack_min[b][0] = 2 * c->pos[0] - amx, c->attack_max[b][0] = 2 * c->pos[0] - amn;
+  }
+}
+
 // 0x801f11a8 (move 3, the dragons): a dart with a ribbon trail; on a hit a sprite stuck to
 // the unit it met.
 void cb_dart(Shot* s) {
@@ -75,7 +85,24 @@ void cb_dart(Shot* s) {
   s->size[0] = 0x18;
   s->size[2] = 0x10;
   s->size[1] = 6;
+  // ORIGINAL BUG (original_bugs.md F15): the dart's facing is Ashton's x velocity (0 when he
+  // throws), so the darts are drawn the way facing 0 points whichever way he faces; the
+  // facing also places the attack box (mirrored with the drawing):
+  //   shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  // The fix is play-neutral: the drawing follows his facing (kept in +0x128 at the spawn),
+  // and the boxes are put back on the side the original facing gives them.
+  const s32 box_facing = s->facing[0];
+  s->facing[0] = s->p128;
   shot_draw_and_box(s, 3, 0xFFFFFFFF);
+  s->facing[0] = box_facing;
+  if (s->p128 != 0) {
+    // The facings are x-only, so the view's sign of x is the drawn facing's sign times the
+    // view matrix's: the original's mirroring follows from it.
+    const bool drawn_flip = 0 < s->view_fx;
+    const s32 view_sign = ((0 < s->view_fx) == (0 < s->p128)) ? 1 : -1;
+    const bool box_flip = s->view_fx != 0 && 0 < static_cast<s64>(box_facing) * view_sign;
+    if (drawn_flip != box_flip) mirror_boxes_x(s);
+  }
   if (g.flags != 0) return;
   s->p130 += g.frame_ticks;
   if (s->p12c == 0 && 0x28 < s->p130) s->p12c = 1;
@@ -428,8 +455,8 @@ void AshtonUnit::interrupt() {
   if (action == 0x19) spell_data_cancel_owner(this);
 }
 
-// Move 0: a swing (anim lvl); each unit hit gets a sprite by the hit's height (the first
-// point's), stronger (power 0x100 and a zoom kick) from frame 0x801f1fc4[lvl] on.
+// Move 0: a swing (anim lvl); each unit hit gets a sprite by its hit's height, stronger
+// (power 0x100 and a zoom kick) from frame 0x801f1fc4[lvl] on.
 void AshtonUnit::move0() {
   BattleGlobals& g = bg();
   const int lvl = pc_move_charge_level(this, killer_index);
@@ -451,8 +478,12 @@ void AshtonUnit::move0() {
     const int r = unit_attack_targets(this, n, found, pts, strong_at <= frame ? 0x100 : 0x80, angle, 0);
     if (r != 0 && effects[0] != nullptr) effects[0]->next_kind = 1;
     for (int i = 0; i < n; ++i) {
-      int k = pts[0].y < -0x60000 ? 3 : 1;
-      if (pts[0].y < -0x90000) k = 2;
+      // ORIGINAL BUG (original_bugs.md F17): every unit's hit sprite is picked by the first
+      // hit point's height (scratch 0x1f8002a0), not its own:
+      //   int k = pts[0].y < -0x60000 ? 3 : 1;
+      //   if (pts[0].y < -0x90000) k = 2;
+      int k = pts[i].y < -0x60000 ? 3 : 1;
+      if (pts[i].y < -0x90000) k = 2;
       if (Sprite* sp = unit_play_anim_ex(this, r != 0 ? k + 3 : k + 6, 1)) {
         if (strong_at <= frame && r != 0) {
           if (bobj_on_screen(this)) {
@@ -573,8 +604,8 @@ void AshtonUnit::move2() {
         if (Sprite* sp = unit_play_anim_ex(this, 6 < frame ? 4 : 3, 1)) {
           const Unit* f = found[0];
           sp->layer = 2;
-          const s32 lift = frame < 7 ? 0x58000 : 0x40000;
-          sprite_attach(sp, found[0], pts[0].x - f->pos[0], pos[1] - (f->pos[1] + lift), pts[0].z - f->pos[2]);
+          const s32 rise = frame < 7 ? 0x58000 : 0x40000;
+          sprite_attach(sp, found[0], pts[0].x - f->pos[0], pos[1] - (f->pos[1] + rise), pts[0].z - f->pos[2]);
           sp->facing[0] = facing[0];
           if (6 < frame) {
             const s32 sc = lvl * 0x400 + 0xC00;
@@ -623,7 +654,8 @@ void AshtonUnit::move3() {
         s->pos[2] = pos[2] + static_cast<s32>(((i & 1) != 0 ? 0x20000u : 0xFFFD0000u) | 0x8000u);
         s->vel[0] = bobj_facing_fx(this, 0x28);
         s->anim = static_cast<u16>((i >> 1) + 7);
-        s->facing[0] = vel[0];  // (+0x28: his x velocity, not his facing; see original_bugs F15)
+        s->facing[0] = vel[0];  // (+0x28: his x velocity, not his facing; original_bugs F15)
+        s->p128 = facing[0];    // (port: the facing the dart is drawn by, F15)
         pc_bind_shot(this, s, static_cast<s16>(lvl));
         pc_camera_frame_target(this, 0x18);
       }

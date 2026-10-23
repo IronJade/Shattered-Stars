@@ -271,6 +271,8 @@ target_sources(ss_game PRIVATE
   src/game/battle/spell_modules.cpp
   src/game/battle/command_menu.cpp
   src/game/battle/items.cpp
+  src/game/ap/json.cpp
+  src/game/ap/ap.cpp
   src/game/battle/shatter.cpp
   src/game/battle/spell_mod_deep_freeze.cpp
   src/game/battle/spell_mod_noah.cpp
@@ -340,7 +342,9 @@ add_library(ss_launcher STATIC
   src/launcher/config.cpp
   src/launcher/discs.cpp
   src/launcher/process.cpp
-  src/launcher/settings.cpp)
+  src/launcher/report.cpp
+  src/launcher/settings.cpp
+  src/launcher/title_art.cpp)
 target_include_directories(ss_launcher PUBLIC src)
 # It uses ss_core's disc reader, but doesn't declare it: that would move ss_core after
 # ss_platform on link lines, and ss_core's runtime needs the platform window. Programs
@@ -348,7 +352,9 @@ target_include_directories(ss_launcher PUBLIC src)
 target_link_libraries(ss_launcher PUBLIC SDL3::SDL3)
 target_compile_options(ss_launcher PRIVATE ${SS_WARNINGS})
 
-add_executable(shattered-stars src/main.cpp)
+# WIN32: a GUI program on Windows (no console window when double-clicked); it attaches
+# to the terminal it was started from (launcher/report.h). No effect elsewhere.
+add_executable(shattered-stars WIN32 src/main.cpp)
 target_link_libraries(shattered-stars PRIVATE ss_game ss_launcher)
 target_compile_options(shattered-stars PRIVATE ${SS_WARNINGS})
 if(WIN32)
@@ -429,6 +435,7 @@ target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_launcher.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_ap.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game ss_launcher)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

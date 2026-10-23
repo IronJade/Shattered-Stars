@@ -64,11 +64,10 @@ struct EnemyMarsilio : EnemyUnit {
     anim = 4;
     bind_trail(2);
     // ORIGINAL BUG (original_bugs.md E5): the step's result (hits + 1) is read as "done", so
-    // the trail ends on a hit and, when nothing is hit, stays bound to +0x1f4 into the next
-    // swing:
+    // the trail ends on the hit instead of with the swing:
     //   if (enemy_attack_step(this) != 0) end_trail();
+    // The swing's end goes idle through begin_action, whose release_effects ends the trail.
     enemy_attack_step(this);
-    if (action_kind == 0) end_trail();  // (the swing's end: enemy_attack_step went idle)
   }
 
   // 0x80088290 [28]: a slanted cut (one hit per attack).

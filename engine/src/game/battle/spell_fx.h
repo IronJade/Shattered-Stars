@@ -11,6 +11,8 @@
 // ported needed so far.
 namespace ss::game::battle {
 
+struct Sprite;
+
 // 0x8003c3b0 screen_fade_create: a full-screen tint (0x1c-byte task at priority 0, its own
 // one-entry layer in front of everything but the HUD): rgb fades by step per tick (after
 // 'hold' ticks) and the task ends at black; a negative step first fades up to white, then
@@ -73,6 +75,18 @@ s32 sv_distance_xz(const u8* a, const psyq::SVECTOR& b);
 // cleared first; the console's 0xf000-byte buffer is unbounded). Returns the count.
 int model_find_vertices_near(std::vector<NearVertex>& out, const std::vector<u8>& model, const psyq::SVECTOR* points,
                              int npoints);
+// (port) A visual-only random source for fixes that add random draws the original never made
+// (original_bugs.md S16): never the game's RNG, so the game's sequence stays the original's.
+// visual_rng_between_fixed(a, b): a << 12 + a draw in [0, (b - a) << 12), as rng_between_fixed.
+u32 visual_rng_next();
+s32 visual_rng_between_fixed(s32 a, s32 b);
+// (port) Held fixes (original_bugs.md "held"): a fix that would change play stays off; the
+// debug variable SS_HELD_FIXES="S17,S19" (or "all") turns them on to measure them.
+bool held_fix_enabled(const char* id);
+// (port) Visual-only sprites: drawn like any other, but no game logic counts them (a cast's
+// spellcast_effects_gone skips them), for fixes that add sprites the console never had.
+Sprite* visual_sprite_spawn(BObj* src, int anim);
+bool sprite_is_visual_only(const Sprite* s);
 // 0x80080c7c (#1984.0) voice_thank_healer: a healed member may thank the healer (an RNG draw
 // when it likes the healer enough; spell_shots.cpp).
 void voice_thank_healer(Unit* healer, Unit* target);

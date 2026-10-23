@@ -294,11 +294,11 @@ void explode(SpellCast* sc) {
           ++sc->step;
           if (1 < static_cast<u8>(sc->combo - 1)) {
             if (sc->combo == 4) sc->eff_power += spellcast_slot(sc->slot ^ 1)->eff_power;
-            // ORIGINAL BUG (original_bugs.md S12): the side is the caster's own flag, not
-            // flipped for combo 3 as the resident hit functions do (spell_hit_rect):
-            //   spell_damage_area(sc, stage().bounds, sc->eff_power, 4, 0x10, c->is_enemy);
+            // ORIGINAL BUG (original_bugs.md S12, held): the side is the caster's own flag,
+            // not flipped for combo 3 as the resident hit functions do (spell_hit_rect). The
+            // fix changes who is hit: held (SS_HELD_FIXES=S12 turns it on).
             int side = c->is_enemy;
-            if (sc->combo == 3) side ^= 1;
+            if (sc->combo == 3 && held_fix_enabled("S12")) side ^= 1;
             spell_damage_area(sc, stage().bounds, sc->eff_power, 4, 0x10, side);
           }
           battle_flash_set(sc, 0x80, 0x80, 0x80);

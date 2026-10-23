@@ -35,8 +35,24 @@ Unit::Unit() {
   // unit_create 0x8004dd30: the Collider boxes are zeroed and the fields set as above.
 }
 
+Unit* unit_null_target() {
+  // (world agent, S3) the kernel bytes 0x0-0x1ff as a unit: zero but +0x125 (slot) = 2.
+  static u8 stats[0x60] = {};
+  static Unit* u = [] {
+    static Unit n;
+    n.slot = 2;
+    n.is_enemy = 0;
+    n.shadow_scale = 0;
+    n.shadow_scale2 = 0;
+    n.status_enabled = 0;
+    n.stats = stats;
+    return &n;
+  }();
+  return u;
+}
+
 bool unit_is_down(const Unit* u) {
-  if (u == nullptr) return true;
+  if (u == nullptr || u == unit_null_target()) return true;  // (world agent: S3's null unit)
   return (u->st()->status & 7) != 0 || u->removed != 0;
 }
 

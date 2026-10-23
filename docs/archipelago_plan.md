@@ -155,6 +155,18 @@ What exists today that the randomizer builds on:
   is given at the right scene). The randomizer can only add to the world, never block the
   story.
 
+## Battle hooks
+
+The battle side of Phase 1 is in [docs/ap/battle.md](ap/battle.md).
+- **The tool.** `tools/ap_battles.py` writes `docs/ap/battles.json`: the encounters with
+  their monsters, bosses and escape flags; every enemy type's two drops and odds; and the 89
+  scripted battle call sites with the story flags their routines test and set.
+- **The goal.** The final boss is Indalecio, encounters 539 / 540 on map 685.
+- **The hooks.** Boss checks, the goal and the DeathLink send all hook into
+  `battle_exit_to_field` (encounter id and outcome). A received DeathLink goes through
+  `battle_party_lost`. First drops go through `roll_drops`; EXP / Fol multipliers through
+  `award_exp_money`.
+
 ## Keeping every seed finishable
 
 1. **The generator's fill is the proof.** Archipelago only accepts a placement where every

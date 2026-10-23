@@ -343,7 +343,49 @@ For each page:
   and compare with `cmpdump.sh`, `cmpnp.py` and `blockcmp.py`. Run at most three Redux
   instances at once, and build with -j8.
 
-## M8: the game can be finished (in progress; paused 2026-10-22 ~20:00 for the usage limit)
+## M8: the game can be finished (in progress; resumed 22:20)
+
+**Since the resume (22:20), state at about 23:00:**
+- Exit 2: the new launcher (now relaxed by the setup agent), plus ss-sweep3 built
+  mid-rewrite. No flag renamed. Disc 2 is `SS_EVENT_SWEEP_DISC=2` (driver `--disc 2`).
+- All my runs use `XDG_CONFIG_HOME=<scratch>` and `--no-memcard`. Earlier runs probably
+  wrote ~/.config/shattered-stars (19:19, 19:43); this was reported.
+- Step 1 is done; see `docs/notes/m8_audit.md` §1.
+- Step 3 is done for what can be set up without a save; see m8_audit.md §3:
+  - disc 1 -> 2 on map 625 works;
+  - the credits and the final screen from map 581 work;
+  - the last scene from 583 runs.
+  Frames are in `scratchpad/menu/m8/{disc625,ending,ending2}`.
+- Fixes this session:
+  - SLZ zeros for references before the output (music on about 50 maps).
+  - **V1**: notice banner, null window (notice.cpp).
+  - **V2**: actor_pop_state after the update deleted the actor; map 753 NPC 18 crashed
+    at the end of its talk (actor_base.cpp, `g_deleted_by_command`).
+  - Both are in original_bugs.md "Field events".
+- Sweep improvements:
+  - Free play needs the player unlocked (field_flags +0x26).
+  - Settling prefers depth 0 (20 frames, else 600).
+  - "stuck" (no progress for max(1200, frames / 3)) versus "timeout" (10 x frames).
+  - Every third choice in an entry is cancelled.
+  - The reload no longer closes windows.
+- ss-sweep7's `last_d*` runs are void. The top-level idle count was not reset when an
+  entry fired, so many entries ended "ok" after one frame. Fixed in event_sweep.cpp
+  (`s.idle = s.idle_top = 0` at fire).
+- Running: the final full sweeps with `bin/ss-sweep8`, `--frames 12000 --stall 600`
+  (the credits run longer than 120 s with no sweep output), into
+  `scratchpad/menu/m8/end_d1` / `end_d2`. PIDs are in `end_d1.pid` / `end_d2.pid`.
+- Then:
+  1. Analyse with `python3 scratchpad/menu/m8/analyze.py scratchpad/menu/m8/end_d1`
+     (and d2).
+  2. Replace `RESULTS_PLACEHOLDER` in m8_audit.md §2 with the counts and the remaining
+     not-ok entries; fix the "timeout" bullet there.
+  3. Tick the checklist's M8 line (docs/CHECKLIST.md) with the summary.
+  4. Report.
+- Suites on this tree (with a scratch XDG): ss_tests 78/0, ss_game_tests 82/0, smoke
+  21 PASS.
+
+(The notes from before the pause follow.)
+
 
 Task (coordinator): classify every event-script stand-in, sweep every map's events on
 both discs, play story stretches (disc 1 -> disc 2, the endings). Results and the method

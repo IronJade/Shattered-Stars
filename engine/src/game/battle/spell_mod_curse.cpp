@@ -115,7 +115,7 @@ void curse(SpellCast* sc) {
       s->pos[0] = p.x, s->pos[1] = p.y, s->pos[2] = p.z, s->pos_w = p.w;
       const s32 dy = rng_between_fixed(0x140, 400);
       s->vel[1] = 0x2000;
-      // Original quirk (original_bugs.md S15, to decide): the width term is size[0] * 4 without the << 12 (a
+      // Original quirk (original_bugs.md S15; kept by the user's decision, 2026-10-22): the width term is size[0] * 4 without the << 12 (a
       // negligible offset), not a height.
       s->pos[1] = (t->pos[1] - (t->size[0] << 2)) - dy;
       s->target = t;

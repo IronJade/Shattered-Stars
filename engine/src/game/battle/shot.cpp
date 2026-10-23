@@ -245,8 +245,28 @@ void shot_k16_projectile(Shot* s) {
       flags |= 0x8000000;
     }
   }
-  bobj_project(s);
-  bobj_anim_draw(s, g.flags);
+  // (Port) the draw-only offset (Shot::draw_offset), shrinking to nothing by draw_ticks.
+  s32 shift[3] = {};
+  if (s->draw_age < s->draw_ticks) {
+    for (int i = 0; i < 3; ++i)
+      shift[i] = static_cast<s32>(static_cast<s64>(s->draw_offset[i]) * (s->draw_ticks - s->draw_age) / s->draw_ticks);
+  }
+  auto shifted = [s, &shift](auto draw) {
+    for (int i = 0; i < 3; ++i) s->pos[i] += shift[i];
+    draw();
+    for (int i = 0; i < 3; ++i) s->pos[i] -= shift[i];
+  };
+  shifted([&] {
+    bobj_project(s);
+    bobj_anim_draw(s, g.flags);
+    // The boxes the draw just placed stay where the Shot is, so it hits as on the console.
+    for (int b = 0; b < 4; ++b) {
+      if ((s->box_mask & (1 << b)) == 0) continue;
+      s32* lo = b < 2 ? s->body_min[b] : s->attack_min[b - 2];
+      s32* hi = b < 2 ? s->body_max[b] : s->attack_max[b - 2];
+      for (int i = 0; i < 3; ++i) lo[i] -= shift[i], hi[i] -= shift[i];
+    }
+  });
   if (static_cast<s32>(s->trail_rgb) > 0) {
     s->trail = ribbon_trail_create(s, 0xC, s->trail_rgb, s->trail_rgb);
     s->trail_rgb = 0;
@@ -267,7 +287,7 @@ void shot_k16_projectile(Shot* s) {
     s32 e = s->ext_x1;
     if (e < 0) e = -e;
     const s32 v = e * 5;
-    bobj_draw_shadow(s, -v, v, -v, v, static_cast<u32>(s->p128));
+    shifted([&] { bobj_draw_shadow(s, -v, v, -v, v, static_cast<u32>(s->p128)); });
   }
   const u8 paused = (flags & 0x200000) != 0 ? (g.flags & 0xBF) : g.flags;
   if (paused != 0) return;
@@ -317,6 +337,7 @@ void shot_k16_projectile(Shot* s) {
     }
   }
   bobj_move(s, s->vel);
+  s->draw_age += g.frame_ticks;
   if ((flags & 0x400000) != 0) s->pos[1] = bobj_ground_height(s);
   if (0xF < s->p12c || s->hit_landed != 0 || (flags & 4) == 0) return;
   Unit* found[8] = {};
@@ -653,6 +674,8 @@ void shot_reset(Shot* s) {
   s->trail_rgb = 0;
   s->last_hit = nullptr;
   for (s32& v : s->user) v = 0;
+  s->draw_offset[0] = s->draw_offset[1] = s->draw_offset[2] = 0;
+  s->draw_ticks = s->draw_age = 0;
   s->lift = 0;
   s->animset = nullptr;
   s->blend = 0;

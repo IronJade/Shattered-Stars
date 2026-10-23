@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/boot/stubs.h"
 #include "game/common/disc_screen.h"
@@ -631,6 +632,7 @@ void field_update(Field* f) {
   trace_leader(f);
   event_sweep_frame(f);  // debugging: SS_EVENT_SWEEP (event_sweep.h)
   field_menu_check(f);  // menu_camp.cpp
+  ap::free_play_update();  // Archipelago (port feature): received items, the notice banner
   switch (f->state) {
     case 0:
       // Play. Every 400 steps (scaled by scene +0x68 on field maps) the walking effects

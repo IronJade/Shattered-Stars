@@ -10,12 +10,13 @@
 // Testing (never needs a click; run with SDL_VIDEO_DRIVER=offscreen):
 //   --screenshot FILE    render offscreen, write the window as a PNG after --frames N
 //                        frames (default 6) and exit; nothing is started or opened
-//   --page NAME          discs | display | sound | memcards | mods | archipelago
+//   --page NAME          discs | display | sound | controls | memcards | mods | archipelago
 //   --set KEY=VALUE      start as if the player had set KEY (not saved unless Save is pressed)
-//   --state NAME         quit-confirm | game-missing (show that dialog)
-//   --do A,B,...         actions, one per frame: autodetect, save, play, quit, close
-//                        (also SS_SETUP_SCRIPT="A,B,...", which reaches setup when the game
-//                        starts it)
+//   --state NAME         quit-confirm | game-missing (show that dialog); capture-key /
+//                        capture-pad (Controls: waiting for a key / button for Cross)
+//   --do A,B,...         actions, one per frame: autodetect, save, play, quit, close,
+//                        set:KEY=VALUE (also SS_SETUP_SCRIPT="A,B,...", which reaches setup
+//                        when the game starts it)
 //   --renderer gl|sdl    OpenGL 3.3 (default) or SDL's renderer (the fallback when OpenGL
 //                        can't start)
 //   --frames N           stop after N frames
@@ -36,6 +37,7 @@
 #include "imgui_impl_sdlrenderer3.h"
 #include "launcher/config.h"
 #include "launcher/process.h"
+#include "launcher/report.h"
 #include "setup/setup_ui.h"
 #include "util/png.h"
 
@@ -50,18 +52,20 @@ int usage() {
   return 2;
 }
 
+// "a, b;c" -> {"a", "b", "c"} (items trimmed; spaces inside an item, as in a path, stay).
 std::vector<std::string> split(const std::string& s) {
   std::vector<std::string> out;
   std::string item;
+  auto flush = [&] {
+    const auto first = item.find_first_not_of(' '), last = item.find_last_not_of(' ');
+    if (first != std::string::npos) out.push_back(item.substr(first, last - first + 1));
+    item.clear();
+  };
   for (char c : s) {
-    if (c == ',' || c == ';') {
-      if (!item.empty()) out.push_back(item);
-      item.clear();
-    } else if (c != ' ') {
-      item += c;
-    }
+    if (c == ',' || c == ';') flush();
+    else item += c;
   }
-  if (!item.empty()) out.push_back(item);
+  flush();
   return out;
 }
 
@@ -162,26 +166,47 @@ struct Gl {  // the few GL calls setup makes itself (ImGui's backend loads its o
   using Clear = void (*)(unsigned);
   using PixelStorei = void (*)(unsigned, int);
   using ReadPixels = void (*)(int, int, int, int, unsigned, unsigned, void*);
+  using GenTextures = void (*)(int, unsigned*);
+  using BindTexture = void (*)(unsigned, unsigned);
+  using TexParameteri = void (*)(unsigned, unsigned, int);
+  using TexImage2D = void (*)(unsigned, int, int, int, int, int, unsigned, unsigned, const void*);
+  using DeleteTextures = void (*)(int, const unsigned*);
   Viewport viewport = nullptr;
   ClearColor clear_color = nullptr;
   Clear clear = nullptr;
   PixelStorei pixel_store = nullptr;
   ReadPixels read_pixels = nullptr;
+  GenTextures gen_textures = nullptr;
+  BindTexture bind_texture = nullptr;
+  TexParameteri tex_parameter = nullptr;
+  TexImage2D tex_image = nullptr;
+  DeleteTextures delete_textures = nullptr;
   bool load() {
-    viewport = reinterpret_cast<Viewport>(SDL_GL_GetProcAddress("glViewport"));
-    clear_color = reinterpret_cast<ClearColor>(SDL_GL_GetProcAddress("glClearColor"));
-    clear = reinterpret_cast<Clear>(SDL_GL_GetProcAddress("glClear"));
-    pixel_store = reinterpret_cast<PixelStorei>(SDL_GL_GetProcAddress("glPixelStorei"));
-    read_pixels = reinterpret_cast<ReadPixels>(SDL_GL_GetProcAddress("glReadPixels"));
-    return viewport && clear_color && clear && pixel_store && read_pixels;
+    auto get = [](const char* name) { return SDL_GL_GetProcAddress(name); };
+    viewport = reinterpret_cast<Viewport>(get("glViewport"));
+    clear_color = reinterpret_cast<ClearColor>(get("glClearColor"));
+    clear = reinterpret_cast<Clear>(get("glClear"));
+    pixel_store = reinterpret_cast<PixelStorei>(get("glPixelStorei"));
+    read_pixels = reinterpret_cast<ReadPixels>(get("glReadPixels"));
+    gen_textures = reinterpret_cast<GenTextures>(get("glGenTextures"));
+    bind_texture = reinterpret_cast<BindTexture>(get("glBindTexture"));
+    tex_parameter = reinterpret_cast<TexParameteri>(get("glTexParameteri"));
+    tex_image = reinterpret_cast<TexImage2D>(get("glTexImage2D"));
+    delete_textures = reinterpret_cast<DeleteTextures>(get("glDeleteTextures"));
+    return viewport && clear_color && clear && pixel_store && read_pixels && gen_textures && bind_texture &&
+           tex_parameter && tex_image && delete_textures;
   }
 };
 
-constexpr unsigned kGlColorBufferBit = 0x4000, kGlRgba = 0x1908, kGlUnsignedByte = 0x1401, kGlPackAlignment = 0x0D05;
+constexpr unsigned kGlColorBufferBit = 0x4000, kGlRgba = 0x1908, kGlUnsignedByte = 0x1401, kGlPackAlignment = 0x0D05,
+                   kGlUnpackAlignment = 0x0CF5, kGlTexture2D = 0x0DE1, kGlMinFilter = 0x2801, kGlMagFilter = 0x2800,
+                   kGlLinear = 0x2601, kGlWrapS = 0x2802, kGlWrapT = 0x2803, kGlClampToEdge = 0x812F,
+                   kGlRgba8 = 0x8058;
 
 }  // namespace
 
 int main(int argc, char** argv) {
+  launcher::attach_console(false);  // started from a terminal: messages go there
   setup::Options options;
   std::string screenshot, renderer_choice = "gl";
   int frames = 0;
@@ -219,7 +244,7 @@ int main(int argc, char** argv) {
 
   SDL_SetAppMetadata("Shattered Stars Setup", nullptr, "org.shatteredstars.setup");
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
-    std::fprintf(stderr, "setup: SDL_Init: %s\n", SDL_GetError());
+    launcher::fatal(std::string("Setup could not start (SDL_Init: ") + SDL_GetError() + ").");
     return quit_code;
   }
   float scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
@@ -259,7 +284,7 @@ int main(int argc, char** argv) {
     window = SDL_CreateWindow(title, width, height, base_flags);
     if (window) renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
-      std::fprintf(stderr, "setup: cannot open a window: %s\n", SDL_GetError());
+      launcher::fatal(std::string("Setup could not open its window (") + SDL_GetError() + ").");
       SDL_Quit();
       return quit_code;
     }
@@ -296,27 +321,55 @@ int main(int argc, char** argv) {
     ImGui_ImplSDLRenderer3_Init(renderer);
   }
 
+  // Pictures (the title logo from the player's disc), filtered linearly when scaled.
+  setup::Textures textures;
+  if (gl_context) {
+    textures.create = [&gl](const u32* rgba, int w, int h) -> u64 {
+      unsigned id = 0;
+      gl.gen_textures(1, &id);
+      gl.bind_texture(kGlTexture2D, id);
+      gl.tex_parameter(kGlTexture2D, kGlMinFilter, static_cast<int>(kGlLinear));
+      gl.tex_parameter(kGlTexture2D, kGlMagFilter, static_cast<int>(kGlLinear));
+      gl.tex_parameter(kGlTexture2D, kGlWrapS, static_cast<int>(kGlClampToEdge));
+      gl.tex_parameter(kGlTexture2D, kGlWrapT, static_cast<int>(kGlClampToEdge));
+      gl.pixel_store(kGlUnpackAlignment, 4);
+      gl.tex_image(kGlTexture2D, 0, static_cast<int>(kGlRgba8), w, h, 0, kGlRgba, kGlUnsignedByte, rgba);
+      return id;
+    };
+    textures.destroy = [&gl](u64 id) {
+      const unsigned name = static_cast<unsigned>(id);
+      gl.delete_textures(1, &name);
+    };
+  } else {
+    textures.create = [renderer](const u32* rgba, int w, int h) -> u64 {
+      SDL_Texture* t = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
+      if (!t) return 0;
+      SDL_UpdateTexture(t, nullptr, rgba, w * 4);
+      SDL_SetTextureScaleMode(t, SDL_SCALEMODE_LINEAR);
+      SDL_SetTextureBlendMode(t, SDL_BLENDMODE_BLEND);
+      return static_cast<u64>(reinterpret_cast<uintptr_t>(t));
+    };
+    textures.destroy = [](u64 id) { SDL_DestroyTexture(reinterpret_cast<SDL_Texture*>(static_cast<uintptr_t>(id))); };
+  }
+
   int exit_code = 0;
   {
-    setup::App app(window, fonts, options);
+    setup::App app(window, fonts, textures, options);
     int frame = 0, busy = 8;  // frames still to draw after the last event
     for (bool running = true; running;) {
       SDL_Event e;
       bool any = false;
-      if (screenshot.empty() && busy <= 0 && SDL_WaitEventTimeout(&e, 250)) {
+      auto handle = [&](const SDL_Event& ev) {
         any = true;
-        ImGui_ImplSDL3_ProcessEvent(&e);
-        if (e.type == SDL_EVENT_QUIT || (e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(window)))
+        if (app.capture_event(ev)) return;  // a key or gamepad button being bound (Controls)
+        ImGui_ImplSDL3_ProcessEvent(&ev);
+        if (ev.type == SDL_EVENT_QUIT ||
+            (ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && ev.window.windowID == SDL_GetWindowID(window)))
           app.request_close();
-        if (e.type == SDL_EVENT_WINDOW_FOCUS_GAINED) app.forget_file_checks();
-      }
-      while (SDL_PollEvent(&e)) {
-        any = true;
-        ImGui_ImplSDL3_ProcessEvent(&e);
-        if (e.type == SDL_EVENT_QUIT || (e.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && e.window.windowID == SDL_GetWindowID(window)))
-          app.request_close();
-        if (e.type == SDL_EVENT_WINDOW_FOCUS_GAINED) app.forget_file_checks();
-      }
+        if (ev.type == SDL_EVENT_WINDOW_FOCUS_GAINED) app.forget_file_checks();
+      };
+      if (screenshot.empty() && busy <= 0 && SDL_WaitEventTimeout(&e, 250)) handle(e);
+      while (SDL_PollEvent(&e)) handle(e);
       busy = any ? 8 : busy - 1;
       if (screenshot.empty() && (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)) {
         SDL_Delay(50);

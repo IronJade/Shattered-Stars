@@ -16,6 +16,7 @@
 #include "game/battle/loaders.h"
 #include "game/battle/render.h"
 #include "game/battle/spells.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/sprite.h"
 #include "game/battle/unit.h"
 #include "game/battle/window.h"
@@ -654,7 +655,9 @@ int SpellMenu::confirm() {
       // ORIGINAL BUG (original_bugs.md S20): a spell on the whole party keeps the member's
       // current target; with none (no action yet this battle) the SpellCast is dropped after
       // the MP is paid (spellcast_retarget keeps the null target for a party caster), so the
-      // spell does nothing. Fixed: the caster stands in.
+      // spell does nothing:
+      //   (u->target left as it is)
+      // Fixed (user, 2026-10-22): with no current target the caster stands in.
       if (u->target == nullptr) u->target = u;
       return 1;
     default: return 1;

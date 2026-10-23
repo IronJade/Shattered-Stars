@@ -132,7 +132,8 @@ void voice_update() {
       if (h != 0xFFFFFFFFu) {
         // The console keeps the handle's low byte (the buffer address's) where sound_handle_
         // active later reads a sound slot, so a voice counts as playing only while its entry
-        // stays in the slot; (port) the address bits are 0 here, with the same result.
+        // stays in the slot; (port) the address bits are 0 here, with the same result. Kept as
+        // the original by the user's decision (original_bugs.md E15).
         v.clip_byte = static_cast<u8>(h);
         v.clip_number = effect_number(static_cast<int>(h >> 16) & 0xFF);
         v.flags = static_cast<u8>((v.flags & 0xFD) | 4);

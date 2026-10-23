@@ -434,7 +434,10 @@ void field_update_equip_report(Field* f) {
     if (g_report_opened == 0xFF) {
       sound_play_sfx(g.sound, 0xE, 0, 0x7F40);
       const u8* sys = g.system_strings;
-      msg_window_open(msg_system(), 1, 2, 0x26, 0xC, sys + rd32(sys + 8), 6, 1);
+      // ORIGINAL BUG (original_bugs.md W1): the window is 0xc lines high, so the fifth
+      // attribute row (MAG, at y + 0x71 + 4 * 0xc) falls under its clip:
+      //   msg_window_open(msg_system(), 1, 2, 0x26, 0xC, sys + rd32(sys + 8), 6, 1);
+      msg_window_open(msg_system(), 1, 2, 0x26, 0xD, sys + rd32(sys + 8), 6, 1);
       msg_window_resize(msg_system(), 6, 0x26, 1);
       if (MsgWindow* w = msg_window(6)) {
         w->draw_callback = report_draw;

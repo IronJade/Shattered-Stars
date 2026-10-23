@@ -152,11 +152,13 @@ void draw_funnel(SpellCast* sc) {
   s32 c[4][4] = {};
   for (int k = 0; k < 6; ++k) {
     const s32 r0 = inner / 6, r1 = outer / 6;
-    // Original quirk (original_bugs.md S18, to decide): the target's y is already 20.12 and is shifted again, so
-    // the funnel is placed right only while the target stands at y 0 (the usual ground).
+    // ORIGINAL BUG (original_bugs.md S18): the target's y is already 20.12 and is shifted
+    // again, so the funnel is placed right only while the target stands at y 0:
+    //   y0 = mul_lo(ty + (6 - k) * -0x70, 0x1000);  y1 = mul_lo(ty + (5 - k) * -0x70, 0x1000);
+    // Fixed (user, 2026-10-22): the target's y as it is (visual only).
     const s32 ty = sc->target->pos[1];
-    const s32 y0 = mul_lo(ty + (6 - k) * -0x70, 0x1000);
-    const s32 y1 = mul_lo(ty + (5 - k) * -0x70, 0x1000);
+    const s32 y0 = ty + mul_lo((6 - k) * -0x70, 0x1000);
+    const s32 y1 = ty + mul_lo((5 - k) * -0x70, 0x1000);
     const s32 turn0 = sc->s24 + (k * 0x8000) / 360;
     const s32 turn1 = sc->s24 + turn_hi / 360;
     for (int j = 0; j < 16; ++j) {

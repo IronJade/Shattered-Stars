@@ -13,6 +13,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/enemy_support.h"
 #include "game/battle/render.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/spell_modules.h"
 #include "game/battle/spellcast.h"
 #include "game/battle/sprite.h"
@@ -54,8 +55,9 @@ void draw_mist(SpellCast* sc) {
 }
 
 // 0x8008cc00: the handler (power: the roll's chance, power / 16 + 180).
-// Original quirk (original_bugs.md S19, to decide): it never calls spellcast_timer_tick, so
-// the wait of step 0 holds nothing (step 1 runs on the next frame).
+// ORIGINAL BUG (original_bugs.md S19, held): it never calls spellcast_timer_tick, so the wait
+// of step 0 holds nothing (step 1 runs on the next frame). The fix lengthens the cast, which
+// the 60-second battles' time limit counts: held; SS_HELD_FIXES=S19 turns it on to measure.
 // 0: dim, flash 0x40, the camera over the caster's side, wait 30. 1 (data loaded): the mist
 // from 0, a hum. 2: it thickens (4 a tick to 0x80); a wisp round the target every 6 -
 // power / 30 ticks (at least 2); after 120 ticks the hum fades. 3: the mist fades. 4:
@@ -65,9 +67,11 @@ void deep_mist(SpellCast* sc) {
   BattleGlobals& g = bg();
   Unit* c = sc->caster;
   if (static_cast<u32>(sc->step - 2) < 2) draw_mist(sc);
-  // ORIGINAL BUG (original_bugs.md S11): no pause test: the steps run on during the pause
-  // (g_battle_flags 4), rolls and sprites included.
-  if ((g.flags & 4) != 0) return;
+  // ORIGINAL BUG (original_bugs.md S11, held): no pause test: the steps run on during the
+  // pause (g_battle_flags 4), rolls and sprites included. The fix moves those draws, so the
+  // game's RNG sequence changes: held (SS_HELD_FIXES=S11 turns it on).
+  if (held_fix_enabled("S11") && (g.flags & 4) != 0) return;
+  if (held_fix_enabled("S19") && spellcast_timer_tick(sc) != 0) return;
   switch (sc->step) {
     case 0:
       spellcast_dim_begin(sc, c->is_enemy);

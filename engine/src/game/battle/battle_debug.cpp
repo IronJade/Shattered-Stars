@@ -1,5 +1,6 @@
 #include "game/battle/battle_debug.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -11,11 +12,14 @@
 #include "disc/slz.h"
 #include "game/battle/battle.h"
 #include "game/battle/camera.h"
+#include "game/battle/killer.h"
 #include "game/battle/result.h"
+#include "game/battle/shot.h"
 #include "game/battle/unit.h"
 #include "game/boot/sound.h"
 #include "game/boot/rng.h"
 #include "game/common/battle_setup.h"
+#include "game/field/characters.h"
 #include "game/field/encounter.h"
 #include "game/field/field.h"
 #include "game/title/title_program.h"
@@ -49,7 +53,35 @@ bool copy_handoff(const std::vector<u8>& ram, int tag, size_t bytes) {
 
 }  // namespace
 
+void battle_debug_trail(const RibbonTrail* t) {
+  static int lo = -1, hi = -1;
+  static const bool on = [] {
+    const char* v = std::getenv("SS_BATTLE_TRAIL");
+    return v != nullptr && std::sscanf(v, "%i:%i", &lo, &hi) == 2;
+  }();
+  if (!on) return;
+  const BattleGlobals& g = bg();
+  if (g.battle_frames < lo || hi < g.battle_frames) return;
+  int idx = -1;
+  for (int i = 0; i < 160; ++i)
+    if (static_cast<const BObj*>(shot_at(i)) == t->source) idx = i;
+  const auto* src = t->source;
+  const Shot* sh = idx >= 0 ? shot_at(idx) : nullptr;
+  const int h1 = (t->head + 1) & 0x1F;
+  std::fprintf(stderr, "[trail] b%05d %p len %d head %d stop %d src %d kind %d w %d h %d a1 %d p1 %d %d %d\n",
+               g.battle_frames, static_cast<const void*>(t), t->length, t->head, t->stop, idx,
+               sh != nullptr ? sh->kind : -1, src != nullptr ? src->size[0] : 0, src != nullptr ? src->size[1] : 0,
+               t->alpha[h1], t->hist[h1][0], t->hist[h1][1], t->hist[h1][2]);
+}
+
 void battle_debug_frame() {
+  static const bool god = std::getenv("SS_BATTLE_GOD") != nullptr;
+  if (god) {
+    // Debugging (sweeps): the standing party members' HP back to the maximum every frame,
+    // so long fights run on to their end.
+    for (PartyUnit* u : bg().party_units)
+      if (u != nullptr && u->st()->hp > 0) u->st()->hp = u->st()->hp_max;
+  }
   static const bool cam_on = std::getenv("SS_BATTLE_CAM") != nullptr;
   if (cam_on) {
     // The camera / clock fields explore.lua's BW_DENSE logs (in-frame values, before the
@@ -85,6 +117,25 @@ void battle_debug_frame() {
     };
     for (int i = 0; i < 8; ++i) line("e", i, bg().enemy_units[i]);
     for (int i = 0; i < 4; ++i) line("p", i, bg().party_units[i]);
+  }
+  static int shot_lo = -1, shot_hi = -1;
+  static const bool shot_init = [] {
+    if (const char* b = std::getenv("SS_BATTLE_SHOTS")) std::sscanf(b, "%d:%d", &shot_lo, &shot_hi);
+    return true;
+  }();
+  (void)shot_init;
+  if (shot_lo >= 0 && bg().battle_frames >= shot_lo && bg().battle_frames <= shot_hi) {
+    // Every live Shot (explore.lua's BW_SHOTS): index, kind, position, velocity, hit flag.
+    std::string line;
+    char buf[160];
+    for (int i = 0; i < 160; ++i) {
+      const Shot* s = shot_at(i);
+      if (s == nullptr || s->kind == 0) continue;
+      std::snprintf(buf, sizeof buf, "%s%d:k%x x%d y%d z%d v%d,%d,%d h%d", line.empty() ? "" : " | ", i, s->kind,
+                    s->pos[0] >> 12, s->pos[1] >> 12, s->pos[2] >> 12, s->vel[0], s->vel[1], s->vel[2], s->hit_landed);
+      line += buf;
+    }
+    std::fprintf(stderr, "[battle] shots v%d %s\n", bg().battle_frames, line.c_str());
   }
   static const bool on = std::getenv("SS_BATTLE_RNG") != nullptr;
   if (!on) return;
@@ -130,16 +181,21 @@ int battle_debug_frame_wait(int n) {
 }
 
 void battle_debug_exit() {
-  const char* path = std::getenv("SS_BATTLE_DUMP");
+  const BattleGlobals& g = bg();
   std::fprintf(stderr, "[battle] exit: rng draws %u\n", rng_draws());
-  if (path == nullptr || *path == 0) return;
-  std::ofstream out(path, std::ios::binary);
-  const std::pair<int, size_t> blocks[] = {{2, 0x2A0}, {3, 0x300}, {4, 0x680}, {6, 0xC28}};
-  for (const auto& [tag, bytes] : blocks) {
-    const auto* p = static_cast<const char*>(handoff_get(&get_system()->handoff, tag));
-    if (p != nullptr) out.write(p, static_cast<std::streamsize>(bytes));
+  std::fprintf(stderr, "[battle] exit: encounter %d outcome %d battle frames %d fight frames %d\n", g.encounter_id,
+               g.outcome, g.battle_frames, g.fight_frames);
+  if (const char* path = std::getenv("SS_BATTLE_DUMP"); path != nullptr && *path != 0) {
+    std::ofstream out(path, std::ios::binary);
+    const std::pair<int, size_t> blocks[] = {{2, 0x2A0}, {3, 0x300}, {4, 0x680}, {6, 0xC28}};
+    for (const auto& [tag, bytes] : blocks) {
+      const auto* p = static_cast<const char*>(handoff_get(&get_system()->handoff, tag));
+      if (p != nullptr) out.write(p, static_cast<std::streamsize>(bytes));
+    }
+    std::fprintf(stderr, "[battle] handoffs 2/3/4/6 written to %s\n", path);
   }
-  std::fprintf(stderr, "[battle] handoffs 2/3/4/6 written to %s\n", path);
+  // SS_BATTLE_QUIT_AT_EXIT=1: the run ends with the battle (sweeps don't go on to the field).
+  if (std::getenv("SS_BATTLE_QUIT_AT_EXIT") != nullptr) throw runtime::QuitRequested{};
 }
 
 void battle_debug_set_end(const std::string& end) {
@@ -176,6 +232,21 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
   auto* party = static_cast<u8*>(handoff_get(reg, 3));
   auto* records = static_cast<u8*>(handoff_get(reg, 4));
   party_slot_init(party, records, 1);
+  if (const char* list = std::getenv("SS_BATTLE_PARTY"); list != nullptr && *list != 0) {
+    // Debugging: "1,2,3,4" fills party slots 0..3 with those characters' starting data, as
+    // the field's party_slot_init does when one joins (0 leaves a slot empty).
+    int ids[4] = {0, 0, 0, 0};
+    const int n = std::sscanf(list, "%i,%i,%i,%i", &ids[0], &ids[1], &ids[2], &ids[3]);
+    for (int i = 0; i < 4; ++i) {
+      if (i < n && ids[i] >= 1 && ids[i] <= 12) {
+        field::party_slot_init(party + i * 0x60, records + i * 0xD0, ids[i]);
+      } else if (i < n || i > 0) {
+        std::memset(party + i * 0x60, 0, 0x60);
+        std::memset(records + i * 0xD0, 0, 0xD0);
+      }
+    }
+    std::fprintf(stderr, "[battle] party %d %d %d %d\n", ids[0], ids[1], ids[2], ids[3]);
+  }
   auto* setup = new BattleSetup;
   bool have_setup = false;
   if (const char* path = std::getenv("SS_BATTLE_RAM"); path != nullptr && *path != 0) {
@@ -206,9 +277,26 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
     // bound globals).
     field::field_bind_system(nullptr);
     field::battle_build_load_list(setup, encounter, stage);
+    // The field always has the right disc in; here the boot disc may lack the battle's
+    // entries (disc 2's areas), so the other disc goes in, as the field's disc swap does.
+    auto lacks_entries = [&]() {
+      for (int i = 0; i < 12 && setup->id(i) != 0; ++i)
+        if (setup->entry(i) > 0 && sys->loader.entry_size(setup->entry(i)) == 0) return setup->entry(i);
+      return 0;
+    };
+    if (const int missing = lacks_entries(); missing != 0) {
+      const int other = sys->loader.entry_size(5 + 2) != 0 ? 1 : 2;  // marker entry 5 + disc
+      const bool swapped = loader_insert_disc(sys->loader, other);
+      std::fprintf(stderr, "[battle] entry %d is not on this disc: disc %d %s\n", missing, other,
+                   swapped && lacks_entries() == 0 ? "inserted" : "does not have it either");
+    }
   }
-  if (std::getenv("SS_BATTLE_STRONG") != nullptr) {
-    // Debugging: a sturdy party (x10 HP, x8 attack) to reach the victory path.
+  if (const char* strong = std::getenv("SS_BATTLE_STRONG"); strong != nullptr) {
+    // Debugging: a sturdy party (x10 HP, x8 attack; "H:A[:D]" gives other factors, D for
+    // defence) to reach the victory path. A scaled HP stops at the game's 9999 (the party AI
+    // assumes it: pc_ai_choose_heal starts its search below 10000).
+    int hp_mul = 10, atk_mul = 8, def_mul = 1;
+    if (std::strchr(strong, ':') != nullptr) std::sscanf(strong, "%i:%i:%i", &hp_mul, &atk_mul, &def_mul);
     for (int i = 0; i < 4; ++i) {
       u8* slot = party + i * 0x60;
       s16 id;
@@ -217,13 +305,19 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
       for (int off : {0x14, 0x18, 0x1C}) {
         s32 v;
         std::memcpy(&v, slot + off, 4);
-        v *= 10;
+        v = std::min(v * hp_mul, 9999);
         std::memcpy(slot + off, &v, 4);
       }
       for (int off : {0x2A, 0x2C, 0x2E}) {
         s16 v;
         std::memcpy(&v, slot + off, 2);
-        v = static_cast<s16>(v * 8);
+        v = static_cast<s16>(std::min(v * atk_mul, 0x7FFF));
+        std::memcpy(slot + off, &v, 2);
+      }
+      for (int off : {0x30, 0x32, 0x34}) {
+        s16 v;
+        std::memcpy(&v, slot + off, 2);
+        v = static_cast<s16>(std::min(v * def_mul, 0x7FFF));
         std::memcpy(slot + off, &v, 2);
       }
     }

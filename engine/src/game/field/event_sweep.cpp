@@ -1,5 +1,6 @@
 #include "game/field/event_sweep.h"
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -7,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "game/boot/loader.h"
 #include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/message.h"
@@ -32,7 +34,8 @@ struct Sweep {
   int frame_limit = 3600;
   int skip = 0;
   int timer = 0;
-  int idle = 0;
+  int idle = 0;         // frames of free play in a row
+  int idle_top = 0;     // ... with the main thread at the top level (depth 0)
   int next = 0;      // the entry to fire next
   bool started = false;  // the current entry left free play at least once
   bool have_snapshot = false;
@@ -41,6 +44,9 @@ struct Sweep {
   u32 standins = 0, unknown = 0;
   const char* standin_name = nullptr;
   int last_map_seen = -1;
+  u32 choices = 0;   // choices answered in the current entry (every third is cancelled)
+  u64 signature = 0; // what the script, the field and the windows were doing
+  int still = 0;     // frames since it last changed
 };
 Sweep g_sweep;
 
@@ -60,7 +66,7 @@ void say(const char* fmt, ...) {
   std::fflush(stderr);
 }
 
-// Free play: the player has control and no event, menu, fade or window is running. The
+// Free play: the player has control (not locked) and no event, menu, fade or window is running. The
 // map's main thread may be inside a function (some maps run a loop while the player walks);
 // events start then too, as vm_thread_update only looks at control, the active trigger and
 // a running talk.
@@ -68,7 +74,7 @@ bool idle(const Field* f) {
   const ScriptCtx* ctx = g_script_vm;
   if (f->state != 0 || ctx == nullptr) return false;
   if (ctx->active_trigger != -1 || ctx->talk_active != 0 || ctx->wait_state != 0 || ctx->sync != 0) return false;
-  if (field_state_s16(0x10) == -1) return false;
+  if (field_state_s16(0x10) == -1 || globals().field_flags[0x26] != 0) return false;  // no control, or locked (ext 0x7b)
   if (fade_is_active(field_fade(), -1)) return false;
   if (msg_system() != nullptr) {
     const int status = msg_window_status(msg_system(), -1);
@@ -111,7 +117,10 @@ void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
     }
   }
   if (waiting || (now % 64 == 0 && field_state_s16(0x10) == -1)) {
-    press_at(now + 1, 0x40);  // Cross
+    // A choice takes Cross (the first option), but every third one Circle (cancel), so
+    // that topic menus that come back after each answer are left in the end.
+    const bool choice = g_script_vm != nullptr && g_script_vm->wait_state == 9;
+    press_at(now + 1, choice && ++g_sweep.choices % 3 == 0 ? 0x20 : 0x40);
     last_press = now;
   }
 }
@@ -182,6 +191,7 @@ void fire(const Entry& e) {
   g_sweep.standins = g_vm_standins.calls;
   g_sweep.unknown = g_vm_stats.unknown_ops;
   g_sweep.standin_name = nullptr;
+  g_sweep.choices = 0;
   say("entry %d %c%d code %d start", g_sweep.next, e.kind, e.index, e.code);
   switch (e.kind) {
     case 'T':
@@ -219,11 +229,33 @@ void fire(const Entry& e) {
   }
 }
 
+// A digest of everything that moves while an event runs: the map, the field state, the
+// script thread's position and waits, and every window's state and text position. A
+// long scene keeps changing it; a stuck one does not.
+u64 progress_signature(const Field* f) {
+  u64 h = 1469598103934665603ull;
+  auto mix = [&h](u64 v) { h = (h ^ v) * 1099511628211ull; };
+  mix(static_cast<u64>(current_map()));
+  mix(static_cast<u64>(f->state));
+  if (const ScriptCtx* ctx = g_script_vm) {
+    mix(static_cast<u64>(ctx->ip - ctx->code));
+    mix(static_cast<u64>(ctx->wait_state));
+    mix(static_cast<u64>(ctx->depth));
+  }
+  for (int i = 0; i < kMsgWindowCount; ++i) {
+    if (MsgWindow* w = msg_window(i)) {
+      mix(static_cast<u64>(i) << 8 | static_cast<u64>(w->state));
+      mix(static_cast<u64>(w->page_read) << 16 | static_cast<u64>(w->page_offset));
+    }
+  }
+  return h;
+}
+
 std::string vm_state(const Field* f) {
   const ScriptCtx* ctx = g_script_vm;
   char line[256];
-  std::snprintf(line, sizeof line, "field state %d wait_state %d param %d ip %ld depth %d trigger %d talk %d control %d",
-                f->state, ctx ? ctx->wait_state : -1, ctx ? ctx->wait_param : -1,
+  std::snprintf(line, sizeof line, "on map %d field state %d wait_state %d param %d ip %ld depth %d trigger %d talk %d control %d",
+                current_map(), f->state, ctx ? ctx->wait_state : -1, ctx ? ctx->wait_param : -1,
                 ctx && ctx->ip && ctx->code ? static_cast<long>(ctx->ip - ctx->code) : -1L, ctx ? ctx->depth : -1,
                 ctx ? ctx->active_trigger : -1, ctx ? ctx->talk_active : -1, field_state_s16(0x10));
   std::string out = line;
@@ -244,7 +276,7 @@ void finish_entry(const Field* f, const char* result) {
   const Entry& e = g_sweep.entries[static_cast<size_t>(g_sweep.next)];
   say("entry %d %c%d end %s frames %d standins %u%s%s unknown_ops %u%s", g_sweep.next, e.kind, e.index, result,
       g_sweep.timer, standins, standins ? " last " : "", standins && g_vm_standins.last ? g_vm_standins.last : "", unknown,
-      std::strcmp(result, "timeout") == 0 ? (" | " + vm_state(f)).c_str() : "");
+      std::strcmp(result, "timeout") == 0 || std::strcmp(result, "stuck") == 0 ? (" | " + vm_state(f)).c_str() : "");
   ++g_sweep.next;
 }
 
@@ -253,7 +285,8 @@ void finish_entry(const Field* f, const char* result) {
 // in just before field_update's state 1 loads the map, since the thread's stacks live in
 // the state block.
 void reload(Field* f) {
-  if (MsgSystem* msg = msg_system()) msg_window_destroy(msg, -1);
+  // (The map load closes the windows; closing them here, under a notice banner that is
+  // showing, reached original_bugs.md V1.)
   if (ScriptCtx* ctx = g_script_vm) ctx->wait = 1 << 20;
   field_state_set_s16(0x10, -1);
   f->pending_map = g_sweep.map;
@@ -261,7 +294,7 @@ void reload(Field* f) {
   f->state = 1;
   g_sweep.phase = Phase::Reload;
   g_sweep.timer = 0;
-  g_sweep.idle = 0;
+  g_sweep.idle = g_sweep.idle_top = 0;
 }
 
 }  // namespace
@@ -279,12 +312,27 @@ void event_sweep_frame(Field* f) {
     if (const char* v = std::getenv("SS_EVENT_SWEEP_SKIP")) s.skip = std::atoi(v);
     s.map = current_map();
     s.phase = Phase::Settle;
-    say("start (frame limit %d, skip %d)", s.frame_limit, s.skip);
+    // SS_EVENT_SWEEP_DISC=2: play as on disc 2 (config +0x4c, as script B 0x6a sets it, and
+    // disc 2's archive, which --disc2 / SS_DISC2 registers).
+    if (const char* v = std::getenv("SS_EVENT_SWEEP_DISC"); v != nullptr && std::atoi(v) == 2) {
+      globals().config[0x4C] = 1;
+      if (!loader_insert_disc(*globals().loader, 2)) say("disc 2 is not available (set SS_DISC2)");
+    }
+    say("start (frame limit %d, skip %d, disc %d)", s.frame_limit, s.skip, globals().config[0x4C] + 1);
   }
   if (s.phase == Phase::Off || s.phase == Phase::Done) return;
   ++s.timer;
   const bool is_idle = idle(f);
   const int map = current_map();
+  // Settled: 20 frames of free play with the main thread at the top level, or 600 with it
+  // inside a function (maps whose main thread loops while the player walks). The first
+  // keeps the sweep from firing into an intro scene that has not locked the player yet.
+  const bool top = g_script_vm != nullptr && g_script_vm->depth == 0;
+  auto count = [&](bool on) {
+    s.idle = on ? s.idle + 1 : 0;
+    s.idle_top = on && top ? s.idle_top + 1 : 0;
+    return s.idle_top >= 20 || s.idle >= 600;
+  };
   if (map != s.last_map_seen) {
     if (s.last_map_seen != -1) say("now on map %d", map);
     s.last_map_seen = map;
@@ -304,8 +352,7 @@ void event_sweep_frame(Field* f) {
         reload(f);
         return;
       }
-      s.idle = is_idle && map == s.map ? s.idle + 1 : 0;
-      if (s.idle >= 20) {
+      if (count(is_idle && map == s.map)) {
         if (!s.have_snapshot) {
           say("settled after %d frames", s.timer);
           snapshot();
@@ -360,7 +407,8 @@ void event_sweep_frame(Field* f) {
       fire(s.entries[static_cast<size_t>(s.next)]);
       s.phase = Phase::Run;
       s.timer = 0;
-      s.idle = 0;
+      s.still = 0;
+      s.idle = s.idle_top = 0;
       s.started = false;
       schedule_input(1);
       return;
@@ -379,12 +427,19 @@ void event_sweep_frame(Field* f) {
       } else if (map != s.map && is_idle) {
         moved = "map " + std::to_string(map);
         result = moved.c_str();
-      } else if (is_idle && map == s.map) {
-        if (++s.idle >= 20) result = "ok";
-      } else {
-        s.idle = 0;
+      } else if (count(is_idle && map == s.map)) {
+        result = "ok";
       }
-      if (result == nullptr && s.timer > s.frame_limit) result = "timeout";
+      // Stuck: nothing moved for frame_limit / 3 frames (at least 1200); a long scene that
+      // keeps moving runs to 10 times frame_limit.
+      if (const u64 sig = progress_signature(f); sig != s.signature) {
+        s.signature = sig;
+        s.still = 0;
+      } else {
+        ++s.still;
+      }
+      if (result == nullptr && s.still > std::max(1200, s.frame_limit / 3)) result = "stuck";
+      if (result == nullptr && s.timer > s.frame_limit * 10) result = "timeout";
       if (result == nullptr) return;
       finish_entry(f, result);
       if (f->state == 6 || f->state == 7) f->state = 0;  // take the game over back

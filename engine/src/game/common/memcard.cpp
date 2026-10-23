@@ -161,6 +161,9 @@ void memcard_set_images(const char* slot1_path, const char* slot2_path) {
   card_set_inserted(1, !g_images[1].empty());
 }
 
+// [world agent: Archipelago's save sidecar, game/ap]
+const std::string& memcard_image(int slot) { return g_images[slot == 1 ? 1 : 0]; }
+
 MemoryCard* memcard_create() {
   auto* mc = new MemoryCard{};
   // Driver constructor (title 0x800368ec): card events, then both slots start with a check.

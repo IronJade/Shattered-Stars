@@ -1,11 +1,14 @@
 // Spell code module 2a9c041ec7 (entries 0x915 / 0x916): Foehn (spell 0xa), a wall of wind
 // sweeping the field. One function at 0x8008cc00 (block 0, 2236 bytes).
 
+#include <cstdlib>
+
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/enemy_support.h"
 #include "game/battle/render.h"
 #include "game/battle/spellcast.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/spell_modules.h"
 #include "game/battle/sprite.h"
 #include "game/battle/unit.h"
@@ -118,19 +121,28 @@ void foehn(SpellCast* sc) {
       // ORIGINAL BUG (original_bugs.md S1): the lists are swapped: side 0 (a party caster)
       // walks 8 entries from the party list (the 4 members, then monsters 0-3), side 1 (a
       // monster) the first 4 monsters, so the effects play on the caster's own side.
-      //   const int count = side == 0 ? 8 : 4;
-      //   Unit* u = side == 0 ? (i < 4 ? party_units[i] : enemy_units[i - 4]) : enemy_units[i];
+      // Fixed visually (user, 2026-10-22): the console's walk stays, with its spawns and
+      // random draws, but its leaves are drawn at zero size; the sounds and the leaves go to
+      // the swept side, the leaves visual-only (visual_rng_*, not counted by
+      // spellcast_effects_gone), so the game's RNG and the spell's length stay the original's.
+      // SS_ORIGINAL_S1=1 shows the original leaves.
+      static const bool original = std::getenv("SS_ORIGINAL_S1") != nullptr;
       const int count = side == 0 ? 8 : 4;
+      const s32 big = sc->power * 10;
+      s32 n = sc->power / 0x28 + 1;
+      if (4 < n) n = 4;
+      auto swept = [&](const Unit* u) {
+        return !unit_is_down(u) && u->pos[2] < sc->s2c && sc->s2c + g.frame_ticks * -0x3C000 <= u->pos[2];
+      };
       for (int i = 0; i < count; ++i) {
-        Unit* u = side == 0 ? static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i)])
-                            : static_cast<Unit*>(g.party_units[static_cast<size_t>(i)]);
-        if (unit_is_down(u)) continue;
-        if (!(u->pos[2] < sc->s2c && sc->s2c + g.frame_ticks * -0x3C000 <= u->pos[2])) continue;
-        bsfx_play_at(0x4C, u);
-        bsfx_play_at(0x34, u);
-        s32 n = sc->power / 0x28 + 1;
-        if (4 < n) n = 4;
-        const s32 big = sc->power * 10;
+        Unit* u = side == 0 ? (i < 4 ? static_cast<Unit*>(g.party_units[static_cast<size_t>(i)])
+                                     : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i - 4)]))
+                            : static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i)]);
+        if (!swept(u)) continue;
+        if (original) {
+          bsfx_play_at(0x4C, u);
+          bsfx_play_at(0x34, u);
+        }
         for (int k = 0; k < n; ++k) {
           Sprite* sp = spellcast_sprite_spawn(sc, 5);
           if (sp == nullptr) continue;
@@ -141,9 +153,33 @@ void foehn(SpellCast* sc) {
           sprite_set_fade(sp, 0x80, -4, 8);
           sp->size[2] = static_cast<s16>(rng_range(8));
           const s32 sc_ = rng_between(big + 6000, big + 12000);
-          sp->scale_y = sc_;
-          sp->scale_x = sc_;
+          sp->scale_y = original ? sc_ : 0;
+          sp->scale_x = original ? sc_ : 0;
           sp->layer = 3;
+        }
+      }
+      if (!original) {
+        const int other = side == 0 ? 8 : 4;
+        for (int i = 0; i < other; ++i) {
+          Unit* u = side == 0 ? static_cast<Unit*>(g.enemy_units[static_cast<size_t>(i)])
+                              : static_cast<Unit*>(g.party_units[static_cast<size_t>(i)]);
+          if (!swept(u)) continue;
+          bsfx_play_at(0x4C, u);
+          bsfx_play_at(0x34, u);
+          for (int k = 0; k < n; ++k) {
+            Sprite* sp = visual_sprite_spawn(&sc->obj, 5);
+            if (sp == nullptr) continue;
+            const s32 dx = visual_rng_between_fixed(-0x80, 0x80);
+            const s32 dy = visual_rng_between_fixed(-0x80, 0x80);
+            const s32 dz = visual_rng_between_fixed(-0x80, 0x80);
+            sprite_set_pos(sp, u->pos[0] + dx, u->pos[1] + dy, u->pos[2] + dz);
+            sprite_set_fade(sp, 0x80, -4, 8);
+            sp->size[2] = static_cast<s16>(visual_rng_next() % 8);
+            const s32 sc_ = big + 6000 + static_cast<s32>(visual_rng_next() % 6000);
+            sp->scale_y = sc_;
+            sp->scale_x = sc_;
+            sp->layer = 3;
+          }
         }
       }
       sc->s2c += g.frame_ticks * -0x3C000;

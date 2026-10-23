@@ -24,6 +24,21 @@ struct KeyEvent {
   bool down = false;
 };
 
+// The player's controls (config.ini's key_* / pad_* keys, set in setup): for each PS1
+// button, by bit number in PadButton, one keyboard key and one gamepad button. Gamepad
+// buttons are SDL_GamepadButton values, or the triggers (kLeftTrigger / kRightTrigger,
+// pressed past half way). 0 / kNoButton: unbound.
+inline constexpr int kNoButton = -1, kLeftTrigger = 100, kRightTrigger = 101;
+struct Controls {
+  int keys[16] = {};     // SDL keycodes
+  int buttons[16] = {};  // gamepad buttons
+  static Controls defaults();
+  bool operator==(const Controls&) const = default;
+};
+// The buttons (PadButton bits) a key or gamepad button presses under these controls.
+u16 pad_bits_for_key(const Controls& controls, int keycode);
+u16 pad_bits_for_button(const Controls& controls, int button);
+
 // How the game window opens (config.ini's display keys, launcher/settings.h).
 enum class WindowMode { kWindowed, kBorderless, kFullscreen };
 
@@ -68,7 +83,8 @@ class Window {
     while (next_event(open, e)) on_key(e);
     return open;
   }
-  u16 pad() const { return pad_; }
+  u16 pad() const { return static_cast<u16>(key_bits_ | button_bits_ | trigger_bits_); }
+  void set_controls(const Controls& controls);
   // The open gamepad's sticks as a DualShock reports them (right X, right Y, left X,
   // left Y; 0x80 centred, 0 left / up); false without a gamepad.
   bool sticks(u8 out[4]) const;
@@ -93,7 +109,9 @@ class Window {
   int tex_width_ = 0, tex_height_ = 0;
   s16 axes_[4] = {};        // gamepad right X, right Y, left X, left Y
   bool fullscreen_ = false; // F11 / Alt+Enter
-  u16 pad_ = 0;
+  Controls controls_ = Controls::defaults();
+  std::vector<int> held_keys_, held_buttons_;  // what is down now, to recompute the bits
+  u16 key_bits_ = 0, button_bits_ = 0, trigger_bits_ = 0;
 };
 
 }  // namespace ss::platform

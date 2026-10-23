@@ -10,8 +10,10 @@ against the entry it was running, and the map is run again from the next entry
 with the entry they appeared in.
 
 Usage:
-  event_sweep.py --bin engine/build-menu/shattered-stars --disc1 CUE [--disc2 CUE]
+  event_sweep.py --bin engine/build-menu/shattered-stars --disc1 CUE [--disc2 CUE] [--disc 2]
                  --out DIR [--maps 0-826] [--jobs 4] [--frames 3600]
+The game always boots disc 1's image; --disc 2 sets the story's disc (config +0x4c) and
+swaps to disc 2's archive at the start, as the script's disc change does.
 Writes DIR/map_NNN.log (raw output) and DIR/results.json, and prints a summary.
 """
 import argparse
@@ -47,11 +49,15 @@ def run_once(args, m, skip, log):
     env.update({
         "SS_EVENT_SWEEP": "1", "SS_EVENT_SWEEP_FRAMES": str(args.frames), "SS_EVENT_SWEEP_SKIP": str(skip),
         "SS_BATTLE_STUB": "1", "SS_DISC1": args.disc1, "SDL_VIDEO_DRIVER": "offscreen",
-        "SDL_AUDIO_DRIVER": "dummy", "SS_MEMCARD1": args.card,
+        "SDL_AUDIO_DRIVER": "dummy",
+        # Never the player's settings: a scratch config directory, and no memory card.
+        "XDG_CONFIG_HOME": os.path.join(os.path.abspath(args.out), "xdg"),
     })
     if args.disc2:
         env["SS_DISC2"] = args.disc2
-    cmd = [args.bin, "--headless", "--frames", "2000000", "--map", str(m)]
+    if args.disc == 2:
+        env["SS_EVENT_SWEEP_DISC"] = "2"
+    cmd = [args.bin, "--headless", "--no-memcard", "--frames", "2000000", "--map", str(m)]
     p = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                          text=True, errors="replace", bufsize=1)
     last = [time.time()]
@@ -171,17 +177,15 @@ def main():
     ap.add_argument("--bin")
     ap.add_argument("--disc1")
     ap.add_argument("--disc2")
+    ap.add_argument("--disc", type=int, default=1, help="play as on disc 1 or 2 (disc 2 needs --disc2)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--maps", default="0-826")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--frames", type=int, default=3600)
     ap.add_argument("--stall", type=float, default=120.0, help="seconds without a [sweep] line before a hang is called")
-    ap.add_argument("--card", default=None, help="memory card image (a scratch copy)")
     ap.add_argument("--reparse", action="store_true", help="rebuild results.json from the map logs in --out")
     args = ap.parse_args()
-    os.makedirs(args.out, exist_ok=True)
-    if args.card is None:
-        args.card = os.path.join(args.out, "card.mcd")
+    os.makedirs(os.path.join(args.out, "xdg"), exist_ok=True)
     maps = parse_maps(args.maps)
     results = {}
     if args.reparse:

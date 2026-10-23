@@ -68,10 +68,12 @@ s32 projectile_arc_velocity(s32 out[4], const BObj* from, const BObj* to, s32 sp
   const Vec4 dir = vec_direction_xz(from->pos, to->pos);
   out[0] = static_cast<s32>(static_cast<u32>(dir.x) * static_cast<u32>(speed));
   out[1] = vy;
-  // ORIGINAL BUG (original_bugs.md B9): z is scaled by a constant 24 instead of 'speed', so
-  // the jump lands short of or past the target in depth unless speed is 24:
-  //   out[2] = dir.z * 24;
-  out[2] = static_cast<s32>(static_cast<u32>(dir.z) * static_cast<u32>(speed));
+  // z is scaled by a constant 24, not by 'speed' as x is, so a jump at another speed (Bowman's
+  // leap, speed 10) lands short of or past the target in depth. Kept on purpose
+  // (original_bugs.md B9, user, 2026-10-22: keep the original; the leap is meant to be able
+  // to miss, like Headsplitter). The z * speed version, not used:
+  //   out[2] = dir.z * speed;
+  out[2] = dir.z * 24;
   out[3] = dir.w;
   return t;
 }

@@ -11,6 +11,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/input.h"
 #include "game/battle/render.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/battle/unit.h"
@@ -268,7 +269,12 @@ void battle_frame_director() {
     }
   }
   if ((g.flags & 0xC) == 0 && g.stage_id == 8 && static_cast<u32>(rng_next() & 0x7FFF) < 0x300) {
-    runtime::Runtime::get().log_once("battle-stage8", "battle: not ported yet: stage 8 lightning (0x80063a70)");
+    // Stage 8's lightning: a white streak from 0x76c units above a random point of the
+    // arena down to it, ending in the stage sprite's flash (kind 0x12, puff 1).
+    s32 to[4];
+    stage_random_point(to, 1);
+    const s32 from[3] = {to[0], to[1] - 0x76C000, to[2]};
+    effect_spawn_streak_at(from, to, 0x101010, 0xFFFFFF, 0x60, 0x1000, 0x1000, 1);
   }
   // TODO(port): the stage code blocks of stages 0xd / 0x15 / 0x1a / 0x24 / 0x29 / 0x38 /
   // 0x39 (#1984 blocks 2-10) and the opening voices (0x8006fb31).

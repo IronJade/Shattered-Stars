@@ -3,6 +3,7 @@
 #include <cstring>
 #include <vector>
 
+#include "game/battle/battle_debug.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
@@ -218,6 +219,7 @@ u32 svec_xy(s32 x, s32 y) { return static_cast<u32>(static_cast<u16>(x)) | stati
 }  // namespace
 
 void RibbonTrail::update() {
+  battle_debug_trail(this);
   BattleGlobals& g = bg();
   if (g.effects_suppressed != 0 && in_pause == 0) return;
   if (kStateResult <= g.state) {

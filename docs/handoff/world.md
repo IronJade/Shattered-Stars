@@ -249,49 +249,58 @@ it compared with PCSX-Redux yet:
   - Redux: `pgrep -f` waits on a pattern also match their own command line (the r340d queue
     never started); use a pid file or a pattern the waiter does not contain.
 
-## Next steps (paused 19:45 at the usage limit; resume here)
+## Since the resume (22:15)
 
-State at the pause: phase 5 done and verified (see "In progress" above); nothing of mine
-running (no Redux, no port runs, no helpers; the capture-copy loops stopped). All work on
-disk; build-world builds shattered-stars and ss_tests (ss_game_tests could not link then:
-the setup agent's platform / launcher change, undefined platform::Window functions; rerun
-it once it links). Suites last green: ss_tests 78/0, smoke 21/21, ss_game_tests 74/0 (19:22).
+- W1 fixed (field/post_battle.cpp: the report window opens 0xd lines high; checked with a
+  port capture: `--debug --map 18`, SS_DEBUG_INPUT "300:item 0x1eb;360:battle 1",
+  `--battle-end 400:0`: Claude's auto-equip report with the MAG row).
+- User decisions on the spell bugs (original_bugs.md, rule "fixes never change the play
+  state"): fixed S10, S16 (visual-only RNG: spell_fx visual_rng_*), S18, each re-verified
+  (i9b / x9b sample for sample); kept S7 / S14 / S15. Held, measured (numbers in the rows):
+  S17, S19. Held under the rule too (restored to the original, fix behind the switch): S1,
+  S5, S11, S12, S20; S3 / S4 "avoided" (crash safety). The switch: SS_HELD_FIXES="S17,..."
+  (spell_fx held_fix_enabled).
+- run_port.sh now sets XDG_CONFIG_HOME to scratchpad/world/spell/xdg (my port runs had
+  written the user's real config: the disc2= line, and memcard1.mcd probably from ss_tests).
+  Run everything with a scratch XDG_CONFIG_HOME.
 
-1. W1 (the post-battle report's MAG row under window 6's clip), only if cheap. Port-only is
-   enough (a visual fix): `--debug` with SS_DEBUG_INPUT="VBLANK:item ID;VBLANK:battle ENC"
-   on a map (smoke-style `--map 18`), `--battle-end FRAMES:0` to win, cross to close the
-   result; the report appears when a new better item gets auto-equipped
-   (field/post_battle.cpp: window 6 opened at 1,2 with 0x26 x 0xC; the attribute panels at
-   y + 0x71, rows 0xC apart: the 5th row falls below the window). Needs an item id better
-   than Claude's start gear (look up item records). Otherwise leave it.
-2. Archipelago Phase 1, the port side (coordinator, 19:43; plan docs/archipelago_plan.md, read
-   it first; the battle / enemy agents write tools/ap_extract.py, docs/ap/ location tables):
-   - docs/ap/seed_format.md: the `.apso2` spec (planned: plain UTF-8 JSON, zip later; keys:
-     format/version, seed id, slot name / id, game, options {goal, world_mode, exp / fol
-     multipliers, deathlink ...}, items {AP item id -> game item id / Fol amount / count},
-     locations [{id, name, type chest|gift|boss|shop, check trigger: chest "flag" (opened
-     flag) / gift "map"+"word" (call site) / boss "encounter", "patches" (low-level lines
-     the generator computes: script MAP WORD EXPECTED VALUE ...), item {player, name, ap id,
-     game id, classification}}], shops / enemies patch lists, start {items, fol, flags}).
-   - engine/src/game/ap/ (new; no network yet): json.{h,cpp} (a small reader / writer; no
-     JSON library in the build), seed.{h,cpp} (load + validate), ap.{h,cpp}: ap_enabled,
-     ap_load_seed, ap_location_checked(id) (records), ap_receive(item, from) (queue, given
-     in free play: field state 0, no script running, not in battle / menu, through
-     inventory_add with a notice banner: field notice_show takes map-font text; ASCII ->
-     glyphs via message.h text_ascii_to_glyph 0x8005e8f8), the sidecar
-     <card image without .mcd>.slotKK.ap.json (seed id, slot, received index, checked ids),
-     written after save_finish == 1 and read after load_finish == 1 / load_save_direct
-     (common/menu_save.cpp ProgressDialog; the card image paths are memcard.cpp g_images).
-   - mods.cpp: the seed's patches join the patch list (at = "seed:<location id>").
-   - Check hooks: chests by the opened flag (the script flag write), gifts by call site
-     (the give_item handler with map + word); bosses later.
-   - Debug console (field/debug_console.cpp): ap_give ITEM [FROM], ap_check ID, ap_status.
-   - CLI `--ap-seed FILE` (main.cpp; off without it); tell the setup agent the config key
-     (planned: `ap_seed`).
-   - Tests: a seed-loader + sidecar round-trip unit test (tests/), a smoke case with a tiny
-     seed (one chest changed, one check recorded, one item received).
-3. Later: Divine Comedy is with the enemy agent, spell 0x40 with the effects agent; the
-   "decide" quirks S7, S10, S14-S19 wait for the user.
+- S1 fixed visual-only (default; RNG equal on k516 / i12), S3 fixed play-identical (the
+  kernel's address-0 bytes as unit_null_target; iC340: RNG 220/220, units exact), S20 fixed
+  by the user's decision (menu Fairy Light with no target heals 20000 -> 22200, MP 999 ->
+  959 once; m9b, the with-target comparison, re-running: the first m9b Redux run hung at
+  boot and was stopped).
+- Archipelago Phase 1, port side (23:40, builds; ss_game_tests 91/0 without the disc):
+  - engine/src/game/ap/: json.{h,cpp} (reader / writer, 64-bit ids, "0x" strings),
+    ap.{h,cpp} (seed loader, location index by id and by chest flag, check API, receive
+    queue given in free play with the notice banner, sidecar <card>.slotNN.ap.json).
+  - Hooks (flagged in others' files): field_program.cpp field_update (free_play_update),
+    script_vm.cpp flag_set (a global flag turning on -> on_flag_set), menu_save.cpp
+    ProgressDialog::frame + load_save_direct (on_saved / on_loaded), memcard.{h,cpp}
+    memcard_image(slot), title_program.cpp start_new_game (on_new_game), main.cpp
+    `--ap-seed FILE` / config ap_seed (windowed runs only), field/mods.cpp (seed lines first).
+  - Debug console: ap_status, ap_check ID, ap_give ITEM [FROM].
+  - Tests: engine/tests/test_ap.cpp (5 cases: JSON, seed, seed errors, checks / queue,
+    sidecar files and the save / load path). Smoke by hand (scratchpad/world/ap): the
+    one-chest seed on map 18 (crate 0x962 -> 5000 Fol by the seed's patch line), the chest
+    check recorded by its opened flag, ap_give -> "Received Revival Card from Alice" banner
+    (captured), SS_LOAD_SAVE with a sidecar -> "[ap] loaded ... 1 checks, received index 3",
+    the card byte-identical.
+  - The banner needs a timed wait (code 0x4006) at the end of its text, or it slides out as
+    soon as the text is shown; placed like the map-name notice (script ext 0xb9).
+
+## Next steps
+
+1. Archipelago Phase 1, the port side (coordinator 19:43 / 22:15; plan docs/archipelago_plan.md;
+   config keys told to the setup agent: ap_seed, later ap_server / ap_slot / ap_password):
+   - docs/ap/seed_format.md (the `.apso2` spec);
+   - engine/src/game/ap/ (json.{h,cpp} reader / writer, seed.{h,cpp}, ap.{h,cpp}: the check
+     API, the receive queue given out in free play with a notice, the sidecar
+     <card>.slotKK.ap.json written after a save / read after a load);
+   - mods.cpp takes the seed's patch lines;
+   - debug console: ap_give, ap_check, ap_status; `--ap-seed FILE` (main.cpp), config ap_seed;
+   - tests: seed loader + sidecar round trip (unit), a smoke case (one chest changed, one
+     check, one item received).
+2. Later: Divine Comedy (enemy agent), spell 0x40 (effects agent).
 
 ## Findings not yet in the catalog
 

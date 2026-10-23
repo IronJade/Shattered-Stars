@@ -13,6 +13,7 @@
 #include "game/battle/particle.h"
 #include "game/battle/render.h"
 #include "game/battle/shot.h"
+#include "game/battle/spell_fx.h"
 #include "game/battle/spell_modules.h"
 #include "game/battle/spellcast.h"
 #include "game/battle/sprite.h"
@@ -120,12 +121,15 @@ void blade(Shot* s) {
         s->aux = 0;
         const Vec4 d = vec_direction(s->pos, s->owner->pos);
         s->vel[0] = d.x, s->vel[1] = d.y, s->vel[2] = d.z, s->extra34 = d.w;
-        // ORIGINAL BUG (original_bugs.md S5): only x is scaled to the blade's speed (0x28); y
-        // and z keep the unit vector's length, so the blade flies back almost along x:
-        //   s->vel[0] *= 0x28;
+        // ORIGINAL BUG (original_bugs.md S5, held): only x is scaled to the blade's speed
+        // (0x28); y and z keep the unit vector, so the blade flies back almost along x. The
+        // returning blade still hits, so the fix changes what it meets: held
+        // (SS_HELD_FIXES=S5 turns it on).
         s->vel[0] *= 0x28;
-        s->vel[1] *= 0x28;
-        s->vel[2] *= 0x28;
+        if (held_fix_enabled("S5")) {
+          s->vel[1] *= 0x28;
+          s->vel[2] *= 0x28;
+        }
         return;
       }
       if (s->aux != 0) {

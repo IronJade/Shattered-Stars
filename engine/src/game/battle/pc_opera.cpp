@@ -565,7 +565,10 @@ void cb_shard(Shot* s) {
       for (int i = 0; i < 2; ++i) {
         if (Sprite* sp = shot_spawn_sprite(s, 7)) {
           const s32 dx = rng_spread_fixed(0x60);
-          const s32 dy = rng_between(-0xC0, 0);
+          // ORIGINAL BUG (original_bugs.md F14): the y jitter is taken raw (under 0.05 of a
+          // unit in 20.12) where the other shots' hit sprites use 192 units:
+          //   const s32 dy = rng_between(-0xC0, 0);
+          const s32 dy = rng_between_fixed(-0xC0, 0);
           sprite_set_pos(sp, s->pos[0] + dx, s->pos[1] + dy, s->pos[2]);
           const s32 sc = rng_between(0x1000, 0x2000);
           sp->scale_y = sc;
@@ -585,7 +588,7 @@ void cb_shard(Shot* s) {
 }
 
 // 0x801f1098 (move 7): the shot that bursts after 12 ticks into lvl + 4 shards (lvl + 3
-// in a ring, thrown up and out, and one straight up).
+// in a ring, thrown up and out; the last one drops where it bursts).
 void cb_burst(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 5;
@@ -606,10 +609,10 @@ void cb_burst(Shot* s) {
       if (c == nullptr) continue;
       bobj_set_pos(c, s->pos);
       if (i == n) {
-        // ORIGINAL BUG (original_bugs.md F13): the last shard's upward velocity is stored
-        // into the burst's own (+0x2c of the burst), so that shard keeps 0 and drops:
-        //   s->vel[1] = static_cast<s32>(0xFFFEC000);
-        c->vel[1] = static_cast<s32>(0xFFFEC000);
+        // Original quirk (original_bugs.md F13, kept: the play-state rule): the last shard's
+        // upward velocity is stored into the burst's own, so that shard keeps 0 and drops
+        // from the burst point. Giving it the velocity moves the move's hits earlier.
+        s->vel[1] = static_cast<s32>(0xFFFEC000);
       } else {
         const s32 a = (i << 12) / n;
         c->vel[0] = bcos(static_cast<u32>(a)) * 9;

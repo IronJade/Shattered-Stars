@@ -17,6 +17,9 @@
 namespace ss::game::field {
 namespace {
 
+// The actor a kActorCmdDelete command removed last (compared by address only, never read).
+const Actor* g_deleted_by_command = nullptr;
+
 // The abstract base vtable (0x80072dd4: every entry is __pure_virtual).
 const ActorVtable kActorBaseVtable = {};
 
@@ -499,6 +502,7 @@ void actor_update(Actor* self, int control, int camera) {
         break;
       }
       case kActorCmdDelete:
+        g_deleted_by_command = self;  // (see actor_pop_state)
         actor_delete(actor_system(), self);
         return;
       case kActorCmdWaitMoveB:
@@ -1052,7 +1056,13 @@ void actor_pop_state(Actor* a, int turn_back) {
   const u32 flags = a->flags;
   a->pushed = 0;
   a->saved_angle = a->angle;
+  g_deleted_by_command = nullptr;
   actor_update(a, 0, 0);
+  // ORIGINAL BUG (original_bugs.md V2): the update can run a queued delete (a talk event
+  // that ends with ext 0x71 on the NPC it talked to); the console then goes on with the
+  // freed actor, copying its freed snapshot back and freeing it twice. Nothing is left to
+  // restore, so stop here.
+  if (g_deleted_by_command == a) return;
   Actor* emote = a->emote;
   s16 emote_timer = 0, emote_anim = 0;
   if (emote != nullptr) {

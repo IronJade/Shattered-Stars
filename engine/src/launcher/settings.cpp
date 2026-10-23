@@ -1,5 +1,7 @@
 #include "launcher/settings.h"
 
+#include <SDL3/SDL.h>
+
 #include <algorithm>
 #include <cstdio>
 
@@ -76,6 +78,73 @@ std::string memcard_path(const Config& c, int slot) {
 std::filesystem::path mods_folder(const Config& c) {
   const std::string v = c.get("mods");
   return v.empty() ? config_dir() / "mods" : utf8_path(v);
+}
+
+}  // namespace ss::launcher
+
+namespace ss::launcher {
+
+const char* const kPadButtonKeys[16] = {"l2",    "r2", "l1", "r1",    "triangle", "circle", "cross", "square",
+                                        "select", "l3", "r3", "start", "up",       "right",  "down",  "left"};
+
+std::string key_name(int keycode) {
+  if (keycode == 0) return "none";
+  const char* name = SDL_GetKeyName(static_cast<SDL_Keycode>(keycode));
+  return name && *name ? name : "none";
+}
+
+int key_from_name(const std::string& name) {
+  if (name.empty() || name == "none") return 0;
+  const SDL_Keycode key = SDL_GetKeyFromName(name.c_str());
+  return key == SDLK_UNKNOWN ? 0 : static_cast<int>(key);
+}
+
+std::string gamepad_button_name(int button) {
+  if (button == platform::kLeftTrigger) return SDL_GetGamepadStringForAxis(SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
+  if (button == platform::kRightTrigger) return SDL_GetGamepadStringForAxis(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
+  if (button < 0) return "none";
+  const char* name = SDL_GetGamepadStringForButton(static_cast<SDL_GamepadButton>(button));
+  return name ? name : "none";
+}
+
+int gamepad_button_from_name(const std::string& name) {
+  if (name.empty() || name == "none") return platform::kNoButton;
+  const SDL_GamepadAxis axis = SDL_GetGamepadAxisFromString(name.c_str());
+  if (axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) return platform::kLeftTrigger;
+  if (axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) return platform::kRightTrigger;
+  const SDL_GamepadButton b = SDL_GetGamepadButtonFromString(name.c_str());
+  return b == SDL_GAMEPAD_BUTTON_INVALID ? platform::kNoButton : static_cast<int>(b);
+}
+
+ControlSettings read_controls(const Config& c) {
+  ControlSettings s;
+  for (int i = 0; i < 16; ++i) {
+    const std::string key = std::string("key_") + kPadButtonKeys[i], pad = std::string("pad_") + kPadButtonKeys[i];
+    if (c.has(key)) s.controls.keys[i] = key_from_name(c.get(key));
+    if (c.has(pad)) s.controls.buttons[i] = gamepad_button_from_name(c.get(pad));
+  }
+  if (c.has("stick_deadzone")) s.stick_deadzone = std::clamp(c.get_int("stick_deadzone", kGameStickDeadzone), 0, 90);
+  s.stick_dpad = c.get_bool("stick_dpad", true);
+  return s;
+}
+
+void write_controls(Config& c, const ControlSettings& s) {
+  const platform::Controls defaults = platform::Controls::defaults();
+  for (int i = 0; i < 16; ++i) {
+    const std::string key = std::string("key_") + kPadButtonKeys[i], pad = std::string("pad_") + kPadButtonKeys[i];
+    if (s.controls.keys[i] == defaults.keys[i]) c.erase(key);
+    else c.set(key, key_name(s.controls.keys[i]));
+    if (s.controls.buttons[i] == defaults.buttons[i]) c.erase(pad);
+    else c.set(pad, gamepad_button_name(s.controls.buttons[i]));
+  }
+  if (s.stick_deadzone < 0) c.erase("stick_deadzone");
+  else c.set_int("stick_deadzone", s.stick_deadzone);
+  if (s.stick_dpad) c.erase("stick_dpad");
+  else c.set_bool("stick_dpad", false);
+}
+
+int stick_deadzone_units(const ControlSettings& s) {
+  return s.stick_deadzone < 0 ? -1 : (s.stick_deadzone * 128 + 50) / 100;
 }
 
 }  // namespace ss::launcher

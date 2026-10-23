@@ -233,51 +233,44 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   spell runs 1600 vsyncs on the console, 1596 in the port, Claude dies after it in both.
   Reported to the coordinator and the world agent.
 
-## Archipelago field tables (started 2026-10-22 ~21:00; paused for the usage limit)
+## E9 revised, E5 checked (2026-10-22 22:55, done; suites 78/0, 82/0, smoke 21/21)
 
-Task (coordinator): docs/archipelago_plan.md Phase 1, the field side: `tools/ap_extract.py`
-(Python on tools/so2_mod.py / so2_script.py, JSON output, names only, no text dumps) with
-chests, real give_item (B 0x60) / add_money (ext 0xd4) gift sites with their guard flags,
-recruitments (ext 0xae party_add sites, conditions, exclusions), the 64 shops with the maps
-that open them (B 0x6d), story order (progress flags / globals, the disc 1 -> 2 point of no
-return, map -> region), Private Actions (items / flags, missable); plus docs/ap/field.md
-(location types, ids: base + type << 20 + map << 10 + index, hook points in the port). The
-battle agent writes tools/ap_battles.py (bosses / drops), which ap_extract imports. No port
-code for Archipelago.
+- E9 (Carlaeagle feathers): the feathers keep the console's start (y -0x78) and path, so
+  they move, collide and hit exactly as on the console; shot_k16_projectile draws them at
+  pos + Shot::draw_offset * (draw_ticks - draw_age) / draw_ticks (a port field, cleared by
+  shot_reset), and moves the boxes the draw placed back onto the path. The module sets the
+  offset (the bird's height) and draw_ticks (the tick nearest the aim, at most the life).
+  ref/caster35: SS_BATTLE_SHOTS positions equal to BW_SHOTS each frame (D 6), feathers 0, 3, 4
+  hit Claude at ref b849 for 510 as on the console, RNG equal to the battle's exit (b2046;
+  the first fix split it at b850). Scripts: scratchpad/enemy/e9/run35.sh.
+- E5 (Marsilio's afterimage): visual only. scratchpad/enemy/e9/e5run.sh (encounter 530,
+  Claude x200 HP attacking, so attack 1 runs and hits at vblank 576): the log is byte for
+  byte the same with the original's line and with the fix.
 
-Done (analysis only; tools/ap_extract.py not written yet):
-- Exploration helper `scratchpad/enemy/ap/explore.py`: caches all 899 field map scripts of
-  disc 1 (`ap/maps.pkl`, 14 s to build), splits them into functions (at `frame`), hashes
-  each function's shape (call targets dropped, jumps relative). 88 functions occur in >= 400
-  maps: the shared library every map carries (at different offsets per map).
-- Library routines seen (map 0 offsets): 0x102c give item with message (pops item,
-  message; item >= 10000 sets flag item - 10000 instead), 0x119c add Fol with message
-  (add_counter18 = ext 0xd4 from stack), 0x131c the chest routine (actor, flag, value,
-  message: value >= 0 -> 0x102c, else -value Fol -> 0x119c; then A 0x01 treasure count and
-  the opened flag), 0x393c party join (ext 0xae from stack, A 0x3f, call). So the real
-  gifts / joins are calls into these helpers with constant pushes from non-library code,
-  plus inline give_item(N) (about 300) / add_counter18(...) (13) / ext_ae(N) (7).
-- Names: #1980 string table is (u16 key, u16 offset) pairs, codes as next_code, glyph = code
-  + 0x1f; items at keys 0xbb8.. (1023), spells 0x3e8 + spell, killer moves 0x1388..; shop
-  names are message group 0xc id - 1 (menu notes). Story globals: script byte address 0xa0
-  = game_state +0 (3 / 4 at New Game), 0xa4 = game_state +4 (compared with values like
-  0x7da: the story progress counter, to confirm).
-- Shops: so2_mod.shop_lists (overlay 0xbaa table 0x80081c98); B_6d(n) call sites open shop n
-  (seen n 1..99 across maps).
+## Archipelago field tables (resumed 2026-10-22 22:15; 23:40 status)
 
-Next step on resume:
-1. Write tools/ap_extract.py: load (as explore.py), library detection by shape count, role of
-   each helper by content (give / money / party / chest), then the sites: calls into the
-   helpers with constant pushes, inline ops; guard flag = flag tested == 0 before and set
-   after in the same function.
-2. Chests (so2_mod.chests), shops (+ B_6d sites), recruitments (+ conditions), story globals
-   and the transfer graph for regions, Private Actions (B 0x0e trigger_set_pa entries).
-3. docs/ap/field.md.
+Task: docs/archipelago_plan.md Phase 1, field side: `tools/ap_extract.py` + docs/ap/field.md.
+No port code.
 
-Also paused (battle side, optional): tick-logged Redux references ref/k515_3, k537_3,
-k538_3 (BW_TICK_LOG, my explore.lua now has it) were stopped unfinished; rerun them to
-compare Noah / Spicule / Mind Blast / Wind of Destruction frame by frame with the port's
-SS_BATTLE_TICK_MAP (the world agent's method).
+State (on disk, not committed): tools/ap_extract.py runs in ~70 s per disc (both discs and
+ap_battles.py's tables when given DISC2 and without --no-battles). It writes:
+- chests 338 (with the B 0x6c registration's conditions), gifts 109, Fol gifts 4, prize
+  tables 171 (contest / exchange branches), recruitments 86 (kinds world_script / restore /
+  choice / scene) and a per-character summary, shops 64 + 62 B 0x6d sites;
+- Private Actions: 741 PA-mode events in 136 maps (registered under flag[2]; partner from
+  saved_party_has), 18 give items, 86 set flags other maps test, 1 join (Chisato, map 242);
+  the 16 B 0x0e sites kept as private_action_triggers;
+- story: every chapter store (4..60, one place each), the disc switch (map 625 0x57a0, B 0x6a,
+  chapter 35, then map 618: the Expel to Energy Nede crossing), regions (unconditional
+  two-way doors, with world maps entered / left and chapters), one-way transfers;
+- location ids: 0x50320000 + (type << 21) + (map << 10) + index; "window" / "missable" from
+  the chapter tests in each location's conditions (its own routine, callers, registrations).
+- Findings: flags 2 and 4 = Private Action mode (the world chunk scripts set both before the
+  PA entrance of a town); the world script (maps 0-3, 826) holds a jump list of warps that set
+  chapters (kept apart); map 625 is the hub between the worlds (chapters 33 / 35 / 50).
+
+Next: docs/ap/field.md (location types, ids, hooks, story order, regions, PAs, open items);
+check the both-disc run (scratchpad/enemy/ap/field_full.json); report to the coordinator.
 
 ## State and next step (2026-10-22 evening, phase 2 done, part 2 done)
 

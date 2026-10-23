@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/boot/sound.h"
 #include "game/common/memcard.h"
@@ -723,6 +724,10 @@ void ProgressDialog::frame() {
     if (length == -1) r = -1;
     if (r != 0) {
       if (r == 1) {
+        // Archipelago (port feature): its state goes in a sidecar file beside the card.
+        // [world agent]
+        if (loading()) ap::on_loaded(memcard_image(slot), index);
+        else ap::on_saved(memcard_image(slot), index);
         finish(0);
       } else {
         cancel();
@@ -1077,6 +1082,7 @@ int load_save_direct(MemoryCard* card, int slot, int index) {
     r = load_finish(card, slot);
   }
   if (r != 1) return 0;
+  ap::on_loaded(memcard_image(slot), index);  // Archipelago (port feature) [world agent]
   // LoadFlow state 8: the last-used positions (load_game_screen cleared both).
   u8* config = globals().config;
   wr32(config + 0x198, 0);

@@ -38,6 +38,10 @@ void pad_set_stick_range(Pad* pad, int port, u8 r0, u8 r1, u8 r2, u8 r3);       
 // 0x80013ca4: 0 the stick is not read as the d-pad; 1 the left stick past half its range
 // adds the d-pad bits; 2 as 1, and the d-pad itself is ignored.
 void pad_set_stick_dpad(Pad* pad, int port, u8 mode);
+// Port feature (setup's Controls page): the player's stick settings, which win over the
+// game's own calls above. dead_zone in raw stick units (0x20, a quarter of the travel, is
+// the game's); dpad 0 / 1 the left stick as the d-pad. -1 keeps the game's value.
+void pad_set_player_stick(int dead_zone, int dpad);
 // 0x80013cb8: the four axes; false (all 0) unless the pad is in analog mode.
 bool pad_stick(Pad* pad, int port, s32* rx, s32* ry, s32* lx, s32* ly);
 

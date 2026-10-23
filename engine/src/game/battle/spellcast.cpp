@@ -608,7 +608,9 @@ int spellcast_effects_gone(SpellCast* sc) {
   const u8* layout = mine != nullptr ? mine->layout : nullptr;
   for (int i = 0; i < 0x128; ++i) {
     const Sprite* s = sprite_at(i);
-    if (s != nullptr && s->anim_id != 0 && s->animset != nullptr && s->animset->layout == layout) return 0;
+    if (s != nullptr && s->anim_id != 0 && s->animset != nullptr && s->animset->layout == layout &&
+        !sprite_is_visual_only(s))
+      return 0;
   }
   for (int i = 0; i < 0xA0; ++i) {
     const Shot* s = shot_at(i);

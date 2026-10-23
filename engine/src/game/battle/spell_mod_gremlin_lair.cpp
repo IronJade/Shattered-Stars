@@ -380,9 +380,11 @@ void gremlin_lair(SpellCast* sc) {
     bobj_anim_draw(&sc->obj, g.flags & 0xC);
   }
   if ((g.flags & 4) != 0) return;
-  // Original quirk (original_bugs.md S17, to decide): the handler never calls spellcast_timer_tick, so the waits of
-  // steps 2, 3, 4 and 6 hold nothing (each step runs on the next frame); only the last one
-  // delays the end, once the cast is finished.
+  // ORIGINAL BUG (original_bugs.md S17, held): the handler never calls spellcast_timer_tick,
+  // so the waits of steps 2, 3, 4 and 6 hold nothing (each step runs on the next frame). The
+  // fix (the timer ticked here, step 6 waiting into step 7) lengthens the cast, which the
+  // 60-second battles' time limit counts: held; SS_HELD_FIXES=S17 turns it on to measure.
+  if (held_fix_enabled("S17") && spellcast_timer_tick(sc) != 0) return;
   switch (sc->step) {
     case 0: {
       spellcast_dim_begin(sc, c->is_enemy);
@@ -490,9 +492,10 @@ void gremlin_lair(SpellCast* sc) {
     }
     case 6:
       sc->obj.anim = 10;
-      // Original quirk (original_bugs.md S17, to decide): step 7 is meant to come next, but spellcast_wait below
-      // advances the step once more, so the wait for the effects (step 7) is skipped.
-      sc->step = 7;
+      // ORIGINAL BUG (original_bugs.md S17, held): step 7 is meant to come next, but
+      // spellcast_wait below advances the step once more, so the wait for the effects (step 7)
+      // is skipped.
+      sc->step = held_fix_enabled("S17") ? 6 : 7;
       bsfx_play_ui(0x28);
       bsfx_play_ui(0x29);
       bsfx_play_ui(0x2A);

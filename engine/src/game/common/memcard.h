@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "core/types.h"
 
 // The game's memory card manager (title program 0x80031290-0x8003161c over the card
@@ -69,5 +71,7 @@ void memcard_file_update(MemoryCard* card, MemcardSlot* slot);
 
 // Card image files used for "bu00:" / "bu10:" (set once at startup).
 void memcard_set_images(const char* slot1_path, const char* slot2_path);
+// The image file of slot 0 / 1 ("" when empty). [world agent: Archipelago's save sidecar, game/ap]
+const std::string& memcard_image(int slot);
 
 }  // namespace ss::game

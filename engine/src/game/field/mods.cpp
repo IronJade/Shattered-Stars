@@ -10,6 +10,7 @@
 #include <sstream>
 #include <string>
 
+#include "game/ap/ap.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::field {
@@ -88,66 +89,86 @@ void write_le(u8* p, int size, u32 v) {
   for (int i = 0; i < size; ++i) p[i] = static_cast<u8>(v >> (8 * i));
 }
 
+// One patch line (comment already stripped); false when it is not understood.
+bool parse_line(const std::string& line, const std::string& at, Patch* out) {
+  std::istringstream fields(line);
+  std::string kind, a, b, c, d, extra;
+  if (!(fields >> kind)) return false;
+  Patch p;
+  p.at = at;
+  u32 target = 0;
+  bool ok = static_cast<bool>(fields >> a >> b >> c >> d) && !(fields >> extra) && parse_number(a, &target) &&
+            parse_number(c, &p.expected) && parse_number(d, &p.value);
+  if (ok) {
+    if (kind == "script") {
+      p.kind = Kind::Script;
+      ok = parse_number(b, &p.where);
+    } else if (kind == "item") {
+      p.kind = Kind::Item;
+      ok = parse_field(b, p.kind, &p.where, &p.size) && target >= 1 && target < 0x400;
+    } else if (kind == "shop") {
+      p.kind = Kind::Shop;
+      ok = parse_number(b, &p.where) && p.where < 0x100;
+    } else if (kind == "enemy") {
+      p.kind = Kind::Enemy;
+      ok = parse_field(b, p.kind, &p.where, &p.size);
+    } else {
+      ok = false;
+    }
+  }
+  if (!ok) return false;
+  p.target = static_cast<int>(target);
+  if (p.kind == Kind::Item || p.kind == Kind::Enemy) {
+    p.expected &= mask(p.size);
+    p.value &= mask(p.size);
+  }
+  *out = p;
+  return true;
+}
+
 const std::vector<Patch>& patches() {
   static std::vector<Patch> list;
   static bool loaded = false;
   if (loaded) return list;
   loaded = true;
+  auto add = [&](std::string line, const std::string& at) {
+    if (const auto hash = line.find('#'); hash != std::string::npos) line.resize(hash);
+    if (line.find_first_not_of(" \t\r") == std::string::npos) return;
+    Patch p;
+    if (!parse_line(line, at, &p)) {
+      std::fprintf(stderr, "[mods] %s: not understood: %s\n", at.c_str(), line.c_str());
+      return;
+    }
+    list.push_back(p);
+  };
+  // An Archipelago seed's edits (game/ap: --ap-seed / config ap_seed) come first.
+  const std::vector<std::string>& seed_lines = ap::seed_patch_lines();
+  for (size_t i = 0; i < seed_lines.size(); ++i) add(seed_lines[i], "seed:" + std::to_string(i + 1));
   auto& rt = runtime::Runtime::get();
   std::string dir = rt.mods_dir;
   if (const char* env = std::getenv("SS_MODS_DIR"); env && *env) dir = env;
   std::error_code ec;
-  if (dir.empty() || !std::filesystem::is_directory(dir, ec)) return list;
-  std::vector<std::filesystem::path> files;
-  for (const auto& e : std::filesystem::directory_iterator(dir, ec))
-    if (e.is_regular_file() && e.path().extension() == ".patch") files.push_back(e.path());
-  std::sort(files.begin(), files.end());
-  for (const auto& path : files) {
-    std::ifstream in(path);
-    int line_no = 0;
-    for (std::string line; std::getline(in, line);) {
-      ++line_no;
-      if (const auto hash = line.find('#'); hash != std::string::npos) line.resize(hash);
-      std::istringstream fields(line);
-      std::string kind, a, b, c, d, extra;
-      if (!(fields >> kind)) continue;
-      Patch p;
-      p.at = path.filename().string() + ":" + std::to_string(line_no);
-      u32 target = 0;
-      bool ok = static_cast<bool>(fields >> a >> b >> c >> d) && !(fields >> extra) && parse_number(a, &target) &&
-                parse_number(c, &p.expected) && parse_number(d, &p.value);
-      if (ok) {
-        if (kind == "script") {
-          p.kind = Kind::Script;
-          ok = parse_number(b, &p.where);
-        } else if (kind == "item") {
-          p.kind = Kind::Item;
-          ok = parse_field(b, p.kind, &p.where, &p.size) && target >= 1 && target < 0x400;
-        } else if (kind == "shop") {
-          p.kind = Kind::Shop;
-          ok = parse_number(b, &p.where) && p.where < 0x100;
-        } else if (kind == "enemy") {
-          p.kind = Kind::Enemy;
-          ok = parse_field(b, p.kind, &p.where, &p.size);
-        } else {
-          ok = false;
-        }
+  const bool dir_ok = !dir.empty() && std::filesystem::is_directory(dir, ec);
+  if (dir_ok) {
+    std::vector<std::filesystem::path> files;
+    for (const auto& e : std::filesystem::directory_iterator(dir, ec))
+      if (e.is_regular_file() && e.path().extension() == ".patch") files.push_back(e.path());
+    std::sort(files.begin(), files.end());
+    for (const auto& path : files) {
+      std::ifstream in(path);
+      int line_no = 0;
+      for (std::string line; std::getline(in, line);) {
+        ++line_no;
+        add(line, path.filename().string() + ":" + std::to_string(line_no));
       }
-      if (!ok) {
-        std::fprintf(stderr, "[mods] %s: not understood: %s\n", p.at.c_str(), line.c_str());
-        continue;
-      }
-      p.target = static_cast<int>(target);
-      if (p.kind == Kind::Item || p.kind == Kind::Enemy) {
-        p.expected &= mask(p.size);
-        p.value &= mask(p.size);
-      }
-      list.push_back(p);
     }
   }
+  if (!dir_ok && seed_lines.empty()) return list;
   const ModsSummary s = mods_summary();
+  std::string from = dir_ok ? dir : "";
+  if (!seed_lines.empty()) from = dir_ok ? "the seed and " + dir : "the seed";
   std::fprintf(stderr, "[mods] %d script, %d item, %d shop, %d enemy patch(es) from %s\n", s.script, s.item, s.shop,
-               s.enemy, dir.c_str());
+               s.enemy, from.c_str());
   return list;
 }
 

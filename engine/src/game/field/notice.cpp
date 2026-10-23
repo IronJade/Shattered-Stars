@@ -177,10 +177,15 @@ void notice_update(Notice* n) {
       }
       if (n->close_request != 0 || status == 1 || status == -1) {
         n->state = 4;
-        if (n->at_top == 0) {
-          msg_window_push_move(msg_window(n->window), 0x122 - n->text_width, 0xE0, 10);
-        } else {
-          msg_window_push_move(msg_window(n->window), n->icon != 0 ? 0x18 : 8, -0x19, 10);
+        // ORIGINAL BUG (original_bugs.md V1): with status -1 the window is gone, and the
+        // console queues the move through a null pointer (into low RAM):
+        // msg_window_push_move(msg_window(n->window), ...);
+        if (MsgWindow* w = msg_window(n->window)) {
+          if (n->at_top == 0) {
+            msg_window_push_move(w, 0x122 - n->text_width, 0xE0, 10);
+          } else {
+            msg_window_push_move(w, n->icon != 0 ? 0x18 : 8, -0x19, 10);
+          }
         }
       }
       break;

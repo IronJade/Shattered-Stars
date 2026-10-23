@@ -120,74 +120,127 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
     whole run), at most 3 unit samples off (HP sampling), and frames under 1-2% apart from
     the end fade.
   - Suites on this build: ss_tests 78/0, ss_game_tests 74/0 (SS_DISC1), smoke 21/21.
-  - B9 (z * 24 in projectile_arc_velocity) was verified faithful with move 3, then fixed (z *
-    speed). It is "fixed, pending the user's decision". The rebuilt binary passes the suites
-    again (78/0, 74/0, 21/21). Move 3 still matches Redux, because its target stands at the
-    same z.
+  - B9 (z * 24 in projectile_arc_velocity) was verified faithful with move 3. The user
+    decided to keep the original (2026-10-22, revised: the leap may miss, like Headsplitter),
+    so the z * 24 line is live again and z * speed is only a comment.
   - The compare script: `scratchpad/battle/pcrun.sh CHAR BYTE REF OUT` (the port run, rngcmp,
     unitcmp and framecmp in one).
 - On disk, uncommitted: `battle_debug.cpp` (SS_BATTLE_CAM res flags), `pc_bowman.cpp`,
   `unit_move.{h,cpp}`, `pc_modules.cpp` (case 4), `engine/CMakeLists.txt`, the catalog CSV,
   and the scratch tools (explore.lua `BW_REG_BP`; per-run cards in the run scripts).
 
-## RESUME POINT (paused for the usage limit, 2026-10-22 ~19:45)
+## Since the 22:14 resume
 
-None of my Redux or port runs are running; the Redux processes still alive are the enemy
-agent's (scratchpad/enemy). Everything is on disk. Verified since the 19:00 commit (reported
-to the coordinator): Dias (all 10 moves), the party AI (healer, fighter and caster paths),
-Claude's move 5. On disk and building but not verified against Redux: the input_free_run
-analog branch, effect_tasks_free_all, the tinted shadows (bobj.cpp).
+- **The attack-spell choice (0x8003a20c): verified.** `ref/caster35`: Celine as an AI
+  caster in slot 1 next to Claude in encounter 35.
+  - She chants (state 14) at b545 and b775 in the original and at port frames 539 / 769
+    (D 6), with the RNG equal through her spells up to b840.
+  - The split at b850 is the enemy agent's fix of original bug E9 (Carlaeagle feathers start
+    0x78 above y 0 on the console; the fix starts them above the bird).
+    - `ref/caster35s` (BW_SHOTS) shows the original's five feathers spawning at y -179 and
+      hitting the airborne Claude at frame 843.
+    - In the port they spawn at y -300, right at his height, and all five hit at once in
+      frame 837, before his air attack's hit on the eagle (frame 839).
+    - A deliberate difference, not a port bug.
+  - New: `SS_BATTLE_SHOTS=LO:HI` (battle_debug.cpp) and explore.lua's `BW_SHOTS` print every
+    live Shot each frame.
+- **B5 fixed** (the user's decision): lens_flare_render works on a per-call copy of the
+  flare set. The draw is identical by construction, since each call patched the table
+  before using it; only the shared table no longer keeps the patched values.
+  original_bugs.md is updated.
+- **docs/ap/battle.md written** (the tool, the JSON shape, findings, the battle hooks).
+  Linked from docs/archipelago_plan.md ("Battle hooks").
+- **dias_l2 b470-490 (the effects agent's note): not the B3 fix as such.**
+  - A build with the stale-OTZ line depth gives the same 4%.
+  - The lines are at the right frame (best match at b-7).
+  - Particle kind 1's update matches 0x8005e618 instruction by instruction.
+  - What remains is which streak lines are drawn and where: the original culls lines by a
+    stale OTZ (`0x5f9 < otz >> 5`), whose value depends on the console's last AVSZ. The
+    port can't reproduce that value, and with B3 fixed it no longer depends on it. Expected
+    under the enhance policy.
 
-In progress, in this order:
+## M7 encounter sweep (current assignment, from 2026-10-22 late)
 
-1. **The attack-spell choice (0x8003a20c) case.** `ref/caster35` (Celine AI in slot 1,
-   tactic 0, encounter 35, 2400 vsyncs) is recorded but not yet compared. Next command:
-
-       cd scratchpad/battle; IN=$(python3 -c "print(','.join(f'{45*i}:cross,{45*i+1}:none' for i in range(1,60)))")
-       # port run as run_caster_ai.sh's pokes, with --battle 35:3, SS_BATTLE_TICKS=1,
-       # SS_BATTLE_RAM=ref/caster35/ram_field_exit_004046.bin, --frames 2400; then
-       # CMP_D=7 rngcmp.py ref/caster35/log.txt port/caster35/log.txt and unitcmp.py ... 7.
-       # Check whether Celine reaches state 14 (a cast) in the ref (p1 s14 in its [bw] enemy
-       # lines). If she never casts, try tactic 1 (record +0x38 = 1) or a longer fight.
-
-2. **Archipelago, battle side.**
-   - Done: `tools/ap_battles.py`. It reads the encounter packs (members, boss flags,
-     escape, drops, EXP / Fol) and every map's scripted battle call sites.
-     - The call sites are calls to the per-map battle helper, which wraps ext 0xb7, after
-       three constant pushes.
-     - The tool also lists the battle_c / battle_b preloads and the global flags each
-       site's routine tests or sets.
-   - Done: `docs/ap/battles.json` (the tool's output, 269 KB).
-   - Findings:
-     - 564 encounters, 47 with a boss member, 187 enemy types (62 without drops).
-     - 89 scripted call sites (5 with a computed encounter, all on map 305).
-     - The final boss is Indalecio, encounters 539 / 540, map 685 (two call sites).
-     - Boss encounters without a scripted site: 0 (Cyril), 263 (Dias), 534 (FunnyThief),
-       561 (Iselia-queen).
-     - Flag 0x2e9 is set by almost every battle routine, so it is not a story marker.
-   - Still to write: `docs/ap/battle.md`, the JSON shape plus the battle hooks:
-     - battle_exit_to_field in battle_program.cpp holds g.encounter_id (0x8006ef98) and
-       g.outcome (0 victory, 1 escaped, 2 defeat, 3 ran off, 4 time up), written to config
-       +0x178. That is where boss checks, the goal (539 / 540 with outcome 0) and the
-       DeathLink send (outcome 2) hook in.
-     - DeathLink receive: in battle, battle_party_lost(); otherwise, end the next battle.
-     - Drops as checks: roll_drops in result.cpp (0x800869fc), one drop per enemy, odds +
-       luck; replace its inventory_add.
-     - EXP / Fol multipliers: the result screen.
-     - Link the doc from docs/archipelago_plan.md (a short "Battle hooks" section).
-   - The enemy agent writes `tools/ap_extract.py` (the field side), which imports my
-     module. My entry point is `ap_battles.build([disc1, disc2])`, which returns the dict
-     written to battles.json.
-
-3. **From the effects agent:**
-   - dias_l2 b470-490 (~4%): only the homing streak lines differ (move 1's 0x30 lines).
-     Suspect the B3 fix (line depth). Test by building with the stale-OTZ line depth (see
-     the ORIGINAL BUG comment in particle.cpp) and comparing with
-     `pcrun.sh 5 2 ref/dias_l2 port/x`.
-   - At 19:40 engine/build-battle did not link because of another agent's mid-edit
-     (runtime.cpp: Window::sticks / rumble undefined), so this test is not run yet.
-   - dias_la: its RNG matches to the exit in my build (19:26 and again at 19:40), so the
-     divergence the effects agent saw comes from its own tree.
+- **B9 is back to the original** (user, revised: keep z * 24; the leap may miss like
+  Headsplitter). The z * speed version in unit_move.cpp is only a comment now.
+  - The B9 measurement was skipped, on the user's word. One thing seen before that: after a
+    cross attack, Bowman's leap takes off level with the target in depth (dz 0), so the
+    two versions differ only on leaps from off to the side.
+  - Checked again against `ref/bowman_l4` (move 3): RNG equal to the exit (b1192), 3 of 1441
+    unit samples off, frames over 1% apart only from b1260 (the end fade).
+  - Suites: ss_tests 78/0, ss_game_tests 81/0, smoke 21/21.
+  - B1, B2, B3 and B5 are visual only. They change the trail vertices, the afterimage draw
+    order, the line depth and a per-call copy of the flare tables, all of them drawing only.
+- **New debug options** (battle_debug.{h,cpp}):
+  - `SS_BATTLE_QUIT_AT_EXIT=1`: the run ends at battle_exit_to_field (runtime::QuitRequested).
+    battle_debug_exit now prints `[battle] exit: encounter E outcome O battle frames B
+    fight frames F`. It runs after the "all down → defeat" fix-up.
+  - `SS_BATTLE_PARTY=1,2,3,4`: fills party slots 0..3 with field::party_slot_init.
+  - `SS_BATTLE_STRONG=H:A`: other HP / attack factors. A plain value keeps x10 / x8.
+  - When the boot disc lacks a load-list entry, `--battle` inserts the other disc
+    (loader_insert_disc, the marker-entry test). It prints `[battle] entry N is not on this disc`.
+- **tools/battle_sweep.py** (new). For each encounter:
+  - The stage comes from the scripted sites and preloads, else from the random groups (the
+    field program's 0x80074fe0 lists with encounter_maps.md's group → stage), else 3.
+  - The party is Claude / Rena / Celine plus a rotating fourth, with the AI driving all
+    (config +0x181), HP x20, ATK x8, MP 200, and killer moves on L1 / R1.
+  - Cross is pressed every 30 vblanks, with a 15000-vblank cap and XDG in OUT/xdg.
+  - At most 5 jobs run at once, on a copy of the binary.
+  - `--stages LO-HI` runs one encounter on each stage.
+  - Output: results.json / csv, missing.json (ranked), summary.md, logs/.
+  - Disc paths: `. scratchpad/battle/discs.sh` (SS_DISC1 / SS_DISC2).
+- Pass 1 (release build before the ports below, all 564) is in `scratchpad/battle/sweep/pass1`.
+  - The trial SIGSEGVs (encounters 450 and 539) were the sweep's own doing. With HP x20 a
+    member had over 9999 HP, and pc_ai_choose_heal (0x8003926c) starts its search at 10000,
+    so `worst` stayed null. That can't happen in the game (HP caps at 9999), so
+    SS_BATTLE_STRONG now caps HP at 9999 and the AI code stays faithful.
+  - Pass 1 has no crashes. The missing pieces it found, by encounters hit:
+    1. equipment effects (every encounter);
+    2. the victory voice (the enemy agent's);
+    3. stage code blocks (stages 0x24 / 0x10 / 0x29 / 0xe / 0x1a / 0x33);
+    4. stage 8 lightning.
+    "NO CASH" (the sprite texture cache is full) is the console's own message, logged once.
+- **Ported and verified: pc_apply_equip_effects 0x800818dc** and its stat helpers
+  0x800823d4-0x800827b4 (party.cpp):
+  - the config modifiers;
+  - about 95 ability-bit effect ids (the kAbilityBits table);
+  - the stat effects, the 0x92 affection bonus and the 0x86 boost (it saves acc_hp_max /
+    acc_mp_max).
+  - Also: PartyUnit::status_test (pc_has_effect 0x8003b8f4) now returns 0 while +0x135
+    (status_enabled) is clear, as the console does. The party AI clears it while scoring.
+  - Redux `ref/equip_9f_86`: Claude with accessories 118 (0x9f, 5% evade, an RNG draw on
+    each enemy hit) and 91 (0x86); the party idles until vsync 4710, then mashes.
+    - Port (pcrun with `PC_IN` cross from 630 and `PC_EXTRA_POKE=",4:0x16=0x76/2,4:0x18=0x5b/2"`):
+      RNG equal to the exit (b1326), 3 of 1642 unit samples off, frames 1.3-1.5% at
+      b650-910.
+    - The pre-port binary splits at b800 with 416 samples off, so the test is sensitive.
+  - Input mapping: a Redux mash at vsync 3810 + 45k is pressed at port vblank 45(k - 6),
+    pcrun-style with SS_BATTLE_TICKS=1.
+- **Ported, on disk, Redux pending: pc_update_effects 0x8003adc8**
+  (PartyUnit::update_status_effects): fury, attack boosts, stun, MP / HP drains, the guts /
+  evasion / intelligence boosts, the 300 / 600-tick regenerations and the timed effects.
+  - New PartyUnit fields: +0x2fe regen_ticks, +0x300 regen_mp_ticks, +0x302 mp_drain_ticks.
+  - Ref `ref/equip_71_85` (accessories 67 = 0x71 HP regen and 90 = 0x85 MP regen, MP 50 of
+    200) is running.
+- **Ported, Redux pending: stage 8 lightning** (director.cpp): stage_random_point plus
+  effect_spawn_streak_at(from 0x76c up, 0x101010 / 0xffffff, 0x60, 0x1000, 0x1000, puff 1).
+  - It needed kind 0x12's +0x10c 1 branch (the world agent's spell_shots.cpp, a 3-line
+    edit): size 0x10, and the streak ends where unit_check_move(s, vel, 7) is blocked.
+  - Ref `ref/stage8_light` (encounter 2, stage 8) is running.
+- **Opera move 7 trails (the effects agent's question)**: in progress.
+  - New dumps: explore.lua `BW_TRAIL=LO:HI` (the breakpoint object must stay referenced or
+    Redux drops it) and the port's `SS_BATTLE_TRAIL=LO:HI` (battle_debug_trail).
+  - Suspect: the console keeps the trail pointer at Shot +0x134, and the trail's back
+    pointer clears it when the trail dies, possibly in a reused pool slot. The port uses
+    p134 = 1 as a flag, with the back pointer on `s->trail`, so a cleared slot never
+    re-creates a trail.
+  - Ref `ref/op_m8_trail` is running.
+- **Next: the stage code blocks.**
+  - ELFs with each #1984 block 2-10 patched in at 0x8008c1f4 are in
+    `scratchpad/battle/stage_blocks/blk<n>.elf` (`blk0e.elf` holds the image's kind-0x19
+    handler).
+  - Ghidra decompiles go to `scratchpad/battle/decomp/` (stage_blocks/decomp_all.sh).
+  - battle_run's stage objects are in analysis/decomp/battle/8007160c (lines 165-280).
 
 ## Next steps
 
@@ -226,7 +279,7 @@ In progress, in this order:
      to slot 1. Then `SS_BATTLE_POKE` sets id 2, class 9, MP and the learned spells (record
      +0x3c..); see `scratchpad/battle/run_rena_ai.sh`.
    - Redux runs use explore.lua's `BW_COPY` (copies at vsync 4047, pokes at 4048).
-3. B1 / B2 / B3 fixed and committed. B5 is still "decide".
+3. B1 / B2 / B3 / B5 fixed (visual only). B9 kept as the original (user, revised).
 4. Voices: the enemy agent took the voice player (voice_play_entry, intro voices).
 5. Claude's move 5 (byte 6): verified against `ref/claude_l6` (RNG to the exit, units at
    most 3 sampling differences).

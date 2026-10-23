@@ -695,7 +695,7 @@ void ChisatoUnit::move5() {
 }
 
 // Move 6: a sound at frame 10, her voice at 13, then from frame 37 every 8 ticks a star
-// falling on the target (lvl + 3 of them, scattered more each time).
+// falling on the target (lvl + 3 of them, scattered more each time in x).
 void ChisatoUnit::move6() {
   BattleGlobals& g = bg();
   const int lvl = pc_move_charge_level(this, killer_index);
@@ -723,6 +723,9 @@ void ChisatoUnit::move6() {
           shot_place_at_unit(s, target, -0x80, 800, 0);
         } else {
           shot_place_at_unit(s, target, rng_spread(counters[1] << 7) - 0x80, 800, 0);
+          // Original quirk (original_bugs.md F12, held by the user): the depth scatter is
+          // added raw to the 20.12 z, so the stars never scatter in depth (a fix with << 12
+          // would make more of them miss).
           s->pos[2] += rng_spread(counters[1] << 6);
         }
         bsfx_play_at(0x38, s);

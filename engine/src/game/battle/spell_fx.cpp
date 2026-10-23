@@ -2,7 +2,9 @@
 
 #include "game/battle/spell_fx.h"
 
+#include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "game/battle/hud.h"
@@ -438,6 +440,61 @@ int model_find_vertices_near(std::vector<NearVertex>& out, const std::vector<u8>
     }
   }
   return static_cast<int>(out.size());
+}
+
+namespace {
+u32 g_visual_rng = 0x2545F491u;  // xorshift32 state (any non-zero seed)
+}  // namespace
+
+u32 visual_rng_next() {
+  u32 x = g_visual_rng;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  g_visual_rng = x;
+  return x;
+}
+
+s32 visual_rng_between_fixed(s32 a, s32 b) {
+  const s32 lo = a << 12, hi = b << 12;
+  if (hi == lo) return lo;
+  const u32 span = static_cast<u32>(hi > lo ? hi - lo : lo - hi);
+  return (hi > lo ? lo : hi) + static_cast<s32>(visual_rng_next() % span);
+}
+
+bool held_fix_enabled(const char* id) {
+  static const std::string list = [] {
+    const char* e = std::getenv("SS_HELD_FIXES");
+    return std::string(e != nullptr ? e : "");
+  }();
+  if (list.empty()) return false;
+  if (list == "all") return true;
+  const std::string want(id);
+  size_t at = 0;
+  while (at <= list.size()) {
+    const size_t stop = list.find(',', at);
+    if (list.substr(at, stop == std::string::npos ? std::string::npos : stop - at) == want) return true;
+    if (stop == std::string::npos) break;
+    at = stop + 1;
+  }
+  return false;
+}
+
+namespace {
+// The visual-only sprites' owner bytes: a sprite whose owner points in here is one of them
+// (the pool writes 1 there when it dies; a reused slot gets its new spawner's owner).
+u8 g_visual_owner[256] = {};
+u32 g_visual_next = 0;
+}  // namespace
+
+Sprite* visual_sprite_spawn(BObj* src, int anim) {
+  u8* owner = &g_visual_owner[g_visual_next++ & 0xFF];
+  *owner = 0;
+  return sprite_spawn_from(anim, 0, src, owner);
+}
+
+bool sprite_is_visual_only(const Sprite* s) {
+  return s != nullptr && s->owner >= g_visual_owner && s->owner < g_visual_owner + 256;
 }
 
 }  // namespace ss::game::battle

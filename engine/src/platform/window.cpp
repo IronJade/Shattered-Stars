@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <bit>
 
 #include "platform/gl.h"
 
@@ -40,47 +41,56 @@ unsigned compile(gl::GLenum type, const char* source, std::string* error) {
   return shader;
 }
 
-u16 key_to_pad(SDL_Keycode key) {
-  switch (key) {
-    case SDLK_UP: return kPadUp;
-    case SDLK_DOWN: return kPadDown;
-    case SDLK_LEFT: return kPadLeft;
-    case SDLK_RIGHT: return kPadRight;
-    case SDLK_RETURN: return kPadStart;
-    case SDLK_BACKSPACE: return kPadSelect;
-    case SDLK_Z: return kPadCross;
-    case SDLK_X: return kPadCircle;
-    case SDLK_A: return kPadSquare;
-    case SDLK_S: return kPadTriangle;
-    case SDLK_Q: return kPadL1;
-    case SDLK_W: return kPadR1;
-    case SDLK_1: return kPadL2;
-    case SDLK_2: return kPadR2;
-    default: return 0;
-  }
-}
-
-u16 gamepad_to_pad(Uint8 button) {
-  switch (button) {
-    case SDL_GAMEPAD_BUTTON_DPAD_UP: return kPadUp;
-    case SDL_GAMEPAD_BUTTON_DPAD_DOWN: return kPadDown;
-    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: return kPadLeft;
-    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return kPadRight;
-    case SDL_GAMEPAD_BUTTON_START: return kPadStart;
-    case SDL_GAMEPAD_BUTTON_BACK: return kPadSelect;
-    case SDL_GAMEPAD_BUTTON_SOUTH: return kPadCross;
-    case SDL_GAMEPAD_BUTTON_EAST: return kPadCircle;
-    case SDL_GAMEPAD_BUTTON_WEST: return kPadSquare;
-    case SDL_GAMEPAD_BUTTON_NORTH: return kPadTriangle;
-    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: return kPadL1;
-    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return kPadR1;
-    case SDL_GAMEPAD_BUTTON_LEFT_STICK: return kPadL3;
-    case SDL_GAMEPAD_BUTTON_RIGHT_STICK: return kPadR3;
-    default: return 0;
-  }
-}
-
 }  // namespace
+
+Controls Controls::defaults() {
+  Controls c;
+  auto set = [&](PadButton b, int key, int button) {
+    const int bit = std::countr_zero(static_cast<unsigned>(b));
+    c.keys[bit] = key;
+    c.buttons[bit] = button;
+  };
+  set(kPadUp, SDLK_UP, SDL_GAMEPAD_BUTTON_DPAD_UP);
+  set(kPadDown, SDLK_DOWN, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+  set(kPadLeft, SDLK_LEFT, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+  set(kPadRight, SDLK_RIGHT, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+  set(kPadStart, SDLK_RETURN, SDL_GAMEPAD_BUTTON_START);
+  set(kPadSelect, SDLK_BACKSPACE, SDL_GAMEPAD_BUTTON_BACK);
+  set(kPadCross, SDLK_Z, SDL_GAMEPAD_BUTTON_SOUTH);
+  set(kPadCircle, SDLK_X, SDL_GAMEPAD_BUTTON_EAST);
+  set(kPadSquare, SDLK_A, SDL_GAMEPAD_BUTTON_WEST);
+  set(kPadTriangle, SDLK_S, SDL_GAMEPAD_BUTTON_NORTH);
+  set(kPadL1, SDLK_Q, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+  set(kPadR1, SDLK_W, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+  set(kPadL2, SDLK_1, kLeftTrigger);
+  set(kPadR2, SDLK_2, kRightTrigger);
+  set(kPadL3, 0, SDL_GAMEPAD_BUTTON_LEFT_STICK);
+  set(kPadR3, 0, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
+  return c;
+}
+
+u16 pad_bits_for_key(const Controls& controls, int keycode) {
+  u16 bits = 0;
+  if (keycode == 0) return 0;
+  for (int i = 0; i < 16; ++i)
+    if (controls.keys[i] == keycode) bits |= static_cast<u16>(1u << i);
+  return bits;
+}
+
+u16 pad_bits_for_button(const Controls& controls, int button) {
+  u16 bits = 0;
+  if (button == kNoButton) return 0;
+  for (int i = 0; i < 16; ++i)
+    if (controls.buttons[i] == button) bits |= static_cast<u16>(1u << i);
+  return bits;
+}
+
+void Window::set_controls(const Controls& controls) {
+  controls_ = controls;
+  held_keys_.clear();
+  held_buttons_.clear();
+  key_bits_ = button_bits_ = trigger_bits_ = 0;
+}
 
 bool Window::sticks(u8 out[4]) const {
   if (gamepad_ == nullptr) return false;
@@ -221,13 +231,14 @@ bool Window::next_event(bool& open, KeyEvent& out) {
       case SDL_EVENT_KEY_DOWN:
       case SDL_EVENT_KEY_UP: {
         const bool down = e.type == SDL_EVENT_KEY_DOWN;
-        if (const u16 bit = key_to_pad(e.key.key)) pad_ = down ? (pad_ | bit) : (pad_ & ~bit);
+        const bool toggle = e.key.key == SDLK_F11 || (e.key.key == SDLK_RETURN && (e.key.mod & SDL_KMOD_ALT));
+        // The keys held now give the buttons (Alt+Enter is the full-screen switch, not a key).
+        std::erase(held_keys_, static_cast<int>(e.key.key));
+        if (down && !toggle) held_keys_.push_back(static_cast<int>(e.key.key));
+        key_bits_ = 0;
+        for (int k : held_keys_) key_bits_ |= pad_bits_for_key(controls_, k);
         if (down && e.key.key == SDLK_ESCAPE) open = false;
-        if (down && !e.key.repeat &&
-            (e.key.key == SDLK_F11 || (e.key.key == SDLK_RETURN && (e.key.mod & SDL_KMOD_ALT)))) {
-          set_fullscreen(!fullscreen_);
-          if (e.key.key == SDLK_RETURN) pad_ &= static_cast<u16>(~kPadStart);  // Alt+Enter is not Start
-        }
+        if (down && !e.key.repeat && toggle) set_fullscreen(!fullscreen_);
         if (!e.key.repeat) {
           out = KeyEvent{static_cast<int>(e.key.key), down};
           return true;
@@ -238,6 +249,8 @@ bool Window::next_event(bool& open, KeyEvent& out) {
         if (SDL_Gamepad* g = SDL_OpenGamepad(e.gdevice.which)) {
           gamepad_ = g;
           for (s16& a : axes_) a = 0;
+          held_buttons_.clear();
+          button_bits_ = trigger_bits_ = 0;
         }
         break;
       case SDL_EVENT_GAMEPAD_REMOVED:
@@ -245,12 +258,16 @@ bool Window::next_event(bool& open, KeyEvent& out) {
           SDL_CloseGamepad(gamepad_);
           gamepad_ = nullptr;
           for (s16& a : axes_) a = 0;
+          held_buttons_.clear();
+          button_bits_ = trigger_bits_ = 0;
         }
         break;
       case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
       case SDL_EVENT_GAMEPAD_BUTTON_UP: {
-        const u16 bit = gamepad_to_pad(e.gbutton.button);
-        pad_ = e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN ? (pad_ | bit) : (pad_ & ~bit);
+        std::erase(held_buttons_, static_cast<int>(e.gbutton.button));
+        if (e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) held_buttons_.push_back(e.gbutton.button);
+        button_bits_ = 0;
+        for (int b : held_buttons_) button_bits_ |= pad_bits_for_button(controls_, b);
         break;
       }
       case SDL_EVENT_GAMEPAD_AXIS_MOTION:
@@ -261,6 +278,16 @@ bool Window::next_event(bool& open, KeyEvent& out) {
             case SDL_GAMEPAD_AXIS_RIGHTY: axes_[1] = e.gaxis.value; break;
             case SDL_GAMEPAD_AXIS_LEFTX: axes_[2] = e.gaxis.value; break;
             case SDL_GAMEPAD_AXIS_LEFTY: axes_[3] = e.gaxis.value; break;
+            case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+            case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: {
+              // A trigger is a button past half way (with a little hysteresis).
+              const int which = e.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? kLeftTrigger : kRightTrigger;
+              const u16 bits = pad_bits_for_button(controls_, which);
+              const bool was = (trigger_bits_ & bits) != 0 && bits != 0;
+              const bool now = e.gaxis.value > (was ? 12000 : 18000);
+              trigger_bits_ = static_cast<u16>(now ? (trigger_bits_ | bits) : (trigger_bits_ & ~bits));
+              break;
+            }
             default: break;
           }
         }

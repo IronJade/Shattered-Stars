@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/common/program_image.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
@@ -232,6 +233,7 @@ namespace {
   u8* config = g_title.config;
   std::memset(config + 0x1A0, 0, 0x100);
   clock_reset(g_title.pad);
+  ap::on_new_game();  // Archipelago (port feature): a fresh state [world agent]
   auto* party = static_cast<u8*>(handoff_get(g_title.handoff, 3));
   auto* records = static_cast<u8*>(handoff_get(g_title.handoff, 4));
   while (!async_load_done(0)) load_queue_update();

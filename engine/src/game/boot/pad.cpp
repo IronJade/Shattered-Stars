@@ -1,5 +1,6 @@
 #include "game/boot/pad.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "runtime/runtime.h"
@@ -30,6 +31,16 @@ struct PadState {
   bool host_gamepad = false;  // port 0 reads as a DualShock (a host gamepad is open)
 };
 PadState g_pad;
+
+// Port feature: the player's stick settings (setup's Controls page), kept over the game's
+// own pad_set_stick_* calls; -1 leaves the game's value.
+struct PlayerStick {
+  int dead_zone = -1;
+  int dpad = -1;
+};
+PlayerStick g_player_stick;
+
+int stick_dpad_mode(int port) { return g_player_stick.dpad >= 0 ? g_player_stick.dpad : g_pad.stick_dpad[port]; }
 
 // 0x8002b5ec / 0x8002b5f0 / 0x8002b608: the vblank handler list.
 struct HandlerList {
@@ -128,13 +139,18 @@ void pad_set_stick_range(Pad*, int port, u8 r0, u8 r1, u8 r2, u8 r3) {
 
 void pad_set_stick_dpad(Pad*, int port, u8 mode) { g_pad.stick_dpad[port] = mode; }
 
+void pad_set_player_stick(int dead_zone, int dpad) {
+  g_player_stick.dead_zone = dead_zone < 0 ? -1 : std::min(dead_zone, 0x7F);
+  g_player_stick.dpad = dpad < 0 ? -1 : dpad != 0;
+}
+
 bool pad_stick(Pad*, int port, s32* rx, s32* ry, s32* lx, s32* ly) {
   s32* out[4] = {rx, ry, lx, ly};
   if (!g_pad.analog[port]) {
     for (s32* o : out) *o = 0;
     return false;
   }
-  const s32 dead = g_pad.dead_zone[port];
+  const s32 dead = g_player_stick.dead_zone >= 0 ? g_player_stick.dead_zone : g_pad.dead_zone[port];
   for (int i = 0; i < 4; ++i) {
     const s32 d = g_pad.axes[port][i] - (g_pad.centre[port][i] + 0x80);
     s32 v = (d < 0 ? -d : d) < dead ? 0 : d < 1 ? d + dead : d - dead;
@@ -177,9 +193,9 @@ void vsync_callback_with(u16 port0_buttons, const u8* port0_sticks) {
     g_pad.analog[port] = sticks != nullptr;
     if (sticks != nullptr) {
       std::memcpy(g_pad.axes[port], sticks, 4);
-      if (g_pad.stick_dpad[port] != 0) {
+      if (stick_dpad_mode(port) != 0) {
         // The left stick past half its range presses the d-pad (mode 2: only the stick).
-        if (g_pad.stick_dpad[port] == 2) buttons &= 0x0FFF;
+        if (stick_dpad_mode(port) == 2) buttons &= 0x0FFF;
         s32 rx, ry, lx, ly;
         if (pad_stick(nullptr, port, &rx, &ry, &lx, &ly)) {
           const s32 hx = g_pad.range[port][2] >> 1, hy = g_pad.range[port][3] >> 1;

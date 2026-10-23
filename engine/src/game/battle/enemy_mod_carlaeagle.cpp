@@ -73,8 +73,10 @@ struct EnemyCarlaeagle : EnemyUnit {
             // ORIGINAL BUG (original_bugs.md E9): the height is the descriptor's point y (0
             // after shot_desc_init), not the bird's, so every feather starts 0x78 above y 0:
             //   from[1] = d->point[1] - 0x78000;
-            const s32 from[3] = {pos[0] + (facing[0] > 0 ? 0x30000 : -0x30000), pos[1] - 0x78000, pos[2]};
-            shot_spawn_projectile(this, from, d, this);
+            // The feathers keep the console's path, so each hits when and where it did there
+            // (and aims as it did); only the drawing starts above the bird (draw_from_bird).
+            const s32 from[3] = {pos[0] + (facing[0] > 0 ? 0x30000 : -0x30000), d->point[1] - 0x78000, pos[2]};
+            if (Shot* s = shot_spawn_projectile(this, from, d, this)) draw_from_bird(s, d);
           }
         }
         if (static_cast<s16>(animate(static_cast<u32>(attack_recovery))) != -1) return;
@@ -98,6 +100,29 @@ struct EnemyCarlaeagle : EnemyUnit {
       default:
         return;
     }
+  }
+
+  // (Port, original_bugs.md E9) a feather is drawn starting 0x78 above the bird, as the
+  // module means (from[1] = pos[1] - 0x78000), and slides onto its real path, which it
+  // joins at the point nearest the aim (the target's centre at the throw, as in
+  // shot_spawn_projectile), within its life. Its hits stay the console's.
+  void draw_from_bird(Shot* s, const ShotDesc* d) {
+    s->draw_offset[1] = pos[1] - d->point[1];
+    s32 aim[3] = {d->point[0], d->point[1], d->point[2]};
+    if (const Unit* t = d->target; t != nullptr) {
+      aim[0] = t->pos[0] + (t->size[0] << 13);
+      aim[1] = t->pos[1] - (t->size[1] << 13);
+      aim[2] = t->pos[2];
+    }
+    s64 along = 0, speed2 = 0;
+    for (int i = 0; i < 3; ++i) {
+      along += static_cast<s64>(aim[i] - s->pos[i]) * s->vel[i];
+      speed2 += static_cast<s64>(s->vel[i]) * s->vel[i];
+    }
+    s64 ticks = speed2 > 0 ? along / speed2 : 1;
+    if (ticks < 1) ticks = 1;
+    if (ticks > d->life) ticks = d->life;
+    s->draw_ticks = static_cast<s32>(ticks);
   }
 
   // 0x80088490 [28]: rise (faster); aim at the target's centre 24 ticks ahead (no higher

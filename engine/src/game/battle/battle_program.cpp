@@ -747,7 +747,6 @@ void battle_free_all() {
 
 void battle_exit_to_field() {
   BattleGlobals& g = g_battle;
-  battle_debug_exit();
   runtime::Runtime::get().trace(("battle exit to field, outcome " + std::to_string(g.outcome)).c_str());
   if (g.outcome == kVictory) {
     int down = 0;
@@ -755,6 +754,7 @@ void battle_exit_to_field() {
       if (unit_is_down(u)) ++down;
     if (down == 4 && party_count_fled() == 0) g.outcome = kDefeat;
   }
+  battle_debug_exit();  // (debug traces; SS_BATTLE_QUIT_AT_EXIT stops the run here)
   pad_vibrate(g.pad, 0, 0, 0);
   const u16 outcome = g.outcome;
   std::memcpy(g.config + 0x178, &outcome, 2);

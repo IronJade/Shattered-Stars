@@ -130,7 +130,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
   `battle/<name>/snapshot` right before each call: other agents switch the shared session);
   listings with `dump_asm.py` (one CLI process).
 
-### Precis (#2155): ported, registered (case 6), level 0 verified (reported); max level not run yet
+### Precis (#2155): verified (level 0 and max level), reported 23:xx
 
 - `engine/src/game/battle/pc_precis.cpp` (new): PrecisUnit (vtable 0x801f1754, +0x360 the
   arm), 10 moves (vtable slots 47-56 through the table 0x801f191c), 8 Shot callbacks, slots
@@ -148,7 +148,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 - Max level: not run yet (see the resume point). The b4 / b10 frame differences are gone
   with the new reference switches (prec_b4 / b10 rerun: no frame above 1%).
 
-### Opera (#2153): ported, registered (case 9); level 0 verified (not yet reported)
+### Opera (#2153): verified (level 0 and max level), reported 23:xx
 
 - `engine/src/game/battle/pc_opera.cpp` (new): OperaUnit (vtable 0x801f1e10), 10 moves
   (pointer table 0x801f1f88), slots 31 / 35 / 36 / 37 / 45, 14 Shot callbacks including
@@ -177,8 +177,9 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 - Move 4's +0x21e flag is kept in a member (`shaken`): on the console it overwrites the
   low half of PartyUnit +0x21e (item_value_sum in the port).
 - Level 0: `as_b1..b5` (moves 0-4): RNG equal to the exit, no frame above 1% in the
-  battle (reported). `as_b6` (move 5) reference is complete, not yet compared. `as_b7..b10`
-  not run (the 19:4x pause killed b7-b9; their partial dirs were removed).
+  battle (reported). `as_b7..b9` (moves 6-8): RNG equal to the exit; move 7's frames
+  differ only in its 2-copy afterimage (B2; the faithful build matches). `as_b6` (move 5):
+  see the current state below. `as_b10` (move 9, spell 0x40) queued.
 - New bugs: F15 (dart facing from his x velocity: decide), F16 (sound at a null dart:
   avoided), F17 (hit sprites by the first point's height: decide).
 - Catalog: battle_pc2147 rows (31), MP table 0x8006b2bf, module tables.
@@ -208,27 +209,41 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
 without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
 
-## Resume point (paused 19:4x for the usage limit; resume at 22:11)
+## Current state (22:5x)
 
-State: no runs of mine are active. The tree builds in engine/build-fx except while another
-agent's in-progress platform/window edit fails to link (19:4x: Window::present / next_event
-undefined); my files are complete. My last edit (removing a temporary debug print from
-pc_opera.cpp's cb_vortex_area) is on disk; rebuild once the window edit is done.
-
-Next, in order (Redux at most 3 at a time: `redux/queue.sh`, builds -j8):
-1. Rebuild: `cmake --build engine/build-fx -j8`.
-2. Compare Ashton move 5: `cd scratchpad/fx_worker/battle && ./port_pc.sh as_b6 7 6 0 1500`,
-   then `python3 ../../battle/rngcmp.py redux/ref/as_b6/log.txt port/as_b6/log.txt` and
-   `FRAMECMP_D=7 python3 ../../battle/framecmp.py redux/ref/as_b6 port/as_b6/cap 160 1500 10`.
-3. Queue the rest: `BW_BATTLE_FOR=1500 BW_QUIT=6000 ./redux/queue.sh "as_b7 7 7" "as_b8 7 8"
-   "as_b9 7 9" "as_b10 7 10"`, then the max-level runs ("prec_m1 6 1 0 999" .. "prec_m10 6 10
-   0 999", "op_m1 9 1 0 999" .. "op_m10 9 10 0 999", "as_m1 7 1 0 999" ..), comparing with
-   `port_pc.sh NAME CHAR BYTE 999 1500`.
-4. Note: Ashton's weapon variant (+0x205, the dragons) is 0 with the poked Claude record,
-   so move 3's darts and move 2's flashes need a run with it set (BW_EXTRA_POKE on the
-   record, and SS_BATTLE_POKE in port_pc.sh) — not done yet.
-5. Report Opera (level 0 verified), then Ashton when 5-9 are compared; run the three suites
-   first (ss_tests, ss_game_tests with and without SS_DISC1, smoke; TMPDIR on disk).
+- Ashton level 0, all 10 moves compared: RNG equal to the exit in moves 0-4 and 6-9
+  (move 9 = spell 0x40, the world agent's `spell_mod_spell40.cpp`: its first check, equal);
+  frames: move 7 (b8) and move 9 (b10) differ only in the homing lines (<= 1.9%: the line
+  walk, Redux's Bresenham vs the hardware DDA; not B1-B3: a scratch build with all three
+  reverted is the same). Move 5 (b6): equal until b536, where the console's frames take 3
+  vblanks under the two dragon heads (`as_b6d`, BW_DENSE): the original's slowdown.
+- Variant 1 (the dragons; weapon item 307 poked into handoff 4 +0xc): `asv_b3` (move 2's
+  flashes): RNG equal to the exit, frames clean. `asv_b4` (move 3's darts) and `asv_b10`
+  (move 9 from frame 5) Redux references ran (orphaned by a queue restart, still writing
+  their dirs); compare with `EXTRA_POKE="4:0xc=307/2" ./port_pc.sh asv_bN 7 N 0 1500`.
+- Original bugs under the play-state rule (a fix must not change hits, damage, timing,
+  pacing; measured with `hits.py` over SS_ENEMY_TRACE=1 port logs against the faithful
+  version): F12 held (original code back), F13 kept (my fix moved op_b8's hits 8 / 19
+  frames earlier: reverted), F14 fixed (neutral), F17 fixed (neutral), F15 held for a
+  decision (dart facing feeds the mirrored attack box; console: Ashton's x velocity is 0 at
+  the spawn; facing left no change, facing right the fix would move the box behind the
+  dart). The scratch build has env toggles SS_F13 / SS_F14 / SS_F15 / SS_F17 for these
+  measurements (`scratchpad/fx_worker/faithful`, re-applied by hand after sync.sh).
+- F15 fixed play-neutral (only the darts' drawing follows Ashton's facing, +0x128 at the
+  spawn; the boxes are mirrored back to facing 0's side): hits identical for the original,
+  the fix and a forced opposite drawing; asv_b4 RNG equal to Redux, no frame above 1%.
+- Opera max level (`op_m1..m10`): RNG equal to the exit in moves 1, 3-8; slowdown in moves
+  0 / 9 (as level 0) and move 2 (Photon Prison: frame counter 2 ticks behind at b420).
+  Move 7's shard ribbon trails differ (<= 15% at b480-540, also in a B1-B3-reverted build:
+  ribbon_trail_update or a trail reading its dead source Shot; passed to the battle agent).
+  Reported.
+- Precis max level `prec_m1..m10`: RNG equal to the exit in all 10; frames differ only in
+  the afterimages (moves 1, 2, 4, 7: B2; the faithful build matches). Reported.
+- Queue (`redux/queue_max2.log`, detached): as_m1..m10. Compare
+  with `./cmp_run.sh NAME CHAR BYTE [USES] [EXTRA_POKE]` (port run + RNG + frames).
+- Tools: `port_pc.sh` uses XDG_CONFIG_HOME=scratchpad/fx_worker/xdg; `redux/queue.sh` takes
+  "VAR=VAL ...|job"; don't SIGSTOP a queue started from the tool shell (it was killed);
+  `hits.py LOG_A LOG_B` compares enemy HP changes of SS_ENEMY_TRACE=1 port logs.
 
 ## Uncommitted files
 

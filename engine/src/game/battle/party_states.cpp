@@ -299,12 +299,93 @@ int PartyUnit::start_reaction() {
   return unit_start_reaction(this);
 }
 
+// 0x8003adc8 pc_update_effects (slot 10): the status update, then while fighting and
+// unpaused the equipment / talent effects on the battle stats (which are rebuilt every
+// frame): fury and the attack boosts, the drains, the regenerations and the timed effects.
 void PartyUnit::update_status_effects() {
+  BattleGlobals& g = bg();
   unit_update_status_effects(this);
-  // TODO(port): the rest of pc_update_effects 0x8003adc8 (fury, regeneration, drains and
-  // the timed equipment effects).
-  if (effect_bits[0] | effect_bits[1] | effect_bits[2] | effect_bits[3] || (st()->status & 0x10))
-    todo("pc_update_effects: equipment / talent effects");
+  if (g.state != kStateFighting || g.flags != 0) return;
+  Stats* s = st();
+  const s32 t = g.frame_ticks;
+  if ((s->status & 0x10) == 0) {
+    if (status_test(0, 0x8000000) != 0) s->atk[2] = static_cast<s16>(s->atk[2] << 1);
+  } else {
+    // Fury: double attack until +0x22c runs out.
+    s->atk[2] = static_cast<s16>(s->atk[2] << 1);
+    fury_ticks -= t;
+    if (fury_ticks < 0) {
+      fury_ticks = 0;
+      s->status = static_cast<u8>(s->status & 0xEF);
+    }
+  }
+  if (status_test(2, 0x80000000) != 0 || status_test(3, 0x40) != 0) {
+    s->atk[2] = static_cast<s16>(s->atk[2] + (s->atk[2] >> 1));
+  } else if (status_test(3, 1) != 0) {
+    s->atk[2] = static_cast<s16>(s->atk[2] * 0xE / 10);
+  }
+  if (status_test(0, 0x4000000) != 0) {
+    special_timer = 6;
+    unit_apply_stun(this);
+  }
+  if (0 < s->mp && status_test(2, 0x100) != 0) {
+    // MP drain: 2 MP every 2 ticks.
+    special_timer = 6;
+    mp_drain_ticks = static_cast<s16>(mp_drain_ticks + t);
+    if (1 < mp_drain_ticks) {
+      unit_damage_mp(this, mp_drain_ticks << 1);
+      mp_drain_ticks = 0;
+    }
+  }
+  if (0 < s->hp && status_test(2, 0x1000) != 0) {
+    special_timer = 6;
+    unit_damage_hp(this, t * 0xC);
+  }
+  if (status_test(2, 0x2000000) != 0) {
+    s->guts[2] = static_cast<s16>(s->guts[2] + (s->guts[2] >> 1));
+    if (0xFE < s->guts[2]) s->guts[2] = 0xFF;
+  }
+  if (status_test(2, 0x10000000) != 0) s->eva[2] = static_cast<s16>(s->eva[2] + 0x40);
+  if (status_test(2, 0x20000000) != 0) {
+    s->intel[2] = static_cast<s16>(s->intel[2] + s->intel[2] / 3);
+    effect_timer[0] = static_cast<s16>(effect_timer[0] + t);
+    if (0x708 < effect_timer[0]) clear_status(2, 0x20000000);
+  }
+  s->eva[2] = static_cast<s16>(s->eva[2] + eva_bonus);
+  regen_ticks = static_cast<s16>(regen_ticks + t);
+  if (300 < regen_ticks) {
+    regen_ticks = static_cast<s16>(regen_ticks - 300);
+    if (status_test(0, 0x80) != 0 || status_test(3, 0x10) != 0) {
+      const s32 heal = -s->hp_max / 0x21;
+      unit_damage_hp(this, heal);
+      damage_popup_spawn(this, heal, 0, 0);
+    }
+    if (status_test(0, 0x10000) != 0) {
+      const s32 heal = -static_cast<s32>(s->mp_max) / 0x32;
+      unit_damage_mp(this, heal);
+      damage_popup_spawn(this, heal, 0, 1);
+    }
+  }
+  regen_mp_ticks = static_cast<s16>(regen_mp_ticks + t);
+  if (600 < regen_mp_ticks) {
+    regen_mp_ticks = static_cast<s16>(regen_mp_ticks - 600);
+    if (status_test(1, 0x40000) != 0 || status_test(1, 0x10000000) != 0 || status_test(2, 8) != 0) {
+      const s32 heal = -static_cast<s32>(s->mp_max) / 0x32;
+      unit_damage_mp(this, heal);
+      damage_popup_spawn(this, heal, 0, 1);
+    }
+  }
+  if (status_test(3, 2) != 0) {
+    effect_timer[1] = static_cast<s16>(effect_timer[1] + t);
+    if (0x708 < effect_timer[1]) clear_status(3, 2);
+  }
+  if (status_test(3, 4) != 0 || status_test(3, 0x800) != 0) {
+    effect_timer[2] = static_cast<s16>(effect_timer[2] + t);
+    if (0x5DC < effect_timer[2]) {
+      clear_status(3, 4);
+      clear_status(3, 0x800);
+    }
+  }
 }
 
 void PartyUnit::set_effect_timer(int which, s16 ticks) {

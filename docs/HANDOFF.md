@@ -96,6 +96,8 @@ only. Agents run the suites themselves before reporting a step as verified.
 - Enhance, don't degrade: the port runs at full speed (no modelling of the original's
   slowdown), and the original's bugs are commented out and corrected, each listed in
   `docs/notes/original_bugs.md`. Save data stays byte-compatible.
+  A fix never changes the play state: hit timing, hits, damage, difficulty and pacing stay
+  the original's, measured against PCSX-Redux before the fix goes in.
 - No game code or assets in git; data is read from the user's discs at run time.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).

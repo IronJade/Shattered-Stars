@@ -33,17 +33,25 @@
 // format emulators use; remembered; "none" removes the card). Slot 1 defaults to
 // memcard1.mcd next to config.ini, created formatted on first use. --no-memcard runs
 // with both slots empty (testing; not remembered). The environment variables
-// SS_MEMCARD1 / SS_MEMCARD2 override the remembered paths for one run.
+// SS_MEMCARD1 / SS_MEMCARD2 override the remembered paths for one run. Headless runs use
+// only cards named for the run (--memcardN, SS_MEMCARDN): otherwise both slots are empty,
+// so tests never create or write a card in the settings folder.
 //
 // Window: config.ini's window / window_scale / resolution / monitor / vsync keys (set in
 // setup); F11 or Alt+Enter toggles fullscreen; Esc quits. Keys: arrows, Z (Cross), X (Circle),
 // A (Square), S (Triangle), Enter (Start), Backspace (Select), Q/W (L1/R1), 1/2 (L2/R2);
 // gamepads map directly (left stick = d-pad).
 //
+// Archipelago (port feature, docs/archipelago_plan.md): --ap-seed FILE (an .apso2 seed, this
+// run only) or config.ini's ap_seed key (not read by headless runs) turns it on; off without
+// a seed. [world agent]
+//
 // IMAGE is a .cue, raw .bin or .iso of your own disc.
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -52,13 +60,16 @@
 
 #include "disc/archive.h"
 #include "disc/disc_image.h"
+#include "game/ap/ap.h"
 #include "game/battle/battle_debug.h"
+#include "game/boot/pad.h"
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
 #include "game/field/debug_console.h"
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/process.h"
+#include "launcher/report.h"
 #include "launcher/settings.h"
 #include "platform/audio.h"
 #include "platform/window.h"
@@ -76,20 +87,26 @@ bool env_set(const char* name) {
   return v != nullptr && *v != 0;
 }
 
+// Why there is nothing to boot from: one line about the image (if one was given), then how
+// to give one. A fatal error (launcher/report.h: a message box when nobody sees stderr).
 void print_no_disc(const std::string& disc1) {
-  if (!disc1.empty())
-    std::fprintf(stderr, "Disc 1 \"%s\": %s\n", disc1.c_str(),
-                 launcher::describe(launcher::identify_disc(launcher::utf8_path(disc1)), 1).c_str());
-  std::fprintf(stderr, "No disc image yet: run %s, put your disc images in a \"discs\" folder next to the game, or\n"
-                       "run once with --disc1 \"/path/to/Disc 1.cue\" (both are remembered).\n",
-               launcher::kSetupProgram);
+  std::string text;
+  if (!disc1.empty()) {
+    const launcher::DiscInfo info = launcher::identify_disc(launcher::utf8_path(disc1));
+    text = "disc 1 image expected, " + disc1 +
+           (info.kind == launcher::DiscKind::kDisc2 ? " is disc 2" : ": " + launcher::describe(info, 1)) + "\n";
+  }
+  text += std::string("No disc image yet: run ") + launcher::kSetupProgram +
+          ", put your disc images in a \"discs\" folder next to the game, or\n"
+          "run once with --disc1 \"/path/to/Disc 1.cue\" (both are remembered).\n";
+  launcher::fatal(text);
 }
 
 int usage(const char* argv0) {
-  std::fprintf(stderr,
+  launcher::report(
                "usage: %s [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
-               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug]\n",
+               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE]\n",
                argv0);
   return 2;
 }
@@ -97,6 +114,19 @@ int usage(const char* argv0) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  // Messages (launcher/report.h): to the terminal the game was started from; a windowed
+  // player's run also keeps them in shattered-stars.log beside config.ini (all of them on
+  // Windows when the game was double-clicked). Headless and SS_DISC runs write no log.
+  {
+    bool headless_run = false, debug_run = false;
+    for (int i = 1; i < argc; ++i) {
+      headless_run = headless_run || std::strcmp(argv[i], "--headless") == 0;
+      debug_run = debug_run || std::strcmp(argv[i], "--debug") == 0;
+    }
+    launcher::attach_console(debug_run);
+    if (!headless_run && !env_set("SS_DISC1") && !env_set("SS_DISC2"))
+      launcher::open_log(launcher::config_dir() / "shattered-stars.log");
+  }
   // 'saved' is config.ini as written back; 'config' the run's settings (saved, plus this
   // run's options and SS_DISC1 / SS_DISC2).
   launcher::Config saved = launcher::Config::load();
@@ -109,11 +139,12 @@ int main(int argc, char** argv) {
   std::filesystem::path dump_dir, capture_dir;
   std::string capture_frames, input_script;
   std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
+  std::string ap_seed;                  // --ap-seed FILE (Archipelago, game/ap)
   bool viewer = false, headless = false, config_changed = false, reference_dither = false,
        no_memcard = false, debug_console = false;
   int entry = 10;
   u64 frames = 0;
-  bool audio_asked = false;
+  bool audio_asked = false, disc1_arg = false, disc2_arg = false, memcard_arg[2] = {false, false};
   std::filesystem::path audio_wav;
   if (const char* wav = std::getenv("SS_AUDIO_WAV"); wav && *wav) audio_wav = wav;
   for (int i = 1; i < argc; ++i) {
@@ -122,10 +153,10 @@ int main(int argc, char** argv) {
     const bool has_value = i + 1 < argc;
     if ((arg == "--disc1" || arg == "--disc") && has_value) {
       remember("disc1", launcher::path_utf8(std::filesystem::absolute(next())));
-      config_changed = true;
+      config_changed = disc1_arg = true;
     } else if (arg == "--disc2" && has_value) {
       remember("disc2", launcher::path_utf8(std::filesystem::absolute(next())));
-      config_changed = true;
+      config_changed = disc2_arg = true;
     } else if (arg == "--viewer") {
       viewer = true;
     } else if (arg == "--dump" && has_value) {
@@ -141,7 +172,7 @@ int main(int argc, char** argv) {
     } else if ((arg == "--memcard1" || arg == "--memcard2") && has_value) {
       const std::string value = next();
       remember(arg.substr(2), value == "none" ? "none" : launcher::path_utf8(std::filesystem::absolute(value)));
-      config_changed = true;
+      config_changed = memcard_arg[arg == "--memcard2"] = true;
     } else if (arg == "--no-memcard") {
       no_memcard = true;
     } else if (arg == "--reference-dither") {
@@ -154,6 +185,8 @@ int main(int argc, char** argv) {
       battle_end = next();
     } else if (arg == "--debug") {  // debug console on the terminal (game/field/debug_console.h)
       debug_console = true;
+    } else if (arg == "--ap-seed" && has_value) {  // Archipelago seed (game/ap; this run only)
+      ap_seed = launcher::path_utf8(std::filesystem::absolute(next()));
     } else if (arg == "--mods" && has_value) {  // world-edit patches (default: mods/ next to config.ini)
       runtime::Runtime::get().mods_dir = std::filesystem::absolute(next()).string();
     } else if (arg == "--map" && has_value) {
@@ -189,17 +222,25 @@ int main(int argc, char** argv) {
   const bool may_write = !headless && !discs_from_env;
   if (config_changed && !headless) {
     for (const std::string& key : remembered) saved.set(key, config.get(key));
-    if (std::string save_error; !saved.save(&save_error)) std::fprintf(stderr, "%s\n", save_error.c_str());
+    if (std::string save_error; !saved.save(&save_error)) launcher::report("%s\n", save_error.c_str());
   }
   if (env_set("SS_DISC1")) config.set("disc1", std::getenv("SS_DISC1"));
   if (env_set("SS_DISC2")) config.set("disc2", std::getenv("SS_DISC2"));
 
-  // Disc 1 (launcher/discs.h): the configured image if it is disc 1, else the first disc 1
-  // in the `discs` folders (silently, remembered), else the setup program.
+  // The boot disc (launcher/discs.h): the configured image if it is disc 1, else the first
+  // disc 1 in the `discs` folders (silently, remembered), else the setup program. An image
+  // given for this run (SS_DISC1, --disc1) or a headless run may also be disc 2, which the
+  // game boots from as a console does (the event sweep of disc 2 runs that way); a windowed
+  // run from config.ini wants disc 1, as setup writes it.
+  const bool lenient = headless || env_set("SS_DISC1") || disc1_arg;
+  auto bootable = [&](const std::string& path) {
+    const int n = launcher::disc_number(launcher::utf8_path(path));
+    return n == 1 || (n == 2 && lenient);
+  };
   {
     const auto folders = launcher::disc_folders(launcher::config_dir());
     bool write_back = false;
-    if (!launcher::is_disc1(launcher::utf8_path(config.get("disc1")))) {
+    if (!bootable(config.get("disc1"))) {
       const launcher::FoundDiscs found = launcher::find_discs(folders);
       if (!found.disc1.empty()) {
         config.set("disc1", found.disc1);
@@ -211,13 +252,13 @@ int main(int argc, char** argv) {
         write_back = true;
       }
     }
-    if (!launcher::is_disc1(launcher::utf8_path(config.get("disc1"))) && may_write) {
+    if (!bootable(config.get("disc1")) && may_write) {
       const std::filesystem::path setup = launcher::sibling_program(launcher::kSetupProgram);
       if (!setup.empty()) {
-        std::fprintf(stderr, "No usable Disc 1 image yet: opening %s.\n", launcher::kSetupProgram);
+        launcher::report("No usable Disc 1 image yet: opening %s.\n", launcher::kSetupProgram);
         std::string setup_error;
         const int code = launcher::run_and_wait(setup, {"--from-game"}, &setup_error);
-        if (code < 0) std::fprintf(stderr, "%s: %s\n", launcher::path_utf8(setup).c_str(), setup_error.c_str());
+        if (code < 0) launcher::report("%s: %s\n", launcher::path_utf8(setup).c_str(), setup_error.c_str());
         if (code != launcher::kSetupPlay) {
           print_no_disc(config.get("disc1"));
           return 1;
@@ -228,15 +269,17 @@ int main(int argc, char** argv) {
         write_back = false;
       }
     }
-    if (!launcher::is_disc1(launcher::utf8_path(config.get("disc1")))) {
+    if (!bootable(config.get("disc1"))) {
       print_no_disc(config.get("disc1"));
       return may_write ? 1 : usage(argv[0]);
     }
-    // Disc 2 (optional): the configured image if it is disc 2, else one next to disc 1 or
-    // in the `discs` folders.
-    if (launcher::disc_number(launcher::utf8_path(config.get("disc2"))) != 2) {
+    // Disc 2 (optional): an image given for this run (SS_DISC2, --disc2) as it is; else the
+    // configured image if it is disc 2, else one next to disc 1 or in the `discs` folders.
+    const bool disc2_given = env_set("SS_DISC2") || disc2_arg;
+    const bool boot_is_disc2 = launcher::disc_number(launcher::utf8_path(config.get("disc1"))) == 2;
+    if (!disc2_given && !boot_is_disc2 && launcher::disc_number(launcher::utf8_path(config.get("disc2"))) != 2) {
       if (!config.get("disc2").empty())
-        std::fprintf(stderr, "Disc 2 \"%s\": %s\n", config.get("disc2").c_str(),
+        launcher::report("Disc 2 \"%s\": %s\n", config.get("disc2").c_str(),
                      launcher::describe(launcher::identify_disc(launcher::utf8_path(config.get("disc2"))), 2).c_str());
       std::string disc2 = launcher::find_disc2_near(launcher::utf8_path(config.get("disc1")));
       if (disc2.empty()) disc2 = launcher::find_discs(folders).disc2;
@@ -253,12 +296,12 @@ int main(int argc, char** argv) {
   auto disc = disc::DiscImage::open(launcher::utf8_path(config.get("disc1")), &error);
   disc::Archive archive;
   if (!disc || !archive.open(*disc, &error)) {
-    std::fprintf(stderr, "%s: %s\n", config.get("disc1").c_str(), error.c_str());
+    launcher::fatal(config.get("disc1") + ": " + error);
     return 1;
   }
   // The sound driver's tables (and libspu's reverb presets) are read from the boot executable.
   if (std::string exe_error; !runtime::boot_exe_open(*disc, &exe_error))
-    std::fprintf(stderr, "%s: %s (no sound)\n", config.get("disc1").c_str(), exe_error.c_str());
+    launcher::report("%s: %s (no sound)\n", config.get("disc1").c_str(), exe_error.c_str());
   // Disc 2 (optional, --disc2): the loader swaps to it when a save or the story needs it
   // (game::loader_insert_disc); without it the game stays on disc 1, whose archive holds
   // the same field and battle data.
@@ -268,20 +311,32 @@ int main(int argc, char** argv) {
   if (!config.get("disc2").empty()) {
     disc2 = disc::DiscImage::open(launcher::utf8_path(config.get("disc2")), &error);
     if (disc2 && archive2.open(*disc2, &error)) game::loader_register_disc(2, &archive2);
-    else std::fprintf(stderr, "%s: %s (disc 2 not available)\n", config.get("disc2").c_str(), error.c_str());
+    else launcher::report("%s: %s (disc 2 not available)\n", config.get("disc2").c_str(), error.c_str());
   }
   if (!dump_dir.empty()) return tools::dump_textures(archive, entry, dump_dir);
   if (viewer) return tools::run_viewer(archive, entry, static_cast<int>(frames));
 
   {
-    const char* env1 = std::getenv("SS_MEMCARD1");
-    const char* env2 = std::getenv("SS_MEMCARD2");
     // launcher::memcard_path: slot 1 defaults to memcard1.mcd next to config.ini; "none"
-    // (an empty slot) comes back empty.
-    const std::string card1 = env1 ? env1 : launcher::memcard_path(config, 1);
-    const std::string card2 = env2 ? env2 : launcher::memcard_path(config, 2);
+    // (an empty slot) comes back empty. Headless: only a card named for this run.
+    std::string cards[2];
+    for (int i = 0; i < 2; ++i) {
+      if (const char* env = std::getenv(i == 0 ? "SS_MEMCARD1" : "SS_MEMCARD2")) cards[i] = env;
+      else if (!headless || memcard_arg[i]) cards[i] = launcher::memcard_path(config, i + 1);
+    }
     auto slot = [&](const std::string& card) { return no_memcard || card.empty() || card == "none" ? nullptr : card.c_str(); };
-    game::memcard_set_images(slot(card1), slot(card2));
+    game::memcard_set_images(slot(cards[0]), slot(cards[1]));
+  }
+
+  // Archipelago (game/ap): the seed is read before any map, so its patch lines join the
+  // world edits. A seed that does not load stops the game (playing on would lose checks).
+  if (ap_seed.empty() && !headless) ap_seed = config.get("ap_seed");
+  if (!ap_seed.empty()) {
+    std::string ap_error;
+    if (!game::ap::start(ap_seed, &ap_error)) {
+      launcher::fatal("Archipelago seed: " + ap_error);
+      return 1;
+    }
   }
 
   auto& rt = runtime::Runtime::get();
@@ -341,10 +396,15 @@ int main(int argc, char** argv) {
     options.monitor = display.monitor;
     options.vsync = display.vsync;
     if (!window.create("Star Ocean: The Second Story (Shattered Stars)", options, &error)) {
-      std::fprintf(stderr, "%s\n", error.c_str());
+      launcher::fatal("The game window could not be opened (" + error + ").\n\nThe game needs OpenGL 3.3: "
+                      "updating the graphics driver usually helps.");
       return 1;
     }
     rt.window = &window;
+    // The player's controls (setup's Controls page; launcher/settings.h).
+    const launcher::ControlSettings controls = launcher::read_controls(config);
+    window.set_controls(controls.controls);
+    game::pad_set_player_stick(launcher::stick_deadzone_units(controls), controls.stick_dpad ? -1 : 0);
   }
 
   const launcher::SoundSettings sound = launcher::read_sound(config);
@@ -353,7 +413,7 @@ int main(int argc, char** argv) {
   audio.volume = sound.volume;
   audio.wav = audio_wav;
   if (std::string audio_error; !platform::audio_open(audio, &audio_error))
-    std::fprintf(stderr, "audio: %s\n", audio_error.c_str());
+    launcher::report("audio: %s\n", audio_error.c_str());
   rt.audio_tick = platform::audio_vblank;
 
   try {
@@ -369,6 +429,11 @@ int main(int argc, char** argv) {
       }
     }
   } catch (const runtime::QuitRequested&) {
+  } catch (const std::exception& e) {
+    if (headless) throw;  // tests see the crash as before
+    launcher::fatal(std::string("The game stopped because of an error:\n\n") + e.what());
+    platform::audio_close();
+    return 3;
   }
   if (const char* vram_png = std::getenv("SS_VRAM_PNG")) {  // debugging: VRAM at exit
     std::vector<u32> pixels;

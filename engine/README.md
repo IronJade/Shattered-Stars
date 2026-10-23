@@ -21,6 +21,36 @@ or data: everything is read at runtime from your own disc images.
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
+## First run
+
+You need images of your own discs, North American release: each disc's `.cue` file with
+its `.bin`, or an `.iso` / `.img` image. Disc 2 is optional until the story asks for it.
+
+**Windows:** unzip `ShatteredStars-win64.zip` anywhere and run **`setup.exe`**. On the
+Discs page, choose Disc 1 (and Disc 2) with *Browse...*. The other pages are Display,
+Sound, Memory cards and Mods. Then press *Save & Play*. Or just run
+`shattered-stars.exe`: it opens setup by itself while it has no disc.
+
+**To skip browsing,** put the disc images in the `discs` folder next to the game
+(subfolders are fine). The game finds them by itself, and setup's *Auto-detect* fills
+them in.
+
+**Linux:** the same two programs sit side by side in the build folder, `shattered-stars`
+(the game) and `shattered-stars-setup` (setup). They work the same way.
+
+| | Windows | Linux |
+|---|---|---|
+| The game | `shattered-stars.exe` | `shattered-stars` |
+| Setup | `setup.exe` | `shattered-stars-setup` |
+| Settings | `%APPDATA%\ShatteredStars\config.ini` | `~/.config/shattered-stars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) |
+| Memory card 1 | `memcard1.mcd` beside `config.ini` | the same |
+| Mods | `mods\` beside `config.ini` | `mods/` beside `config.ini` |
+| Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` |
+
+While playing, F11 or Alt+Enter switches between the window and full screen, and Esc
+quits. `config.ini` is plain `key=value` text: setup writes it, and keys it doesn't know
+are kept. The keys are listed in `src/launcher/config.h`.
+
 ## Build
 
 Needs CMake 3.24+, a C++20 compiler and, ideally, SDL3 development files
@@ -39,19 +69,42 @@ The Windows build is cross-compiled from Linux with MinGW-w64 (on Fedora:
 `sudo dnf install mingw64-gcc-c++ mingw64-SDL3`):
 
 ```sh
-tools/build_windows.sh   # -> dist/ShatteredStars-win64.zip: shattered-stars.exe, SDL3.dll, this README
+tools/build_windows.sh   # -> dist/ShatteredStars-win64.zip: shattered-stars.exe, setup.exe,
+                         #    SDL3.dll, this README and an empty discs\ folder
 ```
 
-The C / C++ runtimes are linked in, so the zip holds everything the game needs; unpack it
-anywhere and run `shattered-stars.exe --disc1 "C:\path\to\Disc 1.cue"` once. On Windows
-the settings, the memory cards and `mods/` live in `%APPDATA%\ShatteredStars\`. The
-Windows build renders the same frames as the Linux one (checked byte for byte), and its test
-suites pass under Wine (`engine/build-win/ss_tests.exe`, `ss_game_tests.exe`).
+The C / C++ runtimes are linked in, so the zip holds everything the game needs (see
+*First run*). The Windows build renders the same frames as the Linux one (checked byte for
+byte), and its test suites pass under Wine (`engine/build-win/ss_tests.exe`,
+`ss_game_tests.exe`).
+
+### Linux package
+
+```sh
+tools/build_linux.sh   # -> dist/ShatteredStars-linux-x86_64.tar.gz: shattered-stars,
+                       #    shattered-stars-setup, libSDL3.so.0, README, discs/
+```
+
+libstdc++ is linked in (`sudo dnf install libstdc++-static`), and SDL3 is copied beside
+the programs, which load it from there (RUNPATH `$ORIGIN`). The player needs only glibc and
+OpenGL 3.3. The glibc version is that of the system the package was built on (Fedora 44:
+2.43); the script prints it and writes it in the package's `README.txt`. Build on an older
+distribution to support older systems.
+
+### Setup program
+
+The setup program uses Dear ImGui (MIT licence), fetched by CMake and pinned by SHA-256.
+`-DSS_BUILD_SETUP=OFF` leaves it out. To check its layout without opening a window,
+`tools/setup_screenshots.sh [PROGRAM] [OUT_DIR]` renders every page and state offscreen as
+PNGs, with scratch settings. Pass `engine/build-win/setup.exe` to run the Windows build
+under Wine. setup's own test options are listed at the top of `src/setup/setup_main.cpp`.
 
 ## Run
 
 ```sh
-# Play: opens the game window. The disc paths are remembered in
+# Settings window (discs, display, sound, memory cards, mods):
+engine/build/shattered-stars-setup
+# Play: opens the game window. Disc paths given here are remembered in
 # ~/.config/shattered-stars/config.ini, so later runs need no arguments.
 engine/build/shattered-stars --disc1 ".../Star Ocean - The Second Story (Disc 1).cue" \
                              --disc2 ".../Star Ocean - The Second Story (Disc 2).cue"
@@ -60,8 +113,10 @@ engine/build/shattered-stars
 
 Memory card 1 is `memcard1.mcd` next to `config.ini` (created formatted on first use);
 `--memcard1 FILE` / `--memcard2 FILE` use other raw 128 KB images. A DexDrive save
-(`.gme`) converts with `tools/gme_to_mcd.py SAVE.gme CARD.mcd` — point `--memcard1` at a
-copy, since the game writes to the card it uses.
+(`.gme`) converts with setup's *Make a .mcd copy* button or with
+`tools/gme_to_mcd.py SAVE.gme CARD.mcd` — point `--memcard1` at a copy, since the game
+writes to the card it uses. Headless runs (`--headless`) use only cards named for the run
+(`--memcard1` / `SS_MEMCARD1`) and never write `config.ini`.
 
 Keyboard pad: arrows = d-pad, Z = Cross, X = Circle, A = Square, S = Triangle,
 Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2. Gamepads work through SDL and read as a DualShock in analog mode: the left stick walks

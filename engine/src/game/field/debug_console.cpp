@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "game/ap/ap.h"
 #include "game/field/actor_base.h"
 #include "game/field/actors.h"
 #include "game/field/fade.h"
@@ -53,7 +54,45 @@ const char* kHelp =
     "  flag N [0|1]              read / set script flag N\n"
     "  global OFF [VALUE]        read / set script global G[OFF] (s32)\n"
     "  battle ENC [STAGE]        start encounter ENC (stage 3 by default)\n"
-    "  noclip                    the leader walks through walls (toggle)";
+    "  noclip                    the leader walks through walls (toggle)\n"
+    "  ap_status                 Archipelago: seed, checks, received items (needs --ap-seed)\n"
+    "  ap_check ID               Archipelago: record location ID as checked\n"
+    "  ap_give ITEM [FROM]       Archipelago: receive ITEM (AP id / name of the seed, or a game\n"
+    "                            item id); given in free play with a notice";
+
+// The Archipelago commands (game/ap): they work outside the field too (the queue waits).
+bool ap_command(const std::vector<std::string>& w) {
+  const std::string& cmd = w[0];
+  if (cmd == "ap_status" && w.size() == 1) {
+    say(ap::status_text());
+  } else if (cmd == "ap_check" && w.size() == 2) {
+    if (!ap::enabled()) {
+      say("Archipelago is off (start with --ap-seed FILE)");
+      return true;
+    }
+    long long id = 0;
+    if (!number(w[1], &id)) {
+      say("not a number: " + w[1]);
+    } else if (ap::is_checked(id)) {
+      say("location " + w[1] + " was already checked");
+    } else if (ap::location_checked(id)) {
+      const ap::Location* l = ap::find_location(id);
+      say("checked " + w[1] + (l != nullptr && !l->name.empty() ? " (" + l->name + ")" : ""));
+    } else {
+      say("location " + w[1] + " is not in this seed");
+    }
+  } else if (cmd == "ap_give" && (w.size() == 2 || w.size() == 3)) {
+    std::string error;
+    if (ap::receive_by_name_or_id(w[1], w.size() == 3 ? w[2] : "", &error)) {
+      say("queued " + w[1] + " (" + std::to_string(ap::pending_count()) + " waiting for free play)");
+    } else {
+      say(error);
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
 
 Actor* leader() { return field_actor(globals().game_state[0x24]); }
 
@@ -80,6 +119,7 @@ void debug_console_command(const std::string& text) {
     say(kHelp);
     return;
   }
+  if (w[0].rfind("ap_", 0) == 0 && ap_command(w)) return;
   if (f == nullptr) {
     say("not in the field (commands work once a map is loaded)");
     return;

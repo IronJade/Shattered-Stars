@@ -35,6 +35,12 @@ struct Shot : Collider {
   const Unit* last_hit = nullptr;  // +0x130 of kind 2 when it holds a unit (p130 is then 2)
   // (Module code keeps state in fields of its own; they are named where it is ported.)
   s32 user[4] = {};
+  // (Port) a draw-only offset (kind 0x16; original_bugs.md E9): the Shot is drawn at pos +
+  // draw_offset * (draw_ticks - draw_age) / draw_ticks, so it comes out of another point
+  // and joins its own path by tick draw_ticks, while it moves and hits as on the console.
+  s32 draw_offset[3] = {};
+  s32 draw_ticks = 0;
+  s32 draw_age = 0;
 
   void update() override;    // [1] shot_update 0x80054560
 };

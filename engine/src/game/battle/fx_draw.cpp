@@ -389,7 +389,8 @@ FlareSet& small_set() {
 }
 
 // 0x80074558 lens_flare_render.
-void lens_flare_render(FlareSet& set, const s32 src[3], s32 dist, u32 rgb, s32 size, s32 threshold, bool patch) {
+void lens_flare_render(const FlareSet& shared, const s32 src[3], s32 dist, u32 rgb, s32 size, s32 threshold, bool patch) {
+  FlareSet set = shared;
   ViewState& v = view();
   auto channel = [](u32 c, s16 k) {
     u32 x = static_cast<u32>(mul32(static_cast<s32>(c), k)) >> 7;
@@ -412,6 +413,11 @@ void lens_flare_render(FlareSet& set, const s32 src[3], s32 dist, u32 rgb, s32 s
   const s32 facing = dot / (vec_distance_fx(d, kZero) >> 12);
   if (facing < 0x400) return;
   if (patch) {
+    // ORIGINAL BUG (original_bugs.md B5): the console writes the stage flare's size into the
+    // shared #1984 flare tables themselves (they keep it for every later flare drawn from
+    // them):
+    //   shared.size[0] = size; shared.size[1] = size + 4; shared.intensity[0] = size * 7;
+    // The port patches its own copy for this flare only.
     set.size[0] = static_cast<u8>(size);
     set.size[1] = static_cast<u8>(size + 4);
     set.intensity[0] = static_cast<s16>(size * 7);

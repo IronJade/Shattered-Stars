@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -11,6 +12,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "launcher/process.h"
+#include "launcher/title_art.h"
 #include "platform/window.h"
 #include "psx/memory_card.h"
 
@@ -29,8 +31,8 @@ constexpr ImVec4 kAccent(0.24f, 0.48f, 0.85f, 1.0f);
 constexpr ImVec4 kAccentHover(0.30f, 0.55f, 0.92f, 1.0f);
 constexpr ImVec4 kAccentActive(0.19f, 0.41f, 0.76f, 1.0f);
 
-constexpr const char* kPageNames[] = {"Discs", "Display", "Sound", "Memory cards", "Mods", "Archipelago"};
-constexpr const char* kPageIds[] = {"discs", "display", "sound", "memcards", "mods", "archipelago"};
+constexpr const char* kPageNames[] = {"Discs", "Display", "Sound", "Controls", "Memory cards", "Mods", "Archipelago"};
+constexpr const char* kPageIds[] = {"discs", "display", "sound", "controls", "memcards", "mods", "archipelago"};
 static_assert(std::size(kPageNames) == static_cast<size_t>(Page::kCount));
 
 // The North American game's save names on a card: "BASCUS-94421S02-Snn".
@@ -93,8 +95,10 @@ bool parse_page(const std::string& name, Page* out) {
 // ---------------------------------------------------------------------------------------
 // State
 
-App::App(SDL_Window* window, const Fonts& fonts, Options options)
-    : window_(window), fonts_(fonts), options_(std::move(options)) {
+static_assert(sizeof(ImTextureID) == sizeof(u64));
+
+App::App(SDL_Window* window, const Fonts& fonts, const Textures& textures, Options options)
+    : window_(window), fonts_(fonts), textures_(textures), options_(std::move(options)) {
   config_ = launcher::Config::load();
   saved_ = read(config_);
   // --set KEY=VALUE (tests): as if the player had changed these, not yet saved.
@@ -104,12 +108,34 @@ App::App(SDL_Window* window, const Fonts& fonts, Options options)
   page_ = options_.page;
 }
 
+App::~App() {
+  if (logo_ && textures_.destroy) textures_.destroy(logo_);
+}
+
+void App::update_logo() {
+  // Read once per disc: at start from config.ini's Disc 1, then whenever the player picks
+  // another valid one. Decoded in memory only (launcher/title_art.h).
+  if (!disc1_ok() || settings_.disc1 == logo_disc_ || !textures_.create) return;
+  logo_disc_ = settings_.disc1;
+  const auto picture = launcher::read_title_picture(launcher::utf8_path(settings_.disc1));
+  if (!picture) return;
+  const launcher::Picture band =
+      launcher::crop(*picture, launcher::kLogoX, launcher::kLogoY, launcher::kLogoWidth, launcher::kLogoHeight);
+  const u64 texture = textures_.create(band.rgba.data(), band.width, band.height);
+  if (!texture) return;
+  if (logo_ && textures_.destroy) textures_.destroy(logo_);
+  logo_ = texture;
+  logo_width_ = band.width;
+  logo_height_ = band.height;
+}
+
 Settings App::read(const launcher::Config& c) const {
   Settings s;
   s.disc1 = c.get("disc1");
   s.disc2 = c.get("disc2");
   s.display = launcher::read_display(c);
   s.sound = launcher::read_sound(c);
+  s.controls = launcher::read_controls(c);
   for (int slot = 1; slot <= 2; ++slot) {
     const std::string path = launcher::memcard_path(c, slot);
     s.card_inserted[slot - 1] = !path.empty();
@@ -189,17 +215,14 @@ void App::auto_detect(bool quiet) {
   }
 }
 
-bool App::save() {
-  const bool cards_clash = settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]);
-  if (!disc1_ok() || cards_clash) return false;
-  // Start from the file as it is now: keys this version doesn't know (or that the game
-  // wrote meanwhile) stay as they are.
-  launcher::Config c = launcher::Config::load(config_.path());
+launcher::Config App::compose(const launcher::Config& base) const {
+  launcher::Config c = base;
   c.set("disc1", settings_.disc1);
   if (settings_.disc2.empty()) c.erase("disc2");
   else c.set("disc2", settings_.disc2);
   launcher::write_display(c, settings_.display);
   launcher::write_sound(c, settings_.sound);
+  launcher::write_controls(c, settings_.controls);
   for (int slot = 1; slot <= 2; ++slot) {
     const std::string key = "memcard" + std::to_string(slot);
     const std::string path = settings_.card[slot - 1];
@@ -216,6 +239,15 @@ bool App::save() {
   const std::string default_mods = launcher::path_utf8(launcher::config_dir() / "mods");
   if (settings_.mods.empty() || same_file(settings_.mods, default_mods)) c.erase("mods");
   else c.set("mods", settings_.mods);
+  return c;
+}
+
+bool App::save() {
+  const bool cards_clash = settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]);
+  if (!disc1_ok() || cards_clash) return false;
+  // Start from the file as it is now: keys this version doesn't know (or that the game
+  // wrote meanwhile) stay as they are.
+  launcher::Config c = compose(launcher::Config::load(config_.path()));
   std::string error;
   if (!c.save(&error)) {
     error_message_ = "The settings could not be saved.\n\n" + error;
@@ -237,6 +269,11 @@ void App::play() {
     return;
   }
   const fs::path game = launcher::sibling_program(launcher::kGameProgram);
+  if (!game.empty() && options_.screenshot) {  // test runs never start anything
+    std::printf("setup: would start %s\n", launcher::path_utf8(game).c_str());
+    done_ = true;
+    return;
+  }
   std::string error;
   if (game.empty() || !launcher::start_program(game, {}, &error)) {
     error_message_ = game.empty() ? std::string("The game (") + launcher::kGameProgram +
@@ -261,7 +298,12 @@ void App::request_close() {
 }
 
 void App::run_action(const std::string& action) {
-  if (action == "autodetect") auto_detect(false);
+  if (action.rfind("set:", 0) == 0 && action.find('=') != std::string::npos) {  // set:KEY=VALUE
+    const auto eq = action.find('=');
+    launcher::Config c = compose(config_);
+    c.set(action.substr(4, eq - 4), action.substr(eq + 1));
+    settings_ = read(c);
+  } else if (action == "autodetect") auto_detect(false);
   else if (action == "save") save();
   else if (action == "play") play();
   else if (action == "quit") quit();
@@ -457,13 +499,58 @@ void App::note(const std::string& text) {
   ImGui::PopStyleColor();
 }
 
+// A path box. At rest it shows the end of the path ("...Disc 1)/SO2 (Disc 1).cue"), where
+// the file name is; a click (or Enter on it) turns it into a text box for typing or pasting.
 bool App::path_input(const char* id, std::string& value, const char* hint, float reserve) {
-  ImGui::SetNextItemWidth(std::max(em() * 8, ImGui::GetContentRegionAvail().x - reserve));
-  std::string edited = value;
-  const bool changed = ImGui::InputTextWithHint(id, hint, &edited);
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal) && !value.empty()) ImGui::SetTooltip("%s", value.c_str());
-  if (changed) value = clean_path(edited);
-  return changed;
+  const float width = std::max(em() * 8, ImGui::GetContentRegionAvail().x - reserve);
+  ImGuiStorage* storage = ImGui::GetStateStorage();
+  const ImGuiID editing_key = ImGui::GetID(id), focus_key = ImGui::GetID((std::string(id) + "#focus").c_str());
+  bool changed = false;
+  if (storage->GetBool(editing_key, false)) {
+    if (storage->GetBool(focus_key, false)) {
+      ImGui::SetKeyboardFocusHere();
+      storage->SetBool(focus_key, false);
+    }
+    ImGui::SetNextItemWidth(width);
+    std::string edited = value;
+    if (ImGui::InputTextWithHint(id, hint, &edited, ImGuiInputTextFlags_AutoSelectAll)) {
+      value = clean_path(edited);
+      changed = true;
+    }
+    if (ImGui::IsItemDeactivated()) storage->SetBool(editing_key, false);
+    return changed;
+  }
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const ImVec2 pos = ImGui::GetCursorScreenPos();
+  const ImVec2 size(width, ImGui::GetFrameHeight());
+  if (ImGui::InvisibleButton(id, size)) {
+    storage->SetBool(editing_key, true);
+    storage->SetBool(focus_key, true);
+  }
+  const bool hovered = ImGui::IsItemHovered();
+  ImDrawList* dl = ImGui::GetWindowDrawList();
+  const ImVec2 end(pos.x + size.x, pos.y + size.y);
+  dl->AddRectFilled(pos, end, ImGui::GetColorU32(hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), style.FrameRounding);
+  if (style.FrameBorderSize > 0)
+    dl->AddRect(pos, end, ImGui::GetColorU32(ImGuiCol_Border), style.FrameRounding, style.FrameBorderSize);
+  const float room = size.x - style.FramePadding.x * 2;
+  std::string shown = value.empty() ? std::string(hint) : value;
+  bool cut = false;
+  if (!value.empty() && ImGui::CalcTextSize(shown.c_str()).x > room) {
+    size_t start = 0;  // drop leading characters (whole UTF-8 sequences) until it fits
+    while (start < value.size() && ImGui::CalcTextSize(("..." + value.substr(start)).c_str()).x > room) {
+      ++start;
+      while (start < value.size() && (static_cast<unsigned char>(value[start]) & 0xC0) == 0x80) ++start;
+    }
+    shown = "..." + value.substr(start);
+    cut = true;
+  }
+  dl->PushClipRect(pos, end, true);
+  dl->AddText(ImVec2(pos.x + style.FramePadding.x, pos.y + style.FramePadding.y),
+              ImGui::GetColorU32(value.empty() ? ImGuiCol_TextDisabled : ImGuiCol_Text), shown.c_str());
+  dl->PopClipRect();
+  if (hovered && cut) ImGui::SetTooltip("%s", value.c_str());
+  return false;
 }
 
 namespace {
@@ -489,11 +576,33 @@ float button_width(const char* label) {
   return ImGui::CalcTextSize(label, nullptr, true).x + ImGui::GetStyle().FramePadding.x * 2;
 }
 
-// A label column: the text, then the widget at a fixed indent.
+// Checkboxes and radio buttons a little smaller than the text boxes.
+bool check(const char* label, bool* v) {
+  const float pad = ImGui::GetFontSize() * 0.16f;
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(pad, pad));
+  const bool changed = ImGui::Checkbox(label, v);
+  ImGui::PopStyleVar();
+  return changed;
+}
+
+bool radio(const char* label, bool active) {
+  const float pad = ImGui::GetFontSize() * 0.16f;
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(pad, pad));
+  const bool pressed = ImGui::RadioButton(label, active);
+  ImGui::PopStyleVar();
+  return pressed;
+}
+
+// Indent of a checkbox's description, under its label.
+float check_indent() { return ImGui::GetFontSize() * 1.32f + ImGui::GetStyle().ItemInnerSpacing.x; }
+
+// A label column: the text, then the widget at a fixed indent (further when the text is
+// wider, as with a wide fallback font).
 void field_label(const char* text, float width) {
+  const float start = ImGui::GetCursorPosX();  // SameLine's offset counts from the window's edge
   ImGui::AlignTextToFramePadding();
   ImGui::TextUnformatted(text);
-  ImGui::SameLine(width);
+  ImGui::SameLine(start + std::max(width, ImGui::CalcTextSize(text).x + ImGui::GetStyle().ItemSpacing.x));
 }
 
 }  // namespace
@@ -507,6 +616,10 @@ void App::frame() {
   if (frame_ == 1) {
     if (!disc1_ok() && settings_.disc1.empty() && options_.sets.empty()) auto_detect(true);
     if (options_.state == "quit-confirm") open_quit_popup_ = true;
+    if (options_.state == "capture-key" || options_.state == "capture-pad") {
+      capture_bit_ = std::countr_zero(static_cast<unsigned>(platform::kPadCross));
+      capture_gamepad_ = options_.state == "capture-pad";
+    }
     if (options_.state == "game-missing") {
       error_message_ = std::string("The game (") + launcher::kGameProgram +
                        ") is not in the same folder as setup, so it can't be started from here.\n\n"
@@ -519,6 +632,7 @@ void App::frame() {
     run_action(action);
   }
   if (settings_ != saved_) saved_message_.clear();
+  update_logo();
 
   const ImGuiViewport* vp = ImGui::GetMainViewport();
   ImGui::SetNextWindowPos(vp->WorkPos);
@@ -552,6 +666,7 @@ void App::frame() {
     case Page::kDiscs: page_discs(); break;
     case Page::kDisplay: page_display(); break;
     case Page::kSound: page_sound(); break;
+    case Page::kControls: page_controls(); break;
     case Page::kMemoryCards: page_cards(); break;
     case Page::kMods: page_mods(); break;
     case Page::kArchipelago: page_archipelago(); break;
@@ -567,7 +682,7 @@ void App::frame() {
 }
 
 void App::header() {
-  const float height = em() * 4.4f;
+  const float height = em() * 5.6f;
   const ImVec2 p0 = ImGui::GetCursorScreenPos();
   const ImVec2 p1(p0.x + ImGui::GetContentRegionAvail().x, p0.y + height);
   ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -591,23 +706,51 @@ void App::header() {
     dl->AddCircleFilled(at, 4.0f * scale, IM_COL32(150, 180, 255, 40), 12);
     dl->AddCircleFilled(at, 1.6f * scale, IM_COL32(240, 245, 255, 235), 8);
   }
+
+  // With a valid Disc 1: the game's own title logo over its nebula, the full height of the
+  // header, fading into the starfield on the right (a mesh with per-vertex alpha).
+  const bool logo = logo_ != 0 && disc1_ok();
+  float text_left = p0.x + em() * 1.4f;
+  if (logo) {
+    const float h = height - 2.0f * scale;
+    const float w = h * static_cast<float>(logo_width_) / static_cast<float>(logo_height_);
+    constexpr int kColumns = 32;
+    dl->PushTexture(ImTextureRef(static_cast<ImTextureID>(logo_)));
+    dl->PrimReserve(kColumns * 6, (kColumns + 1) * 2);
+    const unsigned base = dl->_VtxCurrentIdx;
+    for (int i = 0; i <= kColumns; ++i) {
+      const float u = static_cast<float>(i) / kColumns;
+      // Opaque over the logo, fading out over the last 16% (its right edge) and the first 3%.
+      const float right = std::clamp((1.0f - u) / 0.16f, 0.0f, 1.0f), left = std::clamp(u / 0.03f, 0.0f, 1.0f);
+      const float a = std::min(left, right * right * (3 - 2 * right));
+      const ImU32 col = IM_COL32(255, 255, 255, static_cast<int>(a * 255.0f + 0.5f));
+      dl->PrimWriteVtx(ImVec2(p0.x + u * w, p0.y), ImVec2(u, 0), col);
+      dl->PrimWriteVtx(ImVec2(p0.x + u * w, p0.y + h), ImVec2(u, 1), col);
+    }
+    for (int i = 0; i < kColumns; ++i) {
+      const auto v = static_cast<ImDrawIdx>(base + i * 2);
+      for (int k : {0, 1, 3, 0, 3, 2}) dl->PrimWriteIdx(static_cast<ImDrawIdx>(v + k));
+    }
+    dl->PopTexture();
+    text_left = p0.x + w + em() * 0.6f;
+  }
   dl->AddLine(ImVec2(p0.x, p1.y - 1), ImVec2(p1.x, p1.y - 1), ImGui::GetColorU32(kAccent), 2.0f * scale);
 
-  const float left = em() * 1.4f;
-  ImGui::SetCursorScreenPos(ImVec2(p0.x + left, p0.y + em() * 0.75f));
-  ImGui::PushFont(fonts_.bold, fonts_.size * 1.75f);
+  ImGui::SetCursorScreenPos(ImVec2(text_left, p0.y + em() * 1.0f));
+  ImGui::PushFont(fonts_.bold, fonts_.size * (logo ? 1.5f : 1.75f));
   ImGui::TextUnformatted("Shattered Stars");
   ImGui::PopFont();
-  ImGui::SetCursorScreenPos(ImVec2(p0.x + left, ImGui::GetCursorScreenPos().y - em() * 0.1f));
+  ImGui::SetCursorScreenPos(ImVec2(text_left, ImGui::GetCursorScreenPos().y - em() * 0.1f));
   ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(176, 190, 225, 255));
   ImGui::TextUnformatted(options_.from_game ? "Setup  -  the game is waiting for its discs"
+                         : logo             ? "Setup"
                                             : "Setup for Star Ocean: The Second Story");
   ImGui::PopStyleColor();
 
-  // Where the settings live, at the right (small; for helping someone over the phone).
+  // Where the settings live, at the bottom right (small; for helping someone over the phone).
   const std::string where = "Settings: " + launcher::path_utf8(config_.path());
   ImGui::PushFont(nullptr, fonts_.size * 0.8f);
-  const float max_w = (p1.x - p0.x) * 0.45f;
+  const float max_w = logo ? std::max(em() * 6, p1.x - text_left - em() * 1.2f) : (p1.x - p0.x) * 0.45f;
   std::string shown = where;
   while (shown.size() > 12 && ImGui::CalcTextSize(shown.c_str()).x > max_w) shown = "..." + shown.substr(4);
   const ImVec2 size = ImGui::CalcTextSize(shown.c_str());
@@ -810,8 +953,8 @@ void App::page_discs() {
     ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, em() * 0.2f));
   }
-  note("Shattered Stars plays Star Ocean: The Second Story from images of your own discs (North American "
-       "release): a .cue file with its .bin, or an .iso or .img.");
+  note("Shattered Stars plays Star Ocean: The Second Story from images of your own discs, North American "
+       "release: cue sheets with their bin files, or iso / img images.");
   disc_field(1);
   disc_field(2);
   if (disc_info(settings_.disc2).kind == DiscKind::kNone)
@@ -838,11 +981,13 @@ void App::page_discs() {
     open_folder(target);
   }
   ImGui::EndDisabled();
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayShort)) {
+    std::string where = "The game looks for disc images in:";
+    for (const fs::path& f : folders) where += "\n" + launcher::path_utf8(f);
+    ImGui::SetTooltip("%s", where.c_str());
+  }
   if (!notice_.empty()) status_line(notice_level_, notice_);
-  note("Tip: put your disc images in a folder named \"discs\" and the game finds them by itself. It looks in:");
-  ImGui::Indent(em());
-  for (const fs::path& f : folders) note(launcher::path_utf8(f));
-  ImGui::Unindent(em());
+  note("Tip: put your disc images in a folder named \"discs\" next to the game and it finds them by itself.");
 }
 
 void App::page_display() {
@@ -867,13 +1012,14 @@ void App::page_display() {
        "Covers the screen at the desktop's resolution; switching to other programs is instant."},
       {launcher::WindowMode::kFullscreen, "Full screen", "Takes over the monitor in the resolution chosen below."},
   };
+  const char* about = "";
   for (const ModeChoice& m : modes) {
-    if (ImGui::RadioButton(m.name, d.mode == m.mode)) d.mode = m.mode;
-    ImGui::Indent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
-    note(m.about);
-    ImGui::Unindent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
+    if (&m != modes) ImGui::SameLine(0, em() * 1.6f);
+    if (radio(m.name, d.mode == m.mode)) d.mode = m.mode;
+    if (d.mode == m.mode) about = m.about;
   }
-  ImGui::Dummy(ImVec2(0, em() * 0.3f));
+  note(about);
+  ImGui::Dummy(ImVec2(0, em() * 0.2f));
 
   if (monitors > 1) {
     field_label("Monitor", label_w);
@@ -895,12 +1041,12 @@ void App::page_display() {
     if (SDL_Rect usable; id && SDL_GetDisplayUsableBounds(id, &usable) && usable.w > 0)
       max_scale = std::clamp(std::min(usable.w * 95 / 100 / 320, usable.h * 90 / 100 / 240), 1, launcher::kMaxScale);
     auto scale_name = [&](int s) {
-      std::string text = std::to_string(s) + "x  (" + std::to_string(320 * s) + " x " + std::to_string(240 * s) + ")";
-      if (s == 3) text += "  default";
-      if (s > max_scale) text += "  larger than this monitor";
+      std::string text = std::to_string(s) + "x   " + std::to_string(320 * s) + " x " + std::to_string(240 * s);
+      if (s == 3) text += s > max_scale ? "  (default, shrunk to fit)" : "  (default)";
+      else if (s > max_scale) text += "  (shrunk to fit)";
       return text;
     };
-    ImGui::SetNextItemWidth(em() * 18);
+    ImGui::SetNextItemWidth(em() * 20);
     if (ImGui::BeginCombo("##scale", scale_name(d.scale).c_str())) {
       for (int s = 1; s <= std::max(max_scale, d.scale); ++s)
         if (ImGui::Selectable(scale_name(s).c_str(), s == d.scale)) d.scale = s;
@@ -938,7 +1084,7 @@ void App::page_display() {
           return m.w == d.width && m.h == d.height && (d.refresh <= 0 || std::fabs(m.hz - d.refresh) < 0.05f);
         }))
       preview += "  (closest mode is used)";
-    ImGui::SetNextItemWidth(em() * 18);
+    ImGui::SetNextItemWidth(em() * 20);
     if (ImGui::BeginCombo("##resolution", preview.c_str())) {
       if (ImGui::Selectable(desktop_name.c_str(), !custom)) d.width = d.height = 0, d.refresh = 0;
       for (const Mode& m : list) {
@@ -958,22 +1104,22 @@ void App::page_display() {
   }
 
   subheading(fonts_.bold, fonts_.size, "Picture");
-  ImGui::Checkbox("Vertical sync", &d.vsync);
-  ImGui::Indent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
+  check("Vertical sync", &d.vsync);
+  ImGui::Indent(check_indent());
   note("Shows each frame in step with the monitor's refresh, so the picture never tears.");
-  ImGui::Unindent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
-  ImGui::Checkbox("Dithering", &d.dither);
-  ImGui::Indent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
+  ImGui::Unindent(check_indent());
+  check("Dithering", &d.dither);
+  ImGui::Indent(check_indent());
   note("The PlayStation's colour dithering, as on a real console. Off gives smooth, banded gradients.");
-  ImGui::Unindent(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x);
-  ImGui::Dummy(ImVec2(0, em() * 0.4f));
+  ImGui::Unindent(check_indent());
+  ImGui::Dummy(ImVec2(0, em() * 0.3f));
   status_line(Level::kInfo, "While playing, F11 or Alt+Enter switches between the window and full screen.");
 }
 
 void App::page_sound() {
   heading("Sound");
   launcher::SoundSettings& s = settings_.sound;
-  ImGui::Checkbox("Sound on", &s.enabled);
+  check("Sound on", &s.enabled);
   ImGui::Dummy(ImVec2(0, em() * 0.3f));
   ImGui::BeginDisabled(!s.enabled);
   field_label("Volume", em() * 6);
@@ -984,12 +1130,245 @@ void App::page_sound() {
   note("Music, voices and sound effects all follow this volume.");
 }
 
+// ---------------------------------------------------------------------------------------
+// Controls
+
+namespace {
+
+// Rows of the two halves of the table, as PadButton bits.
+constexpr platform::PadButton kLeftHalf[] = {platform::kPadUp,    platform::kPadDown,   platform::kPadLeft,
+                                             platform::kPadRight, platform::kPadStart,  platform::kPadSelect,
+                                             platform::kPadL3,    platform::kPadR3};
+constexpr platform::PadButton kRightHalf[] = {platform::kPadCross, platform::kPadCircle, platform::kPadSquare,
+                                              platform::kPadTriangle, platform::kPadL1, platform::kPadR1,
+                                              platform::kPadL2, platform::kPadR2};
+
+int bit_of(platform::PadButton b) { return std::countr_zero(static_cast<unsigned>(b)); }
+
+const char* ps1_name(int bit) {
+  static const char* const names[16] = {"L2",       "R2",        "L1",        "R1",       "Triangle", "Circle",
+                                        "Cross",    "Square",    "Select",    "L3",       "R3",       "Start",
+                                        "D-pad Up", "D-pad Right", "D-pad Down", "D-pad Left"};
+  return names[bit];
+}
+
+std::string key_label(int keycode) {
+  if (keycode == 0) return "-";
+  std::string name = launcher::key_name(keycode);
+  if (name == "Return") name = "Enter";
+  return name;
+}
+
+std::string button_label(int button) {
+  switch (button) {
+    case platform::kNoButton: return "-";
+    case platform::kLeftTrigger: return "LT / L2";
+    case platform::kRightTrigger: return "RT / R2";
+    case SDL_GAMEPAD_BUTTON_SOUTH: return "A / Cross";
+    case SDL_GAMEPAD_BUTTON_EAST: return "B / Circle";
+    case SDL_GAMEPAD_BUTTON_WEST: return "X / Square";
+    case SDL_GAMEPAD_BUTTON_NORTH: return "Y / Triangle";
+    case SDL_GAMEPAD_BUTTON_BACK: return "Back";
+    case SDL_GAMEPAD_BUTTON_START: return "Start";
+    case SDL_GAMEPAD_BUTTON_GUIDE: return "Guide";
+    case SDL_GAMEPAD_BUTTON_LEFT_STICK: return "L-stick click";
+    case SDL_GAMEPAD_BUTTON_RIGHT_STICK: return "R-stick click";
+    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: return "LB / L1";
+    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return "RB / R1";
+    case SDL_GAMEPAD_BUTTON_DPAD_UP: return "D-pad Up";
+    case SDL_GAMEPAD_BUTTON_DPAD_DOWN: return "D-pad Down";
+    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: return "D-pad Left";
+    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return "D-pad Right";
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD: return "Touchpad";
+    default: return launcher::gamepad_button_name(button);
+  }
+}
+
+}  // namespace
+
+bool App::capture_event(const SDL_Event& e) {
+  if (capture_bit_ < 0) return false;
+  platform::Controls& c = settings_.controls.controls;
+  auto done = [&] { capture_bit_ = -1; };
+  switch (e.type) {
+    case SDL_EVENT_KEY_DOWN:
+      if (e.key.repeat) return true;
+      if (e.key.key == SDLK_ESCAPE) {
+        done();
+      } else if (e.key.key == SDLK_DELETE) {
+        if (capture_gamepad_) c.buttons[capture_bit_] = platform::kNoButton;
+        else c.keys[capture_bit_] = 0;
+        done();
+      } else if (!capture_gamepad_) {
+        if (e.key.key == SDLK_F11) {
+          controls_notice_ = "F11 switches between the window and full screen while playing: choose another key.";
+        } else {
+          c.keys[capture_bit_] = static_cast<int>(e.key.key);
+          controls_notice_.clear();
+          done();
+        }
+      }
+      return true;
+    case SDL_EVENT_KEY_UP:
+    case SDL_EVENT_TEXT_INPUT:
+      return true;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+      if (capture_gamepad_) {
+        c.buttons[capture_bit_] = e.gbutton.button;
+        done();
+      }
+      return true;
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+      return true;
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+      if (capture_gamepad_ && e.gaxis.value > 20000 &&
+          (e.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER || e.gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
+        c.buttons[capture_bit_] =
+            e.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? platform::kLeftTrigger : platform::kRightTrigger;
+        done();
+      }
+      return true;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      done();  // a click elsewhere cancels (and still clicks)
+      return false;
+    default:
+      return false;
+  }
+}
+
+void App::control_cell(int bit, bool gamepad, float width, bool duplicate) {
+  const platform::Controls& c = settings_.controls.controls;
+  const bool capturing = capture_bit_ == bit && capture_gamepad_ == gamepad;
+  ImGui::PushID(bit * 2 + (gamepad ? 1 : 0));
+  std::string label = capturing ? "Press now"
+                                : (gamepad ? button_label(c.buttons[bit]) : key_label(c.keys[bit]));
+  int colours = 0;
+  if (capturing) {
+    ImGui::PushStyleColor(ImGuiCol_Button, kAccent);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kAccentHover);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
+    colours = 3;
+  } else if (duplicate) {
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(IM_COL32(240, 200, 120, 255)));
+    colours = 1;
+  }
+  if (ImGui::Button(label.c_str(), ImVec2(width, 0)) && !capturing) {
+    capture_bit_ = bit;
+    capture_gamepad_ = gamepad;
+    controls_notice_.clear();
+  }
+  ImGui::PopStyleColor(colours);
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("%s", capturing ? "Esc cancels, Delete leaves it unbound"
+                                      : "Click, then press the key or button for this PlayStation button");
+  ImGui::PopID();
+}
+
+void App::page_controls() {
+  launcher::ControlSettings& cs = settings_.controls;
+  const float heading_y = ImGui::GetCursorPosY();
+  const float right = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x;
+  heading("Controls");
+  const float after_heading = ImGui::GetCursorPosY();
+  const char* reset = "Reset to defaults";
+  ImGui::SetCursorPos(ImVec2(right - button_width(reset), heading_y));
+  if (ImGui::Button(reset)) {
+    cs = launcher::ControlSettings{};
+    capture_bit_ = -1;
+    controls_notice_.clear();
+  }
+  ImGui::SetCursorPosY(after_heading);
+  note("Click a box, then press the key or gamepad button for it (Esc cancels, Delete unbinds).");
+  const platform::Controls& c = cs.controls;
+
+  // Keys or buttons that press more than one PlayStation button.
+  std::vector<std::string> clashes;
+  bool key_clash[16] = {}, button_clash[16] = {};
+  for (int i = 0; i < 16; ++i)
+    for (int j = i + 1; j < 16; ++j) {
+      if (c.keys[i] != 0 && c.keys[i] == c.keys[j]) {
+        key_clash[i] = key_clash[j] = true;
+        clashes.push_back("The " + key_label(c.keys[i]) + " key presses both " + ps1_name(i) + " and " + ps1_name(j) + ".");
+      }
+      if (c.buttons[i] != platform::kNoButton && c.buttons[i] == c.buttons[j]) {
+        button_clash[i] = button_clash[j] = true;
+        clashes.push_back("The gamepad's " + button_label(c.buttons[i]) + " presses both " + ps1_name(i) + " and " +
+                          ps1_name(j) + ".");
+      }
+    }
+
+  // Columns as wide as their widest label (fonts differ: Segoe UI, Noto, the fallback).
+  const float pad_x = em() * 0.6f;
+  float name_w = ImGui::CalcTextSize("PlayStation").x, key_w = em() * 4.5f, pad_w = em() * 5.5f;
+  for (int i = 0; i < 16; ++i) {
+    name_w = std::max(name_w, ImGui::CalcTextSize(ps1_name(i)).x);
+    key_w = std::max(key_w, ImGui::CalcTextSize(key_label(c.keys[i]).c_str()).x + pad_x);
+    pad_w = std::max(pad_w, ImGui::CalcTextSize(button_label(c.buttons[i]).c_str()).x + pad_x);
+  }
+  // Too wide for the page (a wide font): the boxes give way, their labels clip.
+  const float gap = em() * 0.8f, cell = em() * 0.2f * 2 * 7;
+  const float room = ImGui::GetContentRegionAvail().x - 2 * name_w - gap - cell;
+  if (room > 0 && 2 * (key_w + pad_w) > room) {
+    const float k = room / (2 * (key_w + pad_w));
+    key_w *= k;
+    pad_w *= k;
+  }
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(em() * 0.2f, em() * 0.1f));
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(em() * 0.3f, em() * 0.2f));
+  if (ImGui::BeginTable("##controls", 7, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoPadOuterX)) {
+    ImGui::TableSetupColumn("PlayStation", ImGuiTableColumnFlags_WidthFixed, name_w);
+    ImGui::TableSetupColumn("Keyboard", ImGuiTableColumnFlags_WidthFixed, key_w);
+    ImGui::TableSetupColumn("Gamepad", ImGuiTableColumnFlags_WidthFixed, pad_w);
+    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, gap);
+    ImGui::TableSetupColumn("PlayStation", ImGuiTableColumnFlags_WidthFixed, name_w);
+    ImGui::TableSetupColumn("Keyboard", ImGuiTableColumnFlags_WidthFixed, key_w);
+    ImGui::TableSetupColumn("Gamepad", ImGuiTableColumnFlags_WidthFixed, pad_w);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+    for (int col = 0; col < 7; ++col) {
+      ImGui::TableSetColumnIndex(col);
+      ImGui::TextUnformatted(ImGui::TableGetColumnName(col));
+    }
+    ImGui::PopStyleColor();
+    for (size_t row = 0; row < std::size(kLeftHalf); ++row) {
+      ImGui::TableNextRow();
+      for (int half = 0; half < 2; ++half) {
+        const int bit = bit_of(half == 0 ? kLeftHalf[row] : kRightHalf[row]);
+        ImGui::TableSetColumnIndex(half * 4);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(ps1_name(bit));
+        ImGui::TableSetColumnIndex(half * 4 + 1);
+        control_cell(bit, false, key_w, key_clash[bit]);
+        ImGui::TableSetColumnIndex(half * 4 + 2);
+        control_cell(bit, true, pad_w, button_clash[bit]);
+      }
+    }
+    ImGui::EndTable();
+  }
+  ImGui::PopStyleVar(2);
+  for (const std::string& clash : clashes) status_line(Level::kWarning, clash);
+  if (!controls_notice_.empty()) status_line(Level::kInfo, controls_notice_);
+
+  subheading(fonts_.bold, fonts_.size, "Analog stick");
+  check("The left stick also works the d-pad (menus, as on the console)", &cs.stick_dpad);
+  field_label("Dead zone", em() * 6);
+  int dead = cs.stick_deadzone < 0 ? launcher::kGameStickDeadzone : cs.stick_deadzone;
+  ImGui::SetNextItemWidth(em() * 14);
+  if (ImGui::SliderInt("##deadzone", &dead, 0, 60, "%d%%", ImGuiSliderFlags_AlwaysClamp)) cs.stick_deadzone = dead;
+  ImGui::SameLine();
+  ImGui::BeginDisabled(cs.stick_deadzone < 0);
+  if (ImGui::Button("Game's")) cs.stick_deadzone = -1;
+  ImGui::EndDisabled();
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("The game's own: 25%%");
+  note("How far the stick moves before the game notices: raise it if your character walks by itself.");
+}
+
 void App::card_field(int slot) {
   const int i = slot - 1;
   ImGui::PushID(slot);
   subheading(fonts_.bold, fonts_.size, slot == 1 ? "Slot 1" : "Slot 2");
   bool inserted = settings_.card_inserted[i];
-  if (ImGui::Checkbox("Card inserted", &inserted)) {
+  if (check("Card inserted", &inserted)) {
     settings_.card_inserted[i] = inserted;
     if (inserted && settings_.card[i].empty()) settings_.card[i] = launcher::path_utf8(launcher::default_memcard(slot));
   }
@@ -1123,16 +1502,24 @@ void App::page_mods() {
 
 void App::page_archipelago() {
   heading("Archipelago");
-  status_line(Level::kInfo, "Coming later: Archipelago multiworld randomizer support is planned. These settings "
-                            "are placeholders and do nothing yet.");
+  status_line(Level::kInfo, "Coming later: Archipelago multiworld randomizer support is on its way. These settings "
+                            "can't be changed here yet.");
   ImGui::Dummy(ImVec2(0, em() * 0.4f));
+  // The keys the game will read (the world agent's plan): ap_seed (a .apso2 seed file;
+  // empty: Archipelago off), then ap_server / ap_slot / ap_password. Shown as config.ini
+  // has them; Save keeps them as they are.
+  std::string seed = config_.get("ap_seed"), server = config_.get("ap_server", "archipelago.gg:38281"),
+              slot = config_.get("ap_slot"), password = config_.get("ap_password");
   ImGui::BeginDisabled();
-  static bool connect = false;
-  static std::string server = "archipelago.gg:38281", slot, password;
-  ImGui::Checkbox("Connect to an Archipelago server when the game starts", &connect);
   const float label_w = em() * 7;
-  const float width = std::min(em() * 20, ImGui::GetContentRegionAvail().x - label_w);
-  field_label("Server", label_w);
+  const float width = std::min(em() * 22, ImGui::GetContentRegionAvail().x - label_w);
+  field_label("Seed file", label_w);
+  ImGui::SetNextItemWidth(width);
+  ImGui::InputTextWithHint("##seed", "A seed from the Archipelago generator (.apso2)", &seed);
+  ImGui::SameLine();
+  ImGui::Button("Browse...");
+  subheading(fonts_.bold, fonts_.size, "Server");
+  field_label("Address", label_w);
   ImGui::SetNextItemWidth(width);
   ImGui::InputText("##server", &server);
   field_label("Slot name", label_w);
