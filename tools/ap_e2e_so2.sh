@@ -7,28 +7,35 @@
 #   SS_DISC1=DISC1.cue tools/ap_e2e_so2.sh [BINARY]   (tools/ap_test_server.sh start, once, sets up)
 #
 # Claude plays with the phase-3 options character_items, drops_as_checks (first_drop) and
-# traps (20 %). Item plando fixes the cross-world placements, so the run is the same every time:
+# traps (20 %), and the phase-4 ones world_mode open_world and shuffle_shops full. Item plando
+# fixes the cross-world placements, so the run is the same every time:
 #   - Arlia's 200-Fol crate (map 18, flag 0x962; "Arlia Village: 200 Fol chest") holds Bob's
 #     Map Width;
-#   - Bob's Tiles 1, 4 and 10 hold Claude's Resurrection Bottle, Celine (a character item) and a
-#     Fol Loss Trap.
+#   - Hearn's shop slot 2 (map 26, shop 1, Lavender; "Arlia Village: shop 1 Lavender") holds
+#     Claude's own Spectacles (shop slots never hold progression, and every ChecksFinder item
+#     is progression);
+#   - Bob's Tiles 1, 2, 4 and 10 hold Claude's Resurrection Bottle, Salva Pass (an area key),
+#     Celine (a character item) and a Fol Loss Trap.
 # In one scripted run:
 #   1. Generate.py (seed AP_E2E_SEED, default 4242) writes the multiworld and Claude's .apso2.
 #   2. The port (paced: SS_PACE; scratch config, no memory card) connects as Claude, starts on
 #      map 18 and opens the crate: the check goes out, the window says "Sent Map Width to
 #      Bob." and no Fol is paid.
 #   3. Bob (a Python client) receives Map Width from the crate's location, then checks Tiles 1,
-#      4 and 10: in free play the port gives the Resurrection Bottle, Celine joins the party,
-#      and the trap takes 10 % of the 10000 Fol the console gave (`fol 10000`), each with its
-#      banner.
+#      2, 4 and 10: in free play the port gives the Resurrection Bottle and the Salva Pass (the
+#      key Salva's world-map entrances need), Celine joins the party, and the trap takes 10 % of
+#      the 10000 Fol the console gave (`fol 10000`), each with its banner.
 #   4. The console starts a random encounter that drops (`battle 110`, two Kitties, enemy type
 #      90; this run's draws drop the Mithril Shield); --battle-end wins it after 60 frames, and
 #      the result screen's first drop of type 90 is the check "Kitty first drop" instead.
 #   5. The console starts the final boss (`battle 539`), won the same way: the battle's exit
 #      records the goal (CLIENT_GOAL).
-#   6. After the port has quit, a tracker client logs in to Claude's slot and reads the
-#      server's view: the crate and the drop among the checked locations, and the client status
-#      30 (goal).
+#   6. A second session (a new game, no memory card) walks into Hearn's shop and buys one
+#      Sandals and three Lavenders: the Lavender slot's first copy is the check and gives the
+#      Spectacles, the other copies are the shop's own.
+#   7. After the port has quit, a tracker client logs in to Claude's slot and reads the
+#      server's view: the crate, the drop and the shop slot among the checked locations, and
+#      the client status 30 (goal).
 # The server runs with release / collect off, so the checked locations are exactly what was
 # sent. Output, logs and captures (frames 700: the window, 850: the first banner) in
 # scratchpad/ap_e2e_so2/. Exit status 0 when every step is seen.
@@ -44,17 +51,19 @@ SEED=${AP_E2E_SEED:-4242}
 CRATE=1347569665   # Arlia Village: 200 Fol chest (docs/ap/field.json)
 TILE1=81000        # ChecksFinder's Tile 1 (Tile n: 81000 + n - 1)
 DROP=1362231386    # Kitty first drop: 0x50320000 + (8 << 21) + enemy type 90
+SHOP=1366425858    # Hearn's shop slot 2: 0x50320000 + (10 << 21) + (shop 1 << 8) + 2
 export SKIP_REQUIREMENTS_UPDATE=1
-rm -rf "$W"
-mkdir -p "$W/xdg" "$W/nomods" "$W/players" "$W/out"
 if [ ! -x "$AP/ap-venv/bin/python" ]; then
   echo "no Archipelago install: run tools/ap_test_server.sh start (then stop) once" >&2
   exit 1
 fi
+# Check the port before touching the work directory: a busy port may be another run's server.
 if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
   echo "port $PORT is in use (AP_E2E_PORT picks another)" >&2
   exit 1
 fi
+rm -rf "$W"
+mkdir -p "$W/xdg" "$W/nomods" "$W/players" "$W/out"
 ln -sfn "$P/apworld/so2" "$AP/Archipelago/worlds/so2"
 
 cat > "$W/players/Claude.yaml" <<'EOF'
@@ -65,10 +74,21 @@ game: "Star Ocean: The Second Story"
   character_items: true
   drops_as_checks: first_drop
   traps: 20
+  world_mode: open_world
+  shuffle_shops: full
   plando_items:
     - items: {"Resurrection Bottle": 1}
       locations: ["Tile 1"]
       world: Bob
+    - items: {"Salva Pass": 1}
+      locations: ["Tile 2"]
+      world: Bob
+    - items: {"Blueberry": 1}
+      locations: ["Kitty first drop"]
+      world: Claude
+    - items: {"Spectacles": 1}
+      locations: ["Arlia Village: shop 1 Lavender"]
+      world: Claude
     - items: {"Celine": 1}
       locations: ["Tile 4"]
       world: Bob
@@ -96,8 +116,9 @@ fi
 seed_file=$(ls "$W"/out/*_Claude.apso2 | head -1)
 
 cat > "$W/bob.py" <<'BOB'
-# Bob: connects, waits until Claude's crate sends him Map Width, then checks Tiles 1, 4 and 10
-# (Claude's Resurrection Bottle, Celine, a Fol Loss Trap). Stays on to see Claude's goal.
+# Bob: connects, waits until Claude's crate sends him Map Width, then checks Tiles 1, 2, 4 and
+# 10 (Claude's Resurrection Bottle, Salva Pass, Celine, a Fol Loss Trap). Stays on to see
+# Claude's goal.
 import asyncio, json, sys, time, websockets
 CRATE, TILE1 = int(sys.argv[3]), int(sys.argv[4])
 async def main():
@@ -123,8 +144,9 @@ async def main():
                         log(f"received item {it['item']} from player {it['player']} location {it['location']}")
                         if (it["item"], it["location"]) == (80000, CRATE) and not got:
                             got = True
-                            await ws.send(json.dumps([{"cmd": "LocationChecks", "locations": [TILE1, TILE1 + 3, TILE1 + 9]}]))
-                            log("checked Tiles 1, 4 and 10")
+                            await ws.send(json.dumps([{"cmd": "LocationChecks",
+                                                       "locations": [TILE1, TILE1 + 1, TILE1 + 3, TILE1 + 9]}]))
+                            log("checked Tiles 1, 2, 4 and 10")
                 elif p["cmd"] == "PrintJSON" and p.get("type") == "Goal":
                     log("goal announced for player", p.get("slot"))
                     deadline = min(deadline, time.time() + 3)
@@ -184,6 +206,16 @@ env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy S
   --input "200:up,439:none,450:left,554:none,560:up,572:none$presses" \
   --capture "$W/cap" --capture-frames 700,850 < /dev/null > "$W/game.log" 2>&1
 wait $bob
+# Session 2: Hearn's shop (the walk and purchases of smoke_field_events.sh's ap_p4_shop, 1200
+# frames later, after the banners of the four items the server sends again to the new game):
+# one Sandals (slot 0) and three Lavenders (slot 2, Claude's Spectacles).
+walk="200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1600:right,1606:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1800:right,1806:none,1850:right,1856:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none"
+walk=$(echo "$walk" | tr ',' '\n' | awk -F: '{printf "%s%d:%s", (NR > 1 ? "," : ""), $1 + 1200, $2}')
+env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" \
+  SS_DEBUG_INPUT="50:fol 50000;3500:ap_status" \
+  timeout 300 "$BIN" --headless --debug --no-memcard --ap-seed "$seed_file" --frames 3700 --map 18 \
+  --input "$walk" < /dev/null > "$W/game2.log" 2>&1
 "$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" > "$W/tracker.log" 2>&1
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
 
@@ -198,20 +230,26 @@ check "$W/generate.log" "the multiworld generates (SO2 + ChecksFinder)" 'Creatin
 check "$seed_file" "the crate holds Bob's Map Width" '"name": "Map Width"'
 check_not "$W/generate.log" "plando found every item in the pool" 'Could not remove'
 check "$seed_file" "the seed's party holds Celine (character_items)" '"Celine"'
+check "$seed_file" "open world: the seed locks Salva's entrances" '"name": "Expel -> Town of Salva"'
+check "$seed_file" "shop slots are locations (shuffle_shops full)" '"name": "Arlia Village: shop 1 Lavender"'
 check "$W/game.log" "the port connects as Claude" '\[ap\] connected \(slot [0-9]+\)'
 check "$W/game.log" "the crate's check" "\[ap\] check $CRATE .*: Map Width for Bob"
 check "$W/game.log" "no Fol from the crate" '\[leader\] vblank 720 map 18 .* fol 0$'
 check "$W/bob.log" "Bob receives Map Width from the crate" "received item 80000 from player [0-9]+ location $CRATE"
 check "$W/game.log" "Bob's Tile 1 gives the Resurrection Bottle" '\[ap\] given Resurrection Bottle'
+check "$W/game.log" "Bob's Tile 2 gives the Salva Pass (a key)" '\[ap\] key 2 \(Salva Pass\) received'
 check "$W/game.log" "Bob's Tile 4: Celine joins the party" '\[ap\] Celine joins the party \(slot [0-9]+\)'
 check "$W/game.log" "Bob's Tile 10: the Fol Loss Trap takes 1000 Fol" '\[ap\] trap fol_loss: lost 1000 Fol'
 check "$W/game.log" "the first drop of Kitty is withheld" '\[ap\] first drop of enemy type 90 \(item [0-9]+\): the check instead'
 check "$W/game.log" "the drop's check" "\[ap\] check $DROP "
 check "$W/game.log" "the goal (encounter 539 won)" '\[ap\] goal: encounter 539 won'
-check "$W/game.log" "the port's status" 'slot Claude \| checks 2/[0-9]+ \| received 3 \| waiting 0 \| connected \| goal'
+check "$W/game.log" "the port's status" 'slot Claude \| checks 2/[0-9]+ \| received 4 \| waiting 0 \| connected \| goal'
+check "$W/game2.log" "session 2: the shop slot's check pays the Spectacles" "\[ap\] check $SHOP .*: Spectacles$"
+check "$W/game2.log" "... its first copy only" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 3'
 check "$W/server.log" "the server: Claude completed the goal" 'Claude.*has completed their goal'
 check "$W/tracker.log" "the server's checked locations hold the crate" "checked_locations \[.*\b$CRATE\b"
 check "$W/tracker.log" "... and the drop" "checked_locations \[.*\b$DROP\b"
+check "$W/tracker.log" "... and the shop slot" "checked_locations \[.*\b$SHOP\b"
 check "$W/tracker.log" "the server's client status is 30 (goal)" '^client_status 30$'
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails

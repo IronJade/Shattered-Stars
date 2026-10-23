@@ -10,7 +10,8 @@ from .items import GAME
 LOCATION_NAME_TO_ID = {row["name"]: row["id"] for row in LOCATIONS}
 ROW = {row["name"]: row for row in LOCATIONS}
 
-GROUP_OF_TYPE = {"chest": "Chests", "gift": "Gifts", "boss": "Bosses", "join": "Joins", "drop": "First Drops"}
+GROUP_OF_TYPE = {"chest": "Chests", "gift": "Gifts", "boss": "Bosses", "join": "Joins", "drop": "First Drops",
+                 "shop": "Shop Slots"}
 LOCATION_NAME_GROUPS = {}
 for _row in LOCATIONS:
     LOCATION_NAME_GROUPS.setdefault(_row["region"], set()).add(_row["name"])
@@ -42,11 +43,13 @@ def choose(options):
     on: they are how the members join)."""
     side = {0: None, 1: "claude", 2: "rena"}[options.protagonist.value]
     first_drop = options.drops_as_checks == options.drops_as_checks.option_first_drop
+    shops = options.shuffle_shops.value    # 0 off, 1 specials, 2 full
     out = []
     for row in LOCATIONS:
         kind_of = row["type"]
         if (kind_of == "boss" and not options.boss_checks) or (kind_of == "join" and not options.character_items) \
-                or (kind_of == "drop" and not first_drop):
+                or (kind_of == "drop" and not first_drop) \
+                or (kind_of == "shop" and (shops == 0 or (shops == 1 and not row["special"]))):
             continue
         if row["region"] == "Cave of Trials" and not options.cave_of_trials:
             continue
@@ -76,6 +79,8 @@ def seed_check(row):
         return {"type": "join", "map": row["map"], "offset": row["offset"], "character": row["character"]}
     if t == "drop":
         return {"type": "drop", "enemy": row["enemy"]}
+    if t == "shop":
+        return {"type": "shop", "shop": row["shop"], "index": row["index"], "item": row["item"]}
     return {"type": "gift", "map": row["map"], "offset": row["offset"]}
 
 

@@ -10,6 +10,7 @@ should hold a name that isn't recorded here.
 | `globals.csv` | Global variables and the structures behind them |
 | `script_opcodes.csv` | The event-script VM instruction set, with argument counts |
 | `formats.md` | File and data formats (archive, compression, programs, maps, scripts, text, sound) |
+| `gaps_explained.csv` | Gap-scan hits (`tools/catalog_gaps.py`) checked by hand and found not to be a missing function, with the reason |
 
 The structure behind the names (classes, flows, layouts) is in `docs/notes/`.
 

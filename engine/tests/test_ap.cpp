@@ -579,6 +579,70 @@ TEST(ap_character_items) {
   fs::remove_all(dir, ec);
 }
 
+// A received member is recruited for good (docs/ap/seed_format.md "Character items"): a
+// received Celine keeps script flag 112 (Mars then only sends her home for a while, and map 125
+// brings her back); the story's partings for good (Cross Cave's choice 1, map 524, the call at
+// 0x72bc) put a received member back in the join queue; a temporary leave (map 126's, 0x6710)
+// drops a join still waiting. Without a seed, or without the item, nothing changes.
+TEST(ap_received_members_stay) {
+  ap::stop();
+  ScratchGame sg;
+  sg.member(0, 1, 100);  // Claude
+  sg.member(1, 2, 100);  // Rena
+  sg.member(2, 3, 100);  // Celine
+  auto at_map = [&](int m) {
+    const s16 v = static_cast<s16>(m);
+    std::memcpy(sg.state.data() + 0x1A, &v, 2);
+  };
+  auto flag112 = [&] { return (sg.flags[112 >> 3] >> (112 & 7) & 1) != 0; };
+  at_map(524);
+  // No seed: the original.
+  CHECK(!ap::keeps_flag(112));
+  ap::on_party_remove(2, 0x6418, 0x72bc);
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(phase3_seed("{\"character_items\": true}"), &s, &error));
+  ap::start_with(s);
+  // Celine not received: the parting is the game's, flag 112 is the scripts'.
+  CHECK(!ap::keeps_flag(112));
+  ap::on_party_remove(2, 0x6418, 0x72bc);
+  CHECK(ap::state().characters_waiting.empty() && !flag112());
+  // Received (a placeholder of ours): flag 112 set at once and kept.
+  CHECK(ap::on_give_item(1104));
+  CHECK(flag112() && ap::keeps_flag(112) && !ap::keeps_flag(113));
+  // Joined (the sidecar of a save where she is in the party): Cross Cave's choice 1 re-queues her.
+  const fs::path dir = scratch("members");
+  const std::string card = (dir / "memcard1.mcd").string();
+  ap::SaveState st = ap::state();
+  st.characters_waiting.clear();
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 0), st, &error));
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().characters_waiting.empty());
+  ap::on_party_remove(2, 0x100, 0x7000);  // (another call on the map: not a parting)
+  CHECK(ap::state().characters_waiting.empty());
+  ap::on_party_remove(2, 0x6418, 0x72bc);
+  CHECK(ap::state().characters_waiting.size() == 1 && ap::state().characters_waiting[0] == 3);
+  ap::on_party_remove(2, 0x6418, 0x72bc);  // (once)
+  CHECK(ap::state().characters_waiting.size() == 1);
+  // A temporary leave (Rena's game, map 126) drops the join still waiting: the story's comes.
+  at_map(126);
+  ap::on_party_remove(2, 0x6418, 0x6710);
+  CHECK(ap::state().characters_waiting.empty());
+  // A member already in reserve is not removed again: nothing changes.
+  sg.member(2, -3, 100);
+  at_map(524);
+  ap::on_party_remove(2, 0x6418, 0x72bc);
+  CHECK(ap::state().characters_waiting.empty());
+  // Another character at Celine's parting site: nothing (the site is per member).
+  sg.member(3, 9, 100);  // Opera
+  ap::on_party_remove(8, 0x6418, 0x72bc);
+  CHECK(ap::state().characters_waiting.empty());
+  ap::stop();
+  CHECK(!ap::keeps_flag(112));
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
 TEST(ap_drops_rewards_encounters) {
   ap::stop();
   ScratchGame sg;

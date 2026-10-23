@@ -615,10 +615,18 @@ void field_menu_frame() {
   event_sweep_menu_frame();  // debugging: SS_EVENT_SWEEP
 }
 
+// The field save page's constructor (overlay 0xbb6, 0x8007e000): a playing Callways song
+// stops and the field music resumes (callways_stop_song_resume 0x80031744 =
+// callways_end_song(c, 1)).
+void field_save_page_open() {
+  if (Callways* c = callways(); c != nullptr && callways_song_active(c) != 0) callways_stop_song(c, true);
+}
+
 // The library and the field's page handlers for one menu run.
 struct FieldMenuHost {
   FieldMenuHost() {
     menu::set_host(menu::Host::Field);
+    menu::g_save_page_open_hook = &field_save_page_open;
     menu::set_entry_cache_table(&field_cache_slot);
     menu::set_bgload_hooks(&menu_voice_hooks());  // the field's voice streaming (menu_voice.cpp)
     menu::set_menu_frame_hook(&field_menu_frame);

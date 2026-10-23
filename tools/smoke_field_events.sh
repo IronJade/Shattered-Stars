@@ -290,6 +290,37 @@ check ap_p4_shop "our own slot's first copy is the check" '\[ap\] check 13652464
 check ap_p4_shop "the other 2 copies are the shop's own item" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 3'
 check ap_p4_shop "Fol paid for all 4 (1x10 + 3x490)" '\[debug\] map 26 \| state 0 .* Fol 48520 '
 
+# Received members stay recruited [world agent] (docs/ap/seed_format.md "Character items").
+# Rena's game (flag 1 cleared, chapter 15): Celine received with flag 112 clear sets it; map
+# 126's scene (step 1000) takes her out for a while, which drops her pending join; map 125 at
+# step 3300 adds her back (its join site is the check). Map 131's scene (Claude's game, step 0)
+# stores party_has(Celine) = 0 in flag 112: kept set. Cross Cave (map 524, chapter 13) with its
+# choice forced to 1 by a seed patch ("Decide against it"): she leaves, then rejoins in free play.
+cat >"$WORK/cel.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-cel", "slot": {"name": "Claude", "id": 1},
+ "options": {"character_items": true},
+ "items": {"5100003": {"name": "Celine", "kind": "character", "character": 3}},
+ "locations": [{"id": 1353970688, "name": "Celine joins (map 125)", "check": {"type": "join", "map": 125, "offset": 39660, "character": "Celine"},
+                "item": {"player": 2, "player_name": "Alice", "name": "Map Width"}}],
+ "patches": ["script 524 0x1c09 0x0b000000 0x12000001"]}
+SEED
+CEL_RUN=(env SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 SS_BATTLE_STUB=1)
+"${CEL_RUN[@]}" SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY=1,2 SS_SCRIPT_GLOBALS="a0=15,a4=900,c4=0x1" SS_SWEEP_PLAY="999:T0" \
+  SS_DEBUG_INPUT="5:ap_give Celine Bob;30:global 0xa4 1000;32:warp 126;500:global 0xa4 3300;1100:warp 125" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/cel.apso2" --frames 1300 --map 126 </dev/null >"$WORK/ap_cel_mars.log" 2>&1
+check ap_cel_mars "Celine received: flag 112 set" '\[ap\] Celine received: script flag 112 set'
+check ap_cel_mars "map 126 takes her out for a while" '\[ap\] Celine leaves at map 126 for a while'
+check ap_cel_mars "map 125 brings her back (the check)" '\[ap\] check 1353970688 '
+check ap_cel_mars "through the game's join" '\[ap\] join site 125:39660: Celine was received: the game.s join'
+"${CEL_RUN[@]}" SS_SWEEP_PARTY=1 SS_SCRIPT_GLOBALS="a0=15,a4=500" SS_SWEEP_PLAY="999:T0" \
+  SS_DEBUG_INPUT="5:ap_give Celine Bob;30:global 0xa4 0;32:warp 131" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/cel.apso2" --frames 300 --map 131 </dev/null >"$WORK/ap_cel_131.log" 2>&1
+check ap_cel_131 "map 131 cannot clear flag 112" '\[ap\] script flag 112 kept set: Celine was received'
+"${CEL_RUN[@]}" SS_SWEEP_PARTY=1,2 SS_SCRIPT_GLOBALS="a0=13,a4=0" SS_SWEEP_PLAY="524:T4" SS_DEBUG_INPUT="5:ap_give Celine Bob" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/cel.apso2" --frames 5200 --map 524 </dev/null >"$WORK/ap_cel_cave.log" 2>&1
+check ap_cel_cave "Cross Cave's parting" '\[ap\] Celine leaves at map 524 \(Cross Cave, "Decide against it"\): received, so they rejoin'
+check ap_cel_cave "she rejoins in free play" '\[ap\] Celine joins the party \(slot 2\)'
+
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
 SAVE=analysis/saves/dex_north_city.mcd

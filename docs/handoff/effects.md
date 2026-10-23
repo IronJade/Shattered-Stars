@@ -575,6 +575,159 @@ ReturnFromException / ResetEntryInt / HookEntryInt / write / ChangeClearPAD / 0x
 title rows); title lacks 0x80034bac; and functions reached only through vtables are invisible
 to jal-based scans (the three title rows above).
 
+## Phase 8: the gap scan's open rows, empty ports, confidence (fifth agent, from 05:15)
+
+Assignment (coordinator): (1) battle's 51 "boss subsystem" candidates, (2) field's 8,
+(3) the 61 empty port columns, (4) the 3 stale battle_ovl1984_0 `[port partial]` notes,
+(5) guess / likely -> confirmed; regenerate COVERAGE.md. Scratch: `scratchpad/fx_worker/cat3/`
+(`asm.py ELF ADDR..`: REA CLI instructions saved to `asm/<elf>/<addr>.s`, one private Ghidra
+session per call, ~30 s each; `triage.py [MODULE:ADDR..]`: start-of-function words, own /
+family references and engine source lines for each empty-port row; `cls_*.txt` the cat2
+classify.py twins).
+
+Findings so far (05:40):
+- Task 1: the 51 are not a subsystem. 49 are exact entry points of #1984.0 / #1984.1
+  functions (camera_end_scheduled_now ... voice_thank_healer, clash_resolve,
+  spell_clash_check, item_use_battle), called from resident code; REA split #2129's own
+  bytes at those jal targets, inside already-catalogued #2129 rows (load_stage,
+  load_formation, battle_init_objects, the dead voice library, init_bowman = the "Bowman"
+  string, the stale enemy / party-module copies, pc_calc_equipment_stats,
+  party_loader_update). The other 2 are REA splits inside load_stage / party_loader_update
+  (at run time inside #1984.0 spell_menu_release and #1984.1 item_use_battle). Redux RAM dump
+  `scratchpad/battle/modules/ram_char01.bin`: #1984.0 at 0x800715d0 (16470 words), #1984.1
+  at 0x80081728 (3964) and #1981 at 0x80085518 (2767) all equal word for word. No rows added
+  (a row there would split load_stage etc. in the #2129 ELF).
+- The catalog agent's 12 battle rows (0x8007fe58 ... 0x80089064, 0x80085f4c, 0x800882a4) are
+  the same mistake: #2129's bytes at those addresses are mid-function (or data); the calls
+  are to #1984.0 sound_handle_pitch_up / _down / bsfx_update, #1981 battle_fade_task_ctor /
+  battle_exit_to_field / result_screen_ctor, the slot modules (hounddog leap, gelatin
+  attack2, indalecio_create) or the stale Vesper copy's own branch targets. To be deleted.
+- `tools/catalog_gaps.py`: (a) the field scan used base 0x80020ae0 (26 field rows at boot
+  addresses: boot's own ResetGraph ... cdrom_init_controller mislabelled as a "field copy";
+  #3100 loads at 0x8002f810), so its tags / tail-j / table hits were garbage (the 18 field
+  "containment" hits were artifacts); menu_0bb6 used 0x8007e6e4 instead of 0x8007e000.
+  Programs now carry "base". (b) "coresident" modules (battle: #1984 / #1981 / enemy-slot /
+  spell / party modules) cover an address. (c) "ext-jal": jal targets from the code that calls
+  the program (battle: overlays, party / enemy / spell modules into 0x8002f810-0x800715d0;
+  field: #3101-#3109 but #3107, menus #2981-#3010), gated on prologue / leaf / after a jr ra.
+  (d) `docs/catalog/gaps_explained.csv`: hand-checked non-functions with the reason.
+- Field (task 2): the port already has them: 0x8003f518 actor_resolve_anim, 0x800410cc
+  actor_collides, 0x80041ce4 sprite_draw_part, 0x80044c8c sprite_cache_b_alloc, 0x800452b4
+  actor_sys_project_point, 0x80061cf8 sprite_resample (called from #3101 / #3102);
+  0x80079ee4 is the field's copy of title create_game_state (no reference anywhere). Rows
+  wrong: 0x80044754 "actor_sys_update" is sprite_cache_a_alloc, 0x80043018
+  "script_opcode_index_of" is actor_slot (field_actors[194] at 0x80075360). With the fixed
+  scan, field has ~26 candidates (functions only overlays / menus call) being named now.
+
+Progress (06:35):
+- Applied (`scratchpad/fx_worker/cat3/apply3.py` = cat2 apply2.py + DEL; update sets in
+  `cat3/upd/u1..u3*.py`; backup `cat3/functions.before.csv`):
+  - u1: 9 stale `[port partial]` notes rewritten (sound_handle_active, voice_pick_victory,
+    voice_play_result, battle_program_create, battle_main_loop, input_dispatch,
+    effect_skill_popup, enemy_goat_chant, hud_draw; left: enemy_axe_knockback (battle agent's
+    Weirdaxe debris), battle_free_party_models (a design difference)); deleted the 12 bogus
+    battle rows and the 26 field rows at boot addresses.
+  - u2: field +23 rows (the 7 of task 2, 9 functions only overlays / menus call:
+    strings_set, window_list_depth, text_to_card_codes, menu_colour_code, menu_colour,
+    field_pad_direction, actor_sys_touch_cache_a / _b, script_flag_set, field_flags_get_30 /
+    _31, libgte MulMatrix0 / SetLightMatrix / SetColorMatrix / SetBackColor / SetGeomOffset);
+    30 field rows renamed / cited (the "map_sub_*" family is title's strings_word / pack_word /
+    strings_block / pack_block, window_list_close_type, bgload_request, actor_slot,
+    sprite_cache_a_alloc, rot_matrix_x, field_task_create, ...; dead ones "(not needed: dead in
+    the field program ...)"); title's 15 empty rows (memcard_status_of /
+    memcard_new_game_notice_of = the bodies of memcard_status / _new_game_notice, menu_scene_get,
+    deferred_delete, disc_screen_tim_rect, memcard_reset_callback, inventory_* copies ...).
+  - u3: field stat_change_heal_mp (dead), menu_0ba5 text_set_expansion_cursor, field_sub3103
+    MDEC_get_alarm; field callways_stop_song_resume ported (below).
+- Port (reached in play, from the disassembly): the field save page's constructor (#2998
+  0x8007e000) stops a playing Callways song first (callways_song_active ->
+  callways_stop_song_resume 0x80031744). `common/menu_save.{h,cpp}`: `menu::g_save_page_open_hook`
+  called at the top of SaveMenu::SaveMenu for the field host; `field/menu_camp.cpp`:
+  `field_save_page_open` installed by FieldMenuHost. Builds (build-fx). Redux check still to do
+  (needs a song playing at a save point); suites not run yet.
+- In progress: menu_0bb6 (#2998) is the field's copy of the title save menu (0x8007e000-
+  0x80082d28, ~71 functions; only 5 had rows, 3 misnamed rank_list_*). `cat3/align_save.py`
+  pairs them (58 exact normalized twins, the rest by order); diffing the 4 that differ (create
+  144 vs 121 words, child_done 109 vs 102, save_list_create 171 vs 162, save_build 566 vs 564)
+  against the port's field paths before adding the rows.
+
+Progress (07:25):
+- menu_0bb6 done (u4): 67 new rows + 4 corrected (rank_list_* were save_menu_rebuild_slots /
+  save_list_create / save_list_show_entry); names and ports from the title save menu
+  (common/menu_save.cpp, the field host); 4 functions differ from the title (create,
+  child_done, save_list_create, save_build), diffed with `cat3/adiff.py`.
+- Second real gap found and ported: the field save page's constructor also queues the
+  character sprite pack 0xbd2 (unless the session holds it; frame() makes it resident), so
+  the list shows the party sprites of saves whose characters the field has not loaded. The
+  port never queued it. `SaveMenu::SaveMenu` (field host): `load_handle = bgload_queue(&loads,
+  0xBD2, 0, nullptr, 0, 0)` after the Callways hook. Port A/B (map 18 Claude-only game,
+  card with a 3-member save; `cat3/savepg/cap{,A}/frame00780.png`): without it the third
+  member's sprite is missing, with it all three show. Redux check in progress
+  (`cat3/redux/saveref.lua`, a copy of the menu agent's itemsref.lua with field captures;
+  card `cat3/savepg/card2.mcd`: #1 the 3-member disc-2 save, #2 a Claude-only map-18 save
+  written by the port; SS_POKE field_flags +0x68 = 1 opens Data > Save).
+- u5: field 0x80038e64 / e8c / eb8 / f38 / 0x80039268 are the bgload wrappers
+  (bgload_queue_entry_noflag / _default / bgload_queue_entry / bgload_queue_to /
+  bgload_cancel_entry; the step-3 names voice_queue_push_* and their voice_queue.cpp ports were
+  wrong); title 0x80038930's duplicate name bgload_queue_entry -> bgload_queue_to.
+- u6 / u7 (confidence): 3 twins (cat2/raise.py); 21 rows raised by passing Redux references
+  (stage blocks 2-9 by stage13/16c/21/23/26/36/36_long/41, stage 0xe by stage14c, Opera's
+  four #1984.1 Shots by op_b/op_m, voice_pick_victory / voice_play_result by talk_ko,
+  projectile_arc_velocity by bowman_l* / op_b*).
+- Suites after both ports (build-fx): ss_tests 78/0, ss_game_tests 108/0, smoke 86 PASS / 0 FAIL.
+
+### Phase 8 state at the hand-back (07:50): no runs active
+
+Done:
+- Tasks 1-4 complete. `tools/catalog_gaps.py` (no arguments): 0 missing across 32 programs
+  (95 explained, 4198 weak j-only). COVERAGE.md regenerated (`tools/catalog_coverage.py` then
+  `catalog_gaps.py`): 5429 rows, confirmed 4564, likely 699, guess 166; empty 0, unported 0,
+  bad path 0, partial 2 (enemy_axe_knockback: the battle agent's Weirdaxe debris;
+  battle_free_party_models: a design difference). Its hand-written "Unported, reached in
+  play" section now ends with this pass's summary.
+- Rows: 5376 -> 5429 (+91 new: field 24, menu_0bb6 67; -38 deleted: 12 bogus battle, 26
+  field rows at boot addresses); ~80 renamed / corrected (field 45, title 19, menu_0bb6 4,
+  menu_0ba5 1, field_sub3103 1, battle 9 partial notes, ...); confidence: likely 722 -> 699,
+  guess 221 -> 166 (most of the drop is corrections / deletions; 24 raised by evidence).
+- Code (reached in play, from the disassembly; flag to the coordinator):
+  `engine/src/game/common/menu_save.{h,cpp}` (`menu::g_save_page_open_hook`; SaveMenu's
+  field-host block: the hook, then `bgload_queue(&loads, 0xBD2, ...)` unless the session holds
+  the pack), `engine/src/game/field/menu_camp.cpp` (`field_save_page_open`, installed by
+  FieldMenuHost). Port A/B shows the 0xbd2 fix (missing party sprite before, present after).
+  Suites (build-fx, final code): ss_tests 78/0, ss_game_tests 108/0, smoke 86/0.
+
+Not verified against Redux (tried, blocked; the next agent can finish it):
+- Needs a genuine card where the loaded save lacks a character another save on the card
+  has. The port-written map-18 (`--map 18` debug start) save on `cat3/savepg/card2.mcd` makes
+  the ORIGINAL halt in Redux when the camp menu opens after loading it ("Unimplemented a0:40
+  syscall" = an unresolved BREAK, epc 0x8006fec4, ra 0x8005f970): a debug start is not a valid
+  game state (worth a look by whoever owns `--map`: the save itself loads in Redux and the
+  field runs until TRIANGLE). Every scratch card checked has saves of one party only.
+  Redux harness ready: `cat3/redux/saveref.lua` (SS_POKE "0x8007570c,0x68,1,1,=" enables Data
+  > Save; SS_SHOP "100:UP:6,150:CROSS:6,250:CROSS:6,350:CROSS:6" reaches the slot-1 list;
+  captures `out/shop*.raw`, `raw2png.py`), scratch HOME / XDG in `cat3/redux/`.
+- The Callways stop needs a song playing when a save point opens.
+
+Next (task 5, the confidence pass; 699 likely / 166 guess left):
+- Passing references raise rows cheaply: `tools/refs/refs.csv` + the last full run
+  (`scratchpad/regress/full_resync_pass/summary.md`: every listed battle ref RNG-equal to the
+  battle's end) -> map each ref's subject to the rows it exercises (done: stage blocks, Opera's
+  #1984.1 Shots, the victory / result voices, projectile_arc_velocity).
+- boot: 56 likely + 20 guess "PsyQ signature" rows and ~200 `_OBJ_` library internals (all
+  not needed / PsyQ); low value.
+- field 138 likely ("decompilation"): read each against its port (`cat3/asm.py`, `v.py MODULE
+  ADDR` names the jal targets; build a symbol ELF like `cat3/field_all.elf` with
+  `psxexe2elf.py --symbols LIST` when Ghidra has no function at an address).
+- Several step-3 catalog-agent rows were wrong (voice_queue_push_* were bgload wrappers,
+  rank_list_* the save menu, "map_sub_*" the strings_ family, equip_dual_weapon_* the memcard
+  status bodies): treat that pass's remaining guesses with suspicion; `cat3/twin.py MODULE
+  ADDR:END` finds title / field / battle / menu twins by normalized instructions.
+
+Files (this phase): `docs/catalog/functions.csv`, `COVERAGE.md`, `README.md`,
+`gaps_explained.csv` (new); `tools/catalog_gaps.py`; `engine/src/game/common/menu_save.{h,cpp}`,
+`engine/src/game/field/menu_camp.cpp`; this log. Scratch: `scratchpad/fx_worker/cat3/`
+(update sets `upd/u1..u9`, backup `functions.before.csv`).
+
 ## State at the end of phase 5 step 2 (23:xx): no runs active, nothing queued
 
 Scratch: the port captures (port/*/cap) were deleted (regenerable with port_pc.sh); the

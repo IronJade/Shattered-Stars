@@ -6,6 +6,86 @@ Worker: world agent (phase 3: closing the field program's remaining gaps). Build
 `gha.sh` on the project `analysis/ghidra_world`). Nothing is committed by the worker; the
 coordinator commits.
 
+## AP port fixes from the APWorld agent (sixth world agent, 2026-10-23 ~05:30-06:00): DONE, handed back
+
+Assignment (coordinator): (1) a received Celine must never be stuck in reserve (Mars 462 / 126,
+flag 112), and the same check for every character item; (2) `battle N` typed on the title
+segfaults; (3) map 413's event sweep loops on reload. Suites, ap_e2e(_so2), ref_regress --quick,
+a smoke case for Celine. Build `engine/build-world` (ninja -j8); scratch `scratchpad/world/celine/`
+(fn.py MAP OFF: the routine around an offset; strs.py MAP IDX: decoded strings; leaves.py: every
+library leave call with its unequip flag -> leaves.txt; party.py DUMP: party / flag 112 / chapter
+of an SS_STATE_DUMP; env.sh; runs/), `scratchpad/world/loop/` (run413.sh), `scratchpad/world/title/`.
+
+Done so far (uncommitted):
+- (2) field_program() was left dangling when the Field was deleted (battle, title, credits):
+  `field_program_delete` (field_program.cpp, used in field_program.cpp / encounter.cpp /
+  field_section6.cpp) nulls it. Title run: the old binary segfaults (exit 139), the new one says
+  "not in the field" 4 times and exits 0 (scratchpad/world/title/run.sh; give it stdin
+  </dev/null, or the console's stdin reader keeps the process alive after the frame limit).
+- (3) event_sweep.cpp: `reloads` / kMaxReloads 6: after 6 reloads in a row whose main script
+  leaves the map before settling, the next entry ends "loop" and the sweep moves on. Map 413
+  (late proof route 2:T21,419:T0): 7 entries, T0 map 419, T1-K64 "loop", done at vblank 2598.
+- (1) Findings (scripts): Celine's real recruitment is the Cross Cave choice (map 524 0x7000,
+  "Travel together with Celine?": 0 keeps her, 1 = leave routine 0x63e4(2, unequip 1) at 0x72bc).
+  Map 131 (chapter 15) stores flag 112 = party_has(Celine). Claude's game: 124 (step 1000) adds
+  her if absent; 462 T7 (step 2400) sends her home: flag 112 -> 0x63e4(2,0) (temporary), else
+  unequip item 0x2e7 in slot 4 and 0x63e4(2,1) (for good). Rena's game: 126 (step 1000) removes
+  Claude and Celine (Rena's solo); 125 (step 3300, setup) re-adds Celine (0x7dc0: ext 0xae + A
+  0x3f) only with flag 112. Other partings for good: Leon 234 0x6eb0 (Eluria colony, choice 0
+  "Waiting here is better"), Opera 479 0x8250 (choice 1 "this is where we part", after her own
+  join at 0x8244). Everything else that removes an item character is temporary (193/195,
+  444/447, 468-474 tournament, 548 ship, 422 Leon -> 230, 462 Dias -> 434/439, 71 Ashton).
+- (1) Port: ap::keeps_flag (script_vm.cpp flag_set: a received Celine's flag 112 cannot be
+  cleared) + keep_story_flags (set on receipt and in free play); ap::on_party_remove (script_ext
+  ext 0xaf, before the remove): the four parting sites (kPartings) re-queue a received member
+  for the next free play; any other leave of a received member drops a join still waiting.
+- Runs (scratchpad/world/celine/runs): c1 (Claude's game, 462 T7 with Celine received, flag 112
+  clear at start): flag 112 set on receipt, the scene sends her home keeping her gear, 125 at
+  step 3300 rejoins her and records the check; c0 = the same on the pre-fix binary: flag 112
+  stays 0, she stays in reserve. c524 (seed patch forcing choice 1): "Celine leaves at map 524
+  ... rejoin at the next free play", then "Celine joins the party (slot 2)".
+- Later the same turn: on_party_remove runs BEFORE the remove and only for an active member; a
+  temporary leave of a received member drops a join still waiting (found by r1: the item's
+  banner delayed her join, map 126 took her out, then join_waiting pulled her back mid-solo).
+  on_party_add logs "join site M:O: X was received: the game's join"; keeps_flag logs each kept
+  clear.
+- More runs: r1 (Rena's game: 126 at step 1000 takes Claude + Celine out, "for a while"; 125 at
+  step 3300 rejoins her, check recorded), k1 (map 131's store of 0 kept), l1 (Leon 234 choice 0
+  -> rejoins), o1 (Opera 479 choice forced to 1 by patch `script 479 0x1e9d 0x0b000000
+  0x12000001` -> rejoins). Cross Cave's choice patch: `script 524 0x1c09 0x0b000000 0x12000001`.
+- Unit test ap_received_members_stay (ss_game_tests 108/0). Smoke: 7 new checks ap_cel_mars
+  (4), ap_cel_131, ap_cel_cave (2); `scratchpad/world/celine/smoke_cel.sh` runs only them (7/7).
+- Docs: seed_format.md "A received character stays recruited"; formats.md flag 112 + the leave
+  routine; field.md Celine (flagged [world agent]).
+- For the APWorld agent (logic): 124's join only runs when Celine is absent at step 1000, i.e.
+  only if the player sent her away at Cross Cave and she was not received; a received or kept
+  Celine skips it. 125 needs flag 112 (kept, or received). So 124 can be unreachable; in Rena's
+  game choice 1 leaves no Celine site.
+- No seed: the Mars scene (462 T7, Celine in the party, flag 112 clear) with the new build and
+  the pre-fix build (scratchpad/late_proof/bin): state dumps at vblanks 500 / 4000 / 8000 /
+  10000 byte-identical, sweep logs identical (she goes home for good, as on the console).
+- Suites (engine/build-world, SS_DISC1, scratch XDG): ss_tests 78/0, ss_game_tests 108/0, smoke
+  86/86 (79 + 7 ap_cel_*), tools/ap_e2e.sh 23/23, ref_regress --quick 28/28 (0 regress),
+  ap_e2e_so2 24/25: the one FAIL is the APWorld agent's new session 2 (edited 05:37, in
+  progress), which expects Bob's Map Bombs in Hearn's slot 2; the generated seed put an own
+  Paralysis Trap there and the port recorded that check correctly.
+- WARNING for whoever runs tools/ap_e2e_so2.sh: it does `rm -rf scratchpad/ap_e2e_so2` BEFORE
+  its port check. My first try found port 38292 busy, so it may have removed a concurrent run's
+  work dir (the APWorld agent's?) before exiting; later runs used a private copy
+  (scratchpad/world/celine/e2e/ap_e2e_so2.sh, W in my scratch, AP_E2E_PORT=38295). The script
+  should check the port first (the APWorld agent's file; not changed by me).
+
+### Files changed this turn (none committed by me; the 05:16 checkpoint took the first part)
+- engine/src/game/ap/ap.{h,cpp}: on_party_remove, keeps_flag, kPartings, keep_story_flags,
+  character_received, the received-join log line.
+- [world agent] hooks: field/script_ext.cpp (ext 0xaf), field/script_vm.cpp (flag_set),
+  field/field.h + field_program.cpp + encounter.cpp + field_section6.cpp (field_program_delete),
+  field/event_sweep.cpp (reloads / kMaxReloads).
+- engine/tests/test_ap.cpp: ap_received_members_stay.
+- tools/smoke_field_events.sh: ap_cel_mars / ap_cel_131 / ap_cel_cave (7 checks).
+- docs: ap/seed_format.md, ap/field.md (flagged), catalog/formats.md, catalog/script_opcodes.csv
+  (B 0x73 summary), handoff/world.md.
+
 ## AP phase 4, port side (fifth world agent, 2026-10-23 ~04:xx-05:xx): DONE, handed back
 
 Finished the fourth agent's "Open / next" list (all four items). Build `engine/build-world`

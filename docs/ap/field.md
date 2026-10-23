@@ -332,7 +332,7 @@ be matched to these map numbers.
 |---|---|---|---|
 | 8 | an enemy type's first drop | `0x50320000 + (8 << 21) + enemy type` (the stats record's +0 id, battles.json `enemy_types`) | `enemy_drops`: 89 types that random encounters meet and that drop something (Armedknight, type 1: 1362231297) |
 | 9 | a boss fight | `0x50320000 + (9 << 21) + encounter` | `bosses`: 47 boss encounters (Alen-Tax, 191: 1364328639) |
-| 10 | a shop slot (phase 4) | `0x50320000 + (10 << 21) + (shop << 8) + index` | none: the APWorld makes them from the shop lists ([seed_format.md](seed_format.md), "Phase 4") |
+| 10 | a shop slot (phase 4) | `0x50320000 + (10 << 21) + (shop << 8) + index` | none here: `tools/ap_world_tables.py` makes them from `shops` and `shop_sites` (550 slots of the 50 shops a script opens, minus 0x58 and the order shops 0x5a-0x5e; [apworld.md](apworld.md), "Shop slots") |
 
 **Join sites.** A recruitment record's first join site keeps the record's id; every other join
 site of the record takes the map's next free type-4 index (`sites[].location_id`), as gift
@@ -476,6 +476,15 @@ From the scripts, cross-checked with Prima's official guide (page numbers are Pr
   - Noel joins in the story (map 277, chapter 39).
   - Celine's first join is at map 74 (chapter 11). Prima p. 6 says the permanent join is a
     choice after Cross Cave; maps 124 / 125 (chapter 15) hold her later joins.
+  - [world agent, 2026-10-23] The scripts agree: Cross Cave's choice (map 524, chapter 13
+    step 0, "Travel together with Celine?") keeps her (0) or sends her away (1). Map 131 stores
+    flag 112 = party_has(Celine). Claude's game: map 124 (step 1000) adds her only if she is
+    absent, map 462 (step 2400) sends her home, map 125 (step 3300) adds her back only with
+    flag 112. Rena's game: map 126 (step 1000) takes her out, map 125 the same. So for the
+    logic: with choice 0 the 125 site is reached and 124's join is skipped (she is in the
+    party); with choice 1 only 124 is reached, and only in Claude's game; in Rena's game
+    choice 1 leaves no Celine site at all. A received Celine keeps flag 112 in the port
+    (seed_format.md "A received character stays recruited"), so 125 is always reached then.
 - **The party cap.** No join site tests the party size. The exclusive pairs above keep the
   party at eight or fewer; Prima p. 11 says that with Ernest you choose among the last three.
 - **Choices through the library.** Choices asked through the library's message-with-choice

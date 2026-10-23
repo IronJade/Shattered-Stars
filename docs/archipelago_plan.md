@@ -262,12 +262,20 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
      `tools/ap_e2e_so2.sh` 19 / 19 (a received character joins, a trap arrives, a first drop
      goes out).
 4. **Open world.** Area keys gating doors (map transfer patches), the Expel teleporter, shop
-   shuffle. Later, entrance shuffle on the same door patches.
+   shuffle. Done (2026-10-23). Later, entrance shuffle on the same door patches.
    - Port side (2026-10-23, [seed_format.md](ap/seed_format.md) "Phase 4"): the door table
      (`tools/ap_doors.py`, `docs/ap/doors.json`: 2529 doors, 66 world-map entrances), key
      items and locked doors (`world_mode: open_world`), seed door targets for the entrance
      shuffle with a validator (`apworld/so2/doors.py`), the Expel teleporter (Virtual Expel's
      arena old man and Arlia's guide from chapter 36), shop slots as locations.
+   - APWorld (2026-10-23, [apworld.md](ap/apworld.md) "Open world", "Shop slots"): `world_mode:
+     open_world` with 35 area keys (one per entrance group; Arlia and Fun City to start), the
+     story's 23 stages needing the keys of the areas they enter, the teleporter in the logic
+     (chapter 38), progression in Expel only where the new teleporter proof
+     (`tools/ap_late_proof.py --state teleporter`) reaches; `shuffle_shops` specials (98) / full
+     (550), never progression; a design note for the entrance shuffle.
+   - Tests: the world's 95, AP's general 379, 64 seeds (128 files, 127 option combinations) with
+     the checker, the port's door and shop spot checks, `tools/ap_e2e_so2.sh` 25 / 25.
 5. **Release.**
    - First, a custom `.apworld` (custom_worlds; with the `archipelago.json` manifest Archipelago
      0.7 requires) and a port release.

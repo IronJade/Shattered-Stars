@@ -1,6 +1,6 @@
 # The SO2 APWorld (`apworld/so2`)
 
-Phases 2 and 3 of [the Archipelago plan](../archipelago_plan.md): the Archipelago world for Star
+Phases 2 to 4 of [the Archipelago plan](../archipelago_plan.md): the Archipelago world for Star
 Ocean: The Second Story. The game name is "Star Ocean: The Second Story"; it has a colon, so
 quote it in YAMLs. The world targets Archipelago 0.6.8's World API and writes one `.apso2`
 seed per player ([seed_format.md](seed_format.md)), which the port loads.
@@ -17,13 +17,15 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
 | Boss fights | 41 (13 in the cave) | `boss_checks` (default on) | type 9 + encounter |
 | Join sites | 18 | `character_items` | type 4, one per site |
 | First drops | 89 (3 met only in the cave) | `drops_as_checks: first_drop` | type 8 + enemy type |
+| Shop slots | 550 (98 specials) | `shuffle_shops: specials / full` | type 10 + (shop << 8) + entry |
 
 - **Left out:**
   - two chests and 33 gift sites that give key items (script flags 66-91), because the
     story needs them where they are: Cross Cave's chest (map 547, key flag 68) and Cave of
     Trials level 1's (map 706, key flag 93);
   - prize tables, Private Action ids (their rewards are gift sites), recruitments other than
-    the join sites, and shops (phase 4);
+    the join sites, and the shop *site* records (type 5; the slots are type 10, "Shop slots"
+    below);
   - the goal fights 539 / 540, and boss encounters 0 / 263 / 534 / 561, which no script
     starts with a constant encounter.
 - **The Cave of Trials** (`cave_of_trials`, off by default) adds its 81 chests and gift sites
@@ -40,7 +42,12 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
   Celine's first join (map 74) is one of those: she leaves the party at Mars in both games
   (Claude's: the Varmillion scene on map 462, chapter 15 step 2400, whatever flag 112 holds;
   Rena's: map 126, step 1000; checked headless) and comes back at 124 / 125. Noel joins in the
-  story and is not shuffled.
+  story and is not shuffled. Several sites depend on a choice (the world agent, 2026-10-23):
+  Celine's real recruitment is the Cross Cave choice (map 524, chapter 13); map 124 runs only
+  if she was sent away there and not received, 125 needs flag 112, and in Rena's game sending
+  her away leaves no Celine site; Leon (234) and Opera (479) have parting choices. So a join
+  site can stay unreachable: every join site is EXCLUDED and never holds progression (hard
+  reason "join"), and the port rejoins a received member after the partings.
 - **First drops:** the 89 enemy types that random encounters meet and that drop something.
   Each one's region is the earliest region where the type is met; its pool item is the type's
   first drop.
@@ -53,12 +60,14 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
 | a Fol bundle (10 amounts) | `0x50330000 + amount` | filler |
 | a character (Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Chisato) | `0x50340000 + party id` (1 Claude ... 12 Chisato) | useful |
 | a trap: Ambush, Fol Loss (10 %), Poison, Paralysis, Stone | `0x50350000 + 1..5` | trap |
-| an area key (phase 4) | `0x50360000 + N` | (phase 4) |
+| an area key (open world): "Salva Pass" ... (35) | `0x50360000 + N`, N 1-35 (data.KEY_GROUPS) | progression |
 
 - **The pool** is the vanilla contents of this world's locations. A boss, join or drop
   location adds its vanilla item (a Blueberry for bosses and join sites); the party's
   characters replace join sites' Blueberries; `traps` % of the filler becomes traps.
-- There are no progression items of our own: the story's key items are flags and stay put.
+- There are no progression items of our own in story mode: the story's key items are flags
+  and stay put. Open world adds the 35 area keys (progression); each takes the place of a
+  filler item in the pool.
 - **The cave's gems stay put.** The Cave of Trials doors on maps 751 and 764 take the Red Lotus
   Gem (317; gifts on maps 711 and 754) and test the Cracked Gem (289; the chest on map 771).
   Those three locations keep their own item, locked (`items.PUZZLE_ITEMS`), so a door never
@@ -168,11 +177,116 @@ bosses:
 **Characters are useful, never progression.** Member-gated logic would not be monotonic
 (Ashton rules out Opera), so every member-gated location is excluded instead.
 
+## Open world (`world_mode: open_world`, phase 4)
+
+The port locks each world-map entrance until its area's key arrives ([seed_format.md](seed_format.md),
+"Phase 4"). The story still runs in its order, so the keys the story's areas need are the
+seed's progression.
+
+**Keys.** One per entrance group of `docs/ap/doors.json` (`key_group`: the 66 entrances of the
+two world maps, 44 Expel, 22 Nede, in 35 groups), key N = the group's place in doors.json order,
+named "<area> Pass" (`tools/ap_world_tables.py` KEY_NAMES; "Map 231 Pass" for the one-map
+area the story visits at chapters 24-25, "Fienal Pass" for map 687, Fienal's entrance). The
+seed's `doors` lists all 66 with their key; `apworld/so2/doors.py` validates it in the tests.
+**Starting keys:** the Arlia Pass (the start) and the Fun City Pass (the teleporter's way back
+to Expel, and the only way to Virtual Expel), plus the North City Pass with the teleporter off
+(else nothing on Energy Nede is reachable after the switch).
+
+**The story's stages** (data.STAGES, from every chapter / step store with its conditions and
+the area of its map; `scratchpad/enemy/ap5/steps.py`): 23 stages, 12 on Expel (chapters 3-35)
+and 11 on Energy Nede (36-60). Each is an event that needs the previous one and the keys of the
+areas the story walks into in it:
+
+| Stages | Chapters | Keys |
+|---|---|---|
+| 1-4 | 3-13 | Arlia; Salva, Arlia; Cross; Cross Cave |
+| 5-8 | 14-22 | Clik, Mars, Herlie; Herlie; Lacour, Hilton (the tournament maps 434 / 467-477 carry Hilton banners but sit in Lacour); Linga, Sanctuary of Linga |
+| 9-12 | 23-35 | Hilton, Lacour, Map 231, Hoffmann; Lacour Front Line; El Beach, Eluria Colony; Eluria Tower. The disc switch needs stage 12. |
+| 13-17 | 36-41 | none (the scenes after the switch); North City; Noel's House; Red Crystal; Central City |
+| 18-20 | 42-51 | the four Fields (Courage, Power, Intelligence, Love) and Armlock; Central City, L'Aqua; Fienal, L'Aqua, Central City |
+| 21-23 | 52-60 | Armlock, Mihne; Fun City; Armlock, L'Aqua, Fienal. The Final Save Point needs stage 23. |
+
+A key required a stage early only makes the logic stricter. Not the story's: Lasguss Mountain
+and the Mountain Palace (Ashton's quest, Prima pp. 48-56), Cave of Trials Level 1, Giveaway, and
+map 463's entrance on the Nede map ("Gallery Pass").
+
+**A location is reached** (rules.py `open_world_access`) by any of:
+- *early*: the stage before the one that first needs its area's key, plus that key (its area:
+  the entrance group whose entrances reach its map over unconditional field doors, else the
+  nearest one; a gift not before its window's first chapter; Fienal's floors from stage 23; a
+  story boss once its stage is done);
+- *teleporter* (Expel, `expel_teleporter` on): the "Expel Teleporter" event (stage 13 done and the
+  Fun City Pass: chapter 38, the old man in the arena) plus the keys of the world-map entrances
+  on the teleporter proof's route to its map;
+- *late*: the Final Save Point plus the keys on the late proof's route (Fun City for Expel,
+  then the area's entrance).
+
+**Where progression may go.** Our keys are needed before the Final Save Point, so a location
+the player skipped must be reachable again before then. The disc switch closes Expel; the
+teleporter reopens it from chapter 38, and the **teleporter proof** (`tools/ap_late_proof.py
+--state teleporter`: the late save at chapter 38 step 0, flag 730 cleared, the proof seed's
+expel_teleporter on, root Energy Nede's world map; result in late_proof.json's `teleporter`,
+the rows' `tele`) says which Expel locations it reaches. **Result** (2026-10-23): Claude's
+game 583 maps, 265 locations; Rena's 470 maps, 187 (the difference is the Cave of Trials'
+floors only); in both games all 129 Expel locations the late proof proves, so every Expel
+location that may hold progression in story mode may in open world too. So in open world:
+- an Expel location may hold any progression when the teleporter proof reached it (in the
+  protagonist's game, both under "any");
+- where only the late proof reached it, only our own Expel-story keys (stages 1-12): the
+  player can't pass the disc switch without them, so they are picked up before Expel closes;
+- with the teleporter off, or with `expel_progression` off, Expel holds only our Expel-story
+  keys (besides non-progression);
+- an Energy Nede row whose map is entered through an Expel entrance (Lacour's King's Room, map
+  429, a chapter-60 scene) has no early mode: it counts from the Final Save Point;
+- Energy Nede, Fienal and the cave: the late proof, as in story mode; story bosses as before.
+
+The teleporter proof's state has the save's chapter-60 flags, which Energy Nede's maps test,
+so it is used for Expel's maps only. **Known limits** (accepted, conservative elsewhere): a map
+that opens later in the story than its area's first visit, or closes for a while in the middle
+of it, is not modelled (Lacour's fifth entrance in chapters 25-59 and Mars's second at chapter
+15 have open siblings; the arena's route is shut in chapter 57, where only the Fun City Pass,
+a starting key, is needed).
+
+## Shop slots (`shuffle_shops`, phase 4)
+
+Every entry of the shops a script opens (field.json `shops` with a `shop_sites` record) is a
+location: 550 slots in 50 shops. Left out: shop 0x58 (it sells back the books sold to it; its
+list grows with flags 0x194 + item), the Familiar's order shops 0x5a-0x5e (a specialty), and
+the six shops no script opens. **specials** are the 98 slots whose item no other of these shops
+sells (a shop's own stock: Central City's Ignite Sword, Armlock's Force Sword, North City's
+instruments...); **full** is all 550. A slot's site gives its area and missable reasons
+(Lacour's shops close with the war: window; old Clik's: time-limited), which follow
+`missable_locations`. The slot's vanilla item joins the pool.
+
+**Never progression.** A slot can cost up to 40,000 Fol, and with `encounter_rate: 0` Fol is
+finite, so a price could block the seed; shop slots hold only useful, filler and trap items
+(of any world). The seed's check is `{type: shop, shop, index, item}`.
+
+## Entrance shuffle (later: a design note)
+
+The port already sends a seed door to `to` (an arrival point of the game) and
+`doors.validate_doors` checks a table. To build it on this world:
+- shuffle among the 66 world-map entrances first (two-way pairs: an entrance and the exit of the
+  area back to its world map, so the area's own exit must lead back where the new entrance
+  sits); field doors later, if ever (scenes assume their rooms);
+- the logic then needs the area graph instead of key groups: a region per entrance group,
+  entered through whatever entrance now leads there, and each story stage needing the regions
+  its maps lie in (data.STAGES' groups), so a stage's areas must be reachable through the
+  shuffled entrances with the keys in hand;
+- keep the arrivals the story itself uses (scene transfers, the ships, the disc switch) fixed,
+  and keep Fun City's entrance (the teleporter) and Fienal's (map 687) unshuffled, or prove
+  them again;
+- rerun the late and teleporter proofs with the shuffled table's routes (the proof follows real
+  transfers, so `to` must be in the proof seed).
+
 ## Options
 
 | Option | Values | Effect |
 |---|---|---|
 | `goal` | final_boss | Indalecio (539 / 540) |
+| `world_mode` | story (default) / open_world | open_world: area keys lock the world-map entrances ("Open world") |
+| `expel_teleporter` | true (default) / false | open world only: Fun City's arena takes the party back to Expel from chapter 36 |
+| `shuffle_shops` | off (default) / specials / full | shop slots as locations, never progression |
 | `protagonist` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
 | `expel_progression` | true (default) / false | false: no progression in Expel at all |
@@ -209,13 +323,13 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 | `world.py` | `SO2World` (`choose_party`, `create_items`), `SO2Web`, `seed_data`, `generate_output`, `fill_slot_data` |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `data.py` | generated tables (do not edit) |
-| `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent) |
+| `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest, setup and game pages |
 | `test/` | WorldTestBase tests |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 
-    tools/ap_world_tables.py          # field.json + battles.json + late_proof.json -> data.py
+    tools/ap_world_tables.py          # field.json + battles.json + late_proof.json + doors.json -> data.py
 
 Rerun the late proof after a change to the port's field code, the event sweep or field.json
 (about an hour per game; keep the machine's total at 6 game processes: `--jobs 3` each, or one
@@ -224,6 +338,10 @@ game after the other; logs in scratchpad/late_proof/, `--resume` reuses finished
     tools/ap_late_proof.py --bin BIN --game claude --jobs 3 -o scratchpad/late_proof/claude.json &
     tools/ap_late_proof.py --bin BIN --game rena --jobs 3 -o scratchpad/late_proof/rena.json &
     wait; tools/ap_late_proof.py --reparse --game claude --game rena   # -> docs/ap/late_proof.json
+
+and the teleporter proof the same way with `--state teleporter` (work dir
+scratchpad/late_proof/teleporter; about 15 minutes per game at --jobs 3; its reparse writes
+late_proof.json's `teleporter` key).
 
 It needs SS_DISC1 (disc 2 next to it) and a memory card with a save at the Final Save Point
 (`--save`, default `scratchpad/latesave/card.mcd`, `--save-frame 13`).
@@ -240,31 +358,33 @@ ModuleUpdate waits at a prompt. Link the world in:
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python Generate.py --player_files_path P --outputpath O --seed N
 
-Results (2026-10-23):
-- The world's tests: 66 passed (4793 subtests; 17 classes: the defaults, protagonists,
-  missable options, the cave and its gems, Expel without progression, bosses off, characters
-  per protagonist, drops and traps, the late proof per protagonist).
-- AP's general tests with so2 installed: 379 passed (116824 subtests).
-- 60 seeds (`scratchpad/enemy/ap4/batch/run_batch.sh`): two SO2 players (Claude, Rena) with
-  every option random (protagonist, missable_locations, expel_progression, cave_of_trials,
-  boss_checks, character_items, drops_as_checks, traps, both multipliers, encounter_rate,
-  death_link, accessibility) plus ChecksFinder. All generate and fill: 120 `.apso2` files over
-  101 option combinations, 258-560 locations each. `check.py` finds no error: unique ids and
-  placeholders, well-formed patch lines (one per word), the cave's gems in place, a party the
-  story allows with every member in the items table, and each of the 1295 progression items
-  placed in SO2 locations where `may_hold_progression` allows it.
-- In the port (headless, engine/build-enemy):
-  - `tools/ap_e2e_so2.sh`: 19 / 19, twice (the phase-3 steps: a received Celine joins, a Fol
-    Loss Trap takes 10 %, Kitty's first drop goes out as a check);
-  - three batch seeds (Claude's, Rena's and "any"): a received character joins, a Fol Loss
-    trap takes 1000 of 10000 Fol, the rewards scale (EXP x2 / x6 / x8, Fol x6 / x7 / x9), and
-    the first drop of a random-encounter enemy (encounter 110, Kitty, type 90) is withheld
-    and checked (an own item, or "Bloody Helm for Claude" in the other slot);
-  - Ashton's join site (map 71, a sweep at chapter 17 with flag 113): the check goes out, Ashton
-    is held back (not received), and the site's item (a Paralysis Trap) is given.
+Results (2026-10-23, phase 4):
+- The world's tests: 95 passed (7986 subtests; 22 classes: phase 3's 17, plus TestOpenWorld,
+  TestOpenWorldRenaShops, TestOpenWorldNoTeleporter (keys and starting keys, a stage needing its
+  key, where progression may go in Expel, the seed's 66 doors through `doors.validate_doors`),
+  TestShopsFull and TestShopsSpecials (slot counts, never progression, the shop checks)).
+- AP's general tests with so2 installed: 379 passed (116983 subtests).
+- 64 seeds (`scratchpad/enemy/ap5/batch/run_batch.sh`): two SO2 players with every option
+  random, now with world_mode (story 1 : open_world 2), expel_teleporter and shuffle_shops, plus
+  ChecksFinder: 128 `.apso2` files over 127 option combinations, 277-1110 locations each, all
+  generate and fill. `check.py` finds no error: phase 3's checks, plus the open-world
+  progression rule (teleporter proof / Expel-story keys), no progression in shop slots, the
+  shop checks and ids, the 66 doors with their group's key and `validate_doors`, all 35 keys
+  in the items table, the starting keys; 3663 progression items placed in SO2 locations.
+  (Three seeds of the first run failed to fill: open world with expel_progression off left the
+  Expel-story keys nowhere to go; fixed, see "Open world".)
+- In the port (headless, engine/build-enemy, `scratchpad/enemy/ap5/spot/run.sh`), three open-world
+  batch seeds (protagonist any / claude / rena) and one more: North City's entrance (door
+  68685998, key 29) refuses the leader ("North City Pass needed"), `ap_give key:29` gives the
+  key and the town loads (vblank 422); Hearn's shop slots 0 and 2 in a full-shops seed pay the
+  placed items (our own one given, Rena's sent), the specials seeds leave shop 1 alone.
+- `tools/ap_e2e_so2.sh`: 25 / 25, twice (Claude in open world with full shops: the Salva Pass
+  arrives from Bob's tile, a second session buys in Hearn's shop and the slot's check reaches
+  the server).
 
 ## Next
 
-- Phase 4 (open world, shop shuffle; seed fields confirmed in [seed_format.md](seed_format.md),
-  "Phase 4"): area keys on the world-map entrances, the Expel teleporter, shop slots.
+- Entrance shuffle on the door table ("Entrance shuffle (later)" above).
+- Tighter open-world proofs: a mid-Nede state with the flags of its time (the teleporter
+  proof's chapter-60 flags keep it to Expel's maps).
 - A `.apworld` zip for custom_worlds (phase 5).

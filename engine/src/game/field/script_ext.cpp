@@ -474,12 +474,13 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
     }
     case 0xAF: {
       vm_fetch_args(ctx, 1);
-      party_remove_member(ctx, a[0]);
       // Archipelago (port feature; character_items) [world agent]: a received member the story
-      // parts with for good rejoins at the next free play (the site as for ext 0xae).
+      // parts with for good rejoins at the next free play; one it takes out for a while comes
+      // back with the story (the site as for ext 0xae).
       const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
       const int call_at = ctx->depth > 0 ? static_cast<int>(ctx->call_sp[-1]) - 4 : -1;
       ap::on_party_remove(a[0], at, call_at);
+      party_remove_member(ctx, a[0]);
       break;
     }
     case 0xB0:

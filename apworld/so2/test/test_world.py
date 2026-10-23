@@ -60,9 +60,13 @@ def check_seed(test, seed):
         elif row["type"] == "drop":
             test.assertEqual(check["enemy"], row["enemy"])
             test.assertEqual(l["id"], ITEM_BASE + (8 << 21) + row["enemy"])
+        elif row["type"] == "shop":
+            test.assertEqual((check["shop"], check["index"], check["item"]), (row["shop"], row["index"], row["item"]))
+            test.assertEqual(l["id"], ITEM_BASE + (10 << 21) + (row["shop"] << 8) + row["index"])
+            test.assertNotEqual(l["item"]["classification"], "progression")
         item = l["item"]
         if item["player"] == test.player:
-            test.assertIn(item["kind"], ("item", "fol", "character", "trap"))
+            test.assertIn(item["kind"], ("item", "fol", "character", "trap", "key"))
             test.assertIn(str(test.world.item_name_to_id[item["name"]]), seed["items"])
         else:
             test.assertIn("ap_id", item)
@@ -328,3 +332,134 @@ class TestDropsAndTraps(SO2TestBase):
         for l in seed["locations"]:
             if l["check"]["type"] == "drop":
                 self.assertNotEqual(l["item"]["classification"], "progression")
+
+
+# ---- Phase 4: open world and shop slots ----
+
+def doors_json():
+    import json
+    import os
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "docs", "ap", "doors.json")
+    return json.load(open(path)) if os.path.exists(path) else None
+
+
+class OpenWorldChecks:
+    """open_world: the keys, the stages, the doors in the seed, where progression may go."""
+    side = None
+    teleporter = True
+
+    def test_keys_and_start(self):
+        from ..data import KEY_GROUPS
+        from ..items import KEY_OF, START_KEYS
+        start = set(START_KEYS) | (set() if self.teleporter else {"North City Pass"})
+        pre = {i.name for i in self.multiworld.precollected_items[self.player]}
+        self.assertEqual(pre & {g["name"] for g in KEY_GROUPS}, start)
+        keys = [i for i in own_pool(self) if i.code in KEY_OF]
+        self.assertEqual(sorted(i.name for i in keys), sorted(g["name"] for g in KEY_GROUPS if g["name"] not in start))
+        self.assertTrue(all(i.advancement for i in keys))
+        self.assertEqual(len(own_pool(self)), sum(1 for loc in own_locations(self) if not loc.locked))
+
+    def test_stages_need_keys(self):
+        from ..items import stage_event
+        state = CollectionState(self.multiworld)
+        for i in self.multiworld.precollected_items[self.player]:
+            state.collect(i, True)
+        self.assertTrue(self.world.get_location("Story: Shingo Forest and Arlia").can_reach(state))
+        self.assertFalse(self.world.get_location("Story: Salva and Salva Drift").can_reach(state))
+        state.collect(self.world.get_location("Story: Shingo Forest and Arlia").item, True)
+        state.collect(self.world.create_item("Salva Pass"), True)
+        self.assertTrue(self.world.get_location("Story: Salva and Salva Drift").can_reach(state))
+        self.assertFalse(state.has(stage_event(2), self.player))
+        # Salva's chests need the pass and the story's first stage.
+        salva = [loc for loc in own_locations(self) if ROW[loc.name].get("group") == "Town of Salva"
+                 and ROW[loc.name]["type"] == "chest"]
+        self.assertTrue(salva and all(loc.can_reach(state) for loc in salva))
+
+    def test_progression_rules(self):
+        from ..items import SO2Item
+        from ..rules import proven_late, proven_teleporter
+        mine = self.world.create_item("Salva Pass")            # an Expel-story key of ours
+        nede = self.world.create_item("North City Pass")       # needed after the disc switch
+        other = SO2Item("test key", ItemClassification.progression, None, self.player + 1)
+        allowed = {"any": 0, "expel keys": 0}
+        for loc in own_locations(self):
+            row = ROW[loc.name]
+            if loc.progress_type == LocationProgressType.EXCLUDED or row["type"] not in ("chest", "gift"):
+                continue
+            if row["region"] != "Expel":
+                continue
+            st = self.multiworld.state
+            tele = self.teleporter and proven_teleporter(row, self.side)
+            late = proven_late(row, self.side)
+            self.assertEqual(loc.can_fill(st, nede, False), tele, loc.name)
+            self.assertEqual(loc.can_fill(st, other, False), tele, loc.name)
+            self.assertEqual(loc.can_fill(st, mine, False), tele or late, loc.name)
+            allowed["any" if tele else "expel keys"] += tele or late
+        self.assertGreater(sum(allowed.values()), 50)
+
+    def test_seed_doors(self):
+        fill(self)
+        seed = self.world.seed_data()
+        check_seed(self, seed)
+        self.assertEqual(seed["options"]["world_mode"], "open_world")
+        self.assertIs(seed["options"]["expel_teleporter"], self.teleporter)
+        self.assertEqual(len(seed["doors"]), 66)
+        self.assertEqual(len({d["key"] for d in seed["doors"]}), 35)
+        kinds = {i["kind"] for i in seed["start"]["items"]}
+        self.assertEqual(kinds, {"key"})
+        table = doors_json()
+        if table is not None:
+            from ..doors import validate_doors
+            self.assertEqual(validate_doors(seed["doors"], table), [])
+            world = {r["id"]: r for r in table["doors"] if r.get("world") in (1, 2)}
+            self.assertEqual({d["id"] for d in seed["doors"]}, set(world))
+            for d in seed["doors"]:
+                self.assertIn(world[d["id"]]["key_group"], d["name"])
+
+
+class TestOpenWorld(SO2TestBase, OpenWorldChecks):
+    options = {"world_mode": "open_world"}
+
+
+class TestOpenWorldRenaShops(SO2TestBase, OpenWorldChecks):
+    options = {"world_mode": "open_world", "protagonist": "rena", "shuffle_shops": "full", "cave_of_trials": True,
+               "character_items": True}
+    side = "rena"
+
+
+class TestOpenWorldNoTeleporter(SO2TestBase, OpenWorldChecks):
+    options = {"world_mode": "open_world", "expel_teleporter": False, "protagonist": "claude",
+               "missable_locations": "include"}
+    side = "claude"
+    teleporter = False
+
+
+class ShopChecks:
+    mode = "full"
+
+    def test_shop_slots(self):
+        from ..data import LOCATIONS
+        slots = [loc for loc in own_locations(self) if ROW[loc.name]["type"] == "shop"]
+        rows = [r for r in LOCATIONS if r["type"] == "shop" and (self.mode == "full" or r["special"])
+                and "never" not in r["missable"]]
+        self.assertEqual(len(slots), len(rows))
+        self.assertEqual(len({(ROW[l.name]["shop"], ROW[l.name]["index"]) for l in slots}), len(slots))
+        from ..items import SO2Item
+        key = SO2Item("test key", ItemClassification.progression, None, self.player)
+        for loc in slots:
+            self.assertFalse(loc.can_fill(self.multiworld.state, key, False), loc.name)
+            self.assertNotIn(ROW[loc.name]["shop"], (0x58, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E))
+        fill(self)
+        seed = self.world.seed_data()
+        check_seed(self, seed)
+        self.assertEqual(seed["options"]["shuffle_shops"], self.mode)
+        self.assertEqual(seed["doors"], [])
+
+
+class TestShopsFull(SO2TestBase, ShopChecks):
+    options = {"shuffle_shops": "full"}
+
+
+class TestShopsSpecials(SO2TestBase, ShopChecks):
+    options = {"shuffle_shops": "specials", "protagonist": "claude"}
+    mode = "specials"

@@ -350,6 +350,34 @@ locations (a placeholder): it is given then, the join waiting for free play.
 - Banner: "Received Celine from Bob", then "Celine joined the party".
 - A 0x3f after a held-back join finds no slot and does nothing (the original would select the
   bytes before the party block; its own join never fails).
+- **A received character stays recruited** (2026-10-23; docs/catalog/formats.md "Flag 112" and
+  "The map library's leave routine"). The story still takes members out for a while (splits,
+  Mars, the tournament, the ship) and brings them back with its own scenes; it never drops a
+  received one for good:
+  - **Celine and flag 112.** Her real recruitment is Cross Cave's choice (map 524, chapter 13);
+    map 131 then stores "Celine travels with the party" (flag 112) from party_has, and Mars
+    reads it: Claude's game, map 462's scene (step 2400) sends her home for a while with it,
+    for good without it; Rena's game, map 126 (step 1000) takes her out; map 125 (step 3300,
+    both games) adds her back only with it. A received Celine sets flag 112 (on receipt, and in
+    free play for an older save) and the scripts cannot clear it (the VM's flag store asks
+    `ap::keeps_flag`). So she goes home in Mars and map 125 brings her back, as for a Celine
+    the player kept; its join site records its check and adds her through the game's join.
+  - **Partings for good** (`kPartings` in ap.cpp, each a call of the map's leave routine):
+    Celine at Cross Cave, choice 1 (524 0x72bc); Mars with flag 112 clear (462 0x7030); Leon at
+    the Eluria colony, choice 0 "Waiting here is better" (234 0x6eb0); Opera at the Hoffmann
+    Ruins, choice 1 "This is where we part" (479 0x8250). The scene plays (the member leaves,
+    the accessories come off as in the original); a received member then joins again at the
+    next free play ("Celine joined the party"). Log: `Celine leaves at map 524 (...): received,
+    so they rejoin at the next free play`.
+  - **Every other leave is temporary.** A received member's join still waiting at that moment
+    (the item's banner had not gone) is dropped (`... leaves at map 126 for a while`): the
+    story's own join brings them back (Celine 125; Leon 422 -> 230; Dias 462 -> 434 / 439; the
+    restore routines after 193, 444, 468-474, 548). Members received while already in reserve
+    join at the next free play as before.
+  - Checked headless (scratchpad/world/celine/runs): Claude's game 462 T7 (flag 112 clear at the
+    start: the scene keeps her gear; 125 at step 3300 rejoins her; the pre-fix build left her in
+    reserve), Rena's game 126 -> 125, map 131's store kept, the three choice partings (choices
+    forced by seed patches where the sweep's confirm picks the other answer). Smoke: `ap_cel_*`.
 
 ### First drops (`drops_as_checks: first_drop`)
 

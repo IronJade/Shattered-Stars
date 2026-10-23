@@ -15,7 +15,9 @@ stay in place. The entrances hang on three events, so the spheres follow the sto
 """
 from BaseClasses import ItemClassification, Region
 
-from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_VICTORY, SO2Item
+from .data import DISC_SWITCH_STAGE, STAGES
+from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_TELEPORTER, EVENT_VICTORY, KEY_NAME, SO2Item, \
+    stage_event
 from .locations import SO2Location
 
 REGIONS = ("Menu", "Expel", "Energy Nede", "Fienal", "Cave of Trials")
@@ -36,8 +38,35 @@ def create_regions(world):
     regions["Energy Nede"].connect(regions["Fienal"], "To Fienal")
     regions["Fienal"].connect(regions["Cave of Trials"], "Virtual Expel",
                               lambda state: state.has(EVENT_FINAL_SAVE_POINT, player))
-    for region, name, item in EVENTS:
+    events = list(EVENTS)
+    if world.open_world:
+        # Open world: the story's stages as events, each needing the previous one and the keys of
+        # the areas the story walks into in it (data.STAGES; docs/ap/apworld.md, "Open world").
+        for k, (name, _, _) in enumerate(STAGES, start=1):
+            events.append(("Expel" if k <= DISC_SWITCH_STAGE else "Energy Nede", f"Story: {name}", stage_event(k)))
+        if world.options.expel_teleporter:
+            events.append(("Energy Nede", "Expel Teleporter (Fun City arena)", EVENT_TELEPORTER))
+    for region, name, item in events:
         loc = SO2Location(player, name, None, regions[region])
         regions[region].locations.append(loc)
         loc.place_locked_item(SO2Item(item, ItemClassification.progression, None, player))
     return regions
+
+
+def stage_rules(world):
+    """Open world: the events' rules (the stages, the disc switch, the teleporter, the Final Save
+    Point)."""
+    player = world.player
+    for k, (name, _, keys) in enumerate(STAGES, start=1):
+        need = [KEY_NAME[g] for g in keys]
+        prev = stage_event(k - 1) if k > 1 else None
+        world.get_location(f"Story: {name}").access_rule = \
+            lambda state, prev=prev, need=need: (prev is None or state.has(prev, player)) and state.has_all(need, player)
+    world.get_location("Disc Switch (Eluria Tower)").access_rule = \
+        lambda state: state.has(stage_event(DISC_SWITCH_STAGE), player)
+    world.get_location("Final Save Point (Fienal 9F)").access_rule = \
+        lambda state: state.has(stage_event(len(STAGES)), player)
+    if world.options.expel_teleporter:
+        # Chapter 38 (after stage 13, the scenes after the switch): the arena's old man.
+        world.get_location("Expel Teleporter (Fun City arena)").access_rule = \
+            lambda state: state.has_all((stage_event(DISC_SWITCH_STAGE + 1), KEY_NAME["Fun City"]), player)

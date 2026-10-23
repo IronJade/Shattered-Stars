@@ -27,6 +27,12 @@ constexpr int kSaveUnlocks = 0x280;
 constexpr int kSavePacked = 0x380;
 constexpr int kSaveImageSize = 0x1B88;  // unpacked: config, party, records, inventory, snapshot
 
+// The field's copy of the page (overlay 0xbb6, its constructor 0x8007e000) stops a playing
+// Callways song and resumes the field music (callways_song_active 0x80031718,
+// callways_stop_song_resume 0x80031744). The field's menu host installs this; SaveMenu
+// calls it when the field hosts the menu.
+extern void (*g_save_page_open_hook)();
+
 // ---- Save menu (Panel, 0xc4 bytes, vtables 0x800679e4 / 0x800679d4) ------------------
 class SaveMenu : public Panel {
  public:

@@ -11,7 +11,7 @@ from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from . import items, locations, regions, rules
-from .data import GOAL_ENCOUNTERS
+from .data import GOAL_ENCOUNTERS, KEY_GROUPS
 from .options import SO2Options, option_groups
 from .patches import placement_patches
 
@@ -41,6 +41,7 @@ class SO2World(World):
     origin_region_name = "Menu"
 
     def generate_early(self):
+        self.open_world = self.options.world_mode == self.options.world_mode.option_open_world
         self.chosen = locations.choose(self.options)
         self.party = self.choose_party()
 
@@ -89,6 +90,18 @@ class SO2World(World):
                 self.get_location(row["name"]).place_locked_item(self.create_item(name))
             else:
                 pool.append(self.create_item(name))
+        if self.open_world:
+            # The area keys: the starting ones are given, the rest take the place of as many filler
+            # items (the pool keeps one item per location).
+            start = list(items.START_KEYS) + ([] if self.options.expel_teleporter else ["North City Pass"])
+            for name in start:
+                self.multiworld.push_precollected(self.create_item(name))
+            keys = [g["name"] for g in KEY_GROUPS if g["name"] not in start]
+            filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
+            if len(filler) < len(keys):
+                raise Exception(f"{self.player_name}: {len(keys)} keys but only {len(filler)} filler items to replace")
+            for k, name in zip(sorted(self.random.sample(filler, len(keys))), keys):
+                pool[k] = self.create_item(name)
         filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
         count = len(filler) * self.options.traps.value // 100
         trap_names = sorted(items.TRAPS)
@@ -107,6 +120,9 @@ class SO2World(World):
         return {
             "seed_format": SEED_FORMAT_VERSION,
             "goal_encounters": list(GOAL_ENCOUNTERS),
+            "world_mode": o.world_mode.current_key,
+            "expel_teleporter": self.open_world and bool(o.expel_teleporter),
+            "shuffle_shops": o.shuffle_shops.current_key,
             "protagonist": o.protagonist.current_key,
             "missable_locations": o.missable_locations.current_key,
             "expel_progression": bool(o.expel_progression),
@@ -175,7 +191,17 @@ class SO2World(World):
             "patches": patches,
             "start": {"items": start_items, "fol": start_fol, "flags": []},
             "goal": {"encounters": list(GOAL_ENCOUNTERS)},
+            "doors": self.seed_doors(),
         }
+
+    def seed_doors(self):
+        """Open world: every world-map entrance with its area's key (docs/ap/seed_format.md,
+        "Phase 4"; ids from docs/ap/doors.json). Story mode: none."""
+        if not self.open_world:
+            return []
+        world_name = {1: "Expel", 2: "Energy Nede"}
+        return [{"id": d, "key": g["key"], "name": f"{world_name[g['world']]} -> {g['group']}"}
+                for g in KEY_GROUPS for d in g["doors"]]
 
     def generate_output(self, output_directory):
         path = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.apso2")

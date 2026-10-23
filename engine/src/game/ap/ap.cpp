@@ -1179,6 +1179,8 @@ bool on_party_add(int character, int at, int call_at) {
   if (slot_of_character(id) >= 0 || party_has_room()) {
     auto& w = r.state.characters_waiting;
     w.erase(std::remove(w.begin(), w.end(), id), w.end());
+    log("join site " + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
+        " was received: the game's join");
     return false;
   }
   return true;
@@ -1209,21 +1211,31 @@ void on_party_remove(int character, int at, int call_at) {
   if (!r.on || !r.seed.character_items) return;
   const int id = character + 1;
   if (id < 1 || id > kCharacterCount || !character_received(r, id)) return;
+  const int slot = slot_of_character(id);
+  if (slot < 0 || rd16s(party_slot(slot)) <= 0) return;  // not active: nothing is removed
   const field::FieldGlobals& g = field::globals();
   const int map = g.game_state != nullptr ? rd16s(g.game_state + 0x1A) : -1;
+  auto& w = r.state.characters_waiting;
+  const bool waiting = std::find(w.begin(), w.end(), id) != w.end();
   for (const Parting& p : kPartings) {
     if (p.map != map || p.id != id || (p.at != call_at && p.at != at)) continue;
-    auto& w = r.state.characters_waiting;
-    if (std::find(w.begin(), w.end(), id) == w.end()) w.push_back(id);
+    if (!waiting) w.push_back(id);
     log(std::string(character_name(id)) + " leaves at map " + std::to_string(map) + " (" + p.what +
         "): received, so they rejoin at the next free play");
     return;
+  }
+  if (waiting) {
+    w.erase(std::remove(w.begin(), w.end(), id), w.end());
+    log(std::string(character_name(id)) + " leaves at map " + std::to_string(map) +
+        " for a while: the story brings them back (their join no longer waits)");
   }
 }
 
 bool keeps_flag(int flag) {
   const Runtime& r = rt();
-  return flag == kCelineKeptFlag && r.on && r.seed.character_items && character_received(r, kCeline);
+  if (flag != kCelineKeptFlag || !r.on || !r.seed.character_items || !character_received(r, kCeline)) return false;
+  log("script flag 112 kept set: Celine was received (she travels with the party)");
+  return true;
 }
 
 bool party_has_character(int id) { return slot_of_character(id) >= 0; }

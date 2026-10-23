@@ -350,17 +350,21 @@ def build(field, battles, late=None, doors=None):
         late_keys, _ = route_keys(late or {}, groups)
         tele_keys, tele_games = route_keys((late or {}).get("teleporter", {}), groups)
         for l in locs:
-            if l["map"] is not None:
-                l["group"] = gmap.get(l["map"])
+            if l["map"] is not None and l["map"] in gmap:
+                l["group"], near = gmap[l["map"]]
+                if near:
+                    l["group_near"] = True
             if l["type"] == "drop":
-                l["groups"] = sorted({gmap[m] for m in l.pop("site_maps") if m in gmap})
+                l["groups"] = sorted({gmap[m][0] for m in l.pop("site_maps") if m in gmap})
             if l["type"] in ("chest", "gift", "boss"):
                 l["late_keys"] = sorted(late_keys.get(l["id"], ()))
                 l["tele"] = tele_games.get(l["id"], [])
                 l["tele_keys"] = sorted(tele_keys.get(l["id"], ()))
         shops = shop_slots(field, items, worlds, gmap)
         for l in shops:
-            l["group"] = gmap.get(l["map"])
+            l["group"], near = gmap.get(l["map"], (None, False))
+            if near:
+                l["group_near"] = True
         names = {l["name"] for l in locs}
         if any(l["name"] in names for l in shops):
             raise SystemExit("a shop slot's name repeats a location's")
@@ -458,9 +462,10 @@ def key_groups(doors):
 
 
 def map_groups(doors, groups):
-    """Map -> the entrance group a player walks in by: the group whose entrances reach the map
-    over unconditional field doors, else the nearest group over any field door (scene-only maps
-    get one too; they rarely hold anything that may carry progression)."""
+    """Map -> (the entrance group a player walks in by, near): the group whose entrances reach
+    the map over unconditional field doors, else (near) the nearest group over any field door,
+    scenes included (scene-only maps get one too; rules.py never takes a near group's world
+    for the map's)."""
     recs = [r for r in doors["doors"] if not r.get("world_script") and not r.get("world")]
     plain, anyd = collections.defaultdict(set), collections.defaultdict(set)
     for r in recs:
@@ -489,7 +494,7 @@ def map_groups(doors, groups):
                 cand = (rank, d, g["key"])
                 if m not in best or cand < best[m][0]:
                     best[m] = (cand, g["group"])
-    return {m: g for m, (_, g) in best.items()}
+    return {m: (g, rank == 1) for m, ((rank, _, _), g) in best.items()}
 
 
 def route_keys(proof, groups):
@@ -568,7 +573,7 @@ def write(data, path, sources):
     for l in data["locations"]:
         row = {k: l.get(k) for k in ("id", "name", "type", "map", "flag", "offset", "encounter", "character", "enemy",
                                       "shop", "index", "special", "boss", "chapter", "from_chapter", "area", "region",
-                                      "regions", "group", "groups", "on_world_map", "item", "fol", "sites", "missable",
+                                      "regions", "group", "group_near", "groups", "on_world_map", "item", "fol", "sites", "missable",
                                       "protagonist", "late", "late_keys", "tele", "tele_keys")}
         row = {k: v for k, v in row.items() if v is not None or k in ("item", "fol", "protagonist")}
         out.append(f"    {row!r},")

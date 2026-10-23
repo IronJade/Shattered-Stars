@@ -147,6 +147,22 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   - Map 548 (the ship to El, chapter 29 step 30) stores them, then sets flag 765 (Leon).
   - In Rena's game it clears flag 765 again unless the party was Claude and Rena alone.
   - Map 229 then adds Leon to Rena's party in that one case.
+- **Flag 112**: Celine travels with the party. Map 131 (chapter 15 step 0, the scene that
+  moves the story to step 1000) stores party_has(Celine) in it. It is read in Mars: map 462's
+  Varmillion scene (T7, Claude's game, step 2400) sends Celine home with it set (leave routine,
+  gear kept) and for good without it (her accessories and item 0x2e7 in slot 4 come off); map
+  125 (step 3300, both games) adds her back only with it; maps 125 / 126 pick dialogue by it.
+  So the real recruitment is Cross Cave's choice (map 524, chapter 13 step 0, "Travel together
+  with Celine?": 0 keeps her, 1 = leave routine with unequip) [world agent, 2026-10-23].
+- **The map library's leave routine** (0x63e4 on maps 126, 234, 462, 479, 524 ...; found by
+  shape: `pop L4; pop L0; if L4 { B 0x73(L0, 5); B 0x73(L0, 6) }; ext 0xaf(L0); call 0x5698`):
+  a member leaves for the reserve; with "unequip" set their accessories come off first (they
+  stay with the player). Its join twin (0x63c0 / 0x7dc0) is ext 0xae + A 0x3f. Item characters
+  leave for good only at Celine's Cross Cave choice 1 (524, the call at 0x72bc), Mars with flag
+  112 clear (462 0x7030), Leon's Eluria colony choice 0 (234 0x6eb0, "Waiting here is better";
+  sets flag 500) and Opera's Hoffmann Ruins choice 1 (479 0x8250, right after her own join at
+  0x8244; G[0x1be] = 9998, flag 141 cleared). Every other leave of an item character is
+  temporary (`scratchpad/world/celine/leaves.txt` lists all 98 calls) [world agent].
 - **Flags 145-151** are the Hoffmann Ruins switches. Each is set by its room's switch
   routine, called with the flag number (maps 494, 497, 501, 505, 509, 519, 522).
   - Flag 149 (map 509) turns the transfers of maps 506 / 510 from map 507 to its other

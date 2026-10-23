@@ -77,6 +77,8 @@ void list_place(s32* top, s32* cursor, s32 target, s32 last_row) {
 
 }  // namespace
 
+void (*g_save_page_open_hook)() = nullptr;
+
 // ==== SaveMenu ===========================================================================
 
 SaveMenu::SaveMenu() {
@@ -102,6 +104,14 @@ SaveMenu::SaveMenu() {
   shown_load = 0;
   usable[0] = usable[1] = 0;
   load_handle = 0;
+  if (host() == Host::Field) {
+    // The field's copy (overlay 0xbb6, 0x8007e000): a playing Callways song stops first,
+    // then, unless the session already holds it, the character sprite pack 0xbd2 (the
+    // list's party sprites; the field's sprite slots hold only the loaded characters) is
+    // queued; frame() makes it resident once loaded (bgload_queue_entry_noflag 0x80038e64).
+    if (g_save_page_open_hook != nullptr) g_save_page_open_hook();
+    if (session()->cached_0bd2 == 0) load_handle = bgload_queue(&loads, 0xBD2, 0, nullptr, 0, 0);
+  }
   slot_box = new TextBox;
   slot_box->set_rect(0, 0xA2, 0x138, 0x26, 0);
   no_card = nullptr;

@@ -47,7 +47,7 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 |---|---|---|
 | Battle | `docs/handoff/battle.md` | stage references, Weirdaxe debris, final boss first AI draw, B13, M7 tick |
 | Effects | `docs/handoff/effects.md` | battle talk verified; field menu voice Redux check; then the catalog's unported rows |
-| Catalog | `docs/handoff/catalog.md` | gap-scan prologue-filter bug fixed (517 real candidates found, was ~1); 411 rows filled (boot 303, field 62, title 29, battle 12, field_sub3103 1, menu_0ba5 1, menu_0bb6 3); battle's boss-attack subsystem (51 fns) and field's 8 still open |
+| Catalog | `docs/handoff/catalog.md`, `effects.md` | complete: 5429 rows, gap scan 0 missing over 32 programs (`tools/catalog_gaps.py`, `docs/catalog/gaps_explained.csv`), port column 0 empty; left: confidence pass (699 likely, 166 guess) |
 | World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
 | Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
 | Tools | `docs/handoff/tools.md` | reference regression suite (`tools/ref_regress.py`, quick set in checkpoints) |

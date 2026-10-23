@@ -437,7 +437,7 @@ table_b,0xff,0x6f,ovl_801ea374_reload,8,8,4 (inline),if the overlay is absent: F
 table_b,0xff,0x70,ovl_801eac28_b,1,1,0 (inline),"Overlay #3103 0x801eac28(ctx, instr), as B 0x16 (fetches 1)",confirmed
 table_b,0xff,0x71,pad_vibrate,3,3,1 (inline),"FUN_80013e14(pad, a0..a2)",confirmed
 table_b,0xff,0x72,B_nop_72,0,0,0 (inline),,confirmed
-table_b,0xff,0x73,char_unequip_slot,2,2,1 (inline),,confirmed
+table_b,0xff,0x73,char_unequip_slot,2,2,1 (inline),"(member, slot): char_set_equipment(member, slot, 0): the slot's item (record +0xc + 2 * slot; slots 5 / 6 are the accessories) goes back to the inventory; only for an active member. The maps' leave routine takes slots 5 / 6 off a member leaving for good [world agent]",confirmed
 table_b,0xff,0x74,char_set_equipment,3,3,1 (inline),,confirmed
 table_b,0xff,0x75,relation_hash,1,1,0 (inline),R = relation_hash_mod(a),confirmed
 table_b,0xff,0x76,best_friend_of,3,3,1 (inline),R = member with the highest relation sum toward a (ties by hash); falls through into 0x79 and fetches two more args (missing break). Unused in scripts,confirmed

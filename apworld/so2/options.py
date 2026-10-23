@@ -114,9 +114,44 @@ class EncounterRate(Range):
     default = 100
 
 
+class WorldMode(Choice):
+    """story: the areas open as the story opens them.
+    open_world: each area's entrances on the world maps (35 areas, 66 entrances) stay shut
+      until its pass arrives ("Salva Pass"). You start with the Arlia Pass and the Fun City
+      Pass; the story still runs in its order, so its areas need their passes on the way. The
+      passes are progression items shuffled into the multiworld."""
+    display_name = "World Mode"
+    option_story = 0
+    option_open_world = 1
+    default = option_story
+
+
+class ExpelTeleporter(DefaultOnToggle):
+    """Open world only: from chapter 36 the old man in Fun City's arena takes the party back to
+    Arlia (and Arlia's guide brings it back), so Expel stays reachable after the disc switch.
+    Off: Expel reopens only after the Final Save Point, and Expel's locations then hold only
+    Expel's own passes or non-progression items."""
+    display_name = "Expel Teleporter"
+
+
+class ShuffleShops(Choice):
+    """Shop slots become locations: the first copy you buy of a slot's item gives the slot's
+    item instead (any price, the slot's own). They never hold progression items.
+    specials: the slots selling an item no other shop sells (98 slots).
+    full: every slot of every shop a script opens (550 slots)."""
+    display_name = "Shuffle Shops"
+    option_off = 0
+    option_specials = 1
+    option_full = 2
+    default = option_off
+
+
 @dataclass
 class SO2Options(PerGameCommonOptions):
     goal: Goal
+    world_mode: WorldMode
+    expel_teleporter: ExpelTeleporter
+    shuffle_shops: ShuffleShops
     protagonist: Protagonist
     missable_locations: MissableLocations
     expel_progression: ExpelProgression
@@ -132,6 +167,7 @@ class SO2Options(PerGameCommonOptions):
 
 
 option_groups = [
+    OptionGroup("World", [WorldMode, ExpelTeleporter, ShuffleShops]),
     OptionGroup("Locations", [Protagonist, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
                               DropsAsChecks]),
     OptionGroup("Characters and items", [CharacterItems, Traps]),

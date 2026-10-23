@@ -247,70 +247,52 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   Claude x200 HP attacking, so attack 1 runs and hits at vblank 576): the log is byte for
   byte the same with the original's line and with the fix.
 
-## Archipelago phase 4, APWorld side (fifth AP agent, 2026-10-23 from ~05:00; read this first)
+## Archipelago phase 4, APWorld side (fifth AP agent, 2026-10-23 ~05:00-06:10; read this first)
 
-Assignment: open_world (keys per key group, doors in logic, Expel teleporter, starting keys),
-shuffle_shops specials / full (type 10), entrance-shuffle design note, tests (world, AP
-general, 60+ seeds, checker, port spot checks, ap_e2e_so2.sh key + shop), docs; tick phase 4.
-Scratch: scratchpad/enemy/ap5/ (graph.py / graph2.py door regions, steps.py -> steps.json:
-every chapter / step store with its conditions, build.log). Build engine/build-enemy is
-current (rebuilt 05:10, phase-4 port code in).
+**All five tasks done; phase 4 ticked in CHECKLIST.md** (entrance shuffle split into its own
+unticked line). Nothing of mine is running. Env: `source scratchpad/enemy/ap4/env.sh`. Build
+engine/build-enemy is current (rebuilt 05:10; no engine code changed by me this turn, so the
+port suites were not rerun).
 
-**Running:** the teleporter proof, both games, --jobs 3 each (6 processes), started 05:12:
-`tools/ap_late_proof.py --state teleporter --bin scratchpad/late_proof/teleporter/bin/shattered-stars
---game G --jobs 3 --work scratchpad/late_proof/teleporter -o scratchpad/late_proof/teleporter/G.json`
-(done markers scratchpad/late_proof/teleporter/{claude,rena}.done; logs G.run.log, per node
-in G/). Afterwards merge: `tools/ap_late_proof.py --state teleporter --reparse --game claude
---game rena --work scratchpad/late_proof/teleporter` (writes docs/ap/late_proof.json's
-"teleporter" key). If it must be stopped: kill the two driver PIDs from `ps` (exact PID).
+- **Teleporter proof:** `tools/ap_late_proof.py --state teleporter` (chapter 38 step 0, flag 730
+  cleared, proof seed expel_teleporter on, root map 2; result in late_proof.json `teleporter`).
+  Claude 583 maps / 265 locations, Rena 470 / 187 (difference = Cave of Trials floors only);
+  both prove all 129 late-proven Expel locations. Logs scratchpad/late_proof/teleporter/.
+- **Tables** (tools/ap_world_tables.py, `--doors`): KEY_NAMES, STAGES (23), STORY_BOSS_CHAPTER,
+  key_groups / map_groups (group + `group_near` when only reached over scene doors) /
+  route_keys / shop_slots; data.py 1110 rows (550 shop slots, 98 specials), KEY_GROUPS, STAGES,
+  rows' group / tele / late_keys / tele_keys / from_chapter / chapter.
+- **APWorld:** options world_mode / expel_teleporter / shuffle_shops; items keys (KEY_BASE + N,
+  progression), START_KEYS Arlia + Fun City (+ North City with the teleporter off),
+  EXPEL_STORY_KEYS, stage_event; locations shop rows + check; regions stage events +
+  stage_rules; rules.py rewritten (open_world_access: early / teleporter / late modes;
+  open_world_progression: Expel any where tele-proven, else only our Expel-story keys where
+  late-proven; expel_progression off or teleporter off: only those keys; `in_expel`; Nede rows
+  behind an Expel entrance (map 429) have no early mode); world.py keys replace filler, seed
+  `doors` (66), options. Design and limits: apworld.md "Open world", "Shop slots" (never
+  progression: price / Fol could block), "Entrance shuffle (later)".
+- **Tests:** world 95 passed (7986 subtests); AP general 379 passed (116983); batch 64 seeds =
+  128 .apso2, 127 option combinations, 0 checker errors, 3663 progression items
+  (scratchpad/enemy/ap5/batch: run_batch.sh FIRST LAST [KEEP=1 appends], check.py OUT; the first
+  run's 3 fill failures = open world + expel_progression off, fixed); port spot checks
+  (scratchpad/enemy/ap5/spot/run.sh SEED NAME; picks.txt): 4 open-world seeds, North City door
+  68685998 locked -> `ap_give key:29` -> map 260 at vblank 422; full-shops seeds pay shop 1
+  slots 0 / 2 (own given, other sent), specials seeds leave shop 1 alone; tools/ap_e2e_so2.sh
+  25/25 twice (open world + full shops; Salva Pass from Bob's Tile 2; session 2 buys at Hearn's,
+  slot 2 = plando'd own Spectacles because shop slots refuse progression and every ChecksFinder
+  item is progression; port check now before rm -rf of its work dir, per the world agent).
+- **The world agent's character note** (Celine's Cross Cave choice, 124 / 125, Leon 234, Opera
+  479 partings): join sites are always EXCLUDED and never progression; documented in apworld.md.
+- **Open / next:** entrance shuffle (design note); a mid-Nede proof with flags of its time (the
+  teleporter proof's chapter-60 flags limit it to Expel maps); "Map 231 Pass" has no better name
+  (one-map area of chapters 24-25, no locations).
 
-**Done:** tools/ap_late_proof.py `--state teleporter` (chapter 38 step 0, flag 730 cleared,
-proof seed with expel_teleporter on, root map 2 only, result under "teleporter").
-
-**Design (decided; implement in this order):**
-1. Data (tools/ap_world_tables.py -> data.py): KEY_GROUPS (35, doors.json order; key N =
-   1..35, names "<Area> Pass"; their 66 door ids); STAGES (story stages with the keys needed to
-   finish each, from steps.json: the area of every chapter/step store per chapter):
-   1 ch3-4 {Arlia}; 2 ch5-8 {Salva, Arlia}; 3 ch9-11 {Cross}; 4 ch12-13 {Cross Cave};
-   5 ch14-15 {Clik, Mars, Herlie}; 6 ch16-17 {Herlie}; 7 ch18-19 {Lacour, Hilton} (maps 434 /
-   467-477 have "Port Hilton" banners but sit in Lacour); 8 ch20-22 {Linga, Sanctuary of
-   Linga}; 9 ch23-25 {Hilton, Lacour, map 231, Hoffmann}; 10 ch26-28 {Lacour Front Line};
-   11 ch29-31 {El Beach, Eluria Colony}; 12 ch32-35 {Eluria Tower} -> disc switch;
-   13 ch36-37 {} (scenes: 618, 619, Central City 248); 14 ch38 {North City}; 15 ch39
-   {Noel's House}; 16 ch40 {Cave of Red Crystal}; 17 ch41 {Central City}; 18 ch42-45 {Fields of
-   Courage, Power, Intelligence, Love (596 = its end), Armlock}; 19 ch46-47 {Central City,
-   L'Aqua}; 20 ch48-51 {map 687 = Fienal's entrance, L'Aqua, Central City}; 21 ch52-56
-   {Armlock, Mihne}; 22 ch57 {Fun City}; 23 ch58-60 {Armlock, L'Aqua, map 687} -> FSP.
-   Non-story groups (no early access): Lasguss Mountain, Mountain Palace (Ashton's quest,
-   Prima pp. 48-56), Cave of Trials Level 1, Secret Charity/Fake Gallery (463), Giveaway.
-   Rows get `group` (early area: unconditional door region of the map, else nearest group),
-   `tele` (games of the teleporter proof), `late_keys` / `tele_keys` (union over games of
-   the world-map entrances on the proof routes to the location's map: target map -> group),
-   gifts `from_chapter` (window lo), story bosses their chapter. SHOP_SLOTS rows (type
-   "shop", id 0x50320000 + (10 << 21) + (shop << 8) + index): every entry of the shops with a
-   site, minus 0x58 (a buy-back list that grows with sales) and the order shops 0x5a-0x5e
-   (the Familiar specialty); `special` = an item no other of these shops sells; reasons from
-   judge() on the site (Lacour's: window, Clik's: time-limited).
-2. Logic (open world): event "Stage k" needs Stage k-1 + the stage's keys; Disc Switch needs
-   stage 12; Return (teleporter, ch 38) = disc switch + Fun City Pass + teleporter on; FSP needs
-   stage 23. Location access = early (Stage s_G - 1 + key G, s_G = first stage needing G,
-   gifts not before from_chapter; story boss: its stage done) OR tele (Expel only: Return +
-   tele_keys) OR late (FSP + late_keys). Starting keys: Arlia + Fun City (+ North City with the
-   teleporter off).
-3. Progression (open world): Expel location only if tele-proven, except our own Expel-story
-   keys, which may also go where late-proven (they must be picked up before the switch anyway);
-   teleporter off: Expel only our Expel-story keys. Nede / Fienal / cave: late-proven (as story
-   mode). Shops: never progression (no price block; documented). Story mode unchanged.
-   Why: an item skipped in Expel is recoverable after the switch only through the teleporter
-   (Fun City Pass in hand from the start), and the teleporter proof says where. The tele proof
-   state has chapter-60 flags, so it is used for Expel maps only (Nede maps test those flags).
-   Residual risks to document: a location whose map opens later than its area's first story
-   visit; a map closed for a while mid-story (Lacour 25-59 #5 entrance, Mars ch 15, the arena
-   route at ch 57 step 3000 / "chapter != 57": nothing but the Fun City Pass is needed in 57).
-4. Pool: keys (minus starting) replace as many filler items; shop slots add their stock item.
-   Seed: options world_mode / expel_teleporter (false in story) / shuffle_shops; `doors` = the
-   66 entrances with their key (open world); key items {"kind":"key","key":N}; shop checks
-   {type shop, shop, index, item}; validate with doors.validate_doors in the tests.
+### Files changed this turn (none committed)
+- New: none in git (scratch: scratchpad/enemy/ap5/, scratchpad/late_proof/teleporter/).
+- Changed: tools/ap_late_proof.py, tools/ap_world_tables.py, tools/ap_e2e_so2.sh,
+  apworld/so2/{data.py (regenerated), items.py, locations.py, options.py, regions.py, rules.py,
+  world.py, test/test_world.py}, docs/ap/{late_proof.json (teleporter key), apworld.md,
+  field.md}, docs/archipelago_plan.md, docs/CHECKLIST.md, docs/handoff/enemy.md.
 
 ## Archipelago phase 3: proof, batch, docs (fourth AP agent, 2026-10-23 ~01:30-05:00; read this first)
 

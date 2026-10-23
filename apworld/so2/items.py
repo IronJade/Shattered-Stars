@@ -3,13 +3,14 @@ locations (FOL_BASE + amount), the characters character_items shuffles (CHARACTE
 id) and the traps (TRAP_BASE + n). Story key items are script flags and stay where they are."""
 from BaseClasses import Item, ItemClassification
 
-from .data import FOL_AMOUNTS, FOL_BASE, ITEM_BASE, ITEMS, USEFUL_RANGES
+from .data import DISC_SWITCH_STAGE, FOL_AMOUNTS, FOL_BASE, ITEM_BASE, ITEMS, KEY_GROUPS, USEFUL_RANGES
 
 GAME = "Star Ocean: The Second Story"
 FILLER_NAME = "Blueberry"
 
 CHARACTER_BASE = ITEM_BASE + 0x20000
 TRAP_BASE = ITEM_BASE + 0x30000
+KEY_BASE = ITEM_BASE + 0x40000      # an area key (open world): KEY_BASE + key number 1-35
 # Party ids (the port's 1-12: party_add's argument + 1).
 PARTY_ID = {"Claude": 1, "Rena": 2, "Celine": 3, "Bowman": 4, "Dias": 5, "Precis": 6, "Ashton": 7, "Leon": 8,
             "Opera": 9, "Ernest": 10, "Noel": 11, "Chisato": 12}
@@ -31,6 +32,15 @@ ITEM_NAME_TO_ID = {name: ITEM_BASE + n for n, name in ITEMS.items()}
 ITEM_NAME_TO_ID.update({f"{amount} Fol": FOL_BASE + amount for amount in FOL_AMOUNTS})
 ITEM_NAME_TO_ID.update({name: CHARACTER_BASE + PARTY_ID[name] for name in CHARACTER_ITEMS})
 ITEM_NAME_TO_ID.update(TRAP_IDS)
+# Area keys (open world, phase 4): one per world-map entrance group (data.KEY_GROUPS).
+KEY_OF = {KEY_BASE + g["key"]: g for g in KEY_GROUPS}
+KEY_NAME = {g["group"]: g["name"] for g in KEY_GROUPS}
+ITEM_NAME_TO_ID.update({g["name"]: KEY_BASE + g["key"] for g in KEY_GROUPS})
+# Keys the Expel story needs (the disc switch can't be reached without them).
+EXPEL_STORY_KEYS = frozenset(g["name"] for g in KEY_GROUPS if g["stage"] and g["stage"] <= DISC_SWITCH_STAGE)
+# Open world's starting keys: the start (Arlia) and the teleporter's way back to Expel (Fun City),
+# which also opens Virtual Expel after the Final Save Point.
+START_KEYS = ("Arlia Pass", "Fun City Pass")
 GAME_ITEM = {ITEM_BASE + n: n for n in ITEMS}          # AP id -> game item number
 FOL_AMOUNT = {FOL_BASE + a: a for a in FOL_AMOUNTS}     # AP id -> Fol
 CHARACTER_OF = {CHARACTER_BASE + PARTY_ID[n]: n for n in CHARACTER_ITEMS}
@@ -41,6 +51,7 @@ ITEM_NAME_GROUPS = {
     "Equipment": {name for n, name in ITEMS.items() if any(lo <= n <= hi for lo, hi in USEFUL_RANGES)},
     "Characters": set(CHARACTER_ITEMS),
     "Traps": set(TRAPS),
+    "Keys": set(KEY_NAME.values()),
 }
 
 # Items a script tests, so they stay at their own locations (locked there, never in the pool):
@@ -53,6 +64,12 @@ PUZZLE_ITEMS = (289, 317)
 EVENT_ENERGY_NEDE = "Arrived on Energy Nede"
 EVENT_FINAL_SAVE_POINT = "Saved at the Final Save Point"
 EVENT_VICTORY = "Victory"
+EVENT_TELEPORTER = "Expel Teleporter"     # open world: Expel reachable again from chapter 38
+
+
+def stage_event(k):
+    """Open world: the event of story stage k (1-based, data.STAGES) being finished."""
+    return f"Stage {k} done"
 
 
 class SO2Item(Item):
@@ -64,6 +81,8 @@ def classification(name):
     that needs a member is excluded from progression (members rule each other out, which the
     logic can't express), so nothing in the logic waits for one."""
     code = ITEM_NAME_TO_ID[name]
+    if code in KEY_OF:
+        return ItemClassification.progression
     if code in TRAP_OF:
         return ItemClassification.trap
     if code in CHARACTER_OF:
@@ -87,4 +106,6 @@ def seed_item(name, code):
         return {"name": name, "kind": "character", "character": CHARACTER_OF[code]}
     if code in TRAP_OF:
         return dict({"name": name, "kind": "trap"}, **TRAPS[name])
+    if code in KEY_OF:
+        return {"name": name, "kind": "key", "key": KEY_OF[code]["key"]}
     return {"name": name, "kind": "item", "game_id": GAME_ITEM[code], "count": 1}
