@@ -130,7 +130,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
   `battle/<name>/snapshot` right before each call: other agents switch the shared session);
   listings with `dump_asm.py` (one CLI process).
 
-### Precis (#2155): ported, registered (case 6), level 0 verified; max level queued
+### Precis (#2155): ported, registered (case 6), level 0 verified (reported); max level not run yet
 
 - `engine/src/game/battle/pc_precis.cpp` (new): PrecisUnit (vtable 0x801f1754, +0x360 the
   arm), 10 moves (vtable slots 47-56 through the table 0x801f191c), 8 Shot callbacks, slots
@@ -145,30 +145,54 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
   (0x8003aa30), not _for (fixed; Redux breakpoints `prec_b4_cam` showed it); now only the
   vortex's last faint fade differs (b518-530, up to 4%: faint additive gouraud, see the GPU
   check below); b10 (move 9) the sphere is up to 2 steps redder (b960-980; same question).
-- Max level: Redux `prec_m1..m10` queued after Opera's (`redux/queue.sh`, 3 at a time).
+- Max level: not run yet (see the resume point). The b4 / b10 frame differences are gone
+  with the new reference switches (prec_b4 / b10 rerun: no frame above 1%).
 
-### Opera (#2153): ported, registered (case 9), smoke-run; Redux references running
+### Opera (#2153): ported, registered (case 9); level 0 verified (not yet reported)
 
 - `engine/src/game/battle/pc_opera.cpp` (new): OperaUnit (vtable 0x801f1e10), 10 moves
   (pointer table 0x801f1f88), slots 31 / 35 / 36 / 37 / 45, 14 Shot callbacks including
   #1984 block 1's shot_spiral_ring / shot_falling_rock / shot_vortex_area and
   shot_draw_ring_bands (not ported before; only her moves use them). Move 0 starts
   spellcast kind 2 (sets `s3c` and `orb_set` to her AnimSet).
-- Port smoke: all 10 moves run (`port/opsmoke_N`).
-- Redux `op_b1..b10` queued (level 0); compare with `port_pc.sh op_bN 9 N 0 1500`.
-- New bugs: F13 (burst's last shard velocity written to the burst: fix after the faithful
-  check), F14 (shard hit sprites' raw y jitter: decide).
-- Catalog: battle_pc2153 rows (33) and port columns for the four block-1 functions.
+- Level 0 (`op_b1..b10`): RNG equal to the exit in moves 1-8. Moves 0 and 9 are equal
+  until the console's first 3-vblank frame (ticks 3: b392 under move 0's orb rain, b441
+  as move 9's vortex starts; BW_DENSE in `op_b1_dense` / `op_b10_dense`): the original's
+  slowdown, not modelled. Frames: the blend-order differences are gone with the new
+  reference switches; move 7 (b8) differs a little in the shards' ribbon trails (b470-530,
+  <= 2%; passed on as a B1 question).
+- F13 fixed (the last shard gets the upward velocity; with it op_b8's RNG leaves the
+  original at b480, as expected). F14 decide.
+- Catalog: battle_pc2153 rows (33), port columns for the four block-1 functions, MP table
+  0x8006b2f3.
 
-### Low priority after the modules: GPU check (coordinator)
+### Ashton (#2147): ported, registered (case 7); level 0 moves 0-4 verified, 5-9 pending
 
-Result-screen fade: the subtractive gouraud band (POLY_G4, abr 2, dithered, DR_MODE tpage
-0x40) drifts from b-7 to b-5 in the best-matching port frame from ~b1040; the whole scene
-~2.5% brighter in the port from b850 (ref ernest_58). Check against the hardware model:
-dither-then-blend order / Redux brightness. Document in gpu_accuracy.md (change nothing) if
-the port follows hardware; fix if the port is wrong. Suggested test: two G4 quads, white to
-a colour, DR_MODE tpage 0x40 over a scene. Precis b4 (faint additive vortex) and b10
-(sphere) differences may be the same thing.
+- `engine/src/game/battle/pc_ashton.cpp` (new): AshtonUnit (vtable 0x801f1e4c, 0x388 bytes:
+  +0x360 move 4's mark, +0x370 move 7's sparks, +0x384 move 9's glow), 10 moves (pointer
+  table 0x801f1fd0), slots 4 / 6 / 33 / 35 / 36 / 37, 9 Shot callbacks. Module data read
+  with pc_module_u8(7, ...): 0x801f1fc4, 0x801f1fc8 / 0x801f1fcc, 0x801f1e2c.
+- Hunks in the battle agent's files (reported, flagged): `unit.h` (Unit::effect_trail),
+  `killer.cpp` (release_effects stops it), `pc_modules.cpp` (case 7).
+- Move 4's +0x21e flag is kept in a member (`shaken`): on the console it overwrites the
+  low half of PartyUnit +0x21e (item_value_sum in the port).
+- Level 0: `as_b1..b5` (moves 0-4): RNG equal to the exit, no frame above 1% in the
+  battle (reported). `as_b6` (move 5) reference is complete, not yet compared. `as_b7..b10`
+  not run (the 19:4x pause killed b7-b9; their partial dirs were removed).
+- New bugs: F15 (dart facing from his x velocity: decide), F16 (sound at a null dart:
+  avoided), F17 (hit sprites by the first point's height: decide).
+- Catalog: battle_pc2147 rows (31), MP table 0x8006b2bf, module tables.
+
+### GPU check (done, reported, switches added and committed hourly by the coordinator)
+
+- `engine/src/psx/gpu.{h,cpp}`: `Gpu::blend_before_dither`, `Gpu::blend_unsaturated_modulation`,
+  `Gpu::capture_shift` (all false by default); `engine/src/main.cpp`: `--reference-dither`
+  sets all three (hunk flagged). gpu_accuracy.md "What it explains" has the findings: the
+  result fade / spheres / vortex fades are Redux's blend order; the "2.5% brighter" is the
+  capture expansion; Dias's olive sword-wave copies are the B2 afterimage fix (the user is
+  deciding B2 again).
+- Scratch: `scratchpad/fx_worker/faithful` (B1 / B2 reverted, `sync.sh [debug]`), the
+  Redux-blend env test in it is obsolete now.
 
 ### Original bugs F1, F3, F5, F7, F8 (done, reported with Chisato); F11 avoided, F12 decide (new)
 
@@ -184,14 +208,32 @@ a colour, DR_MODE tpage 0x40 over a scene. Precis b4 (faint additive vortex) and
 Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
 without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
 
-Next: compare Opera (op_b1..b10) as they finish, then Precis / Opera max level; report
-Precis, then Opera (run the three suites first); then Ashton (char07: vtable 0x801f1e4c,
-object 0x388, killer table 0x801f1fd0 of 10 direct pointers; slots 4, 6, 33, 35, 36, 37,
-46); then the GPU check. Redux cap: 3 instances at a time (`redux/queue.sh`), builds -j8.
+## Resume point (paused 19:4x for the usage limit; resume at 22:11)
+
+State: no runs of mine are active. The tree builds in engine/build-fx except while another
+agent's in-progress platform/window edit fails to link (19:4x: Window::present / next_event
+undefined); my files are complete. My last edit (removing a temporary debug print from
+pc_opera.cpp's cb_vortex_area) is on disk; rebuild once the window edit is done.
+
+Next, in order (Redux at most 3 at a time: `redux/queue.sh`, builds -j8):
+1. Rebuild: `cmake --build engine/build-fx -j8`.
+2. Compare Ashton move 5: `cd scratchpad/fx_worker/battle && ./port_pc.sh as_b6 7 6 0 1500`,
+   then `python3 ../../battle/rngcmp.py redux/ref/as_b6/log.txt port/as_b6/log.txt` and
+   `FRAMECMP_D=7 python3 ../../battle/framecmp.py redux/ref/as_b6 port/as_b6/cap 160 1500 10`.
+3. Queue the rest: `BW_BATTLE_FOR=1500 BW_QUIT=6000 ./redux/queue.sh "as_b7 7 7" "as_b8 7 8"
+   "as_b9 7 9" "as_b10 7 10"`, then the max-level runs ("prec_m1 6 1 0 999" .. "prec_m10 6 10
+   0 999", "op_m1 9 1 0 999" .. "op_m10 9 10 0 999", "as_m1 7 1 0 999" ..), comparing with
+   `port_pc.sh NAME CHAR BYTE 999 1500`.
+4. Note: Ashton's weapon variant (+0x205, the dragons) is 0 with the poked Claude record,
+   so move 3's darts and move 2's flashes need a run with it set (BW_EXTRA_POKE on the
+   record, and SS_BATTLE_POKE in port_pc.sh) — not done yet.
+5. Report Opera (level 0 verified), then Ashton when 5-9 are compared; run the three suites
+   first (ss_tests, ss_game_tests with and without SS_DISC1, smoke; TMPDIR on disk).
 
 ## Uncommitted files
 
-- Everything so far is in the WIP checkpoints (96aa11d); this log.
+- The coordinator commits hourly; everything of mine is on disk (pc_ashton.cpp,
+  pc_opera.cpp, pc_precis.cpp, pc_module_util.*, gpu.{h,cpp}, docs, catalog rows).
 
 ## Phase 4 step 2 files (committed in 155be10)
 

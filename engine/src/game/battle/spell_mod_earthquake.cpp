@@ -37,12 +37,6 @@ namespace {
 constexpr u32 kPoseTable = 0x8008E2E0;  // 11 poses x 9 angles (u16)
 constexpr u32 kCentres = 0x8008E3D8;    // the three waves' centres (SVECTOR, units)
 
-// A vertex of the stage model near the centres (model_find_vertices_near's 12-byte entry).
-struct NearVertex {
-  s32 offset = 0;    // the vertex's word offset in the model
-  s16 dist[4] = {};  // its xz distance to each point
-};
-
 // The module's writable data.
 struct QuakeState {
   u16 angle[10] = {};            // 0x8008e3a8: the pose (angle 1 is never blended)
@@ -63,10 +57,6 @@ const SpellCast* g_wave_cast = nullptr;
 psyq::MATRIX g_parent_matrix{};
 
 u16 rd16(const std::vector<u8>& b, size_t at) { return static_cast<u16>(b[at] | b[at + 1] << 8); }
-u32 rd32(const u8* p) {
-  return static_cast<u32>(p[0]) | static_cast<u32>(p[1]) << 8 | static_cast<u32>(p[2]) << 16 |
-         static_cast<u32>(p[3]) << 24;
-}
 
 // The rotations obj_set_matrix builds: yaw orient[1], then a tilt of orient[2] about the
 // horizontal axis (orient[0] != 0: the other axis, and orient[2] = orient[0]).
@@ -138,64 +128,6 @@ void obj_set_matrix_child(const s32 pos[3], s32 orient[3], const s32 scale[3]) {
   gte_set_zoom();
   psyq::SetRotMatrix(&t);
   psyq::SetTransMatrix(&t);
-}
-
-// 0x800627c0 sv_distance_xz: sqrt(dx^2 + dz^2) of two SVECTORs (GTE SQR: 16-bit inputs).
-s32 sv_distance_xz(const u8* a, const psyq::SVECTOR& b) {
-  const s32 dx = static_cast<s16>(a[0] | a[1] << 8) - b.vx;
-  const s32 dz = static_cast<s16>(a[4] | a[5] << 8) - b.vz;
-  const psyq::VECTOR in{dx, 0, dz, 0};
-  psyq::VECTOR sq{};
-  psyq::Square0(&in, &sq);
-  return square_root0(static_cast<s32>(static_cast<u32>(sq.vx) + static_cast<u32>(sq.vy) + static_cast<u32>(sq.vz)));
-}
-
-// 0x80061694 model_find_vertices_near: walks every part's 20 primitive sections of a battle
-// model (the vertices are inline SVECTORs of each primitive) and lists each vertex whose xz
-// distance to points[0] is at most 12000, with its distance to each point. Returns the count.
-int model_find_vertices_near(std::vector<NearVertex>& out, const std::vector<u8>& model,
-                             const psyq::SVECTOR* points, int npoints) {
-  // Per section: the first vertex's offset in a primitive, the vertices tested, the stride
-  // (section 9 is skipped; section 18 tests 3 of its quads' 4 vertices).
-  struct Section {
-    u8 first, verts, stride;
-  };
-  static constexpr Section kSections[20] = {
-      {12, 3, 36}, {28, 3, 52}, {20, 3, 44}, {36, 3, 60}, {20, 3, 44}, {36, 3, 60}, {12, 4, 44},
-      {36, 4, 68}, {0, 0, 48},  {48, 4, 80}, {20, 4, 52}, {44, 4, 76}, {4, 3, 28},  {4, 3, 36},
-      {16, 3, 40}, {24, 3, 48}, {4, 4, 36},  {16, 3, 48}, {16, 4, 48}, {28, 4, 60}};
-  out.clear();
-  const u8* base = model.data();
-  const u8* end = base + model.size();
-  const u8* p = base;
-  if (model.size() < 4) return 0;  // (port: bounds checks the console does not make)
-  const u32 parts = rd32(p);
-  p += 4;
-  NearVertex slot;
-  for (u32 part = 0; part < parts; ++part) {
-    p += 4;
-    for (const Section& s : kSections) {
-      if (end - p < 4) return static_cast<int>(out.size());
-      const u32 count = rd32(p);
-      p += 4;
-      if (s.verts == 0) {
-        if (static_cast<size_t>(end - p) < static_cast<size_t>(count) * s.stride) return static_cast<int>(out.size());
-        p += static_cast<size_t>(count) * s.stride;
-        continue;
-      }
-      for (u32 i = 0; i < count && end - p >= s.stride; ++i, p += s.stride) {
-        for (int k = 0; k < s.verts; ++k) {
-          const u8* vtx = p + s.first + k * 8;
-          for (int j = 0; j < npoints; ++j) slot.dist[j] = static_cast<s16>(sv_distance_xz(vtx, points[j]));
-          if (slot.dist[0] < 12001) {
-            slot.offset = static_cast<s32>(vtx - base) >> 2;
-            out.push_back(slot);
-          }
-        }
-      }
-    }
-  }
-  return static_cast<int>(out.size());
 }
 
 // 0x8008e0c0: the stage height hook: inside a wave's crest (its radius minus the distance
@@ -489,10 +421,11 @@ void earthquake(SpellCast* sc) {
         const std::vector<u8>& model = stage().blocks[0];
         st.backup = model;
         st.backed_up = true;
-        // ORIGINAL BUG? (to review): the copy loop fills two of the three points; the third
-        // is whatever the scratchpad holds at 0x1f800010 (here 0, as the module's centres).
+        // ORIGINAL BUG (original_bugs.md S6): the copy loop fills two of the three points; the
+        // third is whatever the scratchpad holds at 0x1f800010 (wave 3's distances are wrong):
+        //   for (int k = 0; k < 2; ++k) {
         psyq::SVECTOR points[3] = {};
-        for (int k = 0; k < 2; ++k) {
+        for (int k = 0; k < 3; ++k) {
           points[k].vx = spell_module_s16(sc, kCentres + k * 8);
           points[k].vy = spell_module_s16(sc, kCentres + k * 8 + 2);
           points[k].vz = spell_module_s16(sc, kCentres + k * 8 + 4);

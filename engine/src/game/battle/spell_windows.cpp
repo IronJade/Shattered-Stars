@@ -6,6 +6,7 @@
 #include <string>
 
 #include "game/battle/bsfx.h"
+#include "game/battle/shatter.h"
 #include "game/battle/spellcast.h"
 #include "game/battle/spells.h"
 #include "game/battle/sprite.h"
@@ -65,7 +66,16 @@ void SpellClashWindow::draw() {
     text_draw_id(this, i * 0x50 + 0x10, 0, spell_element(sc->spell) + 0x14, 0);
   }
   blink = (blink + g.frame_ticks) & 0x1F;
-  if (blink < 0x14) text_draw_id(this, 0x2A, 0, image_u8(0x8007001Cu + first->combo), 0);
+  // The label: the word table at 0x8007001c indexed by the combo (1-4: 0x29 / 0x2b / 0x28 /
+  // 0x2b); its entry 0 is model_shatter's OT bias global.
+  if (blink < 0x14) {
+    s32 label = shatter_ot_bias();
+    if (first->combo != 0) {
+      const u8* p = battle_data(0x8007001Cu + first->combo * 4u);
+      label = p != nullptr ? static_cast<s32>(p[0] | p[1] << 8 | p[2] << 16 | static_cast<u32>(p[3]) << 24) : 0;
+    }
+    text_draw_id(this, 0x2A, 0, label, 0);
+  }
   window_text_end(this);
 }
 

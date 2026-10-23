@@ -211,23 +211,85 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
    vsyncs after the state first reads 2). Bark (ref/h531_3, HP to 130000 at fight + 60):
    kind 0x36 casts at b440; RNG exact to b440, then the original slows down under the
    vortex; every unit sample exact to the battle's end (Claude's KO at the same sample).
-   Indalecio (ref/h539_3, HP to 300000 at fight start) still casts Noah first and Claude
-   dies before a transform; a tough-Claude reference (ref/t539_3, 3000 vsyncs) is running.
+   Indalecio (ref/h539_3, HP to 300000 at fight start) still casts Noah first and an idle
+   STRONG Claude dies before a transform. With a tough Claude (ref/t539_3: HP 9999, 3000
+   vsyncs; TOUGH=1 for run_port.sh) he survives Noah and Indalecio transforms (kind 0x3b):
+   the transformation runs 1420 vsyncs on the console, 1424 in the port, and his second
+   form acts after it in both. Exactness ends at Noah (the original slows down, so the
+   damage rolls differ: Claude 5614 vs 5505 after it).
 
-## State and next step (2026-10-22 evening, phase 2)
+## Phase 2, part 2 (coordinator)
 
-- Helpers: none running. Emulators: none of mine except the disc-1 sweep of the spell-module
-  binary (`scratchpad/enemy/sweep_p2.txt`, 4 at a time; it predates the voice player).
-- On disk, not committed: the seven spell_mod_*.cpp, enemy_shots.cpp, bload.{h,cpp},
-  voice_player.{h,cpp}; hunks in spell_modules.{h,cpp}, CMakeLists.txt, shot.cpp,
-  bsfx.cpp, battle_program.cpp, enemy_ai.cpp, voice.cpp; enemy_support.{h,cpp} (stand-ins
-  gone, sound_handle_release, SS_ENEMY_TRACE=3); enemy_modules.h + enemy_mod_cyril.cpp
-  (enemy_cyril_aura); the bug fixes; original_bugs.md; catalog rows (functions +14, globals
-  +15, port columns).
-- Verified (ss_tests 78/0, ss_game_tests 74/0, smoke 21/21; every reference re-run): all
-  48 exact references stay exact; the spell modules as in the table above.
-- Next: the battle state 1 timing (party loader reads through the queue: owner to be
-  decided), then the catalog rows for bload / voice_player, then step 4.
+- Party voices: PartyUnit::play_voice [43] (pc_play_voice 0x8003ac38) in party_voice.cpp:
+  bsfx_play_at(((slot + 1) << 24) + id, member), an effect of the member's voice bank (the
+  field's voice queue loads them; a --battle run has none, so it skips: port guard);
+  play_move_voice [39] inline in unit.h (slot 43 with move * 2). No RNG, no timing: the
+  references cannot see them; the sound-test record (config +0x1a0) can, in field play.
+- "Battle voice table patches" were spell data patches (g_spell_data_entry: spells 0x13 /
+  0x14 with config +0x4e, spell 0x19 by the rng_range(3) draw, the last fights' versions for
+  encounters 0 / 0x219-0x21c): a hunk in battle_program.cpp through spell_data_entry_set.
+- Divine Comedy (the world agent's) against ref/t540_3 (Indalecio's second form, tough
+  Claude): RNG and units exact through his first spell, then the original slows down; the
+  spell runs 1600 vsyncs on the console, 1596 in the port, Claude dies after it in both.
+  Reported to the coordinator and the world agent.
+
+## Archipelago field tables (started 2026-10-22 ~21:00; paused for the usage limit)
+
+Task (coordinator): docs/archipelago_plan.md Phase 1, the field side: `tools/ap_extract.py`
+(Python on tools/so2_mod.py / so2_script.py, JSON output, names only, no text dumps) with
+chests, real give_item (B 0x60) / add_money (ext 0xd4) gift sites with their guard flags,
+recruitments (ext 0xae party_add sites, conditions, exclusions), the 64 shops with the maps
+that open them (B 0x6d), story order (progress flags / globals, the disc 1 -> 2 point of no
+return, map -> region), Private Actions (items / flags, missable); plus docs/ap/field.md
+(location types, ids: base + type << 20 + map << 10 + index, hook points in the port). The
+battle agent writes tools/ap_battles.py (bosses / drops), which ap_extract imports. No port
+code for Archipelago.
+
+Done (analysis only; tools/ap_extract.py not written yet):
+- Exploration helper `scratchpad/enemy/ap/explore.py`: caches all 899 field map scripts of
+  disc 1 (`ap/maps.pkl`, 14 s to build), splits them into functions (at `frame`), hashes
+  each function's shape (call targets dropped, jumps relative). 88 functions occur in >= 400
+  maps: the shared library every map carries (at different offsets per map).
+- Library routines seen (map 0 offsets): 0x102c give item with message (pops item,
+  message; item >= 10000 sets flag item - 10000 instead), 0x119c add Fol with message
+  (add_counter18 = ext 0xd4 from stack), 0x131c the chest routine (actor, flag, value,
+  message: value >= 0 -> 0x102c, else -value Fol -> 0x119c; then A 0x01 treasure count and
+  the opened flag), 0x393c party join (ext 0xae from stack, A 0x3f, call). So the real
+  gifts / joins are calls into these helpers with constant pushes from non-library code,
+  plus inline give_item(N) (about 300) / add_counter18(...) (13) / ext_ae(N) (7).
+- Names: #1980 string table is (u16 key, u16 offset) pairs, codes as next_code, glyph = code
+  + 0x1f; items at keys 0xbb8.. (1023), spells 0x3e8 + spell, killer moves 0x1388..; shop
+  names are message group 0xc id - 1 (menu notes). Story globals: script byte address 0xa0
+  = game_state +0 (3 / 4 at New Game), 0xa4 = game_state +4 (compared with values like
+  0x7da: the story progress counter, to confirm).
+- Shops: so2_mod.shop_lists (overlay 0xbaa table 0x80081c98); B_6d(n) call sites open shop n
+  (seen n 1..99 across maps).
+
+Next step on resume:
+1. Write tools/ap_extract.py: load (as explore.py), library detection by shape count, role of
+   each helper by content (give / money / party / chest), then the sites: calls into the
+   helpers with constant pushes, inline ops; guard flag = flag tested == 0 before and set
+   after in the same function.
+2. Chests (so2_mod.chests), shops (+ B_6d sites), recruitments (+ conditions), story globals
+   and the transfer graph for regions, Private Actions (B 0x0e trigger_set_pa entries).
+3. docs/ap/field.md.
+
+Also paused (battle side, optional): tick-logged Redux references ref/k515_3, k537_3,
+k538_3 (BW_TICK_LOG, my explore.lua now has it) were stopped unfinished; rerun them to
+compare Noah / Spicule / Mind Blast / Wind of Destruction frame by frame with the port's
+SS_BATTLE_TICK_MAP (the world agent's method).
+
+## State and next step (2026-10-22 evening, phase 2 done, part 2 done)
+
+- Nothing running (no helpers, no emulators, no sweeps).
+- Phase 2 done on disk (reported as verified; the coordinator folds it into the hourly
+  commit): the seven spell modules, enemy_shots.cpp, bload.{h,cpp}, voice_player.{h,cpp},
+  the original-bug fixes, the hooks listed above, catalog rows, notes.
+- Last checks: ss_tests 78/0, ss_game_tests 74/0, smoke 21/21; all references re-run (48
+  exact; the boss fights as described); sweep of every disc-1 encounter with the voice
+  player: 564/564 clean.
+- Open, not mine: the party's voice calls and the battle voice table patches (battle
+  agent; they can call voice_play_entry now); the remaining spell modules (world agent).
 - Comparisons: `scratchpad/enemy/verify_all.sh [PATTERN]`; boss fights need `CMP_FROM=60
-  CMP_R=1 CMP_DMAX=80` (537: `CMP_R=2`); where the original slows to 3-vsync frames (Noah,
-  Spicule / Mind Blast, Wind of Destruction) only the unit samples can still match.
+  CMP_R=1 CMP_DMAX=80` (537: `CMP_R=2`); HP pokes: BW_ENEMY_HP / SS_ENEMY_HP; tough Claude:
+  redux*/run_tough.sh + `TOUGH=1 ./run_port.sh`.

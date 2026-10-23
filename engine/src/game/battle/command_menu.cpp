@@ -651,6 +651,11 @@ int SpellMenu::confirm() {
     case 3:
       u->command = 4;
       u->spell = spell;
+      // ORIGINAL BUG (original_bugs.md S20): a spell on the whole party keeps the member's
+      // current target; with none (no action yet this battle) the SpellCast is dropped after
+      // the MP is paid (spellcast_retarget keeps the null target for a party caster), so the
+      // spell does nothing. Fixed: the caster stands in.
+      if (u->target == nullptr) u->target = u;
       return 1;
     default: return 1;
   }

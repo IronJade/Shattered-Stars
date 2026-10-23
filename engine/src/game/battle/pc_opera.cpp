@@ -585,7 +585,7 @@ void cb_shard(Shot* s) {
 }
 
 // 0x801f1098 (move 7): the shot that bursts after 12 ticks into lvl + 4 shards (lvl + 3
-// in a ring, thrown up and out).
+// in a ring, thrown up and out, and one straight up).
 void cb_burst(Shot* s) {
   BattleGlobals& g = bg();
   s->anim = 5;
@@ -606,7 +606,10 @@ void cb_burst(Shot* s) {
       if (c == nullptr) continue;
       bobj_set_pos(c, s->pos);
       if (i == n) {
-        s->vel[1] = static_cast<s32>(0xFFFEC000);  // (the burst's own velocity: the last shard keeps 0)
+        // ORIGINAL BUG (original_bugs.md F13): the last shard's upward velocity is stored
+        // into the burst's own (+0x2c of the burst), so that shard keeps 0 and drops:
+        //   s->vel[1] = static_cast<s32>(0xFFFEC000);
+        c->vel[1] = static_cast<s32>(0xFFFEC000);
       } else {
         const s32 a = (i << 12) / n;
         c->vel[0] = bcos(static_cast<u32>(a)) * 9;

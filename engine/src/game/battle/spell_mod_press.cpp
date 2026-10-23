@@ -52,7 +52,7 @@ void dizzy_stars(Shot* s) {
   s->pos[0] = cx + bcos(static_cast<u32>(s->p12c)) * rx;
   s->pos[2] = cz + bsin(static_cast<u32>(s->p12c)) * rz;
   s->pos[1] = t->pos[1] - (t->size[1] << 14);
-  // ORIGINAL BUG? (to review): the loop draws the star at 120 degrees twice (0, 120, 120,
+  // Original quirk (original_bugs.md S10, to decide): the loop draws the star at 120 degrees twice (0, 120, 120,
   // 240), so it is doubled and the animation steps four times a frame.
   for (s32 a = 0x78; a < 0xF1; a += 0x78) {
     bobj_project(s);

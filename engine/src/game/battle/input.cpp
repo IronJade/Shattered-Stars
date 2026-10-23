@@ -148,18 +148,26 @@ void draw_hud_panel(const BattleInput* in) {
   }
 }
 
-// 0x8004b3e8 input_free_run: the d-pad moves the controlled member (no analog stick).
+// 0x8004b3e8 input_free_run: the left analog stick (speed scaled by its deflection / 0x50)
+// or else the d-pad moves the controlled member.
 void input_free_run(BattleInput* in) {
   BattleGlobals& g = bg();
   if (g.flags == 0 && g.camera->mode != 0xE) camera_request_mode(g.camera, 2, nullptr);
   PartyUnit* u = controlled();
   s32 vx = 0, vz = 0;
   if (u->airborne != 1) {
-    const u32 h = in->held;
-    if (h & 0x1000) vz = u->run_speed;
-    if (h & 0x4000) vz = -u->run_speed;
-    if (h & 0x8000) vx = -u->run_speed;
-    if (h & 0x2000) vx = u->run_speed;
+    s32 rx = 0, ry = 0, lx = 0, ly = 0;
+    if (pad_stick(g.pad, 0, &rx, &ry, &lx, &ly)) {
+      vx = (lx * u->run_speed) / 0x50;
+      vz = (-ly * u->run_speed) / 0x50;
+    }
+    if (vx == 0 && vz == 0) {
+      const u32 h = in->held;
+      if (h & 0x1000) vz = u->run_speed;
+      if (h & 0x4000) vz = -u->run_speed;
+      if (h & 0x8000) vx = -u->run_speed;
+      if (h & 0x2000) vx = u->run_speed;
+    }
   }
   s32 dx = vx * 3;
   if (dx < 0) dx += 3;

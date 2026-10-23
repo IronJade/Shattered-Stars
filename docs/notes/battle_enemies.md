@@ -121,12 +121,28 @@ matches at an offset of 5-6 vsyncs or of 0-2.
 Bark's SpellCast (kind 0x36, every tenth of its HP lost): with its HP poked to 130000 a minute
 into the fight (both sides: scratchpad/enemy BW_ENEMY_HP / the port's SS_ENEMY_HP) it casts at
 vsync 440; the RNG matches until the original slows down under the vortex, every unit sample
-to the battle's end. Indalecio's transformation (kind 0x3b) is not reached yet: he casts Noah
-first, which kills an idle Claude.
+to the battle's end. Indalecio's transformation (kind 0x3b), with his HP poked to 300000 and a tough Claude (HP
+9999) who survives his Noah: it runs 1420 vsyncs on the console and 1424 in the port, and his
+second form acts after it in both (exactness ends earlier, where the original slows down under
+Noah's wall).
 
 A sweep of every disc-1 encounter (0-563, 3000 frames, Claude idle) runs without a crash.
 What the monsters still miss: the voices (voice_play_entry and the load queue), and the
 spell modules of their second and third spells (the world agent's list).
+
+## Voices and the load queue
+
+A boss's intro voice (its +0x242 entry plus rng_range(+0x248)) is asked of the voice player
+(voice_player.cpp: two slots, each an archive entry loaded through the battle load queue,
+bload.cpp, group 4, then played as a sound clip) the first frame the battle leaves state 0,
+and the boss holds still (anim 0) while sound_handle_active says the voice plays. On the
+console that is until the voice's slot frees, when the clip's stream ends: Cyril's (encounter
+538) streams 256 vsyncs in both the original and the port. The console's slot keeps the low
+byte of the clip handle where a sound slot belongs, so the clip test never holds (E15). The
+console starts the voice only after the party loader's reads (vsync 43 in 538), the port at
+once, and its reads end by the next frame (the no-slowdown rule; SS_BLOAD_DRIVE_TIME=1 times
+them as Redux's drive), so the boss's first move comes earlier in the port; references are
+lined up per fight.
 
 ## Findings
 

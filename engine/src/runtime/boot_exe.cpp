@@ -58,14 +58,8 @@ std::optional<std::vector<u8>> read_file(disc::DiscImage& disc, const FileExtent
 
 }  // namespace
 
-bool boot_exe_open(disc::DiscImage& disc, std::string* error) {
-  g_image = Image{};
-  auto fail = [&](const char* what) {
-    if (error) *error = what;
-    return false;
-  };
+std::string boot_exe_name(disc::DiscImage& disc) {
   // SYSTEM.CNF: "BOOT = cdrom:\SCUS_944.21;1"
-  std::string exe_name = "SCUS_944.21";
   if (auto cnf = find_root_file(disc, "SYSTEM.CNF")) {
     if (auto text = read_file(disc, *cnf)) {
       const std::string s(text->begin(), text->end());
@@ -75,10 +69,21 @@ bool boot_exe_open(disc::DiscImage& disc, std::string* error) {
         auto name_start = s.find_first_not_of(":\\", start);
         const auto name_end = s.find_first_of(";\r\n", name_start);
         if (start != std::string::npos && name_start != std::string::npos)
-          exe_name = s.substr(name_start, name_end - name_start);
+          return s.substr(name_start, name_end - name_start);
       }
     }
   }
+  return {};
+}
+
+bool boot_exe_open(disc::DiscImage& disc, std::string* error) {
+  g_image = Image{};
+  auto fail = [&](const char* what) {
+    if (error) *error = what;
+    return false;
+  };
+  std::string exe_name = boot_exe_name(disc);
+  if (exe_name.empty()) exe_name = "SCUS_944.21";
   auto file = find_root_file(disc, exe_name);
   if (!file) return fail("boot executable not found on the disc");
   auto exe = read_file(disc, *file);

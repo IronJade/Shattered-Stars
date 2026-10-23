@@ -13,6 +13,7 @@
 #include "game/battle/bobj.h"
 #include "game/battle/camera.h"
 #include "game/battle/input.h"
+#include "game/battle/killer.h"
 #include "game/battle/bload.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
@@ -388,19 +389,54 @@ void battle_run() {
       break;
   }
   battle_setup_sprite_banks();
-  // Voice / sfx id patches (config +0x4e, rng(3), encounters 0 / 0x219-0x21c): the voice
-  // tables live in #1984 block 0. The rng draw is kept for the order of later draws.
+  // Spell data patches (g_spell_data_entry 0x8006d1f2, spell * 5 + variant; spells.h):
+  // config +0x4e picks other effect data for spells 0x13 / 0x14, a random one of three for
+  // spell 0x19, and the last fights (encounters 0, 0x219-0x21c) their own versions. (The
+  // enemy agent's hunk.)
+  if (g.config[0x4E] != 0) {
+    for (int v = 0; v < 5; ++v) {
+      spell_data_entry_set(0x13, v, 0x969);
+      spell_data_entry_set(0x14, v, 0x96D);
+    }
+    spell_data_entry_set(0x13, 3, 0x96A);
+    spell_data_entry_set(0x14, 3, 0x96E);
+  }
   const u32 pick = rng_range(3);
-  (void)pick;
+  if (pick == 1) {
+    spell_data_entry_set(0x19, 0, 0x976);
+    spell_data_entry_set(0x19, 4, 0x977);
+  }
+  if (pick == 2) {
+    spell_data_entry_set(0x19, 0, 0x978);
+    spell_data_entry_set(0x19, 4, 0x979);
+  }
   g.single_victory_voice = 0;
   if (g.encounter_id == 0 || (g.encounter_id >= 0x21A && g.encounter_id <= 0x21C)) {
+    if (g.encounter_id == 0 || g.encounter_id == 0x21A) {
+      spell_data_entry_set(0x24, 0, 0x973);
+      spell_data_entry_set(0x21, 0, 0x92C);
+    }
+    spell_data_entry_set(3, 0, 0x91A);
+    spell_data_entry_set(0x14, 0, 0x96F);
+    spell_data_entry_set(0x19, 0, 0x97A);
+    spell_data_entry_set(7, 0, 0x913);
+    spell_data_entry_set(0x1C, 0, 0x924);
+    spell_data_entry_set(0x31, 0, 0x93C);
+    spell_data_entry_set(0x36, 0, 0x94F);
+    spell_data_entry_set(0x3D, 0, 0x95C);
+    spell_data_entry_set(0x3B, 0, 0x957);
     g.special_voice_set = 1;
     g.single_victory_voice = 1;
   } else if (g.encounter_id == 0x219) {
     g.special_voice_set = 2;
+    spell_data_entry_set(0x2D, 0, 0x8EE);
+    spell_data_entry_set(0x2E, 0, 0x8F2);
+    spell_data_entry_set(0x16, 0, 0x905);
+    spell_data_entry_set(2, 0, 0x8FC);
+    spell_data_entry_set(3, 0, 0x919);
+    spell_data_entry_set(0x32, 0, 0x936);
     g.single_victory_voice = 1;
   }
-  if (g.config[0x4E] != 0 || g.special_voice_set != 0) todo("battle voice table patches");
   battle_main_loop();
 }
 
@@ -688,6 +724,7 @@ void battle_free_all() {
   spell_windows_reset();   // the clash / skill-notice / scan windows
   command_menu_reset();    // the command ring's list menus
   battle_windows_free();  // the debug window and the HUD release themselves
+  effect_tasks_free_all();  // afterimages, ghosts and ribbon trails still running
   g.tasks.fill(nullptr);
   g.task_count = 0;
   for (auto& rc : g.render_contexts) {

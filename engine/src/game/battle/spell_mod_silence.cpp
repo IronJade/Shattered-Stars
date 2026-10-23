@@ -67,7 +67,7 @@ void silence(SpellCast* sc) {
       camera_set_focus_unit(g.camera, c, sc->target);
       spellcast_wait(sc, 0x1E);
       sc->obj.pos[0] = c->pos[0];
-      // ORIGINAL BUG? (to review): y - (y << 14) + 3 units: the caster's y where its height
+      // Original quirk (original_bugs.md S14, to decide): y - (y << 14) + 3 units: the caster's y where its height
       // (size y, +0x54) seems meant (y - height * 4 units + 3); units on the ground have y 0.
       const u32 y = static_cast<u32>(c->pos[1]);
       sc->obj.pos[1] = static_cast<s32>(y - (y << 14) + 0x30000u);

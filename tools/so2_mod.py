@@ -47,8 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from so2_archive import ARCHIVE_LBA, TOC_BYTES, SECTOR, SLZ_MAGIC, decrypt_toc, unpack_block  # noqa: E402
 from so2_script import CODE_START, MAP_ENTRY_BASE, disassemble, parse_script  # noqa: E402
 
-RAW = 2352
-DATA_AT = 24  # MODE2/2352 form 1: sync 12, header 4, subheader 8
+SYNC = b"\x00" + b"\xff" * 10 + b"\x00"
 
 
 class Disc:
@@ -61,12 +60,22 @@ class Disc:
                     path = os.path.join(base, parts[1])
                     break
         self.f = open(path, "rb")
+        # Raw 2352-byte sectors (.bin / .img: the user data after the header, and after the
+        # subheader in mode 2) or a 2048-byte-sector .iso, as engine/src/disc/disc_image.cpp.
+        size = os.path.getsize(path)
+        head = self.f.read(16)
+        if size % 2352 == 0 and head[:12] == SYNC:
+            self.raw, self.data_at = 2352, 24 if head[15] == 2 else 16
+        elif size % 2048 == 0:
+            self.raw, self.data_at = 2048, 0
+        else:
+            raise SystemExit(f"{path}: not a CD image this tool reads (.cue / .bin / .iso)")
         self.toc = {i: (lba, n) for i, lba, n in decrypt_toc(self.read(ARCHIVE_LBA, (TOC_BYTES + SECTOR - 1) // SECTOR))}
 
     def read(self, lba, count):
         out = bytearray()
         for k in range(count):
-            self.f.seek((lba + k) * RAW + DATA_AT)
+            self.f.seek((lba + k) * self.raw + self.data_at)
             out += self.f.read(SECTOR)
         return bytes(out)
 

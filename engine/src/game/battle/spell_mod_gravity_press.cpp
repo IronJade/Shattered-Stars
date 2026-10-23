@@ -133,7 +133,7 @@ void unit_ring(Shot* s) {
   s->pos[0] = ux + bcos(static_cast<u32>(s->p12c)) * rx;
   s->pos[2] = uz + bsin(static_cast<u32>(s->p12c)) * rz;
   s->pos[1] = u->pos[1] + u->size[1] * -0x4000;
-  // ORIGINAL BUG? (to review): each pass draws before and after moving, so the 120-degree
+  // Original quirk (original_bugs.md S10, to decide): each pass draws before and after moving, so the 120-degree
   // copy is drawn twice and the animation steps four times a frame (three copies meant?).
   for (s32 deg = 0x78; deg < 0xF1;) {
     bobj_project(s);

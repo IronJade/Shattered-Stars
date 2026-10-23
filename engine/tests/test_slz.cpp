@@ -48,12 +48,15 @@ TEST(slz_method2_fills) {
   CHECK(out[21] == 'z' && out[25] == 'z');
 }
 
-TEST(slz_rejects_bad_reference) {
+// A reference before the start of the output reads zeros (the compressor's cleared
+// window; the console reads the memory before its buffer). Music banks #2646, #2661,
+// #2662, #2678 and #2733 have one.
+TEST(slz_reference_before_start_reads_zeros) {
   const auto data = block(1, 4, {0x00, 0x05, 0x10, 0x00, 0x00});
   std::vector<u8> out;
   std::string error;
-  CHECK(!disc::slz::unpack(data, 0, out, &error));
-  CHECK(!error.empty());
+  CHECK(disc::slz::unpack(data, 0, out, &error));
+  CHECK(out.size() >= 4 && out[0] == 0 && out[1] == 0 && out[2] == 0 && out[3] == 0);
 }
 
 TEST(slz_block_chain) {

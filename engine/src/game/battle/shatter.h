@@ -23,5 +23,7 @@ void model_shatter(const u8* model, const s32 pos[3], const s32 rot[3], const s3
 // (port) Frees every live shard and clears the pool and the shatter globals (0x80070010..
 // 0x8007001c); for battle start and end (battle_init_objects clears the pool's flags).
 void shatter_reset();
+// 0x8007001c g_shatter_ot_bias, which the spell clash banner also reads as its combo-0 label.
+s32 shatter_ot_bias();
 
 }  // namespace ss::game::battle

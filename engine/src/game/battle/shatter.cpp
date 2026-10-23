@@ -231,11 +231,12 @@ void shard_light_colours(PolyShard* s, int n, const u8* normal, const u8* colour
 void shard_light_normals(PolyShard* s, int n, const u8* normals, const u8* colours) {
   Gte& q = psyq::gte();
   for (int i = 0; i < n; ++i) {
-    // ORIGINAL BUG? (to review): the console loads each normal through a pointer read from
-    // the normal's own first word (lw t3,0(a2); lwc2 c2r0,0(t3)), but the model holds the
-    // SVECTORs inline there (model_render loads them directly), so it reads from the address
-    // x | y << 16 (garbage, or an address error when it is not word aligned). The port reads
-    // the inline normal.
+    // ORIGINAL BUG (original_bugs.md S13): the console loads each normal through a pointer
+    // read from the normal's own first word (lw t3,0(a2); lwc2 c2r0,0(t3)), but the model
+    // holds the SVECTORs inline there (model_render loads them directly), so it reads from the
+    // address x | y << 16 (garbage, or an address error when it is not word aligned):
+    //   load_v(q, 0, <the address in the normal's first word>);
+    // The port reads the inline normal.
     load_v(q, 0, normals + 8 * i);
     q.write_data(Gte::RGBC, rd32(colours + 4 * i));
     q.execute(Gte::kNccs);
@@ -564,9 +565,11 @@ void model_shatter(const u8* model, const s32 pos[3], const s32 rot[3], const s3
             break;
           case 7:  // G4: rgbc, n0 n1 n2 n3, v0 v1 v2 v3
             shard_set_vertices(s, 4, r + 36);
-            // ORIGINAL BUG? (to review): the record's colour (+0) is passed but never loaded
-            // (shard_light_gouraud4 takes none), so these shards are lit with the RGBC left
-            // over: the last lit F4's colour of this part, else 0x808080 (sections 4 / 5).
+            // ORIGINAL BUG (original_bugs.md S13): the record's colour (+0) is passed but never
+            // loaded (shard_light_gouraud4 takes none), so these shards are lit with the RGBC
+            // left over: the last lit F4's colour of this part, else 0x808080:
+            //   shard_light_gouraud4(s, r + 4);
+            psyq::gte().write_data(Gte::RGBC, rd32(r));
             shard_light_gouraud4(s, r + 4);
             break;
           case 9:  // G4n: c0 c1 c2 c3, n0 n1 n2 n3, v0 v1 v2 v3
@@ -590,27 +593,30 @@ void model_shatter(const u8* model, const s32 pos[3], const s32 rot[3], const s3
             shard_light_flat(s, kUpNormal, r);
             break;
           case 13:  // unlit G3: c0 c1 c2, v0 v1 v2
-            // ORIGINAL BUG? (to review): the vertices are read from +4 (model_render: +12),
-            // so the shard is (c1 c2 as a vertex, v0, v1).
-            shard_set_vertices(s, 3, r + 4);
+            // ORIGINAL BUG (original_bugs.md S13): the vertices are read from +4 (model_render:
+            // +12), so the shard is (c1 c2 as a vertex, v0, v1):
+            //   shard_set_vertices(s, 3, r + 4);
+            shard_set_vertices(s, 3, r + 12);
             shard_light_colours(s, 3, kUpNormal, r);
             break;
           case 14:  // unlit FT3: uv0 clut, uv1 tpage, uv2, rgbc, v0 v1 v2
             shard_set_vertices(s, 3, r + 16);
             shard_light_flat(s, kUpNormal, r + 12);
             shard_set_texture(s, r, false, clut_base, tpage_base, abr_tpage);
-            // ORIGINAL BUG? (to review): kind 6 (FT4) for a triangle (2 meant?): drawn as a
-            // quad whose fourth vertex (+0x6c) and uv3 (+0x1a) are left from the slot's last use.
-            s->type = 6;
+            // ORIGINAL BUG (original_bugs.md S13): kind 6 (FT4) for a triangle: drawn as a quad
+            // whose fourth vertex (+0x6c) and uv3 (+0x1a) are left from the slot's last use:
+            //   s->type = 6;
+            s->type = 2;
             break;
           case 15:  // unlit GT3: uv0 clut, uv1 tpage, uv2, c0 c1 c2, v0 v1 v2
             shard_set_vertices(s, 3, r + 24);
             shard_light_colours(s, 3, kUpNormal, r + 12);
             shard_set_texture(s, r, false, clut_base, tpage_base, abr_tpage);
-            // ORIGINAL BUG? (to review): kind 8 (GT4) for a triangle (4 meant?): a quad with
-            // the fourth vertex, uv3 and colour (+0x28, which the fade also waits on) left
-            // from the slot's last use.
-            s->type = 8;
+            // ORIGINAL BUG (original_bugs.md S13): kind 8 (GT4) for a triangle: a quad with the
+            // fourth vertex, uv3 and colour (+0x28, which the fade also waits on) left from the
+            // slot's last use:
+            //   s->type = 8;
+            s->type = 4;
             break;
           case 16:  // unlit F4: rgbc, v0 v1 v2 v3
             shard_set_vertices(s, 4, r + 4);
@@ -639,6 +645,8 @@ void model_shatter(const u8* model, const s32 pos[3], const s32 rot[3], const s3
     }
   }
 }
+
+s32 shatter_ot_bias() { return g_shatter.ot_bias; }
 
 void shatter_reset() {
   ShatterState& st = g_shatter;

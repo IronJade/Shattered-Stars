@@ -130,30 +130,112 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
   `unit_move.{h,cpp}`, `pc_modules.cpp` (case 4), `engine/CMakeLists.txt`, the catalog CSV,
   and the scratch tools (explore.lua `BW_REG_BP`; per-run cards in the run scripts).
 
+## RESUME POINT (paused for the usage limit, 2026-10-22 ~19:45)
+
+None of my Redux or port runs are running; the Redux processes still alive are the enemy
+agent's (scratchpad/enemy). Everything is on disk. Verified since the 19:00 commit (reported
+to the coordinator): Dias (all 10 moves), the party AI (healer, fighter and caster paths),
+Claude's move 5. On disk and building but not verified against Redux: the input_free_run
+analog branch, effect_tasks_free_all, the tinted shadows (bobj.cpp).
+
+In progress, in this order:
+
+1. **The attack-spell choice (0x8003a20c) case.** `ref/caster35` (Celine AI in slot 1,
+   tactic 0, encounter 35, 2400 vsyncs) is recorded but not yet compared. Next command:
+
+       cd scratchpad/battle; IN=$(python3 -c "print(','.join(f'{45*i}:cross,{45*i+1}:none' for i in range(1,60)))")
+       # port run as run_caster_ai.sh's pokes, with --battle 35:3, SS_BATTLE_TICKS=1,
+       # SS_BATTLE_RAM=ref/caster35/ram_field_exit_004046.bin, --frames 2400; then
+       # CMP_D=7 rngcmp.py ref/caster35/log.txt port/caster35/log.txt and unitcmp.py ... 7.
+       # Check whether Celine reaches state 14 (a cast) in the ref (p1 s14 in its [bw] enemy
+       # lines). If she never casts, try tactic 1 (record +0x38 = 1) or a longer fight.
+
+2. **Archipelago, battle side.**
+   - Done: `tools/ap_battles.py`. It reads the encounter packs (members, boss flags,
+     escape, drops, EXP / Fol) and every map's scripted battle call sites.
+     - The call sites are calls to the per-map battle helper, which wraps ext 0xb7, after
+       three constant pushes.
+     - The tool also lists the battle_c / battle_b preloads and the global flags each
+       site's routine tests or sets.
+   - Done: `docs/ap/battles.json` (the tool's output, 269 KB).
+   - Findings:
+     - 564 encounters, 47 with a boss member, 187 enemy types (62 without drops).
+     - 89 scripted call sites (5 with a computed encounter, all on map 305).
+     - The final boss is Indalecio, encounters 539 / 540, map 685 (two call sites).
+     - Boss encounters without a scripted site: 0 (Cyril), 263 (Dias), 534 (FunnyThief),
+       561 (Iselia-queen).
+     - Flag 0x2e9 is set by almost every battle routine, so it is not a story marker.
+   - Still to write: `docs/ap/battle.md`, the JSON shape plus the battle hooks:
+     - battle_exit_to_field in battle_program.cpp holds g.encounter_id (0x8006ef98) and
+       g.outcome (0 victory, 1 escaped, 2 defeat, 3 ran off, 4 time up), written to config
+       +0x178. That is where boss checks, the goal (539 / 540 with outcome 0) and the
+       DeathLink send (outcome 2) hook in.
+     - DeathLink receive: in battle, battle_party_lost(); otherwise, end the next battle.
+     - Drops as checks: roll_drops in result.cpp (0x800869fc), one drop per enemy, odds +
+       luck; replace its inventory_add.
+     - EXP / Fol multipliers: the result screen.
+     - Link the doc from docs/archipelago_plan.md (a short "Battle hooks" section).
+   - The enemy agent writes `tools/ap_extract.py` (the field side), which imports my
+     module. My entry point is `ap_battles.build([disc1, disc2])`, which returns the dict
+     written to battles.json.
+
+3. **From the effects agent:**
+   - dias_l2 b470-490 (~4%): only the homing streak lines differ (move 1's 0x30 lines).
+     Suspect the B3 fix (line depth). Test by building with the stale-OTZ line depth (see
+     the ORIGINAL BUG comment in particle.cpp) and comparing with
+     `pcrun.sh 5 2 ref/dias_l2 port/x`.
+   - At 19:40 engine/build-battle did not link because of another agent's mid-edit
+     (runtime.cpp: Window::sticks / rumble undefined), so this test is not run yet.
+   - dias_la: its RNG matches to the exit in my build (19:26 and again at 19:40), so the
+     divergence the effects agent saw comes from its own tree.
+
 ## Next steps
 
-1. Dias (#2143, char05, vtable 0x801f11d4: overrides 1, 35-37, 46-49).
-   - `pc_dias.cpp` is written (all 10 moves and 8 callbacks), registered (pc_modules case
-     5, CMake) and builds clean. Suites 78/0, 74/0, 21/21.
-   - It uses the effects agent's shot_image table (pc_module_util.h) for the Shots'
-     afterimages (the console's +0x130).
-   - Refs `ref/dias_l1`..`l5` are running; bytes 6-10 come next.
-   - Compare with `pcrun.sh 5 <byte> ref/dias_l<byte> port/diasl<byte>`.
-   - Catalog rows still to add.
-2. After Dias, two framework issues reported by the other agents:
-   - The result screen's last fade looks a frame off in every run. I measured it on
-     ernest_58: the band starts in frame 1017 in both, and the band position matches at D 7.
-     The difference is a small global brightness offset in the scene behind it, but recheck.
-   - The world agent's enc 340 item run (scratchpad/world/spell/ref/it340_3, b1290): a
-     party member's hit reaction to the wizard's melee starts one frame early during the
-     battle-over state.
+1. **Dias (verified, all 10 moves)** (#2143, char05, vtable 0x801f11d4).
+   - `pc_dias.cpp` (10 moves, 8 callbacks) is registered (pc_modules case 5, CMake).
+     Catalog rows are in.
+   - Bytes 1-10 (moves 0-9) verified: RNG to the exit, units at most 3 sampling
+     differences.
+   - One visual difference in move 2's sword wave: its tinted ground shadow
+     (shot_draw_and_box colour 0x2080: code 0x2e, tpage 0x0f, so blend mode 0) is dark
+     olive on the console and brownish in the port. bobj_draw_shadow builds the same code
+     and tpage as the console (0x800443f8, checked). Suspects: the GPU's modulated
+     semi-transparent texturing, or the shadow blob's texels.
+   - Frames differ only where the B2 fix (afterimage copies) and the B3 fix (line depth)
+     change the picture.
+   - Refs are `ref/dias_l1`..`dias_la`. `queue_runs.sh CHAR NAME BYTE...` queues such runs
+     with at most 3 of my Redux runs at once. The first dias_l3 run hung at boot (no "clock starts" after 35
+     min); I killed it by PID and requeued it.
+   - An ASan run is clean. It covered Dias's move 9, an AI Rena and the battle exit with
+     effect_tasks_free_all.
+2. **Party AI (verified: healer, fighter, caster paths).** New `party_ai.{h,cpp}` covers all of
+   0x80038114-0x8003a9cf plus 0x8003b6d8 / 0x8003bc9c. It is hooked into pc_ai_update
+   (party_states.cpp), including the forced random run.
+   - Refs: `ref/rena_ai` (Claude at 500 HP; Rena casts Cure Light at b281, as in the port)
+     and `ref/rena_ai1` (tactic 1, no cast).
+   - RNG is equal to past the battle exit in both. Units 1875/1880 and 1454/1456, all HP
+     sampling. Frames match apart from the end fade.
+   - Fighter and caster, verified:
+     - `ref/fighter_ai`: Bowman in slot 1 (class copied from Claude). His AI approaches and
+       attacks at the same frames. RNG equal to the exit, units 1414/1418.
+     - `ref/caster_ai`: Celine (class 10, five spells learned, tactic 0). She never casts in
+       either version (the RNG never passes both 1/8 checks), but keeps away the same way.
+       RNG equal to the exit, units 1795/1801.
+     - The attack-spell choice (0x8003a20c) has not been exercised against Redux yet.
+   - Test setup: `SS_BATTLE_COPY` (new, battle_debug.cpp) copies slot 0's stats and record
+     to slot 1. Then `SS_BATTLE_POKE` sets id 2, class 9, MP and the learned spells (record
+     +0x3c..); see `scratchpad/battle/run_rena_ai.sh`.
+   - Redux runs use explore.lua's `BW_COPY` (copies at vsync 4047, pokes at 4048).
 3. B1 / B2 / B3 fixed and committed. B5 is still "decide".
-4. Party AI (pc_ai_fighter 0x80038664 / healer 0x80038114 / caster 0x80038328), voices.
-5. Claude's move 5 (Energy Sword) compare.
-6. input_free_run's analog branch: use `pad_stick()` (boot pad, 0x80013cb8, 7f41c89).
-7. Effect tasks (Afterimage / Ghost / RibbonTrail) are not deleted at battle end (leak), and
-   `Unit` has no dtor destroying its effects (console unit_destroy 0x8004def0 does). Unit
-   +0x1f8 is a RibbonTrail on the console (port: `effects[1]`, unused so far).
+4. Voices: the enemy agent took the voice player (voice_play_entry, intro voices).
+5. Claude's move 5 (byte 6): verified against `ref/claude_l6` (RNG to the exit, units at
+   most 3 sampling differences).
+6. Done on disk (unverified against Redux; they build):
+   - input_free_run's left-stick branch (pad_stick, speed * deflection / 0x50; the d-pad
+     when the stick is centred).
+   - effect_tasks_free_all (killer.cpp, called from battle_free_all): frees the
+     Afterimage / Ghost / RibbonTrail tasks still running when the battle ends.
+   - Unit +0x1f8 is still `effects[1]` (an Afterimage*). No ported module uses it yet.
 
 ## Tooling notes
 
@@ -184,8 +266,10 @@ and the clock-alignment docs, which were on disk at the cutoff. Checked since:
   encounter 2 on stage 3: the old poke of game_state +0x99 did nothing (the field reads the
   encounter from +0x264, s16); `run_forced.sh` now pokes +0x264. The comparisons hold (both
   sides ran encounter 2).
-- From the enemy agent: Claude's approach walk drifts about 1 unit per 10 frames from the
-  original (encounter 10, Cross mash, from b340): PartyUnit code, to chase. +0x12a is
+- From the enemy agent: Claude's approach walk seemed to drift about 1 unit per 10 frames
+  (encounter 10, Cross mash, from b340). That was the clock alignment: at the right D (and
+  with SS_BATTLE_TICKS for the 1-tick group) every Claude sample in encounters 2, 35 and
+  the module runs matches. +0x12a is
   uninitialised heap in the original until first set. Oozes / Alraunes never fire in those
   encounters (attack odds 0); archers (enc 65, 420: Robinfake), Shout (320) and the wizard
   (340) fire with an idle party: use them for kind 0x16. Darkcrusader (enc 280) uses kind 2.

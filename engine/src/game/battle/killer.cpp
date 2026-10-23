@@ -1,6 +1,7 @@
 #include "game/battle/killer.h"
 
 #include <cstring>
+#include <vector>
 
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
@@ -17,6 +18,27 @@
 #include "game/battle/unit_move.h"
 
 namespace ss::game::battle {
+
+// The effect tasks alive (Afterimage, Ghost, RibbonTrail delete themselves when done; the
+// ones still running when the battle ends are freed by effect_tasks_free_all).
+namespace {
+std::vector<Task*> g_live_effects;
+void live_add(Task* t) { g_live_effects.push_back(t); }
+void live_remove(Task* t) {
+  for (size_t i = 0; i < g_live_effects.size(); ++i) {
+    if (g_live_effects[i] == t) {
+      g_live_effects[i] = g_live_effects.back();
+      g_live_effects.pop_back();
+      return;
+    }
+  }
+}
+}  // namespace
+
+void effect_tasks_free_all() {
+  // Each dtor unregisters its task, clears its owner's back pointer and leaves the list.
+  while (!g_live_effects.empty()) delete g_live_effects.back();
+}
 
 // ---- Afterimage -------------------------------------------------------------------------
 
@@ -36,11 +58,13 @@ Afterimage::Afterimage(const BObj* src, int n, u32 rgb, u8 blend_mode) {
   for (int i = 0; i < 8; ++i) kinds[i] = 0;
   copies = std::make_unique<BObj[]>(static_cast<size_t>(n > 0 ? n : 1));
   task_register(this, 3);
+  live_add(this);
 }
 
 Afterimage::~Afterimage() {
   if (back != nullptr) *back = nullptr;
   task_unregister(this);
+  live_remove(this);
 }
 
 Afterimage* afterimage_create(const BObj* src, int n, u32 rgb, u8 blend_mode) {
@@ -118,11 +142,13 @@ Ghost::Ghost(const BObj* src, u32 rgb) {
   copy.texcache_shared = 1;
   alpha = 0x80;
   task_register(this, 3);
+  live_add(this);
 }
 
 Ghost::~Ghost() {
   if (back != nullptr) *back = nullptr;
   task_unregister(this);
+  live_remove(this);
 }
 
 Ghost* ghost_create(const BObj* src, u32 rgb) { return new Ghost(src, rgb); }
@@ -161,11 +187,13 @@ RibbonTrail::RibbonTrail(const BObj* src, u8 len, u32 a, u32 b) {
   rgb_b = b;
   back = nullptr;
   task_register(this, 3);
+  live_add(this);
 }
 
 RibbonTrail::~RibbonTrail() {
   if (back != nullptr) *back = nullptr;
   task_unregister(this);
+  live_remove(this);
 }
 
 RibbonTrail* ribbon_trail_create(const BObj* src, u8 len, u32 rgb_a, u32 rgb_b) {
@@ -461,6 +489,11 @@ void Unit::release_effects() {
       e->ending = 1;
       e = nullptr;
     }
+  }
+  if (effect_trail != nullptr) {  // (its +0xc is the trail's stop flag)
+    effect_trail->back = nullptr;
+    effect_trail->stop = 1;
+    effect_trail = nullptr;
   }
 }
 

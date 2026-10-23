@@ -163,10 +163,9 @@ it compared with PCSX-Redux yet:
     0x8006fe04 (unit_draw_model's hook, TODO in unit.cpp / stage.cpp: units don't ride the
     waves yet); Divine Comedy reads Indalecio's +0x2f8 through `caster->flying` (needs an
     accessor); Raise Dead's music save / restore mapping to check.
-  - Duplicated local helpers to move to spell_fx: item_fx_sparkle (6 copies), draw_disc
-    0x8007cc5c (3), draw_wave_grid 0x8007d9e0 (4), voice_release 0x8007fd54 (2),
-    model_find_vertices_near 0x80061694 + sv_distance_xz 0x800627c0 (2),
-    camera_orbit_object (2; camera_orbit_unit could take a BObj*), line_trail 0x80076454..
+  - Shared helpers: all moved (item_fx_sparkle, draw_disc, draw_wave_grid, voice_release,
+    model_find_vertices_near / sv_distance_xz, camera_orbit_unit on any BObj); left local:
+    Earthquake's obj_set_matrix_parent / child and Reflection's line_trail (one user each).
 - Rena test redone with the forced casts applied where the port applies them (both at
   input_dispatch now; the old per-vsync Redux poke landed a frame later than the port's,
   which was the whole "+4 RNG at Cure Light" of r340): `ref/rn340_3` vs `prn340`: all 240
@@ -189,7 +188,43 @@ it compared with PCSX-Redux yet:
     input_dispatch) and the port can replay them (`SS_BATTLE_TICK_MAP="F:T,..."`, F the
     battle frame counter before the frame: battle_debug.cpp, flagged); and the spell casts /
     finishes (`BW_SPELL_TRACE=1`, as SS_SPELL_TRACE).
-  - Running (19:00): i11a, i12, i10a (with the tick log and spell trace).
+  - VERIFIED (19:03; every RNG / unit sample exact or within a frame, cast and finish frames
+    identical, captures alike): i10a Shadow Bolt, Gremlin Lair, Deep Freeze, Noah, Black
+    Saber, Acid Rain; i11a Explode, Thundercloud, Energy Arrow, Lunar Light, Forget; i12
+    Tetanus Wind, Sonic Saber, Magnum Tornado, Foehn, Earth Grave, Earthquake, Blood Sucker
+    (i12 with Foehn's S1 fix reverted for the run: the fix moves the leaf sprites' draws; the
+    rest then matches). `sweep_cmp.sh RUN` compares, `sweep_cap.sh RUN D B...` pairs captures
+    (cap_RUN/pair_bN.png). Gremlin Lair's imps show 4 trail copies in the port and 2 on the
+    console: the battle agent's afterimage fix B2, not a module difference.
+  - VERIFIED too (19:08): i9a Cure All, Fairy Light, Dispel, Silence, Deep Mist, Energy Net,
+    Growth, Protection, Anti; i9b Angel Feather, Press, Tractor Beam, Star Flare, Fairy Heal,
+    Haste, Delay (model_shatter included), Gravity Press, Light Cross; i10b Daemon's Gate,
+    Starlight, Extinction, Shadow Flare, Dark Circle. (Angel Feather's angel shows more
+    trail copies in the port: the afterimage fix B2 again.)
+  - VERIFIED (19:16): i11b Neutral, Bless, Eruption, Thunderstorm, Southern Cross, Meteor
+    Swarm, Reflection, Curse, Mind Absorber (695 samples exact).
+  - VERIFIED (19:30): x9 (items 3 / 4 make the user cast The Scream 0x41 / Judgement Day
+    0x42; then Ray 0x1a, the built-in SpellCast kind 1) and x9b (Celine / Leon KO'd from
+    the start: Raise Dead revives p1, the revive item 0xf3 p2; three members, 771 party
+    samples exact).
+  - VERIFIED (19:40): x11 (Celine and Leon casting together: three spell clashes, slot-1
+    SpellCasts, combos 1 / 2 / 4; 1195 party samples exact). Fixed on the way: the clash
+    banner's label read the table at 0x8007001c as bytes; it is a word table (combo 1 0x29,
+    2 0x2b, 3 0x28, 4 0x2b; entry 0 is g_shatter_ot_bias): captures now match.
+  - VERIFIED (19:40): m9 (Rena through the menus with the pad: the ring, the magic list and
+    a cast, the item list and an item on a member, the tactics page; `menu_cmp.sh m9` with
+    MENU_D=4: all RNG / unit samples exact; ring / list / member-select captures alike).
+    It showed S20 (a whole-party spell from the menu with no current target does nothing
+    after paying the MP): fixed after the faithful match.
+  - Not covered by a sweep: Divine Comedy (Indalecio),
+    spell 0x40 (a party move, variant 0 only), Mind Blast / Spicule / Wind of Destruction
+    (the enemy agent's bosses).
+  - original_bugs.md S4-S18 decided after the verification: fixed S4 / S5 (blade hit lists,
+    return speed), S6 (Earthquake's third centre), S8 (Lunar Light's ring), S9 (Shadow
+    Flare's phase), S11 (Deep Mist's pause), S12 (Explode's combo side), S13 (shatter's
+    shard kinds / colours / offsets); "decide" (the user decides: intent unclear, or a fix
+    changes the pacing / look; faithful code kept meanwhile): S7, S10, S14-S19. The code
+    marks them "ORIGINAL BUG (... Sn)" / "Original quirk (... Sn, to decide)".
 - model_shatter + PolyShard ported by the helper (`battle/shatter.{h,cpp}`, in CMake;
   shatter_reset from spells_reset); Southern Cross / Delay / Haste use it. The task list is
   now 320 entries (battle.h, flagged: g_tasks is 320 on the console; a shatter adds up to
@@ -214,17 +249,49 @@ it compared with PCSX-Redux yet:
   - Redux: `pgrep -f` waits on a pattern also match their own command line (the r340d queue
     never started); use a pid file or a pattern the waiter does not contain.
 
-## Next steps
+## Next steps (paused 19:45 at the usage limit; resume here)
 
-1. Compare the idle sweeps as they finish (i11a, i12, i10a running; then i9a, i9b, i10b,
-   i11b): extract the tick map from the ref log ("[bw] tick F T" -> F - T:T), run the port
-   with SS_BATTLE_TICK_MAP, cmp.py, and the spell timelines ([bw] spell vs [spell]); fix the
-   modules; decide the helpers' ORIGINAL BUG? notes (fix after the faithful version matched;
-   S-entries in original_bugs.md).
-2. Remaining duplicated helpers (earthquake / explode: model_find_vertices_near,
-   sv_distance_xz, obj_set_matrix_parent / child; gremlin_lair / press camera_orbit_object;
-   reflection's line_trail; acid_rain's voice_release copy (enemy_support.h has one)).
-3. W1 (the post-battle report's MAG row under the window clip) when convenient.
+State at the pause: phase 5 done and verified (see "In progress" above); nothing of mine
+running (no Redux, no port runs, no helpers; the capture-copy loops stopped). All work on
+disk; build-world builds shattered-stars and ss_tests (ss_game_tests could not link then:
+the setup agent's platform / launcher change, undefined platform::Window functions; rerun
+it once it links). Suites last green: ss_tests 78/0, smoke 21/21, ss_game_tests 74/0 (19:22).
+
+1. W1 (the post-battle report's MAG row under window 6's clip), only if cheap. Port-only is
+   enough (a visual fix): `--debug` with SS_DEBUG_INPUT="VBLANK:item ID;VBLANK:battle ENC"
+   on a map (smoke-style `--map 18`), `--battle-end FRAMES:0` to win, cross to close the
+   result; the report appears when a new better item gets auto-equipped
+   (field/post_battle.cpp: window 6 opened at 1,2 with 0x26 x 0xC; the attribute panels at
+   y + 0x71, rows 0xC apart: the 5th row falls below the window). Needs an item id better
+   than Claude's start gear (look up item records). Otherwise leave it.
+2. Archipelago Phase 1, the port side (coordinator, 19:43; plan docs/archipelago_plan.md, read
+   it first; the battle / enemy agents write tools/ap_extract.py, docs/ap/ location tables):
+   - docs/ap/seed_format.md: the `.apso2` spec (planned: plain UTF-8 JSON, zip later; keys:
+     format/version, seed id, slot name / id, game, options {goal, world_mode, exp / fol
+     multipliers, deathlink ...}, items {AP item id -> game item id / Fol amount / count},
+     locations [{id, name, type chest|gift|boss|shop, check trigger: chest "flag" (opened
+     flag) / gift "map"+"word" (call site) / boss "encounter", "patches" (low-level lines
+     the generator computes: script MAP WORD EXPECTED VALUE ...), item {player, name, ap id,
+     game id, classification}}], shops / enemies patch lists, start {items, fol, flags}).
+   - engine/src/game/ap/ (new; no network yet): json.{h,cpp} (a small reader / writer; no
+     JSON library in the build), seed.{h,cpp} (load + validate), ap.{h,cpp}: ap_enabled,
+     ap_load_seed, ap_location_checked(id) (records), ap_receive(item, from) (queue, given
+     in free play: field state 0, no script running, not in battle / menu, through
+     inventory_add with a notice banner: field notice_show takes map-font text; ASCII ->
+     glyphs via message.h text_ascii_to_glyph 0x8005e8f8), the sidecar
+     <card image without .mcd>.slotKK.ap.json (seed id, slot, received index, checked ids),
+     written after save_finish == 1 and read after load_finish == 1 / load_save_direct
+     (common/menu_save.cpp ProgressDialog; the card image paths are memcard.cpp g_images).
+   - mods.cpp: the seed's patches join the patch list (at = "seed:<location id>").
+   - Check hooks: chests by the opened flag (the script flag write), gifts by call site
+     (the give_item handler with map + word); bosses later.
+   - Debug console (field/debug_console.cpp): ap_give ITEM [FROM], ap_check ID, ap_status.
+   - CLI `--ap-seed FILE` (main.cpp; off without it); tell the setup agent the config key
+     (planned: `ap_seed`).
+   - Tests: a seed-loader + sidecar round-trip unit test (tests/), a smoke case with a tiny
+     seed (one chest changed, one check recorded, one item received).
+3. Later: Divine Comedy is with the enemy agent, spell 0x40 with the effects agent; the
+   "decide" quirks S7, S10, S14-S19 wait for the user.
 
 ## Findings not yet in the catalog
 

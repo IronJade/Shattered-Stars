@@ -20,8 +20,9 @@ u16 pack(int r5, int g5, int b5) {
   return static_cast<u16>(clamp5(r5) | clamp5(g5) << 5 | clamp5(b5) << 10);
 }
 
-u32 to_rgba(u16 c) {
+u32 to_rgba(u16 c, bool shift_only = false) {
   const u32 r = c & 31, g = c >> 5 & 31, b = c >> 10 & 31;
+  if (shift_only) return r << 3 | (g << 3) << 8 | (b << 3) << 16 | 0xFF000000u;
   return (r << 3 | r >> 2) | (g << 3 | g >> 2) << 8 | (b << 3 | b >> 2) << 16 | 0xFF000000u;
 }
 
@@ -219,6 +220,22 @@ void Gpu::shade_pixel(int x, int y, int r, int g, int b, int u, int v, const Sha
   const int d = dither ? kDither[y & 3][x & 3] : 0;
   int semi_mode = s.textured ? (s.texpage >> 5 & 3) : (state_.texpage >> 5 & 3);
   if (!s.textured) {
+    if (blend_before_dither && dither && s.semi) {
+      // PCSX-Redux's order (reference comparisons only): blend the 8-bit colour with the
+      // background expanded to 8 bits, then dither and truncate to 5 bits.
+      u16& dst = vram_[y * kVramWidth + x];
+      if (state_.check_mask && (dst & 0x8000)) return;
+      int br = (dst & 31) << 3, bg = (dst >> 5 & 31) << 3, bb = (dst >> 10 & 31) << 3;
+      switch (semi_mode) {
+        case 0: br = (br >> 1) + (r >> 1); bg = (bg >> 1) + (g >> 1); bb = (bb >> 1) + (b >> 1); break;
+        case 1: br += r; bg += g; bb += b; break;
+        case 2: br -= r; bg -= g; bb -= b; break;
+        default: br += r >> 2; bg += g >> 2; bb += b >> 2; break;
+      }
+      auto to5 = [d](int v) { return (std::clamp(v, 0, 0xFF) + d) >> 3; };
+      dst = static_cast<u16>(pack(to5(br), to5(bg), to5(bb)) | (state_.set_mask ? 0x8000 : 0));
+      return;
+    }
     write_pixel(x, y, pack((r + d) >> 3, (g + d) >> 3, (b + d) >> 3), s.semi, semi_mode);
     return;
   }
@@ -231,6 +248,23 @@ void Gpu::shade_pixel(int x, int y, int r, int g, int b, int u, int v, const Sha
   }
   // Modulation: texel * colour / 128, computed in 8-bit and dithered like shading.
   const int tr = (texel & 31) * r >> 4, tg = (texel >> 5 & 31) * g >> 4, tb = (texel >> 10 & 31) * b >> 4;
+  if (blend_unsaturated_modulation && semi) {
+    // PCSX-Redux's model (reference comparisons only): the modulated value enters the
+    // blend unsaturated, and only the blend's result is clamped.
+    u16& dst = vram_[y * kVramWidth + x];
+    if (state_.check_mask && (dst & 0x8000)) return;
+    const int fr = (tr + d) >> 3, fg = (tg + d) >> 3, fb = (tb + d) >> 3;
+    const int br = dst & 31, bgc = dst >> 5 & 31, bb = dst >> 10 & 31;
+    int rr, gg, bbb;
+    switch (semi_mode) {
+      case 0: rr = (br + fr) >> 1; gg = (bgc + fg) >> 1; bbb = (bb + fb) >> 1; break;
+      case 1: rr = br + fr; gg = bgc + fg; bbb = bb + fb; break;
+      case 2: rr = br - fr; gg = bgc - fg; bbb = bb - fb; break;
+      default: rr = br + (fr >> 2); gg = bgc + (fg >> 2); bbb = bb + (fb >> 2); break;
+    }
+    dst = static_cast<u16>(pack(rr, gg, bbb) | (texel & 0x8000) | (state_.set_mask ? 0x8000 : 0));
+    return;
+  }
   write_pixel(x, y, static_cast<u16>(pack((tr + d) >> 3, (tg + d) >> 3, (tb + d) >> 3) | (texel & 0x8000)), semi,
               semi_mode);
 }
@@ -506,7 +540,7 @@ void Gpu::display_to_rgba(std::vector<u32>& out, int& width, int& height) const 
         };
         out[y * width + x] = vram_byte(byte) | vram_byte(byte + 1) << 8 | vram_byte(byte + 2) << 16 | 0xFF000000u;
       } else {
-        out[y * width + x] = to_rgba(pixel(display_.x + x, display_.y + y));
+        out[y * width + x] = to_rgba(pixel(display_.x + x, display_.y + y), capture_shift);
       }
     }
   }
@@ -514,7 +548,7 @@ void Gpu::display_to_rgba(std::vector<u32>& out, int& width, int& height) const 
 
 void Gpu::vram_to_rgba(std::vector<u32>& out) const {
   out.resize(vram_.size());
-  for (size_t i = 0; i < vram_.size(); ++i) out[i] = to_rgba(vram_[i]);
+  for (size_t i = 0; i < vram_.size(); ++i) out[i] = to_rgba(vram_[i], capture_shift);
 }
 
 }  // namespace ss::psx

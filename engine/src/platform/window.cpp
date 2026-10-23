@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+
 #include "platform/gl.h"
 
 namespace ss::platform {
@@ -106,7 +108,20 @@ Window::~Window() {
   SDL_Quit();
 }
 
-bool Window::create(const std::string& title, int width, int height, std::string* error) {
+std::vector<u32> display_order() {
+  std::vector<u32> out;
+  const SDL_DisplayID primary = SDL_GetPrimaryDisplay();
+  if (primary != 0) out.push_back(primary);
+  int count = 0;
+  if (SDL_DisplayID* ids = SDL_GetDisplays(&count)) {
+    for (int i = 0; i < count; ++i)
+      if (ids[i] != primary) out.push_back(ids[i]);
+    SDL_free(ids);
+  }
+  return out;
+}
+
+bool Window::create(const std::string& title, const WindowOptions& options, std::string* error) {
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
     if (error) *error = std::string("SDL_Init: ") + SDL_GetError();
     return false;
@@ -114,18 +129,55 @@ bool Window::create(const std::string& title, int width, int height, std::string
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+  // The display (monitor 1 = the primary one; a monitor that is gone falls back to it).
+  const std::vector<u32> displays = display_order();
+  SDL_DisplayID display = 0;
+  if (!displays.empty()) {
+    const bool known = options.monitor >= 1 && static_cast<size_t>(options.monitor) <= displays.size();
+    display = displays[known ? static_cast<size_t>(options.monitor - 1) : 0];
+  }
+  // The windowed size, kept 4:3 and shrunk to fit the display's usable area.
+  int width = options.width > 0 ? options.width : 960, height = options.height > 0 ? options.height : 720;
+  if (SDL_Rect usable; display != 0 && SDL_GetDisplayUsableBounds(display, &usable) && usable.w > 0 && usable.h > 0) {
+    const int max_w = usable.w * 95 / 100, max_h = usable.h * 90 / 100;
+    if (width > max_w || height > max_h) {
+      const double scale = std::min(static_cast<double>(max_w) / width, static_cast<double>(max_h) / height);
+      width = std::max(320, static_cast<int>(width * scale));
+      height = std::max(240, static_cast<int>(height * scale));
+    }
+  }
   window_ = SDL_CreateWindow(title.c_str(), width, height,
-                             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+                             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY |
+                                 SDL_WINDOW_HIDDEN);
   if (!window_) {
     if (error) *error = std::string("SDL_CreateWindow: ") + SDL_GetError();
     return false;
   }
+  if (display != 0)
+    SDL_SetWindowPosition(window_, static_cast<int>(SDL_WINDOWPOS_CENTERED_DISPLAY(display)),
+                          static_cast<int>(SDL_WINDOWPOS_CENTERED_DISPLAY(display)));
+  // Full screen: exclusive in the chosen mode (or the desktop's), or borderless (no
+  // mode: the window covers the desktop). F11 later switches to the same kind.
+  if (options.mode == WindowMode::kFullscreen && display != 0) {
+    SDL_DisplayMode mode{};
+    const SDL_DisplayMode* desktop = SDL_GetDesktopDisplayMode(display);
+    if (options.fullscreen_width > 0 && options.fullscreen_height > 0 &&
+        SDL_GetClosestFullscreenDisplayMode(display, options.fullscreen_width, options.fullscreen_height,
+                                            options.refresh, true, &mode)) {
+      SDL_SetWindowFullscreenMode(window_, &mode);
+    } else if (desktop != nullptr) {
+      SDL_SetWindowFullscreenMode(window_, desktop);
+    }
+  }
+  if (options.mode != WindowMode::kWindowed) set_fullscreen(true);
+  SDL_ShowWindow(window_);
   context_ = SDL_GL_CreateContext(window_);
   if (!context_) {
     if (error) *error = std::string("SDL_GL_CreateContext: ") + SDL_GetError();
     return false;
   }
-  SDL_GL_SetSwapInterval(1);
+  SDL_GL_SetSwapInterval(options.vsync ? 1 : 0);
   if (const char* missing = gl::load([](const char* name) -> void* {
         return reinterpret_cast<void*>(SDL_GL_GetProcAddress(name));
       })) {
@@ -173,8 +225,7 @@ bool Window::next_event(bool& open, KeyEvent& out) {
         if (down && e.key.key == SDLK_ESCAPE) open = false;
         if (down && !e.key.repeat &&
             (e.key.key == SDLK_F11 || (e.key.key == SDLK_RETURN && (e.key.mod & SDL_KMOD_ALT)))) {
-          fullscreen_ = !fullscreen_;
-          SDL_SetWindowFullscreen(window_, fullscreen_);
+          set_fullscreen(!fullscreen_);
           if (e.key.key == SDLK_RETURN) pad_ &= static_cast<u16>(~kPadStart);  // Alt+Enter is not Start
         }
         if (!e.key.repeat) {
@@ -254,5 +305,13 @@ void Window::present(const u32* pixels, int width, int height, float aspect) {
 }
 
 void Window::set_title(const std::string& title) { SDL_SetWindowTitle(window_, title.c_str()); }
+
+void Window::set_fullscreen(bool on) {
+  fullscreen_ = on;
+  SDL_SetWindowFullscreen(window_, on);
+  // The game has no use for the mouse: no pointer over the full-screen picture.
+  if (on) SDL_HideCursor();
+  else SDL_ShowCursor();
+}
 
 }  // namespace ss::platform

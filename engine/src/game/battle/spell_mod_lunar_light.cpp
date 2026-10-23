@@ -200,10 +200,12 @@ void lunar_light(SpellCast* sc) {
       effect_spawn_sphere_at(kZeroVector, 8, 7, 0xE, 0x140, 0xFF0080, 0x8C, 0, 0x1800);
       Shot* r = effect_spawn_sparks_at(kZeroVector, 0x18, 0x168, 800, 0x10, 300, 0, 0, 600, 0);
       if (r != nullptr) r->vel[0] = 0xB;
-      effect_spawn_sparks_at(kZeroVector, 0x18, 0x280, 0x280, 0x10, 300, 5, 0, 0x2A8, 0);
-      // ORIGINAL BUG? (to review): the second ring's turn (-11) goes to the first ring again
-      // (its result is dropped), so the first turns -11 and the second not at all.
-      if (r != nullptr) r->vel[0] = -0xB;
+      // ORIGINAL BUG (original_bugs.md S8): the second ring's Shot is dropped and its turn
+      // (-11) goes to the first ring again, so the first turns -11 and the second not at all:
+      //   effect_spawn_sparks_at(kZeroVector, 0x18, 0x280, 0x280, 0x10, 300, 5, 0, 0x2A8, 0);
+      //   if (r != nullptr) r->vel[0] = -0xB;
+      if (Shot* r2 = effect_spawn_sparks_at(kZeroVector, 0x18, 0x280, 0x280, 0x10, 300, 5, 0, 0x2A8, 0))
+        r2->vel[0] = -0xB;
       effect_spawn_sparks_at(kZeroVector, 0x14, 0xF0, 0x1E0, 0x18, 0xB4, 0xE, 1, 0x2EE, 0);
       effect_spawn_sparks_at(kZeroVector, 0x14, 0x140, 0, 0x50, 0x78, 5, 3, 0x154, 0);
       effect_spawn_sparks_at(kZeroVector, 0x14, 0x1E0, 0, 0x40, 0x78, 4, 4, 0x154, 0);

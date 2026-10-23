@@ -141,9 +141,10 @@ bool draw_shimmer(SpellCast* sc) {
     }
     wave_x[1] = sc->s24 + 0x400;
     base_y += 0x50;
-    // ORIGINAL BUG? (to review): the second row's y phase comes from the x phase (s24 + 0x200),
-    // not from s30 as the first row's does.
-    wave_y[1] = sc->s24 + 0x200;
+    // ORIGINAL BUG (original_bugs.md S9): the second row's y phase comes from the x phase,
+    // not from s30 as the first row's does:
+    //   wave_y[1] = sc->s24 + 0x200;
+    wave_y[1] = sc->s30 + 0x200;
     code = scale_colour(0x808080, sc->s34 / 2) | 0x2E000000;
   }
   if ((g.flags & 4) != 0) return false;

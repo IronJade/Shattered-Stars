@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "core/types.h"
 
@@ -23,7 +24,26 @@ struct KeyEvent {
   bool down = false;
 };
 
+// How the game window opens (config.ini's display keys, launcher/settings.h).
+enum class WindowMode { kWindowed, kBorderless, kFullscreen };
+
+struct WindowOptions {
+  WindowMode mode = WindowMode::kWindowed;
+  int width = 960, height = 720;  // the windowed size (shrunk to fit the display)
+  // Exclusive fullscreen: the display mode closest to this (0 x 0: the desktop's).
+  int fullscreen_width = 0, fullscreen_height = 0;
+  float refresh = 0;  // Hz; 0: any
+  int monitor = 1;    // 1 = the primary display, then the others (display_order())
+  bool vsync = true;
+};
+
+// The displays as the settings number them: the primary one first, then the others in
+// SDL's order (SDL_DisplayID values). Needs the video subsystem.
+std::vector<u32> display_order();
+
 // SDL3 window with an OpenGL 3.3 core context that presents an RGBA image.
+// F11 or Alt+Enter switches between the window and full screen (the configured
+// fullscreen kind, or borderless when the window mode is windowed).
 class Window {
  public:
   Window() = default;
@@ -31,7 +51,13 @@ class Window {
   Window(const Window&) = delete;
   Window& operator=(const Window&) = delete;
 
-  bool create(const std::string& title, int width, int height, std::string* error);
+  bool create(const std::string& title, const WindowOptions& options, std::string* error);
+  bool create(const std::string& title, int width, int height, std::string* error) {
+    WindowOptions options;
+    options.width = width;
+    options.height = height;
+    return create(title, options, error);
+  }
 
   // Handles pending events; returns false once the window should close.
   // 'on_key' receives key presses for tools such as the viewer.
@@ -58,6 +84,7 @@ class Window {
 
  private:
   bool next_event(bool& open, KeyEvent& out);
+  void set_fullscreen(bool on);
 
   SDL_Window* window_ = nullptr;
   SDL_Gamepad* gamepad_ = nullptr;  // the last one connected

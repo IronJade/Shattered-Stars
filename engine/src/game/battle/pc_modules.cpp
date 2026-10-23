@@ -20,6 +20,7 @@ std::unique_ptr<PartyUnit> pc_ernest_create();  // pc_ernest.cpp
 std::unique_ptr<PartyUnit> pc_chisato_create();  // pc_chisato.cpp
 std::unique_ptr<PartyUnit> pc_precis_create();   // pc_precis.cpp
 std::unique_ptr<PartyUnit> pc_opera_create();    // pc_opera.cpp
+std::unique_ptr<PartyUnit> pc_ashton_create();   // pc_ashton.cpp
 
 namespace {
 
@@ -60,6 +61,7 @@ std::unique_ptr<PartyUnit> pc_module_create(int character) {
     case 11: return pc_noel_create();
     case 6: return pc_precis_create();
     case 9: return pc_opera_create();
+    case 7: return pc_ashton_create();
     case 12: return pc_chisato_create();
     default:
       runtime::Runtime::get().log_once("battle-module-" + std::to_string(character),

@@ -81,6 +81,19 @@ class Gpu {
   // The console dithers every line (mono or gouraud) when dithering is on; PCSX-Redux's
   // software renderer dithers none. False matches PCSX-Redux for reference comparisons.
   bool dither_lines = true;
+  // The console dithers a semi-transparent gouraud pixel to 5 bits and then blends it;
+  // PCSX-Redux's software renderer blends the 8-bit colour with the background expanded
+  // to 8 bits and then dithers. True matches PCSX-Redux for reference comparisons
+  // (docs/notes/gpu_accuracy.md); the game keeps the hardware order.
+  bool blend_before_dither = false;
+  // The console saturates a modulated texel to 5 bits before blending it; PCSX-Redux's
+  // software renderer blends the unsaturated value (up to 62). True matches PCSX-Redux for
+  // reference comparisons (docs/notes/gpu_accuracy.md); the game keeps the hardware's.
+  bool blend_unsaturated_modulation = false;
+  // Captures (display_to_rgba / vram_to_rgba) expand 5-bit colour to 8 bits by bit
+  // replication (v << 3 | v >> 2); true writes v << 3, as PCSX-Redux's raw captures are,
+  // so 8-bit comparisons do not see the expansion as a brightness offset.
+  bool capture_shift = false;
 
  private:
   struct Vertex {

@@ -37,7 +37,7 @@ struct Sweep {
   bool started = false;  // the current entry left free play at least once
   bool have_snapshot = false;
   std::vector<Entry> entries;
-  std::vector<u8> block, party, records, inventory;
+  std::vector<u8> block, party, records, inventory, config;
   u32 standins = 0, unknown = 0;
   const char* standin_name = nullptr;
   int last_map_seen = -1;
@@ -60,12 +60,14 @@ void say(const char* fmt, ...) {
   std::fflush(stderr);
 }
 
-// Free play: the player has control and no event, menu, fade or window is running.
+// Free play: the player has control and no event, menu, fade or window is running. The
+// map's main thread may be inside a function (some maps run a loop while the player walks);
+// events start then too, as vm_thread_update only looks at control, the active trigger and
+// a running talk.
 bool idle(const Field* f) {
   const ScriptCtx* ctx = g_script_vm;
   if (f->state != 0 || ctx == nullptr) return false;
-  if (ctx->depth != 0 || ctx->active_trigger != -1 || ctx->talk_active != 0 || ctx->wait_state != 0 || ctx->sync != 0)
-    return false;
+  if (ctx->active_trigger != -1 || ctx->talk_active != 0 || ctx->wait_state != 0 || ctx->sync != 0) return false;
   if (field_state_s16(0x10) == -1) return false;
   if (fade_is_active(field_fade(), -1)) return false;
   if (msg_system() != nullptr) {
@@ -75,19 +77,42 @@ bool idle(const Field* f) {
   return true;
 }
 
-// Input: while something runs, Cross every 8 frames (Circle every fourth press), scheduled
-// 600 frames ahead so that menus' own loops keep getting it; none in free play.
-void schedule_input(bool press) {
+// Input. In the field: Cross when a window waits for the button or a choice is up, and
+// otherwise every 64 frames while the player has no control (some waits read the pad
+// directly); not otherwise while the player has control, where a press as an event ends
+// would start a new talk. In a menu's own loop (event_sweep_menu_frame): Circle every 8 frames, to leave
+// it; the presses are scheduled ahead since field_update does not run there.
+void press_at(u64 v, u16 button) {
+  auto& in = runtime::Runtime::get().scripted_input;
+  in[v] = button;
+  in[v + 2] = 0;
+}
+
+void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
   auto& rt = runtime::Runtime::get();
   const u64 now = rt.vblanks();
   auto& in = rt.scripted_input;
   in.erase(in.upper_bound(now), in.end());
   in[now + 1] = 0;
-  if (!press) return;
-  // Anchored to the vblank count, so that rescheduling every frame keeps the same presses.
-  for (u64 v = now + 1; v <= now + 600; ++v) {
-    if (v % 8 == 0) in[v] = ((v / 8) % 4 == 3) ? 0x20 : 0x40;  // Circle : Cross
-    if (v % 8 == 2) in[v] = 0;
+  if (mode == 2) {
+    for (u64 v = now + 1; v <= now + 600; ++v) {
+      if (v % 8 == 0) press_at(v, 0x20);  // Circle
+    }
+    return;
+  }
+  if (mode != 1) return;
+  static u64 last_press = 0;
+  if (now < last_press + 6) return;
+  bool waiting = g_script_vm != nullptr && g_script_vm->wait_state == 9;
+  for (int i = 0; i < kMsgWindowCount && !waiting; ++i) {
+    if (MsgWindow* w = msg_window(i)) {
+      const int st = msg_window_get_state(w);
+      waiting = st == 6 || st == 7 || st == 8;
+    }
+  }
+  if (waiting || (now % 64 == 0 && field_state_s16(0x10) == -1)) {
+    press_at(now + 1, 0x40);  // Cross
+    last_press = now;
   }
 }
 
@@ -97,6 +122,7 @@ void snapshot() {
   g_sweep.party.assign(g.party, g.party + 0x300);
   g_sweep.records.assign(g.records, g.records + 0x680);
   g_sweep.inventory.assign(g.inventory, g.inventory + 0xC28);
+  g_sweep.config.assign(g.config, g.config + 0x2A0);
   g_sweep.have_snapshot = true;
 }
 
@@ -107,6 +133,7 @@ void restore() {
   std::memcpy(g.party, g_sweep.party.data(), 0x300);
   std::memcpy(g.records, g_sweep.records.data(), 0x680);
   std::memcpy(g.inventory, g_sweep.inventory.data(), 0xC28);
+  std::memcpy(g.config, g_sweep.config.data(), 0x2A0);
 }
 
 void collect_entries() {
@@ -121,7 +148,8 @@ void collect_entries() {
   }
   const int self = field_state_s16(0x10);
   for (int i = 0; i < 0xC2; ++i) {
-    if (i == self || !vm_svc_actor_exists(i)) continue;
+    // As field_try_talk: not the controlled actor, nor one flagged 0x20000 (no talking).
+    if (i == self || !vm_svc_actor_exists(i) || (vm_svc_actor_get_flags(i) & 0x20000) != 0) continue;
     const int talk = vm_svc_actor_get_talk_entry(i);
     if (talk != -1) out.push_back({'K', i, talk & 0xFFFF});
     const int pick = vm_svc_actor_get_pickpocket_entry(i);
@@ -130,6 +158,22 @@ void collect_entries() {
   std::string list;
   for (const Entry& e : out) list += std::string(" ") + e.kind + std::to_string(e.index) + "@" + std::to_string(e.code);
   say("entries %zu:%s", out.size(), list.c_str());
+}
+
+// The entry as the map has it now (the reload can set the map up differently): false when
+// it is gone.
+bool still_there(const Entry& e) {
+  ScriptCtx* ctx = g_script_vm;
+  switch (e.kind) {
+    case 'T': return ctx->triggers[e.index].active != 0 && ctx->triggers[e.index].code == ctx->code + e.code;
+    case 'P': return ctx->triggers[e.index].active != 0 && static_cast<u16>(ctx->triggers[e.index].private_action) == e.code;
+    case 'K':
+    case 'S':
+      if (!vm_svc_actor_exists(e.index) || (vm_svc_actor_get_flags(e.index) & 0x20000) != 0) return false;
+      return ((e.kind == 'K' ? vm_svc_actor_get_talk_entry(e.index) : vm_svc_actor_get_pickpocket_entry(e.index)) & 0xFFFF) ==
+             e.code;
+    default: return false;
+  }
 }
 
 void fire(const Entry& e) {
@@ -182,7 +226,16 @@ std::string vm_state(const Field* f) {
                 f->state, ctx ? ctx->wait_state : -1, ctx ? ctx->wait_param : -1,
                 ctx && ctx->ip && ctx->code ? static_cast<long>(ctx->ip - ctx->code) : -1L, ctx ? ctx->depth : -1,
                 ctx ? ctx->active_trigger : -1, ctx ? ctx->talk_active : -1, field_state_s16(0x10));
-  return line;
+  std::string out = line;
+  for (int i = 0; i < kMsgWindowCount; ++i) {
+    if (MsgWindow* w = msg_window(i)) {
+      char d[96];
+      std::snprintf(d, sizeof d, " w%d=%d(raw %d timer %d speed %d pages %d/%d off %d)", i, msg_window_get_state(w), w->state,
+                    w->timer, w->speed, w->page_read, w->page_write, w->page_offset);
+      out += d;
+    }
+  }
+  return out;
 }
 
 void finish_entry(const Field* f, const char* result) {
@@ -214,7 +267,7 @@ void reload(Field* f) {
 }  // namespace
 
 void event_sweep_menu_frame() {
-  if (g_sweep.phase == Phase::Run || g_sweep.phase == Phase::Settle) schedule_input(true);
+  if (g_sweep.phase == Phase::Run || g_sweep.phase == Phase::Settle) schedule_input(2);
 }
 
 void event_sweep_frame(Field* f) {
@@ -239,7 +292,7 @@ void event_sweep_frame(Field* f) {
   switch (s.phase) {
     case Phase::Settle:
       // The map's main script runs until the player has control (or it leaves the map).
-      schedule_input(!is_idle);
+      schedule_input(is_idle ? 0 : 1);
       if (map != s.map && f->state == 0 && is_idle) {
         say("main script left for map %d; settle %s", map, s.have_snapshot ? "(reload)" : "failed");
         if (!s.have_snapshot) {
@@ -269,17 +322,39 @@ void event_sweep_frame(Field* f) {
           runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
           return;
         }
-        // An entry's reload never settled: count it against the previous entry and go on.
+        // The reload never reached free play: the next entry is skipped (its own reload follows).
+        if (s.next < static_cast<int>(s.entries.size())) {
+          const Entry& e = s.entries[static_cast<size_t>(s.next)];
+          say("entry %d %c%d code %d start", s.next, e.kind, e.index, e.code);
+          say("entry %d %c%d end no free play frames %d standins 0 unknown_ops 0 | %s", s.next, e.kind, e.index, s.timer,
+              vm_state(f).c_str());
+          ++s.next;
+        }
+        if (s.next >= static_cast<int>(s.entries.size())) {
+          s.phase = Phase::Done;
+          say("done entries %zu", s.entries.size());
+          runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
+          return;
+        }
         reload(f);
-        s.timer = 0;
       }
       return;
     case Phase::Fire:
       if (s.next >= static_cast<int>(s.entries.size())) {
         s.phase = Phase::Done;
         say("done entries %zu", s.entries.size());
-        schedule_input(false);
+        schedule_input(0);
         runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
+        return;
+      }
+      if (!still_there(s.entries[static_cast<size_t>(s.next)])) {
+        const Entry& e = s.entries[static_cast<size_t>(s.next)];
+        say("entry %d %c%d code %d start", s.next, e.kind, e.index, e.code);
+        const bool actor = e.kind == 'K' || e.kind == 'S';
+        say("entry %d %c%d end gone frames 0 standins 0 unknown_ops 0 | now %s talk %d pick %d", s.next, e.kind, e.index,
+            actor ? (vm_svc_actor_exists(e.index) ? "exists" : "absent") : "trigger",
+            actor ? vm_svc_actor_get_talk_entry(e.index) : -1, actor ? vm_svc_actor_get_pickpocket_entry(e.index) : -1);
+        ++s.next;
         return;
       }
       fire(s.entries[static_cast<size_t>(s.next)]);
@@ -287,10 +362,15 @@ void event_sweep_frame(Field* f) {
       s.timer = 0;
       s.idle = 0;
       s.started = false;
-      schedule_input(true);
+      schedule_input(1);
       return;
     case Phase::Run: {
-      schedule_input(!is_idle);
+      schedule_input(is_idle ? 0 : 1);
+      static const int watch = [] {
+        const char* v = std::getenv("SS_EVENT_SWEEP_WATCH");
+        return v != nullptr ? std::atoi(v) : 0;
+      }();
+      if (watch > 0 && s.timer % watch == 0) say("watch | %s", vm_state(f).c_str());
       if (!is_idle) s.started = true;
       const char* result = nullptr;
       std::string moved;
@@ -312,7 +392,7 @@ void event_sweep_frame(Field* f) {
       return;
     }
     case Phase::Reload:
-      schedule_input(false);
+      schedule_input(0);
       if (f->state == 1 && !fade_is_active(field_fade(), -1)) {
         restore();  // field_update loads the map right after this
         s.phase = Phase::Settle;

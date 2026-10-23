@@ -19,6 +19,11 @@ namespace ss::runtime {
 // has no such file; boot_exe_data then returns null.
 bool boot_exe_open(disc::DiscImage& disc, std::string* error = nullptr);
 
+// The executable SYSTEM.CNF boots ("SCUS_944.21" on disc 1, "SCUS_944.22" on disc 2), which
+// is also the disc's game ID; empty when the disc has no SYSTEM.CNF. (Used by the launcher
+// to tell the player which disc an image is.)
+std::string boot_exe_name(disc::DiscImage& disc);
+
 // Byte at 'address' of the loaded image, or null outside it / with no executable.
 const u8* boot_exe_data(u32 address);
 

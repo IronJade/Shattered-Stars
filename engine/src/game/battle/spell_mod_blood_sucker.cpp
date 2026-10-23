@@ -52,7 +52,7 @@ void blood_sucker(SpellCast* sc) {
     // The glow on the gainer.
     BObj* o = &sc->obj;
     o->pos[0] = gainer->pos[0];
-    // ORIGINAL BUG? (to review): the height is y - (y << 13) (y * -0x1fff), surely meant as
+    // Original quirk (original_bugs.md S7, to decide): the height is y - (y << 13) (y * -0x1fff), surely meant as
     // y - (size y << 13) (the chest); right only for a unit standing at y 0.
     o->pos[1] = static_cast<s32>(static_cast<u32>(gainer->pos[1]) - (static_cast<u32>(gainer->pos[1]) << 13));
     o->colour_mode = 2;

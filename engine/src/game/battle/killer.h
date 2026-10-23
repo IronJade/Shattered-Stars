@@ -69,6 +69,9 @@ struct RibbonTrail : Task {
   void update() override;                              // ribbon_trail_update 0x80075a74
 };
 RibbonTrail* ribbon_trail_create(const BObj* src, u8 len, u32 rgb_a, u32 rgb_b);
+// battle_free_all: deletes the Afterimage / Ghost / RibbonTrail tasks still running (the
+// console drops the whole battle heap; the port frees them).
+void effect_tasks_free_all();
 
 // 0x8003a88c: animates (slot 26); at the end, or late in the end countdown, ends the move
 // (action kind 0x12 + slot 12), releases the bound effects and the camera look offset;

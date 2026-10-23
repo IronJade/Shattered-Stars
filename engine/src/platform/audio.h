@@ -17,6 +17,10 @@ namespace ss::platform {
 struct AudioOptions {
   bool device = false;          // open the default playback device
   std::filesystem::path wav;    // dump everything to this WAV file (empty: no dump)
+  // Master volume of the device's output, 0-100 (config.ini "volume"); the slider is
+  // perceptual (gain = (volume / 100)^2, so 50 is about -12 dB). The WAV dump always
+  // gets the SPU's output unchanged.
+  int volume = 100;
 };
 
 // Returns false (with 'error') if the device or the file can't be opened; the SPU

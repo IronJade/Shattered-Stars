@@ -202,6 +202,8 @@ SpellCast* spellcast_create(int kind, Unit* caster, Unit* target, int power, Spe
     sc->target = t;
     sc->power = power;
     sc->combo = static_cast<u8>(caster->clash);
+    if (std::getenv("SS_SPELL_TRACE") != nullptr)
+      std::fprintf(stderr, "[spell] battle frame %d spellcast slot %d kind %d combo %d\n", bg().battle_frames, i, kind, sc->combo);
     sc->cmd = 0;
     sc->module = nullptr;
     if (sc->data != nullptr) {

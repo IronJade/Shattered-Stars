@@ -14,6 +14,7 @@
 namespace ss::game::battle {
 
 struct Afterimage;
+struct RibbonTrail;
 
 // The stats record (the PartySlot layout, 0x60 bytes): the handoff-3 slot itself for
 // party members, a 0x60-byte block for monsters (built from the encounter pack).
@@ -128,6 +129,7 @@ struct Unit : Collider {
   Unit* last_attacker = nullptr;      // +0x1e8
   Sprite* status_icons[2] = {};       // +0x1ec
   Afterimage* effects[2] = {};        // +0x1f4: the bound afterimage trails (killer moves)
+  RibbonTrail* effect_trail = nullptr;  // +0x1f8 when a module binds a ribbon trail there (Ashton's move 1)
   u8* stats = nullptr;                // +0x1fc
 
   Unit();  // unit_create 0x8004dd30
@@ -329,11 +331,12 @@ struct PartyUnit : Unit {
   virtual int killer_move_cost(int) { return 0; }  // [35] MP cost of killer move 0 / 1 (character module)
   virtual int move_mp_cost(int) { return 0; }       // [36] MP cost of killer move index (character module)
   virtual void killer_move_state(int) {}  // [37] (the character module's killer moves)
-  virtual void play_move_voice(int) {}    // [39] pc_play_move_voice 0x8003ac70 (voice clips: TODO)
+  // [39] pc_play_move_voice 0x8003ac70: the voice of a killer move (slot 43 with move * 2).
+  virtual void play_move_voice(int move) { play_voice(move * 2); }
   virtual int forced_attack_choice() { return -1; }  // [45] pc_forced_attack_choice 0x8003bc40
   virtual void camera_follow_start(); // [38] pc_camera_follow_start 0x80037b9c
   virtual void spell_hook(int) {}     // [42] pc_spell_hook 0x8003bc38: after spell_cast (modules: voice lines)
-  virtual void play_voice(int) {}     // [43] pc_play_voice 0x8003ac38 (voice clips: TODO)
+  virtual void play_voice(int id);    // [43] pc_play_voice 0x8003ac38 (party_voice.cpp)
   void appear_update();               // 0x800362a8 pc_appear_update
 };
 // PartyUnit helpers.

@@ -670,8 +670,19 @@ void bobj_draw_shadow(BObj* o, s32 x0, s32 x1, s32 z0, s32 z1, u32 colour) {
     } else {
       code = 0x2F000000u;
     }
+  } else if (o->colour_mode == 1 || o->colour_mode == 2) {
+    // A tinted shadow follows the object's colour: each channel * rgb / 128, at most 0xff.
+    const u32 kr = o->rgb[0];
+    const u32 kg = o->colour_mode == 1 ? o->rgb[1] : o->rgb[0];
+    const u32 kb = o->colour_mode == 1 ? o->rgb[2] : o->rgb[0];
+    u32 r = (colour & 0xFF) * kr >> 7;
+    if (0xFF < r) r = 0xFF;
+    u32 gch = (colour & 0xFF00) * kg >> 7 & 0xFF00;
+    if (0xFF00 < gch) gch = 0xFF00;
+    u32 b = (colour & 0xFF0000) * kb >> 7 & 0xFF0000;
+    if (0xFF0000 < b) b = 0xFF0000;
+    code = r | gch | b | 0x2E000000u;
   } else {
-    // TODO(port): tinted shadows (colour & 0xffffff scaled by the colour mode).
     code = (colour & 0xFFFFFF) | 0x2E000000u;
   }
   const u16 tpage = alpha != 0xFF ? static_cast<u16>(alpha | 0xF) : 0x4F;

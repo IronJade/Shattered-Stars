@@ -119,9 +119,12 @@ void blade(Shot* s) {
         s->aux = 0;
         const Vec4 d = vec_direction(s->pos, s->owner->pos);
         s->vel[0] = d.x, s->vel[1] = d.y, s->vel[2] = d.z, s->extra34 = d.w;
-        // ORIGINAL BUG? (to review): only x is scaled to the blade's speed (0x28); y and z
-        // keep the unit vector, so the blade turning back flies almost flat along x.
+        // ORIGINAL BUG (original_bugs.md S5): only x is scaled to the blade's speed (0x28); y
+        // and z keep the unit vector, so the blade turning back flies almost flat along x:
+        //   s->vel[0] *= 0x28;
         s->vel[0] *= 0x28;
+        s->vel[1] *= 0x28;
+        s->vel[2] *= 0x28;
         return;
       }
       if (s->aux != 0) {
@@ -140,28 +143,31 @@ void blade(Shot* s) {
     if (s->p134 != 0) return;
   }
   if (s->aux != 0 && s->aux != 3) return;
-  // The hit. The console's frame keeps 4 units, 4 hit units and 4 points in a row: the hit
-  // list starts at the 5th unit (buf + 4), as here.
-  // ORIGINAL BUG? (to review): with more than 4 units in the box the list overwrites units
-  // 5-8 before they are read (a unit 5+ is replaced by an earlier one and skipped as already
-  // hit), and points 5-8 overrun the console's stack frame (the saved registers). The
-  // points passed on are the unfiltered ones (not lined up with the list).
-  Unit* buf[12] = {};
-  Unit** units = buf;
-  Unit** list = buf + 4;
+  // The hit.
+  // ORIGINAL BUG (original_bugs.md S4): the console's frame keeps 4 units, 4 hit units and
+  // 4 points in a row (the hit list starts at the 5th unit): with more than 4 units in the
+  // box the list overwrites units 5-8 before they are read, points 5-8 overrun the stack
+  // frame (the saved registers), and the points passed on are the unfiltered ones:
+  //   Unit* buf[12]; Unit** units = buf; Unit** list = buf + 4; ... (s, k, list, points, ...)
+  Unit* units[8] = {};
   Vec4 points[8] = {};
   collider_set_attack_box(s, 200, 200, 200);
   s->size[2] = 0x100;
   const int n = collider_attack_overlaps(s, units, points, s->p130);
   if (n == 0) return;
+  Unit* list[8] = {};
+  Vec4 list_points[8] = {};
   int k = 0;
   for (int i = 0; i < n; ++i) {
     Unit* u = units[i];
-    if (((s->hit_landed >> (u->slot & 0x1F)) & 1) == 0) list[k++] = u;
+    if (((s->hit_landed >> (u->slot & 0x1F)) & 1) == 0) {
+      list_points[k] = points[i];
+      list[k++] = u;
+    }
     s->hit_landed = static_cast<u8>(s->hit_landed | (1 << (units[i]->slot & 0x1F)));
   }
   if (k == 0) return;
-  shot_apply_damage(s, k, list, points, s->p128, 0x4B, 8, 0, 0x10);
+  shot_apply_damage(s, k, list, list_points, s->p128, 0x4B, 8, 0, 0x10);
   screen_shake2(3, 4, 4, 4, 0xC);
   s32 bits = static_cast<s16>(s->power / 0x1E) + 4;
   if (8 < bits) bits = 8;

@@ -185,6 +185,27 @@ console, how it was checked, and what is still missing.
   - The frames show the same vortex funnel (`draw_vortex`), the small lens flare
     (`lens_flare_draw_small`), the kind-0x11 fire rings and the damage numbers.
 
+- **Character modules and the party AI (the recipe).**
+  - Each module was checked one killer move at a time against a forced encounter-2 fight.
+    The Redux side runs `scratchpad/battle/queue_runs.sh CHAR NAME BYTE...`: run_victory.sh
+    with Claude's slot 0 turned into character CHAR (handoff 3 +0 = id), MP 200 and L1 = the
+    move byte (record +0xcc), with Cross every 45 vsyncs and L1 every 90.
+  - Pokes need hex values (`0x8/1`); explore.lua skips a plain `8/1` silently.
+  - The port side is `scratchpad/battle/pcrun.sh CHAR BYTE REF OUT`. It runs `SS_BATTLE_TICKS=1`
+    with the same pokes through `SS_BATTLE_POKE` (cross at 45i, l1 at 20 + 90i), then rngcmp
+    (CMP_D=7), unitcmp (D 7, the port's SS_ENEMY_TRACE) and framecmp (FRAMECMP_D=7).
+  - A module passes when the RNG totals are equal to the battle exit and the units differ
+    only where an HP change is sampled a frame apart (the port's trace prints from the first
+    enemy's think, Redux at the end of the frame).
+  - Verified this way: Claude (moves 0, 2, 5, 9), Ernest (all 8), Bowman (all 10), Dias (all
+    10).
+  - The party AI used a second member in slot 1. `SS_BATTLE_COPY` / explore.lua's `BW_COPY`
+    copy slot 0's stats and record to slot 1, then pokes set the id, class (+3), MP and
+    learned spells (record +0x3c..). See `scratchpad/battle/run_rena_ai.sh`,
+    `run_fighter_ai.sh` and `run_caster_ai.sh`.
+  - Rena healing a hurt Claude, Bowman fighting and Celine keeping away all match to the
+    exit.
+
 ## Not ported yet (in rough priority order)
 
 1. **Leftovers of the HUD and the result screen.**

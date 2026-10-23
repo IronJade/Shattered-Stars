@@ -10,6 +10,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
 #include "game/battle/killer.h"
+#include "game/battle/party_ai.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
@@ -1100,13 +1101,19 @@ void pc_ai_update(PartyUnit* u) {
     const bool ai = u->status_test(3, 0x2000) == 1 || g.config[0x181] == 1 || g.controlled_slot != u->slot;
     if (ai && u->airborne != 1) {
       const u8 k = u->st()->klass;
-      if (k < 9) todo("pc_ai_fighter 0x80038664");
-      else if (k == 9) todo("pc_ai_healer 0x80038114");
-      else if (k <= 0xC) todo("pc_ai_caster 0x80038328");
+      if (k < 9) pc_ai_fighter(u);
+      else if (k == 9) pc_ai_healer(u);
+      else if (k <= 0xC) pc_ai_caster(u);
     }
   } else {
+    // Forced to move (+0x11c bit 4): a run to a random point within 0x300.
     u->status_bits &= ~0x10u;
-    todo("unit_random_run 0x800541e8 (confused)");
+    if (!unit_random_run(u, 0x300, 0)) {
+      u->move_mode = 1;
+      u->action = 1;
+      u->start_approach();
+      u->action_kind = 0;
+    }
   }
 }
 

@@ -18,6 +18,8 @@ battle,0x8006b1e4,spells_celine,u8[21],Celine class spell list,confirmed,levelup
 battle,0x8006b1fc,spells_noel,u8[21],Noel class spell list,confirmed,levelup_learn_skills
 battle,0x8006b220,g_km_params_claude,s16[][2],Killer-move s16 pair per move (1-based) copied to unit+0x2de/+0x2e0 (likely the move's distance window); other characters: Bowman 0x8006b258 Dias 0x8006d4b8 Precis 0x8006b298 Ashton 0x8006b2cc Opera 0x8006b300 Ernest 0x8006b330 Chisato 0x8006b358,likely,pc_setup_killer_moves 0x80084874 / pc_killer_move_table 0x800849c0
 battle,0x8006b28b,g_killer_mp_precis,u8[],Precis's killer-move MP costs by move byte (1-based; read by her module's cost functions through unit_mp_cost),confirmed,#2155 0x801ee0fc / 0x801ee194
+battle,0x8006b2bf,g_killer_mp_ashton,u8[],Ashton's killer-move MP costs by move byte (1-based; unit_mp_cost),confirmed,#2147 0x801ee0cc / 0x801ee164
+battle,0x8006b2f3,g_killer_mp_opera,u8[],Opera's killer-move MP costs by move byte (1-based; unit_mp_cost),confirmed,#2153 0x801ee0a8 / 0x801ee140
 battle,0x8006b34f,g_killer_mp_chisato,u8[],Chisato's killer-move MP costs by move byte (1-based; unit_mp_cost),confirmed,#2159 0x801ee1ac / 0x801ee244; Redux (MP 200 -> 195 after move 1)
 battle,0x8006b377,item_target_class,u8[],Item effect class -> menu action (0/1/5 member select 3/4/5; 2 enemy target; 3/4 immediate),likely,item_menu_confirm
 battle,0x8006b3dc,camera_set_mode_jt,u32[17],Jump table of camera_set_mode (mode-1 -> setup),confirmed,camera_set_mode
@@ -925,3 +927,7 @@ menu_0bce,0x80082c5a,g_rename_text_line,s16,First texel row of the current text 
 menu_0bce,0x80082c5c,g_rename_strings,u8 *,"Page pack block 0: {u16 id, u16 offset} pairs (100-111 family names, 0x78-0x7c the keyboard labels)",confirmed,"rename_screen, rename_text_find"
 menu_0bce,0x80082c60,g_rename_font,u8 *,"Page pack block 1: the 1-bit font (100 glyphs, 12 rows)",confirmed,"rename_screen, rename_text_draw"
 menu_0bce,0x80082c64,g_rename_text_pixels,u8 *,"The 4-bit line buffer (0x6c00 bytes), uploaded to VRAM (0x140, 0x28)",confirmed,"rename_text_draw, rename_text_frame_upload"
+battle_pc2147,0x801f1e2c,k_ashton_dart_heights,s8[3],"Move 3: dart pair heights (units, added to y - 0x60)",confirmed,0x801eecf8
+battle_pc2147,0x801f1fc4,k_ashton_strong_frame,u8[3],Move 0: the frame from which the swing hits with power 0x100 (by charge level),confirmed,0x801ee424
+battle_pc2147,0x801f1fc8,k_ashton_glow_dx,s8[3],Move 4: x offsets of the glow quads' outer edge per triangle corner,confirmed,0x801eef60
+battle_pc2147,0x801f1fcc,k_ashton_glow_dz,s8[3],Move 4: z offsets of the glow quads' outer edge per triangle corner,confirmed,0x801eef60

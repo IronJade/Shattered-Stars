@@ -80,12 +80,10 @@ def run_once(args, m, skip, log):
     return lines, p.returncode, hung
 
 
-def sweep_map(args, m):
-    result = {"map": m, "entries": [], "events": [], "found": None, "notes": []}
-    skip = 0
-    with open(os.path.join(args.out, f"map_{m:03d}.log"), "w") as log:
-        for attempt in range(40):
-            lines, code, hung = run_once(args, m, skip, log)
+def parse_run(result, lines, code, hung):
+    """Folds one process's output into result; returns the entry to resume from, or None when done."""
+    if True:
+        if True:
             current = None
             last_ended = None
             port_lines = []
@@ -117,7 +115,7 @@ def sweep_map(args, m):
                     else:
                         result.setdefault("port", []).append(line)
             if done:
-                break
+                return None
             # Died or hung: blame the entry in progress and go on after it.
             what = "hang" if hung else f"crash (exit {code})"
             if current is not None:
@@ -129,16 +127,49 @@ def sweep_map(args, m):
                 skip = last_ended + 1
             else:
                 result["notes"].append(f"{what} before the map settled")
-                break
+                return None
             if result["found"] is not None and skip >= result["found"]:
+                return None
+            return skip
+
+
+def new_result(m):
+    return {"map": m, "entries": [], "events": [], "found": None, "notes": []}
+
+
+def sweep_map(args, m):
+    result = new_result(m)
+    skip = 0
+    with open(os.path.join(args.out, f"map_{m:03d}.log"), "w") as log:
+        for attempt in range(40):
+            lines, code, hung = run_once(args, m, skip, log)
+            skip = parse_run(result, lines, code, hung)
+            if skip is None:
                 break
+    return result
+
+
+def reparse_map(path, m):
+    """results from a map log written earlier (runs end with a [driver] exit line)."""
+    result = new_result(m)
+    lines = []
+    for line in open(path, errors="replace"):
+        line = line.rstrip("\n")
+        mo = re.match(r"\[driver\] exit (-?\d+)( \(hang)?", line)
+        if mo:
+            parse_run(result, lines, int(mo.group(1)), mo.group(2) is not None)
+            lines = []
+        else:
+            lines.append(line)
+    if lines:
+        parse_run(result, lines, None, True)
     return result
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--bin", required=True)
-    ap.add_argument("--disc1", required=True)
+    ap.add_argument("--bin")
+    ap.add_argument("--disc1")
     ap.add_argument("--disc2")
     ap.add_argument("--out", required=True)
     ap.add_argument("--maps", default="0-826")
@@ -146,12 +177,21 @@ def main():
     ap.add_argument("--frames", type=int, default=3600)
     ap.add_argument("--stall", type=float, default=120.0, help="seconds without a [sweep] line before a hang is called")
     ap.add_argument("--card", default=None, help="memory card image (a scratch copy)")
+    ap.add_argument("--reparse", action="store_true", help="rebuild results.json from the map logs in --out")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     if args.card is None:
         args.card = os.path.join(args.out, "card.mcd")
     maps = parse_maps(args.maps)
     results = {}
+    if args.reparse:
+        for m in maps:
+            path = os.path.join(args.out, f"map_{m:03d}.log")
+            if os.path.exists(path) and os.path.getsize(path) > 0:
+                results[m] = reparse_map(path, m)
+        with open(os.path.join(args.out, "results.json"), "w") as f:
+            json.dump(results, f, indent=1)
+        return 0
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         for r in pool.map(lambda m: sweep_map(args, m), maps):
             results[r["map"]] = r

@@ -162,7 +162,7 @@ void delay(SpellCast* sc) {
         if (sp == nullptr) continue;
         const s32 dx = rng_between_fixed(t->size[0] * -7, t->size[0] * 7);
         const s32 dy = rng_between_fixed(t->size[1] * -7, t->size[1] * -4);
-        // ORIGINAL BUG? (to review): both bounds are -4 times the depth (the z spread is
+        // Original quirk (original_bugs.md S16, to decide): both bounds are -4 times the depth (the z spread is
         // fixed; -4 .. 4 meant?).
         const s32 dz = rng_between_fixed(t->size[2] * -4, t->size[2] * -4);
         sprite_set_pos(sp, t->pos[0] + dx, t->pos[1] + dy, t->pos[2] + dz);

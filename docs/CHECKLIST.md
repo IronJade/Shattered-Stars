@@ -134,3 +134,11 @@ from config+0x45).
 - [x] World edits, part 1: script patches applied as maps load (`game/field/mods.cpp`; `*.patch` files in `mods/` next to config.ini, `--mods DIR`, `SS_MODS_DIR`), each checked against the original word; `tools/so2_mod.py` lists a map's chests and doors from the disc image and writes patches to change chest contents (items / Fol) and door targets. Verified in the smoke script (Arlia's chest pays 5000 Fol, the store door leads to map 33)
 - [x] Debug console (`--debug`, `game/field/debug_console.cpp`): terminal commands run on the game thread between frames — where, warp (a map's own spot or X Y Z), Fol, items, heal, script flags and globals, forced battles, noclip — and a live status line in the window title
 - [x] World edits, part 2: `item` / `shop` / `enemy` data overrides in the mods files (item records wherever the game unpacks them, shop stock, enemy stats per type as a battle loads), each checked against the original value and logged; `tools/so2_mod.py items / shops / enemies` read the originals from the disc; with `--debug` an in-window overlay shows the console's status and output (smoke: mod_shop, mod_enemy, debug_console)
+
+## 6. Archipelago (plan: `docs/archipelago_plan.md`)
+
+- [ ] Phase 1, foundations: `tools/ap_extract.py` location / item tables, region notes, `game/ap` skeleton, the seed file and the save sidecar
+- [ ] Phase 2, first playable: chest and gift shuffle in story mode, goal = final boss, the native client (apclientpp), receiving with notices, setup's Archipelago section
+- [ ] Phase 3: character items, boss and drop checks, DeathLink, traps, EXP / Fol / encounter options
+- [ ] Phase 4: open world (area keys, the Expel teleporter), shop shuffle, then entrance shuffle
+- [ ] Phase 5: a custom .apworld release, then the pull request for official support

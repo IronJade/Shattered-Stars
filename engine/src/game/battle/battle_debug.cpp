@@ -228,6 +228,26 @@ Program battle_debug_start(const std::string& spec, const std::string& end) {
       }
     }
   }
+  if (const char* copies = std::getenv("SS_BATTLE_COPY"); copies != nullptr) {
+    // Debugging: TAG:SRC:DST:LEN,... copies LEN bytes inside handoff TAG (after
+    // SS_BATTLE_STRONG, before the pokes), e.g. "3:0:0x60:0x60,4:0:0xd0:0xd0" gives party
+    // slot 1 a copy of slot 0's stats and record (explore.lua's BW_COPY does the same).
+    std::string list(copies);
+    size_t at = 0;
+    while (at < list.size()) {
+      size_t stop = list.find(',', at);
+      if (stop == std::string::npos) stop = list.size();
+      const std::string item = list.substr(at, stop - at);
+      at = stop + 1;
+      unsigned tag = 0;
+      int src = 0, dst = 0, len = 0;
+      if (std::sscanf(item.c_str(), "%u:%i:%i:%i", &tag, &src, &dst, &len) != 4) continue;
+      auto* block = static_cast<u8*>(handoff_get(reg, static_cast<int>(tag)));
+      if (block == nullptr || src < 0 || dst < 0 || len <= 0) continue;
+      std::memmove(block + dst, block + src, static_cast<size_t>(len));
+      std::fprintf(stderr, "[battle] copy handoff %u +0x%x -> +0x%x (0x%x bytes)\n", tag, src, dst, len);
+    }
+  }
   if (const char* pokes = std::getenv("SS_BATTLE_POKE"); pokes != nullptr) {
     // Debugging: TAG:OFFSET=VALUE/SIZE,... written into handoff TAG (as a Redux BW_POKE
     // after field_exit), e.g. 4:0xcc=10/1 gives slot 0 killer move byte 10 on L1.

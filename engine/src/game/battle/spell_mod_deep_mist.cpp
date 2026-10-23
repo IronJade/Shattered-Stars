@@ -54,9 +54,8 @@ void draw_mist(SpellCast* sc) {
 }
 
 // 0x8008cc00: the handler (power: the roll's chance, power / 16 + 180).
-// ORIGINAL BUG? (to review): it neither stops in the pause (g_battle_flags 4) nor calls
-// spellcast_timer_tick, so the wait of step 0 holds nothing (step 1 runs on the next frame)
-// and the steps run on during the pause.
+// Original quirk (original_bugs.md S19, to decide): it never calls spellcast_timer_tick, so
+// the wait of step 0 holds nothing (step 1 runs on the next frame).
 // 0: dim, flash 0x40, the camera over the caster's side, wait 30. 1 (data loaded): the mist
 // from 0, a hum. 2: it thickens (4 a tick to 0x80); a wisp round the target every 6 -
 // power / 30 ticks (at least 2); after 120 ticks the hum fades. 3: the mist fades. 4:
@@ -66,6 +65,9 @@ void deep_mist(SpellCast* sc) {
   BattleGlobals& g = bg();
   Unit* c = sc->caster;
   if (static_cast<u32>(sc->step - 2) < 2) draw_mist(sc);
+  // ORIGINAL BUG (original_bugs.md S11): no pause test: the steps run on during the pause
+  // (g_battle_flags 4), rolls and sprites included.
+  if ((g.flags & 4) != 0) return;
   switch (sc->step) {
     case 0:
       spellcast_dim_begin(sc, c->is_enemy);

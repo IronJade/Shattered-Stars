@@ -15,8 +15,8 @@ installed Redux was built from (f63cfc34, October 2026).
 | Gouraud / UV interpolation | planes per triangle, 12-bit gradients, half-unit round | exact rational, truncated: 3244 / 18733 / 4185 pixels off on gpu/triangle, 15860 on the UV rows | edge walker with 16.16 span gradients: 310 / 1848 / 162, 276 off | identical (0) |
 | Coverage (fill rule, quad seams) | | identical | | identical |
 | Flat blending, the four modes | | identical (gpu/quad, gpu/transparency) | | identical |
-| Order of dithering and blending | dither and saturate to 5 bits, then blend 5-bit values (gpu/lines: the transparent dithered gouraud polyline is `(B + Q) >> 1` of the opaque one's dithered value Q at every pixel; 8 channels are impossible if blending came first) | as the hardware | blends the 8-bit colour with the background expanded to 8 bits, then dithers | as the hardware |
-| Modulated colour in a blend | saturated (the blend is 5-bit) | saturated | not saturated: up to 62 enters B - F, B + F, (B + F) / 2 | saturated |
+| Order of dithering and blending | dither and saturate to 5 bits, then blend 5-bit values (gpu/lines: the transparent dithered gouraud polyline is `(B + Q) >> 1` of the opaque one's dithered value Q at every pixel; 8 channels are impossible if blending came first) | as the hardware | blends the 8-bit colour with the background expanded to 8 bits, then dithers | as the hardware (Redux's order under `--reference-dither`: `Gpu::blend_before_dither`) |
+| Modulated colour in a blend | saturated (the blend is 5-bit) | saturated | not saturated: up to 62 enters B - F, B + F, (B + F) / 2 | saturated (unsaturated under `--reference-dither`: `Gpu::blend_unsaturated_modulation`) |
 | Line walk and line dithering | gpu/lines (below) | DDA, nearest pixel; gouraud lines dithered | Bresenham octants; no line dithered | identical (0) |
 | LoadImage from a misaligned address | (DMA: MADR bits 0-1 ignored) | took the address as given | aligns down | aligns down (`psyq::dma_source`) |
 
@@ -52,6 +52,26 @@ cleanly, but not in general.
   one step off remain where Redux's walker differs from the hardware model.
 - Polygons: a quad is dropped whole when any of the five edges of its two triangles
   spans 1024 columns or 512 rows (Redux's notes, checked on three console models).
+- Battle, semi-transparent dithered gouraud (phase 5): the result screen's last fade (the
+  subtractive POLY_G4 band of battle_fade_task, abr 2, DR_MODE tpage 0x40), Precis's move
+  9 sphere (additive lit POLY_G4), her move 3 vortex fading out and Opera's move 8 light
+  sphere differed from Redux by up to 13% of the 4x4 blocks; the best-matching port frame
+  seemed to drift (b-7 to b-5) because the fade's steps land differently. It is the order
+  in the table above. `--reference-dither` now also sets `Gpu::blend_before_dither` (blend
+  the 8-bit colour with the background expanded to 8 bits, then the same dither table)
+  and `Gpu::blend_unsaturated_modulation`; with them all of these match Redux (no frame
+  above 1%: prec_b1 / b10, the Dias result fades). Redux's own Dither16 rounding after the
+  blend matched worse than the hardware table. The game keeps the hardware's behaviour.
+- Captures: `Gpu::capture_shift` (also set by `--reference-dither`) writes 5-bit colour as
+  `v << 3`, as Redux's raw captures are; with bit replication (`v << 3 | v >> 2`, the
+  default) an 8-bit comparison sees the port about 2.5% "brighter" (prec_b1 b600 compared
+  as 5-bit values: 72930 equal green values, 725 one step up, 475 down). framecmp's `// 8`
+  comparison was never affected.
+- Dias's tinted sword-wave copies (olive in Redux, brownish in the port; code 0x2e, tpage
+  0x0f, mode 0): not the GPU. They are afterimage copies, and the port draws each copy once
+  (original_bugs.md B2 fixed) where the original draws half of them twice and never the
+  others, so fewer overlap. A build with the original copy order and the reference
+  switches matches Redux there (dias_l4 b390-410 and b740-780: no frame above 1%).
 
 ## Lines
 

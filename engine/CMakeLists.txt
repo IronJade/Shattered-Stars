@@ -203,6 +203,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/pc_modules.cpp
   src/game/battle/pc_casters.cpp
   src/game/battle/pc_claude.cpp
+  src/game/battle/party_ai.cpp
   src/game/battle/pc_bowman.cpp
   src/game/battle/pc_dias.cpp
   src/game/battle/pc_ernest.cpp
@@ -210,10 +211,12 @@ target_sources(ss_game PRIVATE
   src/game/battle/pc_module_util.cpp
   src/game/battle/pc_precis.cpp
   src/game/battle/pc_opera.cpp
+  src/game/battle/pc_ashton.cpp
   src/game/battle/enemy_support.cpp
   src/game/battle/enemy_shots.cpp
   src/game/battle/bload.cpp
   src/game/battle/voice_player.cpp
+  src/game/battle/party_voice.cpp
   src/game/battle/enemy_families.cpp
   src/game/battle/enemy_modules.cpp
   src/game/battle/enemy_mod_guardian.cpp
@@ -331,14 +334,67 @@ target_include_directories(ss_platform PUBLIC src)
 target_link_libraries(ss_platform PUBLIC SDL3::SDL3)
 target_compile_options(ss_platform PRIVATE ${SS_WARNINGS})
 
+# The launcher library (port feature): config.ini, finding and identifying the player's
+# discs, and starting one program from the other. The game and the setup program share it.
+add_library(ss_launcher STATIC
+  src/launcher/config.cpp
+  src/launcher/discs.cpp
+  src/launcher/process.cpp
+  src/launcher/settings.cpp)
+target_include_directories(ss_launcher PUBLIC src)
+# It uses ss_core's disc reader, but doesn't declare it: that would move ss_core after
+# ss_platform on link lines, and ss_core's runtime needs the platform window. Programs
+# list ss_launcher before ss_core (ss_game brings ss_core).
+target_link_libraries(ss_launcher PUBLIC SDL3::SDL3)
+target_compile_options(ss_launcher PRIVATE ${SS_WARNINGS})
+
 add_executable(shattered-stars src/main.cpp)
-target_link_libraries(shattered-stars PRIVATE ss_game)
+target_link_libraries(shattered-stars PRIVATE ss_game ss_launcher)
 target_compile_options(shattered-stars PRIVATE ${SS_WARNINGS})
 if(WIN32)
   add_custom_command(TARGET shattered-stars POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:shattered-stars>
             $<TARGET_FILE_DIR:shattered-stars>
     COMMAND_EXPAND_LISTS)
+endif()
+
+# The setup program (port feature): the players' settings window (discs, display, sound,
+# memory cards, mods), built on Dear ImGui 1.92.9b (MIT licence), fetched and pinned by
+# SHA-256 like SDL. shattered-stars-setup; setup.exe on Windows, a GUI program (no console).
+option(SS_BUILD_SETUP "Build the setup program (fetches Dear ImGui)" ON)
+if(SS_BUILD_SETUP)
+  include(FetchContent)
+  FetchContent_Declare(imgui
+    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.9b.tar.gz
+    URL_HASH SHA256=21d8a0a565e85dce943e375db00812c2f3f0ab21f3f0f7964e364a63422d7f99
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  FetchContent_MakeAvailable(imgui)
+  add_library(ss_imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp)
+  target_include_directories(ss_imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+                                              ${imgui_SOURCE_DIR}/misc/cpp)
+  target_compile_definitions(ss_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+  target_link_libraries(ss_imgui PUBLIC SDL3::SDL3 ${CMAKE_DL_LIBS})
+
+  add_executable(shattered-stars-setup WIN32 src/setup/setup_main.cpp src/setup/setup_ui.cpp)
+  if(WIN32)
+    set_target_properties(shattered-stars-setup PROPERTIES OUTPUT_NAME setup)
+  endif()
+  target_link_libraries(shattered-stars-setup PRIVATE ss_launcher ss_core ss_platform ss_imgui)
+  target_compile_options(shattered-stars-setup PRIVATE ${SS_WARNINGS})
+  if(WIN32)
+    add_custom_command(TARGET shattered-stars-setup POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:shattered-stars-setup>
+              $<TARGET_FILE_DIR:shattered-stars-setup>
+      COMMAND_EXPAND_LISTS)
+  endif()
 endif()
 
 enable_testing()
@@ -372,7 +428,8 @@ target_sources(ss_game_tests PRIVATE tests/test_field_effects.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_worldmap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_pad.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_save.cpp)
-target_link_libraries(ss_game_tests PRIVATE ss_game)
+target_sources(ss_game_tests PRIVATE tests/test_launcher.cpp)
+target_link_libraries(ss_game_tests PRIVATE ss_game ss_launcher)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)
 

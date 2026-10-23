@@ -1,8 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include "core/types.h"
 #include "game/battle/battle.h"
 #include "game/battle/shot.h"
+#include "runtime/libgte.h"
 
 // Resident effect helpers the spells (and the monsters' spells) use that nothing else
 // ported needed so far.
@@ -56,6 +59,20 @@ void draw_wave_grid(const s32 uv[4], const s32 rect[4], const s32 wave_x[3], con
 // unit_draw_model lifts grounded units (not flying, not airborne 1) by fn(x >> 12, 0, z >> 12)
 // (20.12) for the draw.
 extern s32 (*g_stage_height_fn)(s32 x, s32 y, s32 z);
+// 0x80061694 model_find_vertices_near's 12-byte entry: a vertex of a battle model (its word
+// offset in the model) and its xz distance to each point.
+struct NearVertex {
+  s32 offset = 0;
+  s16 dist[4] = {};
+};
+// 0x800627c0 sv_distance_xz: sqrt(dx^2 + dz^2) of a model's inline SVECTOR and a point (GTE
+// SQR: 16-bit inputs).
+s32 sv_distance_xz(const u8* a, const psyq::SVECTOR& b);
+// 0x80061694 model_find_vertices_near: every vertex of the battle model's primitive sections
+// whose xz distance to points[0] is at most 12000, with its distance to each point (out
+// cleared first; the console's 0xf000-byte buffer is unbounded). Returns the count.
+int model_find_vertices_near(std::vector<NearVertex>& out, const std::vector<u8>& model, const psyq::SVECTOR* points,
+                             int npoints);
 // 0x80080c7c (#1984.0) voice_thank_healer: a healed member may thank the healer (an RNG draw
 // when it likes the healer enough; spell_shots.cpp).
 void voice_thank_healer(Unit* healer, Unit* target);

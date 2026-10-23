@@ -87,6 +87,8 @@ bool audio_open(const AudioOptions& options, std::string* error) {
       if (error) *error = std::string("SDL audio device: ") + SDL_GetError();
       return false;
     }
+    const float level = static_cast<float>(std::clamp(options.volume, 0, 100)) / 100.0f;
+    SDL_SetAudioStreamGain(g.stream, level * level);
     SDL_ResumeAudioStreamDevice(g.stream);
     g.stats = std::getenv("SS_AUDIO_STATS") != nullptr;
   }

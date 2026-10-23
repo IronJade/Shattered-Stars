@@ -380,7 +380,7 @@ void gremlin_lair(SpellCast* sc) {
     bobj_anim_draw(&sc->obj, g.flags & 0xC);
   }
   if ((g.flags & 4) != 0) return;
-  // ORIGINAL BUG? (to review): the handler never calls spellcast_timer_tick, so the waits of
+  // Original quirk (original_bugs.md S17, to decide): the handler never calls spellcast_timer_tick, so the waits of
   // steps 2, 3, 4 and 6 hold nothing (each step runs on the next frame); only the last one
   // delays the end, once the cast is finished.
   switch (sc->step) {
@@ -490,7 +490,7 @@ void gremlin_lair(SpellCast* sc) {
     }
     case 6:
       sc->obj.anim = 10;
-      // ORIGINAL BUG? (to review): step 7 is meant to come next, but spellcast_wait below
+      // Original quirk (original_bugs.md S17, to decide): step 7 is meant to come next, but spellcast_wait below
       // advances the step once more, so the wait for the effects (step 7) is skipped.
       sc->step = 7;
       bsfx_play_ui(0x28);

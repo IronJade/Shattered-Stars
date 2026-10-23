@@ -65,7 +65,18 @@ bool lzss(const u8* src, size_t src_len, std::vector<u8>& out, size_t size, bool
       continue;
     }
     const size_t length = nibble + 3;
-    if (distance > d) return fail(error, "SLZ: reference before the start of the output");
+    if (distance > d) {
+      // A reference before the start of the output. The console copies whatever memory
+      // lies before its buffer; the compressor matched zeros there (an LZSS window that
+      // starts out cleared). Five music banks have one, near their end: #2646 and #2678
+      // within the declared size (the sequence's trailing zeros), #2661, #2662 and #2733
+      // once the stream, which lacks its end marker, runs past it into the bank. Read
+      // as zeros.
+      room(length);
+      for (size_t k = 0; k < length; ++k, ++d) out[d] = d >= distance ? out[d - distance] : 0;
+      s += 2;
+      continue;
+    }
     room(length);
     for (size_t k = 0; k < length; ++k, ++d) out[d] = out[d - distance];
     s += 2;

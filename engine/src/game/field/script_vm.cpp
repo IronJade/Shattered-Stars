@@ -512,6 +512,13 @@ restart:
       ++g_vm_stats.step_limit_hits;
       return;
     }
+    // Debugging (SS_VM_TRACE=1): every instruction with its word offset, call depth and stacks.
+    static const bool trace_ops = std::getenv("SS_VM_TRACE") != nullptr;
+    if (trace_ops) {
+      std::fprintf(stderr, "[vm] w%ld %08x depth %d call_sp %ld value_sp %ld\n", static_cast<long>(ctx->ip - ctx->code),
+                   *ctx->ip, ctx->depth, static_cast<long>(ctx->call_sp - reinterpret_cast<u32*>(g.state_block)),
+                   static_cast<long>(ctx->value_sp - reinterpret_cast<u32*>(g.value_stack)));
+    }
     const u32 fetched = *ctx->ip++;
     u32 instr = fetched;
     const u32 local = instr & 0x800000;

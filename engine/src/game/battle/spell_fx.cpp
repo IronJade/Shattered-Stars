@@ -375,4 +375,69 @@ void draw_wave_grid(const s32 uv[4], const s32 rect[4], const s32 wave_x[3], con
 
 s32 (*g_stage_height_fn)(s32 x, s32 y, s32 z) = nullptr;  // 0x8006fe04
 
+namespace {  // (model_find_vertices_near)
+u32 rd32_le(const u8* p) {
+  return static_cast<u32>(p[0]) | static_cast<u32>(p[1]) << 8 | static_cast<u32>(p[2]) << 16 |
+         static_cast<u32>(p[3]) << 24;
+}
+}  // namespace
+
+// 0x800627c0 sv_distance_xz: sqrt(dx^2 + dz^2) of two SVECTORs (GTE SQR: 16-bit inputs).
+s32 sv_distance_xz(const u8* a, const psyq::SVECTOR& b) {
+  const s32 dx = static_cast<s16>(a[0] | a[1] << 8) - b.vx;
+  const s32 dz = static_cast<s16>(a[4] | a[5] << 8) - b.vz;
+  const psyq::VECTOR in{dx, 0, dz, 0};
+  psyq::VECTOR sq{};
+  psyq::Square0(&in, &sq);
+  return square_root0(static_cast<s32>(static_cast<u32>(sq.vx) + static_cast<u32>(sq.vy) + static_cast<u32>(sq.vz)));
+}
+
+// 0x80061694 model_find_vertices_near: walks every part's 20 primitive sections of a battle
+// model (the vertices are inline SVECTORs of each primitive) and lists each vertex whose xz
+// distance to points[0] is at most 12000, with its distance to each point. Returns the count.
+int model_find_vertices_near(std::vector<NearVertex>& out, const std::vector<u8>& model,
+                             const psyq::SVECTOR* points, int npoints) {
+  // Per section: the first vertex's offset in a primitive, the vertices tested, the stride
+  // (section 9 is skipped; section 18 tests 3 of its quads' 4 vertices).
+  struct Section {
+    u8 first, verts, stride;
+  };
+  static constexpr Section kSections[20] = {
+      {12, 3, 36}, {28, 3, 52}, {20, 3, 44}, {36, 3, 60}, {20, 3, 44}, {36, 3, 60}, {12, 4, 44},
+      {36, 4, 68}, {0, 0, 48},  {48, 4, 80}, {20, 4, 52}, {44, 4, 76}, {4, 3, 28},  {4, 3, 36},
+      {16, 3, 40}, {24, 3, 48}, {4, 4, 36},  {16, 3, 48}, {16, 4, 48}, {28, 4, 60}};
+  out.clear();
+  const u8* base = model.data();
+  const u8* end = base + model.size();
+  const u8* p = base;
+  if (model.size() < 4) return 0;  // (port: bounds checks the console does not make)
+  const u32 parts = rd32_le(p);
+  p += 4;
+  NearVertex slot;
+  for (u32 part = 0; part < parts; ++part) {
+    p += 4;
+    for (const Section& s : kSections) {
+      if (end - p < 4) return static_cast<int>(out.size());
+      const u32 count = rd32_le(p);
+      p += 4;
+      if (s.verts == 0) {
+        if (static_cast<size_t>(end - p) < static_cast<size_t>(count) * s.stride) return static_cast<int>(out.size());
+        p += static_cast<size_t>(count) * s.stride;
+        continue;
+      }
+      for (u32 i = 0; i < count && end - p >= s.stride; ++i, p += s.stride) {
+        for (int k = 0; k < s.verts; ++k) {
+          const u8* vtx = p + s.first + k * 8;
+          for (int j = 0; j < npoints; ++j) slot.dist[j] = static_cast<s16>(sv_distance_xz(vtx, points[j]));
+          if (slot.dist[0] < 12001) {
+            slot.offset = static_cast<s32>(vtx - base) >> 2;
+            out.push_back(slot);
+          }
+        }
+      }
+    }
+  }
+  return static_cast<int>(out.size());
+}
+
 }  // namespace ss::game::battle
