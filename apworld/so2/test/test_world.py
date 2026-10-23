@@ -1,0 +1,280 @@
+"""The SO2 world's own tests (docs/ap/apworld.md). WorldTestBase's default tests run for
+each option set too: every location reachable with all items, something reachable from the
+start, and a fill that meets the accessibility setting."""
+import re
+
+from BaseClasses import CollectionState, ItemClassification, LocationProgressType
+
+from ..data import GOAL_ENCOUNTERS, ITEM_BASE, LOCATIONS
+from ..items import CHARACTER_OF, EVENT_FINAL_SAVE_POINT, FIXED_MEMBERS, PARTY_SIZE, TRAPS
+from ..locations import ROW, SOFT_REASONS, missable_reasons
+from ..patches import role_of_placeholder
+from .bases import SO2TestBase
+
+PATCH = re.compile(r"^script (\d+) 0x([0-9a-f]+) 0x([0-9a-f]{8}) 0x([0-9a-f]{8})$")
+
+
+def own_locations(test):
+    return [loc for loc in test.multiworld.get_locations(test.player) if loc.address is not None]
+
+
+def own_pool(test):
+    return [i for i in test.multiworld.itempool if i.player == test.player]
+
+
+def fill(test):
+    from Fill import distribute_items_restrictive
+    distribute_items_restrictive(test.multiworld)
+
+
+def check_seed(test, seed):
+    """The seed's shape: ids, checks, placeholders and patch lines (docs/ap/seed_format.md)."""
+    test.assertEqual((seed["format"], seed["version"]), ("apso2", 1))
+    test.assertEqual(seed["goal"]["encounters"], list(GOAL_ENCOUNTERS))
+    locs = seed["locations"]
+    test.assertEqual(len(locs), len(own_locations(test)))
+    test.assertEqual(len({l["id"] for l in locs}), len(locs))
+    placeholders = [l["placeholder"] for l in locs if "placeholder" in l]
+    test.assertEqual(len(set(placeholders)), len(placeholders))
+    sites = 0
+    for l in locs:
+        row = ROW[l["name"]]
+        check = l["check"]
+        test.assertEqual(check["type"], row["type"])
+        if row["type"] in ("chest", "gift"):
+            sites += len(row["sites"])
+            test.assertEqual(role_of_placeholder(l["placeholder"]), row["sites"][0][4])
+        else:
+            test.assertNotIn("placeholder", l)
+        if row["type"] == "chest":
+            test.assertEqual((check["map"], check["flag"]), (row["map"], row["flag"]))
+        elif row["type"] == "gift":
+            test.assertEqual((check["map"], check["offset"]), (row["map"], row["offset"]))
+        elif row["type"] == "boss":
+            test.assertEqual(check["encounter"], row["encounter"])
+            test.assertEqual(l["id"], ITEM_BASE + (9 << 21) + row["encounter"])
+            test.assertNotIn(row["encounter"], GOAL_ENCOUNTERS)
+        elif row["type"] == "join":
+            test.assertEqual((check["map"], check["offset"], check["character"]),
+                             (row["map"], row["offset"], row["character"]))
+        elif row["type"] == "drop":
+            test.assertEqual(check["enemy"], row["enemy"])
+            test.assertEqual(l["id"], ITEM_BASE + (8 << 21) + row["enemy"])
+        item = l["item"]
+        if item["player"] == test.player:
+            test.assertIn(item["kind"], ("item", "fol", "character", "trap"))
+            test.assertIn(str(test.world.item_name_to_id[item["name"]]), seed["items"])
+        else:
+            test.assertIn("ap_id", item)
+    test.assertEqual(len(seed["patches"]), sites)
+    by_word = {}
+    for line in seed["patches"]:
+        m = PATCH.match(line)
+        test.assertIsNotNone(m, line)
+        key = (int(m.group(1)), int(m.group(2), 16))
+        test.assertNotIn(key, by_word, f"two patches on one word: {line}")
+        by_word[key] = line
+
+
+class TestDefault(SO2TestBase):
+    def test_pool_is_the_vanilla_contents(self):
+        locs = own_locations(self)
+        pool = own_pool(self)
+        self.assertEqual(len(pool), len(locs))
+        self.assertFalse(any(i.advancement for i in pool), "story mode has no progression items of its own")
+
+    def test_default_location_set(self):
+        rows = [ROW[loc.name] for loc in own_locations(self)]
+        self.assertFalse(any(r["region"] == "Cave of Trials" for r in rows))
+        self.assertFalse(any("never" in r["missable"] for r in rows))
+        self.assertEqual({r["type"] for r in rows}, {"chest", "gift", "boss"})
+        for loc in own_locations(self):
+            missable = bool(missable_reasons(ROW[loc.name], None))
+            self.assertEqual(loc.progress_type == LocationProgressType.EXCLUDED, missable, loc.name)
+
+    def test_bosses(self):
+        bosses = [ROW[loc.name] for loc in own_locations(self) if ROW[loc.name]["type"] == "boss"]
+        # 47 boss encounters: 2 are the goal, 4 have no constant battle site, 13 are in the cave.
+        self.assertEqual(len(bosses), 47 - 2 - 4 - 13)
+        story = [b for b in bosses if b["boss"] == "story"]
+        self.assertEqual(len(story), 21)
+        self.assertFalse(any(b["missable"] for b in story))
+        self.assertTrue(all(b["missable"] for b in bosses if b["boss"] in ("losable", "optional")))
+        self.assertEqual({b["encounter"] for b in bosses if b["boss"] == "losable"}, {204, 517, 530})
+
+    def test_goal_needs_the_final_save_point(self):
+        # Story mode's spheres hang on events: a state without them can't reach the end.
+        bare = CollectionState(self.multiworld)
+        self.assertFalse(self.world.get_location("Indalecio").access_rule(bare))
+        self.assertFalse(bare.can_reach_region("Energy Nede", self.player))
+        self.assertTrue(bare.can_reach_region("Expel", self.player))
+        self.assertBeatable(True)   # with the events swept up, the story runs to the end
+
+    def test_seed_output(self):
+        fill(self)
+        seed = self.world.seed_data()
+        self.assertIs(seed["options"]["deathlink"], False)
+        self.assertIs(seed["options"]["character_items"], False)
+        self.assertEqual(seed["options"]["drops_as_checks"], "off")
+        self.assertEqual((seed["options"]["exp_multiplier"], seed["options"]["fol_multiplier"],
+                          seed["options"]["encounter_rate"]), (1, 1, 100))
+        check_seed(self, seed)
+
+
+class TestProtagonistClaude(SO2TestBase):
+    options = {"protagonist": "claude"}
+
+    def test_no_rena_only_locations(self):
+        rows = [ROW[loc.name] for loc in own_locations(self)]
+        self.assertFalse(any(r["protagonist"] == "rena" for r in rows))
+        self.assertTrue(any(r["protagonist"] == "claude" for r in rows))
+        self.assertEqual(self.world.fill_slot_data()["protagonist"], "claude")
+
+
+class TestMissableRemoved(SO2TestBase):
+    options = {"missable_locations": "remove"}
+
+    def test_no_missable_locations(self):
+        rows = [ROW[loc.name] for loc in own_locations(self)]
+        self.assertFalse(any(r["missable"] or r["protagonist"] for r in rows))
+        self.assertEqual(len(own_pool(self)), len(rows))
+
+
+class TestMissableIncluded(SO2TestBase):
+    options = {"missable_locations": "include", "protagonist": "rena", "character_items": True}
+
+    def test_only_soft_reasons_are_included(self):
+        # A chapter window or a town that changes: be in time. A choice, a member, a Private
+        # Action, a side quest, a losable fight or a join site: still excluded.
+        seen = set()
+        for loc in own_locations(self):
+            reasons = missable_reasons(ROW[loc.name], "rena")
+            excluded = loc.progress_type == LocationProgressType.EXCLUDED
+            self.assertEqual(excluded, bool(reasons - SOFT_REASONS), loc.name)
+            seen.add(excluded)
+        self.assertEqual(seen, {True, False})
+
+
+class TestCaveOfTrials(SO2TestBase):
+    options = {"cave_of_trials": True}
+
+    def test_cave_needs_the_final_save_point(self):
+        cave = [loc for loc in own_locations(self) if ROW[loc.name]["region"] == "Cave of Trials"]
+        self.assertEqual(len(cave), sum(1 for r in LOCATIONS if r["region"] == "Cave of Trials"
+                                        and r["type"] in ("chest", "gift", "boss") and "never" not in r["missable"]))
+        self.assertEqual(sum(1 for loc in cave if ROW[loc.name]["type"] == "boss"), 13)
+        bare = CollectionState(self.multiworld)
+        self.assertFalse(bare.can_reach_region("Cave of Trials", self.player))
+        bare.collect(self.world.get_location("Final Save Point (Fienal 9F)").item, True)
+        bare.collect(self.world.get_location("Disc Switch (Eluria Tower)").item, True)
+        self.assertTrue(bare.has(EVENT_FINAL_SAVE_POINT, self.player))
+        self.assertTrue(cave[0].can_reach(bare))
+
+
+class TestExpelWithoutProgression(SO2TestBase):
+    options = {"expel_progression": False}
+
+    def test_expel_refuses_progression(self):
+        from ..items import SO2Item
+        key = SO2Item("test key", ItemClassification.progression, None, self.player)
+        for loc in self.world.get_region("Expel").locations:
+            if loc.address is not None:
+                self.assertFalse(loc.can_fill(self.multiworld.state, key, False), loc.name)
+                break
+
+
+class TestBossesOff(SO2TestBase):
+    options = {"boss_checks": False}
+
+    def test_no_bosses(self):
+        self.assertFalse(any(ROW[loc.name]["type"] == "boss" for loc in own_locations(self)))
+
+
+def party_of(test):
+    return [CHARACTER_OF[i.code] for i in own_pool(test) if i.code in CHARACTER_OF]
+
+
+class CharacterChecks:
+    """character_items: the pool's characters always make a party the story allows."""
+    side = None
+
+    def test_party_is_consistent(self):
+        for _ in range(20):     # the choice is random: a few more draws with the world's RNG
+            self.check_party(self.world.choose_party())
+        self.check_party(party_of(self))
+        self.assertEqual(sorted(party_of(self)), sorted(self.world.party))
+
+    def check_party(self, party):
+        self.assertEqual(len(party), len(set(party)))
+        self.assertLessEqual(len(party) + len(FIXED_MEMBERS), PARTY_SIZE)
+        self.assertEqual(sum(x in party for x in ("Bowman", "Precis")), 1, party)
+        self.assertFalse("Ashton" in party and "Opera" in party, party)
+        self.assertTrue("Ashton" in party or "Opera" in party, party)
+        if "Ernest" in party:
+            self.assertIn("Opera", party)
+        if self.side != "claude":
+            self.assertNotIn("Leon", party)
+        if self.side != "rena":
+            self.assertNotIn("Dias", party)
+
+    def test_join_sites(self):
+        joins = [loc for loc in own_locations(self) if ROW[loc.name]["type"] == "join"]
+        self.assertTrue(joins)
+        for loc in joins:
+            self.assertEqual(loc.progress_type, LocationProgressType.EXCLUDED, loc.name)
+        listed = {ROW[loc.name]["character"] for loc in joins}
+        # Every shuffled member's sites are listed, in the pool or not, so nobody joins at a scene.
+        self.assertTrue({"Celine", "Bowman", "Precis", "Ashton", "Opera", "Ernest", "Chisato"} <= listed)
+        fill(self)
+        seed = self.world.seed_data()
+        check_seed(self, seed)
+        self.assertIs(seed["options"]["character_items"], True)
+        kinds = {v["kind"] for v in seed["items"].values()}
+        self.assertIn("character", kinds)
+        for v in seed["items"].values():
+            if v["kind"] == "character":
+                self.assertIn(v["character"], self.world.party)
+
+
+class TestCharactersAny(SO2TestBase, CharacterChecks):
+    options = {"character_items": True}
+
+
+class TestCharactersClaude(SO2TestBase, CharacterChecks):
+    options = {"character_items": True, "protagonist": "claude"}
+    side = "claude"
+
+
+class TestCharactersRena(SO2TestBase, CharacterChecks):
+    options = {"character_items": True, "protagonist": "rena", "missable_locations": "remove"}
+    side = "rena"
+
+
+class TestDropsAndTraps(SO2TestBase):
+    options = {"drops_as_checks": "first_drop", "traps": 50, "exp_multiplier": 3, "fol_multiplier": 2,
+               "encounter_rate": 50, "cave_of_trials": True}
+
+    def test_drops(self):
+        drops = [loc for loc in own_locations(self) if ROW[loc.name]["type"] == "drop"]
+        self.assertEqual(len(drops), sum(1 for r in LOCATIONS if r["type"] == "drop"))
+        from ..items import SO2Item
+        key = SO2Item("test key", ItemClassification.progression, None, self.player)
+        for loc in drops:
+            self.assertFalse(loc.can_fill(self.multiworld.state, key, False), loc.name)
+
+    def test_traps_and_options(self):
+        pool = own_pool(self)
+        traps = [i for i in pool if i.name in TRAPS]
+        filler = [i for i in pool if i.classification == ItemClassification.filler]
+        self.assertTrue(traps)
+        self.assertEqual(len(traps), (len(traps) + len(filler)) * 50 // 100)
+        fill(self)
+        seed = self.world.seed_data()
+        check_seed(self, seed)
+        self.assertTrue(any(v["kind"] == "trap" for v in seed["items"].values()))
+        o = seed["options"]
+        self.assertEqual((o["drops_as_checks"], o["exp_multiplier"], o["fol_multiplier"], o["encounter_rate"]),
+                         ("first_drop", 3, 2, 50))
+        for l in seed["locations"]:
+            if l["check"]["type"] == "drop":
+                self.assertNotEqual(l["item"]["classification"], "progression")

@@ -510,6 +510,7 @@ void field_update_encounters(Field* f) {
   auto get = [&](int off) { return rd32(flags + off); };
   auto put = [&](int off, s32 v) { std::memcpy(flags + off, &v, 4); };
   s32 rate = flags[0x25];
+  if (ap::random_encounters_off()) rate = 0;  // Archipelago (port feature): encounter_rate 0% [world agent]
   if (rate == 0) {
     g.battle_preloaded = 0;
     put(0x1C, 0);
@@ -539,6 +540,7 @@ void field_update_encounters(Field* f) {
       if ((rng_next() & 1) != 0) r = -r;
       distance += r;
       if (distance < 600) distance = 600;
+      distance = ap::scale_encounter_distance(distance);  // Archipelago (port feature): encounter_rate [world agent]
       if (flags[0x68] == 0)
         put(0x1C, ((distance * rd16(map_data().scene.data() + 0x68)) / 100) * 0x1000);
       else

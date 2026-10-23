@@ -298,6 +298,10 @@ int voice_queue_update() {
   }
   if (g_entries[0] == 0) {
     if (g_field_mode == 1) {
+      // ORIGINAL BUG (original_bugs.md F18): the console tests party slot 0's character
+      // four times (its pointer is never advanced), so every slot, a member or not, is
+      // marked loaded when slot 0 has one:
+      //   for (i = 0; i < 4; ++i) if (*(s16*)party > 0) sound_set_bank_loaded(s, i, 1);
       for (int i = 0; i < 4; ++i)
         if (rd16s(slot_of(i)) > 0) sound_set_bank_loaded(s, i, 1);
     }

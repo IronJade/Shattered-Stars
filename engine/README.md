@@ -192,9 +192,19 @@ Archipelago generator) and, once one is chosen, offline or online play:
   the seed's own option (set when it was generated): if it's on, a party wipe sends a
   DeathLink and a DeathLink from anyone else ends the current battle or the field
   session, same as dying.
+- **The seed's play options** (each off by default, which plays as the original): New Game
+  starts the protagonist the seed was made for; recruitments can be items (a character
+  joins when their item arrives, room permitting); the first drop of each enemy type can
+  be a check; traps (an ambush, losing Fol, a status ailment); EXP / Fol multipliers
+  (1-10); the random-encounter rate (0-200%). DeathLink waits for a safe moment (out of
+  menus, scenes and story battles the party may lose) and is never sent for a scripted
+  story defeat, nor received during the ending or the credits. `docs/ap/seed_format.md`
+  "Phase 3" has the details.
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
-- Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]`.
+- Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP
+  id or name, a game item id, a character's name, or `trap:ambush`, `trap:fol_loss[:PCT]`,
+  `trap:status[:poison|paralysis|stone]`), `ap_deathlink [FROM]`.
 
 `apworld/so2/patches.py` turns a placement into the seed's placeholder patches.
 

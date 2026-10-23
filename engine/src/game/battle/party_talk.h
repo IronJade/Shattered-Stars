@@ -36,4 +36,8 @@ s32 voice_play_battle_line(PartyUnit* u);
 // strong enough calls out (rng_next15 against bond * 0x24e) and goes into a fury.
 void voice_ally_reaction(PartyUnit* u);
 
+// Debugging: SS_TALK_TRACE=1 logs 'what' with the vblank, the rng draws so far, the unit's
+// party slot and 'value' (lines up with explore.lua's BW_HIT_BP hits on the same addresses).
+void talk_trace(const char* what, const Unit* u, u32 value);
+
 }  // namespace ss::game::battle

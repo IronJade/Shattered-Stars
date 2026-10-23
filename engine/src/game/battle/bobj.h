@@ -84,6 +84,10 @@ struct BObj : Task {
   RenderContext* pool = nullptr;  // +0x84
 
   BObj();                   // bobj_create 0x80041d74
+  // (Port, original_bugs.md B15) a freed object stops being a battle sound's emitter.
+  ~BObj() override;
+  BObj(const BObj&) = default;
+  BObj& operator=(const BObj&) = default;
   void update() override {}
   // vtable[2]: the collider box for 'code' (low nibble box, 0x10 attack group, 0x100 max
   // corner); the base returns the zero vector 0x8006d4ec.

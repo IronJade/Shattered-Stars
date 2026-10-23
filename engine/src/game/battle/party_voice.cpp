@@ -4,6 +4,7 @@
 
 #include "game/battle/battle.h"
 #include "game/battle/bsfx.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/unit.h"
 #include "game/boot/sound.h"
 
@@ -16,6 +17,7 @@ void PartyUnit::play_voice(int id) {
   BattleGlobals& g = bg();
   // (port) A battle started on its own (--battle) has none of the field's voice banks.
   if (g.sound == nullptr || slot > 3 || g.sound->banks[slot].index == nullptr) return;
+  talk_trace("voice", this, static_cast<u32>(id));  // (SS_TALK_TRACE: Redux's pc_play_voice hits)
   bsfx_play_at(static_cast<int>((static_cast<u32>(slot) + 1) << 24) + id, this);
 }
 

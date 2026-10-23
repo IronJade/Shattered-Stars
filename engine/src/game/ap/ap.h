@@ -33,6 +33,11 @@ struct SaveState {
   std::vector<int64_t> checked;    // location ids, in the order they were checked
   bool start_given = false;        // the seed's starting items are in the inventory
   bool goal_done = false;          // the goal battle was won (sent again on connect)
+  // Phase 3.
+  std::vector<int> characters;          // character items received (party ids 1-12)
+  std::vector<int> characters_waiting;  // received, not joined yet (no room, a Private Action...)
+  std::vector<int> first_drops;         // enemy types whose first drop was taken as a check
+  int ambushes = 0;                     // ambush traps received, not fought yet
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -97,6 +102,30 @@ void on_game_over();
 // A DeathLink as if received (console `ap_deathlink`; the link's kDeathLink).
 void deathlink_receive(const std::string& source, const std::string& cause);
 bool deathlink_pending();
+
+// ---- Phase 3: characters, drops, traps, multipliers, DeathLink's safe points ----
+
+// The program running (boot run_program): received DeathLinks are dropped on the title and in
+// the credits, and after the final boss (the ending).
+enum class Scene { kTitle, kField, kBattle, kCredits };
+void on_program(Scene scene);
+// Script ext 0xae party_add (character = the script's argument, the party id - 1): true when
+// Archipelago takes the join (options.character_items: a join site the seed lists records its
+// check, and the member joins only if their item was received). 'at' is the instruction's
+// own byte offset, 'call_at' the innermost call into the running routine (-1: none).
+bool on_party_add(int character, int at, int call_at);
+// Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
+// the drop is not given, it was the enemy type's first-drop check). Both leave the game's
+// values alone without a seed or with the options off.
+void scale_battle_rewards(s32* exp, s32* fol);
+bool on_enemy_drop(int enemy_type, int item);
+// The field's random encounters (field_update_encounters): options.encounter_rate.
+bool random_encounters_off();             // encounter_rate 0
+s32 scale_encounter_distance(s32 distance);  // the distance to the next one, * 100 / rate
+bool party_has_character(int id);         // in a party slot, active or in reserve
+// New Game's choice of protagonist (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
+// seed's options.protagonist; the locations the seed holds are that protagonist's game's).
+int required_protagonist();
 
 std::string status_text();
 

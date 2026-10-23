@@ -415,3 +415,280 @@ TEST(ap_placeholders_same_vblank) {
   ap::stop();
   g.inventory = old_inventory;
 }
+
+// ---- Phase 3 [world agent]: characters, first drops, traps, multipliers, DeathLink's scenes ----
+
+namespace {
+
+// kSeed with the phase-3 options, a join site (map 208, Bowman's call at 0x6bc4), a drop
+// location (enemy type 17), and placeholders holding own traps and a character.
+std::string phase3_seed(const std::string& options) {
+  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  t = replace(t, "  \"locations\": [\n",
+              "  \"locations\": [\n"
+              "    {\"id\": 1354055680, \"name\": \"Bowman joins\", \"check\": {\"type\": \"join\", \"map\": 208, \"offset\": \"0x6bc4\", \"character\": \"Bowman\"},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Hookshot\"}},\n"
+              "    {\"id\": 1362100241, \"name\": \"Goblin's first drop\", \"check\": {\"type\": \"drop\", \"enemy\": 17},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"item\", \"game_id\": 21, \"name\": \"Revival Card\"}},\n"
+              "    {\"id\": 9001, \"name\": \"trap chest\", \"placeholder\": 1100, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 100},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"trap\", \"trap\": \"fol_loss\", \"percent\": 25}},\n"
+              "    {\"id\": 9002, \"name\": \"poison chest\", \"placeholder\": 1101, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 101},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"trap\", \"trap\": \"status\"}},\n"
+              "    {\"id\": 9003, \"name\": \"stone chest\", \"placeholder\": 1102, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 102},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"trap\", \"trap\": \"status\", \"status\": \"stone\"}},\n"
+              "    {\"id\": 9004, \"name\": \"ambush chest\", \"placeholder\": 1103, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 103},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"trap\", \"trap\": \"ambush\"}},\n"
+              "    {\"id\": 9005, \"name\": \"Celine chest\", \"placeholder\": 1104, \"check\": {\"type\": \"chest\", \"map\": 18, \"flag\": 104},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"character\", \"character\": 3}},\n");
+  return t;
+}
+
+// Scratch game blocks for the field's globals (restored by the destructor).
+struct ScratchGame {
+  ss::game::field::FieldGlobals& g = ss::game::field::globals();
+  u8 *party0 = g.party, *config0 = g.config, *state0 = g.game_state, *flags0 = g.script_flags, *inv0 = g.inventory;
+  std::vector<u8> party = std::vector<u8>(0x300, 0), config = std::vector<u8>(0x2A0, 0),
+                  state = std::vector<u8>(0x2A0, 0), flags = std::vector<u8>(0x170, 0), inv = std::vector<u8>(0x1000, 0);
+  ScratchGame() {
+    g.party = party.data();
+    g.config = config.data();
+    g.game_state = state.data();
+    g.script_flags = flags.data();
+    g.inventory = inv.data();
+  }
+  ~ScratchGame() {
+    g.party = party0;
+    g.config = config0;
+    g.game_state = state0;
+    g.script_flags = flags0;
+    g.inventory = inv0;
+  }
+  void member(int slot, int id, int hp, u8 status = 0) {
+    u8* p = party.data() + slot * 0x60;
+    const s16 v = static_cast<s16>(id);
+    std::memcpy(p, &v, 2);
+    p[2] = status;
+    std::memcpy(p + 0x1C, &hp, 4);
+  }
+  s32 fol() const {
+    s32 v;
+    std::memcpy(&v, config.data() + 0x18, 4);
+    return v;
+  }
+};
+
+}  // namespace
+
+TEST(ap_phase3_seed) {
+  ap::Seed s;
+  std::string error;
+  // Without the options: the original game.
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  CHECK(!s.character_items && !s.first_drops && s.exp_multiplier == 1 && s.fol_multiplier == 1 && s.encounter_rate == 100);
+  const std::string opts =
+      "{\"character_items\": true, \"drops_as_checks\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": \"10\", "
+      "\"encounter_rate\": 50, \"deathlink\": true}";
+  CHECK(ap::load_seed_text(phase3_seed(opts), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  CHECK(s.character_items && s.first_drops && s.exp_multiplier == 3 && s.fol_multiplier == 10 && s.encounter_rate == 50);
+  CHECK(s.locations[0].type == "join" && s.locations[0].map == 208 && s.locations[0].offset == 0x6bc4 && s.locations[0].character == 4);
+  CHECK(s.locations[1].type == "drop" && s.locations[1].enemy == 17);
+  CHECK(s.locations[2].item.item.kind == "trap" && s.locations[2].item.item.trap == "fol_loss" && s.locations[2].item.item.percent == 25);
+  CHECK(s.locations[3].item.item.status == "poison" && s.locations[4].item.item.status == "stone");
+  CHECK(s.locations[6].item.item.kind == "character" && s.locations[6].item.item.character == 3 && s.locations[6].item.item.name == "Celine");
+  CHECK(std::string(ap::character_name(12)) == "Chisato" && ap::character_by_name("Leon") == 8 && ap::character_by_name("Zand") == 0);
+  // drops_as_checks also as AP's option value (0 / 1).
+  CHECK(ap::load_seed_text(phase3_seed("{\"drops_as_checks\": 1}"), &s, &error) && s.first_drops);
+  // Out of range: the seed does not load.
+  CHECK(seed_error(phase3_seed("{\"exp_multiplier\": 11}"), "options.exp_multiplier: 1-10"));
+  CHECK(seed_error(phase3_seed("{\"fol_multiplier\": 0}"), "options.fol_multiplier: 1-10"));
+  CHECK(seed_error(phase3_seed("{\"encounter_rate\": 201}"), "options.encounter_rate: 0-200"));
+  CHECK(seed_error(phase3_seed("{\"drops_as_checks\": \"all\"}"), "drops_as_checks"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"character\": \"Bowman\"", "\"character\": 13"), "character 1-12"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"offset\": \"0x6bc4\", ", ""), "a join needs map and offset"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"enemy\": 17", "\"enemy\": -1"), "a drop needs its enemy"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"percent\": 25", "\"percent\": 0"), "percent 1-100"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"status\": \"stone\"", "\"status\": \"sleep\""), "status poison"));
+  CHECK(seed_error(replace(phase3_seed("{}"), "\"trap\": \"ambush\"", "\"trap\": \"meteor\""), "trap ambush"));
+}
+
+TEST(ap_character_items) {
+  ap::stop();
+  ScratchGame sg;
+  sg.member(0, 1, 100);  // Claude
+  sg.member(1, 2, 100);  // Rena
+  const s16 map = 208;
+  std::memcpy(sg.state.data() + 0x1A, &map, 2);
+  ap::Seed s;
+  std::string error;
+  // Off: every join is the game's.
+  CHECK(ap::load_seed_text(phase3_seed("{}"), &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::on_party_add(3, 0x6bc4, -1));
+  CHECK(!ap::is_checked(1354055680));
+  // On: the listed site (the call into the join routine, or an inline party_add) records its
+  // check and keeps Bowman out until his item comes; other sites and maps join as before.
+  CHECK(ap::load_seed_text(phase3_seed("{\"character_items\": true}"), &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::on_party_add(3, 0x100, 0x6bc8));  // (another site)
+  CHECK(!ap::is_checked(1354055680));
+  CHECK(ap::on_party_add(3, 0x1234, 0x6bc4));  // the call at 0x6bc4
+  CHECK(ap::is_checked(1354055680) && ap::state().checked.size() == 1);
+  CHECK(ap::on_party_add(3, 0x6bc4, -1));      // inline at 0x6bc4: checked once, still held back
+  CHECK(ap::state().checked.size() == 1);
+  const s16 other = 209;
+  std::memcpy(sg.state.data() + 0x1A, &other, 2);
+  CHECK(!ap::on_party_add(3, 0x1234, 0x6bc4));  // (same offset on another map)
+  std::memcpy(sg.state.data() + 0x1A, &map, 2);
+  // Received (Celine from a placeholder here: an own item): waiting for free play, kept in
+  // the sidecar.
+  CHECK(ap::on_give_item(1104));
+  CHECK(ap::state().characters.size() == 1 && ap::state().characters[0] == 3);
+  CHECK(ap::state().characters_waiting.size() == 1);
+  CHECK(ap::status_text().find("Celine (waiting)") != std::string::npos);
+  // Bowman received: the site's own join goes ahead (room in the party) and he stops waiting.
+  CHECK(ap::receive_by_name_or_id("Bowman", "Alice", &error));
+  CHECK(ap::state().characters.size() == 1);  // (queued, not given: no free play in a test)
+  ap::SaveState st = ap::state();
+  st.characters.push_back(4);
+  st.characters_waiting.push_back(4);
+  const fs::path dir = scratch("phase3");
+  const std::string card = (dir / "memcard1.mcd").string();
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 0), st, &error));
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().characters.size() == 2 && ap::state().characters_waiting.size() == 2);
+  CHECK(!ap::on_party_add(3, 0x1234, 0x6bc4));  // received: the game's join
+  CHECK(ap::state().characters_waiting.size() == 1 && ap::state().characters_waiting[0] == 3);
+  // A full party (8 slots, members in reserve included): the join waits.
+  for (int i = 2; i < 8; ++i) sg.member(i, i == 3 ? -(i + 1) : i + 1, 100);
+  ap::SaveState st2 = ap::state();
+  st2.characters_waiting.push_back(9);
+  st2.characters.push_back(9);
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), st2, &error));
+  ap::on_loaded(card, 1);
+  CHECK(ap::party_has_character(4) && !ap::party_has_character(9));
+  // Sidecar round trip of the phase-3 fields.
+  st2.first_drops = {17, 3};
+  st2.ambushes = 2;
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(st2), &back, &error));
+  CHECK(back.characters == st2.characters && back.characters_waiting == st2.characters_waiting);
+  CHECK(back.first_drops == st2.first_drops && back.ambushes == 2);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+TEST(ap_drops_rewards_encounters) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  // No seed: the game's values.
+  s32 exp = 1234, fol = 567;
+  ap::scale_battle_rewards(&exp, &fol);
+  CHECK(exp == 1234 && fol == 567);
+  CHECK(ap::on_enemy_drop(17, 5));
+  CHECK(!ap::random_encounters_off() && ap::scale_encounter_distance(4000) == 4000);
+  // A seed with the options at their defaults: the same.
+  CHECK(ap::load_seed_text(phase3_seed("{}"), &s, &error));
+  ap::start_with(s);
+  ap::scale_battle_rewards(&exp, &fol);
+  CHECK(exp == 1234 && fol == 567);
+  CHECK(ap::on_enemy_drop(17, 5) && !ap::is_checked(1362100241));
+  CHECK(!ap::random_encounters_off() && ap::scale_encounter_distance(4000) == 4000);
+  // On.
+  CHECK(ap::load_seed_text(phase3_seed("{\"drops_as_checks\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": 10, "
+                                       "\"encounter_rate\": 200}"),
+                           &s, &error));
+  ap::start_with(s);
+  ap::scale_battle_rewards(&exp, &fol);
+  CHECK(exp == 3702 && fol == 5670);
+  s32 big = 900000000, big_fol = 1;
+  ap::scale_battle_rewards(&big, &big_fol);
+  CHECK(big == 999999999);
+  CHECK(ap::on_enemy_drop(16, 5));   // (no location for type 16)
+  CHECK(!ap::on_enemy_drop(17, 5));  // the first drop of type 17: the check, not the item
+  CHECK(ap::is_checked(1362100241) && ap::state().first_drops.size() == 1 && ap::state().first_drops[0] == 17);
+  CHECK(ap::pending_count() == 1);   // (its own Revival Card, given in free play)
+  CHECK(ap::on_enemy_drop(17, 5));   // later drops: the game's
+  CHECK(ap::scale_encounter_distance(4000) == 2000 && !ap::random_encounters_off());
+  CHECK(ap::load_seed_text(phase3_seed("{\"encounter_rate\": 0}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::random_encounters_off());
+  CHECK(ap::load_seed_text(phase3_seed("{\"encounter_rate\": 50}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::scale_encounter_distance(4000) == 8000);
+  ap::stop();
+}
+
+TEST(ap_traps) {
+  ap::stop();
+  ScratchGame sg;
+  sg.member(0, 1, 100);
+  sg.member(1, 2, 100);
+  sg.member(2, 3, 0, 1);  // Celine is down
+  const s32 fol = 1000;
+  std::memcpy(sg.config.data() + 0x18, &fol, 4);
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(phase3_seed("{}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::on_give_item(1100));  // Fol loss 25%
+  CHECK(sg.fol() == 750 && ap::is_checked(9001));
+  CHECK(ap::on_give_item(1101));  // poison: every active member who is up
+  CHECK(sg.party[2] == 8 && sg.party[0x60 + 2] == 8 && sg.party[0xC0 + 2] == 1);
+  CHECK(ap::on_give_item(1102));  // stone: one member (the last active one up)
+  CHECK(sg.party[0x60 + 2] == (8 | 4) && sg.party[2] == 8);
+  // Stone again: Claude is the last one up, so poison instead (already poisoned).
+  CHECK(ap::receive_by_name_or_id("trap:status:stone", "", &error));
+  CHECK(ap::on_give_item(1103));  // an ambush: waits for the field
+  CHECK(ap::state().ambushes == 1);
+  CHECK(ap::status_text().find("ambushes waiting 1") != std::string::npos);
+  CHECK(!ap::receive_by_name_or_id("trap:meteor", "", &error));
+  CHECK(!ap::receive_by_name_or_id("trap:status:sleep", "", &error));
+  ap::stop();
+}
+
+TEST(ap_deathlink_scenes) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+                                   "\"options\": {\"deathlink\": true}"),
+                           &s, &error));
+  ap::start_with(s);
+  // On the title and in the credits there is no game to end: dropped (and one waiting goes).
+  ap::on_program(ap::Scene::kTitle);
+  ap::deathlink_receive("Alice", "");
+  CHECK(!ap::deathlink_pending());
+  ap::on_program(ap::Scene::kField);
+  ap::deathlink_receive("Alice", "");
+  CHECK(ap::deathlink_pending());
+  ap::on_program(ap::Scene::kBattle);  // (a battle transition: it waits)
+  CHECK(ap::deathlink_pending());
+  ap::on_program(ap::Scene::kCredits);
+  CHECK(!ap::deathlink_pending());
+  ap::deathlink_receive("Alice", "");
+  CHECK(!ap::deathlink_pending());
+  // A game over takes one waiting with it; a load or a new game starts clean.
+  ap::on_program(ap::Scene::kField);
+  ap::deathlink_receive("Alice", "");
+  ap::on_game_over();
+  CHECK(!ap::deathlink_pending());
+  ap::deathlink_receive("Alice", "");
+  ap::on_new_game();
+  CHECK(!ap::deathlink_pending());
+  // After the final boss (539 / 540, whatever the goal): the ending, nothing more.
+  ap::deathlink_receive("Alice", "");
+  ap::on_battle_exit(540, 0);
+  CHECK(!ap::deathlink_pending());
+  ap::deathlink_receive("Alice", "");
+  CHECK(!ap::deathlink_pending());
+  ap::on_new_game();
+  ap::deathlink_receive("Alice", "");
+  CHECK(ap::deathlink_pending());
+  ap::on_battle_exit(539, 2);  // (a lost final fight is no ending)
+  CHECK(ap::deathlink_pending());
+  ap::stop();
+}

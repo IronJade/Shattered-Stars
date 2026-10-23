@@ -15,7 +15,9 @@
 #include "ap_net/link.h"
 #include "game/battle/battle.h"
 #include "game/battle/unit.h"
+#include "game/boot/system.h"
 #include "game/field/field.h"
+#include "game/field/load_queue.h"
 #include "game/field/message.h"
 #include "game/field/notice.h"
 #include "game/field/script_vm.h"
@@ -89,6 +91,12 @@ struct Runtime {
   std::vector<u8> override_text;        // the window's text (kept while the window reads it)
   u64 override_vblank = 0;
   std::set<int64_t> hit_this_vblank;    // placeholder values reached in override_vblank
+  // Phase 3.
+  std::map<int64_t, size_t> join_sites;  // (map << 32 | offset) -> join location index
+  std::map<int, size_t> by_enemy;        // enemy type -> drop location index
+  Scene scene = Scene::kField;           // (tests run without programs: as in the field)
+  bool ending = false;                   // the final boss is beaten: the ending and credits
+  int control_frames = 0;                // field frames the player has had the controls in a row
 };
 Runtime& rt() {
   static Runtime r;
@@ -99,11 +107,15 @@ void index_seed(Runtime& r) {
   r.by_id.clear();
   r.by_flag.clear();
   r.by_placeholder.clear();
+  r.join_sites.clear();
+  r.by_enemy.clear();
   for (size_t i = 0; i < r.seed.locations.size(); ++i) {
     const Location& l = r.seed.locations[i];
     r.by_id[l.id] = i;
     if (l.type == "chest" && l.flag >= 0) r.by_flag[l.flag] = i;
     if (l.placeholder >= 0) r.by_placeholder[l.placeholder] = i;
+    if (l.type == "join") r.join_sites[static_cast<int64_t>(l.map) << 32 | static_cast<u32>(l.offset)] = i;
+    if (l.type == "drop") r.by_enemy[l.enemy] = i;
   }
 }
 
@@ -113,6 +125,9 @@ void fresh_state(Runtime& r) {
   r.state.slot_name = r.seed.slot_name;
   r.checked.clear();
   r.pending.clear();
+  r.deathlink_in = false;
+  r.dying_from_link = false;
+  r.ending = false;
 }
 
 // ASCII -> the field's map-font glyph codes (one byte below 0x80, else two).
@@ -180,6 +195,8 @@ std::vector<u8> map_text(const std::string& ascii) {
 
 std::string describe(const ItemDef& it) {
   if (it.kind == "fol") return std::to_string(it.amount) + " Fol";
+  if (it.kind == "character") return character_name(it.character);
+  if (it.kind == "trap") return it.name.empty() ? "a trap" : it.name;
   std::string name = it.name.empty() ? "item " + std::to_string(it.game_id) : it.name;
   if (it.count > 1) name = std::to_string(it.count) + " x " + name;
   return name;
@@ -224,14 +241,21 @@ void notice_update(bool play) {
   field::notice_show(n, r.notice_text.data(), 0, 7, top ? 1 : 0);
 }
 
-bool in_free_play() {
+// The player moves the leader on the field (field state 0, field_flags +0x10 not -1): no
+// menu, vehicle ride, battle transition or game over, and no scene holding the controls.
+bool player_in_control() {
   field::Field* f = field::field_program();
   if (f == nullptr || f->state != 0) return false;
-  if (field::g_script_vm != nullptr && field::g_script_vm->depth != 0) return false;
   const field::FieldGlobals& g = field::globals();
   s16 control;
   std::memcpy(&control, g.field_flags + 0x10, 2);
   return control != -1;
+}
+
+// Free play: the player in control and no event script running (items, joins, traps).
+bool in_free_play() {
+  if (!player_in_control()) return false;
+  return field::g_script_vm == nullptr || field::g_script_vm->depth == 0;
 }
 
 std::string player_label(const Placement& p) {
@@ -244,7 +268,96 @@ std::string player_label(const Placement& p) {
   return "player " + std::to_string(p.player);
 }
 
-bool give(const ItemDef& it) {
+// ---- Phase 3 helpers ----
+
+constexpr int kFinalBoss[] = {539, 540};  // Indalecio (docs/ap/battle.md): the ending follows
+
+s16 rd16s(const u8* p) {
+  s16 v;
+  std::memcpy(&v, p, 2);
+  return v;
+}
+s32 rd32s(const u8* p) {
+  s32 v;
+  std::memcpy(&v, p, 4);
+  return v;
+}
+bool script_flag(int n) {
+  const field::FieldGlobals& g = field::globals();
+  return g.script_flags != nullptr && ((g.script_flags[n >> 3] >> (n & 7)) & 1) != 0;
+}
+
+// Party slots (handoff 3: 8 x 0x60, +0 the id, negative for a member in reserve).
+u8* party_slot(int i) {
+  u8* party = field::globals().party;
+  return party != nullptr ? party + i * 0x60 : nullptr;
+}
+int slot_of_character(int id) {
+  for (int i = 0; i < 8; ++i) {
+    const u8* p = party_slot(i);
+    if (p == nullptr) return -1;
+    const s16 v = rd16s(p);
+    if (v == id || v == -id) return i;
+  }
+  return -1;
+}
+bool party_has_room() {
+  for (int i = 0; i < 8; ++i)
+    if (const u8* p = party_slot(i); p != nullptr && rd16s(p) == 0) return true;
+  return false;
+}
+
+// The protagonist's exclusions (docs/ap/field.md "Who excludes whom"): Leon joins only in
+// Claude's game (script flag 1 set), Dias only in Rena's.
+const char* protagonist_refuses(int id) {
+  const bool claude = script_flag(1);
+  if (id == 8 && !claude) return "Rena";
+  if (id == 5 && claude) return "Claude";
+  return nullptr;
+}
+
+// The endings: after the final boss (539 / 540), or the endings flow itself (script flag
+// 0x2f1: map 581 plays the endings and the credits while it is set; docs/notes/endings.md).
+bool in_ending(const Runtime& r) { return r.ending || script_flag(0x2F1); }
+
+// A trap's effect, now ('note': what the banner says). The ambush waits for the field.
+void spring_trap(Runtime& r, const ItemDef& it, std::string* note) {
+  field::FieldGlobals& g = field::globals();
+  if (it.trap == "ambush") {
+    ++r.state.ambushes;
+    *note = "an ambush!";
+  } else if (it.trap == "fol_loss") {
+    s32 fol = g.config != nullptr ? rd32s(g.config + 0x18) : 0;
+    const s32 lost = static_cast<s32>(static_cast<s64>(fol) * it.percent / 100);
+    fol -= lost;
+    if (g.config != nullptr) std::memcpy(g.config + 0x18, &fol, 4);
+    *note = "lost " + std::to_string(lost) + " Fol";
+  } else if (it.trap == "status") {
+    // Field statuses (slot +2): 1 down, 2 paralysis, 4 stone, 8 poison (item effects 0x41 /
+    // 0x42 / 0x62 cure them). Poison takes every active member who is up; paralysis and
+    // stone take one (the last active one), never the last member standing.
+    const u8 bit = it.status == "paralysis" ? 2 : it.status == "stone" ? 4 : 8;
+    int up[4], n = 0;
+    for (int i = 0; i < 4; ++i) {
+      const u8* p = party_slot(i);
+      if (p != nullptr && rd16s(p) > 0 && (p[2] & 7) == 0 && rd32s(p + 0x1C) > 0) up[n++] = i;
+    }
+    if (bit == 8 || n < 2) {
+      for (int k = 0; k < n; ++k) party_slot(up[k])[2] |= 8;
+      *note = n > 0 ? "the party is poisoned" : "nothing happened";
+    } else {
+      u8* p = party_slot(up[n - 1]);
+      p[2] |= bit;
+      *note = std::string(character_name(rd16s(p))) + (bit == 2 ? " is paralysed" : " is turned to stone");
+    }
+  }
+  log("trap " + it.trap + ": " + *note);
+}
+
+// Gives an item of this game: false when it has to wait (a full inventory). 'note' (when
+// given) receives a trap's effect for its banner.
+bool give(const ItemDef& it, std::string* note = nullptr) {
+  Runtime& r = rt();
   field::FieldGlobals& g = field::globals();
   if (it.kind == "fol") {
     s32 fol;
@@ -254,10 +367,31 @@ bool give(const ItemDef& it) {
     std::memcpy(g.config + 0x18, &fol, 4);
     return true;
   }
+  if (it.kind == "character") {
+    // Received: the member joins at the next safe point (free_play_update).
+    if (std::find(r.state.characters.begin(), r.state.characters.end(), it.character) == r.state.characters.end())
+      r.state.characters.push_back(it.character);
+    if (std::find(r.state.characters_waiting.begin(), r.state.characters_waiting.end(), it.character) ==
+        r.state.characters_waiting.end())
+      r.state.characters_waiting.push_back(it.character);
+    return true;
+  }
+  if (it.kind == "trap") {
+    std::string what;
+    spring_trap(r, it, &what);
+    if (note != nullptr) *note = what;
+    return true;
+  }
   if (it.kind != "item") return true;  // (nothing to give for another player's item)
   int added = 0;
   for (int i = 0; i < it.count; ++i) added += field::inventory_add(g.inventory, it.game_id, 1, 1) != 0;
   return added > 0;
+}
+
+// The received item's banner.
+std::string received_text(const ItemDef& it, const std::string& from, bool found, const std::string& note) {
+  if (it.kind == "trap") return "Trap" + (from.empty() ? std::string() : " from " + from) + ": " + note;
+  return (found ? "Got " : "Received ") + describe(it) + (from.empty() ? "" : " from " + from);
 }
 
 }  // namespace
@@ -284,6 +418,16 @@ Json sidecar_json(const SaveState& s) {
   Json checked = Json::array();
   for (const int64_t id : s.checked) checked.push(Json::number(id));
   j.set("checked", checked);
+  // Phase 3 (absent in older sidecars: empty).
+  auto ints = [](const std::vector<int>& v) {
+    Json a = Json::array();
+    for (const int n : v) a.push(Json::number(static_cast<int64_t>(n)));
+    return a;
+  };
+  j.set("characters", ints(s.characters));
+  j.set("characters_waiting", ints(s.characters_waiting));
+  j.set("first_drops", ints(s.first_drops));
+  j.set("ambushes", Json::number(static_cast<int64_t>(s.ambushes)));
   return j;
 }
 
@@ -297,6 +441,13 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   r.start_given = j["start_given"].as_bool(false);
   r.goal_done = j["goal"].as_bool(false);
   for (size_t i = 0; i < j["checked"].size(); ++i) r.checked.push_back(j["checked"][i].as_int(0));
+  auto ints = [&](const char* key, std::vector<int>* out) {
+    for (size_t i = 0; i < j[key].size(); ++i) out->push_back(static_cast<int>(j[key][i].as_int(0)));
+  };
+  ints("characters", &r.characters);
+  ints("characters_waiting", &r.characters_waiting);
+  ints("first_drops", &r.first_drops);
+  r.ambushes = static_cast<int>(j["ambushes"].as_int(0));
   *s = std::move(r);
   return true;
 }
@@ -433,7 +584,34 @@ bool receive_by_name_or_id(const std::string& what, const std::string& from, std
     receive(it, from);
     return true;
   }
-  return fail(error, "unknown item '" + what + "' (an AP item id or name of the seed, or a game item id)");
+  // (Testing phase 3: a character's name, or trap:ambush / trap:fol_loss[:PERCENT] /
+  // trap:status[:poison|paralysis|stone].)
+  ItemDef it;
+  if (const int id = character_by_name(what); id != 0) {
+    it.kind = "character";
+    it.character = id;
+    it.name = what;
+    receive(it, from);
+    return true;
+  }
+  if (what.rfind("trap:", 0) == 0) {
+    std::string rest = what.substr(5), arg;
+    if (const size_t colon = rest.find(':'); colon != std::string::npos) {
+      arg = rest.substr(colon + 1);
+      rest.resize(colon);
+    }
+    it.kind = "trap";
+    it.trap = rest;
+    if (rest == "fol_loss") it.percent = arg.empty() ? 10 : std::clamp(std::atoi(arg.c_str()), 1, 100);
+    if (rest == "status") it.status = arg.empty() ? "poison" : arg;
+    if ((rest == "ambush" || rest == "fol_loss" || rest == "status") &&
+        (rest != "status" || it.status == "poison" || it.status == "paralysis" || it.status == "stone")) {
+      it.name = rest;
+      receive(it, from);
+      return true;
+    }
+  }
+  return fail(error, "unknown item '" + what + "' (an AP item id or name of the seed, a game item id, a character, or trap:KIND)");
 }
 
 size_t pending_count() {
@@ -441,12 +619,95 @@ size_t pending_count() {
   const size_t net = r.net_items.size() > static_cast<size_t>(r.state.received_index)
                          ? r.net_items.size() - static_cast<size_t>(r.state.received_index)
                          : 0;
-  return r.pending.size() + net;
+  return r.pending.size() + net + r.state.characters_waiting.size() + static_cast<size_t>(r.state.ambushes);
 }
+
+namespace {
+
+// The ambush trap: in free play on a map with random encounters (field_flags +0x25), not
+// riding (script flags 12 / 14), not inside a map transfer's preload trigger: the field's own
+// forced battle (state 0x21, as the camp menu starts one) on the area's encounter group
+// (+0x14) and stage (+0x12). State 0x21 takes encounter -(game_state +0x264); minus the group
+// makes field_prepare_encounter pick a random member of the group, as a random encounter does.
+bool start_ambush() {
+  field::FieldGlobals& g = field::globals();
+  field::Field* f = field::field_program();
+  if (f == nullptr || g.field_flags[0x25] == 0 || g.field_flags[0x26] != 0) return false;
+  if (script_flag(12) || script_flag(14)) return false;
+  const int tag = field::preload_get_kind2_tag();
+  if (tag != -1 && field::g_script_vm != nullptr && field::trigger_contains_leader(field::g_script_vm, tag)) return false;
+  const s16 group = rd16s(g.field_flags + 0x14);
+  const s16 encounter = static_cast<s16>(-group);
+  std::memcpy(g.game_state + 0x264, &encounter, 2);
+  f->saved_control = rd16s(g.field_flags + 0x10);
+  const s16 none = -1;
+  std::memcpy(g.field_flags + 0x10, &none, 2);
+  f->state = 0x21;
+  log("ambush: the area's encounter group " + std::to_string(group) + ", stage " +
+      std::to_string(rd16s(g.field_flags + 0x12)));
+  return true;
+}
+
+// A received character joins through the game's own join (the library routine: ext 0xae
+// party_add_member, then A 0x3f party_member_clear_bond), outside Private Actions (script
+// flags 2 / 4: the party is set aside) and with a free party slot (8, members in reserve
+// included) or their own reserve slot. Returns the banner, or "" while it has to wait.
+std::string join_waiting(Runtime& r) {
+  for (size_t k = 0; k < r.state.characters_waiting.size(); ++k) {
+    const int id = r.state.characters_waiting[k];
+    const char* name = character_name(id);
+    auto done = [&] { r.state.characters_waiting.erase(r.state.characters_waiting.begin() + static_cast<long>(k)); };
+    if (const char* hero = protagonist_refuses(id)) {
+      done();
+      log(std::string(name) + " cannot join in " + hero + "'s game: dropped");
+      return std::string(name) + " cannot join " + hero + "'s party";
+    }
+    const int slot = slot_of_character(id);
+    if (slot >= 0 && rd16s(party_slot(slot)) > 0) {
+      done();  // (already in the party: joined at a site)
+      log(std::string(name) + " is in the party already");
+      continue;
+    }
+    if (script_flag(2) || script_flag(4)) return "";
+    if (slot < 0 && !party_has_room()) {
+      runtime::Runtime::get().log_once("ap-party-full", "[ap] the party is full (8); received characters wait");
+      continue;
+    }
+    field::party_add_member(nullptr, id - 1);
+    const int active = field::party_find_slot(nullptr, id - 1);
+    if (active >= 0) field::vm_svc_party_member_clear_bond(active);
+    done();
+    log(std::string(name) + " joins the party (slot " + std::to_string(active) + ")");
+    return std::string(name) + " joined the party";
+  }
+  return "";
+}
+
+}  // namespace
 
 void free_play_update() {
   Runtime& r = rt();
   if (!r.on) return;
+  // A received DeathLink: the party falls (the game over) in free play, or once a scene has
+  // left the controls to the player for half a second (a scene's walk-around: a lost
+  // scripted battle's game over starts inside a routine too; the frame a battle hands the
+  // field back mid-scene does not count). Menus, rides, transitions, battles the script lets
+  // the party lose and scenes holding the controls keep it waiting.
+  r.control_frames = player_in_control() ? r.control_frames + 1 : 0;
+  if (r.deathlink_in && in_ending(r)) {
+    log("DeathLink from " + r.deathlink_source + " dropped: the ending");
+    r.deathlink_in = false;
+  }
+  if (r.deathlink_in && (in_free_play() || r.control_frames >= 30)) {
+    r.deathlink_in = false;
+    r.dying_from_link = true;
+    log("DeathLink from " + r.deathlink_source + ": the party falls (vblank " +
+        std::to_string(runtime::Runtime::get().vblanks()) + ", script depth " +
+        std::to_string(field::g_script_vm != nullptr ? field::g_script_vm->depth : -1) + ", wait " +
+        std::to_string(field::g_script_vm != nullptr ? field::g_script_vm->wait_state : -1) + ")");
+    field::field_begin_game_over(field::field_program());
+    return;
+  }
   if (!in_free_play()) {
     notice_update(false);
     return;
@@ -465,36 +726,37 @@ void free_play_update() {
       if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
     if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
   }
-  // A received DeathLink: the party falls here (the game over), as in a lost battle.
-  if (r.deathlink_in) {
-    r.deathlink_in = false;
-    r.dying_from_link = true;
-    log("DeathLink from " + r.deathlink_source + ": the party falls");
-    field::field_begin_game_over(field::field_program());
-    return;
-  }
   // Placeholder messages that no window showed: a banner each instead.
   if (runtime::Runtime::get().vblanks() != r.override_vblank) flush_override_lines(r);
-  // One item per banner: local ones first (the console, boss rewards), then the server's in
+  // One thing per banner: an ambush (once its banner has gone), a received character
+  // joining, then items: local ones first (the console, boss rewards), then the server's in
   // index order (received_index: the next one this save has not had).
   if (r.notice_text.empty() && r.notices.empty()) {
-    if (!r.pending.empty()) {
+    if (r.state.ambushes > 0 && start_ambush()) {
+      --r.state.ambushes;
+      return;
+    }
+    if (const std::string joined = join_waiting(r); !joined.empty()) {
+      queue_notice(joined);
+    } else if (!r.pending.empty()) {
       const Runtime::Pending p = r.pending.front();
-      if (give(p.item)) {
+      std::string note;
+      if (give(p.item, &note)) {
         r.pending.pop_front();
         log("given " + describe(p.item));
-        queue_notice((p.found ? "Got " : "Received ") + describe(p.item) + (p.from.empty() ? "" : " from " + p.from));
+        queue_notice(received_text(p.item, p.from, p.found, note));
       } else {
         runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
       }
     } else if (static_cast<size_t>(r.state.received_index) < r.net_items.size()) {
       const size_t i = static_cast<size_t>(r.state.received_index);
       const ItemDef& it = r.net_items[i];
-      if (give(it)) {
+      std::string note;
+      if (give(it, &note)) {
         ++r.state.received_index;
         log("given " + describe(it) + " (server item " + std::to_string(i) + ")");
-        if (it.kind == "item" || it.kind == "fol")
-          queue_notice("Received " + describe(it) + (r.net_from[i].empty() ? "" : " from " + r.net_from[i]));
+        if (it.kind == "item" || it.kind == "fol" || it.kind == "character" || it.kind == "trap")
+          queue_notice(received_text(it, r.net_from[i], false, note));
       } else {
         runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
       }
@@ -530,7 +792,7 @@ void on_loaded(const std::string& card_image, int save_index) {
   std::string err;
   if (!read_sidecar(path, &s, &err)) {
     log("loaded a save without Archipelago state (" + err + "); starting fresh");
-    fresh_state(r);
+    fresh_state(r);  // (DeathLink and the ending cleared too)
     r.state.start_given = true;  // (an ordinary save: no starting inventory on top of it)
     return;
   }
@@ -544,6 +806,9 @@ void on_loaded(const std::string& card_image, int save_index) {
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   r.state = s;
+  r.deathlink_in = false;  // (a load starts the game again)
+  r.dying_from_link = false;
+  r.ending = false;
   r.checked = std::set<int64_t>(s.checked.begin(), s.checked.end());
   // Local items still waiting stay queued; the server's items past the save's received
   // index are given again (this session keeps the server's whole list).
@@ -639,8 +904,17 @@ bool deathlink_pending() { return rt().deathlink_in; }
 void deathlink_receive(const std::string& source, const std::string& cause) {
   Runtime& r = rt();
   if (!r.on) return;
+  const std::string from = source.empty() ? "someone" : source;
+  // No game to end: the title (nothing loaded yet), the ending after the final boss, the
+  // credits. Everywhere else it waits for its safe point (free_play_update, battle_frame).
+  const char* drop = r.scene == Scene::kTitle ? "on the title" : r.scene == Scene::kCredits ? "in the credits"
+                     : in_ending(r) ? "in the ending" : nullptr;
+  if (drop != nullptr) {
+    log("DeathLink from " + from + " dropped: " + drop);
+    return;
+  }
   r.deathlink_in = true;
-  r.deathlink_source = source.empty() ? "someone" : source;
+  r.deathlink_source = from;
   log("DeathLink received from " + r.deathlink_source + (cause.empty() ? "" : ": " + cause));
 }
 
@@ -724,6 +998,12 @@ void vblank() {
 void on_battle_exit(int encounter, int outcome) {
   Runtime& r = rt();
   if (!r.on || outcome != 0) return;
+  if (std::find(std::begin(kFinalBoss), std::end(kFinalBoss), encounter) != std::end(kFinalBoss)) {
+    // The ending and the credits follow: no DeathLink ends that.
+    r.ending = true;
+    if (r.deathlink_in) log("DeathLink from " + r.deathlink_source + " dropped: the final boss is beaten");
+    r.deathlink_in = false;
+  }
   for (const Location& l : r.seed.locations) {
     if (l.type != "boss" || l.encounter != encounter || is_checked(l.id)) continue;
     record_check(l.id, true);
@@ -744,6 +1024,11 @@ void battle_frame() {
   // In the fight, between special moves: every standing member falls, as from a lethal hit
   // (HP 0, death 1); the battle's own check then loses the fight (outcome 2).
   if (g.state != battle::kStateFighting || (g.flags & 0x40) != 0) return;
+  // Not in a story battle the script lets the party lose (script ext 0xb7's third argument,
+  // field_flags +0x7e = 0: no game over, the scene goes on): it waits for free play.
+  if (const u8* block = g.handoff != nullptr ? static_cast<const u8*>(handoff_get(g.handoff, 9)) : nullptr;
+      block != nullptr && block[0x180 + 0x7E] == 0)
+    return;
   r.deathlink_in = false;
   r.dying_from_link = true;
   for (battle::PartyUnit* u : g.party_units) {
@@ -759,6 +1044,8 @@ void on_game_over() {
   if (!r.on) return;
   const bool from_link = r.dying_from_link;
   r.dying_from_link = false;
+  if (r.deathlink_in) log("DeathLink from " + r.deathlink_source + " dropped: the party fell anyway");
+  r.deathlink_in = false;
   if (from_link || !r.seed.deathlink) return;
   if (r.link && r.net_ok) {
     log("game over: DeathLink sent");
@@ -768,16 +1055,136 @@ void on_game_over() {
   }
 }
 
+// ---- Phase 3 ----
+
+void on_program(Scene scene) {
+  Runtime& r = rt();
+  r.scene = scene;
+  r.control_frames = 0;  // (counted again in the new program's field frames)
+  if (r.on && (scene == Scene::kTitle || scene == Scene::kCredits))
+    log(std::string(scene == Scene::kTitle ? "the title" : "the credits") + " at vblank " +
+        std::to_string(runtime::Runtime::get().vblanks()));
+  if (!r.on || (scene != Scene::kTitle && scene != Scene::kCredits)) return;
+  // No game in play: a DeathLink waiting is dropped (the next one ends the next game).
+  if (r.deathlink_in) log("DeathLink from " + r.deathlink_source + std::string(" dropped: ") +
+                          (scene == Scene::kTitle ? "back on the title" : "the credits"));
+  r.deathlink_in = false;
+  r.dying_from_link = false;
+}
+
+bool on_party_add(int character, int at, int call_at) {
+  Runtime& r = rt();
+  if (!r.on || !r.seed.character_items) return false;
+  const int id = character + 1;
+  if (id < 1 || id > kCharacterCount) return false;
+  const field::FieldGlobals& g = field::globals();
+  const int map = g.game_state != nullptr ? rd16s(g.game_state + 0x1A) : -1;
+  // The site: an inline party_add's own offset, else the call into the library's join routine.
+  auto find = [&](int offset) -> const Location* {
+    if (offset < 0) return nullptr;
+    const auto it = r.join_sites.find(static_cast<int64_t>(map) << 32 | static_cast<u32>(offset));
+    return it != r.join_sites.end() ? &r.seed.locations[it->second] : nullptr;
+  };
+  const Location* l = find(at);
+  if (l == nullptr) l = find(call_at);
+  if (l == nullptr) {
+    // A site the seed does not list (a story member for a scene, a party put back together
+    // after a split): the original join.
+    log(std::string("join ") + character_name(id) + " at map " + std::to_string(map) + " " + std::to_string(at) +
+        " (call " + std::to_string(call_at) + "): not a listed site, the game's join");
+    return false;
+  }
+  if (!is_checked(l->id)) {
+    record_check(l->id, true);
+    if (l->item.own) r.pending.push_back({l->item.item, "", true});
+  }
+  const bool received =
+      std::find(r.state.characters.begin(), r.state.characters.end(), id) != r.state.characters.end();
+  if (!received) {
+    log(std::string("join site ") + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
+        " has not been received: not added");
+    return true;
+  }
+  // Received already: the scene's own join, when there is room (else the item keeps waiting).
+  if (slot_of_character(id) >= 0 || party_has_room()) {
+    auto& w = r.state.characters_waiting;
+    w.erase(std::remove(w.begin(), w.end(), id), w.end());
+    return false;
+  }
+  return true;
+}
+
+bool party_has_character(int id) { return slot_of_character(id) >= 0; }
+
+int required_protagonist() {
+  const Runtime& r = rt();
+  return r.on ? r.seed.protagonist : 0;
+}
+
+void scale_battle_rewards(s32* exp, s32* fol) {
+  Runtime& r = rt();
+  if (!r.on || (r.seed.exp_multiplier == 1 && r.seed.fol_multiplier == 1)) return;
+  const s32 exp0 = *exp, fol0 = *fol;
+  *exp = static_cast<s32>(std::min<s64>(static_cast<s64>(*exp) * r.seed.exp_multiplier, 999999999));
+  *fol = static_cast<s32>(std::min<s64>(static_cast<s64>(*fol) * r.seed.fol_multiplier, 999999999));
+  log("battle rewards: exp " + std::to_string(exp0) + " -> " + std::to_string(*exp) + ", fol " + std::to_string(fol0) +
+      " -> " + std::to_string(*fol));
+}
+
+bool on_enemy_drop(int enemy_type, int item) {
+  Runtime& r = rt();
+  if (!r.on || !r.seed.first_drops) return true;
+  const auto it = r.by_enemy.find(enemy_type);
+  if (it == r.by_enemy.end()) return true;
+  const Location& l = r.seed.locations[it->second];
+  if (is_checked(l.id)) return true;  // (its first drop was the check: the game's drops from now on)
+  record_check(l.id, true);
+  if (l.item.own) r.pending.push_back({l.item.item, "", true});
+  if (std::find(r.state.first_drops.begin(), r.state.first_drops.end(), enemy_type) == r.state.first_drops.end())
+    r.state.first_drops.push_back(enemy_type);
+  log("first drop of enemy type " + std::to_string(enemy_type) + " (item " + std::to_string(item) + "): the check instead");
+  return false;
+}
+
+bool random_encounters_off() {
+  const Runtime& r = rt();
+  return r.on && r.seed.encounter_rate == 0;
+}
+
+s32 scale_encounter_distance(s32 distance) {
+  const Runtime& r = rt();
+  if (!r.on || r.seed.encounter_rate == 100 || r.seed.encounter_rate <= 0) return distance;
+  return static_cast<s32>(static_cast<s64>(distance) * 100 / r.seed.encounter_rate);
+}
+
 std::string status_text() {
   Runtime& r = rt();
   if (!r.on) return "Archipelago off (no seed)";
   char buf[320];
   const char* net = !r.link ? "offline" : r.seed_mismatch ? "wrong seed" : r.net_ok ? "connected" : "connecting";
-  std::snprintf(buf, sizeof buf, "seed %s | slot %s | checks %zu/%zu | received %lld | waiting %zu | %s%s%s",
+  std::snprintf(buf, sizeof buf, "seed %s | slot %s | checks %zu/%zu | received %lld | waiting %zu | %s%s%s%s",
                 r.seed.seed.c_str(), r.seed.slot_name.c_str(), r.checked.size(), r.seed.locations.size(),
                 static_cast<long long>(r.state.received_index), pending_count(), net,
-                r.seed.deathlink ? " | DeathLink" : "", r.state.goal_done ? " | goal" : "");
-  return buf;
+                r.seed.deathlink ? " | DeathLink" : "", r.deathlink_in ? " (pending)" : "",
+                r.state.goal_done ? " | goal" : "");
+  std::string out = buf;
+  const Seed& sd = r.seed;
+  if (sd.character_items || sd.first_drops || sd.exp_multiplier != 1 || sd.fol_multiplier != 1 || sd.encounter_rate != 100) {
+    std::snprintf(buf, sizeof buf, "\n  characters %s | first drops %s (%zu) | exp x%d | fol x%d | encounters %d%%",
+                  sd.character_items ? "on" : "off", sd.first_drops ? "on" : "off", r.state.first_drops.size(),
+                  sd.exp_multiplier, sd.fol_multiplier, sd.encounter_rate);
+    out += buf;
+  }
+  if (!r.state.characters.empty()) {
+    out += "\n  received characters:";
+    for (const int id : r.state.characters) {
+      out += std::string(" ") + character_name(id);
+      if (std::find(r.state.characters_waiting.begin(), r.state.characters_waiting.end(), id) != r.state.characters_waiting.end())
+        out += " (waiting)";
+    }
+  }
+  if (r.state.ambushes > 0) out += "\n  ambushes waiting " + std::to_string(r.state.ambushes);
+  return out;
 }
 
 }  // namespace ss::game::ap

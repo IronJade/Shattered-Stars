@@ -40,6 +40,10 @@ void battle_debug_trail(const RibbonTrail* t);
 // battle_exit_to_field: prints the RNG draws, encounter, outcome and frames; SS_BATTLE_DUMP
 // writes the handoffs; SS_BATTLE_QUIT_AT_EXIT=1 then ends the run (runtime::QuitRequested).
 void battle_debug_exit();
+// Battle state 0 -> 1 (the party loader's end; party.cpp). SS_BATTLE_RNG_SKIP=N makes N extra
+// draws there: re-syncs the generator with a reference whose CD-timed loads drew differently
+// (docs/notes/battle_sweep.md, "RNG after CD-timed loads").
+void battle_debug_loaded();
 // The vblanks battle frame 'n' (0 = the first) waits for at its end (VSync(2): 2).
 // SS_BATTLE_TICKS=W0,W1,... overrides the first frames' waits, to reproduce a reference
 // whose setup ended mid-way through a 2-vblank period: "1" gives the original's 2, 1, 2,

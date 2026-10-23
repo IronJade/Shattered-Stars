@@ -247,6 +247,209 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
   Claude x200 HP attacking, so attack 1 runs and hits at vblank 576): the log is byte for
   byte the same with the original's line and with the fix.
 
+## Archipelago phase 3: proof, batch, docs (fourth AP agent, 2026-10-23 from ~01:30; read this first)
+
+Tasks (coordinator): 1 suites; 2 the late reachability proof wired into the logic; 3
+generation tests (50+ seeds, world tests, AP general tests, port spot checks); 4 phase-3 steps
+in tools/ap_e2e_so2.sh; 5 docs (apworld.md, field.md types 8 / 9, plan, CHECKLIST); 6 the
+world agent's two questions (Leon 229 in Rena seeds, Celine 74).
+
+- **1. Suites: done.** engine/build-enemy (current tree incl. the "!n" hook): ss_tests 78/0,
+  ss_game_tests 104/0, smoke 62/62 (scratchpad/enemy/ap4/*.log). Env: `source
+  scratchpad/enemy/ap4/env.sh` (discs, scratch XDG, SDL drivers, SKIP_REQUIREMENTS_UPDATE).
+- **New hook (boot/system.cpp, flagged `[enemy agent, AP late proof]`):** the SS_BATTLE_STUB
+  stand-in calls `ap::on_battle_exit(encounter, 0)`, so sweeps with a seed log boss checks.
+  Suites to rerun after it (built, not yet run).
+- **2. In progress:** `tools/ap_late_proof.py` (new, mine): proof seed from data.py (every
+  chest / gift / boss), BFS of chapter-60 event sweeps from map 671 (step 0xfa0 = the
+  user's save at the Final Save Point, flag 730, party + Rena + Noel; Rena's game "730,!1"),
+  edges = T / K / S entries ending in control on another map + "main script left"; proven =
+  `[ap] check` in a reached map. Output docs/ap/late_proof.json; logs scratchpad/late_proof/.
+
+## Archipelago phase 2c / 3 (third AP agent, 2026-10-23 ~02:30; read this first)
+
+Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, no builds).
+
+**Tasks, in order** (from the coordinator):
+1. A real end-to-end with an SO2 slot; then tick Phase 2 in CHECKLIST.md. **Done.**
+2. Boss checks: battles.json's boss encounters as locations, in the logic. **Done (APWorld).**
+3. Phase 3, APWorld side (the world agent a6cb3fe962f8c58f8 does the port side):
+   character_items, drops_as_checks, traps, exp / fol multipliers, encounter_rate.
+   **Written, world tests 55/55; docs and batch still to do.**
+4. Logic soundness: no progression where only the optimistic late evaluator says a map is
+   open, unless a headless run proves it. **Method chosen and tested; the BFS not run yet.**
+5. Generation tests again (50+ seeds over option combinations, AP's general tests, the
+   world's tests); report the numbers. **Not started** (world tests only: 55 passed).
+
+### Task 1: done
+- `tools/ap_e2e_so2.sh` (new, mine; `tools/ap_e2e.sh` stays the world agent's, now 16/16
+  with its phase-3 sessions) passes 12/12, twice:
+  - Generate.py, seed 4242, makes SO2 "Claude" (protagonist claude) plus ChecksFinder "Bob",
+    with `--plando "bosses, items, connections, texts"`;
+  - item plando puts Bob's Map Width in Arlia's 200-Fol crate (1347569665) and Claude's
+    Resurrection Bottle on Bob's Tile 1;
+  - MultiServer runs on 127.0.0.1:38292 (AP_E2E_PORT) with release / collect disabled;
+  - the port connects as Claude, opens the crate ("Sent Map Width to Bob."), and gets the
+    bottle in free play;
+  - `battle 539` from the console with `--battle-end 60:0` records the goal;
+  - afterwards a Tracker-tag login reads `checked_locations == [crate]` and
+    `_read_client_status_0_2 == 30`.
+  - Run it with `SS_DISC1=... tools/ap_e2e_so2.sh engine/build-enemy/shattered-stars`.
+- CHECKLIST Phase 2 is ticked.
+- To add, as the world agent asks: phase-3 steps in ap_e2e_so2.sh.
+  - Claude.yaml plando puts "Celine" and a trap ("Fol Loss Trap") on Bob's tiles, with
+    `character_items: true`;
+  - a drop check with `drops_as_checks: first_drop`. The world agent suggests `battle 535`
+    (Berle, type 197, odds 255), but the APWorld makes no drop location for Berle: checked,
+    type 197 is not in field.json enemy_drops, because Berle is met only in scripted fights.
+    Use a random-encounter type instead (e.g. Gerel, type 17, groups 1 / 5; find a sure
+    drop), or `ap_check` the drop location's id from the console.
+
+### Tasks 2 + 3: written (APWorld side)
+- **`tools/ap_extract.py`** (field.json regenerated, 1.08 MB, ids of old records unchanged):
+  - `LOCATION_TYPES` gains drop 8, boss 9. Their ids: `BASE + (8 << 21) + enemy type`,
+    `BASE + (9 << 21) + encounter`. The world agent put both in seed_format.md.
+  - New keys:
+    - `bosses`: 47 records, with constant scripted sites, context, window / late, region,
+      area;
+    - `enemy_drops`: 89 types with a drop that random encounters meet;
+    - `encounter_groups`: the field program's 0x80074fe0 table, groups 1-28 and 30;
+    - `world_map_groups`: the 9 x 7 grids at 0x80074ef0 / 0x80074f70 (+1 for terrain 5,
+      +2 for Nede terrains 10-12);
+    - `encounter_sites`: the 306 calls to each map's set-encounters library routine, which
+      takes rate -> G[0x25], stage -> G[0x12] and group -> G[0x14]. field_flags is the same
+      block as the script globals.
+  - The second site of a recruitment record now has its own id: `gift_site_ids(joins,
+    "recruitment")`. Ernest 479 0x7c30 = 1354333187.
+  - New functions: field_program_image, encounter_groups, world_map_groups, battle_sites,
+    encounter_sites, bosses, enemy_drops.
+  - Regenerate (about 1 min):
+
+        python3 tools/ap_extract.py D1.cue D2.cue --no-battles -o docs/ap/field.json
+
+- **`tools/ap_world_tables.py`** builds data.py with 560 rows: 311 chests, 101 gifts, 41
+  bosses, 18 joins, 89 drops.
+  - **Bosses.**
+    - STORY_BOSSES (21): never missable, since the story fights them and a loss is a game
+      over.
+    - OPTIONAL_BOSSES (4): Flarelizard, Nightmare, XINE, Ghost; reason "optional quest".
+    - losable (3): param 0 (204, 517, 530).
+    - cave (13).
+    - Left out: 539 / 540 (the goal), and 0 / 263 / 534 / 561 (no constant site).
+    - Areas come from the tables; the cave's from the floor banners. Map 463 (Azamgil) is
+      forced to Expel.
+  - **Joins.** JOIN_SITES lists 18 sites, agreed with the world agent:
+    - Celine 124 / 125; Bowman 208; Dias 130 / 439 / 229 0x7c9c; Precis 209;
+    - Ashton 71 x3; Leon 230 / 229 0x73dc; Opera 374 + 479 x3; Ernest 479 0x7c30;
+      Chisato 242.
+    - Not listed (temporary scenes or restores): 74, 437, 434, 468 / 477, 126 / 462 / 524 /
+      422 / 548 / 234. These leaves are proven by `scratchpad/enemy/ap3/removes.py`, which
+      scans calls to the library leave routine (character, flag).
+    - Noel is not shuffled.
+  - **Drops.** Each drop's region is the earliest region where the type is met. The pool item
+    is the type's first drop.
+  - **Missable reasons.** SOFT_REASONS = window, time-limited. Everything else is "hard":
+    private action, optional member, join, optional quest, losable, and protagonist-only
+    under "any".
+- **APWorld** (`apworld/so2`):
+  - **options.py.** New options: boss_checks (default on), character_items, drops_as_checks
+    (off / first_drop), traps (0-100 %), exp_multiplier, fol_multiplier (1-10),
+    encounter_rate (0-200). Three option groups.
+  - **items.py.**
+    - Character items: CHARACTER_BASE = ITEM_BASE + 0x20000, plus the party id (1-12). They
+      are Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Chisato. They are
+      classified useful, never progression, because every member-gated location is
+      excluded.
+    - Traps: TRAP_BASE = ITEM_BASE + 0x30000, plus 1-5: "Ambush Trap", "Fol Loss Trap"
+      (10 %), "Poison Trap", "Paralysis Trap", "Stone Trap".
+    - seed_item writes the kinds character / trap.
+  - **locations.py.**
+    - choose(): boss / join / drop rows follow their options.
+    - A hard reason means EXCLUDED, even with missable "include". This fixes an unsoundness
+      in phase 2b: "include" let two mutually exclusive locations both hold progression.
+    - "remove" never removes join sites.
+    - seed_check now covers boss, join and drop.
+  - **world.py.**
+    - choose_party(): one of Bowman / Precis; Ashton or Opera + Ernest; Celine; Chisato;
+      Leon (claude) / Dias (rena). At most 5 beside Claude, Rena and Noel; when over, Ernest
+      or a single drops out.
+    - create_items: characters replace join locations' Blueberries; traps % of the filler
+      becomes traps.
+    - slot_data and the seed's options gain boss_checks, character_items, characters,
+      drops_as_checks, traps and the multipliers.
+  - **rules.py.** Drops get an item rule: never progression.
+  - **test/test_world.py** (rewritten): 14 classes, 55 tests pass (3794 subtests).
+
+      cd scratchpad/ap/Archipelago && SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test
+
+- **Still to do for 2 + 3:**
+  - docs/ap/apworld.md: new options, locations, characters, the include change, ids;
+  - field.md "Location ids": types 8 / 9, per-site join ids, the new keys;
+  - archipelago_plan.md phase 3 status;
+  - the e2e phase-3 steps;
+  - task 5.
+
+### Task 4: logic soundness (method ready, not run)
+- **The problem.** Every non-excluded chest or gift is assumed reachable forever. A player who
+  skips one before its map closes (an Expel map after the disc switch, a Nede map later on)
+  loses it unless that map reopens at chapter 60. `late` (ap_extract late_maps) counts
+  unknown flags as possible, so it is not a proof. Story bosses are exempt (they can't be
+  skipped). Cave bosses and cave chests need the proof, because the cave is reached only
+  through Virtual Expel.
+- **The method: an event-sweep BFS at chapter 60** (tested).
+  - The script: `scratchpad/enemy/ap3/late/sweep1.sh MAP` (env GLOBALS, FLAGS, SEED, DISC,
+    FRAMES). One headless `--map MAP` run with SS_EVENT_SWEEP=1, SS_BATTLE_STUB=1,
+    SS_SCRIPT_GLOBALS="a0=60,a4=0" (use a4=0xbb8: step 3000 is the state at the Final Save
+    Point, after Vesper and before Cyril), SS_SWEEP_FLAGS=730 and SS_EVENT_SWEEP_DISC=2.
+    - Its copy of the binary is `scratchpad/enemy/ap3/late/bin/shattered-stars`; refresh it
+      after builds.
+    - Each run takes 6-30 s.
+  - **Edges.** The sweep fires each registered entry from a snapshot and logs `entry N Tk end
+    map X` when it transfers.
+    - Count T and K entries; skip P entries, which are Private Action mode.
+    - World maps sweep too: `--map 2` gives T entries to every town, e.g. map 2 to 317, 306,
+      549, 449, 686, 687, 463, 579, 235, 260, 277, 419, 629, 597, 279...
+    - Map 671 leads to 651 and 684.
+  - **Roots.** Map 671 (the Final Save Point). The BFS follows real transfers to Nede, to
+    Fun City's arena (303: K25, then map 18 Virtual Expel), and on to Expel and the cave.
+    Optionally root 18 too, which phase 2b proved.
+  - **Rena's game.** New hook (mine, flagged): SS_SWEEP_FLAGS takes "!n" to clear flag n.
+    `FLAGS='730,!1'` plays Rena's game from a --map start (--map always sets flag 1, Claude).
+    Built and in the bin copy.
+  - **Locations.** Generate an all-locations solo seed: missable include, cave on, boss
+    checks, one with protagonist claude and one with rena. Sweep with `SEED=...`. A chest or
+    gift that fires logs `[ap] check ID`. Proven = checked in a sweep of a BFS-reached map,
+    in that protagonist's game.
+  - **Cave bosses.** The battle stub skips battle_exit_to_field, so no boss check is logged.
+    Either count a cave boss proven when its map is reached and its battle starts (look for a
+    trace of the encounter; SS_TRACE?), or keep cave bosses no-progression.
+  - **Output.** Write a committed tool `tools/ap_late_proof.py`, the BFS driver (jobs 6, the
+    event_sweep.py patterns), and `docs/ap/late_proof.json` with: state, roots, maps reached
+    per game, edges, location ids proven per game.
+  - **Wiring.** ap_world_tables reads late_proof.json and adds `late_proven` per row. In
+    rules.py, a chest / gift / cave boss that is not proven gets the no-progression rule, the
+    one drops have. expel_progression stays as an extra switch.
+  - **Conservative, by design.** The sweep starts with only chapter / step / 730 set, so
+    doors behind story flags may stay shut: those locations become no-progression.
+- **The include fix** above (hard reasons always excluded) is part of task 4. So is "characters
+  are useful only": member-gated logic would be non-monotonic, since Ashton rules out Opera.
+
+### Files changed this turn (none committed)
+- New: tools/ap_e2e_so2.sh.
+- Changed: tools/ap_extract.py, tools/ap_world_tables.py, docs/ap/field.json,
+  apworld/so2/{data.py (generated), items.py, locations.py, options.py, rules.py, world.py,
+  test/test_world.py}.
+- Hook in another agent's file: engine/src/game/field/event_sweep.cpp (SS_SWEEP_FLAGS "!n";
+  the menu agent's file, flagged `[enemy agent, AP late proof]`).
+- Docs: docs/CHECKLIST.md (Phase 2 ticked), docs/handoff/enemy.md.
+- Scratch:
+  - `scratchpad/enemy/ap3/`: build.log, field_new.json, data_before.py, bossctx.py /
+    removes.py / dis.py (analysis), e2e/ (first manual generation);
+  - `scratchpad/enemy/ap3/late/`: sweep1.sh, bin/, logs/ (18, 2, 671), xdg/;
+  - `scratchpad/ap_e2e_so2/`.
+- The build in engine/build-enemy is current (with the hook). Suites not re-run since: run
+  ss_tests / ss_game_tests / smoke before the next report.
+
 ## Archipelago phase 2b (new agent, 2026-10-23; read this first, then the section below)
 
 **Tasks, in order** (from the coordinator):
@@ -308,7 +511,35 @@ Full texts: `scratchpad/enemy/reports/group<N>.txt`. What still matters:
     387.
   - The story needs no inventory items besides key flags (field.md).
 - Scratch: scratchpad/enemy/ap2 (run.sh, xdg, logs, field_before.json, vexpel_seed*.json).
-- **Next: task 3, the APWorld.**
+- **Task 3, the APWorld: done** (docs/ap/apworld.md has everything).
+  - Package and tables:
+    - `apworld/so2/`: world.py, items.py, locations.py, regions.py, rules.py, options.py,
+      data.py (generated), archipelago.json, docs/, test/;
+    - patches.py is the world agent's, imported.
+    - `tools/ap_world_tables.py` writes data.py from field.json + battles.json.
+  - Story mode: 412 locations (311 chests, 101 gift sites); 2 key-item chests and 33
+    key-flag sites stay vanilla. The pool is the vanilla contents. Events: Energy Nede, the
+    Final Save Point, Victory.
+  - Options: goal, protagonist, missable_locations, expel_progression, cave_of_trials,
+    death_link.
+  - Tests:
+    - so2's own: 30 passed;
+    - AP's test/general: 379 passed;
+    - 50 seeds (2 SO2 + ChecksFinder): all fill (100 .apso2 files, 32 option combinations);
+    - in the port: chests on maps 18 / 67 / 402 and gifts on 402 / 233 pay the spoiler's
+      items; Alice's item is "sent"; start_inventory is given.
+  - The world is linked at scratchpad/ap/Archipelago/worlds/so2 (a symlink).
+  - scratchpad/ap_venv is deleted. pytest and pytest-xdist were added to scratchpad/ap/ap-venv.
+- **Agreed with world agent a6cb3fe962f8c58f8 (phase 3, port side):**
+  - its seed names for character / trap items, join / drop checks and multipliers;
+  - drop ids use type 8;
+  - I owe per-site join ids in ap_extract, and a consistent party in the pool.
+- **Open:**
+  - phase 3 in the world (characters, drops, traps);
+  - boss checks (47);
+  - the port enforcing the protagonist;
+  - map 463 / hub 625 (field.md open item 3);
+  - the 129 computed reward calls.
 
 ## Archipelago phase 2 (context rollover 2026-10-23 ~01:00)
 
@@ -377,15 +608,9 @@ docs/ap/field.md, "Findings since Phase 1", with Prima page references.
   It takes about 2.5 min and is deterministic.
 
 **Item 2, status: just started.**
-- **Archipelago 0.6.8.** A git tag shallow-cloned to `scratchpad/ap_venv/Archipelago`. The
-  venv `scratchpad/ap_venv/venv` uses Python 3.13 (`~/.local/bin/python3.13`; the system
-  3.14 is too new) with requirements.txt installed.
-- **Always `source scratchpad/ap_venv/env.sh` first.** It points HOME, XDG_* and TMPDIR at
-  scratchpad/ap_venv, puts the venv on PATH and cds into the Archipelago tree.
-- **`python Generate.py --help` hung** until the timeout killed it. It is most likely
-  ModuleUpdate waiting at an install prompt for other worlds' requirements. Next try:
-  `python ModuleUpdate.py --yes` (or run `Generate.py` with `--skip_prog_balancing`
-  after the update) with stdin closed.
+- **Archipelago 0.6.8** (superseded, 2026-10-23): scratchpad/ap_venv is deleted. Use
+  scratchpad/ap (tools/ap_test_server.sh's install: uv, Python 3.13, `ap-venv`) with
+  `SKIP_REQUIREMENTS_UPDATE=1`. The old install hung because ModuleUpdate waited at a prompt.
 - **The plan for the world:**
   - Put the package at `apworld/so2/` in the repo. Symlink or copy it into
     `Archipelago/worlds/so2` (or `custom_worlds/`) to run.

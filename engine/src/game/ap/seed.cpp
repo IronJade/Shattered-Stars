@@ -33,6 +33,15 @@ int get_int_or(const Json& j, int fallback) {
   return get_int(j, &v) ? static_cast<int>(v) : fallback;
 }
 
+// A character as a party id (1-12) or a name ("Celine").
+int parse_character(const Json& j) {
+  if (j.is_string()) {
+    if (const int by_name = character_by_name(j.as_string()); by_name != 0) return by_name;
+  }
+  int64_t v = 0;
+  return get_int(j, &v) && v >= 1 && v <= kCharacterCount ? static_cast<int>(v) : 0;
+}
+
 bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::string& where) {
   if (!j.is_object()) return fail(error, where + ": an item must be an object");
   ItemDef it;
@@ -48,6 +57,23 @@ bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::stri
   } else if (it.kind == "fol") {
     if (!get_int(j["amount"], &v) || v < 0) return fail(error, where + ": amount expected");
     it.amount = static_cast<int>(v);
+  } else if (it.kind == "character") {
+    it.character = parse_character(j["character"]);
+    if (it.character == 0) return fail(error, where + ": character 1-12 or a name expected");
+    if (it.name.empty()) it.name = character_name(it.character);
+  } else if (it.kind == "trap") {
+    it.trap = j["trap"].as_string();
+    if (it.trap == "fol_loss") {
+      it.percent = j.has("percent") ? get_int_or(j["percent"], -1) : 10;
+      if (it.percent < 1 || it.percent > 100) return fail(error, where + ": percent 1-100 expected");
+    } else if (it.trap == "status") {
+      it.status = j.has("status") ? j["status"].as_string() : "poison";
+      if (it.status != "poison" && it.status != "paralysis" && it.status != "stone")
+        return fail(error, where + ": status poison, paralysis or stone expected");
+    } else if (it.trap != "ambush") {
+      return fail(error, where + ": trap ambush, fol_loss or status expected");
+    }
+    if (it.name.empty()) it.name = it.trap == "ambush" ? "Ambush" : it.trap == "fol_loss" ? "Fol loss" : "Status ailment";
   } else if (it.kind != "foreign") {
     return fail(error, where + ": unknown kind '" + it.kind + "'");
   }
@@ -55,7 +81,32 @@ bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::stri
   return true;
 }
 
+// An option given as a number in a range (a missing one keeps the default).
+bool option_int(const Json& options, const char* key, int lo, int hi, int* out, std::string* error) {
+  if (!options.has(key)) return true;
+  const Json& v = options[key];
+  int64_t n = 0;
+  if (v.type() == Json::Type::Bool) n = v.as_bool() ? 1 : 0;
+  else if (!get_int(v, &n)) n = INT64_MIN;
+  if (n < lo || n > hi)
+    return fail(error, std::string("options.") + key + ": " + std::to_string(lo) + "-" + std::to_string(hi) + " expected");
+  *out = static_cast<int>(n);
+  return true;
+}
+
 }  // namespace
+
+const char* character_name(int id) {
+  static const char* const kNames[kCharacterCount] = {"Claude", "Rena",  "Celine", "Bowman", "Dias", "Precis",
+                                                      "Ashton", "Leon",  "Opera",  "Ernest", "Noel", "Chisato"};
+  return id >= 1 && id <= kCharacterCount ? kNames[id - 1] : "";
+}
+
+int character_by_name(const std::string& name) {
+  for (int id = 1; id <= kCharacterCount; ++id)
+    if (name == character_name(id)) return id;
+  return 0;
+}
 
 // ---- The seed file ----
 
@@ -106,6 +157,16 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     } else if (l.type == "boss") {
       l.encounter = get_int_or(c["encounter"], -1);
       if (l.encounter < 0) return fail(error, where + ": a boss needs its encounter");
+    } else if (l.type == "join") {
+      l.offset = get_int_or(c["offset"], -1);
+      if (l.map < 0 || l.offset < 0) return fail(error, where + ": a join needs map and offset (the site's call)");
+      if (c.has("character")) {
+        l.character = parse_character(c["character"]);
+        if (l.character == 0) return fail(error, where + ": character 1-12 or a name expected");
+      }
+    } else if (l.type == "drop") {
+      l.enemy = get_int_or(c["enemy"], -1);
+      if (l.enemy < 0) return fail(error, where + ": a drop needs its enemy type");
     } else if (l.type.empty()) {
       return fail(error, where + ": check.type missing");
     }
@@ -151,6 +212,29 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   for (size_t i = 0; i < goal.size(); ++i) s.goal_encounters.push_back(get_int_or(goal[i], -1));
   if (!j["goal"].has("encounters")) s.goal_encounters = {539, 540};
   s.deathlink = s.options["deathlink"].as_bool(false);
+  // The protagonist the seed's logic assumes (the APWorld's option: any / claude / rena).
+  if (const Json& p = s.options["protagonist"]; p.is_string()) {
+    const std::string& v = p.as_string();
+    if (v == "claude") s.protagonist = 1;
+    else if (v == "rena") s.protagonist = 2;
+    else if (v != "any" && v != "random") return fail(error, "options.protagonist: any, claude or rena expected");
+  } else if (!p.is_null() && !option_int(s.options, "protagonist", 0, 2, &s.protagonist, error)) {
+    return false;
+  }
+  // Phase 3: the randomizer's play options. Without them (or at their defaults) the game
+  // plays as the original.
+  s.character_items = s.options["character_items"].as_bool(false);
+  const Json& drops = s.options["drops_as_checks"];
+  if (drops.is_string()) {
+    if (drops.as_string() != "off" && drops.as_string() != "first_drop")
+      return fail(error, "options.drops_as_checks: off or first_drop expected");
+    s.first_drops = drops.as_string() == "first_drop";
+  } else {
+    s.first_drops = drops.as_bool(false);
+  }
+  if (!option_int(s.options, "exp_multiplier", 1, 10, &s.exp_multiplier, error)) return false;
+  if (!option_int(s.options, "fol_multiplier", 1, 10, &s.fol_multiplier, error)) return false;
+  if (!option_int(s.options, "encounter_rate", 0, 200, &s.encounter_rate, error)) return false;
   *out = std::move(s);
   return true;
 }

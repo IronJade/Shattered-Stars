@@ -1,0 +1,84 @@
+"""Items: every game item (AP id = ITEM_BASE + item number), the Fol bundles found at
+locations (FOL_BASE + amount), the characters character_items shuffles (CHARACTER_BASE + party
+id) and the traps (TRAP_BASE + n). Story key items are script flags and stay where they are."""
+from BaseClasses import Item, ItemClassification
+
+from .data import FOL_AMOUNTS, FOL_BASE, ITEM_BASE, ITEMS, USEFUL_RANGES
+
+GAME = "Star Ocean: The Second Story"
+FILLER_NAME = "Blueberry"
+
+CHARACTER_BASE = ITEM_BASE + 0x20000
+TRAP_BASE = ITEM_BASE + 0x30000
+# Party ids (the port's 1-12: party_add's argument + 1).
+PARTY_ID = {"Claude": 1, "Rena": 2, "Celine": 3, "Bowman": 4, "Dias": 5, "Precis": 6, "Ashton": 7, "Leon": 8,
+            "Opera": 9, "Ernest": 10, "Noel": 11, "Chisato": 12}
+CHARACTER_ITEMS = ("Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest", "Chisato")
+# The members that never join by an item: the protagonists and Noel (the story adds him).
+FIXED_MEMBERS = ("Claude", "Rena", "Noel")
+PARTY_SIZE = 8
+# Trap items and what the port does with them (docs/ap/seed_format.md, phase 3).
+TRAPS = {
+    "Ambush Trap": {"trap": "ambush"},
+    "Fol Loss Trap": {"trap": "fol_loss", "percent": 10},
+    "Poison Trap": {"trap": "status", "status": "poison"},
+    "Paralysis Trap": {"trap": "status", "status": "paralysis"},
+    "Stone Trap": {"trap": "status", "status": "stone"},
+}
+TRAP_IDS = {name: TRAP_BASE + k for k, name in enumerate(TRAPS, start=1)}
+
+ITEM_NAME_TO_ID = {name: ITEM_BASE + n for n, name in ITEMS.items()}
+ITEM_NAME_TO_ID.update({f"{amount} Fol": FOL_BASE + amount for amount in FOL_AMOUNTS})
+ITEM_NAME_TO_ID.update({name: CHARACTER_BASE + PARTY_ID[name] for name in CHARACTER_ITEMS})
+ITEM_NAME_TO_ID.update(TRAP_IDS)
+GAME_ITEM = {ITEM_BASE + n: n for n in ITEMS}          # AP id -> game item number
+FOL_AMOUNT = {FOL_BASE + a: a for a in FOL_AMOUNTS}     # AP id -> Fol
+CHARACTER_OF = {CHARACTER_BASE + PARTY_ID[n]: n for n in CHARACTER_ITEMS}
+TRAP_OF = {v: k for k, v in TRAP_IDS.items()}
+
+ITEM_NAME_GROUPS = {
+    "Fol": {f"{amount} Fol" for amount in FOL_AMOUNTS},
+    "Equipment": {name for n, name in ITEMS.items() if any(lo <= n <= hi for lo, hi in USEFUL_RANGES)},
+    "Characters": set(CHARACTER_ITEMS),
+    "Traps": set(TRAPS),
+}
+
+# Events (no id): story milestones the regions hang on, and the goal.
+EVENT_ENERGY_NEDE = "Arrived on Energy Nede"
+EVENT_FINAL_SAVE_POINT = "Saved at the Final Save Point"
+EVENT_VICTORY = "Victory"
+
+
+class SO2Item(Item):
+    game = GAME
+
+
+def classification(name):
+    """Equipment and characters are useful. A character is never progression: every location
+    that needs a member is excluded from progression (members rule each other out, which the
+    logic can't express), so nothing in the logic waits for one."""
+    code = ITEM_NAME_TO_ID[name]
+    if code in TRAP_OF:
+        return ItemClassification.trap
+    if code in CHARACTER_OF:
+        return ItemClassification.useful
+    n = GAME_ITEM.get(code)
+    if n is not None and any(lo <= n <= hi for lo, hi in USEFUL_RANGES):
+        return ItemClassification.useful
+    return ItemClassification.filler
+
+
+def item_name(item, fol):
+    """The item a location's vanilla contents give."""
+    return f"{fol} Fol" if fol is not None else ITEMS[item]
+
+
+def seed_item(name, code):
+    """An own item as the seed describes it (docs/ap/seed_format.md, "An item")."""
+    if code in FOL_AMOUNT:
+        return {"name": name, "kind": "fol", "amount": FOL_AMOUNT[code]}
+    if code in CHARACTER_OF:
+        return {"name": name, "kind": "character", "character": CHARACTER_OF[code]}
+    if code in TRAP_OF:
+        return dict({"name": name, "kind": "trap"}, **TRAPS[name])
+    return {"name": name, "kind": "item", "game_id": GAME_ITEM[code], "count": 1}

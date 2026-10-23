@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/boot/stubs.h"
 #include "game/common/math.h"
@@ -375,6 +376,14 @@ void character_screen(Sequence& s) {
   s.result = 0;
   w->set_rect(0x24, 0x78, 0xE8, 0x72);
   int bright[2] = {0x100, 0};  // local_110 / local_10c
+  // Archipelago (port feature) [world agent]: a seed made for one protagonist's game starts
+  // on that protagonist and keeps the cursor there (the other side buzzes).
+  const int locked = ap::required_protagonist();
+  if (locked != 0) {
+    w->selection = locked - 1;
+    bright[0] = locked == 1 ? 0x100 : 0;
+    bright[1] = locked == 2 ? 0x100 : 0;
+  }
   const int widths[2] = {0xCE, 0xE4};  // portrait widths (local_108 / local_104)
   pad_clear(s.t.pad, 0);
   for (;;) {
@@ -404,7 +413,14 @@ void character_screen(Sequence& s) {
         s.result = 1;
         sound_play_sfx(s.sound(), 6, 0, 0x7F40);
       }
-      if (repeat & kPadLeft) {
+      if (locked != 0 && (repeat & (kPadLeft | kPadRight)) != 0) {
+        if (((repeat & kPadLeft) != 0 && w->selection > 0) || ((repeat & kPadRight) != 0 && w->selection < 1)) {
+          sound_play_sfx(s.sound(), 7, 0, 0x7F40);  // (the name screen's refusal sound)
+          runtime::Runtime::get().log_once("ap-protagonist",
+                                           std::string("[ap] this seed is for ") + (locked == 1 ? "Claude" : "Rena") +
+                                               "'s game: the other protagonist cannot be chosen");
+        }
+      } else if (repeat & kPadLeft) {
         if (--w->selection < 0) {
           w->selection = 0;
         } else {
@@ -412,7 +428,7 @@ void character_screen(Sequence& s) {
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);
         }
       }
-      if (repeat & kPadRight) {
+      if (locked == 0 && (repeat & kPadRight)) {
         if (++w->selection < 2) {
           anim = anim_timer = 0;
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);

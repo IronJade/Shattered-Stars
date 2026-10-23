@@ -121,7 +121,7 @@ ext,0xb3,,actor_clear_emote,1,1,0 (inline),actor_cmd_clear_emote,confirmed
 ext,0xb4,,set_76224,2,2,1 (inline),0x80076224 / 0x80076226 = (s16) a0 / a1,confirmed
 ext,0xb5,,fade_ex,4,4,2 (inline),fade_push(a0..a3); first-fade rule as 0x7c,confirmed
 ext,0xb6,,unequip_item,2,2,1 (inline),"char_unequip_item(character, item)",confirmed
-ext,0xb7,,battle,3,3,1 (inline),"(encounter, background, param): field state +0x7e = a2; voice cache, field_prepare_encounter(-a0, a1), battle preloads; wait state 0xb",confirmed
+ext,0xb7,,battle,3,3,1 (inline),"(encounter, background, param): field state +0x7e = a2 (1 = a loss is a game over; 0 = a story battle the party may lose: the script reads the outcome from R, e.g. Zand map 163, Shin map 548, Marsilio map 657, the tournament on 477); voice cache, field_prepare_encounter(-a0, a1), battle preloads; wait state 0xb",confirmed
 ext,0xb8,,music,1,1,0 (inline),Music change (numbers below 100 through music_table 0x800750cc); wait state 8 while it loads,confirmed
 ext,0xb9,,notice,4,4,2 (inline),"Notice banner (unused, string lo, hi, hold) in window 7; at the top when the leader is low on screen",confirmed
 ext,0xba,,music_fade_out,1,1,0 (inline),sound_fade_out(frames) unless a music change is loading,confirmed
@@ -334,14 +334,14 @@ table_b,0xff,0x08,B_nop_08,0,0,0 (inline),,confirmed
 table_b,0xff,0x09,msg_set_13d,2,2,1 (inline),window[a1]+0x13d = a0 != 0 (close flag; set before ext 0x7f waits),confirmed
 table_b,0xff,0x0a,random,1,1,0 (inline),R = rng % a (0 if a == 0),confirmed
 table_b,0xff,0x0b,fx_spawn_beam,11,11,5 (inline),"(a0&0xff, (a1..a3)<<12, (a4..a6)<<12, a7..a10)",confirmed
-table_b,0xff,0x0c,msg_set_140,2,2,1 (inline),"window[a1]+0x140 = a0 (input flag, toggled with 0x09)",confirmed
+table_b,0xff,0x0c,msg_set_140,2,2,1 (inline),"window[a1]+0x140 = a0 (input flag, toggled with 0x09): 1 the confirm button ends waits; 0 only a close request (B 0x03) or auto text (script flag 0x2f1) does",confirmed
 table_b,0xff,0x0d,actor_stop,1,1,0 (inline),clears move/fade state and the command queue,confirmed
 table_b,0xff,0x0e,trigger_set_pa,2,2,1 (inline),trigger[a0]+0xa = a1 (Private Action entry),confirmed
 table_b,0xff,0x0f,mapobj_apply,3,3,1 (inline),"FUN_800525ac(field, a0..a2) + actor draw reset",confirmed
-table_b,0xff,0x10,relation_a_add,3,3,1 (inline),"config+0x58 / +0xe8 [a0*12 + a1] += a2, clamp 0..15",confirmed
-table_b,0xff,0x11,relation_a_get,2,2,1 (inline),R = that byte,confirmed
-table_b,0xff,0x12,relation_b_add,3,3,1 (inline),"config+0x58 / +0xe8 [a0*12 + a1] += a2, clamp 0..15",confirmed
-table_b,0xff,0x13,relation_b_get,2,2,1 (inline),R = that byte,confirmed
+table_b,0xff,0x10,relation_a_add,3,3,1 (inline),"config+0x58 [a0*12 + a1] += a2, clamp 0..15: the table the ending selection reads for opposite-sex pairs (docs/notes/endings.md)",confirmed
+table_b,0xff,0x11,relation_a_get,2,2,1 (inline),R = config+0x58 [a0*12 + a1],confirmed
+table_b,0xff,0x12,relation_b_add,3,3,1 (inline),"config+0xe8 [a0*12 + a1] += a2, clamp 0..15: the table the ending selection reads for same-sex pairs and every ending variant (docs/notes/endings.md)",confirmed
+table_b,0xff,0x13,relation_b_get,2,2,1 (inline),R = config+0xe8 [a0*12 + a1],confirmed
 table_b,0xff,0x14,party_restore_hp_all,0,0,0 (inline),,confirmed
 table_b,0xff,0x15,party_restore_mp_all,0,0,0 (inline),,confirmed
 table_b,0xff,0x16,ovl_801eac28,1,1,0 (inline),"Overlay #3103 0x801eac28(ctx, instr): compares the whole instruction with 0x16, never equal, so it always fetches 1 argument",confirmed

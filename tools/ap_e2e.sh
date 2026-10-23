@@ -17,6 +17,16 @@
 #   3. Bob (a Python client) receives Map Width from Alice, then checks three of his tiles that
 #      hold Alice's items; the port gives them in free play (Blueberries, Blackberries, 100 Fol)
 #      with the banner.
+# Phase 3 [world agent], two more sessions on the same server (a new game each, no sidecar, so
+# the server hands Alice's three items over again):
+#   4. With a phase-3 seed for Alice (the same multiworld seed id), Bob's three items are a
+#      character (Celine) and two traps (half the Fol, poison); her Tile 2 is the first drop
+#      of Berle (enemy type 197): the port fights encounter 535 (console `battle`,
+#      --battle-end 60:0), the drop is the check and Bob receives Map Width from location
+#      81001. Bob, with the DeathLink tag, answers with a DeathLink: Alice's party falls, and
+#      no DeathLink goes back (it was the link's death).
+#   5. Alice loses a battle (--battle-end 60:2): the game over sends a DeathLink that Bob
+#      receives (source Alice).
 # Output, logs and captures (frames 700: the window, 850: the first banner) in
 # scratchpad/ap_e2e/. Exit status 0 when every step is seen.
 set -u
@@ -82,6 +92,60 @@ async def main():
 asyncio.run(main())
 BOB
 
+cat > "$W/seed_p3.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "13515657874892102023",
+ "game": "Star Ocean: The Second Story",
+ "slot": {"name": "Alice", "id": 1},
+ "options": {"deathlink": true, "character_items": true, "drops_as_checks": "first_drop"},
+ "items": {
+  "80002": {"name": "Celine", "kind": "character", "character": 3},
+  "80000": {"name": "Fol trap", "kind": "trap", "trap": "fol_loss", "percent": 50},
+  "80001": {"name": "Poison trap", "kind": "trap", "trap": "status", "status": "poison"}
+ },
+ "locations": [
+  {"id": 81001, "name": "Berle's first drop (Tile 2)", "check": {"type": "drop", "enemy": 197},
+   "item": {"player": 2, "player_name": "Bob", "name": "Map Width", "ap_id": 80000, "classification": "progression"}}
+ ],
+ "patches": []}
+SEED
+
+cat > "$W/bob_dl.py" <<'BOB'
+# Bob for sessions 4 / 5 (DeathLink tag): logs every item and Bounced packet. With "answer",
+# once Alice's Tile 2 (81001) sends him Map Width he sends a DeathLink of his own.
+import asyncio, json, sys, time, websockets
+async def main():
+    t0 = time.time()
+    log = lambda *a: print(f"[bob {time.time() - t0:6.2f}]", *a, flush=True)
+    answer = sys.argv[3] == "answer"
+    async with websockets.connect(sys.argv[2]) as ws:
+        await ws.recv()  # RoomInfo
+        await ws.send(json.dumps([{"cmd": "Connect", "game": "ChecksFinder", "name": "Bob", "password": "",
+                                   "uuid": "bob-ap-e2e-dl", "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
+                                   "items_handling": 0b001, "tags": ["DeathLink"], "slot_data": False}]))
+        sent = False
+        deadline = time.time() + float(sys.argv[1])
+        while time.time() < deadline:
+            try:
+                msg = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            for p in json.loads(msg):
+                if p["cmd"] == "Connected":
+                    log("connected as Bob (DeathLink), slot", p["slot"])
+                elif p["cmd"] == "ReceivedItems":
+                    for it in p["items"]:
+                        log(f"received item {it['item']} from player {it['player']} location {it['location']}")
+                        if answer and (it["item"], it["player"], it["location"]) == (80000, 1, 81001) and not sent:
+                            sent = True
+                            await ws.send(json.dumps([{"cmd": "Bounce", "tags": ["DeathLink"],
+                                                       "data": {"time": time.time(), "source": "Bob", "cause": "Bob fell"}}]))
+                            log("sent a DeathLink")
+                elif p["cmd"] == "Bounced" and "DeathLink" in p.get("tags", []):
+                    log("DeathLink received from", p.get("data", {}).get("source"))
+        log("done")
+asyncio.run(main())
+BOB
+
 python3 apworld/so2/patches.py "$W/seed_in.apso2" --disc "$SS_DISC1" -o "$W/e2e.apso2" || exit 1
 AP=$P/scratchpad/ap
 PORT=${AP_E2E_PORT:-38291}
@@ -111,6 +175,27 @@ env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy S
   --input "200:up,439:none,450:left,554:none,560:up,572:none,600:cross,606:none,760:cross,766:none,1100:cross,1106:none" \
   --capture "$W/cap" --capture-frames 700,850 < /dev/null > "$W/game.log" 2>&1
 wait $bob
+
+# Session 4: Bob's items as a character and traps, the first-drop check, Bob's DeathLink.
+"$AP/ap-venv/bin/python" "$W/bob_dl.py" 75 "ws://localhost:$PORT" answer > "$W/bob_p3.log" 2>&1 &
+bob=$!
+MASH=$(for f in $(seq 1240 20 2200); do printf '%d:cross,%d:none,' "$f" $((f + 4)); done)
+env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Alice SS_AP_GAME=ChecksFinder SS_MODS_DIR="$W/nomods" \
+  SS_TRACE_LEADER=60 SS_DEBUG_INPUT="60:fol 1000;1150:ap_status;1200:battle 535" \
+  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$W/seed_p3.apso2" --frames 2700 --map 18 \
+  --battle-end 60:0 --input "${MASH%,}" < /dev/null > "$W/game_p3.log" 2>&1
+wait $bob
+
+# Session 5: Alice's own game over sends a DeathLink.
+"$AP/ap-venv/bin/python" "$W/bob_dl.py" 45 "ws://localhost:$PORT" listen > "$W/bob_dl.log" 2>&1 &
+bob=$!
+env XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Alice SS_AP_GAME=ChecksFinder SS_MODS_DIR="$W/nomods" \
+  SS_TRACE_LEADER=60 SS_DEBUG_INPUT="200:battle 1" \
+  timeout 600 "$BIN" --headless --debug --no-memcard --ap-seed "$W/seed_p3.apso2" --frames 1800 --map 18 \
+  --battle-end 60:2 < /dev/null > "$W/game_dl.log" 2>&1
+wait $bob
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
 
 fails=0
@@ -124,5 +209,18 @@ check "$W/game.log" "no Fol from the crate" '\[leader\] vblank 720 map 18 .* fol
 check "$W/bob.log" "Bob receives Map Width from Alice's crate" 'received item 80000 from player 1 location 81000'
 check "$W/game.log" "Bob's items given (3)" '\[ap\] given (Blueberries|Blackberries|100 Fol) \(server item 2\)'
 check "$W/game.log" "status" 'slot Alice \| checks 1/1 \| received 3 \| waiting 0 \| connected'
+check "$W/game_p3.log" "phase 3: Bob's Map Bombs is Celine, who joins" '\[ap\] Celine joins the party \(slot 1\)'
+check "$W/game_p3.log" "phase 3: the Fol trap halves the Fol" '\[ap\] trap fol_loss: lost 500 Fol'
+check "$W/game_p3.log" "phase 3: the poison trap" '\[ap\] trap status: the party is poisoned'
+check "$W/game_p3.log" "phase 3: Berle's first drop is the check" '\[ap\] check 81001 .*: Map Width for Bob'
+check "$W/bob_p3.log" "phase 3: Bob receives Map Width from the drop" 'received item 80000 from player 1 location 81001'
+check "$W/game_p3.log" "phase 3: Bob's DeathLink takes Alice's party" '\[ap\] DeathLink from Bob: the party falls'
+if grep -q 'DeathLink sent' "$W/game_p3.log" || grep -q 'DeathLink received from Alice' "$W/bob_p3.log"; then
+  echo "FAIL phase 3: a DeathLink went back for the link's own death"; fails=$((fails + 1))
+else
+  echo "PASS phase 3: no DeathLink back for the link's own death"
+fi
+check "$W/game_dl.log" "phase 3: Alice's game over sends a DeathLink" '\[ap\] game over: DeathLink sent'
+check "$W/bob_dl.log" "phase 3: Bob receives it" 'DeathLink received from Alice'
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails

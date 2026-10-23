@@ -18,6 +18,9 @@ int bsfx_play_at_pos(int sfx, const s32 pos[3]);  // 0x8007f6c8
 void bsfx_update();                               // 0x8007ff08 (battle_main_loop)
 void bsfx_pan_update(int ch);                     // 0x8007ffa8
 void bsfx_reset();                                // bsfx_emitters_init 0x8008016c + the channel table
+// (Port, original_bugs.md B15) called as an object is destroyed: a channel that pans with it
+// keeps its last position (the channel's internal emitter) instead of reading freed memory.
+void bsfx_forget_emitter(const BObj* o);
 
 // Calls on a sound by the handle bsfx_play returned (slot << 16 | sfx), made only while
 // that sound still plays in its slot (sound_handle_active). Voice handles (0x40 / 0x41 <<

@@ -55,17 +55,17 @@ Missing pieces, by encounters hit (B = boss encounters among them):
 | Encounters | B | Missing | Status |
 |---|---|---|---|
 | 564 | 47 | pc_apply_equip_effects: equipment effects 159 / 128 / 228 / 112 / 187 / 115 / 172 (the starting gear) | ported and verified (0x800818dc and its helpers, pc_update_effects 0x8003adc8, pc_has_effect's +0x135 test) |
-| 248 | 8 | voice_play_entry (the victory voice) | the enemy agent's (voices) |
+| 248 | 8 | voice_play_entry (the victory voice) | the effects agent's battle talk layer (party_talk), in progress |
 | 18 | 1 | stage code of stage 0x10 (hanging objects) | ported and verified (ref stage16c) |
 | 18 | 1 | stage code of stage 0x24 (breakables, runaway cart) | ported and verified (refs stage36, stage36_long) |
 | 13 | 0 | stage 8 lightning (0x80063a70) | ported and verified (refs stage8_light, stage8_shots) |
-| 10 | 1 | stage code of stage 0xe (the toppling stack) | ported; ref stage14c differs from b960 (open) |
+| 10 | 1 | stage code of stage 0xe (the toppling stack) | ported and verified (ref stage14c, after the B14 fix: Claude's first jump check) |
 | 9 | 0 | stage code of stage 0x29 (snow flakes) | ported and verified (ref stage41) |
-| 2 | 2 | stage code of stage 0x33 (the last battle's models) | ported; ref stage51 not run yet |
-| 1 | 1 | stage code of stage 0x17 (the toppling halves) | ported; ref stage23 queued |
+| 2 | 2 | stage code of stage 0x33 (the last battle's models) | ported and verified (ref stage51) |
+| 1 | 1 | stage code of stage 0x17 (the toppling halves) | ported and verified (ref stage23) |
 | 1 | 0 | stage code of stage 0x1a (rolling boulders) | ported and verified (ref stage26) |
-| 1 | 1 | stage code of stage 0x1f (floating models) | ported; ref stage31 queued |
-| 13 | 0 | particle kind 4 (shards; kind 5 too) | ported, not checked against Redux |
+| 1 | 1 | stage code of stage 0x1f (floating models) | ported and verified (ref stage31) |
+| 13 | 0 | particle kind 4 (shards; kind 5 too) | ported and verified visually (kind 4: Explode in the world agent's i11a; kind 5: item 0x2f9, ref conf340d) |
 
 Not missing:
 
@@ -74,8 +74,7 @@ Not missing:
   fights hasn't been checked; a BW_HIT_BP on debug_print 0x8003beb8 would show it.
 
 Stages 0xd / 0x38 / 0x39 / 0x15 / 0x28 come from no encounter in battles.json. Their code is
-ported anyway: stage 0x15 is verified (ref stage21), and stage 0xd's ref stage13 was running
-at hand-over.
+ported anyway: stage 0x15 is verified (ref stage21) and stage 0xd too (ref stage13).
 
 Pass 1's bosses all ran to an outcome, except the caps on encounters 509 (M-eater) and 531 (Bark).
 37 of the 47 boss fights were defeats, which is why pass 2 runs in god mode.
@@ -97,11 +96,59 @@ Results are in `scratchpad/battle/sweep/pass2/` (`summary.md`, `results.json`, `
     before kinds 4 / 5 were ported, which is now done.
   - Nothing else in battle reported a missing piece.
 
-The ASan pass is still to do:
+## Stage references (encounter 2 on each special stage, `cmpstage.sh`)
+
+All have the RNG equal to past the battle exit and the Shots equal in every frame. Unit
+samples differ only in the intro x samples (b28-b42) and in HP sampling. The intro x samples
+are the console's party load: its unit sits at the formation point until state 1.
+
+| Stage | Ref | Shot frames |
+|---|---|---|
+| 0xd | stage13 | 660 |
+| 0xe | stage14c (Claude + AI Celine, encounter 35) | 975 |
+| 0x10 | stage16c | 909 |
+| 0x15 | stage21 | 549 |
+| 0x17 | stage23 | 593 |
+| 0x1a | stage26 | 503 |
+| 0x1f | stage31 | 637 |
+| 0x24 | stage36, stage36_long | 525, 1298 |
+| 0x29 | stage41 | 660 |
+| 0x33 | stage51 | 639 |
+
+## ASan pass (2026-10-23, god mode, x20:30:4)
 
 ```
 tools/battle_sweep.py --out scratchpad/battle/sweep/asan --god --strong 20:30:4 \
     --bin engine/build-battle-asan/shattered-stars
 ```
 
-The ASan build is up to date as of the particle port.
+- **Outcomes:** 325 victory, 82 defeat, 153 cap, and 4 runs that ASan stopped.
+- **The 4 reports** (encounters 350, 430, 471, 540) were all one heap-use-after-free in
+  bsfx_pan_update. A SpellCast deletes itself while the sound it started at itself still
+  plays, and the channel keeps the pointer. This is the console's own bug (B15); on the
+  console it reads freed memory.
+  - The fix: ~BObj calls bsfx_forget_emitter, so the channel pans from the object's last
+    position. It is sound only.
+  - Rerun under ASan (`sweep/asan_fix`): all four are clean, with pass 2's outcomes
+    (encounter 540: defeat at 3174).
+- **Otherwise clean:** no other sanitizer report, crash or timeout. The only missing piece is
+  the victory voice, the effects agent's talk layer.
+
+## RNG after CD-timed loads
+
+The port loads instantly; the console waits for the CD. Draws made around a load therefore
+land at other moments, and that is expected (no slowdown modelling).
+- **Battle state 0** (the party loader) lasts about 44 frames per member on the console:
+  Claude alone near b44, four members near b102. The port reaches state 1 at b0.
+  - Draws gated on state 1 come that much earlier in the port, e.g. enemy_think's
+    intro-voice rng_range(2) at 0x8003cb44.
+  - The camera intro ends the intro at the same frame either way. On the late-save final
+    boss the fight starts at b406 in both.
+- **The field voice queue** across map loads (voice_queue_build_field).
+
+Comparisons re-sync the generator after such a load:
+- SS_BATTLE_RNG_SKIP=N makes N extra draws at the port's state 0→1, or the generator can be
+  re-seeded from a Redux dump.
+- The menu agent's late-save final boss (encounter 540, `scratchpad/menu/m8/late/r_b`) with
+  N = 1 (`scratchpad/battle/late/p2`): the generator equals Redux at all 250 samples from b102
+  to b600, the AI's draws from b408 included.

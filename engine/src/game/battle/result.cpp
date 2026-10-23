@@ -3,6 +3,7 @@
 #include <cstring>
 #include <memory>
 
+#include "game/ap/ap.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
@@ -220,6 +221,7 @@ void award_exp_money(ResultScreen* rs) {  // 0x80086290
     rs->fol += g.enemy_units[i]->fol;
     rs->exp += rd32(g.enemy_stats[i] + 0x10);
   }
+  ap::scale_battle_rewards(&rs->exp, &rs->fol);  // Archipelago (port feature): exp / fol multipliers [world agent]
   if (g.reward_flags & 1) rs->fol <<= 1;
   if (g.reward_flags & 4) rs->exp <<= 1;
   if (g.config[0x4D] != 0) rs->exp += rs->exp * rd16(g.config + 0x194) / 100;
@@ -296,8 +298,12 @@ void roll_drops(ResultScreen* rs) {  // 0x800869fc
       u32 chance = static_cast<u32>(u->drop_chance[k]) + static_cast<u32>(luck >> 4) - 7;
       if (g.reward_flags & 2) chance *= 2;
       if (0 < static_cast<s32>(chance) && rng_range(0x100) < chance) {
-        rs->drops[rs->drop_count++] = u->drop_item[k];
-        field::inventory_add(g.inventory, static_cast<s16>(u->drop_item[k]), 1, 1);
+        // Archipelago (port feature) [world agent]: the first drop of an enemy type can be a
+        // check (drops_as_checks), given through the receive path instead; same draw.
+        if (ap::on_enemy_drop(u->st()->id, u->drop_item[k])) {
+          rs->drops[rs->drop_count++] = u->drop_item[k];
+          field::inventory_add(g.inventory, static_cast<s16>(u->drop_item[k]), 1, 1);
+        }
         break;  // one drop per enemy
       }
     }

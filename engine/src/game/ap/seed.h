@@ -15,11 +15,22 @@ namespace ss::game::ap {
 struct ItemDef {
   int64_t ap_id = 0;
   std::string name;
-  std::string kind;  // "item" (game_id, count), "fol" (amount)
+  // "item" (game_id, count), "fol" (amount), "character" (character), "trap" (trap, percent,
+  // status); "foreign" (another player's) and "unknown" (not in the seed's table) give nothing.
+  std::string kind;
   int game_id = 0;
   int count = 1;
   int amount = 0;
+  int character = 0;     // character: the party id, 1 Claude .. 12 Chisato
+  std::string trap;      // trap: "ambush", "fol_loss" or "status"
+  int percent = 0;       // fol_loss: the share of the party's Fol lost (1-100)
+  std::string status;    // status: "poison", "paralysis" or "stone"
 };
+
+// The party ids (handoff 3 slot +0; a script's party_add argument + 1).
+constexpr int kCharacterCount = 12;
+const char* character_name(int id);       // "Celine"; "" outside 1-12
+int character_by_name(const std::string& name);  // 1-12, 0 when not a character's name
 
 // The item placed at a location: this player's own (ItemDef) or another player's.
 struct Placement {
@@ -38,6 +49,8 @@ struct Location {
   int flag = -1;      // chest: its opened flag (global script flag)
   int offset = -1;    // gift: the call site's byte offset in the map's script code
   int encounter = -1; // boss
+  int character = -1; // join: the character the site adds (optional)
+  int enemy = -1;     // drop: the enemy type (the stats record's +0 id)
   // The value the seed's patches put where the location's item was (the chest's or gift's
   // item push): 0x400-0x270f for an item routine (give_item), 0x7f000000 and up for a Fol
   // routine (add money). The port gives the location's item there (or sends another
@@ -61,13 +74,16 @@ struct Seed {
   std::vector<int> start_flags;
   std::vector<int> goal_encounters;  // a victory in one of these is the goal (default: 539, 540)
   bool deathlink = false;            // options.deathlink
+  int protagonist = 0;               // options.protagonist: 0 any, 1 Claude, 2 Rena (New Game's choice)
+  // Phase 3 options (docs/ap/seed_format.md); the defaults play as the original.
+  bool character_items = false;      // options.character_items: listed join sites become checks
+  bool first_drops = false;          // options.drops_as_checks == "first_drop"
+  int exp_multiplier = 1;            // options.exp_multiplier, 1-10
+  int fol_multiplier = 1;            // options.fol_multiplier, 1-10
+  int encounter_rate = 100;          // options.encounter_rate, percent 0-200
 };
 
 // The seed file. load_seed_text is what load_seed_file reads; errors say what and where.
-bool load_seed_text(const std::string& text, Seed* out, std::string* error);
-bool load_seed_file(const std::string& path, Seed* out, std::string* error);
-
-// load_seed_text is what load_seed_file reads; errors say what and where.
 bool load_seed_text(const std::string& text, Seed* out, std::string* error);
 bool load_seed_file(const std::string& path, Seed* out, std::string* error);
 

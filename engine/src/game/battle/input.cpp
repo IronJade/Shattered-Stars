@@ -9,6 +9,7 @@
 #include "game/battle/combat.h"
 #include "game/battle/command_menu.h"
 #include "game/battle/killer.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/hud.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
@@ -666,6 +667,9 @@ void input_dispatch(BattleInput* in) {
   if ((in->pressed & 0x100) != 0 && g.flags == 0 && g.party_escaping == 0 && g.state == kStateFighting && can_act) {
     const int lvl = u->skill_level(0x2D);
     if (lvl < 1 || g.free_run != 0 || u->busy != 0 || g.provoke_used != 0 || (u->status_bits & 0x10) != 0) {
+      bsfx_play_ui(7);
+    } else if (voice_play_battle_line(u) == -1) {
+      // 0x8004a7a4: the provoke line (party_talk.cpp); without it, no provoke.
       bsfx_play_ui(7);
     } else {
       // Provoke: the monsters go for this member for lvl * 3 s.

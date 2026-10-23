@@ -146,6 +146,67 @@ check ap_deathlink_battle "the battle is lost" '\[battle\] exit: encounter 1 out
   --ap-seed "$WORK/ph.apso2" --frames 400 --map 18 </dev/null >"$WORK/ap_deathlink_field.log" 2>&1
 check ap_deathlink_field "game over in the field" '\[leader\] vblank 3[3-9]0 map 18 state 7 '
 
+# Phase 3 [world agent] (docs/ap/seed_format.md "Phase 3"). Character items: a received
+# character joins in free play; Ashton's choice site (map 71, the call at 0x7348) is a check
+# and does not add him unreceived (event sweep, entry 2). Traps: Fol loss and poison. The
+# result screen: first-drop check (Berle, odds 255) and the multipliers. DeathLink: in the
+# camp menu it waits for the menu to close.
+cat >"$WORK/p3.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-3", "slot": {"name": "Claude", "id": 1},
+ "options": {"character_items": true, "drops_as_checks": "first_drop", "exp_multiplier": 3, "fol_multiplier": 2,
+             "deathlink": true},
+ "items": {"5100003": {"name": "Celine", "kind": "character", "character": 3}},
+ "locations": [{"id": 1353915392, "name": "Ashton joins", "check": {"type": "join", "map": 71, "offset": "0x7348", "character": "Ashton"},
+                "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}},
+               {"id": 1362100421, "name": "Berle's first drop", "check": {"type": "drop", "enemy": 197},
+                "item": {"player": 2, "player_name": "Bob", "name": "Map Width"}}]}
+SEED
+"${AP_RUN[@]}" SS_TRACE_LEADER=30 SS_DEBUG_INPUT="200:ap_give Celine Bob;300:fol 1000;320:ap_give trap:fol_loss:25 Bob;500:ap_give trap:status Bob;700:ap_status" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p3.apso2" --frames 900 --map 18 </dev/null >"$WORK/ap_p3_items.log" 2>&1
+check ap_p3_items "a received character joins in free play" '\[ap\] Celine joins the party \(slot 1\)'
+check ap_p3_items "the Fol trap takes 25%" '\[ap\] trap fol_loss: lost 250 Fol'
+check ap_p3_items "the status trap poisons the party" '\[ap\] trap status: the party is poisoned'
+check ap_p3_items "the status line" '\[debug\]   received characters: Celine$'
+"${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=17,1bc=100" SS_SWEEP_FLAGS=113 SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_SKIP=2 \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p3.apso2" --frames 10400 --map 71 </dev/null >"$WORK/ap_p3_join.log" 2>&1
+check ap_p3_join "the join site is a check" '\[ap\] check 1353915392 \(Ashton joins\): Hookshot for Alice'
+check ap_p3_join "and Ashton stays out" '\[ap\] join site 71:29512: Ashton has not been received: not added'
+check ap_p3_join "the scene plays on" '\[sweep\] map 71 vblank [0-9]+ entry 2 T2 end ok'
+MASH=$(for f in $(seq 200 20 2400); do printf '%d:cross,%d:none,' "$f" $((f + 4)); done)
+"${AP_RUN[@]}" timeout 900 "$BIN" --headless --ap-seed "$WORK/p3.apso2" --battle 535 --battle-end 60:0 --frames 2400 \
+  --input "${MASH%,}" </dev/null >"$WORK/ap_p3_drop.log" 2>&1
+check ap_p3_drop "exp x3, fol x2" '\[ap\] battle rewards: exp 99000 -> 297000, fol 58000 -> 116000'
+check ap_p3_drop "the first drop is a check" '\[ap\] check 1362100421 \(Berle.s first drop\): Map Width for Bob'
+check ap_p3_drop "instead of the item" '\[ap\] first drop of enemy type 197 \(item 240\): the check instead'
+"${AP_RUN[@]}" SS_TRACE_LEADER=20 SS_DEBUG_INPUT="400:ap_deathlink Bob" timeout 900 "$BIN" --headless --debug \
+  --ap-seed "$WORK/p3.apso2" --frames 800 --map 18 --input "300:triangle,306:none,700:circle,706:none" \
+  </dev/null >"$WORK/ap_p3_dl_menu.log" 2>&1
+check ap_p3_dl_menu "a DeathLink in the camp menu waits for it to close" '\[ap\] DeathLink from Bob: the party falls \(vblank 7[0-9][0-9],'
+check ap_p3_dl_menu "then the game over" '\[leader\] vblank 7[4-9]0 map 18 state 7 '
+# The seed's protagonist: New Game keeps the cursor on Claude (Right buzzes) or starts on Rena.
+NEWGAME_A="850:start,854:none,951:cross,957:none,1251:cross,1257:none,1551:cross,1557:none,1851:cross,1857:none"
+NEWGAME_B="2151:start,2157:none,2451:cross,2457:none,2700:start,2706:none,3000:start,3006:none,3300:start,3306:none"
+for hero in claude rena; do
+  printf '{"format": "apso2", "version": 1, "seed": "smoke-hero", "slot": {"name": "P", "id": 1}, "options": {"protagonist": "%s"}, "items": {}, "locations": []}\n' \
+    $hero >"$WORK/hero_$hero.apso2"
+  [ $hero = claude ] && PRESS=right || PRESS=left
+  "${AP_RUN[@]}" SS_TRACE_LEADER=600 timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hero_$hero.apso2" --frames 3700 \
+    --input "$NEWGAME_A,2000:$PRESS,2006:none,$NEWGAME_B" </dev/null >"$WORK/ap_hero_$hero.log" 2>&1
+done
+check ap_hero_claude "Claude's seed refuses Rena" '\[ap\] this seed is for Claude.s game'
+check ap_hero_claude "and starts Claude's game (map 7)" '\[leader\] vblank 3600 map 7 state 0 '
+check ap_hero_rena "Rena's seed refuses Claude" '\[ap\] this seed is for Rena.s game'
+check ap_hero_rena "and starts Rena's game (map 18)" '\[leader\] vblank 3600 map 18 state 0 '
+# A story battle the script lets the party lose (the ship, map 548: Shin, ext 0xb7 third
+# argument 0): a DeathLink received in it waits; the loss itself is no game over (nothing
+# sent), and the DeathLink applies once the field leaves the controls to the player.
+"${AP_RUN[@]}" SS_DEBUG_INPUT="1500:ap_deathlink Bob" SS_SCRIPT_GLOBALS="a0=29,a4=30" SS_EVENT_SWEEP=1 SS_SWEEP_PARTY=1 \
+  SS_SWEEP_PLAY=9999:T0 SS_TRACE_LEADER=100 timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p3.apso2" \
+  --frames 2800 --map 548 </dev/null >"$WORK/ap_p3_dl_story.log" 2>&1
+check ap_p3_dl_story "the story battle is lost as scripted" '\[battle\] exit: encounter 517 outcome 2 battle frames 2184 '
+check ap_p3_dl_story "the party falls after it, not in it" '\[ap\] DeathLink from Bob: the party falls \(vblank 26[0-9][0-9],'
+if grep -q "falls in battle" "$WORK/ap_p3_dl_story.log"; then echo "FAIL ap_p3_dl_story: applied inside the losable battle"; fail=1; fi
+
 # Saving (camp menu, Data > Save > slot 1 > #1 > Yes; SS_SAVE_ANYWHERE) writes the sidecar
 # card.slot01.ap.json; the card itself is byte for byte the one saved without a seed.
 SAVE_INPUT="300:triangle,306:none,400:up,406:none,450:cross,456:none,550:cross,556:none,650:cross,656:none,750:cross,756:none,850:cross,856:none"
@@ -188,6 +249,32 @@ if [ -f "$SAVE" ]; then
     SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --ap-seed "$WORK/tiny.apso2" --frames 60 \
     </dev/null >"$WORK/ap_load.log" 2>&1
   check ap_load "a load reads the save's sidecar" '\[ap\] loaded .*world\.slot01\.ap\.json: 1 checks, received index 3'
+  # Phase 3 [world agent] on world map 2: an ambush on the area's encounter group (then
+  # SS_BATTLE_STUB wins it), a DeathLink there, and one received during the ambush's
+  # transition, which takes the party in the battle; encounter_rate 200% / 0%.
+  printf '{"format": "apso2", "version": 1, "seed": "smoke-w", "slot": {"name": "Claude", "id": 1}, "options": {"deathlink": true, "encounter_rate": %s}, "items": {}, "locations": []}\n' \
+    100 >"$WORK/w100.apso2"
+  for r in 200 0; do sed "s/\"encounter_rate\": 100/\"encounter_rate\": $r/" "$WORK/w100.apso2" >"$WORK/w$r.apso2"; done
+  wrun() {  # wrun NAME SEED FRAMES DEBUG_INPUT INPUT [env...]
+    local name=$1 seed=$2 frames=$3 dbg=$4 input=$5
+    shift 5
+    cp "$SAVE" "$WORK/world.mcd"
+    rm -f "$WORK/world.slot01.ap.json"
+    env "$@" SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE_LEADER=10 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+      SS_MEMCARD1="$WORK/world.mcd" SS_DEBUG_INPUT="$dbg" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/$seed" \
+      --frames "$frames" --input "$input" </dev/null >"$WORK/$name.log" 2>&1
+  }
+  wrun ap_p3_ambush w100.apso2 900 "200:ap_give trap:ambush Bob" "0:none" SS_BATTLE_STUB=1
+  check ap_p3_ambush "the ambush takes the area's group" '\[ap\] ambush: the area.s encounter group 50, stage 2'
+  check ap_p3_ambush "a battle, then back on the world map" '\[leader\] vblank 7[0-9]0 map 2 state 0 '
+  wrun ap_p3_dl_world w100.apso2 400 "200:ap_deathlink Bob" "0:none"
+  check ap_p3_dl_world "DeathLink on the world map" '\[leader\] vblank 2[2-9]0 map 2 state 7 '
+  wrun ap_p3_dl_trans w100.apso2 1600 "200:ap_give trap:ambush Bob;430:ap_deathlink Bob" "0:none"
+  check ap_p3_dl_trans "a DeathLink in the battle transition takes the party in the battle" '\[ap\] DeathLink from Bob: the party falls in battle'
+  for r in 100 200 0; do wrun ap_p3_enc$r w$r.apso2 2500 "" "100:left"; done
+  check ap_p3_enc100 "encounter rate 100%: first battle as the original" '\[leader\] vblank 1150 map 2 state 4 '
+  check ap_p3_enc200 "encounter rate 200%: sooner" '\[leader\] vblank 630 map 2 state 4 '
+  if grep -qE 'map 2 state 4 ' "$WORK/ap_p3_enc0.log"; then echo "FAIL ap_p3_enc0: a random battle at 0%"; fail=1; else echo "PASS ap_p3_enc0: no random battle at 0%"; fi
 else
   echo "SKIP north_city: $SAVE not present"
 fi

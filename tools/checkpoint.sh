@@ -25,8 +25,11 @@ if cmake --build engine/build -j8 > /dev/null 2>&1; then
   else
     t2="(not run: SS_DISC1 unset)"; t3="(not run)"
   fi
+  # Reference regression suite (tools/refs/refs.csv), quick set: a failure here is reported
+  # like the other suites, never blocks the commit.
+  t4=$(timeout 600 python3 tools/ref_regress.py --quick --jobs 5 2>&1 | tail -1)
   git add -A
-  what="everything (builds). ss_tests: $t1; ss_game_tests: $t2; smoke: $t3"
+  what="everything (builds). ss_tests: $t1; ss_game_tests: $t2; smoke: $t3; $t4"
 else
   git add -A docs
   what="docs only (the tree does not build right now)"

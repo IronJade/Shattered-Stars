@@ -1,59 +1,59 @@
-# Handoff: state of the port (2026-10-22)
+# Handoff: state of the port (2026-10-23)
 
-The port boots from the user's `.cue`, plays the logos, the opening movie and the title,
-starts a New Game or Continues a save, and plays field maps, the world map and battles.
-`docs/CHECKLIST.md` has the item-by-item state; this file is the quick orientation.
+The port boots from the user's `.cue` / `.iso`, plays the logos, the opening movie and the
+title, starts a New Game or Continues a save, and plays the whole game: field maps, the world
+map, battles, both discs and every ending. `docs/CHECKLIST.md` has the item-by-item state;
+this file is the quick orientation.
 
-## State after the weekly-limit cutoff (2026-10-22)
+## State (2026-10-23, about 01:30)
 
-The account's weekly limit stopped all five agents mid-task at about 11:10. The user
-committed their unfinished work as e37c3a5. That commit builds and passes every suite
-(ss_tests 78/0, ss_game_tests 74/0 with and without the disc, smoke 21/21), and eleven
-encounters run headless without trouble, but most of it has not been compared with
-PCSX-Redux yet. Each area's log in `docs/handoff/` has a "cutoff" section saying exactly
-what is in that commit, what is verified, and where to resume:
-- battle: the air-attack check (enc 35, b470 miss), then Ernest's check;
-- effects: GPU lines written (passes its hardware-dump test); the four modules not started;
-- menu: item creation page 0xf written, the viewer morph half done; nothing verified;
-- world: the spell system and command menus written; nothing verified;
-- enemy: Redux references for the last modules finished but not compared.
+- **M8 done:** the game can be finished. Every map's events on both discs run (event sweep:
+  0 crashes, 0 stand-ins), all 85 endings play, and the user's late-game save (map 671,
+  Fienal 9F) matches PCSX-Redux through the final battle and its endings
+  (`docs/notes/m8_audit.md`, `docs/notes/endings.md`).
+- **M7 nearly done:** every character module, enemy module, spell (70) and spell module (55) is
+  verified; all 564 encounters run without crashes (`docs/notes/battle_sweep.md`). Left: the
+  battle talk layer's last Redux checks, a few stage references, the Weirdaxe debris, the
+  final boss's first AI draw (frame 0 vs 102), then the tick.
+- **Archipelago:** phase 1 and the port side of phase 2 are done; the APWorld
+  (`apworld/so2`, `docs/ap/apworld.md`) generates and fills story-mode seeds, the native
+  client works end to end against a local server. In progress: a real SO2-slot end to end,
+  boss checks, phase 3 (characters, drops, traps, multipliers) on both sides.
+- **Packaging:** setup program, Windows zip and Linux tarball (glibc 2.36) with Archipelago
+  networking (`tools/build_windows.sh`, `tools/build_linux.sh --container`).
+- **Original bugs:** decided by the user one by one (`docs/notes/original_bugs.md`); the rule is
+  that a fix never changes the play state.
 
 ## What works (verified against PCSX-Redux where marked)
 
-- **Title and boot:** logos, opening / attract movies, title menu, Continue / load screen
-  (Redux-identical apart from known GPU steps).
-- **Field:** map loading, the event-script VM, message windows, fades, notices, actors,
-  walking and collision, camera, music; trigger regions, doors, chests, talking
-  (`tools/smoke_field_events.sh`); random and scripted encounters; Callways (songs, money
-  items, walk effects); poison steps; the post-battle Equipment Wizard; the voice queue;
-  game over; the SceneRenderer and the script effects (primitives equal the original's RAM).
-- **World map (overlay 0xc1e):** terrain, sky, fog, world actors, walking and encounters;
-  the user's save (`analysis/saves/dex_north_city.mcd`) loads onto map 2 like Redux.
-- **Menus:** the camp menu's first page, Data → Save / Load (a port save loads in the
-  original), the title's Continue page.
-- **Battles:** entry from the field, combat (movement, attacks, enemy AI, damage, KO,
-  victory / defeat / escape), the HUD and the result screen (#1981), the return to the field
-  with the map's music; a forced battle matches Redux frame for frame.
-- **Controller:** keyboard as a digital pad; a gamepad as an analog DualShock (the left stick
-  steers, the Vibration setting drives rumble).
-- **Disc 2:** with `--disc2`, the loader swaps archives where the original prompts.
+- **Title and boot:** logos, opening / attract movies, title menu, Continue / load screen.
+- **Field:** maps, the event-script VM, messages, actors, camera, music, triggers, doors,
+  chests, talking, encounters, menus (every camp page, shops, item creation), saves that load
+  in the original; the world map with vehicles, the bunny and the courier.
+- **Battles:** everything listed under M7 above, the HUD, the result screen and the return to
+  the field.
+- **Controller:** keyboard or gamepad, rebindable in setup.
+- **Disc 2:** the loader swaps archives where the original prompts.
 
 ## In progress (agents)
 
 Each agent keeps a continuation log in `docs/handoff/<area>.md` (done and verified, in
 progress with the uncommitted files, exact next steps), updated after every finished step.
-Resume an area from its log.
+Agents are replaced by fresh ones from those logs once their context passes ~400k tokens
+(rule in `~/.claude/CLAUDE.md`); the current area → agent id list is `scratchpad/agents.txt`,
+and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its log.
 
-| Agent | Area | Next steps |
+| Area | Log | Now |
 |---|---|---|
-| Battle | `game/battle/` | pc_state_air_attack, the character modules Ernest, Bowman and Dias, party AI |
-| Enemy | `game/battle/enemy_*`, `spell_mod_<name>.cpp` (new) | the eight monster spell modules (12, 16, 22, 28, 51, 55, 56, 57) checked against its boss references, then Shot kinds 0x27 / 0x2d, shot_draw_frame_quad, bload_request and the battle voice player |
-| Menu | `game/field/vm_services*`, `script_*`, M8 audit | the game can be finished: every event-script stand-in classified and ported, an event sweep over every map on both discs, story stretches from save copies |
-| World | `game/battle/spells*`, `spellcast*`, `command_menu*` | verify the spell system and command menus, the test casters' modules, the other ~45 spell modules, battle item use |
-| Effects | `psx/gpu.cpp`, `game/battle/pc_<name>.cpp` (new) | GPU line stepping (hardware model), then the character modules Precis, Ashton, Opera and Chisato |
+| Battle | `docs/handoff/battle.md` | stage references, Weirdaxe debris, final boss first AI draw, B13, M7 tick |
+| Effects | `docs/handoff/effects.md` | battle talk Redux checks (provoke, throws, ally fury, flee), field menu voice |
+| Catalog | `docs/handoff/catalog.md` | stale notes, gap scan per program, missing rows (`docs/catalog/COVERAGE.md`) |
+| World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
+| Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
+| Tools | `docs/handoff/tools.md` | reference regression suite (`tools/ref_regress.py`, quick set in checkpoints) |
+| Menu, Setup | `docs/handoff/menu.md`, `setup.md` | idle (M8 done; packaging done) |
 
-Main session: integration and commits, the field program's glue, play-testing the story
-route.
+Main session: coordination, the user's decisions, the hourly commits.
 
 **Never losing work:** agents write straight to disk and keep their logs and catalog rows
 current at least every 20 minutes. The main session commits once an hour with
@@ -72,6 +72,19 @@ only. Agents run the suites themselves before reporting a step as verified.
   dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
   `-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>`. `gdb.minimal` is installed.
 
+## Reference regression suite
+
+`tools/refs/refs.csv` inventories every PCSX-Redux reference recording under `scratchpad/`
+(battle killer moves and stages, enemy families/modules, the world agent's spell sweeps, the
+effects agent's party-module moves, plus menu/world-map/legacy-effects refs not yet wired
+up) with how its port side is reproduced, how it's compared, and the expected result.
+`tools/ref_regress.py --all|--quick|--area X|--id A,B [--build DIR]` replays the automatable
+ones (222 of 339) through the owning agent's own scripts — never PCSX-Redux — judges each
+against its documented expectation, and writes `scratchpad/regress/<timestamp>/summary.md`;
+`--quick` (~28 refs, under 10 minutes) runs after smoke in `tools/checkpoint.sh` and its
+total goes into the commit message, same as the other suites (a failure is reported, never
+blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
+
 ## Debug options
 
 - `--map N` new game (Claude) on field map N; `--map-pos X,Y,Z[,FACING[,CAMERA]]` the
@@ -79,6 +92,11 @@ only. Agents run the suites themselves before reporting a step as verified.
   for a `--map` start.
 - `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`; `SS_BATTLE_STUB=1` (instant
   victory); `SS_BATTLE_RAM=<dump>`, `SS_BATTLE_STRONG=1`.
+- `SS_BLOAD_DRIVE_TIME=1` (comparisons only, default off): the battle's disc reads take the
+  console drive's time (seek + single-speed sectors). The port normally loads at once, so a
+  voice line's talk pose (the clip's load and upload) is shorter than the original's (6
+  frames vs 10-16); with the switch it matches Redux. `SS_TALK_TRACE=1` logs the party's
+  talk events (lines, talk pose, ally reaction, fury, weapon throws) with the rng count.
 - `--debug`: a console on the terminal (`help`; where / warp / fol / item / heal / flag /
   global / battle / noclip) and a status line in the window title.
 - `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;

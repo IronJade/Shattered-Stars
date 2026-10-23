@@ -10,6 +10,7 @@
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
 #include "game/battle/input.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/render.h"
 #include "game/battle/spell_fx.h"
 #include "game/battle/sprite.h"
@@ -279,7 +280,7 @@ void battle_frame_director() {
   }
   // The stage code's per-frame hook (#1984 blocks 5 / 7 / 2 / 8 / 9 at 0x8008c1f4).
   if ((g.flags & 0xC) == 0) stage_code_update();
-  // TODO(port): the opening voices (0x8006fb31).
+  opening_voices_update();  // 0x80072228: the opening lines (party_talk.cpp)
   if (g.flags == 0) {
     const s32 t = static_cast<u16>(g.item_cooldown) - g.frame_ticks;
     g.item_cooldown = static_cast<s16>(t);

@@ -6,6 +6,129 @@ Worker: world agent (phase 3: closing the field program's remaining gaps). Build
 `gha.sh` on the project `analysis/ghidra_world`). Nothing is committed by the worker; the
 coordinator commits.
 
+## AP phase 4, port side (fourth world agent, 2026-10-23, from ~03:00): IN PROGRESS
+
+Assignment (coordinator): open world, port side. (1) area keys gating doors (world_mode =
+open_world), key list and door ids agreed with the APWorld agent (enemy line in
+scratchpad/agents.txt); (2) the Expel teleporter on the game's own mechanism (design in
+seed_format.md first; disc-swap flow intact); (3) shop shuffle (shuffle_shops specials /
+full); (4) entrance-shuffle groundwork: seed-driven door targets + a validator. Unit tests,
+smoke cases, ap_e2e.sh where a server matters; prove the no-seed path (suites +
+`python3 tools/ref_regress.py --quick`).
+
+State at the 01:37 usage-limit stop (resumed after): research only, no project file edited.
+Scratch in scratchpad/world/ap4: full.json (`ap_extract --full`: 2529 transfers), maps.pkl
+(every map's disassembly, cache_maps.py), dis.py / pdis.py (disassembly helpers).
+
+Findings so far:
+- World-map entrances: 66 transfers in the two chunk scripts (Expel 909: 44, Nede 1048: 22)
+  to 56 entry maps. Each is a tiny routine `frame; ext_ba(60) (music fade); map_transfer_c;
+  return`, registered by ext 0x76 (worldmap_trigger_add) with the routine's word index.
+- Field doors: `frame; map_transfer_c; return` routines registered by thread_start
+  triggers. Triggers fire on entry only (script_triggers.cpp last_trigger / active_trigger),
+  so a blocked door does not refire while the leader stays inside.
+- Plan for a gated door: block at trigger fire when the trigger's routine is a locked door's
+  routine (nothing of it runs: no music fade); fallback at the transfer instruction itself
+  (script_ext.cpp ext 0x7d / 0xa4 / 0xda) for doors reached another way. Seed door targets
+  (entrance shuffle) redirect at the same instruction, so stack-argument transfers work too.
+- Virtual Expel: map 303 0x4c14 (arena old man) tests flag 730 && !flag 2 → map 18; the way
+  back is map 18 0x1fec → 303 under chapter >= 60 && !flag 2 && !flag 753. Flag 730 is also
+  read by map 236 (Central City PA 0x200, chapter >= 58, Filia's event) and map 18 0x2738
+  (chapter >= 60): so setting 730 early is not side-effect free.
+
+## AP phase 3, port side (third world agent, 2026-10-23 ~00:50-02:40): DONE, handed back
+
+Assignment (coordinator): character items, first-drop checks, traps (ambush / Fol loss /
+status), exp / fol multipliers and encounter_rate, DeathLink edge cases, plus (added by the
+coordinator) the seed's protagonist held at New Game. Everything is written up in
+docs/ap/seed_format.md "Phase 3" (options, item kinds, check types, rules, the DeathLink
+safe-point table, sidecar keys, console). Seed fields agreed with the APWorld agent (now
+a1e6498ce791a7ac4; its predecessor ad2e106211b3b492c agreed the names: drop ids type 8, per-site
+join ids, a consistent party pool on its side) and the battle agent (result.cpp hooks OK'd).
+Build engine/build-world (ninja -j8); scratch scratchpad/world/ap3 (env.sh: SS_DISC1,
+XDG_CONFIG_HOME, SDL drivers; runs/ holds seeds and logs; credits/run.py drives the endings
+plan 0 from map 581).
+
+Port code (nothing committed; the coordinator commits):
+- seed.{h,cpp}: kinds character / trap, checks join / drop, options character_items,
+  drops_as_checks, exp/fol_multiplier, encounter_rate, protagonist (any / claude / rena);
+  out-of-range values fail the load; character_name / character_by_name.
+- ap.{h,cpp}: on_party_add (join sites by map + `at` or the innermost call - 4; held back
+  unless received; check recorded), join_waiting (received characters join in free play
+  through party_add_member + clear_bond: not in PA mode flags 2/4, 8 slots incl. reserve,
+  Leon only with flag 1, Dias only without), spring_trap / start_ambush (field state 0x21
+  with +0x264 = -group), on_enemy_drop, scale_battle_rewards, random_encounters_off /
+  scale_encounter_distance, required_protagonist, on_program (Scene: title / field / battle
+  / credits), DeathLink rules (dropped on the title, in the credits, in the ending =
+  final boss 539/540 won or script flag 0x2f1; cleared by game over / load / new game; in
+  the field it applies in free play or after 30 frames of player control inside a scene;
+  battle_frame waits in a battle with field_flags +0x7e = 0), sidecar keys characters /
+  characters_waiting / first_drops / ambushes, status_text lines.
+- Hooks (flagged [world agent]): script_ext.cpp ext 0xae; script_table_a.cpp A 0x3f (slot -1
+  guard); script_ext.cpp script_string (32-bit index wrap: a pre-existing segfault with
+  index -1, maps 71 / 277 from --map starts; menu agent told); field_program.cpp
+  field_update_encounters (rate 0, distance scale); battle/result.cpp award_exp_money /
+  roll_drops; boot/system.cpp run_program (ap::on_program); title/new_game.cpp
+  character_screen (protagonist lock).
+
+Verified:
+- ss_tests 78/0, ss_game_tests 104/0 (SS_DISC1, scratch XDG). Unit tests added: ap_phase3_seed,
+  ap_character_items, ap_drops_rewards_encounters, ap_traps, ap_deathlink_scenes.
+- Smoke (tools/smoke_field_events.sh engine/build-world/shattered-stars): 62/62, of which 25
+  are the new phase-3 checks (ap_p3_*, ap_hero_*; the world-map ones need
+  analysis/saves/dex_north_city.mcd, as north_city does).
+- No-seed Redux proof for the result.cpp hooks: victory_2_3 (scratchpad/battle/ref): RNG
+  equal on all 7 samples b600-b1240 (335 at the exit), handoffs 3 / 4 byte-identical, 2 and 6
+  only at the known fields (+0x14 swap counter, +0x50/+0x52/+0x1a0/+0x1a2 sound test, 6 +0x820
+  item-table pointer). A seed with every option off: same log and handoffs byte for byte.
+  (Transient +10 RNG diffs at b270-b400 in the fight are older than these hooks: battle
+  agent's area.) Encounter rate: no seed vs 100% identical logs on world map 2.
+- Game runs (scratchpad/world/ap3/runs): Ashton's choice site 71 0x7348 (check, held back /
+  received: joins in free play, slot 1); traps on world map 2 (ambush group 50 stage 2, Fol
+  50%, paralysis); encounter_rate 200% 10 encounters vs 5, 50% 3, 0% none; Berle 535: item 240
+  withheld, check sent, exp 99000 -> 297000; protagonist lock both ways; DeathLink: world map
+  (at once), camp menu (waits for it to close), ambush transition (falls in the battle), the
+  ship's losable Shin fight 517 (waits; the loss sends nothing; falls 30 frames after the
+  field gets the controls back), the endings and credits from map 581 (both dropped).
+- tools/ap_e2e.sh: sessions 4 (character + traps from Bob, the first-drop check out, Bob's
+  DeathLink in with no echo) and 5 (Alice's game over sends a DeathLink) added: 16/16.
+- Dias received in Claude's game: dropped with its banner; Leon joins (slot 1).
+
+Sent to the APWorld agent (a1e6498ce791a7ac4) after reviewing its phase-3 contents (18 join
+sites, pool, traps 0x50350001-5, 89 drop types, 41 boss encounters as type 9): list Leon's
+229 0x73dc in rena seeds (else the ship exception adds him free); check whether Celine's 74
+join is really temporary. Both answered (resolved): its locations.choose() drops only the
+OTHER protagonist's rows, so 229 0x73dc is listed in rena / any seeds; Celine 74 is temporary
+(she leaves at 524 0x72bc, 126 0x6710, 462 0x701c / 0x7030; its tool
+scratchpad/enemy/ap3/removes.py CHAR...). seed_format.md now names id types 8 (drop) and
+9 (boss).
+
+Commands (from the repo root):
+- `source scratchpad/world/ap3/env.sh` (SS_DISC1, scratch XDG_CONFIG_HOME, SDL drivers); for
+  disc-2 maps also `export SS_DISC2="${SS_DISC1//Disc 1/Disc 2}"`.
+- Build `cd engine/build-world && ninja -j8`; tests `./ss_tests` (78), `./ss_game_tests` (104).
+- Smoke `tools/smoke_field_events.sh engine/build-world/shattered-stars` (62; never edit it
+  while it runs: bash reads it as it goes). End to end `tools/ap_e2e.sh
+  engine/build-world/shattered-stars` (16; private MultiServer on 127.0.0.1:38291, stopped by
+  its process group).
+- Join-site run: `SS_SCRIPT_GLOBALS="a0=17,1bc=100" SS_SWEEP_FLAGS=113 SS_EVENT_SWEEP=1
+  SS_EVENT_SWEEP_SKIP=2 ... --ap-seed SEED --map 71` (Ashton). Ship / losable battle:
+  `SS_SCRIPT_GLOBALS="a0=29,a4=30" SS_EVENT_SWEEP=1 SS_SWEEP_PARTY=1 SS_SWEEP_PLAY=9999:T0
+  --map 548` (Shin 517 at vblank ~409-2595). Endings and credits: `python3
+  scratchpad/world/ap3/credits/run.py OUT ["V:cmd;..."]` (credits from vblank 9294).
+- No-seed Redux proof: port run with SS_BATTLE_TICKS=1 SS_BATTLE_STRONG=1 SS_BATTLE_RNG=1
+  SS_BATTLE_DUMP=... SS_BATTLE_QUIT_AT_EXIT=1 SS_BATTLE_RAM=scratchpad/battle/ref/victory_2_3/
+  ram_field_exit_004046.bin --reference-dither --battle 2:3, cross every 45; then
+  scratchpad/battle/rngcmp.py and a compare of the handoffs with ram_exit_01236.bin
+  (3 at 0x8009a9c0, 4 at 0x8009acd0, 2 at 0x8009b360, 6 at 0x8009b610).
+
+Open / next:
+- The APWorld side (a1e6498ce791a7ac4) will emit these fields (character and trap items, join
+  sites per site, drop locations, the options in seed options). When it does, add the
+  phase-3 steps to its tools/ap_e2e_so2.sh too (Bob's plando into SO2 character / trap items).
+- Not covered in a game run: a character's join site where the item came earlier AND the
+  party is full (unit-tested); Leon / Dias refused in the wrong game (code path only).
+
 ## HANDOFF: start here (2026-10-23 about 01:40, after the second world agent's turn)
 
 Both queue items from the coordinator are done; nothing is running (no Redux, no server).

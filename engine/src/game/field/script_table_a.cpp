@@ -297,10 +297,15 @@ void vm_exec_table_a(ScriptCtx* ctx, u32 instr) {
       ctx->wait_state = 0xE;
       break;
     case 0x3E: vm_set_r(static_cast<u32>(vm_svc_party_get_super_specialty6())); break;
-    case 0x3F:
+    case 0x3F: {
       vm_fetch_args(ctx, 1);
-      vm_svc_party_member_clear_bond(party_find_slot(ctx, a[0]));
+      // [world agent] Only for a member in the party: slot -1 (a join that Archipelago's
+      // character items held back; in the original the join before it never fails) would
+      // select the 0x60 bytes before the party block.
+      const int slot = party_find_slot(ctx, a[0]);
+      if (slot >= 0) vm_svc_party_member_clear_bond(slot);
       break;
+    }
     case 0x40:
       vm_fetch_args(ctx, 1);
       vm_svc_overlay_801f9a64(a[0]);

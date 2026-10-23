@@ -5,27 +5,28 @@
 // parts/p1.md "PartyUnit".
 
 #include <cstring>
-#include <cstdio>
-#include <cstdlib>
 
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
+#include "game/battle/enemy_support.h"
 #include "game/battle/killer.h"
 #include "game/battle/party_ai.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/render.h"
 #include "game/battle/sprite.h"
 #include "game/battle/stage.h"
 #include "game/battle/spells.h"
 #include "game/battle/unit.h"
 #include "game/battle/unit_move.h"
+#include "game/battle/voice_player.h"
 #include "game/boot/rng.h"
 #include "runtime/runtime.h"
 
 namespace ss::game::battle {
 namespace {
 
-void todo(const char* what) {
+[[maybe_unused]] void todo(const char* what) {
   runtime::Runtime::get().log_once(std::string("battle-party-") + what, std::string("battle: not ported yet: ") + what);
 }
 
@@ -295,8 +296,15 @@ void unit_update_status_effects(Unit* u) {
 
 int PartyUnit::start_reaction() {
   if (reaction == 2) {
-    if (status_test(2, 0x4000) != 0) todo("unit_throw_weapons (counter shots)");
-    if (status_test(2, 0x2000) != 0) todo("unit_throw_weapons (counter shots)");
+    // pc_on_hit 0x8003bb84: equipment that throws weapons when the member is knocked back.
+    if (status_test(2, 0x4000) != 0) {
+      talk_trace("throw", this, 0);
+      unit_throw_weapons(this, 0);
+    }
+    if (status_test(2, 0x2000) != 0) {
+      talk_trace("throw", this, 2);
+      unit_throw_weapons(this, 2);
+    }
   }
   return unit_start_reaction(this);
 }
@@ -515,7 +523,7 @@ void PartyUnit::think() {
     }
   } else {
     play_voice(0x13);
-    // TODO(port): 0x80080974, an ally's call-out voice for the fallen member.
+    voice_ally_reaction(this);  // 0x80080974 (party_talk.cpp): an ally calls out, in a fury
     status_bits = 0;
     effect_bits[2] &= 0x9FFFFFF;
     pc_camera_follow_end(this);
@@ -679,7 +687,7 @@ void PartyUnit::think() {
       blend = 0;
       colour_mode = 0;
       counters[0] = 0;
-      if (victory_voice != 0) todo("voice_play_entry (the victory voice)");
+      if (victory_voice != 0) voice_play_entry(victory_voice, this, -1);  // 0x800360a8 (preloaded by voice_pick_victory)
       bobj_anim_reset(this);
       if (g.victory_speaker != slot) return;
       camera_set_mode(g.camera, 6, this);
@@ -887,7 +895,6 @@ void PartyUnit::state_approach() {
   if (t != nullptr && (t->flying != 0 || t->airborne != 0) && t->pos[1] < jump_threshold + bobj_ground_height(this) &&
       action_kind < 7 && -0x190001 < pos[1])
     jump = true;
-  if (getenv("SS_TMP_JUMP") && t) fprintf(stderr, "[tmpappr] f%u id%d jump%d flags%x fly%d air%d ty%x thr%x ak%d py%x x%x\n", (unsigned)g.battle_frames, (int)st()->id, (int)jump, (unsigned)g.flags, (int)t->flying, (int)t->airborne, t->pos[1], jump_threshold, (int)action_kind, pos[1], pos[0]);
   if (g.flags == 0) {
     camera_follow_start();
     const int r = unit_move_toward_goal(this, 1);
@@ -931,7 +938,6 @@ void PartyUnit::state_approach() {
         }
       }
       const s32 tr = unit_jump_rise_time(this, v234, target->pos);
-      if (getenv("SS_TMP_JUMP")) fprintf(stderr, "[tmpjump] f%u id%d d%x tj%x tr%x last%x straight%d reach%d gh%x ty%x jt%x\n", (unsigned)g.battle_frames, (int)st()->id, d, tj, tr, last_dist, (int)straight, unit_can_reach_target(this, target, 0), bobj_ground_height(this), target->pos[1], jump_threshold);
       if (reached || (d <= tr && tr <= last_dist && straight == 0)) {
         vel[0] = scaled(vel[0], 14);
         vel[1] = scaled(vel[1], 14);
@@ -1068,7 +1074,10 @@ void pc_attack_hit_check(PartyUnit* u) {
     effect_skill_popup(u, 0x2E);
   }
   unit_attack_targets(u, n, units, points, 0x100, angle, 0);
-  if (u->status_test(1, 0x800000) != 0) todo("unit_throw_weapons (extra shots)");
+  if (u->status_test(1, 0x800000) != 0) {  // 0x80037784: equipment that throws weapons on a hit
+    talk_trace("throw", u, 0);
+    unit_throw_weapons(u, 0);
+  }
 }
 
 void PartyUnit::state_attack() {
@@ -1172,7 +1181,7 @@ void PartyUnit::state_flee() {
     }
     if (flee_voice == 0 && flee_timer < 0x3D) {
       flee_voice = 1;
-      todo("the flee voice (0x80080878)");
+      voice_play_extra(this);  // 0x80080878 (party_talk.cpp)
     }
     flee_timer = static_cast<s16>(flee_timer - g.frame_ticks);
   }

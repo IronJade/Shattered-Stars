@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "game/ap/ap.h"
 #include "game/battle/battle.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
@@ -87,6 +88,11 @@ Program boot_main(int is_reset, disc::Archive* archive) {
 }
 
 void run_program(Program program) {
+  // Archipelago (port feature) [world agent]: where received DeathLinks can apply.
+  ap::on_program(program == Program::Title     ? ap::Scene::kTitle
+                 : program == Program::Credits ? ap::Scene::kCredits
+                 : program == Program::Battle  ? ap::Scene::kBattle
+                                               : ap::Scene::kField);
   switch (program) {
     case Program::Title:
       title_entry(get_system());
@@ -104,12 +110,18 @@ void run_program(Program program) {
         // (config +0x178 = 0) after a second and goes back to the field, so the field's
         // round trip can be tested before battles are ported.
         HandoffRegistry* reg = &get_system()->handoff;
-        delete static_cast<BattleSetup*>(handoff_get(reg, 5));
+        auto* setup = static_cast<BattleSetup*>(handoff_get(reg, 5));
+        const s32 encounter = setup != nullptr ? setup->encounter() : -1;
+        delete setup;
         handoff_clear(reg, 5);
         for (int i = 0; i < 60; ++i) psyq::VSync(0);
         auto* config = static_cast<u8*>(handoff_get(reg, 2));
         config[0x178] = config[0x179] = 0;
         runtime::Runtime::get().trace("battle stub: victory, back to the field");
+        // The stand-in's victory counts for an Archipelago seed's boss checks, so event
+        // sweeps (tools/ap_late_proof.py) see which boss fights a map still starts
+        // [enemy agent, AP late proof].
+        ap::on_battle_exit(encounter, 0);
         boot_run_main_program(get_system(), Program::Field);
       }
       std::fprintf(stderr, "[port] program #%d is not ported yet\n", static_cast<int>(program));

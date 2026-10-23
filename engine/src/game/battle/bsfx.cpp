@@ -9,11 +9,19 @@
 namespace ss::game::battle {
 namespace {
 
+// (Port) set while the channel table exists: objects destroyed during static destruction
+// after it must not touch it.
+bool g_channels_alive = false;
+
 struct Channels {
   u8 slot[8] = {};           // 0x8006fa54: the driver's effect slot (0 = free)
   BObj* emitter[8] = {};     // 0x8006fa5c
   s32 distance[8] = {};      // 0x8006fa7c
   BObj internal[8];          // 0x80081150: emitters of mode-2 effects
+  Channels() { g_channels_alive = true; }
+  ~Channels() { g_channels_alive = false; }
+  Channels(const Channels&) = delete;
+  Channels& operator=(const Channels&) = delete;
 };
 Channels& ch() {
   static Channels c;
@@ -111,6 +119,26 @@ int bsfx_play_at_pos(int sfx, const s32 pos[3]) {
     std::memcpy(e.pos, pos, 12);
   }
   return static_cast<s32>(r);
+}
+
+void bsfx_forget_emitter(const BObj* o) {
+  if (!g_channels_alive) return;
+  Channels& c = ch();
+  if (o >= &c.internal[0] && o < &c.internal[8]) return;
+  for (int i = 0; i < 8; ++i) {
+    if (c.emitter[i] != o || c.slot[i] == 0) continue;
+    // ORIGINAL BUG (original_bugs.md B15): the console keeps the pointer after the object
+    // is freed (a SpellCast deletes itself while its sound plays) and bsfx_pan_update reads
+    // the freed memory for the pan and volume. The channel goes on with the object's last
+    // position in its own internal emitter (sound only).
+    if (c.slot[i] > 8) {
+      c.emitter[i] = nullptr;  // (no internal emitter for this slot: the pan stays as it is)
+      continue;
+    }
+    BObj& keep = c.internal[c.slot[i] - 1];
+    std::memcpy(keep.pos, o->pos, sizeof keep.pos);
+    c.emitter[i] = &keep;
+  }
 }
 
 void bsfx_update() {

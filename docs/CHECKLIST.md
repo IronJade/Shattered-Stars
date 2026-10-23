@@ -18,8 +18,8 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
 - [x] **M4** New Game reaches the first map and the player can walk: Claude's opening on map 7 plays through (13 windows; timing and pixels match PCSX-Redux from the fade-in on, apart from the known 1-step window-body and shadow blend differences), the script moves to map 8, its scene plays, then the D-pad walks Claude around
 - [x] **M5** Events: dialogue, doors, chests, shops — verified through the whole game loop (`tools/smoke_field_events.sh`: Arlia → Hearn's store, the 200-Fol chest, talking to Mr. Hearn, the ruins' shut exit, a patched shop); shops compared with PCSX-Redux at Hearn's store (Fol, inventory, recent list)
 - [x] **M6** Menus (items, equipment, skills, save/load): every camp page (1-11), item creation (0xf / 0x10 / 0x13), renaming (0xe), the query page and save / load, each compared with PCSX-Redux
-- [ ] **M7** Battles — combat, HUD, result screen, every enemy class, Claude's and the casters' moves, the Shot kinds the monsters use are done and compared with PCSX-Redux; left: spells and battle items (in progress), the remaining character modules, party AI, voices
-- [ ] **M8** Disc 2 swap; the game can be finished. Audit in `docs/notes/m8_audit.md`:
+- [x] **M7** Battles: combat, HUD, result screen, every enemy class, every character module, the party AI, spells and battle items, the stage code of every special stage and the Shot / Particle kinds are done and compared with PCSX-Redux; the 564-encounter sweep and its ASan pass are clean. The battle talk layer (party_talk: opening lines, talk pose, provoke, ally reaction and fury, flee and victory voices, weapon throws) matches Redux too (RNG equal to the exit; the talk pose matches with `SS_BLOAD_DRIVE_TIME=1`, the port's instant loads make it shorter otherwise)
+- [x] **M8** Disc 2 swap; the game can be finished. Audit in `docs/notes/m8_audit.md`:
   - Every event-script service and opcode is real. 87 services keep a stand-in only for
     VM unit tests; no shipped script reaches one.
   - An event sweep ran every trigger, Private Action, talk and pickpocket entry of all
@@ -29,8 +29,16 @@ original, or a rendered result checked by eye). Names follow `docs/catalog/`.
   - Fixed on the way: music on about 50 maps (SLZ), V1 and V2 (original_bugs.md).
   - Played through: disc 1 -> disc 2 on map 625 with the disc swap, and the credits and
     final screen from map 581.
-  - Left: the private endings, and a check against PCSX-Redux from a real late-game
-    save.
+  - The private endings (`docs/notes/endings.md`): the selection decoded; all 85 ending
+    ids played in the port, each scene showing its pair; five ending lists the same in
+    PCSX-Redux (scenes within 1.01 %).
+  - The user's late save played from the Final Save Point through the final battle to the
+    endings in the port and in PCSX-Redux with the same input: the walk equal at every
+    sample, the generator equal at the battle's start, the same seven endings.
+  - Map 295, the one map whose lack of free play was unexplained, runs the bunny race on
+    the console exactly as in the port; nothing stalls.
+  - Open, for the battle work: the battle AI's first random draw comes at battle frame 0
+    in the port and 102 on the console (endings.md, late save).
 
 ## 0. Foundations
 
@@ -135,7 +143,7 @@ from config+0x45).
 - [x] Battle combat (battle agent, phase 2; `docs/notes/battle_port.md`): 30 fps loop, stage / units / camera (17 modes), the frame director, battle sound front end, movement (swept-box path probe), PartyUnit and EnemyUnit state machines with the enemy AI, player input, `unit_attack_targets` (accuracy, damage, crits, procs, knockback), victory / defeat / escape rules. A forced battle (encounter 2, stage 3) matches a PCSX-Redux run frame for frame (positions, animations, damage numbers, KO frame) apart from the missing HUD and dithering
 - [x] Battle HUD (step 1): window system, #1980 proportional text, the HUD (member HP / MP gauges, item / move icons, target select), the message banner; appears on the same frame as Redux and matches its layouts
 - [x] Battle result screen #1981 (step 2): EXP / Fol award, drops, level-ups with growth and learn tables, the defeat / escape / time-up messages, battle_fade_task, the victory jingle and voice picks (RNG draws; clips not yet); the handoffs at battle_exit_to_field equal the original's byte for byte (party, records; inventory apart from a RAM pointer), and the result pages match Redux frame for frame
-- [ ] Battle, part 2. Done and compared with PCSX-Redux: Claude's module and the killer-move framework, Rena / Celine / Leon / Noel, Bowman, Dias, Ernest, the jump attack (pc_state_air_attack), the party AI (fighter / healer / caster, the attack-spell choice), equipment effects (pc_apply_equip_effects, pc_update_effects), the Particle pool, Shot kinds 0x10 / 0x11 / 0x16 / 2 / 0x2c / 0x32 and shot_apply_damage, all 16 enemy families and the 43 encounter-pack / image enemy modules (`docs/notes/battle_enemies.md`), stage 8 lightning and the stage code blocks of stages 0x10 / 0x15 / 0x1a / 0x24 / 0x29. The encounter sweep (`tools/battle_sweep.py`, `docs/notes/battle_sweep.md`) runs all 564 encounters without a crash. Ported, check pending: stages 0xd / 0xe / 0x17 / 0x1f / 0x33, Particle kinds 4 / 5. Left: voices (the victory voice and the opening voices), spells and battle items (world agent), Precis / Ashton / Opera / Chisato (effects agent), the ASan sweep
+- [x] Battle, part 2. Done and compared with PCSX-Redux: Claude's module and the killer-move framework, Rena / Celine / Leon / Noel, Bowman, Dias, Ernest, the jump attack (pc_state_air_attack), the party AI (fighter / healer / caster, the attack-spell choice), equipment effects (pc_apply_equip_effects, pc_update_effects), the Particle pool with kinds 4 / 5, Shot kinds 0x10 / 0x11 / 0x16 / 2 / 0x2c / 0x32 and shot_apply_damage, all 16 enemy families (the Weirdaxe's debris included) and the 43 encounter-pack / image enemy modules (`docs/notes/battle_enemies.md`), stage 8 lightning and the stage code of the ten special stages with their own references (0xd / 0xe / 0x10 / 0x15 / 0x17 / 0x1a / 0x1f / 0x24 / 0x29 / 0x33: Shots equal frame by frame and RNG equal to the exit). The encounter sweep (`tools/battle_sweep.py`, `docs/notes/battle_sweep.md`) runs all 564 encounters without a crash, and the ASan pass is clean after the B15 fix. Original bugs B13 (the cart's popup) and B15 (a freed sound emitter) are fixed, B14 (an uninitialised approach distance) is kept faithful. The battle talk layer (party_talk: opening lines, talk pose, provoke, ally reaction and fury, flee and victory voices, weapon throws) is verified against Redux (talk_ko / ko2 / ko3 / prov3 / flee: RNG equal to the exit, the same frames, handles and fury state).
 
 ## 5. Completion
 
@@ -149,7 +157,7 @@ from config+0x45).
 ## 6. Archipelago (plan: `docs/archipelago_plan.md`)
 
 - [x] Phase 1, foundations: `tools/ap_extract.py` location / item tables (`docs/ap/field.json`, `docs/ap/battles.json`: 785 field locations, story order, regions; `docs/ap/field.md`, `docs/ap/battle.md`), the `game/ap` module (seed loader, checks, receive queue with notices, `--ap-seed`, the `ap_*` debug commands), the seed format (`docs/ap/seed_format.md`) and the save sidecar; smoke ap_seed / ap_save / ap_load
-- [ ] Phase 2, first playable: chest and gift shuffle in story mode, goal = final boss, the native client (apclientpp), receiving with notices, setup's Archipelago section
+- [x] Phase 2, first playable: chest and gift shuffle in story mode, goal = final boss, the native client (apclientpp), receiving with notices, setup's Archipelago section. The APWorld `apworld/so2` (`docs/ap/apworld.md`); `tools/ap_e2e_so2.sh` plays a generated SO2 + ChecksFinder multiworld end to end on a local server (a chest sends the other slot's item, an item is received, the goal; the server's checked locations and client status 30), 12/12
 - [ ] Phase 3: character items, boss and drop checks, DeathLink, traps, EXP / Fol / encounter options
 - [ ] Phase 4: open world (area keys, the Expel teleporter), shop shuffle, then entrance shuffle
 - [ ] Phase 5: a custom .apworld release, then the pull request for official support

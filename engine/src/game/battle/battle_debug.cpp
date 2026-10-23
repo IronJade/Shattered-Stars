@@ -13,6 +13,7 @@
 #include "game/battle/battle.h"
 #include "game/battle/camera.h"
 #include "game/battle/killer.h"
+#include "game/battle/render.h"
 #include "game/battle/result.h"
 #include "game/battle/shot.h"
 #include "game/battle/unit.h"
@@ -75,6 +76,50 @@ void battle_debug_trail(const RibbonTrail* t) {
 }
 
 void battle_debug_frame() {
+  // (Menu agent) SS_BATTLE_UNITS=N: up to battle frame N, the generator (index and FNV-1a
+  // over the 56-word table, as event_sweep.cpp and lateref.lua print it), its draws, and
+  // every unit's position and HP, at the end of each frame's logic (where lateref.lua
+  // breaks in the original: 0x8004693c), for comparing a battle's opening with PCSX-Redux.
+  static const int units_upto = [] {
+    const char* v = std::getenv("SS_BATTLE_UNITS");
+    return v != nullptr ? std::atoi(v) : -1;
+  }();
+  if (bg().battle_frames <= units_upto) {
+    u32 table[56];
+    s32 index = 0;
+    rng_save(table, &index);
+    u32 h = 0x811c9dc5u;
+    for (u32 w : table)
+      for (int b = 0; b < 4; ++b) h = (h ^ (w >> (8 * b) & 0xFF)) * 0x01000193u;
+    std::string line;
+    char part[96];
+    for (int i = 0; i < 4; ++i) {
+      if (const PartyUnit* u = bg().party_units[static_cast<size_t>(i)]) {
+        std::snprintf(part, sizeof part, "%sp%d %d,%d,%d hp %d", line.empty() ? "" : " | ", i, u->pos[0], u->pos[1], u->pos[2],
+                      u->st()->hp);
+        line += part;
+      }
+    }
+    for (int i = 0; i < 8; ++i) {
+      if (const EnemyUnit* u = bg().enemy_units[static_cast<size_t>(i)]) {
+        std::snprintf(part, sizeof part, "%se%d %d,%d,%d hp %d", line.empty() ? "" : " | ", i, u->pos[0], u->pos[1], u->pos[2],
+                      u->st()->hp);
+        line += part;
+      }
+    }
+    std::fprintf(stderr, "[bunits] b %d v %llu rng %d %08x draws %u; %s\n", bg().battle_frames,
+                 static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), index, h, rng_draws(), line.c_str());
+  }
+  // (Menu agent) SS_BATTLE_HP1=F: from battle frame F on, monsters above 1 HP drop to 1 (as
+  // lateref.lua's SS_ENEMY_HP1), to end a long fight after the compared opening.
+  static const int hp1_from = [] {
+    const char* v = std::getenv("SS_BATTLE_HP1");
+    return v != nullptr ? std::atoi(v) : -1;
+  }();
+  if (hp1_from >= 0 && bg().battle_frames >= hp1_from) {
+    for (EnemyUnit* u : bg().enemy_units)
+      if (u != nullptr && u->st()->hp > 1) u->st()->hp = 1;
+  }
   static const bool god = std::getenv("SS_BATTLE_GOD") != nullptr;
   if (god) {
     // Debugging (sweeps): the standing party members' HP back to the maximum every frame,
@@ -92,6 +137,12 @@ void battle_debug_frame() {
                  static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), g.battle_frames, g.frame_ticks,
                  g.state, g.flags, c ? c->mode : -1, c ? c->step : -1, c ? c->remaining : 0, c ? c->speed : 0,
                  c ? c->ticks : 0, battle_result_screen() != nullptr, g.result_started);
+    // The view (explore.lua BW_VIEW): render eye / target, the camera's eye / look-at, zoom.
+    const ViewState& vw = view();
+    std::fprintf(stderr, "[battle] view f %d m %d eye %d %d %d tgt %d %d %d ceye %d %d %d clook %d %d %d zoom %d\n",
+                 g.battle_frames, vw.view_mode, vw.view_eye[0], vw.view_eye[1], vw.view_eye[2], vw.view_target[0],
+                 vw.view_target[1], vw.view_target[2], vw.cam_eye[0], vw.cam_eye[1], vw.cam_eye[2], vw.cam_lookat[0],
+                 vw.cam_lookat[1], vw.cam_lookat[2], vw.zoom);
   }
   static int box_lo = -1, box_hi = -1;
   static const bool box_init = [] {
@@ -178,6 +229,15 @@ int battle_debug_frame_wait(int n) {
   if (n >= 0 && static_cast<size_t>(n) < waits.size() && waits[static_cast<size_t>(n)] > 0)
     return waits[static_cast<size_t>(n)];
   return 2;
+}
+
+void battle_debug_loaded() {
+  static const int skip = [] {
+    const char* e = std::getenv("SS_BATTLE_RNG_SKIP");
+    return e != nullptr ? std::atoi(e) : 0;
+  }();
+  for (int i = 0; i < skip; ++i) rng_next();
+  if (skip != 0) std::fprintf(stderr, "[battle] loaded: %d extra rng draws (SS_BATTLE_RNG_SKIP)\n", skip);
 }
 
 void battle_debug_exit() {

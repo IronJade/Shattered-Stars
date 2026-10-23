@@ -15,7 +15,9 @@
 
 #include "disc/slz.h"
 #include "game/battle/battle.h"
+#include "game/battle/battle_debug.h"
 #include "game/battle/camera.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/pc_modules.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
@@ -606,6 +608,7 @@ void PartyLoader::update() {
   g.item_data_freed = true;  // the console frees g_item_table here (inventory +0x820 dangles)
   battle_separate_units();
   g.state = kStateLoaded;
+  battle_debug_loaded();  // (debugging: SS_BATTLE_RNG_SKIP)
   task_unregister(this);
   g.party_loader.reset();  // deletes this
 }
@@ -660,6 +663,7 @@ void PartyUnit::update() {
   }
   BattleGlobals& g = bg();
   if (g.camera != nullptr && g.camera->target != this) camera_focus = 0;
+  pc_talk_update(this);  // 0x800350cc: the talk pose ends with its clip (party_talk.cpp)
   if (ignore_units != 0) {
     const s32 zero[3] = {0, 0, 0};
     if (unit_check_move(this, zero, 7) == nullptr) ignore_units = 0;

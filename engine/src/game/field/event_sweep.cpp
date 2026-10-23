@@ -21,7 +21,7 @@
 namespace ss::game::field {
 namespace {
 
-enum class Phase { Off, Settle, Fire, Run, Leave, Reload, Done, Play };
+enum class Phase { Off, Settle, Fire, Run, Leave, Reload, Done, Play, Route };
 
 struct Entry {
   char kind = 'T';   // T trigger, P Private Action, K talk, S pickpocket
@@ -54,6 +54,15 @@ struct Sweep {
   int still = 0;     // frames since it last changed
   std::vector<int> scene_models;  // SS_ENDING_LOG: frames each sprite key was drawn on this map
   int goto_map = -1;  // SS_SWEEP_GOTO
+  struct Walk { int map; u16 dir; };
+  std::vector<Walk> route;  // SS_ROUTE
+  bool synced = false;
+  u64 sync = 0;             // vblank of the sync (t = 0)
+  int control_run = 0;      // frames in a row with field state 0 and a controlled actor
+  int streak = 0;           // control streaks since the sync
+  int window_wait = 0;      // frames in a row a window waited for the button (state 6 / 7)
+  int press_left = 0;       // frames confirm stays held
+  int last_state = -1;      // field state last frame
 };
 Sweep g_sweep;
 
@@ -120,11 +129,11 @@ bool idle(const Field* f) {
   return true;
 }
 
-// Input. In the field: Cross when a window waits for the button or a choice is up, and
+// Input. In the field: confirm when a window waits for the button or a choice is up, and
 // otherwise every 64 frames while the player has no control (some waits read the pad
 // directly); not otherwise while the player has control, where a press as an event ends
-// would start a new talk. In a menu's own loop (event_sweep_menu_frame): Circle every 8 frames, to leave
-// it; the presses are scheduled ahead since field_update does not run there.
+// would start a new talk. In a menu's own loop (event_sweep_menu_frame): cancel every 8 frames, to leave
+// it (cancel); the presses are scheduled ahead since field_update does not run there.
 void press_at(u64 v, u16 button) {
   auto& in = runtime::Runtime::get().scripted_input;
   in[v] = button;
@@ -391,9 +400,13 @@ void event_sweep_frame(Field* f) {
       const long off = std::strtol(v, &end, 16);
       if (end != nullptr && *end == '=' && off >= 0 && off < 0x2A0) g.config[off] = static_cast<u8>(std::strtol(end + 1, nullptr, 0));
     });
+    // "!n" clears flag n instead ("!1": Rena's game from a --map start) [enemy agent, AP late proof].
     for_each_item("SS_SWEEP_FLAGS", [&](const char* v) {
-      const long n = std::strtol(v, nullptr, 0);
-      if (n >= 0 && n < 0x170 * 8) g.script_flags[n >> 3] = static_cast<u8>(g.script_flags[n >> 3] | 1 << (n & 7));
+      const bool clear = *v == '!';
+      const long n = std::strtol(clear ? v + 1 : v, nullptr, 0);
+      if (n < 0 || n >= 0x170 * 8) return;
+      if (clear) g.script_flags[n >> 3] = static_cast<u8>(g.script_flags[n >> 3] & ~(1 << (n & 7)));
+      else g.script_flags[n >> 3] = static_cast<u8>(g.script_flags[n >> 3] | 1 << (n & 7));
     });
     say("start (frame limit %d, skip %d, disc %d)", s.frame_limit, s.skip, globals().config[0x4C] + 1);
     // SS_SWEEP_PLAY="MAP:ENTRY,...": play mode. No snapshots or reloads: each time the
@@ -410,6 +423,22 @@ void event_sweep_frame(Field* f) {
     // map, no fade) and stop the sweep and its input. For comparing a loaded save's endings
     // with PCSX-Redux, where a Lua script pokes the same two Field members.
     if (const char* v = std::getenv("SS_SWEEP_GOTO")) s.goto_map = std::atoi(v);
+    // SS_ROUTE="MAP:DIR,...": walk a route with input simple enough for a PCSX-Redux script
+    // to give the same (scratchpad/menu/m8/late/lateref.lua). DIR is up / down / left /
+    // right or two joined by '+'. See Phase::Route.
+    for_each_item("SS_ROUTE", [&](const char* v) {
+      int map = -1;
+      char dir[32] = {};
+      if (std::sscanf(v, "%d:%31[a-z+]", &map, dir) != 2) return;
+      u16 mask = 0;
+      const std::string d = dir;
+      if (d.find("up") != std::string::npos) mask |= 0x1000;
+      if (d.find("right") != std::string::npos) mask |= 0x2000;
+      if (d.find("down") != std::string::npos) mask |= 0x4000;
+      if (d.find("left") != std::string::npos) mask |= 0x8000;
+      s.route.push_back({map, mask});
+    });
+    if (!s.route.empty()) s.phase = Phase::Route;
   }
   // SS_ENDING_LOG=1: on every map change, the ending list map 581 builds (G[0x388 + k] ids,
   // G[0x348 + 4k] maps, ended by 0xff) and the index G[0x344].
@@ -451,6 +480,24 @@ void event_sweep_frame(Field* f) {
       say("endings done");
       runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
     }
+  }
+  // SS_SWEEP_ACTORS=N: every N frames, each actor's slot, sprite key, position, move mode
+  // and target, wait state and flags (for stalls that wait on an NPC).
+  static const int actors_every = [] {
+    const char* v = std::getenv("SS_SWEEP_ACTORS");
+    return v != nullptr ? std::atoi(v) : 0;
+  }();
+  if (actors_every > 0 && runtime::Runtime::get().vblanks() % static_cast<u64>(actors_every) == 0) {
+    std::string line;
+    for (int slot = 0; slot < 0xC2; ++slot) {
+      const Actor* a = field_actor(slot);
+      if (a == nullptr) continue;
+      char b[128];
+      std::snprintf(b, sizeof b, " [%d k%d %d,%d,%d mv%d->%d,%d w%d f%x]", slot, a->model, a->x >> 12, a->y >> 12, a->z >> 12,
+                    a->move_mode, a->target[0] >> 12, a->target[2] >> 12, a->wait_state, a->flags);
+      line += b;
+    }
+    say("actors%s", line.c_str());
   }
   if (s.phase == Phase::Off || s.phase == Phase::Done) {
     // After SS_SWEEP_GOTO the ending log still follows the maps.
@@ -622,6 +669,84 @@ void event_sweep_frame(Field* f) {
       say("play: step %zu on map %d: %c%d", s.played - 1, map, e.kind, e.index);
       fire(e);
       s.idle = s.idle_top = 0;
+      return;
+    }
+    case Phase::Route: {
+      // The rules (the same in lateref.lua, decided from the state at the end of the frame):
+      // with field state 0, a controlled actor and the leader's actor 20 frames in a row on
+      // a listed map, its direction is held; a window waiting for the button (state 6 / 7)
+      // or a choice 10 frames in a row gets confirm for 2 frames; nothing else (no input in
+      // battles).
+      // The first 20-frame streak is the sync point (t = 0); SS_ROUTE_RNG=FILE (57 words:
+      // index, table, as endref.lua / lateref.lua dump them) sets the generator there.
+      auto& rt = runtime::Runtime::get();
+      const u64 now = rt.vblanks();
+      const int leader = leader_slot();
+      const bool in_control = f->state == 0 && field_state_s16(0x10) != -1 && vm_svc_actor_exists(leader);
+      s.control_run = in_control ? s.control_run + 1 : 0;
+      auto where = [&]() {
+        s32 x = 0, y = 0, z = 0;
+        vm_svc_actor_get_position(leader, &x, &y, &z);
+        char b[96];
+        std::snprintf(b, sizeof b, "leader %d,%d,%d view %d,%d", x >> 12, y >> 12, z >> 12, vm_svc_actor_get_view_x(leader),
+                      vm_svc_actor_get_view_y(leader));
+        return std::string(b);
+      };
+      if (!s.synced) {
+        if (s.control_run < 20) return;
+        if (const char* path = std::getenv("SS_ROUTE_RNG")) {
+          u32 w[57];
+          if (std::FILE* in = std::fopen(path, "rb")) {
+            if (std::fread(w, 4, 57, in) == 57) rng_restore(w + 1, static_cast<s32>(w[0]));
+            std::fclose(in);
+          }
+        }
+        s.synced = true;
+        s.sync = now;
+        s.last_state = f->state;
+        say("route: sync t 0 on map %d; %s; %s", map, rng_signature().c_str(), where().c_str());
+        // SS_ROUTE_GOTO=MAP: then load MAP at its own entry spot as field state 1 does (the
+        // same two Field members lateref.lua pokes with SS_GOTO).
+        if (const char* g = std::getenv("SS_ROUTE_GOTO")) {
+          f->pending_map = std::atoi(g);
+          f->state = 1;
+          s.control_run = 0;
+          return;
+        }
+      }
+      const long t = static_cast<long>(now - s.sync);
+      if (f->state != s.last_state) {
+        say("route: t %ld field state %d -> %d on map %d; %s", t, s.last_state, f->state, map, rng_signature().c_str());
+        s.last_state = f->state;
+      }
+      if (s.control_run == 1) ++s.streak;
+      u16 dir = 0;
+      for (const auto& w : s.route)
+        if (w.map == map) dir = w.dir;
+      if (in_control && dir != 0 && s.control_run >= 20 && (s.control_run - 20) % 30 == 0)
+        say("route: t %ld map %d streak %d c %d %s; %s", t, map, s.streak, s.control_run, where().c_str(), rng_signature().c_str());
+      // A choice (VM wait state 9) counts as a window waiting for the button.
+      bool waiting = g_script_vm != nullptr && g_script_vm->wait_state == 9;
+      for (int i = 0; i < kMsgWindowCount && !waiting; ++i) {
+        if (MsgWindow* w = msg_window(i)) waiting = w->state == 6 || w->state == 7;
+      }
+      s.window_wait = waiting ? s.window_wait + 1 : 0;
+      if (s.window_wait >= 10) {
+        s.window_wait = 0;
+        s.press_left = 2;
+        say("route: t %ld confirm on map %d", t, map);
+      }
+      u16 mask = s.control_run >= 20 ? dir : 0;
+      if (s.press_left > 0) {
+        mask = static_cast<u16>(mask | pad_button(0));
+        --s.press_left;
+      }
+      // At this vblank: the VSync callback latches the pad before the vblank count moves on
+      // (runtime.cpp), so this is what the next frame reads, as a pad override set at this
+      // vsync is in PCSX-Redux.
+      auto& in = rt.scripted_input;
+      in.erase(in.upper_bound(now), in.end());
+      in[now] = mask;
       return;
     }
     case Phase::Reload:

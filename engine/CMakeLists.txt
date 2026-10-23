@@ -94,6 +94,7 @@ add_library(ss_game STATIC
   src/game/common/save_icon.cpp
   src/game/title/load_screen.cpp
   src/game/field/menu_camp.cpp
+  src/game/field/menu_voice.cpp
   src/game/field/menu_shop.cpp
   src/game/field/item_effect.cpp
   src/game/field/menu_items.cpp
@@ -190,6 +191,7 @@ target_sources(ss_game PRIVATE
   src/game/battle/combat.cpp
   src/game/battle/bsfx.cpp
   src/game/battle/party_states.cpp
+  src/game/battle/party_talk.cpp
   src/game/battle/enemy_ai.cpp
   src/game/battle/input.cpp
   src/game/battle/director.cpp

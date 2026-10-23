@@ -73,7 +73,11 @@ REGISTRATIONS = {"thread_start": (9,), "thread_start_ex": (9,), "ext_f3": (7, 9)
 # the map's locations of that type in script order. Shared scripts use their first map.
 LOCATION_BASE = 0x50320000
 LOCATION_TYPES = {"chest": 1, "gift": 2, "fol_gift": 3, "recruitment": 4, "shop": 5, "private_action": 6,
-                  "prize": 7}
+                  "prize": 7, "drop": 8, "boss": 9}
+# Two types are keyed by what the port checks, not by map: a first drop is BASE + (8 << 21) +
+# enemy type, a boss BASE + (9 << 21) + encounter. A join site's id is BASE + (4 << 21) +
+# (map << 10) + index, one per party_add site (recruitment records with two sites give the
+# second one the next free index of its map).
 
 
 # ---- Names ---------------------------------------------------------------------------------
@@ -1403,7 +1407,7 @@ def assign_ids(groups):
 
 
 SITE_KEYS = ("map", "handler", "value_at", "form", "item", "fol", "name", "word", "expected", "role", "registered_at",
-             "requires", "window", "region", "world", "area")
+             "requires", "via", "window", "region", "world", "area")
 
 
 def merge_chests(records):
@@ -1439,10 +1443,11 @@ def merge_chests(records):
     return out, retired
 
 
-def gift_site_ids(gifts):
+def gift_site_ids(gifts, kind="gift"):
     """One location id per reward site of a gift event (an event may give several items, or
-    an item and Fol). The event's first site keeps the event's id (the id every event had
-    before); the other sites take the next free indices of their map, in offset order."""
+    an item and Fol) or a recruitment (Opera and Ernest join at one choice). The event's first
+    site keeps the event's id (the id every event had before); the other sites take the next
+    free indices of their map, in offset order."""
     used = collections.Counter(g["map"] for g in gifts if "location_id" in g)
     added = 0
     for g in sorted((g for g in gifts if "location_id" in g), key=lambda g: (g["map"], g["offset"])):
@@ -1450,7 +1455,7 @@ def gift_site_ids(gifts):
             if k == 0:
                 s["location_id"] = g["location_id"]
                 continue
-            s["location_id"] = LOCATION_BASE + (LOCATION_TYPES["gift"] << 21) + (g["map"] << 10) + used[g["map"]]
+            s["location_id"] = LOCATION_BASE + (LOCATION_TYPES[kind] << 21) + (g["map"] << 10) + used[g["map"]]
             used[g["map"]] += 1
             added += 1
     return added
@@ -1491,6 +1496,156 @@ def tag_private_action_gifts(maps, pas, records):
                 r["pa_partners"] = sorted(set(r.get("pa_partners", [])) | set(p.get("partners", [])))
 
 
+# ---- Battles: bosses and the random encounters (for boss and first-drop locations) ----------
+
+FIELD_PROGRAM = 3100           # the field program's archive entry (its data holds the tables)
+FIELD_BASE = 0x8002F810        # where it is loaded
+GROUP_TABLE = 0x80074FE0       # area encounter groups: pointers to 0-terminated s16 encounter lists
+# The world maps' encounter groups: a 9 x 7 grid of s8 per world map (negative: a 3 x 3 grid
+# from the second table), as the world map's walk reads them (field_overlay_c1e.md). Terrain 5
+# uses group + 1, and on Energy Nede terrains 10-12 use group + 2.
+WORLD_GROUP_TABLES = {1: (0x80074EF0, 0x80074F5C), 2: (0x80074F70, 0x80074FD0)}
+
+
+def field_program_image(disc):
+    return bytes(unpack_block(disc.entry(FIELD_PROGRAM), 0))
+
+
+def encounter_groups(img):
+    """{group: [encounters]} from the field program's group table."""
+    def r32(a):
+        return struct.unpack_from("<I", img, a - FIELD_BASE)[0]
+    groups = {}
+    for g in range(1, 64):
+        p = r32(GROUP_TABLE + g * 4)
+        if not FIELD_BASE <= p < FIELD_BASE + len(img):
+            continue
+        encs = []
+        while len(encs) < 256:
+            e = struct.unpack_from("<h", img, p - FIELD_BASE)[0]
+            if e == 0:
+                break
+            encs.append(e)
+            p += 2
+        groups[g] = encs
+    return groups
+
+
+def world_map_groups(img):
+    """{world map: sorted groups} its ground can pick (group 0, no list, is left out)."""
+    s8 = lambda a: struct.unpack_from("<b", img, a - FIELD_BASE)[0]  # noqa: E731
+    out = {}
+    for world, (table, subs) in WORLD_GROUP_TABLES.items():
+        cells = set()
+        for i in range(63):
+            g = s8(table + i)
+            if g < 0:
+                p = struct.unpack_from("<I", img, subs + (-g) * 4 - FIELD_BASE)[0]
+                cells.update(s8(p + k) for k in range(9))
+            else:
+                cells.add(g)
+        cells.discard(0)
+        extra = {g + 1 for g in cells} | ({g + 2 for g in cells} if world == 2 else set())
+        out[world] = sorted(cells | extra)
+    return out
+
+
+def battle_sites(maps):
+    """The scripted battles with a constant encounter: calls into the map's battle helper (the
+    routine running ext 0xb7 'battle' on three stacked values) after three constant pushes,
+    as tools/ap_battles.py finds them, with the conditions they run under (context)."""
+    out = []
+    for mp in maps.values():
+        helpers = {mp.ins[mp.funcs[mp.func_of[n]][0]][0] for n, i in enumerate(mp.ins)
+                   if i[2].startswith("battle <3 from stack>") and n in mp.func_of}
+        for n, i in enumerate(mp.ins):
+            if not (i[2].startswith("call") and i[3] in helpers and n >= 3):
+                continue
+            vals = [so2_mod.push_value(mp.ins[n - 3 + j]) for j in range(3)]
+            k = mp.func_of.get(n)
+            if None in vals or vals[0] == 0 or k is None:
+                continue    # computed (map 305's arena) or the random-encounter path
+            rec = {"map": mp.id, "offset": i[0], "routine": mp.ins[mp.funcs[k][0]][0],
+                   "encounter": vals[0], "stage": vals[1], "param": vals[2]}
+            rec.update(context(mp, k, n))
+            mark_window(rec)
+            out.append(rec)
+    return out
+
+
+def encounter_sites(maps):
+    """Where a map turns random encounters on: calls into its encounter-settings routine (the
+    library's: rate -> G[0x25], stage -> G[0x12], group -> G[0x14]; group 0 computes one)
+    with constant rate, stage and group, with their conditions. field_flags is the script
+    globals' block, so G[0x25] is the rate the field reads."""
+    out = []
+    for mp in maps.values():
+        setters = set()
+        for k, (s, e) in enumerate(mp.funcs):
+            texts = [mp.ins[x][2] for x in range(s, e)]
+            if any(t.startswith("pop_store s8 G[0x25]") for t in texts) and \
+               any(t.startswith("pop_store s16 G[0x14]") for t in texts):
+                setters.add(mp.ins[s][0])
+        for n, i in enumerate(mp.ins):
+            if not (i[2].startswith("call") and i[3] in setters and n >= 3):
+                continue
+            vals = [so2_mod.push_value(mp.ins[n - 3 + j]) for j in range(3)]
+            k = mp.func_of.get(n)
+            if None in vals or k is None or vals[0] == 0 or vals[2] <= 0:
+                continue
+            rec = {"map": mp.id, "offset": i[0], "rate": vals[0], "stage": vals[1], "group": vals[2]}
+            if len(mp.maps) > 1:
+                rec["maps"] = mp.maps
+            rec.update(context(mp, k, n))
+            out.append(rec)
+    return out
+
+
+def bosses(encounters, sites, final):
+    """One record per boss encounter (a member with the boss flag): its scripted call sites.
+    The four with no constant site (0, 263, 534, 561) are listed with none."""
+    per = collections.defaultdict(list)
+    for s in sites:
+        per[s["encounter"]].append(s)
+    out = []
+    for e, enc in sorted(encounters.items()):
+        if not enc["boss"]:
+            continue
+        rec = {"encounter": e, "location_id": LOCATION_BASE + (LOCATION_TYPES["boss"] << 21) + e,
+               "names": [m["name"] for m in enc["members"] if m["boss"]],
+               "monsters": [m["name"] for m in enc["members"]], "can_escape": enc["can_escape"],
+               "sites": sorted(per.get(e, []), key=lambda s: (s["map"], s["offset"]))}
+        if e in final:
+            rec["final"] = True
+        out.append(rec)
+    return out
+
+
+def enemy_drops(encounters, enemies, groups, world_groups, enc_sites):
+    """One record per enemy type that has a drop and meets the party in random encounters: the
+    groups holding it, the map sites turning those groups on, and the world maps whose ground
+    picks them. Types met only in scripted battles (bosses, events) are left out: their one
+    fight gives one roll."""
+    in_group = collections.defaultdict(set)
+    for g, encs in groups.items():
+        for e in encs:
+            for m in encounters.get(e, {}).get("members", []):
+                in_group[m["type"]].add(g)
+    out = []
+    for t, en in sorted(enemies.items()):
+        drops = [d for d in en["drops"] if d["item"]]
+        if not drops:
+            continue
+        gs = in_group.get(t, set())
+        sites = [(s["map"], s["offset"]) for s in enc_sites if s["group"] in gs]
+        worlds = sorted(w for w, wg in world_groups.items() if gs & set(wg))
+        if not sites and not worlds:
+            continue
+        out.append({"enemy": t, "name": en["name"], "location_id": LOCATION_BASE + (LOCATION_TYPES["drop"] << 21) + t,
+                    "drops": drops, "groups": sorted(gs), "sites": sites, "world_maps": worlds})
+    return out
+
+
 def build(paths, battles=True):
     disc, maps = load_maps(paths[0])
     names = read_names(disc)
@@ -1524,7 +1679,9 @@ def build(paths, battles=True):
             money.append(ev)
     ch = chests(maps)
     for c in ch:
-        if "item" in c:
+        if c.get("item", 0) >= 10000:
+            c["key_flag"] = c["item"] - 10000   # the give routine sets flag n - 10000: a key item
+        elif "item" in c:
             c["name"] = item_name(c["item"])
         mark_window(c)
     shops = so2_mod.shop_lists(disc)
@@ -1581,6 +1738,7 @@ def build(paths, battles=True):
                 ("shop", sites), ("private_action", pa_rewards)])
     ch, retired = merge_chests(ch)
     gift_site_ids(gifts)
+    gift_site_ids(joins, "recruitment")
     tag_private_action_gifts(maps, pas, gifts + prizes + money)
     late = set(late_maps(trs))
     for c in ch:
@@ -1588,6 +1746,22 @@ def build(paths, battles=True):
     for lst in (gifts, money, joins, prizes, sites, pas):
         for r in lst:
             r["late"] = any(m in late for m in r.get("maps", [r["map"]]))
+    # Bosses and first drops: the encounter packs (tools/ap_battles.py's reader), the field
+    # program's encounter groups and the maps' encounter settings.
+    import ap_battles
+    encs, enemies = ap_battles.read_encounters(disc)
+    img = field_program_image(disc)
+    groups = encounter_groups(img)
+    wgroups = world_map_groups(img)
+    bsites = with_maps(battle_sites(maps))
+    esites = with_maps(encounter_sites(maps))
+    for lst in (bsites, esites):
+        for r in lst:
+            r["late"] = any(m in late for m in r.get("maps", [r["map"]]))
+    final = {e for e, enc in encs.items()
+             if enc["boss"] and any(m["name"].startswith(ap_battles.FINAL_BOSS_NAMES) for m in enc["members"])}
+    boss_list = bosses(encs, bsites, final)
+    drop_list = enemy_drops(encs, enemies, groups, wgroups, esites)
     out = {
         "source": "tools/ap_extract.py",
         "shared_scripts": [mp.maps for mp in maps.values() if len(mp.maps) > 1],
@@ -1612,6 +1786,13 @@ def build(paths, battles=True):
         "prize_tables": prizes,
         "recruitments": joins,
         "characters": classify_joins(joins),
+        # Boss encounters with their scripted sites (location type 9, keyed by encounter), and
+        # the enemy types with a drop that random encounters meet (type 8, keyed by type).
+        "bosses": boss_list,
+        "enemy_drops": drop_list,
+        "encounter_groups": {str(g): v for g, v in sorted(groups.items())},
+        "world_map_groups": {str(w): v for w, v in sorted(wgroups.items())},
+        "encounter_sites": esites,
         "dynamic_reward_calls": dynamic,
         "shops": shop_table,
         "shop_sites": sites,

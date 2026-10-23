@@ -160,9 +160,11 @@ The entries that did not end in free play or a map change:
   175, 690-696 to 695). Those scenes ran, and the next map is swept on its own.
 - Map 185 is a scene chain over maps 207 and 183, and map 576 leads into disc 2's
   opening on 618 (about 17000 frames). Both were still moving at 12000 frames.
-- Map 295: its main thread waits for actor 27 while the player has control. Most likely
-  the NPC's walk is blocked by the leader standing at the `--map` start spot. Not
-  checked against the original.
+- Map 295 (the Bunny Racetrack): not a stall. Its main thread runs the race for as long
+  as the player stays: it asks whether to watch a race, four racers (actors 24-27) parade
+  one by one to x -796 with the main thread waiting for each (word 324), they leave, the race
+  runs, and the question comes again. The sweep never sees the main thread idle, so it
+  reports no free play. Checked against PCSX-Redux from the same start (below).
 
 What the sweep found and what was fixed:
 - **Music:** 61 "field music: the sequence block does not unpack" lines on about 50 maps.
@@ -197,9 +199,41 @@ There is no save near either point, so the scripts' own story globals were set f
     ("Their adventure ..."), which the game stays on, as the console does.
   - From map 583 with the story globals, the last scene played and moved through maps
     581, 587 and 686.
-  - The private endings (the map list at G[0x348 + 4 * G[0x344]]) need the relationship
-    values of a real playthrough, which a `--map` start does not have. They were not
-    checked one by one.
+  - The private endings (the map list at G[0x348 + 4 * G[0x344]]) were checked one by one
+    afterwards, with poked relationship values: section 5.
+
+## 4. Map 295 against the console
+
+Both sides loaded the user's late save, then map 295 at its own entry spot as field state 1
+does (the spot a `--map 295` start uses: leader at 384, 0, 563), and answered windows and the
+race question with confirm (`SS_ROUTE_GOTO=295`, `scratchpad/menu/m8/late/lateref.lua`
+with `SS_GOTO=295`). Actors were logged every 2 frames.
+- The racers appear 516 frames after the sync in the port and 610 on the console (loading).
+- From there every state change of the four racers comes on the same frame on both: racer
+  24 sets off at +10, turns at the corner (x 479) at +248, leaves it at +452 and stops at
+  x -796 at +708; racer 27 sets off at +2168, turns at +2404, leaves at +2610 and stops at
+  +2864; the racers are removed at +2876 and the race starts.
+- The leader stands at z 563, off the racers' line (z 675), and blocks nothing.
+
+So the wait on actor 27 ends on the console as in the port; a player who stays at the
+entry spot is not stuck.
+
+## 5. The endings and the late save
+
+See `docs/notes/endings.md`: the selection rules, the 85 ending ids, every id played in the
+port, five ending lists compared with PCSX-Redux, and the user's late save played from the
+Final Save Point through the final battle to the end in both, with the same endings.
+
+The final battle's RNG (added by the battle agent, 2026-10-23): the late save's generator
+position after the CD-timed loads differs, and that is expected (docs/notes/battle_sweep.md,
+"RNG after CD-timed loads").
+- On map 671 the field voice queue draws 4 times on the console after the route sync; the
+  port made those draws at the map load and draws the walk's 3 extra-distance rolls instead.
+- In battle, the console's party load holds state 0 until about b102. The port is in state 1
+  at b0, so enemy_think's intro-voice draw comes at b0 instead of b102.
+- With the generator re-synced at battle state 1 (SS_BATTLE_RNG_SKIP=1, `late/p2` in the
+  battle scratch), the generator equals Redux at every sample from b102 to b600, the AI's
+  draws from b408 included.
 
 ## Fixed
 

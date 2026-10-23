@@ -22,7 +22,7 @@ so later versions can add to the file.
 | `seed` | string | the multiworld's seed id (required); the save sidecar keeps it |
 | `game` | string | `"Star Ocean: The Second Story"` |
 | `slot` | `{name, id}` | this player's slot name and number |
-| `options` | object | the player's options, as the APWorld names them (kept, not read yet) |
+| `options` | object | the player's options, as the APWorld names them; the port reads `deathlink` and the phase-3 options ("Phase 3" below) |
 | `items` | object | this game's items by AP item id: the names and what they give (below) |
 | `locations` | array | this player's locations and what each holds (below) |
 | `patches` | array of strings | world edits, one line each, in the mods syntax (below) |
@@ -39,7 +39,7 @@ location's `item`, and in `start.items`.
 | Key | Meaning |
 |---|---|
 | `name` | shown in the banner ("Received Revival Card from Alice") |
-| `kind` | `"item"` (the default) or `"fol"` |
+| `kind` | `"item"` (the default), `"fol"`, `"character"` or `"trap"` ("Phase 3" below) |
 | `game_id` | `item`: the game's item number, 1-1023 |
 | `count` | `item`: how many, 1-20 (default 1) |
 | `amount` | `fol`: how much Fol |
@@ -50,7 +50,7 @@ location's `item`, and in `start.items`.
 |---|---|
 | `id` | the AP location id (unique in the seed) |
 | `name` | for the log and the console |
-| `check.type` | `chest`, `gift` or `boss` (other types load but nothing checks them yet) |
+| `check.type` | `chest`, `gift`, `boss`, `join` or `drop` ("Phase 3" below; other types load but nothing checks them) |
 | `check.map` | the field map |
 | `check.flag` | `chest`: its opened flag, a global script flag 0-2943 |
 | `check.offset` | `gift`: the call site's byte offset in the map's script code |
@@ -63,8 +63,10 @@ location's `item`, and in `start.items`.
 
 The location ids come from `tools/ap_extract.py`: `0x50320000 + (type << 21) + (map << 10) +
 index`, where the type is 1 for a chest, 2 for a gift, and so on, and the index counts that
-map's locations of the type in script order. The port never computes an id. It finds a
-location by its check fields and reports the id the seed gives.
+map's locations of the type in script order. Two types carry no map: 8 is an enemy type's
+first drop (`0x50320000 + (8 << 21) + enemy type`) and 9 a boss (`0x50320000 + (9 << 21) +
+encounter`). The port never computes an id. It finds a location by its check fields and
+reports the id the seed gives.
 
 ### Patches
 
@@ -285,3 +287,138 @@ All 7 steps passed on 2026-10-23. Captures are written to `scratchpad/ap_e2e/cap
 
 Test switches: `SS_AP_SERVER=ws://HOST:PORT` (with `SS_AP_SLOT`, `SS_AP_GAME`) connects any run,
 headless ones included, without config.ini. `SS_PACE=1` paces a headless run at the field rate.
+
+## Phase 3 (port side, 2026-10-23)
+
+Agreed with the APWorld agent. Every option defaults to the original game: without a seed, or
+with an option at its default, the game plays exactly as on the console (a no-seed and an
+options-off run of the victory reference give the same RNG and handoffs as PCSX-Redux).
+
+### Options
+
+| Key | Values | Default | What it does |
+|---|---|---|---|
+| `protagonist` | `any`, `claude`, `rena` (or 0-2) | `any` | New Game starts on that protagonist and keeps the cursor there (the other side buzzes; log `this seed is for Claude's game`). |
+| `character_items` | true / false | false | Listed join sites are checks; members join through their items. |
+| `drops_as_checks` | `off`, `first_drop` (or 0 / 1) | `off` | The first drop of each enemy type with a `drop` location is a check. |
+| `exp_multiplier` | 1-10 | 1 | The battle's EXP total, at the result screen. |
+| `fol_multiplier` | 1-10 | 1 | The battle's Fol total, at the result screen. |
+| `encounter_rate` | 0-200 (percent) | 100 | Random-encounter frequency on field and world maps. 0 = none. |
+| `deathlink` | true / false | false | As in phase 2, with the safe points below. |
+
+A value out of range stops the seed from loading ("options.exp_multiplier: 1-10 expected").
+`traps` (the share of filler that becomes traps) is the APWorld's; the port reads only the trap
+items.
+
+### New item kinds
+
+| Kind | Fields | What the game does |
+|---|---|---|
+| `character` | `character`: the party id 1-12 (1 Claude, 2 Rena, 3 Celine, 4 Bowman, 5 Dias, 6 Precis, 7 Ashton, 8 Leon, 9 Opera, 10 Ernest, 11 Noel, 12 Chisato) or the name | The member joins at the next safe point (below). field.json's `joins` values are these minus 1. |
+| `trap` | `trap`: `ambush`, `fol_loss` (+ `percent` 1-100, default 10) or `status` (+ `status`: `poison`, `paralysis`, `stone`; default `poison`) | Below. |
+
+Both arrive like any item: in the server's index order, one per banner, "Received Celine from
+Bob", "Trap from Bob: lost 250 Fol". Either can also sit at one of this player's own
+locations (a placeholder): it is given then, the join waiting for free play.
+
+### New check types
+
+| `check.type` | Fields | Where the port checks it |
+|---|---|---|
+| `join` | `map`, `offset` (the site's `at`: field.json `recruitments[].sites[]` with `what == "join"`), `character` (optional) | script ext 0xae party_add. The site is the instruction itself (an inline party_add) or the call into the library's join routine: the innermost call frame's return offset - 4. |
+| `drop` | `enemy`: the enemy type (battles.json `enemy_types` key = the stats record's +0 id) | the result screen's roll_drops (#1981 0x800869fc). Id: `0x50320000 + (8 << 21) + enemy`. |
+
+### Character items (`character_items`)
+
+- **A listed join site** records its check (its item: given in free play, or sent). The
+  member joins there only if their item was received already and there is room.
+- **Every other join site** plays as the original: members a scene takes along for a while
+  (Leon on map 437, Dias at the tournament on 477) and the 32 sites that put the party back
+  together after a split. So the APWorld lists every site where a shuffled character joins for
+  good (Celine 124 / 125, Dias 130 / 439 / 229 0x7c9c, Leon 230 0x6c58 ...), each with its own
+  id.
+- **A received character** joins at the next free play through the game's own join (the
+  library routine's two ops: ext 0xae party_add_member, A 0x3f party_member_clear_bond):
+  - not during a Private Action (script flags 2 / 4: the party is set aside);
+  - with a free party slot. The 8 slots count members in reserve (a member a scene took out
+    keeps their slot), and a member in reserve takes their own slot back. With no room the
+    character waits (`characters_waiting` in the sidecar) and joins once a slot frees.
+  - Leon only in Claude's game (script flag 1 set), Dias only in Rena's: in the other game the
+    item is dropped with a banner ("Leon cannot join Rena's party").
+  - Bowman / Precis and Ashton / Opera + Ernest: the port lets both join. The APWorld keeps
+    the pool to one of each pair.
+- Banner: "Received Celine from Bob", then "Celine joined the party".
+- A 0x3f after a held-back join finds no slot and does nothing (the original would select the
+  bytes before the party block; its own join never fails).
+
+### First drops (`drops_as_checks: first_drop`)
+
+- In roll_drops the RNG draw and the one-drop-per-enemy rule are unchanged.
+- When an enemy type drops anything and the seed has its `drop` location unchecked, the item is
+  not given and not listed on the result screen. The check is recorded, the enemy type joins
+  the sidecar's `first_drops`, and the location's item comes in free play ("Got X") or is sent
+  ("Sent X to Y").
+- Later drops of that type are the game's.
+
+### Traps
+
+- **`ambush`:** after its banner, at the next free play on a map with random encounters
+  (field_flags +0x25 non-zero; not riding, not inside a map transfer's preload trigger), the
+  field's forced battle (state 0x21, as a camp-menu item starts one) on the area's encounter
+  group (+0x14) and stage (+0x12). State 0x21 takes encounter -(game_state +0x264); minus the
+  group makes field_prepare_encounter pick a random member of the group, as a random encounter
+  does. Waiting ambushes are kept in the sidecar (`ambushes`). Losing it is a game over.
+- **`fol_loss`:** the party loses `percent` % of its Fol (rounded down).
+- **`status`:** field statuses live in party slot +2 (1 down, 2 paralysis, 4 stone, 8 poison;
+  item effects 0x42 / 0x62 / 0x41 cure them). Poison takes every active member who is up.
+  Paralysis or stone takes one (the last active member up), and never the last one standing:
+  then it is poison instead.
+
+### Multipliers and the encounter rate
+
+- **EXP / Fol:** award_exp_money (#1981 0x80086290) scales the summed totals before the
+  original's doubling bonuses, sharing and member bonuses (log `battle rewards: exp 99000 ->
+  297000`). Capped at 999999999. More EXP means more level-ups, so a run with a multiplier
+  draws more RNG at the result screen.
+- **Encounter rate:** field_update_encounters (field_program.cpp) scales each new distance to
+  the next encounter by 100 / rate after the original's randomisation. 0 % turns random
+  encounters off (the area's group still feeds ambushes). Walking on world map 2 for 6000
+  frames: 100 % = no seed (same log), 200 % 10 encounters against 5, 50 % 3.
+
+### DeathLink: the safe points
+
+| Where the game is | Received DeathLink | Sent |
+|---|---|---|
+| Free play (field or world map) | the party falls at once (field_begin_game_over) | on any game over |
+| A scene (an event script holding the controls) | waits. It applies in free play, or once a scene has left the controls to the player for 30 frames (a scene's walk-around: a lost scripted battle's game over starts inside a routine too) | |
+| A menu (camp, shop, save point) | waits for the menu to close | |
+| A ride (vehicle, bunny; field states 9-0x20) | waits for the player to get off | |
+| A battle transition (field states 2 / 4 / 5 / 0x21, the battle's intro) | waits for the fight: every standing member falls, the battle is lost, the game over follows | |
+| A fight | between special moves, the party falls | outcome 2 with a game over |
+| A story battle the script lets the party lose (ext 0xb7's third argument 0, kept in field_flags +0x7e; random and menu battles set it to 1) | waits for the field after it | never: the loss is no game over, the scene goes on |
+| The game over itself | a waiting one is dropped (the party fell anyway) | |
+| The title, a load or a new game | dropped | |
+| The ending (after the final boss 539 / 540, or script flag 0x2f1, the endings flow) and the credits (#3107) | dropped | |
+
+The program switches come from boot's run_program (`ap::on_program`). Checked in the game
+(scratchpad/world/ap3): the world map (falls at once), the camp menu (received at vblank 400
+inside it, falls at 720 once it closed), an ambush's transition (falls in the battle at fight
+frame 2), the ship's Shin fight on map 548 (encounter 517, lost as scripted with no game over;
+a DeathLink received in it falls 30 frames after the field gets the controls back, vblank
+2624), the endings and the credits from map 581 (both dropped; the endings play to the end).
+
+### Sidecar additions
+
+```json
+{"characters": [7], "characters_waiting": [], "first_drops": [197], "ambushes": 0}
+```
+
+`characters` lists the character items received (the order they came), `characters_waiting`
+those not joined yet, `first_drops` the enemy types whose first drop was a check, `ambushes`
+the ambushes still to fight. An older sidecar without them reads as empty.
+
+### Console (with `--debug`)
+
+`ap_give` also takes a character's name (`ap_give Celine Bob`) and `trap:ambush`,
+`trap:fol_loss[:PERCENT]`, `trap:status[:poison|paralysis|stone]`. `ap_status` adds a line
+with the phase-3 options and one with the received characters.

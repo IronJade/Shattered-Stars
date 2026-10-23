@@ -19,7 +19,10 @@ s32* const a = g_vm_args;
 
 // A string of the map script by index (u16 offsets into the text).
 const u8* script_string(ScriptCtx* ctx, s32 index) {
-  return ctx->text + read_u16(ctx->strings + 2 * static_cast<u32>(index));
+  // [world agent] The console's address arithmetic is 32-bit: index -1 (a script's computed
+  // index, seen from --map starts on maps 71 and 277) reads the u16 just before the table
+  // rather than 8 GB past it.
+  return ctx->text + read_u16(ctx->strings + static_cast<s32>(2u * static_cast<u32>(index)));
 }
 
 // A message window's text: the script's string, or (Archipelago, port feature) the message
@@ -456,10 +459,17 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       vm_fetch_args(ctx, 1);
       field_state_set_s16(0xE, a[0]);
       break;
-    case 0xAE:
+    case 0xAE: {
       vm_fetch_args(ctx, 1);
-      party_add_member(ctx, a[0]);
+      // Archipelago (port feature; character_items) [world agent]: a join site the seed lists
+      // is a check, and the member joins only once their item is received. The site is this
+      // instruction or the call into the library's join routine (the innermost frame's return
+      // offset - 4).
+      const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
+      const int call_at = ctx->depth > 0 ? static_cast<int>(ctx->call_sp[-1]) - 4 : -1;
+      if (!ap::on_party_add(a[0], at, call_at)) party_add_member(ctx, a[0]);
       break;
+    }
     case 0xAF:
       vm_fetch_args(ctx, 1);
       party_remove_member(ctx, a[0]);

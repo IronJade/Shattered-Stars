@@ -209,7 +209,7 @@ registered in pc_modules.cpp (flag the hunk to the coordinator).
 Suites at the report (build-fx, current tree): ss_tests 78/0, ss_game_tests 74/0 with and
 without SS_DISC1, smoke 21/21 (TMPDIR=scratchpad/fx_worker/tmp).
 
-## Phase 6: catalog completion (in progress, started 23:50)
+## Phase 6: catalog completion (in progress, started 23:50; rolled over 01:10)
 
 Assignment (coordinator): (1) `tools/catalog_coverage.py` writes `docs/catalog/COVERAGE.md`
 (per module: rows by confidence and by port status) — done; (2) work the 426 empty port
@@ -246,9 +246,141 @@ before editing them; (3) raise guess / likely rows to confirmed with evidence.
   - Not needed after all: clash_register / clash_resolve (dead: the only jal is in #2129
     bytes #1984.1 overwrites); pages 0xc / 0xd and the cheat dialog (only behind the
     camp menu's third dialog, whose constructor 0x8007fe6c has no caller).
+- 01:00 status. Battle talk port written and wired (`party_talk.{h,cpp}`; hunks in
+  director.cpp, party.cpp update, input.cpp provoke, party_states.cpp x5 (ally reaction,
+  victory voice, flee voice, both weapon-throw sites), battle_program.cpp (party_talk_init;
+  clash TODOs replaced by the reason), CMakeLists). Field part written (`field/menu_voice.
+  {h,cpp}`, `menu::BgLoadHooks` in common/menu_core.{h,cpp}, FieldMenuHost sets them).
+  Suites on build-fx: ss_tests 78/0, ss_game_tests 99/0 with and without the disc, smoke
+  37/0. Debug switches: SS_TALK_TRACE (each talk call with vblank and rng draws),
+  SS_TALK_OFF (no opening lines), SS_TALK_FLEE=F (flee at battle frame F),
+  SS_MENU_VOICE_TRACE. Harness: explore.lua BW_HIT_BP now prints rng / a0 / a1 / v0 and has
+  BW_COPY; port_pc.sh takes EXTRA_IN, PORT_MASH, PORT_STRONG.
+- Verified so far (Redux `talk_ko`, Claude + Rena): RNG equal to the battle exit; opening
+  line op1 at the same battle frame with the same handle 0x05080000, talk pose 40 vblanks in
+  both; victory voices (entries 0x989 / 0x995) and result lines (0xa11 / 0xa16) at the same
+  frames (SS_VOICE_TRACE vs BW_HIT_BP vpe). Running: `talk_jobs2.sh` (prov2: provoke + both
+  throws, ko2: Claude falls beside Rena, flee).
+- (Retracted: the "prec_m1 regression at b570" I reported was my mistake: prec_m1 is the
+  max-level reference and needs USES=999, `./port_pc.sh prec_m1 6 1 999 1500`. The
+  coordinator checked: with 999 the current tree, talk layer included, is RNG-equal past
+  the exit on prec_m1, as_m1, chis_m1, bowman_l1, dias_l1, ernest_2_3.)
+
+### State at the rollover (01:10): what the next agent picks up
+
+`scratchpad/fx_worker/battle/redux/talk_jobs2.sh` finished at 01:12 (refs
+`redux/ref/talk_prov2`, `talk_ko2`, `talk_flee`; no Redux running). Their hits, before the
+battle ends (later hits at the same addresses are the result / field code):
+- talk_flee: `extra` at battle +398, rng 12194 (the flee voice). Compare the port.
+- talk_ko2: `ally` at +2100 (a0 0x801ed920, the slot 1 unit: Rena fell first, Claude's
+  bond toward her was not poked) and at +2324 (Claude, slot 0); no `fury` (no qualifying
+  standing ally the second time; the first: Claude's bond toward Rena is 0). Useful as a
+  no-fury RNG check; for the fury, also poke Claude's bond toward Rena
+  (`2:0x5a=0x28/1`, Redux `4047@*0x80075270+0x5a=0x28/1`: 0x4b + 1*0xc + 2) or keep Rena
+  out of reach.
+- talk_prov2: no `line` hit during the fight, so the Select presses did not provoke (busy,
+  free run or the camera?): look at the port's input at those frames, or press Select
+  repeatedly (BW_MASH select every 90 from 4110; port PORT_MASH adds select:300:90). The
+  `throw` hit at +1078 is after the battle (the result code); no equipment throw happened
+  either: check that the pokes (record +0x16 accessory, +0x10 armor) took (item ids are
+  1-based: item_data_field reads (item - 1) * 0x30; the ids 0x181 / 0x2cf are the 1-based
+  ids of records 0x180 / 0x2ce). Then run the port on each and compare
+(`SS_TALK_TRACE` [talk] lines against the refs' `[bw] hit` lines, which carry the rng count
+and a0 / a1 / v0; `python3 battle/rngcmp.py REF/log.txt PORT/log.txt` from `scratchpad/`;
+hits after the battle's end are other programs' code at the same addresses, ignore them):
+- prov2 (Claude, Provoke level 3, accessory 0x181 = throws on hits, armor 0x2cf = throws when
+  knocked back; Select at 300 and 750):
+  `SS_TALK_TRACE=1 EXTRA_POKE="4:0x89=3/1,4:0x16=0x181/2,4:0x10=0x2cf/2" EXTRA_IN="300:select,750:select" PORT_MASH="cross:500:45,l1:590:90" ./port_pc.sh talk_prov2 1 1 0 2400`
+  Expect `line` / `lineret` (handle, or -1 = buzzer and no provoke) and `throw` hits.
+- ko2 (Claude at 1 HP, idle; Rena copied from slot 0 unstrengthened; her bond 0x28):
+  `SS_TALK_TRACE=1 PORT_STRONG=1:1:1 SS_BATTLE_COPY="3:0:0x60:0x60,4:0:0xd0:0xd0" EXTRA_POKE="3:0x14=0x514/4,3:0x18=0x514/4,3:0x1c=0x514/4,3:0x2a=0x50/2,3:0x60=2/2,3:0x1c=1/4,2:0x64=0x28/1" PORT_MASH="none:0:99999" ./port_pc.sh talk_ko2 1 1 0 2400`
+  Expect `ally` then `fury` (Rena: action reset, stats +2 bit 0x10, fury_ticks 1200) if
+  Claude falls; if he does not, the run needs stronger enemies or a longer idle.
+- flee (escape flag + flee timer 0x3c poked at vsync 4432 = battle frame 350):
+  `SS_TALK_TRACE=1 SS_TALK_FLEE=350 ./port_pc.sh talk_flee 1 1 0 2400`. Expect `extra`.
+- Already verified: talk_ko (first round) RNG equal to the exit, opening line, talk pose,
+  victory voices, result lines (above). talk_prov (round 1, Precis) is not usable: its
+  Select presses fell on busy frames, and Precis needs USES=999 for that reference anyway.
+
+Not started: the field menu voice against Redux. Plan: the disc-2 world-map save
+`scratchpad/world/card1.mcd` (map 2, field_flags +0x25 = 67; copy it, never the user's
+cards), a copy of `scratchpad/menu/redux/itemsref.lua` that opens the camp menu soon after
+the load (streaming still in progress) and logs 0x80078864 / 0x80078868 / 0x8007886c (menu
+state, budget, timer) and 0x800759a0 / 0x80075998 (field) on change, with breakpoints on
+0x80038dfc (voice_reload_member), 0x8007972c (voice_slot_invalidate), 0x80079000 /
+0x80079308 (queue builds), 0x80079a7c (abort), 0x80038bcc / 0x80038c70 (init / shutdown);
+Redux on the disc-2 cue. Port: `SS_LOAD_SAVE=0 SS_MENU_VOICE_TRACE=1` with SS_DISC1 /
+SS_DISC2, scratch XDG and card. For the reload hook, a killer-move change: the menu agent's
+`kms` plan (`scratchpad/menu/kmsr/plan.txt`, specrun.sh) on its spec cards.
+
+After both verifications: set the 11 "(unported: ...)" rows to their files
+(`party_talk.cpp`, `field/menu_voice.cpp` + `common/menu_core.cpp`) with the evidence; fix
+the stale "[port partial: ...]" notes on sound_handle_active 0x8007fc54, voice_pick_victory
+0x800804d4, voice_play_result 0x800807c8 (the voice player is ported) and on
+battle_program_create 0x800715d0 (stage code blocks and opening voices are now ported);
+regenerate COVERAGE.md. Then (coordinator's order) the per-program gap scan (jal targets
+and REA procedures against the catalog rows; boot has uncatalogued routines around
+0x80014444-0x800144e4, e.g. 0x8001446c empty, 0x80014474 / 0x800144ac / 0x800144d0), then
+raising guess (43) / likely (412) rows to confirmed.
+
+Files of mine touched this phase (for the checkpoint): new `engine/src/game/battle/
+party_talk.{h,cpp}`, `engine/src/game/field/menu_voice.{h,cpp}`, `tools/catalog_coverage.py`,
+`docs/catalog/COVERAGE.md`; flagged hunks in battle director.cpp, party.cpp, input.cpp,
+party_states.cpp, battle_program.cpp, common/menu_core.{h,cpp}, field/menu_camp.cpp,
+engine/CMakeLists.txt (party_talk.cpp, menu_voice.cpp); catalog rows via apply.py /
+append.py (3 new rows: menu_0ba6 0x8007fe6c menu3_create, boot 0x80014444 clock_set, boot
+0x8001445c pad_set_reset_callback).
 - Seen, not mine: Weirdaxe debris (enemy_ai.cpp:210, battle agent). The boot executable
   has uncatalogued functions (e.g. 0x8001446c..0x800144e4); a gap scan (jal targets /
   procedures vs rows) is the next catalog step after the ports.
+
+### Phase 6, second agent (from 01:05): talk checks, field menu voice, M7
+
+**Battle talk: verified (01:50); M7 and "Battle, part 2" ticked in CHECKLIST.md.** Port vblank
+p = Redux battle frame p + 5 (vsync p + 4080); compare with `rngcmp.py` (D 7).
+- flee (talk_jobs2): `extra` at port 393 / Redux +398, 85 draws after op1 in both, entry 0x991
+  in both; RNG equal to the exit (b730).
+- ko2 (talk_jobs2): RNG equal to b2400; both ally calls equal (p1 2095 / +2100, p0 2319 /
+  +2324, same draw counts); nobody left standing to react, so no fury there.
+- prov3 (`redux/talk_jobs3.sh`; port: prov2's command, `talk_prov3`): provoke line at 301 /
+  +306 (44 draws after op1 in both), handle 0x40000249 in both; accessory throws at 631 / +636
+  and 889 / +894 (283 / 416 draws in both; Redux's status test at 0x8003777c returns 1 there);
+  RNG equal to the exit (b1348).
+- ko3 (port `talk_ko3c`, command above): line 301 / +306 (handle 0x40000248), Claude falls at
+  1015 / +1020 (712 draws in both), Rena's fury with handle 0x4000026c; Rena's unit in the
+  Redux dump at 0x80080b40 (`ram_fury_01020.bin`, unit 0x801ed920): +0x124 0, +0x12a 0, +0x201
+  1, +0x228 0x4000026c, +0x22c 1200, status 0x10 = the port's fury_state 00001001 / ticks 0x4b0;
+  RNG equal to b2400.
+- prov2 (talk_jobs2) was unusable: it mapped port p to Redux p + 3810 (the mash phase only).
+- Talk pose length: the port's ends 6 frames after a voice line, Redux's 10-16 (the clip's
+  disc read + upload: E15 keeps "playing" = the entry still in the voice slot). With
+  `SS_BLOAD_DRIVE_TIME=1` the port matches (ko3 +320 / +320 and +1030 / +1030, prov3 +324 /
+  +322). Coordinator's decision: CD timing, not modelled; the switch stays comparison-only
+  (docs/HANDOFF.md debug options).
+- victory_2_3's "temporary differences at b270-b400" (battle agent's lead 2): rngcmp's D
+  fallback (2; that log has no frames lines). With CMP_D=6 or 7 the port is RNG-equal to b1250
+  (exit b1236), with and without SS_TALK_OFF.
+- Regress leads (coordinator): chis_m4 b490, op_m3 b520, op_b10 b500, op_m10 b570 are the
+  console's 3-vblank frames (ref frame counters jump at b480 / b420 / b450 / b450); only the
+  opening line in SS_TALK_TRACE. refs.csv fixed (also the off-by-one lenient labels on op_b9 /
+  op_m2 / op_m9); 9/9 PASS (`scratchpad/fx_worker/regress9/summary.md`).
+- Debug lines: SS_TALK_TRACE `throw` at both weapon-throw sites (party_states.cpp, through
+  `talk_trace` in party_talk.h) and `fury_state` / `fury_ticks` after pc_start_fury.
+
+Field menu voice (scratch `scratchpad/fx_worker/mv/`):
+- `mvref.lua` + `run_mv.sh NAME`: Redux on disc 2 with a copy of `world/card1.mcd` (Claude 56,
+  Rena, Ashton; world map 2), camp menu at MV_OPEN vsyncs after the field starts, MV_PLAN
+  relative to menu_scene_create; logs the menu / field voice state, queue head and the sound
+  slots on change, and the init / shutdown / reload / invalidate / build / abort / reset /
+  upload / copy calls with the rng count; dumps rng_open.bin (for SS_MENU_RNG) and ram_end.bin.
+- Port: `SS_LOAD_SAVE=0 SS_TRACE=1 SS_MENU_VOICE_TRACE=1`, world map at vblank 2, the field's
+  banks in by vblank 26 (28, 29, 145, 146, 280, then clips 265, 290, 412). Killer-move change
+  (Claude's first L1 slot, Dragon Howl -> Air Slash): `p2` run, inputs
+  `150:triangle,223:cross,263:cross,393:cross,453:cross,493:down,523:cross,640/700/760:circle`
+  (each released 4 later): init at 168 (state 3), reload at 524, battle banks 23 / 28 to slot
+  0 at 585-588 (budget 226), field clip 257 at 592, done 594, shutdown 779.
+- Running (01:20): `run_mv.sh mvA` (MV_OPEN=1500, the kms-style plan 60/100/230/290 cross,
+  330 down, 360 cross, circles 700/760/820, MV_AFTER=300).
 
 ## State at the end of phase 5 step 2 (23:xx): no runs active, nothing queued
 

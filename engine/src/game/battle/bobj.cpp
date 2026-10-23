@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "game/battle/bsfx.h"
 #include "game/battle/render.h"
 #include "game/battle/stage.h"
 #include "psx/gte.h"
@@ -346,6 +347,8 @@ TexCache* texcache_create(const s16 area[4]) {
 void texcache_pool_reset() { g_texcache_count = 0; }
 
 BObj::BObj() { bobj_anim_reset(this); }
+
+BObj::~BObj() { bsfx_forget_emitter(this); }
 
 s32* BObj::get_box(int) { return g_zero_box; }
 

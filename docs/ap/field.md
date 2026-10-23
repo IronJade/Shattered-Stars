@@ -8,7 +8,8 @@ Phase 1 of [the Archipelago plan](../archipelago_plan.md) for the field. This pa
 - the hooks the port offers for checks and placements.
 
 The battle side (bosses, the goal, drops, DeathLink) is in [battle.md](battle.md). Its tool,
-`tools/ap_battles.py`, is imported by this one.
+`tools/ap_battles.py`, is imported by this one. The APWorld built on these tables is in
+[apworld.md](apworld.md).
 
 ## The tool: `tools/ap_extract.py`
 
@@ -120,6 +121,7 @@ One record per line in the record lists. The fields:
                      location_id, location_type, sites: [{map, handler, value_at, form, item|fol,
                      word, expected, role, ...}], versions?, contents_differ?}],
   "retired_location_ids": [...],   (chest ids merged into another version: not locations)
+                    (a chest whose value is 10000 + n gives key item flag n: "key_flag")
   "gifts":         [{map, offset, routine, block, items, item_names, flags_given,
                      sites: [{what, value, at, value_at, form, word, expected, role, location_id}],
                      requires, via, flags_tested, flags_set, guard_flags, story_tests, story_set,
@@ -155,7 +157,7 @@ with its conditions) and `story_points` (every store to the two story globals).
 
 | Location type | Count | Expel / Energy Nede | Notes |
 |---|---|---|---|
-| Chests | 313 | 235 / 78 | One per opened flag: 338 handler sites, 25 flags on two versions of a map. 306 items, 7 Fol. None sits in a closing story window. |
+| Chests | 313 | 235 / 78 | One per opened flag: 338 handler sites, 25 flags on two versions of a map. 304 items, 7 Fol, 2 key items (`key_flag`: flag 68 in Cross Cave, map 547; flag 93 in the Cave of Trials, map 706). None sits in a closing story window. |
 | Gifts (single events) | 109 | 88 / 21 | 95 items. 33 give a key-item flag (flags 66-91). 66 have a guard flag. 39 sit in a closing story window. |
 | Fol gifts | 1 | 1 / 0 | Map 148: 100 Fol. Three more add_money calls are fees (maps 82 and 105: -10, -100). |
 | Prize tables | 171 | 12 / 159 | Contests and exchanges, one entry per branch: 105 on map 688, 31 on 305, 23 on 295, 8 on 184. |

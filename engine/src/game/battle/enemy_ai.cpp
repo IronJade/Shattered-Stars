@@ -21,10 +21,6 @@
 namespace ss::game::battle {
 namespace {
 
-void todo(const char* what) {
-  runtime::Runtime::get().log_once(std::string("battle-enemy-") + what, std::string("battle: not ported yet: ") + what);
-}
-
 u32 rng15() { return static_cast<u32>(rng_next() & 0x7FFF); }
 
 // config +0x182 == 1: the monster takes the party's best numbers (a test rule).
@@ -206,8 +202,8 @@ void enemy_think(EnemyUnit* e) {
 }
 
 int EnemyUnit::start_reaction() {
-  if (family == EnemyFamily::Axe && reaction == 2 && st()->id == 0x89)
-    todo("enemy_axe_knockback: Weirdaxe's debris Shots");
+  // The Axe family's slot 5 (enemy_axe_knockback 0x8003f37c: the Weirdaxe's eight debris
+  // Shots when knocked back) is EnemyAxe::start_reaction in enemy_families.cpp.
   return unit_start_reaction(this);
 }
 

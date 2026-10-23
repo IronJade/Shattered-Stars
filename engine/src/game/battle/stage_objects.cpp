@@ -71,8 +71,8 @@ void rolling_shadow(Shot* s, s32 rest, s32 base) {
   if (s->p12c == 0) bobj_draw_shadow(s, -r, r, -r, r, 0xFFFFFFFFu);
 }
 
-// The units a rolling object runs into on either side: 'damage' (the popup shows 50),
-// knocked up and away from it, a hit reaction, sfx 0x4c and a spark (sprite 0x11).
+// The units a rolling object runs into on either side: 'damage' HP (the popup shows it; see
+// B13), knocked up and away from it, a hit reaction, sfx 0x4c and a spark (sprite 0x11).
 int rolling_hits(Shot* s, s32 damage, u8 hit_flag) {
   int hits = 0;
   for (int side = 0; side < 2; ++side) {
@@ -84,7 +84,12 @@ int rolling_hits(Shot* s, s32 damage, u8 hit_flag) {
     s->hit_landed = hit_flag;
     for (int i = 0; i < n; ++i) {
       Unit* u = units[i];
-      damage_popup_spawn(u, 0x32, 0, 0);
+      // ORIGINAL BUG (original_bugs.md B13): each stage block's popup is a constant 50, so
+      // the stage 0x24 cart, which takes 100 HP, shows 50:
+      //   damage_popup_spawn(u, 0x32, 0, 0);
+      // The popup shows the damage taken (still 50 for the stage 0x1a and 0xd boulders).
+      // Drawing only: a popup draws no random numbers and takes the same popup slot.
+      damage_popup_spawn(u, damage, 0, 0);
       unit_damage_hp(u, damage);
       u->knockback[1] = 0;
       u->knockback[2] = static_cast<s32>(0xFFFE0000);

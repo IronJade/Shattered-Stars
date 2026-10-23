@@ -469,6 +469,44 @@ Results are in `scratchpad/menu/m8/end_d1` / `end_d2` (`analyze.py`).
   the battle, so the endings need no input.
 - Also new: `SS_SWEEP_PLAY_SWEEP=1` (sweep the map the play ends on), trigger bounding boxes
   in the "entries" line, call-stack return words in the state digest.
+- **c3 / c4_tie (Redux):** c4_tie same list (Claude + Chisato, id 15, where the guide's
+  priority list would pick Precis), same maps and sprites, scenes within 1.01 % (first scene
+  63 vblanks of CD time). c3 still running at 01:00.
+- **docs/notes/endings.md written** (rules, 85-id table with sprites drawn, 9 guide
+  disagreements with printed page refs, checks). Placeholders left: C3_LIST, C4_LIST,
+  LATE_SAVE_SECTION.
+
+### 3. The late save (in progress, 2026-10-23 ~01:00)
+
+- **Route mode (port, event_sweep.cpp `SS_ROUTE="671:up,684:up"`)**: field state 0 +
+  controlled actor + leader actor 20 frames in a row on a listed map: hold the direction;
+  a window in state 6/7 10 frames: confirm 2 frames; nothing else (no input in battles).
+  First 20-frame streak = sync (t 0); `SS_ROUTE_RNG=FILE` sets the generator there (57
+  words, index then table). Input is written at `now` (the VSync callback latches the pad
+  before the vblank count moves on, runtime.cpp) - this matches Redux's pad override exactly
+  (36/36 leader samples on a 684 climb; at now+1 the port was 1 unit behind).
+- **Redux: `late/lateref.lua`** (same rules; `late/runlate.sh NAME ENV...`): dumps
+  `rng_sync.bin` at the sync; battle frames via a breakpoint at 0x8004693c (battle_main_loop
+  calling text_frame_upload = where the port calls battle_debug_frame); `SS_ENEMY_HP1=F`;
+  `SS_RNG_CALLERS=N` logs rng_next's ra plus rng_range's / rng_next15's caller.
+- **Port battle debug (battle_debug.cpp, battle agent's file, 2 small blocks):**
+  `SS_BATTLE_UNITS=N` (per frame up to N: RNG sig, draws, unit pos/HP) and
+  `SS_BATTLE_HP1=F` (monsters to 1 HP from frame F).
+- **Runs:** Redux `late/r_b` (full, endings still playing at 01:00), port `late/p_b` (same
+  RNG at sync from r_b; reached "endings done": 85 84 75 49 65 41 3). `late/cmplate.py
+  PORT REDUX` compares.
+- **Results so far:** 114/114 walk samples (leader x,y,z and view) equal on 671 + 684 x3;
+  map loads at t 169/1263/2357 (port) vs 170 and a constant +154 on 685; the 12 confirm
+  presses on 685 all exactly 154 frames later in Redux (CD time); battle start t 7024 vs
+  7182. RNG at the battle's first frame equal (index 1, e2caeafb, +17 draws). Battle units
+  equal from b 62 (Redux fills g_party_units over b 0-62 while the models load); RNG equal
+  b 0-100; Redux draws once at b 102 that the port drew at b 0 (port draw 17 =
+  enemy_think at b 0); from b 408 the AI's draws differ. Port draws traced with gdb
+  (`late/rngcall.gdb`, `late/p_c`): walk 3x extra-distance roll (field_program.cpp:577),
+  B 0x0a x5, intro voices x4, voice queue x2, script thread x1, battle_run x1,
+  enemy_think x1. Redux (`late/r_c`): 4x rng_range at t 33 on 671 (caller being traced in
+  `late/r_d`), B 0x0a x5 (ra 0x80065728), intro voices 2+2 (rng_range + rng_next15),
+  voice queue 2, script 1, b 0 1, b 102 1, then AI from b 408.
 
 ### 1. SLZ (done)
 
@@ -540,7 +578,37 @@ Results are in `scratchpad/menu/m8/end_d1` / `end_d2` (`analyze.py`).
 4. Write `docs/notes/endings.md`: rules, table (id, pair, variant, map), the guide
    cross-check with page refs, run results. Then the checklist.
 
-### 3. The late save (not started)
+- **01:20 status:** r_b (Redux) finished: same endings list as the port, scene lengths within
+  0.89 %, same sprites; written up in endings.md "The user's late save". Redux callers
+  traced (`late/r_d`): the t-33 draws on 671 are voice_queue_build_field (4 draws, the port
+  makes them at map load before the sync); the b 102 draw is enemy_think rng_range(2)
+  (0x8003cb44), which the port makes at b 0. Battle AI draws differ from b 408 (battle
+  agent's area; in the report).
+- **Map 295 done:** no stall. `late/p295c` vs `late/r_f295` (late save, `SS_ROUTE_GOTO` /
+  `SS_GOTO` 295, confirm on windows and choices, actors every 2 frames): all 27 racer state
+  changes on the same frame relative to the racers' appearance (port +516, Redux +610 after
+  the sync). Written in m8_audit.md section 4. Sweep option `SS_SWEEP_ACTORS=N` added.
+- Redux c3 stalled once at 00:38 (Redux itself asleep, CPU time frozen); killed by PID
+  (SIGKILL needed) and rerun as `cmp/r_c3` (old one in `cmp/r_c3_stalled`).
+- Catalog: script_opcodes.csv B 0x0c / 0x10-0x13 rows made exact; globals.csv
+  script_flags / script_globals rows list the ending flags and list offsets.
+- **All four tasks done (01:25):** c3 matched in Redux (84 75 47 32 1, scenes within
+  0.82 %); endings.md complete (no placeholders); m8_audit.md sections 4 (map 295) and 5;
+  M8 ticked in CHECKLIST.md with the battle-AI draw timing listed as open for the battle
+  work. Suites after the last code change (build-menu, scratch XDG): ss_tests 78/0,
+  ss_game_tests 104/0, smoke 37 PASS / 0 FAIL (`scratchpad/menu/suite/*2.log`).
+- **Code changed this session:** `engine/src/game/field/event_sweep.cpp` (scene sprite log,
+  SS_SWEEP_GOTO, RNG signature, SS_SWEEP_PLAY_SWEEP, trigger boxes, call-stack words,
+  confirm/cancel from config, SS_ROUTE / SS_ROUTE_RNG / SS_ROUTE_GOTO, SS_SWEEP_ACTORS);
+  `engine/src/game/battle/battle_debug.cpp` (SS_BATTLE_UNITS, SS_BATTLE_HP1; battle agent's
+  file, two debug-only blocks at the top of battle_debug_frame).
+- **Next (if assigned):** the battle opening difference is the battle agent's: enemy_think's
+  first rng_range(2) (original caller 0x8003cb44) at battle frame 102 on the console vs 0
+  in the port, then AI draws differ from frame 408 (`late/p_b` vs `late/r_b`, and the
+  callers in `late/p_c` (gdb) / `late/r_d`). Possibly also: the original sets game_state
+  +0x1a to 581 when 685's final movie starts; the port only at the load after it.
+
+### 3. The late save (original notes)
 
 - Info: `python3 scratchpad/menu/m8/saveinfo.py scratchpad/latesave/card.mcd 13`.
   - Map 671; G[0xa0] = 0x3c, G[0xa4] = 4000; disc 2; Fol 4.8M.

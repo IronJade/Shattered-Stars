@@ -190,8 +190,11 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
    rules that match the real game.
 2. **The story always progresses.** In story mode, story key items and scenes are not shuffled.
    Area keys exist only in open-world mode, where we also unlock the doors they gate.
-3. **The disc 1 to disc 2 point of no return.** Expel is lost when the story moves to Energy
-   Nede, and Archipelago's fill assumes a reachable location stays reachable. Two ways out:
+3. **The disc 1 to disc 2 point of no return.** Expel is left behind when the story moves to
+   Energy Nede, but the game reopens it as Virtual Expel after Fienal's Final Save Point
+   (checked headless; [field.md](ap/field.md), "Virtual Expel"). So the logic keeps Expel's
+   locations, and only the time-limited ones count as missable. Before that was known, two
+   ways out were planned:
    - **(a) Preferred:** a port-side "return to Expel" teleporter in randomizer mode, so Expel
      stays reachable.
    - **(b) Fallback option:** Expel's locations may only hold non-progression items once the
@@ -235,7 +238,10 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
      `.apso2` file, the checks and receive queue, and the sidecar; `--ap-seed FILE` or
      config `ap_seed`; the console commands `ap_status`, `ap_check` and `ap_give`.
 2. **First playable: chest and gift shuffle, story mode.**
-   - APWorld: items, locations, regions, goal = final boss.
+   - APWorld: items, locations, regions, goal = final boss. Written (2026-10-23):
+     `apworld/so2`, [docs/ap/apworld.md](ap/apworld.md). It has 412 locations (311 chests,
+     101 gift sites). Virtual Expel keeps Expel's locations reachable. 50 seeds fill, and
+     the port pays what the spoiler says.
    - Port: chests, gifts and the goal as checks; receiving with notices; offline solo seeds; the
      setup program's Archipelago section.
    - Tests on both sides.

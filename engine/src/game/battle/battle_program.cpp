@@ -19,6 +19,7 @@
 #include "game/battle/bsfx.h"
 #include "game/battle/combat.h"
 #include "game/battle/hud.h"
+#include "game/battle/party_talk.h"
 #include "game/battle/result.h"
 #include "game/battle/particle.h"
 #include "game/battle/shot.h"
@@ -188,8 +189,7 @@ void battle_init_state() {
   stage().flare_on = 0;
   view().clear_alt_on = 0;
   unit_globals() = UnitGlobals{};
-  // TODO(port): g_member_tables (party_banter_voice_table per member, 0x54 bytes each)
-  // for the #1984.1 banter lines.
+  party_talk_init();  // 0x80074ea4: g_member_tables, and the opening lines' state (party_talk.cpp)
 }
 
 void battle_init_objects() {
@@ -539,7 +539,8 @@ void battle_main_loop() {
     if (g.state > kStateResult) battle_exit_to_field();
     screen_flip();
     text_frame_begin();
-    // TODO(port): the clash masks (12 words at 0x8006fe10); deferred deletes.
+    // TODO(port): deferred deletes. (The console also clears the 12 clash masks at
+    // 0x8006fe10 here; not needed: nothing registers a clash, see clash_resolve below.)
     pool_a_bytes_used() = 0;
     for (RenderContext* layer : g.ot_layers)
       if (layer != nullptr) layer->ot_head = screen_clear_ot(layer->ot);
@@ -614,7 +615,9 @@ void battle_main_loop() {
     sprite_pool_update();
     particle_pool_update();
     if (g.stage_hidden == 0) stage_draw_and_animate();
-    // TODO(port): clash_resolve (state > 1).
+    // clash_resolve 0x8008183c (state > 1) is not needed: its only source, clash_register
+    // 0x80081728, is never called (the one jal sits in #2129 bytes #1984.1 overwrites), so it
+    // never finds a pair (docs/catalog/functions.csv).
     bool ended = false;
     if (g.config[0x181] == 2 && g.state == kStateFighting && g.flags == 0) {
       // The escape race: an enemy reaching the goal wins it.

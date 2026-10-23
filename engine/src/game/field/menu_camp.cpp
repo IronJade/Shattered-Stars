@@ -37,6 +37,7 @@
 #include "game/field/menu_skills.h"
 #include "game/field/menu_specialty.h"
 #include "game/field/menu_status.h"
+#include "game/field/menu_voice.h"
 #include "game/field/mods.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
@@ -619,6 +620,7 @@ struct FieldMenuHost {
   FieldMenuHost() {
     menu::set_host(menu::Host::Field);
     menu::set_entry_cache_table(&field_cache_slot);
+    menu::set_bgload_hooks(&menu_voice_hooks());  // the field's voice streaming (menu_voice.cpp)
     menu::set_menu_frame_hook(&field_menu_frame);
     menu::set_page_handler(1, &page01_update);
     menu::set_page_handler(2, &menu_page02_update);
@@ -660,6 +662,7 @@ struct FieldMenuHost {
     menu::set_panel_frame_hook(nullptr);
     menu::TextRenderer::set_name_source(nullptr);
     menu::set_entry_cache_table(nullptr);
+    menu::set_bgload_hooks(nullptr);
     menu::set_page_code_entry(0);
     menu::set_host(menu::Host::Title);
   }

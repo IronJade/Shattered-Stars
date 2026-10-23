@@ -167,6 +167,18 @@ bool bgload_is_done(int handle);                                  // title 0x800
 LoadRequest* bgload_request(int handle);                          // title 0x80038dbc
 void async_load_queue_update();                                   // title 0x80038e10 / field 0x80039418 bgload_update
 
+// The field's copies of bgload_init / bgload_shutdown / bgload_update (0x80038bcc /
+// 0x80038c70 / 0x80039418) also keep the field's voice streaming going while a menu's own
+// loads are idle (field/menu_voice.cpp); the title's have none of it.
+struct BgLoadHooks {
+  void (*init)() = nullptr;           // at the end of bgload_init
+  void (*shutdown)() = nullptr;       // at the end of bgload_shutdown
+  void (*request_start)() = nullptr;  // a request starts reading (field: voice_preload_abort)
+  void (*idle)(s32& timer) = nullptr; // nothing to read; timer counts the frames since the last read
+};
+void set_bgload_hooks(const BgLoadHooks* hooks);  // null: none
+void bgload_restart_timer();                      // the idle timer back to 60 frames (field 0x80038e1c)
+
 // ---- Strings (title 0x80035bc8-0x80036028 / field 0x800360cc-0x8003652c) ---------
 int str_len(const char* s);                       // title 0x80035bc8
 void str_cat(char* dst, const char* src);         // title 0x80035bec

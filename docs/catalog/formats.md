@@ -209,7 +209,7 @@ u16: bits 0–9 item id, bits 10–14 count.
 
 ## Party slot (0x60 bytes, handoff 3) and character record (0xd0 bytes, handoff 4)
 
-Written by `party_slot_init` (title 0x80061f80). Slot: `+0` u16 character (1 Claude, 2 Rena, ...), `+3` u8 (1 Claude, 9 Rena), `+0x10` u32, `+0x14/+0x18/+0x1c` u32 HP-like triple (Claude 130, Rena 100), `+0x20/+0x22/+0x24` u16 MP-like triple (20 / 40), `+0x28` u16 level 1, then u16 stats at `+0x2a..+0x54`. Record: `+0` u16, `+6` u16, `+0xc..+0x19` u16 equipment-like ids (Rena: 0x21b, 0x2a9), `+0x20` u32 talent bits (`roll_talents`), `+0x24` name (C string; overwritten with the entered name), skill bytes from `+0x3c`.
+Written by `party_slot_init` (title 0x80061f80). Slot: `+0` u16 character (1 Claude, 2 Rena, ...; negative: a member in reserve, out of the party with the data kept), `+2` u8 field status (1 down, 2 paralysis, 4 stone, 8 poison; `& 7` set = cannot act; item effects 0x41 / 0x42 / 0x62 cure poison / paralysis / stone), `+3` u8 (1 Claude, 9 Rena), `+0x10` u32, `+0x14/+0x18/+0x1c` u32 HP-like triple (Claude 130, Rena 100), `+0x20/+0x22/+0x24` u16 MP-like triple (20 / 40), `+0x28` u16 level 1, then u16 stats at `+0x2a..+0x54`. Record: `+0` u16, `+6` u16, `+0xc..+0x19` u16 equipment-like ids (Rena: 0x21b, 0x2a9), `+0x20` u32 talent bits (`roll_talents`), `+0x24` name (C string; overwritten with the entered name), skill bytes from `+0x3c`.
 
 ## STR movies (`movie_open`; disc 1 #4563-#4581 and #4586, disc 2 #4573-#4604)
 

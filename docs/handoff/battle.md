@@ -6,7 +6,131 @@ Build dirs: `engine/build-battle` (normal) and `engine/build-battle-asan` (ASan;
 `LD_PRELOAD=scratchpad/battle/asan/usr/lib64/libasan.so.8`). Scratch (on disk):
 `scratchpad/battle/`. The worker does not commit; the coordinator does.
 
-## Hand-over (2026-10-23, context rollover): start here
+## Hand-over (2026-10-23 ~03:00, second rollover): start here
+
+**State.** Every item of the assignment is done. M7 waits only on the effects agent's battle
+talk layer (party_talk.{h,cpp}: opening lines, talk pose, provoke, ally reaction and fury,
+flee and victory voices, weapon throws), which that agent owns and is verifying.
+CHECKLIST.md's M7 and "Battle, part 2" lines say so. Tick them together with the effects
+agent once its talk checks are in.
+
+**Uncommitted files of mine** (the coordinator's checkpoints commit them):
+- party.cpp (B14 model; battle_debug_loaded call)
+- battle_program.cpp (party_note_stage_file)
+- unit.h (declaration)
+- stage_objects.cpp (B13)
+- bsfx.{h,cpp}, bobj.{h,cpp} (B15)
+- battle_debug.{h,cpp} (SS_BATTLE_CAM view line; SS_BATTLE_RNG_SKIP / battle_debug_loaded)
+- enemy_ai.cpp (dead Weirdaxe todo removed: the enemy agent's file, flagged)
+- docs: original_bugs.md B13/B14/B15, the catalog (operator_new; pc_state_approach;
+  enemy_axe_knockback; bsfx_pan_update), battle_sweep.md, CHECKLIST.md, m8_audit.md (a short
+  late-save note: the menu agent's file, flagged), docs/ap/battle.md (the final boss wording).
+
+**Suites on this build** (before B15 and SS_BATTLE_RNG_SKIP; rerun before calling the step
+verified):
+- ss_tests 78/0
+- ss_game_tests 104/0 (SS_DISC1)
+- smoke 37/37
+- After B15: refs stage14c, caster35, bowman_l1 and stage51 are unchanged.
+
+**Leads for the successor** (from the coordinator, not yet looked at):
+1. **ref_regress diverges on two stage refs.** In `tools/ref_regress.py`
+   (`scratchpad/regress/full_head2/summary.md`), stage16c diverges at b270 and stage36_long at
+   b1410 at HEAD. Check whether they are real or the suite's setup:
+   - stage16c is a caster ref: it needs `cmpstage_caster.sh stage16c <S>` (S from its
+     ram_battle_loop dump). With that, it was RNG-equal to b1840 this session.
+   - stage36_long has no exit line, so cmpstage.sh's S comes out empty and the input offset
+     becomes 4076 (no presses). That is how it was verified (1298 Shot frames equal).
+     CMP_OFF=-1 makes the cart spawn differ.
+   - Also check tools/refs/refs.csv for a missing poke or re-sync point.
+2. **The world agent's no-seed check on ref/victory_2_3.** It shows small temporary RNG
+   differences at b270-b400 that recover by b600 (equal b600-b1240); the ref used to match
+   frame for frame.
+   - Check whether this is new, and whether the talk layer (opening lines, ally reaction) or
+     B13 / B14 is involved.
+   - B13 is draw-only (A/B proved on stage36_long).
+   - B14 on stage 3 gives Claude 0xc20ae6af (negative), so it behaves like the old 0.
+   - So look at the talk layer first: build without party_talk's hunks, or set its env off.
+3. **The tools agent's list** (docs/handoff/tools.md): v538_3, h531_3 and h539_3 at b50, and
+   m524_3 / m537_3 / m538_3 / m539_3. These are possibly the party-load (state 0) RNG offset,
+   which their generic run scripts don't re-sync (see "RNG after CD-timed loads" in
+   battle_sweep.md).
+
+## Session 2026-10-23 (new battle agent): progress
+
+Assignment (coordinator):
+1. Compare the stage refs.
+2. Fix stage 0xe.
+3. Run the ASan pass.
+4. Check the party's one-frame-early hit reaction (eA-eF, encounter 340).
+5. B13 popup.
+6. Weirdaxe debris Shots (enemy_axe_knockback).
+7. Update CHECKLIST.
+
+The victory voice and the whole talk layer moved to the effects agent (party_talk.{h,cpp}). Don't tick M7 until that has landed and been verified.
+
+- **Stages 0xd / 0x17 / 0x1f: verified.** Refs stage13 / stage23 / stage31, `cmpstage.sh`:
+  - Shots equal in every frame (660 / 593 / 637). stage31's b7 is the first sample's tick phase only.
+  - RNG equal to past the exit.
+  - Units off only in the intro x samples (b28-b42, as in every stage ref) and HP sampling.
+- **Stage 0xe: fixed and verified (B14).** The b960 split was not E9. Claude's first jump check reads PartyUnit +0x230, which nothing initialises:
+  - On the console it holds a word of the raw stage file (stage14c: 0x04afbca6, positive, so he jumps at b951). The port had 0.
+  - New: party.cpp `heap_word_at_unit` and `party_note_stage_file`; battle_program.cpp passes load-list entry 2 to it; the declaration is in unit.h.
+  - Result: ref stage14c has RNG equal to the exit (b1954), 7 of 3177 unit samples off, and Shots equal in all 975 frames.
+  - Rechecked after the change: stage13/23/31/26/41/36/21/8_light/16c are unchanged. caster35 (with `cmpstage_caster7.sh`, the 2-1-2 tick group) has RNG equal to b2060, past the exit.
+  - Catalog: operator_new 0x8001fd94 added, and pc_state_approach's row now notes B14. original_bugs.md has B14.
+- **Final boss (coordinator's question): answered.**
+  - Map 685 tests flag 0x22c (set by Filia's event on map 239). Set: encounter 540. Clear: 539. One fight either way.
+  - Told the world agent the goal default should be [539, 540]. Fixed the wording in docs/ap/battle.md.
+- **ASan pass:** running (`scratchpad/battle/sweep/asan`, PID in sweep/asan.pid).
+- **Stage 0x33: verified.** ref stage51 (`cmpstage.sh stage51`):
+  - RNG equal to the exit (b1282).
+  - Shots equal in all 639 frames.
+  - 3 of 1558 unit samples off.
+  - Frames about 1% at most until the exit.
+- **B13: fixed (visual only).** stage_objects.cpp rolling_hits: the popup shows `damage` (100 for the cart; 50 for the 0x1a / 0xd boulders as before).
+  - A/B on stage36_long: the RNG, units and Shots traces are byte-identical with and without the fix (`scratchpad/battle/b13/`).
+  - original_bugs.md row updated.
+- **Weirdaxe debris: verified.** The work was already done: EnemyAxe::start_reaction in enemy_families.cpp (the enemy agent's) matches 0x8003f37c instruction for instruction.
+  - The todo in EnemyUnit::start_reaction (enemy_ai.cpp) was dead code. It is replaced by a pointer comment, and the unused todo() helper is removed (a small edit in the enemy agent's file).
+  - Redux `ref/axe372` (encounter 372, Claude byte 1): the k2c debris equals BW_SHOTS in all 17 frames, and every Shot is equal in all 365 compared frames.
+  - RNG equal to the exit (b734), 1 of 1449 unit samples off, b370 frame 0.35%. `shotcmp.py REF PORT D [KIND]` is new.
+  - Catalog row updated.
+- **Particle kind 4: verified visually.** The world agent's i11a sweep (Explode, `explode/cap.sh i11a 6 DIR B...`): the purple shards match, e.g. b760 at 0.8% blocks (`explode/pair_b00760.png`). The odd frames' big numbers are the slow-frame phase.
+- **Particle kind 5 (confetti; item 0x2f9, effect 0x5e): in progress.**
+  - Ref `ref/conf340` (no tick log): the confetti is there in both. The frames differ from b315 because of the console's slow frames (the port matches at D 4 there).
+  - `ref/conf340t` (BW_TICK_LOG) was running at 01:05. Replay it with SS_BATTLE_TICK_MAP, as `explode/cap.sh` does.
+- **The "one-frame-early party hit reaction" (world agent, it340 b1290 and rn340): not a port bug.**
+  - In all four samples the state is equal and only the HP differs.
+  - SS_ENEMY_TRACE prints the party at the first enemy's think, before the enemies act. An enemy's hit in frame N therefore shows in the port's party HP one sample later, while Redux samples at the end of the frame.
+  - Dense ref stage13 b421-424: the ref drops HP at b421 and enters s3 at b423. The port shows s3 at b424 (the same 2-vblank update) and the HP at its next print.
+- **ASan pass: done.** 325 victory, 82 defeat, 153 cap, and 4 ASan stops. All four were a
+  heap-use-after-free in bsfx_pan_update: a SpellCast deletes itself while its own sound pans
+  from it.
+  - Fixed as B15: ~BObj → bsfx_forget_emitter moves the channel onto its internal emitter at
+    the last position. Sound only.
+  - Rerun (`sweep/asan_fix`): all four clean, same outcomes as pass 2.
+- **Particle kind 5: verified.** Ref `ref/conf340d`, item 0x2f9 on Claude at b300.
+  - The first big "camera" differences were the harness's mash 2 vblanks early. With the
+    presses at 44 + 45i (`NO_MASH=1 PORT_INPUT=...`), the view (new
+    `[battle] view` line in SS_BATTLE_CAM vs wredux explore.lua's `[bw] view`, `viewcmp.py`)
+    is equal in all 71 frames, and the frames are 0.7-2.2% through the confetti.
+  - My copy of the world agent's Redux tooling is in `scratchpad/battle/wredux/` (BW_ITEM,
+    BW_TICK_LOG, BW_DENSE with the view line).
+- **Late-save final boss (coordinator): closed.** The port's party load ends state 0 at b0,
+  the console's at about b102 (CD-timed). The coordinator decided not to model it.
+  - Re-synced with the new `SS_BATTLE_RNG_SKIP=1` (one draw at state 0→1): the generator
+    equals Redux at all 250 samples b102-b600, the AI included (`scratchpad/battle/late/p2`).
+  - The other one-draw difference is the field's: the voice queue on map 671 versus the walk
+    rolls.
+  - Documented in battle_sweep.md and m8_audit.md. The tools agent was told (it documented
+    the re-sync in tools/refs/README.md).
+- **prec_m1 "regression" (coordinator): not one.** The repro used USES=0, but the ref is the max-level move (uses 999).
+  - With 999: prec_m1, as_m1, chis_m1, bowman_l1, dias_l1 and ernest_2_3 are RNG-equal past the exit.
+  - op_m1 (move 0) splits at b400 as in the effects agent's own run (console slowdown).
+  - `fxcheck/port_pc_b.sh` is a copy of its port_pc.sh writing to my scratch.
+
+## Hand-over (2026-10-23, first rollover; done, kept for its tool notes)
 
 Assignment (coordinator): finish M7 with an encounter sweep.
 

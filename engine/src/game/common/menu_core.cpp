@@ -34,8 +34,9 @@ struct BgLoad {
   s16 capacity = 0;                  // 0x8004efbc
   s16 current = 0;                   // 0x8004efc0
   std::vector<LoadRequest> requests; // 0x8004efc4
-  s32 timer = 0x3C;                  // 0x8004efd0
+  s32 timer = 0x3C;                  // 0x8004efd0 (field 0x8007886c)
 } g_bg;
+const BgLoadHooks* g_bg_hooks = nullptr;
 
 }  // namespace
 
@@ -220,15 +221,20 @@ const std::vector<u8>* entry_cache_slot(int index) {
 
 BgLoadClient::~BgLoadClient() { bgload_cancel_owner(this); }
 
+void set_bgload_hooks(const BgLoadHooks* hooks) { g_bg_hooks = hooks; }
+void bgload_restart_timer() { g_bg.timer = 0x3C; }
+
 void bgload_init() {
   g_bg = BgLoad{};
   g_bg.timer = 0x3C;
+  if (g_bg_hooks != nullptr && g_bg_hooks->init != nullptr) g_bg_hooks->init();
 }
 
 void bgload_shutdown() {
   for (int i = 0; i < g_bg.capacity; ++i) bgload_cancel(i + 1);
   g_bg.requests.clear();
   g_bg.capacity = 0;
+  if (g_bg_hooks != nullptr && g_bg_hooks->shutdown != nullptr) g_bg_hooks->shutdown();
 }
 
 void bgload_cancel(int handle) {
@@ -326,11 +332,15 @@ void async_load_queue_update() {
       if ((f & 1) && (f & 2)) {
         g_bg.current = static_cast<s16>(i);
         g_bg.state = 1;
+        if (g_bg_hooks != nullptr && g_bg_hooks->request_start != nullptr) g_bg_hooks->request_start();
         break;
       }
     }
   }
-  if (g_bg.state == 0) return;
+  if (g_bg.state == 0) {
+    if (g_bg_hooks != nullptr && g_bg_hooks->idle != nullptr) g_bg_hooks->idle(g_bg.timer);
+    return;
+  }
   Loader* loader = menu_loader();
   LoadRequest& r = g_bg.requests[static_cast<size_t>(g_bg.current)];
   for (;;) {
