@@ -50,6 +50,11 @@ was downgraded) with corrected evidence, listed below for a stronger agent.
 
 ## Rows left for a stronger agent (both `likely`, unchanged)
 
+**Both settled (leads agent, 2026-10-23, docs/handoff/port_leads.md lead 5): confirmed.**
+sound_add_ticks: the second word is 0x8c86338c = `lw a2, 0x338c(a0)` (opcode 0x23), not
+0x0c86338c; the body is exactly the summary. CdRemove: `li t2, 0xa0; jr t2; li t1, 0x72`, the
+BIOS A(72h) stub (the number sits in the delay slot the decompiler drops).
+
 1. **`0x8001abc0 sound_add_ticks`** — Ghidra creates no function boundary here (`resolve_
    containing_procedure`: not_in_procedure; no xrefs in `SO2_boot+main.elf`, since its only
    callers are in an overlay program). Hand-disassembly of the raw bytes matches the summary/port

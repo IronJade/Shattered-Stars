@@ -38,7 +38,7 @@ jobs:
           python-version: "3.12"
 
       - name: Static check of every mod
-        run: python3 tools/mod_check.py --all --github
+        run: python3 tools/mod_check.py --all --github --strict  # the maintainer's rule: risky edits must be declared
 
       - name: mods/index.json matches mods/
         run: python3 tools/mod_index.py check

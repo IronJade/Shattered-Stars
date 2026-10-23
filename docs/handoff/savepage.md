@@ -230,3 +230,33 @@ rather than continuing to retry.
   `engine/src/game/field/menu_camp.cpp`).
 - Build: `engine/build-savepage` (RelWithDebInfo, matches `engine/build`'s cache
   settings), built clean, unmodified since (no engine changes to re-verify).
+
+## Fix 1 (Callways stop): DONE, CONFIRMED MATCHING (leads agent, 2026-10-23 10:20)
+
+Log: `docs/handoff/port_leads.md` lead 6. The blocker was not a MusicDialog problem:
+- The original's dialog is vertical (Compose over Play music) and its grid call is the port's
+  exactly (music_dialog_build 0x80080dd4: `cursor_add_grid(.., 1, 1, 2, 0, 0x28, 0, 0xe, ..)`);
+  its vtable uses the shared Dialog input (slot [11] 0x800e05f0). No orientation or input bug.
+- A rerun on the early save with the same timing (DOWN at shop-relative +520) moves the cursor
+  to "Play the tune." and a second DOWN wraps back to Compose (mode 1), in Redux
+  (`scratchpad/leads/cw/redux/out3/`) and the port alike; the earlier failure was a harness
+  artifact (the captures in `scratchpad/savepage/redux/out/` likely came from another run).
+- The late save confirms with CIRCLE and cancels with CROSS (its config), the early save with
+  CROSS.
+
+The check, late save (card_combined slot 2 in Redux, `SS_LOAD_SAVE=1` in the port), Ashton:
+Camp > Specialty > Ashton > Musical Talent > Play music > The Song of Salvation, back out with
+CROSS x 3, Data > Save:
+- Redux (`scratchpad/leads/cw/redux/cwref.lua`, a copy of saveref.lua with breakpoints on
+  callways_stop_song_resume 0x80031744 and callways_end_song 0x80031ad8; `out2/log.txt`):
+  callways song 1 from +850; the save page's constructor calls callways_stop_song_resume at
+  +1461 (ra 0x8007e168), which calls callways_end_song(c, 1); song 0 from then on
+  (`out2/shop01430` the Save / Load submenu, `shop01500` the save page).
+- Port (`scratchpad/leads/cw/port_run.sh`, a probe build with [pcw] traces; `port/m4/log.txt`):
+  play_song id 1 at vblank 562; field_save_page_open at 1000 finds song 1 and calls
+  callways_stop_song(c, true) (the stop with the field music resumed).
+- In Redux a "secret talent 'Sense of Rhythm' worked" message follows the song (an RNG roll).
+  The port's plain run has none (its generator starts from SS_LOAD_SAVE, without the title's
+  draws); started from the original's generator at the menu (`SS_MENU_RNG=
+  scratchpad/leads/cw/late_rng_open.bin`, Redux `out/before_rng.bin`), the port shows the same
+  message after the same song (`port/m5/cap`).

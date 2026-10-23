@@ -293,27 +293,31 @@ This line, from one of the sample mods, turns a 200 Fol crate in Arlia into 500 
 script 18 0x82c 0xffffff38 0xfffffe0c
 ```
 
-**The mod manager.** New in this version, mods come as packages: a folder, or a `.zip` of one,
-holding a `mod.json` manifest (name, version, author, description, the oldest port version it
-works with) and its patch files. The setup program's **Mods** page lists the installed mods and
-lets you:
+**The mod manager.** Mods come as packages: a folder, or a `.zip` of one, holding a `mod.json`
+manifest (name, version, author, description, the oldest port version it works with) and its
+patch files. The setup program's **Mods** page installs them from a `.zip`, turns each on or
+off, sets the load order, removes them, and shows each mod's description and README. When two
+enabled mods change the same thing, the later one in the load order wins, and setup warns you
+and says which. Loose `.patch` files keep working as before, and an Archipelago seed's own
+edits always apply first and are never overridden by a mod.
 
-- turn each mod on or off;
-- set the load order;
-- install a mod from a `.zip`, or remove one;
-- read a mod's description and README;
-- see a warning when two enabled mods change the same thing, and which one takes effect.
+<p align="center">
+  <img src="docs/images/setup-mods.png" alt="The setup program's Mods page: the installed mods in load order with tick boxes, conflict and error marks, and the Install from .zip, Move up, Move down and Remove buttons" width="600">
+</p>
 
-Loose `.patch` files dropped into the mods folder keep working as before. An Archipelago seed's
-own edits always apply first and are never overridden by a mod.
+**The curated list.** The [`mods/`](mods) folder of this repository holds the curated mod list;
+today it has two small sample packages. Creators submit a mod as a pull request. An automatic
+check runs on every submission (`tools/mod_check.py --strict`, no discs needed): it checks the
+package's files and every patch line against the disc's tables, and fails unless each risky
+edit (a door sent elsewhere, a free item, a boss with 0 HP, ...) is declared with a reason.
+Then the maintainer runs the mod in the real game with `tools/mod_verify.py`: every patch line
+must apply, and every map and battle the mod touches must load and run as it does without the
+mod. Only then is it marked verified, and any later change to its files clears that.
 
-**The curated list.** The [`mods/`](mods) folder of this repository holds the curated mod list.
-Today it has two small sample packages. Creators make their patches with `tools/so2_mod.py`,
-put them in a package and submit it as a pull request. Coming next: an automatic check of every
-submission, and the maintainer's verification with the real game (every patch line applies,
-and every map and battle the mod touches loads and runs) before a mod is listed as verified.
-
-More on the [Modding](https://github.com/IronJade/Shattered-Stars/wiki/Modding) page.
+On the wiki: [Installing and Managing Mods](https://github.com/IronJade/Shattered-Stars/wiki/Installing-and-Managing-Mods),
+[Making a Mod](https://github.com/IronJade/Shattered-Stars/wiki/Making-a-Mod),
+[Submitting a Mod](https://github.com/IronJade/Shattered-Stars/wiki/Submitting-a-Mod), and the
+[Modding](https://github.com/IronJade/Shattered-Stars/wiki/Modding) overview.
 
 ## Archipelago
 

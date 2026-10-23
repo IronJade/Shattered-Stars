@@ -361,6 +361,10 @@ python3 tools/mod_check.py --all                      every mods/*/ folder
 
 It exits 1 on any error, 0 otherwise. Warnings (undeclared risky edits) don't fail it
 unless `--strict` is given. `--github` prints workflow annotations and a job summary.
+The pull-request workflow runs `--strict` (the maintainer's decision, 2026-10-23): a
+submitted mod must declare every risky edit with a reason. Two more decisions of the same
+day: in a conflict the later mod in load order wins, and a package copied in by hand starts
+disabled until it's enabled in setup (installs from a .zip start enabled).
 
 ### Errors
 
@@ -425,7 +429,7 @@ over every field map of the North American disc, plus a margin), the record size
 
 ```
 SS_DISC1=<disc 1 .cue> python3 tools/mod_verify.py mods/<id> [--bin engine/build/shattered-stars]
-    [--out scratchpad/modverify/<id>] [--jobs 4]
+    [--out scratchpad/modverify/<id>] [--jobs 3]
 ```
 
 Every run is headless (`--headless`, offscreen video, dummy audio) with a scratch settings

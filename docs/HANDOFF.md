@@ -48,8 +48,8 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 | Battle | `docs/handoff/battle.md` | stage references, Weirdaxe debris, final boss first AI draw, B13, M7 tick |
 | Effects | `docs/handoff/effects.md` | battle talk verified; field menu voice Redux check; then the catalog's unported rows |
 | Catalog | `docs/handoff/catalog.md`, `effects.md` | complete: 5429 rows, gap scan 0 missing over 32 programs (`tools/catalog_gaps.py`, `docs/catalog/gaps_explained.csv`), port column 0 empty; left: confidence pass (699 likely, 166 guess) |
-| Confidence pass | `docs/handoff/confidence_field.md`, `confidence_battle.md`, `confidence_boot.md` | done (2026-10-23): 5446 of 5452 rows confirmed; the last 6 are with the port-leads agent (`docs/handoff/port_leads.md`) |
-| Save page | `docs/handoff/savepage.md` | the Callways stop and sprite pack 0xbd2 fixes against Redux, on a scratch card with two saves of different parties |
+| Confidence pass | `docs/handoff/confidence_field.md`, `confidence_battle.md`, `confidence_boot.md`, `port_leads.md` | done (2026-10-23): all 5452 rows confirmed; the leads it raised are closed (B16-B20, the courier's voice streaming, the save page's Callways stop) |
+| Save page | `docs/handoff/savepage.md`, `port_leads.md` | done: sprite pack 0xbd2 and the Callways stop both match Redux |
 | Release (AP phase 5) | `docs/handoff/release.md` | prepared (09:20): `tools/build_apworld.sh` -> `dist/so2.apworld` + template YAML (packaged world: 4 seed sets, e2e 25/25), player docs, both bundles rebuilt, AP's general tests pass with the world in place; `docs/ap/release_checklist.md`. Open: the user's choices (maintainer, licence, port version), the DeathLink wording; publishing is the user's call |
 | Spell | `docs/handoff/spell.md` | re-recording the 12 lenient world_spell refs with `BW_TICK_LOG` |
 | World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |

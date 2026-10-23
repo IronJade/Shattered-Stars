@@ -4,7 +4,7 @@ Every image here is a screenshot of Shattered Stars (this port) running, capture
 own OpenGL output (not a raw VRAM dump, not an emulator) for the README and wiki. They are
 the one approved exception to "no game assets in git" (`docs/HANDOFF.md`): nothing else
 from the discs is committed. Captured headless (`SDL_VIDEO_DRIVER=offscreen`), at 1280x960
-for every in-game shot; the two setup-program shots are the setup window's own size,
+for every in-game shot; the setup-program shots are the setup window's own size,
 920x660. How each one was produced, including the exact command: `docs/handoff/readme_shots.md`.
 
 - `title-screen.png` — the title screen (logo, New Game / Continue / Voice Collection).
@@ -24,3 +24,10 @@ for every in-game shot; the two setup-program shots are the setup window's own s
   another player (Bob) over a local multiworld server, with the in-game banner.
 - `setup-discs.png` — the setup program's Discs page, both discs verified.
 - `setup-archipelago.png` — the setup program's Archipelago page, a seed file loaded.
+- `setup-mods.png` — the setup program's Mods page: the installed mods in load order, two
+  marked with a conflict and one that can't load (rendered by `tools/setup_screenshots.sh`,
+  shot `mods-manager`, with test packages).
+- `setup-mods-conflict.png` — the Mods page's info panel for a mod in a conflict, each
+  conflict explained in a sentence (`tools/setup_screenshots.sh`, shot `mods-conflict`).
+- `setup-mods-replace.png` — installing a .zip of a mod that is installed already: setup asks
+  before replacing it (`tools/setup_screenshots.sh`, shot `mods-replace`).

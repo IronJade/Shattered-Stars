@@ -65,11 +65,12 @@ find. Limits: 32 patch files, 256 KiB each, 1 MiB per package.
    a `mod.json` (and a README.md if you like). Try the mod in the game.
 2. Run the static check and fix every error:
 
-       python3 tools/mod_check.py mods/<your-mod-id>
+       python3 tools/mod_check.py --strict mods/<your-mod-id>
 
    It also flags risky edits (an unknown script word, a door sent elsewhere, a key item
-   chest changed, a boss with 0 HP, a free item, ...). If you mean one, declare it in
-   `mod.json` with a reason, so the reviewer sees why:
+   chest changed, a boss with 0 HP, a free item, ...). The pull-request check runs in strict
+   mode, so an undeclared risky edit fails it. If you mean one, declare it in `mod.json` with
+   a reason, so the reviewer sees why:
 
        "declared_risks": [{"rule": "door-retarget", "lines": ["changes.patch:4"],
                            "reason": "The shortcut back to Arlia; the old door still works."}]

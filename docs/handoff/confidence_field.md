@@ -91,6 +91,7 @@ extents), 2 bogus credits rows deleted. `tools/catalog_coverage.py` + `tools/cat
 re-run under the lock: 0 missing addresses across 32 programs. No engine code changed.
 Outside this assignment's module list but field-side, still `likely`: menu_0bb9 0x8008b338
 model_blend, field_sub3109 0x801f9fe0 gauge_set_pos, menu_0bb2 0x800810a8 grid_box_place.
+(All three confirmed later by the leads agent, docs/handoff/port_leads.md lead 5.)
 
 ## Port leads (for a follow-up agent)
 
@@ -100,6 +101,8 @@ model_blend, field_sub3109 0x801f9fe0 gauge_set_pos, menu_0bb2 0x800810a8 grid_b
    (courier state, line ~712, state 0x1d -> 0x1e) does not, so voice-clip streaming stays off
    after a courier delivery until something else turns it on. Fidelity fix (one line), but it
    can change the voice-clip RNG use, so measure before / after.
+   DONE (leads agent, docs/handoff/port_leads.md lead 4): field_install_side_text turns streaming
+   on itself, as 0x80053b44 does; checked in Redux; RNG before / after recorded there.
 2. field 0x80050f64 field_prepare_encounter (design difference, low priority): the console
    preloads only the battle entries that fit its heap (keeping 0x800761a4 free; the rest are
    negated and read by the battle) and computes the voice-clip budget from the read time of

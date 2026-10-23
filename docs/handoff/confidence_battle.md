@@ -117,11 +117,14 @@ after the user's decision). Helpers' detail files: `scratchpad/conf_battle/leads
    5+ hits overwrite hit point 0 and, in shot_hit_magic, the caller's saved registers (crash
    likely); k16: point 0 garbage for 5-7, saved s0-s2 for 8. The port keeps 8 slots (play equal
    for <= 4 hits). Like original_bugs.md S4.
+   DONE (leads agent, docs/handoff/port_leads.md): original_bugs.md B16, avoided, comments in shot.cpp.
 3. Original-bug proposal (leads_C2 1): ribbon_trail_update 0x80075a74 (killer.cpp RibbonTrail):
    the saved far edge is never initialised; when segment 0 is culled the console's first drawn
    quad takes stale stack values, the port's {0,0} (a quad stretched to the top-left). Visual.
+   DONE: original_bugs.md B18, fixed (visual only).
 4. Original-bug proposal (leads_C2 3): draw_flare_polygon 0x800741b0 (fx_draw.cpp): the fan's
    first vertex ignores the camera roll 0x8006f084. Visual.
+   DONE: original_bugs.md B19, fixed (visual only).
 5. ui_draw_target_arrow 0x80072780 (director.cpp:46): one 0x20-byte allocation for POLY_F3 +
    DR_MODE on the console, two in the port (with 0x14-0x1f bytes left the port queues the arrow
    without its DR_MODE). Arena overflow only.
@@ -132,6 +135,8 @@ after the user's decision). Helpers' detail files: `scratchpad/conf_battle/leads
    screen_shake_vertical / screen_shake), camera_reset_mode (camera_reset). The other proposed
    renames are done (Engine changes). Defensive port guards with no play effect (null unit /
    record checks, &3 slot masks in input_dispatch, cel_texture) are listed in leads_G / leads_I.
+   DONE (renames): screen_shake_vertical / screen_shake / camera_reset (an overload of render.h's
+   camera_reset(), 0x80076be8).
 8. Unreachable / no play effect (recorded only): enemy_goat_chant 0x800409e4 port omits the
    enemy_state_chant call (slot 37 has no caller); shot_k15 negative-level branch reads +0x134
    after the increment (never taken).
@@ -140,9 +145,12 @@ after the user's decision). Helpers' detail files: `scratchpad/conf_battle/leads
    then reads that enemy's fields as unit pointers: likely crash). The port's units[8] fixes it
    silently (no ORIGINAL BUG comment). The stage 0xd boulder (blk5) has the same 4-entry array
    (overflow only moves the first spark). The stage36_long +-9 residue is not in the cart's code.
+   DONE: original_bugs.md B17, avoided (the boulders' points also overrun saved registers, ra from
+   the 7th / 8th hit; the stage 0x1a boulder has the same 4-entry list), comment in rolling_hits.
 10. Original-bug proposal (leads_J): model_render section 0 (lit flat triangles) tests the
    unshifted OTZ, so those polygons drop out at 1/8 of the depth of the other 19 sections; the
    port keeps it. leads_J.md has the 20 record layouts, ready for docs/notes/battle.md 6.3.
+   DONE: original_bugs.md B20, fixed (visual only).
 11. Kept quirk (leads_F): stage_random_point passes 20.12 coordinates where whole units belong;
    the port keeps it.
 12. Wording (leads_H): original_bugs.md B6 could name unit_probe_path 0x8004e7ac and the case.

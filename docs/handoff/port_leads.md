@@ -83,23 +83,33 @@ lead 1), `docs/handoff/savepage.md` (the Callways blocker), `docs/notes/original
   (banks 287 / 410 instead of 290 / 412); 4854 vs 4842 draws over 3000 vblanks. Suites
   (snap_l4): ss_tests 78/0, ss_game_tests 119/0, smoke 86/0, quick 28/0.
 
-## In progress
+- **Lead 6 (the Callways stop): verified matching, no code change.** The original's
+  MusicDialog is vertical (Compose over Play music) and its grid call is the port's exactly
+  (music_dialog_build 0x80080dd4: cursor_add_grid(.., 1, 1, 2, 0, 0x28, 0, 0xe, ..); slot
+  [11] is the shared Dialog input 0x800e05f0), so no orientation or input bug; RIGHT is not
+  needed. A Redux rerun on the early save moves DOWN to Play and wraps back (out3/); the
+  earlier block was a harness artifact. The late save confirms with CIRCLE, cancels with CROSS.
+  Late save, Ashton > Musical Talent > Play > Song of Salvation, CROSS x 3, Data > Save:
+  Redux (`scratchpad/leads/cw/redux/cwref.lua`, out2/log.txt): song 1 from +850; the save
+  page's constructor calls callways_stop_song_resume at +1461 (ra 0x8007e168) ->
+  callways_end_song(c, 1); song 0 after. Port (probe build with [pcw] traces,
+  cw/port/m4/log.txt): play_song at 562, field_save_page_open at 1000 stops song 1 with
+  resume. The "secret talent Sense of Rhythm" message after the song also appears in the port
+  when it starts from the original's menu RNG (SS_MENU_RNG=scratchpad/leads/cw/late_rng_open.bin,
+  cw/port/m5). Details appended to docs/handoff/savepage.md.
 
-- Lead 6 (Callways stop, time box ~45 min from 10:10). Findings so far: the original's
-  MusicDialog is vertical (Redux scratchpad/leads/cw/shop00500_312x216_16.png: Compose over
-  Play music) and its grid call is the port's exactly (music_dialog_build 0x80080dd4:
-  cursor_add_grid(.., mode 1, 1, 2, 0, 0x28, 0, 0xe, ..)), so no orientation bug and RIGHT is
-  not the answer. The previous Redux attempt ran on the EARLY save (Claude, MP 37, level 6),
-  not the late one. Port, late save (card_combined slot 1; this save confirms with CIRCLE,
-  cancels with CROSS): DOWN moves to Play, the PlayList opens, song 1 plays (level -10,
-  vblank 562), and Data > Save opens the save page at 1000, which stops it with resume
-  (probe trace [pcw]: scratchpad/leads/cw/port/m4/log.txt, run by cw/port_run.sh). Redux run
-  of the same on the late save going (scratchpad/leads/cw/redux/cwref.lua, out/log.txt:
-  [cw] lines log callways_stop_song_resume 0x80031744 / callways_end_song 0x80031ad8).
+## State: all six leads closed (10:25)
 
-## Next steps
+Final suites on the current tree (snapshot of engine/build-leads): ss_tests 78/0,
+ss_game_tests 119/0, smoke 86/0, ref_regress --quick 28/0 (scratchpad/leads/suites_final.log).
 
-Lead 6.
+Files changed (engine): battle/shot.cpp, stage_objects.cpp (comments, B16 / B17); 53 battle
+files for the renames (list: scratchpad/leads/rename_files.txt; combat.h / camera.h
+declarations); battle/killer.cpp (B18), fx_draw.cpp (B19), stage.cpp (B20);
+field/message_text.cpp, post_battle.cpp, field_world.cpp (comment), message.h (comment) for
+lead 4; boot/sound.cpp (comment). Docs: docs/notes/original_bugs.md (B16-B20),
+docs/catalog/functions.csv (u_leads1.py 11 summaries, u_leads2.py 6 rows), COVERAGE.md,
+docs/handoff/{savepage,confidence_battle,confidence_field,confidence_boot}.md (closed marks).
 
 ## How to verify
 
@@ -107,7 +117,15 @@ Lead 6.
   FETCHCONTENT_SOURCE_DIR_*; RelWithDebInfo, Ninja).
 - `SS_DISC1=<disc 1 .cue> engine/build-leads/ss_tests`, `ss_game_tests`,
   `tools/smoke_field_events.sh`, `tools/ref_regress.py --quick --build engine/build-leads`.
-- Baseline binary from before any change: `scratchpad/leads/bin/ss_base`.
+- `scratchpad/leads/suites2.sh TAG` snapshots the build's binaries and runs all four suites
+  (result in scratchpad/leads/suites_TAG.log).
+- Binaries kept: `scratchpad/leads/bin/ss_l12` (before lead 3) / `ss_l3` (after),
+  `ss_l4before` / `ss_l4after`. Probe sources (lead 3 / 6 traces and forcing switches):
+  `scratchpad/leads/probe/engine` (a 09:40 copy of engine/ plus probes; its build dir was
+  removed: configure it like build-leads to reuse it). Lead 3 frames:
+  `scratchpad/leads/frames/`. Lead 4: `scratchpad/leads/courier/run.sh BIN TAG` and
+  `scratchpad/leads/redux/courier.lua`. Lead 6: `scratchpad/leads/cw/port_run.sh`,
+  `scratchpad/leads/cw/redux/cwref.lua`.
 
 ## Rules (mandatory, from the coordinator)
 
