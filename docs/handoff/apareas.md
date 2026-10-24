@@ -218,3 +218,25 @@ doors.json: from_area / to_area only.
   tools/ap_world_tables.py on it gives a data.py byte-identical to the committed 0.1.1 data.py,
   so the logic is unchanged.
 - 0.1.1 ships with 0.02.00 (the user's decision); there is no separate hotfix release.
+
+## Lead closed: flight on an early teleporter return (coordinator, 2026-10-23 23:40)
+Question (the user): does the party get the Synard on Expel when the open-world teleporter
+brings it back? Answer: **not before the Final Save Point; 0.1.1's logic stands.**
+- Expel's world map spawns the Synard (actor 0xd) whenever flag 11 is set, at its Expel spot
+  game_state +0x26c / +0x28c / +0x270 (map.cpp:564-570). Only Virtual Arlia's arrival (map 18
+  0x5a4, chapter >= 60 and flag 730) writes that spot; the teleporter's three patch lines change
+  only the old man's and the guide's chapter tests (seed_format.md "The Expel teleporter").
+- Live run (scratchpad/synard/run_early.log): --map 18 at chapter 41, flag 11 set, flag 730
+  clear, then to map 1: the spot stays 0, so the Synard sits at the map's origin; the party is
+  at Arlia's exit (86054, 25733).
+- Terrain (scratchpad/synard/origin_reach.py, tools/ap_walkmap.py's grid at step 16, both NA
+  discs): no walkable cell within the boarding reach (0x105 units, field_world.cpp:310-318) of
+  the origin: open sea. So the Synard can't be boarded, and Hoffmann Ruins, El and the Cave of
+  Trials island stay out of the teleporter's reach until the Final Save Point, as
+  TELEPORTER_ISLANDS assumes.
+- After the Final Save Point the Synard is parked at Arlia and reaches the Cave of Trials; the
+  apworld puts every Cave of Trials location after the Final Save Point event, so that
+  requirement is covered. (A plain debug warp at chapter 60 did not reproduce Arlia's parking:
+  it needs the real Virtual Expel arrival; that case rests on the script reading.)
+- Possible enhancement (the user's call, not planned): park the Synard on an open-world
+  teleporter return; the islands could then hold progression (a 0.1.2 logic change plus proofs).
