@@ -141,7 +141,11 @@ Everything else is shifted-identical. The full per-function lists are in
 - **Projectile clash removed:** in #1984 block 1, `clash_register` and `clash_resolve` are
   stubs (`jr ra`) and `spell_clash_check` changed. On NA, opposing elemental projectiles
   whose hit boxes overlap cancel or overpower each other; the PAL builds dropped that.
-  This changes the play state, so the port must keep it per region.
+  This changes the play state, so the port must keep it per region. `spell_clash_check`
+  (PAL 0x80081b34 in Europe) checks 9 spells that never clash instead of 7: the PAL table
+  (NA 0x80085504's place) is NA's 7 (Explode, Dark Circle, Meteor Swarm, Southern Cross,
+  Daemon's Gate, Extinction, Earthquake) plus 0x41 'The Scream' and 0x42 'Judgement Day' (the
+  item spells). The port runs NA's check (7) on every release, by decision.
 - Smaller: `field_load_map`, `text_render_line`, `strbuf_format_int`, `sprite_resample`,
   `menu_colour_code` / `menu_colour` removed, `creation_viewer_update`, `rename_page_frame`,
   `spell_thundercloud_bolt` (3 words), `save_build` (the product code's address).
@@ -416,6 +420,14 @@ Coverage: the port records every (image, NA address) it reads with `SS_REGION_RE
 (NA suites and sweeps -> `tools/regions/na_reads.txt`); `region_map.py --check` fails if any
 of them has no counterpart in a release, and lists the read bytes whose value differs from
 NA's (Europe: none; France / Germany: 3 bytes, text-related).
+
+The list must include the battle sweeps' reads: until 2026-10-23 it held the suites' and event
+sweeps' only (no #1984 block 1 reads), so the check missed that the word holding entries 5-7 of
+`spell_clash_check`'s never-clash list (7c0.1 0x80085508) was unmapped. Its bytes are NA's in
+every PAL release, but its pad byte isn't (the PAL table is 2 longer), so the word diff dropped
+it; the port read 0 there and let Extinction, Daemon's Gate and Earthquake clash on PAL (the
+battle comparison's enc466 / enc478: two Soulmasters casting Extinction together). The table is
+now mapped by position (`TABLES`), and the battle sweeps' reads are in the list (8423).
 
 | | Europe | France | Germany |
 |---|---|---|---|

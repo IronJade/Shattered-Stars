@@ -384,7 +384,8 @@ VM-state changes, `evcmp2.py` = transfer destinations / big frame deltas, `pngsh
 
 ## 0.02.00 readiness (agent 6, 19:45; battle rows pending the queue)
 
-Verdict: **releasable once the battle comparison is clean (pending, queue ends ~21:45).** Every
+Verdict: **releasable once the battle comparison is clean (pending; bt_de ends ~21:20, then
+"Remaining (coordinator runs these)" below).** Every
 other row is filled and passed; no port fault was found in the event sweeps, the Redux checks or
 the French e2e.
 
@@ -422,12 +423,73 @@ Suites: agent 5's final build (t5c 16:29): ss_tests 99/0, ss_game_tests 128/0, s
 ref_regress quick 28/28. Agent 6 changed no engine code (only the working tree's El voyage
 gate changes, the elgate agent's, are in `bin/ss_v1`).
 
-Still running: the sweep queue `scratchpad/regions/q/queue.sh` PID 1279484 (binary `bin/ss_q`):
-bt_na done 19:22 (564 runs: cap 155, defeat 82, victory 327, 0 crashes), bt_eu from 19:22, then
-bt_fr, bt_de (~47 min each, "queue done" ~21:45). Do not start, restart or kill it.
+Still running (coordinator, ~20:40): the sweep queue `scratchpad/regions/q/queue.sh` PID 1279484
+(binary `bin/ss_q`): bt_na done 19:22 (564 runs: cap 155, defeat 82, victory 327, 0 crashes),
+bt_eu and bt_fr done, bt_de started 20:34 (ends ~21:20, then "queue done" in `q/queue.log`). Do
+not start, restart or kill it. Agent 6's own background waits (plain `timeout ... kill -0 1279484`
+/ `[ -f q/bt_eu/results.json ]` sleep loops, no game processes) end with the queue or at their
+deadlines; nothing else of agent 6's runs.
 
-Not done: battle comparisons (`work/bcmp.py q/bt_na q/bt_RG` for eu / fr / de, explain every
-difference, then delete `q/bt_*/logs`); README / wiki "Discs"; optional NA-save import in setup.
+**Agent 6 ended ~20:40** (coordinator's wrap-up: the session switched to prompted edits, so a
+background agent can't run shell commands). No command was refused before that. Agent 6 changed
+no engine, tool or test code; scratch only (`scratchpad/regions/verify/`, `redux/drive6.lua`,
+`redux/run6.sh`, `redux/runs6/`, `runs/save6*`, `runs/pbt_*`, `runs/bt6_*`).
+
+### Remaining (coordinator runs these)
+
+Run from `scratchpad/regions/` (the repo's `scratchpad/regions`), after "queue done" appears in
+`q/queue.log`:
+
+1. Battle sweep health, per release:
+   `head -8 q/bt_eu/summary.md q/bt_fr/summary.md q/bt_de/summary.md`
+   Expect 564 runs each, 0 crashes / sanitizer reports / timeouts, outcomes close to NA's (cap
+   155, defeat 82, victory 327; identical if the traces below are identical).
+2. The comparisons (save each output; `mkdir -p bcmp` first):
+   `python3 work/bcmp.py q/bt_na q/bt_eu > bcmp/eu.txt`
+   `python3 work/bcmp.py q/bt_na q/bt_fr > bcmp/fr.txt`
+   `python3 work/bcmp.py q/bt_na q/bt_de > bcmp/de.txt`
+   then `head -3 bcmp/*.txt`. The first line is `{'same': N, 'differ': M} only NA x only RG y`.
+   Expect `same` 564, `differ` 0, only NA / RG 0 for all three: the battle programs run NA's
+   logic, and France's 4 spot battles (1, 35, 191, 300) were trace-identical (agent 5). For
+   every `differ` row the script prints the first [bunits] line where NA and the release part
+   (RNG hash, draws, positions, HP per frame). A difference is acceptable only if the release's
+   own data is read at that point (check the table with `rmap/peek.py IMAGE NA_ADDR LEN`, which
+   prints the bytes in NA / EU / FR / DE through the map); otherwise it is a port fault (a
+   misread table): flag it, it blocks the verdict until fixed (a fix must keep NA
+   byte-identical and rerun the suites, rules at the top).
+3. Record the three first lines in the readiness table ("Battle sweep vs NA" row) and set the
+   verdict: releasable if all three are 564 / 0, or every difference is explained.
+4. After recording: `rm -rf q/bt_na/logs q/bt_eu/logs q/bt_fr/logs q/bt_de/logs` (~90-150 MB
+   each; results.json / summary.md stay).
+
+Optional (not required for the verdict; the code paths are covered by the checks done): the
+German result screen and the French Scan window. Port:
+`SAVE=save6s PARGS=--debug verify/pbt.sh fr pbt_fr_s1 1450
+"810:triangle,814:none,850:left,854:none,910:cross,914:none,970:cross,974:none,1030:cross,1034:none"
+"$(seq -s, 1030 15 1450)" "SS_DEBUG_INPUT=200:battle 1"` (run from the repo root; captures in
+`runs/pbt_fr_s1/cap`); original: as `redux/runs6/de_scan` (keys in the 19:38 entry's runs:
+`RX_KEYS="1950:start,1954:none,4700:triangle,4704:none,4740:left,4744:none,4790:cross,4794:none,4840:cross,4844:none,4890:cross,4894:none"`,
+`RX_MASH="2050:2230:30:cross"`, `RX_GSTATE=0x80075378`, `RX_MAPKEYS="1:0:<redux/runs6/walk_pal.txt cut at 2128>,2128:none"`,
+`redux/run6.sh fr runs6/fr_scan $PWD/../runs/save6s_fr/card.mcd`). Expect the same windows.
+
+Release-notes facts (docs/release_notes/0.02.00.md, the coordinator words them):
+- Event sweeps ("TO CONFIRM" at line ~34): done for all three releases on both discs. Europe's
+  results equal North America's on disc 2 as on disc 1 (0 other results). France and Germany run
+  every entry; the only different results come from the automatic test answering a choice
+  differently (their option text is longer, so the test's button press lands on the other
+  answer) and from each release's own developer text test in the world script (unreachable in
+  play): no port difference. Their non-ok entries are NA's own (the ending loop on maps 0 / 826,
+  maps 58 / 139 gone on disc 2) plus France's 266 K18, the test's input looping in North City's
+  library encyclopedia (the article displays in full). The battle comparison is still pending
+  (step 2 above).
+- Battle result / Scan ("TO CONFIRM" at line ~40): confirmed. The French battle result screen
+  and the German Scan window match the originals in PCSX-Redux.
+- French e2e ("TO CONFIRM" at line ~150): confirmed. The full end-to-end test (27 checks, the
+  real SO2 slot) passed on the French discs too, on a build with the El voyage gate changes.
+- Correction for anyone following the old item-5 plan: item 0x61 is the Insanity Ring; the
+  Scan item is 0x36 Spectacles (German "Brille"), whose effect kind is 0x61.
+
+Not done: the battle comparisons above; README / wiki "Discs"; optional NA-save import in setup.
 
 ## Next steps
 
@@ -476,3 +538,24 @@ entries), `cmpcode.py` (normalise + trap strip + diff alignment, classify per ca
 Open from the survey: read in full the remaining EU diffs (battle_main_loop, field_main_loop,
 camera_step_eye, input_* updates, sprite_update, menu_scene_*, screen_set_display_window,
 mem_* allocator, credits_vblank, *_on_close); FR/DE text functions; JP.
+
+## Battle comparison (coordinator, 21:10)
+Queue done 21:05. bt_na / bt_eu / bt_fr / bt_de: 564 runs each, 0 crashes / sanitizer reports /
+timeouts. `work/bcmp.py q/bt_na q/bt_RG` (outputs scratchpad/regions/bcmp/{eu,fr,de}.txt):
+197 same, 367 differ for every release, but the sweeps are not like for like:
+- **Stage choice differs (sweep tool, not the port).** battle_sweep.py picks a stage per
+  encounter from the field program's group lists: NA 374 `random`, 130 `default`, 60
+  `scripted`; EU / FR / DE 0 `random`, 504 `default` (stage 3), 60 `scripted`, so it finds no
+  group lists in the PAL field program (presumably read at NA offsets). 365 encounters ran on
+  other stages than NA's; their traces part at line 0 (the stage's party start positions).
+  Not comparable until rerun on NA's stages.
+- **Same stage (199 encounters):** 197 byte-identical traces and endings in all three
+  releases. **2 differ, identically in EU, FR and DE:** enc466 (Soulmaster x3 + Dreamshade x2;
+  first diff at trace line 336, battle frame 672: draws 3534 vs NA 3529) and enc478 (Soulmaster
+  x4; line 305, frame 610: draws 3067 vs 3062; then defeat 1644 vs NA's cap). Positions and HP
+  equal at that line: the PAL runs draw 5 more random numbers in one frame. Open: the release's
+  own data (acceptable) or a port read of an NA table (blocks the release).
+Next: (1) root-cause the Soulmaster draws (SS_TALK_TRACE / rng trace around frame 610 of
+enc478, NA vs EU; rmap/peek.py on the reads in that frame); (2) rerun the PAL sweeps on NA's
+stages for the 365 encounters (fix the sweep's PAL group-list read, or pass NA's stage per
+encounter), then bcmp again; (3) battle logs (q/bt_*/logs) kept until then.

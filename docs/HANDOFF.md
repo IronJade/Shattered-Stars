@@ -43,19 +43,24 @@ this file is the quick orientation.
 
    `.claude/scheduled_tasks.lock` is excluded locally (`.git/info/exclude`), so the checkpoint
    doesn't pick it up.
-2. **Permission mode:** the user runs "Auto" mode (17:25). In "ask" mode background agents can't
-   show prompts, so their requests are refused and they stop. When an agent reports a refusal,
-   bring it straight to the user, then pass their decision back to the agent (SendMessage).
+2. **Permission mode:** from 20:50 the user runs "Edit automatically" with prompts (Auto
+   mode off). Background agents can't show prompts, so a command that needs approval is refused
+   and the agent stops. A refusal once went unreported and killed a run: every agent prompt must
+   say "on a refusal, stop at once and report the exact command", and the coordinator brings
+   each refusal to the user straight away (or runs that step in the main session, where the user
+   sees the prompt), then passes the decision back to the agent (SendMessage).
 3. **El voyage gate:** implemented and tested (`docs/handoff/elgate.md`, 18:12 entry); the
    user chose the 6-pass gate (18:45). Left at 18:50: the late + teleporter proofs with the gate
    build (`scratchpad/elgate/proofs/`, `all.done` when finished), their comparison with
    `docs/ap/late_proof.json`, and apworld.md's Testing section. If the elgate agent is gone,
    finish those from its log.
-4. **Regions verification:** the regions-verify agent (opus, started 18:42) compares the FR/DE
-   event sweeps and the battle sweeps (queue PID 1279484, `scratchpad/regions/q/queue.log`,
-   ending about 19:45) with NA, checks the French battle result screen and the German Scan
-   window in Redux, runs ap_e2e_so2.sh on French, and writes the final readiness verdict in
-   `docs/handoff/regions.md`. If it is gone, resume from that log.
+4. **Regions verification** (`docs/handoff/regions.md`): event sweeps, Redux checks (French
+   battle result, German Scan) and the French e2e are done and clean (regions-verify, 20:58).
+   The battle comparison (21:10) has 197 of 199 same-stage encounters identical in EU / FR / DE,
+   with two open items blocking the release: **soulmaster** (opus, `docs/handoff/soulmaster.md`)
+   root-causes the +5 rng draws in enc466 / enc478 on PAL; **stagerun** (sonnet) makes
+   battle_sweep.py pick NA's stages on PAL and reruns the other 365 encounters (q/bt2_*). Then
+   the proof-tool fix (queued in scratchpad/agents.txt; not a release blocker).
 5. **Then 0.02.00:**
    - resolve the release notes' TO CONFIRM items;
    - bump the version to 0.02.00 (engine/CMakeLists.txt) and update the README badge and file

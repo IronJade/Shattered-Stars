@@ -413,7 +413,7 @@ battle_ovl1984_1,0x80085340,clash_opposed_mask,u16[12],Element bit -> opposed el
 battle_ovl1984_1,0x80085358,element_opposed,u8[12],Element -> opposed element {3 2 1 0 6 9 4 8 7 5},confirmed,spell_clash_check
 battle_ovl1984_1,0x80085364,element_allied,u8[10][2],Element -> two allied elements,confirmed,spell_clash_check
 battle_ovl1984_1,0x8008536c,item_effect_jump_table,void *[98],item_use_battle switch (kinds 1-0x62),confirmed,data dump
-battle_ovl1984_1,0x80085504,skill_no_clash,u8[7],Skill ids that never clash {3 0x26 0x13 0x14 0x24 0x25 0x19},confirmed,spell_clash_check
+battle_ovl1984_1,0x80085504,skill_no_clash,u8[7],"Skill ids that never clash {3 0x26 0x13 0x14 0x24 0x25 0x19} PAL releases: u8[9], NA's 7 then 0x41 0x42 (The Scream / Judgement Day), read 9 by their spell_clash_check; the word at 0x80085508 has a pad byte that differs (NA 0x10), so the region map takes the table by position (tools/region_map.py TABLES)",confirmed,spell_clash_check
 battle_ovl1984_1,0x8008550c,g_item_iter,u8,Target iterator for item_next_party_target / item_next_enemy_target (0xff = before the first),confirmed,item_use_battle
 battle_ovl1984_1,0x80085510,g_item_user,Unit *,Unit using the item,confirmed,item_use_battle
 battle_ovl1984_1,0x80085514,g_item_target,Unit *,Current item target (changed by the iterators),confirmed,item_use_battle

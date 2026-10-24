@@ -171,6 +171,7 @@ READ_EXTENTS = {
     ("title", 0x8004E274): (8, "title_screen menu_rect: one 8-byte rect per read"),
     ("title", 0x80063198): (40, "roll_talents: 10 entries of u16 bit + u16 chance"),
     ("battle", 0x8008519C): (2, "party.cpp battle_s16 (0x80085198 + idx * 2)"),
+    ("battle", 0x800851AA): (2, "party.cpp battle_s16: Claude's last killer-move entry (0x80085198 + idx * 2, idx < 10)"),
 }
 
 # Step 3c: tables the port indexes by position, including entries NA never reads (a French or
@@ -187,6 +188,12 @@ TABLES = {
     # NA's table ends at 0xe0 (variables follow, at +0x100 in France / Germany, whose table is
     # 0x100 long: the port reads it from its start in the release's layout, window.cpp).
     "battle": [(0x8006E7C0, 0xE0, "battle text_from_ascii: the ASCII table, by character")],
+    # skill_no_clash, u8[7] (spells.cpp spell_clash_check): NA's 7 spells are the PAL table's first
+    # 7 (the PAL code checks 9: it adds 0x41 / 0x42; NA's logic is ported, so the port reads 7).
+    # The word holding entries 5-7 also holds a pad byte that differs (NA 0x10, PAL 0x41: the
+    # PAL table's 8th entry), so the word diff left it unmapped and the port read 0 there,
+    # letting Extinction / Daemon's Gate / Earthquake clash on PAL.
+    "7c0.1": [(0x80085504, 7, "spell_clash_check: the spells that never clash, by position")],
     "bce": [(0x80082B70, 0x28, "rename page column map (menu_rename.cpp)"),
             (0x80082B78, 0x100, "rename page text_from_ascii: the ASCII table, by character")],
 }

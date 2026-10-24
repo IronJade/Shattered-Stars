@@ -290,6 +290,19 @@ void check_release_images(const char* env, region::Id release) {
     CHECK(runtime::boot_exe_open(*na.disc));
     for (u32 i = 0; i < na_table.size(); ++i) na_table[i] = *runtime::boot_exe_data(0x8002BC34 + i);
     CHECK(eu_table == na_table);
+    // #1984 block 1's skill_no_clash (0x80085504, u8[7], spells.cpp spell_clash_check): NA's
+    // 7 spells read the same through the map (the PAL table is 9 long; the word holding
+    // entries 5-7 has a pad byte that differs, which left them unmapped once).
+    std::vector<u8> na_b1 = unpack(na.archive, 1984, 1), rg_b1 = unpack(d.archive, 1984, 1);
+    region::select(release);
+    const region::ImageMap* m1 = region::entry_map(1984, 1);
+    CHECK(m1 != nullptr && region::prepare(m1, rg_b1));
+    for (u32 a = 0x80085504; a < 0x8008550B; ++a) {
+      const u8* n = region::image_byte(nullptr, na_b1, 0x80081728, a, nullptr);
+      const u8* r = region::image_byte(m1, rg_b1, 0x80081728, a, nullptr);
+      CHECK(n != nullptr && r != nullptr && *n == *r);
+    }
+    region::select(region::Id::kNorthAmerica);
   }
 }
 

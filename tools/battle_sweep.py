@@ -29,6 +29,17 @@ The stage comes from the field data:
   the group -> stage pairs of docs/notes/encounter_maps.md);
 - else stage 3.
 
+On a PAL disc the field program is relinked (tools/region_map.py: every program loads
+0x1b0 higher, and each image shifts in steps wherever a function or table changed size), so
+the group table and its s16 lists sit at other offsets than on NA. `random_groups` reads the
+disc's boot serial to find its region (tools/region_map.SERIALS) and, for Europe / France /
+Germany, translates every address it reads through that region's field segments
+(engine/data/regions/<region>.inc kfield_seg, the same facts region.cpp's `translate` /
+`to_na_address` use) instead of NA's raw offsets, so a PAL sweep picks the same stage per
+encounter as NA's. The field image's FNV-1a 64 is checked against the .inc's recorded hash
+first (a mismatch means the .inc is stale for this disc and the sweep falls back to no
+random groups, same as a disc it can't read at all). NA itself is never translated.
+
 `--stages LO-HI` instead runs one encounter (`--stage-encounter`, default 1) on every stage
 in the range, which finds stage-only gaps (stage code blocks, stage ops, the stage-8
 lightning).
@@ -42,6 +53,7 @@ SS_MEM_CAP_GB, default 4 GB); one that dies there is reported as a "memory cap" 
 """
 
 import argparse
+import bisect
 import collections
 import concurrent.futures
 import csv
@@ -57,6 +69,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from memcap import hit_cap, run_capped  # noqa: E402
+import region_map as regionmap  # noqa: E402
 
 OUTCOMES = {0: "victory", 1: "escaped", 2: "defeat", 3: "ran off", 4: "time up"}
 # The fourth member, by encounter: the characters other than Claude, Rena and Celine.
@@ -101,24 +114,124 @@ def random_group_stages():
     return stages
 
 
+def fnv1a64(data):
+    """region.cpp fnv1a64(): the field image's identity, to catch a stale .inc."""
+    h = 0xCBF29CE484222325
+    for b in data:
+        h = ((h ^ b) * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return h
+
+
+_FIELD_MAP_CACHE = {}
+
+
+def field_segment_map(region):
+    """(na_base, rg_base, na_size, rg_size, rg_fnv, segs) of the field image from
+    engine/data/regions/<region>.inc (segs: [(na_off, size, delta)], region.cpp Segment)."""
+    if region in _FIELD_MAP_CACHE:
+        return _FIELD_MAP_CACHE[region]
+    path = os.path.join(ROOT, "engine", "data", "regions", f"{region}.inc")
+    text = open(path, encoding="utf-8").read()
+    m = re.search(r"constexpr Segment kfield_seg\[\] = \{(.*?)\n\};", text, re.S)
+    if not m:
+        raise ValueError(f"{path}: no kfield_seg[] (stage fix needs the field image's map)")
+    segs = [(int(a, 16), int(b, 16), int(c)) for a, b, c in
+            re.findall(r"\{\s*(0x[0-9a-fA-F]+)\s*,\s*(0x[0-9a-fA-F]+)\s*,\s*(-?\d+)\s*\}", m.group(1))]
+    m2 = re.search(
+        r"\{ImageKind::kEntry,\s*3100,\s*0,\s*(0x[0-9a-fA-F]+)u,\s*(0x[0-9a-fA-F]+)u,\s*"
+        r"(0x[0-9a-fA-F]+)u,\s*(0x[0-9a-fA-F]+)u,\s*0x[0-9a-fA-F]+ull,\s*(0x[0-9a-fA-F]+)ull,", text)
+    if not m2:
+        raise ValueError(f"{path}: no field entry in kImages[] (stage fix needs its load bases / hash)")
+    na_base, rg_base, na_size, rg_size, rg_fnv = (int(x, 16) for x in m2.groups())
+    out = (na_base, rg_base, na_size, rg_size, rg_fnv, segs)
+    _FIELD_MAP_CACHE[region] = out
+    return out
+
+
+def translate_off(segs, na_off):
+    """region.cpp translate(): NA byte offset -> this image's byte offset, or None."""
+    starts = [s[0] for s in segs]
+    i = bisect.bisect_right(starts, na_off) - 1
+    if i < 0:
+        return None
+    off, size, delta = segs[i]
+    if na_off - off >= size:
+        return None
+    return na_off + delta
+
+
+def to_na_off(segs, region_off):
+    """region.cpp to_na_address(): this image's byte offset of a pointer's target -> its NA
+    byte offset, or None. Segments' region-side starts rise with their NA ones (region.cpp)."""
+    starts = [s[0] + s[2] for s in segs]
+    i = bisect.bisect_right(starts, region_off) - 1
+    if i < 0:
+        return None
+    off, size, delta = segs[i]
+    if region_off - (off + delta) >= size:
+        return None
+    return region_off - delta
+
+
+def region_key_of(disc):
+    """The disc's region key ('eu' / 'fr' / 'de'), or None (NA, or not one of those)."""
+    region, _disc_no = regionmap.SERIALS.get(regionmap.boot_name(disc), (None, 0))
+    return region if region in ("eu", "fr", "de") else None
+
+
 def random_groups(disc_path):
-    """{group: [encounters]} from the field program's 0-terminated s16 lists."""
+    """{group: [encounters]} from the field program's 0-terminated s16 lists.
+
+    On NA these are read at their raw NA offsets, as the field program loads them. A PAL
+    disc's field program is relinked (region_key_of / field_segment_map, the module
+    docstring): every address here is translated through the region's field segments first,
+    so the group table and the lists it points to (self-pointers into the same image, kept
+    as region addresses on disc until the port's region::prepare rewrites them at load) read
+    the same groups as NA.
+    """
     import struct
     import so2_mod
     from so2_archive import unpack_block
     disc = so2_mod.Disc(disc_path)
     img = bytes(unpack_block(disc.entry(FIELD_PROGRAM), 0))
 
+    segs = rg_base = None
+    region = region_key_of(disc)
+    if region:
+        na_base, rg_base, na_size, rg_size, rg_fnv, segs = field_segment_map(region)
+        if len(img) != rg_size or fnv1a64(img) != rg_fnv:
+            raise ValueError(f"{region}.inc's field map doesn't match this disc's field program "
+                              f"(size {len(img)} vs {rg_size}): stale .inc or wrong disc")
+
+    def off(a):
+        na_off = a - FIELD_BASE
+        return na_off if segs is None else translate_off(segs, na_off)
+
     def r32(a):
-        return struct.unpack_from("<I", img, a - FIELD_BASE)[0]
+        o = off(a)
+        if o is None or not 0 <= o <= len(img) - 4:
+            return None
+        return struct.unpack_from("<I", img, o)[0]
 
     def r16(a):
-        return struct.unpack_from("<h", img, a - FIELD_BASE)[0]
+        o = off(a)
+        if o is None or not 0 <= o <= len(img) - 2:
+            return 0
+        return struct.unpack_from("<h", img, o)[0]
 
     groups = {}
     for g in range(1, 64):
-        p = r32(GROUP_TABLE + g * 4)
-        if not FIELD_BASE <= p < FIELD_BASE + len(img):
+        raw = r32(GROUP_TABLE + g * 4)
+        if raw is None:
+            break
+        if segs is None:
+            p = raw
+        else:
+            # raw is a region address (on-disc field self-pointers hold the region's own
+            # addresses until region::prepare patches them): convert to NA, like the port.
+            na_off2 = to_na_off(segs, raw - rg_base)
+            p = FIELD_BASE + na_off2 if na_off2 is not None else None
+        if p is None or not FIELD_BASE <= p < FIELD_BASE + len(img):
             break
         encs = []
         while r16(p) != 0 and len(encs) < 256:

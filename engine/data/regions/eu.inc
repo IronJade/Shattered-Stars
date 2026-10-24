@@ -3832,7 +3832,7 @@ constexpr Pointers k7c0_0_ptr[] = {
 constexpr Segment k7c0_1_seg[] = {
     {0x10c, 0x8, -268},  // equal 2
     {0x644, 0x35d4, -1596},  // same-size change 4, equal 3441
-    {0x3c30, 0x1b0, -1620},  // equal 108
+    {0x3c30, 0x1b4, -1620},  // equal 108, table by position 1
     {0x3de4, 0xc, -1616},  // equal 3
 };
 constexpr Pointers k7c0_1_ptr[] = {
