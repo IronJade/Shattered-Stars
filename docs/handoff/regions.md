@@ -382,12 +382,11 @@ VM-state changes, `evcmp2.py` = transfer destinations / big frame deltas, `pngsh
     monster): "GP 60/ 60", "MP 0/ 0", "Licht: Schwäche" with "Brille" under it, pixel for pixel
     the same window, text and ä. No port change needed.
 
-## 0.02.00 readiness (agent 6, 19:45; battle rows pending the queue)
+## 0.02.00 readiness (agent 6, 19:45; battle rows: coordinator, 22:55)
 
-Verdict: **releasable once the battle comparison is clean (pending; bt_de ends ~21:20, then
-"Remaining (coordinator runs these)" below).** Every
-other row is filled and passed; no port fault was found in the event sweeps, the Redux checks or
-the French e2e.
+Verdict (22:55): **releasable.** Every row is filled and passed. The battle comparison found
+one port fault, the never-clash spell list misread on PAL (docs/handoff/soulmaster.md), which is
+fixed; on the fixed build every encounter of every release matches NA.
 
 | | Europe | France | Germany |
 |---|---|---|---|
@@ -396,7 +395,7 @@ the French e2e.
 | Event sweep disc 1 vs NA (`evcmp/`) | 5162 same, 164 frames only, 0 other result | 4502 same, 818 frames only, 6 other + 2 only-FR: all explained | 4496 same, 820 frames only, 10 other + 2 only-DE: all explained |
 | Event sweep disc 2 vs NA | 5163 same, 163 frames only, 0 other | as disc 1 (4501 / 819 / 6 + 2) | as disc 1 (4495 / 821 / 10 + 2) |
 | Non-ok entries (both discs) | NA's set exactly | NA's minus 591-593 stuck, plus 266 K18 timeout (sweep heuristic) | NA's minus 591-593 stuck |
-| Battle sweep vs NA ([bunits] RNG / positions / HP) | pending | pending (spot: 4 / 4 same) | pending |
+| Battle sweep vs NA ([bunits] RNG / positions / HP), NA's stages | 564 / 564 identical | 564 / 564 identical | 564 / 564 identical |
 | Text | NA's | own system; opening 88 / 88 lines = Redux | own system; 84 / 84 lines = Redux |
 | Title keyboard, camp / Options pages = Redux | n/a | yes | yes |
 | Rename page = Redux | n/a | yes | yes |
@@ -559,3 +558,18 @@ Next: (1) root-cause the Soulmaster draws (SS_TALK_TRACE / rng trace around fram
 enc478, NA vs EU; rmap/peek.py on the reads in that frame); (2) rerun the PAL sweeps on NA's
 stages for the 365 encounters (fix the sweep's PAL group-list read, or pass NA's stage per
 encounter), then bcmp again; (3) battle logs (q/bt_*/logs) kept until then.
+
+## Battle comparison, final (coordinator, 22:55)
+After the soulmaster fix (never-clash list mapped by position; build engine/build-soulmaster,
+copy bin/ss_fix) and the sweep's PAL stage fix (tools/battle_sweep.py reads the PAL field
+program's group lists through the region map; stagerun agent), the 365 encounters that had run
+on other stages were rerun on ss_fix for EU, FR and DE (work/bf_all.sh -> q/bf_{eu,fr,de}; 365
+runs each, 0 crashes) and compared with q/bt_na (work/bf_cmp.py): **365 / 365 identical in all
+three, stage = NA's for every run.** The other 199: 197 byte-identical in q/bt_RG (the fix
+cannot change them: the PAL map now gives NA's bytes), and enc466 / enc478 identical on the
+fixed build (soulmaster's reruns). So 564 / 564 per release. bt2_* (old binary) and bt3_eu
+(cut off at 362, when the stagerun agent stopped) are superseded. Battle logs (q/bt_*, bt2_*,
+bt3_eu, bf_*: ~150 MB each) are kept until the release, then deleted.
+Known difference for the notes (by the NA-logic decision): PAL's own spell_clash_check checks 9
+never-clash spells (NA's 7 plus 0x41 The Scream and 0x42 Judgement Day); the port runs NA's 7, so
+those two item spells can clash on PAL in the port, unlike on a PAL console.

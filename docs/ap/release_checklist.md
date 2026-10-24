@@ -13,9 +13,9 @@ different schedules and Archipelago can only read one of them as a real version:
 
 | What | Value | Set in |
 |---|---|---|
-| The APWorld (`world_version`) | `0.1.0` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) |
+| The APWorld (`world_version`) | `0.1.1` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) |
 | Archipelago core this world targets (`minimum_ap_version`) | `0.6.8` | `apworld/so2/archipelago.json` |
-| The port's own release version | **`0.01.00`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.01.00)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
+| The port's own release version | **`0.02.00`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.02.00)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
 
 The port version is written `0.01.00`: two-digit minor and patch fields, chosen so either
 can go past 9 later without reordering (`0.01.00` -> `0.10.00` -> `0.99.00`, never `0.10.0`
