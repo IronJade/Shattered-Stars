@@ -508,13 +508,27 @@ Results (2026-10-23, 0.1.1 with the El voyage gate; docs/handoff/elgate.md):
   all 192; the 16 all-story seeds are byte-identical to the batch before the gate. Stranded keys
   the voyage's window needs (scratchpad/elgate/batch/elcount2.py): 0 (0.1.0's batch: an El pass
   off El, which the player could sail away from, in 110 of its 114 open-world slots).
-- `tools/ap_e2e_so2.sh`: 27 / 27. The port's engine suites: ss_tests 99, ss_game_tests 129
-  (ap_gate_door new), the field smoke script 86 PASS, none failing.
+- `tools/ap_e2e_so2.sh`: 27 / 27. The port's engine suites: ss_tests 99/0, ss_game_tests 129/0,
+  AP 26/0 (ap_gate_door new, in ss_game_tests), the field smoke script 86 PASS, none failing.
 - In the port (headless, scratchpad/elgate/demo/run.sh): at chapter 27 step 7000 the meeting
   room's trigger refuses without the passes (the banner names each, the story stays at chapter
   27, the leader keeps the controls), with five of six names only the last, and with all six
   the scenes store chapter 28 and sail (map 548, chapter 29); Central City's exit at chapter 37
   refuses without the Central City Pass and lets the party out at chapter 38 or with the pass.
+- The late and teleporter proofs, rerun with the gate build (scratchpad/elgate/proofs/,
+  compare.py against docs/ap/late_proof.json): the teleporter key is identical in both games
+  (proven, checks and maps). The late key's maps and edges are identical too, but 2 of the 278
+  checks the committed file proves are absent from this rerun's proven set in both games: the
+  Cave of Trials Level 1 (map 705) and Level 11 (map 807) boss checks (ids 1364328951,
+  1364328961; the cave's "10 / 13" bosses in the Results table above). The cause is the proof
+  driver's timing, not the gate (A/B, scratchpad/proofab/): replaying the two nodes with the
+  gate and the pre-gate binary, each on both routes the proofs took into the cave (via 702 or
+  709), gave no boss on map 705 in either swap and the boss on map 807 in both. Both maps settle
+  to the same state and entry list from either route. The driver kills a run after 6 reloads
+  (wall clock, polled every 0.5 s) and goes on after the last entry started, so under load a
+  boss entry that starts just before the kill is skipped before its fight ends; which
+  predecessor wins a node's route is also first-come with `--jobs` > 1.
+  docs/ap/late_proof.json is unchanged (two earlier runs prove both bosses).
 
 ## Changes
 

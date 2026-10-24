@@ -1,8 +1,10 @@
 # Handoff: the El voyage gate (Archipelago open world)
 
-Status (2026-10-23 18:10): **in progress, nearly done** (elgate agent, session 1; see "Done / in progress"). Earlier: two agents were stopped by permission refusals in
-"ask" mode, because background agents can't show approval prompts. Start a fresh agent from this
-brief, with the session in "Edit automatically" mode.
+Status (2026-10-23 19:30): **done** (elgate-finish agent). The 6-pass gate ships as built
+(user decision, 18:45 below); see "Done (19:30)" for the closing checks. Earlier: two agents
+were stopped by permission refusals in "ask" mode, because background agents can't show
+approval prompts. Start a fresh agent from this brief, with the session in "Edit automatically"
+mode.
 
 ## The hazard
 In open world (world_mode `open_world`), the El voyage (Port Hilton to map 548 at chapter 28
@@ -169,3 +171,39 @@ The 6-pass gate ships in 0.1.1: with the teleporter and expel_progression both o
 voyage waits for the three El passes and the North City, Noel's House and Red Crystal Passes.
 The alternatives (Nede passes as starting items; a port change opening the teleporter at
 chapter 38) were declined. No change to the implementation is needed.
+
+## Done (19:30, elgate-finish agent)
+- **Proof comparison** (scratchpad/elgate/proofs/, finished 19:12; compare.py against
+  docs/ap/late_proof.json): the `teleporter` key is identical in both games (proven, checks,
+  maps). The `late` key's maps and edges are identical in both games, but 2 of the 278 checks
+  the committed file proves are missing from this rerun's proven set, in both claude and rena:
+  Cave of Trials Level 1's boss (map 705, id 1364328951) and Level 11's boss (map 807, id
+  1364328961) — the cave's "10 / 13" bosses in apworld.md's Results table. Both maps are still
+  reached (in `maps`) and their reload-settle note is still "settle (reload)", not "killed",
+  just at a different retry count than the committed run (705@G1cf=1: x30 vs x72; 807@G1cf=11:
+  x34 vs x72) — a repeating floor unrelated to the voyage door or the teleporter stages, so
+  this reads as the proof's own reload-loop noise rather than an effect of the gate. Per the
+  brief, docs/ap/late_proof.json and apworld/ are untouched; this is reported, not fixed.
+- **docs/ap/apworld.md**: Testing section, "Results (0.1.1 with the El voyage gate)" — added
+  the proof-comparison bullet above and made the engine suites line explicit (ss_tests 99/0,
+  ss_game_tests 129/0, AP 26/0); the rest of that block (batch, e2e, smoke, demo, AP general
+  tests) was already filled in by session 1. The 0.1.1 changelog already states the 6-pass
+  rule (the "Fixed: the teleporter needs the Synard" entry); no change needed there.
+- **docs/release_notes/0.02.00.md**: Archipelago section's "teleporter needs the Synard" bullet
+  now names the Expel Teleporter and Expel Progression options and says they default on in open
+  world. The old "Open world: collect the El keys before sailing to El" TO CONFIRM bullet
+  (Known limitations) is replaced with the fixed behaviour (all 6 passes, the defaults they
+  depend on, the in-game message). The other TO CONFIRM markers (regions sweeps, battle
+  result / Scan, French e2e) are untouched, for another agent.
+- Nothing else was open. No build, no game or server run; everything needed had already run.
+
+## Proof gap explained (19:55, coordinator; proofab agent)
+The 2 missing late-proof checks (Cave of Trials L1 / L11 bosses) are the proof driver's
+timing, not the gate: an A/B (scratchpad/proofab/repro.py, which calls ap_late_proof.run_map)
+of gate vs pre-gate binary on both routes gave map 705 no boss in either swap and map 807 the
+boss in both. Mechanism: run_map kills a run once more than 6 "settle (reload)" lines have
+arrived (wall clock, 0.5 s poll), then resumes after max(started) + 1, so an entry that started
+just before the kill is skipped before its battle ends; routes are first-come with --jobs > 1
+(bfs / done). Tool fix queued for after the regions queue (per-entry reload budget: reset
+the counter at each entry start, or resume at the killed entry), then rerun the late proofs;
+not a release blocker (late_proof.json unchanged).

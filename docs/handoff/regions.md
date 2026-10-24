@@ -365,49 +365,69 @@ VM-state changes, `evcmp2.py` = transfer destinations / big frame deltas, `pngsh
   `scratchpad/regions/ap_e2e_so2_fr.out`, work dir `ap_e2e_so2_fr/`, both game runs under the cap:
   `memcap.txt`). Captures (`verify/e2e_fr_caps.png`): "Sent Map Width to Bob." and the banner in
   the French map font on map 18.
+- 19:38 **Item 5 done: French battle result screen and German Scan window = the originals.**
+  Port runs from new cards written by the port on world map 1 at a walkable spot (`--map-pos
+  51200,0,18500`: `runs/save6p_fr|de` with item 0x61, `runs/save6s_fr|de` with item 0x36; note
+  **item 0x61 is the Insanity Ring: the Scan item is 0x36 Spectacles / Brille**, effect 0x61);
+  port scripts `verify/pbt.sh`, originals `redux/run6.sh` + `redux/drive6.lua` (drive.lua plus
+  RX_PEEK / RX_POKEP), walk keys x5/6 (`redux/runs6/walk_pal.txt`).
+  - France (`verify/fr_result_pair.png`; port `runs/pbt_fr2/cap`, original `redux/runs6/fr_result`):
+    the same "Résultat / Points d'expérience / Fol" window (place, size, columns, the spinning
+    gem) and the same level-up window "Claude Possession : N Aug. / N point(s) d'aptitude
+    obtenu(s)." (France's word order: `result_prefix_order`). The numbers differ because the
+    fights differ (the port: encounter 6, 36 EXP / 60 Fol, 2 levels; the original, Claude's HP /
+    attack poked to win: 20 / 36, 1 level, so no number before "Aug.", the port's rule too).
+  - Germany (`verify/de_scan_cmp.png`; port `runs/pbt_de_s1` = debug `battle 1` from the card,
+    Brille from the item ring; original `redux/runs6/de_scan`, a random encounter with the same
+    monster): "GP 60/ 60", "MP 0/ 0", "Licht: Schwäche" with "Brille" under it, pixel for pixel
+    the same window, text and ä. No port change needed.
 
-## 0.02.00 readiness (agent 5, 16:32)
+## 0.02.00 readiness (agent 6, 19:45; battle rows pending the queue)
 
-Verdict: **not yet releasable; close.** Europe, France and Germany boot, play, save and load
-on one build with NA unchanged, but the disc 2 / France / Germany sweeps and the battle
-comparison are still running, and three Redux checks are open.
+Verdict: **releasable once the battle comparison is clean (pending, queue ends ~21:45).** Every
+other row is filled and passed; no port fault was found in the event sweeps, the Redux checks or
+the French e2e.
 
 | | Europe | France | Germany |
 |---|---|---|---|
 | Recognised, both discs, mixed pairs refused (setup) | yes | yes | yes |
 | Address maps: 6690 port reads, unmapped / suspicious / fatal | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
-| Event sweep disc 1 vs NA (same binary) | 5162 same, 164 frames only, 0 other result | queued | queued |
-| Event sweep disc 2 | done, NA's non-ok set; vs NA pending (ev_na_d2 queued) | queued | queued |
-| Battle sweep vs NA ([bunits] RNG / positions / HP) | queued | queued (spot: 4 / 4 same as the queue binary) | queued |
+| Event sweep disc 1 vs NA (`evcmp/`) | 5162 same, 164 frames only, 0 other result | 4502 same, 818 frames only, 6 other + 2 only-FR: all explained | 4496 same, 820 frames only, 10 other + 2 only-DE: all explained |
+| Event sweep disc 2 vs NA | 5163 same, 163 frames only, 0 other | as disc 1 (4501 / 819 / 6 + 2) | as disc 1 (4495 / 821 / 10 + 2) |
+| Non-ok entries (both discs) | NA's set exactly | NA's minus 591-593 stuck, plus 266 K18 timeout (sweep heuristic) | NA's minus 591-593 stuck |
+| Battle sweep vs NA ([bunits] RNG / positions / HP) | pending | pending (spot: 4 / 4 same) | pending |
 | Text | NA's | own system; opening 88 / 88 lines = Redux | own system; 84 / 84 lines = Redux |
 | Title keyboard, camp / Options pages = Redux | n/a | yes | yes |
 | Rename page = Redux | n/a | yes | yes |
-| Battle result screen / Scan window = Redux | n/a | open | open |
+| Battle result screen = Redux | n/a | yes (`verify/fr_result_pair.png`) | not compared (the French check covers the window code) |
+| Scan window = Redux | n/a | not compared (the German check covers it) | yes (`verify/de_scan_cmp.png`) |
 | Saves: written by the port load in the original | yes (Redux) | yes | yes |
 | Saves: written by the original load in the port | (same format) | yes (Redux-written save) | (same format) |
-| Archipelago | e2e_so2 27 / 27 | ap_e2e 23 / 23; e2e_so2 open | (FR covers the text path) |
+| Archipelago | e2e_so2 27 / 27 | ap_e2e 23 / 23; **e2e_so2 27 / 27** (`ap_e2e_so2_fr.out`, El voyage gate build) | (FR covers the text path) |
 | Mods (`mod_verify`, both samples) | PASS | (same maps as EU) | (same maps as EU) |
 | Smoke (converted card) | 85 / 86 (hearn_talk: EU text offset, expected) | - | - |
+
+Event sweep differences explained (agent 6 entry above): the sweep's choice heuristic meets
+France / Germany's longer option text one press later and takes the other answer (591-594 T9,
+598 T12 / 605, 588 T0, 266 K18 laps, frames-only outliers 123 / 190 / 442 / 584); maps 0 / 826
+K19 / K60 are each release's own developer text test (Germany's ends on map 282). Not port
+faults; the scripts are NA's logic there.
 
 Known differences (by decision or the release's own data): NA game logic at 60 Hz on every
 release (the PAL 6/5 scaling and the projectile-clash removal are not ported); each release's
 own text, staff cards, rumble lengths, save product code, save magic and icon flag; the
 credits' 50 Hz cue waits converted to 60 Hz.
 
-Suites on the final build (`engine/build-regions`, copy `bin/ss_t5c`; t5c 16:29): ss_tests
-99/0, ss_game_tests 128/0, smoke 86/0, ref_regress quick 28/28.
+Suites: agent 5's final build (t5c 16:29): ss_tests 99/0, ss_game_tests 128/0, smoke 86/0,
+ref_regress quick 28/28. Agent 6 changed no engine code (only the working tree's El voyage
+gate changes, the elgate agent's, are in `bin/ss_v1`).
 
-**Agent 5 ended 16:33 (context budget). Still running:** the sweep queue
-`scratchpad/regions/q/queue.sh` PID 1279484 (binary `bin/ss_q`; ev_na_d2 started 16:18, then
-ev_fr_d1 ... bt_de; rerun it to resume, finished steps are skipped). Not ours (both ended by 16:33): the
-`tools/ap_late_proof.py` runs (PIDs 1297126, 1297127); another agent's `ap_e2e_so2.sh` may still run. The
-queue's binary predates the save fixes (they change no sweep result: sweeps run without a card).
+Still running: the sweep queue `scratchpad/regions/q/queue.sh` PID 1279484 (binary `bin/ss_q`):
+bt_na done 19:22 (564 runs: cap 155, defeat 82, victory 327, 0 crashes), bt_eu from 19:22, then
+bt_fr, bt_de (~47 min each, "queue done" ~21:45). Do not start, restart or kill it.
 
-Not done: French battle result screen and German Scan window against Redux (item 5, plan
-above); `ap_e2e_so2.sh` on France (item 6); the rest of the queue and its comparisons (items
-2-3: `work/evcmp.py q/ev_na_dN q/ev_RG_dN`, `work/bcmp.py q/bt_na q/bt_RG`, then delete the
-battle logs); README / wiki "Discs" and the 0.02.00 release notes; optional NA-save import in
-setup (product code, magic, icon flag and both checksums, as `card_region.py`).
+Not done: battle comparisons (`work/bcmp.py q/bt_na q/bt_RG` for eu / fr / de, explain every
+difference, then delete `q/bt_*/logs`); README / wiki "Discs"; optional NA-save import in setup.
 
 ## Next steps
 
