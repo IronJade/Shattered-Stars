@@ -279,3 +279,24 @@ draft is explicitly published. The four files above should be rebuilt fresh in t
 tree's own `dist/` immediately before running this (section 4's standing advice: source moves
 fast here, re-verify before actually publishing), rather than reusing this pass's
 `scratchpad/rc-0.01.00-dist/` copies, which exist only for this review.
+
+## 8. Release candidate 0.02.00: verification run (2026-10-23)
+
+Built from commit `47dbc37` in a disposable worktree by `scratchpad/rc-0.02.00.sh` (the
+section 7 procedure as one script: worktree, builds, checks, sums, worktree removed; log and
+results in `scratchpad/rc-0.02.00-dist/`). Nothing was tagged, released or pushed by this run.
+
+| Check | Result |
+|---|---|
+| `tools/build_linux.sh --container` | exit 0. `ShatteredStars-0.02.00-linux-x86_64.tar.gz`, 8.5M. glibc floor `2.36`. |
+| `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` set) | exit 0. `ShatteredStars-0.02.00-win64.zip`, 6.9M. |
+| `tools/build_apworld.sh` (fresh Archipelago copy without `worlds/so2`, so it packaged the worktree's `apworld/so2`) | exit 0. `so2.apworld` (80K), `Star Ocean The Second Story.yaml`. |
+| Linux `--version` (game and setup, scratch `XDG_CONFIG_HOME`) | `Shattered Stars 0.02.00`, exit 0, no `config.ini` written. |
+| Linux smoke on the packaged binary | from the worktree: 73 PASS / 0 FAIL / 1 SKIP (the git-ignored local fixtures are absent, as for 0.01.00); from the main tree with its fixtures: **86 PASS / 0 FAIL / 0 SKIP**, the same as the development build. |
+| Windows under Wine (scratch prefix, headless, 4 GB scope) | `shattered-stars.exe --version` prints `Shattered Stars 0.02.00`, exit 0; a 300-vblank headless boot onto Arlia (map 18) registers its triggers (code words 491, 497, 478, ...) and stops after 300 vblanks, exit 0. |
+| `.apworld` in a clean Archipelago (`custom_worlds`, no `worlds/so2`) | loads, `world_version` 0.1.1, no failed world loads; one seed from the built template (`Generate.py --seed 90200`): exit 0, `AP_<seed>.zip`, no traceback. |
+| SHA-256 | in `docs/release_notes/0.02.00.md` and `scratchpad/rc-0.02.00-dist/SHA256SUMS`. |
+
+The game's own verification for 0.02.00 (sweeps, Redux checks, Archipelago proofs and
+end-to-end runs) is in docs/handoff/regions.md ("0.02.00 readiness"), docs/handoff/soulmaster.md
+and docs/handoff/elgate.md.

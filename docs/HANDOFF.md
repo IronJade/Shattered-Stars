@@ -5,7 +5,7 @@ title, starts a New Game or Continues a save, and plays the whole game: field ma
 map, battles, both discs and every ending. `docs/CHECKLIST.md` has the item-by-item state;
 this file is the quick orientation.
 
-## State (2026-10-23, 18:50)
+## State (2026-10-23, 23:05)
 
 - **Released:** v0.01.00 (North American discs), https://github.com/IronJade/Shattered-Stars/releases/tag/v0.01.00.
   The README, the screenshots (docs/images), the wiki (35 pages, including the modder reference),
@@ -54,21 +54,19 @@ this file is the quick orientation.
    build (`scratchpad/elgate/proofs/`, `all.done` when finished), their comparison with
    `docs/ap/late_proof.json`, and apworld.md's Testing section. If the elgate agent is gone,
    finish those from its log.
-4. **Regions verification** (`docs/handoff/regions.md`): event sweeps, Redux checks (French
-   battle result, German Scan) and the French e2e are done and clean (regions-verify, 20:58).
-   The battle comparison (21:10) has 197 of 199 same-stage encounters identical in EU / FR / DE,
-   with two open items blocking the release: **soulmaster** (opus, `docs/handoff/soulmaster.md`)
-   root-causes the +5 rng draws in enc466 / enc478 on PAL; **stagerun** (sonnet) makes
-   battle_sweep.py pick NA's stages on PAL and reruns the other 365 encounters (q/bt2_*). Then
-   the proof-tool fix (queued in scratchpad/agents.txt; not a release blocker).
-5. **Then 0.02.00:**
-   - resolve the release notes' TO CONFIRM items;
-   - bump the version to 0.02.00 (engine/CMakeLists.txt) and update the README badge and file
-     names;
-   - build the release candidate from a clean worktree as for 0.01.00 (docs/ap/release_checklist.md
-     section 7);
-   - get the user's go-ahead, then push main, create the draft release, verify, publish, and push
-     the wiki.
+4. **Regions verification: done (22:55), releasable** (`docs/handoff/regions.md`, readiness
+   section and "Battle comparison, final"): event sweeps explained, Redux checks match, French
+   e2e 27/27, battles 564/564 identical to NA per release on the fixed build. The one port fault
+   found (PAL never-clash spell list misread, `docs/handoff/soulmaster.md`) is fixed.
+5. **0.02.00 release:** release notes settled (no TO CONFIRM left; only the SHA-256 sums), version
+   0.02.00 committed (47dbc37). The release candidate is built and checked from a clean worktree
+   at 47dbc37 by `scratchpad/rc-0.02.00.sh` (results `scratchpad/rc-0.02.00-dist/summary.txt`,
+   log `rc.log`). Then: fill in the SHA-256 sums from its SHA256SUMS, remove the DRAFT note,
+   commit; **get the user's go-ahead**; push main, `gh release create v0.02.00 ... --draft`
+   (docs/ap/release_checklist.md section 7's command, with the 0.02.00 names and rebuilt files),
+   verify, publish, and push the wiki (scratchpad/wiki, 3dc5c04).
+6. **After the release:** the late-proof tool fix (scratchpad/agents.txt, queued); delete the
+   battle logs (scratchpad/regions/q/{bt,bt2,bt3,bf}_*/logs).
 
 ## What works (verified against PCSX-Redux where marked)
 
