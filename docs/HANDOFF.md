@@ -5,27 +5,19 @@ title, starts a New Game or Continues a save, and plays the whole game: field ma
 map, battles, both discs and every ending. `docs/CHECKLIST.md` has the item-by-item state;
 this file is the quick orientation.
 
-## State (2026-10-23, 23:05)
+## State (2026-10-23, 23:15)
 
-- **Released:** v0.01.00 (North American discs), https://github.com/IronJade/Shattered-Stars/releases/tag/v0.01.00.
-  The README, the screenshots (docs/images), the wiki (35 pages, including the modder reference),
-  the mod manager and the curated mods/ list are public.
+- **Released:** v0.02.00 (2026-10-23 23:13; North American, European, French and German discs,
+  so2.apworld 0.1.1), https://github.com/IronJade/Shattered-Stars/releases/tag/v0.02.00, tag on
+  fd687ad; notes `docs/release_notes/0.02.00.md`, RC run `docs/ap/release_checklist.md` section 8.
+  The wiki's 0.02.00 pages are pushed (150080d). v0.01.00 (NA only) before it.
 - **The game:** M7 and M8 are done. Every map, battle and ending is verified, and the late save
   matches PCSX-Redux. The catalog has 5452 of 5452 functions confirmed.
-- **0.02.00 (Europe, France, Germany) in progress:**
-  - **Regions:** all three play on one build, with region profiles running the NA logic at
-    60 Hz on their own text and data. The FR/DE text system is done (287/287 dialogue lines
-    exact against Redux). Saves are native per release; all four originals load the port's
-    saves. Europe's disc 1 and disc 2 sweeps match NA. See `docs/handoff/regions.md`, which ends
-    with a readiness section.
-  - **Archipelago:** `so2.apworld` 0.1.1 fixes two open-world ship landings and is fully proven
-    (`docs/handoff/apareas.md`). It ships with 0.02.00, by the user's decision. It also gets
-    the El voyage gate (`docs/handoff/elgate.md`): in open world, the ship to El waits for the
-    El passes, plus the three Energy Nede passes when the teleporter and expel_progression are
-    both on (the user's decision, 18:45: the 6-pass gate as built).
-  - **Docs:** the 0.02.00 README update is committed. The wiki changes are committed in
-    scratchpad/wiki (3dc5c04) but **not pushed**; push them at release. The release-notes draft
-    is `docs/release_notes/0.02.00.md`.
+- **Regions:** Europe, France and Germany play on NA's logic at 60 Hz with their own text and
+  data; battles 564/564 identical to NA per release, event sweeps explained, Redux checks match
+  (`docs/handoff/regions.md`, `soulmaster.md`). Japan is recognised, not supported yet.
+- **Archipelago:** so2.apworld 0.1.1 (open-world ship landings, the El voyage gate,
+  `docs/handoff/apareas.md`, `elgate.md`). Open: the upstream Archipelago PR (the user's call).
 
 ### Resume here (a fresh session)
 1. **Recreate the hourly checkpoint cron** (CronCreate, `13 * * * *`). Its prompt:
@@ -58,15 +50,10 @@ this file is the quick orientation.
    section and "Battle comparison, final"): event sweeps explained, Redux checks match, French
    e2e 27/27, battles 564/564 identical to NA per release on the fixed build. The one port fault
    found (PAL never-clash spell list misread, `docs/handoff/soulmaster.md`) is fixed.
-5. **0.02.00 release:** release notes settled (no TO CONFIRM left; only the SHA-256 sums), version
-   0.02.00 committed (47dbc37). The release candidate is built and checked from a clean worktree
-   at 47dbc37 by `scratchpad/rc-0.02.00.sh` (results `scratchpad/rc-0.02.00-dist/summary.txt`,
-   log `rc.log`). Then: fill in the SHA-256 sums from its SHA256SUMS, remove the DRAFT note,
-   commit; **get the user's go-ahead**; push main, `gh release create v0.02.00 ... --draft`
-   (docs/ap/release_checklist.md section 7's command, with the 0.02.00 names and rebuilt files),
-   verify, publish, and push the wiki (scratchpad/wiki, 3dc5c04).
-6. **After the release:** the late-proof tool fix (scratchpad/agents.txt, queued); delete the
-   battle logs (scratchpad/regions/q/{bt,bt2,bt3,bf}_*/logs).
+5. **0.02.00 released** (23:13). Open, none blocking: the late-proof tool fix
+   (scratchpad/agents.txt, queued: per-entry reload budget in tools/ap_late_proof.py, then rerun
+   the late proofs, expecting 278); delete the battle logs (scratchpad/regions/q/{bt,bt2,bt3,bf}_*/logs,
+   ~1.5 GB); Japan; the optional NA-save import in setup; the upstream Archipelago PR.
 
 ## What works (verified against PCSX-Redux where marked)
 
