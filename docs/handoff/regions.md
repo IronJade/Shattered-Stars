@@ -317,6 +317,55 @@ Agent 5 progress:
   0 / 826 hang, 58 / 139 gone, 591-593 stuck); the queue goes on with ev_na_d2, ev_fr_d1,
   ev_de_d1, ev_fr_d2, ev_de_d2, then bt_na, bt_eu, bt_fr, bt_de (hours).
 
+### Agent 6 (`regions-verify`, from 18:40): last checks before 0.02.00
+
+Rules as at the top (headless, memcap, -j4, 3 game processes + 2 Redux of our own, no commits;
+`checkpoint_notes.txt` prefix "regions-verify: "). Binary from the working tree incl. the El voyage
+gate changes: `bin/ss_v1` (built 18:43, `engine/build-regions`). Scratch: `scratchpad/regions/verify/`
+(`evrun.sh` = one map in sweep mode with screenshots + `SS_EVENT_SWEEP_WATCH`, `trace.py` =
+VM-state changes, `evcmp2.py` = transfer destinations / big frame deltas, `pngsheet.py`).
+
+- 19:05 **Event sweep comparisons done** (`scratchpad/regions/evcmp/{eu_d2,fr_d1,fr_d2,de_d1,de_d2}.txt`
+  and `*_2.txt`; queue binary `bin/ss_q`, same for every release):
+
+  | vs NA | same | same result, other frames | other result | only in release |
+  |---|---|---|---|---|
+  | EU d2 | 5163 | 163 | 0 | 0 |
+  | FR d1 / d2 | 4502 / 4501 | 818 / 819 | 6 / 6 | 2 / 2 |
+  | DE d1 / d2 | 4496 / 4495 | 820 / 821 | 10 / 10 | 2 / 2 |
+
+  Non-ok sets: EU = NA's exactly (0 / 826 K21 hang, 58 K19 / S19 + 139 K40 gone, 591-593 T9
+  stuck; the same on disc 1 and 2). FR: NA's minus 591-593 stuck, plus 266 K18 timeout. DE: NA's
+  minus 591-593 stuck. No transfer goes to another map than NA's where both transfer
+  (`evcmp2.py`). Every difference explained; **none is a port fault**:
+  1. **The sweep's choice heuristic** (event_sweep.cpp `schedule_input`: a choice gets Cross, but
+     every third press made while a choice waits is a cancel). France / Germany's option text has
+     more characters (591: NA "Touch it. / Don't" 26 bytes printed by frame 67, FR 31 characters
+     in 23 bytes by frame 73; the speed table 0x800751b8 is the same 2 / 60 / 16 / 8 / 4 in all
+     four releases), so a choice accepts input one press (6 frames) later and the sweep lands on
+     the other option. Scripts 266, 588, 591-594, 598, 605 are NA's logic (only window geometry /
+     text ids differ, `work/script_diff3.py`). Cases: 591-594 T9 (FR picks "Laisse tomber" instead
+     of touching the orb, so no NA M8 rotating-bridge stuck; 594 no transfer to 593); 605
+     (promontory: NA shouts for the echo and the scene returns to 598, so NA's new game on 605
+     "left the map" and FR / DE's has the 2 entries; 598 T12 = the same scene, ends on 605); DE
+     588 T0 (confirms the return to Energy Nede: map 2); FR 266 K18 (North City library
+     encyclopedia: every lap adds the same press count, so the cancel never falls on the topic
+     menu at ip 5108 and the laps repeat; the article "L'ère de paix" types out in full,
+     `verify/sheet_266.png`, lap trace `ev/fr266w`); and the frames-only outliers 123 K18,
+     190 K16, 442 K17, 584 K25 (choice at ip 4775 accepted at 21 frames vs NA's 15). Screens:
+     `verify/sheet_591.png`, `sheet_605.png`; traces `verify/ev/*w/run.log`.
+  2. **World script K19 / K60 (maps 0 / 826)**: the developers' text test (screen "So2 German
+     Revision 027 ... fontmaster.bin", France "So2 France Revision 052"), each release's own
+     sequence (EU / FR restructured too: 3644 / 3852 frames vs NA 11852); Germany's ends with a
+     transfer to map 282. Debug only, not reachable in play (`verify/sheet_k19.png`).
+  The 818-821 "other frames" entries of FR / DE are talk lengths (their own text): 421 within 10
+  frames, 347 within 60, 42 within 300, the rest are the cases above.
+- 19:25 **`ap_e2e_so2.sh` on France done: 27 PASS, 0 FAIL** (binary `bin/ss_v1` = working tree with
+  the El voyage gate changes; `AP_E2E_PORT=38295` so it can't meet another agent's server; output
+  `scratchpad/regions/ap_e2e_so2_fr.out`, work dir `ap_e2e_so2_fr/`, both game runs under the cap:
+  `memcap.txt`). Captures (`verify/e2e_fr_caps.png`): "Sent Map Width to Bob." and the banner in
+  the French map font on map 18.
+
 ## 0.02.00 readiness (agent 5, 16:32)
 
 Verdict: **not yet releasable; close.** Europe, France and Germany boot, play, save and load

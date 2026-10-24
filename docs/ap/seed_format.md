@@ -512,6 +512,9 @@ built. No port change is needed.
 | `offset` | the transfer instruction's byte offset in the script code |
 | `routine` | the byte offset of the routine's `frame` (doors.json's `routine`): what a trigger region starts |
 | `key` | open world: the key the door needs (0 / absent: none) |
+| `keys` | open world: keys the door needs, all of them (a one-way story point: the El voyage's trigger, 0.1.1) |
+| `until` | open world: a chapter; the keys are needed only while the story's chapter (G[0xa0]) is below it (an exit kept shut while the story is inside the area) |
+| `purpose` | the banner's ending for a missing key ("to sail": "Eluria Pass needed to sail"; left out when the text would not fit the banner, 236 pixels) |
 | `to` | entrance shuffle: `{map, x, y, z, dir}` sent there instead (`dir` optional) |
 
 - **Locked.** When a trigger region (field doors: thread_start regions; world-map entrances:
@@ -519,7 +522,18 @@ built. No port change is needed.
   does not start: nothing of it runs (the world map's music fade included), the leader keeps
   the controls, the banner says "Salva Pass needed", and the region fires again only after the
   leader has left it (the triggers' own last-trigger rule). A locked door reached another way
-  (a talk handler, a scene) skips the transfer instruction itself.
+  (a talk handler, a scene) skips the transfer instruction itself. A door with `keys` is locked
+  while any of them is missing, and the banner names each missing one in turn, with the door's
+  `purpose` ("El Beach Pass needed to sail"); a key's banner already waiting is not queued
+  again. Such a door must name its `routine`: the gate is the trigger (the El voyage's routine
+  stores chapter 28 before its transfer).
+- **The APWorld's gates (0.1.1).** After the 66 entrances, the seed lists the El voyage's
+  trigger in the Lacour Front Line's meeting room (`{"id": 29106503, "routine": "0x7c28",
+  "keys": [18, 19, 17], "name": "El voyage", "purpose": "to sail"}`; with the teleporter
+  and expel_progression on, also keys 29, 30 and 31) and two exits kept shut until a chapter:
+  Central City's (`{"id": 15407589, "routine": "0x670c", "keys": [28], "until": 38, ...,
+  "purpose": "to leave"}`) and Noel's House's (18160748, routine 0x7164, key 30, until 40).
+  A port before 0.02.00 reads only `key`, so it does not apply them.
 - **Checked as the map loads.** A seed door whose word is not a map transfer on that map's
   script is ignored and logged (`door D: map M offset X holds W, not a map transfer`), as a
   patch with the wrong EXPECTED is.

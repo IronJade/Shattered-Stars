@@ -15,13 +15,20 @@ stage_rules), and a location needs its area's key from the stage the story first
 area, plus the key of the harbour its ship lands at (Lacour, Hoffmann Ruins), or the
 teleporter's or the late proof's route keys. Our keys are needed before the
 Final Save Point, so a skipped Expel location must be reachable again after the disc switch:
-only the teleporter proof (chapter 38, through Fun City's arena; the rows' `tele`) says where,
+only the teleporter proof (chapter 38's flags, through Fun City's arena, which the party
+reaches once the Synard flies, data.TELEPORTER_STAGE; the rows' `tele`) says where,
 so Expel holds progression only there, except the Expel story's own keys, which the player
 must pick up before the switch anyway.
+
+Open world's one-way story points (data.STORY_GATES; docs/ap/apworld.md, "The El voyage"): the
+stage that ends with one needs the gate's keys (regions.py stage_rules), the port keeps it shut
+until the player holds them, and a location the story reaches before it (its early mode) holds
+progression only where the gate's proof reached it at the gate: the rest can close before the
+player is back, and whatever the gate's keys hang on must be in reach there.
 """
 from worlds.generic.Rules import add_item_rule
 
-from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES
+from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
 from .items import EVENT_FINAL_SAVE_POINT, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, KEY_NAME, stage_event
 from .locations import ROW
 from .regions import stage_rules
@@ -39,6 +46,8 @@ def in_expel(row):
     return row["region"] == "Expel" or (row["region"] == "Energy Nede" and not row.get("group_near")
                                         and WORLD_OF_GROUP.get(row.get("group")) == 1)
 FIENAL_STAGE = len(STAGES)      # Fienal's floors above the first visit's open in the last chapters
+# Per gate, per game: the locations its proof reached at the gate (data.STORY_GATES `proven`).
+GATE_PROVEN = [{game: frozenset(ids) for game, ids in gate["proven"].items()} for gate in STORY_GATES]
 
 
 def games_of(side):
@@ -54,6 +63,11 @@ def proven_late(row, side):
 def proven_teleporter(row, side):
     """Whether the teleporter proof (chapter 38, Fun City's arena to Arlia) reached it."""
     return all(g in row.get("tele", ()) for g in games_of(side))
+
+
+def proven_at_gate(row, side, k):
+    """Whether gate k's proof (data.STORY_GATES) reached the location at the gate."""
+    return all(row["id"] in GATE_PROVEN[k].get(g, ()) for g in games_of(side))
 
 
 def may_hold_progression(row, side, expel_progression=True):
@@ -73,6 +87,34 @@ def stage_of_chapter(ch):
     return 1 if ch < STAGES[0][1][0] else len(STAGES)
 
 
+def early_stage(row):
+    """Open world: the stage in which the story first reaches the location (its early mode:
+    the stage before it finished, plus the area's keys), or None (drops, story bosses, Energy
+    Nede rows behind an Expel entrance, the Cave of Trials, areas the story never enters)."""
+    kind, region, group = row["type"], row["region"], row.get("group")
+    if kind == "drop" or (kind == "boss" and row.get("boss") == "story"):
+        return None
+    stage = STAGE_OF_GROUP.get(group)
+    if region == "Energy Nede" and WORLD_OF_GROUP.get(group) == 1:
+        stage = None    # after the switch an Expel entrance is reached only through the teleporter
+    if region == "Fienal":
+        stage = FIENAL_STAGE
+    if not stage or region == "Cave of Trials":
+        return None
+    if row.get("from_chapter"):
+        stage = max(stage, stage_of_chapter(row["from_chapter"]))
+    return stage
+
+
+def closes_at_gate(row, side):
+    """Open world: whether the story reaches the location before a gate (data.STORY_GATES)
+    whose proof did not reach it there: it may close before the player is back, so it holds
+    no progression (story bosses aside: the story fights them)."""
+    stage = early_stage(row)
+    return stage is not None and any(stage <= gate["stage"] and not proven_at_gate(row, side, k)
+                                     for k, gate in enumerate(STORY_GATES))
+
+
 def open_world_access(row, side, teleporter):
     """Open world: (stage needed, keys needed) pairs, any of which reaches the location; the
     stage is "the stage before it is finished" (0: the start). Event names stand for stages
@@ -86,14 +128,8 @@ def open_world_access(row, side, teleporter):
         if row.get("on_world_map") or any(STAGE_OF_GROUP.get(g) for g in groups):
             return [(EVENT_FINAL_SAVE_POINT, ())]
         return [(EVENT_FINAL_SAVE_POINT, (KEY_NAME[g],)) for g in groups] or [(EVENT_FINAL_SAVE_POINT, ())]
-    stage = STAGE_OF_GROUP.get(group)
-    if region == "Energy Nede" and WORLD_OF_GROUP.get(group) == 1:
-        stage = None    # after the switch an Expel entrance is reached only through the teleporter
-    if region == "Fienal":
-        stage = FIENAL_STAGE
-    if stage and region != "Cave of Trials":
-        if row.get("from_chapter"):
-            stage = max(stage, stage_of_chapter(row["from_chapter"]))
+    stage = early_stage(row)
+    if stage:
         keys = (KEY_NAME[group],) + tuple(KEY_NAME[g] for g in LANDING_OF_GROUP.get(group, ())) if group else ()
         modes.append((stage_event(stage - 1) if stage > 1 else None, keys))
     if teleporter and in_expel(row) and proven_teleporter(row, side):
@@ -109,7 +145,7 @@ def open_world_progression(row, side, teleporter, expel_progression=True):
     """Open world: what a location may hold: "any", "expel keys" (non-progression or our
     Expel-story keys) or "none" (non-progression). expel_progression off still lets our
     Expel-story keys into Expel: the disc switch can't be reached without them."""
-    if row["type"] in ("drop", "join", "shop"):
+    if row["type"] in ("drop", "join", "shop") or closes_at_gate(row, side):
         return "none"
     if not in_expel(row):
         return "any" if may_hold_progression(row, side) else "none"
@@ -147,5 +183,5 @@ def set_rules(world):
                 (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in modes)
 
 
-__all__ = ["set_rules", "may_hold_progression", "proven_late", "proven_teleporter", "open_world_access",
-           "DISC_SWITCH_STAGE"]
+__all__ = ["set_rules", "may_hold_progression", "proven_late", "proven_teleporter", "proven_at_gate", "early_stage",
+           "closes_at_gate", "open_world_access", "DISC_SWITCH_STAGE"]

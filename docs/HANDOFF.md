@@ -5,24 +5,65 @@ title, starts a New Game or Continues a save, and plays the whole game: field ma
 map, battles, both discs and every ending. `docs/CHECKLIST.md` has the item-by-item state;
 this file is the quick orientation.
 
-## State (2026-10-23, about 01:30)
+## State (2026-10-23, 18:50)
 
-- **M8 done:** the game can be finished. Every map's events on both discs run (event sweep:
-  0 crashes, 0 stand-ins), all 85 endings play, and the user's late-game save (map 671,
-  Fienal 9F) matches PCSX-Redux through the final battle and its endings
-  (`docs/notes/m8_audit.md`, `docs/notes/endings.md`).
-- **M7 done:** every character module, enemy module, spell (70) and spell module (55) is
-  verified; all 564 encounters run without crashes (`docs/notes/battle_sweep.md`); the battle
-  talk layer (`battle/party_talk.cpp`) matches Redux (RNG equal to the exit; the talk pose is
-  shorter by the clip's CD load time, accepted).
-- **Archipelago:** phase 1 and the port side of phase 2 are done; the APWorld
-  (`apworld/so2`, `docs/ap/apworld.md`) generates and fills story-mode seeds, the native
-  client works end to end against a local server. In progress: a real SO2-slot end to end,
-  boss checks, phase 3 (characters, drops, traps, multipliers) on both sides.
-- **Packaging:** setup program, Windows zip and Linux tarball (glibc 2.36) with Archipelago
-  networking (`tools/build_windows.sh`, `tools/build_linux.sh --container`).
-- **Original bugs:** decided by the user one by one (`docs/notes/original_bugs.md`); the rule is
-  that a fix never changes the play state.
+- **Released:** v0.01.00 (North American discs), https://github.com/IronJade/Shattered-Stars/releases/tag/v0.01.00.
+  The README, the screenshots (docs/images), the wiki (35 pages, including the modder reference),
+  the mod manager and the curated mods/ list are public.
+- **The game:** M7 and M8 are done. Every map, battle and ending is verified, and the late save
+  matches PCSX-Redux. The catalog has 5452 of 5452 functions confirmed.
+- **0.02.00 (Europe, France, Germany) in progress:**
+  - **Regions:** all three play on one build, with region profiles running the NA logic at
+    60 Hz on their own text and data. The FR/DE text system is done (287/287 dialogue lines
+    exact against Redux). Saves are native per release; all four originals load the port's
+    saves. Europe's disc 1 and disc 2 sweeps match NA. See `docs/handoff/regions.md`, which ends
+    with a readiness section.
+  - **Archipelago:** `so2.apworld` 0.1.1 fixes two open-world ship landings and is fully proven
+    (`docs/handoff/apareas.md`). It ships with 0.02.00, by the user's decision. It also gets
+    the El voyage gate (`docs/handoff/elgate.md`): in open world, the ship to El waits for the
+    El passes, plus the three Energy Nede passes when the teleporter and expel_progression are
+    both on (the user's decision, 18:45: the 6-pass gate as built).
+  - **Docs:** the 0.02.00 README update is committed. The wiki changes are committed in
+    scratchpad/wiki (3dc5c04) but **not pushed**; push them at release. The release-notes draft
+    is `docs/release_notes/0.02.00.md`.
+
+### Resume here (a fresh session)
+1. **Recreate the hourly checkpoint cron** (CronCreate, `13 * * * *`). Its prompt:
+   - Don't run scratchpad/merge_catalogs.retired.py.
+   - Copy scratchpad/checkpoint_notes.txt to checkpoint_notes_run.txt and empty the original.
+   - With SS_DISC1 set to the NA disc 1 .cue, run
+     `timeout 3000 tools/checkpoint.sh scratchpad/checkpoint_notes_run.txt > scratchpad/checkpoint_last.log 2>&1`
+     in the background.
+   - If no commit was made, append the run notes back.
+   - Report the suite totals.
+   - Check agent sizes (`~/.claude/scripts/agent_context.py --project Shattered --hours 2`) and
+     roll over any agent past 400k from its log.
+   - Start queued items in fresh agents.
+   - Commit, never push.
+
+   `.claude/scheduled_tasks.lock` is excluded locally (`.git/info/exclude`), so the checkpoint
+   doesn't pick it up.
+2. **Permission mode:** the user runs "Auto" mode (17:25). In "ask" mode background agents can't
+   show prompts, so their requests are refused and they stop. When an agent reports a refusal,
+   bring it straight to the user, then pass their decision back to the agent (SendMessage).
+3. **El voyage gate:** implemented and tested (`docs/handoff/elgate.md`, 18:12 entry); the
+   user chose the 6-pass gate (18:45). Left at 18:50: the late + teleporter proofs with the gate
+   build (`scratchpad/elgate/proofs/`, `all.done` when finished), their comparison with
+   `docs/ap/late_proof.json`, and apworld.md's Testing section. If the elgate agent is gone,
+   finish those from its log.
+4. **Regions verification:** the regions-verify agent (opus, started 18:42) compares the FR/DE
+   event sweeps and the battle sweeps (queue PID 1279484, `scratchpad/regions/q/queue.log`,
+   ending about 19:45) with NA, checks the French battle result screen and the German Scan
+   window in Redux, runs ap_e2e_so2.sh on French, and writes the final readiness verdict in
+   `docs/handoff/regions.md`. If it is gone, resume from that log.
+5. **Then 0.02.00:**
+   - resolve the release notes' TO CONFIRM items;
+   - bump the version to 0.02.00 (engine/CMakeLists.txt) and update the README badge and file
+     names;
+   - build the release candidate from a clean worktree as for 0.01.00 (docs/ap/release_checklist.md
+     section 7);
+   - get the user's go-ahead, then push main, create the draft release, verify, publish, and push
+     the wiki.
 
 ## What works (verified against PCSX-Redux where marked)
 

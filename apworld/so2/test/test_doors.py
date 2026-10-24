@@ -15,7 +15,7 @@ except ImportError:  # standalone, outside an Archipelago checkout
 # end 20 entered from 11 (E) with no way out.
 TABLE = {"doors": [
     {"id": doors.door_id(909, 0x100), "map": 909, "world": 1, "to": {"map": 10, "x": 5, "y": 0, "z": 5, "dir": 0}},
-    {"id": doors.door_id(10, 0x40), "map": 10, "to": {"map": 11, "x": 1, "y": 0, "z": 1, "dir": 0}},
+    {"id": doors.door_id(10, 0x40), "map": 10, "routine": 0x20, "to": {"map": 11, "x": 1, "y": 0, "z": 1, "dir": 0}},
     {"id": doors.door_id(11, 0x40), "map": 11, "to": {"map": 10, "x": 9, "y": 0, "z": 9, "dir": 0}},
     {"id": doors.door_id(11, 0x80), "map": 11, "to": {"map": 1, "x": 100, "y": 0, "z": 100, "dir": 0}},
     {"id": doors.door_id(11, 0xC0), "map": 11, "to": {"map": 20, "x": 0, "y": 0, "z": 0, "dir": 0}},
@@ -53,6 +53,25 @@ class TestDoorValidator(unittest.TestCase):
         d = doors.door_id(11, 0x80)
         got = doors.validate_doors([{"id": d, "to": {"map": 10, "x": 9, "y": 0, "z": 9}}], TABLE)
         self.assertEqual(got, [f"door {d}: map 10 never gets back to a world map"])
+
+
+    def test_gate_doors(self):
+        """A door that needs several keys (a one-way story point: the El voyage's), named by its
+        routine."""
+        b = doors.door_id(10, 0x40)
+        self.assertEqual(doors.validate_doors([{"id": b, "routine": "0x20", "keys": [17, 18, 19]}], TABLE), [])
+        self.assertEqual(doors.validate_doors([{"id": b, "routine": 0x20, "keys": [5]}], TABLE), [])
+        got = doors.validate_doors([{"id": b, "keys": [17, 0]}], TABLE)
+        self.assertIn("key 0 is not 1-255", got[0])
+        got = doors.validate_doors([{"id": b, "keys": []}], TABLE)
+        self.assertIn("keys must be a list", got[0])
+        got = doors.validate_doors([{"id": b, "routine": "0x24", "keys": [3]}], TABLE)
+        self.assertIn("routine 0x24", got[0])
+        got = doors.validate_doors([{"id": doors.door_id(909, 0x100), "routine": 0, "key": 3}], TABLE)
+        self.assertIn("routine 0", got[0])
+        self.assertEqual(doors.validate_doors([{"id": b, "keys": [5], "until": 38}], TABLE), [])
+        got = doors.validate_doors([{"id": b, "keys": [5], "until": 0}], TABLE)
+        self.assertIn("until 0", got[0])
 
 
 if __name__ == "__main__":

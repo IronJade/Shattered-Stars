@@ -225,9 +225,9 @@ map 463's entrance on the Nede map ("Gallery Pass").
   (Lacour's group) through Port Hilton, its only harbour (the Herlie ship, flag 18, world door
   59578036), and Hoffmann Ruins through map 231, its beach (the Hilton ship, flag 22, chapters
   23-27, world door 59578306);
-- *teleporter* (Expel, `expel_teleporter` on): the "Expel Teleporter" event (stage 13 done and the
-  Fun City Pass: chapter 38, the old man in the arena) plus the keys of the world-map entrances
-  on the teleporter proof's route to its map;
+- *teleporter* (Expel, `expel_teleporter` on): the "Expel Teleporter" event (stage 16 done and the
+  Fun City Pass: the old man in the arena, once the Synard flies; "The El voyage", below) plus
+  the keys of the world-map entrances on the teleporter proof's route to its map;
 - *late*: the Final Save Point plus the keys on the late proof's route (Fun City for Expel,
   then the area's entrance).
 
@@ -259,6 +259,53 @@ Colony's 2 gifts, which hold only our Expel-story keys in open world). So in ope
   429, a chapter-60 scene) has no early mode: it counts from the Final Save Point;
 - Energy Nede, Fienal and the cave: the late proof, as in story mode; story bosses as before.
 
+**The El voyage and the other one-way points** (0.1.1; docs/handoff/elgate.md). The story
+sails to El from the Lacour Front Line without free play on the way: at chapter 27 step 7000
+(stored in meeting room 448) the meeting room 444 holds a walk-in trigger (routine 0x7c28)
+whose scene stores chapter 28 and sends the party to Lacour Castle (422), whose scene sends it
+to Port Hilton (169), whose scene sails (548, chapter 29). El is left only through the disc
+switch; the Cross and Lacour continents reopen through the teleporter, Hoffmann Ruins' island
+(whose ship sails only at chapters 23-27) after the Final Save Point. So (data.STORY_GATES,
+from tools/ap_world_tables.py):
+- the stage that ends with the voyage (stage 10) also needs the El Beach, Eluria and Eluria
+  Tower Passes (regions.py `stage_rules`), so the fill puts them where the player gets them
+  before sailing, in this world or another;
+- the seed's door table holds the trigger's door (29106503, the transfer to 422 in routine
+  0x7c28) with those `keys`; the port keeps the trigger shut until every one has arrived and the
+  banner names each missing one ("Eluria Pass needed to sail", seed_format.md "Phase 4"; without the purpose when the text would not fit the banner);
+- an Expel location the story reaches before the voyage (its early mode is at stage 10 or
+  before) holds progression only where the **voyage proof** reached it
+  (`tools/ap_late_proof.py --state voyage`: the late save at chapter 27 step 7000, flag 730
+  cleared, disc 1, Claude and Rena, root map 444; an entry that moves the story past chapter
+  27 is not followed and its checks don't count, nor are Expel's entrances to El and the Cave of
+  Trials; Hoffmann Ruins' island is, its ship still sails). **Result** (2026-10-23): both games
+  289 maps, 129 locations, among them every Expel location the logic lets hold progression
+  before the voyage (Hoffmann Ruins' 26 chests included), so no location's class changed.
+- **The teleporter needs the Synard.** Energy Nede's world map (archive 0x1060 + i, read as
+  tools/ap_walkmap.py reads Expel's) puts Central City and North City on one island and Fun City
+  (279, entered only from that map) on another; before the Synard (flag 11, set at map 417
+  where chapter 41 is stored) the party moves only by North City's transporter (the director's office, 272) (267 to Noel's
+  House, chapters 38-40). So the "Expel Teleporter" event needs stage 16 (data
+  TELEPORTER_STAGE), not 13, and with `expel_teleporter` and `expel_progression` on, when Energy
+  Nede's keys and other worlds' progression may sit on the Cross and Lacour continents, the
+  voyage also needs the keys of the stages until then (North City, Noel's House, Red Crystal
+  Passes: the gate's `teleporter_groups`), held before sailing.
+- **Exits kept shut for a while** (data.EXIT_GATES, no logic). The story brings the party into
+  Central City (the scenes 619 to 248, chapters 36-37) and Noel's House (the transporter,
+  chapter 38) without their entrance, and on those islands nothing else may hold their key.
+  Until chapter 38 (Central City, exit 235 to the world map, routine 0x670c) and 40 (Noel's
+  House, exit 277, routine 0x7164) the seed door needs the area's key (`until`; banner "Central
+  City Pass needed to leave").
+- **The other one-way points, checked.** The disc switch closes Expel: everything Expel holds
+  is either an Expel-story key, which the switch's stage needs, or (teleporter on) on the
+  continents the teleporter reopens, from the Synard, which the voyage gate covers. With
+  `expel_progression` off Expel holds only our Expel-story keys. Fienal: its floors count from
+  stage 23 (the Final Save Point's), and no key is needed inside it. The Front Line itself shuts
+  its exit (438) at chapter 26 from step 1000 and at chapter 27 step 3000, while the story stays
+  inside and no key is needed. Hoffmann's island closes with its ship at chapter 28, after the
+  gate. No key item is given around the Front Line (Shin 516 is a story boss at 447; Leon joins
+  at El Beach, 230), and every join site is EXCLUDED anyway.
+
 The teleporter proof's state has the save's chapter-60 flags, which Energy Nede's maps test,
 so it is used for Expel's maps only. **Known limits** (accepted, conservative elsewhere): a map
 that opens later in the story than its area's first visit, or closes for a while in the middle
@@ -266,9 +313,8 @@ of it, is not modelled (Lacour's fifth entrance in chapters 25-59 and Mars's sec
 15 have open siblings; the arena's route is shut in chapter 57, where only the Fun City Pass,
 a starting key, is needed). The late proof fires the world maps' entrance triggers without
 walking there too, which Virtual Expel's Synard (flight anywhere, Prima p. 130) justifies after
-the Final Save Point. Open question (docs/handoff/apareas.md, "Leads"): Central City at
-chapters 36-37 (the party is brought in by a scene; leaving before the mayor's scene would need
-the Central City Pass, first required at stage 17).
+the Final Save Point. Central City at chapters 36-37 (docs/handoff/apareas.md, "Leads"):
+settled by its exit gate (above).
 
 ## Shop slots (`shuffle_shops`, phase 4)
 
@@ -391,7 +437,9 @@ game after the other; logs in scratchpad/late_proof/, `--resume` reuses finished
 
 and the teleporter proof the same way with `--state teleporter` (work dir
 scratchpad/late_proof/teleporter; about 15 minutes per game at --jobs 3; its reparse writes
-late_proof.json's `teleporter` key). Every game run is under the memory cap (tools/memcap.py,
+late_proof.json's `teleporter` key), and the voyage proof with `--state voyage` (work dir
+scratchpad/late_proof/voyage, disc 1, root map 444; about 15 minutes per game at --jobs 2; key
+`voyage`, which `tools/ap_world_tables.py` copies into data.STORY_GATES `proven`). Every game run is under the memory cap (tools/memcap.py,
 SS_MEM_CAP_GB, 4 GB): a run that dies at it fails the proof (exit status 3), never retried.
 `tools/ap_walkmap.py --check` confirms the teleporter's islands (`TELEPORTER_ISLANDS`) from
 the world map's terrain.
@@ -445,6 +493,29 @@ Results (2026-10-23, 0.1.1; docs/handoff/apareas.md):
   Ruins) in 44 of these 114 open-world slots; 0.1.1 in none.
 - `tools/ap_e2e_so2.sh`: 25 / 25, twice.
 
+Results (2026-10-23, 0.1.1 with the El voyage gate; docs/handoff/elgate.md):
+- The world's tests: 108 passed (7986 subtests; new: test_voyage_gate and
+  test_teleporter_needs_the_synard in the three open-world classes, test_gate_doors for the
+  validator). AP's general tests: 379 passed (116979 subtests).
+- The logic diff against 0.1.1 before the gate (scratchpad/apareas/logicdiff.py, classdiff.py):
+  no location's access modes or progression class changed, in story mode or open world; the
+  changes are the Front Line stage's rule (the three El passes, plus North City, Noel's House and
+  Red Crystal with the teleporter and expel_progression on) and the teleporter event (stage 16).
+  data.py only gains TELEPORTER_STAGE, STORY_GATES and EXIT_GATES.
+- 96 seeds (the same players, seeds 1-96): 192 `.apso2`, 189 option combinations, all generate
+  and fill; `check.py` (now also: the gate and exit doors, the gate's keys only where the voyage
+  proof reached them, no progression where it did not) finds no error, `validate_doors` passes on
+  all 192; the 16 all-story seeds are byte-identical to the batch before the gate. Stranded keys
+  the voyage's window needs (scratchpad/elgate/batch/elcount2.py): 0 (0.1.0's batch: an El pass
+  off El, which the player could sail away from, in 110 of its 114 open-world slots).
+- `tools/ap_e2e_so2.sh`: 27 / 27. The port's engine suites: ss_tests 99, ss_game_tests 129
+  (ap_gate_door new), the field smoke script 86 PASS, none failing.
+- In the port (headless, scratchpad/elgate/demo/run.sh): at chapter 27 step 7000 the meeting
+  room's trigger refuses without the passes (the banner names each, the story stays at chapter
+  27, the leader keeps the controls), with five of six names only the last, and with all six
+  the scenes store chapter 28 and sail (map 548, chapter 29); Central City's exit at chapter 37
+  refuses without the Central City Pass and lets the party out at chapter 38 or with the pass.
+
 ## Changes
 
 **0.1.1** (2026-10-23, not released yet). Open world only; story mode, the item pool, location
@@ -475,6 +546,23 @@ names and ids are unchanged.
   locations hold only our Expel-story keys in open world, as other Expel locations the
   teleporter does not reach; their teleporter access is gone (the story's visit and the Final
   Save Point remain).
+- *Fixed: keys left behind by the El voyage* (docs/handoff/elgate.md; "The El voyage and the
+  other one-way points" above). From the Front Line's meeting at chapter 27 step 7000 the story
+  sails to El with no free play on the way, and the Cross and Lacour continents and Hoffmann
+  Ruins' island stay out of reach until the teleporter or the Final Save Point; 0.1.0 put an El
+  pass there in 110 of the 114 open-world slots of the 96-seed batch (0.1.1-pre: 114), lost if
+  the player sailed without it. Now the voyage's stage needs the three El passes, the seed's
+  door table gates the meeting's trigger on them (the port: "El Beach Pass needed to sail to
+  El"), and an Expel location the story reaches before the voyage holds progression only where
+  the new voyage proof reached it at chapter 27 step 7000 (all of them did).
+- *Fixed: the teleporter needs the Synard.* Fun City lies on another island of Energy Nede than
+  Central City: the arena is reached from stage 16 (the Cave of Red Crystal), not stage 13. With
+  the teleporter and expel_progression on, the voyage also needs the North City, Noel's House
+  and Red Crystal Passes, which the story needs before then (0.1.0 could leave them on Expel's
+  continents: 85 in the 0.1.1-pre batch).
+- *Fixed: walking out of Central City (chapters 36-37) or Noel's House (38-39)*, which the story
+  enters without their entrance, onto an island with no way back in: until chapter 38 / 40 the
+  exit needs the area's key (seed doors with `until`; no logic change).
 - Area labels: field.json's `map_areas` agrees with docs/modding/reference/map_names.csv for 158
   more maps (tools/ap_extract.py `AREA_FIXES`; field.md "Place names"). The logic never read
   them; location names keep their 0.1.0 labels.

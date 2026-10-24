@@ -418,7 +418,7 @@ class OpenWorldChecks:
 
     def test_progression_rules(self):
         from ..items import SO2Item
-        from ..rules import proven_late, proven_teleporter
+        from ..rules import closes_at_gate, proven_late, proven_teleporter
         mine = self.world.create_item("Salva Pass")            # an Expel-story key of ours
         nede = self.world.create_item("North City Pass")       # needed after the disc switch
         other = SO2Item("test key", ItemClassification.progression, None, self.player + 1)
@@ -430,13 +430,108 @@ class OpenWorldChecks:
             if row["region"] != "Expel":
                 continue
             st = self.multiworld.state
-            tele = self.teleporter and proven_teleporter(row, self.side)
-            late = proven_late(row, self.side)
+            # (A location the story reaches before the El voyage that the voyage proof did not
+            # reach there holds none: test_voyage_gate.)
+            stays = not closes_at_gate(row, self.side)
+            tele = self.teleporter and proven_teleporter(row, self.side) and stays
+            late = proven_late(row, self.side) and stays
             self.assertEqual(loc.can_fill(st, nede, False), tele, loc.name)
             self.assertEqual(loc.can_fill(st, other, False), tele, loc.name)
             self.assertEqual(loc.can_fill(st, mine, False), tele or late, loc.name)
             allowed["any" if tele else "expel keys"] += tele or late
         self.assertGreater(sum(allowed.values()), 50)
+
+    def test_voyage_gate(self):
+        """The El voyage (data.STORY_GATES): from the Lacour Front Line's meeting room at chapter
+        27 step 7000 the story sails to El and the Cross and Lacour continents and Hoffmann
+        Ruins' island close until the teleporter or the Final Save Point. The stage that ends
+        with it needs the three El passes; the seed's gate door keeps the port's trigger shut
+        until they arrive; a location the story reaches before it holds progression only where
+        the voyage proof reached it at the gate, so the passes (and whatever they hang on) are
+        in reach there."""
+        from ..data import STAGES, STORY_GATES
+        from ..items import KEY_NAME, stage_event
+        from ..regions import gate_groups
+        from ..rules import closes_at_gate, early_stage, proven_at_gate
+        (gate,) = STORY_GATES
+        self.assertEqual((gate["name"], gate["stage"], gate["door"], gate["routine"]), ("El voyage", 10, 29106503, 0x7C28))
+        self.assertEqual(sorted(KEY_NAME[g] for g in gate["groups"]), ["El Beach Pass", "Eluria Pass", "Eluria Tower Pass"])
+        # With the teleporter and expel_progression on, also the Nede stages' keys until the
+        # Synard reaches Fun City's teleporter (test_teleporter_needs_the_synard).
+        later = bool(self.world.options.expel_teleporter and self.world.options.expel_progression)
+        self.assertEqual(gate["teleporter_groups"], ["North City", "Noel's House", "Cave of Red Crystal"])
+        passes = [KEY_NAME[g] for g in gate_groups(self.world, gate)]
+        self.assertEqual(len(passes), 6 if later else 3)
+        self.assertTrue(all(gate["proven"].get(g) for g in ("claude", "rena")))
+
+        def state_at(stage, extra):
+            state = CollectionState(self.multiworld)
+            for i in self.multiworld.precollected_items[self.player]:
+                state.collect(i, True)
+            for name, _, need in STAGES[:stage]:
+                state.collect(self.world.get_location(f"Story: {name}").item, True)
+                for g in need:
+                    state.collect(self.world.create_item(KEY_NAME[g]), True)
+            for g in STAGES[stage][2]:
+                state.collect(self.world.create_item(KEY_NAME[g]), True)
+            for name in extra:
+                state.collect(self.world.create_item(name), True)
+            return state
+
+        voyage = self.world.get_location(f"Story: {STAGES[gate['stage'] - 1][0]}")
+        for k in range(len(passes)):
+            self.assertFalse(voyage.can_reach(state_at(gate["stage"] - 1, passes[:k] + passes[k + 1:])), passes[k])
+        self.assertTrue(voyage.can_reach(state_at(gate["stage"] - 1, passes)))
+        # Where a pass may go in this world: a location the voyage proof reached at the gate, or
+        # a story boss fought before it; never one the story reaches only after the voyage.
+        el_pass = self.world.create_item(passes[0])
+        st = self.multiworld.state
+        counts = {"proven": 0, "closes": 0}
+        for loc in own_locations(self):
+            row = ROW[loc.name]
+            if row["type"] not in ("chest", "gift", "boss"):
+                continue
+            stage = early_stage(row)
+            if stage is not None and stage <= gate["stage"] and row.get("boss") != "story":
+                if not proven_at_gate(row, self.side, 0):
+                    self.assertTrue(closes_at_gate(row, self.side), loc.name)
+                    self.assertFalse(loc.can_fill(st, el_pass, False), loc.name)
+                    counts["closes"] += 1
+                elif loc.can_fill(st, el_pass, False):
+                    counts["proven"] += 1
+        self.assertGreater(counts["proven"], 50)
+        fill(self)
+        stage_of = {loc.name: early_stage(ROW[loc.name]) for loc in own_locations(self) if loc.address}
+        for loc in own_locations(self):
+            if loc.item and loc.item.player == self.player and loc.item.name in passes:
+                row = ROW[loc.name]
+                if row.get("boss") == "story":
+                    self.assertLess(row["chapter"], gate["chapter"] + 1, loc.name)
+                else:
+                    self.assertTrue(proven_at_gate(row, self.side, 0), loc.name)
+                    self.assertLessEqual(stage_of[loc.name], gate["stage"], loc.name)
+        self.assertEqual(stage_event(gate["stage"]), voyage.item.name)
+
+    def test_teleporter_needs_the_synard(self):
+        """Fun City, the teleporter's end on Energy Nede, lies on another island of the Nede
+        world map than Central City: the party reaches it once the Synard flies (stage 16, the
+        Cave of Red Crystal), not at chapter 38."""
+        from ..data import STAGES, TELEPORTER_STAGE
+        from ..items import stage_event
+        self.assertEqual(STAGES[TELEPORTER_STAGE - 1][0], "Cave of Red Crystal")
+        if not self.teleporter:
+            return
+        loc = self.world.get_location("Expel Teleporter (Fun City arena)")
+        state = CollectionState(self.multiworld)
+        for i in self.multiworld.precollected_items[self.player]:
+            state.collect(i, True)
+        for name, _, _ in STAGES[:TELEPORTER_STAGE - 1]:
+            state.collect(self.world.get_location(f"Story: {name}").item, True)
+        state.collect(self.world.get_location("Disc Switch (Eluria Tower)").item, True)
+        self.assertTrue(state.has(stage_event(TELEPORTER_STAGE - 1), self.player))
+        self.assertFalse(loc.can_reach(state))
+        state.collect(self.world.get_location(f"Story: {STAGES[TELEPORTER_STAGE - 1][0]}").item, True)
+        self.assertTrue(loc.can_reach(state))
 
     def test_teleporter_islands(self):
         """The teleporter's party (chapter 38, landing in Arlia) walks the Cross continent and
@@ -467,8 +562,22 @@ class OpenWorldChecks:
         check_seed(self, seed)
         self.assertEqual(seed["options"]["world_mode"], "open_world")
         self.assertIs(seed["options"]["expel_teleporter"], self.teleporter)
-        self.assertEqual(len(seed["doors"]), 66)
-        self.assertEqual(len({d["key"] for d in seed["doors"]}), 35)
+        from ..data import EXIT_GATES, STORY_GATES
+        entrances = [d for d in seed["doors"] if "key" in d]
+        gates = [d for d in seed["doors"] if "keys" in d and "until" not in d]
+        exits = [d for d in seed["doors"] if "until" in d]
+        # Central City's and Noel's House's exits, shut until chapters 38 / 40 without their keys.
+        self.assertEqual([(d["id"], d["until"], d["keys"], d["purpose"]) for d in exits],
+                         [(15407589, 38, [28], "to leave"), (18160748, 40, [30], "to leave")])
+        self.assertEqual(len(exits), len(EXIT_GATES))
+        self.assertEqual(len(entrances), 66)
+        self.assertEqual(len({d["key"] for d in entrances}), 35)
+        from ..regions import gate_keys
+        self.assertEqual(gates, [{"id": g["door"], "routine": f"{g['routine']:#x}", "keys": gate_keys(self.world, g),
+                                  "name": g["name"], "purpose": g["purpose"]} for g in STORY_GATES])
+        later = self.teleporter and bool(self.world.options.expel_progression)
+        self.assertEqual([len(d["keys"]) for d in gates], [6 if later else 3])
+        self.assertEqual(len(seed["doors"]), 66 + len(STORY_GATES) + len(EXIT_GATES))
         kinds = {i["kind"] for i in seed["start"]["items"]}
         self.assertEqual(kinds, {"key"})
         table = doors_json()
@@ -476,9 +585,15 @@ class OpenWorldChecks:
             from ..doors import validate_doors
             self.assertEqual(validate_doors(seed["doors"], table), [])
             world = {r["id"]: r for r in table["doors"] if r.get("world") in (1, 2)}
-            self.assertEqual({d["id"] for d in seed["doors"]}, set(world))
-            for d in seed["doors"]:
+            self.assertEqual({d["id"] for d in entrances}, set(world))
+            for d in entrances:
                 self.assertIn(world[d["id"]]["key_group"], d["name"])
+            by_id = {r["id"]: r for r in table["doors"]}
+            for d in gates:   # the El voyage's: the transfer to Lacour Castle in the trigger's routine
+                self.assertEqual((by_id[d["id"]]["map"], by_id[d["id"]]["routine"], by_id[d["id"]]["to"]["map"]),
+                                 (444, 0x7C28, 422))
+            for d in exits:   # an exit to Energy Nede's world map in the trigger's routine
+                self.assertEqual((by_id[d["id"]]["routine"], by_id[d["id"]]["to"]["map"]), (int(d["routine"], 16), 2))
 
 
 class TestOpenWorld(SO2TestBase, OpenWorldChecks):

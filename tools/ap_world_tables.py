@@ -391,8 +391,10 @@ def build(field, battles, late=None, doors=None):
         l.pop("site_maps", None)
     fol = sorted({l["fol"] for l in locs if l["fol"] is not None})
     goal = battles.get("final_boss_encounters", [539, 540])
+    numbers = {g["group"]: g["key"] for g in groups}
+    exits = [dict(e, keys=[numbers[x] for x in e["groups"]]) for e in EXIT_GATES] if groups else []
     return {"items": items, "fol": fol, "locations": sorted(locs, key=lambda l: l["id"]), "goal": goal,
-            "groups": groups}
+            "groups": groups, "gates": story_gates(late or {}, groups, locs) if groups else [], "exits": exits}
 
 
 # ---- Phase 4: open world (area keys, story stages) and shop slots ----------------------------
@@ -449,6 +451,12 @@ STAGES = [
     ("The last chapters", (58, 60), ["Town of Armlock", "L'Aqua", "map 687"]),
 ]
 DISC_SWITCH_STAGE = 12      # STAGES[:12] are Expel's; the disc switch ends stage 12
+# The Expel teleporter (Fun City's arena, open world) is reached from the stage that ends taming
+# the Synard: Energy Nede's world map (archive 0x1060 + i) puts Central City and North City on
+# one island and Fun City (279, entered only from that map) on another; before the Synard (flag
+# 11, set at map 417, the Cave of Red Crystal, where chapter 41 is stored) the party moves only
+# by North City's transporter (the director's office, 272) (267 -> Noel's House 278, chapters 38-40). So stage 16.
+TELEPORTER_STAGE = 16
 # Areas the story reaches only by a ship that lands through another entrance group's door: a
 # location's early mode (rules.py open_world_access) needs that group's key as well. The Lacour
 # continent: the Herlie ship (flag 18, set on map 144 from chapter 16) lands through world door
@@ -456,6 +464,42 @@ DISC_SWITCH_STAGE = 12      # STAGES[:12] are Expel's; the disc switch ends stag
 # ship (flag 22, set on map 169 in chapters 23-27) lands through world door 59578306 on map 231,
 # the ruins' beach (flag 21 sails back). Later stages need these keys anyway.
 SHIP_LANDINGS = {"Town of Lacour": ["Port Hilton"], "Hoffmann Ruins": ["map 231"]}
+# One-way story points an open-world seed gates on keys (docs/ap/apworld.md, "Open world": the
+# El voyage). The El voyage: at chapter 27 step 7000 the Lacour Front Line's meeting room (map
+# 444) holds the trigger (thread_start at 0x86d4, routine 0x7c28) whose scene stores chapter 28
+# and sends the party to Lacour Castle (422), whose scene sends it to Port Hilton (169), whose
+# scene sails to El (548) at chapter 28 step 0: no free play between. El is left only through
+# the disc switch, and the Cross and Lacour continents and Hoffmann Ruins' island reopen only
+# through the Expel teleporter (chapter 38) or after the Final Save Point. So the stage that
+# ends with the voyage needs the El passes (the logic), the port keeps the trigger shut until
+# the player holds them (the seed door: the transfer at 0x851c, door 29106503, in that
+# routine), and an Expel location the story reaches before the voyage holds progression only
+# where the voyage proof (tools/ap_late_proof.py --state voyage: chapter 27 step 7000, map 444)
+# reached it.
+STORY_GATES = [
+    {"name": "El voyage", "stage": 10, "groups": ["El Beach", "Eluria Colony", "Eluria Tower"],
+     "map": 444, "door": 29106503, "routine": 0x7C28, "chapter": 27, "step": 7000, "purpose": "to sail",
+     "proof": "voyage", "reopens": TELEPORTER_STAGE},
+]
+# Exits an open-world seed keeps shut for a while (no logic: the story does not need them then).
+# Before the Synard, Energy Nede's islands confine the party (TELEPORTER_STAGE above), and the
+# story brings it into two areas without their world-map entrance: Central City (the scenes 619
+# -> 248, chapters 36-37; chapter 38 is stored inside it, at 246) and Noel's House (Central
+# City's transporter 267 -> 278, chapter 38; chapter 40 is stored inside it, at 277). A player
+# who walked out before then would need the area's key to get back in (Central City's is first
+# needed at stage 17), and on that island nothing may hold it. So until that chapter the exit
+# to the world map (235 -> 2, routine 0x670c; 277 -> 2, routine 0x7164) needs the area's key.
+EXIT_GATES = [
+    {"name": "Central City exit", "groups": ["Central City"], "map": 235, "door": 15407589, "routine": 0x670C,
+     "until": 38, "purpose": "to leave"},
+    {"name": "Noel's House exit", "groups": ["Noel's House"], "map": 277, "door": 18160748, "routine": 0x7164,
+     "until": 40, "purpose": "to leave"},
+]
+# A gate's `reopens`: with the Expel teleporter and expel_progression on, the Cross and Lacour
+# continents hold any progression (the teleporter brings the player back), but only from the
+# Synard (TELEPORTER_STAGE): the gate then also needs the keys of the stages after the disc
+# switch up to it (`teleporter_groups`: North City, Noel's House, Cave of Red Crystal), so
+# nothing the story needs in between is left behind.
 # Story bosses: the chapter of the fight (its stage must be finished to count it).
 STORY_BOSS_CHAPTER = {191: 6, 194: 15, 195: 15, 209: 21, 210: 24, 516: 27, 519: 33, 520: 33, 521: 38, 522: 40,
                       524: 42, 525: 42, 527: 42, 528: 42, 531: 55, 532: 57, 533: 57, 535: 58, 536: 60, 537: 60,
@@ -528,6 +572,30 @@ def map_groups(doors, groups):
                 if m not in best or cand < best[m][0]:
                     best[m] = (cand, g["group"])
     return {m: (g, rank == 1) for m, ((rank, _, _), g) in best.items()}
+
+
+def story_gates(late, groups, locs):
+    """STORY_GATES with each gate's keys (numbers) and, per game, the chest, gift and boss
+    locations its proof (late_proof.json's key `proof`) reached at the gate."""
+    numbers = {g["group"]: g["key"] for g in groups}
+    ids = {l["id"] for l in locs if l["type"] in ("chest", "gift", "boss")}
+    out = []
+    for gate in STORY_GATES:
+        unknown = set(gate["groups"]) - set(numbers)
+        if unknown:
+            raise SystemExit(f"gate {gate['name']}: groups without a key {unknown}")
+        proof = late.get(gate["proof"], {}).get("games", {})
+        if not proof:
+            print(f"no {gate['proof']} proof in the late proof file: gate {gate['name']!r} lets no location "
+                  f"the story reaches before it hold progression")
+        g = {k: v for k, v in gate.items() if k not in ("proof", "reopens")}
+        g["keys"] = [numbers[x] for x in gate["groups"]]
+        later = [x for _, _, keys in STAGES[DISC_SWITCH_STAGE:gate["reopens"]] for x in keys]
+        g["teleporter_groups"] = [x for x in dict.fromkeys(later) if x not in gate["groups"]]
+        g["teleporter_keys"] = [numbers[x] for x in g["teleporter_groups"]]
+        g["proven"] = {game: sorted(set(res.get("proven", [])) & ids) for game, res in sorted(proof.items())}
+        out.append(g)
+    return out
 
 
 def route_keys(proof, groups):
@@ -622,6 +690,28 @@ def write(data, path, sources):
             "STAGES = ["]
     out += [f"    {st!r}," for st in STAGES]
     out += ["]", f"DISC_SWITCH_STAGE = {DISC_SWITCH_STAGE}", ""]
+    if data.get("gates"):
+        out += ["# Open world: the Expel teleporter is reached once this stage is finished (the Synard).",
+                f"TELEPORTER_STAGE = {TELEPORTER_STAGE}", "",
+                "# Open world: one-way story points gated on keys (tools/ap_world_tables.py STORY_GATES): the stage",
+                "# that ends with it needs the keys of `groups` (key numbers `keys`), and with the Expel teleporter",
+                "# and expel_progression on those of `teleporter_groups` too; the seed door (`door`, in `routine`",
+                "# of `map`) stays shut until the player holds them, the banner says `purpose`; `proven`: per",
+                "# game, the chests, gifts and bosses its proof reached at the gate (chapter / step).",
+                "STORY_GATES = ["]
+        for g in data["gates"]:
+            head = {k: v for k, v in g.items() if k != "proven"}
+            out.append(f"    dict({head!r},")
+            out.append("         proven={")
+            for game, ids in g["proven"].items():
+                out.append(f"             {game!r}: {ids!r},")
+            out.append("         }),")
+        out += ["]", "",
+                "# Open world: exits kept shut until a chapter (tools/ap_world_tables.py EXIT_GATES; no logic): the",
+                "# seed door needs the keys of `groups` while the story's chapter is below `until`.",
+                "EXIT_GATES = ["]
+        out += [f"    {e!r}," for e in data.get("exits", [])]
+        out += ["]", ""]
     with open(path, "w", newline="\n") as f:
         f.write("\n".join(out))
 

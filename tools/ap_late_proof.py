@@ -55,6 +55,18 @@ entrances to the islands the teleporter's party can neither walk nor sail to
 the disc switch and the Final Save Point through the teleporter. Its result goes to the
 output's "teleporter" key.
 
+The voyage state (--state voyage, for open world; docs/ap/apworld.md "Open world", "The El
+voyage"): the same save at chapter 27 step 7000 with flag 730 cleared, on disc 1, the party
+Claude and Rena: the last free play before the El voyage. At that step the Lacour Front Line's
+meeting room (map 444) holds the trigger (routine 0x7c28) whose scene stores chapter 28 and
+starts the one-way chain to El (the castle scene 422, Port Hilton's departure 169, the ship
+548), which an open-world seed gates on the El passes. The only root is map 444. The search
+does not follow an entry that leaves the story past chapter 27 (the sweep shows the chapter,
+G[0xa0], after each entry), nor Expel's world-map entrances to El (229, 232, 557) or the Cave
+of Trials (704); Hoffmann Ruins' island (231, 478) is followed: Port Hilton's ship still sails
+there through chapter 27. A location proven there can be reached at the gate, so it may hold
+what the gate needs. Its result goes to the output's "voyage" key.
+
 Usage:
   tools/ap_late_proof.py --bin BIN --save CARD.mcd --save-frame 13 [--game claude --game rena]
                          [--jobs 3] [--resume] [--work scratchpad/late_proof] [-o docs/ap/late_proof.json]
@@ -103,6 +115,12 @@ TELEPORTER_CHAPTER = 38   # the Nede story's first walk on the world map (chapte
 # them from the terrain (--check compares). The late state follows them all (the Synard).
 EXPEL_WORLD_MAP = 1
 TELEPORTER_ISLANDS = frozenset({229, 231, 232, 478, 557, 704})
+# The voyage state (module doc): the Lacour Front Line's meeting room at chapter 27 step 7000,
+# where the El voyage's trigger lies (apworld/so2/data.py STORY_GATES).
+VOYAGE_ROOTS = [444]
+VOYAGE_CHAPTER, VOYAGE_STEP = 27, 7000
+VOYAGE_ISLANDS = frozenset({229, 232, 557, 704})   # El's continent and the Cave of Trials' island
+VOYAGE_PARTY = "1"   # Rena joins the --map start's Claude (Noel is met on Energy Nede)
 SCRIPT_FLAGS = 0x170 * 8
 KEEP_FLAGS = {1, 2, 4, 730} | set(range(66, 94))  # the game, Private Action mode, the save, key items
 PARTY = "1,10"   # Rena and Noel join the --map start's Claude (both are in every party at chapter 60)
@@ -115,6 +133,8 @@ ENTRIES = re.compile(r"\[sweep\] map (\d+) vblank \d+ entries (\d+)")
 CHECK = re.compile(r"\[ap\] check (\d+) \(")
 STATE = re.compile(r"\[sweep\] map \d+ vblank \d+ (settled|entry \d+) state (.*)$")
 SHOW = "G1cf:1,G1c0:2,F157"   # the floor, the previous map, Fienal's stair flag (event_sweep.cpp)
+SHOW_CHAPTER = SHOW + ",Ga0:4"   # the voyage state also shows the chapter
+CHAPTER_SHOWN = re.compile(r"(?:^|,)Ga0=(-?\d+)")
 
 
 def load(name):
@@ -167,7 +187,8 @@ def done_flags(field):
 
 def build_state(snap, field, game, kind="late"):
     """(SS_SCRIPT_GLOBALS, SS_SWEEP_FLAGS, summary) for a game from the save's snapshot. kind
-    "teleporter": chapter 38 step 0, flag 730 cleared (the teleporter state, module doc)."""
+    "teleporter": chapter 38 step 0, flag 730 cleared (the teleporter state, module doc);
+    "voyage": chapter 27 step 7000, flag 730 cleared (the voyage state)."""
     gs, flags = snap[:0x2A0], snap[0x2A0:0x2A0 + 0x170]
     words = {}
     for off in range(0, 0x2A0, 4):
@@ -186,6 +207,9 @@ def build_state(snap, field, game, kind="late"):
     if kind == "teleporter":
         words[0xA0], words[0xA4] = TELEPORTER_CHAPTER, 0
         cleared = cleared | {730}
+    elif kind == "voyage":
+        words[0xA0], words[0xA4] = VOYAGE_CHAPTER, VOYAGE_STEP
+        cleared = cleared | {730}
     on = [n for n in range(SCRIPT_FLAGS) if flags[n >> 3] >> (n & 7) & 1 and n not in cleared]
     if game == "claude" and 1 not in on:
         on.append(1)
@@ -194,7 +218,8 @@ def build_state(snap, field, game, kind="late"):
     glob_text = ",".join(f"{g:x}={v:#x}" if v >= 0 else f"{g:x}={v}" for g, v in sorted(words.items()))
     summary = {"chapter": words[0xA0], "step": words[0xA4], "flags_set": len(on), "flags_cleared": len(cleared),
                "globals": len(words), "flag_730": 730 in on, "floor_G1cf": gs[0x1CF - 0xA0],
-               "previous_map_G1c0": struct.unpack_from("<h", gs, 0x1C0 - 0xA0)[0], "party_added": PARTY}
+               "previous_map_G1c0": struct.unpack_from("<h", gs, 0x1C0 - 0xA0)[0],
+               "party_added": VOYAGE_PARTY if kind == "voyage" else PARTY}
     return glob_text, flag_text, summary
 
 
@@ -243,15 +268,21 @@ def run_map(args, state, target, route, seed, logpath):
     crash or hang). Returns the kept lines of every run."""
     root, route = route
     glob_text, flag_text = state
+    voyage = args.state == "voyage"
     env = dict(os.environ)
     env.update({
         "SS_EVENT_SWEEP": "1", "SS_EVENT_SWEEP_FRAMES": str(args.frames), "SS_BATTLE_STUB": "1",
-        "SS_EVENT_SWEEP_DISC": "2", "SS_DISC1": args.disc1, "SS_DISC2": args.disc2,
-        "SS_SCRIPT_GLOBALS": glob_text, "SS_SWEEP_FLAGS": flag_text, "SS_SWEEP_PARTY": PARTY, "SS_SWEEP_SHOW": SHOW,
+        "SS_DISC1": args.disc1, "SS_DISC2": args.disc2,
+        "SS_SCRIPT_GLOBALS": glob_text, "SS_SWEEP_FLAGS": flag_text,
+        "SS_SWEEP_PARTY": VOYAGE_PARTY if voyage else PARTY, "SS_SWEEP_SHOW": SHOW_CHAPTER if voyage else SHOW,
         "SDL_VIDEO_DRIVER": "offscreen", "SDL_AUDIO_DRIVER": "dummy",
         # Never the player's settings: a scratch config directory and no memory card.
         "XDG_CONFIG_HOME": os.path.join(os.path.abspath(args.work), "xdg"),
     })
+    # Disc 2 after the switch (the late and teleporter states); the voyage state is on disc 1.
+    env.pop("SS_EVENT_SWEEP_DISC", None)
+    if not voyage:
+        env["SS_EVENT_SWEEP_DISC"] = "2"
     env.pop("SS_SWEEP_PLAY", None)
     if route:
         env["SS_SWEEP_PLAY"] = ",".join(f"{m}:{k}{i}" for m, k, i in route)
@@ -321,22 +352,37 @@ def run_map(args, state, target, route, seed, logpath):
     return all_lines
 
 
-def parse(lines, target, route):
+def parse(lines, target, route, max_chapter=None):
     """What one map's runs found: the map swept, its exits {(map, entry kind, index): state on
-    arrival}, the state it settled in, the checks, notes."""
+    arrival}, the state it settled in, the checks, notes. max_chapter (the voyage state): an
+    entry whose state line shows a later chapter (G[0xa0]) proves none of its checks."""
     swept, exits, checks, notes = (target if not route else None), {}, set(), []
     settled, last_exit = "", None
+    in_entry, entry_checks, held = False, set(), None
     for x in lines:
         if mo := STATE.search(x):
             text = ",".join(mo.group(2).split())
+            if mo.group(1) != "settled" and held is not None:
+                cm = CHAPTER_SHOWN.search(text)
+                if cm and int(cm.group(1)) > max_chapter:
+                    if held:
+                        notes.append(f"checks past chapter {max_chapter} not counted: {sorted(held)}")
+                else:
+                    checks |= held
+                held = None
             if mo.group(1) == "settled":
                 settled = settled or text
             elif last_exit is not None and (last_exit[0] != -1 or text != settled):
                 # Another map, or the same map in another state (a latch, a floor counter).
                 exits[last_exit if last_exit[0] != -1 else (-1,) + last_exit[1:]] = text
             continue
+        if held is not None:   # (an entry without a state line)
+            checks |= held
+            held = None
         last_exit = None
-        if mo := PLAY_DONE.search(x):
+        if max_chapter is not None and ENTRY_START.search(x):
+            in_entry, entry_checks = True, set()
+        elif mo := PLAY_DONE.search(x):
             if swept is None:
                 swept = int(mo.group(1))
                 if int(mo.group(2)) != int(mo.group(3)):
@@ -348,8 +394,10 @@ def parse(lines, target, route):
                 exits.setdefault(last_exit, "")
             elif kind != "P" and result == "ok":
                 last_exit = (-1, kind, index)   # here; an edge only if the state changed
+            if max_chapter is not None:   # (counted once the state line shows the chapter)
+                held, in_entry, entry_checks = entry_checks, False, set()
         elif mo := CHECK.search(x):
-            checks.add(int(mo.group(1)))
+            (entry_checks if max_chapter is not None and in_entry else checks).add(int(mo.group(1)))
         elif x.startswith("[driver] exit") and x != "[driver] exit 0":
             notes.append(x[9:])
         elif "main script left" in x:
@@ -415,7 +463,8 @@ def bfs(args, game, state, seed, stateful, root_maps=ROOTS):
 
     def done(node, lines):
         target = map_of(node)
-        swept, exits, settled, c, n = parse(lines, target, route[node][1])
+        swept, exits, settled, c, n = parse(lines, target, route[node][1],
+                                            VOYAGE_CHAPTER if args.state == "voyage" else None)
         checks[node] = sorted(c)
         if n:
             notes[node] = n
@@ -437,6 +486,22 @@ def bfs(args, game, state, seed, stateful, root_maps=ROOTS):
             if off:
                 notes.setdefault(node, []).append(f"island entrances not followed (no ship or flight): {off}")
             exits = {k: st for k, st in exits.items() if k[0] not in TELEPORTER_ISLANDS}
+        if args.state == "voyage":
+            # Not past the gate: an entry that moved the story on (the El voyage's chain stores
+            # chapter 28), nor the El / Cave of Trials islands from Expel's world map.
+            def past(st):
+                mo = CHAPTER_SHOWN.search(st or "")
+                return mo is not None and int(mo.group(1)) > VOYAGE_CHAPTER
+            late = sorted({(to, kind, index) for (to, kind, index), st in exits.items() if past(st)})
+            if late:
+                notes.setdefault(node, []).append(
+                    "entries past chapter 27 not followed: " + ", ".join(f"{k}{i}->{to}" for to, k, i in late))
+            exits = {k: st for k, st in exits.items() if not past(st)}
+            if swept == EXPEL_WORLD_MAP:
+                off = sorted({to for to, _, _ in exits if to in VOYAGE_ISLANDS})
+                if off:
+                    notes.setdefault(node, []).append(f"island entrances not followed (only the voyage sails there): {off}")
+                exits = {k: st for k, st in exits.items() if k[0] not in VOYAGE_ISLANDS}
         edges.setdefault(swept, set()).update(to for to, _, _ in exits if to != swept)
         new = []
         for (to, kind, index), st in sorted(exits.items()):
@@ -521,12 +586,14 @@ def main():
     ap.add_argument("--work", default=os.path.join(ROOT, "scratchpad", "late_proof"))
     ap.add_argument("--reparse", action="store_true", help="rebuild the result from the logs in --work")
     ap.add_argument("-o", "--out", default=os.path.join(ROOT, "docs", "ap", "late_proof.json"))
-    ap.add_argument("--state", choices=["late", "teleporter"], default="late",
-                    help="late: the Final Save Point; teleporter: chapter 38 with the Expel teleporter (open world)")
+    ap.add_argument("--state", choices=["late", "teleporter", "voyage"], default="late",
+                    help="late: the Final Save Point; teleporter: chapter 38 with the Expel teleporter (open world); "
+                         "voyage: chapter 27 step 7000, at the El voyage's gate (open world)")
     args = ap.parse_args()
     tele = args.state == "teleporter"
-    if tele and args.work == os.path.join(ROOT, "scratchpad", "late_proof"):
-        args.work = os.path.join(ROOT, "scratchpad", "late_proof", "teleporter")
+    voyage = args.state == "voyage"
+    if args.state != "late" and args.work == os.path.join(ROOT, "scratchpad", "late_proof"):
+        args.work = os.path.join(ROOT, "scratchpad", "late_proof", args.state)
     games = args.game or ["claude", "rena"]
     if not args.disc1:
         sys.exit("set SS_DISC1 (or --disc1)")
@@ -546,13 +613,19 @@ def main():
         out["about"] = ("Locations proven reachable at chapter 38 (after the disc switch) through the Expel "
                         "teleporter, per game: tools/ap_late_proof.py --state teleporter (docs/ap/apworld.md, "
                         "'Open world'). Open-world seeds put progression in Expel only where this proves it.")
+    elif voyage:
+        out = full.setdefault("voyage", {})
+        out["about"] = ("Locations proven reachable at chapter 27 step 7000, the last free play before the El "
+                        "voyage (the Lacour Front Line's meeting room, map 444), per game: tools/ap_late_proof.py "
+                        "--state voyage (docs/ap/apworld.md, 'Open world'). In open world an Expel location the "
+                        "story reaches before the voyage holds progression only where this proves it.")
     else:
         out = full
         out["about"] = ("Locations proven reachable after the Final Save Point, per game: tools/ap_late_proof.py "
                         "(docs/ap/apworld.md, 'Logic: the late proof'). apworld/so2/rules.py keeps progression "
                         "out of every other location.")
     out.setdefault("games", {})
-    roots = TELEPORTER_ROOTS if tele else ROOTS
+    roots = TELEPORTER_ROOTS if tele else VOYAGE_ROOTS if voyage else ROOTS
     for game in games:
         glob_text, flag_text, summary = build_state(snap, field, game, args.state)
         try:
@@ -560,7 +633,7 @@ def main():
         except MemoryCapHit as e:
             print(f"[{game}] FAILED at the memory cap: {e}", file=sys.stderr, flush=True)
             return 3
-        result["state"] = dict(summary, roots=roots, disc=2, frames=args.frames, seed_locations=count,
+        result["state"] = dict(summary, roots=roots, disc=1 if voyage else 2, frames=args.frames, seed_locations=count,
                                expel_teleporter=tele,
                                stateful_maps={str(m): sorted(v) for m, v in sorted(stateful.items())})
         result["generated"] = datetime.date.today().isoformat()

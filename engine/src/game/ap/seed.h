@@ -66,7 +66,8 @@ struct Location {
 
 // A door (phase 4, docs/ap/seed_format.md): one map-transfer instruction (script ext 0x7d /
 // 0xa4 / 0xda), id = map * 65536 + offset / 4 (tools/ap_doors.py, docs/ap/doors.json). In an
-// open-world seed a door with a key needs that key; a door with a target sends the party there
+// open-world seed a door with a key needs that key, and one with `keys` needs all of them (a
+// one-way story point: the El voyage's trigger); a door with a target sends the party there
 // instead (entrance shuffle).
 struct DoorTarget {
   int map = -1;
@@ -80,9 +81,12 @@ struct Door {
   int offset = 0;            // the transfer instruction's byte offset in the script code
   int routine = -1;          // the byte offset of the routine a trigger starts (-1: unknown)
   int key = 0;               // the key it needs (0: none)
+  std::vector<int> keys;     // ... or the keys it needs, all of them (`keys`; `key` is among them)
   bool has_target = false;
   DoorTarget to;
   std::string name;
+  std::string purpose;       // the banner's ending for a missing key ("to sail to El"; "": none)
+  int until = 0;             // the keys are needed only while the story's chapter is below this (0: always)
 };
 
 struct Seed {

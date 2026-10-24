@@ -158,7 +158,8 @@ int required_protagonist();
 void on_script_loaded(int map, const std::vector<u8>& script);
 // A trigger region about to start the routine at byte offset 'routine' of the loaded script:
 // true when it is a door routine the open world keeps shut (every seed door in it needs a key
-// not received). Nothing of it runs; a banner names the key.
+// not received; a door with `keys` needs all of them: the El voyage's trigger). Nothing of it
+// runs; a banner names each missing key.
 bool door_blocked_at_trigger(int routine);
 // A map transfer (script ext 0x7d / 0xa4 / 0xda) at byte offset 'offset'; args = map,
 // transition, x, y, z, dir (as fetched). True: a locked door, the transfer is skipped. A seed
@@ -172,5 +173,6 @@ int on_shop_buy(int shop, int index, int item, int count);
 bool shop_slot_open(int shop, int index, int item);  // an unchecked shop-slot location there
 
 std::string status_text();
+std::vector<std::string> waiting_notices();   // the banners not shown yet (tests)
 
 }  // namespace ss::game::ap

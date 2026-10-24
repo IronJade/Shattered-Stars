@@ -20,13 +20,34 @@ releases; so2.apworld 0.1.1).
 - Few shell commands; stop and report on a refusal. One "docs-0.02: " line in
   scratchpad/checkpoint_notes.txt when done. Save and end past ~300k context.
 
-## Plan / state
+## State (16:45): done
 
-- [ ] README: What it is, What you need + Supported releases table, Mods / Archipelago lines.
-- [ ] docs/release_notes/0.02.00.md (draft, TO CONFIRM markers).
-- [ ] Wiki: Home, _Footer, Installing-and-Setup, Playing, FAQ, Archipelago, Modding,
-      Making-a-Mod, Submitting-a-Mod, Installing-and-Managing-Mods, How-the-Port-Was-Made.
-- [ ] Wiki commit (local only), checkpoint line.
+- [x] README: What it is, What you need + "Supported releases" table (serials, 60 Hz NA
+      logic, saves per release, mixed pairs refused, Japan recognised), one line each in Mods
+      and Archipelago. (The 16:38 checkpoint commit 1bb10c0 already includes it.)
+- [x] docs/release_notes/0.02.00.md: draft in the 0.01.00 format, DRAFT banner, SHA-256
+      placeholder, 4 TO CONFIRM markers: FR/DE event sweeps + Disc 2 + battle comparison;
+      French battle result / German Scan vs Redux; ap_e2e_so2 on France; the El-voyage lead
+      (docs/handoff/apareas.md, unfixed design decision). First draft in 1bb10c0; later edits
+      uncommitted.
+- [x] Wiki (scratchpad/wiki, local commit 3dc5c04, NOT pushed): Home, _Footer,
+      Installing-and-Setup, Playing, FAQ, Archipelago (0.1.1 section, regenerate notice),
+      Modding (new "Mods and the releases"), Making-a-Mod, Submitting-a-Mod,
+      Installing-and-Managing-Mods, How-the-Port-Was-Made (region profiles), plus 0.02.00 in
+      the version examples of Building-from-Source and Contributing.
+
+## Source inconsistencies found
+
+- 0.1.1 has two fixes (ship landings, teleporter islands; docs/ap/apworld.md "Changes"); both
+  documented.
+- The El-voyage lead (apareas.md) is not fixed in 0.1.1 and not in apworld.md's known limits.
+- Mod submissions: .github/PULL_REQUEST_TEMPLATE/mod_submission.md and mods/README.md still
+  require the NA discs, and tools/mod_check.py compares with the NA tables only; the wiki keeps
+  NA for submissions and explains. tools/so2_data.py's error text still says "use the North
+  American or European discs".
+- The AP option value is `open_world` (not "open").
+- How-the-Port-Was-Made "What's left" still has stale bullets (mod manager "being built",
+  .apworld release "to come"); not touched.
 
 ## Notes
 

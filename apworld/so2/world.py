@@ -11,7 +11,7 @@ from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
 from . import items, locations, regions, rules
-from .data import GOAL_ENCOUNTERS, KEY_GROUPS
+from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
 
@@ -196,12 +196,21 @@ class SO2World(World):
 
     def seed_doors(self):
         """Open world: every world-map entrance with its area's key (docs/ap/seed_format.md,
-        "Phase 4"; ids from docs/ap/doors.json). Story mode: none."""
+        "Phase 4"; ids from docs/ap/doors.json), then each one-way story point's door with the
+        keys it needs (data.STORY_GATES: the El voyage's trigger in the Lacour Front Line's
+        meeting room) and the exits kept shut until a chapter. Story mode: none."""
         if not self.open_world:
             return []
         world_name = {1: "Expel", 2: "Energy Nede"}
-        return [{"id": d, "key": g["key"], "name": f"{world_name[g['world']]} -> {g['group']}"}
-                for g in KEY_GROUPS for d in g["doors"]]
+        doors = [{"id": d, "key": g["key"], "name": f"{world_name[g['world']]} -> {g['group']}"}
+                 for g in KEY_GROUPS for d in g["doors"]]
+        doors += [{"id": gate["door"], "routine": f"{gate['routine']:#x}", "keys": regions.gate_keys(self, gate),
+                   "name": gate["name"], "purpose": gate["purpose"]} for gate in STORY_GATES]
+        # Exits kept shut until a chapter (data.EXIT_GATES: Central City's and Noel's House's
+        # before the Synard), so nobody walks out of an area the story brought them into.
+        doors += [{"id": e["door"], "routine": f"{e['routine']:#x}", "keys": list(e["keys"]), "until": e["until"],
+                   "name": e["name"], "purpose": e["purpose"]} for e in EXIT_GATES]
+        return doors
 
     def generate_output(self, output_directory):
         path = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.apso2")

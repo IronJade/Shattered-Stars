@@ -914,7 +914,7 @@ std::string phase4_seed(const std::string& options) {
 
 // A map script with map_transfer_c words at the given byte offsets of its code.
 std::vector<u8> script_with_transfers(std::initializer_list<int> offsets) {
-  std::vector<u8> s(0x1C + 0x4000, 0);
+  std::vector<u8> s(0x1C + 0x10000, 0);
   for (const int at : offsets) {
     const u32 w = 0xDA000011u;
     std::memcpy(s.data() + 0x1C + at, &w, 4);
@@ -998,6 +998,95 @@ TEST(ap_doors_and_keys) {
   ap::stop();
   // No seed: nothing changes.
   CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) && ap::on_shop_buy(1, 2, 224, 3) == 3);
+}
+
+namespace {
+
+// phase4_seed with the El passes (keys 17-19) in three chests (placeholders 1117-1119) and the
+// El voyage's gate: the Lacour Front Line meeting room's trigger (map 444, routine 0x7c28; the
+// transfer to Lacour Castle at 0x851c, door 29106503) needing all three.
+std::string gate_seed(const std::string& options) {
+  std::string t = phase4_seed(options);
+  t = replace(t, "\"5009000\":",
+              "\"5300017\": {\"name\": \"Eluria Tower Pass\", \"kind\": \"key\", \"key\": 17},\n"
+              "    \"5300018\": {\"name\": \"El Beach Pass\", \"kind\": \"key\", \"key\": 18},\n"
+              "    \"5300019\": {\"name\": \"Eluria Pass\", \"kind\": \"key\", \"key\": 19},\n    \"5009000\":");
+  std::string chests;
+  for (const int k : {17, 18, 19})
+    chests += "    {\"id\": " + std::to_string(9100 + k) + ", \"name\": \"pass " + std::to_string(k) +
+              "\", \"placeholder\": " + std::to_string(1100 + k) + ", \"check\": {\"type\": \"chest\", \"map\": 444, \"flag\": " +
+              std::to_string(100 + k) + "},\n     \"item\": {\"player\": 1, \"kind\": \"key\", \"key\": " + std::to_string(k) + "}},\n";
+  t = replace(t, "  \"locations\": [\n", "  \"locations\": [\n" + chests);
+  t = replace(t, "    {\"map\": 17, \"offset\": \"0x2060\", \"key\": 3}\n",
+              "    {\"map\": 17, \"offset\": \"0x2060\", \"key\": 3},\n"
+              "    {\"id\": 29106503, \"routine\": \"0x7c28\", \"keys\": [18, 19, 17], \"name\": \"El voyage\", \"purpose\": \"to sail\"},\n"
+              "    {\"id\": 15407589, \"routine\": \"0x670c\", \"keys\": [28], \"until\": 38, \"name\": \"Central City exit\", \"purpose\": \"to leave\"}\n");
+  return t;
+}
+
+}  // namespace
+
+TEST(ap_gate_door) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(gate_seed("{\"world_mode\": \"open_world\"}"), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  CHECK(s.doors.size() == 5 && s.doors[3].map == 444 && s.doors[3].offset == 0x851C && s.doors[3].routine == 0x7C28);
+  CHECK(s.doors[4].map == 235 && s.doors[4].offset == 0x6794 && s.doors[4].until == 38 && s.doors[3].until == 0);
+  CHECK(seed_error(replace(gate_seed("{}"), "\"until\": 38", "\"until\": 300"), "until: a chapter"));
+  CHECK(s.doors[3].keys == (std::vector<int>{18, 19, 17}) && s.doors[3].key == 18 && s.doors[3].purpose == "to sail");
+  CHECK(s.doors[0].keys == std::vector<int>{3} && s.doors[0].purpose.empty());
+  CHECK(seed_error(replace(gate_seed("{}"), "\"keys\": [18, 19, 17]", "\"keys\": [18, 0]"), "keys: 1-255"));
+  CHECK(seed_error(replace(gate_seed("{}"), "\"keys\": [18, 19, 17]", "\"keys\": 18"), "keys must be an array"));
+  ap::start_with(s);
+  ap::on_script_loaded(444, script_with_transfers({0x851C}));
+  // Without the passes the trigger does not start; the banner names each one, once.
+  CHECK(ap::door_blocked_at_trigger(0x7C28));
+  CHECK(ap::door_blocked_at_trigger(0x7C28));
+  CHECK(ap::waiting_notices() == (std::vector<std::string>{"El Beach Pass needed to sail",
+                                                           "Eluria Pass needed to sail",
+                                                           "Eluria Tower Pass needed to sail"}));
+  CHECK(!ap::door_blocked_at_trigger(0x7C24));  // (another routine)
+  // Two of the three: still shut.
+  CHECK(ap::on_give_item(1118) && ap::on_give_item(1119) && ap::has_key(18) && ap::has_key(19));
+  CHECK(ap::door_blocked_at_trigger(0x7C28));
+  s32 args[7] = {422, 130, -215, 0, 0, 180, 128};
+  CHECK(ap::on_map_transfer(0x851C, args));
+  // All three: the voyage goes on, its transfer untouched.
+  CHECK(ap::on_give_item(1117) && ap::has_key(17));
+  CHECK(!ap::door_blocked_at_trigger(0x7C28));
+  CHECK(!ap::on_map_transfer(0x851C, args) && args[0] == 422 && args[2] == -215);
+  ap::stop();
+  // Only the missing ones are named.
+  CHECK(ap::load_seed_text(gate_seed("{\"world_mode\": \"open_world\"}"), &s, &error));
+  ap::start_with(s);
+  ap::on_script_loaded(444, script_with_transfers({0x851C}));
+  CHECK(ap::on_give_item(1118) && ap::on_give_item(1117));
+  CHECK(ap::door_blocked_at_trigger(0x7C28));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"Eluria Pass needed to sail"});
+  ap::stop();
+  // An exit kept shut until a chapter (Central City's before chapter 38), without its key.
+  CHECK(ap::load_seed_text(gate_seed("{\"world_mode\": \"open_world\"}"), &s, &error));
+  ap::start_with(s);
+  ap::on_script_loaded(235, script_with_transfers({0x6794}));
+  const s32 chapter37 = 37, chapter38 = 38;
+  std::memcpy(sg.state.data(), &chapter37, 4);
+  CHECK(ap::door_blocked_at_trigger(0x670C));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"Key 28 needed to leave"});
+  std::memcpy(sg.state.data(), &chapter38, 4);
+  CHECK(!ap::door_blocked_at_trigger(0x670C));
+  std::memset(sg.state.data(), 0, 4);
+  ap::stop();
+  // Story mode: no gate.
+  CHECK(ap::load_seed_text(gate_seed("{}"), &s, &error));
+  ap::start_with(s);
+  ap::on_script_loaded(444, script_with_transfers({0x851C}));
+  CHECK(!ap::door_blocked_at_trigger(0x7C28) && ap::waiting_notices().empty());
+  ap::stop();
+  // No seed: nothing changes.
+  CHECK(!ap::door_blocked_at_trigger(0x7C28));
 }
 
 TEST(ap_shop_slots) {

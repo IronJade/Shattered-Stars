@@ -64,7 +64,7 @@ PUZZLE_ITEMS = (289, 317)
 EVENT_ENERGY_NEDE = "Arrived on Energy Nede"
 EVENT_FINAL_SAVE_POINT = "Saved at the Final Save Point"
 EVENT_VICTORY = "Victory"
-EVENT_TELEPORTER = "Expel Teleporter"     # open world: Expel reachable again from chapter 38
+EVENT_TELEPORTER = "Expel Teleporter"     # open world: Expel reachable again once the Synard flies (chapter 41)
 
 
 def stage_event(k):

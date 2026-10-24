@@ -15,7 +15,7 @@ stay in place. The entrances hang on three events, so the spheres follow the sto
 """
 from BaseClasses import ItemClassification, Region
 
-from .data import DISC_SWITCH_STAGE, STAGES
+from .data import DISC_SWITCH_STAGE, STAGES, STORY_GATES, TELEPORTER_STAGE
 from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_TELEPORTER, EVENT_VICTORY, KEY_NAME, SO2Item, \
     stage_event
 from .locations import SO2Location
@@ -53,12 +53,32 @@ def create_regions(world):
     return regions
 
 
+def gate_groups(world, gate):
+    """The entrance groups whose keys a one-way story point needs in this world: its own, and
+    with the Expel teleporter and expel_progression on (Nede keys and other worlds' items may
+    then sit on the Cross and Lacour continents, which the teleporter reopens only from the
+    Synard) the keys of the story's stages until then (`teleporter_groups`)."""
+    later = world.options.expel_teleporter and world.options.expel_progression
+    return list(gate["groups"]) + (list(gate["teleporter_groups"]) if later else [])
+
+
+def gate_keys(world, gate):
+    """gate_groups' key numbers (the seed door's `keys`)."""
+    numbers = dict(zip(gate["groups"] + gate["teleporter_groups"], gate["keys"] + gate["teleporter_keys"]))
+    return [numbers[g] for g in gate_groups(world, gate)]
+
+
 def stage_rules(world):
     """Open world: the events' rules (the stages, the disc switch, the teleporter, the Final Save
-    Point)."""
+    Point). A stage that ends with a one-way story point (data.STORY_GATES: the El voyage at the
+    end of the Lacour Front Line stage) also needs the gate's keys: the port does not let the
+    story past it without them."""
     player = world.player
+    gated = {}
+    for gate in STORY_GATES:
+        gated.setdefault(gate["stage"], []).extend(KEY_NAME[g] for g in gate_groups(world, gate))
     for k, (name, _, keys) in enumerate(STAGES, start=1):
-        need = [KEY_NAME[g] for g in keys]
+        need = list(dict.fromkeys([KEY_NAME[g] for g in keys] + gated.get(k, [])))
         prev = stage_event(k - 1) if k > 1 else None
         world.get_location(f"Story: {name}").access_rule = \
             lambda state, prev=prev, need=need: (
@@ -68,6 +88,8 @@ def stage_rules(world):
     world.get_location("Final Save Point (Fienal 9F)").access_rule = \
         lambda state: state.has(stage_event(len(STAGES)), player)
     if world.options.expel_teleporter:
-        # Chapter 38 (after stage 13, the scenes after the switch): the arena's old man.
+        # The arena's old man, from chapter 36; but Fun City lies on another island of Energy
+        # Nede's world map than Central City, reached by the Synard (stage 16, the Cave of Red
+        # Crystal; data.TELEPORTER_STAGE).
         world.get_location("Expel Teleporter (Fun City arena)").access_rule = \
-            lambda state: state.has_all((stage_event(DISC_SWITCH_STAGE + 1), KEY_NAME["Fun City"]), player)
+            lambda state: state.has_all((stage_event(TELEPORTER_STAGE), KEY_NAME["Fun City"]), player)

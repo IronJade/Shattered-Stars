@@ -7,7 +7,9 @@ the APWorld's; this only checks a table:
     problems = validate_doors(seed_doors, doors_json)    # [] when the table is good
 
 - every door id is one of the game's doors (id = map * 65536 + offset / 4);
-- a key is 1-255;
+- a key is 1-255, and so is each of a door's `keys` (a door that needs them all: a one-way
+  story point, the El voyage's);
+- a `routine` is the door's own (the routine its trigger starts); `until` is a chapter 1-255;
 - a target ("to") is an arrival point of the game: the map and position some door of the
   game itself sends the party to (so nobody lands inside a wall);
 - every target map can get back to a world map (1 Expel, 2 Energy Nede, 3) over the doors,
@@ -74,6 +76,32 @@ def validate_doors(seed_doors, doors_json):
         key = d.get("key", 0)
         if key and not 1 <= _int(key) <= 255:
             problems.append(f"{where}: key {key} is not 1-255")
+        if "keys" in d:
+            keys = d["keys"]
+            if not isinstance(keys, list) or not keys:
+                problems.append(f"{where}: keys must be a list of keys")
+            else:
+                for k in keys:
+                    try:
+                        ok = 1 <= _int(k) <= 255
+                    except (ValueError, TypeError):
+                        ok = False
+                    if not ok:
+                        problems.append(f"{where}: key {k} is not 1-255")
+        if "until" in d:
+            try:
+                ok = 1 <= _int(d["until"]) <= 255
+            except (ValueError, TypeError):
+                ok = False
+            if not ok:
+                problems.append(f"{where}: until {d['until']} is not a chapter 1-255")
+        if "routine" in d:
+            try:
+                routine = _int(d["routine"])
+            except (ValueError, TypeError):
+                routine = None
+            if routine is None or routine != rec.get("routine"):
+                problems.append(f"{where}: routine {d['routine']} is not door {did}'s ({rec.get('routine')})")
         if "to" in d:
             t = d["to"]
             try:

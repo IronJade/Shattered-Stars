@@ -20,6 +20,7 @@
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
+#include "game/field/message_internal.h"
 #include "game/field/notice.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
@@ -1381,12 +1382,54 @@ const Door* door_at(int offset) {
   return nullptr;
 }
 
-bool door_locked(const Door& d) { return rt().seed.open_world && d.key != 0 && !has_key(d.key); }
+// The story's chapter (script global G[0xa0], game_state +0; 0 without a game state).
+int story_chapter() {
+  const u8* g = field::globals().game_state;
+  return g == nullptr ? 0 : static_cast<int>(rd32s(g));
+}
 
+// The keys of a door the player lacks (open world): its `key`, or every one of its `keys` (a
+// one-way story point such as the El voyage needs them all); none once the chapter reaches the
+// door's `until` (an exit kept shut only while the story is inside the area).
+std::vector<int> missing_keys(const Door& d) {
+  std::vector<int> out;
+  if (!rt().seed.open_world) return out;
+  if (d.until > 0 && story_chapter() >= d.until) return out;
+  for (const int k : d.keys)
+    if (!has_key(k)) out.push_back(k);
+  return out;
+}
+
+bool door_locked(const Door& d) { return !missing_keys(d).empty(); }
+
+// A banner text's width in the map font (notice_show's measure; 0 before the font is loaded).
+// The banner's box is at most 0xf8 pixels, the text 0xc less (notice.cpp).
+constexpr int kBannerTextMax = 0xF8 - 0xC;
+int banner_text_width(const std::string& ascii) {
+  const u8* font = field::msg_font_ref();
+  if (font == nullptr) return 0;
+  int width = 0;
+  for (const char ch : ascii) {
+    const s32 g = message_glyph(ch);
+    if (g >= 0 && g < 0x4000) width += 1 + field::msg_glyph_width(static_cast<u32>(g));
+  }
+  return width;
+}
+
+// The banner names each missing key ("Salva Pass needed", "Eluria Pass needed to sail"), one
+// at a time, with the door's purpose when it fits the banner; a key's notice already waiting is
+// not queued again.
 void door_refused(const Door& d) {
-  const char* key = key_name(d.key);
-  log("door " + std::to_string(d.id) + (d.name.empty() ? "" : " (" + d.name + ")") + ": locked, needs " + key);
-  queue_notice(std::string(key) + " needed");
+  std::string names;
+  for (const int k : missing_keys(d)) {
+    const std::string key = key_name(k);
+    names += (names.empty() ? "" : ", ") + key;
+    std::string text = key + " needed" + (d.purpose.empty() ? "" : " " + d.purpose);
+    if (!d.purpose.empty() && banner_text_width(text) > kBannerTextMax) text = key + " needed";
+    auto& q = rt().notices;
+    if (std::find(q.begin(), q.end(), text) == q.end()) queue_notice(text);
+  }
+  log("door " + std::to_string(d.id) + (d.name.empty() ? "" : " (" + d.name + ")") + ": locked, needs " + names);
 }
 
 }  // namespace
@@ -1490,6 +1533,8 @@ int on_shop_buy(int shop, int index, int item, int count) {
       "): the slot's check took the first copy of " + std::to_string(count));
   return count - 1;
 }
+
+std::vector<std::string> waiting_notices() { return {rt().notices.begin(), rt().notices.end()}; }
 
 std::string status_text() {
   Runtime& r = rt();

@@ -1,5 +1,6 @@
 #include "game/ap/seed.h"
 
+#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <filesystem>
@@ -289,7 +290,19 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     door.routine = get_int_or(d["routine"], -1);
     door.key = get_int_or(d["key"], 0);
     if (door.key < 0 || door.key > 255) return fail(error, where + ": key 1-255 expected");
+    if (door.key != 0) door.keys.push_back(door.key);
+    const Json& kj = d["keys"];
+    if (!kj.is_null() && !kj.is_array()) return fail(error, where + ": keys must be an array");
+    for (size_t k = 0; k < kj.size(); ++k) {
+      const int key = get_int_or(kj[k], -1);
+      if (key < 1 || key > 255) return fail(error, where + ": keys: 1-255 expected");
+      if (std::find(door.keys.begin(), door.keys.end(), key) == door.keys.end()) door.keys.push_back(key);
+    }
+    if (door.key == 0 && !door.keys.empty()) door.key = door.keys.front();
     door.name = d["name"].as_string();
+    door.purpose = d["purpose"].as_string();
+    door.until = get_int_or(d["until"], 0);
+    if (door.until < 0 || door.until > 255) return fail(error, where + ": until: a chapter 1-255 expected");
     if (d.has("to")) {
       const Json& t = d["to"];
       door.has_target = true;
