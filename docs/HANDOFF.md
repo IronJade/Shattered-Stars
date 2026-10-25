@@ -47,7 +47,9 @@ this file is the quick orientation.
    section and "Battle comparison, final"): event sweeps explained, Redux checks match, French
    e2e 27/27, battles 564/564 identical to NA per release on the fixed build. The one port fault
    found (PAL never-clash spell list misread, `docs/handoff/soulmaster.md`) is fixed.
-5. **apv2 (2026-10-25):** start from `docs/handoff/apv2.md` (the user's requests verbatim, every
+5. **The hub open world (started 2026-10-25):** `docs/handoff/hub.md` (the user's decisions D1-D10,
+   the plan, the agents hubdata / hubvm / gifts and the next ones: hubcore, hubworld, hubproof).
+   **apv2 (2026-10-25):** start from `docs/handoff/apv2.md` (the user's requests verbatim, every
    decision, per-agent results and open items; agent logs ships, dialogue, apworld2, party,
    leader, hooks, killer_prof in docs/handoff/). Research notes in scratchpad/openworld/.
 6. **0.02.00 released** (2026-10-23 23:13). Open, none blocking: the late-proof tool fix
