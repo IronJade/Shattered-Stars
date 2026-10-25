@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "game/ap/ap.h"
+#include "game/ap/hub.h"
 #include "game/boot/pad.h"
 #include "game/common/math.h"
 #include "game/field/leader.h"
@@ -474,6 +475,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       // offset - 4).
       const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
       const int call_at = ctx->depth > 0 ? static_cast<int>(ctx->call_sp[-1]) - 4 : -1;
+      if (ap::hub_swallows_party(true, a[0])) break;  // the hub: none inside a story view [hubvm agent]
       if (!ap::on_party_add(a[0], at, call_at)) party_add_member(ctx, a[0]);
       break;
     }
@@ -484,6 +486,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       // back with the story (the site as for ext 0xae).
       const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
       const int call_at = ctx->depth > 0 ? static_cast<int>(ctx->call_sp[-1]) - 4 : -1;
+      if (ap::hub_swallows_party(false, a[0])) break;  // the hub: none inside a story view [hubvm agent]
       ap::on_party_remove(a[0], at, call_at);
       party_remove_member(ctx, a[0]);
       break;

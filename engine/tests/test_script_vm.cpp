@@ -14,6 +14,9 @@
 #include "disc/archive.h"
 #include "disc/disc_image.h"
 #include "disc/slz.h"
+#include "game/ap/ap.h"
+#include "game/ap/hub.h"
+#include "game/ap/seed.h"
 #include "game/boot/system.h"
 #include "game/field/field.h"
 #include "game/field/message.h"
@@ -707,4 +710,325 @@ TEST(script_vm_disc1_all_map_main_functions) {
   CHECK(maps > 800);
   CHECK_EQ(unknown, 0u);
   CHECK(problems.empty());
+}
+
+// ---- Archipelago, the hub [hubvm agent] (game/ap/hub.h; docs/ap/seed_format.md "Hub") ----
+
+namespace {
+
+// A hub seed: Alen-Tax's chamber (map 61) with a story view, Azamgil's (Rena's game only) and
+// Visseyer's (no view); the step passes the lock on maps 685 and 686.
+const char* kHubSeed = R"seed({"format": "apso2", "version": 3, "seed": "hub-test", "slot": {"name": "H", "id": 1},
+ "options": {"world_mode": "hub"}, "items": {}, "locations": [],
+ "bosses": [{"encounter": 191, "name": "Alen-Tax", "map": 61,
+             "view": {"chapter": 6, "step": 2100, "flags": {"745": 0, "744": 0, "11": 0},
+                      "globals": {"0x1cf": {"size": 1, "value": 3}, "0x2e0": "0x1234"}, "keep": [11]}},
+            {"encounter": 195, "name": "Azamgil", "map": 463, "game": "rena", "view": {"chapter": 15, "step": 2500}},
+            {"encounter": 209, "name": "Visseyer", "map": 412}],
+ "hub": {"chapter": 60, "step": 4000, "lock": {"chapter": true, "step": true, "step_maps": [685, 686]}}})seed";
+
+std::string hub_seed_with(const std::string& from, const std::string& to) {
+  std::string t = kHubSeed;
+  const size_t at = t.find(from);
+  if (at != std::string::npos) t.replace(at, from.size(), to);
+  return t;
+}
+
+bool start_hub(const std::string& text) {
+  ap::Seed s;
+  std::string error;
+  if (!ap::load_seed_text(text, &s, &error)) {
+    std::fprintf(stderr, "  hub seed: %s\n", error.c_str());
+    return false;
+  }
+  ap::start_with(s);
+  return true;
+}
+
+void set_map(Fixture& f, int map) {
+  const s16 m = static_cast<s16>(map);
+  std::memcpy(f.block.data() + 0x220 + 0x1A, &m, 2);
+}
+void set_story(Fixture& f, s32 chapter, s32 step) {
+  vm_wr32(f.block.data() + 0x180 + 0xA0, static_cast<u32>(chapter));
+  vm_wr32(f.block.data() + 0x180 + 0xA4, static_cast<u32>(step));
+}
+void set_flag(Fixture& f, u32 n, bool on) {
+  u8& b = f.block[0x8C0 + (n >> 3)];
+  b = on ? static_cast<u8>(b | 1 << (n & 7)) : static_cast<u8>(b & ~(1 << (n & 7)));
+}
+size_t hub_log_count(const std::string& part) {
+  size_t n = 0;
+  for (const std::string& line : ap::hub_log()) n += line.find(part) != std::string::npos;
+  return n;
+}
+
+// Stores to the chapter and step in every form the VM has: store = word, typed store, inc,
+// block_store; then a control store.
+const std::vector<u32> kLockScript = {
+    op(0x17),                         // 0
+    op(0x1A, 0xA0), 13,               // 1 (+0x4): store s32 G[0xa0] = 13
+    op(0x1A, 0xA4), 0,                // 3 (+0xc): store s32 G[0xa4] = 0
+    typed(0x21, kS32, 0xA0), 14,      // 5 (+0x14): typed store G[0xa0] = 14
+    typed(0x47, kS32, 0xA4),          // 7 (+0x1c): G[0xa4]++
+    op(0x61, 0xA0), 1, 15,            // 8 (+0x20): block_store 1 word at G[0xa0]: 15
+    op(0x1A, 0x200), 7,               // 11: store s32 G[0x200] = 7
+    op(0x15, 13),                     // 13: spin
+};
+
+}  // namespace
+
+TEST(ap_hub_seed) {
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kHubSeed, &s, &error));
+  CHECK(s.hub && !s.open_world && s.version == 3 && s.bosses.size() == 3);
+  CHECK(s.hub_lock_chapter && s.hub_lock_step && s.hub_step_maps == (std::vector<int>{685, 686}));
+  const ap::HubBoss& b = s.bosses[0];
+  CHECK(b.encounter == 191 && b.map == 61 && b.maps == std::vector<int>{61} && b.has_view && b.game == 0);
+  CHECK(b.view.chapter == 6 && b.view.step == 2100 && b.view.flags.size() == 3 && !b.view.flags.at(745));
+  CHECK(b.view.globals.size() == 2 && b.view.globals[0].addr == 0x1CF && b.view.globals[0].size == 1 &&
+        b.view.globals[0].value == 3 && b.view.globals[1].addr == 0x2E0 && b.view.globals[1].size == 4 &&
+        b.view.globals[1].value == 0x1234);
+  CHECK(b.view.keep == std::vector<int>{11});
+  CHECK(s.bosses[1].game == 2 && !s.bosses[2].has_view);
+  // world_mode 2, defaults of the lock.
+  CHECK(ap::load_seed_text(hub_seed_with("\"world_mode\": \"hub\"", "\"world_mode\": 2"), &s, &error) && s.hub);
+  CHECK(ap::load_seed_text(hub_seed_with(", \"lock\": {\"chapter\": true, \"step\": true, \"step_maps\": [685, 686]}", ""), &s, &error));
+  CHECK(s.hub_step_maps == std::vector<int>{685});
+  auto refused = [&](const std::string& text, const std::string& part) {
+    ap::Seed t;
+    std::string e;
+    const bool ok = !ap::load_seed_text(text, &t, &e) && e.find(part) != std::string::npos;
+    if (!ok) std::fprintf(stderr, "  expected '%s', got '%s'\n", part.c_str(), e.c_str());
+    return ok;
+  };
+  CHECK(refused(hub_seed_with("\"keep\": [11]", "\"keep\": [12]"), "view.keep: a flag of view.flags"));
+  CHECK(refused(hub_seed_with("\"0x2e0\": \"0x1234\"", "\"0x2e1\": 5"), "view.globals"));
+  CHECK(refused(hub_seed_with("\"0x2e0\": \"0x1234\"", "\"0xa4\": 5"), "view.globals"));
+  CHECK(refused(hub_seed_with("\"game\": \"rena\"", "\"game\": \"ashton\""), "game: claude or rena"));
+  CHECK(refused(hub_seed_with("\"world_mode\": \"hub\"", "\"world_mode\": \"hubs\""), "story, open_world or hub"));
+  CHECK(refused(hub_seed_with("\"step\": 2100,", ""), "view.step missing"));
+  CHECK(refused(hub_seed_with("\"version\": 3", "\"version\": 4"), "unsupported version 4"));
+}
+
+TEST(ap_hub_chapter_lock) {
+  ap::stop();
+  {
+    Fixture f;
+    set_story(f, 60, 4000);
+    set_map(f, 547);
+    CHECK(start_hub(kHubSeed));
+    f.load(kLockScript, 1);
+    g_vm_step_limit = 40;
+    f.frame();
+    CHECK_EQ(f.var32(0xA0), 60);
+    CHECK_EQ(f.var32(0xA4), 4000);
+    CHECK_EQ(f.var32(0x200), 7);
+    CHECK_EQ(hub_log_count("chapter store 13 dropped at map 547 offset 0x4"), 1u);
+    CHECK_EQ(hub_log_count("step store 0 dropped at map 547 offset 0xc"), 1u);
+    CHECK_EQ(hub_log_count("chapter store 14 dropped at map 547 offset 0x14"), 1u);
+    CHECK_EQ(hub_log_count("step store 4001 dropped at map 547 offset 0x1c"), 1u);
+    CHECK_EQ(hub_log_count("chapter store 15 dropped at map 547 offset 0x20"), 1u);
+    // Logged once per site.
+    f.load(kLockScript, 1);
+    f.frame();
+    CHECK_EQ(hub_log_count("dropped at map 547"), 5u);
+    // A step map: the step passes, the chapter does not.
+    set_map(f, 685);
+    f.load(kLockScript, 1);
+    f.frame();
+    CHECK_EQ(f.var32(0xA0), 60);
+    CHECK_EQ(f.var32(0xA4), 1);  // (0, then ++)
+    // The disc switch is dropped in hub mode.
+    CHECK(ap::hub_swallows_disc_change());
+    g_vm_step_limit = 0;
+    ap::stop();
+  }
+  for (const char* other : {"story", "none"}) {
+    Fixture f;
+    set_story(f, 60, 4000);
+    set_map(f, 547);
+    if (std::string(other) == "story") CHECK(start_hub(hub_seed_with("\"world_mode\": \"hub\"", "\"world_mode\": \"story\"")));
+    f.load(kLockScript, 1);
+    g_vm_step_limit = 40;
+    f.frame();
+    g_vm_step_limit = 0;
+    CHECK_EQ(f.var32(0xA0), 15);  // the original: every store lands
+    CHECK_EQ(f.var32(0xA4), 1);
+    CHECK(!ap::hub_swallows_disc_change());
+    CHECK(!ap::g_hub_vm);
+    ap::stop();
+  }
+}
+
+TEST(ap_hub_story_view) {
+  ap::stop();
+  Fixture f;
+  set_story(f, 60, 4000);
+  set_flag(f, 1, true);     // Claude's game
+  set_flag(f, 745, true);   // real 1, the view 0
+  set_flag(f, 744, false);  // real 0, the view 0, stored 1 in the view: dropped
+  set_flag(f, 11, false);   // real 0, the view 0, stored 1 in the view: kept
+  vm_wr32(f.block.data() + 0x180 + 0x1CC, 0x11223344u);
+  CHECK(start_hub(kHubSeed));
+  // Visseyer's chamber: no view. Azamgil's: Rena's game only.
+  ap::on_script_loaded(412, {});
+  CHECK(!ap::hub_view_on());
+  ap::on_script_loaded(463, {});
+  CHECK(!ap::hub_view_on());
+  set_map(f, 61);
+  ap::on_script_loaded(61, {});
+  CHECK(ap::hub_view_on() && ap::hub_view_encounter() == 191);
+  f.load(
+      {
+          op(0x17),                                   // 0
+          op(0x19, 0xA0), 6, op(0x02, 0x200),         // 1: G[0x200] = (chapter == 6)
+          op(0x0B, 0xA4), op(0x02, 0x204),            // 4: G[0x204] = step
+          op(0x0E, 745), op(0x02, 0x208),             // 6: G[0x208] = flag 745
+          op(0x0D, 0x1CF), op(0x02, 0x20C),           // 8: G[0x20c] = u8 G[0x1cf]
+          op(0x0B, 0x1CC), op(0x02, 0x210),           // 10: G[0x210] = s32 G[0x1cc] (one byte the view's)
+          op(0x1A, 0xA0), 41,                         // 12: chapter = 41
+          op(0x1A, 0xA4), 0,                          // 14: step = 0
+          typed(0x21, kFlag, 744), 1,                 // 16: flag 744 = 1 (the view's)
+          typed(0x21, kFlag, 11), 1,                  // 18: flag 11 = 1 (the view's; kept)
+          typed(0x21, kFlag, 483), 1,                 // 20: flag 483 = 1 (not the view's: through)
+          op(0x12, 9), op(0x05, 0x1CF),               // 22: s8 G[0x1cf] = 9 (the view's)
+          op(0x13), 0xAABBCCDDu, op(0x02, 0x1CC),     // 24: s32 G[0x1cc] = 0xaabbccdd (3 bytes through)
+          typed(0x47, kS32, 0xA4),                    // 27: step++
+          op(0x0B, 0xA0), op(0x02, 0x214),            // 28: G[0x214] = chapter as the view shows it
+          op(0x15, 30),                               // 30: spin
+      },
+      1);
+  g_vm_step_limit = 60;
+  f.frame();
+  g_vm_step_limit = 0;
+  CHECK_EQ(f.var32(0x200), 1);
+  CHECK_EQ(f.var32(0x204), 2100);
+  CHECK_EQ(f.var32(0x208), 0);
+  CHECK_EQ(f.var32(0x20C), 3);
+  CHECK_EQ(f.var32(0x210), 0x03223344);
+  CHECK_EQ(f.var32(0x214), 41);
+  // The real state: chapter and step untouched, the view's flags untouched, flag 483 through, the
+  // word's three other bytes through.
+  CHECK_EQ(f.var32(0xA0), 60);
+  CHECK_EQ(f.var32(0xA4), 4000);
+  CHECK(f.flag(745) && !f.flag(744) && !f.flag(11) && f.flag(483));
+  CHECK_EQ(static_cast<u32>(f.var32(0x1CC)), 0x11BBCCDDu);
+  CHECK(ap::hub_status().find("chapter 41 step 1") != std::string::npos);
+  // Party changes inside the view are dropped; none outside it.
+  CHECK(ap::hub_swallows_party(true, 1));
+  // The battle back on the same map: the view stays; the victory goes in goal_won.
+  ap::on_battle_exit(191, 0);
+  CHECK(ap::goal_won(191));
+  ap::on_script_loaded(61, {});
+  CHECK(ap::hub_view_on());
+  // Free play after the victory ends it: flag 11 kept, the rest dropped.
+  ap::hub_free_play();
+  CHECK(!ap::hub_view_on());
+  CHECK(f.flag(11) && !f.flag(744) && f.flag(745));
+  CHECK_EQ(f.var32(0xA0), 60);
+  CHECK_EQ(hub_log_count("dropped chapter 41, step 1, G[0x1cf] 170, flag 744=1, 1 party changes; kept flag 11=1"), 1u);
+  CHECK(!ap::hub_swallows_party(true, 1));
+  // Beaten: the chamber shows the hub's own state from now on.
+  ap::on_script_loaded(61, {});
+  CHECK(!ap::hub_view_on());
+  ap::stop();
+}
+
+TEST(ap_hub_view_ends) {
+  ap::stop();
+  Fixture f;
+  set_story(f, 60, 4000);
+  set_flag(f, 1, true);
+  CHECK(start_hub(hub_seed_with("\"map\": 61,", "\"map\": 61, \"maps\": [61, 62],")));
+  // The player walks out before the fight: the view ends at the next map's load (nothing kept),
+  // and comes back on re-entry; a map of `maps` keeps it.
+  ap::on_script_loaded(61, {});
+  CHECK(ap::hub_view_on());
+  ap::on_script_loaded(62, {});
+  CHECK(ap::hub_view_on());
+  ap::on_script_loaded(60, {});
+  CHECK(!ap::hub_view_on());
+  CHECK_EQ(hub_log_count("story view off: map"), 1u);
+  ap::on_script_loaded(61, {});
+  CHECK(ap::hub_view_on());
+  // Free play before the victory does not end it; another boss's victory neither.
+  ap::hub_free_play();
+  ap::on_battle_exit(209, 0);
+  CHECK(ap::hub_view_on());
+  // New Game and a load reset it (nothing written back).
+  ap::on_new_game();
+  CHECK(!ap::hub_view_on());
+  ap::on_script_loaded(61, {});
+  CHECK(ap::hub_view_on());
+  ap::on_loaded("", 0);
+  CHECK(!ap::hub_view_on());
+  // Rena's game: Azamgil's chamber has its view, Alen-Tax's too (no `game`).
+  set_flag(f, 1, false);
+  ap::on_script_loaded(463, {});
+  CHECK(ap::hub_view_encounter() == 195);
+  ap::stop();
+  // A story seed with the same rows: no view.
+  CHECK(start_hub(hub_seed_with("\"world_mode\": \"hub\"", "\"world_mode\": \"open_world\"")));
+  ap::on_script_loaded(61, {});
+  CHECK(!ap::hub_view_on());
+  ap::stop();
+}
+
+TEST(ap_hub_view_keys) {
+  // The optional keys: after_maps (the view goes on into them, never starts there), until
+  // "transfer" (no end at free play), cut_to (after the win, the first transfer out goes there).
+  ap::stop();
+  Fixture f;
+  set_story(f, 60, 4000);
+  set_flag(f, 1, true);
+  const std::string text = hub_seed_with(
+      "{\"encounter\": 209, \"name\": \"Visseyer\", \"map\": 412}",
+      "{\"encounter\": 527, \"name\": \"Guardian (Courage)\", \"map\": 642, \"view\": {\"chapter\": 42, \"step\": 0, \"after_maps\": [625]}},"
+      " {\"encounter\": 525, \"name\": \"Guardian (Power)\", \"map\": 603, \"maps\": [603, 604], \"view\": {\"chapter\": 42, \"step\": 0, \"until\": \"transfer\"}},"
+      " {\"encounter\": 520, \"name\": \"Berle\", \"map\": 575, \"maps\": [557, 575], \"view\": {\"chapter\": 33, \"step\": 0,"
+      " \"cut_to\": {\"map\": 557, \"x\": -92, \"y\": 0, \"z\": 1907, \"dir\": 270}}}");
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(text, &s, &error));
+  CHECK(s.bosses.size() == 5 && s.bosses[2].view.after_maps == std::vector<int>{625} && s.bosses[3].view.until_transfer &&
+        s.bosses[4].view.has_cut_to && s.bosses[4].view.cut_to.map == 557 && s.bosses[4].view.cut_to.z == 1907 &&
+        s.bosses[4].view.cut_to.dir == 270);
+  ap::Seed bad;
+  CHECK(!ap::load_seed_text(hub_seed_with("\"chapter\": 6, \"step\": 2100,", "\"chapter\": 6, \"step\": 2100, \"until\": \"later\","), &bad, &error) &&
+        error.find("view.until") != std::string::npos);
+  CHECK(!ap::load_seed_text(hub_seed_with("\"chapter\": 6, \"step\": 2100,", "\"chapter\": 6, \"step\": 2100, \"cut_to\": {\"map\": 557, \"x\": 1, \"y\": 0},"), &bad, &error) &&
+        error.find("view.cut_to") != std::string::npos);
+  ap::start_with(s);
+  // after_maps.
+  ap::on_script_loaded(625, {});
+  CHECK(!ap::hub_view_on());
+  ap::on_script_loaded(642, {});
+  CHECK(ap::hub_view_encounter() == 527);
+  ap::on_script_loaded(625, {});
+  CHECK(ap::hub_view_encounter() == 527);
+  ap::on_script_loaded(641, {});
+  CHECK(!ap::hub_view_on());
+  // until "transfer".
+  ap::on_script_loaded(603, {});
+  ap::on_battle_exit(525, 0);
+  ap::hub_free_play();
+  CHECK(ap::hub_view_encounter() == 525);
+  ap::on_script_loaded(604, {});
+  CHECK(ap::hub_view_encounter() == 525);
+  ap::on_script_loaded(602, {});
+  CHECK(!ap::hub_view_on());
+  // cut_to: not before the win; the first transfer out after it; the view ends at that load.
+  ap::on_script_loaded(575, {});
+  s32 args[7] = {576, 2, 0, 0, 0, 0, 0};
+  CHECK(!ap::on_map_transfer(0x100, args) && args[0] == 576);
+  ap::on_battle_exit(520, 0);
+  s32 inside[7] = {557, 2, 5, 0, 5, 90, 0};
+  CHECK(!ap::on_map_transfer(0x100, inside) && inside[0] == 557 && inside[2] == 5);  // (a view map: no cut)
+  CHECK(!ap::on_map_transfer(0x100, args) && args[0] == 557 && args[2] == -92 && args[3] == 0 && args[4] == 1907 && args[5] == 270);
+  CHECK_EQ(hub_log_count("the transfer to map 576 goes to map 557 (-92, 0, 1907) instead (cut_to)"), 1u);
+  ap::on_script_loaded(557, {});
+  CHECK(!ap::hub_view_on());
+  ap::stop();
 }

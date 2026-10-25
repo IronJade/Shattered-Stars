@@ -686,9 +686,10 @@ turns none of these features on is a version-1 seed the 0.02.00 port plays as it
 
 A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
 silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
-slot_data's `seed_format` is the same number. (The port reads both since 2026-10-25; it
-refuses 3 and up: "unsupported version 3 (this build reads 1 and 2)". It reads the v2 fields
-in a version-1 seed too.)
+slot_data's `seed_format` is the same number. (The port reads both since 2026-10-25, and 3
+(a hub seed, "Hub" below) since the hub's port work the same day; it refuses 4 and up:
+"unsupported version 4 (this build reads 1 to 3)". It reads the v2 fields in a version-1 seed
+too.)
 
 ### New `options` keys
 
@@ -1037,3 +1038,216 @@ engine/tests/test_ap.cpp `ap_v2_*`; smoke cases `ap_v2_*`, `auto_wizard`.
             "banners": ["Talk to Filia in Central City first"], "name": "Indalecio (Limiter Off)"}]
 }
 ```
+
+## Hub (`world_mode: hub`)
+
+Written by the agent "hubdata" (log `docs/handoff/hubdata.md`), agreed with the port agent
+"hubvm" (log `docs/handoff/hubvm.md`, whose proposal the `bosses` rows follow). The design and
+the user's decisions: `docs/handoff/hub.md` (D1-D10). The data: `docs/ap/hub_state.json`
+(`tools/ap_hub_state.py`) and `docs/ap/hub_bosses.json` (`tools/ap_hub_bosses.py`); the APWorld
+copies their rows into the seed.
+
+A hub seed starts New Game after the Final Save Point (chapter 60, flag 730, disc 2) with every
+location's done flags cleared; both worlds are open (the Synard on Energy Nede, the Fun City
+arena's old man / Arlia's guide and the Synard on Virtual Expel); towns are open and each
+dungeon has one key; each story boss plays its original scene in its chamber through a story
+view until it is beaten. Without `world_mode: hub` none of this exists.
+
+### The version and the options
+
+- `version`: **3**. A wave-2 port refuses it ("unsupported version 3 (this build reads 1 and
+  2)") instead of playing a hub seed as a story game.
+- `options.world_mode`: `"hub"` (or 2). The chapter lock, the story views, the hub New Game and
+  the dungeon keys run only then.
+- Reference only (the port reads the blocks below): `options.hub_start` (`fun_city`, `arlia`,
+  `random`: the APWorld picks the concrete `hub.start`), `options.fienal_requirement`
+  (`fields_and_berle`, `fields`, `all_bosses`: written as the gate door's `won`, below).
+- `party_rules` is `"open"` and characters are items (D7); `starting_character` works as in
+  open world.
+
+### The `hub` block (the state New Game builds)
+
+```json
+"hub": {
+ "chapter": 60, "step": 4000, "disc": 2,
+ "flags": [3, 5, 6, 11, 17, ...],
+ "globals": {"0xc4": "0x20100", "0x1bc": "0x270f", "0x30c": "0xc809", ...},
+ "games": {"claude": {"flags": [1], "globals": {"0xc4": "0x20100"}},
+           "rena":   {"flags": [],  "globals": {"0xc4": "0x20001"}}},
+ "start": {"name": "Fun City", "map": 279, "x": 470, "y": 0, "z": 68, "dir": 180},
+ "lock": {"chapter": true, "step": true, "step_maps": [685]}
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `chapter`, `step` | G[0xa0] / G[0xa4] (game_state +0 / +4) at New Game: 60 and 4000 (why 4000: hub_state.json `step_reason`) |
+| `disc` | 2: the field loads Energy Nede's and Fienal's maps from disc 2, which also holds Expel's (field.json `disc2`) |
+| `flags` | every global script flag set at New Game; all others are clear. Both games; the hero's own flag comes from `games` |
+| `globals` | script global words written at New Game: `{"0xADDR": value}`, ADDR 4-aligned, 0xc4 <= ADDR < 0x340 (game_state +0x24 .. +0x29f), 32-bit little-endian. Never the names (G[0xc8]-G[0x1b7]: New Game's own), the message speed (G[0x1b8]: a setting) or the map / position / music words (G[0xa8]-G[0xc3]: the start sets them) |
+| `games` | applied after `flags` / `globals` for the hero the player picked (Claude: flag 1 set, game_state +0x24 / +0x25 = 0 / 1; Rena: flag 1 clear, 1 / 0), as the late proof builds Rena's game |
+| `start` | where New Game puts the party: field map, position, facing (the arrival of the town's world-map entrance). `name` for the log |
+| `lock.chapter` | P2: outside a story view, a script store to G[0xa0] is dropped (log `hub: chapter store N dropped at map M offset X`) |
+| `lock.step` | likewise for G[0xa4] (steps 1000-5000 of chapter 60 belong to Fienal's chambers, which play them inside their views; outside them the step stays 4000) |
+| `lock.step_maps` | maps where step stores outside a view go through (default `[685]`: the goal fight's aftermath stores step 5000 on the way to the endings) |
+
+- **Order at New Game** (hubcore, P1): the original New Game (hero choice, names, the starting
+  party and inventory), then `flags` (all others cleared), `globals`, `games[hero]`, `chapter` /
+  `step`, then the transfer to `start` on disc 2; then `start.items`, `goal.flags` and the
+  starting character as in open world. Relationship values (config +0x58 / +0xe8), levels,
+  inventory and Fol are New Game's: the hub state holds no config data.
+- **The Synards.** `flags` holds flag 11 (the Synard); `globals` holds both parking spots
+  (table A 0x19 `set_point`): Expel's (game_state +0x26c x, +0x28c y, +0x270 z, +0x27c facing:
+  Arlia's own spot, (51209, -150, 17464, 90), which Virtual Arlia's arrival and Arlia 17 / 19
+  store) and Energy Nede's (+0x274, +0x290, +0x278, +0x27e: the start town's own spot; Fun City's
+  is (81546, -258, 33880, 176), stored by map 279). So the Synard waits next to the start town
+  on its world and next to Arlia on Expel (R8: no first trip through the old man needed). A
+  start on Expel keeps Nede's spot at Fun City (the arena's old man lands there).
+- **Neutral, not the user's save.** hub_state.json lists every flag and word of the late save
+  with its category (story, chest opened, gift guard, boss guard, PA / relationship, ending,
+  other) and what the hub does with it.
+
+### The `bosses` block (the chambers)
+
+```json
+"bosses": [
+ {"encounter": 531, "name": "Bark", "map": 454, "maps": [453, 454],
+  "view": {"chapter": 55, "step": 0,
+           "flags": {"740": 0, "741": 0, "742": 0, "743": 0, "744": 0, "745": 0}, "keep": []},
+  "location": 1364328979, "dungeon": "Mihne Cavern", "keys": [18],
+  "trigger": [{"kind": "thread_start", "routine": "0x661c", "registered_at": "0x67c0",
+               "region": [[124, 131], [198, 129], [184, 119], [135, 122]]}]},
+ {"encounter": 527, "name": "Guardian", "map": 642, "maps": [642],
+  "view": {"chapter": 42, "step": 0, "flags": {"523": 0, "524": 0, "745": 0}, "keep": [],
+           "after_maps": [625]}},
+ {"encounter": 194, "name": "Varmillion", "map": 462, "game": "claude",
+  "view": {"chapter": 15, "step": 2400, "flags": {"731": 0, "745": 0}, "keep": []}}
+]
+```
+(Rows abridged; docs/ap/hub_bosses.json has them all.)
+
+Read by the port:
+
+| Key | Meaning |
+|---|---|
+| `encounter` | the boss battle. A victory in it (outcome 0) goes in the sidecar's `goal_won` (the list door `won` conditions read), so "Defeat X first" doors and the Fienal gate need no new sidecar key. The boss is **unbeaten** while its encounter is not in `goal_won` |
+| `name` | logs and banners |
+| `map`, `maps` | the chamber: while the party is on one of `maps` (default `[map]`) and the boss is unbeaten, the view is on |
+| `view` | the story view (absent: no view; a flag-guarded boss whose guard the hub state clears, such as Visseyer at 412, plays its scene at the hub's own state) |
+| `view.chapter`, `view.step` | what the chamber's scripts read in G[0xa0] / G[0xa4]; their stores go to the view |
+| `view.flags` | `{"n": 0 or 1}`: flags the chamber's scripts see with these values; reads and writes go to the view. Flags not listed read and write the real flags as usual |
+| `view.globals` | (optional) script globals redirected the same way: `{"0xADDR": value}` a 32-bit word (ADDR 4-aligned, >= 0xa8; all four bytes), or `{"0xADDR": {"size": 1 or 2, "value": v}}` for a byte / half global (only those bytes; ADDR aligned to its size): prefer it for the floor G[0x1cf] and the like |
+| `view.keep` | flags of `view.flags` whose value at the view's end is written to the real flags (the whitelist); everything else stored in the view is dropped |
+| `game` | optional: `"claude"` or `"rena"`: the chamber exists only in that hero's game (Varmillion 462 / Azamgil 463) |
+| `view.after_maps` | (proposed to hubvm, optional) maps the view goes on into when its scene transfers there from a view map, without turning the view on by themselves (an aftermath through a scene map: the Field of Courage's 625 vision, the Synard Plant's 271, the Field of Intelligence's 555 / 628 / 556) |
+| `view.until` | (proposed, optional) `"free_play"` (default: the view ends at the first free play after the win) or `"transfer"` (it lasts until a map outside `maps` / `after_maps` loads: the Field of Power, whose end scene in 604 is guarded only by flags) |
+| `view.cut_to` | (proposed, optional) `{map, x, y, z, dir}`: after the win, the scene's first transfer out of the view goes here instead (Berle 575: the scene goes on to 576, which stores chapter 34 and moves to the disc switch's scene map 625; cut_to = the tower's world-map arrival) |
+
+- **The view ends** at the first map load outside `maps` (the scene's transfer out, or the
+  player walking out before the fight) or at the first free play (no event or talk running, no
+  fade or window up) after the boss battle was won. New Game and a load reset it. Party changes
+  (ext 0xae / 0xaf) and disc changes (B 0x6a) inside a view are dropped (D7; no scene reaches a
+  disc change before its cut).
+- **What a row's view lists** (tools/ap_hub_bosses.py; `view_flags_why` says why per flag).
+  `chapter` / `step`: the scene's guard (`chapter <= N` reads as N; Bark has none and gets the
+  chapter the story enters Mihne at, 55). `flags`: the flags the view's maps read whose value at
+  that chapter differs from the hub's (the latest story scene storing it before that chapter
+  decides), and the flags stored in the view that the hub must not keep (story bookkeeping, the
+  party flags 740-744: dropped), each at its value at that story point; flag 745 (the scene
+  flag; a chamber's set-up fades in only while it is 0) at 0 wherever a scene stores it. Not
+  listed, so written through: the bosses' guards and their "won" flags, the Fields' 162-165,
+  key items 66-91, chest and gift flags. `keep`: Arcmene's flag 11 (its 12 is dropped: it makes
+  a disc of Nede's world map unwalkable and is clear in the late save).
+
+Reference only (the port ignores them; the APWorld and the proofs read them):
+
+| Key | Meaning |
+|---|---|
+| `location` | the boss location's id (`0x50320000 + (9 << 21) + encounter`) |
+| `dungeon`, `keys` | the dungeon key group and its key(s) (below) |
+| `trigger` | (a list: one per way in) how the scene starts in the view: `kind` `thread_start` (a trigger region: `region` its four corners (x, z), `registered_at` the registration's byte offset), `setup` (the map's set-up code calls it on arrival), `talk` (an actor's talk handler); `routine` the routine started (doors.json's sense) |
+| `late` | whether the late state reaches the chamber (false: P5 needs a door override or an arrival in hub mode) |
+
+### The dungeon keys (D4)
+
+Towns are open; each dungeon has one key (`{"kind": "key", "key": N, "name": "Hoffmann Ruins
+Key"}`, as phase 4's area keys). The seed's `doors` locks every door into the dungeon with it:
+world-map entrances (as in open world) and the field doors from a town into a dungeon (Salva
+Drift, the Mars dungeon, Zand's Mansion, the Synard Plant, the Portal of Sealing...), which the
+door table already takes (`id` = map * 65536 + offset / 4, `routine` for a trigger region).
+hub_bosses.json `dungeons` lists each key group with its doors (on the late state's edges),
+chambers and chests: 20 groups, Expel 11 (Salva Drift, Cross Cave, the Mars dungeon, Zand's
+Mansion, the Sanctuary of Linga, Hoffmann Ruins, the Lacour Front Line, Eluria Tower, the
+Mountain Palace, Lasguss Mountain, the Cave of Trials) and Energy Nede 9 (the Synard Plant, the
+Cave of Red Crystal, the four Fields, Mihne Cavern, the Portal of Sealing, Fienal). Three
+chambers stand in towns and need no key: Berle at Armlock 306, Shigeo in Fun City 281, Marsilio
+in the Fun City arena 305. Fienal's entrance carries the goal requirement (D6) as `won` (the
+chambers' encounters) with a banner; the Final Save Point's way to the final corridor (door
+43978493) keeps the goal's own conditions.
+
+### Sidecar
+
+Nothing new: chamber victories go in `goal_won`; the hub state is built once at New Game and
+saved with the game. A save made in a view holds the real state (the view's values never
+reach it); loading it starts with the view off.
+
+### The port: the chapter lock and the story views (agent "hubvm", `engine/src/game/ap/hub.cpp`)
+
+What the port does with `world_mode: hub`, `hub.lock` and `bosses` (implemented 2026-10-25; the
+hub New Game, the start and the dungeon doors are the "hubcore" agent's). Without a hub seed none
+of it runs: the script VM tests one flag (`ap::g_hub_vm`) and takes the original path.
+
+- **Where it hooks.** Every script access to a global variable or flag goes through the VM's
+  `var_get` / `var_set` / `flag_get` / `flag_set` (`engine/src/game/field/script_vm.cpp`; also the
+  inc / dec ops and block_store 0x61-0x63, which wrote around them before), and with a hub seed
+  asks `game/ap/hub` first, byte by byte. Native code that reads or writes the game state
+  directly is not redirected: the save icon's chapter (the real one), the world map's chapter
+  test (no view is on there), table A 0x19 `set_point` (the vehicles' spots), the music word,
+  battle results.
+- **The lock** (`hub.lock.chapter` / `.step`, both default on). Outside a story view a script store
+  that touches G[0xa0]-G[0xa3] is dropped; one touching G[0xa4]-G[0xa7] too, except on the maps
+  of `hub.lock.step_maps` (default `[685]`: the goal fight's aftermath stores step 5000 on the
+  way to the endings). Each site is logged once: `[ap] hub: chapter store 13 dropped at map 547
+  offset 0x6a80 (the lock)` (the loaded release's script offset). Why steps too: at chapter 60
+  the only step stores that belong to the hub are Fienal's (inside their views, D10) and 685's;
+  every other one that can run there pairs with a dropped chapter store ("chapter N, step 0":
+  547, 576, Arlia 22, the Fields) or is a flag-guarded store from an earlier chapter, and would
+  move the hub off step 4000. Script B 0x6a (the disc switch) is dropped in hub mode (logged
+  once); with the chapter held at 60 its scene (map 625 at chapter 34) never comes anyway.
+- **A view's life.** When a map's script loads (before its set-up code runs) and the party is in
+  a row's `maps`, the row's `game` matches (Claude's game = script flag 1) and its encounter is
+  not in `goal_won`, the first such row with a `view` turns on: `[ap] hub: story view on: map 61
+  (Alen-Tax, encounter 191): chapter 6 step 2100, 1 flags, 0 globals`. A row without a view logs
+  `no story view, the scene plays at the hub's state`. While on: reads of G[0xa0]-G[0xa7], of the
+  view's `globals` bytes and of its `flags` return the view's values; stores to them change only
+  the view; every other variable and flag is the real one (stores go through). Party changes
+  (ext 0xae / 0xaf) are dropped (`story view: party_add Rena at map 61 dropped`). The battle
+  keeps it (the field reloads the same map); a victory in the row's encounter goes in
+  `goal_won` (as for any row's encounter, with or without a view) and marks the view won.
+- **A view's end.** At the first map load outside `maps` (the scene's transfer out, or the party
+  walking out before the fight: it comes back on re-entry) or at the first free play (field state
+  0, the player in control, no script running) after the win. The `keep` flags a script stored in
+  the view are written to the real flags then (a chest flag among them records its check as
+  usual); everything else it stored is dropped: `[ap] hub: story view off: map 2 (Arcmene,
+  encounter 522; map 1088 loaded): dropped chapter 41, step 0, flag 12=1, flag 745=1; kept flag
+  11=1`. New Game and a load turn a view off with nothing written back; a save holds the real
+  state; a save loaded in a chamber whose boss is unbeaten turns its view on with the map's load.
+- **`view.after_maps`, `view.until`, `view.cut_to`** (hubdata's proposal, read by the port): a
+  load of an `after_maps` map keeps a view on (it never starts one there); with `until:
+  "transfer"` free play doesn't end the view, only a load outside `maps` / `after_maps` does;
+  with `cut_to`, once the boss is won the first script transfer to a map outside `maps` /
+  `after_maps` goes to `cut_to` instead (`story view: Berle, encounter 520: the transfer to map
+  576 goes to map 557 (-92, 0, 1907) instead (cut_to)`, ahead of the seed's door table), and the
+  view ends at that load even if `cut_to.map` is one of `maps`. Unit-tested (ap_hub_view_keys);
+  not yet proven headless on their chambers.
+- **`view.globals`.** `{"0xADDR": word}` redirects the word's four bytes (the neighbours at the
+  seed's values); `{"0xADDR": {"size": 1 | 2 | 4, "value": v}}` (ADDR aligned to size) redirects
+  only those bytes. 0xa8 <= ADDR, ADDR + size <= 0x340.
+- **Writing a view's flag list.** `SS_HUB_TRACE=1` prints every game-state store and flag store a
+  script makes while a view is on, with `view` (taken) or `through` (real): `[ap] hub trace: flag
+  745 = 1 at map 417 (view)`, and each flag's first read (`read flag 389 = 0 at map 463 (real)`). Flags a scene stores that the hub must not keep belong in `flags`
+  (745, which the Alen-Tax and Arcmene scenes set, needs no listing: every map's set-up clears
+  it; docs/catalog/globals.csv script_flags). Proven headless (late proof state, 2026-10-25): Visseyer 412 (no view),
+  Alen-Tax 61 and Arcmene 417 (views); docs/handoff/hubvm.md has the runs. Not flag 12 in
+  Arcmene's `keep`: it is clear in the hub state and makes part of Nede's world map unwalkable.
+- `status_text` (console `ap`) shows `hub | lock chapter on step on | chambers N | story view ...`.

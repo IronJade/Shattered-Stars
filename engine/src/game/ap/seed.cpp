@@ -99,6 +99,125 @@ bool option_int(const Json& options, const char* key, int lo, int hi, int* out, 
   return true;
 }
 
+// The hub's `bosses` (docs/ap/seed_format.md "Hub") [hubvm agent]: one chamber per row,
+// {encounter, name, map, maps?, view?: {chapter, step, flags?: {"n": 0|1}, globals?: {"0xNNN": v},
+// keep?: [n]}}.
+bool parse_bosses(const Json& bj, std::vector<HubBoss>* out, std::string* error) {
+  if (bj.is_null()) return true;
+  if (!bj.is_array()) return fail(error, "bosses must be an array");
+  constexpr int kFlags = 0x170 * 8;
+  for (size_t i = 0; i < bj.size(); ++i) {
+    const Json& b = bj[i];
+    const std::string where = "bosses[" + std::to_string(i) + "]";
+    if (!b.is_object()) return fail(error, where + ": a boss must be an object");
+    HubBoss boss;
+    boss.encounter = get_int_or(b["encounter"], -1);
+    if (boss.encounter < 0) return fail(error, where + ": encounter missing");
+    boss.name = b["name"].as_string();
+    boss.map = get_int_or(b["map"], -1);
+    if (boss.map < 0 || boss.map >= 1200) return fail(error, where + ": map (0-1199) missing");
+    if (!b["maps"].is_null() && !b["maps"].is_array()) return fail(error, where + ": maps must be an array");
+    for (size_t k = 0; k < b["maps"].size(); ++k) {
+      const int m = get_int_or(b["maps"][k], -1);
+      if (m < 0 || m >= 1200) return fail(error, where + ": maps: 0-1199 expected");
+      boss.maps.push_back(m);
+    }
+    if (std::find(boss.maps.begin(), boss.maps.end(), boss.map) == boss.maps.end()) boss.maps.insert(boss.maps.begin(), boss.map);
+    const Json& v = b["view"];
+    if (!v.is_null()) {
+      if (!v.is_object()) return fail(error, where + ": view must be an object");
+      boss.has_view = true;
+      int64_t n = 0;
+      if (!get_int(v["chapter"], &n) || n < 0 || n > 255) return fail(error, where + ": view.chapter (0-255) missing");
+      boss.view.chapter = static_cast<int>(n);
+      if (!get_int(v["step"], &n) || n < 0 || n > 0xFFFFFF) return fail(error, where + ": view.step missing");
+      boss.view.step = static_cast<int>(n);
+      if (!v["flags"].is_null() && !v["flags"].is_object()) return fail(error, where + ": view.flags must be an object");
+      for (const auto& [key, val] : v["flags"].items()) {
+        if (!get_int(Json::string(key), &n) || n < 0 || n >= kFlags)
+          return fail(error, where + ": view.flags: script flags 0-2943 expected ('" + key + "')");
+        int64_t on = 0;
+        if (val.type() == Json::Type::Bool) on = val.as_bool() ? 1 : 0;
+        else if (!get_int(val, &on) || (on != 0 && on != 1)) return fail(error, where + ": view.flags: 0 or 1 expected");
+        boss.view.flags[static_cast<int>(n)] = on != 0;
+      }
+      if (!v["globals"].is_null() && !v["globals"].is_object()) return fail(error, where + ": view.globals must be an object");
+      for (const auto& [key, val] : v["globals"].items()) {
+        // {"0xADDR": word} or {"0xADDR": {"size": 1|2|4, "value": v}} (a byte or half global on
+        // its own): past the chapter and step, inside the game state (G[0xa8] .. G[0x33f]).
+        StoryView::Global g;
+        int64_t value = 0;
+        bool ok = get_int(Json::string(key), &n);
+        if (val.is_object()) {
+          g.size = get_int_or(val["size"], 4);
+          ok = ok && get_int(val["value"], &value) && (g.size == 1 || g.size == 2 || g.size == 4);
+        } else {
+          ok = ok && get_int(val, &value);
+        }
+        if (!ok || n < 0xA8 || n + g.size > 0x340 || (n & (g.size - 1)) != 0)
+          return fail(error, where + ": view.globals: offsets 0xa8-0x33f (aligned) with values expected ('" + key + "')");
+        g.addr = static_cast<int>(n);
+        g.value = static_cast<int32_t>(value);
+        boss.view.globals.push_back(g);
+      }
+      if (!v["after_maps"].is_null() && !v["after_maps"].is_array()) return fail(error, where + ": view.after_maps must be an array");
+      for (size_t k = 0; k < v["after_maps"].size(); ++k) {
+        const int m = get_int_or(v["after_maps"][k], -1);
+        if (m < 0 || m >= 1200) return fail(error, where + ": view.after_maps: 0-1199 expected");
+        boss.view.after_maps.push_back(m);
+      }
+      if (const Json& u = v["until"]; !u.is_null()) {
+        if (u.as_string() != "free_play" && u.as_string() != "transfer")
+          return fail(error, where + ": view.until: free_play or transfer expected");
+        boss.view.until_transfer = u.as_string() == "transfer";
+      }
+      if (const Json& c = v["cut_to"]; !c.is_null()) {
+        int64_t x = 0, y = 0, z = 0;
+        boss.view.cut_to.map = get_int_or(c["map"], -1);
+        if (!c.is_object() || boss.view.cut_to.map < 0 || boss.view.cut_to.map >= 1200 || !get_int(c["x"], &x) ||
+            !get_int(c["y"], &y) || !get_int(c["z"], &z))
+          return fail(error, where + ": view.cut_to needs map (0-1199), x, y and z");
+        boss.view.has_cut_to = true;
+        boss.view.cut_to.x = static_cast<int>(x);
+        boss.view.cut_to.y = static_cast<int>(y);
+        boss.view.cut_to.z = static_cast<int>(z);
+        boss.view.cut_to.dir = get_int_or(c["dir"], -1);
+      }
+      if (!v["keep"].is_null() && !v["keep"].is_array()) return fail(error, where + ": view.keep must be an array");
+      for (size_t k = 0; k < v["keep"].size(); ++k) {
+        const int flag = get_int_or(v["keep"][k], -1);
+        if (boss.view.flags.count(flag) == 0) return fail(error, where + ": view.keep: a flag of view.flags expected");
+        boss.view.keep.push_back(flag);
+      }
+    }
+    if (const Json& game = b["game"]; !game.is_null()) {
+      if (game.as_string() == "claude") boss.game = 1;
+      else if (game.as_string() == "rena") boss.game = 2;
+      else return fail(error, where + ": game: claude or rena expected");
+    }
+    out->push_back(boss);
+  }
+  return true;
+}
+
+// The hub block's `lock` (the rest of the block is New Game's, hubcore's) [hubvm agent].
+bool parse_hub_lock(const Json& lj, Seed* s, std::string* error) {
+  if (lj.is_null()) return true;
+  if (!lj.is_object()) return fail(error, "hub.lock must be an object");
+  s->hub_lock_chapter = lj["chapter"].as_bool(true);
+  s->hub_lock_step = lj["step"].as_bool(true);
+  if (const Json& sm = lj["step_maps"]; !sm.is_null()) {
+    if (!sm.is_array()) return fail(error, "hub.lock.step_maps must be an array");
+    s->hub_step_maps.clear();
+    for (size_t k = 0; k < sm.size(); ++k) {
+      const int m = get_int_or(sm[k], -1);
+      if (m < 0 || m >= 1200) return fail(error, "hub.lock.step_maps: maps 0-1199 expected");
+      s->hub_step_maps.push_back(m);
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 const char* character_name(int id) {
@@ -123,9 +242,10 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   if (j["format"].as_string() != "apso2") return fail(error, "format must be \"apso2\"");
   Seed s;
   s.version = get_int_or(j["version"], 0);
-  // 1: phases 1-4; 2: a seed using any v2 field (docs/ap/seed_format.md "The version rule").
-  if (s.version != 1 && s.version != 2)
-    return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1 and 2)");
+  // 1: phases 1-4; 2: a seed using any v2 field (docs/ap/seed_format.md "The version rule");
+  // 3: a hub seed (docs/ap/seed_format.md "Hub") [hubvm agent].
+  if (s.version < 1 || s.version > 3)
+    return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1 to 3)");
   s.seed = j["seed"].as_string();
   if (s.seed.empty()) return fail(error, "seed (the multiworld's seed id) missing");
   s.slot_name = j["slot"]["name"].as_string();
@@ -285,13 +405,15 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   if (!option_int(s.options, "encounter_rate", 0, 200, &s.encounter_rate, error)) return false;
   // Phase 4: the open world (doors need keys, the Expel teleporter), shop slots, the door table.
   if (const Json& wm = s.options["world_mode"]; wm.is_string()) {
-    if (wm.as_string() != "story" && wm.as_string() != "open_world")
-      return fail(error, "options.world_mode: story or open_world expected");
+    if (wm.as_string() != "story" && wm.as_string() != "open_world" && wm.as_string() != "hub")
+      return fail(error, "options.world_mode: story, open_world or hub expected");
     s.open_world = wm.as_string() == "open_world";
+    s.hub = wm.as_string() == "hub";  // [hubvm agent]
   } else if (!wm.is_null()) {
     int v = 0;
-    if (!option_int(s.options, "world_mode", 0, 1, &v, error)) return false;
+    if (!option_int(s.options, "world_mode", 0, 2, &v, error)) return false;
     s.open_world = v == 1;
+    s.hub = v == 2;
   }
   s.expel_teleporter = s.options["expel_teleporter"].as_bool(s.open_world);
   if (const Json& sh = s.options["shuffle_shops"]; sh.is_string()) {
@@ -388,6 +510,10 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     }
     s.doors.push_back(door);
   }
+  // The hub's chambers and its lock [hubvm agent].
+  if (!parse_bosses(j["bosses"], &s.bosses, error)) return false;
+  if (!j["hub"].is_null() && !j["hub"].is_object()) return fail(error, "hub must be an object");
+  if (!parse_hub_lock(j["hub"]["lock"], &s, error)) return false;
   *out = std::move(s);
   return true;
 }

@@ -1,4 +1,5 @@
 #include "game/ap/ap.h"
+#include "game/ap/hub.h"
 
 #include <algorithm>
 #include <climits>
@@ -912,6 +913,7 @@ void start_with(Seed s) {
   r.killer_scan_pending = true;
   r.notices.clear();
   r.notice_text.clear();
+  hub_start(&r.seed);  // the hub's chapter lock and story views [hubvm agent]
   log("seed " + r.seed.seed + " slot " + r.seed.slot_name + ": " + std::to_string(r.seed.locations.size()) +
       " locations, " + std::to_string(r.seed.items.size()) + " item types, " + std::to_string(r.seed.patches.size()) +
       " patch lines");
@@ -927,6 +929,7 @@ bool start(const std::string& seed_path, std::string* error) {
 void stop() {
   Runtime& r = rt();
   r = Runtime{};
+  hub_start(nullptr);
   runtime::Runtime::get().net_poll = nullptr;
 }
 
@@ -1213,6 +1216,7 @@ void free_play_update() {
     notice_update(false);
     return;
   }
+  hub_free_play();  // the hub: a story view whose boss was won ends [hubvm agent]
   give_start(r);
   keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
   party_v2_update(r);   // v2: split windows, temporary members, members back after a split
@@ -1263,6 +1267,7 @@ void on_new_game() {
   Runtime& r = rt();
   if (!r.on) return;
   fresh_state(r);
+  hub_reset();  // (a story view left on)
   r.goal_flags_pending = true;  // v2: goal.flags in the new game's first field frame
   log("new game: a fresh state for seed " + r.seed.seed);
 }
@@ -1296,6 +1301,7 @@ void on_loaded(const std::string& card_image, int save_index) {
   if (!r.on) return;
   // v2: goal.flags again after every load (sidecar or not); the use counts the save brings.
   r.goal_flags_pending = true;
+  hub_reset();  // the hub: a load starts with any story view off [hubvm agent]
   r.killer_scan_pending = true;
   if (card_image.empty()) return;
   const std::string path = sidecar_path(card_image, save_index);
@@ -1578,7 +1584,12 @@ void on_battle_exit(int encounter, int outcome) {
   const bool door_won = std::any_of(r.seed.doors.begin(), r.seed.doors.end(), [&](const Door& d) {
     return std::find(d.won.begin(), d.won.end(), encounter) != d.won.end();
   });
-  if (victory && ((all && goal) || door_won) &&
+  // The hub [hubvm agent]: a chamber's boss won goes in goal_won too (the boss is beaten: its
+  // story view no longer comes; "Defeat X first" doors read it); the view on ends at the next
+  // free play.
+  const bool hub_boss = hub_boss_encounter(encounter);
+  if (victory) hub_battle_won(encounter);
+  if (victory && ((all && goal) || door_won || hub_boss) &&
       std::find(r.state.goal_won.begin(), r.state.goal_won.end(), encounter) == r.state.goal_won.end()) {
     r.state.goal_won.push_back(encounter);
     log("goal: encounter " + std::to_string(encounter) + " won (goal_won " + std::to_string(r.state.goal_won.size()) +
@@ -1985,6 +1996,7 @@ bool has_key(int key) {
 void on_script_loaded(int map, const std::vector<u8>& script) {
   Runtime& r = rt();
   if (!r.on) return;
+  hub_map_loaded(map);  // the hub: a chamber's story view starts, or the one on ends [hubvm agent]
   r.harbour_shown = false;  // (a menu left open by a transfer)
   r.script_map = script_group(map);
   r.loaded_map = map;
@@ -2033,6 +2045,7 @@ bool door_blocked_at_trigger(int routine_at) {
 bool on_map_transfer(int offset, s32* args) {
   Runtime& r = rt();
   if (!r.on) return false;
+  if (hub_map_transfer(args)) return false;  // the hub: a won story view's cut_to [hubvm agent]
   const Door* d = door_at(na_offset(r.loaded_map, offset));
   if (d == nullptr) return false;
   if (door_locked(*d)) {
@@ -2426,6 +2439,7 @@ std::string status_text() {
     if (r.state.goal_won.empty()) out += " none";
     for (const int e : r.state.goal_won) out += " " + std::to_string(e);
   }
+  if (const std::string h = hub_status(); !h.empty()) out += "\n  " + h;  // [hubvm agent]
   if (party_v2(r)) {  // v2 party [party agent]
     out += std::string("\n  party rules ") + (sd.open_party ? "open" : "story") + " | starting " +
            (sd.starting_character != 0 ? character_name(sd.starting_character) : "nobody") + " | party " + party_line();

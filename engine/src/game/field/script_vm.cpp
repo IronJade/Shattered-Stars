@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "game/ap/ap.h"
+#include "game/ap/hub.h"
 #include "game/boot/rng.h"
 #include "game/boot/system.h"
 #include "game/field/vm_services.h"
@@ -41,8 +42,41 @@ u8* flag_ptr(ScriptCtx* ctx, u32 local, u32 addr) {
   return local ? ctx->local_flags - (static_cast<s32>(addr) >> 3) - 1
                : globals().script_flags + (static_cast<s32>(addr) >> 3);
 }
-u32 flag_get(ScriptCtx* ctx, u32 local, u32 addr) { return *flag_ptr(ctx, local, addr) >> (addr & 7) & 1; }
+// Archipelago, the hub (port feature; game/ap/hub.h, docs/ap/seed_format.md "Hub") [hubvm agent]:
+// with a hub seed (ap::g_hub_vm) the scripts' global variable and flag accesses pass the hub,
+// which serves a boss chamber's story view (its chapter, step, flags and globals) and drops the
+// chapter / step stores its lock holds. Without one these are the plain accesses. g_instr_at is
+// the executing instruction's byte offset (the lock's log names the site).
+s32 g_instr_at = 0;
+// A variable's 'size' (4, 2 or 1) bytes, little-endian, zero-extended.
+u32 var_get(ScriptCtx* ctx, u32 local, u32 addr, int size) {
+  const u8* p = var_ptr(ctx, local, addr, size);
+  u32 v = 0;
+  if (local == 0 && ap::g_hub_vm && ap::hub_var_read(addr, size, p, &v)) return v;
+  if (size == 4) return static_cast<u32>(vm_rd32(p));
+  if (size == 2) return static_cast<u16>(vm_rd16(p));
+  return *p;
+}
+// A 16-bit variable read signed (the s16 operand types).
+u32 var_get16s(ScriptCtx* ctx, u32 local, u32 addr) {
+  return static_cast<u32>(static_cast<s32>(static_cast<s16>(var_get(ctx, local, addr, 2))));
+}
+// Stores the low 'size' bytes of v.
+void var_set(ScriptCtx* ctx, u32 local, u32 addr, int size, u32 v) {
+  u8* p = var_ptr(ctx, local, addr, size);
+  if (local == 0 && ap::g_hub_vm && ap::hub_var_write(addr, size, v, p, g_instr_at)) return;
+  if (size == 4) vm_wr32(p, v);
+  else if (size == 2) vm_wr16(p, v);
+  else *p = static_cast<u8>(v);
+}
+
+u32 flag_get(ScriptCtx* ctx, u32 local, u32 addr) {
+  bool on = false;
+  if (local == 0 && ap::g_hub_vm && ap::hub_flag_read(static_cast<int>(addr), &on)) return on ? 1 : 0;  // (a view's flag)
+  return *flag_ptr(ctx, local, addr) >> (addr & 7) & 1;
+}
 void flag_set(ScriptCtx* ctx, u32 local, u32 addr, bool on) {
+  if (local == 0 && ap::g_hub_vm && ap::hub_flag_write(static_cast<int>(addr), on)) return;  // (a view's flag)
   u8* p = flag_ptr(ctx, local, addr);
   const u8 bit = static_cast<u8>(1 << (addr & 7));
   // Archipelago (port feature; character_items) [world agent]: a flag a received member keeps
@@ -63,9 +97,9 @@ u32 next_word(ScriptCtx* ctx) { return *ctx->ip++; }
 u32 load_indexed(ScriptCtx* ctx, u32 element, u32 addr) {
   const u32 local = addr & 0x800000;
   const u32 a = addr & 0x7FFFFF;
-  if (element == 2) return static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, a, 2))));
-  if (element == 1) return *var_ptr(ctx, local, a, 1);
-  if (element == 4) return static_cast<u32>(vm_rd32(var_ptr(ctx, local, a, 4)));
+  if (element == 2) return var_get16s(ctx, local, a);
+  if (element == 1) return var_get(ctx, local, a, 1);
+  if (element == 4) return var_get(ctx, local, a, 4);
   return flag_get(ctx, local, a);
 }
 
@@ -76,11 +110,11 @@ void load_typed(ScriptCtx* ctx, u32 instr, u32& value) {
   const u32 a = instr & 0xFFFF;
   switch (instr >> 16 & 0xF) {
     case 0:
-    case 8: value = static_cast<u32>(vm_rd32(var_ptr(ctx, local, a, 4))); break;
-    case 1: value = static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, a, 2)))); break;
-    case 9: value = static_cast<u16>(vm_rd16(var_ptr(ctx, local, a, 2))); break;
+    case 8: value = var_get(ctx, local, a, 4); break;
+    case 1: value = var_get16s(ctx, local, a); break;
+    case 9: value = var_get(ctx, local, a, 2); break;
     case 2:
-    case 10: value = *var_ptr(ctx, local, a, 1); break;
+    case 10: value = var_get(ctx, local, a, 1); break;
     case 3: value = flag_get(ctx, local, a); break;
     default: break;
   }
@@ -93,11 +127,11 @@ void store_typed(ScriptCtx* ctx, u32 instr, u32 v) {
   const u32 a = instr & 0xFFFF;
   switch (instr >> 16 & 0x7F) {
     case 0:
-    case 8: vm_wr32(var_ptr(ctx, local, a, 4), v); break;
+    case 8: var_set(ctx, local, a, 4, v); break;
     case 1:
-    case 9: vm_wr16(var_ptr(ctx, local, a, 2), v); break;
+    case 9: var_set(ctx, local, a, 2, v); break;
     case 2:
-    case 10: *var_ptr(ctx, local, a, 1) = static_cast<u8>(v); break;
+    case 10: var_set(ctx, local, a, 1, v); break;
     case 3: flag_set(ctx, local, a, v != 0); break;
     default: break;
   }
@@ -152,9 +186,9 @@ void assign_op(ScriptCtx* ctx, u32 instr, u32 operand, u32& value, u32& result) 
   switch (type) {
     case 0: case 1: case 2: case 8: case 9: case 10: {
       const u32 width = type & 7;  // 0 = 32-bit, 1 = 16-bit (read signed), 2 = byte (read unsigned)
-      if (width == 1) value = static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, a, 2))));
-      else if (width == 0) value = static_cast<u32>(vm_rd32(var_ptr(ctx, local, a, 4)));
-      else value = *var_ptr(ctx, local, a, 1);
+      if (width == 1) value = var_get16s(ctx, local, a);
+      else if (width == 0) value = var_get(ctx, local, a, 4);
+      else value = var_get(ctx, local, a, 1);
       const bool is_unsigned = (type & 8) != 0;
       const s32 sv = static_cast<s32>(value), so = static_cast<s32>(operand);
       switch (op) {
@@ -170,9 +204,9 @@ void assign_op(ScriptCtx* ctx, u32 instr, u32 operand, u32& value, u32& result) 
         case 0x5F: result = is_unsigned ? value >> (operand & 0x1F) : static_cast<u32>(sv >> (operand & 0x1F)); break;
         default: break;
       }
-      if (width == 1) vm_wr16(var_ptr(ctx, local, a, 2), result);
-      else if (width == 0) vm_wr32(var_ptr(ctx, local, a, 4), result);
-      else *var_ptr(ctx, local, a, 1) = static_cast<u8>(result);
+      if (width == 1) var_set(ctx, local, a, 2, result);
+      else if (width == 0) var_set(ctx, local, a, 4, result);
+      else var_set(ctx, local, a, 1, result);
       break;
     }
     case 3: {
@@ -526,6 +560,7 @@ restart:
                    *ctx->ip, ctx->depth, static_cast<long>(ctx->call_sp - reinterpret_cast<u32*>(g.state_block)),
                    static_cast<long>(ctx->value_sp - reinterpret_cast<u32*>(g.value_stack)));
     }
+    g_instr_at = static_cast<s32>(ctx->ip - ctx->code) * 4;  // (the hub's lock log)
     const u32 fetched = *ctx->ip++;
     u32 instr = fetched;
     const u32 local = instr & 0x800000;
@@ -533,15 +568,15 @@ restart:
     switch (instr >> 24) {
       case 0x01: case 0x02: case 0x08:  // pop_store s32
         value = pop(ctx);
-        vm_wr32(var_ptr(ctx, local, addr, 4), value);
+        var_set(ctx, local, addr, 4, value);
         break;
       case 0x03: case 0x04:  // pop_store s16
         value = pop(ctx);
-        vm_wr16(var_ptr(ctx, local, addr, 2), value);
+        var_set(ctx, local, addr, 2, value);
         break;
       case 0x05: case 0x06:  // pop_store s8
         value = pop(ctx);
-        *var_ptr(ctx, local, addr, 1) = static_cast<u8>(value);
+        var_set(ctx, local, addr, 1, value);
         break;
       case 0x07:  // pop_store flag
         flag_set(ctx, local, addr, pop(ctx) != 0);
@@ -556,15 +591,15 @@ restart:
         vm_set_r(value);
         break;
       case 0x0B: case 0x0F:  // push s32
-        value = static_cast<u32>(vm_rd32(var_ptr(ctx, local, addr, 4)));
+        value = var_get(ctx, local, addr, 4);
         push(ctx, value);
         break;
       case 0x0C:  // push s16
-        value = static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, addr, 2))));
+        value = var_get16s(ctx, local, addr);
         push(ctx, value);
         break;
       case 0x0D:  // push u8
-        value = *var_ptr(ctx, local, addr, 1);
+        value = var_get(ctx, local, addr, 1);
         push(ctx, value);
         break;
       case 0x0E:  // push flag; a zero operand pushes R
@@ -576,7 +611,7 @@ restart:
         break;
       case 0x10: {  // index_load_var: R = element at var32 + next word
         const u32 offset = next_word(ctx);
-        indexed = static_cast<u32>(vm_rd32(var_ptr(ctx, local, addr, 4))) + offset;
+        indexed = var_get(ctx, local, addr, 4) + offset;
         value = load_indexed(ctx, element, indexed);
         vm_set_r(value);
         break;
@@ -639,20 +674,20 @@ restart:
         break;
       case 0x19: {  // push_eq s32
         const u32 imm = next_word(ctx);
-        push(ctx, static_cast<u32>(vm_rd32(var_ptr(ctx, local, addr, 4))) == imm);
+        push(ctx, var_get(ctx, local, addr, 4) == imm);
         break;
       }
       case 0x1A:  // store s32 = next word
-        vm_wr32(var_ptr(ctx, local, addr, 4), next_word(ctx));
+        var_set(ctx, local, addr, 4, next_word(ctx));
         break;
       case 0x1B: {  // push_eq s16
         const u32 imm = next_word(ctx);
-        push(ctx, static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, addr, 2)))) == imm);
+        push(ctx, var_get16s(ctx, local, addr) == imm);
         break;
       }
       case 0x1C: {  // push_eq u8
         const u32 imm = next_word(ctx);
-        push(ctx, *var_ptr(ctx, local, addr, 1) == imm);
+        push(ctx, var_get(ctx, local, addr, 1) == imm);
         break;
       }
       case 0x1D: {  // push_eq flag
@@ -708,21 +743,9 @@ restart:
         const s32 d = (instr >> 24) == 0x47 ? 1 : -1;
         const u32 a = instr & 0xFFFF;
         switch (instr >> 16 & 0xF) {
-          case 0: case 8: {
-            u8* p = var_ptr(ctx, local, a, 4);
-            vm_wr32(p, static_cast<u32>(vm_rd32(p) + d));
-            break;
-          }
-          case 1: case 9: {
-            u8* p = var_ptr(ctx, local, a, 2);
-            vm_wr16(p, static_cast<u32>(vm_rd16(p) + d));
-            break;
-          }
-          case 2: case 10: {
-            u8* p = var_ptr(ctx, local, a, 1);
-            *p = static_cast<u8>(*p + d);
-            break;
-          }
+          case 0: case 8: var_set(ctx, local, a, 4, var_get(ctx, local, a, 4) + static_cast<u32>(d)); break;
+          case 1: case 9: var_set(ctx, local, a, 2, var_get(ctx, local, a, 2) + static_cast<u32>(d)); break;
+          case 2: case 10: var_set(ctx, local, a, 1, var_get(ctx, local, a, 1) + static_cast<u32>(d)); break;
           default: break;
         }
         break;
@@ -730,9 +753,9 @@ restart:
       case 0x49: {  // not: R = ~var (flags: logical not)
         const u32 a = instr & 0xFFFF;
         switch (instr >> 16 & 0xF) {
-          case 0: case 8: vm_set_r(~static_cast<u32>(vm_rd32(var_ptr(ctx, local, a, 4)))); break;
-          case 1: case 9: vm_set_r(~static_cast<u32>(static_cast<s32>(vm_rd16(var_ptr(ctx, local, a, 2))))); break;
-          case 2: case 10: vm_set_r(~static_cast<u32>(*var_ptr(ctx, local, a, 1))); break;
+          case 0: case 8: vm_set_r(~var_get(ctx, local, a, 4)); break;
+          case 1: case 9: vm_set_r(~var_get16s(ctx, local, a)); break;
+          case 2: case 10: vm_set_r(~var_get(ctx, local, a, 1)); break;
           case 3: vm_set_r(flag_get(ctx, local, a) == 0 ? 1 : 0); break;
           default: break;
         }
@@ -745,9 +768,9 @@ restart:
       case 0x4B: {  // is_zero
         const u32 a = instr & 0xFFFF;
         switch (instr >> 16 & 0xF) {
-          case 0: case 8: vm_set_r(vm_rd32(var_ptr(ctx, local, a, 4)) == 0); break;
-          case 1: case 9: vm_set_r(vm_rd16(var_ptr(ctx, local, a, 2)) == 0); break;
-          case 2: case 10: vm_set_r(*var_ptr(ctx, local, a, 1) == 0); break;
+          case 0: case 8: vm_set_r(var_get(ctx, local, a, 4) == 0); break;
+          case 1: case 9: vm_set_r(var_get(ctx, local, a, 2) == 0); break;
+          case 2: case 10: vm_set_r(var_get(ctx, local, a, 1) == 0); break;
           case 3: vm_set_r(flag_get(ctx, local, a) == 0 ? 1 : 0); break;
           default: break;
         }
@@ -772,7 +795,10 @@ restart:
         const u32 count = next_word(ctx);
         u8* base = local ? ctx->locals : g.script_globals;
         u8* dst = base + addr;
-        for (u32 n = count; n != 0; --n) vm_wr32(dst, next_word(ctx));
+        for (u32 n = count; n != 0; --n) {
+          if (local == 0) var_set(ctx, 0, addr, 4, next_word(ctx));  // (the hub's view and lock: globals)
+          else vm_wr32(dst, next_word(ctx));
+        }
         value = 0xFFFFFFFFu;
         break;
       }

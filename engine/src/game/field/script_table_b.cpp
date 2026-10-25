@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "game/ap/ap.h"
+#include "game/ap/hub.h"
 #include "game/boot/rng.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
@@ -527,6 +528,7 @@ void vm_exec_table_b(ScriptCtx* ctx, u32 instr) {
       ctx->wait_state = 0xE;
       break;
     case 0x6A:  // disc_change_2
+      if (ap::hub_swallows_disc_change()) break;  // Archipelago, the hub: stays on disc 2 [hubvm agent]
       g.config[0x4C] = 1;
       vm_svc_field_prompt_disc_change(2, 1);
       break;

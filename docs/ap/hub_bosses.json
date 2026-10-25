@@ -1,0 +1,3337 @@
+{
+ "about": "The hub's boss chambers (story views) and dungeon keys: tools/ap_hub_bosses.py (docs/ap/seed_format.md 'Hub', docs/handoff/hub.md). The APWorld copies `bosses` rows (encounter, name, map, maps, view, game) into the seed; the rest is reference for the proofs and the port.",
+ "generated": "2026-10-25",
+ "excluded": {
+  "losable (D5)": {
+   "265": null,
+   "204": "Dias",
+   "517": "Shin",
+   "530": "Marsilio"
+  },
+  "goal": {
+   "539": "Indalecio",
+   "540": "Indalecio (Limiter Off)"
+  },
+  "optional, own guards": {
+   "196": "Flarelizard",
+   "197": "Nightmare",
+   "199": "XINE",
+   "211": "Ghost"
+  },
+  "Cave of Trials": "13 bosses, flags 950-962 (cleared in the hub state)"
+ },
+ "bosses": [
+  {
+   "encounter": 191,
+   "name": "Alen-Tax",
+   "map": 61,
+   "maps": [
+    61
+   ],
+   "area": "Salva Drift",
+   "dungeon": "Salva Drift",
+   "town": false,
+   "location": 1364328639,
+   "battle": {
+    "stage": 7,
+    "param": 1,
+    "offset": "0x4ce4"
+   },
+   "routine": "0x4808",
+   "guard": {
+    "chapter": 6,
+    "step": 2100,
+    "flags": {
+     "1": 0
+    },
+    "conditions": [
+     "(chapter == 6 && (step == 2100 && flag[1] == 0))",
+     "(chapter == 6 && (step == 2100 && flag[1] == 1))",
+     "not ((chapter == 6 && (step == 2100 && flag[1] == 1)))"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x5704",
+     "call_at": "0x5684",
+     "conditions": [
+      "(chapter == 6 && (step == 2100 && flag[1] == 1))"
+     ]
+    },
+    {
+     "kind": "thread_start",
+     "registered_at": "0x56e4",
+     "conditions": [
+      "not ((chapter == 6 && (step == 2100 && flag[1] == 1)))",
+      "(chapter == 6 && (step == 2100 && flag[1] == 0))"
+     ],
+     "region": [
+      [
+       218,
+       131
+      ],
+      [
+       347,
+       300
+      ],
+      [
+       365,
+       296
+      ],
+      [
+       235,
+       127
+      ]
+     ],
+     "routine": "0x5354"
+    }
+   ],
+   "events": [
+    [
+     "0x4858",
+     "party join"
+    ],
+    [
+     "0x48a4",
+     "battle"
+    ],
+    [
+     "0x523c",
+     "step = 3000"
+    ],
+    [
+     "0x5254",
+     "transfer 53 (-30, 0, -54) dir 91"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 53 (-30, 0, -54) dir 91",
+    "offset": "0x5254"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 6,
+    "step": 2100,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 3000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 523,
+   "name": "Cross Cave guardians",
+   "map": 547,
+   "maps": [
+    547
+   ],
+   "area": "Cross Cave",
+   "dungeon": "Cross Cave",
+   "town": false,
+   "location": 1364328971,
+   "battle": {
+    "stage": 8,
+    "param": 1,
+    "offset": null
+   },
+   "routine": "0x6af8",
+   "guard": {
+    "chapter": null,
+    "step": null,
+    "flags": {
+     "449": 0
+    },
+    "conditions": [
+     "flag[449] == 0"
+    ]
+   },
+   "trigger": [],
+   "events": [
+    [
+     "0x6b28",
+     "battle"
+    ],
+    [
+     "0x6df8",
+     "flag 449 = 1"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": null,
+   "view_reason": "the Cross Cave key chest's guardians (set battle 523, flag 449 clear): the routine has no story test; the hub clears 449 and the chest flag 2569. The chest's handler stores chapter 13 / step 0 (dropped by the chapter lock)",
+   "side_effects": [],
+   "p5": false,
+   "note": "the Cross Cave key chest's guardians (set battle 523, flag 449 clear): the routine has no story test; the hub clears 449 and the chest flag 2569. The chest's handler stores chapter 13 / step 0 (dropped by the chapter lock)"
+  },
+  {
+   "encounter": 194,
+   "name": "Varmillion",
+   "map": 462,
+   "maps": [
+    462
+   ],
+   "area": "Mars Village",
+   "dungeon": "Mars Dungeon",
+   "town": false,
+   "location": 1364328642,
+   "battle": {
+    "stage": 9,
+    "param": 1,
+    "offset": "0x6a78"
+   },
+   "routine": "0x66cc",
+   "guard": {
+    "chapter": 15,
+    "step": 2400,
+    "flags": {
+     "1": 1
+    },
+    "conditions": [
+     "(flag[1] == 1 && (chapter == 15 && step == 2400))",
+     "not (step != 2400)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x7a74",
+     "conditions": [
+      "(flag[1] == 1 && (chapter == 15 && step == 2400))"
+     ],
+     "region": [
+      [
+       241,
+       159
+      ],
+      [
+       243,
+       189
+      ],
+      [
+       258,
+       189
+      ],
+      [
+       257,
+       158
+      ]
+     ],
+     "routine": "0x66cc"
+    }
+   ],
+   "events": [
+    [
+     "0x697c",
+     "battle"
+    ],
+    [
+     "0x707c",
+     "step = 3000"
+    ],
+    [
+     "0x7084",
+     "transfer 135 (471, 0, -33) dir 138"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 135 (471, 0, -33) dir 138",
+    "offset": "0x7084"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "game": "claude",
+   "view": {
+    "chapter": 15,
+    "step": 2400,
+    "flags": {
+     "731": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "731": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 3000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 195,
+   "name": "Azamgil",
+   "map": 463,
+   "maps": [
+    463
+   ],
+   "area": "Secret Charity/Fake Gallery",
+   "dungeon": "Mars Dungeon",
+   "town": false,
+   "location": 1364328643,
+   "battle": {
+    "stage": 9,
+    "param": 1,
+    "offset": "0x6a44"
+   },
+   "routine": "0x66c8",
+   "guard": {
+    "chapter": 15,
+    "step": 2500,
+    "flags": {
+     "1": 0,
+     "389": 0
+    },
+    "conditions": [
+     "(flag[1] == 0 && (chapter == 15 && step == 2500))",
+     "flag[389] == 0",
+     "not (step != 2500)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x72d8",
+     "conditions": [
+      "flag[389] == 0",
+      "(flag[1] == 0 && (chapter == 15 && step == 2500))"
+     ],
+     "region": [
+      [
+       269,
+       147
+      ],
+      [
+       274,
+       187
+      ],
+      [
+       291,
+       185
+      ],
+      [
+       285,
+       152
+      ]
+     ],
+     "routine": "0x66c8"
+    }
+   ],
+   "events": [
+    [
+     "0x6888",
+     "battle"
+    ],
+    [
+     "0x6abc",
+     "key item 70"
+    ],
+    [
+     "0x6aec",
+     "step = 2600"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "game": "rena",
+   "view": {
+    "chapter": 15,
+    "step": 2500,
+    "flags": {
+     "154": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "154": "stored later (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "key item 70",
+    "step = 2600"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 209,
+   "name": "Visseyer",
+   "map": 412,
+   "maps": [
+    412
+   ],
+   "area": "Sanctuary of Linga",
+   "dungeon": "Sanctuary of Linga",
+   "town": false,
+   "location": 1364328657,
+   "battle": {
+    "stage": 16,
+    "param": 1,
+    "offset": "0x69a8"
+   },
+   "routine": "0x66c0",
+   "guard": {
+    "chapter": null,
+    "step": null,
+    "flags": {
+     "483": 0
+    },
+    "conditions": [
+     "chapter >= 21",
+     "flag[483] == 0"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x6edc",
+     "conditions": [
+      "chapter >= 21",
+      "flag[483] == 0"
+     ],
+     "region": [
+      [
+       90,
+       133
+      ],
+      [
+       209,
+       173
+      ],
+      [
+       208,
+       165
+      ],
+      [
+       92,
+       126
+      ]
+     ],
+     "routine": "0x66c0"
+    }
+   ],
+   "events": [
+    [
+     "0x66d4",
+     "battle"
+    ],
+    [
+     "0x6e4c",
+     "flag 483 = 1"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": null,
+   "view_reason": "flag-guarded (chapter >= 21 && flag 483 == 0): the hub state clears 483, so the scene arms at chapter 60; the scene sets 483 and the party stays in 412 (hubvm: proven headless, 409:T6 -> 412)",
+   "side_effects": [],
+   "p5": false,
+   "note": "flag-guarded (chapter >= 21 && flag 483 == 0): the hub state clears 483, so the scene arms at chapter 60; the scene sets 483 and the party stays in 412 (hubvm: proven headless, 409:T6 -> 412)"
+  },
+  {
+   "encounter": 210,
+   "name": "Harfainx",
+   "map": 523,
+   "maps": [
+    523
+   ],
+   "area": "Hoffmann Ruins",
+   "dungeon": "Hoffmann Ruins",
+   "town": false,
+   "location": 1364328658,
+   "battle": {
+    "stage": 36,
+    "param": 1,
+    "offset": "0x6c10"
+   },
+   "routine": "0x6750",
+   "guard": {
+    "chapter": 24,
+    "step": 2000,
+    "flags": {},
+    "conditions": [
+     "(chapter == 24 && step == 2000)",
+     "not ((chapter != 24 || step != 2000))"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x749c",
+     "conditions": [
+      "(chapter == 24 && step == 2000)"
+     ],
+     "region": [
+      [
+       273,
+       424
+      ],
+      [
+       418,
+       421
+      ],
+      [
+       419,
+       400
+      ],
+      [
+       247,
+       400
+      ]
+     ],
+     "routine": "0x6750"
+    }
+   ],
+   "events": [
+    [
+     "0x6864",
+     "battle"
+    ],
+    [
+     "0x7120",
+     "key item 77"
+    ],
+    [
+     "0x73cc",
+     "step = 3000"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 24,
+    "step": 2000,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "key item 77",
+    "step = 3000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 516,
+   "name": "Shin",
+   "map": 447,
+   "maps": [
+    447
+   ],
+   "area": "Meeting Room",
+   "dungeon": "Lacour Front Line",
+   "town": false,
+   "location": 1364328964,
+   "battle": {
+    "stage": 52,
+    "param": 1,
+    "offset": "0x74cc"
+   },
+   "routine": "0x7358",
+   "guard": {
+    "chapter": 27,
+    "step": 1000,
+    "flags": {},
+    "conditions": [
+     "chapter == 27",
+     "step == 1000"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x7bc4",
+     "call_at": "0x7c20",
+     "conditions": [
+      "chapter == 27",
+      "step == 1000"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x736c",
+     "battle"
+    ],
+    [
+     "0x744c",
+     "flag 745 = 1"
+    ],
+    [
+     "0x7888",
+     "step = 2000"
+    ],
+    [
+     "0x78d4",
+     "transfer 439 (-151, 0, 61) dir 269"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 439 (-151, 0, 61) dir 269",
+    "offset": "0x78d4"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 27,
+    "step": 1000,
+    "flags": {
+     "490": 1,
+     "491": 1,
+     "492": 1,
+     "493": 1,
+     "494": 1,
+     "495": 1,
+     "496": 1,
+     "675": 0,
+     "676": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "490": "set in chapter 26",
+    "491": "set in chapter 26",
+    "492": "set in chapter 26",
+    "493": "set in chapter 26",
+    "494": "set in chapter 26",
+    "495": "set in chapter 26",
+    "496": "set in chapter 26",
+    "675": "stored later (stored in the view)",
+    "676": "stored later (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "side_effects": [
+    "step = 2000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 519,
+   "name": "Shin",
+   "map": 569,
+   "maps": [
+    569
+   ],
+   "area": "Eluria Tower",
+   "dungeon": "Eluria Tower",
+   "town": false,
+   "location": 1364328967,
+   "battle": {
+    "stage": 30,
+    "param": 1,
+    "offset": "0x490c"
+   },
+   "routine": "0x47c8",
+   "guard": {
+    "chapter": null,
+    "step": null,
+    "flags": {
+     "587": 0
+    },
+    "conditions": [
+     "flag[587] == 0"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x4edc",
+     "call_at": "0x4ee8",
+     "conditions": [
+      "flag[587] == 0"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x47e0",
+     "battle"
+    ],
+    [
+     "0x4810",
+     "flag 745 = 1"
+    ],
+    [
+     "0x4998",
+     "flag 587 = 1"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": null,
+   "view_reason": "flag-guarded (flag 587 == 0, no chapter test): the hub clears 587; it plays inside Berle 520's tower view (chapter 33), on the way up",
+   "side_effects": [],
+   "p5": true,
+   "note": "flag-guarded (flag 587 == 0, no chapter test): the hub clears 587; it plays inside Berle 520's tower view (chapter 33), on the way up"
+  },
+  {
+   "encounter": 520,
+   "name": "Berle",
+   "map": 575,
+   "maps": [
+    557,
+    558,
+    559,
+    560,
+    561,
+    562,
+    563,
+    564,
+    565,
+    566,
+    567,
+    568,
+    569,
+    570,
+    571,
+    572,
+    573,
+    574,
+    575
+   ],
+   "area": "Eluria Tower",
+   "dungeon": "Eluria Tower",
+   "town": false,
+   "location": 1364328968,
+   "battle": {
+    "stage": 31,
+    "param": 1,
+    "offset": "0x7950"
+   },
+   "routine": "0x6978",
+   "guard": {
+    "chapter": 33,
+    "step": null,
+    "flags": {},
+    "conditions": [
+     "chapter == 33"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x7a74",
+     "call_at": "0x7a80",
+     "conditions": [
+      "chapter == 33"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x76f0",
+     "battle"
+    ],
+    [
+     "0x7974",
+     "step = 1000"
+    ],
+    [
+     "0x797c",
+     "transfer 576 (0, 0, 0) dir 0"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 576 (0, 0, 0) dir 0",
+    "offset": "0x797c"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": {
+    "chapter": 33,
+    "step": 0,
+    "flags": {
+     "513": 1,
+     "535": 0,
+     "598": 1,
+     "599": 1,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [],
+    "cut_to": {
+     "map": 557,
+     "x": -92,
+     "y": 0,
+     "z": 1907,
+     "dir": 270
+    }
+   },
+   "view_flags_why": {
+    "513": "set in chapter 32 (stored in the view)",
+    "535": "hub (stored in the view)",
+    "598": "hub (stored in the view)",
+    "599": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 1000"
+   ],
+   "p5": true,
+   "note": "P5: the late state never got past 557 (door 557 -> 558, routine 0x7808, needs chapter > 32: a headless look). The view covers the whole tower at the climb's chapter 33, so Shin 569 plays on the way up. The cut must not follow the scene: 576 stores chapter 34 unconditionally and goes on to 625 (the disc switch's scene map); cut_to = the tower's world-map arrival"
+  },
+  {
+   "encounter": 521,
+   "name": "Synard",
+   "map": 269,
+   "maps": [
+    264,
+    269
+   ],
+   "area": "Synard Plant",
+   "dungeon": "Synard Plant",
+   "town": false,
+   "location": 1364328969,
+   "battle": {
+    "stage": 23,
+    "param": 1,
+    "offset": "0x6df4"
+   },
+   "routine": "0x6b5c",
+   "guard": {
+    "chapter": 38,
+    "step": 4000,
+    "flags": {},
+    "conditions": [
+     "chapter == 38",
+     "step == 4000"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x7c20",
+     "call_at": "0x7c2c",
+     "conditions": [
+      "chapter == 38",
+      "step == 4000"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6b74",
+     "battle"
+    ],
+    [
+     "0x6c00",
+     "flag 745 = 1"
+    ],
+    [
+     "0x6df8",
+     "transfer 271 (-872, 400, -675) dir 270"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 271 (-872, 400, -675) dir 270",
+    "offset": "0x6df8"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": {
+    "chapter": 38,
+    "step": 4000,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [],
+    "after_maps": [
+     271
+    ]
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [],
+   "p5": false,
+   "note": "P5: map 264 (Synard Reception Area, North City) sends its two doors (0x7390 / 0x7410) to 269 at chapter <= 38, else to 270 (the plant's later version, same spot): the view on 264 opens the way (264 has scenes only at 38/0 and 38/1000; its NPCs show chapter 38). The aftermath continues in 271 (38/4000: step 5000, then 272 or 264)"
+  },
+  {
+   "encounter": 522,
+   "name": "Arcmene",
+   "map": 417,
+   "maps": [
+    417
+   ],
+   "area": "Cave of Red Crystal",
+   "dungeon": "Cave of Red Crystal",
+   "town": false,
+   "location": 1364328970,
+   "battle": {
+    "stage": 15,
+    "param": 1,
+    "offset": "0x6d84"
+   },
+   "routine": "0x6b54",
+   "guard": {
+    "chapter": 40,
+    "step": 1000,
+    "flags": {},
+    "conditions": [
+     "(chapter <= 40 && step == 1000)",
+     "local[0x0] < 0"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x80a8",
+     "call_at": "0x80b4",
+     "conditions": [
+      "(chapter <= 40 && step == 1000)",
+      "local[0x0] < 0"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6b68",
+     "battle"
+    ],
+    [
+     "0x6c20",
+     "flag 745 = 1"
+    ],
+    [
+     "0x77a4",
+     "chapter = 41"
+    ],
+    [
+     "0x77ac",
+     "step = 0"
+    ],
+    [
+     "0x791c",
+     "choice"
+    ],
+    [
+     "0x7e38",
+     "flag 11 = 1"
+    ],
+    [
+     "0x7e40",
+     "flag 12 = 1"
+    ],
+    [
+     "0x7e84",
+     "transfer (computed)"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer (computed)",
+    "offset": "0x7e84"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 40,
+    "step": 1000,
+    "flags": {
+     "11": 0,
+     "12": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [
+     11
+    ]
+   },
+   "view_flags_why": {
+    "11": "curated",
+    "12": "curated",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "curated"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "chapter = 41",
+    "choice",
+    "flag 11 = 1",
+    "flag 12 = 1",
+    "step = 0"
+   ],
+   "p5": false,
+   "note": "guard chapter <= 40 && step == 1000. The aftermath stores chapter 41, sets 11 and 12 (12 must not stay: it makes a disc of Nede's world map unwalkable; clear in the late save) and moves computed (Central City). Noel's choice to stay (0x7db8) and party changes are dropped (hubvm: proven headless with these flags, 418:T2 -> 417)"
+  },
+  {
+   "encounter": 524,
+   "name": "Magichand",
+   "map": 554,
+   "maps": [
+    554
+   ],
+   "area": "Field of Intelligence",
+   "dungeon": "Field of Intelligence",
+   "town": false,
+   "location": 1364328972,
+   "battle": {
+    "stage": 42,
+    "param": 1,
+    "offset": "0x6bbc"
+   },
+   "routine": "0x687c",
+   "guard": {
+    "chapter": 42,
+    "step": null,
+    "flags": {
+     "175": 0
+    },
+    "conditions": [
+     "(chapter == 42 && flag[175] == 0)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x6c74",
+     "call_at": "0x6c80",
+     "conditions": [
+      "(chapter == 42 && flag[175] == 0)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x689c",
+     "flag 745 = 1"
+    ],
+    [
+     "0x68e0",
+     "battle"
+    ],
+    [
+     "0x6bd0",
+     "flag 175 = 1"
+    ],
+    [
+     "0x6be4",
+     "transfer 555 (176, 0, -984) dir 180"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 555 (176, 0, -984) dir 180",
+    "offset": "0x6be4"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": {
+    "chapter": 42,
+    "step": 0,
+    "flags": {
+     "176": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [],
+    "after_maps": [
+     555,
+     628,
+     556
+    ]
+   },
+   "view_flags_why": {
+    "176": "stored later (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [],
+   "p5": false,
+   "note": "553's door picks 554 iff flag 175 is clear, which the hub state makes so (no view of 553 needed). Aftermath: 554 -> 555 (42: step 1000 -> 628, or step 1010 -> map 14, Shingo Forest: a vision in one game) -> ... -> 556 (sets 162). Map 14 is left out of after_maps (Expel; a headless look decides whether the vision must be followed or cut)"
+  },
+  {
+   "encounter": 525,
+   "name": "Guardian",
+   "map": 603,
+   "maps": [
+    603,
+    604
+   ],
+   "area": "Field of Power",
+   "dungeon": "Field of Power",
+   "town": false,
+   "location": 1364328973,
+   "battle": {
+    "stage": 46,
+    "param": 1,
+    "offset": "0x6a6c"
+   },
+   "routine": "0x6628",
+   "guard": {
+    "chapter": 42,
+    "step": null,
+    "flags": {
+     "528": 0
+    },
+    "conditions": [
+     "(chapter == 42 && flag[528] == 0)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x6c4c",
+     "call_at": "0x6c58",
+     "conditions": [
+      "(chapter == 42 && flag[528] == 0)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6640",
+     "flag 745 = 1"
+    ],
+    [
+     "0x676c",
+     "battle"
+    ],
+    [
+     "0x6b08",
+     "flag 528 = 1"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 42,
+    "step": 0,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [],
+    "until": "transfer"
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [],
+   "p5": false,
+   "note": "604's end scene (0x6870 / 0x688c) is guarded only by flags (528 == 1 && 163 == 0, flag 1 for the game), no chapter: after the Guardian it must run in the view (chapter 42), so the view lasts until the party leaves [603, 604]"
+  },
+  {
+   "encounter": 527,
+   "name": "Guardian",
+   "map": 642,
+   "maps": [
+    642
+   ],
+   "area": "Field of Courage",
+   "dungeon": "Field of Courage",
+   "town": false,
+   "location": 1364328975,
+   "battle": {
+    "stage": 14,
+    "param": 1,
+    "offset": "0x7464"
+   },
+   "routine": "0x6914",
+   "guard": {
+    "chapter": 42,
+    "step": null,
+    "flags": {
+     "164": 0,
+     "521": 1
+    },
+    "conditions": [
+     "(chapter == 42 && flag[164] == 0)",
+     "not (choice == 0)",
+     "not (flag[521] == 0)",
+     "not (step == 20)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x7ccc",
+     "conditions": [
+      "(chapter == 42 && flag[164] == 0)",
+      "not (step == 20)"
+     ],
+     "region": [
+      [
+       692,
+       181
+      ],
+      [
+       720,
+       228
+      ],
+      [
+       751,
+       213
+      ],
+      [
+       720,
+       162
+      ]
+     ],
+     "routine": "0x6914",
+     "y_range": [
+      25,
+      500
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6bd0",
+     "choice"
+    ],
+    [
+     "0x6eb0",
+     "battle"
+    ],
+    [
+     "0x75b0",
+     "step = 10"
+    ],
+    [
+     "0x75b8",
+     "transfer 625 (-1500, 0, 2000) dir 0"
+    ],
+    [
+     "0x6834",
+     "key item 84"
+    ],
+    [
+     "0x6890",
+     "chapter = 46"
+    ],
+    [
+     "0x68b8",
+     "flag 164 = 1"
+    ],
+    [
+     "0x68fc",
+     "step = 0"
+    ],
+    [
+     "0x7890",
+     "step = 0"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 625 (-1500, 0, 2000) dir 0",
+    "offset": "0x75b8"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 42,
+    "step": 0,
+    "flags": {
+     "523": 0,
+     "524": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": [],
+    "after_maps": [
+     625
+    ]
+   },
+   "view_flags_why": {
+    "523": "hub (stored in the view)",
+    "524": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "chapter = 46",
+    "flag 164 = 1",
+    "key item 84",
+    "step = 0",
+    "step = 10"
+   ],
+   "p5": false,
+   "note": "Claude's game: the aftermath goes to 625 (the scene map) at step 10 for a vision and returns to 642 at step 20 (625 0x5aa0); Rena's game stays in 642 (key item 84, flag 164)"
+  },
+  {
+   "encounter": 528,
+   "name": "Lover",
+   "map": 596,
+   "maps": [
+    596
+   ],
+   "area": "North City",
+   "dungeon": "Field of Love",
+   "town": false,
+   "location": 1364328976,
+   "battle": {
+    "stage": 45,
+    "param": 1,
+    "offset": "0x730c"
+   },
+   "routine": "0x6864",
+   "guard": {
+    "chapter": 42,
+    "step": null,
+    "flags": {
+     "518": 0
+    },
+    "conditions": [
+     "(chapter == 42 && flag[518] == 0)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x7f20",
+     "call_at": "0x7f2c",
+     "conditions": [
+      "(chapter == 42 && flag[518] == 0)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6884",
+     "flag 745 = 1"
+    ],
+    [
+     "0x6cb8",
+     "battle"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 42,
+    "step": 0,
+    "flags": {
+     "508": 0,
+     "519": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "508": "unclear (stored in the view)",
+    "519": "stored later (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    508,
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [],
+   "p5": false
+  },
+  {
+   "encounter": 531,
+   "name": "Bark",
+   "map": 454,
+   "maps": [
+    453,
+    454
+   ],
+   "area": "Mihne Cavern",
+   "dungeon": "Mihne Cavern",
+   "town": false,
+   "location": 1364328979,
+   "battle": {
+    "stage": 32,
+    "param": 1,
+    "offset": "0x66c4"
+   },
+   "routine": "0x661c",
+   "guard": {
+    "chapter": null,
+    "step": null,
+    "flags": {},
+    "conditions": []
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x67c0",
+     "conditions": [],
+     "region": [
+      [
+       124,
+       131
+      ],
+      [
+       198,
+       129
+      ],
+      [
+       184,
+       119
+      ],
+      [
+       135,
+       122
+      ]
+     ],
+     "routine": "0x661c"
+    }
+   ],
+   "events": [
+    [
+     "0x662c",
+     "battle"
+    ],
+    [
+     "0x66d8",
+     "step = 1000"
+    ],
+    [
+     "0x66e0",
+     "transfer 455 (-67, 0, 1108) dir 93"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 455 (-67, 0, 1108) dir 93",
+    "offset": "0x66e0"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": {
+    "chapter": 55,
+    "step": 0,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 1000"
+   ],
+   "p5": false,
+   "note": "P5: map 453's door (0x3bd0) goes to 455 when chapter > 55, to 454 otherwise; 454 registers Bark's trigger unconditionally. View (55, 0) on [453, 454]; the scene stores step 1000 and moves to 455 (the cut)"
+  },
+  {
+   "encounter": 532,
+   "name": "Marsilio",
+   "map": 305,
+   "maps": [
+    305
+   ],
+   "area": "Fun City",
+   "dungeon": "Fun City Fighting Arena",
+   "town": true,
+   "location": 1364328980,
+   "battle": {
+    "stage": 22,
+    "param": 1,
+    "offset": "0x79b4"
+   },
+   "routine": "0x71b8",
+   "guard": {
+    "chapter": 57,
+    "step": 20,
+    "flags": {},
+    "conditions": [
+     "chapter == 57",
+     "choice == 2",
+     "not (choice == 0)",
+     "step == 20"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "talk",
+     "registered_at": "0x6c48",
+     "conditions": [
+      "not (choice == 0)",
+      "choice == 2"
+     ],
+     "actor": 16,
+     "routine": "0x6e78"
+    },
+    {
+     "kind": "talk",
+     "registered_at": "0x9e28",
+     "conditions": [
+      "not (choice == 0)",
+      "choice == 2",
+      "chapter == 57",
+      "step == 20"
+     ],
+     "actor": 16,
+     "routine": "0x6e78"
+    }
+   ],
+   "events": [
+    [
+     "0x7780",
+     "battle"
+    ],
+    [
+     "0x7be4",
+     "step = 2000"
+    ],
+    [
+     "0x7bec",
+     "flag 2327 = 1"
+    ],
+    [
+     "0x7bf4",
+     "transfer 296 (-5, 0, 823) dir 91"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 296 (-5, 0, 823) dir 91",
+    "offset": "0x7bf4"
+   },
+   "late": {
+    "claude": false,
+    "rena": false
+   },
+   "view": {
+    "chapter": 57,
+    "step": 20,
+    "flags": {
+     "511": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0,
+     "2327": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "511": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)",
+    "2327": "unclear (stored in the view)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744,
+    2327
+   ],
+   "side_effects": [
+    "step = 2000"
+   ],
+   "p5": true,
+   "note": "P5: the arena 305 is not reached by the late state (doors from 279 0xa100, 297 by the receptionist's choice 1, 301, 302): a headless look. The scene starts from an actor's talk (registered at 57/20) and choice 2"
+  },
+  {
+   "encounter": 533,
+   "name": "Shigeo",
+   "map": 281,
+   "maps": [
+    281
+   ],
+   "area": "Fun City",
+   "dungeon": "Fun City",
+   "town": true,
+   "location": 1364328981,
+   "battle": {
+    "stage": 35,
+    "param": 1,
+    "offset": "0x725c"
+   },
+   "routine": "0x668c",
+   "guard": {
+    "chapter": 57,
+    "step": 2000,
+    "flags": {},
+    "conditions": [
+     "(chapter == 57 && step == 2000)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x9168",
+     "conditions": [
+      "(chapter == 57 && step == 2000)"
+     ],
+     "region": [
+      [
+       82,
+       234
+      ],
+      [
+       83,
+       241
+      ],
+      [
+       347,
+       187
+      ],
+      [
+       338,
+       181
+      ]
+     ],
+     "routine": "0x855c"
+    }
+   ],
+   "events": [
+    [
+     "0x6fe8",
+     "battle"
+    ],
+    [
+     "0x76a8",
+     "step = 3000"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 57,
+    "step": 2000,
+    "flags": {
+     "557": 1,
+     "558": 1,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "557": "hub (stored in the view)",
+    "558": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 3000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 535,
+   "name": "Berle",
+   "map": 306,
+   "maps": [
+    306
+   ],
+   "area": "Town of Armlock",
+   "dungeon": "Town of Armlock",
+   "town": true,
+   "location": 1364328983,
+   "battle": {
+    "stage": 25,
+    "param": 1,
+    "offset": "0x39c"
+   },
+   "routine": "0x40",
+   "guard": {
+    "chapter": 58,
+    "step": 0,
+    "flags": {},
+    "conditions": [
+     "(chapter == 58 && step == 0)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "thread_start",
+     "registered_at": "0x1170",
+     "conditions": [
+      "(chapter == 58 && step == 0)"
+     ],
+     "region": [
+      [
+       373,
+       176
+      ],
+      [
+       382,
+       158
+      ],
+      [
+       339,
+       139
+      ],
+      [
+       319,
+       144
+      ]
+     ],
+     "routine": "0x40"
+    }
+   ],
+   "events": [
+    [
+     "0x1e8",
+     "battle"
+    ],
+    [
+     "0x6c5c",
+     "battle"
+    ],
+    [
+     "0x6c88",
+     "choice"
+    ],
+    [
+     "0x3b4",
+     "step = 1000"
+    ],
+    [
+     "0x3bc",
+     "transfer 314 (-84, 52, -10) dir 89"
+    ]
+   ],
+   "cut": {
+    "at": "transfer",
+    "to": "transfer 314 (-84, 52, -10) dir 89",
+    "offset": "0x3bc"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 58,
+    "step": 0,
+    "flags": {
+     "376": 0,
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "376": "hub (stored in the view)",
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "choice",
+    "step = 1000"
+   ],
+   "p5": false,
+   "note": "a town chamber (Armlock 306): the scene starts at 58/0 by a trigger region; the cut is the transfer to 314 (Portal of Sealing's side)"
+  },
+  {
+   "encounter": 536,
+   "name": "Ruprecht/Nicolus/Jibril",
+   "map": 657,
+   "maps": [
+    657
+   ],
+   "area": "Fienal",
+   "dungeon": "Fienal",
+   "town": false,
+   "location": 1364328984,
+   "battle": {
+    "stage": 48,
+    "param": 1,
+    "offset": "0x8d4c"
+   },
+   "routine": "0x8b24",
+   "guard": {
+    "chapter": 60,
+    "step": 1000,
+    "flags": {},
+    "conditions": [
+     "(chapter == 60 && step == 1000)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x91b0",
+     "call_at": "0x91bc",
+     "conditions": [
+      "(chapter == 60 && step == 1000)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x8ba4",
+     "flag 745 = 1"
+    ],
+    [
+     "0x8bd0",
+     "battle"
+    ],
+    [
+     "0x8f54",
+     "step = 2000"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 60,
+    "step": 1000,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 2000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 537,
+   "name": "Vesper/Decus",
+   "map": 669,
+   "maps": [
+    669
+   ],
+   "area": "Fienal",
+   "dungeon": "Fienal",
+   "town": false,
+   "location": 1364328985,
+   "battle": {
+    "stage": 49,
+    "param": 1,
+    "offset": "0x71dc"
+   },
+   "routine": "0x6f70",
+   "guard": {
+    "chapter": 60,
+    "step": 2000,
+    "flags": {},
+    "conditions": [
+     "(chapter == 60 && step == 2000)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x7470",
+     "call_at": "0x747c",
+     "conditions": [
+      "(chapter == 60 && step == 2000)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6f9c",
+     "flag 745 = 1"
+    ],
+    [
+     "0x7044",
+     "battle"
+    ],
+    [
+     "0x728c",
+     "step = 3000"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 60,
+    "step": 2000,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 3000"
+   ],
+   "p5": false
+  },
+  {
+   "encounter": 538,
+   "name": "Cyril",
+   "map": 674,
+   "maps": [
+    674
+   ],
+   "area": "Fienal",
+   "dungeon": "Fienal",
+   "town": false,
+   "location": 1364328986,
+   "battle": {
+    "stage": 50,
+    "param": 1,
+    "offset": "0x6e0c"
+   },
+   "routine": "0x6ae0",
+   "guard": {
+    "chapter": 60,
+    "step": 3000,
+    "flags": {},
+    "conditions": [
+     "(chapter == 60 && step == 3000)"
+    ]
+   },
+   "trigger": [
+    {
+     "kind": "setup",
+     "routine": "0x70d0",
+     "call_at": "0x70dc",
+     "conditions": [
+      "(chapter == 60 && step == 3000)"
+     ]
+    }
+   ],
+   "events": [
+    [
+     "0x6b28",
+     "flag 745 = 1"
+    ],
+    [
+     "0x6b88",
+     "battle"
+    ],
+    [
+     "0x6f1c",
+     "step = 4000"
+    ]
+   ],
+   "cut": {
+    "at": "free play"
+   },
+   "late": {
+    "claude": true,
+    "rena": true
+   },
+   "view": {
+    "chapter": 60,
+    "step": 3000,
+    "flags": {
+     "740": 0,
+     "741": 0,
+     "742": 0,
+     "743": 0,
+     "744": 0,
+     "745": 0
+    },
+    "keep": []
+   },
+   "view_flags_why": {
+    "740": "unclear (stored in the view)",
+    "741": "unclear (stored in the view)",
+    "742": "unclear (stored in the view)",
+    "743": "unclear (stored in the view)",
+    "744": "unclear (stored in the view)",
+    "745": "the scene flag (clear in the hub; the set-up fades in only at 0)"
+   },
+   "view_check": [
+    740,
+    741,
+    742,
+    743,
+    744
+   ],
+   "side_effects": [
+    "step = 4000"
+   ],
+   "p5": false
+  }
+ ],
+ "dungeons": [
+  {
+   "key": 1,
+   "name": "Salva Drift Key",
+   "dungeon": "Salva Drift",
+   "world": 1,
+   "maps": [
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72
+   ],
+   "doors": [
+    {
+     "id": 2824661,
+     "map": 43,
+     "routine": "0x673c",
+     "to": 63,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "chapter < 6"
+     ]
+    },
+    {
+     "id": 2824674,
+     "map": 43,
+     "routine": "0x673c",
+     "to": 63,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "(chapter == 6 && step < 2050)"
+     ]
+    },
+    {
+     "id": 2824679,
+     "map": 43,
+     "routine": "0x673c",
+     "to": 63,
+     "world": null,
+     "late_edge": true,
+     "requires": []
+    },
+    {
+     "id": 3480401,
+     "map": 53,
+     "routine": "0x6c08",
+     "to": 62,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "not (flag[2])",
+      "not (chapter == 7)"
+     ]
+    }
+   ],
+   "doors_not_on_late_edges": 1,
+   "chambers": [
+    191
+   ],
+   "chests": 17,
+   "late_reached_maps": 12
+  },
+  {
+   "key": 2,
+   "name": "Cross Cave Key",
+   "dungeon": "Cross Cave",
+   "world": 1,
+   "maps": [
+    524,
+    525,
+    526,
+    527,
+    528,
+    529,
+    530,
+    531,
+    532,
+    533,
+    534,
+    535,
+    536,
+    537,
+    538,
+    539,
+    540,
+    541,
+    542,
+    543,
+    544,
+    545,
+    546,
+    547
+   ],
+   "doors": [
+    {
+     "id": 59577013,
+     "map": 909,
+     "routine": "0x4ac8",
+     "to": 524,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    523
+   ],
+   "chests": 24,
+   "late_reached_maps": 23
+  },
+  {
+   "key": 3,
+   "name": "Mars Dungeon Key",
+   "dungeon": "Mars Dungeon",
+   "world": 1,
+   "maps": [
+    456,
+    457,
+    458,
+    459,
+    460,
+    461,
+    462,
+    463,
+    464,
+    465,
+    466
+   ],
+   "doors": [
+    {
+     "id": 8134067,
+     "map": 124,
+     "routine": "0x7190",
+     "to": 465,
+     "world": null,
+     "late_edge": true,
+     "requires": []
+    },
+    {
+     "id": 8134506,
+     "map": 124,
+     "routine": "0x7d4c",
+     "to": 465,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "not (flag[2])"
+     ]
+    },
+    {
+     "id": 8134658,
+     "map": 124,
+     "routine": "0x7dbc",
+     "to": 465,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "chapter == 15",
+      "not ((step >= 0 && step < 1800))",
+      "not (step == 1800)"
+     ]
+    },
+    {
+     "id": 68685710,
+     "map": 1048,
+     "routine": "0x3e24",
+     "to": 463,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    194,
+    195
+   ],
+   "chests": 6,
+   "late_reached_maps": 11
+  },
+  {
+   "key": 4,
+   "name": "Zand's Mansion Key",
+   "dungeon": "Zand's Mansion",
+   "world": 1,
+   "maps": [
+    143,
+    158,
+    159,
+    160,
+    161,
+    162,
+    163,
+    164,
+    165,
+    166
+   ],
+   "doors": [
+    {
+     "id": 9312652,
+     "map": 142,
+     "routine": "0x6628",
+     "to": 143,
+     "world": null,
+     "late_edge": true,
+     "requires": []
+    },
+    {
+     "id": 9314034,
+     "map": 142,
+     "routine": "0x77cc",
+     "to": 143,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "flag[2] == 1",
+      "G[0x1d2] == 1"
+     ]
+    }
+   ],
+   "doors_not_on_late_edges": 1,
+   "chambers": [],
+   "chests": 4,
+   "late_reached_maps": 10
+  },
+  {
+   "key": 5,
+   "name": "Sanctuary of Linga Key",
+   "dungeon": "Sanctuary of Linga",
+   "world": 1,
+   "maps": [
+    402,
+    403,
+    404,
+    405,
+    406,
+    407,
+    408,
+    409,
+    410,
+    411,
+    412
+   ],
+   "doors": [
+    {
+     "id": 59576996,
+     "map": 909,
+     "routine": "0x4a84",
+     "to": 402,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    209
+   ],
+   "chests": 11,
+   "late_reached_maps": 11
+  },
+  {
+   "key": 6,
+   "name": "Hoffmann Ruins Key",
+   "dungeon": "Hoffmann Ruins",
+   "world": 1,
+   "maps": [
+    478,
+    479,
+    480,
+    481,
+    482,
+    483,
+    484,
+    485,
+    486,
+    487,
+    488,
+    489,
+    490,
+    491,
+    492,
+    493,
+    494,
+    495,
+    496,
+    497,
+    498,
+    499,
+    500,
+    501,
+    502,
+    503,
+    504,
+    505,
+    506,
+    507,
+    508,
+    509,
+    510,
+    511,
+    512,
+    513,
+    514,
+    515,
+    516,
+    517,
+    518,
+    519,
+    520,
+    521,
+    522,
+    523
+   ],
+   "doors": [
+    {
+     "id": 59576310,
+     "map": 909,
+     "routine": "0x3fcc",
+     "to": 478,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    210
+   ],
+   "chests": 30,
+   "late_reached_maps": 32
+  },
+  {
+   "key": 7,
+   "name": "Lacour Front Line Key",
+   "dungeon": "Lacour Front Line",
+   "world": 1,
+   "maps": [
+    438,
+    439,
+    440,
+    441,
+    442,
+    443,
+    444,
+    445,
+    446,
+    447,
+    448
+   ],
+   "doors": [
+    {
+     "id": 59577030,
+     "map": 909,
+     "routine": "0x4b0c",
+     "to": 438,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 2,
+   "chambers": [
+    516
+   ],
+   "chests": 0,
+   "late_reached_maps": 10
+  },
+  {
+   "key": 8,
+   "name": "Eluria Tower Key",
+   "dungeon": "Eluria Tower",
+   "world": 1,
+   "maps": [
+    557,
+    558,
+    559,
+    560,
+    561,
+    562,
+    563,
+    564,
+    565,
+    566,
+    567,
+    568,
+    569,
+    570,
+    571,
+    572,
+    573,
+    574,
+    575,
+    576,
+    626,
+    627
+   ],
+   "doors": [
+    {
+     "id": 59577638,
+     "map": 909,
+     "routine": "0x548c",
+     "to": 557,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 2,
+   "chambers": [
+    519,
+    520
+   ],
+   "chests": 23,
+   "late_reached_maps": 1
+  },
+  {
+   "key": 9,
+   "name": "Mountain Palace Key",
+   "dungeon": "Mountain Palace",
+   "world": 1,
+   "maps": [
+    340,
+    341,
+    342,
+    343,
+    344,
+    345,
+    346,
+    347,
+    348,
+    349,
+    350,
+    351,
+    352,
+    353,
+    354,
+    355,
+    356,
+    357,
+    358,
+    359,
+    360,
+    361,
+    362,
+    363,
+    364,
+    365,
+    366,
+    367,
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380
+   ],
+   "doors": [
+    {
+     "id": 59576276,
+     "map": 909,
+     "routine": "0x3f44",
+     "to": 355,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [],
+   "chests": 19,
+   "late_reached_maps": 29
+  },
+  {
+   "key": 10,
+   "name": "Lasguss Mountain Key",
+   "dungeon": "Lasguss Mountain",
+   "world": 1,
+   "maps": [
+    381,
+    382,
+    383,
+    384,
+    385
+   ],
+   "doors": [
+    {
+     "id": 59576242,
+     "map": 909,
+     "routine": "0x3ebc",
+     "to": 382,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    },
+    {
+     "id": 59576259,
+     "map": 909,
+     "routine": "0x3f00",
+     "to": 381,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [],
+   "chests": 0,
+   "late_reached_maps": 5
+  },
+  {
+   "key": 11,
+   "name": "Cave of Trials Key",
+   "dungeon": "Cave of Trials",
+   "world": 1,
+   "maps": [
+    698,
+    699,
+    700,
+    701,
+    702,
+    703,
+    704,
+    705,
+    706,
+    707,
+    708,
+    709,
+    710,
+    711,
+    712,
+    713,
+    714,
+    715,
+    716,
+    717,
+    718,
+    719,
+    720,
+    721,
+    722,
+    723,
+    724,
+    725,
+    726,
+    727,
+    728,
+    729,
+    730,
+    731,
+    732,
+    733,
+    734,
+    735,
+    736,
+    737,
+    738,
+    739,
+    740,
+    741,
+    742,
+    743,
+    744,
+    745,
+    746,
+    747,
+    748,
+    749,
+    750,
+    751,
+    752,
+    753,
+    754,
+    755,
+    756,
+    757,
+    758,
+    759,
+    760,
+    761,
+    762,
+    763,
+    764,
+    765,
+    766,
+    767,
+    768,
+    769,
+    770,
+    771,
+    772,
+    773,
+    774,
+    775,
+    776,
+    777,
+    778,
+    779,
+    780,
+    781,
+    782,
+    783,
+    784,
+    785,
+    786,
+    787,
+    788,
+    789,
+    790,
+    791,
+    792,
+    793,
+    794,
+    795,
+    796,
+    797,
+    798,
+    799,
+    800,
+    801,
+    802,
+    803,
+    804,
+    805,
+    806,
+    807,
+    808,
+    809,
+    810,
+    811,
+    812,
+    813,
+    814,
+    815,
+    816,
+    817,
+    818,
+    819,
+    820,
+    821,
+    822,
+    823,
+    824,
+    825
+   ],
+   "doors": [
+    {
+     "id": 59577733,
+     "map": 909,
+     "routine": "0x55b8",
+     "to": 704,
+     "world": 1,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [],
+   "chests": 79,
+   "late_reached_maps": 126
+  },
+  {
+   "key": 12,
+   "name": "Synard Plant Key",
+   "dungeon": "Synard Plant",
+   "world": 2,
+   "maps": [
+    269,
+    270,
+    271
+   ],
+   "doors": [
+    {
+     "id": 17308911,
+     "map": 264,
+     "routine": "0x7390",
+     "to": 270,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "not (chapter <= 38)"
+     ]
+    },
+    {
+     "id": 17308943,
+     "map": 264,
+     "routine": "0x7410",
+     "to": 270,
+     "world": null,
+     "late_edge": true,
+     "requires": [
+      "not (chapter <= 38)"
+     ]
+    }
+   ],
+   "doors_not_on_late_edges": 5,
+   "chambers": [
+    521
+   ],
+   "chests": 0,
+   "late_reached_maps": 1
+  },
+  {
+   "key": 13,
+   "name": "Cave of Red Crystal Key",
+   "dungeon": "Cave of Red Crystal",
+   "world": 2,
+   "maps": [
+    413,
+    414,
+    415,
+    416,
+    417,
+    418,
+    419
+   ],
+   "doors": [
+    {
+     "id": 68686044,
+     "map": 1048,
+     "routine": "0x4364",
+     "to": 419,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    522
+   ],
+   "chests": 8,
+   "late_reached_maps": 7
+  },
+  {
+   "key": 14,
+   "name": "Field of Intelligence Key",
+   "dungeon": "Field of Intelligence",
+   "world": 2,
+   "maps": [
+    549,
+    550,
+    551,
+    552,
+    553,
+    554,
+    555,
+    556,
+    628
+   ],
+   "doors": [
+    {
+     "id": 68685640,
+     "map": 1048,
+     "routine": "0x3d14",
+     "to": 549,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 1,
+   "chambers": [
+    524
+   ],
+   "chests": 7,
+   "late_reached_maps": 4
+  },
+  {
+   "key": 15,
+   "name": "Field of Power Key",
+   "dungeon": "Field of Power",
+   "world": 2,
+   "maps": [
+    597,
+    598,
+    599,
+    600,
+    601,
+    602,
+    603,
+    604,
+    605,
+    606,
+    607,
+    608,
+    609,
+    610,
+    611,
+    612,
+    613,
+    614,
+    615,
+    616,
+    624
+   ],
+   "doors": [
+    {
+     "id": 68686143,
+     "map": 1048,
+     "routine": "0x43ec",
+     "to": 597,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 3,
+   "chambers": [
+    525
+   ],
+   "chests": 8,
+   "late_reached_maps": 13
+  },
+  {
+   "key": 16,
+   "name": "Field of Courage Key",
+   "dungeon": "Field of Courage",
+   "world": 2,
+   "maps": [
+    629,
+    630,
+    631,
+    632,
+    633,
+    634,
+    635,
+    636,
+    637,
+    638,
+    639,
+    640,
+    641,
+    642
+   ],
+   "doors": [
+    {
+     "id": 68686061,
+     "map": 1048,
+     "routine": "0x43a8",
+     "to": 629,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 1,
+   "chambers": [
+    527
+   ],
+   "chests": 6,
+   "late_reached_maps": 14
+  },
+  {
+   "key": 17,
+   "name": "Field of Love Key",
+   "dungeon": "Field of Love",
+   "world": 2,
+   "maps": [
+    588,
+    589,
+    590,
+    591,
+    592,
+    593,
+    594,
+    595,
+    596
+   ],
+   "doors": [
+    {
+     "id": 68686412,
+     "map": 1048,
+     "routine": "0x4920",
+     "to": 588,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 2,
+   "chambers": [
+    528
+   ],
+   "chests": 4,
+   "late_reached_maps": 7
+  },
+  {
+   "key": 18,
+   "name": "Mihne Cavern Key",
+   "dungeon": "Mihne Cavern",
+   "world": 2,
+   "maps": [
+    449,
+    450,
+    451,
+    452,
+    453,
+    454,
+    455
+   ],
+   "doors": [
+    {
+     "id": 68685657,
+     "map": 1048,
+     "routine": "0x3d58",
+     "to": 449,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 0,
+   "chambers": [
+    531
+   ],
+   "chests": 13,
+   "late_reached_maps": 6
+  },
+  {
+   "key": 19,
+   "name": "Portal of Sealing Key",
+   "dungeon": "Portal of Sealing",
+   "world": 2,
+   "maps": [
+    313,
+    386,
+    387,
+    388,
+    389,
+    390,
+    391,
+    392,
+    393,
+    394,
+    395,
+    396,
+    397,
+    398,
+    399,
+    400,
+    401
+   ],
+   "doors": [],
+   "doors_not_on_late_edges": 1,
+   "chambers": [],
+   "chests": 1,
+   "late_reached_maps": 0
+  },
+  {
+   "key": 20,
+   "name": "Fienal Key",
+   "dungeon": "Fienal",
+   "world": 2,
+   "maps": [
+    647,
+    648,
+    649,
+    650,
+    651,
+    652,
+    653,
+    654,
+    655,
+    656,
+    657,
+    658,
+    659,
+    660,
+    661,
+    662,
+    663,
+    664,
+    665,
+    666,
+    667,
+    668,
+    669,
+    670,
+    671,
+    672,
+    673,
+    674,
+    675,
+    676,
+    677,
+    678,
+    679,
+    680,
+    681,
+    682,
+    683,
+    684,
+    685,
+    687
+   ],
+   "doors": [
+    {
+     "id": 68685691,
+     "map": 1048,
+     "routine": "0x3de0",
+     "to": 687,
+     "world": 2,
+     "late_edge": true,
+     "requires": []
+    }
+   ],
+   "doors_not_on_late_edges": 1,
+   "chambers": [
+    536,
+    537,
+    538
+   ],
+   "chests": 26,
+   "late_reached_maps": 37
+  }
+ ],
+ "town_chambers": {
+  "306": "Town of Armlock",
+  "281": "Fun City",
+  "305": "Fun City Fighting Arena"
+ },
+ "notes": [
+  "p5 = the late state does not reach the chamber and its view's maps don't open the way: Shin 569 / Berle 575 (Eluria Tower past 557: door 0x7808, a headless look; Berle's tower-wide view may be enough), Marsilio 305 (the arena's doors). Bark 454 and the Synard 269 are opened by their views' approach rooms (453, 264); the Field of Intelligence's 554 by the hub state (flag 175 clear).",
+  "Lasguss Mountain (no chest, only the optional XINE) and the Portal of Sealing (not reached at chapter 60: 313 -> 400 only at 52-2000; one chest, the Heraldry lab's) gate nothing the hub can use: candidates to drop from the key list (18 keys), or P5 for the Portal.",
+  "Fienal: the D6 requirement (`won`) gates its entrance; a Fienal key on top is optional (proposal: none).",
+  "Every view lists the party flags 740-744 at the hub's value (0) so a scene's party bookkeeping drops, and flag 745 at 0 (hubvm: the set-up fades in only while it is 0)."
+ ]
+}

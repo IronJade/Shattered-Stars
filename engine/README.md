@@ -252,6 +252,13 @@ Archipelago generator) and, once one is chosen, offline or online play:
   a fight the story gives one member alone (Claude in Shingo Forest in Rena's game, the
   tournament's fights) borrows that member for the fight only. A starting character joins at
   the first free play and leads (`docs/ap/seed_format.md` "The party rules").
+- **The hub** (seed version 3, `world_mode: hub`; in progress): the story stays at chapter 60
+  (scenes that would move the chapter or step on are held back, a log line each), and each
+  story boss plays its original scene in its chamber: while the boss is unbeaten, the chamber
+  sees that boss's own point in the story (a "story view"), and what the scene stores there is
+  dropped once it is over, except what the seed keeps. Debugging: `SS_HUB_TRACE=1` lists what a
+  scene stores in its view (`docs/ap/seed_format.md` "Hub", "The port: the chapter lock and the
+  story views").
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP

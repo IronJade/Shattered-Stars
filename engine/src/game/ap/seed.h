@@ -103,6 +103,38 @@ struct Door {
   bool has_conditions() const { return !flags.empty() || !won.empty(); }
 };
 
+// The hub (`world_mode: "hub"`; docs/ap/seed_format.md "Hub") [hubvm agent]: a story boss's
+// chamber. While the party is on one of its maps and the boss is not yet won (the sidecar's
+// goal_won), its story view (if any) shows the chamber's scripts the boss's own story state:
+// the chapter / step globals (G[0xa0] / G[0xa4]), the listed flags and globals read and write a
+// view copy, so the original scene plays; what the scene stores there is dropped when the view
+// ends, except the `keep` flags.
+struct StoryView {
+  int chapter = 0;
+  int step = 0;
+  std::map<int, bool> flags;      // flag -> the value the view starts with
+  struct Global {
+    int addr = 0;                 // script global byte offset (0xa8-0x33f), aligned to size
+    int size = 4;                 // 4 (a word, the format's default), 2 or 1
+    int32_t value = 0;            // the value the view starts with (its low 'size' bytes)
+  };
+  std::vector<Global> globals;    // more script globals redirected like the chapter and step
+  std::vector<int> keep;          // view flags whose value at the view's end is written back
+  std::vector<int> after_maps;    // the view goes on into these from a view map (never starts there)
+  bool until_transfer = false;    // until "transfer": no end at free play, only at a map outside the view
+  bool has_cut_to = false;        // cut_to: after the win, the first transfer out of the view goes here
+  DoorTarget cut_to;
+};
+struct HubBoss {
+  int encounter = -1;             // the boss battle: a victory records it (goal_won)
+  std::string name;
+  int map = -1;                   // the chamber
+  std::vector<int> maps;          // the maps the view spans (default: map)
+  bool has_view = false;          // false: no view (a flag-guarded boss plays at the hub's state)
+  StoryView view;
+  int game = 0;                   // 0 both games, 1 only Claude's (script flag 1 set), 2 only Rena's
+};
+
 struct Seed {
   int version = 0;
   std::string seed;          // the multiworld's seed id
@@ -138,6 +170,12 @@ struct Seed {
   bool open_party = false;           // options.party_rules == "open": only story members, received members
                                      // and the starting character join; no lockouts
   int starting_character = 0;        // options.starting_character: party id 1-12 (0: none, the hero leads)
+  // The hub [hubvm agent] (docs/ap/seed_format.md "Hub").
+  bool hub = false;                  // options.world_mode == "hub": the chapter lock and the story views
+  bool hub_lock_chapter = true;      // hub.lock.chapter: outside a view, chapter stores are dropped
+  bool hub_lock_step = true;         // hub.lock.step: ... and step stores, except on hub_step_maps
+  std::vector<int> hub_step_maps = {685};  // hub.lock.step_maps: maps whose step stores pass the lock
+  std::vector<HubBoss> bosses;       // the seed's `bosses` (the chambers)
 };
 
 // The door id rule (tools/ap_doors.py).

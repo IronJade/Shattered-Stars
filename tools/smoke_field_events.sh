@@ -518,4 +518,45 @@ else
   echo "PASS ap_leader_story: story mode keeps Claude"
 fi
 
+# Archipelago, the hub [hubvm agent] (docs/ap/seed_format.md "Hub"; engine/src/game/ap/hub.h). At
+# chapter 60 step 4000 (the hub's state) Arcmene's chamber (map 417, entered from 418's lower
+# door at y -200, where the set-up starts the scene) plays its original scene through the story
+# view (chapter 40 step 1000): the fight, the check, the aftermath's chapter-41 store dropped with
+# the view at the world map's load, flag 11 kept; the chapter stays 60. A story seed with the
+# same rows, and no seed: the chamber is empty at chapter 60 (the original). The chapter lock:
+# Cross Cave's key chest (547, flag 2569 clear) stores chapter 13 step 0, dropped in the hub,
+# stored in a story seed.
+cat >"$WORK/hub.apso2" <<'SEED'
+{"format": "apso2", "version": 3, "seed": "smoke-hub", "slot": {"name": "Hub", "id": 1}, "options": {"world_mode": "hub"},
+ "items": {"5000757": {"name": "Blueberry", "kind": "item", "game_id": 757}},
+ "locations": [{"id": 1364328970, "name": "Arcmene", "check": {"type": "boss", "encounter": 522},
+                "item": {"player": 1, "kind": "item", "game_id": 757, "name": "Blueberry"}}],
+ "bosses": [{"encounter": 522, "name": "Arcmene", "map": 417,
+             "view": {"chapter": 40, "step": 1000, "flags": {"745": 0, "11": 0, "12": 0}, "keep": [11]}}],
+ "hub": {"lock": {"chapter": true, "step": true}}}
+SEED
+sed 's/"version": 3/"version": 2/; s/"world_mode": "hub"/"world_mode": "story"/; s/"smoke-hub"/"smoke-hub-story"/' "$WORK/hub.apso2" >"$WORK/hubstory.apso2"
+HUB_RUN=("${CEL_RUN[@]}" SS_SCRIPT_GLOBALS="a0=60,a4=4000" SS_SWEEP_FLAGS=11)
+"${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hub.apso2" --frames 9000 --map 418 \
+  </dev/null >"$WORK/ap_hub_arcmene.log" 2>&1
+check ap_hub_arcmene "the story view comes on in the chamber" '\[ap\] hub: story view on: map 417 \(Arcmene, encounter 522\): chapter 40 step 1000'
+check ap_hub_arcmene "the original scene's fight, its check" '\[ap\] check 1364328970 \(Arcmene\)'
+check ap_hub_arcmene "the view ends at the transfer out: chapter 41 dropped, flag 11 kept" 'story view off: map 2 .*dropped chapter 41, step 0, flag 12=1, flag 745=1; kept flag 11=1'
+check ap_hub_arcmene "the chapter stays 60" 'play: story chapter 60 step 4000'
+for v in hubstory none; do
+  [ $v = none ] && seedarg=() || seedarg=(--ap-seed "$WORK/$v.apso2")
+  "${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard "${seedarg[@]}" --frames 600 --map 418 \
+    </dev/null >"$WORK/ap_hub_arcmene_$v.log" 2>&1
+  check ap_hub_arcmene_$v "no view: the chamber is empty at chapter 60" 'play: control on map 417 after 1 of 1 steps'
+  if grep -qE 'story view on|a battle at' "$WORK/ap_hub_arcmene_$v.log"; then echo "FAIL ap_hub_arcmene_$v: a view or a fight"; fail=1; else echo "PASS ap_hub_arcmene_$v: no view, no fight"; fi
+done
+"${HUB_RUN[@]}" SS_SWEEP_PLAY="547:K60" timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hub.apso2" --frames 2100 --map 547 \
+  </dev/null >"$WORK/ap_hub_lock.log" 2>&1
+check ap_hub_lock "the chest's chapter store is dropped" '\[ap\] hub: chapter store 13 dropped at map 547 offset 0x6a80 \(the lock\)'
+check ap_hub_lock "and its step store" '\[ap\] hub: step store 0 dropped at map 547 offset 0x6a88 \(the lock\)'
+check ap_hub_lock "the chapter stays 60" 'play: story chapter 60 step 4000'
+"${HUB_RUN[@]}" SS_SWEEP_PLAY="547:K60" timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hubstory.apso2" --frames 2100 --map 547 \
+  </dev/null >"$WORK/ap_hub_lock_story.log" 2>&1
+check ap_hub_lock_story "a story seed: the chest stores chapter 13 (the original)" 'play: story chapter 13 step 0'
+
 exit $fail

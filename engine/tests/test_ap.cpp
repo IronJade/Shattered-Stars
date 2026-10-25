@@ -164,7 +164,7 @@ TEST(ap_seed_errors) {
   CHECK(seed_error("not json", "not JSON"));
   CHECK(seed_error("[]", "JSON object"));
   CHECK(seed_error(replace(kSeed, "\"apso2\"", "\"other\""), "format"));
-  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 3"), "unsupported version 3 (this build reads 1 and 2)"));
+  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 4"), "unsupported version 4 (this build reads 1 to 3)"));
   CHECK(seed_error(replace(kSeed, "\"seed\": \"12345678901234567890\",", ""), "seed"));
   CHECK(seed_error(replace(kSeed, "\"flag\": \"0x962\"", "\"flag\": 9999"), "locations[0]: a chest needs"));
   CHECK(seed_error(replace(kSeed, "\"id\": 1347569664", "\"id\": 1347569665"), "locations[1]: id 1347569665 repeated"));
