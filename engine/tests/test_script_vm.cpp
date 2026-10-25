@@ -412,6 +412,84 @@ TEST(script_vm_save_and_restore_state) {
   CHECK_EQ(wait, 4);  // the wait counter is not part of the saved state (the frame's is)
 }
 
+TEST(script_vm_ext_cb_sound_start_clip_stack) {
+  // ext 0xcb (sound_start_clip) fetches five arguments, but the game's two calls (map 642
+  // 0x6e2c-0x6e3c, map 575 0x760c-0x761c) push four: the clip, 0x20, 0x40, 0x2000. The
+  // original pops the word below the value stack as the slot and leaves the stack a word
+  // low, which the battle that follows saves as a u16 offset (0xfffc). The port pops only
+  // the four: slot 0 (no clip), stack balanced, and a battle's save / restore round trip
+  // brings the stack back where it was.
+  Fixture f;
+  std::vector<u32> code(32, 0);
+  code[0] = op(0x17);
+  code[1] = op(0x18, 0);  // frame: 0 flag bytes, 16 variable bytes
+  code[2] = 16;
+  code[3] = op(0x12, 3);  // the clip (the scripts push the local play_sfx's R went to)
+  code[4] = op(0x12, 0x20);
+  code[5] = op(0x12, 0x40);
+  code[6] = op(0x12, 0x2000);
+  code[7] = op(0xCB, 0x800000);  // stack form, as both calls
+  code[8] = ext(0x7A, 5);        // wait(5)
+  code[9] = op(0x15, 9);
+  f.load(code, 1);
+  vm_wr32(f.block.data() + 0xFC, 7);  // the word below the value stack: never an argument
+  const u32* base = reinterpret_cast<const u32*>(f.block.data() + 0x100);
+  g_trace.clear();
+  vm_svc_set_trace(record);
+  f.frame();
+  vm_svc_set_trace(nullptr);
+  CHECK_EQ(f.ip(), 9 * 4);
+  CHECK(f.ctx.value_sp == base);  // the four values gone, nothing below them popped
+  CHECK_EQ(vm_rd32(f.block.data() + 0xFC), 7);
+  CHECK_EQ(g_trace.size(), static_cast<size_t>(1));
+  // The original's argument order: slot <- below the stack (0 here), then the four pushes.
+  CHECK(!g_trace.empty() && g_trace[0] == "sound_start_clip(0,3,32,64,0)");
+
+  // The battle after the call (map 642 ext 0xb7 at 0x4f70, map 575 ext 0xed at 0x76f0).
+  const u32* csp = f.ctx.call_sp;
+  vm_save_state(&f.ctx);
+  CHECK_EQ(vm_rd16(f.block.data() + 0x180 + 0x34), 0);  // the saved stack offset
+  f.block[0x180 + 0x24] = 1;
+  vm_ctx_create(&f.ctx);
+  vm_init(&f.ctx);
+  vm_restore_state(&f.ctx);
+  f.block[0x180 + 0x24] = 0;
+  CHECK(f.ctx.value_sp == base);
+  CHECK(f.ctx.call_sp == csp);
+  CHECK_EQ(f.ip(), 9 * 4);
+}
+
+TEST(script_vm_ext_cb_five_arguments) {
+  // A call with all five arguments, stack or inline form, takes five as the original.
+  Fixture f;
+  std::vector<u32> code(32, 0);
+  code[0] = op(0x17);
+  code[1] = op(0x12, 0x99);  // below the call's arguments: stays on the stack
+  code[2] = op(0x12, 2);
+  code[3] = op(0x12, 0x60);
+  code[4] = op(0x12, 0x30);
+  code[5] = op(0x12, 0x1800);
+  code[6] = op(0x12, 1);
+  code[7] = op(0xCB, 0x800000);
+  code[8] = ext(0xCB, 4);  // inline: slot 4, then (0x50, 0x7f) and (0x2000, 1)
+  code[9] = pair(0x50, 0x7F);
+  code[10] = pair(0x2000, 1);
+  code[11] = ext(0x7A, 5);
+  code[12] = op(0x15, 12);
+  f.load(code, 1);
+  const u32* base = reinterpret_cast<const u32*>(f.block.data() + 0x100);
+  g_trace.clear();
+  vm_svc_set_trace(record);
+  f.frame();
+  vm_svc_set_trace(nullptr);
+  CHECK_EQ(f.ip(), 12 * 4);
+  CHECK(f.ctx.value_sp == base + 1);
+  CHECK_EQ(base[0], 0x99u);
+  CHECK_EQ(g_trace.size(), static_cast<size_t>(2));
+  CHECK(g_trace.size() == 2 && g_trace[0] == "sound_start_clip(2,96,48,6144,1)");
+  CHECK(g_trace.size() == 2 && g_trace[1] == "sound_start_clip(4,80,127,8192,1)");
+}
+
 TEST(script_vm_inventory_check_bytes) {
   Fixture f;
   u8* inv = f.inventory.data();

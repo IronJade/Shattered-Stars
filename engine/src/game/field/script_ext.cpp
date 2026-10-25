@@ -640,10 +640,28 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       vm_fetch_args(ctx, 1);
       vm_set_r(static_cast<u32>(vm_svc_sound_effect_playing(a[0])));
       break;
-    case 0xCB:
-      vm_fetch_args(ctx, 5);
+    case 0xCB: {  // sound_start_clip(slot, volume, pan, pitch_scale, invert)
+      // ORIGINAL BUG (original_bugs.md W4, field 0x80063688): the original fetches five
+      // arguments, but the game's only two calls (map 642 0x6e3c, the Field of Courage before
+      // the Guardian; map 575 0x761c, Eluria Tower before Berle) push four: the clip play_sfx
+      // returned, then 0x20 / 0x40, 0x40 / 0x40, 0x2000 / 0x1068. The fifth pop takes the word
+      // below the value stack (state block +0xfc, 0 in practice) as the slot, so no clip is
+      // touched, and the stack stays a word low: the battle that follows saves that offset as
+      // a u16, and on the way back the script's stack sits 64 KB past the state block.
+      //   vm_fetch_args(ctx, 5);
+      // The port pops only what the stack holds and reads an argument below it as 0, so the
+      // call is the original's (slot 0: no clip) and the stack stays balanced.
+      const long held = ctx->value_sp - reinterpret_cast<u32*>(globals().value_stack);
+      if (inline_args || held >= 5) {
+        vm_fetch_args(ctx, 5);
+      } else {
+        const int n = held > 0 ? static_cast<int>(held) : 0;
+        for (int i = 4; i >= 5 - n; --i) a[i] = static_cast<s32>(*--ctx->value_sp);
+        for (int i = 0; i < 5 - n; ++i) a[i] = 0;
+      }
       vm_svc_sound_start_clip(a[0], a[1] & 0xFF, a[2] & 0xFF, static_cast<s16>(a[3]), a[4] & 0xFF);
       break;
+    }
     case 0xCC:
       vm_fetch_args(ctx, 1);
       vm_svc_sound_fade_in(static_cast<s16>(a[0]));

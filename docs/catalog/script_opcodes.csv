@@ -141,7 +141,7 @@ ext,0xc7,,nop_c7,0,0,0 (inline),No handler,confirmed
 ext,0xc8,,play_sfx,3,3,1 (inline),"R = sound_play_sfx(id, (s8) pan, volume & 0xffff)",confirmed
 ext,0xc9,,sound_release_clip,1,1,0 (inline),sound_release_clip,confirmed
 ext,0xca,,sound_effect_playing,1,1,0 (inline),"R = id of effect slot a while it plays, else 0 (boot 0x8001a0ac)",confirmed
-ext,0xcb,,sound_start_clip,5,5,2 (inline),"sound_start_clip(slot, volume, pan, pitch, flag); CONFLICT (hubchambers, 2026-10-25): the game's only two calls are stack-form and push 4 values (map 642 0x6e3c, Courage's Guardian; map 575 0x761c, Berle's tower scene): the port's 5-value fetch underflows the script value stack (ASan heap-buffer-overflow in script_vm.cpp push, no seed needed); the handler's stack-form count needs a look",conflict
+ext,0xcb,,sound_start_clip,5,5,2 (inline),"Handler 0x80063688: vm_fetch_args 5, then sound_start_clip(slot, volume & 0xff, pan & 0xff, (s16) pitch_scale, invert & 0xff) (boot 0x8001a4b8); always five, no optional argument, no count in the instruction. The game's only two calls are stack form and push 4 (map 642 0x6e3c before the Courage Guardian, map 575 0x761c before Berle: the clip play_sfx returned, volume 0x20 / 0x40, pan 0x40, pitch 0x2000 / 0x1068), so the original takes the word below the value stack (0) as the slot and leaves the stack a word low, which the battle after saves as a u16 and restores 64 KB up: original bug W4 (docs/notes/original_bugs.md). The port pops only what the stack holds (vmfix, 2026-10-25)",confirmed
 ext,0xcc,,sound_fade_in,1,1,0 (inline),boot 0x8001a82c(frames),confirmed
 ext,0xcd,,sound_fade_out_effects,1,1,0 (inline),sound_fade_out_effects(frames),confirmed
 ext,0xce,,sound_set_tempo,1,1,0 (inline),boot 0x8001a938((s8) a),confirmed

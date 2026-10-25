@@ -942,7 +942,13 @@ void vm_svc_sound_release_clip(int slot) {
 }
 void vm_svc_sound_start_clip(int slot, int volume, int pan, int pitch, int flag) {
   TRACE("%d,%d,%d,%d,%d", slot, volume, pan, pitch, flag);
-  if (Sound* s = globals().sound) sound_start_clip(s, slot, volume, pan, pitch, flag);
+  // Effect slots are 1-8. The original has no range check: slot 0 (ext 0xcb's calls, see
+  // script_ext.cpp) reads Sound +0x10f8 (the reverb depth) as the busy word and at most
+  // writes over its copy of the common SPU attributes, which is never applied again; the
+  // port has nothing before effects[0], so it skips any slot outside 1-8.
+  Sound* s = globals().sound;
+  if (s == nullptr || slot < 1 || slot > static_cast<int>(std::size(s->effects))) return;
+  sound_start_clip(s, slot, volume, pan, pitch, flag);
 }
 void vm_svc_sound_play_sequence() {
   TRACE("%s", "");
