@@ -31,8 +31,8 @@
 #   5. The console starts the final boss (`battle 539`), won the same way: the battle's exit
 #      records the goal (CLIENT_GOAL).
 #   6. A second session (a new game, no memory card) walks into Hearn's shop and buys one
-#      Sandals and three Lavenders: the Lavender slot's first copy is the check and gives the
-#      Spectacles, the other copies are the shop's own.
+#      Sandals and three Lavenders: the Lavender slot's first purchase is also the check and
+#      gives the Spectacles; every copy bought is the player's.
 #   7. A third session plays Dias, a second SO2 slot with a version-2 seed (so2.apworld 0.2.0:
 #      goal indalecio_limiter_off_and_iseria_queen, craftsanity, killer-move checks, no-fail
 #      crafting; story mode): goal.flags are set at the start; the console's final boss (`battle
@@ -298,7 +298,7 @@ check "$W/game.log" "the drop's check" "\[ap\] check $DROP "
 check "$W/game.log" "the goal (encounter 539 won)" '\[ap\] goal: encounter 539 won'
 check "$W/game.log" "the port's status" 'slot Claude \| checks 2/[0-9]+ \| received 4 \| waiting 0 \| connected \| goal'
 check "$W/game2.log" "session 2: the shop slot's check pays the Spectacles" "\[ap\] check $SHOP .*: Spectacles$"
-check "$W/game2.log" "... its first copy only" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 3'
+check "$W/game2.log" "... and the 3 Lavenders bought are ours" '\[ap\] shop 1 entry 2 \(item 224\): 3 bought, and the slot.s check'
 check "$W/server.log" "the server: Claude completed the goal" 'Claude.*has completed their goal'
 check "$W/tracker.log" "the server's checked locations hold the crate" "checked_locations \[.*\b$CRATE\b"
 check "$W/tracker.log" "... and the drop" "checked_locations \[.*\b$DROP\b"

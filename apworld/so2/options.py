@@ -307,8 +307,9 @@ class ExpelTeleporter(DefaultOnToggle):
 
 
 class ShuffleShops(Choice):
-    """Shop slots become locations: the first copy you buy of a slot's item gives the slot's
-    item instead (any price, the slot's own). They never hold progression items.
+    """Shop slots become locations: the first time you buy a slot's item, you get what you buy,
+    and the slot's check too (its item given or sent; the price is the slot's own). The shop's
+    list marks a slot still to check with the Archipelago logo. Never progression items.
     specials: the slots selling an item no other shop sells (98 slots).
     full: every slot of every shop a script opens (550 slots)."""
     display_name = "Shuffle Shops"

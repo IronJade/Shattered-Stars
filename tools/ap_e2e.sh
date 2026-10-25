@@ -346,7 +346,7 @@ if grep -q 'field_load_map(map=18 keep=1 flags=0) at vblank [1-5][0-9][0-9]$' "$
   echo "FAIL phase 4: the door transferred while still locked"; fails=$((fails + 1))
 fi
 check "$W/game_p4shop.log" "phase 4: the shop slot's check is sent" '\[ap\] check 81002 .*: Map Bombs for Bob'
-check "$W/game_p4shop.log" "phase 4: the shop entry is consumed" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 1'
+check "$W/game_p4shop.log" "phase 4: the copy bought is ours, the purchase the check" '\[ap\] shop 1 entry 2 \(item 224\): 1 bought, and the slot.s check'
 check "$W/bob_shop.log" "phase 4: Bob receives the shop item" 'received item [0-9]+ from player 1 location 81002'
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails

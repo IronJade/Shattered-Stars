@@ -39,12 +39,14 @@ docs/ap/late_proof.json. How the APWorld is built and checked: docs/handoff/apwo
   own values; `random_town` picks any row of hub_state.json `starts`, all 16 towns since
   hubcore's update); `fienal_requirement`: fields_and_berle (default) / fields / all_bosses.
 - **Locations = what the hub reaches** (hub.py `choose`, `reached_games`): chests / gifts / cave
-  and optional bosses the late proof proved (258 / 9 / 10 / XINE), the 22 chambers (the 21
+  and optional bosses the late proof proved (258 / 9 / 10 / XINE; **since hubproof, 2026-10-25:
+  the hub proof's, data.HUB_REACHED: 290 / 9 / 10 / XINE in both games, docs/ap/hub_proof.json**), the 22 chambers (the 21
   story-boss rows + a new hub-only row "Cross Cave: Guardians boss", id 1364328971, from
   data.HUB_LOCATIONS), shops open at the hub state (tool: map late-reached + conditions possible at
-  chapter 60 step 4000 with the hub's flags, not in a PA: 41 Claude / 42 Rena), drops met there
-  (82 types per game), crafts, killer moves. Never: joins (D7), losable fights (D5), unproven
-  rows (Eluria Tower's 23 chests etc.: hubproof adds them). Missable reasons: the soft ones
+  chapter 60 step 4000 with the hub's flags, not in a PA: 41 Claude / 42 Rena; the hub proof's
+  maps since hubproof: unchanged), drops met there (82 types per game; 85 on the hub proof's
+  maps), crafts, killer moves. Never: joins (D7), losable fights (D5), unproven rows (Eluria
+  Tower's 23 chests etc.: the hub proof added them and Fienal's maze's 9: 290 chests now). Missable reasons: the soft ones
   (window, time-limited) don't apply (nothing closes); hard ones stay (EXCLUDED / remove);
   "story_route" when reached in only one of the route's games (and the other game's chamber
   under story_route any).
@@ -126,7 +128,7 @@ docs/ap/late_proof.json. How the APWorld is built and checked: docs/handoff/apwo
    state; if not, drop it: add 199 to a "not in the hub" set), on the Synard doors in
    hub_bosses.json, on row changes (each time: `python3 tools/ap_world_tables.py`, the world
    tests, a hub batch); hubproof (replace the late proof's reach at hub.py's "hubproof" places and
-   in the tool's `hub_tables`).
+   in the tool's `hub_tables`): **done by hubproof 2026-10-25 (docs/handoff/hubproof.md)**.
 2. The version stays 0.2.0 (the user's decision); nothing else open for the APWorld.
 
 ## How to verify
@@ -148,6 +150,7 @@ docs/ap/late_proof.json. How the APWorld is built and checked: docs/handoff/apwo
   Row changes flow in by regenerating data.py.
 - hubproof: the real hub proof (replaces late_proof.json's reach: hub.py `reached_games`,
   `may_hold_progression`, `drop_rule`; the tool's `hub_tables` late maps for shops / drops).
+  **Done (hubproof, 2026-10-25):** data.HUB_REACHED / HUB_MAPS from docs/ap/hub_proof.json.
 
 ## For hubworld (notes from other agents)
 

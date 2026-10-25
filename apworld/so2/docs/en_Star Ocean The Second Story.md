@@ -91,7 +91,10 @@ chests and 3 of the gifts are in the Cave of Trials, which only appears with
 | Killer-move proficiency levels | 133 | `killer_move_checks` |
 
 Shop slots never hold progression items, in any mode — a price can run into the tens of
-thousands of Fol, so nothing the story needs is ever gated behind a purchase.
+thousands of Fol, so nothing the story needs is ever gated behind a purchase. In the shop's list
+a slot still to check has the Archipelago logo after its name. Buy it (any number of copies) and
+you get what you bought, and the slot's check too: its item comes to you or goes to its player.
+After that it is an ordinary entry.
 
 **Enemy drops** may hold progression items (`drop_progression: allow`, the default), must get
 them first where the odds are fair (`force`), or never hold them (`never`). Whatever you
@@ -291,7 +294,7 @@ Running away from a fight never counts.
 | `hub_start` | `fun_city` (default), `arlia`, `random_town` | Hub mode only: where New Game puts you; `random_town` is any town of either world. |
 | `fienal_requirement` | `fields_and_berle` (default), `fields`, `all_bosses` | Hub mode only: the bosses that open Fienal (the four Fields' and Berle in Armlock; the Fields' only; every boss outside Fienal). |
 | `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items). |
-| `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
+| `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations: the first time you buy a slot's item you get what you buy, and the slot's check too. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
 | `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
 | `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: you pick on a character select at New Game, among the members this world allows. See "In open world" above. |
 | `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |

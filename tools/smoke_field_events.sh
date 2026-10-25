@@ -380,12 +380,14 @@ check ap_p4_el "El on offer at chapter 27 step 7000" '\[ap\] harbour: Cross, Hof
 check ap_p4_el "El without its pass: refused" '\[ap\] door 29106503 \(El voyage\): locked, needs El Beach Pass'
 check ap_p4_el "nothing stored" '\[debug\] map 169 .* G\[0xa0\]=27 G\[0xa4\]=7000'
 
-# Archipelago phase 4 [world agent]: shop shuffle. Hearn's store (map 26, shop 1): entry 0
-# (Sandals, item 728) is Alice's; entry 2 (Lavender, item 224) is our own Revival Card. Talk
-# to Hearn (up to his counter, confirm the Yes/No prompt), Buy, add 1 Sandal and 3 Lavenders,
-# settle: the first copy of each is the check (Sandals sent to Alice, nothing given; Lavender
-# gives the Revival Card), the other 2 Lavenders are the shop's own item (menu_shop.cpp settle,
-# draw_row colours an unchecked slot's name 2; ap_shop_slots unit-tests the colour logic).
+# Archipelago phase 4 [world agent; shopboth agent]: shop shuffle. Hearn's store (map 26, shop
+# 1): entry 0 (Sandals, item 728) is Alice's; entry 2 (Lavender, item 224) is our own Revival
+# Card. Talk to Hearn (up to his counter, confirm the Yes/No prompt), Buy, add 1 Sandal and 3
+# Lavenders, settle: every copy bought is ours (the Equipment Wizard equips the Sandals) and
+# each slot's first purchase is also its check (Sandals: Hookshot sent to Alice; Lavender: the
+# Revival Card given). A second visit buys one more Lavender: just the item. `item N 20` says
+# how many fit (20 minus those held). menu_shop.cpp settle / draw_row (the Archipelago mark);
+# ap_shop_slots unit-tests the rest.
 cat >"$WORK/p4shop.apso2" <<'SEED'
 {"format": "apso2", "version": 1, "seed": "smoke-4shop", "slot": {"name": "Claude", "id": 1},
  "options": {"shuffle_shops": "full"},
@@ -397,16 +399,63 @@ cat >"$WORK/p4shop.apso2" <<'SEED'
     "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}}
  ]}
 SEED
-"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;1620:where;2300:where" timeout 900 "$BIN" --headless --debug \
-  --ap-seed "$WORK/p4shop.apso2" --frames 2400 --map 18 \
-  --input "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1600:right,1606:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1800:right,1806:none,1850:right,1856:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none" \
+SHOP1="200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1600:right,1606:none,1650:down,1656:none,1700:down,1706:none,1750:right,1756:none,1800:right,1806:none,1850:right,1856:none,1900:cross,1906:none,1950:cross,1956:none,2100:cross,2106:none,2320:cross,2326:none"
+SHOP2="2460:cross,2466:none,2500:cross,2506:none,2600:cross,2606:none,2700:cross,2706:none,2760:cross,2766:none,2850:down,2856:none,2900:down,2906:none,2950:right,2956:none,3100:cross,3106:none,3150:cross,3156:none,3300:cross,3306:none"
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;1620:where;2300:where;2440:where;3450:where;3500:item 224 20;3510:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p4shop.apso2" --frames 3600 --map 18 --input "$SHOP1,$SHOP2" \
   </dev/null >"$WORK/ap_p4_shop.log" 2>&1
 check ap_p4_shop "the Buy list opens (shop 1, Hearn's)" '\[debug\] map 26 \| state 3 '
 check ap_p4_shop "another slot's item is sent" '\[ap\] check 1365246464 \(Arlia shop: Sandals\): Hookshot for Alice'
-check ap_p4_shop "and none of it is given" '\[ap\] shop 1 entry 0 \(item 728\): the slot.s check took the first copy of 1'
-check ap_p4_shop "our own slot's first copy is the check" '\[ap\] check 1365246466 \(Arlia shop: Lavender\): Revival Card'
-check ap_p4_shop "the other 2 copies are the shop's own item" '\[ap\] shop 1 entry 2 \(item 224\): the slot.s check took the first copy of 3'
+check ap_p4_shop "and the Sandals bought are ours, the purchase the check" '\[ap\] shop 1 entry 0 \(item 728\): 1 bought, and the slot.s check'
+check ap_p4_shop "the Equipment Wizard equips them" '\[debug\] map 26 \| state 15 .* Fol 48520 '
+check ap_p4_shop "our own slot's check gives the Revival Card" '\[ap\] check 1365246466 \(Arlia shop: Lavender\): Revival Card'
+check ap_p4_shop "and the 3 Lavenders bought are ours" '\[ap\] shop 1 entry 2 \(item 224\): 3 bought, and the slot.s check'
 check ap_p4_shop "Fol paid for all 4 (1x10 + 3x490)" '\[debug\] map 26 \| state 0 .* Fol 48520 '
+check ap_p4_shop "a second purchase: one more Lavender (490)" '\[debug\] map 26 \| state 0 .* Fol 48030 '
+check ap_p4_shop "4 Lavenders held" '\[debug\] item 224: added 16$'
+check ap_p4_shop "1 Revival Card held" '\[debug\] item 21: added 19$'
+if [ "$(grep -c '\[ap\] shop 1 entry' "$WORK/ap_p4_shop.log")" != 2 ]; then
+  echo "FAIL ap_p4_shop: the second purchase made a check"; fail=1
+else
+  echo "PASS ap_p4_shop: the second purchase is just the item"
+fi
+# A full stack: 20 Revival Cards held, the Lavender slot's Revival Card waits (the 3 Lavenders
+# go in); a Revival Card sold on the second visit makes room and it is given.
+SHOP2SELL="2460:cross,2466:none,2500:cross,2506:none,2600:cross,2606:none,2700:cross,2706:none,2770:right,2776:none,2810:cross,2816:none,2900:right,2906:none,3100:cross,3106:none,3150:cross,3156:none,3300:cross,3306:none"
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;60:item 21 20;3450:where;3700:item 224 20;3710:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p4shop.apso2" --frames 3800 --map 18 --input "$SHOP1,$SHOP2SELL" \
+  </dev/null >"$WORK/ap_shop_full.log" 2>&1
+check ap_shop_full "the check's Revival Card waits (20 held)" '\[ap\] the inventory is full; Revival Card waits'
+check ap_shop_full "the 3 Lavenders bought go in" '\[ap\] shop 1 entry 2 \(item 224\): 3 bought, and the slot.s check'
+check ap_shop_full "one sold (50 Fol) makes room" '\[debug\] map 26 \| state 0 .* Fol 48570 '
+check ap_shop_full "and the Revival Card is given" '\[ap\] given Revival Card'
+check ap_shop_full "3 Lavenders held" '\[debug\] item 224: added 17$'
+check ap_shop_full "20 Revival Cards held" '\[debug\] item 21: added 0$'
+# An order (shops 0x5a-0x5e: the APWorld makes none of them slots; a seed may): Hearn's B 0x6d 1
+# made the order shop 0x5a (map 26 word 0x21d), its Blueberry slot holds our own Blueberry. 20
+# Blueberries ordered: placing the order is the check (a Blueberry given at once); the courier
+# (G[0x334] = game_state +0x294 due, flag 13) delivers all 20: 19 fit, the 21st waits.
+mkdir -p "$WORK/mods-order"
+echo "script 26 0x21d 0xff6d0001 0xff6d005a" >"$WORK/mods-order/order.patch"
+cat >"$WORK/order.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-order", "slot": {"name": "Claude", "id": 1},
+ "options": {"shuffle_shops": "full"},
+ "items": {"5000757": {"name": "Blueberry", "kind": "item", "game_id": 757}},
+ "locations": [
+   {"id": 1365269506, "name": "Order shop: Blueberry", "check": {"type": "shop", "shop": 90, "index": 2, "item": 757},
+    "item": {"player": 1, "kind": "item", "game_id": 757, "name": "Blueberry"}}
+ ]}
+SEED
+ORDER_R=$(for i in $(seq 0 19); do f=$((1750 + i * 12)); printf '%d:right,%d:none,' "$f" $((f + 5)); done)
+"${AP_RUN[@]}" SS_MODS_DIR="$WORK/mods-order" SS_DEBUG_INPUT="50:fol 50000;2390:where;2400:global 0x334 1;2401:flag 13 1;3200:item 757 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/order.apso2" --frames 3300 --map 18 \
+  --input "200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none,1560:cross,1566:none,1650:down,1656:none,1700:down,1706:none,${ORDER_R}2100:cross,2106:none,2150:cross,2156:none,2300:cross,2306:none,2700:cross,2706:none,2800:cross,2806:none,2900:cross,2906:none" \
+  </dev/null >"$WORK/ap_shop_order.log" 2>&1
+check ap_shop_order "Hearn's shop is the order shop 0x5a" 'order.patch:1: map 26 word 541 0xff6d0001 -> 0xff6d005a'
+check ap_shop_order "placing the order is the check" '\[ap\] shop 90 entry 2 \(item 757\): 20 bought, and the slot.s check'
+check ap_shop_order "20 Blueberries paid (60 each)" '\[debug\] map 26 \| state 0 .* Fol 48800 '
+check ap_shop_order "the courier: 19 fit, the 21st waits" '\[ap\] courier: 20 x item 757 ordered, 19 fit; 1 wait'
+check ap_shop_order "20 Blueberries held" '\[debug\] item 757: added 0$'
 
 # Received members stay recruited [world agent] (docs/ap/seed_format.md "Character items").
 # Rena's game (flag 1 cleared, chapter 15): Celine received with flag 112 clear sets it; map

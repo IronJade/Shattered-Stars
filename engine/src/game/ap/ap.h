@@ -244,10 +244,16 @@ bool on_map_transfer(int offset, s32* args);
 bool transfer_again();
 bool has_key(int key);
 // Shops (menu_shop.cpp settle): 'count' copies of entry 'index' (item 'item') of shop 'shop'
-// bought or ordered. Returns the copies the game itself gives: count - 1 when the first copy
-// was a shop slot's check (its item given, or sent), else count.
-int on_shop_buy(int shop, int index, int item, int count);
+// bought or ordered, after the game has booked every copy (all of them the player's). When the
+// entry is a shop slot not checked yet, this first purchase is also its check: its item given
+// (waiting while there is no room) or sent; true then [shopboth agent: was count - 1 copies].
+bool on_shop_buy(int shop, int index, int item, int count);
 bool shop_slot_open(int shop, int index, int item);  // an unchecked shop-slot location there
+// The courier's delivery of an order (field_world.cpp state 0x1e): 'count' copies of 'item'
+// the inventory refused (20 of a kind at most: a slot's check can bring one more of an ordered
+// item). Archipelago on: what fits goes in now, the rest waits ("Got X" once there is room)
+// instead of vanishing as in the original. Off: false, nothing done [shopboth agent].
+bool order_overflow(int item, int count);
 
 // ---- Port Hilton's harbour (open world; docs/ap/seed_format.md "Phase 4", "The harbour") ----
 // An open-world seed gets port-added patch lines on map 169 (the Hilton sailor, actor 17, routine

@@ -1,5 +1,6 @@
 #include "game/field/menu_shop.h"
 
+#include <algorithm>
 #include <cstring>
 #include <vector>
 
@@ -95,6 +96,7 @@ class Shop;
 class ShopList final : public menu::Dialog {
  public:
   explicit ShopList(Shop* shop);
+  ~ShopList() override;
   void draw_item(menu::TextBox* box, int slot, int index) override;   // [8] 0x8007fe34
   void on_child_done(int id, int state, int result) override;         // [10] 0x8007fb54
   void on_cursor(int n) override;                                     // [12] 0x8007fdd8
@@ -107,6 +109,7 @@ class ShopList final : public menu::Dialog {
   bool change(int delta);         // 0x8007fd48
   s32 price(int item) const;      // 0x8007ff94
   void draw_row(menu::TextRenderer* r, s16 x, int index);  // 0x8007feac
+  void upload_ap_mark();          // port (Archipelago)
 
   s16 choice_ = 0;                // +0x34
   Shop* shop_ = nullptr;          // +0x50
@@ -117,6 +120,7 @@ class ShopList final : public menu::Dialog {
   s32 discount_ = 0;              // +0x64: buying, percent off
   s32 haggle_ = 0;                // +0x68: selling, percent on top (skill 4)
   s32 bargain_ = 0;               // +0x6c: super specialty 6, percent either way
+  int ap_mark_ = 0;               // port: the Archipelago mark's VRAM (a CVram handle; 0 none)
 };
 
 // ---- "Account settlement: is this acceptable?" (Dialog, vtable 0x80081318; 0x80080158) ---
@@ -314,9 +318,7 @@ int Shop::settle() {
     for (const ItemList::Entry& e : buy.entries) {
       if (e.cart == 0) continue;
       bought = 1;
-      // Archipelago (port feature; shop slots) [world agent]: a slot's first copy is its check.
-      const int copies = ap::on_shop_buy(shop, e.index, e.item, e.cart);
-      if (copies > 0) inventory_add(g.inventory, e.item, copies, 1);
+      inventory_add(g.inventory, e.item, e.cart, 1);
     }
   } else {
     // Orders arrive later: up to ten in game_state +0x250, due at the clock in +0x294
@@ -327,9 +329,8 @@ int Shop::settle() {
     for (const ItemList::Entry& e : buy.entries) {
       if (e.cart == 0) continue;
       ordered = 1;
-      const int copies = ap::on_shop_buy(shop, e.index, e.item, e.cart);  // Archipelago [world agent]
-      if (copies > 0 && n < 10) {
-        const u16 v = static_cast<u16>(copies << 10 | e.item);
+      if (n < 10) {
+        const u16 v = static_cast<u16>(e.cart << 10 | e.item);
         std::memcpy(gs + 0x250 + n * 2, &v, 2);
         ++n;
       }
@@ -340,6 +341,13 @@ int Shop::settle() {
     }
   }
   wr32(g.config + 0x18, clamp_money(balance, 999999999));
+  // Archipelago (port feature; shop slots) [world agent, shopboth agent]: the first purchase of
+  // a slot (an order: placing it) is also its check, its item given or sent; every copy paid
+  // for is the player's all the same. Booked after the purchases and the money, so that a
+  // check's item never takes a bought copy's room (the courier lets an ordered copy wait,
+  // field_world.cpp) and a check's Fol is not overwritten by the balance.
+  for (const ItemList::Entry& e : buy.entries)
+    if (e.cart != 0) ap::on_shop_buy(shop, e.index, e.item, e.cart);
   session->select_result = static_cast<s8>(bought);
   const int any = bought + sold + ordered;
   if (any != 0) {
@@ -538,10 +546,51 @@ void Shop::draw_member() {
 
 // ==== ShopList ===========================================================================
 
+// Archipelago (port feature; shop slots) [shopboth agent]: the mark of a slot whose check is
+// still open, drawn after its name: the Archipelago logo's six circles (archipelago.gg, MIT)
+// with the text's drop shadow ('s'), 12 x 12 texels of a 15-bit page in the menus' VRAM.
+constexpr int kMarkSize = 12;
+constexpr const char* kApMark[kMarkSize] = {
+    "....rrr.....", "...rrrrr....", ".yyyrrrggg..", "yyyyyrggggg.", "yyyy...ggggs", ".bbb...pppss",
+    "bbbb...pppp.", "bbbbooopppps", ".bboooooppss", "..sooooosss.", "....oooss...", ".....sss....",
+};
+
+u16 mark_texel(char c) {
+  u32 rgb = 0;
+  switch (c) {
+    case 'r': rgb = 0xC97682; break;
+    case 'y': rgb = 0xEEE391; break;
+    case 'g': rgb = 0x75C275; break;
+    case 'b': rgb = 0x767EBD; break;
+    case 'p': rgb = 0xCA94C2; break;
+    case 'o': rgb = 0xD9A07D; break;
+    case 's': rgb = 0x101018; break;
+    default: return 0;  // transparent
+  }
+  return static_cast<u16>(0x8000 | (rgb >> 19 & 0x1F) | (rgb >> 11 & 0x1F) << 5 | (rgb >> 3 & 0x1F) << 10);
+}
+
+void ShopList::upload_ap_mark() {
+  ap_mark_ = menu::cvram_alloc(kMarkSize, kMarkSize);  // (0 when the text VRAM is full: colour 2 instead)
+  if (ap_mark_ == 0) return;
+  std::vector<u16> texels(static_cast<size_t>(kMarkSize * kMarkSize));
+  for (int y = 0; y < kMarkSize; ++y)
+    for (int x = 0; x < kMarkSize; ++x) texels[static_cast<size_t>(y * kMarkSize + x)] = mark_texel(kApMark[y][x]);
+  menu::upload_image(psyq::RECT{menu::cvram_x(ap_mark_), menu::cvram_y(ap_mark_), kMarkSize, kMarkSize}, std::move(texels));
+}
+
 ShopList::ShopList(Shop* shop) {
   shop_ = shop;
   buying_ = shop->buying;
   list_ = buying_ ? &shop->buy : &shop->sell;
+  if (buying_) {
+    for (const ItemList::Entry& e : list_->entries) {
+      if (ap::shop_slot_open(menu::globals().session->arg, e.index, e.item)) {
+        upload_ap_mark();  // Archipelago: an open slot on the list [shopboth agent]
+        break;
+      }
+    }
+  }
   discount_ = 0;
   if (script_flag(0x2C8)) discount_ += 0x19;
   if (script_flag(0x2C9)) discount_ += 5;
@@ -568,6 +617,8 @@ ShopList::ShopList(Shop* shop) {
   cursor->add_grid(&choice_, 2, 1, shown, 0, 10, 0, 0xE, list_box_);
   help_flags = 4;
 }
+
+ShopList::~ShopList() { menu::cvram_mark_free(ap_mark_); }
 
 void ShopList::show_held(int item) {
   menu::TextBox* box = held_box_;
@@ -674,13 +725,32 @@ void ShopList::draw_row(menu::TextRenderer* r, s16 x, int index) {
   if (index < 0 || index >= list_->count()) return;
   const ItemList::Entry& e = list_->entries[static_cast<size_t>(index)];
   r->set_pen_x(x);
-  // Archipelago (port feature) [world agent]: an unchecked shop slot's name in colour 2.
-  const bool slot = ap::shop_slot_open(menu::globals().session->arg, e.index, e.item);
-  if (slot) r->set_colour(2);
+  // Archipelago (port feature) [world agent, shopboth agent]: a slot whose check is still open
+  // has the Archipelago mark after its name (no room for it in VRAM: the name in colour 2).
+  // The rows are a ring of lines: a line's mark from the row it showed before goes first.
+  std::vector<menu::TextIcon>& marks = r->line(r->current_line())->icons;
+  std::erase_if(marks, [](const menu::TextIcon& i) { return i.tpage != 0; });
+  const bool slot = buying_ && ap::shop_slot_open(menu::globals().session->arg, e.index, e.item);
+  if (slot && ap_mark_ == 0) r->set_tables(2);
   r->draw_current(r->message(e.item));
-  if (slot) r->set_colour(1);
+  if (slot && ap_mark_ == 0) r->set_tables(1);
+  const s32 cost = price(e.item);
+  if (slot && ap_mark_ != 0) {
+    // After the name, left of the price's first digit (the price is right-aligned in 8 x 6 px).
+    int digits = 1;
+    for (s32 v = cost < 0 ? -cost : cost; v >= 10; v /= 10) ++digits;
+    const int room = x + 0x78 + (8 - digits - (cost < 0 ? 1 : 0)) * 6 - kMarkSize - 1;
+    menu::TextIcon mark;
+    mark.x = static_cast<s16>(std::min(r->pen_x() + 2, room));
+    const int vx = menu::cvram_x(ap_mark_), vy = menu::cvram_y(ap_mark_);
+    mark.tpage = static_cast<u16>(0x100 | (vy >> 4 & 0x10) | (vx & 0x3FF) >> 6);  // 15-bit page
+    mark.u = static_cast<u8>(vx & 0x3F);
+    mark.v = static_cast<u8>(vy & 0xFF);
+    mark.w = mark.h = kMarkSize;
+    marks.push_back(mark);
+  }
   r->set_pen_x(x + 0x78);
-  r->draw_number(price(e.item), 8);
+  r->draw_number(cost, 8);
   r->set_pen_x(x + 0xA8);
   r->draw_pack_message(0xD);
   r->set_pen_x(x + 0xB8);

@@ -43,7 +43,17 @@ OPTIONAL = {"Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Er
 USEFUL_RANGES = ((75, 162), (485, 754))
 FIENAL = range(647, 686)
 CAVE_OF_TRIALS = range(698, 826)
-CHARACTERS = ["Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest",
+# [cavefix 2026-10-25] The Cave of Trials' learn chests are no item chests: their routine (map
+# 740 0x4938) teaches a member a move (A 0x21 known?, ext 0x73 learn) and opens only with that
+# member in the party; field.json read its push of the move index (0xc / 9 / 0xd) as items 12 /
+# 9 / 13 (Portrait F / G / J). so2.apworld 0.1.x made them chests, whose placeholder patch put
+# the index past the record's 0x20 moves (the port 0.02.00 then wrote outside the records).
+# Left out from 0.2.0; skillsanity brings them back as learn points, under the floors' banners
+# (map: flag -> member, move, area):
+LEARN_CHESTS = {(740, 2675): ("Leon", "Extinction", "Cave of Trials Level 4"),
+                (798, 2657): ("Ashton", "tri-Ace", "Cave of Trials Level 10"),
+                (799, 2721): ("Celine", "Meteor Swarm", "Cave of Trials Level 10")}
+CHARACTERS =["Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest",
               "Noel", "Chisato"]   # party_add's argument n (party id n + 1)
 # character_items shuffles the members who join by the player's choice or for part of the story
 # only, and lists the sites where each joins for good (docs/ap/apworld.md, "Characters"; agreed
@@ -223,9 +233,13 @@ def build(field, battles, late=None, doors=None):
     def contents_name(item, fol):
         return f"{fol} Fol" if fol is not None else items.get(item, f"Item {item}")
 
+    learn = set()
     for c in field["chests"]:
         if c.get("dynamic") or "key_flag" in c:
             continue    # a key item (script flag) stays in place in story mode
+        if (c["map"], c["flag"]) in LEARN_CHESTS:
+            learn.add((c["map"], c["flag"]))
+            continue    # a learn chest (LEARN_CHESTS): no item
         contexts = [{"requires": s.get("requires", []), "via": s.get("via")} for s in c["sites"]]
         reasons, side = judge(contexts, c)
         locs.append({"id": c["location_id"], "type": "chest", "map": c["map"], "flag": c["flag"],
@@ -233,6 +247,8 @@ def build(field, battles, late=None, doors=None):
                      "region": region_of(c["map"], c.get("world", worlds.get(c["map"]))),
                      "sites": [site_row(s["map"], s) for s in c["sites"]],
                      "missable": reasons, "story_route": side})
+    if learn != set(LEARN_CHESTS):
+        raise SystemExit(f"learn chests not in field.json: {sorted(set(LEARN_CHESTS) - learn)}")
     for key in ("gifts", "fol_gifts"):
         for g in field[key]:
             if g.get("world_script") or g.get("payment") or "location_id" not in g:

@@ -47,8 +47,8 @@ class HubChecks:
 
     def test_only_what_the_hub_reaches(self):
         """No join site, no losable fight, nothing the hub can't reach in the player's game(s);
-        chests, gifts and the cave's / optional bosses proven by the late proof (hubproof: the hub
-        proof), shops open and enemy types met at the hub state, the chambers of this game."""
+        chests, gifts and the cave's / optional bosses proven by the hub proof (data.HUB_REACHED),
+        shops open and enemy types met at the hub state, the chambers of this game."""
         side = self.side()
         for row in self.rows():
             kind = row["type"]
@@ -60,9 +60,9 @@ class HubChecks:
                     game = hub.CHAMBERS[row["encounter"]].get("game")
                     self.assertIn(game, (None, side) if side else (None, "claude", "rena"), row["name"])
                 else:
-                    self.assertTrue(any(g in row["late"] for g in self.games()), row["name"])
+                    self.assertTrue(any(g in hub.reached_games(row) for g in self.games()), row["name"])
             elif kind in ("chest", "gift"):
-                self.assertTrue(any(g in row["late"] for g in self.games()), row["name"])
+                self.assertTrue(any(g in hub.reached_games(row) for g in self.games()), row["name"])
             elif kind == "shop":
                 self.assertTrue(any(row["shop"] in HUB_SHOPS[g] for g in self.games()), row["name"])
             elif kind == "drop":
@@ -190,7 +190,7 @@ class HubChecks:
             if kind in ("gift", "shop", "craft", "join") or excluded:
                 self.assertFalse(ok, loc.name)
             elif kind == "chest" or (kind == "boss" and row["encounter"] not in hub.CHAMBERS):
-                want = all(g in row["late"] for g in self.games()) and (expel or row["region"] != "Expel")
+                want = all(g in hub.reached_games(row) for g in self.games()) and (expel or row["region"] != "Expel")
                 if kind == "boss" and row.get("boss") == "optional":
                     want = want and row["encounter"] in hub.CONFIRMED_OPTIONAL
                 self.assertEqual(ok, want, loc.name)
@@ -293,14 +293,14 @@ class TestHubDefault(SO2TestBase, HubChecks):
     options = {"world_mode": "hub"}
 
     def test_default_counts(self):
-        """Defaults (story_route any, boss_checks on, cave off): 185 chests and 7 gifts the late
-        proof reached (the cave's left out), 20 chambers (+ 2 hero chambers, filler only), XINE
+        """Defaults (story_route any, boss_checks on, cave off): 217 chests and 7 gifts the hub
+        proof reached (the cave's left out; with Eluria Tower's 23 and Fienal's maze 9), 20 chambers (+ 2 hero chambers, filler only), XINE
         (it plays at the hub state: it may hold progression), 17 keys (no cave, no Fienal, no
         Portal of Sealing)."""
         kinds = {}
         for row in self.rows():
             kinds[row["type"]] = kinds.get(row["type"], 0) + 1
-        self.assertEqual(kinds, {"chest": 185, "gift": 7, "boss": 23})
+        self.assertEqual(kinds, {"chest": 217, "gift": 7, "boss": 23})
         self.assertEqual(len(self.world.hub_keys), 17)
         self.assertEqual(self.world.hub_start, "fun_city")
 
@@ -315,7 +315,7 @@ class TestHubClaudeArlia(SO2TestBase, HubChecks):
         self.assertIn("Cave of Trials Key", [g["name"] for g in self.world.hub_keys])
         self.assertEqual(len(self.world.hub_keys), 18)
         rows = self.rows()
-        self.assertEqual(sum(1 for r in rows if r["type"] == "chest"), 258)
+        self.assertEqual(sum(1 for r in rows if r["type"] == "chest"), 290)   # the hub proof's (the late proof's 258)
         self.assertNotIn("Mars: Azamgil boss", {r["name"] for r in rows})
 
 

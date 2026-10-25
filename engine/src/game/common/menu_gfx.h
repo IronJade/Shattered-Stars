@@ -85,6 +85,10 @@ void upload_queue_flush();                             // title 0x8006e3ac (once
 struct TextIcon {  // 8 bytes: a button icon inside a line
   s16 x = 0;       // +0
   s16 id = 0;      // +2: index into the session's button map
+  // Port (not in the original): with tpage != 0, an image of the port's own instead of a
+  // button: w x h texels at (u, v) of 'tpage' (15-bit pages need no 'clut') [shopboth agent].
+  u16 tpage = 0, clut = 0;
+  u8 u = 0, v = 0, w = 0, h = 0;
 };
 struct TextLine {        // 0x28 bytes
   u16 flags = 0;         // +0x00 (bit 0: hidden)

@@ -2505,9 +2505,9 @@ bool shop_slot_open(int shop, int index, int item) {
   return !is_checked(l.id) && (l.shop_item < 0 || l.shop_item == item);
 }
 
-int on_shop_buy(int shop, int index, int item, int count) {
+bool on_shop_buy(int shop, int index, int item, int count) {
   Runtime& r = rt();
-  if (!r.on || count <= 0 || !shop_slot_open(shop, index, item)) return count;
+  if (!r.on || count <= 0 || !shop_slot_open(shop, index, item)) return false;
   const Location& l = r.seed.locations[r.by_shop_slot.at(shop << 8 | index)];
   record_check(l.id, true);  // (another player's item: "Sent X to Y")
   if (l.item.own) {
@@ -2515,11 +2515,28 @@ int on_shop_buy(int shop, int index, int item, int count) {
       queue_notice("Got " + describe(l.item.item));
     } else {
       r.pending.push_back({l.item.item, "", true});  // (the inventory is full: given later)
+      log("the inventory is full; " + describe(l.item.item) + " waits");
     }
   }
   log("shop " + std::to_string(shop) + " entry " + std::to_string(index) + " (item " + std::to_string(item) +
-      "): the slot's check took the first copy of " + std::to_string(count));
-  return count - 1;
+      "): " + std::to_string(count) + " bought, and the slot's check");
+  return true;
+}
+
+bool order_overflow(int item, int count) {
+  Runtime& r = rt();
+  if (!r.on || item <= 0 || count <= 0) return false;
+  int fit = 0;
+  while (fit < count && field::inventory_add(field::globals().inventory, item, 1, 1) != 0) ++fit;
+  ItemDef it;
+  it.kind = "item";
+  it.game_id = item;
+  for (const auto& [id, def] : r.seed.items)
+    if (def.kind == "item" && def.game_id == item) it.name = def.name;
+  for (int i = fit; i < count; ++i) r.pending.push_back({it, "", true});  // ("Got X" once there is room)
+  log("courier: " + std::to_string(count) + " x item " + std::to_string(item) + " ordered, " + std::to_string(fit) +
+      " fit; " + std::to_string(count - fit) + " wait");
+  return true;
 }
 
 // ---- v2: goals, crafting, killer moves ----

@@ -10,20 +10,22 @@ as soon as its dungeon's key has arrived (D3: every boss independent; the chambe
 none). Fienal has no key: it opens when the bosses of `fienal_requirement` are beaten (D6), and
 the goal lies behind it. Characters are always items (D7).
 
-The locations are what the hub reaches. Until the hub proof (agent "hubproof") exists, that is the
-late proof's reach (the hub state is the late proof's minus 24 reset flags): its proven chests,
-gifts and Cave of Trials / optional bosses, the shops open at the hub state and the enemy types met
-there (tools/ap_world_tables.py `hub_tables`), plus the 22 chambers (docs/ap/hub_bosses.json,
-proven headless by the agent "hubchambers"). Every place marked "hubproof" switches to the hub
-proof's rows. Progression goes only to proven chests, the chambers and proven cave bosses; drops
-per drop_progression / area_keys_in_drops; never to shops, gifts or crafts.
+The locations are what the hub reaches: the hub proof's (docs/ap/hub_proof.json: the late proof's
+search run from the hub's New Game with the chapter lock on, tools/ap_late_proof.py --state hub):
+its proven chests, gifts and Cave of Trials / optional bosses (data.HUB_REACHED), the shops open at
+the hub state and the enemy types met there on the maps it reached (data.HUB_SHOPS, HUB_DROPS,
+HUB_MAPS; tools/ap_world_tables.py `hub_tables`), plus the 22 chambers (docs/ap/hub_bosses.json,
+proven headless by the agent "hubchambers" and from the hub's New Game by the hub proof's
+`--bosses`). Progression goes only to proven chests, the chambers and proven cave bosses; drops per
+drop_progression / area_keys_in_drops; never to shops, gifts or crafts.
 """
 import copy
 
 from BaseClasses import ItemClassification, LocationProgressType, Region
 from worlds.generic.Rules import add_item_rule
 
-from .data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_LOCATIONS, HUB_SHOPS, HUB_STARTS, HUB_STATE, LOCATIONS
+from .data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_LOCATIONS, HUB_MAPS, HUB_REACHED, HUB_SHOPS, HUB_STARTS, \
+    HUB_STATE, LOCATIONS
 from .items import ALL_KEY_IDS, EVENT_FIENAL_OPEN, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_VICTORY, GAME, \
     HUB_KEY_NAME, HUB_KEYLESS, SO2Item
 from .locations import ROW, SOFT_REASONS, SO2Location, choose_crafts, choose_killer_moves
@@ -35,9 +37,9 @@ from .rules import FORCE_DROP_CHANCE, MIN_DROP_CHANCE, drop_chance, killer_rule
 PORTAL = "Portal of Sealing"
 OUT_OF_HUB = (PORTAL,)
 # ---- Waiting on the other hub agents (docs/handoff/hubworld.md, "Waiting") ---------------------
-# Optional bosses (side quests) the hub reaches: a location when the late proof proved it (XINE in
-# Lasguss Mountain; hubproof: the hub proof), filler only (their "optional quest") unless
-# hubchambers confirmed that it plays at the hub state; then it may hold progression.
+# Optional bosses (side quests) the hub reaches: a location when the hub proof proved it (XINE in
+# Lasguss Mountain), filler only (their "optional quest") unless hubchambers confirmed that it
+# plays at the hub state; then it may hold progression.
 CONFIRMED_OPTIONAL = frozenset({199})  # XINE plays at the hub state in both games (hubchambers, 2026-10-25)
 
 FIENAL = "Fienal"
@@ -49,6 +51,7 @@ CHAMBERS = {b["encounter"]: b for b in HUB_BOSSES}
 CHAMBER_LOCATIONS = {b["location"] for b in HUB_BOSSES}
 DUNGEONS = {g["dungeon"]: g for g in HUB_DUNGEONS}
 DUNGEON_OF_MAP = {m: g["dungeon"] for g in HUB_DUNGEONS for m in g["maps"]}
+HUB_MAPS_OF = {g: frozenset(HUB_MAPS[g]) for g in GAMES}   # the maps the hub proof reached, per game
 ROWS = LOCATIONS + HUB_LOCATIONS
 # The Fienal requirement (D6): the four Fields' bosses (Magichand 524, the Guardians of Power 525
 # and Courage 527, Lover 528), and Berle in Armlock (535, a town chamber: no key).
@@ -123,10 +126,10 @@ def dungeon_of(row):
 
 
 def reached_games(row):
-    """The games in which the hub reaches the location (hubproof: the hub proof's rows). The
-    chambers: their game (hubchambers proves them); chests, gifts, cave and optional bosses: the
-    late proof's; shops and drops: the hub-state tables (data.HUB_SHOPS, HUB_DROPS); join sites:
-    none (no join scene runs at chapter 60, D7); losable fights: none (D5)."""
+    """The games in which the hub reaches the location. The chambers: their game (hubchambers
+    proves them); chests, gifts, cave and optional bosses: the hub proof's (data.HUB_REACHED);
+    shops and drops: the hub-state tables (data.HUB_SHOPS, HUB_DROPS); join sites: none (no join
+    scene runs at chapter 60, D7); losable fights: none (D5)."""
     kind = row["type"]
     if kind == "boss" and row["encounter"] in CHAMBERS:
         game = CHAMBERS[row["encounter"]].get("game")
@@ -134,7 +137,7 @@ def reached_games(row):
     if kind == "boss" and row.get("boss") == "losable":
         return ()
     if kind in ("chest", "gift", "boss"):
-        return tuple(row.get("late", ()))
+        return tuple(HUB_REACHED.get(row["id"], ()))
     if kind == "shop":
         return tuple(g for g in GAMES if row["shop"] in HUB_SHOPS[g])
     if kind == "drop":
@@ -282,10 +285,10 @@ def drop_rule(world, row, side):
     game, the dungeons where random encounters meet the type at the hub state; under story_route
     "any", those of both games (a drop met in only one is EXCLUDED, hub_reasons). Progression
     as in story mode (rules.drop_rule): never with drop_progression never, encounter_rate 0 or a
-    chance under 1 / 64 at Luck 0; else only through a place the late proof reached where the
-    type is met with no condition (hubproof: the hub proof), outside Expel with expel_progression
-    off; it is then reached only through those places. Access: any of the places' dungeons'
-    (their key, Fienal's gate, or nothing)."""
+    chance under 1 / 64 at Luck 0; else only through the maps of a place where the type is met
+    with no condition that the hub proof reached in every game the player may play
+    (data.HUB_MAPS), outside Expel with expel_progression off; it is then reached only through
+    those maps. Access: any of the places' dungeons' (their key, Fienal's gate, or nothing)."""
     o = world.options
     per = [set(HUB_DROPS[row["id"]][g]) for g in games_of(side)]
     met = set.intersection(*per) or set.union(*per)
@@ -294,23 +297,24 @@ def drop_rule(world, row, side):
         return "none", modes
     prog = set()
     for p in row["places"]:
-        if not all(g in p.get("late", ()) for g in games_of(side)):
+        maps = [m for m in p["maps"] if all(m in HUB_MAPS_OF[g] for g in games_of(side))]
+        if not maps:
             continue
         if p["region"] == "Expel" and not o.expel_progression:
             continue
         if p.get("world_map"):
             prog.add(())
         else:
-            prog |= {access_of(world, DUNGEON_OF_MAP.get(m)) for m in p["maps"]}
+            prog |= {access_of(world, DUNGEON_OF_MAP.get(m)) for m in maps}
     if not prog:
         return "none", modes
     return "any", sorted(prog)
 
 
 def may_hold_progression(world, row, side):
-    """Chests, gifts, bosses: progression only in a chamber, or where the proof reached it in
-    every game the player may play (hubproof: the hub proof); never in a gift (all modes), an
-    optional boss hubchambers did not confirm, or Expel with expel_progression off."""
+    """Chests, gifts, bosses: progression only in a chamber, or where the hub proof reached it in
+    every game the player may play; never in a gift (all modes), an optional boss hubchambers did
+    not confirm, or Expel with expel_progression off."""
     if row["type"] not in ("chest", "boss"):
         return False
     if row["region"] == "Expel" and not world.options.expel_progression:
@@ -319,7 +323,7 @@ def may_hold_progression(world, row, side):
         return True
     if row["type"] == "boss" and row.get("boss") == "optional" and row["encounter"] not in CONFIRMED_OPTIONAL:
         return False
-    return all(g in row.get("late", ()) for g in games_of(side))
+    return all(g in reached_games(row) for g in games_of(side))
 
 
 def set_rules(world):

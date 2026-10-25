@@ -691,11 +691,16 @@ seeds made by so2.apworld 0.1.1 get it with a port update (docs/handoff/ships.md
 - `index` is the entry's place in the list the shop shows: the original stock list with the
   seed's own `shop` patch lines applied (without them, the original index). For shop 0x58
   (the stock that grows with flags) it is the place among the entries shown.
-- The list shows an unchecked slot's name in colour 2. Buying it (any count): the first copy
-  is the check. Its item is given at once (an own item: banner "Got X" once the shop closes;
-  inventory full: given later) or sent ("Sent X to Y"); the other copies are the shop's
-  item. After the check the entry is an ordinary one. The price is the entry's own.
-- Order shops (0x5a-0x5e): the order is the purchase; the slot's copy is not delivered.
+- The list marks an unchecked slot with the Archipelago logo after its name (a 12 x 12 port
+  image in the menus' text VRAM; when there is no room for it, the name in colour 2).
+- Buying it (any count) gives every copy bought, and this first purchase is also the slot's
+  check: its item given at once (an own item: banner "Got X" once the shop closes; no room for
+  it: given later) or sent ("Sent X to Y"). After the check the entry is an ordinary one. The
+  price is the entry's own. (Ports up to 0.02.00: the first copy was the check, so count - 1
+  were given, and the colour-2 mark never drew; the port change alone fixes existing seeds.)
+- Order shops (0x5a-0x5e; the APWorld makes none of them slots): the order is delivered as
+  ordered, and placing it is the check. With a seed, ordered copies the inventory refuses at the
+  delivery (20 of a kind) go in as far as they fit and the rest wait as "Got X" items.
 - An entry that sells another item than `item` is not the slot (nothing recorded).
 
 ### The door table (`tools/ap_doors.py`, `docs/ap/doors.json`)

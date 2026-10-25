@@ -531,6 +531,12 @@ void TextRenderer::draw_line(int index, const RenderContext* ctx, int slot, s16 
   // Button icons (16x16 from the menu sheet; the session maps buttons to cells).
   const MenuSession* session = globals().session;
   for (const TextIcon& icon : l->icons) {
+    if (icon.tpage != 0) {
+      // Port: an image of the port's own (the shop's Archipelago mark) [shopboth agent].
+      quad(static_cast<s16>(icon.x + l->x + px), static_cast<s16>(l->y + py), icon.w, icon.h, icon.u, icon.v,
+           icon.tpage, icon.clut);
+      continue;
+    }
     const u8 cell = session ? session->button_map[icon.id] : 0;
     auto* p = prim_alloc<psyq::POLY_FT4>(ctx);
     if (!p) break;

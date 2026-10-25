@@ -1085,7 +1085,7 @@ TEST(ap_doors_and_keys) {
   CHECK(!ap::on_map_transfer(0x3C78, d) && d[0] == 43);
   ap::stop();
   // No seed: nothing changes.
-  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) && ap::on_shop_buy(1, 2, 224, 3) == 3);
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) && !ap::on_shop_buy(1, 2, 224, 3));
 }
 
 namespace {
@@ -1355,14 +1355,32 @@ TEST(ap_shop_slots) {
   ap::start_with(s);
   CHECK(ap::shop_slot_open(1, 2, 224) && !ap::shop_slot_open(1, 2, 225) && !ap::shop_slot_open(1, 1, 221));
   // Another item at the entry (the seed expected Lavender): not the slot.
-  CHECK(ap::on_shop_buy(1, 2, 225, 2) == 2 && !ap::is_checked(1365246466));
-  // Three Lavender: the first is the check (our Revival Card), the game gives two.
-  CHECK(ap::on_shop_buy(1, 2, 224, 3) == 2 && ap::is_checked(1365246466));
-  CHECK(field::inventory_find(sg.g.inventory, 21) >= 0);
-  CHECK(!ap::shop_slot_open(1, 2, 224) && ap::on_shop_buy(1, 2, 224, 1) == 1);
-  // Alice's slot: one copy bought, none given, the check sent.
-  CHECK(ap::on_shop_buy(1, 0, 728, 1) == 0 && ap::is_checked(1365246464));
+  CHECK(!ap::on_shop_buy(1, 2, 225, 2) && !ap::is_checked(1365246466));
+  // [shopboth agent] Three Lavender (the settlement has added all three): the first purchase is
+  // also the check, our Revival Card given; the Lavender stay the player's.
+  const auto held = [&](int item) {
+    const int i = field::inventory_find(sg.g.inventory, item);
+    return i < 0 ? 0 : sg.inv[static_cast<size_t>(i) * 2 + 1] >> 2 & 0x1F;
+  };
+  field::inventory_add(sg.g.inventory, 224, 3, 1);
+  CHECK(ap::on_shop_buy(1, 2, 224, 3) && ap::is_checked(1365246466));
+  CHECK(held(224) == 3 && held(21) == 1 && ap::pending_count() == 0);
+  // A second purchase: just the item.
+  CHECK(!ap::shop_slot_open(1, 2, 224) && !ap::on_shop_buy(1, 2, 224, 1) && held(21) == 1);
+  // Alice's slot: the check sent, nothing of ours given (the Sandals are the player's).
+  CHECK(ap::on_shop_buy(1, 0, 728, 1) && ap::is_checked(1365246464) && held(21) == 1);
+  // A full stack (20 Revival Cards): the check's own item waits, given once there is room.
   ap::stop();
+  ap::start_with(s);
+  field::inventory_add(sg.g.inventory, 21, 19, 1);
+  CHECK(held(21) == 20 && ap::on_shop_buy(1, 2, 224, 1) && ap::is_checked(1365246466));
+  CHECK(held(21) == 20 && ap::pending_count() == 1);
+  // The courier: ordered copies the inventory refused (20 of a kind) go in as far as they fit,
+  // the rest waits; with Archipelago off nothing (the original: they vanish).
+  field::inventory_add(sg.g.inventory, 757, 18, 1);
+  CHECK(ap::order_overflow(757, 5) && held(757) == 20 && ap::pending_count() == 4);
+  ap::stop();
+  CHECK(!ap::order_overflow(757, 5) && held(757) == 20 && ap::pending_count() == 0);
 }
 
 // ---- v2 (docs/ap/seed_format.md "v2 fields") [hooks agent] ----

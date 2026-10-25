@@ -477,6 +477,58 @@ both notices ("rose to 2", "learned"), the specialty list and a detail.
 - Records, party, config and inventory match.
 - The frames differ only in the sprite and the help bar.
 
+### Skill guilds (script library; research of the agent "skillsanity", 2026-10-25)
+
+A guild is no shop page: every map script carries the same library, with eight menu
+routines (a choice window of three or four sets with their prices, then the purchase routine,
+map 80 0x6958). The purchase: the set's flag set already, "Sorry, but it seems that you already
+know that skill"; Fol (`get_counter18`) below the price, "not enough money"; else the flag is
+set (indexed store), the Fol taken, "Thank you very much", and the one-shot bargain flags
+0x2df / 0x2e0 cleared. A price goes through 0x442c first: plus (0x2df) or minus (0x2e0) the
+price x super specialty 6 level x 3 %. Buying a set makes its skills learnable by every member
+(`skill_book_allowed`: the skill's group in `k_book_groups` 0x8008d2d8, flag 700 + group).
+
+| Set (flag) | Price | Skills (ids) | Guilds |
+|---|---|---|---|
+| Knowledge 1 (700) | 300 | Mineralogy 5, Herbal Medicine 6, Recipe 0x11 | Cross, Clik, Linga, Central City |
+| Sensibility 1 (701) | 400 | Courage 0x1c, Patience 0xc, Esthetic Sense 8, Good Eye 0x12 | Cross, Clik, Central City |
+| Technique 1 (702) | 400 | Whistling 0x13, Copying 0x1e, Sketching 1, Kitchen Knife 0x10 | Cross, Clik, Herlie, Central City |
+| Combat 1 (703) | 400 | Spirit Force 0x29, Below the Belt 0x21, Strong Blow 0x22, Cancel 0x2b | Clik, Herlie, Lacour, Armlock |
+| Knowledge 2 (704) | 1500 | Musical Notation 2, Biology 0xe, Tool Knowledge 4 | Herlie, Hilton, Linga, Central City |
+| Sensibility 2 (705) | 1600 | Playfulness 0x1a, Danger Sense 0xd, Perseverance 0xb, Poker Face 0x1d | Herlie, Hilton, North City |
+| Technique 2 (706) | 1600 | Mech Knowledge 0x1f, Craft 7, Animal Training 0x14, Writing 9 | Hilton, North City |
+| Combat 2 (707) | 1600 | Flip 0x23, Gale 0x2c, Feint 0x25, Mental Training 0x26 | Hilton, Lacour, Armlock |
+| Knowledge 3 (708) | 2700 | Mental Science 0xf, Piety 0x19, Fairyology 0x17 | Linga, North City |
+| Sensibility 3 (709) | 2700 | Functionality 0x1b, Radar 0x18, Effort 0xa | Lacour, Armlock |
+| Technique 3 (710) | 3600 | Music Instrument 3, Metal Casting 0x15, Scientific Ability 0x16, Mech Operation 0x20 | Linga, North City |
+| Combat 3 (711) | 4500 | Counterattack 0x24, Parry 0x2a, Body Control 0x28, Motormouth 0x27, Provocation 0x2d | Lacour, Armlock |
+
+- The guild maps and their menus: Cross 80 (K1 S1 T1), Port of Clik 123 (K1 S1 T1 C1), Herlie
+  147 (K2 S2 T1 C1), Hilton 173 "Skill Power" (K2 S2 T2 C2), Linga 190 (K1 K2 K3 T3), Lacour 219
+  and Armlock 316 (S3 C1 C2 C3), Central City 258 (K1 K2 S1 T1), North City 264 "Boondocks
+  Office" (K3 S2 T2 T3). Names: the explainer texts; ids: the specialty table 0x8007197c and
+  the battle code (0x21 ignores DEF, 0x22 knock-back, 0x23 flip, 0x24 counter, 0x25 accuracy,
+  0x26 attack, 0x27 casting time, 0x28 stun guard, 0x29 DEF, 0x2a evasion).
+- The 46th skill, **Float** (0x2e), is in no set: the Cave of Trials level 11 prize (map 807)
+  gives it to the active members (special command 0x12).
+- **Starting skills** (`init_*`, record +0x5c + skill): Claude Scientific Ability, Functionality;
+  Rena Kitchen Knife, Recipe 4, Good Eye (Cooking); Celine Mineralogy, Craft, Esthetic Sense 5,
+  Scientific Ability 2, Fairyology 2 (Metalwork, Alchemy); Bowman Herbal Medicine 5, Biology 4,
+  Mental Science 2 (Compounding); Precis Functionality 3, Mech Knowledge, Mech Operation
+  (Machinery); Leon Mineralogy 3, Scientific Ability 4, Fairyology (Alchemy); Opera Craft, Metal
+  Casting, Functionality, Mech Operation 3 (Customize); Ernest Herbal Medicine 5, Patience 5,
+  Whistling 4 (Survival); Chisato Copying 4 (Reproduction); Dias, Ashton and Noel none.
+- **Killer moves and spells** (record +0x3c + index = learned): the learn tables of #1981
+  (`levelup_learn_skills`) teach 69 moves and 82 spells by level; a member joins knowing
+  exactly the table's entries up to the join level (Celine 8, Bowman 25, Dias 35, Precis 15,
+  Ashton 17, Leon 30, Opera 21, Ernest 25, Noel 40, Chisato 40). Outside the tables: Claude's
+  Phase Gun (the opening's ext 0x73, taken back at Salva by ext 0xfc); Precis's Holo-holograph
+  (the arena Private Action, map 304, or item 464 Holoprojector), Barrier (465 Plasma Zap-stick)
+  and M. Super Beam (466 Mech Launcher); Opera's Healing Star (467 White System), Laser Bit (468
+  Black System) and Hyper Launcher (469 Green System); and the Cave of Trials' learn chests:
+  Leon's Extinction (map 740), Ashton's tri-Ace (798), Celine's Meteor Swarm (799). Items
+  464-469 act through the item effect's `character_flag`; 465-469 come only from Machinery.
+
 ## Options (page 7, overlay 0xbc8)
 
 The page has two screens of options. Moving the cursor into a group of the other screen

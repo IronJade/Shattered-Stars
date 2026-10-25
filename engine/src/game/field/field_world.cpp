@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/boot/sound.h"
 #include "game/common/math.h"
@@ -725,7 +726,8 @@ void field_world_update(Field* f) {
           const u16 v = read_u16(gs + 0x250 + i * 2);
           if (v == 0) continue;
           const int count = (v & 0x7fff) >> 10;
-          inventory_add(g.inventory, v & 0x3ff, count, 1);
+          if (inventory_add(g.inventory, v & 0x3ff, count, 1) == 0)
+            ap::order_overflow(v & 0x3ff, count);  // Archipelago: what doesn't fit waits [shopboth agent]
           wr32(flags + 0x38 + k * 4, static_cast<s32>((static_cast<u32>(v & 0x3ff) << 16) | static_cast<u32>(count)));
           ++k;
         }

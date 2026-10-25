@@ -8,13 +8,13 @@ seed per player ([seed_format.md](seed_format.md)), which the port loads.
 ## Locations
 
 Story mode's locations come from the discs through `docs/ap/field.json` (`tools/ap_extract.py`,
-[field.md](field.md)); `tools/ap_world_tables.py` turns them into `data.py`, 1113 rows (the
+[field.md](field.md)); `tools/ap_world_tables.py` turns them into `data.py`, 1110 rows (the
 first six kinds below). The crafts and the killer-move levels (0.2.0) come from `crafts.py` and
 `moves.py`, tables written from the disc research (Files, below):
 
 | Kind | Rows | Option | Id ([field.md](field.md), "Location ids") |
 |---|---|---|---|
-| Chests | 311 (78 in the Cave of Trials) | always | type 1, one per opened flag |
+| Chests | 308 (75 in the Cave of Trials) | always | type 1, one per opened flag |
 | Gift sites | 101 (3 in the cave) | always | type 2, one per reward site that gives an item or Fol |
 | Boss fights | 41 (13 in the cave) | `boss_checks` (default on) | type 9 + encounter |
 | Join sites | 18, + 3 under open world's party rules | `character_items` | type 4, one per site |
@@ -30,13 +30,16 @@ Hub mode (`world_mode: hub`, "Hub mode" below) uses only what the hub reaches of
   - two chests and 33 gift sites that give key items (script flags 66-91), because the
     story needs them where they are: Cross Cave's chest (map 547, key flag 68) and Cave of
     Trials level 1's (map 706, key flag 93);
+  - the Cave of Trials' three learn chests (0.2.0; `LEARN_CHESTS`): maps 740 / 798 / 799,
+    flags 2675 / 2657 / 2721, which teach Leon Extinction (level 4), Ashton tri-Ace and Celine
+    Meteor Swarm (level 10) and open only with that member in the party (Changes, 0.2.0);
   - prize tables, Private Action ids (their rewards are gift sites), recruitments other than
     the join sites, and the shop *site* records (type 5; the slots are type 10, "Shop slots"
     below);
   - the goal fights 539 / 540, and boss encounters 0 / 263 / 534 / 561, which no script
     starts with a constant encounter (561, the Iseria Queen, is summoned by a song: an event of
     the Iseria Queen goal, "Goals" below).
-- **The Cave of Trials** (`cave_of_trials`, off by default) adds its 81 chests and gift sites
+- **The Cave of Trials** (`cave_of_trials`, off by default) adds its 78 chests and gift sites
   and its 13 bosses.
 - **Bosses** by class: 21 story bosses (the story fights them; a loss is a game over; two are
   timed survivals the port checks when the minute runs out, Shin at the Lacour Front Line 516
@@ -380,7 +383,7 @@ settled by its exit gate (above).
 The user's decisions D1-D10 (docs/handoff/hub.md), the seed's blocks (seed_format.md "Hub"), the
 port's side (agents hubvm, hubcore, hubchambers). Code: `apworld/so2/hub.py`; tables: data.py's
 hub section (`tools/ap_world_tables.py` from docs/ap/hub_state.json, hub_bosses.json,
-late_proof.json and field.json). Story mode and open world are unchanged by it.
+hub_proof.json and field.json). Story mode and open world are unchanged by it.
 
 **What it is.** New Game starts after the Final Save Point (chapter 60, step 4000, flag 730,
 disc 2) with every location undone and the chapter held at 60 (the port's chapter lock): both
@@ -393,30 +396,33 @@ opens on the Fienal requirement (D6), and the goal lies behind it. Characters ar
 (D7). Since the chapter never moves and nothing is one-way, every key stays reachable from any
 play state (the accessibility rule holds by construction).
 
-**The locations: what the hub reaches** (`hub.choose`, `hub.reached_games`). Until the hub proof
-(agent hubproof) exists, the late proof's reach stands in for it (the hub state is the late
-proof's state minus 24 reset flags: 9 boss guards, 13 Private Action results, Limiter Off, key
-item 84); every place in hub.py marked "hubproof" switches to the hub proof's rows then:
-- chests, gifts, the Cave of Trials' bosses and the side-quest bosses the late proof proved in
-  the game(s) of the story_route: 258 chests (73 in the cave), 9 gifts (2 in the cave), 10 cave
-  bosses, XINE (the only side-quest boss it reached; hubchambers confirmed it plays at the hub
-  state in both games, so it may hold progression: `hub.CONFIRMED_OPTIONAL = {199}`, and the
-  Lasguss Mountain key stays);
+**The locations: what the hub reaches** (`hub.choose`, `hub.reached_games`): the hub proof's
+(docs/ap/hub_proof.json, `tools/ap_late_proof.py --state hub`, agent hubproof: the late proof's
+search run from the hub's New Game (the port builds the state, SS_HUB_STATE), the start map Fun
+City 279 as its root, the chapter lock on, every chamber row of hub_bosses.json in its seed, the
+hero alone; Eluria Tower's two walks the sweep can't fire (557 -> 558 -> 559) as extra roots;
+Fienal's floor-6 maze 673 followed room by room). data.HUB_REACHED (the games per location) and
+HUB_MAPS (the maps per game) carry it:
+- chests, gifts, the Cave of Trials' bosses and the side-quest bosses the hub proof proved in
+  the game(s) of the story_route: 290 chests in both games (73 in the cave; the late proof's 258
+  plus Eluria Tower's 23 and the 9 of Fienal's maze rooms 647 / 673, which the late proof's
+  sweep never walked to), 9 gifts (2 in the cave), 10 cave bosses, XINE (the only side-quest
+  boss it reached; it plays at the hub state in both games, so it may hold progression:
+  `hub.CONFIRMED_OPTIONAL = {199}`, and the Lasguss Mountain key stays);
 - the 22 chambers (`boss_checks`; hub_bosses.json, proven headless by hubchambers): the 21 story
   bosses of story mode but the losable fights (D5: Dias 204, Shin 517, Marsilio 530, and Zand 265,
   which is no location), plus the Cross Cave guardians (set battle 523), a hub-only row; the
   other game's chamber is left out (Varmillion is Claude's, Azamgil Rena's; under story_route
   "any" both stay, filler only);
-- shop slots of the shops open at the hub state (data.HUB_SHOPS: a site on a map the late proof
+- shop slots of the shops open at the hub state (data.HUB_SHOPS: a site on a map the hub proof
   reached whose conditions can hold at chapter 60, step 4000 with the hub's flags, outside a
   Private Action: 41 shops in Claude's game, 42 in Rena's; old Clik's and Lacour's war-time
   shops are closed);
 - first drops of the enemy types random encounters meet at the hub state (data.HUB_DROPS, per
-  game the dungeons where they are met: 82 of the 89 types);
+  game the dungeons where they are met, on the hub proof's maps: 85 of the 89 types);
 - crafts and killer-move levels as in open world.
-- Never: join sites (no join scene runs at chapter 60), the losable fights, anything the late
-  proof didn't reach (Eluria Tower's 23 chests: hubcore opens the tower past map 557 and the hub
-  proof will add them; old Clik; the tournament; the story scenes' gifts).
+- Never: join sites (no join scene runs at chapter 60), the losable fights, anything the hub
+  proof didn't reach (old Clik; the tournament; the story scenes' gifts; the arena's prize gift).
 - Missable reasons: a window or a time limit doesn't apply (nothing closes); the hard reasons
   (a choice, a member, a side quest) stay EXCLUDED, or left out with `missable_locations:
   remove`; "story_route" when the hub reaches a location in only one of the route's games.
@@ -453,11 +459,11 @@ carries them as `won` with one banner each ("Defeat Magichand first", ...); the 
 43978493) keeps the goal's own conditions.
 
 **Where progression may go** (`hub.may_hold_progression`, `hub.drop_rule`): a chamber; a chest
-or cave boss the late proof reached in every game the player may play (hubproof: the hub proof);
-XINE (confirmed); never a gift, a shop slot, a craft or an EXCLUDED location; with
-`expel_progression` off nothing in Expel. Drops as in story mode (`drop_progression`, the Luck
-floor, encounter_rate 0), through places the late proof reached where the type is met with no
-condition, and only through those; `area_keys_in_drops` off keeps every Star Ocean key (area or
+or cave boss the hub proof reached in every game the player may play; XINE (confirmed); never a
+gift, a shop slot, a craft or an EXCLUDED location; with `expel_progression` off nothing in
+Expel. Drops as in story mode (`drop_progression`, the Luck floor, encounter_rate 0), through the
+maps of places where the type is met with no condition that the hub proof reached in every game
+the player may play, and only through those; `area_keys_in_drops` off keeps every Star Ocean key (area or
 dungeon key, any player's) out of the drops. Killer moves per `killer_move_progression`.
 
 **The party (D7).** `party_rules` is "open" and characters are items whatever `character_items`
@@ -521,6 +527,13 @@ instruments...); **full** is all 550. A slot's site gives its area and missable 
 finite, so a price could block the seed; shop slots hold only useful, filler and trap items
 (of any world); the user confirmed this default on 2026-10-23. The seed's check is
 `{type: shop, shop, index, item}`.
+
+**Buying (2026-10-25, the port alone).** The first purchase of a slot gives what was bought (every
+copy) and the slot's check, as Severed Chains does; the port marks a slot still to check with the
+Archipelago logo in the shop's list. Up to port 0.02.00 the first copy *was* the check (the user's
+report: Fol gone, the items not the ones bought) and the colour-2 mark it meant to show never
+drew. Seeds are unchanged: existing 0.1.x / 0.2.0 seeds get the new behaviour from the port. No
+logic change (no progression in shops).
 
 ## Enemy drops (`drop_progression`, `area_keys_in_drops`; 0.2.0)
 
@@ -994,6 +1007,41 @@ Results (2026-10-25, `starting_character: any` as New Game's pick; docs/handoff/
   new list in every one, and where the party rules are open the pool has the start's place: one
   member more), and with them the other slot of the same multiworld (the shared fill).
 
+Results (2026-10-25, the hub proof; docs/handoff/hubproof.md):
+- The hub proof (`tools/ap_late_proof.py --state hub`; docs/ap/hub_proof.json): from the title's
+  state New Game builds (the port's own code, SS_HUB_STATE, in each hero's game), the start Fun
+  City 279 as the root, the chapter lock on, all 22 chamber rows and the P5 doors in its seed, the
+  hero alone in the party; Eluria Tower's two walks (557 -> 558 -> 559, hubcore2) as extra roots
+  searched after the start's own; Fienal's floor-6 maze 673 (a 4 x 4 grid of rooms) followed room
+  by room. Claude's game 773 nodes, 625 maps, 329 locations; Rena's 774, 626, 328 (Varmillion is
+  Claude's chamber). Against the late proof: nothing lost; gained 51 / 50: Eluria Tower's 23
+  chests and its two bosses, the 9 chests of Fienal's maze rooms (647, 673: the late proof's
+  sweep never walked the maze), and the chambers whose scenes don't run at the late state. The
+  chapter lock dropped exactly one store pair in either game, from a free-play path: Cross Cave's
+  key chest (547, talk K60: chapter 13 and step 0, guarded by flag 2569 only, the known one). No
+  edge it found enters a dungeon other than by a door hub_bosses.json lists.
+- `--bosses`: every chamber spec of tools/ap_hub_chambers.py from the title's New Game, along the
+  hub proof's route through the dungeon's locked door with its key in the starting inventory
+  (no door refused): 43 of 46 specs pass (view, battle won by the stand-in, the check, goal_won,
+  the story at 60 / 4000), both games, every chamber row covered; 3 skipped (an arrival-position
+  spec, and Cyril's west side, which lies behind his room from the start). The goal walk
+  (Fienal's maze -> the Final Save Point 671 -> 684 -> 685, the final battle) passes from the
+  hub start in both games.
+- The APWorld reads it (data.HUB_REACHED, HUB_MAPS): the world's tests 318 passed (23214
+  subtests; the default hub world now has 217 chests, 290 with the cave); AP's general tests 379
+  passed (117124 subtests); data.py regenerates identically and its part before the hub section
+  is unchanged. The hub players' batch (seeds 1-96, `hub_hp`): 96/96 exit 0, `check.py` (its hub
+  reach now from HUB_REACHED / HUB_MAPS) 0 errors on 192 files; in the 154 hub slots 3352
+  progression items in chests (350 of them in the 32 chests only the hub proof reaches), 304 in
+  chambers and cave bosses, 582 in drops. The story / open-world players' batch (`full_hp`): 96/96
+  exit 0, 0 errors, all 192 `.apso2` byte-identical to the batch before (`full_cs`).
+- The late proof's driver fix (2026-10-25; docs/handoff/elgate.md "Proof gap explained"): each
+  entry has its own reload budget, and a run is resumed at the first entry the sweep skipped
+  for reloads ("end loop", event_sweep.cpp kMaxReloads) instead of past it. Rerun from the gate
+  build's node logs (only the nodes with reload loops rerun): both games 278 proven, the same set
+  as docs/ap/late_proof.json, the same checks per map, maps and edges (the Cave of Trials L1 / L11
+  bosses back).
+
 ## Changes
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
@@ -1024,6 +1072,17 @@ never` (above).
   0x50370000 + N), the Cross Cave guardians' boss location (hub only), the event "Fienal opened";
   version-3 seeds with `hub` and `bosses` ("Hub mode"). Story-mode and open-world seeds are
   byte-identical to the batch before it (Testing).
+- *Fixed: the Cave of Trials' learn chests are no locations* (2026-10-25, agent cavefix;
+  docs/handoff/cavefix.md). 0.1.x's "Cave of Trials Level 1: Portrait F / G / J chest" (ids
+  1348308992, 1348368384, 1348369409; maps 740 / 798 / 799, really levels 4 / 10 / 10) are the
+  routine that teaches Leon Extinction, Ashton tri-Ace and Celine Meteor Swarm: field.json read
+  its push of the move index (0xc / 9 / 0xd) as items 12 / 9 / 13. They opened only with that
+  member in the party, and their placeholder patch put the move index past the record's 0x20
+  moves: the 0.02.00 port then read and wrote outside its member records. 0.2.0 leaves them out
+  (with Portraits F, G and J from the pool), so a seed with `cave_of_trials` has 3 locations
+  fewer and places its items differently; seeds without it are unchanged. The port's fix makes
+  0.1.x seeds safe: nothing is learned or written, and the chest gives or sends its location's
+  item (when the member opens it). Skillsanity is to bring them back as learn points.
 - *Fixed: gift sites never hold progression* (2026-10-25, the user: "NPC gift checks should NOT
   hold progression"). Before, the late proof let the 9 gift sites it reaches hold progression in
   story mode, and in open world Eluria Colony's 2 gifts could hold our own Expel-story keys
@@ -1084,9 +1143,10 @@ pool, location names and ids are unchanged.
 ## Next
 
 - Entrance shuffle on the door table ("Entrance shuffle (later)" above).
-- Hub mode: the hub proof (agent hubproof) replaces the late proof's reach (hub.py's "hubproof"
-  places: Eluria Tower's chests once the tower opens past 557; the floors and puzzles the hub
-  reaches); the Portal of Sealing (hubcore); XINE's confirmation (hubchambers).
+- Hub mode: the arena's prize gift (map 305, reachable after "no" at the ask through 297's
+  desk, with Fol for the fee: not proven by the hub proof, which starts with New Game's Fol);
+  the late proof's own search could walk Fienal's maze as the hub proof does (its 9 maze chests
+  stay non-progression in story mode and open world until then).
 - Tighter open-world proofs: a mid-Nede state with the flags of its time (the teleporter
   proof's chapter-60 flags keep it to Expel's maps).
 - A `.apworld` zip for custom_worlds (phase 5).
