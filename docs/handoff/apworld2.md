@@ -8,6 +8,9 @@ version of this log: scratchpad/apworld2/apworld2_log_prev.md.)
 **Session 3** (2026-10-25, successor agent): batch rerun, AP general tests, docs/ap/apworld.md,
 the player guide. Progress notes under "Session 3" below.
 
+**Session 4** ("gifts" agent, 2026-10-25, the hub plan's docs/handoff/hub.md): gift sites never
+hold progression, in either world mode. Progress notes under "Session 4" below.
+
 ## Rules given
 
 - Edit only apworld/, tools/ap_world_tables.py (then regenerate data.py), docs/ap/apworld.md,
@@ -296,6 +299,45 @@ level to learn the move (conservative). (All implemented.)
   docs/ap/data/craft_results.csv, craft_decode.txt and move_levels.csv instead of the
   scratchpad copies; crafts.py / moves.py are reproducible from git again. The scratchpad
   originals (scratchpad/apworld2/make_crafts.py, make_moves.py) are left in place unchanged.
+
+## Session 4 (gifts agent, 2026-10-25)
+
+The hub plan's "gifts" work item (docs/handoff/hub.md): the user's decision "NPC gift checks
+should NOT hold progression" (before: the 9 gift sites the late proof reaches in story mode
+could, and in open world Eluria Colony's 2 gifts could hold our own Expel-story keys).
+
+- **rules.py:** `may_hold_progression` and `open_world_progression` now treat `"gift"` as
+  never-progression, the same way as `"drop"`, `"join"` and `"shop"` (one added entry in each
+  tuple); the module docstring's list of never-progression kinds updated. No other logic
+  changed: a gift location's reachability (`open_world_access`, the region graph in story mode)
+  is untouched, only whether it may hold progression. This also closes the one open-world
+  exception gift sites had: Eluria Colony's 2 gifts can no longer hold even this world's own
+  Expel-story keys.
+- **Tests:** `test_world.py` gains `assert_no_gift_progression` (checks `can_fill` is false for
+  every gift location against both this world's own progression, e.g. an area key, and another
+  world's) and a `test_gifts_never_hold_progression` method on `LateProofChecks` and
+  `OpenWorldChecks`, so it runs under the existing `TestLateProofAny`, `TestLateProofRena`,
+  `TestOpenWorld`, `TestOpenWorldRenaShops` and `TestOpenWorldNoTeleporter` (story and open
+  world, with/without the teleporter, cave_of_trials, missable_locations, shuffle_shops and
+  character_items). Also fixed `OpenWorldChecks.test_progression_rules`, which asserted a gift
+  in Expel could hold progression when the teleporter or late proof reached it (no longer true):
+  it now special-cases `row["type"] == "gift"` to assert `can_fill` is always false there. World
+  tests: 240 passed, 19751 subtests (was 235 / 19741; +5 new test methods).
+- **Batch:** reran the 96-seed batch (`scratchpad/apworld2/batch/full`, same `players/`): 96/96
+  exit 0, 192 `.apso2` over 192 option combinations, 276-1768 locations each, all generate and
+  fill. `check.py` extended (`allowed` / `allowed_open` add `"gift"` to the never-progression
+  types, matching rules.py) finds **0 errors**; 5957 progression items in SO2 locations (3-73
+  per slot; was 5954 before this fix, noise from the fill RNG). No fill failure in open world
+  with `expel_progression` off, where the Eluria Colony gifts had been one of the few places an
+  Expel-story key could land: still found room among the chests and drops in every slot.
+- **Docs:** docs/ap/apworld.md ("Logic" — the rule and the "9 gifts" / Eluria Colony results
+  text; "Changes" 0.2.0 — new bullet; "Testing" — a new dated results entry). The player guide
+  (`apworld/so2/docs/en_Star Ocean The Second Story.md`) never claimed gift sites may hold
+  progression (checked: it only states what shops/drops/crafts/killer moves do), so it needed
+  no change. Not touched: seed_format.md, data.py (no data-table change, pure rules.py logic),
+  tools/ap_world_tables.py, engine/.
+- **Not released yet:** this folds into the still-unreleased so2.apworld 0.2.0 (no version bump
+  of its own).
 
 ## How to verify
 

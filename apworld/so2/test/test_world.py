@@ -27,6 +27,22 @@ def fill(test):
     distribute_items_restrictive(test.multiworld)
 
 
+def assert_no_gift_progression(test):
+    """No gift location holds progression (the user, 2026-10-25): not this world's own keys
+    (open world's area keys) and not another world's, whatever `may_hold_progression` /
+    `open_world_progression` would otherwise let through."""
+    from ..items import SO2Item
+    gifts = [loc for loc in own_locations(test) if ROW[loc.name]["type"] == "gift"]
+    test.assertTrue(gifts)
+    other = SO2Item("test key", ItemClassification.progression, None, test.player + 1)
+    st = test.multiworld.state
+    for loc in gifts:
+        test.assertFalse(loc.can_fill(st, other, False), loc.name)
+        if test.world.open_world:
+            mine = test.world.create_item("Salva Pass")   # this world's own progression (a key)
+            test.assertFalse(loc.can_fill(st, mine, False), loc.name)
+
+
 def check_seed(test, seed):
     """The seed's shape: ids, checks, placeholders and patch lines (docs/ap/seed_format.md)."""
     test.assertEqual((seed["format"], seed["version"]), ("apso2", test.world.seed_version()))
@@ -237,6 +253,9 @@ class LateProofChecks:
             if row["type"] == "chest" and row["map"] in (117, 119):
                 self.assertFalse(may_hold_progression(row, self.side), row["name"])
 
+    def test_gifts_never_hold_progression(self):
+        assert_no_gift_progression(self)
+
 
 class TestLateProofAny(SO2TestBase, LateProofChecks):
     options = {"cave_of_trials": True, "missable_locations": "include", "enemy_dropsanity": "first_drop"}
@@ -439,6 +458,10 @@ class OpenWorldChecks:
             if row["region"] != "Expel":
                 continue
             st = self.multiworld.state
+            if row["type"] == "gift":   # never progression, not even our own Expel-story keys
+                for item in (nede, other, mine):
+                    self.assertFalse(loc.can_fill(st, item, False), loc.name)
+                continue
             # (A location the story reaches before the El voyage that the voyage proof did not
             # reach there holds none: test_voyage_gate.)
             stays = not closes_at_gate(row, self.side)
@@ -564,6 +587,9 @@ class OpenWorldChecks:
             self.assertFalse(loc.can_fill(self.multiworld.state, nede, False), loc.name)
             tested += 1
         self.assertGreater(tested, 30)
+
+    def test_gifts_never_hold_progression(self):
+        assert_no_gift_progression(self)
 
     def test_seed_doors(self):
         fill(self)

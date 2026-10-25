@@ -63,3 +63,10 @@ seed blocks) → docs.
 ## Status
 
 - 2026-10-25: decisions taken; gifts, hubdata, hubvm started.
+- 2026-10-25: **gifts done.** rules.py `may_hold_progression` / `open_world_progression` treat
+  `gift` as never-progression (like `drop` / `join` / `shop`), in either world mode, for this
+  world's own keys and other worlds' progression alike. World tests 240 passed (was 235); the
+  96-seed batch (full) regenerated, 96/96 exit 0, check.py (extended with the gift rule) 0
+  errors; no fill failure with expel_progression off. docs/ap/apworld.md and
+  docs/handoff/apworld2.md ("Session 4") updated; the player guide needed no change (it never
+  claimed gifts may hold progression). Folds into the unreleased so2.apworld 0.2.0.

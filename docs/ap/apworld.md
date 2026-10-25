@@ -174,10 +174,11 @@ games each location was proven in into its row (`late`).
   location is proven in a game when a sweep of that game's search logs its `[ap] check`.
 - **The rule** (rules.py `may_hold_progression`): a location may hold progression only when it
   was proven in the story_route's game (in both games under "any"). Story bosses are exempt
-  (the story fights them); join sites, shop slots and crafts never may; first drops follow
-  `drop_progression` ("Enemy drops" below: their places are judged by the same proofs) and
-  killer-move levels `killer_move_progression` ("Killer moves"); with `expel_progression` off,
-  nothing in Expel may.
+  (the story fights them); join sites, shop slots, gift sites and crafts never may (the user,
+  2026-10-25: an NPC gift check should never hold progression, this world's own keys or another
+  world's alike, whatever the proof reaches); first drops follow `drop_progression` ("Enemy
+  drops" below: their places are judged by the same proofs) and killer-move levels
+  `killer_move_progression` ("Killer moves"); with `expel_progression` off, nothing in Expel may.
 - **Conservative by design:** every entry starts from the map's arrival state, so doors behind
   switches, puzzles the save had not solved or a choice's other answers stay shut; such
   locations only lose the right to hold progression.
@@ -198,8 +199,11 @@ bosses:
   550 (2), Fienal's stair rooms 647 / 673 (9: floor states the search did not reach) and five
   cave chests behind puzzles (maps 710, 740, 798, 799).
 - Gifts are mostly rewards of story scenes tied to a chapter or step, which no longer run at
-  chapter 60; most were excluded already (window, Private Action, member).
-- So a seed puts progression in at most 258 chests, 9 gifts, the 21 story bosses and 10 cave
+  chapter 60; most were excluded already (window, Private Action, member). The 9 the proof
+  reaches never hold progression either way (`may_hold_progression` excludes every gift site
+  outright, the user, 2026-10-25): the table's gift row and this proof still matter for open
+  world's reachability ("Open world" below), not for what a gift may hold.
+- So a seed puts progression in at most 258 chests, the 21 story bosses and 10 cave
   bosses (fewer with the options): every multiworld in the batch below filled.
 - Rerun the proof after a change to the port's field code, the event sweep or field.json
   ("Files", below).
@@ -277,8 +281,10 @@ island (with map 231) and the Cave of Trials' island are reached only by the sto
 the teleporter search does not follow their entrances (`TELEPORTER_ISLANDS`;
 `tools/ap_walkmap.py` reads the world map's walkable terrain, finds those islands and
 `--check`s the list). **Result** (2026-10-23, 0.1.1): both games 418 maps, 153 locations; 101
-of the 129 Expel locations the late proof proves (not Hoffmann Ruins' 26 chests or Eluria
-Colony's 2 gifts, which hold only our Expel-story keys in open world). So in open world:
+of the 129 Expel locations the late proof proves (not Hoffmann Ruins' 26 chests, which hold
+only our Expel-story keys in open world, or Eluria Colony's 2 gifts, which hold none: gift
+sites never hold progression, not even our own keys, "Logic" above). So in open world (chests
+and bosses; gift sites are always "none", above):
 - an Expel location may hold any progression when the teleporter proof reached it (in the
   story_route's game, both under "any"): the Cross and Lacour continents;
 - where only the late proof reached it, only our own Expel-story keys (stages 1-12): the
@@ -792,6 +798,21 @@ Results (2026-10-25, 0.2.0; docs/handoff/apworld2.md):
   (the one new option that changes a story seed by default): all 32 `.apso2` identical to the
   0.1.1 batch's but for the `options` object (11 keys added, none changed).
 
+Results (2026-10-25, gift sites never hold progression; docs/handoff/apworld2.md "Session 4"):
+- The world's tests: 240 passed (19751 subtests; new: `test_gifts_never_hold_progression` in
+  `LateProofChecks` and `OpenWorldChecks`, run under `TestLateProofAny`, `TestLateProofRena`,
+  `TestOpenWorld`, `TestOpenWorldRenaShops` and `TestOpenWorldNoTeleporter` — story and open
+  world, with and without the teleporter, cave_of_trials, missable_locations, shuffle_shops and
+  character_items on; `can_fill` is false for every gift location against both this world's own
+  progression, e.g. an area key, and another world's).
+- 96 seeds (scratchpad/apworld2/batch: the same players, `full`): 192 `.apso2` over 192 option
+  combinations, 276-1768 locations each, all generate and fill (96/96 exit 0). `check.py`
+  (`allowed` / `allowed_open` now treat `gift` as never-progression, like `drop` / `join` /
+  `shop`) finds 0 errors; 5957 progression items in SO2 locations (3-73 per slot). No fill
+  failure in open world with `expel_progression` off, where the 2 Eluria Colony gifts had been
+  one of the few places for an Expel-story key: the keys still found room among the chests and
+  drops.
+
 ## Changes
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
@@ -815,6 +836,13 @@ never` (above).
 - slot_data and `options` gain the new options, `party_rules` and `apworld_version`; the seed
   gains `version` 2 when needed. Location and item ids of 0.1.1 are unchanged; the new ones are
   types 11 (crafts) and 12 (killer moves), the characters Claude, Rena and Noel.
+- *Fixed: gift sites never hold progression* (2026-10-25, the user: "NPC gift checks should NOT
+  hold progression"). Before, the late proof let the 9 gift sites it reaches hold progression in
+  story mode, and in open world Eluria Colony's 2 gifts could hold our own Expel-story keys
+  (0.1.1's "Fixed: the teleporter does not reach Expel's islands", below). Now `may_hold_progression`
+  and `open_world_progression` (rules.py) treat `gift` as never-progression, the same as `drop`,
+  `join` and `shop`, in either world mode and for this world's own keys and other worlds'
+  progression alike ("Logic", "Open world").
 
 **0.1.1** (2026-10-23, released with the port's 0.02.00). Open world only; story mode, the item
 pool, location names and ids are unchanged.

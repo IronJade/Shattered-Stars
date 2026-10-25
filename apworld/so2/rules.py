@@ -7,8 +7,10 @@ as the story goes on (Expel at the disc switch, towns that change), so a locatio
 progression only when the late proof (tools/ap_late_proof.py, docs/ap/late_proof.json; the
 rows' `late`) checked it in a sweep of the game after the Final Save Point, the point the
 story always reaches, with every location left undone. Story bosses are exempt: the story
-fights them. First drops are dice rolls, join sites need their member's story and shop slots a
-price: never progression. expel_progression off keeps progression out of Expel as well.
+fights them. First drops are dice rolls, join sites need their member's story, shop slots a
+price and gift sites are never progression (the user, 2026-10-25: an NPC gift check should
+never hold progression, our own keys or another world's alike, whatever the proof reaches).
+expel_progression off keeps progression out of Expel as well.
 
 Open world: the story's stages need the keys of the areas they walk into (regions.py
 stage_rules), and a location needs its area's key from the stage the story first enters the
@@ -77,7 +79,7 @@ def proven_at_gate(row, side, k):
 
 
 def may_hold_progression(row, side, expel_progression=True):
-    if row["type"] in ("drop", "join", "shop"):
+    if row["type"] in ("drop", "join", "shop", "gift"):
         return False
     if row["region"] == "Expel" and not expel_progression:
         return False
@@ -151,7 +153,7 @@ def open_world_progression(row, side, teleporter, expel_progression=True):
     """Open world: what a location may hold: "any", "expel keys" (non-progression or our
     Expel-story keys) or "none" (non-progression). expel_progression off still lets our
     Expel-story keys into Expel: the disc switch can't be reached without them."""
-    if row["type"] in ("drop", "join", "shop") or closes_at_gate(row, side):
+    if row["type"] in ("drop", "join", "shop", "gift") or closes_at_gate(row, side):
         return "none"
     if not in_expel(row):
         return "any" if may_hold_progression(row, side) else "none"
