@@ -436,13 +436,18 @@ void pc_apply_equip_effects(PartyUnit* u, u8* slot, u8* rec) {
   if (s->mp_max < s->mp) s->mp = s->mp_max;
 }
 
-// 0x80083d40 tex_rects_offset: moves a texture block's rectangles by (dx, dy).
+// 0x80083d40 tex_rects_offset: moves a texture block's cel rectangles by (dx, dy) VRAM
+// halfwords: the u0 v0 u1 v1 bytes (+2..+5) of each of the count (+0xa) 8-byte entries of
+// the table at +0x10 (the one cel_texture reads for attached parts), u by dx * 4 (4-bit
+// texels), v by dy. Used for the weapon texture of party slots 1-3.
 void tex_rects_offset(u8* block, s32 dx, s32 dy) {
   const int n = static_cast<u16>(rds16(block + 0xA));
   for (int i = 0; i < n; ++i) {
-    u8* r = block + 0xC + i * 8;
-    r[0] = static_cast<u8>(r[0] + dx);
+    u8* r = block + 0x12 + i * 8;
+    r[0] = static_cast<u8>(r[0] + dx * 4);
+    r[2] = static_cast<u8>(r[2] + dx * 4);
     r[1] = static_cast<u8>(r[1] + dy);
+    r[3] = static_cast<u8>(r[3] + dy);
   }
 }
 
