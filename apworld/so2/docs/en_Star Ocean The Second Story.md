@@ -77,7 +77,7 @@ doesn't change the goal.
 
 ## What locations exist?
 
-Chests and gift sites always exist as locations: 311 chests and 101 gift sites (78 of the
+Chests and gift sites always exist as locations: 308 chests and 101 gift sites (75 of the
 chests and 3 of the gifts are in the Cave of Trials, which only appears with
 `cave_of_trials`). Six more kinds exist only with their own option:
 

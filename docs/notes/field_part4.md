@@ -338,8 +338,11 @@ Renames in **bold**.
   +0 s16 id+1 (negative reserve, 0 empty), +2 u8 status bits (bit 0 cleared by full heal), +3 u8 class
   (>= 9 casters: Rena 9, Leon 0xa, Celine 0xb, Noel 0xc), +0x14/+0x18/+0x1c HP base/max/current, +0x20/+0x22/+0x24
   MP, +0x26 level-like (battle voice average), +0x28 level. Character 0xd0 at 0x80075280: +0xc..+0x18 equipment
-  slots 0-6 (5/6 = accessories), +0x1a s16 0..999, +0x20 talents, +0x24 name, +0x3c skill levels,
-  +0x5c bytes, +0xcc u8[2][2] assigned killer moves. Ids: 1 Claude, 2 Rena, 3 Celine, 4 Bowman, 5 Dias,
+  slots 0-6 (5/6 = accessories), +0x1a s16 0..999, +0x20 talents, +0x24 name, +0x3c u8[0x20] learned
+  killer moves / spells (by the move's or the class spell list's index; 1 learned, negative switched
+  off; ext 0x73 / 0xfc and A 0x21 index it with a script value, unchecked: field 0x80064eb8),
+  +0x5c u8[0x30] skill levels (by skill id), +0x8c u16[0x20] move proficiency, +0xcc u8[2][2]
+  assigned killer moves. Ids: 1 Claude, 2 Rena, 3 Celine, 4 Bowman, 5 Dias,
   6 Precis, 7 Ashton, 8 Leon, 9 Opera, 10 Ernest, 11 Noel, 12 Chisato. Script flag 1 = Claude's story.
   Every party change of slots 0-3 calls voice_slot_invalidate + FUN_8004358c(0x800752b0, 0) and clears
   `0x800759a0`.

@@ -130,6 +130,16 @@ inline void vm_note_unknown(u32 instr) {
   g_vm_stats.last_unknown = instr;
 }
 
+// Port guard (not in the original) [cavefix agent]: a member record's learned killer moves /
+// spells, record +0x3c, are u8[0x20] (+0x5c starts the skill levels, +0x8c the u16[0x20]
+// proficiencies). ext 0x73 / ext 0xfc / A 0x21 index it with a script value unchecked
+// (field 0x80064eb8: sb at records + slot * 0xd0 + a1 + 0x3c); every original call site passes
+// less than 0x20, but so2.apworld 0.1.x cave_of_trials seeds patch the Cave of Trials learn
+// chests' index with an item placeholder (0x400 and up), past the 0x680-byte records block.
+// True when INDEX is inside the table; else false and a log line (OP names the command).
+constexpr u32 kRecordMoveSlots = 0x20;
+bool vm_move_index_ok(const char* op, s32 character, s32 index);
+
 // --- VM core (script_vm.cpp) ---------------------------------------------------------
 ScriptCtx* vm_ctx_create(ScriptCtx* ctx);            // 0x800621e0: clears the triggers and cursors
 void vm_init(ScriptCtx* ctx);                        // 0x80062260: binds g_map_script; enters at hdr[2]

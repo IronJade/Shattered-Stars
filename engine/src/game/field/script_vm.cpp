@@ -1,5 +1,6 @@
 #include "game/field/script_vm.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "game/ap/ap.h"
@@ -18,6 +19,13 @@ u32 g_vm_step_limit = 0;
 void (*g_vm_ext_hook)(ScriptCtx* ctx, u32 instr) = nullptr;
 
 void ScriptCtx::update() { vm_thread_update(this); }
+
+bool vm_move_index_ok(const char* op, s32 character, s32 index) {
+  if (static_cast<u32>(index) < kRecordMoveSlots) return true;
+  std::fprintf(stderr, "[port] %s: character %d, move index %d (%#x) is outside the record's 0x20 moves; ignored\n",
+               op, character, index, static_cast<u32>(index));
+  return false;
+}
 
 namespace {
 

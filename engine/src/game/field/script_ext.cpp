@@ -181,6 +181,12 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
     case 0x73: {  // learn skill: record +0x3c + skill = 1
       vm_fetch_args(ctx, 2);
       const int slot = slot_of_character(a[0]);
+      if (!vm_move_index_ok("ext 0x73 learn_skill", a[0], a[1])) {
+        // (Port) Nothing learned. The index of a Cave of Trials learn chest that a 0.1.x seed
+        // took for an item is that seed's placeholder: the location's item, given or sent.
+        ap::on_give_item(a[1]);
+        break;
+      }
       if (slot < 8) g.records[slot * 0xD0 + a[1] + 0x3C] = 1;
       break;
     }
@@ -922,6 +928,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
     case 0xFC: {  // forget skill a1: skill byte cleared, killer move a1 + 1 unassigned
       vm_fetch_args(ctx, 2);
       const int slot = slot_of_character(a[0]);
+      if (!vm_move_index_ok("ext 0xfc forget_skill", a[0], a[1])) break;  // (port) nothing changed
       if (slot < 8) {
         u8* rec = g.records + slot * 0xD0;
         rec[a[1] + 0x3C] = 0;

@@ -53,7 +53,7 @@ ext,0x6f,,msg_say_plain_w,4,2,2 (inline),msg_say_plain in window n,confirmed
 ext,0x70,,actor_create,9,8,4 (inline),"(slot, model, x, y, z, angle, param, talk entry lo, hi): actor_create; talk entry -> actor +0x52",confirmed
 ext,0x71,,actor_delete,1,1,0 (inline),actor_queue_delete(actor),confirmed
 ext,0x72,,set_config_181,2,2,1 (inline),config +0x181 / +0x182 = a0 / a1,confirmed
-ext,0x73,,learn_skill,2,2,1 (inline),Character record +0x3c + skill = 1,confirmed
+ext,0x73,,learn_skill,2,2,1 (inline),"Character record +0x3c + skill = 1 (a0 the 0-based character, a1 the move / spell flag index). Call sites: Claude's Phase Gun at the opening (maps 7 / 12; taken back by ext 0xfc at Salva, maps 48 / 61), Precis's Holo-holograph in a Fun City arena Private Action (map 304), and the Cave of Trials' learn chest routine (args text, opened flag, index, character; it opens only with that member present and the move unknown, A 0x21): Extinction for Leon (map 740, flag 2675), tri-Ace for Ashton (798, 2657), Meteor Swarm for Celine (799, 2721) [skillsanity]. Field 0x80064a30 (vm_exec_ext jump table 0x8007359c; the store 0x80064eb8: records 0x80075280 + slot * 0xd0 + a1, sb 1 at +0x3c), a1 unchecked; the table is u8[0x20] and every original call site passes less than 0x20. Port: a1 outside 0-0x1f is ignored with a log line, and an Archipelago item placeholder there (so2.apworld 0.1.x cave_of_trials patched the learn chests' index) gives or sends its location's item [cavefix]",confirmed
 ext,0x74,,trigger_add,11,9,5 (inline),"Trigger region (corners x0,z0..x3,z3, unused, code lo, hi); R = slot (was thread_start)",confirmed
 ext,0x75,,trigger_add_y,13,11,6 (inline),"trigger_add with a y range (a11, a12)",confirmed
 ext,0x76,,worldmap_trigger_add,9,9,4 (inline),World-map overlay #3102 0x800829fc: always fetches 9 (no inline merge: code = a8 & 0x7fffff); R = slot,confirmed
@@ -190,7 +190,7 @@ ext,0xf8,,get_clock,0,0,0 (inline),R = boot play-time clock (0x8002b620),confirm
 ext,0xf9,,get_state180,1,1,0 (inline),R = game_state +0x180[a] (a < 0x30),confirmed
 ext,0xfa,,set_state180_clock,1,1,0 (inline),game_state +0x180[a] = play-time clock (a < 0x30) (was set_state180_random),confirmed
 ext,0xfb,,msg_set_default_size,2,2,1 (inline),MsgSystem default window w / h,confirmed
-ext,0xfc,,forget_skill,2,2,1 (inline),record +0x3c + skill = 0; killer moves equal to skill + 1 unassigned,confirmed
+ext,0xfc,,forget_skill,2,2,1 (inline),"record +0x3c + skill = 0; killer moves equal to skill + 1 unassigned. Field 0x80064a88 (sb 0 at record + a1 + 0x3c, then +0xcc / +0xce pairs equal to a1 + 1 cleared), a1 unchecked. Port: a1 outside 0-0x1f is ignored with a log line [cavefix]",confirmed
 ext,0xfd,,ext_fd,0,0,0 (inline),,args-only
 ext,0xfe,,table_a,0,0,0 (inline),Dispatch to table A (sub-command in bits 16-22),confirmed
 ext,0xff,,table_b,0,0,0 (inline),Dispatch to table B,confirmed
@@ -227,7 +227,7 @@ table_a,0xfe,0x1d,trigger_set_flag6,1,1,0 (inline),trigger[a]+6 = 1,confirmed
 table_a,0xfe,0x1e,get_mp,1,1,0 (inline),R = party slot (character) +0x24 (MP; was get_hp),confirmed
 table_a,0xfe,0x1f,set_mp,2,2,1 (inline),"Party slot +0x24 = min(a1, slot +0x22) (MP; was set_hp)",confirmed
 table_a,0xfe,0x20,get_max_hp,1,1,0 (inline),R = slot+0x18,confirmed
-table_a,0xfe,0x21,get_skill,2,2,1 (inline),R = (s8) record(a0)+0x3c+a1 (ext 0x73 sets it to 1),confirmed
+table_a,0xfe,0x21,get_skill,2,2,1 (inline),R = (s8) record(a0)+0x3c+a1 (ext 0x73 sets it to 1); a1 unchecked (record +0x3c is u8[0x20]). Port: a1 outside 0-0x1f gives R = 0 with a log line [cavefix],confirmed
 table_a,0xfe,0x22,set_status,2,2,1 (inline),slot(a0)+2 = a1,confirmed
 table_a,0xfe,0x23,field_free_ot_layers,0,0,0 (inline),FUN_80053158() (also in exit_to_program),confirmed
 table_a,0xfe,0x24,worldmap_add_entry,14,14,7 (inline),"up to 4: {a0,a1} at 0x8007470c+8n, a2..a13 (s16) at 0x80076284+0x18n, count 0x80076282 (maps 909+)",confirmed

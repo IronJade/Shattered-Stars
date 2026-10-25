@@ -528,6 +528,90 @@ TEST(script_vm_party_helpers) {
   CHECK_EQ(vm_rd16(f.party.data() + 0x120), -2);  // Rena moved to the next empty slot
 }
 
+TEST(script_vm_learned_move_index_bounds) {
+  // [cavefix agent] ext 0x73 (learn) / ext 0xfc (forget) / A 0x21 (known?) index a member
+  // record's learned moves, record +0x3c u8[0x20], with a script value. Inside the table they
+  // act as the original; outside it (0x20, -1, or a 0.1.x cave_of_trials seed's item
+  // placeholder at a Cave of Trials learn chest: 0x501) nothing is written or read and A 0x21
+  // gives 0. The records live in a larger buffer here, so a write past the 0x680-byte block
+  // shows in the guard bytes in any build.
+  Fixture f;
+  std::vector<u8> big(0x680 + 0x1000, 0xAA);
+  std::memset(big.data(), 0, 0x680);
+  globals().records = big.data();
+  vm_wr16(f.party.data(), 1);             // Claude, slot 0 (character 0)
+  vm_wr16(f.party.data() + 4 * 0x60, 8);  // Leon, slot 4 (character 7)
+  u8* leon = big.data() + 4 * 0xD0;
+  leon[0xCC] = 0xD;                       // killer move 0xd (index 0xc) assigned
+  leon[0xCD] = 3;
+  f.load(
+      {
+          op(0x17),                                               // 0: return
+          op(0x12, 7), op(0x12, 0xC), op(0x73, 0x800000),         // 1: Leon learns 0xc
+          op(0x12, 7), op(0x12, 0x1F), op(0x73, 0x800000),        // 4: ... and 0x1f, the last
+          op(0x12, 7), op(0x12, 0xC), op(0xFE, 0xA10000),         // 7: R = known(0xc)
+          op(0x0B, 0), op(0x02, 0x200),                           // 10: G[0x200] = R
+          ext(0x7A, 1),                                           // 12: wait(1)
+          op(0x12, 7), op(0x12, 0x20), op(0x73, 0x800000),        // 13: 0x20: past the table
+          op(0x12, 7), op(0x12, 0x501), op(0x73, 0x800000),       // 16: the placeholder
+          op(0x12, 0), op(0x12, 0x501), op(0x73, 0x800000),       // 19: (Claude: inside the block)
+          op(0x12, 7), op(0x13), 0xFFFFFFFF, op(0x73, 0x800000),  // 22: -1
+          typed(0x21, kS32, 0x204), 5,                            // 26: G[0x204] = 5, R = 5
+          op(0x12, 7), op(0x12, 0x501), op(0xFE, 0xA10000),       // 28: R = 0, nothing read
+          op(0x0B, 0), op(0x02, 0x208),                           // 31: G[0x208] = R
+          op(0x12, 7), op(0x12, 0x501), op(0xFC, 0x800000),       // 33: forget: ignored
+          op(0x12, 7), op(0x12, 0xC), op(0xFC, 0x800000),         // 36: Leon forgets 0xc
+          ext(0x7A, 5), op(0x15, 39),                             // 39: wait; spin
+      },
+      1);
+  f.frame();
+  CHECK_EQ(leon[0x3C + 0xC], 1);
+  CHECK_EQ(leon[0x3C + 0x1F], 1);
+  CHECK_EQ(f.var32(0x200), 1);
+  std::vector<u8> expect = big;
+  for (int i = 0; i < 20 && f.ip() != 40 * 4; ++i) f.frame();
+  CHECK_EQ(f.ip(), 40 * 4);  // in the last wait
+  CHECK_EQ(f.var32(0x204), 5);
+  CHECK_EQ(f.var32(0x208), 0);
+  expect[4 * 0xD0 + 0x3C + 0xC] = 0;  // the valid forget: the move and its assignment
+  expect[4 * 0xD0 + 0xCC] = 0;
+  CHECK(big == expect);
+  CHECK_EQ(leon[0x5C], 0);
+  CHECK_EQ(leon[0xCD], 3);
+  globals().records = f.records.data();
+}
+
+TEST(script_vm_learn_chest_placeholder_is_the_location) {
+  // [cavefix agent] A so2.apworld 0.1.x cave_of_trials seed took the Cave of Trials learn
+  // chests' move index for an item (Portrait F / G / J) and patched it with a placeholder. The
+  // learn (ext 0x73) then gives that location's item: here another player's, so the check is
+  // made; nothing is learned.
+  ap::stop();
+  const char* text = R"seed({
+    "format": "apso2", "version": 1, "seed": "1", "game": "Star Ocean: The Second Story",
+    "slot": {"name": "Claude", "id": 1}, "options": {"story_route": "claude", "goal": "indalecio"},
+    "items": {},
+    "locations": [{"id": 1348308992, "name": "Cave of Trials Level 1: Portrait F chest",
+                   "check": {"type": "chest", "map": 740, "flag": 2675}, "placeholder": 1281,
+                   "item": {"player": 2, "player_name": "Rena", "name": "Shield Sword", "ap_id": 1345454609,
+                            "classification": "useful"}}],
+    "patches": ["script 740 0x14a8 0x1200000c 0x12000501"]
+  })seed";
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(text, &s, &error));
+  ap::start_with(s);
+  Fixture f;
+  vm_wr16(f.party.data() + 4 * 0x60, 8);  // Leon, slot 4
+  const std::vector<u8> before = f.records;
+  f.load({op(0x17), op(0x12, 7), op(0x12, 0x501), op(0x73, 0x800000), ext(0x7A, 5), op(0x15, 4)}, 1);
+  f.frame();
+  CHECK_EQ(f.ip(), 5 * 4);
+  CHECK(ap::is_checked(1348308992));
+  CHECK(f.records == before);
+  ap::stop();
+}
+
 // ---- Disc tests -------------------------------------------------------------------
 namespace {
 

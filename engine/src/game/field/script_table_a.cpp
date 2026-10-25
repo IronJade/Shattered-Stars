@@ -177,6 +177,10 @@ void vm_exec_table_a(ScriptCtx* ctx, u32 instr) {
     case 0x21: {  // get_skill
       vm_fetch_args(ctx, 2);
       const u8* rec = record_of(a[0]);
+      if (rec != nullptr && !vm_move_index_ok("A 0x21 get_skill", a[0], a[1])) {
+        vm_set_r(0);  // (port) no such move, so not known: a learn chest opens as before
+        break;
+      }
       if (rec != nullptr) vm_set_r(static_cast<u32>(static_cast<s32>(static_cast<s8>(rec[a[1] + 0x3C]))));
       break;
     }
