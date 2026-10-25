@@ -64,6 +64,18 @@ struct MenuSession {
   s8 unknown35 = 0;       // +0x35: item effect 0x60 (camp result 6, the way out of a dungeon)
 };
 
+// The resource pack's two window-art TIMs (4-bit, 16 CLUT rows each) and where the scene
+// puts them: TIM 0's pixels are 64x128 and TIM 1's 64x48 (field 0x8002fc38..0x8002fcbc /
+// title 0x80030218..0x8003029c build these on the stack).
+struct WindowArt {
+  psyq::RECT pixels;
+  s16 clut[4];  // x, y, (unused), CLUT rows
+};
+inline constexpr WindowArt kWindowArt[2] = {
+    {{0x180, 0x100, 0x40, 0x80}, {0x100, 0x1E0, 1, 0x10}},
+    {{0x180, 0x1C8, 0x40, 0x30}, {0x110, 0x1E0, 1, 0x10}},
+};
+
 // Scene (title 0x3c bytes on the stack / field 0x40).
 struct MenuScene {
   explicit MenuScene(MemoryCard* card);  // title 0x8002fff4 / field 0x8002f9f8
@@ -71,7 +83,9 @@ struct MenuScene {
   int run();                             // title 0x800305c4 / field 0x8002ffdc
   void frame_begin();                    // title 0x800306a4 / field 0x800300dc
   void frame_end();                      // title 0x8003083c / field 0x8003029c
-  void upload_tim(int index, const psyq::RECT& rect, const s16 clut[4]);  // title 0x80030974 / field 0x800303d4
+  // TIM #index of g_menu_res (title 0x80030974 / field 0x800303d4); the original's self
+  // argument is unused. false (nothing uploaded) when the pack lacks its pixels or CLUTs.
+  static bool upload_tim(int index, const psyq::RECT& rect, const s16 clut[4]);
 
   RenderContext* ctx = nullptr;          // +0x04
   WindowList* windows = nullptr;         // +0x0c

@@ -1,5 +1,6 @@
 // Menu framework (game/common/menu_*): the save file's zero-run packing, and with
-// SS_DISC1 set a load of a real save compared with the original.
+// SS_DISC1 set a load of a real save compared with the original and the scene's
+// window-art uploads against the resource packs.
 //
 // The save is the first position of the card image SS_SAVE_CARD (default
 // analysis/saves/dex_north_city.mcd); the test reads a copy and never writes the
@@ -8,6 +9,7 @@
 // original left them in PCSX-Redux when the title program ran the field after loading
 // that save through the Continue screen (main RAM at boot_run_main_program).
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -19,11 +21,14 @@
 
 #include "disc/archive.h"
 #include "disc/disc_image.h"
+#include "disc/slz.h"
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
 #include "game/common/menu_save.h"
+#include "game/common/menu_scene.h"
 #include "game/title/load_screen.h"
 #include "game/title/title_program.h"
+#include "runtime/runtime.h"
 #include "test.h"
 
 using namespace ss;
@@ -139,4 +144,57 @@ TEST(menu_load_save_matches_original) {
   }
   game::memcard_set_images(nullptr, nullptr);
   std::filesystem::remove(copy);
+}
+
+TEST(menu_window_art_fits_pack) {
+  // The scene's window-art rects are the sizes in the resource packs' TIM headers, and each
+  // upload ends inside its pack (the port had TIM 0 as 64x256 and read 0x25e0 bytes past
+  // the 23624-byte pack at every menu). Every field menu kind's pack and the title's.
+  if (!ensure_system()) {
+    std::printf("  (skipped: SS_DISC1 not set)\n");
+    return;
+  }
+  disc::Archive* archive = game::get_system()->loader.archive();
+  psx::Gpu& gpu = runtime::Runtime::get().gpu;
+  std::vector<u8>& res = game::menu::globals().res;
+  const std::vector<u8> saved_res = res;
+  const std::vector<u16> saved_vram(gpu.vram().begin(), gpu.vram().end());
+  for (u32 entry : {0xBA4u, 0xBA8u, 0xBACu, 0xBB0u, 0xBB4u, 0xBD0u}) {
+    auto raw = archive->read_entry(entry);
+    CHECK(raw.has_value());
+    if (!raw) continue;
+    auto pack = disc::slz::unpack_block(*raw, 0, 0, nullptr);
+    CHECK(pack.has_value());
+    if (!pack) continue;
+    CHECK_EQ(pack->size(), static_cast<size_t>(23624));
+    for (int i = 0; i < 2; ++i) {
+      const game::menu::WindowArt& art = game::menu::kWindowArt[i];
+      const size_t at = read_u32(pack->data() + i * 4);
+      CHECK(at + 0x220 <= pack->size());
+      if (at + 0x220 > pack->size()) continue;
+      const u8* tim = pack->data() + at;
+      CHECK_EQ(read_u32(tim), 0x10u);
+      CHECK_EQ(read_u32(tim + 4), 8u);  // 4-bit, with a CLUT block
+      CHECK_EQ(static_cast<s16>(read_u16(tim + 0x12)), art.clut[3]);
+      CHECK_EQ(static_cast<s16>(read_u16(tim + 0x21C)), art.pixels.w);
+      CHECK_EQ(static_cast<s16>(read_u16(tim + 0x21E)), art.pixels.h);
+      const size_t end = at + 0x220 + static_cast<size_t>(art.pixels.w) * art.pixels.h * 2;
+      CHECK(end <= pack->size());
+      // The upload puts exactly those bytes at the rect.
+      res = *pack;
+      CHECK(game::menu::MenuScene::upload_tim(i, art.pixels, art.clut));
+      int differ = 0;
+      for (int y = 0; y < art.pixels.h; ++y)
+        for (int x = 0; x < art.pixels.w; ++x)
+          differ += gpu.pixel(art.pixels.x + x, art.pixels.y + y) != read_u16(tim + 0x220 + (y * art.pixels.w + x) * 2);
+      CHECK_EQ(differ, 0);
+      // A pack that ends one pixel early is not uploaded (nothing read past it).
+      res.resize(end - 2);
+      gpu.vram()[static_cast<size_t>(art.pixels.y) * psx::kVramWidth + art.pixels.x] = 0x1234;
+      CHECK(!game::menu::MenuScene::upload_tim(i, art.pixels, art.clut));
+      CHECK_EQ(gpu.pixel(art.pixels.x, art.pixels.y), 0x1234);
+    }
+  }
+  res = saved_res;
+  std::copy(saved_vram.begin(), saved_vram.end(), gpu.vram().begin());
 }

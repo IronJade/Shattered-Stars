@@ -1,5 +1,8 @@
 #include "game/common/menu_scene.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "disc/slz.h"
@@ -129,16 +132,9 @@ MenuScene::MenuScene(MemoryCard* card) {
   saved_icons.assign(0x2000, 0);
   const psyq::RECT icons{0x200, 0x100, 0x40, 0x80};
   psyq::StoreImage(&icons, saved_icons.data());
-  {
-    const psyq::RECT r{0x180, 0x100, 0x40, 0x100};
-    const s16 clut[4] = {0x100, 0x1E0, 1, 0x10};
-    upload_tim(0, r, clut);
-  }
-  {
-    const psyq::RECT r{0x180, 0x1C8, 0x40, 0x30};
-    const s16 clut[4] = {0x110, 0x1E0, 1, 0x10};
-    upload_tim(1, r, clut);
-  }
+  // Window art: TIM 0 64x128 at (0x180,0x100), TIM 1 64x48 at (0x180,0x1c8). (The port had
+  // TIM 0 as 64x256, the moved page's rect, and read 0x25e0 bytes past the 23624-byte pack.)
+  for (int i = 0; i < 2; ++i) upload_tim(i, kWindowArt[i].pixels, kWindowArt[i].clut);
   // Two greyed palettes per character row (x 0x10 and 0x20) from rows 0x1ec / 0x1ed.
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 0xC; ++j) {
@@ -184,15 +180,26 @@ MenuScene::~MenuScene() {
   if (g.scene == this) g.scene = nullptr;
 }
 
-void MenuScene::upload_tim(int index, const psyq::RECT& rect, const s16 clut[4]) {
-  const u8* res = globals().res.data();
-  const u8* tim = res + read_u32(res + index * 4);
+bool MenuScene::upload_tim(int index, const psyq::RECT& rect, const s16 clut[4]) {
+  const std::vector<u8>& pack = globals().res;
+  // Port: the pack is a host buffer of its unpacked size; a TIM whose pixels (+0x220) or
+  // CLUT rows (+0x14) would run past it (a short or modded pack) is not uploaded. The
+  // original has no check; the shipped packs always hold both.
+  const size_t pixels = static_cast<size_t>(std::max<int>(rect.w, 0)) * std::max<int>(rect.h, 0) * 2;
+  const size_t rows = static_cast<size_t>(std::max<int>(clut[3], 0)) * 0x20;
+  const size_t at = pack.size() >= static_cast<size_t>(index + 1) * 4 ? read_u32(pack.data() + index * 4) : SIZE_MAX;
+  if (at > pack.size() || pack.size() - at < std::max(0x220 + pixels, 0x14 + rows)) {
+    std::fprintf(stderr, "[menu] window-art TIM %d does not fit the %zu-byte pack; not uploaded\n", index, pack.size());
+    return false;
+  }
+  const u8* tim = pack.data() + at;
   psyq::LoadImage(&rect, tim + 0x220);
   const u8* pal = tim + 0x14;
   for (int i = 0; i < clut[3]; ++i, pal += 0x20) {
     const psyq::RECT r{clut[0], static_cast<s16>(clut[1] + i), 0x10, 1};
     psyq::LoadImage(&r, pal);
   }
+  return true;
 }
 
 int MenuScene::run() {
