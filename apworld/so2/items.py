@@ -1,9 +1,10 @@
 """Items: every game item (AP id = ITEM_BASE + item number), the Fol bundles found at
 locations (FOL_BASE + amount), the characters character_items shuffles (CHARACTER_BASE + party
-id) and the traps (TRAP_BASE + n). Story key items are script flags and stay where they are."""
+id), the traps (TRAP_BASE + n), open world's area keys (KEY_BASE + n) and hub mode's dungeon keys
+(HUB_KEY_BASE + n). Story key items are script flags and stay where they are."""
 from BaseClasses import Item, ItemClassification
 
-from .data import DISC_SWITCH_STAGE, FOL_AMOUNTS, FOL_BASE, ITEM_BASE, ITEMS, KEY_GROUPS, USEFUL_RANGES
+from .data import DISC_SWITCH_STAGE, FOL_AMOUNTS, FOL_BASE, HUB_DUNGEONS, ITEM_BASE, ITEMS, KEY_GROUPS, USEFUL_RANGES
 
 GAME = "Star Ocean: The Second Story"
 FILLER_NAME = "Blueberry"
@@ -11,6 +12,7 @@ FILLER_NAME = "Blueberry"
 CHARACTER_BASE = ITEM_BASE + 0x20000
 TRAP_BASE = ITEM_BASE + 0x30000
 KEY_BASE = ITEM_BASE + 0x40000      # an area key (open world): KEY_BASE + key number 1-35
+HUB_KEY_BASE = ITEM_BASE + 0x50000  # a dungeon key (hub mode): HUB_KEY_BASE + key number (data.HUB_DUNGEONS)
 # Party ids (the port's 1-12: party_add's argument + 1).
 PARTY_ID = {"Claude": 1, "Rena": 2, "Celine": 3, "Bowman": 4, "Dias": 5, "Precis": 6, "Ashton": 7, "Leon": 8,
             "Opera": 9, "Ernest": 10, "Noel": 11, "Chisato": 12}
@@ -41,6 +43,16 @@ ITEM_NAME_TO_ID.update(TRAP_IDS)
 KEY_OF = {KEY_BASE + g["key"]: g for g in KEY_GROUPS}
 KEY_NAME = {g["group"]: g["name"] for g in KEY_GROUPS}
 ITEM_NAME_TO_ID.update({g["name"]: KEY_BASE + g["key"] for g in KEY_GROUPS})
+# Dungeon keys (hub mode, D4): one per dungeon of data.HUB_DUNGEONS, named "Salva Drift Key" ... The
+# seed describes them as area keys ({"kind": "key", "key": N}: the port matches doors by N, which a
+# hub seed uses for dungeon keys alone). None for Fienal (the Fienal requirement, D6, gates it)
+# and the Portal of Sealing (out of hub mode: hubcore, 2026-10-25; the late state never reaches it,
+# its doors are story-gated and Armlock's 306 is Berle's chamber; one chest).
+HUB_KEYLESS = ("Fienal", "Portal of Sealing")
+HUB_KEY_OF = {HUB_KEY_BASE + g["key"]: g for g in HUB_DUNGEONS if g["dungeon"] not in HUB_KEYLESS}
+HUB_KEY_NAME = {g["dungeon"]: g["name"] for g in HUB_KEY_OF.values()}
+ITEM_NAME_TO_ID.update({g["name"]: code for code, g in HUB_KEY_OF.items()})
+ALL_KEY_IDS = frozenset(KEY_OF) | frozenset(HUB_KEY_OF)    # any Star Ocean key (area_keys_in_drops)
 # Keys the Expel story needs (the disc switch can't be reached without them).
 EXPEL_STORY_KEYS = frozenset(g["name"] for g in KEY_GROUPS if g["stage"] and g["stage"] <= DISC_SWITCH_STAGE)
 # Open world's starting keys: the start (Arlia) and the teleporter's way back to Expel (Fun City),
@@ -57,6 +69,7 @@ ITEM_NAME_GROUPS = {
     "Characters": set(ALL_CHARACTER_ITEMS),
     "Traps": set(TRAPS),
     "Keys": set(KEY_NAME.values()),
+    "Dungeon Keys": set(HUB_KEY_NAME.values()),
 }
 
 # Items a script tests, so they stay at their own locations (locked there, never in the pool):
@@ -72,6 +85,7 @@ EVENT_VICTORY = "Victory"
 EVENT_TELEPORTER = "Expel Teleporter"     # open world: Expel reachable again once the Synard flies (chapter 41)
 EVENT_LIMITER_OFF = "Limiter Off"         # goals: Filia's scene in Central City City Hall sets flag 556
 EVENT_ISERIA_QUEEN = "Iseria Queen defeated"   # goal indalecio_limiter_off_and_iseria_queen
+EVENT_FIENAL_OPEN = "Fienal opened"       # hub mode: the Fienal requirement's bosses beaten (D6)
 
 
 def stage_event(k):
@@ -89,7 +103,7 @@ def classification(name):
     logic can't express), so nothing in the logic waits for one. The exception,
     killer_move_progression any, is applied in SO2World.create_item (progression_characters)."""
     code = ITEM_NAME_TO_ID[name]
-    if code in KEY_OF:
+    if code in KEY_OF or code in HUB_KEY_OF:
         return ItemClassification.progression
     if code in TRAP_OF:
         return ItemClassification.trap
@@ -124,4 +138,6 @@ def seed_item(name, code):
         return dict({"name": name, "kind": "trap"}, **TRAPS[name])
     if code in KEY_OF:
         return {"name": name, "kind": "key", "key": KEY_OF[code]["key"]}
+    if code in HUB_KEY_OF:
+        return {"name": name, "kind": "key", "key": HUB_KEY_OF[code]["key"]}
     return {"name": name, "kind": "item", "game_id": GAME_ITEM[code], "count": 1}

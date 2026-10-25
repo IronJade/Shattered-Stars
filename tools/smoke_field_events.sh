@@ -188,20 +188,29 @@ check ap_p3_drop "instead of the item" '\[ap\] first drop of enemy type 197 \(it
   </dev/null >"$WORK/ap_p3_dl_menu.log" 2>&1
 check ap_p3_dl_menu "a DeathLink in the camp menu waits for it to close" '\[ap\] DeathLink from Bob: the party falls \(vblank 7[0-9][0-9],'
 check ap_p3_dl_menu "then the game over" '\[leader\] vblank 7[4-9]0 map 18 state 7 '
-# The seed's story_route: New Game keeps the cursor on Claude (Right buzzes) or starts on Rena.
+# The seed's story_route: New Game skips the hero select and the naming screen (that hero, the
+# default name) [charselect agent]; under "any" both screens show (Right picks Rena).
 NEWGAME_A="850:start,854:none,951:cross,957:none,1251:cross,1257:none,1551:cross,1557:none,1851:cross,1857:none"
 NEWGAME_B="2151:start,2157:none,2451:cross,2457:none,2700:start,2706:none,3000:start,3006:none,3300:start,3306:none"
-for hero in claude rena; do
+for hero in claude rena any; do
   printf '{"format": "apso2", "version": 1, "seed": "smoke-hero", "slot": {"name": "P", "id": 1}, "options": {"story_route": "%s"}, "items": {}, "locations": []}\n' \
     $hero >"$WORK/hero_$hero.apso2"
-  [ $hero = claude ] && PRESS=right || PRESS=left
-  "${AP_RUN[@]}" SS_TRACE_LEADER=600 timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hero_$hero.apso2" --frames 3700 \
-    --input "$NEWGAME_A,2000:$PRESS,2006:none,$NEWGAME_B" </dev/null >"$WORK/ap_hero_$hero.log" 2>&1
+  [ $hero = any ] && PRESS="2000:right,2006:none," || PRESS=
+  "${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=600 timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hero_$hero.apso2" \
+    --frames 3700 --input "$NEWGAME_A,$PRESS$NEWGAME_B" </dev/null >"$WORK/ap_hero_$hero.log" 2>&1
 done
-check ap_hero_claude "Claude's seed refuses Rena" '\[ap\] this seed is for Claude.s game'
+check ap_hero_claude "Claude's seed skips the hero select and the naming screen" '\[ap\] story route Claude \(the seed.s\): New Game skips the hero select and the naming screen \(Claude\)'
 check ap_hero_claude "and starts Claude's game (map 7)" '\[leader\] vblank 3600 map 7 state 0 '
-check ap_hero_rena "Rena's seed refuses Claude" '\[ap\] this seed is for Rena.s game'
+check ap_hero_rena "Rena's seed skips the hero select and the naming screen" '\[ap\] story route Rena \(the seed.s\): New Game skips the hero select and the naming screen \(Rena\)'
 check ap_hero_rena "and starts Rena's game (map 18)" '\[leader\] vblank 3600 map 18 state 0 '
+check ap_hero_any "story_route any: the hero select shows" '\[trace\] 0x80047690 at vblank'
+check ap_hero_any "and the naming screen" '\[trace\] 0x800478e8 at vblank'
+check ap_hero_any "and Right picks Rena's game (map 18)" '\[leader\] vblank 3600 map 18 state 0 '
+for hero in claude rena; do
+  if grep -q '\[trace\] 0x80047690\|\[trace\] 0x800478e8' "$WORK/ap_hero_$hero.log"; then
+    echo "FAIL ap_hero_$hero: the hero select or the naming screen showed"; fail=1
+  fi
+done
 # A story battle the script lets the party lose (the ship, map 548: Shin, ext 0xb7 third
 # argument 0): a DeathLink received in it waits; the loss itself is no game over (nothing
 # sent), and the DeathLink applies once the field leaves the controls to the player.
@@ -605,19 +614,32 @@ hb = json.load(open("docs/ap/hub_bosses.json"))
 starts = {s["key"]: s for s in hs["starts"]}
 keys = {str(5390000 + g["key"]): {"kind": "key", "key": g["key"], "name": g["name"]} for g in hb["dungeons"]}
 rows = [{k: b[k] for k in ("encounter", "name", "map", "maps", "view", "game") if b.get(k) is not None} for b in hb["bosses"]]
+# The two chambers that ask first (the APWorld's apworld/so2/hub.py ASK) [hubask agent].
+ask = {533: {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"},
+       532: {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509],
+             "options": [{"map": 297, "window": "0x5c50", "choice": "0x5c6c", "text": "Face Marsilio.",
+                          "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
+                         {"map": 305, "window": "0x6ea8", "choice": "0x6ec4", "text": "Leave the arena.",
+                          "to": {"map": 304, "x": 1339, "y": 0, "z": -6, "dir": 180}}]}}
+for r in rows:
+    if r["encounter"] in ask:
+        r["ask"] = ask[r["encounter"]]
 doors = [{"id": 68686044, "routine": "0x4364", "key": 13, "name": "Energy Nede -> Cave of Red Crystal"},
          {"id": 68685691, "routine": "0x3de0", "won": [524], "banners": ["Defeat Magichand first"], "name": "Energy Nede -> Fienal"},
          {"id": 19929509, "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271, "while_unbeaten": 532},
           "name": "Fun City Fighting Arena (map 304 -> 305 while Marsilio is unbeaten)"}]
-def seed(name, hero, start, start_keys=()):
+def seed(name, hero, start, start_keys=(), fol=0):
     hub = dict(hs["hub"], start=dict(starts[start]))
     s = {"format": "apso2", "version": 3, "seed": "smoke-" + name, "slot": {"name": "Hub", "id": 1},
          "options": {"world_mode": "hub", "story_route": hero, "party_rules": "open", "character_items": True},
          "items": keys, "locations": [], "hub": hub, "bosses": rows, "doors": doors}
     if start_keys:
         s["start"] = {"items": [keys[str(5390000 + k)] for k in start_keys]}
+    if fol:
+        s["start"] = dict(s.get("start", {}), fol=fol)
     json.dump(s, open(f"{work}/{name}.apso2", "w"))
 seed("hubfc", "claude", "fun_city")
+seed("hubfol", "claude", "fun_city", fol=50000)  # (the arena's registration fee)
 seed("hubarlia", "rena", "arlia")
 seed("hublinga", "claude", "linga")
 seed("hubkey", "claude", "fun_city", (13,))
@@ -625,10 +647,10 @@ PY
   hub_ng() {  # hub_ng NAME SEED HERO FRAMES [env...]: New Game (the prologue skipped) with a hub seed
     local name=$1 seed=$2 press=$3 frames=$4
     shift 4
-    [ "$press" = claude ] && press=right || press=left
+    # (the seed names the hero: New Game skips the hero select and the naming screen)
     env "$@" SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 \
       SS_TRACE_LEADER=50 timeout 900 "$BIN" --headless --debug --no-memcard --ap-seed "$WORK/$seed.apso2" --frames "$frames" \
-      --input "$NEWGAME_A,2000:$press,2006:none,$NEWGAME_B" </dev/null >"$WORK/$name.log" 2>&1
+      --input "$NEWGAME_A,$NEWGAME_B" </dev/null >"$WORK/$name.log" 2>&1
   }
   hub_ng ap_hub_ng_fc hubfc claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21,2:T10"
   check ap_hub_ng_fc "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*chapter 60 step 4000, disc 2; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
@@ -649,7 +671,8 @@ PY
   check ap_hub_ng_linga "the Synard by Linga" 'world: vehicle 1 \(the Synard\) parked at 90815,-150,13368 on map 1'
   hub_ng ap_hub_key hubkey claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21"
   check ap_hub_key "with the key the cave loads" 'field_load_map\(map=419 '
-  hub_ng ap_hub_fienal hubfc claude 3700 SS_TRACE=1 SS_BATTLE_STUB=1 SS_DEBUG_INPUT="3050:battle 524" SS_SWEEP_PLAY="279:T4,2:T10"
+  # (the win between the field's start, ~2714 since New Game skips the hero screens, and the walk)
+  hub_ng ap_hub_fienal hubfc claude 3700 SS_TRACE=1 SS_BATTLE_STUB=1 SS_DEBUG_INPUT="2760:battle 524" SS_SWEEP_PLAY="279:T4,2:T10"
   check ap_hub_fienal "Magichand won" '\[ap\] goal: encounter 524 won'
   check ap_hub_fienal "then Fienal opens" 'field_load_map\(map=687 '
   hub_ng ap_hub_arena hubfc claude 9000 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12,281:T3,297:T4,299:T2,304:T4,305:K16:2,296:T2,304:T4"
@@ -658,6 +681,67 @@ PY
   check ap_hub_arena "Go see Narl: the fight, won" '\[ap\] goal: encounter 532 won'
   check ap_hub_arena "the scene's way out ends the view" '\[ap\] hub: story view off: map 296 \(Marsilio, encounter 532; map 296 loaded\)'
   check ap_hub_arena "after the win the door is the original" '\[ap\] door 19929509: encounter 532 won, the door.s own target \(map 296\)'
+  # The two chambers that ask first (the user's rulings: Shigeo 281, the arena 305) [hubask agent]
+  # (docs/ap/seed_format.md "Hub", `ask`). Shigeo: the door 280 -> 281 asks; yes plays his scene
+  # and fight, no leaves 281 at the hub's state: the route on to Expel (297, 299, the arena's old
+  # man 303 -> Virtual Arlia 18) and a real walk across the street (the strip fires, nothing runs).
+  # The arena: the desk's third option "Face Marsilio." (the view on; the Clerk's fourth option
+  # "Leave the arena." added; "Go see Narl" the fight), its "Register." the normal arena (no view,
+  # its battles, back to 304), the antechamber's door (yes: the arena; the Clerk's way out, then
+  # no: the door's own target 296), a save in Marsilio's view loading with it.
+  ask_none() {  # ask_none NAME DESCRIPTION REGEX: no line may match
+    if grep -qE "$3" "$WORK/$1.log"; then echo "FAIL $1: $2 (a line matches: $3)"; fail=1; else echo "PASS $1: $2"; fi
+  }
+  hub_ng ap_hub_ask_yes hubfc claude 9000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12,281:T0"
+  check ap_hub_ask_yes "the door into 281 asks first" '\[ap\] hub: ask: Shigeo, encounter 533: door 18356813 \(map 280 -> map 281\): "Shigeo is on the rampage ahead. / Face Shigeo now\?"'
+  check ap_hub_ask_yes "yes: the view" '\[ap\] hub: ask: Shigeo, encounter 533: yes: map 281 with its story view'
+  check ap_hub_ask_yes "his scene's view comes on" '\[ap\] hub: story view on: map 281 \(Shigeo, encounter 533\): chapter 57 step 2000'
+  check ap_hub_ask_yes "the fight, won" '\[ap\] goal: encounter 533 won'
+  check ap_hub_ask_yes "the view ends in place" '\[ap\] hub: story view off: map 281 \(Shigeo, encounter 533; free play after the battle\)'
+  hub_ng ap_hub_ask_no hubfc claude 6000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T4,299:T6,303:K25"
+  check ap_hub_ask_no "no: 281 at the hub's state" '\[ap\] hub: chamber map 281 \(Shigeo, encounter 533\): no story view \(the answer was no\)'
+  check ap_hub_ask_no "on to Expel (Virtual Arlia)" 'field_load_map\(map=18 '
+  ask_none ap_hub_ask_no "no view, no fight" 'story view on: map 281|a battle at'
+  env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \
+    timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hubfc.apso2" --frames 1300 --map 281 --map-pos -3795,0,-3406,2048 \
+    --input "60:up,640:right,720:up" </dev/null >"$WORK/ap_hub_ask_walk.log" 2>&1
+  check ap_hub_ask_walk "walking across 281: the strip fires" 'trigger 0 fires \(code word 8535\)'
+  check ap_hub_ask_walk "and the party reaches the arena's hall 297" 'field_load_map\(map=297 '
+  ask_none ap_hub_ask_walk "no scene, no fight" 'story view on|a battle at'
+  hub_ng ap_hub_ask_desk hubfc claude 9500 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:K16:2,305:K16:2"
+  check ap_hub_ask_desk "the desk's menu gets Face Marsilio" '\[ap\] hub: ask: Marsilio, encounter 532: map 297.s choice at 0x5c6c: option 2 "Face Marsilio." added'
+  check ap_hub_ask_desk "chosen: into the arena with the view" '"Face Marsilio." chosen: to map 305 \(-13, 0, 276\), with its story view'
+  check ap_hub_ask_desk "Marsilio's view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\): chapter 57 step 20'
+  check ap_hub_ask_desk "the Clerk's menu gets the way out" 'map 305.s choice at 0x6ec4: option 3 "Leave the arena." added'
+  check ap_hub_ask_desk "Go see Narl: the fight, won" '\[ap\] goal: encounter 532 won'
+  check ap_hub_ask_desk "the scene's way out ends the view" '\[ap\] hub: story view off: map 296 \(Marsilio, encounter 532; map 296 loaded\)'
+  hub_ng ap_hub_ask_register hubfol claude 9000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:K16:1/0/0"
+  check ap_hub_ask_register "Register: the arena with no view" '\[ap\] hub: chamber map 305 \(Marsilio, encounter 532\): no story view'
+  check ap_hub_ask_register "a ranking battle starts" 'a battle at vblank'
+  check ap_hub_ask_register "and the arena's own way back to 304" 'field_load_map\(map=304 '
+  ask_none ap_hub_ask_register "no Marsilio" 'story view on: map 305|encounter 532 won'
+  hub_ng ap_hub_ask_exit hubfc claude 6000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T4,299:T2,304:T4,305:K16:3,304:T4:1"
+  check ap_hub_ask_exit "the antechamber's door asks" '\[ap\] hub: ask: Marsilio, encounter 532: door 19929509 \(map 304 -> map 305\)'
+  check ap_hub_ask_exit "yes: the arena with the view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\)'
+  check ap_hub_ask_exit "Leave the arena: out without the fight" '"Leave the arena." chosen: to map 304 \(1339, 0, -6\), out of the chamber'
+  check ap_hub_ask_exit "the view ends at 304" '\[ap\] hub: story view off: map 304 \(Marsilio, encounter 532; map 304 loaded\)'
+  check ap_hub_ask_exit "asked again; no: the door's own target" '\[ap\] hub: ask: Marsilio, encounter 532: no: door 19929509 goes to its own target \(map 296\)'
+  check ap_hub_ask_exit "the lobby 296" 'field_load_map\(map=296 '
+  ask_none ap_hub_ask_exit "nothing won" 'encounter 532 won'
+  rm -f "$WORK/askcard.mcd" "$WORK"/askcard.slot*.ap.json
+  env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \
+    SS_SAVE_ANYWHERE=1 SS_MEMCARD1="$WORK/askcard.mcd" timeout 900 "$BIN" --headless --ap-seed "$WORK/hubfc.apso2" --frames 2000 \
+    --map 304 --map-pos 1339,0,-6,2048 --input "60:up,330:none,450:cross,456:none,490:cross,496:none,530:cross,536:none,1000:triangle,1006:none,1100:up,1106:none,1150:cross,1156:none,1250:cross,1256:none,1350:cross,1356:none,1450:cross,1456:none,1550:cross,1556:none" \
+    </dev/null >"$WORK/ap_hub_ask_save.log" 2>&1
+  check ap_hub_ask_save "walked into the door, yes: Marsilio's view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\)'
+  check ap_hub_ask_save "saved there" '\[ap\] saved .*askcard\.slot01\.ap\.json'
+  if grep -q '"hub_view": 532' "$WORK/askcard.slot01.ap.json" 2>/dev/null; then echo "PASS ap_hub_ask_save: the sidecar keeps the view"; else echo "FAIL ap_hub_ask_save: the sidecar keeps the view"; fail=1; fi
+  env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_TRACE=1 SS_LOAD_SAVE=0 \
+    SS_MEMCARD1="$WORK/askcard.mcd" SS_EVENT_SWEEP=1 SS_SWEEP_PLAY="305:K16:3" timeout 900 "$BIN" --headless --ap-seed "$WORK/hubfc.apso2" \
+    --frames 900 </dev/null >"$WORK/ap_hub_ask_load.log" 2>&1
+  check ap_hub_ask_load "the load: the view on again" '\[ap\] hub: ask: Marsilio, encounter 532: the save was made in its story view'
+  check ap_hub_ask_load "Marsilio's view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\)'
+  check ap_hub_ask_load "and the Clerk's way out" '"Leave the arena." chosen: to map 304'
 else
   echo "SKIP ap_hub_ng: no disc 2 image next to disc 1"
 fi

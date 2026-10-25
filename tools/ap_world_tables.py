@@ -730,6 +730,170 @@ FILLER_ITEM = 757          # Blueberry: what a boss or join location adds to the
 WORLD_MAP_NAMES = {1: "Expel world map", 2: "Energy Nede world map"}
 
 
+# ---- Hub mode (world_mode: hub; docs/ap/seed_format.md "Hub", docs/handoff/hub.md) ---------
+# The hub's New Game state (docs/ap/hub_state.json, tools/ap_hub_state.py) and its boss chambers
+# and dungeon keys (docs/ap/hub_bosses.json, tools/ap_hub_bosses.py) are copied into data.py's
+# HUB_* tables, which the APWorld writes into a hub seed (`hub`, `bosses`, `doors`). What the hub
+# reaches is the hub proof's (docs/ap/hub_proof.json: tools/ap_late_proof.py --state hub, the late
+# proof run from the hub's New Game with the chapter lock on): HUB_REACHED, the games in which it
+# proved each chest, gift and boss; HUB_MAPS, the maps it reached per game; the shops open at the
+# hub state and the dungeons where each enemy type is met there, on those maps. Without a hub
+# proof, the late proof's reach stands in (its maps; the rows' own `late` games).
+HUB_STEP = 4000
+# Chamber rows that are no location of story mode (data.LOCATIONS has the other 21 story bosses):
+# encounter -> (label, chapter). The Cross Cave guardians are a set battle (523, after the chest
+# with flag 2569 on map 547), a chamber in hub mode (D5).
+HUB_EXTRA_BOSSES = {523: ("Guardians", 13)}
+HUB_STATE_KEYS = ("chapter", "step", "disc", "flags", "globals", "games", "lock")
+HUB_BOSS_KEYS = ("encounter", "name", "map", "maps", "view", "game",          # the port's
+                 "location", "dungeon", "town", "trigger", "late", "p5")    # reference
+
+
+def hub_atom(flags, game):
+    """An atom's value at the hub state (chapter 60, step HUB_STEP, every flag known: the hub's
+    flags set, all others clear; flag 1 per game; not in a Private Action). Globals, members,
+    locals: unknown."""
+    flags = (set(flags) - {1, 2, 4}) | ({1} if game == "claude" else set())
+    values = {"chapter": 60, "step": HUB_STEP}
+
+    def atom(a):
+        m = re.fullmatch(r"(chapter|step)\s*(==|!=|>=|<=|<|>)\s*(-?(?:0x[0-9a-f]+|\d+))", a)
+        if m:
+            v, n = values[m.group(1)], int(m.group(3), 0)
+            return {"==": v == n, "!=": v != n, ">=": v >= n, "<=": v <= n, "<": v < n, ">": v > n}[m.group(2)]
+        m = re.fullmatch(r"flag\[(\d+)\](?:\s*(==|!=)\s*(\d+))?", a)
+        if m:
+            v = int(m.group(1)) in flags
+            return compare(v, m.group(2), int(m.group(3) or 0))
+        return None
+    return atom
+
+
+def door_routine(door, own, doors):
+    """A dungeon door's routine as the seed writes it, or None: the port refuses a door with a
+    routine at its trigger, which stops every transfer the routine makes, so only when each of
+    them leads into the dungeon (docs/ap/doors.json, same map and routine). Else (Zand's Mansion's
+    9314034: its routine 0x77cc also leads to Herlie, 157) the port refuses the transfer alone."""
+    routine = int(door["routine"], 16)
+    siblings = [r for r in (doors or {}).get("doors", []) if r.get("routine") == routine and r["map"] == door["map"]
+                and not r.get("world_script")]
+    return door["routine"] if all(r["to"]["map"] in own for r in siblings) else None
+
+
+def hub_tables(field, late, hub_state, hub_bosses, locs, doors=None, hub_proof=None):
+    """data.py's HUB_* tables (write()): the state, the starts, the chamber rows, the dungeon key
+    groups, the hub-only location rows (HUB_EXTRA_BOSSES), the shops open at the hub state and,
+    per enemy type, the dungeons ("" = a town or a world map) where it is met there; with the hub
+    proof (docs/ap/hub_proof.json) what it reached: the locations per game and the maps."""
+    games = ("claude", "rena")
+    reach = hub_proof if hub_proof else late
+    late_maps = {g: set(reach.get("games", {}).get(g, {}).get("maps", [])) for g in games}
+    dungeon = {m: d["dungeon"] for d in hub_bosses["dungeons"] for m in d["maps"]}
+    atoms = {g: hub_atom(hub_state["hub"]["flags"], g) for g in games}
+    state = {k: hub_state["hub"][k] for k in HUB_STATE_KEYS}
+    bosses = [{k: b[k] for k in HUB_BOSS_KEYS if k in b} for b in hub_bosses["bosses"]]
+    dungeons = [{"key": d["key"], "name": d["name"], "dungeon": d["dungeon"], "world": d["world"], "maps": d["maps"],
+                 "doors": [{"id": x["id"], "map": x["map"], "routine": door_routine(x, set(d["maps"]), doors),
+                            "to": x["to"]} for x in d["doors"]],
+                 "chambers": d["chambers"]} for d in hub_bosses["dungeons"]]
+    ids = {l["id"] for l in locs}
+    names = {l["name"] for l in locs}
+    rows = []
+    for b in hub_bosses["bosses"]:
+        if b["location"] in ids:
+            continue
+        label, chapter = HUB_EXTRA_BOSSES[b["encounter"]]
+        area = b.get("area") or f"Map {b['map']}"
+        row = {"id": b["location"], "name": f"{area}: {label} boss", "type": "boss", "map": b["map"],
+               "encounter": b["encounter"], "boss": "story", "chapter": chapter, "area": area,
+               "region": region_of(b["map"], field["map_worlds"].get(str(b["map"]))), "item": FILLER_ITEM, "fol": None,
+               "sites": [], "missable": [], "story_route": None,
+               "late": [g for g in games if (b.get("late") or {}).get(g)], "hub_only": True}
+        if row["name"] in names:
+            raise SystemExit(f"hub location name {row['name']!r} repeats a location's")
+        rows.append(row)
+    # Shops open at the hub state: a site on a map the proof reached whose conditions can hold.
+    shops = {}
+    for g in games:
+        shops[g] = sorted({x["shop"] for x in field["shop_sites"] if x["shop"] not in SHOPS_LEFT_OUT
+                           and x["map"] in late_maps[g] and possible(x, atoms[g])})
+    # Enemy types: where random encounters meet them at the hub state.
+    esites = {(s["map"], s["offset"]): s for s in field.get("encounter_sites", [])}
+    drops = {}
+    for d in field.get("enemy_drops", []):
+        per = {}
+        for g in games:
+            where = set()
+            for m, off in d["sites"]:
+                s = esites[(m, off)]
+                if possible(s, atoms[g]):
+                    where |= {dungeon.get(m2, "") for m2 in s.get("maps", [m]) if m2 in late_maps[g] or m2 in (1, 2, 3)}
+            if d["world_maps"]:
+                where.add("")
+            per[g] = sorted(where)
+        drops[d["location_id"]] = per
+    starts = hub_state["starts"]    # a list of rows with their `key` (or, before 2026-10-25, a dict by key)
+    starts = {r["key"]: r for r in starts} if isinstance(starts, list) else starts
+    out = {"state": state, "starts": starts, "bosses": bosses, "dungeons": dungeons, "rows": rows,
+           "shops": shops, "drops": drops, "town_chambers": {int(k): v for k, v in hub_bosses["town_chambers"].items()}}
+    if hub_proof:
+        kinds = {l["id"] for l in locs + rows if l["type"] in ("chest", "gift", "boss")}
+        proven = {g: set(hub_proof["games"].get(g, {}).get("proven", [])) for g in games}
+        out["reached"] = {i: [g for g in games if i in proven[g]] for i in sorted(kinds) if any(i in proven[g] for g in games)}
+        out["maps"] = {g: sorted(late_maps[g]) for g in games}
+    return out
+
+
+def write_hub(hub):
+    """data.py's hub section (appended after the open-world tables)."""
+    proof = "docs/ap/hub_proof.json" if hub.get("reached") is not None else "docs/ap/late_proof.json"
+    out = ["", "# ---- Hub mode (world_mode: hub): tools/ap_world_tables.py from docs/ap/hub_state.json,",
+           f"# docs/ap/hub_bosses.json, {proof} and docs/ap/field.json (docs/ap/seed_format.md",
+           "# \"Hub\"). HUB_STATE: the seed's `hub` block but `start` (chapter, step, disc, the flags set at New",
+           "# Game, the globals written, the per-game flags / globals, the chapter lock).",
+           f"HUB_STATE = {hub['state']!r}",
+           "# The start points (hub_start; every town of both worlds, hub_state.json `starts`): key -> the row",
+           "# the seed's `hub.start` takes (with its `globals`: the start's Synard words, which the port",
+           "# writes after HUB_STATE's).",
+           "HUB_STARTS = {"]
+    out += [f"    {k!r}: {v!r}," for k, v in hub["starts"].items()]
+    out += ["}",
+            "# The chambers (the seed's `bosses` rows: the port's keys and the reference keys).",
+            "HUB_BOSSES = ["]
+    out += [f"    {b!r}," for b in hub["bosses"]]
+    out += ["]",
+            "# Chambers in towns (no key): map -> town.",
+            f"HUB_TOWN_CHAMBERS = {hub['town_chambers']!r}",
+            "# The dungeon key groups (D4): key number, item name, dungeon, world, maps, the doors into it",
+            "# (id = map * 65536 + offset / 4, the routine of its trigger or None when that routine also",
+            "# leads elsewhere, the map it leads to), chambers.",
+            "HUB_DUNGEONS = ["]
+    out += [f"    {d!r}," for d in hub["dungeons"]]
+    out += ["]",
+            "# Locations only hub mode has (the chambers that are no story-mode location).",
+            "HUB_LOCATIONS = ["]
+    out += [f"    {r!r}," for r in hub["rows"]]
+    out += ["]",
+            "# Per game, the shops open at the hub state (a site on a map the hub proof reached whose",
+            "# conditions can hold at chapter 60, step 4000, with the hub's flags).",
+            f"HUB_SHOPS = {hub['shops']!r}",
+            "# Per first-drop location, per game: the dungeons where random encounters meet the type at the",
+            "# hub state (\"\": a town or a world map, no key).",
+            "HUB_DROPS = {"]
+    out += [f"    {k}: {v!r}," for k, v in sorted(hub["drops"].items())]
+    out += ["}"]
+    if hub.get("reached") is not None:
+        out += ["# The hub proof (docs/ap/hub_proof.json): per chest, gift and boss it proved, the games in which",
+                "# it reached it (a chamber's own game decides for the chambers: hub_bosses.json `game`).",
+                "HUB_REACHED = {"]
+        out += [f"    {k}: {v!r}," for k, v in sorted(hub["reached"].items())]
+        out += ["}",
+                "# The maps the hub proof reached, per game (a first drop's places count only there).",
+                f"HUB_MAPS = {hub['maps']!r}"]
+    out += [""]
+    return out
+
+
 def write(data, path, sources):
     out = ['"""The SO2 APWorld\'s tables. Generated by tools/ap_world_tables.py from',
            f'{", ".join(sources)}; do not edit (regenerate)."""', "",
@@ -790,6 +954,8 @@ def write(data, path, sources):
                 "EXIT_GATES = ["]
         out += [f"    {e!r}," for e in data.get("exits", [])]
         out += ["]", ""]
+    if data.get("hub"):
+        out = out[:-1] + write_hub(data["hub"])
     with open(path, "w", newline="\n") as f:
         f.write("\n".join(out))
 
@@ -800,6 +966,9 @@ def main():
     ap.add_argument("--battles", default=os.path.join(ROOT, "docs/ap/battles.json"))
     ap.add_argument("--late", default=os.path.join(ROOT, "docs/ap/late_proof.json"))
     ap.add_argument("--doors", default=os.path.join(ROOT, "docs/ap/doors.json"))
+    ap.add_argument("--hub-state", default=os.path.join(ROOT, "docs/ap/hub_state.json"))
+    ap.add_argument("--hub-bosses", default=os.path.join(ROOT, "docs/ap/hub_bosses.json"))
+    ap.add_argument("--hub-proof", default=os.path.join(ROOT, "docs/ap/hub_proof.json"))
     ap.add_argument("-o", "--output", default=os.path.join(ROOT, "apworld/so2/data.py"))
     a = ap.parse_args()
     field = json.load(open(a.field))
@@ -809,6 +978,14 @@ def main():
         print(f"no late proof ({a.late}): no chest, gift or Cave of Trials boss may hold progression")
     doors = json.load(open(a.doors)) if os.path.exists(a.doors) else None
     data = build(field, battles, late, doors)
+    if os.path.exists(a.hub_state) and os.path.exists(a.hub_bosses):
+        hub_proof = json.load(open(a.hub_proof)) if os.path.exists(a.hub_proof) else None
+        if not hub_proof:
+            print(f"no hub proof ({a.hub_proof}): the hub's reach is the late proof's")
+        data["hub"] = hub_tables(field, late, json.load(open(a.hub_state)), json.load(open(a.hub_bosses)),
+                                 data["locations"], doors, hub_proof)
+    else:
+        print(f"no hub tables ({a.hub_state}, {a.hub_bosses}): data.py without hub mode")
     write(data, a.output, ["docs/ap/field.json", "docs/ap/battles.json", "docs/ap/late_proof.json",
                            "docs/ap/doors.json"])
     locs = data["locations"]
@@ -826,6 +1003,12 @@ def main():
           f"{sum(1 for l in late_rows if l['late'] == ['claude'])}, Rena's only "
           f"{sum(1 for l in late_rows if l['late'] == ['rena'])}, neither {sum(1 for l in late_rows if not l['late'])}"
           f" (of {len(late_rows)} chests, gifts and bosses)")
+    if data.get("hub"):
+        h = data["hub"]
+        met = {g: sum(1 for v in h["drops"].values() if v[g]) for g in ("claude", "rena")}
+        print(f"hub: {len(h['state']['flags'])} flags, starts {sorted(h['starts'])}, {len(h['bosses'])} chambers, "
+              f"{len(h['dungeons'])} key groups, extra rows {[r['name'] for r in h['rows']]}; shops open "
+              f"{ {g: len(v) for g, v in h['shops'].items()} }; enemy types met {met}")
 
 
 if __name__ == "__main__":

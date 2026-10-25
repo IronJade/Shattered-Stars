@@ -20,6 +20,8 @@ class Goal(Choice):
       gives at the bottom of the Cave of Trials, and played by a member at Musical level 10 with
       Pitch and Sense of Rhythm. The goal needs the cave cleared whether or not cave_of_trials
       adds its locations. The Silver Trumpet can't be sold until the song is composed.
+    In hub mode the same goals; Filia's scene can be done from the start (Central City is open
+    and the hub is past the Final Save Point), and the Iseria Queen needs the Cave of Trials Key.
     """
     display_name = "Goal"
     option_indalecio = 0
@@ -30,9 +32,13 @@ class Goal(Choice):
 
 
 class StoryRoute(Choice):
-    """The story route you will pick at New Game: Claude's game or Rena's. Locations that exist
-    only in the other route's game are left out. With "any", they stay in the world but hold
-    only filler (or follow missable_locations)."""
+    """The story route: Claude's game or Rena's. With claude or rena, New Game starts that hero's
+    game with the default name (the hero select and the naming screen are skipped); with "any",
+    you pick at New Game. Locations that exist only in the other route's game are left out. With "any", they stay in the world but hold
+    only filler (or follow missable_locations).
+    Hub mode: the hero's own boss is Varmillion (Claude's game) or Azamgil (Rena's); with "any"
+    both stay as filler-only locations, and both heroes are items (the one you pick at New Game
+    is already in the party)."""
     display_name = "Story Route"
     option_any = 0
     option_claude = 1
@@ -41,7 +47,7 @@ class StoryRoute(Choice):
 
 
 class StartingCharacter(Choice):
-    """Open world only: a member who joins you at the start, whatever the story route, and leads
+    """Open world and hub mode: a member who joins you at the start, whatever the story route, and leads
     the party: you walk around as them, and the story calls them by name where it would name
     the hero. The story route's hero still stays in the party.
     hero: nobody extra; the hero leads, as in the original.
@@ -66,7 +72,7 @@ class StartingCharacter(Choice):
 
 
 class ExcludeCharacters(OptionSet):
-    """Open world with character_items: members who are never in the item pool, so they never
+    """Open world with character_items, and hub mode: members who are never in the item pool, so they never
     join (to make room for the ones you want). The story route's hero can't be excluded (under
     story_route "any", neither Claude nor Rena). If you exclude both Rena and Noel, the only
     healers, the party may have no healer."""
@@ -84,6 +90,8 @@ class MissableLocations(Choice):
       only, because two of them can rule each other out.
     remove: they are left out of the world, and their items out of the pool (join scenes stay
       while character_items is on: they are how the members join).
+    Hub mode: nothing closes there, so a chapter window or a time limit no longer applies; the
+    hub only has the locations it can reach, and the choice-bound ones follow this option.
     """
     display_name = "Missable Locations"
     option_exclude = 0
@@ -95,20 +103,23 @@ class MissableLocations(Choice):
 class ExpelProgression(Toggle):
     """Expel's locations may hold progression items. The disc switch leaves Expel behind, but
     after the Final Save Point in Fienal the old man in Fun City's arena reopens it (Virtual
-    Expel), so they are never lost. Turn this off to keep progression out of Expel."""
+    Expel), so they are never lost. Turn this off to keep progression out of Expel (hub mode
+    too, where Expel is open from the start)."""
     display_name = "Expel Progression"
     default = 1
 
 
 class CaveOfTrials(Toggle):
     """Add the Cave of Trials' chests (Virtual Expel, after the Final Save Point; very hard
-    monsters)."""
+    monsters). In hub mode, behind the Cave of Trials Key."""
     display_name = "Cave of Trials"
 
 
 class BossChecks(DefaultOnToggle):
     """Defeating a boss is a location: the story's bosses, the side quests' and the Cave of
-    Trials' (with cave_of_trials). Indalecio is the goal, not a location."""
+    Trials' (with cave_of_trials). Indalecio is the goal, not a location. In hub mode the story
+    bosses wait in their chambers (the Cross Cave guardians among them); off, they still play
+    and Fienal's requirement still needs them, but they are no locations."""
     display_name = "Boss Checks"
 
 
@@ -123,7 +134,8 @@ class CharacterItems(Toggle):
     hero and Noel too, Leon and Dias in either game, Bowman with Precis, Ashton with Opera), up
     to 8 with the hero and the starting character, minus exclude_characters. The party always
     gets Rena or Noel (the only healers) unless you exclude both. Members who are not items
-    never join."""
+    never join.
+    Hub mode: always on (no join scene runs there), with open world's rules."""
     display_name = "Character Items"
 
 
@@ -241,15 +253,49 @@ class WorldMode(Choice):
     open_world: each area's entrances on the world maps (35 areas, 66 entrances) stay shut
       until its pass arrives ("Salva Pass"). You start with the Arlia Pass and the Fun City
       Pass; the story still runs in its order, so its areas need their passes on the way. The
-      passes are progression items shuffled into the multiworld."""
+      passes are progression items shuffled into the multiworld.
+    hub: New Game starts after the Final Save Point, with every chest and boss still waiting.
+      Both worlds and every town are open from the start and nothing ever closes; each dungeon
+      has one key ("Salva Drift Key"). Each story boss waits in its dungeon and plays its
+      original scene; beating it is a location. Fienal opens once the bosses of
+      fienal_requirement are beaten. The story's own scenes, the join scenes (party members
+      are always items), the early NPC gifts, old Clik and the tournament are not part of it."""
     display_name = "World Mode"
     option_story = 0
     option_open_world = 1
+    option_hub = 2
     default = option_story
 
 
+class HubStart(Choice):
+    """Hub mode only: where New Game puts you.
+    fun_city: Fun City on Energy Nede (the arena's old man takes you to Expel).
+    arlia: Arlia on Expel.
+    random_town: any town of either world with a start point, picked at generation.
+    (Archipelago's own "random" picks one of these three values.)"""
+    display_name = "Hub Start"
+    option_fun_city = 0
+    option_arlia = 1
+    option_random_town = 2
+    default = option_fun_city
+
+
+class FienalRequirement(Choice):
+    """Hub mode only: the bosses you must beat before Fienal (and so the goal) opens.
+    fields_and_berle: the bosses of the four Fields (Magichand, the Guardians of Power and
+      Courage, Lover) and Berle in Armlock.
+    fields: the four Fields' bosses only.
+    all_bosses: every story boss outside Fienal (Varmillion or Azamgil only with a story_route
+      that picks the game)."""
+    display_name = "Fienal Requirement"
+    option_fields_and_berle = 0
+    option_fields = 1
+    option_all_bosses = 2
+    default = option_fields_and_berle
+
+
 class ExpelTeleporter(DefaultOnToggle):
-    """Open world only: from chapter 36 the old man in Fun City's arena takes the party back to
+    """Open world only (hub mode opens Expel from the start): from chapter 36 the old man in Fun City's arena takes the party back to
     Arlia (and Arlia's guide brings it back), so Expel stays reachable after the disc switch.
     Off: Expel reopens only after the Final Save Point, and Expel's locations then hold only
     Expel's own passes or non-progression items."""
@@ -272,6 +318,8 @@ class ShuffleShops(Choice):
 class SO2Options(PerGameCommonOptions):
     goal: Goal
     world_mode: WorldMode
+    hub_start: HubStart
+    fienal_requirement: FienalRequirement
     expel_teleporter: ExpelTeleporter
     shuffle_shops: ShuffleShops
     story_route: StoryRoute
@@ -297,7 +345,7 @@ class SO2Options(PerGameCommonOptions):
 
 
 option_groups = [
-    OptionGroup("World", [WorldMode, ExpelTeleporter, ShuffleShops]),
+    OptionGroup("World", [WorldMode, HubStart, FienalRequirement, ExpelTeleporter, ShuffleShops]),
     OptionGroup("Locations", [StoryRoute, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
                               EnemyDropsanity, DropProgression, AreaKeysInDrops, Craftsanity, KillerMoveChecks,
                               KillerMoveProgression]),

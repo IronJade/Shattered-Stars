@@ -6,7 +6,7 @@ make, id ITEM_BASE + (11 << 21) + item (docs/ap/seed_format.md, "v2 fields")."""
 from BaseClasses import Location, LocationProgressType
 
 from .crafts import CRAFTS
-from .data import ITEM_BASE, ITEMS, LOCATIONS
+from .data import HUB_BOSSES, HUB_LOCATIONS, ITEM_BASE, ITEMS, LOCATIONS
 from .items import GAME
 from .moves import MOVES, move_levels
 
@@ -24,14 +24,16 @@ KILLER_ROWS = [{"id": ITEM_BASE + (KILLER_TYPE << 21) + (pid << 14) + (move << 1
                 "area": who, "region": "Expel", "sites": [], "missable": [], "story_route": None}
                for who, pid, move, name, learn, div, top in MOVES
                for level, uses in move_levels((who, pid, move, name, learn, div, top))]
-ALL_ROWS = LOCATIONS + CRAFT_ROWS + KILLER_ROWS
+# Hub mode's own rows (data.HUB_LOCATIONS: the chambers that are no story-mode location, the Cross
+# Cave guardians); story mode and open world never choose them (`hub_only`).
+ALL_ROWS = LOCATIONS + CRAFT_ROWS + KILLER_ROWS + HUB_LOCATIONS
 LOCATION_NAME_TO_ID = {row["name"]: row["id"] for row in ALL_ROWS}
 ROW = {row["name"]: row for row in ALL_ROWS}
 
 GROUP_OF_TYPE = {"chest": "Chests", "gift": "Gifts", "boss": "Bosses", "join": "Joins", "drop": "First Drops",
                  "shop": "Shop Slots", "craft": "Crafts", "killer_move": "Killer Moves"}
 LOCATION_NAME_GROUPS = {}
-for _row in LOCATIONS:
+for _row in LOCATIONS + HUB_LOCATIONS:
     LOCATION_NAME_GROUPS.setdefault(_row["region"], set()).add(_row["name"])
     LOCATION_NAME_GROUPS.setdefault(_row["area"], set()).add(_row["name"])
     LOCATION_NAME_GROUPS.setdefault(GROUP_OF_TYPE[_row["type"]], set()).add(_row["name"])
@@ -39,6 +41,8 @@ for _row in CRAFT_ROWS:     # by specialty: every specialty that makes the item
     LOCATION_NAME_GROUPS.setdefault("Crafts", set()).add(_row["name"])
     for _spec in _row["specialties"]:
         LOCATION_NAME_GROUPS.setdefault(_spec, set()).add(_row["name"])
+_CHAMBERS = {b["location"] for b in HUB_BOSSES}
+LOCATION_NAME_GROUPS["Boss Chambers"] = {r["name"] for r in LOCATIONS + HUB_LOCATIONS if r["id"] in _CHAMBERS}
 for _row in KILLER_ROWS:    # by member
     LOCATION_NAME_GROUPS.setdefault("Killer Moves", set()).add(_row["name"])
     LOCATION_NAME_GROUPS.setdefault(f"Killer Moves: {_row['character']}", set()).add(_row["name"])

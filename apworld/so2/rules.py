@@ -32,8 +32,8 @@ from BaseClasses import LocationProgressType
 from worlds.generic.Rules import add_item_rule
 
 from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
-from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_TELEPORTER, \
-    EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, KEY_OF, stage_event
+from .items import ALL_KEY_IDS, EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, \
+    EVENT_LIMITER_OFF, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, stage_event
 from .locations import ROW
 from .regions import stage_rules
 
@@ -255,7 +255,12 @@ def killer_rule(world, loc, row):
     player = world.player
     o = world.options
     status = fighter_status(row["character"], world.party_info)
-    need = [EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT]
+    if getattr(world, "hub", False):
+        # Hub mode: everything is open from the start; a move learned past level 30 counts once
+        # Fienal's requirement is met (the party has beaten the Fields' bosses, or more).
+        need = [] if row["learn_level"] <= KILLER_EARLY_LEVEL else [EVENT_FIENAL_OPEN]
+    else:
+        need = [EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT]
     if status == "item" and row["character"] in world.progression_characters:
         need.append(row["character"])
     loc.access_rule = lambda state, need=need: state.has_all(need, player)
@@ -320,8 +325,9 @@ def set_rules(world):
                 world.forced_drops.add(loc.name)    # filled first (world.fill_hook)
             if not keys_in_drops:
                 # area_keys_in_drops off: no area key (this world's or another Star Ocean
-                # player's) behind a fight's drop, in either world mode.
-                add_item_rule(loc, lambda item: not (item.game == GAME and item.code in KEY_OF))
+                # player's, a hub player's dungeon keys too) behind a fight's drop, in either
+                # world mode.
+                add_item_rule(loc, lambda item: not (item.game == GAME and item.code in ALL_KEY_IDS))
         elif world.open_world:
             allowed = open_world_progression(row, side, teleporter, expel)
         else:

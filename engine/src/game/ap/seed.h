@@ -130,6 +130,29 @@ struct StoryView {
   DoorTarget cut_to;
   int done_flag = -1;             // done_flag: after the win the view still comes on in its maps until this real flag is set [hubchambers]
 };
+// A chamber's `ask` (docs/ap/seed_format.md "Hub", the user's rulings on Shigeo 281 and the arena
+// 305) [hubask agent]: while the boss is unbeaten the view comes on only when the player says yes.
+// The question (text, the game's own windows) comes at a script transfer into the chamber's maps
+// from outside them (only the listed `doors`, when given): yes = the view on, no = the chamber at
+// the hub's own state (a seed door that sent the transfer into the chamber goes to its own target
+// instead). `options` add a last option to an existing choice: chosen, the party goes to `to`
+// (into the chamber: the view on; out of it: the view ends, nothing recorded). Any other arrival
+// (a load, another transfer) has no view.
+struct HubAsk {
+  bool on = false;
+  std::vector<std::string> text;  // the question's lines
+  std::string yes = "Yes.", no = "No.";
+  bool all_doors = true;          // no `doors`: every transfer into the chamber asks
+  std::vector<int64_t> doors;     // ... else only these seed door ids (map * 65536 + offset / 4)
+  struct Option {
+    int map = -1;                 // the map whose script holds the choice
+    int window = -1;              // the byte offset (NA) of the op opening its options window (ext 0x68)
+    int choice = -1;              // ... and of its choice op (ext 0xdc; then `push R`, `pop_store L[n]`)
+    std::string text;             // the extra option's line
+    DoorTarget to;                // where choosing it sends the party
+  };
+  std::vector<Option> options;
+};
 struct HubBoss {
   int encounter = -1;             // the boss battle: a victory records it (goal_won)
   std::string name;
@@ -138,6 +161,7 @@ struct HubBoss {
   bool has_view = false;          // false: no view (a flag-guarded boss plays at the hub's state)
   StoryView view;
   int game = 0;                   // 0 both games, 1 only Claude's (script flag 1 set), 2 only Rena's
+  HubAsk ask;                     // [hubask agent]
 };
 
 // The hub's New Game (the `hub` block's state; docs/ap/seed_format.md "Hub") [hubcore agent]:

@@ -248,6 +248,27 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
     Confirmed. The routine before the set-up ends (0x9d3c) by u8 G[0x217] (the arena
     registration's state, 0-3) in 0x7c1c / 0x8220 / 0x8530 / 0x8e48, then 0x91c0 (the transfer
     back to the antechamber 304 at 1339, 0, -6). Likely.
+  - [hubask agent, 2026-10-25] **The arena's desk** (map 297, the receptionist actor 16, talk
+    0x5c20, registered by ext 0xf3 at chapter != 57): question string 155 (window 1, ext 0x69 at
+    0x5c30), options 156 "Hear an explanation. / Register." (ext 0x68 at 0x5c50, window 0, h 2),
+    ext 0xdc 2 at 0x5c6c, push R / pop_store L[0] (0x22800000), ext 0x81 0 at 0x5c78. Register:
+    the fee (0x7d0 through 0x25a4; question 164 / options 165), the battle (168 / 169: Duel,
+    Bullying, Team, Survival; ext 0xdc 4 at 0x5f20), flags 758-769 (0x2f6 + member: who is in the
+    party, read back by 305's 0x91c0; likely), the mode routines 0x4fec / 0x5224 / 0x54a8 / 0x5b0c, the
+    fee paid (add_counter18), flag 586 (0x24a) = 1, map_transfer_c(305, 0, -13, 0, 276, 271, 128)
+    at 0x6124 (door 19470409). At the hub state (chapter 60, no view) that transfer starts the
+    arena's ranking battles in 305 and ends at 304 (confirmed headless; the menus' offsets and words
+    checked on the NA disc).
+  - **Map 305's Clerk** (talk 0x6e78): question 110 (ext 0x69 at 0x6e90), options 111 "Do
+    intensive training. / Rest. / Go see Narl." (ext 0x68 at 0x6ea8, window 0, h 3), ext 0xdc 3 at
+    0x6ec4, the store, ext 0x81 0 at 0x6ed0; a cancel (R -1) ends the talk (0x71b0 ext 0x84).
+    Map 305 is the arena ring itself (no door region: the arena's own way out is the scripted
+    0x92cc: music fade, map_transfer_c(304, 0, 1339, 0, -6, 180, 128)). Confirmed (headless).
+  - **Fun City 281's Shigeo strip** (T0, routine 0x855c, trigger space x 82..347, z 181..241):
+    walking from the 280 door's arrival (-3795, 0, -3406) up, right, up crosses it at view (215,
+    214) on the way to the 297 door (T3); at chapter 60 its routine does nothing. Confirmed.
+  - The game's option lines begin with glyphs 0xfe 0xfe 0xea (the cursor's room; maps 297 / 305).
+    A message line wraps when it passes the window's width less 16 px (text_layout_line).
 
 ### Text
 
@@ -309,8 +330,29 @@ u16: bits 0–9 item id, bits 10–14 count.
   - block 3: menu art (texture pack block) uploaded to (0x140, 0), CLUT row 0x1e0.
 - **#15** block 0: window skin; `+0xc` → inner block; `inner + inner[0] + 4` = 256-colour CLUT (row 0x1fe), `inner + inner[1]` = `{u16 w, u16 h, pixels}` 4-bit, uploaded to (0x3c0, 0).
 - **#16** blocks 0 / 1: Claude / Rena portraits, 16-bit, at (0x140 / 0x240, 0x100); widths 0xce / 0xe4.
+  They are byte-identical to the renaming page's pictures of Claude and Rena (0xbd4 / 0xbd5,
+  below); no other member has a hero-select portrait or a profile text (title ids 0x20-0x2d are the
+  only profiles in NA, EU, FR, DE and JP; charselect research, 2026-10-25).
 - **#2674 / #2675** (0xa72 / 0xa73): `u32 bank_offset`, an SLZ sequence at +4, the sound bank at `bank_offset` (the Sound Select / later screens' demo tunes; see "Sound banks" and "Sound sequences"). #2674's sequence block runs 3 bytes past its declared unpacked size (2633 vs 2630): the console's `slz_lzss` doesn't check.
 - **#2680 / #2681**: first part of Claude's / Rena's prologue (loaded into a 0x52800 buffer during name entry).
+
+## Member pictures and profile facts (every release)
+
+Member numbers are party ids (1 Claude, 2 Rena, 3 Celine, 4 Bowman, 5 Dias, 6 Precis, 7 Ashton,
+8 Leon, 9 Opera, 10 Ernest, 11 Noel, 12 Chisato).
+- **0xbd3 + member** (0xbd4-0xbdf): the renaming page's picture, one SLZ block holding a texture
+  block (`u16 flags` depth 2, `u16 clut_len` 0, `u16 vram_width`, `u16 height` 240, 15-bit
+  pixels); widths 206, 228, 208, 208, 208, 216, 232, 192, 224, 208, 216, 216 in member order.
+  (0xbd3 itself is the save icon.)
+- **0x1170 + member** (0x1171-0x117c): the Status page's portrait, a 160 x 160 16-bit TIM; every
+  0x800 sector starts with 0x10 bytes of header.
+- **0x117d-0x1188**: Art's pictures (items 6-0x11), 320 x 1200 15-bit, raw.
+- **Status page pack 0xbb3** (strings block 0; the pack's own subset font in block 1): group 7
+  the labels Name / Race / Favorite Food; group 0xa the occupation, group 0xb the race (13
+  messages: the 13th is Rena once flag 0x2dc is set), group 0xc the family name (" Kenni" ...),
+  one message per member; the favourite food is the item at u16 table 0x80081612 + member * 2
+  in the Status overlay 0xbb2.
+- **0xbcf** (the renaming page's pack) holds the family names again in the title encoding.
 
 ## Party slot (0x60 bytes, handoff 3) and character record (0xd0 bytes, handoff 4)
 

@@ -99,6 +99,68 @@ bool option_int(const Json& options, const char* key, int lo, int hi, int* out, 
   return true;
 }
 
+// A field position {map, x, y, z, dir?} (dir: degrees, -1 when missing).
+bool parse_target(const Json& c, DoorTarget* out) {
+  int64_t x = 0, y = 0, z = 0;
+  out->map = get_int_or(c["map"], -1);
+  if (!c.is_object() || out->map < 0 || out->map >= 1200 || !get_int(c["x"], &x) || !get_int(c["y"], &y) ||
+      !get_int(c["z"], &z))
+    return false;
+  out->x = static_cast<int>(x);
+  out->y = static_cast<int>(y);
+  out->z = static_cast<int>(z);
+  out->dir = get_int_or(c["dir"], -1);
+  return true;
+}
+
+// A row's `ask` [hubask agent]: {text, answers?: [yes, no], doors?: [id], options?: [{map, window,
+// choice, text, to}]}. Lines of at most 34 characters (the windows' width), at most 3 of them.
+bool parse_ask(const Json& a, HubAsk* out, const std::string& where, std::string* error) {
+  if (a.is_null()) return true;
+  if (!a.is_object()) return fail(error, where + ": ask must be an object");
+  auto line_ok = [](const std::string& s) { return !s.empty() && s.size() <= 34 && s.find('\n') == std::string::npos; };
+  const std::string text = a["text"].as_string();
+  for (size_t at = 0; at <= text.size();) {
+    const size_t nl = std::min(text.find('\n', at), text.size());
+    out->text.push_back(text.substr(at, nl - at));
+    at = nl + 1;
+  }
+  if (out->text.size() > 3 || !std::all_of(out->text.begin(), out->text.end(), line_ok))
+    return fail(error, where + ": ask.text: 1-3 lines of 1-34 characters expected");
+  if (const Json& an = a["answers"]; !an.is_null()) {
+    if (!an.is_array() || an.size() != 2 || !line_ok(an[0].as_string()) || !line_ok(an[1].as_string()))
+      return fail(error, where + ": ask.answers: [yes, no] expected");
+    out->yes = an[0].as_string();
+    out->no = an[1].as_string();
+  }
+  if (const Json& d = a["doors"]; !d.is_null()) {
+    if (!d.is_array()) return fail(error, where + ": ask.doors must be an array");
+    out->all_doors = false;
+    for (size_t k = 0; k < d.size(); ++k) {
+      int64_t id = 0;
+      if (!get_int(d[k], &id) || id < 0) return fail(error, where + ": ask.doors: door ids expected");
+      out->doors.push_back(id);
+    }
+  }
+  if (const Json& o = a["options"]; !o.is_null()) {
+    if (!o.is_array()) return fail(error, where + ": ask.options must be an array");
+    for (size_t k = 0; k < o.size(); ++k) {
+      HubAsk::Option opt;
+      opt.map = get_int_or(o[k]["map"], -1);
+      opt.window = get_int_or(o[k]["window"], -1);
+      opt.choice = get_int_or(o[k]["choice"], -1);
+      opt.text = o[k]["text"].as_string();
+      if (opt.map < 0 || opt.map >= 1200 || opt.window < 0 || (opt.window & 3) != 0 || opt.choice <= opt.window ||
+          (opt.choice & 3) != 0 || !line_ok(opt.text) || !parse_target(o[k]["to"], &opt.to))
+        return fail(error, where + ": ask.options[" + std::to_string(k) +
+                               "]: map, window and choice (code offsets), text and to {map, x, y, z} expected");
+      out->options.push_back(opt);
+    }
+  }
+  out->on = true;
+  return true;
+}
+
 // The hub's `bosses` (docs/ap/seed_format.md "Hub") [hubvm agent]: one chamber per row,
 // {encounter, name, map, maps?, view?: {chapter, step, flags?: {"n": 0|1}, globals?: {"0xNNN": v},
 // keep?: [n]}}.
@@ -200,6 +262,7 @@ bool parse_bosses(const Json& bj, std::vector<HubBoss>* out, std::string* error)
       else if (game.as_string() == "rena") boss.game = 2;
       else return fail(error, where + ": game: claude or rena expected");
     }
+    if (!parse_ask(b["ask"], &boss.ask, where, error)) return false;  // [hubask agent]
     out->push_back(boss);
   }
   return true;

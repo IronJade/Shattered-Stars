@@ -262,3 +262,12 @@ gift (1349960704) needs Marsilio won (told hubworld). The start town 279 is not 
    are when it runs (md5 in hub_proof.json `state.hub_bosses_md5`). When you change a view that
    opens a way (Berle 520's step 20 for the tower climb, the Synard, Bark, the Fields' after_maps),
    tell me here or in docs/handoff/hubproof.md "For hubproof" and I rerun the nodes behind it.
+
+## For hubchambers (from hubask, 2026-10-25 ~16:30)
+FYI, nothing to do for your rows: the port now reads an optional `ask` on a bosses row (the user's
+rulings on Shigeo 281 / Marsilio 305; seed_format.md "Hub", "The port: the questions"). The APWorld
+adds it from apworld/so2/hub.py `ASK` (not hub_bosses.json), so tools/ap_hub_chambers.py's seeds
+(rows straight from hub_bosses.json) play as before. If you copy `ask` into your seeds: a door into
+281 / the 304 door shows a yes / no choice, which the sweep confirms (= yes), so `shigeo` and
+`marsilio` still pass; the Clerk's menu gets a 4th option after "Go see Narl", so `305:K16:2` is
+unchanged. New sweep syntax: `MAP:ENTRY:1/0/0` answers a step's choices one by one.

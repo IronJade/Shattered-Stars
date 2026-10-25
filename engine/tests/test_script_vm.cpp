@@ -1144,3 +1144,217 @@ TEST(ap_hub_view_keys) {
   CHECK(!ap::hub_view_on());
   ap::stop();
 }
+
+// ---- The questions (a row's `ask`) [hubask agent] (the user's rulings on Shigeo 281 and the arena
+// 305; docs/ap/seed_format.md "Hub") ----
+
+namespace {
+
+// Shigeo's town chamber asks at every way in; Marsilio's arena only at the antechamber's door (a
+// seed door 304 -> 296 sent into 305 while he is unbeaten, here at offset 0x10) and by the extra
+// options: the desk's (map 297) and the Clerk's in the arena (map 305, with the view on).
+const char* kAskSeed = R"seed({"format": "apso2", "version": 3, "seed": "ask-test", "slot": {"name": "H", "id": 1},
+ "options": {"world_mode": "hub"}, "items": {}, "locations": [],
+ "doors": [{"id": 19922948, "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271, "while_unbeaten": 532}}],
+ "bosses": [{"encounter": 533, "name": "Shigeo", "map": 281, "view": {"chapter": 57, "step": 2000},
+             "ask": {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"}},
+            {"encounter": 532, "name": "Marsilio", "map": 305, "view": {"chapter": 57, "step": 20},
+             "ask": {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19922948],
+                     "options": [{"map": 297, "window": "0x4", "choice": "0x14", "text": "Face Marsilio.",
+                                  "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
+                                 {"map": 305, "window": "0x4", "choice": "0x14", "text": "Leave the arena.",
+                                  "to": {"map": 304, "x": 1339, "y": 0, "z": -6, "dir": 180}}]}}],
+ "hub": {"chapter": 60, "step": 4000, "lock": {"chapter": true, "step": true}}})seed";
+
+// A choice as the game writes it: ext 0x68 (9, 11, 24, 2, -, string 0; window 0) at word 1, ext
+// 0xdc 2 at word 5, push R, pop_store L[0], ext 0x81 0, then a spin.
+const std::vector<u32> kChoiceScript = {
+    op(0x17),                                   // 0
+    0x68000009u, 24u << 16 | 11u, 2u, 0u,       // 1 (+0x4): the options window
+    0xDC000002u,                                // 5 (+0x14): the choice
+    0x0B000000u, 0x22800000u,                   // 6, 7: push R, pop_store L[0]
+    0x81000000u,                                // 8 (+0x20): close window 0
+    op(0x15, 9),                                // 9: spin
+};
+
+// The phases of a question at a transfer, answered 'r' (0 yes, 1 no, -1 cancelled): the op runs
+// again with the script's own arguments each time, as the VM reruns it.
+bool ask_through(s32* args, int offset, s32 r) {
+  s32 own[7];
+  std::memcpy(own, args, sizeof own);
+  for (int phase = 0; phase < 3; ++phase) {
+    std::memcpy(args, own, sizeof own);
+    if (!ap::on_map_transfer(offset, args) || !ap::transfer_again()) return false;
+    if (phase == 1) vm_set_r(static_cast<u32>(r));  // (the choice's answer)
+  }
+  std::memcpy(args, own, sizeof own);
+  return !ap::on_map_transfer(offset, args) && !ap::transfer_again();
+}
+
+}  // namespace
+
+TEST(ap_hub_ask) {
+  ap::stop();
+  // The format.
+  {
+    ap::Seed s;
+    std::string error;
+    CHECK(ap::load_seed_text(kAskSeed, &s, &error));
+    const ap::HubAsk& a = s.bosses[1].ask;
+    CHECK(s.bosses[0].ask.on && s.bosses[0].ask.all_doors && s.bosses[0].ask.text.size() == 2 &&
+          s.bosses[0].ask.yes == "Yes." && s.bosses[0].ask.no == "No.");
+    CHECK(a.on && !a.all_doors && a.doors == std::vector<int64_t>{19922948} && a.options.size() == 2);
+    CHECK(a.options[0].map == 297 && a.options[0].window == 4 && a.options[0].choice == 0x14 &&
+          a.options[0].text == "Face Marsilio." && a.options[0].to.map == 305 && a.options[0].to.dir == 271);
+    auto refused = [&](const std::string& from, const std::string& to, const std::string& part) {
+      std::string t = kAskSeed;
+      t.replace(t.find(from), from.size(), to);
+      ap::Seed u;
+      std::string e;
+      const bool ok = !ap::load_seed_text(t, &u, &e) && e.find(part) != std::string::npos;
+      if (!ok) std::fprintf(stderr, "  expected '%s', got '%s'\n", part.c_str(), e.c_str());
+      return ok;
+    };
+    CHECK(refused("on the rampage ahead.", "on the rampage ahead of the party.", "ask.text: 1-3 lines"));
+    CHECK(refused("\\nFace Shigeo now?", "\\na\\nb\\nc", "ask.text: 1-3 lines"));
+    CHECK(refused("\"window\": \"0x4\", \"choice\": \"0x14\", \"text\": \"Face", "\"choice\": \"0x14\", \"text\": \"Face", "ask.options[0]"));
+    CHECK(refused("\"doors\": [19922948]", "\"doors\": 5", "ask.doors must be an array"));
+  }
+  Fixture f;
+  set_story(f, 60, 4000);
+  CHECK(start_hub(kAskSeed));
+  f.load({op(0x17), op(0x15, 1)}, 1);  // (a thread for the questions)
+  // Shigeo: the door 280 -> 281 asks; yes: the view comes on with 281's load.
+  set_map(f, 280);
+  ap::on_script_loaded(280, {});
+  s32 in[7] = {281, 0, -3795, 0, -3406, 177, 136};
+  CHECK(ask_through(in, 0x6934, 0));
+  CHECK(in[0] == 281 && in[2] == -3795);
+  CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: door 18356813 (map 280 -> map 281): \"Shigeo is on the rampage ahead. / Face Shigeo now?\""), 1u);
+  CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: yes: map 281 with its story view"), 1u);
+  set_map(f, 281);
+  ap::on_script_loaded(281, {});
+  CHECK(ap::hub_view_encounter() == 533);
+  // A save made now remembers the view (a yes), its load turns it on again with the map's load.
+  CHECK(ap::hub_asked_view() == 533);
+  ap::on_loaded("", 0);
+  CHECK(!ap::hub_view_on());
+  ap::hub_resume_view(533);
+  ap::on_script_loaded(281, {});
+  CHECK(ap::hub_view_encounter() == 533);
+  // A transfer inside the chamber never asks.
+  s32 inside[7] = {281, 0, 0, 0, 0, 0, 0};
+  CHECK(!ap::on_map_transfer(0x100, inside) && !ap::transfer_again());
+  // No (and a cancel): 281 at the hub's state; the question comes again next time; a load: no view.
+  for (const s32 answer : {1, -1}) {
+    set_map(f, 297);
+    ap::on_script_loaded(297, {});
+    CHECK(!ap::hub_view_on());
+    s32 back[7] = {281, 128, -5774, 0, -3487, 357, 130};
+    CHECK(ask_through(back, 0x47a4, answer));
+    CHECK(back[0] == 281);
+    set_map(f, 281);
+    ap::on_script_loaded(281, {});
+    CHECK(!ap::hub_view_on());
+  }
+  CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: no: map 281 at the hub's state"), 2u);
+  CHECK_EQ(hub_log_count("chamber map 281 (Shigeo, encounter 533): no story view (the answer was no)"), 2u);
+  CHECK(ap::hub_asked_view() == -1);
+  ap::on_loaded("", 0);
+  ap::on_script_loaded(281, {});
+  CHECK(!ap::hub_view_on());
+  CHECK_EQ(hub_log_count("no story view (not asked: a load or another way in)"), 1u);
+  // Marsilio: the antechamber's door (304 -> 296, sent into 305 by the seed door) asks; no is the
+  // door's own target, yes the arena with its view.
+  std::vector<u8> s304(0x1C + 0x14, 0);
+  const u32 transfer = 0xDA000000u;
+  std::memcpy(s304.data() + 0x1C + 0x10, &transfer, 4);
+  set_map(f, 304);
+  ap::on_script_loaded(304, s304);
+  s32 door[7] = {296, 0, -6, 0, 1014, 91, 128};
+  CHECK(ask_through(door, 0x10, 1));
+  CHECK(door[0] == 296 && door[2] == -6 && door[4] == 1014);
+  CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: no: door 19922948 goes to its own target (map 296)"), 1u);
+  s32 door2[7] = {296, 0, -6, 0, 1014, 91, 128};
+  CHECK(ask_through(door2, 0x10, 0));
+  CHECK(door2[0] == 305 && door2[2] == -13 && door2[4] == 276 && door2[5] == 271);
+  set_map(f, 305);
+  ap::on_script_loaded(305, {});
+  CHECK(ap::hub_view_encounter() == 532);
+  // Another way into 305 (the desk's registration, not in `doors`): no question, no view.
+  set_map(f, 297);
+  ap::on_script_loaded(297, {});
+  s32 desk[7] = {305, 0, -13, 0, 276, 271, 128};
+  CHECK(!ap::on_map_transfer(0x6124, desk) && !ap::transfer_again() && desk[0] == 305);
+  set_map(f, 305);
+  ap::on_script_loaded(305, {});
+  CHECK(!ap::hub_view_on());
+  // The desk's extra option: the options window one line taller with it, the choice one option
+  // longer; chosen (R = 2 after the store), the party goes to 305 with the view on.
+  set_map(f, 297);
+  f.load(kChoiceScript, 1, {std::string("\x10\x11\x80\x80\x10\x12", 6)});
+  ap::on_script_loaded(297, f.script);
+  CHECK_EQ(ap::g_hub_sites, 1);
+  g_trace.clear();
+  vm_svc_set_trace(record);
+  g_vm_step_limit = 20;
+  f.frame();
+  g_vm_step_limit = 0;
+  vm_svc_set_trace(nullptr);
+  bool taller = false;
+  for (const std::string& t : g_trace) taller = taller || t.find("msg_window_open(rect=9,11,24,3 ") == 0;
+  CHECK(taller);
+  CHECK_EQ(f.ctx.choice_count, 3);
+  CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: map 297's choice at 0x14: option 2 \"Face Marsilio.\" added"), 1u);
+  CHECK(f.ip() == 9 * 4);  // (R -1 without windows: the routine went on as its own)
+  f.ctx.ip = f.ctx.code + 8;
+  vm_set_r(2);
+  CHECK(ap::hub_fetch(&f.ctx));
+  CHECK(f.ctx.wait_state == 1 && f.ctx.wait_param == 305);
+  CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: \"Face Marsilio.\" chosen: to map 305 (-13, 0, 276), with its story view"), 1u);
+  set_map(f, 305);
+  ap::on_script_loaded(305, f.script);  // (the Clerk's site: 305's script here is the test's)
+  CHECK(ap::hub_view_encounter() == 532);
+  CHECK_EQ(ap::g_hub_sites, 1);
+  // The Clerk's extra option: out of the arena, the view ends with 304's load, nothing recorded.
+  f.ctx.ip = f.ctx.code + 8;
+  vm_set_r(2);
+  CHECK(ap::hub_fetch(&f.ctx));
+  CHECK(f.ctx.wait_state == 1 && f.ctx.wait_param == 304);
+  set_map(f, 304);
+  ap::on_script_loaded(304, s304);
+  CHECK(!ap::hub_view_on() && !ap::goal_won(532));
+  // In 305 without the view (the normal arena) the Clerk's site adds nothing; another option of
+  // the choice is the routine's own.
+  set_map(f, 305);
+  ap::on_script_loaded(305, f.script);
+  CHECK(!ap::hub_view_on());
+  f.ctx.ip = f.ctx.code + 1;
+  CHECK(!ap::hub_fetch(&f.ctx));
+  set_map(f, 297);
+  ap::on_script_loaded(297, f.script);
+  f.ctx.ip = f.ctx.code + 8;
+  vm_set_r(1);
+  CHECK(!ap::hub_fetch(&f.ctx));
+  // A site whose words differ: no extra option.
+  std::vector<u8> other = f.script;
+  other[0x1C + 0x14 + 3] = 0xDD;  // (ext 0xdd: another form)
+  const size_t misses = hub_log_count("is not the shape the seed names");
+  ap::on_script_loaded(297, other);
+  CHECK_EQ(ap::g_hub_sites, 0);
+  CHECK_EQ(hub_log_count("is not the shape the seed names"), misses + 1);
+  // Won: no question, no extra option; the door is the original again.
+  ap::on_battle_exit(532, 0);
+  ap::on_script_loaded(297, f.script);
+  f.ctx.ip = f.ctx.code + 1;
+  CHECK(!ap::hub_fetch(&f.ctx));
+  set_map(f, 304);
+  ap::on_script_loaded(304, s304);
+  s32 after[7] = {296, 0, -6, 0, 1014, 91, 128};
+  CHECK(!ap::on_map_transfer(0x10, after) && !ap::transfer_again() && after[0] == 296);
+  ap::stop();
+  // Without a hub seed: no question.
+  set_map(f, 280);
+  s32 none[7] = {281, 0, -3795, 0, -3406, 177, 136};
+  CHECK(!ap::on_map_transfer(0x6934, none) && !ap::transfer_again() && none[0] == 281);
+}

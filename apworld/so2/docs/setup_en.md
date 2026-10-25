@@ -109,6 +109,15 @@ room.
   slot name or password doesn't match the room — the client reports the refusal rather than
   silently failing to connect; double-check the slot name and password on the Archipelago page
   against what the room host gave you.
+- **"The data could not be loaded. Your data may be faulty."** when loading a seed's save.
+  With a seed, Shattered Stars loads only that seed's own saves, exactly as the game saved them:
+  a save from another seed or from an ordinary game, a save copied without the `.ap.json` file
+  next to it, or a save changed with a save editor is refused (the game's log says which). Each
+  seed plays on its own memory card, `archipelago/<seed>_<slot>/memcard1.mcd` next to the
+  game's `config.ini`; keep the `.ap.json` files beside it when you back it up or move it. This
+  is a guard against accidents and casual editing, not anti-cheat. Saves an earlier version
+  made for the seed on your own memory card are copied to the seed's card once, and keep
+  loading.
 - **A seed that won't load.** The seed is checked when you pick it; if the archive holds no
   Star Ocean seed (Star Ocean wasn't one of the games generated), or the seed isn't valid (or is
   damaged), setup will tell you rather than letting you start the game with it.

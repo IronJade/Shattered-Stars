@@ -264,7 +264,14 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       // seed keeps locked does not transfer; a seed target replaces map, x, y, z and dir.
       const int at = static_cast<int>(ctx->ip - 1 - ctx->code) * 4;
       vm_fetch_args(ctx, op == 0x7D ? 6 : 7);
-      if (ap::on_map_transfer(at, a)) break;
+      if (ap::on_map_transfer(at, a)) {
+        // [hubask agent] The hub's question first (a chamber's `ask`): this op runs again after it.
+        if (ap::transfer_again()) {
+          ctx->ip = ctx->code + at / 4;
+          if (!inline_args) ctx->value_sp += op == 0x7D ? 6 : 7;  // (the arguments are still there)
+        }
+        break;
+      }
       if (op == 0x7D) {
         ctx->arrival_param = 0x80;
       } else if (op == 0xDA) {

@@ -22,6 +22,9 @@ first six kinds below). The crafts and the killer-move levels (0.2.0) come from 
 | Shop slots | 550 (98 specials) | `shuffle_shops: specials / full` | type 10 + (shop << 8) + entry |
 | Crafts | 553 | `craftsanity` | type 11 + item: one per item Item Creation can make |
 | Killer-move levels | 133 (69 moves) | `killer_move_checks` | type 12 + (party id << 14) + (move << 10) + level |
+| Hub-only boss | 1: the Cross Cave guardians (set battle 523) | `world_mode: hub` with `boss_checks` | type 9 + encounter (`data.HUB_LOCATIONS`) |
+
+Hub mode (`world_mode: hub`, "Hub mode" below) uses only what the hub reaches of these rows.
 
 - **Left out:**
   - two chests and 33 gift sites that give key items (script flags 66-91), because the
@@ -79,6 +82,7 @@ first six kinds below). The crafts and the killer-move levels (0.2.0) come from 
 | a character: Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Chisato; under open world's party rules any member but the story route's hero (Claude, Rena and Noel too) | `0x50340000 + party id` (1 Claude ... 12 Chisato) | useful; progression when `killer_move_progression: any` needs it ("Killer moves") |
 | a trap: Ambush, Fol Loss (10 %), Poison, Paralysis, Stone | `0x50350000 + 1..5` | trap |
 | an area key (open world): "Salva Pass" ... (35) | `0x50360000 + N`, N 1-35 (data.KEY_GROUPS) | progression |
+| a dungeon key (hub mode): "Salva Drift Key" ... (19 registered, at most 18 in a seed) | `0x50370000 + N`, N = docs/ap/hub_bosses.json `dungeons[].key` 1-19 (data.HUB_DUNGEONS) | progression |
 
 - **The pool** is the vanilla contents of this world's locations. A boss, join or drop
   location adds its vanilla item (a Blueberry for bosses and join sites); a craft adds the
@@ -371,6 +375,136 @@ walking there too, which Virtual Expel's Synard (flight anywhere, Prima p. 130) 
 the Final Save Point. Central City at chapters 36-37 (docs/handoff/apareas.md, "Leads"):
 settled by its exit gate (above).
 
+## Hub mode (`world_mode: hub`; 0.2.0)
+
+The user's decisions D1-D10 (docs/handoff/hub.md), the seed's blocks (seed_format.md "Hub"), the
+port's side (agents hubvm, hubcore, hubchambers). Code: `apworld/so2/hub.py`; tables: data.py's
+hub section (`tools/ap_world_tables.py` from docs/ap/hub_state.json, hub_bosses.json,
+late_proof.json and field.json). Story mode and open world are unchanged by it.
+
+**What it is.** New Game starts after the Final Save Point (chapter 60, step 4000, flag 730,
+disc 2) with every location undone and the chapter held at 60 (the port's chapter lock): both
+worlds and every town are open from the start, and nothing closes (no disc switch, no El voyage,
+no exit gate, no teleporter). Each dungeon has one key (D4). Each story boss waits in its chamber
+and plays its original scene through a story view (D2); beating it is its location, open once its
+dungeon's key has arrived (D3: every boss independent; the town chambers, Berle in Armlock 306,
+Shigeo in Fun City 281 and Marsilio in the arena 305, need none). Fienal has no key: its entrance
+opens on the Fienal requirement (D6), and the goal lies behind it. Characters are always items
+(D7). Since the chapter never moves and nothing is one-way, every key stays reachable from any
+play state (the accessibility rule holds by construction).
+
+**The locations: what the hub reaches** (`hub.choose`, `hub.reached_games`). Until the hub proof
+(agent hubproof) exists, the late proof's reach stands in for it (the hub state is the late
+proof's state minus 24 reset flags: 9 boss guards, 13 Private Action results, Limiter Off, key
+item 84); every place in hub.py marked "hubproof" switches to the hub proof's rows then:
+- chests, gifts, the Cave of Trials' bosses and the side-quest bosses the late proof proved in
+  the game(s) of the story_route: 258 chests (73 in the cave), 9 gifts (2 in the cave), 10 cave
+  bosses, XINE (the only side-quest boss it reached; hubchambers confirmed it plays at the hub
+  state in both games, so it may hold progression: `hub.CONFIRMED_OPTIONAL = {199}`, and the
+  Lasguss Mountain key stays);
+- the 22 chambers (`boss_checks`; hub_bosses.json, proven headless by hubchambers): the 21 story
+  bosses of story mode but the losable fights (D5: Dias 204, Shin 517, Marsilio 530, and Zand 265,
+  which is no location), plus the Cross Cave guardians (set battle 523), a hub-only row; the
+  other game's chamber is left out (Varmillion is Claude's, Azamgil Rena's; under story_route
+  "any" both stay, filler only);
+- shop slots of the shops open at the hub state (data.HUB_SHOPS: a site on a map the late proof
+  reached whose conditions can hold at chapter 60, step 4000 with the hub's flags, outside a
+  Private Action: 41 shops in Claude's game, 42 in Rena's; old Clik's and Lacour's war-time
+  shops are closed);
+- first drops of the enemy types random encounters meet at the hub state (data.HUB_DROPS, per
+  game the dungeons where they are met: 82 of the 89 types);
+- crafts and killer-move levels as in open world.
+- Never: join sites (no join scene runs at chapter 60), the losable fights, anything the late
+  proof didn't reach (Eluria Tower's 23 chests: hubcore opens the tower past map 557 and the hub
+  proof will add them; old Clik; the tournament; the story scenes' gifts).
+- Missable reasons: a window or a time limit doesn't apply (nothing closes); the hard reasons
+  (a choice, a member, a side quest) stay EXCLUDED, or left out with `missable_locations:
+  remove`; "story_route" when the hub reaches a location in only one of the route's games.
+
+**The dungeon keys** (`hub.needed_keys`; data.HUB_DUNGEONS, from hub_bosses.json `dungeons`). A key
+exists only where something of this world lies behind it (the coordinator's ruling): one of its
+locations (a drop aside), a chamber of the Fienal requirement, or the Cave of Trials for the
+Iseria Queen goal. So a dungeon with nothing behind it in this seed has no key and no door rows:
+it is open. Never a Fienal key (the requirement instead) or a Portal of Sealing key: the Portal
+is out of hub mode (hubcore, 2026-10-25: the late state never reaches it, its doors are
+story-gated at chapter 52 and Armlock's 306 is Berle's chamber, for one chest: `hub.OUT_OF_HUB`);
+Lasguss Mountain's exactly when XINE is a location. With the defaults (cave off) 17 keys; 18 with
+the cave: Salva Drift, Cross Cave, the Mars dungeon, Zand's Mansion, the Sanctuary of Linga,
+Hoffmann Ruins, the Lacour Front Line, Eluria Tower, the Mountain Palace, Lasguss Mountain, the
+Cave of Trials (Expel); the Synard Plant, the Cave of Red Crystal, the four Fields, Mihne Cavern
+(Energy Nede). No starting key: sphere 1 is the towns (their chests, the town chambers, shops,
+gifts, crafts). The keys and the characters take the place of as many filler items in the pool
+(there are no join sites to hold the characters).
+
+**Regions and rules.** Menu -> Expel and Energy Nede (the towns, open) -> one region per dungeon
+with a key, entered with it; Energy Nede -> Fienal on the event "Fienal opened" (location "Fienal
+Gate (Fienal requirement)": the keys of the requirement's chambers; by D3 "can beat boss X" is
+"has X's dungeon key"). Indalecio (Victory) is in Fienal and needs Limiter Off / the Iseria Queen
+with those goals; Limiter Off (Filia's scene, Central City City Hall) has no requirement (the hub
+is at chapter 60 with flag 730); the Iseria Queen is in the Cave of Trials (its key). A drop is
+reached through any of the dungeons it is met in (a town or a world map: nothing). Killer-move
+levels learned by level 30 count from the start, the others from "Fienal opened".
+
+**`fienal_requirement`** (D6): `fields_and_berle` (default: Magichand 524, the Guardians of Power
+525 and Courage 527, Lover 528, Berle in Armlock 535), `fields` (the four), `all_bosses` (every
+chamber outside Fienal; Varmillion / Azamgil only when story_route names the game: under "any"
+the seed can't name the player's). The seed's Fienal entrance (door 68685691, routine 0x3de0)
+carries them as `won` with one banner each ("Defeat Magichand first", ...); the goal gate (door
+43978493) keeps the goal's own conditions.
+
+**Where progression may go** (`hub.may_hold_progression`, `hub.drop_rule`): a chamber; a chest
+or cave boss the late proof reached in every game the player may play (hubproof: the hub proof);
+XINE (confirmed); never a gift, a shop slot, a craft or an EXCLUDED location; with
+`expel_progression` off nothing in Expel. Drops as in story mode (`drop_progression`, the Luck
+floor, encounter_rate 0), through places the late proof reached where the type is met with no
+condition, and only through those; `area_keys_in_drops` off keeps every Star Ocean key (area or
+dungeon key, any player's) out of the drops. Killer moves per `killer_move_progression`.
+
+**The party (D7).** `party_rules` is "open" and characters are items whatever `character_items`
+says. With story_route claude / rena: open world's rules (the other hero and Noel can be items,
+no lockouts, the healer guarantee, `starting_character`, `exclude_characters`). With "any": no
+join scene runs at chapter 60, so both heroes are items (but a starting Claude or Rena); the one
+picked at New Game is in the party already, so their item does nothing. Under
+`killer_move_progression: hero` that makes Claude's item progression (his moves need him).
+
+**The options in hub mode.** `hub_start` (`fun_city` default, `arlia`, `random_town`: any row of
+hub_state.json `starts`, every town of both worlds; Archipelago reserves `random` for a Choice,
+where it picks among the option's own values); `fienal_requirement` as above. `story_route`
+picks the hero's chamber and whether both heroes are items; `expel_teleporter` and the El voyage
+gate don't apply (no such doors in a hub seed); `missable_locations` as above; `character_items`
+is forced on; `cave_of_trials` puts the cave's locations behind its key; `boss_checks` off keeps
+the chambers out of the locations (they still play, and the Fienal requirement still needs
+them); the goals work as in the other modes (Filia's scene and the Clik flags preset by
+`goal.flags`).
+
+**The seed** (version 3; seed_format.md "Hub"): `hub` = data.HUB_STATE (chapter, step, disc,
+flags, globals, games, lock) with `start` = the chosen row of hub_state.json `starts` as it is
+(with its own `globals`, the start's Synard words, which the port writes after `hub.globals`);
+`bosses` = every chamber row (the port's keys as hub_bosses.json has them, `view` left out when
+null, plus location, dungeon, `keys` = [this seed's key] or [], trigger, late), whatever
+`boss_checks` says; `doors` = every door hub_bosses.json lists for each dungeon with a key
+(`{id, key, routine, name}`; no `routine` when that routine also leads elsewhere, as Zand's
+Mansion's 9314034, which also goes to Herlie: the port then refuses the transfer alone),
+Fienal's entrance (`won`, `banners`), the goal gate, and the P5 doors (`hub.P5_DOORS`: the arena
+antechamber's door 19929509 leads to Marsilio's arena 305 while he is unbeaten, `to` with
+`while_unbeaten` 532; Fienal's 679 -> 674 door 44502760 lands on 674's east side while Cyril 538
+is unbeaten, since his scene never ends from the west (hubchambers); the port's P5,
+docs/ap/seed_format.md "Hub"). Two `bosses` rows carry `ask` (`hub.ASK`; below). `options`
+gains `hub_start`, `hub_start_town` (the start picked), `fienal_requirement`, `fienal_won`,
+`dungeon_keys` (hub seeds only; story and open-world seeds are unchanged).
+
+**The chambers that ask first** (the user's rulings, 2026-10-25; `hub.ASK`, the port's `ask`:
+seed_format.md "Hub", "The port: the questions"; agent hubask). Shigeo's street (Fun City 281) lies
+on the only Energy Nede -> Expel route: each door into it asks "Shigeo is on the rampage ahead. /
+Face Shigeo now?"; no lets the party pass (281 at the hub's own state). Marsilio's arena 305: the
+antechamber's door asks (no: the lobby 296), the arena desk's first menu gets "Face Marsilio."
+beside "Register." (the normal arena: its ranking battles for training at any time), and in his
+view the Clerk's menu gets "Leave the arena." No answer records anything: the boss stays unbeaten
+and the question comes again. Logic: nothing changes (both are town chambers, keyless, open from
+the start; a no only defers the location). The arena's gift (1349960704, map 305, the survival
+battle's prize) needs no Marsilio win any more: the normal arena is open while he is unbeaten, so
+its rule is the town's (none), as before.
+
 ## Shop slots (`shuffle_shops`, phase 4)
 
 Every entry of the shops a script opens (field.json `shops` with a `shop_sites` record) is a
@@ -578,17 +712,19 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | Option | Values | Effect |
 |---|---|---|
 | `goal` | indalecio (default; alias final_boss) / indalecio_limiter_off / indalecio_limiter_off_and_iseria_queen | Indalecio, either fight (539 / 540); the limiter-off fight (540); the Iseria Queen (561) and then 540 ("Goals") |
-| `world_mode` | story (default) / open_world | open_world: area keys lock the world-map entrances ("Open world") |
+| `world_mode` | story (default) / open_world / hub | open_world: area keys lock the world-map entrances ("Open world"); hub: the late-game hub with a key per dungeon and the boss chambers ("Hub mode") |
+| `hub_start` | fun_city (default) / arlia / random_town | hub mode: the start point; random_town: any town of either world |
+| `fienal_requirement` | fields_and_berle (default) / fields / all_bosses | hub mode: the bosses that open Fienal (D6) |
 | `expel_teleporter` | true (default) / false | open world only: Fun City's arena takes the party back to Expel from chapter 36 |
 | `shuffle_shops` | off (default) / specials / full | shop slots as locations, never progression |
 | `story_route` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
-| `starting_character` | hero (default) / any / claude ... chisato | open world only: a member who joins at the start and leads; hero: nobody extra; any: a random member, not a hero or excluded ("Party v2") |
-| `exclude_characters` | a set of member names (default empty) | open world with character_items: never in the pool, so they never join; not the hero |
+| `starting_character` | hero (default) / any / claude ... chisato | open world and hub mode: a member who joins at the start and leads; hero: nobody extra; any: a random member, not a hero or excluded ("Party v2") |
+| `exclude_characters` | a set of member names (default empty) | open world with character_items, hub mode: never in the pool, so they never join; not the hero |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
 | `expel_progression` | true (default) / false | false: no other world's progression in Expel; in open world our own Expel-story keys still may be there (the user's decision, 2026-10-23) |
 | `cave_of_trials` | false (default) / true | add the Cave of Trials (after the Final Save Point) |
 | `boss_checks` | true (default) / false | the 41 boss fights are locations |
-| `character_items` | false (default) / true | the party's members join through items, their join sites are locations; open world: party v2 |
+| `character_items` | false (default) / true | the party's members join through items, their join sites are locations; open world: party v2; hub mode: always on, no join sites |
 | `enemy_dropsanity` | off (default) / first_drop | each enemy type's first drop is a location |
 | `drop_progression` | allow (default) / force / never | whether first drops may hold progression; force: the fair-odds ones first ("Enemy drops") |
 | `area_keys_in_drops` | true (default) / false | false: no Star Ocean area key in this world's drops |
@@ -639,7 +775,8 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
 - `version`: 1, or 2 when the seed uses a field an older port would ignore (a limiter-off goal,
   `party_rules: "open"`, a starting character, craft or killer-move locations,
   `no_fail_crafting`: `seed_version`; seed_format.md "The version rule"), so the 0.02.00 port
-  refuses such a seed instead of playing it wrong;
+  refuses such a seed instead of playing it wrong; 3 for a hub seed (and its `hub` and `bosses`
+  blocks, "Hub mode" above);
 - every own location with its check (chest: map + flag; gift: map + call-site offset; boss:
   encounter; join: map + offset + character; drop: enemy type; craft: item; killer move:
   character + move + level + uses) and its item (own: kind and its fields; another player's:
@@ -656,17 +793,19 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 
 | File | Contents |
 |---|---|
-| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` |
+| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `create_hub_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` |
+| `hub.py` | hub mode: `choose` (the locations), `needed_keys`, `fienal_won`, `create_regions`, `set_rules`, `drop_rule`, the seed's `hub` / `bosses` / `doors` (`seed_hub`, `seed_bosses`, `seed_doors`); `OUT_OF_HUB` (the Portal of Sealing), `CONFIRMED_OPTIONAL` (waiting on hubchambers) |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
-| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`) |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 
-    tools/ap_world_tables.py          # field.json + battles.json + late_proof.json + doors.json -> data.py
+    tools/ap_world_tables.py          # field.json + battles.json + late_proof.json + doors.json
+                                      # (+ hub_state.json + hub_bosses.json: the hub section) -> data.py
     tools/ap_make_crafts.py           # docs/ap/data/craft_results.csv + craft_decode.txt + the overlay -> crafts.py
     tools/ap_make_moves.py            # docs/ap/data/move_levels.csv -> moves.py
 
@@ -813,6 +952,28 @@ Results (2026-10-25, gift sites never hold progression; docs/handoff/apworld2.md
   one of the few places for an Expel-story key: the keys still found room among the chests and
   drops.
 
+Results (2026-10-25, hub mode; docs/handoff/hubworld.md):
+- The world's tests: 312 passed (22635 subtests; new: `test_hub.py`, six option mixes: what the
+  hub reaches, the chambers and their regions, the keys (something behind each, never Fienal's or
+  the Portal of Sealing's, Lasguss with XINE), every boss reachable with its key alone, the Fienal
+  requirement (no key of it missing), where progression may go, the party, the version-3 seed's
+  `hub` / `bosses` / `doors` through `validate_doors`; and a story / open-world seed without any
+  of it). AP's general tests: 379 passed (117127 subtests). data.py reproduces from the tool, and
+  the data.py before hub mode is a byte prefix of it.
+- 96 seeds of the hub players (scratchpad/apworld2/batch/players_hub: one SO2 player always in hub
+  mode, one in hub / story / open world 3 : 1 : 1, every hub and older option random, and
+  ChecksFinder): 96/96 exit 0, 192 `.apso2` over 192 option combinations (154 hub slots: 41
+  Arlia, 38 Fun City, 75 random_town starts; requirement 76 / 39 / 39; 13-18 dungeon keys),
+  192-1671 locations each. `check.py` (new hub checks: the version, the hub block and start, the
+  requirement, the keys and their doors, the Fienal gate and banners, the chambers' rows, what the
+  hub reaches, where progression went, the party; it catches each of ten deliberately broken
+  seeds, scratchpad/hubworld/neg) finds 0 errors. Progression in the hub slots: 3136 in chests, 306
+  in chambers and cave bosses, 622 in drops, 299 in killer-move levels; none in a gift, shop or
+  craft.
+- The 0.2.0 batch's players (story and open world, seeds 1-96) regenerated with hub mode in the
+  code: all 192 `.apso2` byte-identical to the batch before it (`compare.py`), and `check.py` 0
+  errors.
+
 ## Changes
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
@@ -836,6 +997,11 @@ never` (above).
 - slot_data and `options` gain the new options, `party_rules` and `apworld_version`; the seed
   gains `version` 2 when needed. Location and item ids of 0.1.1 are unchanged; the new ones are
   types 11 (crafts) and 12 (killer moves), the characters Claude, Rena and Noel.
+- *Hub mode* (2026-10-25; the user: hub mode is part of 0.2.0, "the first major revision of the
+  apworld as is"): `world_mode: hub`, `hub_start`, `fienal_requirement`; dungeon keys (item ids
+  0x50370000 + N), the Cross Cave guardians' boss location (hub only), the event "Fienal opened";
+  version-3 seeds with `hub` and `bosses` ("Hub mode"). Story-mode and open-world seeds are
+  byte-identical to the batch before it (Testing).
 - *Fixed: gift sites never hold progression* (2026-10-25, the user: "NPC gift checks should NOT
   hold progression"). Before, the late proof let the 9 gift sites it reaches hold progression in
   story mode, and in open world Eluria Colony's 2 gifts could hold our own Expel-story keys
@@ -896,7 +1062,9 @@ pool, location names and ids are unchanged.
 ## Next
 
 - Entrance shuffle on the door table ("Entrance shuffle (later)" above).
-- The open world's hub with boss chambers (docs/handoff/apv2.md, "Later").
+- Hub mode: the hub proof (agent hubproof) replaces the late proof's reach (hub.py's "hubproof"
+  places: Eluria Tower's chests once the tower opens past 557; the floors and puzzles the hub
+  reaches); the Portal of Sealing (hubcore); XINE's confirmation (hubchambers).
 - Tighter open-world proofs: a mid-Nede state with the flags of its time (the teleporter
   proof's chapter-60 flags keep it to Expel's maps).
 - A `.apworld` zip for custom_worlds (phase 5).

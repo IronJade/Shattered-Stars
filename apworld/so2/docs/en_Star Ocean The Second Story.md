@@ -22,8 +22,8 @@ On top of that baseline, six more kinds of locations can be turned on:
 
 ## What is the goal?
 
-The goal is always beating Indalecio, the final boss, in Fienal. The `goal` option picks which
-version of him counts:
+The goal is always beating Indalecio, the final boss, in Fienal (in hub mode too, once Fienal
+is open: see "Hub mode" below). The `goal` option picks which version of him counts:
 
 - **`indalecio`** (the default; `final_boss` still works): either version of the fight. This is
   how the game normally ends.
@@ -71,6 +71,9 @@ doesn't change the goal.
 - **Area keys**, if `world_mode` is `open_world`. Thirty-five keys, each named after an area
   ("Salva Pass", "Fienal Pass", and so on), unlock that area's entrances on the world map. These
   are progression items and are placed in the multiworld like any other progression item.
+- **Dungeon keys**, if `world_mode` is `hub`. One per dungeon ("Salva Drift Key", "Field of
+  Power Key", and so on, up to 18), each unlocking every door into its dungeon. Progression
+  items. See "Hub mode" below.
 
 ## What locations exist?
 
@@ -133,6 +136,65 @@ happens to them:
   rule each other out;
 - `remove` leaves every missable location out of the world entirely, items and all — except
   join sites, which stay, because they're how party members join when `character_items` is on.
+
+## Hub mode
+
+With `world_mode: hub` you don't play the story at all. New Game drops you into the world as it
+stands after the Final Save Point in Fienal — with every chest still closed and every story boss
+still waiting — and the whole game is open around you:
+
+- **Both worlds, every town, from the start.** Energy Nede by the Synard, Expel through the old
+  man in Fun City's arena or Virtual Expel's Synard. Nothing ever closes behind you: the story's
+  clock is held at its last chapter, so there is no disc switch, no voyage and no way to miss
+  anything for good.
+- **One key per dungeon.** Towns are always open; each dungeon (Salva Drift, Cross Cave, the
+  Mars dungeon, Zand's Mansion, the Sanctuary of Linga, Hoffmann Ruins, the Lacour Front Line,
+  Eluria Tower, the Mountain Palace, Lasguss Mountain, the Cave of Trials, the Synard Plant, the
+  Cave of Red Crystal, the four Fields, Mihne Cavern) stays locked until its key arrives. A
+  dungeon gets a key only when something in it counts for your world; one with nothing in it
+  is simply open.
+- **The bosses wait in their dungeons** and play their original scenes when you walk in: Alen-Tax
+  in Salva Drift, the Cross Cave guardians, Varmillion (Claude's game) or Azamgil (Rena's) in the
+  Mars dungeon, Visseyer, Harfainx, Shin at the Front Line and in Eluria Tower, Berle in Eluria
+  Tower and in Armlock, the Synard, Arcmene, the four Fields' guardians, Bark, Marsilio in the
+  arena, Shigeo, and the three Fienal pairs. Each one is fought whenever you like, in any order,
+  as soon as you have its dungeon's key (Berle in Armlock, Shigeo and Marsilio stand in towns
+  and need none). Beating one is a location (`boss_checks`).
+- **Shigeo and Marsilio ask first.** Both wait in Fun City, on your way between the two worlds
+  and in the arena you'll want for training, so neither is forced on you:
+  - Each door into Shigeo's street asks "Face Shigeo now?". Yes plays his scene and fight; No
+    lets you walk through the street (to the arena and the old man's way to Expel) without him.
+  - The arena's receptionist offers "Face Marsilio." next to "Register.", and the arena's back
+    door asks "Face Marsilio now?". Yes takes you to his scene; there the Clerk adds "Leave the
+    arena." to his menu if you'd rather go back. **The arena itself can be used for training at
+    any time**: "Register." gives the ordinary ranking battles, Marsilio or not.
+  - Saying No (or leaving) changes nothing: he stays unbeaten and you're asked again next time.
+- **Fienal opens on `fienal_requirement`:** the four Fields' bosses and Berle in Armlock (the
+  default), the four Fields' bosses only, or every boss outside Fienal. Fienal's entrance tells
+  you which one is still missing ("Defeat Lover first"). Fienal has no key of its own. Your goal
+  (`goal`, as above) is behind it; with a limiter-off goal, Filia is waiting in Central City City
+  Hall from the start, and the Iseria Queen needs the Cave of Trials Key.
+- **`hub_start`** picks where New Game puts you: Fun City (the default), Arlia, or `random_town`,
+  any town of either world.
+- **Party members are always items** (whatever `character_items` says): nobody joins through a
+  story scene there. `starting_character` and `exclude_characters` work as in open world. With
+  `story_route: any` both Claude and Rena are items too; the one you pick at New Game is already
+  with you, so their item does nothing.
+
+**What hub mode leaves out.** Everything the late game can't reach any more: the story's
+scenes, the join scenes, the gifts of the story's earlier scenes (only the handful you can still
+get after the Final Save Point stay), old Clik and its shops, Lacour's tournament and its war-time
+shops, the fights the story lets you lose (Dias at the tournament, Shin on the ship, Marsilio's
+first fight in Fienal, Zand) and the side quests' bosses the late game no longer offers (XINE in
+Lasguss Mountain stays, and can hold anything). What
+stays: the chests the game can still reach after the Final Save Point (185, or 258 with the Cave
+of Trials), the bosses above, and whatever else your options add (shops, drops, crafts, killer
+moves) as far as the hub reaches them. Eluria Tower's chests are not locations yet (the tower's
+upper floors are being checked in the port first).
+
+Progression items in hub mode go only into those chests and the boss fights (and, by
+`drop_progression`, enemy drops); never into shops, gifts or crafts. Killer-move levels learned
+past level 30 are expected once Fienal is open.
 
 ## What does another player's item look like?
 
@@ -214,17 +276,19 @@ Running away from a fight never counts.
 | Option | Choices | What it does |
 |---|---|---|
 | `goal` | `indalecio` (default; `final_boss` works too), `indalecio_limiter_off`, `indalecio_limiter_off_and_iseria_queen` | Which Indalecio counts, and whether the Iseria Queen must fall first — see "What is the goal?" above. |
-| `world_mode` | `story` (default), `open_world` | `open_world`: the 35 area keys lock the world map's entrances until you find them. |
+| `world_mode` | `story` (default), `open_world`, `hub` | `open_world`: the 35 area keys lock the world map's entrances until you find them. `hub`: start after the Final Save Point with everything open, a key per dungeon and the bosses waiting — see "Hub mode" above. |
+| `hub_start` | `fun_city` (default), `arlia`, `random_town` | Hub mode only: where New Game puts you; `random_town` is any town of either world. |
+| `fienal_requirement` | `fields_and_berle` (default), `fields`, `all_bosses` | Hub mode only: the bosses that open Fienal (the four Fields' and Berle in Armlock; the Fields' only; every boss outside Fienal). |
 | `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items). |
 | `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
-| `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely. With `any`, both exist, but a location that belongs to only one game holds filler. |
-| `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world only (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: a random member who isn't the hero or excluded. See "In open world" above. |
-| `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`: these members are never items, so they never join. The story route's hero can't be excluded. |
+| `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
+| `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: a random member who isn't the hero or excluded. See "In open world" above. |
+| `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |
 | `missable_locations` | `exclude` (default), `include`, `remove` | How locations that can be missed for good are treated — see above. |
 | `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world). |
-| `cave_of_trials` | off (default), on | Add the Cave of Trials, a very hard postgame dungeon, and its chests, gifts and bosses. |
+| `cave_of_trials` | off (default), on | Add the Cave of Trials, a very hard postgame dungeon, and its chests, gifts and bosses (in hub mode behind the Cave of Trials Key). |
 | `boss_checks` | on (default), off | Defeating a boss (story, side quest or Cave of Trials) is a location. Indalecio is always the goal, never a location. |
-| `character_items` | off (default), on | Party members join through items instead of their story scene — see "Who can join your party?" above (open world has no lockouts). |
+| `character_items` | off (default), on | Party members join through items instead of their story scene — see "Who can join your party?" above (open world has no lockouts). Always on in hub mode. |
 | `enemy_dropsanity` | off (default), `first_drop` | The first time each enemy type drops anything in a random encounter, that drop is a location. |
 | `drop_progression` | `allow` (default), `force`, `never` | With `enemy_dropsanity`: whether drops may hold progression items; `force` fills the fair-odds drops with progression first. Never for enemies you can't meet again or that rarely drop — see "Enemy drops" above. |
 | `area_keys_in_drops` | on (default), off | With `enemy_dropsanity`: off keeps every area key (yours and other Star Ocean players') out of your drops. |

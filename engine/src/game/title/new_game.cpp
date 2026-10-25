@@ -1,6 +1,7 @@
 #include "game/title/new_game.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
@@ -379,14 +380,6 @@ void character_screen(Sequence& s) {
   s.result = 0;
   w->set_rect(0x24, 0x78, 0xE8, 0x72);
   int bright[2] = {0x100, 0};  // local_110 / local_10c
-  // Archipelago (port feature) [world agent]: a seed made for one story_route's game starts
-  // on that story_route and keeps the cursor there (the other side buzzes).
-  const int locked = ap::required_story_route();
-  if (locked != 0) {
-    w->selection = locked - 1;
-    bright[0] = locked == 1 ? 0x100 : 0;
-    bright[1] = locked == 2 ? 0x100 : 0;
-  }
   const int widths[2] = {0xCE, 0xE4};  // portrait widths (local_108 / local_104)
   pad_clear(s.t.pad, 0);
   for (;;) {
@@ -416,14 +409,7 @@ void character_screen(Sequence& s) {
         s.result = 1;
         sound_play_sfx(s.sound(), 6, 0, 0x7F40);
       }
-      if (locked != 0 && (repeat & (kPadLeft | kPadRight)) != 0) {
-        if (((repeat & kPadLeft) != 0 && w->selection > 0) || ((repeat & kPadRight) != 0 && w->selection < 1)) {
-          sound_play_sfx(s.sound(), 7, 0, 0x7F40);  // (the name screen's refusal sound)
-          runtime::Runtime::get().log_once("ap-story_route",
-                                           std::string("[ap] this seed is for ") + (locked == 1 ? "Claude" : "Rena") +
-                                               "'s game: the other story_route cannot be chosen");
-        }
-      } else if (repeat & kPadLeft) {
+      if (repeat & kPadLeft) {
         if (--w->selection < 0) {
           w->selection = 0;
         } else {
@@ -431,7 +417,7 @@ void character_screen(Sequence& s) {
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);
         }
       }
-      if (locked == 0 && (repeat & kPadRight)) {
+      if (repeat & kPadRight) {
         if (++w->selection < 2) {
           anim = anim_timer = 0;
           sound_play_sfx(s.sound(), 1, 0, 0x7F40);
@@ -607,6 +593,22 @@ void name_screen(Sequence& s) {
   delete kb;
   delete box;
   if (s.countdown == 0) psyq::SetDispMask(1);
+}
+
+// Archipelago (port feature) [charselect agent]: a seed whose options.story_route names a hero
+// skips the hero select and the naming screen. What they would have left behind: that hero in
+// config +0x45, the name box's default name (as Start on an untouched name box keeps it), and
+// the load of the hero's first prologue part that the naming screen starts.
+void skip_hero_screens(Sequence& s, int route) {
+  const int character = route - 1;
+  s.config()[0x45] = static_cast<u8>(character);
+  {
+    NameBoxWindow box(character);
+    name_box_commit(&box, s.name);
+  }
+  async_load(character != 0 ? 0xA79 : 0xA78, s.t.prologue_data.data(), -1);
+  std::fprintf(stderr, "[ap] story route %s (the seed's): New Game skips the hero select and the naming screen (%s)\n",
+               character != 0 ? "Rena" : "Claude", s.name);
 }
 
 // LAB_80045ebc: Standard / Semi-active / Full Active.
@@ -829,6 +831,9 @@ int new_game_sequence(RenderContext** holder, char* name) {
   pad_clear(t.pad, 0);
 
   // The screens, with Circle stepping back one screen (from Sound Select, to the title).
+  // Archipelago: with a seed's story_route (1 Claude, 2 Rena; 0 for "any", no seed or
+  // Archipelago off) the hero select and the naming screen are skipped, both ways.
+  const int route = ap::required_story_route();
   enum class Step { Sound, Vibration, Character, Name, CombatMode, BattleRank, Done };
   Step step = s.result == 0 ? Step::Sound : Step::Done;
   while (step != Step::Done) {
@@ -860,6 +865,11 @@ int new_game_sequence(RenderContext** holder, char* name) {
         step = Step::Character;
         break;
       case Step::Character:
+        if (route != 0) {
+          skip_hero_screens(s, route);
+          step = Step::CombatMode;
+          break;
+        }
         character_screen(s);
         if (s.result != 0) {
           step = Step::Vibration;
@@ -884,7 +894,10 @@ int new_game_sequence(RenderContext** holder, char* name) {
         break;
       case Step::CombatMode:
         combat_mode_screen(s);
-        if (s.result != 0) {
+        if (s.result != 0 && route != 0) {
+          async_load_cancel(s.config()[0x45] != 0 ? 0xA79 : 0xA78, t.prologue_data.data());
+          step = Step::Vibration;
+        } else if (s.result != 0) {
           step = Step::Name;
         } else {
           step = t.battle_rank_unlocked ? Step::BattleRank : Step::Done;

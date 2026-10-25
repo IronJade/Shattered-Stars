@@ -242,7 +242,7 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   DeathLink and a DeathLink from anyone else ends the current battle or the field
   session, same as dying.
 - **The seed's play options** (each off by default, which plays as the original): New Game
-  starts the story_route the seed was made for; recruitments can be items (a character
+  starts the story_route the seed was made for (skipping the hero select and the naming screen); recruitments can be items (a character
   joins when their item arrives, room permitting); the first drop of each enemy type can
   be a check; traps (an ambush, losing Fol, a status ailment); EXP / Fol multipliers
   (1-10); the random-encounter rate (0-200%). DeathLink waits for a safe moment (out of
@@ -284,11 +284,15 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   story boss plays its original scene in its chamber: while the boss is unbeaten, the chamber
   sees that boss's own point in the story (a "story view"), and what the scene stores there is
   dropped once it is over, except what the seed keeps. A door the hub needs (the arena
-  antechamber's into Marsilio's arena) leads there only while its boss is unbeaten. Saves keep
-  all of it. Debugging: `SS_HUB_TRACE=1` lists what a scene stores in its view;
-  `SS_HUB_STATE=1` builds the hub's New Game state on a `--map` debug start
-  (`docs/ap/seed_format.md` "Hub": "The port: the chapter lock and the story views", "The
-  port: New Game, the starts, the doors, P5").
+  antechamber's into Marsilio's arena) leads there only while its boss is unbeaten. A chamber
+  the seed marks `ask` asks first, in the game's own windows (Shigeo's street in Fun City: "Face
+  Shigeo now?"; no lets the party pass): its scene plays only after a yes; extra options on the
+  game's own menus do the rest (the arena desk's "Face Marsilio.", beside "Register." for the
+  ordinary arena; the Clerk's "Leave the arena." in Marsilio's scene). Saves keep all of it.
+  Debugging: `SS_HUB_TRACE=1` lists what a scene stores in its view; `SS_HUB_STATE=1` builds
+  the hub's New Game state on a `--map` debug start; `SS_SWEEP_PLAY=MAP:K16:1/0/0` answers a
+  step's choices one by one (`docs/ap/seed_format.md` "Hub": "The port: the chapter lock and the
+  story views", "The port: New Game, the starts, the doors, P5", "The port: the questions").
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP

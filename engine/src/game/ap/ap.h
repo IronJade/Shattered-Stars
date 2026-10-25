@@ -53,6 +53,10 @@ struct SaveState {
   // them ("sha256:..."), written at every save. With a seed a load needs it to match
   // (load_allowed); never kept in the running state.
   std::string save_hash;
+  // [hubask agent] An asked chamber's story view (a yes) on when the save was made: its encounter
+  // (-1 none). The load turns that view on again with the map's load (the view's values were never
+  // saved: the save holds the real state).
+  int hub_view = -1;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -224,6 +228,10 @@ bool door_blocked_at_trigger(int routine);
 // transition, x, y, z, dir (as fetched). True: a locked door, the transfer is skipped. A seed
 // door with a target rewrites args (map, x, y, z, dir).
 bool on_map_transfer(int offset, s32* args);
+// After on_map_transfer returned true: the transfer waits for the hub's question (a chamber's
+// `ask`, game/ap/hub.h hub_ask_transfer): the op must run again (ip back on it, its stack
+// arguments back on the stack) [hubask agent].
+bool transfer_again();
 bool has_key(int key);
 // Shops (menu_shop.cpp settle): 'count' copies of entry 'index' (item 'item') of shop 'shop'
 // bought or ordered. Returns the copies the game itself gives: count - 1 when the first copy
@@ -296,5 +304,10 @@ int scan_killer_moves();
 
 std::string status_text();
 std::vector<std::string> waiting_notices();   // the banners not shown yet (tests)
+// ASCII as the map font's codes (no end code; the release's glyphs, '?' past ASCII): the port's own
+// message texts (the hub's questions) [hubask agent].
+std::vector<u8> glyph_text(const std::string& ascii);
+// Its width in pixels in the map font (0 before the font is loaded).
+int glyph_text_width(const std::string& ascii);
 
 }  // namespace ss::game::ap

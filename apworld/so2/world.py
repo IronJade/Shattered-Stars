@@ -2,6 +2,8 @@
 
 Story mode: the chests and the gifts that give items or Fol are shuffled; the story's key
 items (script flags) stay in place, so the story always goes on. The goal is the final boss.
+Open world locks the world maps' entrances behind area keys; hub mode (hub.py) starts after the
+Final Save Point with both worlds open, a key per dungeon and the story bosses in their chambers.
 The output is one .apso2 seed per player (docs/ap/seed_format.md), which the port loads.
 """
 import json
@@ -12,13 +14,14 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import items, locations, regions, rules
+from . import hub, items, locations, regions, rules
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
 
 SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
+SEED_FORMAT_V3 = 3              # a hub seed (seed_format.md "Hub"): a wave-2 port refuses it
 APWORLD_VERSION = "0.2.0"
 
 # The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
@@ -65,16 +68,25 @@ class SO2World(World):
     origin_region_name = "Menu"
 
     def generate_early(self):
-        self.open_world = self.options.world_mode == self.options.world_mode.option_open_world
+        o = self.options
+        self.open_world = o.world_mode == o.world_mode.option_open_world
+        self.hub = o.world_mode == o.world_mode.option_hub     # characters are items whatever character_items says
         self.party_info = self.plan_party()
         self.party = self.party_info.pool
-        self.chosen = locations.choose(self.options, self.party_info)
+        self.chosen = (hub.choose if self.hub else locations.choose)(o, self.party_info)
         self.forced_drops = set()       # drop_progression force (rules.set_rules)
-        # Characters the logic needs (killer_move_progression any: a member's killer-move levels
-        # need their item) are progression; any other character item is useful.
+        # Characters the logic needs (a member's killer-move levels that may hold progression need
+        # their item when the member joins by it: killer_move_progression any, or hero for a hero
+        # who is an item, hub mode under story_route any) are progression; any other is useful.
         killers = {row["character"] for row, _ in self.chosen if row["type"] == "killer_move"}
-        self.progression_characters = set(self.party) & killers \
-            if self.options.killer_move_progression.current_key == "any" else set()
+        mode = o.killer_move_progression.current_key
+        if mode == "hero":
+            killers &= set(self.party_info.story_members)
+        self.progression_characters = set(self.party) & killers if mode in ("any", "hero") else set()
+        if self.hub:
+            self.fienal_won = hub.fienal_won(self)      # the Fienal requirement (D6)
+            self.hub_keys = hub.needed_keys(self)       # the dungeon keys this world has (D4)
+            self.hub_start = hub.choose_start(self)     # the start point (D9)
 
     def story_members(self):
         """The heroes: the story route's, or both under "any" (the player picks at New Game)."""
@@ -83,10 +95,19 @@ class SO2World(World):
     def plan_party(self):
         """The party this world allows (Party). Story mode, or open world without
         character_items: the story's party rules (choose_party); open world with character_items:
-        open world's (choose_open_party). starting_character only in open world."""
+        open world's (choose_open_party). starting_character only in open world and hub mode.
+        Hub mode: open world's rules with character items always (D7); no join scene runs at
+        chapter 60, so under story_route "any" both heroes are items too (the one the player
+        picks at New Game is in the party already: their item does nothing)."""
         o = self.options
         heroes = self.story_members()
         start = self.choose_start(heroes)
+        if self.hub:
+            others = self.choose_open_party(heroes, start)
+            pool = others if len(heroes) == 1 else \
+                sorted(set(others) | {h for h in heroes if h != start}, key=items.CHARACTER_NAMES.index)
+            sure = (set(heroes) if len(heroes) == 1 else set()) | ({start} if start else set())
+            return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(heroes) | set(pool)))
         fixed = set(items.FIXED_MEMBERS) | ({start} if start else set())
         if not (self.open_world and o.character_items):
             pool = self.choose_party()
@@ -104,7 +125,7 @@ class SO2World(World):
         value = o.starting_character.value
         if value == o.starting_character.option_hero:
             return None
-        if not self.open_world:
+        if not (self.open_world or self.hub):
             logging.warning(f"{self.player_name}: starting_character is for open world; ignored in story mode")
             return None
         if value == o.starting_character.option_any:
@@ -171,11 +192,12 @@ class SO2World(World):
         fill_locations[:] = [loc for loc in fill_locations if loc.item is None]
 
     def create_regions(self):
-        made = regions.create_regions(self)
+        made = (hub.create_regions if self.hub else regions.create_regions)(self)
         for row, kind in self.chosen:
-            loc = locations.SO2Location(self.player, row["name"], row["id"], made[row["region"]])
+            region = made[hub.region_of(self, row) if self.hub else row["region"]]
+            loc = locations.SO2Location(self.player, row["name"], row["id"], region)
             loc.progress_type = kind
-            made[row["region"]].locations.append(loc)
+            region.locations.append(loc)
 
     def create_item(self, name):
         cls = items.classification(name)
@@ -191,6 +213,8 @@ class SO2World(World):
         names = [items.pool_filler(row["item"]) if row["type"] == "craft"
                  else items.FILLER_NAME if row["type"] == "killer_move" else items.item_name(row["item"], row["fol"])
                  for row, _ in self.chosen]
+        if self.hub:
+            return self.create_hub_items(names)
         joins = [k for k, (row, _) in enumerate(self.chosen) if row["type"] == "join"]
         if len(joins) < len(self.party):
             raise Exception(f"{self.player_name}: {len(self.party)} characters but {len(joins)} join locations")
@@ -222,11 +246,34 @@ class SO2World(World):
             pool[k] = self.create_item(self.random.choice(trap_names))
         self.multiworld.itempool += pool
 
+    def create_hub_items(self, names):
+        """Hub mode's pool: the vanilla contents of this world's locations (the cave's gems
+        locked at their own), then the dungeon keys and the characters (no join sites: D7) in the
+        place of as many filler items, then the traps."""
+        pool = []
+        for (row, _), name in zip(self.chosen, names):
+            if row["type"] in ("chest", "gift") and row["item"] in items.PUZZLE_ITEMS:
+                self.get_location(row["name"]).place_locked_item(self.create_item(name))
+            else:
+                pool.append(self.create_item(name))
+        extra = [items.HUB_KEY_NAME[g["dungeon"]] for g in self.hub_keys] + list(self.party)
+        filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
+        if len(filler) < len(extra):
+            raise Exception(f"{self.player_name}: {len(extra)} keys and characters but only {len(filler)} filler items")
+        for k, name in zip(sorted(self.random.sample(filler, len(extra))), extra):
+            pool[k] = self.create_item(name)
+        filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
+        count = len(filler) * self.options.traps.value // 100
+        trap_names = sorted(items.TRAPS)
+        for k in self.random.sample(filler, count):
+            pool[k] = self.create_item(self.random.choice(trap_names))
+        self.multiworld.itempool += pool
+
     def get_filler_item_name(self):
         return items.FILLER_NAME
 
     def set_rules(self):
-        rules.set_rules(self)
+        (hub.set_rules if self.hub else rules.set_rules)(self)
 
     def goal_encounters(self):
         """The encounters the goal needs: any of them (indalecio, limiter off), or all of them
@@ -259,8 +306,10 @@ class SO2World(World):
 
     def seed_version(self):
         """1, or 2 when the seed uses a field an older port would ignore (docs/ap/seed_format.md,
-        "The version rule")."""
+        "The version rule"); 3 for a hub seed ("Hub")."""
         o = self.options
+        if self.hub:
+            return SEED_FORMAT_V3
         v2 = (o.goal.value != 0 or self.party_info.rules == "open" or self.party_info.start is not None
               or bool(o.craftsanity) or bool(o.no_fail_crafting) or bool(o.killer_move_checks))
         return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
@@ -268,7 +317,7 @@ class SO2World(World):
     def fill_slot_data(self):
         o = self.options
         p = self.party_info
-        return {
+        data = {
             "seed_format": self.seed_version(),
             "goal_encounters": self.goal_encounters(),
             "world_mode": o.world_mode.current_key,
@@ -299,6 +348,13 @@ class SO2World(World):
             "party_rules": p.rules,
             "apworld_version": APWORLD_VERSION,
         }
+        if self.hub:
+            # Hub mode (seed_format.md "Hub"; reference: the port reads the `hub` block and the
+            # doors). Characters are always items (D7).
+            data.update(character_items=True, hub_start=o.hub_start.current_key, hub_start_town=self.hub_start,
+                        fienal_requirement=o.fienal_requirement.current_key, fienal_won=list(self.fienal_won),
+                        dungeon_keys=[items.HUB_KEY_NAME[g["dungeon"]] for g in self.hub_keys])
+        return data
 
     def seed_data(self):
         """The .apso2 seed (docs/ap/seed_format.md) as a dict."""
@@ -354,13 +410,18 @@ class SO2World(World):
             "start": {"items": start_items, "fol": start_fol, "flags": []},
             "goal": self.seed_goal(),
             "doors": self.seed_doors() + self.goal_doors(),
+            # Hub mode: the state New Game builds and the chambers (seed_format.md "Hub").
+            **({"hub": hub.seed_hub(self), "bosses": hub.seed_bosses(self)} if self.hub else {}),
         }
 
     def seed_doors(self):
         """Open world: every world-map entrance with its area's key (docs/ap/seed_format.md,
         "Phase 4"; ids from docs/ap/doors.json), then each one-way story point's door with the
         keys it needs (data.STORY_GATES: the El voyage's trigger in the Lacour Front Line's
-        meeting room) and the exits kept shut until a chapter. Story mode: none."""
+        meeting room) and the exits kept shut until a chapter. Story mode: none. Hub mode: the
+        dungeons' doors and Fienal's gate (hub.seed_doors)."""
+        if self.hub:
+            return hub.seed_doors(self)
         if not self.open_world:
             return []
         world_name = {1: "Expel", 2: "Energy Nede"}

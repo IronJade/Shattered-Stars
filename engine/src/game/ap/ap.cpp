@@ -115,6 +115,7 @@ struct Runtime {
   // Port Hilton's harbour: the captain's menu while it is open (harbour_open .. harbour_choose),
   // the script's string indices it replaces, and their texts (kept while the windows read them).
   bool harbour_shown = false;
+  bool transfer_again = false;           // on_map_transfer: the hub's question is up, the op runs again [hubask agent]
   std::vector<Voyage> harbour;           // the destinations offered (Not now after them)
   int harbour_question = -1, harbour_options = -1;
   std::vector<u8> harbour_question_text, harbour_options_text;
@@ -797,6 +798,7 @@ Json sidecar_json(const SaveState& s) {
     j.set("stash", a);
   }
   if (!s.save_hash.empty()) j.set("save_hash", Json::string(s.save_hash));  // version 2
+  if (s.hub_view >= 0) j.set("hub_view", Json::number(static_cast<int64_t>(s.hub_view)));  // [hubask agent]
   return j;
 }
 
@@ -832,6 +834,7 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
     r.stash.push_back(std::move(st));
   }
   r.save_hash = j["save_hash"].as_string();  // version 2 (absent: empty, and a seed refuses the load)
+  r.hub_view = static_cast<int>(j["hub_view"].as_int(-1));  // [hubask agent] (absent: none)
   *s = std::move(r);
   return true;
 }
@@ -1374,6 +1377,7 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   std::string err;
   SaveState s = r.state;
   s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
+  s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
   if (write_sidecar(path, s, &err)) {
     log("saved " + path);
   } else {
@@ -1411,6 +1415,8 @@ void on_loaded(const std::string& card_image, int save_index) {
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   s.save_hash.clear();  // (the card's, not the running state's)
+  hub_resume_view(s.hub_view);  // [hubask agent] the asked chamber's view the save was made in
+  s.hub_view = -1;
   r.state = s;
   goal_all_update(r);  // (the merge may complete goal.all)
   r.deathlink_in = false;  // (a load starts the game again)
@@ -2138,6 +2144,7 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
   Runtime& r = rt();
   if (!r.on) return;
   hub_map_loaded(map);  // the hub: a chamber's story view starts, or the one on ends [hubvm agent]
+  hub_script_loaded(map, script);  // ... and the extra options of its `ask` rows [hubask agent]
   r.harbour_shown = false;  // (a menu left open by a transfer)
   r.script_map = script_group(map);
   r.loaded_map = map;
@@ -2185,33 +2192,46 @@ bool door_blocked_at_trigger(int routine_at) {
 
 bool on_map_transfer(int offset, s32* args) {
   Runtime& r = rt();
+  r.transfer_again = false;
   if (!r.on) return false;
   if (hub_map_transfer(args)) return false;  // the hub: a won story view's cut_to [hubvm agent]
-  const Door* d = door_at(na_offset(r.loaded_map, offset));
-  if (d == nullptr) return false;
-  if (door_locked(*d)) {
-    door_refused(*d);
-    return true;
+  const int na = na_offset(r.loaded_map, offset);
+  // [hubask agent] The hub's question at this transfer is up: its phases run in the op's reruns
+  // (the door table ran when it came up).
+  const int64_t id = na < 0 ? -1 : door_id(r.script_map, na);
+  if (hub_ask_busy(id)) {
+    r.transfer_again = hub_ask_transfer(id, args, args);
+    return r.transfer_again;
   }
-  // [hubcore agent] to.while_unbeaten: the redirect is off once that boss is won.
-  if (d->has_target && d->to_while_unbeaten >= 0 && goal_won(d->to_while_unbeaten)) {
-    log("door " + std::to_string(d->id) + ": encounter " + std::to_string(d->to_while_unbeaten) +
-        " won, the door's own target (map " + std::to_string(args[0]) + ")");
-    return false;
+  s32 own[6];
+  std::memcpy(own, args, sizeof own);
+  if (const Door* d = door_at(na); d != nullptr) {
+    if (door_locked(*d)) {
+      door_refused(*d);
+      return true;
+    }
+    if (d->has_target && d->to_while_unbeaten >= 0 && goal_won(d->to_while_unbeaten)) {
+      // [hubcore agent] to.while_unbeaten: the redirect is off once that boss is won.
+      log("door " + std::to_string(d->id) + ": encounter " + std::to_string(d->to_while_unbeaten) +
+          " won, the door's own target (map " + std::to_string(args[0]) + ")");
+    } else if (d->has_target) {
+      char msg[160];
+      std::snprintf(msg, sizeof msg, "door %lld: map %d (%d, %d, %d) -> map %d (%d, %d, %d)", static_cast<long long>(d->id),
+                    args[0], args[2], args[3], args[4], d->to.map, d->to.x, d->to.y, d->to.z);
+      log(msg);
+      args[0] = d->to.map;
+      args[2] = d->to.x;
+      args[3] = d->to.y;
+      args[4] = d->to.z;
+      if (d->to.dir >= 0) args[5] = d->to.dir;
+    }
   }
-  if (d->has_target) {
-    char msg[160];
-    std::snprintf(msg, sizeof msg, "door %lld: map %d (%d, %d, %d) -> map %d (%d, %d, %d)", static_cast<long long>(d->id),
-                  args[0], args[2], args[3], args[4], d->to.map, d->to.x, d->to.y, d->to.z);
-    log(msg);
-    args[0] = d->to.map;
-    args[2] = d->to.x;
-    args[3] = d->to.y;
-    args[4] = d->to.z;
-    if (d->to.dir >= 0) args[5] = d->to.dir;
-  }
-  return false;
+  // [hubask agent] Into a chamber that asks first (its `ask`): the question, then this op again.
+  r.transfer_again = hub_ask_transfer(id, own, args);
+  return r.transfer_again;
 }
+
+bool transfer_again() { return rt().transfer_again; }
 
 // ---- Port Hilton's harbour ----
 
@@ -2374,6 +2394,7 @@ int harbour_open(int question, int options) {
 
 const u8* script_text(int index, const u8* original) {
   Runtime& r = rt();
+  if (const u8* hub = r.on ? hub_script_text(index, original) : nullptr) return hub;  // [hubask agent] an extra option
   if (!r.on || !r.harbour_shown || index < 0) return nullptr;
   if (index == r.harbour_question) {
     r.harbour_question_text = harbour_question(original);
@@ -2543,6 +2564,14 @@ int scan_killer_moves() {
 }
 
 std::vector<std::string> waiting_notices() { return {rt().notices.begin(), rt().notices.end()}; }
+
+std::vector<u8> glyph_text(const std::string& ascii) {
+  std::vector<u8> out;
+  put_glyphs(out, ascii);
+  return out;
+}
+
+int glyph_text_width(const std::string& ascii) { return banner_text_width(ascii); }
 
 std::string status_text() {
   Runtime& r = rt();

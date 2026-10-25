@@ -48,7 +48,13 @@ struct Sweep {
   int last_map_seen = -1;
   u32 choices = 0;   // choices answered in the current entry (every third is cancelled)
   u64 signature = 0; // what the script, the field and the windows were doing
-  struct Step { int map; char kind; int index; int option = 0; };  // option: "MAP:K26:1" (below)
+  struct Step {
+    int map;
+    char kind;
+    int index;
+    int option = 0;            // option: "MAP:K26:1" (below)
+    std::vector<int> options;  // "MAP:K16:1/0/0": the step's k-th choice takes the k-th (the last repeats) [hubask agent]
+  };
   std::vector<Step> play;  // SS_SWEEP_PLAY
   size_t played = 0;
   int still = 0;     // frames since it last changed
@@ -237,13 +243,24 @@ void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
   static int downs = 0;          // cursor moves made on the choice up now (a play step's option)
   static u64 option_since = 0;   // when that choice came up
   bool waiting = g_script_vm != nullptr && g_script_vm->wait_state == 9;
+  // (A step's choices so far: "MAP:K16:1/0/0" gives each its own option.) [hubask agent]
+  static size_t step_played = 0;
+  static int step_choices = 0;
+  static bool was_waiting = false;
+  if (g_sweep.played != step_played) step_played = g_sweep.played, step_choices = 0;
+  if (was_waiting && !waiting) ++step_choices;
+  was_waiting = waiting;
   if (!waiting) downs = 0, option_since = 0;
   // SS_SWEEP_PLAY "MAP:K26:1": while that step plays, a choice takes option 1: 20 frames after it
   // comes up the cursor goes down once (every 10 frames), then confirm (Arlia's guide's "go" is
   // the second option) [hubcore agent].
   const Sweep& sw = g_sweep;
-  const int option = sw.phase == Phase::Play && sw.played > 0 && sw.played <= sw.play.size() ? sw.play[sw.played - 1].option : 0;
-  if (waiting && option > 0) {
+  const Sweep::Step* step = sw.phase == Phase::Play && sw.played > 0 && sw.played <= sw.play.size() ? &sw.play[sw.played - 1] : nullptr;
+  const bool listed = step != nullptr && !step->options.empty();
+  const int option = step == nullptr ? 0
+                     : listed       ? step->options[std::min(static_cast<size_t>(step_choices), step->options.size() - 1)]
+                                    : step->option;
+  if (waiting && (option > 0 || listed)) {
     if (option_since == 0) option_since = now;
     // (The choice reads the pad only once its window is up: state -1, 1, 6 or 7, as the VM's
     // wait state 9 tests, and not while its cursor slides.)
@@ -556,7 +573,20 @@ void event_sweep_frame(Field* f) {
       char kind = 0;
       int map = -1, index = -1;
       int option = 0;  // "MAP:ENTRY:N": the step's choices take option N (0 the first) [hubcore agent]
-      if (std::sscanf(v, "%d:%c%d:%d", &map, &kind, &index, &option) >= 3) s.play.push_back({map, kind, index, option});
+      if (std::sscanf(v, "%d:%c%d:%d", &map, &kind, &index, &option) >= 3) {
+        s.play.push_back({map, kind, index, option, {}});
+        // "MAP:ENTRY:N/M/...": one option per choice, in order [hubask agent]
+        const char* list = std::strchr(v, ':');
+        if (list != nullptr) list = std::strchr(list + 1, ':');
+        if (list != nullptr && std::strchr(list, '/') != nullptr)
+          for (const char* p = list + 1; *p != 0; p = *p == '/' ? p + 1 : p) {
+            char* end = nullptr;
+            const long n = std::strtol(p, &end, 10);
+            if (end == p) break;
+            s.play.back().options.push_back(static_cast<int>(n));
+            p = end;
+          }
+      }
     });
     if (!s.play.empty()) s.phase = Phase::Play;
     // SS_SWEEP_GOTO=MAP: once settled, load map MAP as field_update's state 1 does (pending

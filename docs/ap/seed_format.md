@@ -223,6 +223,10 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   summary's +0x1a; `util::save_digest`). The game takes it from what the card driver reads back
   after writing the save. Version-1 sidecars (no hash) still read, but a seed refuses to load
   their saves (below).
+- `hub_view` (hub mode, optional; agent "hubask", 2026-10-25): the encounter of a chamber that
+  asks first (its row's `ask`) whose story view was on when the save was made (the player had
+  said yes). The load turns that view on again with the map's load; without it a load in such a
+  chamber comes up at the hub's own state. Absent everywhere else.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -338,7 +342,7 @@ options-off run of the victory reference give the same RNG and handoffs as PCSX-
 
 | Key | Values | Default | What it does |
 |---|---|---|---|
-| `story_route` | `any`, `claude`, `rena` (or 0-2) | `any` | New Game starts on that story route and keeps the cursor there (the other side buzzes; log `this seed is for Claude's game`). Seeds from so2.apworld 0.1.0 / 0.1.1 call it `protagonist`; the port reads either. |
+| `story_route` | `any`, `claude`, `rena` (or 0-2) | `any` | `claude` / `rena`: New Game skips the hero select and the naming screen and starts that hero's game with the default name, in every mode (log `story route Claude (the seed's): New Game skips the hero select and the naming screen (Claude)`; Circle on the combat-mode screen goes back to Vibration; the camp menu's Status page renames as usual). `any`: both screens as the original. (Until 2026-10-25 the port kept the cursor on the seed's side instead.) Seeds from so2.apworld 0.1.0 / 0.1.1 call it `protagonist`; the port reads either. |
 | `character_items` | true / false | false | Listed join sites are checks; members join through their items. |
 | `enemy_dropsanity` | `off`, `first_drop` (or 0 / 1) | `off` | The first drop of each enemy type with a `drop` location is a check. 0.1.0 / 0.1.1 seeds call it `drops_as_checks`; the port reads either. |
 | `exp_multiplier` | 1-10 | 1 | The battle's EXP total, at the result screen. |
@@ -1181,6 +1185,7 @@ Read by the port:
 | `view.until` | (optional) `"free_play"` (default: the view ends at the first free play after the win) or `"transfer"` (it lasts until a map outside `maps` / `after_maps` loads: the Field of Power, whose end scene in 604 is guarded only by flags) |
 | `view.cut_to` | (optional) `{map, x, y, z, dir}`: after the win, the scene's first transfer out of the view goes here instead (Berle 575: the scene goes on to 576, which stores chapter 34 and moves to the disc switch's scene map 625; cut_to = the tower's world-map arrival) |
 | `view.done_flag` | (optional, a script flag) after the win the view still comes on in its `maps` (marked won) until this REAL flag is set: an end scene the player reaches by a walk after the fight (the Field of Power: 163, set by 604's vision end; leaving 603 between the Guardian and that vision would otherwise run the flag-guarded vision at chapter 60 and strand the party on 622) [hubchambers] |
+| `ask` | (optional) the chamber asks first (the user's rulings on Shigeo 281 and the arena 305; below, "The port: the questions"): `{"text", "answers"?, "doors"?, "options"?}`. While the boss is unbeaten its view comes on only after a yes [hubask] |
 
 - **The view ends** at the first map load outside `maps` / `after_maps` (the scene's transfer
   out, or the player walking out before the fight) or at free play after the boss battle was won:
@@ -1231,10 +1236,11 @@ chambers' encounters) with a banner; the Final Save Point's way to the final cor
 
 ### Sidecar
 
-Nothing new: chamber victories go in `goal_won`; the hub state is built once at New Game and
-saved with the game. A save made in a view holds the real state (the view's values never
-reach it); loading it starts with the view off, and the loaded map's own load turns it back on
-in a chamber whose boss is unbeaten. The save guard ("The save sidecar") applies as in every
+Chamber victories go in `goal_won`; the hub state is built once at New Game and saved with the
+game. A save made in a view holds the real state (the view's values never reach it); loading it
+starts with the view off, and the loaded map's own load turns it back on in a chamber whose boss
+is unbeaten; in a chamber that asks first (`ask`) only when the save was made in its view (the
+sidecar's `hub_view`, the one hub field: "The port: the questions"). The save guard ("The save sidecar") applies as in every
 mode. Proven headless (hubcore, 2026-10-25): a hub save and its load keep the hub (no second
 New Game: the party at the saved position, chapter 60 step 4000, the lock on), and a save made
 in Armlock 306 (Berle 535's view on) loads with the view on again.
@@ -1357,5 +1363,77 @@ the P5 rows (implemented 2026-10-25; docs/handoff/hubcore.md has the runs).
   Marsilio is unbeaten that door leads into 305, whose view (57/20) registers the Clerk (K16):
   "Go see Narl" plays Marsilio's scene, and its transfer to 296 ends the view; after the win
   the door leads to 296 again. 296 stays reachable from 299 / 300. Inside the view 305 has no
-  walk-out exit (the Clerk's training and rest keep the party there): a party that enters while
-  Marsilio is unbeaten leaves by winning (any way into 305, the paid registration at 297 too).
+  walk-out exit (the Clerk's training and rest keep the party there), and before the rulings
+  below every way into 305 turned the view on: a party could leave only by winning. With the
+  row's `ask` (the APWorld writes it) the door asks first, the desk's "Register." is the normal
+  arena and the Clerk offers "Leave the arena." ("The port: the questions").
+
+### The port: the questions (agent "hubask", `engine/src/game/ap/hub.cpp`)
+
+The user's rulings (2026-10-25, docs/handoff/hub.md): **Shigeo 281, ask first** (Fun City's 281
+lies on the only Energy Nede -> Expel route, and his scene starts from a strip across the street
+while he is unbeaten) and **the arena 305, ask plus a way out** ("players will generally use the
+arena in Fun City as a way to level up their characters. They need to be able to do that without
+being forced to go through Marsilio first"). A row's `ask`:
+
+```json
+"ask": {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509],
+        "options": [{"map": 297, "window": "0x5c50", "choice": "0x5c6c", "text": "Face Marsilio.",
+                     "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
+                    {"map": 305, "window": "0x6ea8", "choice": "0x6ec4", "text": "Leave the arena.",
+                     "to": {"map": 304, "x": 1339, "y": 0, "z": -6, "dir": 180}}]}
+```
+
+| Key | Meaning |
+|---|---|
+| `text` | the question: 1-3 lines (`\n`) of at most 34 characters (the port refuses more) |
+| `answers` | (optional) `[yes, no]`, default `["Yes.", "No."]` |
+| `doors` | (optional) the door ids (map * 65536 + offset / 4, NA) whose transfers into the chamber ask; absent: every script transfer into the chamber's `maps` from a map outside them asks |
+| `options` | (optional) an extra last option on a choice the game already has: `map` (the script's map), `window` / `choice` (NA byte offsets of the options window's ext 0x68 and of the choice's ext 0xdc N; the port checks their words, and the `push R` / `pop_store L[n]` after the choice, in the loaded release's layout), `text` (the option's line), `to` {map, x, y, z, dir} where choosing it sends the party |
+
+- **While the boss is unbeaten the view comes on only after a yes.** A yes at a question, or an
+  option whose `to` lies in the chamber, makes the next map load turn the view on; a no, a load
+  (unless the save was made in the view: the sidecar's `hub_view`) or any other way in leaves the
+  chamber at the hub's own state (chapter 60). Nothing is recorded: the boss stays unbeaten and
+  the question comes again at the next way in. Once the boss is won, `ask` does nothing.
+- **The question** (`hub_ask_transfer`, from `ap::on_map_transfer` after the door table). The
+  transfer op hosts it: the op runs again (ip back on it, stack arguments back on the stack) while
+  the question's phases run, as the game's own yes / no questions are laid out (map 297's fee):
+  the question in window 1 (a hold window at (x, 2), as wide as its longest line in the map font
+  needs: a line wraps past the window's width less 16 px), the VM waits for it to print (wait
+  state 2), the answers in window 0 under it with the game's lead-in before each line (glyphs
+  0xfe 0xfe 0xea on NA / Europe; 0x72 x 4 and 0x82 on France / Germany), the VM's own choice
+  (wait state 9: the first option first, cancel allowed = no), both windows closed (wait 2 / -1),
+  then the transfer. Yes: as the door table sent it. No: when a seed door had sent the transfer
+  into the chamber (`to.while_unbeaten`) its own target; else the chamber at the hub's state.
+  Logged: `[ap] hub: ask: Shigeo, encounter 533: door 18356813 (map 280 -> map 281): "Shigeo is
+  on the rampage ahead. / Face Shigeo now?" (window 31 cells, its widest line 217 px)`, then
+  `... yes: map 281 with its story view` / `... no: map 281 at the hub's state` / `... no: door
+  19929509 goes to its own target (map 296)`. A synchronous call (vm_call_sync) never asks.
+- **The options** (`hub_fetch`, called by the VM before each instruction while the loaded map has
+  armed sites): at `window` the options window opens one line taller (ext 0x68 from the stack)
+  with the extra line after the original's (its own lead-in copied; `ap::script_text`); at
+  `choice` the choice takes one option more; after the choice's store, when R is the extra
+  option: windows 0 / 1 close, ext 0x84 gives the controls back and ext 0xda (from the stack)
+  sends the party to `to` (into the chamber: the view comes on; out of it: the view ends there,
+  nothing written back). On a chamber map an option shows only while its view is on (the Clerk
+  exists only then anyway); elsewhere while the boss is unbeaten. A site whose words differ is
+  logged and left alone (`... is not the shape the seed names ...; no extra option`).
+- **The two rows** (apworld/so2/hub.py `ASK`; proven headless, docs/handoff/hubask.md):
+  - Shigeo 533: `{"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"}`: the doors into
+    281 (from 280, 292 and 297) ask. Yes: his scene and fight; no: 281 at the hub's state, the
+    strip does nothing (walked across headless), the route on to 297 and Expel stays open.
+  - Marsilio 532 (above): the antechamber's door asks (yes: the arena with the view; no: the
+    lobby 296); the desk's first menu (297, the receptionist) reads "Hear an explanation. /
+    Register. / Face Marsilio.": Face Marsilio goes into the arena with the view, Register is the
+    arena as it is (no view: the fee, the battle mode, the ranking battles in 305, back to 304:
+    the training any time); in his view the Clerk's menu reads "Do intensive training. / Rest. /
+    Go see Narl. / Leave the arena.", the last one back to the antechamber 304 without a fight.
+    Why options there and not a yes / no: the desk's own transfer into 305 comes after the fee,
+    the battle mode, flag 586 and the party flags 758-769 (a team battle sets members aside; only
+    305's arena routine puts them back), so a question at that transfer would cost a yes the fee
+    and leave the party split; and 305 is the arena ring itself (no door): the Clerk, its only
+    entry in the view, is where a player looks for the way out. The Clerk's own options keep their
+    numbers ("Go see Narl" is still option 2).
+- The words were checked on all four releases (NA, Europe, France, Germany: 297 alike, 305
+  through the region tables' script map).

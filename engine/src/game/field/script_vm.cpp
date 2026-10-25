@@ -560,6 +560,8 @@ restart:
                    *ctx->ip, ctx->depth, static_cast<long>(ctx->call_sp - reinterpret_cast<u32*>(g.state_block)),
                    static_cast<long>(ctx->value_sp - reinterpret_cast<u32*>(g.value_stack)));
     }
+    // [hubask agent] A hub seed's extra option on a choice (game/ap/hub.h hub_fetch).
+    if (ap::g_hub_sites != 0 && ap::hub_fetch(ctx)) continue;
     g_instr_at = static_cast<s32>(ctx->ip - ctx->code) * 4;  // (the hub's lock log)
     const u32 fetched = *ctx->ip++;
     u32 instr = fetched;

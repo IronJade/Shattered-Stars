@@ -177,3 +177,26 @@ with the lock on, `--bosses`, e2e).
 - 2026-10-25: hubchambers stopped at ~700k (log hubchambers.md); found an engine bug: script
   ext 0xCB (sound_start_clip) underflows the value stack in two scenes (575, 642; both call sites
   push 4): a port bug in normal play too, for a fresh agent with REA.
+- 2026-10-25: **hubchambers done** (all 22 chambers PASS, 46/46 both heroes; no restaged fallback;
+  the map 14 vision followed, not cut: Rena's game needs 556's end scene). **Committed b5f3032:
+  the port side** (hubcore, hubcore2, hubchambers; staged tree ss_tests 99/0, ss_game_tests
+  170/0, smoke 148/0 + 13 analysis/-save checks that skip outside the working tree). Not yet
+  committed: the APWorld (apworld/, tools/ap_world_tables.py, docs/ap/apworld.md): hubask
+  regenerates data.py (stale since hub_bosses.json 13:47), adds the Cyril door 44502760 (679 ->
+  674 east while 538 unbeaten: a soft lock from the west), the arena gift's rule, XINE
+  CONFIRMED_OPTIONAL {199}, and its Shigeo / arena prompts; then one APWorld commit. Running:
+  hubask, hubproof, vmfix (ext 0xCB).
+- 2026-10-25, the user: New Game for AP seeds (story route skip, a 12-member character select): spec queued in docs/handoff/charselect.md.
+- 2026-10-25: **hubask done** (docs/handoff/hubask.md; ~620k): a generic `ask` key on bosses rows.
+  Shigeo 281: each door into his street asks ("Face Shigeo now?"), no = an ordinary town; the
+  arena: the desk 297 gains "Face Marsilio." (Register = the normal arena: four ranking battles
+  proven without Marsilio), the back door 304 -> 305 asks yes / no, and inside his scene the
+  Clerk gains "Leave the arena." (back to 304, no fight); no records nothing; a save inside an
+  accepted scene keeps it (sidecar `hub_view`). APWorld: `hub.ASK`, the Cyril door 44502760, XINE
+  confirmed (CONFIRMED_OPTIONAL {199}), data.py regenerated; the arena gift needs no Marsilio
+  rule (the normal arena is open). Suites ss_tests 99/0, ss_game_tests 173/0, smoke 198/0;
+  world tests 313, AP general 379, hub batch 96/96 0 errors, identity 192/192. Questions for the
+  user: Shigeo's question repeats on every crossing until he is beaten (both ways); the desk and
+  the Clerk use menu options rather than yes / no (the fee, the split party, no door in the ring).
+- 2026-10-25, the user on charselect: text option 3 ("Both": a facts line from the disc + four
+  lines of our own; Claude and Rena keep their bios); reuse the "Hero select" heading art.
