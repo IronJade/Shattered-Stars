@@ -8,16 +8,20 @@ seed per player ([seed_format.md](seed_format.md)), which the port loads.
 ## Locations
 
 Story mode's locations come from the discs through `docs/ap/field.json` (`tools/ap_extract.py`,
-[field.md](field.md)); `tools/ap_world_tables.py` turns them into `data.py`, 560 rows:
+[field.md](field.md)); `tools/ap_world_tables.py` turns them into `data.py`, 1113 rows (the
+first six kinds below). The crafts and the killer-move levels (0.2.0) come from `crafts.py` and
+`moves.py`, tables written from the disc research (Files, below):
 
 | Kind | Rows | Option | Id ([field.md](field.md), "Location ids") |
 |---|---|---|---|
 | Chests | 311 (78 in the Cave of Trials) | always | type 1, one per opened flag |
 | Gift sites | 101 (3 in the cave) | always | type 2, one per reward site that gives an item or Fol |
 | Boss fights | 41 (13 in the cave) | `boss_checks` (default on) | type 9 + encounter |
-| Join sites | 18 | `character_items` | type 4, one per site |
-| First drops | 89 (3 met only in the cave) | `drops_as_checks: first_drop` | type 8 + enemy type |
+| Join sites | 18, + 3 under open world's party rules | `character_items` | type 4, one per site |
+| First drops | 89 (3 met only in the cave) | `enemy_dropsanity: first_drop` | type 8 + enemy type |
 | Shop slots | 550 (98 specials) | `shuffle_shops: specials / full` | type 10 + (shop << 8) + entry |
+| Crafts | 553 | `craftsanity` | type 11 + item: one per item Item Creation can make |
+| Killer-move levels | 133 (69 moves) | `killer_move_checks` | type 12 + (party id << 14) + (move << 10) + level |
 
 - **Left out:**
   - two chests and 33 gift sites that give key items (script flags 66-91), because the
@@ -27,7 +31,8 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
     the join sites, and the shop *site* records (type 5; the slots are type 10, "Shop slots"
     below);
   - the goal fights 539 / 540, and boss encounters 0 / 263 / 534 / 561, which no script
-    starts with a constant encounter.
+    starts with a constant encounter (561, the Iseria Queen, is summoned by a song: an event of
+    the Iseria Queen goal, "Goals" below).
 - **The Cave of Trials** (`cave_of_trials`, off by default) adds its 81 chests and gift sites
   and its 13 bosses.
 - **Bosses** by class: 21 story bosses (the story fights them; a loss is a game over; two are
@@ -44,8 +49,12 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
   along for a while and the restores after a split, which the port plays as the original.
   Celine's first join (map 74) is one of those: she leaves the party at Mars in both games
   (Claude's: the Varmillion scene on map 462, chapter 15 step 2400, whatever flag 112 holds;
-  Rena's: map 126, step 1000; checked headless) and comes back at 124 / 125. Noel joins in the
-  story and is not shuffled. Several sites depend on a choice (the world agent, 2026-10-23):
+  Rena's: map 126, step 1000; checked headless) and comes back at 124 / 125. Under the story's
+  party rules Noel joins in the story and is not shuffled. Open world's party rules ("Party v2",
+  below) add three sites (tools/ap_world_tables.py `OPEN_JOIN_SITES`, `open_only` in data.py):
+  Rena's first join in Claude's game (map 9, 0x6b94), Claude's in Rena's game (map 12, 0x6e08)
+  and Noel's (map 277, 0x6fe0), each listed only when that member is not a story member, and
+  leave out the story members' own sites. Several sites depend on a choice (the world agent, 2026-10-23):
   Celine's real recruitment is the Cross Cave choice (map 524, chapter 13); map 124 runs only
   if she was sent away there and not received, 125 needs flag 112, and in Rena's game sending
   her away leaves no Celine site; Leon (234) and Opera (479) have parting choices. So a join
@@ -53,7 +62,13 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
   reason "join"), and the port rejoins a received member after the partings.
 - **First drops:** the 89 enemy types that random encounters meet and that drop something.
   Each one's region is the earliest region where the type is met; its pool item is the type's
-  first drop.
+  first drop. Whether one may hold progression: "Enemy drops" below.
+- **Crafts** (0.2.0): one per distinct item Item Creation can make, named after the first
+  specialty that makes it ("Cooking: Fried Rice"); location groups "Crafts" and one per
+  specialty. See "Craftsanity" below.
+- **Killer-move levels** (0.2.0): one per proficiency level of each killer move a learn table
+  teaches ("Bowman: Pillory level 6"); groups "Killer Moves" and "Killer Moves: <member>". See
+  "Killer moves" below.
 
 ## Items
 
@@ -61,27 +76,32 @@ Story mode's locations come from the discs through `docs/ap/field.json` (`tools/
 |---|---|---|
 | a game item n (1-1023) | `0x50320000 + n` | equipment (75-162, 485-754) useful, the rest filler |
 | a Fol bundle (10 amounts) | `0x50330000 + amount` | filler |
-| a character (Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Chisato) | `0x50340000 + party id` (1 Claude ... 12 Chisato) | useful |
+| a character: Celine, Bowman, Dias, Precis, Ashton, Leon, Opera, Ernest, Chisato; under open world's party rules any member but the story route's hero (Claude, Rena and Noel too) | `0x50340000 + party id` (1 Claude ... 12 Chisato) | useful; progression when `killer_move_progression: any` needs it ("Killer moves") |
 | a trap: Ambush, Fol Loss (10 %), Poison, Paralysis, Stone | `0x50350000 + 1..5` | trap |
 | an area key (open world): "Salva Pass" ... (35) | `0x50360000 + N`, N 1-35 (data.KEY_GROUPS) | progression |
 
 - **The pool** is the vanilla contents of this world's locations. A boss, join or drop
-  location adds its vanilla item (a Blueberry for bosses and join sites); the party's
+  location adds its vanilla item (a Blueberry for bosses and join sites); a craft adds the
+  crafted item when that is filler, else a Blueberry (so equipment does not grow the pool's
+  useful share; `items.pool_filler`); a killer-move level adds a Blueberry; the party's
   characters replace join sites' Blueberries; `traps` % of the filler becomes traps.
 - There are no progression items of our own in story mode: the story's key items are flags
-  and stay put. Open world adds the 35 area keys (progression); each takes the place of a
-  filler item in the pool.
+  and stay put (the one exception: character items that `killer_move_progression: any` needs).
+  Open world adds the 35 area keys (progression); each takes the place of a filler item in the
+  pool.
 - **The cave's gems stay put.** The Cave of Trials doors on maps 751 and 764 take the Red Lotus
   Gem (317; gifts on maps 711 and 754) and test the Cracked Gem (289; the chest on map 771).
   Those three locations keep their own item, locked (`items.PUZZLE_ITEMS`), so a door never
   needs a gem placed behind it.
 - The filler name is Blueberry.
 
-**The party** (character_items, `world.choose_party`): one of Bowman / Precis (Precis rules
-Bowman out); Ashton, or Opera with Ernest (Ashton rules Opera out, Ernest comes only with
-Opera); Celine; Chisato; Leon in Claude's game or Dias in Rena's (neither with protagonist
-"any"). With Claude, Rena and Noel the party is at most 8: when there is one too many, Ernest
-or one of the single members stays out. The seed's `options.characters` lists them.
+**The party** (character_items under the story's party rules, `world.choose_party`): one of
+Bowman / Precis (Precis rules Bowman out); Ashton, or Opera with Ernest (Ashton rules Opera
+out, Ernest comes only with Opera); Celine; Chisato; Leon in Claude's game or Dias in Rena's
+(neither with story_route "any"). With Claude, Rena and Noel the party is at most 8: when there
+is one too many, Ernest or one of the single members stays out. The seed's
+`options.characters` lists them. Open world with character_items has its own rules ("Party
+v2", below).
 
 ## Regions and events
 
@@ -90,7 +110,12 @@ way the story does:
 - "Arrived on Energy Nede" at the disc switch;
 - "Saved at the Final Save Point" (Fienal 9F, map 671): it opens the Cave of Trials and
   Indalecio;
-- "Victory" at Indalecio, the goal. The seed's `goal.encounters` is [539, 540].
+- "Victory" at Indalecio, the goal. The seed's `goal.encounters` is [539, 540] with `goal:
+  indalecio`.
+
+The limiter-off goals add "Limiter Off" (Energy Nede region, location "Limiter Off (Filia,
+Central City)"), which Indalecio then needs, and the Iseria Queen goal "Iseria Queen defeated"
+(Cave of Trials region, "Iseria Queen (Cave of Trials)"); see "Goals" below.
 
 ## Logic
 
@@ -109,7 +134,7 @@ field.json's conditions (three-valued evaluation with flag 1 fixed per game):
 | join | a join site (character_items) | 18 |
 | optional quest | an optional boss | 4 |
 | losable | a fight the story lets the party lose (the port checks it on the scripted defeat as on a win; the reason and its filler-only rule stay) | 3 |
-| protagonist | only one game runs it (under protagonist "any") | Claude / Rena only: gifts 9 / 2, bosses 1 / 1, joins 2 / 4 |
+| story_route | only one game runs it (under story_route "any") | Claude / Rena only: gifts 9 / 2, bosses 1 / 1, joins 2 / 4 |
 
 "window" and "time-limited" are soft: a diligent player avoids them, so `missable_locations:
 include` makes them ordinary locations (but see rule 2). Every other reason is hard: two such
@@ -130,7 +155,7 @@ games each location was proven in into its row (`late`).
   and 1406 story flags), with every location's own "done" flags cleared (each chest's opened
   flag, each gift's guard flags, each cave boss's guard flag: 378 flags), as for a player who
   skipped them all. The message speed (a setting) stays the `--map` default. Rena's game is
-  the same state with flag 1 cleared and the protagonist bytes swapped. The party is Claude,
+  the same state with flag 1 cleared and the story_route bytes swapped. The party is Claude,
   Rena and Noel.
 - **The search:** breadth-first over event sweeps, one headless process per node. Each sweep
   fires every trigger, talk and pickpocket entry of the map from the same snapshot, answers
@@ -148,9 +173,11 @@ games each location was proven in into its row (`late`).
 - **Proven:** the port loads a proof seed with every chest, gift and boss location, and a
   location is proven in a game when a sweep of that game's search logs its `[ap] check`.
 - **The rule** (rules.py `may_hold_progression`): a location may hold progression only when it
-  was proven in the protagonist's game (in both games under "any"). Story bosses are exempt
-  (the story fights them); first drops (dice rolls) and join sites never may; with
-  `expel_progression` off, nothing in Expel may.
+  was proven in the story_route's game (in both games under "any"). Story bosses are exempt
+  (the story fights them); join sites, shop slots and crafts never may; first drops follow
+  `drop_progression` ("Enemy drops" below: their places are judged by the same proofs) and
+  killer-move levels `killer_move_progression` ("Killer moves"); with `expel_progression` off,
+  nothing in Expel may.
 - **Conservative by design:** every entry starts from the map's arrival state, so doors behind
   switches, puzzles the save had not solved or a choice's other answers stay shut; such
   locations only lose the right to hold progression.
@@ -177,8 +204,11 @@ bosses:
 - Rerun the proof after a change to the port's field code, the event sweep or field.json
   ("Files", below).
 
-**Characters are useful, never progression.** Member-gated logic would not be monotonic
-(Ashton rules out Opera), so every member-gated location is excluded instead.
+**Characters are useful, not progression.** Member-gated logic would not be monotonic
+(Ashton rules out Opera), so every member-gated location is excluded instead. The one
+exception (0.2.0) is `killer_move_progression: any`, where a killer-move level of a member who
+joins by their item needs the item, which is then progression; the pool never holds two
+members who rule each other out, so a received member always joins ("Killer moves").
 
 ## Open world (`world_mode: open_world`, phase 4)
 
@@ -250,7 +280,7 @@ the teleporter search does not follow their entrances (`TELEPORTER_ISLANDS`;
 of the 129 Expel locations the late proof proves (not Hoffmann Ruins' 26 chests or Eluria
 Colony's 2 gifts, which hold only our Expel-story keys in open world). So in open world:
 - an Expel location may hold any progression when the teleporter proof reached it (in the
-  protagonist's game, both under "any"): the Cross and Lacour continents;
+  story_route's game, both under "any"): the Cross and Lacour continents;
 - where only the late proof reached it, only our own Expel-story keys (stages 1-12): the
   player can't pass the disc switch without them, so they are picked up before Expel closes;
 - with the teleporter off, or with `expel_progression` off, Expel holds only our Expel-story
@@ -305,6 +335,25 @@ from tools/ap_world_tables.py):
   inside and no key is needed. Hoffmann's island closes with its ship at chapter 28, after the
   gate. No key item is given around the Front Line (Shin 516 is a story boss at 447; Leon joins
   at El Beach, 230), and every join site is EXCLUDED anyway.
+- **The Lacour continent's soft-lock and Port Hilton's harbour** (port, 2026-10-25;
+  seed_format.md "The harbour"; docs/handoff/ships.md). Entering Lacour at chapter 22 step 9999
+  stores chapter 23, and Port Hilton's sailor, the continent's only way off, refused the passage
+  to Cross at chapters 23 and 24; the stage-9 keys (Map 231 and Hoffmann Passes) the fill may
+  put on the Cross continent were then out of reach until chapter 25, which needs them: a
+  soft-lock in released 0.1.0 / 0.1.1 open-world seeds that the logic did not model. The port
+  now lifts that refusal (and the chapter-18 Tournament Pass one) in every open-world seed,
+  decided from `world_mode`, so the logic's assumption (the Cross continent stays reachable) is
+  true without a logic change and existing seeds get it with a port update. The sailor also
+  becomes the captain the user asked for: **Cross / Hoffmann Ruins / El / Not now**, each only
+  when open (Hoffmann Ruins from chapter 23 to 59, the Hoffmann soldier's own sail; El only at
+  the story's voyage point, chapter 27 step 7000, with every key of the El gate, doing what the
+  Front Line's trigger does, the keys checked before anything is stored; never after the disc
+  switch). The party can walk from the Front Line to Port Hilton at that point (exit 438 is
+  open at step 7000, and ap_walkmap.py puts both on one walkable piece of the continent at
+  chapter 27). The Hoffmann ship's soldier stays at Port Hilton until chapter 59, and voyages
+  check their landing's key at the NPC, before the fare. The logic does not yet use the ship's
+  longer window (Hoffmann's island stays in `TELEPORTER_ISLANDS`): a proposal for the apworld is
+  in docs/handoff/ships.md.
 
 The teleporter proof's state has the save's chapter-60 flags, which Energy Nede's maps test,
 so it is used for Expel's maps only. **Known limits** (accepted, conservative elsewhere): a map
@@ -332,6 +381,175 @@ finite, so a price could block the seed; shop slots hold only useful, filler and
 (of any world); the user confirmed this default on 2026-10-23. The seed's check is
 `{type: shop, shop, index, item}`.
 
+## Enemy drops (`drop_progression`, `area_keys_in_drops`; 0.2.0)
+
+With `enemy_dropsanity: first_drop`, an enemy type's first drop may now hold progression (0.1.x:
+never). `drop_progression`: **allow** (default: it may, but needn't), **force** (the fair-odds
+drops take progression first), **never** (0.1.x's rule). In every mode (rules.py `drop_rule`):
+
+- **The odds.** `roll_drops` (battle/result.cpp, 0x800869fc) rolls a downed enemy's two drop
+  slots in turn, each at odds + (average Luck of the standing members >> 4) - 7 out of 256, and
+  stops at the first success. Luck only adds, so the chance at Luck 0 is the floor
+  (`drop_chance`). A drop holds progression only from 1 in 64 kills at Luck 0
+  (`MIN_DROP_CHANCE`, 4 / 256). That keeps out 21 of the 89 types: the 11 that drop nothing
+  without Luck (Magius 27 and Ericodus 56 need an average Luck of 128, Shout 96, Starguarder
+  80, the seven odds-5 types such as the slimes 48), Rikiha and Burst (1 / 256), the seven
+  odds-10 types (3 / 256) and the Guarder (3.99 / 256). Never with `encounter_rate: 0`.
+- **Met again.** Archipelago counts a location reached for good, so the enemy must be there to
+  fight from wherever the logic reaches the drop. `tools/ap_world_tables.py` (`drop_places`)
+  gives each drop row its `places`: the maps where random encounters meet the type with no
+  condition on the encounter site or the calls reaching it (`unconditional`), merged by area
+  and proofs (region, entrance group, the games whose late / teleporter / voyage proof reached
+  the map, their route keys), and each world map it is met on. Each row also gets its two slots'
+  `odds`.
+  - **Story mode:** a place the late proof reached (or a world map it walked), as for chests,
+    and outside Expel with `expel_progression` off. 62 of the 89 drops may hold progression
+    (25 with `expel_progression` off).
+  - **Open world:** each place counts as a chest on its maps would (`open_world_progression`,
+    `open_world_access` through `place_row`: early in its area's stage with the keys, through
+    the teleporter, after the Final Save Point; nothing that closes before the El voyage); a
+    world map only after the Final Save Point (its encounter cells are not mapped to islands).
+    The drop holds the best class among its places and is reached only through the access
+    modes of the places that allow progression, so the logic never counts it through a place
+    that can close. With the teleporter and `expel_progression` on: 60 drops any progression,
+    2 only our Expel-story keys; teleporter off: 52 and 10; `expel_progression` off: 25 and 30.
+- **force:** the drops that may hold progression and drop at least 20 / 256 at Luck 0
+  (`FORCE_DROP_CHANCE`, about 8 %, one in 13 kills: a handful of fights; 25 types, of which 22
+  pass the rules above, 13 in story mode with `expel_progression` off, 18 in open world) are
+  filled first: `SO2World.fill_hook` runs `fill_restrictive(allow_partial=True)` on them with the
+  multiworld's progression (not the deprioritized), before the main fill; what can't go there
+  is filled as usual. They are not Archipelago's priority locations: AP 0.6.8's priority fill
+  raises a FillError when a priority location can't take any of the progression left, as a late
+  drop can't in a solo open world (5 of 5 test seeds failed that way).
+- **`area_keys_in_drops`** (default on; the user, 2026-10-25): off adds an item rule to this
+  world's drops, in either world mode: no area key of any Star Ocean world (this world's or
+  another SO2 player's), so no area waits on one fight's drop. On, keys follow the drop's class
+  like any progression.
+
+## Craftsanity (`craftsanity`, `no_fail_crafting`; 0.2.0)
+
+- **The locations** (`crafts.py`, written by scratchpad/apworld2/make_crafts.py from the craft
+  research: scratchpad/openworld/craft_results.csv and the specialties' tables decoded off the
+  disc at the addresses `engine/src/game/field/menu_creation.cpp` uses): one per distinct item
+  Item Creation can make, 553, by the specialty that names them: Cooking 104, Customize 100,
+  Metalwork 92, Compounding 49, Blacksmith 44, Art 39, Machinery 29, Authoring 25, Publishing
+  24, Master Chef 21, Alchemy 16, Reverse Side 10. Every result is a game item; none was found
+  unmakeable. A location per result, not per recipe: a recipe's results are not a stable set
+  (Customize chains have no end). Failure items (12) are not locations; Identify, Survival and
+  Reproduction hand back or copy items and have none. Publishing (super specialty 5,
+  `Super5::compute`) makes a book about the party member picked: the member's index in the
+  table 0x80083D68 (12 party ids) picks a book from 0x80083D30 (common) or, in 10 % of tries,
+  0x80083D4C (rare); make_crafts.py reads the three tables from overlay 0xbc2 (archive entry
+  3010, loaded at 0x8007e000): 24 books, items 196-219. The research's tables plus these: all
+  553 items are their own `common_kind` (the item pack's blocks 3-5, entry 3000), so every
+  check can fire.
+- **Who can make it** (`makers`; the disc decode: `party_selected_char()` is the 1-based party
+  id): Customize's lists are one member's each (Claude to Ashton), Machinery's rare tables
+  Precis's or Opera's, Authoring's rare books Leon's, Art's portraits A-L one member's each (the
+  portrayed member must be in the active party), Publishing's books their subject's (who must
+  be in the party), Cooking's Grain teas anyone's but Claude's, Rena's, Precis's and Leon's (they
+  cook from another list): 156 of the 553. Metalwork's per-member equip filter is not
+  modelled.
+- **The rule:** never progression (an item rule; the user, 2026-10-25: a craft check gives a
+  random Archipelago item, any world's non-progression), and no access rule (Item Creation works
+  anywhere once a specialty is learned). A member-locked craft is EXCLUDED unless a maker is
+  sure to be in the party (the story's party rules: Claude, Rena, Noel and the starting
+  character; open world's: the heroes and the starting character), and left out when no maker
+  can ever join (open world's rules: a member who is not a hero, the start or in the pool).
+- **The check:** `{type: craft, item}`: the port checks the `common_kind` of what
+  `CreationPage::produce()` gives (a rare kind counts as its common item), and the player keeps
+  the crafted item (the user, 2026-10-25).
+- **`no_fail_crafting`** is written to the seed for the port (the attempt succeeds whenever the
+  specialty picked a result); no logic change.
+
+## Killer moves (`killer_move_checks`, `killer_move_progression`; 0.2.0)
+
+- **The locations** (`moves.py`, written by scratchpad/apworld2/make_moves.py from
+  scratchpad/killer_prof/move_levels.csv: the learn tables in archive #1981 and the move data in
+  #2129; docs/handoff/killer_prof.md): one per proficiency level of each killer move a learn
+  table teaches (the user, 2026-10-25: "every proficiency level"), 133 over 69 moves (Claude,
+  Bowman and Dias 10 moves, Ashton 9, Ernest and Chisato 8, Precis and Opera 7). A move's level
+  is min(uses / div, cap); the use count (record + 0x8a + 2 * move) goes up by 1 each time the
+  move starts (the original's `pc_begin_action`, battle/party_states.cpp), at most 999. The 61
+  moves with at most 3 levels have a location per level (112); the 7 that count in fine steps
+  (Bowman's Poison Pills, Pillory, Secret Medicine and Whirlwind Fist, Opera's Photon Prison,
+  Cold Wind and Gravity Shell) have three, at the levels 100, 200 and 300 uses reach (21), the
+  counts the tiered moves' levels mostly need. Ashton's Dead Triangle has no levels; the 8 moves
+  without a learn-table row (Phase Gun, Precis's three, Opera's three, Ashton's Tri-Ace) are
+  not listed.
+- **The member** (`locations.fighter_status`): sure to be in the party (a hero, the story's
+  fixed members, the starting character) or joining by their character item: an ordinary
+  location; joining only by the player's choice in the story (character_items off): EXCLUDED;
+  never in the party: left out. With `encounter_rate: 0` every level is EXCLUDED (the uses need
+  battles).
+- **Access** (rules.py `killer_rule`): the member, at the level that learns the move, and the
+  battles. Conservatively, a move learned by level 30 counts from the disc switch (a party there
+  is well past it; 53 locations), any other from the Final Save Point (80).
+- **`killer_move_progression`:** never (default): no progression. hero: the story members'
+  moves only (Claude's, in Claude's game and under story_route any; Rena has no killer moves).
+  any: every member the logic counts on (sure or by item). Under any, a level of a member who
+  joins by their item also needs the item, which becomes progression
+  (`world.progression_characters`: Archipelago's CollectionState counts only progression
+  items); under never and hero the item is not required (nothing there holds progression, and
+  full accessibility reaches every item anyway).
+- **The check:** `{type: killer_move, character, move, level, uses}`, `uses` = level x the
+  move's divisor in the armed table; the port compares the raw use count.
+
+## Party v2 (open world with `character_items`; 0.2.0)
+
+The new character rules are open world only (the user, 2026-10-25); story mode keeps the
+story's party rules ("The party" above). `world.plan_party` returns the `Party`: the rules
+(`party_rules` in the seed), the story members, the starting member, the pool, who is sure to
+be in the party and who can ever be.
+
+- **The story members:** the story route's hero, or Claude and Rena under story_route any (the
+  player picks at New Game, so neither can be an item). The hero is never an item (slot 0 at New
+  Game, the Private Actions; party_ships.md) and can't be excluded (a warning).
+- **`starting_character`** (open world, either party rules; default `hero`): hero means nobody
+  extra (the hero leads, as in the original); any, a random member who is neither a hero nor
+  excluded; a name, that member (it wins over `exclude_characters`, with a warning; the hero of
+  a one-hero route means nobody extra). Story mode ignores it (a warning). The member joins at
+  the start and leads (the port: the field sprite and the name swap, seed_format.md "Party
+  v2"). `hero` is the default rather than any because a random member would make every
+  open-world seed a version-2 seed and change the game for players who did not ask.
+- **The pool** (`choose_open_party`): every other member not excluded and not the start, as many
+  as fit 8 with the story members and the start (a random sample when more are allowed). No
+  lockouts: Leon and Dias in either game, Bowman with Precis, Ashton with Opera and Ernest.
+- **The healer guarantee:** when none of the story members, the start and the pool is Rena or
+  Noel (the only healers), an allowed healer takes a random pool member's place (the pool is
+  full then); with both excluded, none (the player's choice).
+- **Join sites:** every non-story member's, the three new ones included; all EXCLUDED. Members
+  not in the pool (and neither story members nor the start) never join.
+- Open world without character_items keeps the story's party rules (`party_rules: "story"`),
+  plus the starting member.
+
+## Goals (`goal`; 0.2.0)
+
+The user (2026-10-25): Indalecio either version, Indalecio with his limiter off, or both the
+limiter-off Indalecio and the Iseria Queen (research: scratchpad/openworld/goals.md; the seed:
+seed_format.md "Goals").
+
+| `goal` | Wins | The seed | Logic |
+|---|---|---|---|
+| `indalecio` (default; `final_boss` an alias) | 539 or 540 | `goal: {encounters: [539, 540]}`, as in 0.1.x; no gate | Victory: the Final Save Point |
+| `indalecio_limiter_off` | 540 | `{encounters: [540], flags: [445, 446]}` and the goal gate (a version-2 seed) | Victory also needs "Limiter Off": the Final Save Point, and in open world the Central City Pass |
+| `indalecio_limiter_off_and_iseria_queen` | 561, then 540 | `{all: [561, 540], encounters: [540], flags: [445, 446]}` and the gate with `won: [561]` (version 2) | Victory also needs "Iseria Queen defeated": the Final Save Point, and in open world the Cave of Trials and Fun City Passes |
+
+- **Limiter off:** map 685 picks encounter 540 when flag 556 is set, set only by Filia's scene in
+  Central City City Hall (map 239) after the Final Save Point, which needs her Clik meeting
+  (flags 445 / 446, a Private Action closed by Clik's destruction). The port presets 445 and
+  446 at New Game and after every load (`goal.flags`; this costs only Clik's Private Action),
+  and keeps the Final Save Point floor's way to Indalecio (door 43978493, map 671 -> 684,
+  routine 0x3bec) shut until flag 556 (banner "Talk to Filia in Central City first"), in
+  either world mode.
+- **The Iseria Queen** (561) has no battle site: the song "The Evil Melody" (song 7) summons her,
+  composed from the Silver Trumpet (item 48, which G-Celesta gives at the bottom of the Cave of
+  Trials, map 815) and played with a Conductor's Baton by a member at Musical 10 with Pitch and
+  Sense of Rhythm; it works with encounter_rate 0. The gate also needs her win (`won`, banner
+  "Defeat the Iseria Queen first"), and the port keeps the trumpet out of the shops' sell lists
+  until the song is composed (flag 53). The Cave of Trials region exists whether or not
+  `cave_of_trials` adds its locations, which this goal does not turn on.
+
 ## Entrance shuffle (later: a design note)
 
 The port already sends a seed door to `to` (an arrival point of the game) and
@@ -353,25 +571,35 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 
 | Option | Values | Effect |
 |---|---|---|
-| `goal` | final_boss | Indalecio (539 / 540) |
+| `goal` | indalecio (default; alias final_boss) / indalecio_limiter_off / indalecio_limiter_off_and_iseria_queen | Indalecio, either fight (539 / 540); the limiter-off fight (540); the Iseria Queen (561) and then 540 ("Goals") |
 | `world_mode` | story (default) / open_world | open_world: area keys lock the world-map entrances ("Open world") |
 | `expel_teleporter` | true (default) / false | open world only: Fun City's arena takes the party back to Expel from chapter 36 |
 | `shuffle_shops` | off (default) / specials / full | shop slots as locations, never progression |
-| `protagonist` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
+| `story_route` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
+| `starting_character` | hero (default) / any / claude ... chisato | open world only: a member who joins at the start and leads; hero: nobody extra; any: a random member, not a hero or excluded ("Party v2") |
+| `exclude_characters` | a set of member names (default empty) | open world with character_items: never in the pool, so they never join; not the hero |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
 | `expel_progression` | true (default) / false | false: no other world's progression in Expel; in open world our own Expel-story keys still may be there (the user's decision, 2026-10-23) |
 | `cave_of_trials` | false (default) / true | add the Cave of Trials (after the Final Save Point) |
 | `boss_checks` | true (default) / false | the 41 boss fights are locations |
-| `character_items` | false (default) / true | the party's members join through items, their join sites are locations |
-| `drops_as_checks` | off (default) / first_drop | each enemy type's first drop is a location |
+| `character_items` | false (default) / true | the party's members join through items, their join sites are locations; open world: party v2 |
+| `enemy_dropsanity` | off (default) / first_drop | each enemy type's first drop is a location |
+| `drop_progression` | allow (default) / force / never | whether first drops may hold progression; force: the fair-odds ones first ("Enemy drops") |
+| `area_keys_in_drops` | true (default) / false | false: no Star Ocean area key in this world's drops |
+| `craftsanity` | false (default) / true | the 553 crafts are locations, never progression ("Craftsanity") |
+| `no_fail_crafting` | false (default) / true | Item Creation never fails by chance (the port) |
+| `killer_move_checks` | false (default) / true | the 133 killer-move levels are locations ("Killer moves") |
+| `killer_move_progression` | never (default) / hero / any | which killer-move levels may hold progression |
 | `traps` | 0-100 (default 0) | the share of filler turned into traps |
 | `exp_multiplier`, `fol_multiplier` | 1-10 (default 1) | the battle's EXP / Fol total |
 | `encounter_rate` | 0-200 (default 100) | random-encounter frequency, percent |
 | `death_link` | false / true | written to the seed as `options.deathlink` |
 
-slot_data and the seed's `options` repeat them, with `seed_format`, `goal_encounters` and
-`characters` (the party). The port reads the phase-3 ones ([seed_format.md](seed_format.md),
-"Phase 3").
+slot_data and the seed's `options` repeat them (`starting_character` as the member chosen, or
+null; `exclude_characters` as a list), with `seed_format`, `goal_encounters`, `characters` (the
+pool's members), `party_rules` ("story" / "open") and `apworld_version`. The port reads the
+phase-3 ones ([seed_format.md](seed_format.md), "Phase 3") and, of 0.2.0's, `no_fail_crafting`,
+`starting_character` and `party_rules` ("v2 fields").
 
 ### DeathLink and the fights you can't win
 
@@ -402,13 +630,19 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
 ## The seed (`generate_output`)
 
 `SO2World.seed_data()` writes:
+- `version`: 1, or 2 when the seed uses a field an older port would ignore (a limiter-off goal,
+  `party_rules: "open"`, a starting character, craft or killer-move locations,
+  `no_fail_crafting`: `seed_version`; seed_format.md "The version rule"), so the 0.02.00 port
+  refuses such a seed instead of playing it wrong;
 - every own location with its check (chest: map + flag; gift: map + call-site offset; boss:
-  encounter; join: map + offset + character; drop: enemy type) and its item (own: kind and
-  its fields; another player's: name / ap_id / player_name);
+  encounter; join: map + offset + character; drop: enemy type; craft: item; killer move:
+  character + move + level + uses) and its item (own: kind and its fields; another player's:
+  name / ap_id / player_name);
 - each chest's and gift's placeholder and patch lines, from the world agent's
   `apworld/so2/patches.py` (`placement_patches`; every chest and gift location gets one, since
   the port checks gifts only through theirs);
-- `items`, `start` (start_inventory: items and Fol), `options` and `goal`.
+- `items`, `start` (start_inventory: items and Fol), `options`, `goal` (`seed_goal`) and `doors`
+  (open world's, then the goal gate, `goal_doors`).
 
 The world never reads the discs. Each site's `word` / `expected` come from field.json.
 
@@ -416,16 +650,19 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 
 | File | Contents |
 |---|---|
-| `world.py` | `SO2World` (`choose_party`, `create_items`), `SO2Web`, `seed_data`, `generate_output`, `fill_slot_data` |
+| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `data.py` | generated tables (do not edit) |
+| `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
-| `archipelago.json`, `docs/` | manifest, setup and game pages |
-| `test/` | WorldTestBase tests |
+| `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 
     tools/ap_world_tables.py          # field.json + battles.json + late_proof.json + doors.json -> data.py
+    tools/ap_make_crafts.py           # docs/ap/data/craft_results.csv + craft_decode.txt + the overlay -> crafts.py
+    tools/ap_make_moves.py            # docs/ap/data/move_levels.csv -> moves.py
 
 Rerun the late proof after a change to the port's field code, the event sweep or field.json
 (about an hour per game; keep the machine's total at 6 game processes: `--jobs 3` each, or one
@@ -475,7 +712,7 @@ Results (2026-10-23, phase 4):
   (Three seeds of the first run failed to fill: open world with expel_progression off left the
   Expel-story keys nowhere to go; fixed, see "Open world".)
 - In the port (headless, engine/build-enemy, `scratchpad/enemy/ap5/spot/run.sh`), three open-world
-  batch seeds (protagonist any / claude / rena) and one more: North City's entrance (door
+  batch seeds (story_route any / claude / rena) and one more: North City's entrance (door
   68685998, key 29) refuses the leader ("North City Pass needed"), `ap_give key:29` gives the
   key and the town loads (vblank 422); Hearn's shop slots 0 and 2 in a full-shops seed pay the
   placed items (our own one given, Rena's sent), the specials seeds leave shop 1 alone.
@@ -530,10 +767,57 @@ Results (2026-10-23, 0.1.1 with the El voyage gate; docs/handoff/elgate.md):
   predecessor wins a node's route is also first-come with `--jobs` > 1.
   docs/ap/late_proof.json is unchanged (two earlier runs prove both bosses).
 
+Results (2026-10-25, 0.2.0; docs/handoff/apworld2.md):
+- The world's tests: 235 passed (19741 subtests, a count that varies with the random fills;
+  `test_v2.py`'s classes: drops in each mode, force filling first, no keys in drops; craftsanity in story and open world, no-fail alone;
+  party v2's members, start, healer guarantee and exclusions; the goals' events, gate and seed;
+  killer moves per progression mode and with encounter_rate 0). AP's general tests with so2
+  installed: 379 passed (117030 subtests).
+- 96 seeds (scratchpad/apworld2/batch: `run_batch.sh`, `check.py`; the 0.1.1 batch's players
+  with every 0.2.0 option random too; two SO2 players and ChecksFinder): 192 `.apso2` over 192
+  option combinations (183 version 2, 9 version 1), 276-1768 locations each, all generate and
+  fill. `check.py` (0.1.1's checks plus: the version rule; craft and killer-move checks and ids;
+  no progression in crafts; drops' progression by `drop_rule`, never under 1 / 64 or with
+  encounter_rate 0 or `never`; killer moves' by mode; no area key in a drop with
+  `area_keys_in_drops` off; the goal object and gate; party v2's size, exclusions, healer and
+  join sites; the story's party rules) finds no error; 5954 progression items in SO2 locations.
+  Progression placed: in drops 195 in 33 open-world slots and 74 in 18 story slots with allow,
+  400 in 19 and 97 in 6 with force, none with never; in killer-move levels 187 in 36 slots with
+  any, 68 in 28 with hero, none with never; none in the crafts of 59 slots (`stats.py`). (The
+  goal gate's first banner was shortened after this run, a text change only: a seed generated
+  since carries it.) The first run found another SO2 player's area key in a story-mode world's
+  drop with `area_keys_in_drops` off (7 files; the item rule then applied in open world only):
+  fixed, none in the reruns.
+- The 16 seeds whose players are both in story mode, generated with `drop_progression: never`
+  (the one new option that changes a story seed by default): all 32 `.apso2` identical to the
+  0.1.1 batch's but for the `options` object (11 keys added, none changed).
+
 ## Changes
 
-**0.1.1** (2026-10-23, not released yet). Open world only; story mode, the item pool, location
-names and ids are unchanged.
+**0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
+the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a
+version-1 seed the 0.02.00 port plays; story-mode seeds are 0.1.1's with `drop_progression:
+never` (above).
+- *Goals:* `goal` indalecio (0.1.x's `final_boss`, kept as an alias) / indalecio_limiter_off /
+  indalecio_limiter_off_and_iseria_queen, with the events "Limiter Off" and "Iseria Queen
+  defeated", the seed's `goal.flags` / `goal.all` and the gate on the way to Indalecio
+  ("Goals").
+- *Drops may hold progression:* `drop_progression` allow (default) / force / never, only for
+  enemies met again from where the logic reaches the drop and with fair odds at Luck 0;
+  `area_keys_in_drops` (default on; 0.1.x kept area keys out of drops) ("Enemy drops").
+- *Craftsanity:* 553 craft locations (Publishing's books included), never progression;
+  `no_fail_crafting` for the port ("Craftsanity").
+- *Killer moves:* 133 killer-move level locations; `killer_move_progression` never / hero / any
+  ("Killer moves").
+- *Party v2* (open world with character_items): no lockouts, the other hero and Noel as items,
+  three new join sites, `exclude_characters`, the healer guarantee; `starting_character`
+  (open world, default hero) ("Party v2").
+- slot_data and `options` gain the new options, `party_rules` and `apworld_version`; the seed
+  gains `version` 2 when needed. Location and item ids of 0.1.1 are unchanged; the new ones are
+  types 11 (crafts) and 12 (killer moves), the characters Claude, Rena and Noel.
+
+**0.1.1** (2026-10-23, released with the port's 0.02.00). Open world only; story mode, the item
+pool, location names and ids are unchanged.
 - *Fixed: two ship landings missing from the logic* (docs/handoff/apareas.md). The Lacour
   continent is reached only by the Herlie ship, which lands in Port Hilton through a door the
   Hilton Pass opens, and Hoffmann Ruins only by the Hilton ship, which lands on map 231 (the Map
@@ -584,6 +868,7 @@ names and ids are unchanged.
 ## Next
 
 - Entrance shuffle on the door table ("Entrance shuffle (later)" above).
+- The open world's hub with boss chambers (docs/handoff/apv2.md, "Later").
 - Tighter open-world proofs: a mid-Nede state with the flags of its time (the teleporter
   proof's chapter-60 flags keep it to Expel's maps).
 - A `.apworld` zip for custom_worlds (phase 5).

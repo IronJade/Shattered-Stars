@@ -242,7 +242,7 @@ def args_before(ins, n, count):
 
 COMMON_FLAGS = set()   # flags set to 1 by many routines (scene state, not one-time guards)
 # Script flags 2 and 4: Private Action mode (the world chunk scripts set both before a town's
-# PA entrance). Flag 1 is the protagonist: set in Claude's game (the new game sets it with
+# PA entrance). Flag 1 is the story_route: set in Claude's game (the new game sets it with
 # map 7, chapter 3), clear in Rena's (map 18, chapter 4).
 PA_FLAGS = {2, 4}
 

@@ -92,7 +92,7 @@ Expected: each run writes `AP_<seed>.zip` containing one `.apso2` per Star Ocean
 spoiler, with exit 0 and nothing in the log matching `error|traceback|exception`. Verified
 this pass for: defaults solo; defaults in a 2-player multiworld (SO2 + ChecksFinder);
 `world_mode: open_world` + `character_items` + `shuffle_shops: full` + `traps: 30` +
-`cave_of_trials` + `death_link`; `protagonist: rena` + `missable_locations: include` +
+`cave_of_trials` + `death_link`; `story_route: rena` + `missable_locations: include` +
 `expel_progression: false` + the EXP/Fol/encounter-rate options.
 
 Serve one multiworld zip and confirm it binds to 127.0.0.1 only:

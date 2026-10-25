@@ -64,6 +64,32 @@ void write_sound(Config& c, const SoundSettings& s) {
   c.set_int("volume", s.volume);
 }
 
+TextSettings read_text(const Config& c) {
+  TextSettings s;
+  s.instant = c.get_bool("instant_text", false);
+  s.auto_advance = c.get_bool("auto_advance", false);
+  s.auto_advance_ms = std::clamp(c.get_int("auto_advance_delay", s.auto_advance_ms), kMinAutoAdvanceMs, kMaxAutoAdvanceMs);
+  return s;
+}
+
+void write_text(Config& c, const TextSettings& s) {
+  const TextSettings defaults;
+  auto put_bool = [&c](const char* key, bool value, bool fallback) {
+    if (value == fallback) c.erase(key);
+    else c.set_bool(key, value);
+  };
+  put_bool("instant_text", s.instant, defaults.instant);
+  put_bool("auto_advance", s.auto_advance, defaults.auto_advance);
+  if (s.auto_advance_ms == defaults.auto_advance_ms) c.erase("auto_advance_delay");
+  else c.set_int("auto_advance_delay", std::clamp(s.auto_advance_ms, kMinAutoAdvanceMs, kMaxAutoAdvanceMs));
+}
+
+int auto_advance_frames(const TextSettings& s) {
+  if (!s.auto_advance) return 0;
+  const int ms = std::clamp(s.auto_advance_ms, kMinAutoAdvanceMs, kMaxAutoAdvanceMs);
+  return std::max(1, (ms * 60 + 500) / 1000);
+}
+
 std::filesystem::path default_memcard(int slot) {
   return config_dir() / ("memcard" + std::to_string(slot) + ".mcd");
 }

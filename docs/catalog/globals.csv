@@ -491,7 +491,7 @@ field,0x8007522c,k_sequences,s16[16],B 0x6f / 0x16 / 0x70 cue lists: entries 450
 field,0x80075254,f_system,System *,System object as seen by program #3100,likely,field_exit_to_program
 field,0x80075258,f_handoff,Registry *,Inter-program handoff registry,likely,field_exit_to_program
 field,0x8007525c,f_loader,Loader *,System + 0x10,likely,usage with loader_* calls
-field,0x80075270,config,u8 *,"Config block (handoff 2, 0x2a0): +0/+2/+4/+6 confirm / cancel / menu / PA buttons, +0x14 / +0x1c..+0x2c counters, +0x18 money (clamped 0..999999999), +0x45 hero, +0x4c disc 2, +0x58 / +0xe8 12x12 relation tables (was game_counters)",confirmed,"field_bind_system; VM ext 0xd3/0xd4, table A 0x05-0x0d, table B 0x10-0x13"
+field,0x80075270,config,u8 *,"Config block (handoff 2, 0x2a0): +0/+2/+4/+6 confirm / cancel / menu / PA buttons, +0x14 / +0x1c..+0x2c counters, +0x18 money (clamped 0..999999999), +0x40 formation (FormationPage), +0x41 Formation leader (a front-four party slot: the member controlled in battle; camp menu Combat > Formation > Leader, LeaderDialog; in open-world AP seeds the port also draws the field walking actor as this member, field/leader.h), +0x45 hero, +0x4c disc 2, +0x58 / +0xe8 12x12 relation tables (was game_counters)",confirmed,"field_bind_system; VM ext 0xd3/0xd4, table A 0x05-0x0d, table B 0x10-0x13"
 field,0x80075274,f_sound,Sound *,Sound system (music / effects),likely,music opcodes
 field,0x80075278,inventory,u16[],"Item entries: bits 0-9 item id, bits 10-14 count",likely,table A 0x39
 field,0x8007527c,party_table,PartySlot[8],"0x60 bytes per slot. +0x00 s16 character id + 1 (negative = inactive?), +0x22 s16 maximum, +0x24 s16 current (HP?)",likely,table A 0x1e / 0x1f

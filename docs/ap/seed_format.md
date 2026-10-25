@@ -18,7 +18,7 @@ so later versions can add to the file.
 | Key | Type | Meaning |
 |---|---|---|
 | `format` | `"apso2"` | required |
-| `version` | 1 | required; this build reads 1 |
+| `version` | 1 or 2 | required; this build reads 1 and 2 (2: "v2 fields" below) |
 | `seed` | string | the multiworld's seed id (required); the save sidecar keeps it |
 | `game` | string | `"Star Ocean: The Second Story"` |
 | `slot` | `{name, id}` | this player's slot name and number |
@@ -302,9 +302,9 @@ options-off run of the victory reference give the same RNG and handoffs as PCSX-
 
 | Key | Values | Default | What it does |
 |---|---|---|---|
-| `protagonist` | `any`, `claude`, `rena` (or 0-2) | `any` | New Game starts on that protagonist and keeps the cursor there (the other side buzzes; log `this seed is for Claude's game`). |
+| `story_route` | `any`, `claude`, `rena` (or 0-2) | `any` | New Game starts on that story route and keeps the cursor there (the other side buzzes; log `this seed is for Claude's game`). Seeds from so2.apworld 0.1.0 / 0.1.1 call it `protagonist`; the port reads either. |
 | `character_items` | true / false | false | Listed join sites are checks; members join through their items. |
-| `drops_as_checks` | `off`, `first_drop` (or 0 / 1) | `off` | The first drop of each enemy type with a `drop` location is a check. |
+| `enemy_dropsanity` | `off`, `first_drop` (or 0 / 1) | `off` | The first drop of each enemy type with a `drop` location is a check. 0.1.0 / 0.1.1 seeds call it `drops_as_checks`; the port reads either. |
 | `exp_multiplier` | 1-10 | 1 | The battle's EXP total, at the result screen. |
 | `fol_multiplier` | 1-10 | 1 | The battle's Fol total, at the result screen. |
 | `encounter_rate` | 0-200 (percent) | 100 | Random-encounter frequency on field and world maps. 0 = none. |
@@ -383,7 +383,7 @@ locations (a placeholder): it is given then, the join waiting for free play.
     reserve), Rena's game 126 -> 125, map 131's store kept, the three choice partings (choices
     forced by seed patches where the sweep's confirm picks the other answer). Smoke: `ap_cel_*`.
 
-### First drops (`drops_as_checks: first_drop`)
+### First drops (`enemy_dropsanity: first_drop`)
 
 - In roll_drops the RNG draw and the one-drop-per-enemy rule are unchanged.
 - When an enemy type drops anything and the seed has its `drop` location unchecked, the item is
@@ -571,6 +571,70 @@ uses the game's own two-way route, opened from chapter 36:
   K25 transfers to map 18 with the teleporter, only talks without it; map 18's K26 exists only
   with it, and its yes branch transfers to map 303.
 
+### The harbour (Port Hilton, open world; port behaviour, 2026-10-25)
+
+Port behaviour only: no seed field. The port decides from `world_mode: open_world`, so open-world
+seeds made by so2.apworld 0.1.1 get it with a port update (docs/handoff/ships.md).
+
+- **The soft-lock it fixes.** Entering Lacour (214) from the world map at chapter 22 step 9999
+  stores chapter 23 (909 routine 0x47e8). Port Hilton's sailor (map 169, actor 17, talk routine
+  0x714c) is the only way off the Lacour continent, and he refused the passage to Cross at
+  chapters 23 and 24 ("'Tis a black day for Lacour", string 107); chapter 25 is stored on map
+  231, after the Hoffmann trip, which needs the Map 231 and Hoffmann Passes, and the fill may
+  have put those on the Cross continent. In an open-world seed he no longer refuses then, nor at
+  chapter 18 from step 6000 (the Tournament Pass).
+- **The captain's menu.** His Cross / Don't cross choice becomes "Where to, matey? Cross is N
+  FOL." (his own speaker label, the fare he works out) with **Cross / Hoffmann Ruins / El / Not
+  now**, only the destinations open now (Cross and Not now alone keep his own strings):
+  - Cross: always; his own fare and voyage (flags 16 + 17, landing at Herlie).
+  - Hoffmann Ruins: chapters 23-59 (map 231's soldier sails back until 59); the Hoffmann
+    soldier's own sail (169 0x7cf8: flags 16 + 22, map 231), which at chapter 23 stores chapter
+    24 as the story's first trip does. No fare (the soldier takes none).
+  - El: only while the story is at the voyage (chapter 27 step 7000, what room 444's trigger
+    waits for; disc 1, so never after the disc switch), and only when every key of the seed's El
+    voyage door (29106503, its `keys`) has arrived. Without them it is still listed and choosing
+    it shows the El gate's banners ("Eluria Pass needed to sail", one per missing pass) and
+    stores nothing: the player sees why the ship will not sail rather than wondering where the
+    option went. With them it does what room 444's routine 0x7c28 ends with: the music and the
+    screen fade (90 frames), chapter 28 step 0, map_transfer_c(422, 130, -215, 0, 0, 180, 128):
+    Lacour Castle's farewell, Port Hilton's departure, the ship (548). The keys are checked
+    before anything is stored. Room 444's own trigger and its gate are unchanged.
+- **The Hoffmann ship** (actor 24, routine 0x79c0) stands at Port Hilton at chapters 23-59,
+  not 23-27, and offers "We'll go to the ruins again" until 59 (the four "Lacour Hope" soldiers
+  beside him stay as long: their lines are the chapter 24-27 ones).
+- **Landing keys first.** A voyage whose landing door (the world-map script's transfers, 909:
+  0x5cf8 Herlie, 0x5ad0 and 0x6120 Port Hilton, 0x5f08 map 231) needs a key not received is
+  refused at the NPC, before the fare or any voyage, with the banner "Map 231 Pass needed to
+  sail": the captain's Cross and Hoffmann Ruins, the Hoffmann soldier's yes, Herlie's sailor
+  (map 144, routine 0x7298; the Hilton landing). Map 231's soldier needs no check (the party
+  came through Port Hilton, whose key is the landing's). The landing doors themselves still
+  refuse a voyage reached another way.
+- **How.** Twelve patch lines the port adds to an open-world seed's own (logged `seed:N`; each
+  skipped if the disc's word differs; NA words, other releases through region::script_offset:
+  Germany lays map 169 out otherwise from 0x7c70, +84 bytes; verified on NA / EU / FR / DE):
+
+      script 169 0x1c65 0x00000012 0x000003e7   chapter 18 refusal: never
+      script 169 0x1c79 0x00000017 0x000003e7   chapter 23 refusal: never
+      script 169 0x1c7c 0x00000018 0x000003e7   chapter 24 refusal: never
+      script 169 0x1c99 0x12000002 0xfe700000   push 2 (option count) -> port op A 0x70
+      script 169 0x1ca6 0x19800004 0x0b800004   push_eq L[4], 0 -> push L[4] ...
+      script 169 0x1ca7 0x00000000 0xfef10000   ... port op A 0x71 (the voyage chosen)
+      script 169 0x2647 0x0000001b 0x0000003b   actor 24 registered: chapter <= 27 -> 59
+      script 169 0x1f23 0x0000001b 0x0000003b   his "again" choice: chapter <= 27 -> 59
+      script 169 0x1f3b 0x19800000 0x0b800000   push_eq L[0], 0 -> push L[0] ...
+      script 169 0x1f3c 0x00000000 0xfef20016   ... port op A 0x72, landing flag 22
+      script 144 0x1cdc 0x19800000 0x0b800000   Herlie's sailor: push L[0] ...
+      script 144 0x1cdd 0x00000000 0xfef20012   ... port op A 0x72, landing flag 18
+
+  The port-only ops are table A subs (opcode 0xfe) the original leaves empty (above 0x48;
+  field/script_table_a.cpp): **0x70** pushes the option count (the stack holds the choice
+  library call's question string; the next instruction pushes the options string; both are
+  then replaced while the menu is open); **0x71** pops the option and pushes 1 for the sailor's
+  own fare and Cross voyage, 0 for nothing, or goes on in the Hoffmann soldier's sail, or plays
+  444's ending; **0x72** (low byte: the landing's flag) pops the option and pushes `option == 0`
+  and the landing's key held. The choice library (0x484c) takes up to four options.
+- **Story mode, no seed:** none of it (the sailor refuses at chapters 18 / 23-24 as the original).
+
 ### Shop slots (`shuffle_shops`)
 
 | `check.type` | Fields | Where the port checks it |
@@ -605,3 +669,371 @@ uses the game's own two-way route, opened from chapter 36:
   1-255, and that every target map gets back to a world map over the doors (with the seed's
   targets applied). It returns the problems, an empty list for a good table. CLI:
   `python3 apworld/so2/doors.py SEED.apso2 [--doors docs/ap/doors.json]`.
+
+## v2 fields (so2.apworld 0.2.0, 2026-10-25)
+
+Written by the APWorld agent "apworld2" (log `docs/handoff/apworld2.md`) for the port agents
+of wave 2. Everything here is additive: a 0.1.x seed reads as before, and a 0.2.0 seed that
+turns none of these features on is a version-1 seed the 0.02.00 port plays as it does today.
+
+### The version rule
+
+`version` is the lowest format that can play the seed:
+- **1** when the seed uses nothing below that an old port would ignore;
+- **2** when it uses any of: `goal.all`, `goal.flags`, a door with `flags` / `won`,
+  `party_rules: "open"`, a `starting_character`, `craft` or `killer_move` locations, or
+  `no_fail_crafting`.
+
+A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
+silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
+slot_data's `seed_format` is the same number. (The port reads both since 2026-10-25; it
+refuses 3 and up: "unsupported version 3 (this build reads 1 and 2)". It reads the v2 fields
+in a version-1 seed too.)
+
+### New `options` keys
+
+The port reads the ones marked **read**; the rest are for reference (the APWorld already
+applied them to the locations and items it wrote).
+
+| Key | Values | Default | Port |
+|---|---|---|---|
+| `goal` | `indalecio`, `indalecio_limiter_off`, `indalecio_limiter_off_and_iseria_queen` | `indalecio` | reference; the port reads the top-level `goal` object (below). YAMLs may still say `final_boss` (= `indalecio`). |
+| `drop_progression` | `allow`, `force`, `never` | `allow` | reference (where the APWorld lets progression go) |
+| `area_keys_in_drops` | true / false | true | reference |
+| `craftsanity` | true / false | false | reference; the checks are the seed's `craft` locations |
+| `no_fail_crafting` | true / false | false | **read**: item creation never fails by chance (below) |
+| `killer_move_checks` | true / false | false | reference; the checks are the seed's `killer_move` locations |
+| `killer_move_progression` | `never`, `hero`, `any` | `never` | reference |
+| `starting_character` | a character name (as `options.characters` spells them) or `null` | `null` | **read** (open world only; below) |
+| `exclude_characters` | list of names | `[]` | reference |
+| `party_rules` | `"story"`, `"open"` | `"story"` | **read**: the party rules (below) |
+| `apworld_version` | `"0.2.0"` | | reference |
+
+`characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
+and Leon / Dias in either game, under `party_rules: "open"`.
+
+### Goals
+
+The top-level `goal` object:
+
+| Key | Meaning |
+|---|---|
+| `encounters` | any-of (as before): a victory in one of these is the goal. Missing: `[539, 540]`. |
+| `all` | new: every one of these encounters must be won, in any order; when present the port ignores `encounters` for the goal |
+| `flags` | new: script flags the port sets at New Game **and again after every load** (the sidecar's or not). `start.flags` is applied once and never to a save loaded without a sidecar, which would leave a goal gate shut for good. Setting them again is harmless. |
+
+- **`goal_won`** (sidecar, new): the encounters of `all` won so far, in order. On load it
+  merges like `checked` (same seed: runtime ∪ save); an older sidecar reads as empty. The goal
+  is sent (CLIENT_GOAL, sidecar `goal`) once every encounter of `all` is in it. A win counts
+  as for `encounters` today: outcome 0 only.
+- **Door conditions** (new, in the top-level `doors` table, like the El voyage's door):
+
+| Key | Meaning |
+|---|---|
+| `flags` | script flags that must all be set |
+| `won` | encounters that must all be in `goal_won` |
+| `banners` | one text per condition, `flags` first then `won`, in that order (at most 236 px each); the port shows the first missing condition's |
+
+  A door with `flags` / `won` is locked like a door with `keys` (the trigger does not start,
+  the leader keeps the controls, the banner shows, the region fires again only after the
+  leader has left it) and must name its `routine`. **These conditions apply in story mode
+  too** (area keys don't). A door may carry `keys` and conditions together; all must hold.
+- **The goal gate:** door **43978493** (map 671 -> 684, routine 0x3bec: the Final Save Point
+  floor's way to the final corridor), so the banner shows where the player can turn back.
+
+Per goal:
+
+| `options.goal` | `goal` object | doors | version |
+|---|---|---|---|
+| `indalecio` | `{"encounters": [539, 540]}` (as today) | none | 1 |
+| `indalecio_limiter_off` | `{"encounters": [540], "flags": [445, 446]}` | `{"id": 43978493, "routine": "0x3bec", "flags": [556], "banners": ["Talk to Filia in Central City first"], "name": "Indalecio (Limiter Off)"}` | 2 |
+| `indalecio_limiter_off_and_iseria_queen` | `{"all": [561, 540], "encounters": [540], "flags": [445, 446]}` | the same door with `"won": [561]` and a second banner "Defeat the Iseria Queen first" | 2 |
+
+- Flags 445 / 446 are the Clik meeting with Filia (Claude's game / Rena's game; both, so either
+  game works); flag 556 is Limiter Off, set only by Filia's scene in Central City City Hall
+  (map 239) after the Final Save Point; map 685 picks encounter 540 when it is set
+  (scratchpad/openworld/goals.md). The preset costs only Clik's Filia Private Action.
+- **The Silver Trumpet** (the user, 2026-10-25): in a seed whose `goal.all` holds 561, item 48
+  is left out of every shop's sell list while flag 53 (song 7, "The Evil Melody") is clear.
+  Selling it before composing would lose the Iseria Queen, the only source being G-Celesta.
+- Iseria Queen (561) has no constant battle site: the song summons her (551 + Musical level).
+  The port records the win at `battle_exit_to_field` as for any goal encounter.
+
+### Party v2 (`party_rules`, `starting_character`)
+
+**`party_rules: "story"`** (story mode, or open world without `character_items`, and every
+0.1.x seed): phase 3's rules, unchanged.
+
+**`party_rules: "open"`** (`world_mode: open_world` with `character_items`):
+- **The story members** join through the story as usual: the hero (the story route picked at
+  New Game), and under `story_route: "any"` both Claude and Rena. The hero is always in the
+  party (slot 0, Private Actions).
+- **Every other member** joins only through their item (received, or found at one of this
+  player's locations) or as the starting character. Their item is `{"kind": "character",
+  "character": N}` as in phase 3; N may now be 1 Claude, 2 Rena or 11 Noel (the other hero
+  and Noel can be items), and Leon / Dias in either game.
+  - A join of a member who is neither received nor the starting character does not happen,
+    at a listed join site (which records its check, as today) or anywhere else; the scene goes
+    on. Exception: the temporary joins inside the story's split windows (the tournament,
+    Linga, the Front Line, the ship, the Nede Fields; party_ships.md C), which the port lets
+    through and undoes when the window ends.
+  - **No lockouts:** Leon in Rena's game, Dias in Claude's, Bowman with Precis, Ashton with
+    Opera / Ernest (story_route_refuses is off).
+  - A received member's slot is never overwritten: with no free slot, a join is skipped.
+  - Members not in `characters` and not story members never join (the APWorld left them out:
+    `exclude_characters`, or no room).
+- **New join locations** (check type `join`, as in phase 3): Rena's first join in Claude's game
+  (map 9, offset 0x6b94), Claude's in Rena's game (map 12, 0x6e08) and Noel's (map 277,
+  0x6fe0), listed only when that member is not a story member. Like every join site they hold
+  only filler.
+- The APWorld keeps the party to 8: story members + starting character + `characters`.
+
+**`starting_character`** (open world only; `null` in story mode): when it names a member,
+- that member joins at the first free play of a new game (before `start.items` are given, so
+  the banner order is "X joined the party" first) and becomes the leader (the Formation leader,
+  config +0x41): the field sprite follows the leader, and dialogue and speaker labels use the
+  leader's name where the hero's would be (the user, 2026-10-25: "Yes, swap names");
+- they count as received: never refused, never overwritten, rejoining after a parting
+  (`kPartings`) like a received member, and a story join of them while present is a no-op;
+- when it names the hero of the game the player picked (possible under `story_route: "any"`),
+  nobody joins and the hero leads;
+- it works with `party_rules` either way: without `character_items` the story's own recruits
+  join as in the original, and the starting member takes one of the 8 places (the port skips
+  a story join that finds no free slot rather than overwrite a received or starting member).
+
+#### The party rules (what the port does; agent "party", `engine/src/game/ap/ap.cpp`)
+
+Read: `options.party_rules` (`"story"` / `"open"`; missing = story; anything else stops the
+seed loading) and `options.starting_character` (a name as `options.characters` spells them, a
+party id 1-12, or `null` / `"hero"` / `""` / 0 for none). Research: scratchpad/party/splits.md
+(every party join and leave in the 820 field scripts, disc 2's being the same, with its
+conditions and its return).
+
+- **Joins under `"open"`** (script ext 0xae): the hero, both heroes under `story_route: "any"`,
+  received members and the starting character join; anyone else is refused at any site (a listed
+  one still records its check; log `join Celine at map 124 ...: neither a story member, received
+  nor the starting character: not added`). No lockouts: `story_route_refuses` is off (Leon joins
+  Rena's game, Dias Claude's). Leon's leave in Rena's game at the Eluria colony (234 0x74c8) and
+  Noel staying at the sanctuary (417 0x7db8, choice 1) are partings for good like `kPartings`.
+- **Slots.** A slot holding a story member or a member recruited for good (received, starting) is
+  never overwritten, in either rules: with every slot taken a join takes the first reserve slot of
+  another member (a story member the scene took along for a while, as the original's overwrite of
+  the first reserve slot), else it is skipped (a received member's join then waits).
+- **The split windows** (`kSplitWindows`). The story's splits take members out and put back
+  exactly those it took (by the flags they stored: 195, 447, 469 / 474, 232, 401 ...); members a
+  split does not list (Leon at Linga, Noel on the ship) stay. While a window is on:
+  - a member recruited for good whom a split set aside stays out (no rejoin); a new join waits
+    while the party is split (windows marked "everyone");
+  - the members a fight needs alone are let in for a while, even when not received: **Claude** in
+    Shingo Forest (map 12, chapter 4 step 150, Rena's game: the scene takes Rena out for Claude's
+    fight) and at **the tournament** (chapter 19: Claude's fights in Rena's game), **Dias** at the
+    tournament (both games; 434's join in Rena's game included). They are kept in the sidecar's
+    `temporary` and leave the party (their slot emptied) at the first free play after the window.
+    With every slot kept, such a member borrows the first reserve slot; its member's slot and
+    record go to the sidecar's `stash` and come back when anything joins that member, when the
+    borrower is out of the party, or after the window.
+  Outside every window (free play, not in a Private Action) a member recruited for good who is in
+  reserve rejoins ("Celine joined the party"). The windows: Rena at home (Claude's game, 5/0-1000),
+  Claude away (Rena's game, 5/2000-2500), the other hero away (5/3000-6/2100, 7/1000-8/0), Mars
+  (15/1000-3300), Dias away in Rena's game (15/2700-19/1500, 19/5500-26/2500), the tournament (all
+  of chapter 19), Linga (22/3000-5000), Leon away (25/3000 to the end of 30), the Front Line
+  (26/1000-3000), the ship to El (29/0-31/0), Eluria Tower (Claude's game, 33/0-10), the Heraldry
+  Weapons Laboratory (53/3000-4000), and while flag 586 (the Fun City arena), 2318 (the Cave of
+  Trials' party choice) or 2326 (Fun City's contest) is set. Member-only windows (Dias, Leon, the
+  other hero) hold only a member the story set aside, not one newly received.
+- **The starting character** (`party_rules` either way): queued first at New Game's first free
+  play, before `start.items` (log `starting character Ashton: joins at the first free play and
+  leads`), joins through the game's join ("Ashton joined the party"), and becomes the Formation
+  leader (config +0x41 = their slot, the front four). Naming the picked game's hero: nobody joins
+  (log `... is this game's hero: nobody joins, the hero leads`). Counted as received (never
+  refused or overwritten, back after partings and splits; a starting Celine keeps flag 112).
+- **Contract corrections** (for the APWorld): only Shingo Forest and the tournament need a member
+  who is not received; at Linga, the Front Line, the ship and the Nede Fields the hero stays (or,
+  556, the others fight), so their story-only joins are refused like any other: in Rena's game
+  Rena goes to the Front Line (439) and lands on El Beach (229) alone when neither Dias nor Leon
+  was received (no random encounters on 439-443 / 229-233, no scripted battle there). An excluded
+  member can still appear for those fights (Dias, Claude). The port also protects story members'
+  slots, not only received ones.
+- Unchanged: `party_rules: "story"` without a starting character plays phase 3's rules exactly
+  (unit tests `ap_character_items`, `ap_received_members_stay`; smoke `ap_cel_*`).
+- Checked: unit tests `ap_v2_party_seed`, `ap_v2_party_open_joins`, `ap_v2_party_slots`,
+  `ap_v2_party_windows`, `ap_v2_party_borrow`, `ap_v2_starting_character`; headless (both games):
+  map 12's fight with Claude let in, every tournament fight step (Claude's game 4400 / 6200 /
+  10200, Rena's 6500 / 8500 / 10200 / 11500 / 12600 / 16500 / 19500), the splits holding received
+  members until they are over (468 the tournament and 548 the ship in Claude's game, 444 the
+  Front Line and 126 Mars in Rena's game, 193 Linga and 124 / 444 in both), the refusals there
+  (Celine at 124, Leon at 230), the starting character at New Game (Claude's game map 7: Ashton;
+  Rena's game map 18: Leon), Dias joining Claude's game; smoke `ap_v2_m12`, `ap_v2_t477`,
+  `ap_v2_start`, `ap_v2_linga` (docs/handoff/party.md).
+
+#### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
+
+In every seed with `world_mode: open_world` (any version; nothing else turns it on, and the
+starting character is only the usual way the leader gets set), on field maps:
+
+- **Sprite.** The walking actor shows the Formation leader (config +0x41, the camp menu's
+  Combat > Formation > Leader, the member the player controls in battle) whenever that slot
+  holds an active member who is not the hero. Changing the leader in the camp menu shows at
+  once when the menu closes. The actor stays the hero's for everything else: slot G[0xc4],
+  model, animation state (the frame, timer and loop counts the scripts wait on), position,
+  collision; only the drawn sprite changes (the emote above the head and the default message
+  row follow the drawn sprite). Running shows the stand-in's walk at the run's pace (only the
+  heroes have run sprites). A stand-in whose sprite this map's party packs lack (joined or made
+  leader after the map loaded) is drawn from their own pack, read on the side from the disc.
+- **Names.** In the map scripts' messages, the hero's literal name token (`{name:00}` in
+  Claude's game, `{name:01}` in Rena's) reads as the leader's name, in the text and in the
+  speaker labels ("Ronixis: Ashton. You've made it to Ensign."). The other hero's token stays
+  theirs; name variables (`0x4007`: "X learned ...") are never changed; Archipelago messages
+  ("Got X") and the harbour menu are the port's own text.
+- **The hero instead** (sprite and names together, so a box never pairs one with the other):
+  on world maps (the members' world sprites have 4 of the 21 animations); when the leader is
+  the hero or not active (a Private Action keeps only the hero); when a script gave the walking
+  actor another sprite (the bunny, a disguise); and **for the rest of a scene** once
+  - the stand-in's own actor exists (the scene shows them as themselves: the two would show),
+  - a message names the stand-in (their own name token, or a name variable holding them), from
+    that message on, so it never reads "Ashton: ... Ashton,",
+  - the walking actor is asked for a scene animation (one of the scene-only gestures, beyond
+    the 21 walking ones), which only the hero has.
+  The scene ends when free play resumes (the player has the controls back: no event or talk
+  running, no fade or window up). A scene that runs through several maps keeps the hero
+  throughout.
+- **Presentation only.** Flags, chapter, party, inventory and the random generator are the same
+  with and without it (headless proofs: Claude's opening with `starting_character: Ashton`
+  through 14 rewritten messages and a latched scene; the late save's walk into the final scene;
+  Rena's game's Arlia events; byte-identical state dumps and rng signatures;
+  docs/handoff/leader.md). Name lengths change
+  how long the typewriter takes over a line, as renaming the hero does in the original.
+- Debugging (environment, never config.ini): `SS_LEADER_STANDIN=0` off, `=1` on without an
+  open-world seed; `SS_LEADER_SLOT=N` party slot N as the leader (presentation only);
+  `SS_LEADER_TRACE=1` logs what the walking actor shows and why.
+
+### Craftsanity (`craft` locations) and `no_fail_crafting`
+
+| `check.type` | Fields | Id |
+|---|---|---|
+| `craft` | `item`: the game item number (1-1023) the creation must produce | `0x50320000 + (11 << 21) + item` |
+
+- **Where:** `CreationPage::produce()` (engine/src/game/field/menu_creation.cpp), after
+  `inventory_give(made_, 0)`, for the item-making specialties only: page 0xf variants 1 Art,
+  4 Customize, 6 Metalwork, 7 Authoring, 10 Compounding, 11 Cooking, 13 Alchemy, 17 Machinery,
+  and page 0x10 (super) variants 1 Master Chef, 5 Publishing, 7 Blacksmith, 8 Reverse Side.
+  Not Identify (5), Survival (14) or Reproduction (16), which hand back or copy items.
+- **What:** the check of item `common_kind(made_)` (a result that came out as its rare kind, an
+  unidentified 0x338+ item or the rare item, counts as its common item), when the seed lists a
+  `craft` location for it that is not checked yet. Success or failure alike (a failure item is
+  a check only if the seed lists it; 0.2.0 lists results only).
+- **The crafted item stays the player's** (the user, 2026-10-25): the creation gives it as
+  usual; the location's item comes on top (given in free play, "Got X", or sent, "Sent X to
+  Y"). Craft locations never hold progression.
+- Sidecar: nothing new (`checked` records them).
+- **`no_fail_crafting: true`:** in `CreationPage::decide()` after `compute()`, the attempt
+  succeeds (`success_ = 1`) whenever the specialty picked a result (`good_item_ != 0`). A member
+  without the specialty's talents still counts as level 0 for which result compute() picks
+  (the original's rule), but no longer fails. The 30 % rare-kind swap is unchanged. The port
+  decides structural non-results (Customize's result equal to its input stays a failure:
+  nothing would change).
+
+### Killer-move checks (`killer_move` locations)
+
+| `check.type` | Fields | Id |
+|---|---|---|
+| `killer_move` | `character` (party id 1-12), `move` (1-15, the id's 4 bits; 0.2.0 uses 1-11, Claude's Mirror Slice being 11: the learn tables' move number, battle/result.cpp `learn_from_table`: learned flag at record + 0x3c + move - 1, use count at record + 0x8a + 2 * move), `level` (for display), `uses` (the use count that reaches the level) | `0x50320000 + (12 << 21) + (character << 14) + (move << 10) + level` |
+
+- **When:** the member's use count of that move (record + 0x8a + 2 * move, the count the
+  original's `pc_begin_action` raises by 1 each time the move starts, at most 999) is at least
+  `uses`. The count changes only in battle, so the port may test after each battle (and on
+  load); a count already past `uses` (an old save) checks at once.
+- `uses` = level x the move's divisor in the armed table (scratchpad/killer_prof/move_levels.csv).
+  The port compares the raw count, so the bare-handed tables of Claude, Dias and Ashton (other
+  divisors for three moves) don't matter.
+- 0.2.0 lists the 69 learn-table moves: every level of a move with at most 3 (61 moves, 112
+  locations), and for the 7 that count in fine steps the levels 100, 200 and 300 uses reach
+  (21). Ashton's Dead Triangle has none; the 8 moves without a learn-table row (Phase Gun,
+  Precis's three, Opera's three, Ashton's Tri-Ace) aren't listed.
+- The move's level-ups themselves (Claude's upgraded data at 100 / 200 uses...) are the game's.
+
+### Enemy drops
+
+Nothing new for the port: `drop` checks are phase 3's. `drop_progression` and
+`area_keys_in_drops` only change what the APWorld puts there (docs/ap/apworld.md, "Logic").
+
+### The port: goals, doors, the trumpet, crafting, killer moves (implemented 2026-10-25)
+
+The hooks agent's part of wave 2 (log docs/handoff/hooks.md). Code: game/ap/seed.cpp
+(reading), game/ap/ap.cpp (goal_won, door conditions, sell_locked, on_craft,
+scan_killer_moves), field/menu_shop.cpp, field/menu_creation.cpp; tests
+engine/tests/test_ap.cpp `ap_v2_*`; smoke cases `ap_v2_*`, `auto_wizard`.
+
+- **Loading.** `goal.all` / `goal.flags` must be arrays (flags 0-2943, encounters >= 0); a
+  `craft` needs `item` 1-1023; a `killer_move` needs `character` (1-12 or a name), `move`
+  1-15 (the id's 4 bits; Claude's Mirror Slice is move 11) and `uses` 1-999 (`level` optional); a door's `flags` / `won` / `banners` must be
+  arrays, and a door with `flags` or `won` must name its `routine`.
+- **goal_won.** A victory (outcome 0) in an encounter of `goal.all`, or of any door's `won`,
+  goes in the sidecar's `goal_won` once (log `goal: encounter 561 won (goal_won 1, goal.all
+  2)`). When every encounter of `goal.all` is in it the goal is set and sent (once; again on
+  every connect, as before). A load with the same seed merges the save's list and this
+  session's (save's first) and tests `goal.all` again; a save without a sidecar starts empty.
+  Without `goal.all` the any-of rule is unchanged and nothing goes in `goal_won`.
+- **goal.flags** are set at the first field frame after New Game, after every load (sidecar or
+  not), and after the seed loads (a start straight into the field, `--map`): log `goal flags
+  set (2)`.
+- **Door conditions** lock the trigger (`door_blocked_at_trigger`) and a transfer reached
+  another way (`on_map_transfer`) in every world mode, with or without keys. Flags are read
+  live (a flag cleared again shuts the door again). The banner is the first missing
+  condition's text (after a missing key's banners when the door has keys too); an empty one
+  shows "The way is closed for now". The text is not measured at load (no font yet); one wider
+  than 236 px shows anyway and is logged (`banner "..." is 248 px, over the banner's 236`).
+  Log: `door 43978493 (Indalecio (Limiter Off)): locked, needs flag 556 ("Talk to Filia in
+  Central City first")`.
+- **The Silver Trumpet:** shops' `add_inventory` (every sell list but shops 0x39 / 0x58, which
+  buy only items 0xc4-0xdb) skips item 48 while flag 53 is clear in a seed whose `goal.all`
+  holds 561 (log `the Silver Trumpet stays off the sell list ...`). With no other sellable
+  item the shop's Sell command has nothing to list.
+- **Craft checks** come after the creation's own give, for the 12 item-making specialties
+  (the page's variant and super flag): log `craft: item 344 made (success)`, then the check;
+  another player's item gets the "Sent X to Y" banner, our own is given at the next free play
+  ("Got X"). Compounding and Machinery have no failure item: their failure makes nothing and
+  checks nothing.
+- **no_fail_crafting.** In `decide()` after `compute()`: `success_ = 1` when `good_item_ != 0`,
+  except a structural non-result (port field `no_result_`): Customize's result equal to its
+  input, an Alchemy entry with divisor 0, a Survival pick with a zero chance at this kind of
+  place. **Art** (specialty 1) picks its result only after a successful roll (`good_item_` is
+  0 on a failure), so `Creation1::compute` makes its roll a success under the option. A
+  Customize recipe refused by chance (the item's worth too low) gives the tier item instead.
+  Talent-less members still pick at level 0. Super specialties 2 and 4 (their own decide) and
+  3 / 6 (no decide) are untouched; Identify, Survival and Reproduction go through decide()
+  too, so the option makes them succeed as well (they are no craft checks).
+- **Killer moves:** after every battle exit and every load (and once after the seed loads),
+  at the next free play, each unchecked `killer_move` location whose member is in a party slot
+  (active or in reserve) is compared: `record[slot] + 0x8a + 2 * move >= uses` (log `killer
+  move: Claude move 3 used 190 times (level 1 at 100)`). A member not in the party is skipped
+  until they are. The same record counters also count a spellcaster's spells
+  (pc_cast_spell), so only fighters' moves belong in the seed (as 0.2.0 lists them).
+- **Checked headless** (scratchpad/hooks/runs): the gate at map 671, chapter 60 (refused
+  without flag 556, then without 561; console `battle 561` with `--battle-end 60:0`; then map
+  684 loads); `goal_won` written to the sidecar, restored by a load (the door opens) and empty
+  after loading the same card without its sidecar; the sell list in Hearn's shop with and
+  without flag 53; the menu agent's creation plans on card spec2 with and without no-fail;
+  killer moves on a modified spec2 save (counts past on load; a count rising in a battle).
+
+### Example (0.2.0, open world, version 2)
+
+```json
+{
+ "format": "apso2", "version": 2,
+ "options": {"world_mode": "open_world", "character_items": true, "party_rules": "open",
+             "story_route": "claude", "starting_character": "Ashton",
+             "characters": ["Rena", "Dias", "Leon", "Opera", "Noel", "Chisato"],
+             "exclude_characters": ["Bowman"], "craftsanity": true, "no_fail_crafting": false,
+             "goal": "indalecio_limiter_off", "drop_progression": "allow",
+             "area_keys_in_drops": true, "apworld_version": "0.2.0"},
+ "goal": {"encounters": [540], "flags": [445, 446]},
+ "locations": [
+  {"id": 1368523063, "name": "Cooking: Fried Rice", "check": {"type": "craft", "item": 311},
+   "item": {"player": 2, "player_name": "Alice", "name": "Map Width", "ap_id": 81001,
+            "classification": "useful"}}
+ ],
+ "doors": [{"id": 43978493, "routine": "0x3bec", "flags": [556],
+            "banners": ["Talk to Filia in Central City first"], "name": "Indalecio (Limiter Off)"}]
+}
+```

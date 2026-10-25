@@ -1,27 +1,77 @@
 """Player options (docs/ap/apworld.md)."""
 from dataclasses import dataclass
 
-from Options import Choice, DeathLink, DefaultOnToggle, OptionGroup, PerGameCommonOptions, Range, Toggle
+from Options import Choice, DeathLink, DefaultOnToggle, OptionGroup, OptionSet, PerGameCommonOptions, Range, Toggle
+
+# The twelve members, as the seed and the option values name them (party ids 1-12).
+CHARACTER_NAMES = ("Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest",
+                   "Noel", "Chisato")
 
 
 class Goal(Choice):
     """What completes the game.
-    final_boss: defeat Indalecio, the final boss (either version of the fight).
+    indalecio: defeat Indalecio in Fienal, either version of the fight ("final_boss" still works).
+    indalecio_limiter_off: defeat Indalecio with his limiter off (the harder fight). Filia's
+      meeting in Clik is done for you at the start; after the Final Save Point, enter Central
+      City as a Private Action and walk into City Hall: Filia's scene takes the limiter off. The
+      way to Indalecio stays shut until then.
+    indalecio_limiter_off_and_iseria_queen: as above, and defeat the Iseria Queen first. She is
+      summoned by the song "The Evil Melody", composed from the Silver Trumpet that G-Celesta
+      gives at the bottom of the Cave of Trials, and played by a member at Musical level 10 with
+      Pitch and Sense of Rhythm. The goal needs the cave cleared whether or not cave_of_trials
+      adds its locations. The Silver Trumpet can't be sold until the song is composed.
     """
     display_name = "Goal"
-    option_final_boss = 0
-    default = option_final_boss
+    option_indalecio = 0
+    option_indalecio_limiter_off = 1
+    option_indalecio_limiter_off_and_iseria_queen = 2
+    alias_final_boss = 0
+    default = option_indalecio
 
 
-class Protagonist(Choice):
-    """The protagonist you will pick at New Game. Locations that exist only in the other
-    protagonist's game are left out. With "any", they stay in the world but hold only
-    filler (or follow missable_locations)."""
-    display_name = "Protagonist"
+class StoryRoute(Choice):
+    """The story route you will pick at New Game: Claude's game or Rena's. Locations that exist
+    only in the other route's game are left out. With "any", they stay in the world but hold
+    only filler (or follow missable_locations)."""
+    display_name = "Story Route"
     option_any = 0
     option_claude = 1
     option_rena = 2
     default = option_any
+
+
+class StartingCharacter(Choice):
+    """Open world only: a member who joins you at the start, whatever the story route, and leads
+    the party: you walk around as them, and the story calls them by name where it would name
+    the hero. The story route's hero still stays in the party.
+    hero: nobody extra; the hero leads, as in the original.
+    any: a random member (never one in exclude_characters, nor the hero).
+    A named member who is excluded still starts (this option wins). Ignored in story mode."""
+    display_name = "Starting Character"
+    option_hero = 13
+    option_any = 0
+    option_claude = 1
+    option_rena = 2
+    option_celine = 3
+    option_bowman = 4
+    option_dias = 5
+    option_precis = 6
+    option_ashton = 7
+    option_leon = 8
+    option_opera = 9
+    option_ernest = 10
+    option_noel = 11
+    option_chisato = 12
+    default = option_hero
+
+
+class ExcludeCharacters(OptionSet):
+    """Open world with character_items: members who are never in the item pool, so they never
+    join (to make room for the ones you want). The story route's hero can't be excluded (under
+    story_route "any", neither Claude nor Rena). If you exclude both Rena and Noel, the only
+    healers, the party may have no healer."""
+    display_name = "Exclude Characters"
+    valid_keys = CHARACTER_NAMES
 
 
 class MissableLocations(Choice):
@@ -68,17 +118,89 @@ class CharacterItems(Toggle):
     for good become locations: a member joins when their item arrives, never at the scene
     (scenes that take one along for a while play as usual). The pool always holds a party the
     story allows: Bowman or Precis, Ashton or Opera (with Ernest), within the party's 8 places
-    with Claude, Rena and Noel. With protagonist "any", Leon and Dias stay out."""
+    with Claude, Rena and Noel. With story_route "any", Leon and Dias stay out.
+    Open world: no lockouts. Any member but the story route's hero can be an item (the other
+    hero and Noel too, Leon and Dias in either game, Bowman with Precis, Ashton with Opera), up
+    to 8 with the hero and the starting character, minus exclude_characters. The party always
+    gets Rena or Noel (the only healers) unless you exclude both. Members who are not items
+    never join."""
     display_name = "Character Items"
 
 
-class DropsAsChecks(Choice):
+class EnemyDropsanity(Choice):
     """first_drop: the first item each enemy type drops is a location (enemy types met in
-    random encounters). Drops never hold progression items."""
-    display_name = "Drops as Checks"
+    random encounters). drop_progression decides whether they may hold progression items."""
+    display_name = "Enemy Dropsanity"
     option_off = 0
     option_first_drop = 1
     default = option_off
+
+
+class DropProgression(Choice):
+    """With enemy_dropsanity: may an enemy type's first drop hold a progression item?
+    allow: it may, but needn't.
+    force: the drops with fair odds (at least 1 in 13 kills without Luck) get progression
+      first: the generator fills them before anything else, as far as the logic allows.
+    never: drops hold only useful, filler and trap items.
+    Whatever the choice, only an enemy that can always be met again holds progression (met with
+    no story condition, in an area the logic's proofs keep open), never with encounter_rate 0,
+    and never a drop that comes less than once in 64 kills without Luck (Magius, Ericodus,
+    Shout, Starguarder, the slimes and others need a lucky party to drop at all)."""
+    display_name = "Drop Progression"
+    option_allow = 0
+    option_force = 1
+    option_never = 2
+    default = option_allow
+
+
+class AreaKeysInDrops(DefaultOnToggle):
+    """With enemy_dropsanity: area keys (open world's) may be among the progression an enemy's
+    first drop holds (within drop_progression's rules). Turn it off so that no area is ever
+    locked behind a fight's drop: this world's drops then never hold an area key, this world's
+    or another Star Ocean player's."""
+    display_name = "Area Keys in Drops"
+
+
+class Craftsanity(Toggle):
+    """Each item that Item Creation can make (cooking, compounding, metalwork, customizing, the
+    super specialties, Publishing's books...; 553 items) is a location, checked the first time
+    you make it. You keep what you made. These locations never hold progression items; one
+    whose item only a certain member can make (or, for portraits and books, be the subject of)
+    holds only filler unless that member is sure to be in the party, and is left out when that
+    member can never join (open world with character_items)."""
+    display_name = "Craftsanity"
+
+
+class KillerMoveChecks(Toggle):
+    """Each proficiency level of each killer move is a location, checked when the member's use
+    count of the move reaches it (Claude, Bowman, Dias, Precis, Ashton, Opera, Ernest and
+    Chisato; 133 locations). Most moves have 1-3 levels at 100-300 uses; the moves that count in
+    fine steps (Secret Medicine, Photon Prison, Pillory, Whirlwind Fist, Poison Pills, Cold Wind,
+    Gravity Shell) have three, at 100, 200 and 300 uses. A member who may never join has none;
+    one who joins only by your choice in the story holds only filler."""
+    display_name = "Killer Move Checks"
+
+
+class KillerMoveProgression(Choice):
+    """With killer_move_checks: may a killer move's level hold a progression item?
+    never: no; each holds a random non-progression item.
+    hero: only the story route's hero's moves (Claude's in Claude's game, and under story_route
+      "any"; Rena has no killer moves).
+    any: the moves of every member the logic can count on: the heroes, the starting character,
+      and members who join by their character item (the logic then needs the item).
+    A level counts from the disc switch (moves learned up to level 30) or the Final Save Point
+    (the rest), and never with encounter_rate 0 (the uses need battles)."""
+    display_name = "Killer Move Progression"
+    option_never = 0
+    option_hero = 1
+    option_any = 2
+    default = option_never
+
+
+class NoFailCrafting(Toggle):
+    """Item Creation never fails by chance: every attempt makes the item the specialty picked
+    (a member without the specialty's talents still makes the simplest results)."""
+    display_name = "No-Fail Crafting"
 
 
 class Traps(Range):
@@ -152,13 +274,21 @@ class SO2Options(PerGameCommonOptions):
     world_mode: WorldMode
     expel_teleporter: ExpelTeleporter
     shuffle_shops: ShuffleShops
-    protagonist: Protagonist
+    story_route: StoryRoute
+    starting_character: StartingCharacter
+    exclude_characters: ExcludeCharacters
     missable_locations: MissableLocations
     expel_progression: ExpelProgression
     cave_of_trials: CaveOfTrials
     boss_checks: BossChecks
     character_items: CharacterItems
-    drops_as_checks: DropsAsChecks
+    enemy_dropsanity: EnemyDropsanity
+    drop_progression: DropProgression
+    area_keys_in_drops: AreaKeysInDrops
+    craftsanity: Craftsanity
+    no_fail_crafting: NoFailCrafting
+    killer_move_checks: KillerMoveChecks
+    killer_move_progression: KillerMoveProgression
     traps: Traps
     exp_multiplier: ExpMultiplier
     fol_multiplier: FolMultiplier
@@ -168,8 +298,9 @@ class SO2Options(PerGameCommonOptions):
 
 option_groups = [
     OptionGroup("World", [WorldMode, ExpelTeleporter, ShuffleShops]),
-    OptionGroup("Locations", [Protagonist, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
-                              DropsAsChecks]),
-    OptionGroup("Characters and items", [CharacterItems, Traps]),
-    OptionGroup("Battles", [ExpMultiplier, FolMultiplier, EncounterRate]),
+    OptionGroup("Locations", [StoryRoute, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
+                              EnemyDropsanity, DropProgression, AreaKeysInDrops, Craftsanity, KillerMoveChecks,
+                              KillerMoveProgression]),
+    OptionGroup("Characters and items", [StartingCharacter, CharacterItems, ExcludeCharacters, Traps]),
+    OptionGroup("Battles and crafting", [ExpMultiplier, FolMultiplier, EncounterRate, NoFailCrafting]),
 ]

@@ -34,8 +34,8 @@ constexpr ImVec4 kAccent(0.24f, 0.48f, 0.85f, 1.0f);
 constexpr ImVec4 kAccentHover(0.30f, 0.55f, 0.92f, 1.0f);
 constexpr ImVec4 kAccentActive(0.19f, 0.41f, 0.76f, 1.0f);
 
-constexpr const char* kPageNames[] = {"Discs", "Display", "Sound", "Controls", "Memory cards", "Mods", "Archipelago"};
-constexpr const char* kPageIds[] = {"discs", "display", "sound", "controls", "memcards", "mods", "archipelago"};
+constexpr const char* kPageNames[] = {"Discs", "Display", "Sound", "Controls", "Gameplay", "Memory cards", "Mods", "Archipelago"};
+constexpr const char* kPageIds[] = {"discs", "display", "sound", "controls", "gameplay", "memcards", "mods", "archipelago"};
 static_assert(std::size(kPageNames) == static_cast<size_t>(Page::kCount));
 
 // The game's save names on a card: "<product code>S02-Snn", the product code of each
@@ -144,6 +144,7 @@ Settings App::read(const launcher::Config& c) const {
   s.display = launcher::read_display(c);
   s.sound = launcher::read_sound(c);
   s.controls = launcher::read_controls(c);
+  s.text = launcher::read_text(c);
   for (int slot = 1; slot <= 2; ++slot) {
     const std::string path = launcher::memcard_path(c, slot);
     s.card_inserted[slot - 1] = !path.empty();
@@ -261,6 +262,7 @@ launcher::Config App::compose(const launcher::Config& base) const {
   launcher::write_display(c, settings_.display);
   launcher::write_sound(c, settings_.sound);
   launcher::write_controls(c, settings_.controls);
+  launcher::write_text(c, settings_.text);
   for (int slot = 1; slot <= 2; ++slot) {
     const std::string key = "memcard" + std::to_string(slot);
     const std::string path = settings_.card[slot - 1];
@@ -741,6 +743,7 @@ void App::frame() {
     case Page::kDisplay: page_display(); break;
     case Page::kSound: page_sound(); break;
     case Page::kControls: page_controls(); break;
+    case Page::kGameplay: page_gameplay(); break;
     case Page::kMemoryCards: page_cards(); break;
     case Page::kMods: page_mods(); break;
     case Page::kArchipelago: page_archipelago(); break;
@@ -1274,6 +1277,49 @@ void App::page_sound() {
   ImGui::EndDisabled();
   ImGui::Dummy(ImVec2(0, em() * 0.3f));
   note("Music, voices and sound effects all follow this volume.");
+}
+
+// ---------------------------------------------------------------------------------------
+// Gameplay
+
+void App::page_gameplay() {
+  heading("Gameplay");
+  launcher::TextSettings& t = settings_.text;
+  subheading(fonts_.bold, fonts_.size, "Dialogue");
+  check("Instant text", &t.instant);
+  ImGui::Indent(check_indent());
+  note("Each message page appears at once instead of letter by letter. Pauses the scenes "
+       "time themselves still wait.");
+  ImGui::Unindent(check_indent());
+  check("Auto-advance", &t.auto_advance);
+  ImGui::Indent(check_indent());
+  note("A message waiting for the confirm button moves on by itself, as if you had pressed it. "
+       "It stops at every choice (yes / no, shops, inns, names): you always choose.");
+  ImGui::Dummy(ImVec2(0, em() * 0.2f));
+  ImGui::BeginDisabled(!t.auto_advance);
+  field_label("Wait", em() * 4);
+  auto delay_name = [](int ms) {
+    char buf[48];
+    std::snprintf(buf, sizeof buf, "%g second%s%s", ms / 1000.0, ms == 1000 ? "" : "s",
+                  ms == launcher::TextSettings{}.auto_advance_ms ? "  (default)" : "");
+    return std::string(buf);
+  };
+  ImGui::SetNextItemWidth(em() * 12);
+  if (ImGui::BeginCombo("##auto_advance_delay", delay_name(t.auto_advance_ms).c_str())) {
+    for (int ms : launcher::kAutoAdvanceDelays)
+      if (ImGui::Selectable(delay_name(ms).c_str(), ms == t.auto_advance_ms)) t.auto_advance_ms = ms;
+    ImGui::EndCombo();
+  }
+  ImGui::EndDisabled();
+  ImGui::SameLine();
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextDisabled("after the page is complete");
+  ImGui::Unindent(check_indent());
+  ImGui::Dummy(ImVec2(0, em() * 0.3f));
+  note("Both are off by default; with them off the game plays exactly as the original. "
+       "They never change what happens, only how long the messages wait, and work in every "
+       "game, Archipelago seeds included. The game's own message speed (in the camp menu's "
+       "options) still applies while instant text is off.");
 }
 
 // ---------------------------------------------------------------------------------------

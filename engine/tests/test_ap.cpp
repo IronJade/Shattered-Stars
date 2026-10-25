@@ -4,6 +4,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -40,7 +42,7 @@ const char* kSeed = R"seed({
   "seed": "12345678901234567890",
   "game": "Star Ocean: The Second Story",
   "slot": {"name": "Claude", "id": 1},
-  "options": {"protagonist": "claude", "goal": "indalecio"},
+  "options": {"story_route": "claude", "goal": "indalecio"},
   "items": {
     "5000021": {"name": "Revival Card", "kind": "item", "game_id": "0x15"},
     "5009000": {"name": "500 Fol", "kind": "fol", "amount": 500}
@@ -162,7 +164,7 @@ TEST(ap_seed_errors) {
   CHECK(seed_error("not json", "not JSON"));
   CHECK(seed_error("[]", "JSON object"));
   CHECK(seed_error(replace(kSeed, "\"apso2\"", "\"other\""), "format"));
-  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 2"), "unsupported version 2"));
+  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 3"), "unsupported version 3 (this build reads 1 and 2)"));
   CHECK(seed_error(replace(kSeed, "\"seed\": \"12345678901234567890\",", ""), "seed"));
   CHECK(seed_error(replace(kSeed, "\"flag\": \"0x962\"", "\"flag\": 9999"), "locations[0]: a chest needs"));
   CHECK(seed_error(replace(kSeed, "\"id\": 1347569664", "\"id\": 1347569665"), "locations[1]: id 1347569665 repeated"));
@@ -268,7 +270,7 @@ TEST(ap_server_link) {
   ap::stop();
   ap::Seed s;
   std::string error;
-  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}",
                                    "\"options\": {\"deathlink\": true}, \"goal\": {\"encounters\": [7]}"),
                            &s, &error));
   CHECK(s.deathlink && s.goal_encounters.size() == 1 && s.goal_encounters[0] == 7);
@@ -424,7 +426,7 @@ namespace {
 // kSeed with the phase-3 options, a join site (map 208, Bowman's call at 0x6bc4), a drop
 // location (enemy type 17), and placeholders holding own traps and a character.
 std::string phase3_seed(const std::string& options) {
-  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  std::string t = replace(kSeed, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
   t = replace(t, "  \"locations\": [\n",
               "  \"locations\": [\n"
               "    {\"id\": 1354055680, \"name\": \"Bowman joins\", \"check\": {\"type\": \"join\", \"map\": 208, \"offset\": \"0x6bc4\", \"character\": \"Bowman\"},\n"
@@ -487,7 +489,7 @@ TEST(ap_phase3_seed) {
   CHECK(ap::load_seed_text(kSeed, &s, &error));
   CHECK(!s.character_items && !s.first_drops && s.exp_multiplier == 1 && s.fol_multiplier == 1 && s.encounter_rate == 100);
   const std::string opts =
-      "{\"character_items\": true, \"drops_as_checks\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": \"10\", "
+      "{\"character_items\": true, \"enemy_dropsanity\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": \"10\", "
       "\"encounter_rate\": 50, \"deathlink\": true}";
   CHECK(ap::load_seed_text(phase3_seed(opts), &s, &error));
   if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
@@ -498,13 +500,17 @@ TEST(ap_phase3_seed) {
   CHECK(s.locations[3].item.item.status == "poison" && s.locations[4].item.item.status == "stone");
   CHECK(s.locations[6].item.item.kind == "character" && s.locations[6].item.item.character == 3 && s.locations[6].item.item.name == "Celine");
   CHECK(std::string(ap::character_name(12)) == "Chisato" && ap::character_by_name("Leon") == 8 && ap::character_by_name("Zand") == 0);
-  // drops_as_checks also as AP's option value (0 / 1).
-  CHECK(ap::load_seed_text(phase3_seed("{\"drops_as_checks\": 1}"), &s, &error) && s.first_drops);
+  // enemy_dropsanity also as AP's option value (0 / 1).
+  CHECK(ap::load_seed_text(phase3_seed("{\"enemy_dropsanity\": 1}"), &s, &error) && s.first_drops);
+  // so2.apworld 0.1.0 / 0.1.1 seeds: the old option names still count.
+  CHECK(ap::load_seed_text(phase3_seed("{\"drops_as_checks\": \"first_drop\", \"protagonist\": \"rena\"}"), &s, &error) &&
+        s.first_drops && s.story_route == 2);
+  CHECK(seed_error(phase3_seed("{\"protagonist\": \"noel\"}"), "options.protagonist: any, claude or rena"));
   // Out of range: the seed does not load.
   CHECK(seed_error(phase3_seed("{\"exp_multiplier\": 11}"), "options.exp_multiplier: 1-10"));
   CHECK(seed_error(phase3_seed("{\"fol_multiplier\": 0}"), "options.fol_multiplier: 1-10"));
   CHECK(seed_error(phase3_seed("{\"encounter_rate\": 201}"), "options.encounter_rate: 0-200"));
-  CHECK(seed_error(phase3_seed("{\"drops_as_checks\": \"all\"}"), "drops_as_checks"));
+  CHECK(seed_error(phase3_seed("{\"enemy_dropsanity\": \"all\"}"), "enemy_dropsanity"));
   CHECK(seed_error(replace(phase3_seed("{}"), "\"character\": \"Bowman\"", "\"character\": 13"), "character 1-12"));
   CHECK(seed_error(replace(phase3_seed("{}"), "\"offset\": \"0x6bc4\", ", ""), "a join needs map and offset"));
   CHECK(seed_error(replace(phase3_seed("{}"), "\"enemy\": 17", "\"enemy\": -1"), "a drop needs its enemy"));
@@ -663,7 +669,7 @@ TEST(ap_drops_rewards_encounters) {
   CHECK(ap::on_enemy_drop(17, 5) && !ap::is_checked(1362100241));
   CHECK(!ap::random_encounters_off() && ap::scale_encounter_distance(4000) == 4000);
   // On.
-  CHECK(ap::load_seed_text(phase3_seed("{\"drops_as_checks\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": 10, "
+  CHECK(ap::load_seed_text(phase3_seed("{\"enemy_dropsanity\": \"first_drop\", \"exp_multiplier\": 3, \"fol_multiplier\": 10, "
                                        "\"encounter_rate\": 200}"),
                            &s, &error));
   ap::start_with(s);
@@ -719,7 +725,7 @@ TEST(ap_deathlink_scenes) {
   ap::stop();
   ap::Seed s;
   std::string error;
-  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+  CHECK(ap::load_seed_text(replace(kSeed, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}",
                                    "\"options\": {\"deathlink\": true}"),
                            &s, &error));
   ap::start_with(s);
@@ -765,7 +771,7 @@ TEST(ap_deathlink_scenes) {
 namespace {
 
 std::string scripted_loss_seed() {
-  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}",
+  std::string t = replace(kSeed, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}",
                           "\"options\": {\"deathlink\": true}, \"goal\": {\"encounters\": [540]}");
   return replace(t, "{\"id\": 1, \"name\": \"Cyril\",",
                  "{\"id\": 204, \"name\": \"Dias\", \"check\": {\"type\": \"boss\", \"encounter\": 204},"
@@ -892,7 +898,7 @@ namespace {
 // (chunk script 909 0x3c78, routine 0x3c6c) needing key 3; Arlia's door to map 18 (17 0x2054)
 // sent to map 23; and a door on a word that is no map transfer.
 std::string phase4_seed(const std::string& options) {
-  std::string t = replace(kSeed, "\"options\": {\"protagonist\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  std::string t = replace(kSeed, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
   t = replace(t, "\"5009000\":", "\"5300003\": {\"name\": \"Salva Pass\", \"kind\": \"key\", \"key\": 3},\n    \"5009000\":");
   t = replace(t, "  \"locations\": [\n",
               "  \"locations\": [\n"
@@ -1089,6 +1095,175 @@ TEST(ap_gate_door) {
   CHECK(!ap::door_blocked_at_trigger(0x7C28));
 }
 
+namespace {
+
+// gate_seed with two ship landings' doors (the world-map script's transfers: Port Hilton -> map
+// 231, 909 0x5f08, key 9 "Map 231 Pass"; Herlie -> Port Hilton, 909 0x5ad0, key 7) and those two
+// keys in chests (placeholders 1107, 1109).
+std::string harbour_seed(const std::string& options) {
+  std::string t = gate_seed(options);
+  t = replace(t, "\"5009000\":",
+              "\"5300007\": {\"name\": \"Port Hilton Pass\", \"kind\": \"key\", \"key\": 7},\n"
+              "    \"5300009\": {\"name\": \"Map 231 Pass\", \"kind\": \"key\", \"key\": 9},\n    \"5009000\":");
+  std::string chests;
+  for (const int k : {7, 9})
+    chests += "    {\"id\": " + std::to_string(9100 + k) + ", \"name\": \"pass " + std::to_string(k) +
+              "\", \"placeholder\": " + std::to_string(1100 + k) + ", \"check\": {\"type\": \"chest\", \"map\": 169, \"flag\": " +
+              std::to_string(100 + k) + "},\n     \"item\": {\"player\": 1, \"kind\": \"key\", \"key\": " + std::to_string(k) + "}},\n";
+  t = replace(t, "  \"locations\": [\n", "  \"locations\": [\n" + chests);
+  t = replace(t, "    {\"id\": 29106503,",
+              "    {\"id\": 59578306, \"routine\": \"0x57d8\", \"key\": 9, \"name\": \"Port Hilton -> map 231\"},\n"
+              "    {\"id\": 59578036, \"routine\": \"0x57d8\", \"key\": 7, \"name\": \"Herlie -> Port Hilton\"},\n"
+              "    {\"id\": 29106503,");
+  return t;
+}
+
+void set_story(ScratchGame& sg, s32 chapter, s32 step) {
+  std::memcpy(sg.state.data(), &chapter, 4);
+  std::memcpy(sg.state.data() + 4, &step, 4);
+}
+
+std::vector<ap::Voyage> voyages(std::initializer_list<ap::Voyage> v) { return v; }
+
+// A map-font text's codes (one byte below 0x80, else two; control codes' parameters as codes).
+std::vector<u32> text_codes(const u8* p) {
+  std::vector<u32> out;
+  for (size_t i = 0; p[i] != 0 && out.size() < 400;) {
+    u32 c = p[i++];
+    if (c >= 0x80) c = (c & 0x7F) | static_cast<u32>(p[i++]) << 7;
+    out.push_back(c);
+    if (c == 0x400E) out.push_back(p[i++]);
+  }
+  return out;
+}
+
+}  // namespace
+
+TEST(ap_harbour) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  using V = ap::Voyage;
+  CHECK(ap::load_seed_text(harbour_seed("{\"world_mode\": \"open_world\"}"), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  ap::start_with(s);
+  // The open world's harbour lines join the seed's: the refusals lifted, the menu's ops, the
+  // Hoffmann soldier's chapters, the landing checks.
+  int harbour = 0;
+  for (const std::string& l : ap::seed_patch_lines())
+    harbour += l.rfind("script 169 ", 0) == 0 || l.rfind("script 144 ", 0) == 0;
+  CHECK(harbour == 12);
+  bool lifted23 = false, menu_op = false;
+  for (const std::string& l : ap::seed_patch_lines()) {
+    lifted23 |= l.rfind("script 169 0x1c79 0x00000017 0x000003e7", 0) == 0;
+    menu_op |= l.rfind("script 169 0x1c99 0x12000002 0xfe700000", 0) == 0;
+  }
+  CHECK(lifted23 && menu_op);
+  ap::on_script_loaded(169, script_with_transfers({}));
+
+  // The menu by chapter: Cross alone before Lacour's chapter 23 (the sailor's own strings).
+  set_story(sg, 16, 0);
+  CHECK(ap::harbour_menu() == voyages({V::kCross}));
+  CHECK(ap::harbour_open(108, 109) == 2);
+  const u8 own_question[] = {0x5C, 0x01, 0x57, 0};  // (a label glyph, code 1, a glyph)
+  CHECK(ap::script_text(108, own_question) == nullptr && ap::script_text(109, own_question) == nullptr);
+  CHECK(ap::harbour_choose(0).kind == ap::HarbourChoice::kCross);  // (his own fare and voyage)
+  CHECK(ap::harbour_open(108, 109) == 2 && ap::harbour_choose(1).kind == ap::HarbourChoice::kStay);
+  // Chapter 23 (the soft-lock's chapter): Cross and Hoffmann Ruins, until chapter 59.
+  set_story(sg, 23, 0);
+  CHECK(ap::harbour_menu() == voyages({V::kCross, V::kHoffmann}));
+  set_story(sg, 59, 9999);
+  CHECK(ap::harbour_menu() == voyages({V::kCross, V::kHoffmann}));
+  set_story(sg, 60, 0);
+  CHECK(ap::harbour_menu() == voyages({V::kCross}));
+  // El only at the story's voyage point, chapter 27 step 7000, on disc 1.
+  set_story(sg, 27, 6999);
+  CHECK(ap::harbour_menu() == voyages({V::kCross, V::kHoffmann}));
+  set_story(sg, 27, 7000);
+  CHECK(ap::harbour_menu() == voyages({V::kCross, V::kHoffmann, V::kEl}));
+  sg.config[0x4C] = 1;
+  CHECK(ap::harbour_menu() == voyages({V::kCross, V::kHoffmann}));
+  sg.config[0x4C] = 0;
+
+  // The menu's text: the script's two strings (by the indices the op found) become the port's.
+  CHECK(ap::harbour_open(108, 109) == 4);
+  CHECK(ap::script_text(107, own_question) == nullptr);
+  const u8* q = ap::script_text(108, own_question);
+  CHECK(q != nullptr);
+  if (q != nullptr) {
+    const std::vector<u32> c = text_codes(q);
+    // The script's own speaker label (up to code 1), a new line, then the fare as {number_var:00}.
+    CHECK(c.size() > 6 && c[0] == 0x5C && c[1] == 1 && c[2] != 0x57);
+    CHECK(std::count(c.begin(), c.end(), 0x4000u) == 1);
+    CHECK(std::find(c.begin(), c.end(), 0x400Eu) != c.end());
+  }
+  // "{fe}{fe}{ea}Cross\n{fe}{fe}{ea}Don't cross{wait}": each option line keeps the lead-in.
+  const u8 own_options[] = {0xFE, 0x01, 0xFE, 0x01, 0xEA, 0x01, 0xB8, 0x01, 0x80, 0x80,
+                            0xFE, 0x01, 0xFE, 0x01, 0xEA, 0x01, 0xB9, 0x01, 0x82, 0x80, 0};
+  const u8* o = ap::script_text(109, own_options);
+  CHECK(o != nullptr);
+  if (o != nullptr) {
+    const std::vector<u32> c = text_codes(o);
+    CHECK(std::count(c.begin(), c.end(), 0x4000u) == 3 && c.back() == 0x4002);  // (4 lines, then wait)
+    CHECK(std::count(c.begin(), c.end(), 0xEAu) == 4 && c[0] == 0xFE && c[1] == 0xFE && c[2] == 0xEA);
+  }
+
+  // El chosen without the El passes: refused before anything is stored; the banner names each.
+  ap::HarbourChoice h = ap::harbour_choose(2);
+  CHECK(h.kind == ap::HarbourChoice::kStay);
+  CHECK(sg.state[0] == 27 && sg.state[4] == 0x58);  // (still chapter 27 step 7000)
+  CHECK(ap::waiting_notices() == (std::vector<std::string>{"El Beach Pass needed to sail", "Eluria Pass needed to sail",
+                                                           "Eluria Tower Pass needed to sail"}));
+  CHECK(ap::script_text(108, own_question) == nullptr);  // (the menu has closed)
+  // Hoffmann Ruins without the Map 231 Pass: refused at the sailor (no fare, no voyage).
+  CHECK(ap::harbour_open(108, 109) == 4 && ap::harbour_choose(1).kind == ap::HarbourChoice::kStay);
+  CHECK(ap::waiting_notices().back() == "Map 231 Pass needed to sail");
+  CHECK(!ap::voyage_landing_open(22) && !ap::voyage_landing_open(18));
+  CHECK(ap::voyage_landing_open(17) && ap::voyage_landing_open(21));  // (no key on those doors here)
+  // With it: the Hoffmann soldier's sail (map 169, 0x7cf8).
+  CHECK(ap::on_give_item(1109) && ap::has_key(9) && ap::voyage_landing_open(22));
+  CHECK(ap::harbour_open(108, 109) == 4);
+  h = ap::harbour_choose(1);
+  CHECK(h.kind == ap::HarbourChoice::kJump && h.offset == 0x7CF8);
+  // Not now, a cancel, an option past the list: nothing.
+  CHECK(ap::harbour_open(108, 109) == 4 && ap::harbour_choose(3).kind == ap::HarbourChoice::kStay);
+  CHECK(ap::harbour_open(108, 109) == 4 && ap::harbour_choose(-1).kind == ap::HarbourChoice::kStay);
+  CHECK(ap::harbour_open(108, 109) == 4 && ap::harbour_choose(7).kind == ap::HarbourChoice::kStay);
+  // Every El pass: El sails as from the Front Line (chapter 28 step 0, Lacour Castle).
+  CHECK(ap::on_give_item(1117) && ap::on_give_item(1118) && ap::on_give_item(1119));
+  CHECK(ap::harbour_open(108, 109) == 4 && ap::harbour_choose(2).kind == ap::HarbourChoice::kEl);
+  CHECK(sg.state[0] == 27);  // (stored only after 444's fade)
+  s32 args[7] = {};
+  ap::el_voyage_transfer(args);
+  CHECK(sg.state[0] == 28 && sg.state[4] == 0);
+  CHECK(args[0] == 422 && args[1] == 130 && args[2] == -215 && args[3] == 0 && args[4] == 0 && args[5] == 180 && args[6] == 128);
+  // Herlie's sailor: the Port Hilton landing's key first.
+  CHECK(!ap::voyage_landing_open(18) && ap::on_give_item(1107) && ap::voyage_landing_open(18));
+  // The Hoffmann sail only on Port Hilton's script.
+  set_story(sg, 24, 0);
+  ap::on_script_loaded(144, script_with_transfers({}));
+  CHECK(ap::harbour_open(108, 109) == 3 && ap::harbour_choose(1).kind == ap::HarbourChoice::kStay);
+  ap::stop();
+
+  // Story mode: no harbour lines, Cross alone, landings never refused (the original's choice).
+  CHECK(ap::load_seed_text(harbour_seed("{}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::seed_patch_lines().size() == s.patches.size());
+  ap::on_script_loaded(169, script_with_transfers({}));
+  set_story(sg, 27, 7000);
+  CHECK(ap::harbour_menu() == voyages({V::kCross}));
+  CHECK(ap::harbour_open(108, 109) == 2 && ap::script_text(108, own_question) == nullptr);
+  CHECK(ap::harbour_choose(0).kind == ap::HarbourChoice::kCross && ap::harbour_choose(1).kind == ap::HarbourChoice::kStay);
+  CHECK(ap::voyage_landing_open(22) && ap::waiting_notices().empty());
+  ap::stop();
+  // No seed: the same.
+  CHECK(ap::harbour_menu() == voyages({V::kCross}) && ap::harbour_open(108, 109) == 2);
+  CHECK(ap::script_text(108, own_question) == nullptr && ap::voyage_landing_open(22));
+  CHECK(ap::harbour_choose(0).kind == ap::HarbourChoice::kCross && ap::harbour_choose(-1).kind == ap::HarbourChoice::kStay);
+  set_story(sg, 0, 0);
+}
+
 TEST(ap_shop_slots) {
   ap::stop();
   ScratchGame sg;
@@ -1105,5 +1280,728 @@ TEST(ap_shop_slots) {
   CHECK(!ap::shop_slot_open(1, 2, 224) && ap::on_shop_buy(1, 2, 224, 1) == 1);
   // Alice's slot: one copy bought, none given, the check sent.
   CHECK(ap::on_shop_buy(1, 0, 728, 1) == 0 && ap::is_checked(1365246464));
+  ap::stop();
+}
+
+// ---- v2 (docs/ap/seed_format.md "v2 fields") [hooks agent] ----
+
+namespace {
+
+// kSeed as a version-2 seed: the Limiter Off + Iseria Queen goal (goal.all 561 / 540, goal.flags
+// 445 / 446, the gate door 43978493 on map 671 needing flag 556 and 561 won), two craft
+// locations (Fried Rice 311: Alice's; 0x1a5: ours) and three killer-move levels (Claude's move
+// 3 at 100 and 200 uses, Ashton's move 1 at 50).
+const char* kV2Goal = "{\"all\": [561, 540], \"encounters\": [540], \"flags\": [445, 446]}";
+std::string v2_seed(const std::string& options, const std::string& goal = kV2Goal) {
+  std::string t = replace(kSeed, "\"version\": 1", "\"version\": 2");
+  t = replace(t, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  t = replace(t, "  \"locations\": [\n",
+              "  \"locations\": [\n"
+              "    {\"id\": 1368523063, \"name\": \"Cooking: Fried Rice\", \"check\": {\"type\": \"craft\", \"item\": 311},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Map Width\", \"ap_id\": 81001, \"classification\": \"useful\"}},\n"
+              "    {\"id\": 1368523173, \"name\": \"Alchemy: Silver\", \"check\": {\"type\": \"craft\", \"item\": \"0x1a5\"},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"item\", \"game_id\": 21, \"name\": \"Revival Card\"}},\n"
+              "    {\"id\": 1375751169, \"name\": \"Claude: move 3 L1\", \"check\": {\"type\": \"killer_move\", \"character\": 1, \"move\": 3, \"level\": 1, \"uses\": 100},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 300}},\n"
+              "    {\"id\": 1375751170, \"name\": \"Claude: move 3 L2\", \"check\": {\"type\": \"killer_move\", \"character\": \"Claude\", \"move\": 3, \"level\": 2, \"uses\": 200},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Hookshot\"}},\n"
+              "    {\"id\": 1375847425, \"name\": \"Ashton: move 1 L1\", \"check\": {\"type\": \"killer_move\", \"character\": 7, \"move\": 1, \"level\": 1, \"uses\": 50},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 7}},\n");
+  t = replace(t, "  \"patches\":",
+              "  \"goal\": " + goal + ",\n"
+              "  \"doors\": [{\"id\": 43978493, \"routine\": \"0x3bec\", \"flags\": [556], \"won\": [561],\n"
+              "             \"banners\": [\"Talk to Filia in Central City first\", \"Defeat the Iseria Queen first\"],\n"
+              "             \"name\": \"Indalecio (Limiter Off)\"}],\n"
+              "  \"patches\":");
+  return t;
+}
+
+bool flag_on(const ScratchGame& sg, int n) { return ((sg.flags[static_cast<size_t>(n >> 3)] >> (n & 7)) & 1) != 0; }
+void set_flag(ScratchGame& sg, int n, bool on) {
+  u8& b = sg.flags[static_cast<size_t>(n >> 3)];
+  b = static_cast<u8>(on ? b | 1 << (n & 7) : b & ~(1 << (n & 7)));
+}
+
+// The party's records (8 x 0xd0, by party slot) for the killer-move use counts.
+struct Records {
+  u8*& ptr = field::globals().records;
+  u8* saved = ptr;
+  std::vector<u8> data = std::vector<u8>(0x680, 0);
+  Records() { ptr = data.data(); }
+  ~Records() { ptr = saved; }
+  void uses(int slot, int move, int n) {
+    const s16 v = static_cast<s16>(n);
+    std::memcpy(data.data() + slot * 0xD0 + 0x8A + 2 * move, &v, 2);
+  }
+};
+
+}  // namespace
+
+TEST(ap_v2_seed) {
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(v2_seed("{\"no_fail_crafting\": true}"), &s, &error));
+  if (!error.empty()) std::fprintf(stderr, "  %s\n", error.c_str());
+  CHECK(s.version == 2 && s.no_fail_crafting);
+  CHECK(s.goal_all == (std::vector<int>{561, 540}) && s.goal_encounters == std::vector<int>{540});
+  CHECK(s.goal_flags == (std::vector<int>{445, 446}));
+  CHECK(s.locations[0].type == "craft" && s.locations[0].craft_item == 311 && s.locations[1].craft_item == 0x1A5);
+  const ap::Location& k = s.locations[2];
+  CHECK(k.type == "killer_move" && k.character == 1 && k.move == 3 && k.level == 1 && k.uses == 100);
+  CHECK(s.locations[3].character == 1 && s.locations[3].uses == 200 && s.locations[4].character == 7);
+  CHECK(s.doors.size() == 1);
+  const ap::Door& d = s.doors[0];
+  CHECK(d.map == 671 && d.offset == 0x3BF4 && d.routine == 0x3BEC && d.keys.empty() && d.has_conditions());
+  CHECK(d.flags == std::vector<int>{556} && d.won == std::vector<int>{561} && d.banners.size() == 2);
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error) && !s.no_fail_crafting);
+  // A version-1 seed reads as before.
+  CHECK(ap::load_seed_text(kSeed, &s, &error) && s.version == 1 && s.goal_all.empty() && s.goal_flags.empty());
+  CHECK(s.goal_encounters == (std::vector<int>{539, 540}) && !s.no_fail_crafting);
+  CHECK(seed_error(v2_seed("{}", "{\"all\": [-1]}"), "goal.all: encounter ids"));
+  CHECK(seed_error(v2_seed("{}", "{\"all\": 561}"), "goal.all must be an array"));
+  CHECK(seed_error(v2_seed("{}", "{\"flags\": [3000]}"), "goal.flags: script flags 0-2943"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"item\": 311", "\"item\": 0"), "a craft needs its item"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"move\": 3, \"level\": 1", "\"move\": 16, \"level\": 1"), "its move (1-15)"));
+  CHECK(ap::load_seed_text(replace(v2_seed("{}"), "\"move\": 3, \"level\": 1", "\"move\": 11, \"level\": 1"), &s, &error) &&
+        s.locations[2].move == 11);  // (Claude's Mirror Slice)
+  CHECK(seed_error(replace(v2_seed("{}"), "\"uses\": 100", "\"uses\": 1000"), "uses (1-999)"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"character\": 7", "\"character\": \"Nobody\""), "its character"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"routine\": \"0x3bec\", ", ""), "flags / won needs its routine"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"flags\": [556]", "\"flags\": [9999]"), "flags: script flags"));
+  CHECK(seed_error(replace(v2_seed("{}"), "\"won\": [561]", "\"won\": 561"), "won must be an array"));
+}
+
+TEST(ap_v2_goal_all) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "12345678901234567890";
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected());
+  // goal.all: 540 alone (any-of would have ended it) is not the goal; an escape from 561 counts
+  // nothing; its victory completes goal.all and the goal goes out once.
+  ap::on_battle_exit(540, battle::kVictory);
+  CHECK(!ap::state().goal_done && goals == 0 && ap::goal_won(540) && !ap::goal_won(561));
+  ap::on_battle_exit(561, battle::kEscaped);
+  ap::on_battle_exit(561, battle::kDefeat);
+  CHECK(!ap::goal_won(561) && !ap::state().goal_done);
+  ap::on_battle_exit(561, battle::kVictory);
+  CHECK(ap::state().goal_done && goals == 1 && ap::state().goal_won == (std::vector<int>{540, 561}));
+  ap::on_battle_exit(561, battle::kVictory);
+  CHECK(goals == 1 && ap::state().goal_won.size() == 2);
+  CHECK(ap::status_text().find("goal.all 561 540 | won 540 561") != std::string::npos);
+  // The sidecar keeps goal_won; an older sidecar reads it as empty.
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.goal_won == (std::vector<int>{540, 561}));
+  ap::Json old = ap::sidecar_json(ap::SaveState{});
+  old.set("goal_won", ap::Json());
+  CHECK(ap::sidecar_from_json(old, &back, &error) && back.goal_won.empty());
+  ap::stop();
+
+  // Loads merge like checked: a save with 561 won, this session's 540: both, and the goal.
+  const fs::path dir = scratch("v2goal");
+  const std::string card = (dir / "memcard1.mcd").string();
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  ap::on_battle_exit(561, battle::kVictory);
+  ap::on_saved(card, 0);
+  ap::on_new_game();
+  CHECK(ap::state().goal_won.empty());
+  ap::on_battle_exit(540, battle::kVictory);
+  CHECK(!ap::state().goal_done);
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().goal_won == (std::vector<int>{561, 540}) && ap::state().goal_done);
+  // A sidecar-less save: a fresh state.
+  ap::on_loaded(card, 4);
+  CHECK(ap::state().goal_won.empty() && !ap::state().goal_done);
+  ap::stop();
+  // Any-of seeds (no goal.all) keep today's rule and record nothing in goal_won.
+  CHECK(ap::load_seed_text(v2_seed("{}", "{\"encounters\": [540], \"flags\": [445, 446]}"), &s, &error));
+  ap::start_with(s);
+  ap::on_battle_exit(540, battle::kVictory);
+  CHECK(ap::state().goal_done && ap::state().goal_won.empty());
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+TEST(ap_v2_goal_flags) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  // The first field frame sets them (a start straight into the field), once.
+  ap::free_play_update();
+  CHECK(flag_on(sg, 445) && flag_on(sg, 446) && !flag_on(sg, 556));
+  set_flag(sg, 445, false);
+  set_flag(sg, 446, false);
+  ap::free_play_update();
+  CHECK(!flag_on(sg, 445));
+  // New Game: again.
+  ap::on_new_game();
+  ap::free_play_update();
+  CHECK(flag_on(sg, 445) && flag_on(sg, 446));
+  // Every load, a save without a sidecar included (start.flags would not apply there).
+  const fs::path dir = scratch("v2flags");
+  set_flag(sg, 445, false);
+  set_flag(sg, 446, false);
+  ap::on_loaded((dir / "memcard1.mcd").string(), 3);
+  ap::free_play_update();
+  CHECK(flag_on(sg, 445) && flag_on(sg, 446));
+  ap::stop();
+  // A seed without goal.flags sets nothing; no seed, nothing.
+  set_flag(sg, 445, false);
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  ap::start_with(s);
+  ap::free_play_update();
+  CHECK(!flag_on(sg, 445));
+  ap::stop();
+  ap::free_play_update();
+  CHECK(!flag_on(sg, 445));
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+TEST(ap_v2_door_conditions) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  // A story-mode seed: the conditions apply anyway.
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  CHECK(!s.open_world);
+  ap::start_with(s);
+  ap::on_script_loaded(671, script_with_transfers({0x3BF4}));
+  // Neither condition: the trigger does not start; the first missing one's banner, once.
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"Talk to Filia in Central City first"});
+  CHECK(!ap::door_blocked_at_trigger(0x3BE0));  // (another routine)
+  s32 args[7] = {684, 0, 0, 0, 0, 0, 128};
+  CHECK(ap::on_map_transfer(0x3BF4, args));     // (reached another way: skipped too)
+  // Flag 556 (Filia's scene): the Iseria Queen is still missing.
+  set_flag(sg, 556, true);
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(ap::waiting_notices().back() == "Defeat the Iseria Queen first");
+  // A loss or an escape does not count; her victory opens it.
+  ap::on_battle_exit(561, battle::kEscaped);
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  ap::on_battle_exit(561, battle::kVictory);
+  CHECK(!ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(!ap::on_map_transfer(0x3BF4, args) && args[0] == 684);
+  // The flag cleared again: shut again (the flag is read live).
+  set_flag(sg, 556, false);
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  ap::stop();
+  // Open world: conditions and keys together; all must hold.
+  CHECK(ap::load_seed_text(replace(v2_seed("{\"world_mode\": \"open_world\"}"), "\"routine\": \"0x3bec\",",
+                                   "\"routine\": \"0x3bec\", \"key\": 3,"), &s, &error));
+  CHECK(s.doors[0].keys == std::vector<int>{3});
+  ap::start_with(s);
+  ap::on_script_loaded(671, script_with_transfers({0x3BF4}));
+  set_flag(sg, 556, true);
+  ap::on_battle_exit(561, battle::kVictory);
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"Key 3 needed"});
+  CHECK(ap::receive_by_name_or_id("key:3", "Bob", &error));
+  ap::stop();
+  // A banner left out: a plain one.
+  CHECK(ap::load_seed_text(replace(v2_seed("{}"), "\"banners\": [\"Talk to Filia in Central City first\", ", "\"banners\": [\"\", "), &s,
+                           &error));
+  ap::start_with(s);
+  ap::on_script_loaded(671, script_with_transfers({0x3BF4}));
+  set_flag(sg, 556, false);
+  CHECK(ap::door_blocked_at_trigger(0x3BEC));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"The way is closed for now"});
+  ap::stop();
+  // No seed: nothing changes.
+  CHECK(!ap::door_blocked_at_trigger(0x3BEC) && !ap::on_map_transfer(0x3BF4, args));
+}
+
+TEST(ap_v2_trumpet) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(!ap::sell_locked(48));  // (no seed)
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  // The Iseria Queen goal: the Silver Trumpet stays off the sell list until The Evil Melody
+  // (song 7, flag 53) is composed; nothing else is held back.
+  CHECK(ap::sell_locked(48) && !ap::sell_locked(47) && !ap::sell_locked(49) && !ap::sell_locked(21));
+  set_flag(sg, 53, true);
+  CHECK(!ap::sell_locked(48));
+  set_flag(sg, 53, false);
+  ap::stop();
+  // Other goals: sold as usual.
+  CHECK(ap::load_seed_text(v2_seed("{}", "{\"encounters\": [540], \"flags\": [445, 446]}"), &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::sell_locked(48));
+  ap::stop();
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::sell_locked(48));
+  ap::stop();
+}
+
+TEST(ap_v2_craft) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(v2_seed("{\"no_fail_crafting\": true}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::no_fail_crafting());
+  // Alice's item at Fried Rice: sent (banner), recorded once.
+  ap::on_craft(311, true);
+  CHECK(ap::is_checked(1368523063) && ap::waiting_notices() == std::vector<std::string>{"Sent Map Width to Alice"});
+  ap::on_craft(311, true);
+  CHECK(ap::state().checked.size() == 1 && ap::waiting_notices().size() == 1);
+  // Our own item at 0x1a5: checked; the item comes in free play ("Got X"), on top of the craft.
+  ap::on_craft(0x1A5, true);
+  CHECK(ap::is_checked(1368523173) && ap::pending_count() == 1);
+  // An item the seed does not list: nothing.
+  ap::on_craft(312, true);
+  CHECK(ap::state().checked.size() == 2);
+  ap::stop();
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::no_fail_crafting());
+  ap::stop();
+  CHECK(!ap::no_fail_crafting());
+  ap::on_craft(311, true);  // (no seed: nothing)
+}
+
+TEST(ap_v2_killer_moves) {
+  ap::stop();
+  ScratchGame sg;
+  Records rec;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(v2_seed("{}"), &s, &error));
+  ap::start_with(s);
+  sg.member(0, 1, 100);   // Claude in slot 0
+  sg.member(1, -2, 100);  // Rena in reserve
+  rec.uses(0, 3, 99);
+  CHECK(ap::scan_killer_moves() == 0);
+  rec.uses(0, 3, 100);    // level 1 reached
+  CHECK(ap::scan_killer_moves() == 1 && ap::is_checked(1375751169) && !ap::is_checked(1375751170));
+  CHECK(ap::scan_killer_moves() == 0);
+  rec.uses(0, 2, 999);    // (another move)
+  CHECK(ap::scan_killer_moves() == 0);
+  // Ashton isn't in the party: slot 1's record belongs to Rena.
+  rec.uses(1, 1, 60);
+  CHECK(ap::scan_killer_moves() == 0);
+  // He joins in slot 2 with a count already past (a save, say): checked at once.
+  sg.member(2, 7, 100);
+  rec.uses(2, 1, 50);
+  CHECK(ap::scan_killer_moves() == 1 && ap::is_checked(1375847425));
+  // A count past both levels: the rest at once (the cap is 999).
+  rec.uses(0, 3, 999);
+  CHECK(ap::scan_killer_moves() == 1 && ap::is_checked(1375751170));
+  CHECK(ap::waiting_notices() == std::vector<std::string>{"Sent Hookshot to Alice"});
+  CHECK(ap::pending_count() == 2);  // (the two own Fol items, given in free play)
+  ap::stop();
+  CHECK(ap::scan_killer_moves() == 0);  // (no seed)
+}
+
+// ---- v2 party (docs/ap/seed_format.md "Party v2") [party agent] ----
+
+namespace {
+
+// A version-2 seed with the given options and three join sites: Rena's first join in Claude's
+// game (map 9, 0x6b94), Noel's (map 277, 0x6fe0) and Bowman's (map 208, 0x6bc4).
+std::string party_seed(const std::string& options) {
+  std::string t = replace(kSeed, "\"version\": 1", "\"version\": 2");
+  t = replace(t, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}", "\"options\": " + options);
+  t = replace(t, "  \"locations\": [\n",
+              "  \"locations\": [\n"
+              "    {\"id\": 1353851904, \"name\": \"Shingo Forest: Rena joins\", \"check\": {\"type\": \"join\", \"map\": 9, \"offset\": \"0x6b94\", \"character\": \"Rena\"},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Map Width\"}},\n"
+              "    {\"id\": 1354126336, \"name\": \"Noel's House: Noel joins\", \"check\": {\"type\": \"join\", \"map\": 277, \"offset\": \"0x6fe0\", \"character\": \"Noel\"},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 10}},\n"
+              "    {\"id\": 1354055680, \"name\": \"Bowman joins\", \"check\": {\"type\": \"join\", \"map\": 208, \"offset\": \"0x6bc4\", \"character\": \"Bowman\"},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Hookshot\"}},\n");
+  return t;
+}
+
+std::string open_options(const std::string& route, const std::string& extra = "") {
+  return "{\"world_mode\": \"open_world\", \"character_items\": true, \"party_rules\": \"open\", \"story_route\": \"" + route +
+         "\"" + extra + "}";
+}
+
+// The field's party with its records, the map, the story's position and the game.
+struct PartyGame {
+  ScratchGame sg;
+  Records rec;
+  fs::path dir = scratch("v2party");
+  int loads = 0;
+  ~PartyGame() {
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+  }
+  void at(int map, s32 chapter, s32 step) {
+    const s16 m = static_cast<s16>(map);
+    std::memcpy(sg.state.data() + 0x1A, &m, 2);
+    set_story(sg, chapter, step);
+  }
+  void claude_game(bool on) { set_flag(sg, 1, on); }
+  void members(std::initializer_list<int> ids) {
+    std::fill(sg.party.begin(), sg.party.end(), 0);
+    int slot = 0;
+    for (const int id : ids) sg.member(slot++, id, 100);
+  }
+  // The party as "1,2,-3" (slots in order, empty ones left out).
+  std::string party() const {
+    std::string out;
+    for (int i = 0; i < 8; ++i) {
+      s16 v;
+      std::memcpy(&v, sg.party.data() + i * 0x60, 2);
+      if (v == 0) continue;
+      out += (out.empty() ? "" : ",") + std::to_string(v);
+    }
+    return out;
+  }
+  // These members received (through a save's sidecar, as a load gives them).
+  void received(std::vector<int> ids) {
+    ap::SaveState st = ap::state();
+    st.characters = std::move(ids);
+    st.characters_waiting.clear();
+    st.start_given = true;
+    const std::string card = (dir / "memcard1.mcd").string();
+    std::string error;
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, loads), st, &error));
+    ap::on_loaded(card, loads++);
+  }
+  // A join as script ext 0xae does it: the game's own join unless Archipelago took it.
+  bool join(int id, int at, int call_at = -1) {
+    if (ap::on_party_add(id - 1, at, call_at)) return false;
+    field::party_add_member(nullptr, id - 1);
+    return true;
+  }
+  void leave(int id) {
+    ap::on_party_remove(id - 1, 0x100, -1);
+    field::party_remove_member(nullptr, id - 1);
+  }
+};
+
+}  // namespace
+
+TEST(ap_v2_party_seed) {
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  CHECK(s.version == 2 && s.open_party && s.starting_character == 0);
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\"")), &s, &error));
+  CHECK(s.starting_character == 7);
+  CHECK(ap::load_seed_text(party_seed(open_options("any", ", \"starting_character\": 9")), &s, &error) && s.starting_character == 9);
+  for (const char* none : {"null", "\"hero\"", "\"\"", "0"}) {
+    CHECK(ap::load_seed_text(party_seed(open_options("claude", std::string(", \"starting_character\": ") + none)), &s, &error));
+    CHECK(s.starting_character == 0);
+  }
+  // party_rules "story" (or none): phase 3's rules; a starting character works without it too.
+  CHECK(ap::load_seed_text(party_seed("{\"party_rules\": \"story\", \"starting_character\": \"Leon\"}"), &s, &error));
+  CHECK(!s.open_party && s.starting_character == 8);
+  CHECK(ap::load_seed_text(kSeed, &s, &error) && !s.open_party && s.starting_character == 0);
+  CHECK(seed_error(party_seed("{\"party_rules\": \"closed\"}"), "options.party_rules: story or open"));
+  CHECK(seed_error(party_seed("{\"party_rules\": true}"), "options.party_rules: story or open"));
+  CHECK(seed_error(party_seed("{\"starting_character\": \"Zand\"}"), "options.starting_character"));
+  CHECK(seed_error(party_seed("{\"starting_character\": 13}"), "options.starting_character"));
+}
+
+// party_rules "open": only story members, received members and the starting character join,
+// at a listed site (its check recorded) or anywhere else; phase 3's seeds unchanged.
+TEST(ap_v2_party_open_joins) {
+  ap::stop();
+  PartyGame pg;
+  pg.claude_game(true);
+  pg.members({1});
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  // Rena's listed site (map 9, the call at 0x6b94): the check, but no Rena (not received).
+  pg.at(9, 4, 2000);
+  CHECK(!pg.join(2, 0x63d0, 0x6b94));
+  CHECK(ap::is_checked(1353851904) && pg.party() == "1");
+  // Unlisted sites (map 27 re-adds Rena; Mars adds Celine): nobody either.
+  pg.at(27, 5, 1000);
+  CHECK(!pg.join(2, 0x63d0, 0x580));
+  pg.at(124, 15, 1000);
+  CHECK(!pg.join(3, 0x63d0, 0x7058));
+  CHECK(pg.party() == "1" && ap::state().checked.size() == 1);
+  // The hero: the game's join.
+  CHECK(pg.join(1, 0x63d0, 0x1234));
+  // Received: anywhere, the game's join (Leon in Claude's game, Rena at map 27).
+  pg.received({2, 8});
+  pg.at(27, 5, 1000);
+  CHECK(pg.join(2, 0x63d0, 0x580));
+  pg.at(230, 30, 0);
+  CHECK(pg.join(8, 0x63d0, 0x6c58));
+  CHECK(pg.party() == "1,2,8");
+  // A listed site of a received member: checked, and the game's join.
+  pg.received({2, 8, 11});
+  pg.at(277, 39, 1000);
+  CHECK(pg.join(11, 0x63d0, 0x6fe0));
+  CHECK(ap::is_checked(1354126336) && pg.party() == "1,2,8,11");
+  ap::stop();
+  // story_route "any": both heroes are story members.
+  pg.members({1});
+  CHECK(ap::load_seed_text(party_seed(open_options("any")), &s, &error));
+  ap::start_with(s);
+  pg.at(27, 5, 1000);
+  CHECK(pg.join(2, 0x63d0, 0x580));
+  CHECK(!pg.join(3, 0x63d0, 0x7058));
+  CHECK(pg.party() == "1,2");
+  ap::stop();
+  // Phase 3 (party_rules "story", character_items): unlisted sites are the game's; a listed one
+  // holds back a member not received.
+  pg.members({1});
+  CHECK(ap::load_seed_text(party_seed("{\"character_items\": true, \"story_route\": \"claude\"}"), &s, &error));
+  ap::start_with(s);
+  pg.at(124, 15, 1000);
+  CHECK(pg.join(3, 0x63d0, 0x7058));
+  pg.at(208, 22, 4000);
+  CHECK(!pg.join(4, 0x63d0, 0x6bc4));
+  CHECK(pg.party() == "1,3" && ap::is_checked(1354055680));
+  ap::stop();
+}
+
+// A slot of a story member or of a member recruited for good is never overwritten.
+TEST(ap_v2_party_slots) {
+  ap::stop();
+  PartyGame pg;
+  pg.claude_game(true);
+  // Eight slots: Claude, Rena, Celine (in reserve), Bowman, Dias (in reserve: a story member for a
+  // while, not received), Precis, Ashton, Opera.
+  pg.members({1, 2, -3, 4, -5, 6, 7, 9});
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.at(230, 30, 0);
+  pg.received({2, 3, 4, 6, 7, 8, 9, 11});
+  // Leon: Dias's reserve slot (not kept), not Celine's.
+  CHECK(!pg.join(8, 0x63d0, 0x6c58));
+  CHECK(pg.party() == "1,2,-3,4,8,6,7,9");
+  // Noel: no slot left but kept ones: skipped, his join waits.
+  CHECK(!pg.join(11, 0x63d0, 0x6fe0));
+  CHECK(pg.party() == "1,2,-3,4,8,6,7,9");
+  CHECK(ap::state().characters_waiting == std::vector<int>{11});
+  CHECK(ap::party_free_play_step().empty());  // (still no room)
+  ap::stop();
+}
+
+// The split windows: temporary members, the split's members kept away, back afterwards.
+TEST(ap_v2_party_windows) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("rena")), &s, &error));
+  ap::start_with(s);
+  // Shingo Forest (map 12, chapter 4 step 150): Rena's game only.
+  pg.claude_game(false);
+  pg.at(12, 4, 150);
+  CHECK(ap::split_window_needing(1) == "Shingo Forest (map 12)" && ap::split_window_needing(5).empty());
+  pg.claude_game(true);
+  CHECK(ap::split_window_needing(1).empty());
+  // The tournament: Dias (and Claude) for a while, everyone else kept apart; over at chapter 20.
+  pg.at(477, 19, 4400);
+  CHECK(!ap::split_window_needing(5).empty() && !ap::split_window_keeping(0).empty());
+  pg.at(1, 20, 0);
+  CHECK(ap::split_window_needing(5).empty() && ap::split_window_keeping(0).empty());
+  // Linga (chapter 22, steps 3000-5000); Dias away in Rena's game from Mars to the tournament.
+  pg.at(193, 22, 4000);
+  CHECK(ap::split_window_keeping(0) == "Linga (193 -> 195)");
+  pg.at(193, 22, 6000);
+  CHECK(ap::split_window_keeping(0).empty());
+  pg.claude_game(false);
+  pg.at(1, 17, 0);
+  CHECK(ap::split_window_keeping(5) == "Dias away (462 -> 434)" && ap::split_window_keeping(4).empty() &&
+        ap::split_window_keeping(0).empty());
+  set_flag(pg.sg, 2318, true);  // (the Cave of Trials' party choice)
+  CHECK(ap::split_window_keeping(0) == "the Cave of Trials (flag 2318)");
+  set_flag(pg.sg, 2318, false);
+  // Rena's game, Claude not received: map 12 takes Rena out and adds Claude for the fight (let in
+  // for a while), then swaps them back; free play after the scene drops him for good.
+  pg.members({2});
+  pg.at(12, 4, 150);
+  pg.leave(2);
+  CHECK(!pg.join(1, 0x63d0, 0x6e08));
+  CHECK(pg.party() == "1,-2" && ap::state().temporary == std::vector<int>{1});
+  pg.leave(1);
+  CHECK(pg.join(2, 0x63d0, 0x70b4));
+  CHECK(pg.party() == "-1,2");
+  pg.at(12, 4, 200);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(pg.party() == "2" && ap::state().temporary.empty());
+  // Outside the window he is refused (map 9's site, chapter 4 step 2000).
+  pg.at(9, 4, 2000);
+  CHECK(!pg.join(1, 0x63d0, 0x6ba0));
+  CHECK(pg.party() == "2");
+  ap::stop();
+  // Claude's game, Celine received: Linga takes her out; she stays out during the split (no
+  // banner), and rejoins in free play once it is over (her restore is not needed).
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1, 2, 3});
+  pg.received({3});
+  pg.at(193, 22, 3000);
+  pg.leave(3);
+  CHECK(pg.party() == "1,2,-3");
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,2,-3");
+  pg.at(195, 22, 5100);
+  CHECK(ap::party_free_play_step() == "Celine joined the party");
+  CHECK(pg.party() == "1,2,3" && ap::state().characters_waiting.empty());
+  ap::stop();
+  // A window for one member (Rena's game, Dias away from the tournament to the Front Line) holds
+  // the Dias the story set aside, not one received meanwhile.
+  CHECK(ap::load_seed_text(party_seed(open_options("rena")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(false);
+  pg.members({2, -5});
+  pg.received({5});
+  pg.at(1, 20, 0);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "2,-5");
+  pg.at(447, 26, 3100);  // (past the Front Line too)
+  CHECK(ap::party_free_play_step() == "Dias joined the party" && pg.party() == "2,5");
+  pg.members({2});
+  pg.at(1, 20, 0);
+  CHECK(ap::receive_by_name_or_id("Dias", "Bob", &error));
+  pg.received({5});
+  ap::SaveState st = ap::state();
+  CHECK(ap::party_free_play_step().empty());  // (received through a load: not waiting)
+  st.characters_waiting = {5};
+  {
+    const std::string card = (pg.dir / "memcard1.mcd").string();
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 9), st, &error));
+    ap::on_loaded(card, 9);
+  }
+  CHECK(ap::party_free_play_step() == "Dias joined the party" && pg.party() == "2,5");
+  ap::stop();
+}
+
+// A temporary member with every slot kept borrows one; its member comes back (the sidecar keeps
+// the borrowed data).
+TEST(ap_v2_party_borrow) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1, 2, 3, 4, 6, 7, 8, 9});
+  pg.received({2, 3, 4, 6, 7, 8, 9});
+  pg.rec.data[0x10] = 0x5A;  // (Claude's record: a byte to see it come back)
+  pg.at(477, 19, 4400);
+  // Dias's fight: the scene takes Claude out, adds Dias.
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "5,2,3,4,6,7,8,9" && ap::state().stash.size() == 1 && ap::state().temporary == std::vector<int>{5});
+  // The sidecar keeps the stash.
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error));
+  CHECK(back.stash.size() == 1 && back.stash[0].slot == 0 && back.stash[0].bytes == ap::state().stash[0].bytes &&
+        back.temporary == std::vector<int>{5});
+  ap::Json bad;
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 1, \"stash\": [{\"slot\": 9, \"bytes\": \"00\"}]}", &bad, &error));
+  CHECK(!ap::sidecar_from_json(bad, &back, &error));
+  // The fight over: Dias out, Claude back in his own slot with his record.
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  CHECK(pg.party() == "1,2,3,4,6,7,8,9" && pg.rec.data[0x10] == 0x5A);
+  CHECK(ap::state().stash.empty() && ap::state().temporary.empty());
+  ap::stop();
+}
+
+// The starting character: joins at the first free play, before the starting items, and leads;
+// the picked game's hero means nobody; no lockouts, also without character_items.
+TEST(ap_v2_starting_character) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1});
+  pg.at(7, 3, 0);
+  ap::on_new_game();
+  CHECK(ap::starting_member() == 7);
+  CHECK(ap::party_free_play_step() == "Ashton joined the party");
+  CHECK(pg.party() == "1,7" && pg.sg.config[0x41] == 1 && ap::state().start_given);
+  CHECK(ap::party_free_play_step().empty());  // (once)
+  // Counts as received: a listed or story join of hers while present is a no-op, a split's
+  // leave brings her back afterwards.
+  pg.at(71, 10, 0);
+  CHECK(pg.join(7, 0x63d0, 0x7348) && pg.party() == "1,7");
+  pg.at(193, 22, 3000);
+  pg.leave(7);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,-7");
+  pg.at(193, 22, 5100);
+  CHECK(ap::party_free_play_step() == "Ashton joined the party" && pg.party() == "1,7");
+  ap::stop();
+  // story_route "any", starting Rena: she joins Claude's game; Rena's game: nobody (the hero).
+  CHECK(ap::load_seed_text(party_seed(open_options("any", ", \"starting_character\": \"Rena\"")), &s, &error));
+  ap::start_with(s);
+  pg.members({2});
+  pg.claude_game(false);
+  ap::on_new_game();
+  CHECK(ap::starting_member() == 0 && ap::party_free_play_step().empty() && pg.party() == "2");
+  pg.members({1});
+  pg.claude_game(true);
+  ap::on_new_game();
+  CHECK(ap::starting_member() == 2 && ap::party_free_play_step() == "Rena joined the party" && pg.party() == "1,2");
+  ap::stop();
+  // Without character_items (party_rules "story"): Leon starts Rena's game (no lockout); the
+  // story's recruits join as in the original.
+  CHECK(ap::load_seed_text(party_seed("{\"world_mode\": \"open_world\", \"party_rules\": \"story\", \"story_route\": \"rena\", "
+                                      "\"starting_character\": \"Leon\"}"),
+                           &s, &error));
+  ap::start_with(s);
+  pg.members({2});
+  pg.claude_game(false);
+  ap::on_new_game();
+  CHECK(ap::party_free_play_step() == "Leon joined the party" && pg.party() == "2,8");
+  pg.at(124, 15, 1000);
+  CHECK(pg.join(3, 0x63d0, 0x7058) && pg.party() == "2,8,3");
+  ap::stop();
+}
+
+// While the party is set aside for the hero alone (a Private Action's flags 2 / 4, or the map
+// library's isolate routine's flag 746), the party rules leave it alone.
+TEST(ap_v2_party_isolated) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1, -3});
+  pg.received({3});
+  pg.at(18, 10, 0);
+  for (const int flag : {2, 4, 746}) {
+    set_flag(pg.sg, flag, true);
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "1,-3");
+    set_flag(pg.sg, flag, false);
+  }
+  CHECK(ap::party_free_play_step() == "Celine joined the party" && pg.party() == "1,3");
   ap::stop();
 }

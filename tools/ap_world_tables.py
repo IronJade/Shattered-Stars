@@ -16,7 +16,7 @@ type that random encounters meet (type 8, by enemy type). Each location carries:
   - its vanilla contents (a game item or a Fol amount), which make the item pool;
   - its region (Expel, Energy Nede, Fienal, Cave of Trials);
   - why it can be missed, if it can ("window", "time-limited", "private action", "optional
-    member", "never"), and the protagonist it needs ("claude" / "rena"), from its
+    member", "never"), and the story_route it needs ("claude" / "rena"), from its
     conditions evaluated with tools/ap_extract.py's three-valued evaluator;
   - the games in which tools/ap_late_proof.py proved it reachable after the Final Save Point
     (`late`: chests, gifts, bosses), which decides whether it may hold progression.
@@ -59,6 +59,12 @@ CHARACTERS = ["Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", 
 #     exception (229, flag 765);
 #   Bowman 208, Precis 209 (a Private Action), Ashton 71 (three states of his quest), Opera
 #   374 and 479 (three), Ernest 479 (with Opera, choice 0), Chisato 242.
+# Open world's party rules (docs/ap/seed_format.md, "Party v2") make the other hero and Noel
+# items too: their first join for good is a join location, listed only when they are not a
+# story member of the seed (`open_only`): Rena in Claude's game (map 9, chapter 4 step 2000),
+# Claude in Rena's (map 12, chapter 4 step 150), Noel (map 277, chapter 39 step 1000). The
+# story route each needs is fixed here (the records' own conditions don't carry flag 1).
+OPEN_JOIN_SITES = {"Rena": ((9, 0x6B94), "claude"), "Claude": ((12, 0x6E08), "rena"), "Noel": ((277, 0x6FE0), None)}
 JOIN_SITES = {
     "Celine": ((124, 0x7058), (125, 0x9AEC)),
     "Bowman": ((208, 0x6BC4),),
@@ -110,7 +116,7 @@ OPTIONAL_BOSSES = {
 }
 # Reasons that a diligent player can avoid (get it before the story closes it): missable
 # "include" makes these ordinary locations. Every other reason (a choice, an exclusive party
-# member, a Private Action, a losable fight, a join site, the other protagonist) stays
+# member, a Private Action, a losable fight, a join site, the other story_route) stays
 # excluded from progression whatever the option, because two such locations can rule each
 # other out and the generator can't tell which one the player will take.
 SOFT_REASONS = ("window", "time-limited")
@@ -163,7 +169,7 @@ CLAUDE, RENA, SOLO = scenario(flag1=True), scenario(flag1=False), scenario(solo=
 
 
 def judge(contexts, rec):
-    """(missable reasons, protagonist) of a location reached through any of these contexts."""
+    """(missable reasons, story_route) of a location reached through any of these contexts."""
     reasons = []
     if rec.get("missable"):
         reasons.append("window")
@@ -226,7 +232,7 @@ def build(field, battles, late=None, doors=None):
                      "area": area_label(c) or f"Map {c['map']}", "item": c.get("item"), "fol": c.get("fol"),
                      "region": region_of(c["map"], c.get("world", worlds.get(c["map"]))),
                      "sites": [site_row(s["map"], s) for s in c["sites"]],
-                     "missable": reasons, "protagonist": side})
+                     "missable": reasons, "story_route": side})
     for key in ("gifts", "fol_gifts"):
         for g in field[key]:
             if g.get("world_script") or g.get("payment") or "location_id" not in g:
@@ -243,9 +249,9 @@ def build(field, battles, late=None, doors=None):
                              "item": s["value"] if s["what"] == "item" else None,
                              "fol": s["value"] if s["what"] == "fol" else None,
                              "region": region_of(g["map"], g.get("world", worlds.get(g["map"]))),
-                             "sites": [site_row(g["map"], s)], "missable": reasons, "protagonist": side,
+                             "sites": [site_row(g["map"], s)], "missable": reasons, "story_route": side,
                              "from_chapter": (g.get("window") or [None])[0]})
-    # Boss fights: one location per encounter; its sites' contexts decide the protagonist.
+    # Boss fights: one location per encounter; its sites' contexts decide the story_route.
     final = set(battles.get("final_boss_encounters", [539, 540]))
     for b in field.get("bosses", []):
         e = b["encounter"]
@@ -287,9 +293,10 @@ def build(field, battles, late=None, doors=None):
             region = "Expel"    # map 463 (Azamgil, chapter 15) is Mars's dungeon (field.md, anomalies)
         locs.append({"id": b["location_id"], "type": "boss", "map": s0["map"], "encounter": e,
                      "area": place, "item": FILLER_ITEM, "fol": None, "region": region, "sites": [],
-                     "missable": reasons, "protagonist": side, "boss": cls, "label": label})
+                     "missable": reasons, "story_route": side, "boss": cls, "label": label})
     # Join sites of the shuffled characters (character_items).
     wanted = {(m, off): who for who, sites in JOIN_SITES.items() for m, off in sites}
+    wanted.update({site: who for who, (site, _) in OPEN_JOIN_SITES.items()})
     found = set()
     for r in field["recruitments"]:
         if r.get("world_script") or "location_id" not in r:
@@ -306,13 +313,17 @@ def build(field, battles, late=None, doors=None):
                 raise SystemExit(f"map {r['map']} join site {site['at']:#x}: no location id")
             reasons, side = judge([{"requires": r.get("requires", []), "via": r.get("via")}], r)
             reasons = ["join"] + [x for x in reasons if x != "optional member"]
+            open_only = who in OPEN_JOIN_SITES
+            if open_only:
+                side = OPEN_JOIN_SITES[who][1]
+                reasons = [x for x in reasons if x != "never"]
             locs.append({"id": lid, "type": "join", "map": r["map"], "offset": site["at"], "character": who,
                          "area": area_label(r) or f"Map {r['map']}", "item": FILLER_ITEM, "fol": None,
                          "region": region_of(r["map"], r.get("world", worlds.get(r["map"]))), "sites": [],
-                         "missable": reasons, "protagonist": side})
+                         "missable": reasons, "story_route": side, "open_only": True if open_only else None})
     if found != set(wanted):
         raise SystemExit(f"join sites not in field.json: {sorted(set(wanted) - found)}")
-    # First drops (drops_as_checks): the enemy types random encounters meet. The location's
+    # First drops (enemy_dropsanity): the enemy types random encounters meet. The location's
     # region is the earliest one where the type is met; it never holds progression (a drop is
     # a dice roll, and some odds are low).
     order = ("Expel", "Energy Nede", "Fienal", "Cave of Trials")
@@ -327,11 +338,17 @@ def build(field, battles, late=None, doors=None):
         region, _, area = min(places, key=lambda p: order.index(p[0]))
         reasons = [] if any(late for _, late, _ in places) else ["time-limited"]
         drop_maps = sorted({m for m, _ in d["sites"]})
+        # The maps where the type is met with no condition on the encounter (no chapter, flag or
+        # floor test): the ones the drop's progression logic may count (rules.py drop_places).
+        stable = sorted({(m2, esites[(m, off)].get("world", worlds.get(m))) for m, off in d["sites"]
+                         if unconditional(esites[(m, off)]) for m2 in esites[(m, off)].get("maps", [m])})
         locs.append({"id": d["location_id"], "type": "drop", "map": None, "enemy": d["enemy"], "site_maps": drop_maps,
                      "on_world_map": bool(d["world_maps"]),
                      "area": area or region, "item": d["drops"][0]["item"], "fol": None, "region": region,
-                     "sites": [], "missable": reasons, "protagonist": None, "label": d["name"],
-                     "regions": sorted({p[0] for p in places}, key=order.index)})
+                     "sites": [], "missable": reasons, "story_route": None, "label": d["name"],
+                     "regions": sorted({p[0] for p in places}, key=order.index),
+                     "odds": [x["odds"] for x in d["drops"]], "stable_maps": stable,
+                     "world_maps": list(d["world_maps"])})
     # Names: "AREA: CONTENTS chest|gift"; "AREA: NAME boss"; "AREA: CHARACTER joins";
     # "NAME first drop"; made unique with the map, then a number.
     base = {}
@@ -374,6 +391,7 @@ def build(field, battles, late=None, doors=None):
                     l["group_near"] = True
             if l["type"] == "drop":
                 l["groups"] = sorted({gmap[m][0] for m in l.pop("site_maps") if m in gmap})
+                l["places"] = drop_places(l.pop("stable_maps"), l.pop("world_maps"), gmap, late or {}, groups)
             if l["type"] in ("chest", "gift", "boss"):
                 l["late_keys"] = sorted(late_keys.get(l["id"], ()))
                 l["tele"] = tele_games.get(l["id"], [])
@@ -388,7 +406,8 @@ def build(field, battles, late=None, doors=None):
             raise SystemExit("a shop slot's name repeats a location's")
         locs += shops
     for l in locs:
-        l.pop("site_maps", None)
+        for k in ("site_maps", "stable_maps", "world_maps"):
+            l.pop(k, None)
     fol = sorted({l["fol"] for l in locs if l["fol"] is not None})
     goal = battles.get("final_boss_encounters", [539, 540])
     numbers = {g["group"]: g["key"] for g in groups}
@@ -598,6 +617,64 @@ def story_gates(late, groups, locs):
     return out
 
 
+def unconditional(site):
+    """An encounter site with no condition on it or on the calls reaching it."""
+    return not site.get("requires") and all(not v.get("requires") for v in site.get("via") or [])
+
+
+def map_proofs(proof, groups):
+    """Map -> (the games whose search reached it, the entrance groups on its routes there: the
+    union over the games and the map's nodes), for one proof of late_proof.json."""
+    target = {m: g["group"] for g in groups for m in g["maps"]}
+    games, keys = collections.defaultdict(list), collections.defaultdict(set)
+    for game, res in sorted(proof.get("games", {}).items()):
+        for m in res.get("maps", []):
+            games[m].append(game)
+        for node, route in res.get("routes", {}).items():
+            m = int(node.split("@")[0])
+            steps = [x.split(":") for x in route.split("|", 1)[1].split(",") if x] if "|" in route else []
+            maps_ = [int(a) for a, _ in steps] + [m]
+            for k, (a, _) in enumerate(steps):
+                if int(a) in (1, 2) and maps_[k + 1] in target:
+                    keys[m].add(target[maps_[k + 1]])
+    return games, keys
+
+
+def drop_places(stable, world_maps, gmap, late, groups):
+    """A first drop's places for its progression logic (rules.py drop_places): the maps where
+    random encounters meet the type with no condition (`stable`: (map, world) pairs), merged
+    where they share their area and proofs: region, entrance group (`group_near` as for
+    locations), the games whose late / teleporter / voyage proof reached the map and the late and
+    teleporter route keys; and each world map the type is met on (`world_map`: 1 Expel, 2 Nede),
+    which the logic counts only after the Final Save Point (its encounter cells are not mapped
+    to islands)."""
+    proofs = {k: map_proofs(p, groups) for k, p in
+              (("late", late), ("tele", late.get("teleporter", {})), ("voyage", late.get("voyage", {})))}
+    merged = {}
+    for m, world in stable:
+        if m in (1, 2, 3):
+            continue
+        group, near = gmap.get(m, (None, False))
+        sig = (region_of(m, world), group, near,
+               tuple(proofs["late"][0].get(m, ())), tuple(sorted(proofs["late"][1].get(m, ()))),
+               tuple(proofs["tele"][0].get(m, ())), tuple(sorted(proofs["tele"][1].get(m, ()))),
+               tuple(proofs["voyage"][0].get(m, ())))
+        merged.setdefault(sig, []).append(m)
+    out = []
+    for (region, group, near, lg, lk, tg, tk, vg), maps_ in merged.items():
+        place = {"maps": sorted(maps_), "region": region, "group": group}
+        if near:
+            place["group_near"] = True
+        place.update({"late": list(lg), "late_keys": list(lk), "tele": list(tg), "tele_keys": list(tk),
+                      "voyage": list(vg)})
+        out.append(place)
+    out.sort(key=lambda p: p["maps"][0])
+    for w in sorted(world_maps):
+        out.append({"maps": [w], "world_map": w, "region": {1: "Expel", 2: "Energy Nede"}[w],
+                    "late": list(proofs["late"][0].get(w, ()))})
+    return out
+
+
 def route_keys(proof, groups):
     """Location id -> the entrance groups on the proof routes to the map that checked it (union
     over the games and over that map's nodes), and the games that proved it."""
@@ -640,7 +717,7 @@ def shop_slots(field, items, worlds, groups_of_map):
             out.append({"id": LOCATION_BASE + (10 << 21) + (shop << 8) + index, "type": "shop", "shop": shop,
                         "index": index, "map": site["map"], "area": area, "item": item, "fol": None,
                         "region": region_of(site["map"], site.get("world", worlds.get(site["map"]))),
-                        "sites": [], "missable": reasons, "protagonist": side, "special": sellers[item] == 1,
+                        "sites": [], "missable": reasons, "story_route": side, "special": sellers[item] == 1,
                         "name": f"{area}: shop {shop} {items.get(item, item)}"})
     taken = collections.Counter(l["name"] for l in out)
     for l in out:
@@ -668,15 +745,16 @@ def write(data, path, sources):
             "# One location per line: id, name, type (chest / gift / boss / join / drop), map, flag (chest) /",
             "# offset (gift, join) / encounter (boss) / enemy (drop), character (join), boss class, area,",
             "# region, vanilla item or Fol, patch sites [map, word, expected, form, role], missable",
-            "# reasons, the protagonist it needs (None: both), late: the games in which it was proven",
+            "# reasons, the story_route it needs (None: both), late: the games in which it was proven",
             "# reachable after the Final Save Point (docs/ap/late_proof.json; chests, gifts, bosses).",
             "LOCATIONS = ["]
     for l in data["locations"]:
         row = {k: l.get(k) for k in ("id", "name", "type", "map", "flag", "offset", "encounter", "character", "enemy",
                                       "shop", "index", "special", "boss", "chapter", "from_chapter", "area", "region",
                                       "regions", "group", "group_near", "groups", "on_world_map", "item", "fol", "sites", "missable",
-                                      "protagonist", "late", "late_keys", "tele", "tele_keys")}
-        row = {k: v for k, v in row.items() if v is not None or k in ("item", "fol", "protagonist")}
+                                      "story_route", "late", "late_keys", "tele", "tele_keys", "odds", "places",
+                                      "open_only")}
+        row = {k: v for k, v in row.items() if v is not None or k in ("item", "fol", "story_route")}
         out.append(f"    {row!r},")
     out += ["]", "",
             "# Phase 4 (open world): the world-map entrance groups (docs/ap/doors.json key_group), one key",
@@ -740,8 +818,8 @@ def main():
           f"boss classes {dict(collections.Counter(l['boss'] for l in locs if l['type'] == 'boss'))}; "
           f"joins {dict(collections.Counter(l['character'] for l in locs if l['type'] == 'join'))}")
     print(f"missable {sum(1 for l in locs if l['missable'])} "
-          f"{dict(why)}; claude-only {sum(1 for l in locs if l['protagonist'] == 'claude')}, rena-only "
-          f"{sum(1 for l in locs if l['protagonist'] == 'rena')}; regions "
+          f"{dict(why)}; claude-only {sum(1 for l in locs if l['story_route'] == 'claude')}, rena-only "
+          f"{sum(1 for l in locs if l['story_route'] == 'rena')}; regions "
           f"{dict(collections.Counter(l['region'] for l in locs))}; Fol bundles {len(data['fol'])}")
     late_rows = [l for l in locs if "late" in l]
     print(f"proven late: both games {sum(1 for l in late_rows if len(l['late']) == 2)}, Claude's only "

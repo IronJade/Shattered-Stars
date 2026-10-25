@@ -55,7 +55,7 @@ bundles need a rebuild).
   - Generated 4 seeds from `scratchpad/release/verify/` player files (seed 777, using the
     repo's `scratchpad/ap/ap-venv`): solo (defaults), a 2-player multiworld (SO2 + ChecksFinder,
     defaults), and two non-default option sets (open_world + character_items + shuffle_shops
-    full + traps 30 + death_link; protagonist rena + missable_locations include +
+    full + traps 30 + death_link; story_route rena + missable_locations include +
     expel_progression false + multipliers). All 4 generated `.apso2` + spoiler with no errors.
   - `MultiServer.py` served the multiworld zip on 127.0.0.1:38391 ("Hosting game at
     127.0.0.1:38391"), loaded our embedded data package; stopped by exact PID (note: an
@@ -71,7 +71,7 @@ bundles need a rebuild).
     exists and `worlds/so2` does not; the repo-root `cd` fix (`$(dirname "$0")/..` assumed
     the script lives one level under the repo root, true for `tools/` but not for this copy
     under `scratchpad/release/`, so the root is set explicitly instead).
-    **Result: 25/25 PASS** against the packaged world (character_items, drops_as_checks,
+    **Result: 25/25 PASS** against the packaged world (character_items, enemy_dropsanity,
     traps, open_world + full shops, the goal), same checks as the original script's run
     against the dev symlink. Log: `scratchpad/release/e2e_packaged.log`.
 - Engine binary check: `engine/src/game/ap/ap.{h,cpp}` changed at HEAD (a687725, after

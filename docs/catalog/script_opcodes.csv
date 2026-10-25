@@ -306,9 +306,9 @@ table_a,0xfe,0x6c,A_nop_6c,0,0,0 (inline),No handler,confirmed
 table_a,0xfe,0x6d,A_nop_6d,0,0,0 (inline),No handler,confirmed
 table_a,0xfe,0x6e,A_nop_6e,0,0,0 (inline),No handler,confirmed
 table_a,0xfe,0x6f,A_nop_6f,0,0,0 (inline),No handler,confirmed
-table_a,0xfe,0x70,A_nop_70,0,0,0 (inline),No handler,confirmed
-table_a,0xfe,0x71,A_nop_71,0,0,0 (inline),No handler,confirmed
-table_a,0xfe,0x72,A_nop_72,0,0,0 (inline),No handler,confirmed
+table_a,0xfe,0x70,A_nop_70,0,0,0 (inline),"No handler. Port only (Archipelago, open world): harbour_count, pushes the Port Hilton captain's option count in place of the sailor's push 2 (map 169 0x7264; docs/ap/seed_format.md ""The harbour"")",confirmed
+table_a,0xfe,0x71,A_nop_71,0,0,0 (inline),"No handler. Port only: harbour_go (stack form, pops the option): pushes 1 (the sailor's fare and Cross voyage) or 0, or goes on in the Hoffmann soldier's sail (169 0x7cf8), or plays room 444's El ending (chapter 28, map_transfer_c 422)",confirmed
+table_a,0xfe,0x72,A_nop_72,0,0,0 (inline),"No handler. Port only: landing_check (stack form, pops the option; low byte the voyage's landing flag 17/18/21/22): pushes option == 0 and the landing door's key held (Hoffmann soldier 169 0x7cec, Herlie's sailor 144 0x7370)",confirmed
 table_a,0xfe,0x73,A_nop_73,0,0,0 (inline),No handler,confirmed
 table_a,0xfe,0x74,A_nop_74,0,0,0 (inline),No handler,confirmed
 table_a,0xfe,0x75,A_nop_75,0,0,0 (inline),No handler,confirmed

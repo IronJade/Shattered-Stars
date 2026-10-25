@@ -158,7 +158,7 @@ check ap_deathlink_field "game over in the field" '\[leader\] vblank 3[3-9]0 map
 # camp menu it waits for the menu to close.
 cat >"$WORK/p3.apso2" <<'SEED'
 {"format": "apso2", "version": 1, "seed": "smoke-3", "slot": {"name": "Claude", "id": 1},
- "options": {"character_items": true, "drops_as_checks": "first_drop", "exp_multiplier": 3, "fol_multiplier": 2,
+ "options": {"character_items": true, "enemy_dropsanity": "first_drop", "exp_multiplier": 3, "fol_multiplier": 2,
              "deathlink": true},
  "items": {"5100003": {"name": "Celine", "kind": "character", "character": 3}},
  "locations": [{"id": 1353915392, "name": "Ashton joins", "check": {"type": "join", "map": 71, "offset": "0x7348", "character": "Ashton"},
@@ -188,11 +188,11 @@ check ap_p3_drop "instead of the item" '\[ap\] first drop of enemy type 197 \(it
   </dev/null >"$WORK/ap_p3_dl_menu.log" 2>&1
 check ap_p3_dl_menu "a DeathLink in the camp menu waits for it to close" '\[ap\] DeathLink from Bob: the party falls \(vblank 7[0-9][0-9],'
 check ap_p3_dl_menu "then the game over" '\[leader\] vblank 7[4-9]0 map 18 state 7 '
-# The seed's protagonist: New Game keeps the cursor on Claude (Right buzzes) or starts on Rena.
+# The seed's story_route: New Game keeps the cursor on Claude (Right buzzes) or starts on Rena.
 NEWGAME_A="850:start,854:none,951:cross,957:none,1251:cross,1257:none,1551:cross,1557:none,1851:cross,1857:none"
 NEWGAME_B="2151:start,2157:none,2451:cross,2457:none,2700:start,2706:none,3000:start,3006:none,3300:start,3306:none"
 for hero in claude rena; do
-  printf '{"format": "apso2", "version": 1, "seed": "smoke-hero", "slot": {"name": "P", "id": 1}, "options": {"protagonist": "%s"}, "items": {}, "locations": []}\n' \
+  printf '{"format": "apso2", "version": 1, "seed": "smoke-hero", "slot": {"name": "P", "id": 1}, "options": {"story_route": "%s"}, "items": {}, "locations": []}\n' \
     $hero >"$WORK/hero_$hero.apso2"
   [ $hero = claude ] && PRESS=right || PRESS=left
   "${AP_RUN[@]}" SS_TRACE_LEADER=600 timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hero_$hero.apso2" --frames 3700 \
@@ -263,9 +263,39 @@ for v in open story; do
   SS_DISC2="${SS_DISC2:-${SS_DISC1//Disc 1/Disc 2}}" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
     timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
 done
-check ap_p4_tele_open "the teleporter's edits apply" '\[mods\] 3 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
+check ap_p4_tele_open "the teleporter's edits apply (3, with the harbour's 12)" '\[mods\] 15 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
 check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
 check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+
+# Archipelago phase 4 [ships agent]: Port Hilton's harbour (docs/ap/seed_format.md "The harbour").
+# Chapter 23, in front of the Hilton sailor (map 169, actor 17): in an open-world seed he no longer
+# refuses (the soft-lock) and offers Cross / Hoffmann Ruins / Not now; Cross pays and sails (map 1).
+# In story mode he refuses as the original (no menu, no voyage). Chapter 27 step 7000: El is
+# offered, and without its pass (the seed's El voyage door) the banner names it, nothing stored.
+cat >"$WORK/p4harbour.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-4h", "slot": {"name": "Claude", "id": 1},
+ "options": {"world_mode": "open_world"},
+ "items": {"5300018": {"name": "El Beach Pass", "kind": "key", "key": 18}}, "locations": [],
+ "doors": [{"id": 29106503, "routine": "0x7c28", "keys": [18], "name": "El voyage", "purpose": "to sail"}]}
+SEED
+HARBOUR=(--headless --debug --map 169 --map-pos -4127,0,-1091)
+for v in harbour story; do
+  "${AP_RUN[@]}" SS_TRACE=1 SS_SCRIPT_GLOBALS="a0=23,a4=0" SS_DEBUG_INPUT="60:fol 5000;250:warp 169 -4127 0 -1091 89" \
+    timeout 900 "$BIN" "${HARBOUR[@]}" --ap-seed "$WORK/p4$v.apso2" --frames 1000 --input "450:cross,454:none,670:cross,674:none" \
+    </dev/null >"$WORK/ap_p4_$v.log" 2>&1
+done
+check ap_p4_harbour "the captain's menu at chapter 23" '\[ap\] harbour: Cross, Hoffmann Ruins, Not now \(chapter 23 step 0\)'
+check ap_p4_harbour "Cross chosen" '\[ap\] harbour: option 0, Cross'
+check ap_p4_harbour "and the voyage starts" 'field_load_map\(map=1 keep=1'
+if grep -q '\[ap\] harbour' "$WORK/ap_p4_story.log"; then echo "FAIL ap_p4_story: the harbour in story mode"; fail=1; fi
+if grep -q 'field_load_map(map=1 ' "$WORK/ap_p4_story.log"; then echo "FAIL ap_p4_story: sailed in story mode"; fail=1; fi
+check ap_p4_story "story mode: he refuses (his window)" 'msg_window_open_default\(text=.* at vblank 45[0-9]'
+"${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=27,a4=7000" SS_DEBUG_INPUT="60:fol 5000;250:warp 169 -4127 0 -1091 89;1000:where" \
+  timeout 900 "$BIN" "${HARBOUR[@]}" --ap-seed "$WORK/p4harbour.apso2" --frames 1100 \
+  --input "450:cross,454:none,650:down,654:none,690:down,694:none,750:cross,754:none" </dev/null >"$WORK/ap_p4_el.log" 2>&1
+check ap_p4_el "El on offer at chapter 27 step 7000" '\[ap\] harbour: Cross, Hoffmann Ruins, El, Not now \(chapter 27 step 7000\)'
+check ap_p4_el "El without its pass: refused" '\[ap\] door 29106503 \(El voyage\): locked, needs El Beach Pass'
+check ap_p4_el "nothing stored" '\[debug\] map 169 .* G\[0xa0\]=27 G\[0xa4\]=7000'
 
 # Archipelago phase 4 [world agent]: shop shuffle. Hearn's store (map 26, shop 1): entry 0
 # (Sandals, item 728) is Alice's; entry 2 (Lavender, item 224) is our own Revival Card. Talk
@@ -325,6 +355,46 @@ check ap_cel_131 "map 131 cannot clear flag 112" '\[ap\] script flag 112 kept se
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/cel.apso2" --frames 5200 --map 524 </dev/null >"$WORK/ap_cel_cave.log" 2>&1
 check ap_cel_cave "Cross Cave's parting" '\[ap\] Celine leaves at map 524 \(Cross Cave, "Decide against it"\): received, so they rejoin'
 check ap_cel_cave "she rejoins in free play" '\[ap\] Celine joins the party \(slot 2\)'
+
+# v2 party [party agent] (docs/ap/seed_format.md "Party v2"): party_rules "open". Rena's game
+# (a --map start begins as Claude: SS_SWEEP_PARTY_DROP empties his slot), Claude not received:
+# map 12's scene (chapter 4 step 150) takes Rena out and lets Claude in for the fight only (its
+# listed site still checks). Claude's game: the tournament's Dias fight (477, chapter 19 step
+# 4400) lets Dias in for a while; the starting character (Ashton) joins at the first free play
+# and leads; a received Dias joins (no lockout); Linga's split (193, chapter 22 step 3000) keeps
+# received members out until it is over.
+cat >"$WORK/v2rena.apso2" <<'SEED'
+{"format": "apso2", "version": 2, "seed": "smoke-v2r", "slot": {"name": "Rena", "id": 1},
+ "options": {"world_mode": "open_world", "character_items": true, "party_rules": "open", "story_route": "rena"},
+ "items": {"5100001": {"name": "Claude", "kind": "character", "character": 1}},
+ "locations": [{"id": 1353854976, "name": "Shingo Forest: Claude joins", "check": {"type": "join", "map": 12, "offset": 28168, "character": "Claude"},
+                "item": {"player": 2, "player_name": "Alice", "name": "Map Width"}}]}
+SEED
+sed 's/"smoke-v2r"/"smoke-v2c"/; s/"story_route": "rena"/"story_route": "claude", "starting_character": "Ashton"/; s/"locations": \[.*/"locations": []}/' \
+  "$WORK/v2rena.apso2" | grep -v '"item": {"player": 2' >"$WORK/v2claude.apso2"
+V2_RENA=(SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=1 SS_SWEEP_CONFIG=45=1 SS_SWEEP_PLAY="999:T0")
+"${CEL_RUN[@]}" "${V2_RENA[@]}" SS_SCRIPT_GLOBALS="a0=4,a4=150" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2rena.apso2" --frames 1700 --map 12 </dev/null >"$WORK/ap_v2_m12.log" 2>&1
+check ap_v2_m12 "the listed site checks" '\[ap\] check 1353854976 '
+check ap_v2_m12 "Claude in for the fight only" '\[ap\] join Claude at map 12 .*: for a while \(Shingo Forest \(map 12\)\): Claude, \(Rena\)'
+check ap_v2_m12 "the fight" '\[ap\] a battle at vblank'
+check ap_v2_m12 "Rena back" '\[ap\] join Rena at map 12 .*: the game.s join'
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 </dev/null >"$WORK/ap_v2_t477.log" 2>&1
+check ap_v2_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament'
+check ap_v2_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.s game\): the game.s join'
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_DEBUG_INPUT="600:ap_give Dias Bob" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 1000 --map 7 </dev/null >"$WORK/ap_v2_start.log" 2>&1
+check ap_v2_start "the starting character joins first" '\[ap\] Ashton joins the party \(slot 1\): Claude, Ashton'
+check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+check ap_v2_start "no lockout: Dias in Claude's game" '\[ap\] Dias joins the party \(slot 2\)'
+sed 's/, "starting_character": "Ashton"//; s/"items": {/"items": {"5100002": {"name": "Rena", "kind": "character", "character": 2}, "5100003": {"name": "Celine", "kind": "character", "character": 3}, /' \
+  "$WORK/v2claude.apso2" >"$WORK/v2linga.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY=1,2 SS_SCRIPT_GLOBALS="a0=22,a4=3000" \
+  SS_DEBUG_INPUT="5:ap_give Rena Bob;6:ap_give Celine Bob;1500:global 0xa4 5100" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2linga.apso2" --frames 1800 --map 193 </dev/null >"$WORK/ap_v2_linga.log" 2>&1
+check ap_v2_linga "the split keeps Rena out" '\[ap\] Rena waits: Linga \(193 -> 195\) keeps the party apart'
+check ap_v2_linga "back once it is over" '\[ap\] Rena joins the party \(slot [0-7]\)'
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
@@ -389,6 +459,63 @@ if [ -f "$SAVE" ]; then
   check ap_p4_world "with the key the town loads" 'field_load_map\(map=260 keep=1 flags=2\) at vblank 4[0-9][0-9]'
 else
   echo "SKIP north_city: $SAVE not present"
+fi
+
+# Archipelago v2 [hooks agent] (docs/ap/seed_format.md "v2 fields"). The goal gate (door
+# 43978493, map 671 -> 684, routine 0x3bec) in a story-mode seed at chapter 60: refused without
+# flag 556, then without the Iseria Queen (561) won; a forced 561 victory (console, --battle-end)
+# goes in goal_won and the door opens. Without a seed the region transfers as the original. The
+# Silver Trumpet (item 48) stays off a shop's sell list until The Evil Melody (flag 53).
+# Auto-advance (SS_AUTO_ADVANCE) closes the post-battle equipment report by itself.
+cat >"$WORK/v2gate.apso2" <<'SEED'
+{"format": "apso2", "version": 2, "seed": "smoke-v2", "slot": {"name": "Claude", "id": 1}, "items": {}, "locations": [],
+ "goal": {"all": [561, 540], "encounters": [540], "flags": [445, 446]},
+ "doors": [{"id": 43978493, "routine": "0x3bec", "flags": [556], "won": [561], "name": "Indalecio (Limiter Off)",
+            "banners": ["Talk to Filia in Central City first", "Defeat the Iseria Queen first"]}]}
+SEED
+"${AP_RUN[@]}" SS_TRACE=1 SS_SCRIPT_GLOBALS=a0=60 SS_AUTO_ADVANCE=1000 SS_DEBUG_INPUT="280:flag 556 1;500:battle 561" timeout 900 \
+  "$BIN" --headless --debug --ap-seed "$WORK/v2gate.apso2" --frames 2300 --map 671 --battle-end 60:0 \
+  --input "100:up,200:none,210:down,290:none,300:up,380:none,390:down,470:none,2000:up,2200:none" </dev/null >"$WORK/ap_v2_gate.log" 2>&1
+check ap_v2_gate "goal.flags set" '\[ap\] goal flags set \(2\)'
+check ap_v2_gate "refused without flag 556" 'locked, needs flag 556 \("Talk to Filia in Central City first"\)'
+check ap_v2_gate "refused without the Iseria Queen" 'locked, needs encounter 561 won \("Defeat the Iseria Queen first"\)'
+check ap_v2_gate "the forced 561 victory is kept" '\[ap\] goal: encounter 561 won \(goal_won 1, goal.all 2\)'
+check ap_v2_gate "then the door opens" 'field_load_map\(map=684 keep=1 flags=0\) at vblank 2[01][0-9][0-9]'
+"${AP_RUN[@]}" SS_TRACE=1 SS_SCRIPT_GLOBALS=a0=60 timeout 900 "$BIN" --headless --frames 220 --map 671 --input "100:up,200:none" \
+  </dev/null >"$WORK/ap_v2_nogate.log" 2>&1
+check ap_v2_nogate "no seed: the original transfer" 'field_load_map\(map=684 keep=1 flags=0\) at vblank [12][0-9][0-9]'
+V2_SHOP="200:up,439:none,450:left,663:none,670:up,1000:none,1010:left,1060:none,1070:up,1250:none,1260:cross,1266:none,1300:cross,1306:none,1400:cross,1406:none,1500:cross,1506:none"
+for v in locked open; do
+  [ $v = open ] && dbg="50:item 48;60:flag 53 1;1650:where" || dbg="50:item 48;1650:where"
+  "${AP_RUN[@]}" SS_DEBUG_INPUT="$dbg" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2gate.apso2" --frames 1700 --map 18 \
+    --input "$V2_SHOP" </dev/null >"$WORK/ap_v2_trumpet_$v.log" 2>&1
+done
+check ap_v2_trumpet_locked "Hearn's shop opens" '\[debug\] map 26 \| state 3 '
+check ap_v2_trumpet_locked "the Silver Trumpet stays off the sell list" '\[ap\] the Silver Trumpet stays off the sell list'
+check ap_v2_trumpet_open "Hearn's shop opens" '\[debug\] map 26 \| state 3 '
+if grep -q 'stays off the sell list' "$WORK/ap_v2_trumpet_open.log"; then echo "FAIL ap_v2_trumpet_open: kept off after flag 53"; fail=1; else echo "PASS ap_v2_trumpet_open: sold once The Evil Melody is composed"; fi
+"${AP_RUN[@]}" SS_AUTO_ADVANCE=1000 SS_TRACE_LEADER=30 timeout 900 "$BIN" --headless --frames 1300 --map 18 \
+  --input "200:up,439:none,450:left,593:none,600:up,612:none,640:cross,646:none,800:cross,806:none" </dev/null >"$WORK/auto_wizard.log" 2>&1
+check auto_wizard "auto-advance: the Equipment Wizard opened" '\[leader\] vblank [6-9][0-9]0 map 18 state 15 '
+check auto_wizard "and closed with no press" '\[leader\] vblank 1260 map 18 state 0 .* control 0 '
+
+# The leader stand-in (open world; docs/ap/seed_format.md "The leader stand-in"): Ashton, the
+# starting character, joins on map 8 and leads; the walking actor is drawn as him and Claude's
+# line at the ruins' shut door (ruins_exit above) names him. A story-mode seed keeps Claude.
+for v in ow story; do
+  [ $v = ow ] && wm='"world_mode": "open_world", ' || wm=''
+  printf '{"format": "apso2", "version": 2, "seed": "smoke-leader-%s", "slot": {"name": "P", "id": 1}, "options": {"story_route": "claude", %s"starting_character": "Ashton"}, "items": {}, "locations": []}\n' \
+    $v "$wm" >"$WORK/leader_$v.apso2"
+  "${AP_RUN[@]}" SS_TRACE=1 SS_LEADER_TRACE=1 timeout 900 "$BIN" --headless --ap-seed "$WORK/leader_$v.apso2" --frames 5400 --map 8 \
+    --input "${ADV}5000:down,5600:none" </dev/null >"$WORK/ap_leader_$v.log" 2>&1
+done
+check ap_leader_ow "the walking actor shows Ashton" '\[standin\] vblank [0-9]+ map 8 shows 6 \(stand-in'
+check ap_leader_ow "the shut door's line names him" '\[standin\] vblank [0-9]+ map 8 message rewritten 1 6'
+check ap_leader_ow "the trigger plays as without him" 'msg_window_open.* at vblank 51[2-9][0-9]'
+if grep -qE 'shows 6|message rewritten' "$WORK/ap_leader_story.log"; then
+  echo "FAIL ap_leader_story: story mode drew a stand-in"; fail=1
+else
+  echo "PASS ap_leader_story: story mode keeps Claude"
 fi
 
 exit $fail

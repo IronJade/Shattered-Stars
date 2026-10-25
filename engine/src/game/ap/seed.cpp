@@ -123,7 +123,9 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   if (j["format"].as_string() != "apso2") return fail(error, "format must be \"apso2\"");
   Seed s;
   s.version = get_int_or(j["version"], 0);
-  if (s.version != 1) return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1)");
+  // 1: phases 1-4; 2: a seed using any v2 field (docs/ap/seed_format.md "The version rule").
+  if (s.version != 1 && s.version != 2)
+    return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1 and 2)");
   s.seed = j["seed"].as_string();
   if (s.seed.empty()) return fail(error, "seed (the multiworld's seed id) missing");
   s.slot_name = j["slot"]["name"].as_string();
@@ -178,6 +180,19 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
       l.shop_item = get_int_or(c["item"], -1);
       if (l.shop < 0 || l.shop > 0xFF || l.index < 0 || l.index > 0xFF)
         return fail(error, where + ": a shop slot needs shop (0-255) and index (0-255)");
+    } else if (l.type == "craft") {  // v2: the creation that makes this item
+      l.craft_item = get_int_or(c["item"], -1);
+      if (l.craft_item < 1 || l.craft_item >= 0x400) return fail(error, where + ": a craft needs its item (1-1023)");
+    } else if (l.type == "killer_move") {  // v2: a member's use count of a move reaching a level
+      l.character = parse_character(c["character"]);
+      l.move = get_int_or(c["move"], -1);
+      l.level = get_int_or(c["level"], 0);
+      l.uses = get_int_or(c["uses"], -1);
+      if (l.character == 0) return fail(error, where + ": a killer move needs its character (1-12 or a name)");
+      // 1-15: the id's 4 bits (0.2.0 uses 1-11: Claude's Mirror Slice is move 11); the record has
+      // room for more (32 counters, +0x8c + 2 * (move - 1) up to +0xca).
+      if (l.move < 1 || l.move > 15) return fail(error, where + ": a killer move needs its move (1-15)");
+      if (l.uses < 1 || l.uses > 999) return fail(error, where + ": a killer move needs uses (1-999)");
     } else if (l.type.empty()) {
       return fail(error, where + ": check.type missing");
     }
@@ -222,23 +237,45 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   const Json& goal = j["goal"]["encounters"];
   for (size_t i = 0; i < goal.size(); ++i) s.goal_encounters.push_back(get_int_or(goal[i], -1));
   if (!j["goal"].has("encounters")) s.goal_encounters = {539, 540};
+  // v2: goal.all (every one must be won, any order) and goal.flags (set at New Game and after
+  // every load: a gate's preset flags, which start.flags would miss on a save without a sidecar).
+  const Json& goal_all = j["goal"]["all"];
+  if (!goal_all.is_null() && !goal_all.is_array()) return fail(error, "goal.all must be an array");
+  for (size_t i = 0; i < goal_all.size(); ++i) {
+    const int enc = get_int_or(goal_all[i], -1);
+    if (enc < 0) return fail(error, "goal.all: encounter ids expected");
+    if (std::find(s.goal_all.begin(), s.goal_all.end(), enc) == s.goal_all.end()) s.goal_all.push_back(enc);
+  }
+  const Json& goal_flags = j["goal"]["flags"];
+  if (!goal_flags.is_null() && !goal_flags.is_array()) return fail(error, "goal.flags must be an array");
+  for (size_t i = 0; i < goal_flags.size(); ++i) {
+    const int flag = get_int_or(goal_flags[i], -1);
+    if (flag < 0 || flag >= 0x170 * 8) return fail(error, "goal.flags: script flags 0-2943 expected");
+    s.goal_flags.push_back(flag);
+  }
   s.deathlink = s.options["deathlink"].as_bool(false);
-  // The protagonist the seed's logic assumes (the APWorld's option: any / claude / rena).
-  if (const Json& p = s.options["protagonist"]; p.is_string()) {
+  // so2.apworld 0.1.0 / 0.1.1 seeds name two options the old way (protagonist,
+  // drops_as_checks); read whichever name the seed has.
+  const char* route_key = s.options.has("story_route") || !s.options.has("protagonist") ? "story_route" : "protagonist";
+  const char* drops_key =
+      s.options.has("enemy_dropsanity") || !s.options.has("drops_as_checks") ? "enemy_dropsanity" : "drops_as_checks";
+  // The story_route the seed's logic assumes (the APWorld's option: any / claude / rena).
+  if (const Json& p = s.options[route_key]; p.is_string()) {
     const std::string& v = p.as_string();
-    if (v == "claude") s.protagonist = 1;
-    else if (v == "rena") s.protagonist = 2;
-    else if (v != "any" && v != "random") return fail(error, "options.protagonist: any, claude or rena expected");
-  } else if (!p.is_null() && !option_int(s.options, "protagonist", 0, 2, &s.protagonist, error)) {
+    if (v == "claude") s.story_route = 1;
+    else if (v == "rena") s.story_route = 2;
+    else if (v != "any" && v != "random")
+      return fail(error, std::string("options.") + route_key + ": any, claude or rena expected");
+  } else if (!p.is_null() && !option_int(s.options, route_key, 0, 2, &s.story_route, error)) {
     return false;
   }
   // Phase 3: the randomizer's play options. Without them (or at their defaults) the game
   // plays as the original.
   s.character_items = s.options["character_items"].as_bool(false);
-  const Json& drops = s.options["drops_as_checks"];
+  const Json& drops = s.options[drops_key];
   if (drops.is_string()) {
     if (drops.as_string() != "off" && drops.as_string() != "first_drop")
-      return fail(error, "options.drops_as_checks: off or first_drop expected");
+      return fail(error, std::string("options.") + drops_key + ": off or first_drop expected");
     s.first_drops = drops.as_string() == "first_drop";
   } else {
     s.first_drops = drops.as_bool(false);
@@ -265,6 +302,23 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     else return fail(error, "options.shuffle_shops: off, specials or full expected");
   } else if (!sh.is_null() && !option_int(s.options, "shuffle_shops", 0, 2, &s.shuffle_shops, error)) {
     return false;
+  }
+  s.no_fail_crafting = s.options["no_fail_crafting"].as_bool(false);  // v2
+  // v2 party [party agent]: party_rules "story" (phase 3's rules, the default) or "open"; the
+  // starting character by name (as options.characters spells them) or party id, null for none.
+  if (const Json& pr = s.options["party_rules"]; pr.is_string()) {
+    if (pr.as_string() != "story" && pr.as_string() != "open") return fail(error, "options.party_rules: story or open expected");
+    s.open_party = pr.as_string() == "open";
+  } else if (!pr.is_null()) {
+    return fail(error, "options.party_rules: story or open expected");
+  }
+  if (const Json& sc = s.options["starting_character"]; !sc.is_null()) {
+    const bool none = (sc.is_string() && (sc.as_string().empty() || sc.as_string() == "hero")) ||
+                      (sc.is_number() && sc.as_int(-1) == 0);
+    if (!none) {
+      s.starting_character = parse_character(sc);
+      if (s.starting_character == 0) return fail(error, "options.starting_character: a character's name or null expected");
+    }
   }
   const Json& dj = j["doors"];
   if (!dj.is_null() && !dj.is_array()) return fail(error, "doors must be an array");
@@ -303,6 +357,23 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     door.purpose = d["purpose"].as_string();
     door.until = get_int_or(d["until"], 0);
     if (door.until < 0 || door.until > 255) return fail(error, where + ": until: a chapter 1-255 expected");
+    // v2 conditions: flags that must be set, encounters that must be won (goal_won); they apply
+    // in every world mode, and the gate is the trigger, so the door names its routine.
+    for (const char* key : {"flags", "won", "banners"})
+      if (!d[key].is_null() && !d[key].is_array()) return fail(error, where + ": " + key + " must be an array");
+    for (size_t k = 0; k < d["flags"].size(); ++k) {
+      const int flag = get_int_or(d["flags"][k], -1);
+      if (flag < 0 || flag >= 0x170 * 8) return fail(error, where + ": flags: script flags 0-2943 expected");
+      door.flags.push_back(flag);
+    }
+    for (size_t k = 0; k < d["won"].size(); ++k) {
+      const int enc = get_int_or(d["won"][k], -1);
+      if (enc < 0) return fail(error, where + ": won: encounter ids expected");
+      door.won.push_back(enc);
+    }
+    for (size_t k = 0; k < d["banners"].size(); ++k) door.banners.push_back(d["banners"][k].as_string());
+    if (door.has_conditions() && door.routine < 0)
+      return fail(error, where + ": a door with flags / won needs its routine");
     if (d.has("to")) {
       const Json& t = d["to"];
       door.has_target = true;

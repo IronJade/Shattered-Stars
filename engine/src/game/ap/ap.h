@@ -40,6 +40,15 @@ struct SaveState {
   int ambushes = 0;                     // ambush traps received, not fought yet
   // Phase 4.
   std::vector<int> keys;                // area keys received (their numbers, in the order they came)
+  // v2.
+  std::vector<int> goal_won;            // goal.all's encounters won so far (in order)
+  // v2 party [party agent] (docs/ap/seed_format.md "Party v2").
+  std::vector<int> temporary;           // members a split window let in for a while (party ids)
+  struct Stash {
+    int slot = 0;                       // the party slot a temporary member borrowed (a full party)
+    std::vector<u8> bytes;              // its member's slot (0x60) and record (0xd0), put back later
+  };
+  std::vector<Stash> stash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -135,6 +144,27 @@ void on_party_remove(int character, int at, int call_at);
 // party_has): Mars then sends her home only for a while (map 462 / 126) and map 125 (chapter
 // 15, step 3300) brings her back, as for a Celine the player kept at Cross Cave.
 bool keeps_flag(int flag);
+
+// ---- v2 party (docs/ap/seed_format.md "Party v2") [party agent] ----
+// party_rules "open" (open world with character_items): only the story members (the hero; both
+// heroes under story_route "any"), received members and the starting character join, at any site
+// (a listed one still records its check); no lockouts; a slot of a story member or of a member
+// recruited for good (received, the starting character) is never overwritten: with every slot
+// taken a join takes a reserve slot of another member, else it is skipped. The story's split
+// windows (ap.cpp kSplitWindows) let the members a fight needs in for a while (Claude in Shingo
+// Forest in Rena's game; Dias, and Claude in Rena's game, at the tournament) and take them out
+// once over; a member recruited for good whom a split set aside rejoins once no window keeps them
+// away. The starting character (also without character_items) joins at the first free play
+// before the starting items and becomes the Formation leader (config +0x41).
+// The starting character in play: 0 without one or when it names the picked game's hero.
+int starting_member();
+// The split window on now that keeps member 'id' away (id 0: one keeping everyone away), or "";
+// the one that lets member 'id' in for a while, or "".
+std::string split_window_keeping(int id);
+std::string split_window_needing(int id);
+// Free play's party step at once (the start's join, the split windows, temporary members, the
+// join queue): the banner it would show ("" none). Tests.
+std::string party_free_play_step();
 // Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
 // the drop is not given, it was the enemy type's first-drop check). Both leave the game's
 // values alone without a seed or with the options off.
@@ -144,9 +174,9 @@ bool on_enemy_drop(int enemy_type, int item);
 bool random_encounters_off();             // encounter_rate 0
 s32 scale_encounter_distance(s32 distance);  // the distance to the next one, * 100 / rate
 bool party_has_character(int id);         // in a party slot, active or in reserve
-// New Game's choice of protagonist (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
-// seed's options.protagonist; the locations the seed holds are that protagonist's game's).
-int required_protagonist();
+// New Game's choice of story_route (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
+// seed's options.story_route; the locations the seed holds are that story_route's game's).
+int required_story_route();
 
 // ---- Phase 4: the open world (doors and keys, the Expel teleporter), shop slots ----
 
@@ -171,6 +201,69 @@ bool has_key(int key);
 // was a shop slot's check (its item given, or sent), else count.
 int on_shop_buy(int shop, int index, int item, int count);
 bool shop_slot_open(int shop, int index, int item);  // an unchecked shop-slot location there
+
+// ---- Port Hilton's harbour (open world; docs/ap/seed_format.md "Phase 4", "The harbour") ----
+// An open-world seed gets port-added patch lines on map 169 (the Hilton sailor, actor 17, routine
+// 0x714c; the Hoffmann ship's soldier, actor 24, routine 0x79c0) and map 144 (Herlie's sailor,
+// routine 0x7298) that call three port-only script ops (table A subs 0x70-0x72, which do nothing
+// in the original); field/script_table_a.cpp runs them with these.
+enum class Voyage { kNotNow, kCross, kHoffmann, kEl };
+const char* voyage_name(Voyage v);   // "Cross", "Hoffmann Ruins", "El", "Not now"
+// The captain's destinations now, Not now not included: Cross; in open world also Hoffmann Ruins
+// at chapters 23-59 (the story's first trip, at 23, stores chapter 24; map 231's soldier sails
+// back until 59) and El at the story's voyage point (chapter 27 step 7000, disc 1: what room
+// 444's trigger waits for). Outside open world: Cross only.
+std::vector<Voyage> harbour_menu();
+// Op 0x70, in place of the sailor's `push 2` (the choice library's option count): the count, Not
+// now included. With more than Cross on offer the choice's two strings (the script's string
+// indices 'question' and 'options') show the port's menu (script_text) until harbour_choose.
+int harbour_open(int question, int options);
+// A message window's text in place of the script's string 'index' ('original'); null: the
+// script's own. Only the harbour's menu, while it is open.
+const u8* script_text(int index, const u8* original);
+// Op 0x71, after the choice: option 'choice' (-1: cancelled) of the menu harbour_open built.
+// kStay: nothing (Not now, cancelled, or refused: a banner names the missing key); kCross: the
+// sailor's own fare and voyage go on; kJump: go on at byte offset 'offset' of the loaded script
+// (the Hoffmann soldier's sail, NA 0x7cf8, in this release's layout); kEl: every key of the El
+// voyage's gate (seed door 29106503) is held: the caller plays room 444's ending
+// (el_voyage_transfer).
+struct HarbourChoice {
+  enum Kind { kStay, kCross, kJump, kEl } kind = kStay;
+  int offset = -1;
+};
+HarbourChoice harbour_choose(int choice);
+// Room 444's ending of the El voyage's scene (routine 0x7c28) after its fade: stores chapter 28
+// step 0 and gives its transfer (map, transition, x, y, z, dir, extra: 422, 130, -215, 0, 0, 180,
+// 128) for script ext 0xda.
+void el_voyage_transfer(s32 args[7]);
+// Op 0x72: a voyage the script is about to start (its landing's script flag: 17 Hilton -> Herlie,
+// 18 Herlie -> Hilton, 21 map 231 -> Hilton, 22 Hilton -> map 231) can land: false, with the
+// banner naming the key ("Map 231 Pass needed to sail"), when the seed's door there needs a key
+// not received. Before the fare, so a refused voyage costs nothing.
+bool voyage_landing_open(int flag);
+
+// ---- v2 (docs/ap/seed_format.md "v2 fields"): goals, crafting, killer moves ----
+// Goals: on_battle_exit records goal.all's victories (outcome 0) in the sidecar's goal_won and
+// sends the goal once all are won; goal.flags are set at the first field frame after New Game
+// and after every load (free_play_update). Door conditions (a door's flags / won, any world
+// mode) lock it like a missing key: door_blocked_at_trigger / on_map_transfer.
+bool goal_won(int encounter);                 // in the sidecar's goal_won
+// Shops' sell lists (menu_shop.cpp add_inventory): true for an item left out. The Silver
+// Trumpet (item 48) while The Evil Melody (song 7, script flag 53) is not composed, in a seed
+// whose goal.all holds Iseria Queen (561): she comes only from that song.
+bool sell_locked(int item);
+// CreationPage::produce() (field/menu_creation.cpp), the item-making specialties: 'item' was
+// made (its common kind; success or failure alike). The seed's craft location for it is
+// checked once; its item comes on top (given in free play, or sent); the made item is the
+// player's as usual.
+void on_craft(int item, bool success);
+// options.no_fail_crafting: CreationPage::decide() makes every attempt that picked a result
+// succeed.
+bool no_fail_crafting();
+// Killer-move checks: each unchecked killer_move location whose member (in a party slot) has
+// used the move at least `uses` times (record + 0x8a + 2 * move) is checked. Run in free play
+// after a battle and after a load (and by tests); returns the checks recorded.
+int scan_killer_moves();
 
 std::string status_text();
 std::vector<std::string> waiting_notices();   // the banners not shown yet (tests)

@@ -15,6 +15,7 @@
 #include "game/boot/rng.h"
 #include "game/common/screen.h"
 #include "game/common/text_rules.h"
+#include "game/field/message.h"
 #include "game/field/post_battle.h"
 #include "game/field/script_vm.h"
 #include "runtime/libgpu.h"
@@ -193,7 +194,11 @@ void wait_button(ResultScreen* rs) {  // 0x800868dc
   rs->timer = static_cast<u16>(rs->timer + g.frame_ticks);
   u16 confirm;
   std::memcpy(&confirm, g.config, 2);
-  if ((battle_input().pressed & confirm) != 0 || 0x168 < static_cast<s16>(rs->timer)) {
+  // Port setting (auto-advance, field/message.h text_options; off by default): a page waiting
+  // that long moves on as a confirm press would then [hooks agent].
+  const int auto_frames = field::text_options().auto_advance_frames;
+  const bool auto_advance = auto_frames > 0 && static_cast<s16>(rs->timer) >= auto_frames;
+  if ((battle_input().pressed & confirm) != 0 || 0x168 < static_cast<s16>(rs->timer) || auto_advance) {
     bsfx_play_ui(2);
     rs->confirmed = 1;
     sprite_free(rs->prompt);
@@ -300,7 +305,7 @@ void roll_drops(ResultScreen* rs) {  // 0x800869fc
       if (g.reward_flags & 2) chance *= 2;
       if (0 < static_cast<s32>(chance) && rng_range(0x100) < chance) {
         // Archipelago (port feature) [world agent]: the first drop of an enemy type can be a
-        // check (drops_as_checks), given through the receive path instead; same draw.
+        // check (enemy_dropsanity), given through the receive path instead; same draw.
         if (ap::on_enemy_drop(u->st()->id, u->drop_item[k])) {
           rs->drops[rs->drop_count++] = u->drop_item[k];
           field::inventory_add(g.inventory, static_cast<s16>(u->drop_item[k]), 1, 1);

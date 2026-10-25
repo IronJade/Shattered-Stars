@@ -207,6 +207,43 @@ TEST(launcher_settings_defaults_and_round_trip) {
   CHECK_EQ(launcher::read_sound(c).volume, 0);
 }
 
+// The dialogue settings (port enhancements): off by default, left out of the file at their
+// defaults, the delay clamped and turned into vblanks.
+TEST(launcher_text_settings_defaults_and_round_trip) {
+  launcher::Config empty;
+  const launcher::TextSettings t = launcher::read_text(empty);
+  CHECK(!t.instant);
+  CHECK(!t.auto_advance);
+  CHECK_EQ(t.auto_advance_ms, 1000);
+  CHECK_EQ(launcher::auto_advance_frames(t), 0);  // off
+
+  launcher::Config c;
+  launcher::write_text(c, t);
+  CHECK(!c.has("instant_text"));
+  CHECK(!c.has("auto_advance"));
+  CHECK(!c.has("auto_advance_delay"));
+  const launcher::TextSettings on{true, true, 1500};
+  launcher::write_text(c, on);
+  CHECK(c.get("instant_text") == "1");
+  CHECK(c.get("auto_advance") == "1");
+  CHECK(c.get("auto_advance_delay") == "1500");
+  CHECK(launcher::read_text(c) == on);
+  CHECK_EQ(launcher::auto_advance_frames(on), 90);
+  launcher::write_text(c, t);  // back to the defaults: the keys go again
+  CHECK(!c.has("instant_text"));
+  CHECK(!c.has("auto_advance_delay"));
+
+  c.set("auto_advance", "1");
+  c.set("auto_advance_delay", "5");
+  CHECK_EQ(launcher::read_text(c).auto_advance_ms, launcher::kMinAutoAdvanceMs);
+  CHECK_EQ(launcher::auto_advance_frames(launcher::read_text(c)), 6);
+  c.set("auto_advance_delay", "999999");
+  CHECK_EQ(launcher::read_text(c).auto_advance_ms, launcher::kMaxAutoAdvanceMs);
+  CHECK_EQ(launcher::auto_advance_frames(launcher::read_text(c)), 600);
+  CHECK_EQ(launcher::auto_advance_frames({false, true, 500}), 30);
+  CHECK_EQ(launcher::auto_advance_frames({false, true, 1000}), 60);
+}
+
 TEST(launcher_memcards_and_mods_defaults) {
   launcher::Config c;
   CHECK(launcher::memcard_path(c, 1) == launcher::path_utf8(launcher::config_dir() / "memcard1.mcd"));

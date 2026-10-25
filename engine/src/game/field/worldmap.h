@@ -181,7 +181,7 @@ const u8* world_ovl_data(u32 address);
 // 0x80088814 + 0x8007e000: creates WorldBg and WorldCam (replacing the previous ones).
 void world_create_objects();
 // field_register_party_sprites (field 0x8004b5cc): the world party pack's offset table:
-// the leader (-2), the other protagonist (-3), then each party member (-4, -5, ...).
+// the leader (-2), the other story_route (-3), then each party member (-4, -5, ...).
 void world_register_party_sprites(const u8* table);
 void world_destroy_objects();               // BG vtable delete + __builtin_delete(0x800752c4)
 void world_bg_release(WorldBg* bg);         // 0x800888e0: cancel the read, free the blocks

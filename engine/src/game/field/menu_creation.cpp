@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
@@ -319,6 +320,9 @@ class CreationPage : public menu::Panel {
   s16 fail_item_ = 0;                       // +0xb4
   s16 good_item_ = 0;                       // +0xb6
   s16 made_ = 0;                            // +0xb8
+  // Port (Archipelago v2, no_fail_crafting): compute() picked a result the original can never
+  // make (Customize's result equal to its input, a zero-chance pick): it stays a failure.
+  bool no_result_ = false;
   ItemList* list_ = nullptr;                // +0xbc
   menu::TextBox* recipe_ = nullptr;         // +0xc0
   menu::TextBox* list_box_ = nullptr;       // +0xc4
@@ -764,6 +768,7 @@ bool CreationPage::pick2() {
 bool CreationPage::decide() {
   if (tool_ != 0 && inventory_count(tool_) == 0) return false;
   success_ = fail_item_ = good_item_ = 0;
+  no_result_ = false;
   if (!has_talents()) {
     const s16 saved = level_;
     level_ = 0;
@@ -772,6 +777,10 @@ bool CreationPage::decide() {
   } else {
     compute();
   }
+  // Archipelago v2 (port feature, the seed's no_fail_crafting; docs/ap/seed_format.md
+  // "Craftsanity"): an attempt that picked a result succeeds. Which result is the original's
+  // pick (a member without the talents still picks at level 0); the rare swap below is unchanged.
+  if (success_ == 0 && good_item_ != 0 && !no_result_ && ap::no_fail_crafting()) success_ = 1;
   u8* config = party_config();
   wr32(config + 0x20, rd32s(config + 0x20) + 1);   // tries
   if (success_ != 0) wr32(config + 0x28, rd32s(config + 0x28) + 1);   // successes
@@ -805,6 +814,15 @@ void CreationPage::produce() {
   inventory_take_one(item2_);
   inventory_take_one(tool_);
   inventory_give(made_, 0);
+  // Archipelago v2 (port feature, craftsanity): what an item-making specialty made, success or
+  // failure, as its common kind, is the seed's craft check for that item (the player keeps it).
+  // Page 0xf: Art 1, Customize 4, Metalwork 6, Authoring 7, Compounding 10, Cooking 11,
+  // Alchemy 13, Machinery 17; page 0x10: Master Chef 1, Publishing 5, Blacksmith 7, Reverse
+  // Side 8. Not Identify 5, Survival 14 or Reproduction 16 (they hand back or copy items).
+  const bool makes = super_ != 0 ? (id_ == 1 || id_ == 5 || id_ == 7 || id_ == 8)
+                                 : (id_ == 1 || id_ == 4 || id_ == 6 || id_ == 7 || id_ == 10 || id_ == 11 ||
+                                    id_ == 13 || id_ == 17);
+  if (made_ != 0 && makes) ap::on_craft(common_kind(made_), success_ != 0);
 }
 
 void CreationPage::on_confirm(int n) {
@@ -930,6 +948,9 @@ void Creation1::compute() {
     }
   }
   if (level_ != 0) success_ = chance(level_ * 8 + bonus_ + 10) ? 1 : 0;
+  // Archipelago v2 (port feature, no_fail_crafting): Art picks its result only on a success, so
+  // the option makes the roll a success here (decide() covers the specialties that always pick).
+  if (success_ == 0 && ap::no_fail_crafting()) success_ = 1;
   if (success_ != 0) {
     int item = pick_from_groups(pick, groups);
     if (static_cast<u32>(item - 6) < 0xC) {
@@ -1120,6 +1141,7 @@ class Creation13 final : public CreationPage {
     if (owns(0x1CA)) bonus_ = static_cast<s16>(bonus_ + 0x14);
     const int div = byte(0x80083F98 + index1_);
     if (level_ != 0 && div != 0) success_ = chance((level_ << 4) / div + bonus_) ? 1 : 0;
+    no_result_ = div == 0;  // (port: a zero chance at every level)
     fail_item_ = 0x1AC;
     good_item_ = item1_;
   }
@@ -1225,6 +1247,7 @@ void Creation14::compute() {
     scale = byte((b == 8 ? 0x800840C3u : 0x800840C4u) + i * 4 + b);
     good_item_ = half(0x80084098 + i * 2);
   }
+  no_result_ = scale == 0;  // (port: a pick this place never yields, at any level)
   if (level_ != 0) {
     int p;
     if (scale == -1) {
@@ -1401,6 +1424,7 @@ void Customize::compute() {
   if (r > 0) good_item_ = static_cast<s16>(r);
   if (good_item_ == 0) good_item_ = static_cast<s16>(tier_item(value));
   if (success_ != 0 && item1_ == good_item_) success_ = 0;
+  no_result_ = item1_ == good_item_;  // (port: nothing would change)
 }
 
 // Cooking (11; vtable 0x80081840; 0xbae 0x80081250): an ingredient (items 0x117-0x11c,

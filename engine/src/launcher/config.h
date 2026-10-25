@@ -23,6 +23,10 @@
 //   monitor               1 = the primary display, 2 = the next, ...
 //   vsync, dither, audio  0 / 1
 //   volume                0-100
+//   instant_text          0 / 1: message pages show at once (port; default 0)
+//   auto_advance          0 / 1: messages waiting for confirm move on by themselves, never
+//                         answering a choice (port; default 0)
+//   auto_advance_delay    its wait in milliseconds, 100-10000 (default 1000)
 namespace ss::launcher {
 
 // Where the settings, the memory cards and mods/ live:

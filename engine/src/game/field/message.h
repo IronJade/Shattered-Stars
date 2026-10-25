@@ -147,7 +147,32 @@ struct MsgWindow {
   void (*draw_callback)(int x, int y) = nullptr;  // +0x158: after the text, unless opening
   void (*close_callback)() = nullptr;      // +0x15c: when the closing animation ends
   psyq::RECT clip{};                       // +0x160
+  // Port (not in the original): vblanks this window has waited for the confirm button
+  // (state 6 / 7 with button_advance), counted whatever the settings; auto-advance reads it.
+  u16 button_wait = 0;
 };
+
+// Port settings (not in the original; config.ini instant_text / auto_advance /
+// auto_advance_delay, launcher/settings.h). Both are off by default, and then every window
+// behaves exactly as the original's.
+//   instant: a page shows at once, as if every text speed were infinite (the speed codes,
+//     the per-frame budget and the scrolling between lines), and the next page follows in
+//     the frame its wait ends. The text's own waits stay:
+//     the confirm waits, the timed waits (0x4006) and the pauses (0x4003 n >= 5, n - 5
+//     frames); so does the window's opening and closing.
+//   auto_advance_frames > 0: a window waiting for the confirm button (state 6 / 7, with
+//     button_advance) moves on by itself once it has waited that many vblanks, exactly as
+//     a press of confirm would move it on at that moment; only the waiting window sees it.
+//     Never while a choice is up (the VM's wait state 9, which reads confirm as an answer)
+//     or a script's field-menu request is pending (wait state 0xe); the player chooses.
+struct TextOptions {
+  bool instant = false;
+  int auto_advance_frames = 0;  // vblanks (60 a second); 0: off
+};
+TextOptions& text_options();
+// Debugging (default off): SS_MSG_TRACE=1 logs on stderr how each confirm wait ended
+// ("[msg] vblank V window N wait W -> button / auto / forced", W its length in vblanks) and
+// each timed wait ("... timed wait, F frames left -> timer / button / forced").
 
 // The message system (0x20c bytes, vtable 0x800731a4, task priority 4).
 struct MsgSystem : Task {
@@ -204,7 +229,10 @@ void msg_window_step_open_anim(MsgWindow* w);                        // 0x80059c
 //   string (item name) of variable v; 0x4009 choice block; 0x400a .. 0x400b ruby
 //   block; 0x400c c: name of character c; 0x400d i: fixed space / icon i;
 //   0x400e v: variable v in decimal; 0x400f x: set the x position.
+// (With TextOptions::instant the window calls it with kMsgInstantChars until the page
+// stops: a confirm or timed wait, a pause, a full window, or its end.)
 void msg_window_print(MsgWindow* w, int chars);                      // 0x80059db8
+constexpr int kMsgInstantChars = 0x4000;  // port: "every character of the page" for msg_window_print
 int msg_window_new_line(MsgWindow* w);                               // 0x8005a678
 void msg_window_draw(MsgWindow* w);                                  // 0x8005a7bc
 void msg_window_get_clip(MsgWindow* w, psyq::RECT* r);               // 0x8005c130

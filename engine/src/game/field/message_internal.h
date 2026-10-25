@@ -24,6 +24,11 @@ inline u16 msg_rd16(const u8* p) {
   return v;
 }
 
+// Port (auto-advance, TextOptions): the VM waits on a choice (wait state 9, which reads
+// confirm as the answer while its window waits in state 6) or on a field menu the script
+// asked for (wait state 0xe). In message_draw.cpp, which can see the VM's context.
+bool msg_vm_choice_or_menu_wait();
+
 // Advance width of glyph code c (1-based) in the current font.
 inline int msg_glyph_width(u32 c) { return msg_font_ref()[c + 7]; }
 

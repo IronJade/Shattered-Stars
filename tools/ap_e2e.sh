@@ -105,7 +105,7 @@ cat > "$W/seed_p3.apso2" <<'SEED'
 {"format": "apso2", "version": 1, "seed": "13515657874892102023",
  "game": "Star Ocean: The Second Story",
  "slot": {"name": "Alice", "id": 1},
- "options": {"deathlink": true, "character_items": true, "drops_as_checks": "first_drop"},
+ "options": {"deathlink": true, "character_items": true, "enemy_dropsanity": "first_drop"},
  "items": {
   "80002": {"name": "Celine", "kind": "character", "character": 3},
   "80000": {"name": "Fol trap", "kind": "trap", "trap": "fol_loss", "percent": 50},

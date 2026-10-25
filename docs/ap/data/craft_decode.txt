@@ -1,0 +1,332 @@
+bc0=24980 bae=19496 bc2=24292 bytes
+
+== Compounding ==
+pair table (36): [1, 2, 3, 4, 5, 6, 2, 7, 8, 9, 10, 11, 3, 8, 12, 13, 14, 15, 4, 9, 13, 16, 17, 18, 5, 10, 14, 17, 19, 20, 6, 11, 15, 18, 20, 21]
+distinct compounding results: 49
+  0x0e2 Skanda Compress
+  0x0e3 Attack Vial
+  0x0e4 Energy Tonic
+  0x0e5 Kamikaze Tonic
+  0x0e6 Smelling Salts
+  0x0e7 Shock Oil
+  0x0e8 Smoke Oil
+  0x0ea Herbal Oil
+  0x0eb Bubble Lotion
+  0x0ec Paralysis Oil
+  0x0ed Bitter Lotion
+  0x0ee Fairy Glass
+  0x0ef Fairy's Cologne
+  0x0f0 Merlin Drink
+  0x0f1 Medical Rinse
+  0x0f2 Melting Lotion
+  0x0f3 Resurrection Mist
+  0x0f4 Risky Liquid
+  0x0f5 Lilith Tonic
+  0x0f6 Danger Pot
+  0x0f7 Nightmare Pot
+  0x0f8 Flash Pot
+  0x0fa Mental Pot
+  0x0fb Sour Syrup
+  0x0fc Sweet Syrup
+  0x0fd Maple Syrup
+  0x0fe Fruit Syrup
+  0x0ff Fresh Syrup
+  0x100 Hot Syrup
+  0x101 Mixed Syrup
+  0x102 Cure Poison
+  0x103 Cure Paralysis
+  0x104 Wonder Drug
+  0x105 Natural High
+  0x106 Crush Pill
+  0x107 Care Tablet
+  0x108 Violence Pill
+  0x109 Marionette Pill
+  0x10a Skanda Ointment
+  0x10b Stink Gel
+  0x10c Succubus Cologne
+  0x10e Pixie Cologne
+  0x10f Smoke Mist
+  0x110 Paralysis Mist
+  0x111 Fairy Mist
+  0x113 Holy Mist
+  0x114 Madness Mist
+  0x115 Resurrection Bottle
+  0x116 Spring Water
+chance[level][r] sample: [[4, 4, 0, 0], [30, 30, 2, 2], [30, 30, 10, 2], [40, 30, 10, 10], [40, 40, 10, 10], [40, 40, 20, 10]] ... [[14, 15, 4, 9], [13, 16, 17, 18]]
+
+== Alchemy divisors (index 0..15) ==
+[1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 8, 8]
+
+== Metalwork ==
+materials: ['0x1a3 Iron', '0x1a5 Silver', '0x1a4 Gold', '0x1ae Sapphire', '0x1af Ruby', '0x1b1 Crystal', '0x1ad Green Beryl', '0x1b3 Diamond', '0x1b0 Star Ruby', '0x1b4 Rainbow Diamond', '0x1a6 Moonite', "0x1b2 Sage's Stone"]
+fail items: ['0x044 Useless Decoration', '0x05c Weighty Ring', '0x084 Gaudy Earring']
+char usable-masks: [2828, 2048, 1024, 512, 64, 256, 32, 128, 4, 16, 8, 1, 2]
+distinct metalwork good items: 92
+  0x038 Moonlight
+  0x039 Silver Idol
+  0x03a Golden Idol
+  0x03b Pretty Idol
+  0x03c Weird Doll
+  0x03d Reverse Doll
+  0x03e Silver Pendant
+  0x03f Sturm Ring
+  0x040 Green Bracelet
+  0x041 Frog
+  0x042 Glass Slippers
+  0x043 Regeneration Ring
+  0x045 Luna Tablet
+  0x046 Poison Check
+  0x047 Paralysis Check
+  0x048 Stone Check
+  0x049 Purple Mist
+  0x04a Magic Mist
+  0x04b Necklace
+  0x04c Might Chain
+  0x04d Surrender Pendant
+  0x04f Ruby Pendant
+  0x050 Star Necklace
+  0x053 Silver Charm
+  0x054 Blue Talisman
+  0x055 Talisman
+  0x056 Luna Talisman
+  0x057 Gold Ring
+  0x058 Princess Ring
+  0x059 Healing Ring
+  0x05a Mental Ring
+  0x05b Wisdom Ring
+  0x05d Hard Ring
+  0x05e Heavy Ring
+  0x05f Atlas Ring
+  0x060 Eclipse Ring
+  0x061 Insanity Ring
+  0x062 Infinity Ring
+  0x063 Battalia Ring
+  0x064 Demonslayer Ring
+  0x065 Reflection Ring
+  0x066 Protection Ring
+  0x069 Promised Ring
+  0x06a Stardust Ring
+  0x06b Peep Half
+  0x06c Peep Non
+  0x06f Lunatic Ring
+  0x070 Berserk Ring
+  0x071 Shield Ring
+  0x072 Resistance Ring
+  0x073 Aqua Ring
+  0x074 Flare Ring
+  0x076 Prism Ring
+  0x077 Holy Ring
+  0x078 Emerald Ring
+  0x079 Water Ring
+  0x07a Fire Ring
+  0x07b Thunder Ring
+  0x07c Fairy Ring
+  0x07d Black Earring
+  0x07e Golden Earring
+  0x07f Ruby Earring
+  0x080 Blood Earring
+  0x081 Shield Earring
+  0x082 Zephyr Earring
+  0x083 Flash Earring
+  0x086 Hard Earring
+  0x087 Emerald Earring
+  0x088 Star Earring
+  0x089 Attack Earring
+  0x08a First Earring
+  0x08b Lunatic Earring
+  0x08c Silver Cross
+  0x08d Golden Cross
+  0x08e Magic Cross
+  0x08f Silver Ring
+  0x091 Left Cross
+  0x092 Silver Barrette
+  0x093 Angel Hair
+  0x094 Golden Bracelet
+  0x095 Anklet
+  0x096 Lot Bracelet
+  0x097 Recoil Bracelet
+  0x098 Dream Bracelet
+  0x099 Golden Crown
+  0x09a Shiny Earring
+  0x09b Moon Earring
+  0x09c Mind Ring
+  0x09d Feet Symbol
+  0x09e Silver Earring
+  0x09f Misty Symbol
+  0x0a0 Crown
+divisor by r (0..7): [1, 1, 2, 2, 3, 3, 4, 4]
+
+== Authoring ==
+skill -> book (level>=5 unlocks the book):
+  skill 0x0f -> 0x0ae Heart Barriers  divisor=1
+  skill 0x05 -> 0x0b0 The Land's Secret  divisor=1
+  skill 0x04 -> 0x0b1 Pocket Encyclopedia  divisor=1
+  skill 0x07 -> 0x0b2 Gold/Silversmith  divisor=1
+  skill 0x11 -> 0x0a7 Today's Dish  divisor=2
+  skill 0x02 -> 0x0a8 Musical Theory  divisor=2
+  skill 0x0e -> 0x0af Nature's Life Force  divisor=2
+  skill 0x14 -> 0x0b7 Forest Friends  divisor=2
+  skill 0x06 -> 0x0b8 All About Herbs  divisor=2
+  skill 0x01 -> 0x0a6 Pose Collection  divisor=2
+  skill 0x20 -> 0x0a9 Operation Manual  divisor=3
+  skill 0x10 -> 0x0ac Cook from the Heart  divisor=3
+  skill 0x03 -> 0x0b3 Pieces for Learners  divisor=3
+  skill 0x24 -> 0x0b9 On Revenge  divisor=3
+  skill 0x1e -> 0x0bb Before Tea's Ready  divisor=3
+  skill 0x1f -> 0x0aa Engineering  divisor=3
+  skill 0x12 -> 0x0ab Choose Ingredients  divisor=4
+  skill 0x17 -> 0x0ad Mystical Beings  divisor=4
+  skill 0x15 -> 0x0b4 No Need For Words  divisor=4
+  skill 0x16 -> 0x0b6 The Hermes Theory  divisor=4
+  skill 0x26 -> 0x0ba On Training  divisor=4
+character-8 rare books: ['0x271 Treatise', '0x274 Reference Book', '0x276 Heraldry', '0x279 Heraldry Book']
+
+== Art ==
+level->row: [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 10, 5, 1, 0, 84]
+item1=1 groups: [['0x013 Victorial Card', '0x014 Mortalial Card', '0x015 Revival Card'], ['0x016 Fol Up Card', '0x017 Discovery Card', '0x018 Extension Card'], ["0x002 'Spring'", '0x019 Fairies Card', '0x01a Fountain Card'], ["0x003 'The Scream'", "0x004 'Judgement Day'", "0x005 'The Last Supper'"], ['0x006 Portrait A', '0x007 Portrait B', '0x008 Portrait C', '0x009 Portrait G', '0x00a Portrait I', '0x00b Portrait D', '0x00c Portrait F', '0x00d Portrait J', '0x00e Portrait H', '0x00f Portrait E', '0x010 Portrait L', '0x011 Portrait K']]
+item1=0x2b groups: [['0x01b Silence Card', '0x01f Tri-ball', '0x027 Skanda'], ['0x01c Hexagram Card', '0x020 Hyperball', '0x025 Dummy Doll'], ['0x021 Super Ball', "0x022 Angel's Statue", '0x02a Mirror of Wisdom'], ['0x01d Magic Rock', "0x023 Fairy's Statue", '0x029 Jack-in-the-box'], ['0x024 Goddess Statue', '0x026 Idol', '0x028 Treasure Chest']]
+favourite-food character table (items 6..0x11): [1, 2, 3, 7, 9, 4, 6, 10, 8, 5, 12, 11]
+
+== Survival ==
+place weights (place 0..10, 8 cols): [[0, 5, 5, 5, 40, 5, 30, 10], [5, 20, 10, 20, 15, 10, 15, 5], [0, 0, 0, 0, 0, 0, 0, 100], [0, 0, 0, 5, 5, 5, 5, 80], [70, 0, 0, 5, 5, 5, 5, 10], [0, 5, 0, 40, 5, 0, 20, 30], [0, 5, 5, 5, 40, 5, 30, 10], [0, 5, 0, 40, 5, 0, 20, 30], [70, 0, 0, 5, 5, 5, 5, 10], [0, 0, 0, 5, 0, 0, 5, 90], [0, 0, 0, 5, 5, 0, 5, 85]]
+survival list0: ['0x0dc Mandrake', '0x0dd Rose Hips', '0x0de Artemis Leaf', '0x0df Wolfsbane', '0x0e0 Lavender', '0x0e1 Aceras', '0x1a3 Iron', '0x1a5 Silver', '0x1a4 Gold', '0x1af Ruby', '0x1ae Sapphire', '0x1b1 Crystal', '0x1ad Green Beryl', '0x1b3 Diamond', '0x1b0 Star Ruby', '0x1aa Damascus', '0x1ab Rune Metal', '0x1a7 Orichalcum', '0x1b4 Rainbow Diamond', '0x1a6 Moonite', "0x1b2 Sage's Stone", '0x1a8 Meteorite', '0x1a9 Mithril']
+survival list1: ['0x0dc Mandrake', '0x0dd Rose Hips', '0x0de Artemis Leaf', '0x0df Wolfsbane', '0x0e0 Lavender', '0x0e1 Aceras', '0x1a3 Iron', '0x1a5 Silver', '0x1a4 Gold', '0x1af Ruby', '0x1ae Sapphire', '0x1b1 Crystal', '0x1ad Green Beryl', '0x1b3 Diamond', '0x1b0 Star Ruby', '0x1aa Damascus', '0x1ab Rune Metal', '0x1a7 Orichalcum', '0x1b4 Rainbow Diamond', '0x1a6 Moonite', "0x1b2 Sage's Stone", '0x1a8 Meteorite', '0x1a9 Mithril']
+
+== Machinery ==
+normal: [('0x1be Killer Poison', 1), ('0x1bf Peep-peep Bomb', 1), ('0x1cc Soldering Iron', 1), ('0x1b9 Music Box', 2), ("0x1bc Magician's Hand", 2), ('0x1c0 Mind Bomb', 2), ('0x1c1 Flare Bomb', 2), ('0x1ce Text Software', 3), ('0x1cf Antiseptic Gloves', 3), ('0x1c2 Tetra-bomb', 3), ('0x1c3 Assault Bomb', 3), ('0x1bb Graphic Software', 4), ('0x1cd Survival Kit', 4), ('0x1bd Ririca', 4), ('0x1c4 Protection Bomb', 4), ('0x1c5 Half-dead Bomb', 4), ('0x1ba Element Analyzer', 5), ('0x1ca Erlenmeyer Flask', 5), ('0x1c7 Nuclear Bomb', 5)]
+char9 rare: ['0x245 Booster Box', '0x1d3 White System', '0x247 Black Box', '0x24a X Box', '0x1d4 Black System', '0x24b Magic Box', '0x1d5 Green System']
+char6 rare: ['0x253 Iron Punch', '0x254 One-two Punch', '0x255 Straight Punch', '0x1d1 Plasma Zap-stick', '0x259 Ultra Punch', '0x1d2 Mech Launcher']
+
+== Customize ==
+char 0: tiers 0..10 -> ['0x000 ?', '0x100 Hot Syrup', '0x000 ?', "0x002 'Spring'", '0x080 Blood Earring', '0x200 Oriental Blade', '0x000 ?', "0x004 'Judgement Day'", '0x000 ?', '0x00c Portrait F', '0x000 ?']
+char 1: tiers 0..10 -> ['0x2c8 Odd Shield', '0x1e6 Worn-out Sword', '0x1e9 Broad Sword', '0x1eb Sinclair Sabre', '0x1ee Gusguine', '0x1ef Long Edge', '0x1f1 Veil Piercer', '0x1f7 Sawed', '0x1f8 Force Sword', '0x1fc Aura Blade', '0x1e5 Dull Sword']
+char 2: tiers 0..10 -> ['0x1d8 Lady Fingers', '0x1d8 Lady Fingers', '0x21b Knuckles', '0x21c Hard Knuckles', '0x21d Cestus', '0x21f Metal Fangs', '0x222 Pain Cestus', '0x220 Magical Gloves', '0x226 Kaiser Knuckles', '0x226 Kaiser Knuckles', '0x21a Worn Knuckles']
+char 3: tiers 0..10 -> ['0x2a8 Odd Clothes', '0x2a8 Odd Clothes', '0x238 Rod', '0x239 Ruby Wand', '0x23b Crest Rod', '0x23f Magical Rod', '0x23a Tongue Twister', '0x243 Clap Rod', '0x240 Rod of Snakes', '0x240 Rod of Snakes', '0x236 Bent Rod']
+char 4: tiers 0..10 -> ['0x1d7 Odd Medicine', '0x1d7 Odd Medicine', '0x21b Knuckles', '0x21c Hard Knuckles', '0x228 Bagh Nakh', '0x229 Giant Fists', '0x221 Braised Knuckles', "0x22c Titan's Fists", '0x226 Kaiser Knuckles', '0x226 Kaiser Knuckles', '0x21a Worn Knuckles']
+char 5: tiers 0..10 -> ['0x290 Odd Helmet', '0x1e6 Worn-out Sword', '0x1fe Bastard Sword', '0x1ff Baselard', '0x200 Oriental Blade', '0x201 Murasame Sword', '0x1f2 Grand Stinger', '0x204 The Hope of Breeze', "0x206 Ruins' Fate", '0x207 Pleiad Sword', '0x1e5 Dull Sword']
+char 6: tiers 0..10 -> ['0x291 Odd Hat', '0x291 Odd Hat', '0x252 Magic Hand', '0x253 Iron Punch', '0x254 One-two Punch', '0x259 Ultra Punch', '0x25a Great Punch', '0x25d Atomic Punch', '0x25f SD Punch', '0x25f SD Punch', '0x244 Scrap Iron']
+char 7: tiers 0..10 -> ['0x2a6 Flashy Armor', '0x20b Twin Swords', '0x20c Guard Sword', '0x20d Both Shaver', '0x20f Twin-edge', '0x212 Twin Picks', '0x215 Double Masher', '0x213 Scyther', '0x216 Lotus Eater', '0x218 Holy Cross', '0x20a Wobbly Sword']
+material -> worth bonus: [('0x1a3 Iron', 0), ('0x1a4 Gold', 1), ('0x1a5 Silver', 1), ('0x1ae Sapphire', 2), ('0x1af Ruby', 2), ('0x1ad Green Beryl', 4), ('0x1b1 Crystal', 4), ('0x1b3 Diamond', 6), ('0x1b0 Star Ruby', 8), ('0x1aa Damascus', 10), ('0x1ab Rune Metal', 12), ('0x1a7 Orichalcum', 14), ('0x1b4 Rainbow Diamond', 14), ('0x1a6 Moonite', 16), ("0x1b2 Sage's Stone", 18), ('0x1a8 Meteorite', 18), ('0x1a9 Mithril', 20)]
+char 1 recipe list @ 0x80081fbc:
+    threshold>40 + material 0x1a4 Gold + any of ['0x1e6 Worn-out Sword', '0x1e9 Broad Sword', '0x1ea Long Sword', '0x1eb Sinclair Sabre', '0x1fd All-Purpose Knife'] -> 0x1e7 Golden Fangs
+    threshold>30 + material 0x1a5 Silver + any of ['0x1e6 Worn-out Sword', '0x1e9 Broad Sword', '0x1ea Long Sword', '0x1eb Sinclair Sabre', '0x1fd All-Purpose Knife'] -> 0x1e8 Silver Fangs
+    threshold>20 + material 0x1af Ruby + any of ['0x1e6 Worn-out Sword', '0x1e9 Broad Sword', '0x1ea Long Sword', '0x1eb Sinclair Sabre', '0x1fd All-Purpose Knife'] -> 0x1ec Flame Blade
+    threshold>50 + material 0x1b0 Star Ruby + any of ['0x1ef Long Edge', '0x1f0 Sharp Edge', '0x1f1 Veil Piercer', '0x1f2 Grand Stinger', '0x1f4 Heart Breaker', '0x1f5 Marvel Sword', '0x1f6 Minus Sword', '0x1f7 Sawed', '0x1f8 Force Sword', '0x1f9 Windsley Sword', '0x1fa Silvance', '0x1fb Eternal Sphere', '0x1fc Aura Blade'] -> 0x1f3 Ignite Sword
+    threshold>70 + material 0x1a7 Orichalcum + any of ['0x1f3 Ignite Sword', '0x1f4 Heart Breaker', '0x1f5 Marvel Sword', '0x1f6 Minus Sword', '0x1f7 Sawed', '0x1f8 Force Sword', '0x1f9 Windsley Sword', '0x1fb Eternal Sphere', '0x1fc Aura Blade'] -> 0x1fa Silvance
+    threshold>40 + material 0x1aa Damascus + any of ['0x1f0 Sharp Edge'] -> 0x1f2 Grand Stinger
+    threshold>60 + material 0x1a9 Mithril + any of ['0x1f0 Sharp Edge'] -> 0x1f6 Minus Sword
+    threshold>50 + material 0x1b3 Diamond + any of ['0x1f1 Veil Piercer'] -> 0x1f4 Heart Breaker
+    threshold>40 + material 0x1aa Damascus + any of ['0x1f6 Minus Sword'] -> 0x1f2 Grand Stinger
+    threshold>80 + material 0x1a9 Mithril + any of ['0x1f6 Minus Sword'] -> 0x1fb Eternal Sphere
+char 2 recipe list @ 0x80082064:
+    threshold>50 + material 0x1a6 Moonite + any of ['0x21b Knuckles', '0x21c Hard Knuckles', '0x21d Cestus'] -> 0x223 Dragon's Claws
+    threshold>40 + material 0x1aa Damascus + any of ['0x21b Knuckles', '0x21c Hard Knuckles', '0x21d Cestus'] -> 0x222 Pain Cestus
+    threshold>40 + material 0x1ab Rune Metal + any of ['0x21b Knuckles', '0x21c Hard Knuckles', '0x21d Cestus'] -> 0x21f Metal Fangs
+    threshold>60 + material 0x1a6 Moonite + any of ['0x220 Magical Gloves'] -> 0x224 Rune Full Moon
+    threshold>70 + material 0x1ab Rune Metal + any of ['0x220 Magical Gloves'] -> 0x225 Sorceress Knuckles
+    threshold>70 + material 0x1b2 Sage's Stone + any of ['0x224 Rune Full Moon'] -> 0x225 Sorceress Knuckles
+    threshold>70 + material 0x1b3 Diamond + any of ['0x225 Sorceress Knuckles'] -> 0x226 Kaiser Knuckles
+    threshold>80 + material 0x1a6 Moonite + any of ['0x226 Kaiser Knuckles'] -> 0x227 Empresia
+char 3 recipe list @ 0x800820c4:
+    threshold>30 + material 0x1a9 Mithril + any of ['0x238 Rod', '0x239 Ruby Wand', '0x23b Crest Rod'] -> 0x237 Silver Rod
+    threshold>20 + material 0x1af Ruby + any of ['0x237 Silver Rod', '0x23a Tongue Twister', '0x23c Holy Rod', '0x23d Silvermoon', '0x23e Prime Prayer', '0x23f Magical Rod', '0x240 Rod of Snakes', "0x241 Dragon's Tusk", '0x242 Ruby Rod', '0x243 Clap Rod'] -> 0x239 Ruby Wand
+    threshold>40 + material 0x1b0 Star Ruby + any of ['0x237 Silver Rod', '0x23a Tongue Twister', '0x23d Silvermoon', '0x23e Prime Prayer', '0x23f Magical Rod', '0x240 Rod of Snakes', "0x241 Dragon's Tusk", '0x243 Clap Rod'] -> 0x242 Ruby Rod
+    threshold>50 + material 0x1a7 Orichalcum + any of ['0x23a Tongue Twister', '0x23d Silvermoon', '0x23e Prime Prayer', '0x240 Rod of Snakes', "0x241 Dragon's Tusk", '0x242 Ruby Rod', '0x243 Clap Rod'] -> 0x23c Holy Rod
+    threshold>60 + material 0x1a6 Moonite + any of ['0x237 Silver Rod'] -> 0x23d Silvermoon
+    threshold>80 + material 0x1b0 Star Ruby + any of ['0x23c Holy Rod'] -> 0x241 Dragon's Tusk
+    threshold>80 + material 0x1a7 Orichalcum + any of ['0x242 Ruby Rod'] -> 0x241 Dragon's Tusk
+char 4 recipe list @ 0x8008213c:
+    threshold>50 + material 0x1a8 Meteorite + any of ['0x21b Knuckles', '0x21c Hard Knuckles', '0x228 Bagh Nakh'] -> 0x221 Braised Knuckles
+    threshold>40 + material 0x1ab Rune Metal + any of ['0x21b Knuckles', '0x21c Hard Knuckles', '0x228 Bagh Nakh'] -> 0x21f Metal Fangs
+    threshold>60 + material 0x1b4 Rainbow Diamond + any of ['0x229 Giant Fists'] -> 0x22c Titan's Fists
+    threshold>70 + material 0x1b1 Crystal + any of ["0x22c Titan's Fists"] -> 0x22b Asura
+    threshold>70 + material 0x1b3 Diamond + any of ['0x22b Asura'] -> 0x22a Hecatoncheire
+    threshold>60 + material 0x1a3 Iron + any of ['0x22a Hecatoncheire'] -> 0x22c Titan's Fists
+    threshold>80 + material 0x1b3 Diamond + any of ['0x224 Rune Full Moon'] -> 0x22e Moon Fists
+char 5 recipe list @ 0x8008218c:
+    threshold>50 + material 0x1a8 Meteorite + any of ['0x202 Soul Slayer', '0x204 The Hope of Breeze', '0x205 Hard Cleaver', "0x206 Ruins' Fate", '0x207 Pleiad Sword', '0x208 Crimson Diablos', '0x209 Cromlea Sword'] -> 0x203 Whirlwind
+    threshold>60 + material 0x1b0 Star Ruby + any of ['0x1f3 Ignite Sword', '0x1f5 Marvel Sword', '0x1fa Silvance', '0x204 The Hope of Breeze', '0x205 Hard Cleaver', "0x206 Ruins' Fate", '0x207 Pleiad Sword', '0x208 Crimson Diablos', '0x209 Cromlea Sword'] -> 0x202 Soul Slayer
+    threshold>80 + material 0x1b2 Sage's Stone + any of ['0x202 Soul Slayer'] -> 0x208 Crimson Diablos
+    threshold>40 + material 0x1aa Damascus + any of ['0x133 Sharpness'] -> 0x1f2 Grand Stinger
+    threshold>50 + material 0x1a9 Mithril + any of ['0x133 Sharpness'] -> 0x1f5 Marvel Sword
+    threshold>60 + material 0x1aa Damascus + any of ['0x1f2 Grand Stinger'] -> 0x206 Ruins' Fate
+    threshold>60 + material 0x1b4 Rainbow Diamond + any of ['0x204 The Hope of Breeze'] -> 0x205 Hard Cleaver
+    threshold>80 + material 0x1aa Damascus + any of ['0x205 Hard Cleaver'] -> 0x208 Crimson Diablos
+char 6 recipe list @ 0x800821fc:
+    threshold>40 + material 0x1af Ruby + any of ['0x254 One-two Punch', '0x255 Straight Punch', '0x257 Ice Punch', '0x258 Thunder Punch', '0x259 Ultra Punch', '0x25a Great Punch', '0x25b Hyper Punch', '0x25c Burning Hand', '0x25d Atomic Punch', '0x25e Spark Hand', '0x25f SD Punch', '0x260 UGA Punch', '0x261 SDUGA Punch'] -> 0x256 Fire Punch
+    threshold>40 + material 0x1ae Sapphire + any of ['0x254 One-two Punch', '0x255 Straight Punch', '0x256 Fire Punch', '0x258 Thunder Punch', '0x259 Ultra Punch', '0x25a Great Punch', '0x25b Hyper Punch', '0x25c Burning Hand', '0x25d Atomic Punch', '0x25e Spark Hand', '0x25f SD Punch', '0x260 UGA Punch', '0x261 SDUGA Punch'] -> 0x257 Ice Punch
+    threshold>40 + material 0x1b3 Diamond + any of ['0x254 One-two Punch', '0x255 Straight Punch', '0x256 Fire Punch', '0x257 Ice Punch', '0x259 Ultra Punch', '0x25a Great Punch', '0x25b Hyper Punch', '0x25c Burning Hand', '0x25d Atomic Punch', '0x25e Spark Hand', '0x25f SD Punch', '0x260 UGA Punch', '0x261 SDUGA Punch'] -> 0x258 Thunder Punch
+    threshold>60 + material 0x1b0 Star Ruby + any of ['0x25a Great Punch', '0x25b Hyper Punch', '0x25d Atomic Punch', '0x25e Spark Hand', '0x25f SD Punch', '0x260 UGA Punch', '0x261 SDUGA Punch'] -> 0x25c Burning Hand
+    threshold>60 + material 0x1b4 Rainbow Diamond + any of ['0x25a Great Punch', '0x25b Hyper Punch', '0x25c Burning Hand', '0x25d Atomic Punch', '0x25f SD Punch', '0x260 UGA Punch', '0x261 SDUGA Punch'] -> 0x25e Spark Hand
+    threshold>20 + material 0x1a3 Iron + any of ['0x252 Magic Hand'] -> 0x253 Iron Punch
+    threshold>70 + material 0x1aa Damascus + any of ['0x25f SD Punch'] -> 0x260 UGA Punch
+    threshold>80 + material 0x1a8 Meteorite + any of ['0x260 UGA Punch'] -> 0x261 SDUGA Punch
+char 7 recipe list @ 0x800822b0:
+    threshold>30 + material 0x1aa Damascus + any of ['0x20b Twin Swords'] -> 0x20e Smaller
+    threshold>70 + material 0x1a8 Meteorite + any of ['0x210 Pair Nuts'] -> 0x217 Gemini
+    threshold>40 + material 0x1a3 Iron + any of ['0x20c Guard Sword'] -> 0x211 Shield Sword
+    threshold>40 + material 0x1a6 Moonite + any of ['0x20e Smaller'] -> 0x210 Pair Nuts
+    threshold>70 + material 0x1a9 Mithril + any of ['0x20f Twin-edge'] -> 0x218 Holy Cross
+    threshold>70 + material 0x1a8 Meteorite + any of ['0x216 Lotus Eater'] -> 0x217 Gemini
+    threshold>80 + material 0x1aa Damascus + any of ['0x213 Scyther'] -> 0x219 Melufa
+
+== Cooking ==
+16 ingredients
+  0x117 Seafood (idx 0): dishes=['0x151 Toro Tuna', '0x154 Shu-mai', '0x153 Seaweed Miso Soup', '0x125 Broth', '0x158 Shrimp au Gratin', '0x159 Big Tuna', '0x123 Shark Fin Soup', '0x135 Sole & Fruit Sauce', '0x15a Salmon Omelet', '0x15b Shrimp Pilaf'] kinds=[1, 1, 2, 18, 18, 19, 35, 35, 35, 36] fails=['0x306 Rotten Sashimi']
+  0x118 Fruit (idx 1): dishes=['0x129 Orangeade', '0x170 Berry Juice', '0x172 Orange Sherbet', '0x173 Banana Crepes', '0x174 Apple Cider', '0x175 Pickled Plum', '0x176 Strawberry Mousse', '0x177 Apple Crepes', '0x178 Peach Ice Cream', '0x179 Aged Berry Juice', '0x17a Orange Au Gratin'] kinds=[1, 1, 2, 2, 20, 18, 19, 19, 35, 40, 35] fails=['0x17b Bitter Juice']
+  0x119 Grain (idx 2): dishes=['0x15d Root Beer', "0x15e 'Ishidaya' Tea", '0x15f Yukiyucho Tea', '0x160 Hassaku Tea', '0x161 Yaegaki Tea', "0x162 'Usunigori' Tea", '0x164 Sweet Dumpling', '0x166 Daikon Miso Soup', '0x167 Gruel', '0x168 Rice Cakes', '0x169 Pancakes', '0x2fd Soy Milk', '0x137 Fried Rice', '0x16d Shrimp Doria', '0x16e Rice Omelet', '0x2fc Rice Croquettes'] kinds=[17, 17, 18, 18, 19, 19, 1, 1, 2, 18, 18, 19, 35, 35, 35, 35] fails=['0x163 Sambai Tea', '0x2fe Smelly Rice Cakes']
+  0x11a Meat (idx 3): dishes=['0x17c Meat Dumpling', '0x17d Potstickers', '0x17e Beef Croquettes', '0x17f Chicken Skewers', '0x180 Jambalaya', '0x182 Chicken Doria', '0x183 Steak', '0x13f Hamburger', '0x184 Baby Rabbit Risotto', '0x185 Ground Lamb Steak'] kinds=[1, 1, 2, 2, 18, 18, 19, 36, 36, 35] fails=['0x187 Bad Tasting Stew']
+  0x11b Vegetables (idx 4): dishes=['0x18a Squash Croquettes', '0x18b Corn Potage', '0x2ff Quick Pickles', '0x18d Spring Rolls', '0x18e Carrot Juice', '0x18f Cabbage Roll', '0x300 Rice-bran Pickles', '0x190 Squash Spring Rolls', '0x191 Vegetable Juice', '0x192 Green Potage', '0x301 Carrot Ice Cream'] kinds=[1, 1, 2, 18, 18, 18, 19, 35, 35, 35, 35] fails=['0x193 Wilted Salad']
+  0x11c Egg/Dairy Products (idx 5): dishes=['0x194 Fried Eggs', '0x196 Fruit Smoothie', '0x197 Yogurt', '0x198 Egg Sandwich', '0x199 Chocolate Crepes', '0x19a Bacon & Eggs', '0x19b Vanilla Ice Cream', '0x19c Shortcake', '0x19d Custard Pudding', '0x19e Macaroni Au Gratin'] kinds=[1, 2, 1, 1, 19, 18, 18, 35, 35, 36] fails=['0x19f Spicy Cake', '0x1a0 Raw Milk']
+  0x30e Purity Leaf (idx 6): dishes=['0x317 Milky Potage', '0x318 Special Stir-fry', '0x319 Magical Salad', '0x31a Golden Stew'] kinds=[3, 3, 4, 5] fails=[]
+  0x30f Juicy Beef (idx 7): dishes=['0x31b Fine Saute', '0x31c Exciting Tenderloin', '0x31d Prime Sirloin', '0x31e Inviting Filet'] kinds=[3, 4, 5, 5] fails=[]
+  0x310 Prime Tuna (idx 8): dishes=['0x31f Tuna Skewers', '0x320 Prime Tuna Steak', '0x321 Fish of Happiness', '0x322 Special Tuna'] kinds=[3, 3, 4, 5] fails=[]
+  0x311 Ganze Sea Urchin (idx 9): dishes=['0x323 Ichigoni', '0x324 Ichigoni Supreme', "0x325 Prince's Zoni Stew", '0x326 Sea Urchin on Rice'] kinds=[3, 4, 5, 7] fails=[]
+  0x312 Magical Rice (idx 10): dishes=['0x327 Deluxe Doria', '0x328 Miracle Fried Rice', '0x329 Risotto Ecstasy', '0x32a Heavenly Doria'] kinds=[3, 3, 4, 5] fails=[]
+  0x313 Creamy Cheese (idx 11): dishes=['0x32b Au Gratin Climax', '0x32c Cheese Pizza', '0x32d Assorted Cheeses', '0x32e Gorgonzola'] kinds=[3, 3, 4, 5] fails=[]
+  0x314 Sweet Fruit (idx 12): dishes=['0x32f Gateau Marjolaine', '0x330 1-up Pudding', '0x331 Beautiful Ice Cream', '0x332 Ginger Ale'] kinds=[3, 4, 5, 8] fails=[]
+  0x315 Slippery Slime (idx 13): dishes=['0x16b Soda-Pop', '0x155 Amoeba Soup', '0x195 Slime Jelly', '0x186 Gelatin Steak'] kinds=[3, 3, 8, 8] fails=[]
+  0x316 Jiggly Slime (idx 14): dishes=['0x16b Soda-Pop', '0x155 Amoeba Soup', '0x195 Slime Jelly', '0x186 Gelatin Steak'] kinds=[2, 2, 4, 4] fails=[]
+  0x336 Yarma Cooking Set (idx 15): dishes=["0x333 Genie's Veggie Soup", "0x334 Genie's Steak", '0x335 Energy Drink', '0x171 Seltzer'] kinds=[6, 6, 6, 6] fails=[]
+special 3rd-ingredient dishes (chars 1,2,6,8): ['0x164 Sweet Dumpling', '0x166 Daikon Miso Soup', '0x167 Gruel', '0x168 Rice Cakes', '0x169 Pancakes', '0x2fd Soy Milk', '0x137 Fried Rice', '0x16d Shrimp Doria', '0x16e Rice Omelet', '0x2fc Rice Croquettes']
+distinct cooking dishes total: 104
+
+== Master Chef ==
+pair->class: [1, 2, 3, 4, 5, 6, 2, 7, 8, 9, 10, 11, 3, 8, 12, 13, 14, 15, 4, 9, 13, 16, 17, 18, 5, 10, 14, 17, 19, 20, 6, 11, 15, 18, 20, 21]
+class -> good/fail: {1: ('0x11d Sashimi', '0x306 Rotten Sashimi'), 2: ('0x11f Sole & Wine Sauce', '0x306 Rotten Sashimi'), 3: ('0x122 Shark Potstickers', '0x306 Rotten Sashimi'), 4: ("0x124 Bird's Nest Soup", '0x187 Bad Tasting Stew'), 5: ('0x126 Mushroom Soup', '0x193 Wilted Salad'), 6: ('0x127 Steamed Aspic', '0x306 Rotten Sashimi'), 7: ('0x12a Pear Compote', '0x17b Bitter Juice'), 8: ('0x12b Strawberry Mochi', '0x17b Bitter Juice'), 9: ('0x12e Muscat Grape Jelly', '0x187 Bad Tasting Stew'), 10: ('0x12f Konyaku Jelly', '0x17b Bitter Juice'), 11: ('0x132 Coconut Milk', '0x19f Spicy Cake'), 12: ('0x136 Sweet Rice Cakes', '0x2fe Smelly Rice Cakes'), 13: ('0x138 Meat Fried Rice', '0x187 Bad Tasting Stew'), 14: ('0x139 Sake Lees Pickles', '0x193 Wilted Salad'), 15: ('0x13b French Toast', '0x19f Spicy Cake'), 16: ('0x140 Sirloin Steak', '0x187 Bad Tasting Stew'), 17: ('0x142 Peking Duck', '0x187 Bad Tasting Stew'), 18: ('0x143 Creamed Stew', '0x187 Bad Tasting Stew'), 19: ('0x149 Fried Vegetables', '0x193 Wilted Salad'), 20: ('0x14c Yogurt Salad', '0x193 Wilted Salad'), 21: ('0x14f Plain Omelet', '0x1a0 Raw Milk')}
+
+== Blacksmith ==
+materials: ['0x1a3 Iron', '0x1a7 Orichalcum', '0x1aa Damascus', '0x1a6 Moonite', '0x1a9 Mithril', '0x1a8 Meteorite', '0x1ab Rune Metal']
+  material 0x1a3 Iron better=False: [('0x292 Banded Helm', 1), ('0x2aa Ringed Mail', 1), ('0x2af Plate Mail', 2), ('0x2e0 Plate Greaves', 1), ('0x297 Plate Helm', 1), ("0x2c7 Knight's Shield", 1), ('0x1fd All-Purpose Knife', 2)]
+  material 0x1a3 Iron better=True: [('0x2af Plate Mail', 2), ('0x1fd All-Purpose Knife', 2)]
+  material 0x1a7 Orichalcum better=False: [("0x29f Hermit's Helm", 1), ('0x2ef Neo Greaves', 1), ('0x2be Barrier Armor', 1), ('0x2d6 Barrier Shield', 1)]
+  material 0x1a7 Orichalcum better=True: [('0x2c2 Reflective Armor', 4), ("0x2a0 Odin's Helm", 4)]
+  material 0x1aa Damascus better=False: [('0x2bc Core Plate', 1), ('0x2c4 Bloody Armor', 1), ('0x2c3 Chaos Mail', 1), ('0x2a1 Bloody Helm', 1)]
+  material 0x1aa Damascus better=True: [('0x2d2 Algol', 4), ('0x2c1 Duel Suit', 3), ('0x29e Duel Helm', 3)]
+  material 0x1a6 Moonite better=False: [("0x29a Jeanne's Helm", 3), ("0x2d1 Jeanne's Shield", 3), ("0x2b7 Jeanne's Armor", 4), ("0x2ec Witch's Boots", 4)]
+  material 0x1a6 Moonite better=True: [('0x2ce The Armband of Kali', 3), ('0x298 Isis Tiara', 4), ("0x2bb Ishtar's Robe", 4)]
+  material 0x1a9 Mithril better=False: [('0x2bd Mithril Mesh', 3), ('0x2b3 Mithril Coat', 3), ('0x2d3 Mithril Shield', 3), ('0x2b5 Mithril Dress', 3)]
+  material 0x1a9 Mithril better=True: [('0x2d7 Pallas Athena', 6)]
+  material 0x1a8 Meteorite better=False: [('0x2b6 Star Cloak', 4), ('0x2f0 Star Greaves', 4), ('0x050 Star Necklace', 4), ('0x2cf Star Guard', 8)]
+  material 0x1a8 Meteorite better=True: [('0x2ee Sylvan Boots', 5), ('0x29d Sylvan Helm', 5), ('0x2bf Sylvan Mail', 5)]
+  material 0x1ab Rune Metal better=False: [('0x2cc Rune Buckler', 4), ('0x2ea Rune Shoes', 4), ("0x29b Wizard's Hat", 3), ("0x2ba Wizard's Mail", 3)]
+  material 0x1ab Rune Metal better=True: [('0x2b1 Flying Hawk Robes', 3), ('0x2b2 Mirage Robe', 5)]
+distinct blacksmith results: 45
+
+== Reverse Side ==
+[('0x1dc Forged Bills', 1), ('0x1e0 Stock Certificates', 1), ('0x1db Fill-up', 2), ('0x1dd Forged Checks', 2), ('0x1de Forged Documents', 3), ('0x1e3 Contract', 3), ('0x1e4 Life Insurance', 3), ('0x1df Second Ledger', 4), ('0x1e1 Forged Medals', 4), ('0x1e2 Lien', 4)]
+
+== TOTALS ==
+  Compounding: 49 distinct items
+  Alchemy: 16 distinct items
+  Metalwork: 95 distinct items
+  Authoring: 25 distinct items
+  Art: 41 distinct items
+  Machinery: 32 distinct items
+  Customize: 100 distinct items
+  Cooking: 104 distinct items
+  Master Chef (super): 28 distinct items
+  Blacksmith (super): 45 distinct items
+  Reverse Side (super): 10 distinct items
+grand total distinct result/fail items across all specialties: 541
+wrote /run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Projects/Shattered-Stars/scratchpad/openworld/craft_results.csv 545 rows

@@ -1,7 +1,11 @@
 // vm_exec_table_a (field 0x80067634): opcode 0xfe, sub-command in bits 16-22 through
 // the jump table 0x8007380c (0x01-0x48; 0x00, 0x2f, 0x30 and above 0x48 do nothing).
 // Counters, party and character records, equipment, the world-map entries, overlay
-// effects and the choice line counts.
+// effects and the choice line counts. Subs 0x70-0x72 are the port's (Archipelago: Port
+// Hilton's harbour in an open-world seed).
+#include <cstdio>
+
+#include "game/ap/ap.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
 
@@ -316,7 +320,66 @@ void vm_exec_table_a(ScriptCtx* ctx, u32 instr) {
       vm_fetch_args(ctx, static_cast<int>(sub - 0x40));
       for (int i = 0; i < 16; ++i) ctx->option_lines[i] = static_cast<s16>(a[i]);
       break;
-    default:  // 0x00, 0x2f, 0x30, > 0x48
+    // Archipelago (port feature; not in the original, where these subs do nothing): Port Hilton's
+    // harbour in an open-world seed (game/ap harbour_*, docs/ap/seed_format.md "Phase 4"). Only the
+    // patch lines an open-world seed adds put them in a script (maps 169 and 144).
+    case 0x70: {
+      // In place of the Hilton sailor's `push 2` before the choice library call (0x484c): the
+      // captain's option count. The stack holds the call's arguments so far (..., the question's
+      // string, the choice window's width); the next instruction pushes the options' string.
+      const s32 question = static_cast<s32>(ctx->value_sp[-2]);
+      const u32 next = *ctx->ip;
+      const s32 options = (next >> 24) == 0x12 ? static_cast<s32>(next & 0xFFFFFF) : question + 1;
+      *ctx->value_sp++ = static_cast<u32>(ap::harbour_open(question, options));
+      break;
+    }
+    case 0x71: {
+      // After the choice (the option popped): pushes 1 for the sailor's own fare and Cross voyage,
+      // 0 for nothing (the routine's jz goes to its end), or goes on elsewhere.
+      constexpr u32 kElResume = 0x454C0001u;  // (not an option: this op again after 444's fade)
+      vm_fetch_args(ctx, 1);
+      if (static_cast<u32>(a[0]) == kElResume) {
+        // Room 444's ending, after its 90 frames: chapter 28 step 0 and its transfer to Lacour
+        // Castle (map_transfer_c, from the stack: the op's own offset is no seed door).
+        s32 args[7];
+        ap::el_voyage_transfer(args);
+        *ctx->value_sp++ = 0;
+        for (const s32 v : args) *ctx->value_sp++ = static_cast<u32>(v);
+        vm_exec_ext(ctx, 0xDA800000u);
+        break;
+      }
+      const ap::HarbourChoice c = ap::harbour_choose(a[0]);
+      if (c.kind == ap::HarbourChoice::kCross) {
+        *ctx->value_sp++ = 1;
+      } else if (c.kind == ap::HarbourChoice::kJump && c.offset >= 0 && (c.offset & 3) == 0 &&
+                 ctx->code[c.offset / 4] == 0x12000001u) {
+        // The Hoffmann soldier's sail (map 169 0x7cf8: `push 1`, the preload of map 1, no locals;
+        // its routine's return ends the talk).
+        ctx->ip = ctx->code + c.offset / 4;
+      } else if (c.kind == ap::HarbourChoice::kEl) {
+        // Room 444's ending before its transfer (routine 0x7c28: ext 0xba 90, ext 0x7c 3 90,
+        // wait 90), then this op again.
+        if (vm_rd16(g.game_state + 0x1C) != -1 && ctx->music == -1) vm_svc_sound_fade_out(90);
+        vm_svc_fade_push(3, 90, 0, 0);
+        *ctx->value_sp++ = kElResume;
+        --ctx->ip;
+        ctx->wait += 90;
+      } else {
+        if (c.kind == ap::HarbourChoice::kJump) std::fprintf(stderr, "[ap] harbour: the Hoffmann sail is not at %#x\n", c.offset);
+        *ctx->value_sp++ = 0;
+      }
+      break;
+    }
+    case 0x72: {
+      // In place of `push_eq <option>, 0` before a voyage (the Hoffmann soldier's yes, Herlie's
+      // sailor's): pushes option == 0 and the landing's key is held (instr & 0xff: the voyage's
+      // landing flag; a banner names a missing key), before any fare is paid.
+      vm_fetch_args(ctx, 1);
+      const bool go = a[0] == 0 && ap::voyage_landing_open(static_cast<int>(instr & 0xFF));
+      *ctx->value_sp++ = go ? 1u : 0u;
+      break;
+    }
+    default:  // 0x00, 0x2f, 0x30, > 0x48 (and the port's above)
       vm_note_unknown(instr);
       break;
   }

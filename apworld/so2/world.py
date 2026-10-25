@@ -5,7 +5,9 @@ items (script flags) stay in place, so the story always goes on. The goal is the
 The output is one .apso2 seed per player (docs/ap/seed_format.md), which the port loads.
 """
 import json
+import logging
 import os
+from typing import NamedTuple, Optional
 
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
@@ -15,7 +17,29 @@ from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
 
-SEED_FORMAT_VERSION = 1
+SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
+SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
+APWORLD_VERSION = "0.2.0"
+
+# The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
+# seed's goal object and the gate on the Final Save Point floor's way to Indalecio (door
+# 43978493, map 671 -> 684), which the port keeps shut until the goal's conditions hold.
+LIMITER_FLAGS = [445, 446]      # the Clik meeting with Filia (Claude's game, Rena's), preset by the port
+LIMITER_OFF_FLAG = 556          # set only by Filia's scene in Central City City Hall (map 239)
+ISERIA_QUEEN = 561
+GOAL_GATE = {"id": 43978493, "routine": "0x3bec"}
+GOAL_BANNERS = {"flags": "Talk to Filia in Central City first", "won": "Defeat the Iseria Queen first"}    # <= 236 px each
+GOAL_GATE_NAMES = {1: "Indalecio (Limiter Off)", 2: "Indalecio (Limiter Off, Iseria Queen)"}    # the port logs it
+
+
+class Party(NamedTuple):
+    """Who can be in this world's party (docs/ap/seed_format.md, "Party v2")."""
+    rules: str                  # "story": phase 3's rules; "open": open world with character_items
+    story_members: tuple        # join through the story's own scenes (party rules "open")
+    start: Optional[str]        # starting_character (open world): joins at the start and leads
+    pool: list                  # the character items
+    guaranteed: frozenset       # surely in the party in the end (craft member locks)
+    possible: frozenset         # can ever be in the party
 
 
 class SO2Web(WebWorld):
@@ -42,25 +66,109 @@ class SO2World(World):
 
     def generate_early(self):
         self.open_world = self.options.world_mode == self.options.world_mode.option_open_world
-        self.chosen = locations.choose(self.options)
-        self.party = self.choose_party()
+        self.party_info = self.plan_party()
+        self.party = self.party_info.pool
+        self.chosen = locations.choose(self.options, self.party_info)
+        self.forced_drops = set()       # drop_progression force (rules.set_rules)
+        # Characters the logic needs (killer_move_progression any: a member's killer-move levels
+        # need their item) are progression; any other character item is useful.
+        killers = {row["character"] for row, _ in self.chosen if row["type"] == "killer_move"}
+        self.progression_characters = set(self.party) & killers \
+            if self.options.killer_move_progression.current_key == "any" else set()
+
+    def story_members(self):
+        """The heroes: the story route's, or both under "any" (the player picks at New Game)."""
+        return {"claude": ("Claude",), "rena": ("Rena",)}.get(self.options.story_route.current_key, ("Claude", "Rena"))
+
+    def plan_party(self):
+        """The party this world allows (Party). Story mode, or open world without
+        character_items: the story's party rules (choose_party); open world with character_items:
+        open world's (choose_open_party). starting_character only in open world."""
+        o = self.options
+        heroes = self.story_members()
+        start = self.choose_start(heroes)
+        fixed = set(items.FIXED_MEMBERS) | ({start} if start else set())
+        if not (self.open_world and o.character_items):
+            pool = self.choose_party()
+            possible = (fixed | set(pool)) if o.character_items else set(items.CHARACTER_NAMES)
+            return Party("story", heroes, start, pool, frozenset(fixed), frozenset(possible))
+        pool = self.choose_open_party(heroes, start)
+        sure = set(heroes) | ({start} if start else set())
+        return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(pool)))
+
+    def choose_start(self, heroes):
+        """starting_character, open world only: None (the hero leads), a named member, or under
+        "any" a random member who is neither a hero nor excluded. A named member wins over
+        exclude_characters; the hero of a one-hero route means nobody extra."""
+        o = self.options
+        value = o.starting_character.value
+        if value == o.starting_character.option_hero:
+            return None
+        if not self.open_world:
+            logging.warning(f"{self.player_name}: starting_character is for open world; ignored in story mode")
+            return None
+        if value == o.starting_character.option_any:
+            pick = [n for n in items.CHARACTER_NAMES if n not in heroes and n not in o.exclude_characters.value]
+            return self.random.choice(pick) if pick else None
+        name = items.CHARACTER_NAMES[value - 1]
+        if name in o.exclude_characters.value:
+            logging.warning(f"{self.player_name}: starting_character {name} is in exclude_characters; {name} starts")
+        return None if heroes == (name,) else name
+
+    def choose_open_party(self, heroes, start):
+        """Open world's character items: any member but the heroes and the starting character,
+        none in exclude_characters, as many as fit the party's 8 places with the heroes and the
+        starting member (a random choice when more are allowed). The healer guarantee: when
+        neither the heroes, the starting member nor the pool has Rena or Noel, one of them (the
+        ones not excluded) takes a random pool member's place; with both excluded, none."""
+        rng = self.random
+        excluded = set(self.options.exclude_characters.value)
+        if excluded & set(heroes):
+            logging.warning(f"{self.player_name}: exclude_characters can't exclude the story route's hero "
+                            f"({', '.join(sorted(excluded & set(heroes)))})")
+        allowed = [n for n in items.CHARACTER_NAMES if n not in heroes and n != start and n not in excluded]
+        room = items.PARTY_SIZE - len(heroes) - (1 if start and start not in heroes else 0)
+        pool = list(allowed) if len(allowed) <= room else rng.sample(allowed, room)
+        if not ({start, *heroes, *pool} & set(items.HEALERS)):
+            healers = [n for n in items.HEALERS if n in allowed]
+            if healers:     # the pool is full (an allowed healer would be in it otherwise)
+                pool.remove(rng.choice(pool))
+                pool.append(rng.choice(healers))
+        return sorted(pool, key=items.CHARACTER_NAMES.index)
 
     def choose_party(self):
         """The characters this world's pool holds (character_items): a party the story allows.
         One of Bowman / Precis (Precis rules Bowman out), one of Ashton / Opera with Ernest
         (Ashton rules Opera out, and Ernest comes only with Opera), Celine, Chisato, and Leon in
-        Claude's game or Dias in Rena's (neither when the protagonist is "any": the port turns
+        Claude's game or Dias in Rena's (neither when the story_route is "any": the port turns
         away the wrong one). With Claude, Rena and Noel, at most 8: when there is one too many,
         Ernest stays out (Opera can join alone) or one of the others does."""
         if not self.options.character_items:
             return []
         rng = self.random
-        side = self.options.protagonist.current_key
+        side = self.options.story_route.current_key
         singles = ["Celine", "Chisato"] + {"claude": ["Leon"], "rena": ["Dias"]}.get(side, [])
         party = [rng.choice(["Bowman", "Precis"])] + rng.choice([["Ashton"], ["Opera", "Ernest"]]) + singles
         while len(party) > items.PARTY_SIZE - len(items.FIXED_MEMBERS):
             party.remove(rng.choice([x for x in party if x in singles or x == "Ernest"]))
         return sorted(party, key=items.CHARACTER_ITEMS.index)
+
+    def fill_hook(self, progitempool, usefulitempool, filleritempool, fill_locations):
+        """drop_progression force: the fair-odds drops that may hold progression (rules.py,
+        `forced_drops`) take progression items first, any player's, as far as the logic allows;
+        those it can't fill are filled as usual."""
+        drops = [loc for loc in fill_locations if loc.player == self.player and loc.name in self.forced_drops]
+        if not drops or not progitempool:
+            return
+        from Fill import fill_restrictive, sweep_from_pool
+        self.random.shuffle(drops)
+        candidates = [item for item in progitempool if not item.deprioritized]
+        single = self.multiworld.players == 1 and not self.multiworld.groups
+        fill_restrictive(self.multiworld, sweep_from_pool(self.multiworld.state), drops, candidates,
+                         single_player_placement=single, swap=False, allow_partial=True, one_item_per_player=False,
+                         name="SO2 forced drops")
+        progitempool[:] = [item for item in progitempool if item.location is None]
+        fill_locations[:] = [loc for loc in fill_locations if loc.item is None]
 
     def create_regions(self):
         made = regions.create_regions(self)
@@ -70,14 +178,19 @@ class SO2World(World):
             made[row["region"]].locations.append(loc)
 
     def create_item(self, name):
-        return items.SO2Item(name, items.classification(name), self.item_name_to_id[name], self.player)
+        cls = items.classification(name)
+        if name in getattr(self, "progression_characters", ()):
+            cls = ItemClassification.progression | ItemClassification.useful
+        return items.SO2Item(name, cls, self.item_name_to_id[name], self.player)
 
     def create_items(self):
         # The pool is the vanilla contents of this world's locations (a boss or join location
         # adds a Blueberry), with the party's characters in place of the join sites' filler,
         # then the traps option's share of the filler turned into traps. The cave's gems are
         # locked at their own locations instead.
-        names = [items.item_name(row["item"], row["fol"]) for row, _ in self.chosen]
+        names = [items.pool_filler(row["item"]) if row["type"] == "craft"
+                 else items.FILLER_NAME if row["type"] == "killer_move" else items.item_name(row["item"], row["fol"])
+                 for row, _ in self.chosen]
         joins = [k for k, (row, _) in enumerate(self.chosen) if row["type"] == "join"]
         if len(joins) < len(self.party):
             raise Exception(f"{self.player_name}: {len(self.party)} characters but {len(joins)} join locations")
@@ -115,27 +228,76 @@ class SO2World(World):
     def set_rules(self):
         rules.set_rules(self)
 
+    def goal_encounters(self):
+        """The encounters the goal needs: any of them (indalecio, limiter off), or all of them
+        (with the Iseria Queen)."""
+        return {0: list(GOAL_ENCOUNTERS), 1: [540], 2: [ISERIA_QUEEN, 540]}[self.options.goal.value]
+
+    def seed_goal(self):
+        """The seed's goal object (docs/ap/seed_format.md, "v2 fields": Goals)."""
+        goal = self.options.goal.value
+        if goal == 0:
+            return {"encounters": list(GOAL_ENCOUNTERS)}
+        out = {"encounters": [540], "flags": list(LIMITER_FLAGS)}
+        if goal == 2:
+            out = {"all": [ISERIA_QUEEN, 540], **out}
+        return out
+
+    def goal_doors(self):
+        """The goal's gate (both world modes): the way to Indalecio stays shut until Filia took
+        his limiter off (flag 556) and, for the Iseria Queen goal, she was beaten."""
+        goal = self.options.goal.value
+        if goal == 0:
+            return []
+        door = dict(GOAL_GATE, flags=[LIMITER_OFF_FLAG])
+        banners = [GOAL_BANNERS["flags"]]
+        if goal == 2:
+            door["won"] = [ISERIA_QUEEN]
+            banners.append(GOAL_BANNERS["won"])
+        door.update(banners=banners, name=GOAL_GATE_NAMES[goal])
+        return [door]
+
+    def seed_version(self):
+        """1, or 2 when the seed uses a field an older port would ignore (docs/ap/seed_format.md,
+        "The version rule")."""
+        o = self.options
+        v2 = (o.goal.value != 0 or self.party_info.rules == "open" or self.party_info.start is not None
+              or bool(o.craftsanity) or bool(o.no_fail_crafting) or bool(o.killer_move_checks))
+        return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
+
     def fill_slot_data(self):
         o = self.options
+        p = self.party_info
         return {
-            "seed_format": SEED_FORMAT_VERSION,
-            "goal_encounters": list(GOAL_ENCOUNTERS),
+            "seed_format": self.seed_version(),
+            "goal_encounters": self.goal_encounters(),
             "world_mode": o.world_mode.current_key,
             "expel_teleporter": self.open_world and bool(o.expel_teleporter),
             "shuffle_shops": o.shuffle_shops.current_key,
-            "protagonist": o.protagonist.current_key,
+            "story_route": o.story_route.current_key,
             "missable_locations": o.missable_locations.current_key,
             "expel_progression": bool(o.expel_progression),
             "cave_of_trials": bool(o.cave_of_trials),
             "boss_checks": bool(o.boss_checks),
             "character_items": bool(o.character_items),
             "characters": list(self.party),
-            "drops_as_checks": o.drops_as_checks.current_key,
+            "enemy_dropsanity": o.enemy_dropsanity.current_key,
             "traps": o.traps.value,
             "exp_multiplier": o.exp_multiplier.value,
             "fol_multiplier": o.fol_multiplier.value,
             "encounter_rate": o.encounter_rate.value,
             "death_link": bool(o.death_link),
+            "goal": o.goal.current_key,
+            "drop_progression": o.drop_progression.current_key,
+            "area_keys_in_drops": bool(o.area_keys_in_drops),
+            "craftsanity": bool(o.craftsanity),
+            "no_fail_crafting": bool(o.no_fail_crafting),
+            "killer_move_checks": bool(o.killer_move_checks),
+            "killer_move_progression": o.killer_move_progression.current_key,
+            "starting_character": p.start,
+            "exclude_characters": sorted(o.exclude_characters.value, key=items.CHARACTER_NAMES.index),
+            "party_rules": p.rules,
+            "apworld_version": APWORLD_VERSION,
         }
 
     def seed_data(self):
@@ -180,7 +342,7 @@ class SO2World(World):
                 start_items.append(dict(described))
         return {
             "format": "apso2",
-            "version": SEED_FORMAT_VERSION,
+            "version": self.seed_version(),
             "seed": mw.seed_name,
             "game": self.game,
             "slot": {"name": mw.get_player_name(player), "id": player},
@@ -190,8 +352,8 @@ class SO2World(World):
             "locations": locs,
             "patches": patches,
             "start": {"items": start_items, "fol": start_fol, "flags": []},
-            "goal": {"encounters": list(GOAL_ENCOUNTERS)},
-            "doors": self.seed_doors(),
+            "goal": self.seed_goal(),
+            "doors": self.seed_doors() + self.goal_doors(),
         }
 
     def seed_doors(self):

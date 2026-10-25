@@ -9,6 +9,7 @@
 #include "game/field/field.h"
 #include "game/field/field_input.h"
 #include "game/field/field_sub_overlays.h"
+#include "game/field/leader.h"
 #include "game/field/map.h"
 #include "game/field/message.h"
 #include "game/field/screen.h"
@@ -846,6 +847,9 @@ void fieldactor_draw(Actor* self, int arg) {
   if (g_globals.children_pass != 0) mirror_update(self);  // 0x801f9800 (#3106: mirror images)
   const s32 old_sprite_anim = self->sprite_anim;
   actor_resolve_anim(self);
+  // Port feature (Archipelago open world, field/leader.h): the walking actor drawn as the
+  // Formation leader; its own sprite fields are back when this returns.
+  const LeaderSpriteSwap standin(self);
   s16 cam[2] = {0, 0};
   bg_get_view_origin(bg_renderer(), cam);
   if (self->flags & kActorNoScroll) cam[0] = cam[1] = 0;

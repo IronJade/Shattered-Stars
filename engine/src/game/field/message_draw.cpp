@@ -4,6 +4,7 @@
 #include "game/field/message.h"
 #include "game/field/message_internal.h"
 #include "game/field/screen.h"
+#include "game/field/script_vm.h"
 #include "runtime/libgpu.h"
 
 // Drawing of the message windows (msg_window_draw 0x8005a7bc and its clip helpers)
@@ -463,6 +464,11 @@ void msg_window_draw(MsgWindow* w) {
     psyq::SetDrawArea(a, &clip);
     add(ot + 1, a);
   }
+}
+
+bool msg_vm_choice_or_menu_wait() {
+  const ScriptCtx* ctx = g_script_vm;
+  return ctx != nullptr && (ctx->wait_state == 9 || ctx->wait_state == 0xE);
 }
 
 void choice_draw_cursor(ChoiceState* c) {

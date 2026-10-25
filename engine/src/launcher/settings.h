@@ -30,6 +30,24 @@ struct SoundSettings {
   bool operator==(const SoundSettings&) const = default;
 };
 
+// Dialogue (port enhancements, both off by default; game/field/message.h TextOptions):
+// instant_text shows each message page at once; auto_advance moves a message waiting for
+// the confirm button on by itself after auto_advance_delay milliseconds, but never answers
+// a choice. Keys at their default are left out of the file.
+struct TextSettings {
+  bool instant = false;
+  bool auto_advance = false;
+  int auto_advance_ms = 1000;
+  bool operator==(const TextSettings&) const = default;
+};
+// The delays setup offers (milliseconds); config.ini may hold any value in the range.
+inline constexpr int kAutoAdvanceDelays[] = {500, 1000, 1500, 2000, 3000};
+inline constexpr int kMinAutoAdvanceMs = 100, kMaxAutoAdvanceMs = 10000;
+TextSettings read_text(const Config& c);
+void write_text(Config& c, const TextSettings& s);
+// The delay in vblanks (60 a second), at least 1; 0 when auto-advance is off.
+int auto_advance_frames(const TextSettings& s);
+
 // Controls: config.ini's key_<button> (an SDL key name: "Z", "Return", "Left Shift") and
 // pad_<button> (an SDL gamepad name: "a", "dpup", "leftshoulder", "lefttrigger"), "none"
 // for unbound, for the buttons in kPadButtonKeys; stick_deadzone (percent of the stick's

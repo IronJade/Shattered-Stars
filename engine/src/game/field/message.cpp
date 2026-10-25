@@ -1,11 +1,15 @@
 #include "game/field/message.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include "game/common/text_rules.h"
 #include "game/field/field.h"
 #include "game/field/message_internal.h"
 #include "game/field/notice.h"
+#include "runtime/runtime.h"
 
 // Message system core: the system task, window creation and destruction, the
 // text-cell allocator, the window state machine and the typewriter
@@ -31,7 +35,39 @@ u16 config_button(int i) {
   return cfg ? static_cast<u16>(cfg[i * 2] | cfg[i * 2 + 1] << 8) : 0;
 }
 
+// ---- Port settings (TextOptions, message.h): instant text and auto-advance --------------
+
+TextOptions g_text_options;
+
+bool msg_trace() {
+  static const bool on = [] {
+    const char* v = std::getenv("SS_MSG_TRACE");
+    return v != nullptr && *v != 0 && *v != '0';
+  }();
+  return on;
+}
+
+int window_index(const MsgWindow* w) {
+  for (int i = 0; i < kMsgWindowCount; ++i)
+    if (g_windows[i] == w) return i;
+  return -1;
+}
+
+// Auto-advance may stand in for the player's press: no choice is up and no field menu the
+// script asked for is pending (msg_vm_choice_or_menu_wait, message_draw.cpp).
+bool auto_advance_allowed() { return !msg_vm_choice_or_menu_wait(); }
+
+// Instant text: msg_window_print until the page stops (a wait, a pause, a full window, its
+// end). The calls are the ones the typewriter makes over several frames, made at once.
+void print_page_at_once(MsgWindow* w) {
+  const u8 page = w->page_read;
+  for (int guard = 0; guard < 64 && w->state == 4 && w->page_read == page && page != w->page_write; ++guard)
+    msg_window_print(w, kMsgInstantChars);
+}
+
 }  // namespace
+
+TextOptions& text_options() { return g_text_options; }
 
 s32 g_text_speed[5] = {2, 60, 16, 8, 4};
 void (*g_msg_project_anchor)(s16* xy) = nullptr;
@@ -403,6 +439,18 @@ void msg_window_update(MsgWindow* w) {
     saved_speed = w->speed;  // a button press speeds the text up for this frame
     w->speed = 3;
   }
+  // Port (TextOptions): how long the window has waited for confirm, and auto-advance's
+  // stand-in press once it has waited the set time.
+  bool auto_press = false;
+  if (static_cast<u8>(w->state - 6) < 2 && w->button_advance != 0) {
+    w->button_wait = static_cast<u16>(std::min(w->button_wait + std::max(ticks, 0), 0xFFFF));
+    const int delay = g_text_options.auto_advance_frames;
+    auto_press = delay > 0 && w->button_wait >= delay && auto_advance_allowed();
+  } else {
+    w->button_wait = 0;
+  }
+  const bool instant = g_text_options.instant;
+  int instant_steps = 0;  // instant text: printing / scrolling rounds this frame (a safety cap)
   bool again = true;
   w->page_started = 0;
   while (again) {
@@ -451,7 +499,12 @@ void msg_window_update(MsgWindow* w) {
             w->scroll_pending = 0;
           }
           w->page_started = 0;
-          if (w->speed < 5 && g_text_speed[w->speed] > 0) {
+          if (instant) {
+            // Port (TextOptions::instant): the page up to its next stop, at once; a line
+            // that scrolls in (state 5) is scrolled and printed in this frame too.
+            print_page_at_once(w);
+            if (w->state == 5) again = ++instant_steps < 64;
+          } else if (w->speed < 5 && g_text_speed[w->speed] > 0) {
             msg_window_print(w, g_text_speed[w->speed]);
             if (ticks == 1 && w->state == 4) {
               w->state = 3;
@@ -473,6 +526,15 @@ void msg_window_update(MsgWindow* w) {
         break;
       }
       case 5:  // scrolling
+        if (instant) {
+          // Port (TextOptions::instant): the whole scroll at once (2 pixels a frame
+          // otherwise), then the page goes on printing in this frame.
+          msg_window_scroll(w, (std::max<int>(w->scroll_remaining, 0) + 1) / 2);
+          w->state = 4;
+          ticks = 1;
+          again = ++instant_steps < 64;
+          break;
+        }
         msg_window_scroll(w, ticks);
         if (w->scroll_remaining > 0) break;
         w->state = 4;
@@ -482,7 +544,14 @@ void msg_window_update(MsgWindow* w) {
       case 6:
       case 7:  // waiting for the confirm button (7: the window empties first)
         if (w->button_advance == 0) break;
-        if ((pressed & config_button(0)) == 0 && w->force_advance == 0) break;
+        if ((pressed & config_button(0)) == 0 && w->force_advance == 0 && !auto_press) break;
+        if (msg_trace()) {
+          std::fprintf(stderr, "[msg] vblank %llu window %d wait %d -> %s\n",
+                       static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), window_index(w),
+                       w->button_wait,
+                       (pressed & config_button(0)) != 0 ? "button" : w->force_advance != 0 ? "forced" : "auto");
+        }
+        w->button_wait = 0;
         if (w->state == 7) {
           w->used_lines = 0;
           w->text_height = 0;
@@ -495,11 +564,17 @@ void msg_window_update(MsgWindow* w) {
           w->state = 4;
         }
         w->page_height = 0;
+        if (instant) again = ++instant_steps < 64;  // instant text: the next page in this frame
         break;
       case 8: {  // timed wait
         w->timer = static_cast<s16>(w->timer - ticks);
         const bool button = w->button_advance != 0 && (pressed & config_button(0)) != 0;
         if (!button && w->force_advance == 0 && w->timer > 0) break;
+        if (msg_trace()) {
+          std::fprintf(stderr, "[msg] vblank %llu window %d timed wait, %d frames left -> %s\n",
+                       static_cast<unsigned long long>(runtime::Runtime::get().vblanks()), window_index(w),
+                       std::max<int>(w->timer, 0), button ? "button" : w->force_advance != 0 ? "forced" : "timer");
+        }
         w->force_advance = 0;
         if (w->scroll_pending != 0) {
           w->state = 5;
@@ -508,6 +583,7 @@ void msg_window_update(MsgWindow* w) {
           w->state = 4;
         }
         w->page_height = 0;
+        if (instant) again = ++instant_steps < 64;  // instant text: the next page in this frame
         break;
       }
       case 9:  // closing

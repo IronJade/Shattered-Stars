@@ -29,8 +29,10 @@ def fill(test):
 
 def check_seed(test, seed):
     """The seed's shape: ids, checks, placeholders and patch lines (docs/ap/seed_format.md)."""
-    test.assertEqual((seed["format"], seed["version"]), ("apso2", 1))
-    test.assertEqual(seed["goal"]["encounters"], list(GOAL_ENCOUNTERS))
+    test.assertEqual((seed["format"], seed["version"]), ("apso2", test.world.seed_version()))
+    test.assertEqual(seed["goal"], test.world.seed_goal())
+    if test.world.options.goal.value == 0:
+        test.assertEqual(seed["goal"], {"encounters": list(GOAL_ENCOUNTERS)})
     locs = seed["locations"]
     test.assertEqual(len(locs), len(own_locations(test)))
     test.assertEqual(len({l["id"] for l in locs}), len(locs))
@@ -60,6 +62,10 @@ def check_seed(test, seed):
         elif row["type"] == "drop":
             test.assertEqual(check["enemy"], row["enemy"])
             test.assertEqual(l["id"], ITEM_BASE + (8 << 21) + row["enemy"])
+        elif row["type"] == "craft":
+            test.assertEqual(check, {"type": "craft", "item": row["item"]})
+            test.assertEqual(l["id"], ITEM_BASE + (11 << 21) + row["item"])
+            test.assertNotEqual(l["item"]["classification"], "progression")
         elif row["type"] == "shop":
             test.assertEqual((check["shop"], check["index"], check["item"]), (row["shop"], row["index"], row["item"]))
             test.assertEqual(l["id"], ITEM_BASE + (10 << 21) + (row["shop"] << 8) + row["index"])
@@ -123,20 +129,20 @@ class TestDefault(SO2TestBase):
         seed = self.world.seed_data()
         self.assertIs(seed["options"]["deathlink"], False)
         self.assertIs(seed["options"]["character_items"], False)
-        self.assertEqual(seed["options"]["drops_as_checks"], "off")
+        self.assertEqual(seed["options"]["enemy_dropsanity"], "off")
         self.assertEqual((seed["options"]["exp_multiplier"], seed["options"]["fol_multiplier"],
                           seed["options"]["encounter_rate"]), (1, 1, 100))
         check_seed(self, seed)
 
 
-class TestProtagonistClaude(SO2TestBase):
-    options = {"protagonist": "claude"}
+class Teststory_routeClaude(SO2TestBase):
+    options = {"story_route": "claude"}
 
     def test_no_rena_only_locations(self):
         rows = [ROW[loc.name] for loc in own_locations(self)]
-        self.assertFalse(any(r["protagonist"] == "rena" for r in rows))
-        self.assertTrue(any(r["protagonist"] == "claude" for r in rows))
-        self.assertEqual(self.world.fill_slot_data()["protagonist"], "claude")
+        self.assertFalse(any(r["story_route"] == "rena" for r in rows))
+        self.assertTrue(any(r["story_route"] == "claude" for r in rows))
+        self.assertEqual(self.world.fill_slot_data()["story_route"], "claude")
 
 
 class TestMissableRemoved(SO2TestBase):
@@ -144,12 +150,12 @@ class TestMissableRemoved(SO2TestBase):
 
     def test_no_missable_locations(self):
         rows = [ROW[loc.name] for loc in own_locations(self)]
-        self.assertFalse(any(r["missable"] or r["protagonist"] for r in rows))
+        self.assertFalse(any(r["missable"] or r["story_route"] for r in rows))
         self.assertEqual(len(own_pool(self)), len(rows))
 
 
 class TestMissableIncluded(SO2TestBase):
-    options = {"missable_locations": "include", "protagonist": "rena", "character_items": True}
+    options = {"missable_locations": "include", "story_route": "rena", "character_items": True}
 
     def test_only_soft_reasons_are_included(self):
         # A chapter window or a town that changes: be in time. A choice, a member, a Private
@@ -205,18 +211,22 @@ class TestExpelWithoutProgression(SO2TestBase):
 
 class LateProofChecks:
     """Progression goes only where the late proof (docs/ap/late_proof.json, rows' `late`)
-    reached the location in the protagonist's game (both under "any"); story bosses are exempt,
+    reached the location in the story_route's game (both under "any"); story bosses are exempt,
     drops and join sites never hold it."""
     side = None
 
     def test_progression_only_where_proven(self):
         from ..items import SO2Item
-        from ..rules import may_hold_progression
+        from ..rules import drop_rule, may_hold_progression
         key = SO2Item("test key", ItemClassification.progression, None, self.player)
         allowed = 0
         for loc in own_locations(self):
             row = ROW[loc.name]
-            want = may_hold_progression(row, self.side) and loc.progress_type != LocationProgressType.EXCLUDED
+            if row["type"] == "drop":   # drop_progression allow: test_v2 DropChecks
+                proven = drop_rule(row, self.side, False, False, True, "allow", 100)[0] != "none"
+            else:
+                proven = may_hold_progression(row, self.side)
+            want = proven and loc.progress_type != LocationProgressType.EXCLUDED
             self.assertEqual(loc.can_fill(self.multiworld.state, key, False), want, loc.name)
             allowed += want
         self.assertGreater(allowed, 100)
@@ -229,11 +239,11 @@ class LateProofChecks:
 
 
 class TestLateProofAny(SO2TestBase, LateProofChecks):
-    options = {"cave_of_trials": True, "missable_locations": "include", "drops_as_checks": "first_drop"}
+    options = {"cave_of_trials": True, "missable_locations": "include", "enemy_dropsanity": "first_drop"}
 
 
 class TestLateProofRena(SO2TestBase, LateProofChecks):
-    options = {"protagonist": "rena", "cave_of_trials": True, "missable_locations": "include"}
+    options = {"story_route": "rena", "cave_of_trials": True, "missable_locations": "include"}
     side = "rena"
 
 
@@ -295,26 +305,28 @@ class TestCharactersAny(SO2TestBase, CharacterChecks):
 
 
 class TestCharactersClaude(SO2TestBase, CharacterChecks):
-    options = {"character_items": True, "protagonist": "claude"}
+    options = {"character_items": True, "story_route": "claude"}
     side = "claude"
 
 
 class TestCharactersRena(SO2TestBase, CharacterChecks):
-    options = {"character_items": True, "protagonist": "rena", "missable_locations": "remove"}
+    options = {"character_items": True, "story_route": "rena", "missable_locations": "remove"}
     side = "rena"
 
 
 class TestDropsAndTraps(SO2TestBase):
-    options = {"drops_as_checks": "first_drop", "traps": 50, "exp_multiplier": 3, "fol_multiplier": 2,
+    options = {"enemy_dropsanity": "first_drop", "traps": 50, "exp_multiplier": 3, "fol_multiplier": 2,
                "encounter_rate": 50, "cave_of_trials": True}
 
     def test_drops(self):
         drops = [loc for loc in own_locations(self) if ROW[loc.name]["type"] == "drop"]
         self.assertEqual(len(drops), sum(1 for r in LOCATIONS if r["type"] == "drop"))
         from ..items import SO2Item
+        from ..rules import drop_rule
         key = SO2Item("test key", ItemClassification.progression, None, self.player)
-        for loc in drops:
-            self.assertFalse(loc.can_fill(self.multiworld.state, key, False), loc.name)
+        for loc in drops:   # drop_progression allow (test_v2 has the details)
+            want = drop_rule(ROW[loc.name], None, False, False, True, "allow", 50)[0] != "none"
+            self.assertEqual(loc.can_fill(self.multiworld.state, key, False), want, loc.name)
 
     def test_traps_and_options(self):
         pool = own_pool(self)
@@ -327,11 +339,8 @@ class TestDropsAndTraps(SO2TestBase):
         check_seed(self, seed)
         self.assertTrue(any(v["kind"] == "trap" for v in seed["items"].values()))
         o = seed["options"]
-        self.assertEqual((o["drops_as_checks"], o["exp_multiplier"], o["fol_multiplier"], o["encounter_rate"]),
+        self.assertEqual((o["enemy_dropsanity"], o["exp_multiplier"], o["fol_multiplier"], o["encounter_rate"]),
                          ("first_drop", 3, 2, 50))
-        for l in seed["locations"]:
-            if l["check"]["type"] == "drop":
-                self.assertNotEqual(l["item"]["classification"], "progression")
 
 
 # ---- Phase 4: open world and shop slots ----
@@ -601,13 +610,13 @@ class TestOpenWorld(SO2TestBase, OpenWorldChecks):
 
 
 class TestOpenWorldRenaShops(SO2TestBase, OpenWorldChecks):
-    options = {"world_mode": "open_world", "protagonist": "rena", "shuffle_shops": "full", "cave_of_trials": True,
+    options = {"world_mode": "open_world", "story_route": "rena", "shuffle_shops": "full", "cave_of_trials": True,
                "character_items": True}
     side = "rena"
 
 
 class TestOpenWorldNoTeleporter(SO2TestBase, OpenWorldChecks):
-    options = {"world_mode": "open_world", "expel_teleporter": False, "protagonist": "claude",
+    options = {"world_mode": "open_world", "expel_teleporter": False, "story_route": "claude",
                "missable_locations": "include"}
     side = "claude"
     teleporter = False
@@ -640,5 +649,5 @@ class TestShopsFull(SO2TestBase, ShopChecks):
 
 
 class TestShopsSpecials(SO2TestBase, ShopChecks):
-    options = {"shuffle_shops": "specials", "protagonist": "claude"}
+    options = {"shuffle_shops": "specials", "story_route": "claude"}
     mode = "specials"

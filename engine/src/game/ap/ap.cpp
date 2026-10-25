@@ -109,6 +109,19 @@ struct Runtime {
   int loaded_map = -1;                   // ... and the map itself (for its script offsets)
   std::set<int64_t> bad_doors;           // seed doors whose word is not a map transfer: ignored
   std::map<int, size_t> by_shop_slot;    // (shop << 8 | index) -> shop location index
+  // Port Hilton's harbour: the captain's menu while it is open (harbour_open .. harbour_choose),
+  // the script's string indices it replaces, and their texts (kept while the windows read them).
+  bool harbour_shown = false;
+  std::vector<Voyage> harbour;           // the destinations offered (Not now after them)
+  int harbour_question = -1, harbour_options = -1;
+  std::vector<u8> harbour_question_text, harbour_options_text;
+  // v2: goal.flags to set at the next field frame (New Game, a load); killer-move use counts to
+  // compare at the next free play (a battle, a load); craft locations by the item they need.
+  bool goal_flags_pending = false;
+  bool killer_scan_pending = false;
+  std::map<int, size_t> by_craft;        // item -> craft location index
+  // v2 party [party agent]: the starting character becomes the Formation leader when they join.
+  bool lead_start = false;
 };
 Runtime& rt() {
   static Runtime r;
@@ -143,9 +156,11 @@ void index_seed(Runtime& r) {
   r.doors_by_script.clear();
   r.by_shop_slot.clear();
   r.bad_doors.clear();
+  r.by_craft.clear();
   for (size_t i = 0; i < r.seed.locations.size(); ++i) {
     const Location& l = r.seed.locations[i];
     r.by_id[l.id] = i;
+    if (l.type == "craft" && r.by_craft.count(l.craft_item) == 0) r.by_craft[l.craft_item] = i;
     if (l.type == "chest" && l.flag >= 0) r.by_flag[l.flag] = i;
     if (l.placeholder >= 0) r.by_placeholder[l.placeholder] = i;
     if (l.type == "join") r.join_sites[static_cast<int64_t>(l.map) << 32 | static_cast<u32>(l.offset)] = i;
@@ -168,6 +183,7 @@ void fresh_state(Runtime& r) {
   r.deathlink_in = false;
   r.dying_from_link = false;
   r.ending = false;
+  r.lead_start = false;  // (v2 party)
 }
 
 // ASCII -> the field's map-font glyph codes (one byte below 0x80, else two).
@@ -352,9 +368,9 @@ bool party_has_room() {
   return false;
 }
 
-// The protagonist's exclusions (docs/ap/field.md "Who excludes whom"): Leon joins only in
+// The story_route's exclusions (docs/ap/field.md "Who excludes whom"): Leon joins only in
 // Claude's game (script flag 1 set), Dias only in Rena's.
-const char* protagonist_refuses(int id) {
+const char* story_route_refuses(int id) {
   const bool claude = script_flag(1);
   if (id == 8 && !claude) return "Rena";
   if (id == 5 && claude) return "Claude";
@@ -365,13 +381,271 @@ bool character_received(const Runtime& r, int id) {
   return std::find(r.state.characters.begin(), r.state.characters.end(), id) != r.state.characters.end();
 }
 
+// ---- v2 party (docs/ap/seed_format.md "Party v2") [party agent] ----
+
+constexpr int kClaude = 1, kRena = 2, kDias = 5, kLeon = 8;
+constexpr u16 member_bit(int id) { return static_cast<u16>(1u << (id - 1)); }
+
+// The picked game's hero: Claude with script flag 1 (Claude's game), else Rena.
+int hero_id() { return script_flag(1) ? kClaude : kRena; }
+
+// The starting character in play: 0 without one, or when it names the picked game's hero
+// (possible under story_route "any": then nobody joins and the hero leads).
+int start_member(const Runtime& r) {
+  const int id = r.seed.starting_character;
+  return id >= 1 && id <= kCharacterCount && id != hero_id() ? id : 0;
+}
+
+// The v2 party rules are on: party_rules "open", or a starting character (open world with or
+// without character_items).
+bool party_v2(const Runtime& r) { return r.on && (r.seed.open_party || r.seed.starting_character != 0); }
+
+// The story members: the hero, and under story_route "any" both heroes (the player picks the
+// game at New Game, so neither can be an item).
+bool story_member(const Runtime& r, int id) {
+  return id == hero_id() || (r.seed.story_route == 0 && (id == kClaude || id == kRena));
+}
+
+// Recruited for good: received, or the starting character. Never refused, never overwritten,
+// back after the story's partings and splits.
+bool protected_member(const Runtime& r, int id) { return character_received(r, id) || id == start_member(r); }
+
+// Who may join under party_rules "open".
+bool permitted(const Runtime& r, int id) { return story_member(r, id) || protected_member(r, id); }
+
+// The story's position: chapter G[0xa0] * 0x10000 + step G[0xa4] (steps stay below 0x10000;
+// G[0xa0] is game_state +0, the same bytes).
+s32 story_position() {
+  const u8* gs = field::globals().game_state;
+  if (gs == nullptr) return 0;
+  return rd32s(gs) * 0x10000 + rd32s(gs + 4);
+}
+
+// The story's split windows (scratchpad/party/splits.md: every party leave in the 820 field
+// scripts with its return): while one is on, the members it keeps away stay away (a member
+// recruited for good whom the split took out does not rejoin, a newly received one waits), and
+// the members it needs for a while are let in even under party_rules "open" (taken out again
+// once it is over). Outside every window a member recruited for good who is in reserve rejoins
+// at the next free play (the restores re-add only the members the story itself took out).
+struct SplitWindow {
+  int game;                                  // 0 both games, 1 Claude's (script flag 1), 2 Rena's
+  int from_ch, from_step, to_ch, to_step;    // the story's position, both ends included
+  int flag;                                  // >= 0: on while this script flag is set instead
+  u16 away;                                  // members it keeps away (member_bit; kEveryone)
+  u16 temps;                                 // members it lets in for a while
+  const char* what;
+};
+constexpr u16 kEveryone = 0x0FFF;
+constexpr SplitWindow kSplitWindows[] = {
+    // Map 12 (Shingo Forest), chapter 4 step 150, Rena's game: the scene takes Rena out and
+    // Claude alone fights the monster (battle_c), then swaps them back.
+    {2, 4, 150, 4, 150, -1, 0, member_bit(kClaude), "Shingo Forest (map 12)"},
+    {1, 5, 0, 5, 1000, -1, member_bit(kRena), 0, "Rena at home (17 -> 27)"},
+    {2, 5, 2000, 5, 2500, -1, member_bit(kClaude), 0, "Claude away (18 -> 17)"},
+    {0, 5, 3000, 6, 2100, -1, member_bit(kClaude) | member_bit(kRena), 0, "the other hero away (27 -> 61)"},
+    {0, 7, 1000, 8, 0, -1, member_bit(kClaude) | member_bit(kRena), 0, "the other hero away (21 -> 17)"},
+    {0, 15, 1000, 15, 3300, -1, kEveryone, 0, "Mars (124 / 126 / 462 -> 125 / 135)"},
+    {2, 15, 2700, 19, 1500, -1, member_bit(kDias), 0, "Dias away (462 -> 434)"},
+    // The tournament (maps 468-477): the party is set aside and each fight puts one fighter alone
+    // into the battle (Dias's fights in both games, Claude's in Rena's game).
+    {0, 19, 1000, 19, 0xFFFF, -1, kEveryone, member_bit(kDias) | member_bit(kClaude), "the tournament (468 -> 469 / 474)"},
+    {2, 19, 5500, 26, 2500, -1, member_bit(kDias), 0, "Dias away (468 -> 439)"},
+    {0, 22, 3000, 22, 5000, -1, kEveryone, 0, "Linga (193 -> 195)"},
+    {0, 25, 3000, 30, 0xFFFF, -1, member_bit(kLeon), 0, "Leon away (422 -> 230 / 229)"},
+    {0, 26, 1000, 26, 3000, -1, kEveryone, 0, "the Front Line (444 -> 447)"},
+    {0, 29, 0, 31, 0, -1, kEveryone, 0, "the ship to El (548 -> 229 / 230 / 232)"},
+    {1, 33, 0, 33, 10, -1, kEveryone, 0, "Eluria Tower (567)"},
+    {0, 53, 3000, 53, 4000, -1, kEveryone, 0, "the Heraldry Weapons Laboratory (398 -> 401)"},
+    {0, 0, 0, 0, 0, 586, kEveryone, 0, "the Fun City arena (flag 586)"},
+    {0, 0, 0, 0, 0, 2318, kEveryone, 0, "the Cave of Trials (flag 2318)"},
+    {0, 0, 0, 0, 0, 2326, kEveryone, 0, "Fun City's contest (flag 2326)"},
+};
+
+bool window_on(const SplitWindow& w) {
+  if (w.game == 1 && !script_flag(1)) return false;
+  if (w.game == 2 && script_flag(1)) return false;
+  if (w.flag >= 0) return script_flag(w.flag);
+  const s32 at = story_position();
+  return at >= w.from_ch * 0x10000 + w.from_step && at <= w.to_ch * 0x10000 + w.to_step;
+}
+
+// The window on now that keeps member 'id' away (0: one that keeps everyone away), or null.
+const SplitWindow* window_keeping(int id) {
+  for (const SplitWindow& w : kSplitWindows)
+    if ((id == 0 ? w.away == kEveryone : (w.away & member_bit(id)) != 0) && window_on(w)) return &w;
+  return nullptr;
+}
+// The window on now that lets member 'id' in for a while, or null.
+const SplitWindow* window_needing(int id) {
+  for (const SplitWindow& w : kSplitWindows)
+    if ((w.temps & member_bit(id)) != 0 && window_on(w)) return &w;
+  return nullptr;
+}
+
+// A member slot the port never overwrites: a story member's or one recruited for good.
+bool keeps_slot(const Runtime& r, int id) { return permitted(r, id); }
+
+bool in_list(const std::vector<int>& v, int id) { return std::find(v.begin(), v.end(), id) != v.end(); }
+void drop_from(std::vector<int>& v, int id) { v.erase(std::remove(v.begin(), v.end(), id), v.end()); }
+
+void invalidate_voice(int slot) {
+  if (slot < 0 || slot >= 4) return;
+  field::vm_svc_voice_slot_invalidate(slot);
+  field::vm_svc_load_queue_set_streaming(0);
+  field::vm_svc_set_voice_cache_state(0);
+}
+
+// The party for the log: "Claude, Rena, (Celine)" (a member in reserve in brackets).
+std::string party_line() {
+  std::string out;
+  for (int i = 0; i < 8; ++i) {
+    const u8* p = party_slot(i);
+    if (p == nullptr) break;
+    const s16 v = rd16s(p);
+    if (v == 0) continue;
+    if (!out.empty()) out += ", ";
+    out += v > 0 ? std::string(character_name(v)) : "(" + std::string(character_name(-v)) + ")";
+  }
+  return out.empty() ? "nobody" : out;
+}
+
+// With every slot taken: a reserve slot the port may give a new member, the first one of a
+// member it does not keep (the original overwrites the first reserve slot); -1: none.
+int free_reserve_slot(const Runtime& r) {
+  for (int i = 0; i < 8; ++i) {
+    const u8* p = party_slot(i);
+    if (p == nullptr) return -1;
+    const s16 v = rd16s(p);
+    if (v < 0 && !keeps_slot(r, -v)) return i;
+  }
+  return -1;
+}
+
+// Puts member 'id' (not in the party) in slot 'slot' as the game's join does there.
+void join_in_slot(int slot, int id) {
+  field::vm_svc_party_slot_init(slot, id);
+  invalidate_voice(slot);
+}
+
+// The member whose data a stash holds.
+int stash_member(const SaveState::Stash& s) {
+  if (s.bytes.size() < 2) return 0;
+  const s16 v = rd16s(s.bytes.data());
+  return v < 0 ? -v : v;
+}
+
+// A temporary member with no slot left (a full party of members the port keeps) borrows the
+// first reserve slot; its member's slot and record are stashed (and saved in the sidecar) until
+// restore_stash puts them back.
+bool borrow_slot(Runtime& r, int id) {
+  field::FieldGlobals& g = field::globals();
+  if (g.records == nullptr) return false;
+  for (int i = 0; i < 8; ++i) {
+    u8* p = party_slot(i);
+    if (p == nullptr || rd16s(p) >= 0) continue;
+    SaveState::Stash s;
+    s.slot = i;
+    s.bytes.assign(p, p + 0x60);
+    s.bytes.insert(s.bytes.end(), g.records + i * 0xD0, g.records + (i + 1) * 0xD0);
+    log(std::string(character_name(id)) + " borrows slot " + std::to_string(i) + " of " + character_name(stash_member(s)) +
+        " (in reserve; put back when the window ends)");
+    r.state.stash.push_back(std::move(s));
+    join_in_slot(i, id);
+    return true;
+  }
+  return false;
+}
+
+// Puts stash 'k' back in its slot; the temporary member there (in reserve or active) is dropped
+// from the party: it was only lent the place.
+void restore_stash(Runtime& r, size_t k) {
+  field::FieldGlobals& g = field::globals();
+  const SaveState::Stash s = r.state.stash[k];
+  r.state.stash.erase(r.state.stash.begin() + static_cast<long>(k));
+  u8* p = party_slot(s.slot);
+  if (p == nullptr || g.records == nullptr || s.bytes.size() != 0x60 + 0xD0) return;
+  const s16 v = rd16s(p);
+  const int lent = v < 0 ? -v : v;
+  std::memcpy(p, s.bytes.data(), 0x60);
+  std::memcpy(g.records + s.slot * 0xD0, s.bytes.data() + 0x60, 0xD0);
+  invalidate_voice(s.slot);
+  drop_from(r.state.temporary, lent);
+  log(std::string(character_name(stash_member(s))) + " back in slot " + std::to_string(s.slot) +
+      (lent != 0 ? std::string(" (") + character_name(lent) + " leaves it)" : std::string()));
+}
+
+// The stash holding member 'id', put back before anything joins them.
+void restore_stash_of(Runtime& r, int id) {
+  for (size_t k = 0; k < r.state.stash.size(); ++k)
+    if (stash_member(r.state.stash[k]) == id) {
+      restore_stash(r, k);
+      return;
+    }
+}
+
+// The party is set aside for the hero alone: a Private Action (script flags 2 / 4), or the map
+// library's isolate routine (B 0x29, then flag 746 until its restore routine, B 0x2a, clears it).
+constexpr int kIsolatedFlag = 746;
+bool party_isolated() { return script_flag(2) || script_flag(4) || script_flag(kIsolatedFlag); }
+
+// The free-play part of the v2 rules (not while the party is set aside for the hero alone): a
+// stash whose temporary member is out of the party goes back; temporary members who joined for
+// good meanwhile stay; once no window needs a temporary member it leaves the party; a member
+// recruited for good who is in reserve rejoins once no window keeps them away (through
+// join_waiting, one banner each).
+void party_v2_update(Runtime& r) {
+  if (!party_v2(r) || party_isolated()) return;
+  for (size_t k = 0; k < r.state.stash.size();) {
+    const u8* p = party_slot(r.state.stash[k].slot);
+    if (p != nullptr && rd16s(p) > 0 && in_list(r.state.temporary, rd16s(p)) && window_needing(rd16s(p)) != nullptr) {
+      ++k;
+      continue;
+    }
+    restore_stash(r, k);
+  }
+  for (size_t k = 0; k < r.state.temporary.size();) {
+    const int id = r.state.temporary[k];
+    if (protected_member(r, id) || (r.seed.open_party && story_member(r, id))) {
+      log(std::string(character_name(id)) + " stays: joined for good meanwhile");
+      r.state.temporary.erase(r.state.temporary.begin() + static_cast<long>(k));
+      continue;
+    }
+    if (window_needing(id) != nullptr) {
+      ++k;
+      continue;
+    }
+    r.state.temporary.erase(r.state.temporary.begin() + static_cast<long>(k));
+    const int slot = slot_of_character(id);
+    if (slot < 0) continue;
+    // Out of the party for good: the slot is free again (the original leaves its temporary
+    // members in reserve, where the next join overwrites them).
+    u8* p = party_slot(slot);
+    const s16 none = 0;
+    std::memcpy(p, &none, 2);
+    invalidate_voice(slot);
+    log(std::string(character_name(id)) + " leaves the party: the window that needed them is over (" + party_line() + ")");
+  }
+  for (int id = 1; id <= kCharacterCount; ++id) {
+    const int slot = slot_of_character(id);
+    if (slot < 0 || rd16s(party_slot(slot)) > 0 || !protected_member(r, id) || in_list(r.state.characters_waiting, id)) continue;
+    if (const SplitWindow* w = window_keeping(id)) {
+      runtime::Runtime::get().log_once("ap-split-" + std::to_string(id),
+                                       std::string("[ap] ") + character_name(id) + " is away for " + w->what);
+      continue;
+    }
+    r.state.characters_waiting.push_back(id);
+    log(std::string(character_name(id)) + " is in reserve and no split keeps them away: rejoins");
+  }
+}
+
 // A received Celine travels with the party: script flag 112, which map 131 stores from
-// party_has(Celine) as chapter 15 begins and Mars (462 / 125 / 126) reads (keeps_flag).
+// party_has(Celine) as chapter 15 begins and Mars (462 / 125 / 126) reads (keeps_flag). So does
+// a starting Celine.
 constexpr int kCelineKeptFlag = 112;
 constexpr int kCeline = 3;
 void keep_story_flags(const Runtime& r) {
   field::FieldGlobals& g = field::globals();
-  if (!r.seed.character_items || g.script_flags == nullptr || !character_received(r, kCeline)) return;
+  if ((!r.seed.character_items && !party_v2(r)) || g.script_flags == nullptr || !protected_member(r, kCeline)) return;
   if (!script_flag(kCelineKeptFlag)) log("Celine received: script flag 112 set (she travels with the party)");
   g.script_flags[kCelineKeptFlag >> 3] = static_cast<u8>(g.script_flags[kCelineKeptFlag >> 3] | 1 << (kCelineKeptFlag & 7));
 }
@@ -496,6 +770,26 @@ Json sidecar_json(const SaveState& s) {
   j.set("first_drops", ints(s.first_drops));
   j.set("ambushes", Json::number(static_cast<int64_t>(s.ambushes)));
   j.set("keys", ints(s.keys));  // phase 4
+  j.set("goal_won", ints(s.goal_won));  // v2
+  // v2 party [party agent]: temporary members, and the slots they borrowed (written only when
+  // there are any: a sidecar without them reads as empty).
+  if (!s.temporary.empty()) j.set("temporary", ints(s.temporary));
+  if (!s.stash.empty()) {
+    Json a = Json::array();
+    for (const SaveState::Stash& st : s.stash) {
+      static const char* const kHex = "0123456789abcdef";
+      std::string hex;
+      for (const u8 b : st.bytes) {
+        hex += kHex[b >> 4];
+        hex += kHex[b & 15];
+      }
+      Json e = Json::object();
+      e.set("slot", Json::number(static_cast<int64_t>(st.slot)));
+      e.set("bytes", Json::string(hex));
+      a.push(e);
+    }
+    j.set("stash", a);
+  }
   return j;
 }
 
@@ -517,6 +811,18 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   ints("first_drops", &r.first_drops);
   r.ambushes = static_cast<int>(j["ambushes"].as_int(0));
   ints("keys", &r.keys);
+  ints("goal_won", &r.goal_won);  // v2 (absent in older sidecars: empty)
+  ints("temporary", &r.temporary);  // v2 party
+  for (size_t i = 0; i < j["stash"].size(); ++i) {
+    const Json& e = j["stash"][i];
+    SaveState::Stash st;
+    st.slot = static_cast<int>(e["slot"].as_int(-1));
+    const std::string& hex = e["bytes"].as_string();
+    auto nib = [](char c) { return c >= 'a' ? c - 'a' + 10 : c >= 'A' ? c - 'A' + 10 : c - '0'; };
+    for (size_t k = 0; k + 1 < hex.size(); k += 2) st.bytes.push_back(static_cast<u8>(nib(hex[k]) << 4 | nib(hex[k + 1])));
+    if (st.slot < 0 || st.slot > 7 || st.bytes.size() != 0x60 + 0xD0) return fail(error, "stash: a slot 0-7 and 0x130 bytes expected");
+    r.stash.push_back(std::move(st));
+  }
   *s = std::move(r);
   return true;
 }
@@ -572,9 +878,38 @@ void start_with(Seed s) {
     r.seed.patches.push_back("script 303 0x1308 0x00000001 0x00000024");
     r.seed.patches.push_back("script 18 0x996 0x0000003c 0x00000024  # Arlia's guide: chapter >= 60 -> 36");
   }
+  if (r.seed.open_world) {
+    // Port Hilton's harbour (docs/ap/seed_format.md "Phase 4", "The harbour"). The Hilton sailor
+    // (map 169, actor 17, routine 0x714c) is the only way off the Lacour continent: entering
+    // Lacour at chapter 22 step 9999 stores chapter 23, and he refused the passage at chapters 23
+    // and 24, so the keys of stage 9 the fill may put on the Cross continent were out of reach
+    // (a soft-lock); he no longer refuses it then, nor at chapter 18 for a Tournament Pass. His
+    // choice becomes the captain's menu (port op A 0x70: the option count; A 0x71: the voyage
+    // chosen): Cross, Hoffmann Ruins, El, Not now. The Hoffmann ship's soldier (actor 24)
+    // stands there at chapters 23-59, not 23-27; he and Herlie's sailor (map 144, routine
+    // 0x7298) check the landing's key before the voyage (A 0x72). NA words; other releases'
+    // through region::script_offset, each line skipped if the disc's word differs.
+    for (const char* line : {
+             "script 169 0x1c65 0x00000012 0x000003e7  # Hilton sailor: no Tournament Pass refusal (chapter 18)",
+             "script 169 0x1c79 0x00000017 0x000003e7  # ... nor the chapter 23 one (Lacour's black day)",
+             "script 169 0x1c7c 0x00000018 0x000003e7  # ... nor chapter 24's",
+             "script 169 0x1c99 0x12000002 0xfe700000  # his choice: the captain's menu (port op A 0x70, the count)",
+             "script 169 0x1ca6 0x19800004 0x0b800004  # push L[4] (the option chosen) ...",
+             "script 169 0x1ca7 0x00000000 0xfef10000  # ... port op A 0x71: the voyage",
+             "script 169 0x2647 0x0000001b 0x0000003b  # the Hoffmann ship's soldier (actor 24): chapters 23-59",
+             "script 169 0x1f23 0x0000001b 0x0000003b  # ... his 'ruins again' choice until chapter 59",
+             "script 169 0x1f3b 0x19800000 0x0b800000  # ... push L[0] (yes: 0) ...",
+             "script 169 0x1f3c 0x00000000 0xfef20016  # ... port op A 0x72: the Map 231 landing's key (flag 22)",
+             "script 144 0x1cdc 0x19800000 0x0b800000  # Herlie's sailor: push L[0] (yes: 0) ...",
+             "script 144 0x1cdd 0x00000000 0xfef20012  # ... port op A 0x72: Port Hilton's landing key (flag 18)",
+         })
+      r.seed.patches.push_back(line);
+  }
   r.on = true;
   index_seed(r);
   fresh_state(r);
+  r.goal_flags_pending = true;   // (a start straight into the field, --map, has no New Game)
+  r.killer_scan_pending = true;
   r.notices.clear();
   r.notice_text.clear();
   log("seed " + r.seed.seed + " slot " + r.seed.slot_name + ": " + std::to_string(r.seed.locations.size()) +
@@ -740,35 +1075,104 @@ bool start_ambush() {
 // party_add_member, then A 0x3f party_member_clear_bond), outside Private Actions (script
 // flags 2 / 4: the party is set aside) and with a free party slot (8, members in reserve
 // included) or their own reserve slot. Returns the banner, or "" while it has to wait.
+//
+// v2 [party agent]: no lockouts (party_rules "open", and for the starting character); a member
+// a split window keeps away waits for its end; with every slot taken, a reserve slot of a member
+// the port does not keep (a story member for a while) is used, never a kept member's. The
+// starting character becomes the Formation leader (config +0x41) as they join.
 std::string join_waiting(Runtime& r) {
+  // The Formation leader: config +0x41, an active slot of the front four (menu_combat.cpp).
+  auto lead = [&](int id) {
+    if (!r.lead_start || id != start_member(r)) return;
+    r.lead_start = false;
+    const int slot = field::party_find_slot(nullptr, id - 1);
+    if (slot >= 0 && slot < 4 && field::globals().config != nullptr) {
+      field::globals().config[0x41] = static_cast<u8>(slot);
+      log(std::string(character_name(id)) + " leads (Formation leader, slot " + std::to_string(slot) + ")");
+    }
+  };
   for (size_t k = 0; k < r.state.characters_waiting.size(); ++k) {
     const int id = r.state.characters_waiting[k];
     const char* name = character_name(id);
     auto done = [&] { r.state.characters_waiting.erase(r.state.characters_waiting.begin() + static_cast<long>(k)); };
-    if (const char* hero = protagonist_refuses(id)) {
+    const bool no_lockouts = r.seed.open_party || id == start_member(r);
+    if (const char* hero = no_lockouts ? nullptr : story_route_refuses(id)) {
       done();
       log(std::string(name) + " cannot join in " + hero + "'s game: dropped");
       return std::string(name) + " cannot join " + hero + "'s party";
     }
+    if (party_v2(r)) restore_stash_of(r, id);
     const int slot = slot_of_character(id);
     if (slot >= 0 && rd16s(party_slot(slot)) > 0) {
       done();  // (already in the party: joined at a site)
       log(std::string(name) + " is in the party already");
+      lead(id);
       continue;
     }
     if (script_flag(2) || script_flag(4)) return "";
-    if (slot < 0 && !party_has_room()) {
-      runtime::Runtime::get().log_once("ap-party-full", "[ap] the party is full (8); received characters wait");
-      continue;
+    if (party_v2(r) && party_isolated()) return "";
+    if (party_v2(r)) {
+      // A member the story set aside (in reserve) waits for the end of every window keeping them
+      // away; a new one only while the party is split (a window keeping everyone away).
+      if (const SplitWindow* w = window_keeping(slot >= 0 ? id : 0)) {
+        runtime::Runtime::get().log_once("ap-wait-" + std::to_string(id),
+                                         std::string("[ap] ") + name + " waits: " + w->what + " keeps the party apart");
+        continue;
+      }
     }
-    field::party_add_member(nullptr, id - 1);
+    int into = -1;  // (v2, a full party: a reserve slot of a member the port does not keep)
+    if (slot < 0 && !party_has_room()) {
+      into = party_v2(r) ? free_reserve_slot(r) : -1;
+      if (into < 0) {
+        runtime::Runtime::get().log_once("ap-party-full", "[ap] the party is full (8); received characters wait");
+        continue;
+      }
+    }
+    if (into >= 0) {
+      log(std::string(name) + " takes the reserve slot " + std::to_string(into) + " of " +
+          character_name(-rd16s(party_slot(into))) + " (not kept)");
+      join_in_slot(into, id);
+    } else {
+      field::party_add_member(nullptr, id - 1);
+    }
     const int active = field::party_find_slot(nullptr, id - 1);
     if (active >= 0) field::vm_svc_party_member_clear_bond(active);
     done();
-    log(std::string(name) + " joins the party (slot " + std::to_string(active) + ")");
+    log(std::string(name) + " joins the party (slot " + std::to_string(active) + ")" +
+        (party_v2(r) ? ": " + party_line() : std::string()));
+    lead(id);
     return std::string(name) + " joined the party";
   }
   return "";
+}
+
+// New Game's first free play: the starting character (v2) and the seed's starting items, Fol and
+// flags, once per game (an ordinary save loaded without a sidecar counts as given).
+void give_start(Runtime& r) {
+  if (r.state.start_given) return;
+  r.state.start_given = true;
+  // v2 [party agent]: the starting character joins first (their banner before anything the
+  // starting items bring) and leads; naming the picked game's hero, nobody joins.
+  if (const int sc = start_member(r); sc != 0) {
+    drop_from(r.state.characters_waiting, sc);
+    r.state.characters_waiting.insert(r.state.characters_waiting.begin(), sc);
+    r.lead_start = true;
+    log(std::string("starting character ") + character_name(sc) + ": joins at the first free play and leads");
+  } else if (r.seed.starting_character != 0) {
+    log(std::string("starting character ") + character_name(r.seed.starting_character) +
+        " is this game's hero: nobody joins, the hero leads");
+  }
+  for (const ItemDef& it : r.seed.start_items) give(it);
+  if (r.seed.start_fol > 0) {
+    ItemDef f;
+    f.kind = "fol";
+    f.amount = r.seed.start_fol;
+    give(f);
+  }
+  field::FieldGlobals& g = field::globals();
+  for (const int flag : r.seed.start_flags)
+    if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
+  if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
 }
 
 }  // namespace
@@ -776,6 +1180,15 @@ std::string join_waiting(Runtime& r) {
 void free_play_update() {
   Runtime& r = rt();
   if (!r.on) return;
+  // v2: goal.flags (a goal gate's preset flags, such as Clik's Filia meeting 445 / 446), at the
+  // first field frame after New Game or a load, the loaded game's flags in place by then; every
+  // load, a save without a sidecar included (start.flags would miss that one).
+  if (r.goal_flags_pending && field::globals().script_flags != nullptr) {
+    r.goal_flags_pending = false;
+    u8* flags = field::globals().script_flags;
+    for (const int flag : r.seed.goal_flags) flags[flag >> 3] = static_cast<u8>(flags[flag >> 3] | 1 << (flag & 7));
+    if (!r.seed.goal_flags.empty()) log("goal flags set (" + std::to_string(r.seed.goal_flags.size()) + ")");
+  }
   // A received DeathLink: the party falls (the game over) in free play, or once a scene has
   // left the controls to the player for half a second (a scene's walk-around: a lost
   // scripted battle's game over starts inside a routine too; the frame a battle hands the
@@ -800,21 +1213,13 @@ void free_play_update() {
     notice_update(false);
     return;
   }
-  if (!r.state.start_given) {
-    r.state.start_given = true;
-    for (const ItemDef& it : r.seed.start_items) give(it);
-    if (r.seed.start_fol > 0) {
-      ItemDef f;
-      f.kind = "fol";
-      f.amount = r.seed.start_fol;
-      give(f);
-    }
-    field::FieldGlobals& g = field::globals();
-    for (const int flag : r.seed.start_flags)
-      if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
-    if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
-  }
+  give_start(r);
   keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
+  party_v2_update(r);   // v2: split windows, temporary members, members back after a split
+  if (r.killer_scan_pending) {  // v2: after a battle or a load, the killer moves' use counts
+    r.killer_scan_pending = false;
+    scan_killer_moves();
+  }
   // Placeholder messages that no window showed: a banner each instead.
   if (runtime::Runtime::get().vblanks() != r.override_vblank) flush_override_lines(r);
   // One thing per banner: an ambush (once its banner has gone), a received character
@@ -858,8 +1263,21 @@ void on_new_game() {
   Runtime& r = rt();
   if (!r.on) return;
   fresh_state(r);
+  r.goal_flags_pending = true;  // v2: goal.flags in the new game's first field frame
   log("new game: a fresh state for seed " + r.seed.seed);
 }
+
+namespace {
+// goal.all: every encounter in goal_won. Sets the goal (and sends it) the first time.
+void goal_all_update(Runtime& r) {
+  if (r.seed.goal_all.empty() || r.state.goal_done) return;
+  for (const int enc : r.seed.goal_all)
+    if (std::find(r.state.goal_won.begin(), r.state.goal_won.end(), enc) == r.state.goal_won.end()) return;
+  r.state.goal_done = true;
+  log("goal: every encounter of goal.all won");
+  if (r.link && r.net_ok) r.link->goal();
+}
+}  // namespace
 
 void on_saved(const std::string& card_image, int save_index) {
   Runtime& r = rt();
@@ -875,7 +1293,11 @@ void on_saved(const std::string& card_image, int save_index) {
 
 void on_loaded(const std::string& card_image, int save_index) {
   Runtime& r = rt();
-  if (!r.on || card_image.empty()) return;
+  if (!r.on) return;
+  // v2: goal.flags again after every load (sidecar or not); the use counts the save brings.
+  r.goal_flags_pending = true;
+  r.killer_scan_pending = true;
+  if (card_image.empty()) return;
   const std::string path = sidecar_path(card_image, save_index);
   SaveState s;
   std::string err;
@@ -892,9 +1314,13 @@ void on_loaded(const std::string& card_image, int save_index) {
     std::set<int64_t> have(s.checked.begin(), s.checked.end());
     for (const int64_t id : r.state.checked)
       if (have.insert(id).second) s.checked.push_back(id);
+    // v2: goal.all's wins too (the save's, then this session's).
+    for (const int enc : r.state.goal_won)
+      if (std::find(s.goal_won.begin(), s.goal_won.end(), enc) == s.goal_won.end()) s.goal_won.push_back(enc);
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   r.state = s;
+  goal_all_update(r);  // (the merge may complete goal.all)
   r.deathlink_in = false;  // (a load starts the game again)
   r.dying_from_link = false;
   r.ending = false;
@@ -1122,9 +1548,12 @@ void on_battle_exit(int encounter, int outcome) {
     // clear this; a DeathLink never fells the party there anyway (battle_frame waits).
     r.dying_from_link = false;
   }
+  r.killer_scan_pending = true;  // v2: the fight may have raised a killer move's use count
   const bool victory = outcome == battle::kVictory;
-  const bool goal = std::find(r.seed.goal_encounters.begin(), r.seed.goal_encounters.end(), encounter) !=
-                    r.seed.goal_encounters.end();
+  // The goal: a victory in one of goal.encounters, or (v2) in every one of goal.all.
+  const bool all = !r.seed.goal_all.empty();
+  const std::vector<int>& goal_list = all ? r.seed.goal_all : r.seed.goal_encounters;
+  const bool goal = std::find(goal_list.begin(), goal_list.end(), encounter) != goal_list.end();
   const bool boss = std::any_of(r.seed.locations.begin(), r.seed.locations.end(), [&](const Location& l) {
     return l.type == "boss" && l.encounter == encounter;
   });
@@ -1144,8 +1573,20 @@ void on_battle_exit(int encounter, int outcome) {
       if (l.item.own) r.pending.push_back({l.item.item, "", true});
     }
   }
-  // The goal needs the victory.
-  if (victory && goal && !r.state.goal_done) {
+  // The goal needs the victory. goal.all: each victory is kept (goal_won; also one a door's
+  // `won` names), the goal comes with the last one.
+  const bool door_won = std::any_of(r.seed.doors.begin(), r.seed.doors.end(), [&](const Door& d) {
+    return std::find(d.won.begin(), d.won.end(), encounter) != d.won.end();
+  });
+  if (victory && ((all && goal) || door_won) &&
+      std::find(r.state.goal_won.begin(), r.state.goal_won.end(), encounter) == r.state.goal_won.end()) {
+    r.state.goal_won.push_back(encounter);
+    log("goal: encounter " + std::to_string(encounter) + " won (goal_won " + std::to_string(r.state.goal_won.size()) +
+        ", goal.all " + std::to_string(r.seed.goal_all.size()) + ")");
+  }
+  if (all) {
+    if (victory && goal) goal_all_update(r);
+  } else if (victory && goal && !r.state.goal_done) {
     r.state.goal_done = true;
     log("goal: encounter " + std::to_string(encounter) + " won");
     if (r.link && r.net_ok) r.link->goal();
@@ -1215,7 +1656,7 @@ void on_program(Scene scene) {
 
 bool on_party_add(int character, int at, int call_at) {
   Runtime& r = rt();
-  if (!r.on || !r.seed.character_items) return false;
+  if (!r.on || (!r.seed.character_items && !party_v2(r))) return false;
   const int id = character + 1;
   if (id < 1 || id > kCharacterCount) return false;
   const field::FieldGlobals& g = field::globals();
@@ -1229,32 +1670,81 @@ bool on_party_add(int character, int at, int call_at) {
   };
   const Location* l = find(at);
   if (l == nullptr) l = find(call_at);
-  if (l == nullptr) {
-    // A site the seed does not list (a story member for a scene, a party put back together
-    // after a split): the original join.
-    log(std::string("join ") + character_name(id) + " at map " + std::to_string(map) + " " + std::to_string(at) +
-        " (call " + std::to_string(call_at) + "): not a listed site, the game's join");
-    return false;
-  }
-  if (!is_checked(l->id)) {
+  const s32 pos = story_position();
+  const std::string where = "map " + std::to_string(map) + " " + std::to_string(at) + " (call " + std::to_string(call_at) +
+                            ", chapter " + std::to_string(pos >> 16) + " step " + std::to_string(pos & 0xFFFF) +
+                            (script_flag(1) ? ", Claude's game" : ", Rena's game") + ")";
+  if (l != nullptr && !is_checked(l->id)) {
     record_check(l->id, true);
     if (l->item.own) r.pending.push_back({l->item.item, "", true});
   }
-  const bool received =
-      std::find(r.state.characters.begin(), r.state.characters.end(), id) != r.state.characters.end();
-  if (!received) {
-    log(std::string("join site ") + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
-        " has not been received: not added");
+  if (!party_v2(r)) {
+    // Phase 3 (party_rules "story", no starting character).
+    if (l == nullptr) {
+      // A site the seed does not list (a story member for a scene, a party put back together
+      // after a split): the original join.
+      log(std::string("join ") + character_name(id) + " at " + where + ": not a listed site, the game's join");
+      return false;
+    }
+    if (!character_received(r, id)) {
+      log(std::string("join site ") + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
+          " has not been received: not added");
+      return true;
+    }
+    // Received already: the scene's own join, when there is room (else the item keeps waiting).
+    if (slot_of_character(id) >= 0 || party_has_room()) {
+      drop_from(r.state.characters_waiting, id);
+      log("join site " + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
+          " was received: the game's join");
+      return false;
+    }
     return true;
   }
-  // Received already: the scene's own join, when there is room (else the item keeps waiting).
+  // v2 [party agent] (docs/ap/seed_format.md "Party v2"). Who may join: under party_rules "open"
+  // the story members, received members and the starting character; under "story" (a starting
+  // character without character_items) everyone, except that a listed site adds a received
+  // member only (phase 3).
+  restore_stash_of(r, id);
+  const bool allowed = r.seed.open_party ? permitted(r, id) : (l == nullptr || protected_member(r, id));
+  if (!allowed) {
+    const bool active = slot_of_character(id) >= 0 && rd16s(party_slot(slot_of_character(id))) > 0;
+    if (active) return true;  // (a temporary member, in the party already: nothing to do)
+    if (r.seed.open_party) {
+      if (const SplitWindow* w = window_needing(id)) {
+        // The story needs them for a while (a fight they make alone): let in, out again later.
+        // With every slot kept they borrow one (its member's data stashed until the window ends).
+        if (slot_of_character(id) >= 0 || party_has_room()) {
+          field::party_add_member(nullptr, id - 1);
+        } else if (const int into = free_reserve_slot(r); into >= 0) {
+          join_in_slot(into, id);
+        } else if (!borrow_slot(r, id)) {
+          log(std::string(character_name(id)) + " is needed for " + w->what + " but there is no slot: not added");
+          return true;
+        }
+        if (!in_list(r.state.temporary, id)) r.state.temporary.push_back(id);
+        log(std::string("join ") + character_name(id) + " at " + where + ": for a while (" + w->what + "): " + party_line());
+        return true;
+      }
+    }
+    log(std::string("join ") + character_name(id) + " at " + where + (l != nullptr ? " (a listed site)" : "") + ": " +
+        (r.seed.open_party ? "neither a story member, received nor the starting character" : "not received") +
+        ": not added");
+    return true;
+  }
+  if (protected_member(r, id)) drop_from(r.state.characters_waiting, id);
   if (slot_of_character(id) >= 0 || party_has_room()) {
-    auto& w = r.state.characters_waiting;
-    w.erase(std::remove(w.begin(), w.end(), id), w.end());
-    log("join site " + std::to_string(map) + ":" + std::to_string(l->offset) + ": " + character_name(id) +
-        " was received: the game's join");
+    log(std::string("join ") + character_name(id) + " at " + where + ": the game's join");
     return false;
   }
+  // Every slot taken: a reserve slot of a member the port does not keep, never a kept one's.
+  if (const int into = free_reserve_slot(r); into >= 0) {
+    log(std::string("join ") + character_name(id) + " at " + where + ": takes the reserve slot " + std::to_string(into) +
+        " of " + character_name(-rd16s(party_slot(into))));
+    join_in_slot(into, id);
+    return true;
+  }
+  log(std::string("join ") + character_name(id) + " at " + where + ": no free slot (a kept member's would be overwritten): skipped");
+  if (protected_member(r, id) && !in_list(r.state.characters_waiting, id)) r.state.characters_waiting.push_back(id);
   return true;
 }
 
@@ -1275,14 +1765,17 @@ constexpr Parting kPartings[] = {
     {462, 0x7030, 3, "Mars sends Celine home (flag 112 clear)"},  // chapter 15 step 2400, Claude's game
     {234, 0x6EB0, 8, "Eluria colony, \"Waiting here is better\""},  // chapter 31 step 1000, choice 0
     {479, 0x8250, 9, "Hoffmann Ruins, \"This is where we part\""},  // chapter 24 step 3000, choice 1
+    // v2 [party agent]: members who join in either game now (party_rules "open").
+    {234, 0x74C8, 8, "Eluria colony, Leon stays (Rena's game)"},  // chapter 31 step 1000, Rena's game
+    {417, 0x7DB8, 11, "Cave of the Red Crystal, \"you are needed here\""},  // chapter <= 40 step 1000, choice 1
 };
 }  // namespace
 
 void on_party_remove(int character, int at, int call_at) {
   Runtime& r = rt();
-  if (!r.on || !r.seed.character_items) return;
+  if (!r.on || (!r.seed.character_items && !party_v2(r))) return;
   const int id = character + 1;
-  if (id < 1 || id > kCharacterCount || !character_received(r, id)) return;
+  if (id < 1 || id > kCharacterCount || !protected_member(r, id)) return;
   const int slot = slot_of_character(id);
   if (slot < 0 || rd16s(party_slot(slot)) <= 0) return;  // not active: nothing is removed
   const field::FieldGlobals& g = field::globals();
@@ -1300,21 +1793,45 @@ void on_party_remove(int character, int at, int call_at) {
     w.erase(std::remove(w.begin(), w.end(), id), w.end());
     log(std::string(character_name(id)) + " leaves at map " + std::to_string(map) +
         " for a while: the story brings them back (their join no longer waits)");
+  } else if (party_v2(r)) {
+    log(std::string(character_name(id)) + " leaves at map " + std::to_string(map) + " (call " + std::to_string(call_at) +
+        ") for a while");
   }
 }
 
 bool keeps_flag(int flag) {
   const Runtime& r = rt();
-  if (flag != kCelineKeptFlag || !r.on || !r.seed.character_items || !character_received(r, kCeline)) return false;
+  if (flag != kCelineKeptFlag || !r.on || (!r.seed.character_items && !party_v2(r)) || !protected_member(r, kCeline))
+    return false;
   log("script flag 112 kept set: Celine was received (she travels with the party)");
   return true;
 }
 
+int starting_member() { return rt().on ? start_member(rt()) : 0; }
+
+std::string split_window_keeping(int id) {
+  const SplitWindow* w = party_v2(rt()) ? window_keeping(id) : nullptr;
+  return w != nullptr ? w->what : "";
+}
+
+std::string split_window_needing(int id) {
+  const SplitWindow* w = party_v2(rt()) ? window_needing(id) : nullptr;
+  return w != nullptr ? w->what : "";
+}
+
+std::string party_free_play_step() {
+  Runtime& r = rt();
+  if (!r.on) return "";
+  give_start(r);
+  party_v2_update(r);
+  return join_waiting(r);
+}
+
 bool party_has_character(int id) { return slot_of_character(id) >= 0; }
 
-int required_protagonist() {
+int required_story_route() {
   const Runtime& r = rt();
-  return r.on ? r.seed.protagonist : 0;
+  return r.on ? r.seed.story_route : 0;
 }
 
 void scale_battle_rewards(s32* exp, s32* fol) {
@@ -1400,7 +1917,19 @@ std::vector<int> missing_keys(const Door& d) {
   return out;
 }
 
-bool door_locked(const Door& d) { return !missing_keys(d).empty(); }
+// v2: a door's first condition not met, -1 when all are: its flags (script flags set) first,
+// then its won (encounters in goal_won), in the banners' order. Any world mode.
+int missing_condition(const Door& d) {
+  const Runtime& r = rt();
+  for (size_t i = 0; i < d.flags.size(); ++i)
+    if (!script_flag(d.flags[i])) return static_cast<int>(i);
+  for (size_t i = 0; i < d.won.size(); ++i)
+    if (std::find(r.state.goal_won.begin(), r.state.goal_won.end(), d.won[i]) == r.state.goal_won.end())
+      return static_cast<int>(d.flags.size() + i);
+  return -1;
+}
+
+bool door_locked(const Door& d) { return !missing_keys(d).empty() || missing_condition(d) >= 0; }
 
 // A banner text's width in the map font (notice_show's measure; 0 before the font is loaded).
 // The banner's box is at most 0xf8 pixels, the text 0xc less (notice.cpp).
@@ -1417,15 +1946,29 @@ int banner_text_width(const std::string& ascii) {
 }
 
 // The banner names each missing key ("Salva Pass needed", "Eluria Pass needed to sail"), one
-// at a time, with the door's purpose when it fits the banner; a key's notice already waiting is
-// not queued again.
-void door_refused(const Door& d) {
+// at a time, with the door's purpose (or 'purpose', when given) when it fits the banner; a key's
+// notice already waiting is not queued again.
+void door_refused(const Door& d, const std::string& purpose_override = "") {
+  const std::string& purpose = purpose_override.empty() ? d.purpose : purpose_override;
   std::string names;
   for (const int k : missing_keys(d)) {
     const std::string key = key_name(k);
     names += (names.empty() ? "" : ", ") + key;
-    std::string text = key + " needed" + (d.purpose.empty() ? "" : " " + d.purpose);
-    if (!d.purpose.empty() && banner_text_width(text) > kBannerTextMax) text = key + " needed";
+    std::string text = key + " needed" + (purpose.empty() ? "" : " " + purpose);
+    if (!purpose.empty() && banner_text_width(text) > kBannerTextMax) text = key + " needed";
+    auto& q = rt().notices;
+    if (std::find(q.begin(), q.end(), text) == q.end()) queue_notice(text);
+  }
+  // v2: the first condition not met, with its banner (the seed's text; a plain one without).
+  if (const int c = missing_condition(d); c >= 0) {
+    const size_t i = static_cast<size_t>(c);
+    const bool flag = i < d.flags.size();
+    const std::string what = flag ? "flag " + std::to_string(d.flags[i]) : "encounter " + std::to_string(d.won[i - d.flags.size()]) + " won";
+    const std::string text = i < d.banners.size() && !d.banners[i].empty() ? d.banners[i] : "The way is closed for now";
+    names += (names.empty() ? "" : ", ") + what + " (\"" + text + "\")";
+    if (const int w = banner_text_width(text); w > kBannerTextMax)
+      log("door " + std::to_string(d.id) + ": banner \"" + text + "\" is " + std::to_string(w) + " px, over the banner's " +
+          std::to_string(kBannerTextMax));
     auto& q = rt().notices;
     if (std::find(q.begin(), q.end(), text) == q.end()) queue_notice(text);
   }
@@ -1442,6 +1985,7 @@ bool has_key(int key) {
 void on_script_loaded(int map, const std::vector<u8>& script) {
   Runtime& r = rt();
   if (!r.on) return;
+  r.harbour_shown = false;  // (a menu left open by a transfer)
   r.script_map = script_group(map);
   r.loaded_map = map;
   const auto it = r.doors_by_script.find(r.script_map);
@@ -1468,7 +2012,8 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
 
 bool door_blocked_at_trigger(int routine_at) {
   Runtime& r = rt();
-  if (!r.on || !r.seed.open_world || routine_at < 0) return false;
+  // (Keys lock only in open world, v2 conditions in every mode: door_locked knows.)
+  if (!r.on || routine_at < 0) return false;
   const int routine = na_offset(r.loaded_map, routine_at);
   if (routine < 0) return false;
   const auto it = r.doors_by_script.find(r.script_map);
@@ -1508,6 +2053,252 @@ bool on_map_transfer(int offset, s32* args) {
   return false;
 }
 
+// ---- Port Hilton's harbour ----
+
+namespace {
+
+constexpr int64_t kElVoyageDoor = 29106503;  // room 444's transfer to Lacour Castle (0x851c): the El gate
+constexpr int kHoffmannSail = 0x7CF8;         // map 169 routine 0x79c0: the soldier's sail (no locals)
+
+// The story's step (script global G[0xa4], game_state +4).
+int story_step() {
+  const u8* g = field::globals().game_state;
+  return g == nullptr ? 0 : static_cast<int>(rd32s(g + 4));
+}
+
+const Door* find_door(int64_t id) {
+  for (const Door& d : rt().seed.doors)
+    if (d.id == id) return &d;
+  return nullptr;
+}
+
+// The story is at the El voyage: chapter 27 step 7000 (stored in meeting room 448; room 444's
+// trigger fires then), on disc 1 (never after the disc switch).
+bool el_voyage_due() {
+  const u8* config = field::globals().config;
+  const bool disc1 = config == nullptr || config[0x4C] == 0;
+  return disc1 && story_chapter() == 27 && story_step() == 7000;
+}
+
+// A map-font text's code at 'p' (one byte below 0x80, else two) and its size with the control
+// codes' parameters (tools/so2_script.py CONTROL).
+u32 text_code(const u8* p, size_t* size) {
+  u32 code = p[0];
+  size_t n = 1;
+  if (code >= 0x80) {
+    code = (code & 0x7F) | static_cast<u32>(p[1]) << 7;
+    n = 2;
+  }
+  switch (code) {
+    case 0x4003: case 0x4004: case 0x4007: case 0x4008: case 0x400C: case 0x400D: case 0x400E: case 0x400F: n += 1; break;
+    case 0x4006: case 0x4009: n += 2; break;
+    default: break;
+  }
+  *size = n;
+  return code;
+}
+
+// The captain's question in place of the sailor's ("Sailor{1}The passage to Cross? It'll be
+// {number_var:00} FOL."): the script's own speaker label (the release's: up to the label's end,
+// code 1, or a new line and its indent), then "Where to, matey? / Cross is N FOL." (G[0x38],
+// the fare the routine has just worked out, as the script's own {number_var:00}).
+std::vector<u8> harbour_question(const u8* original) {
+  std::vector<u8> out;
+  if (original != nullptr) {
+    const u32 space = static_cast<u32>(message_glyph(' '));
+    size_t at = 0, n = 0;
+    for (int i = 0; i < 32; ++i) {
+      const u32 c = text_code(original + at, &n);
+      if (c == 0 || c == 0x4002) break;
+      if (c == 1 || c == 0x4000) {
+        at += n;
+        while (text_code(original + at, &n) == space) at += n;  // (the line's indent)
+        out.assign(original, original + at);
+        break;
+      }
+      at += n;
+    }
+  }
+  put_glyphs(out, "Where to, matey?");
+  put_code(out, 0x4000);
+  put_glyphs(out, "Cross is ");
+  put_code(out, 0x400E);
+  out.push_back(0);
+  put_glyphs(out, " FOL.");
+  out.push_back(0);
+  return out;
+}
+
+// The menu in place of the sailor's "Cross / Don't cross": each line begins with the script's
+// own lead-in (the codes both of its lines begin with: the cursor's room), then the destination.
+std::vector<u8> harbour_options(const u8* original, const std::vector<Voyage>& menu) {
+  std::vector<u8> lead;
+  if (original != nullptr) {
+    // The original's lines (up to 0x4000 / 0x4002 / the end), as code byte ranges.
+    std::vector<std::pair<size_t, size_t>> lines;
+    size_t at = 0, start = 0, n = 0;
+    for (int i = 0; i < 200; ++i) {
+      const u32 c = text_code(original + at, &n);
+      if (c == 0 || c == 0x4000 || c == 0x4002) {
+        lines.push_back({start, at});
+        if (c != 0x4000) break;
+        start = at + n;
+      }
+      at += n;
+    }
+    if (lines.size() >= 2) {
+      size_t a = lines[0].first, b = lines[1].first;
+      for (int i = 0; i < 8 && a < lines[0].second && b < lines[1].second; ++i) {
+        size_t na = 0, nb = 0;
+        const u32 ca = text_code(original + a, &na);
+        if (ca != text_code(original + b, &nb) || na != nb) break;
+        a += na;
+        b += nb;
+      }
+      lead.assign(original + lines[0].first, original + a);
+    }
+  }
+  std::vector<u8> out;
+  std::vector<Voyage> all = menu;
+  all.push_back(Voyage::kNotNow);
+  for (size_t i = 0; i < all.size(); ++i) {
+    if (i > 0) put_code(out, 0x4000);
+    out.insert(out.end(), lead.begin(), lead.end());
+    put_glyphs(out, voyage_name(all[i]));
+  }
+  put_code(out, 0x4002);
+  out.push_back(0);
+  return out;
+}
+
+std::string menu_text(const std::vector<Voyage>& menu) {
+  std::string s;
+  for (const Voyage v : menu) s += (s.empty() ? "" : ", ") + std::string(voyage_name(v));
+  return s + ", Not now";
+}
+
+}  // namespace
+
+const char* voyage_name(Voyage v) {
+  switch (v) {
+    case Voyage::kCross: return "Cross";
+    case Voyage::kHoffmann: return "Hoffmann Ruins";
+    case Voyage::kEl: return "El";
+    default: return "Not now";
+  }
+}
+
+std::vector<Voyage> harbour_menu() {
+  std::vector<Voyage> menu{Voyage::kCross};
+  const Runtime& r = rt();
+  if (!r.on || !r.seed.open_world) return menu;
+  const int chapter = story_chapter();
+  if (chapter >= 23 && chapter <= 59) menu.push_back(Voyage::kHoffmann);
+  if (el_voyage_due()) menu.push_back(Voyage::kEl);
+  return menu;
+}
+
+int harbour_open(int question, int options) {
+  Runtime& r = rt();
+  r.harbour = harbour_menu();
+  r.harbour_shown = r.harbour.size() > 1;
+  r.harbour_question = question;
+  r.harbour_options = options;
+  if (r.on) {
+    char at[48];
+    std::snprintf(at, sizeof at, " (chapter %d step %d)", story_chapter(), story_step());
+    log("harbour: " + menu_text(r.harbour) + at + (r.harbour_shown ? "" : ": the sailor's own Cross / Don't cross"));
+  }
+  return static_cast<int>(r.harbour.size()) + 1;
+}
+
+const u8* script_text(int index, const u8* original) {
+  Runtime& r = rt();
+  if (!r.on || !r.harbour_shown || index < 0) return nullptr;
+  if (index == r.harbour_question) {
+    r.harbour_question_text = harbour_question(original);
+    return r.harbour_question_text.data();
+  }
+  if (index == r.harbour_options) {
+    r.harbour_options_text = harbour_options(original, r.harbour);
+    return r.harbour_options_text.data();
+  }
+  return nullptr;
+}
+
+HarbourChoice harbour_choose(int choice) {
+  Runtime& r = rt();
+  HarbourChoice out;
+  if (!r.on || !r.seed.open_world) {
+    // (Not an open-world seed: the sailor's own test, option 0 = Cross.)
+    if (choice == 0) out.kind = HarbourChoice::kCross;
+    return out;
+  }
+  const std::vector<Voyage> menu = r.harbour_shown ? r.harbour : harbour_menu();
+  r.harbour_shown = false;
+  const Voyage v = choice >= 0 && choice < static_cast<int>(menu.size()) ? menu[static_cast<size_t>(choice)] : Voyage::kNotNow;
+  log("harbour: option " + std::to_string(choice) + ", " + voyage_name(v));
+  switch (v) {
+    case Voyage::kCross:
+      if (voyage_landing_open(17)) out.kind = HarbourChoice::kCross;  // (his fare and voyage)
+      break;
+    case Voyage::kHoffmann:
+      // The Hoffmann soldier's own sail: at chapter 23 it stores 24, as the story's first trip.
+      if (r.script_map != 169) break;
+      if (voyage_landing_open(22)) {
+        const s64 at = region::script_offset(r.loaded_map, kHoffmannSail);
+        if (at < 0) {
+          log("harbour: this release's map 169 has no Hoffmann sail at NA 0x7cf8");
+          break;
+        }
+        out.kind = HarbourChoice::kJump;
+        out.offset = static_cast<int>(at);
+      }
+      break;
+    case Voyage::kEl: {
+      // Every key of the El voyage's gate first, before anything is stored (a chapter 28 left
+      // behind would start the voyage at the next visit of Port Hilton or Lacour Castle).
+      if (!el_voyage_due()) break;
+      const Door* d = find_door(kElVoyageDoor);
+      if (d != nullptr && door_locked(*d)) {
+        door_refused(*d);
+        break;
+      }
+      out.kind = HarbourChoice::kEl;
+      break;
+    }
+    default: break;
+  }
+  return out;
+}
+
+void el_voyage_transfer(s32 args[7]) {
+  u8* g = field::globals().game_state;
+  if (g != nullptr) {
+    const s32 chapter = 28, step = 0;
+    std::memcpy(g, &chapter, 4);
+    std::memcpy(g + 4, &step, 4);
+  }
+  const s32 room444[7] = {422, 130, -215, 0, 0, 180, 128};  // map_transfer_c at 444 0x851c
+  std::memcpy(args, room444, sizeof room444);
+  log("harbour: the El voyage (chapter 28 step 0, to Lacour Castle as from the Front Line)");
+}
+
+bool voyage_landing_open(int flag) {
+  Runtime& r = rt();
+  if (!r.on || !r.seed.open_world) return true;
+  // The world-map script's landing transfers (909, routine 0x57d8), docs/ap/doors.json.
+  const int64_t id = flag == 17   ? door_id(909, 0x5CF8)   // Hilton -> Herlie
+                     : flag == 18 ? door_id(909, 0x5AD0)   // Herlie -> Port Hilton
+                     : flag == 21 ? door_id(909, 0x6120)   // map 231 -> Port Hilton
+                     : flag == 22 ? door_id(909, 0x5F08)   // Port Hilton -> map 231
+                                  : -1;
+  const Door* d = find_door(id);
+  if (d == nullptr || !door_locked(*d)) return true;
+  door_refused(*d, "to sail");
+  return false;
+}
+
 bool shop_slot_open(int shop, int index, int item) {
   const Runtime& r = rt();
   if (!r.on) return false;
@@ -1532,6 +2323,63 @@ int on_shop_buy(int shop, int index, int item, int count) {
   log("shop " + std::to_string(shop) + " entry " + std::to_string(index) + " (item " + std::to_string(item) +
       "): the slot's check took the first copy of " + std::to_string(count));
   return count - 1;
+}
+
+// ---- v2: goals, crafting, killer moves ----
+
+namespace {
+constexpr int kSilverTrumpet = 48;   // composes song 7 or 8 (menu_specialty.cpp ComposeList)
+constexpr int kEvilMelodyFlag = 53;  // song 7 learnt: script flag 0x2f + 6
+constexpr int kIseriaQueen = 561;    // song 7 at Musical level 10 (callways_song_summon)
+}  // namespace
+
+bool goal_won(int encounter) {
+  const Runtime& r = rt();
+  return std::find(r.state.goal_won.begin(), r.state.goal_won.end(), encounter) != r.state.goal_won.end();
+}
+
+bool sell_locked(int item) {
+  const Runtime& r = rt();
+  if (!r.on || item != kSilverTrumpet || script_flag(kEvilMelodyFlag)) return false;
+  if (std::find(r.seed.goal_all.begin(), r.seed.goal_all.end(), kIseriaQueen) == r.seed.goal_all.end()) return false;
+  log("the Silver Trumpet stays off the sell list (The Evil Melody, flag 53, not composed yet)");
+  return true;
+}
+
+void on_craft(int item, bool success) {
+  Runtime& r = rt();
+  if (!r.on || item <= 0) return;
+  const auto it = r.by_craft.find(item);
+  if (it == r.by_craft.end()) return;
+  const Location& l = r.seed.locations[it->second];
+  if (is_checked(l.id)) return;
+  log("craft: item " + std::to_string(item) + " made (" + (success ? "success" : "failure") + ")");
+  record_check(l.id, true);  // (another player's item: "Sent X to Y")
+  if (l.item.own) r.pending.push_back({l.item.item, "", true});  // ("Got X" in free play)
+}
+
+bool no_fail_crafting() { return rt().on && rt().seed.no_fail_crafting; }
+
+int scan_killer_moves() {
+  Runtime& r = rt();
+  const field::FieldGlobals& g = field::globals();
+  if (!r.on || g.records == nullptr || g.party == nullptr) return 0;
+  int n = 0;
+  for (const Location& l : r.seed.locations) {
+    if (l.type != "killer_move" || is_checked(l.id)) continue;
+    const int slot = slot_of_character(l.character);
+    if (slot < 0) continue;  // (not in the party: the record is someone else's)
+    // The member's record (8 x 0xd0, by party slot): the move's use count, +1 each time the
+    // move starts (battle pc_begin_action 0x80037098, store 0x800373b4), at most 999.
+    const int count = rd16s(g.records + slot * 0xD0 + 0x8A + 2 * l.move);
+    if (count < l.uses) continue;
+    log(std::string("killer move: ") + character_name(l.character) + " move " + std::to_string(l.move) + " used " +
+        std::to_string(count) + " times (level " + std::to_string(l.level) + " at " + std::to_string(l.uses) + ")");
+    record_check(l.id, true);
+    if (l.item.own) r.pending.push_back({l.item.item, "", true});
+    ++n;
+  }
+  return n;
 }
 
 std::vector<std::string> waiting_notices() { return {rt().notices.begin(), rt().notices.end()}; }
@@ -1570,6 +2418,20 @@ std::string status_text() {
     out += buf;
     if (r.state.keys.empty()) out += " none";
     for (const int k : r.state.keys) out += std::string(" ") + key_name(k);
+  }
+  if (!sd.goal_all.empty() || !r.state.goal_won.empty()) {  // v2
+    out += "\n  goal.all";
+    for (const int e : sd.goal_all) out += " " + std::to_string(e);
+    out += " | won";
+    if (r.state.goal_won.empty()) out += " none";
+    for (const int e : r.state.goal_won) out += " " + std::to_string(e);
+  }
+  if (party_v2(r)) {  // v2 party [party agent]
+    out += std::string("\n  party rules ") + (sd.open_party ? "open" : "story") + " | starting " +
+           (sd.starting_character != 0 ? character_name(sd.starting_character) : "nobody") + " | party " + party_line();
+    if (const SplitWindow* w = window_keeping(0)) out += std::string(" | split: ") + w->what;
+    for (const int id : r.state.temporary) out += std::string(" | ") + character_name(id) + " for a while";
+    if (!r.state.stash.empty()) out += " | borrowed slots " + std::to_string(r.state.stash.size());
   }
   return out;
 }

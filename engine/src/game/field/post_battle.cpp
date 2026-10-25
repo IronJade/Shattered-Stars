@@ -33,6 +33,7 @@ u8 g_report_showing = 0;             // 0x80076274: a member's page is up
 u8 g_report_member = 0;              // 0x80076275
 u8 g_report_opened = 0xFF;           // 0x80076276: member the window was opened for
 u8 g_report_drawn = 0xFF;            // 0x80076277: member whose item names are open
+int g_report_wait = 0;               // port: vblanks the member's page has been up (auto-advance)
 std::unique_ptr<std::array<TextPanel, 4>> g_panels;  // 0x800752e4
 s16 g_side_entry = 0;                // 0x800762ec
 std::vector<u8> g_side_buffer;       // 0x800762e8
@@ -423,6 +424,7 @@ void field_update_equip_report(Field* f) {
       for (int i = 0; i < 5; ++i) changed |= rd16s(e + 0x14 + i * 2) != rd16s(e + 0x22 + i * 2);
       if (rd16s(g.party + m * 0x60) > 0 && changed) {
         g_report_showing = 1;
+        g_report_wait = 0;
         g_report_member = static_cast<u8>(m);
         return;
       }
@@ -452,7 +454,11 @@ void field_update_equip_report(Field* f) {
       }
       g_report_opened = g_report_member;
     }
-    if ((g.pressed[0] & read_u16(g.config)) != 0) {
+    // Port setting (auto-advance, message.h text_options; off by default): a member's page shown
+    // that long moves on as a confirm press would then [hooks agent].
+    g_report_wait += g.frame_ticks;
+    const int auto_frames = text_options().auto_advance_frames;
+    if ((g.pressed[0] & read_u16(g.config)) != 0 || (auto_frames > 0 && g_report_wait >= auto_frames)) {
       g_report_showing = 0;
       g.pressed[0] = 0;
       g_report_member = static_cast<u8>(g_report_member + 1);

@@ -1,4 +1,4 @@
-# Handoff: state of the port (2026-10-23)
+# Handoff: state of the port (2026-10-25)
 
 The port boots from the user's `.cue` / `.iso`, plays the logos, the opening movie and the
 title, starts a New Game or Continues a save, and plays the whole game: field maps, the world
@@ -16,25 +16,22 @@ this file is the quick orientation.
 - **Regions:** Europe, France and Germany play on NA's logic at 60 Hz with their own text and
   data; battles 564/564 identical to NA per release, event sweeps explained, Redux checks match
   (`docs/handoff/regions.md`, `soulmaster.md`). Japan is recognised, not supported yet.
-- **Archipelago:** so2.apworld 0.1.1 (open-world ship landings, the El voyage gate,
+- **Archipelago:** so2.apworld 0.1.1 released (open-world ship landings, the El voyage gate,
   `docs/handoff/apareas.md`, `elgate.md`). Open: the upstream Archipelago PR (the user's call).
+- **so2.apworld 0.2.0 + port v2 (2026-10-25, built, not released; `docs/handoff/apv2.md`):**
+  the user's feature list: renames (story_route, enemy_dropsanity), drop progression modes and
+  area keys in drops, craftsanity (553) + no-fail crafting, killer-move level checks (133), three
+  goals (Indalecio / Limiter Off / + Iseria Queen) with gates, open-world party v2 (no lockouts,
+  exclusions, healer guarantee, starting character as leader with the sprite and name stand-in,
+  split windows), the Port Hilton captain's menu and the chapter 23-24 soft-lock fix (affects
+  released 0.1.1 open-world seeds; the port fix alone repairs them), and dialogue settings
+  (instant text, auto-advance). Seed format version 2 (`docs/ap/seed_format.md` "v2 fields").
+  Later: the hub open world (`scratchpad/openworld/story_flags.md` section 4).
 
 ### Resume here (a fresh session)
-1. **Recreate the hourly checkpoint cron** (CronCreate, `13 * * * *`). Its prompt:
-   - Don't run scratchpad/merge_catalogs.retired.py.
-   - Copy scratchpad/checkpoint_notes.txt to checkpoint_notes_run.txt and empty the original.
-   - With SS_DISC1 set to the NA disc 1 .cue, run
-     `timeout 3000 tools/checkpoint.sh scratchpad/checkpoint_notes_run.txt > scratchpad/checkpoint_last.log 2>&1`
-     in the background.
-   - If no commit was made, append the run notes back.
-   - Report the suite totals.
-   - Check agent sizes (`~/.claude/scripts/agent_context.py --project Shattered --hours 2`) and
-     roll over any agent past 400k from its log.
-   - Start queued items in fresh agents.
-   - Commit, never push.
-
-   `.claude/scheduled_tasks.lock` is excluded locally (`.git/info/exclude`), so the checkpoint
-   doesn't pick it up.
+1. **No hourly checkpoint** (retired 2026-10-25, the user: no more need for hourly checkpoints
+   or pushing, as long as workers write straight to disk). Don't recreate the cron; agents keep
+   their logs and catalog rows current on disk. `tools/checkpoint.sh` still works by hand.
 2. **Permission mode:** from 20:50 the user runs "Edit automatically" with prompts (Auto
    mode off). Background agents can't show prompts, so a command that needs approval is refused
    and the agent stops. A refusal once went unreported and killed a run: every agent prompt must
@@ -50,7 +47,10 @@ this file is the quick orientation.
    section and "Battle comparison, final"): event sweeps explained, Redux checks match, French
    e2e 27/27, battles 564/564 identical to NA per release on the fixed build. The one port fault
    found (PAL never-clash spell list misread, `docs/handoff/soulmaster.md`) is fixed.
-5. **0.02.00 released** (23:13). Open, none blocking: the late-proof tool fix
+5. **apv2 (2026-10-25):** start from `docs/handoff/apv2.md` (the user's requests verbatim, every
+   decision, per-agent results and open items; agent logs ships, dialogue, apworld2, party,
+   leader, hooks, killer_prof in docs/handoff/). Research notes in scratchpad/openworld/.
+6. **0.02.00 released** (2026-10-23 23:13). Open, none blocking: the late-proof tool fix
    (scratchpad/agents.txt, queued: per-entry reload budget in tools/ap_late_proof.py, then rerun
    the late proofs, expecting 278); delete the battle logs (scratchpad/regions/q/{bt,bt2,bt3,bf}_*/logs,
    ~1.5 GB); Japan; the optional NA-save import in setup; the upstream Archipelago PR.
@@ -84,7 +84,7 @@ and `~/.claude/scripts/agent_context.py` shows sizes. Resume an area from its lo
 | Release (AP phase 5) | `docs/handoff/release.md`, `docs/ap/release_checklist.md` | **0.01.00 released 2026-10-23** (https://github.com/IronJade/Shattered-Stars/releases/tag/v0.01.00, tag on c773d54): both bundles, `so2.apworld`, the template; notes `docs/release_notes/0.01.00.md`. Known issue: `so2.apworld` 0.1.0's open-world mode misses two ship landings (about 4 in 10 open-world seeds unfinishable; story mode unaffected). Fixed in 0.1.1 (`docs/handoff/apareas.md`), which ships with 0.02.00 by the user's decision; its notes must tell open-world players to regenerate. Open: the upstream Archipelago PR (the user's call) |
 | Regions (0.02.00) | `docs/handoff/regions.md`, `regions_text.md` | Europe playable on one build (NA logic at 60 Hz, own text and data; 0 unmapped reads for EU/FR/DE; `tools/memcap.py` caps every game run). In progress: the FR/DE text system (regions-text agent). Next: wire `text_rules.h` for FR/DE and enable them, disc 2 sweeps for all three, the NA-vs-EU battle comparison, then README/wiki and release 0.02.00. Japan later |
 | Spell | `docs/handoff/spell.md` | re-recording the 12 lenient world_spell refs with `BW_TICK_LOG` |
-| World | `docs/handoff/world.md` | Archipelago phase 3, port side; protagonist from the seed |
+| World | `docs/handoff/world.md` | Archipelago phase 3, port side; story_route from the seed |
 | Enemy (APWorld) | `docs/handoff/enemy.md` | real SO2-slot end to end, boss locations, phase 3 APWorld side, logic soundness |
 | Tools | `docs/handoff/tools.md` | reference regression suite (`tools/ref_regress.py`, quick set in checkpoints) |
 | Menu, Setup | `docs/handoff/menu.md`, `setup.md` | idle (M8 done; packaging done) |

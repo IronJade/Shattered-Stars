@@ -26,10 +26,12 @@ until the player holds them, and a location the story reaches before it (its ear
 progression only where the gate's proof reached it at the gate: the rest can close before the
 player is back, and whatever the gate's keys hang on must be in reach there.
 """
+from BaseClasses import LocationProgressType
 from worlds.generic.Rules import add_item_rule
 
 from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
-from .items import EVENT_FINAL_SAVE_POINT, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, KEY_NAME, stage_event
+from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_TELEPORTER, \
+    EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, KEY_OF, stage_event
 from .locations import ROW
 from .regions import stage_rules
 
@@ -66,7 +68,11 @@ def proven_teleporter(row, side):
 
 
 def proven_at_gate(row, side, k):
-    """Whether gate k's proof (data.STORY_GATES) reached the location at the gate."""
+    """Whether gate k's proof (data.STORY_GATES) reached the location at the gate. A drop's place
+    (drop_places) carries the games whose voyage proof reached its maps: the El voyage, the only
+    gate, is the voyage proof's."""
+    if row.get("id") is None:
+        return all(g in row.get("voyage", ()) for g in games_of(side))
     return all(row["id"] in GATE_PROVEN[k].get(g, ()) for g in games_of(side))
 
 
@@ -157,31 +163,177 @@ def open_world_progression(row, side, teleporter, expel_progression=True):
     return "expel keys" if proven_late(row, side) else "none"
 
 
+# ---- Enemy drops (enemy_dropsanity, drop_progression; docs/ap/apworld.md, "Drops") ----------
+# roll_drops (engine/src/game/battle/result.cpp, 0x800869fc) rolls a downed enemy's two drop
+# slots in turn, each at odds + (average Luck of the standing members >> 4) - 7 out of 256, and
+# stops at the first success. Luck only adds, so the chance at Luck 0 is the floor. A drop holds
+# progression only from MIN_DROP_CHANCE (1 in 64 kills at Luck 0): that keeps out the 11 types
+# that can't drop at all without Luck (Magius 27 and Ericodus 56 need an average Luck of 128,
+# Shout 96, Starguarder 80, the odds-5 slimes 48) and 9 more under 1 in 64 (Rikiha, Burst, the
+# odds-10 types). drop_progression "force" fills the drops from FORCE_DROP_CHANCE (20 / 256, about
+# 1 in 13 kills, 8 %: a handful of fights with that enemy) with progression first, as far as the
+# logic allows (world.fill_hook; not Archipelago's priority locations, whose fill fails outright
+# when one can't take any of the progression left, as a late drop can't in a solo open world).
+MIN_DROP_CHANCE = 4 / 256
+FORCE_DROP_CHANCE = 20 / 256
+PROGRESSION_RANK = ("none", "expel keys", "any")
+
+
+def drop_chance(row, luck=0):
+    """The chance that a downed enemy of the drop's type drops anything (roll_drops)."""
+    miss = 1.0
+    for odds in row["odds"]:
+        c = odds + (luck >> 4) - 7
+        if c > 0:
+            miss *= 1 - min(c, 256) / 256
+    return 1 - miss
+
+
+def place_row(place):
+    """A drop's place (data.py `places`) as a location row the open-world rules take: a chest on
+    its maps, reached as they are."""
+    return {"type": "chest", "id": None, "region": place["region"], "group": place.get("group"),
+            "group_near": place.get("group_near"), "late": place.get("late", []),
+            "late_keys": place.get("late_keys", []), "tele": place.get("tele", []),
+            "tele_keys": place.get("tele_keys", []), "voyage": place.get("voyage", []), "missable": []}
+
+
+def drop_rule(row, side, open_world, teleporter, expel_progression, mode, encounter_rate):
+    """A first drop's (what it may hold, its open-world access modes or None for the default).
+    It may hold progression only when its enemy can always be met again from wherever the logic
+    counts it reached, which its places say (the maps where random encounters meet the type with
+    no story condition, tools/ap_world_tables.py drop_places):
+    - story mode: a place the late proof reached (or a world map it walked), as for chests: the
+      story always reaches the Final Save Point, so the enemy is there to fight in the end;
+      with expel_progression off, a place outside Expel;
+    - open world: each place counts as a chest on its maps would (open_world_progression,
+      open_world_access: early in the story's stage with its area's keys, through the Expel
+      teleporter, after the Final Save Point; nothing that closes before the El voyage); a world
+      map only after the Final Save Point (its encounter cells are not mapped to islands). The
+      drop holds the best class among its places and is reached through the modes of the places
+      that allow progression, so the logic never counts it through a place that can close.
+    Never with drop_progression never, encounter_rate 0 or a chance under MIN_DROP_CHANCE."""
+    if mode == "never" or encounter_rate == 0 or drop_chance(row) < MIN_DROP_CHANCE:
+        return "none", None
+    if not open_world:
+        ok = any(proven_late(p, side) and (expel_progression or p["region"] != "Expel") for p in row["places"])
+        return ("any" if ok else "none"), None
+    best, modes = "none", []
+    for p in row["places"]:
+        if p.get("world_map"):
+            if not proven_late(p, side) or (p["region"] == "Expel" and not expel_progression):
+                continue
+            cls, pm = "any", [(EVENT_FINAL_SAVE_POINT, ())]
+        else:
+            pr = place_row(p)
+            cls = open_world_progression(pr, side, teleporter, expel_progression)
+            pm = open_world_access(pr, side, teleporter)
+        if cls == "none":
+            continue
+        best = max(best, cls, key=PROGRESSION_RANK.index)
+        modes += [m for m in pm if m not in modes]
+    return best, (modes or None)
+
+
+# ---- Killer moves (killer_move_checks, killer_move_progression) --------------------------------
+# A level needs its member in the party and the member's level to learn the move, plus the
+# move's uses (battles). Conservatively: a move learned by level KILLER_EARLY_LEVEL counts from
+# the disc switch (a party there is typically well past it), any other from the Final Save Point
+# (after which any level can be reached).
+KILLER_EARLY_LEVEL = 30
+
+
+def killer_rule(world, loc, row):
+    """A killer-move level's access (the stage for the learn level; with killer_move_progression
+    any, a member who joins by a character item also needs the item, which is then progression:
+    world.progression_characters) and what it may hold (killer_move_progression; never with
+    encounter_rate 0 or when EXCLUDED). Otherwise the item isn't required: the location holds
+    no progression, and under full accessibility every item, the member's too, is reached."""
+    from .locations import fighter_status
+    player = world.player
+    o = world.options
+    status = fighter_status(row["character"], world.party_info)
+    need = [EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT]
+    if status == "item" and row["character"] in world.progression_characters:
+        need.append(row["character"])
+    loc.access_rule = lambda state, need=need: state.has_all(need, player)
+    mode = o.killer_move_progression.current_key
+    allowed = (mode == "any" and status in ("sure", "item")) or \
+              (mode == "hero" and row["character"] in world.party_info.story_members)
+    if not allowed or o.encounter_rate.value == 0 or loc.progress_type == LocationProgressType.EXCLUDED:
+        add_item_rule(loc, lambda item: not item.advancement)
+
+
+def goal_rules(world):
+    """Indalecio needs the Final Save Point; with goal indalecio_limiter_off also Filia's scene in
+    Central City (the Limiter Off event: the Final Save Point, and in open world the Central City
+    Pass), and with the Iseria Queen goal her defeat too (the Final Save Point, and in open world
+    the Cave of Trials Pass and the Fun City Pass, the cave rows' route; the cave's region exists
+    whether or not cave_of_trials adds its locations)."""
+    player = world.player
+    goal = world.options.goal.value
+    need = [EVENT_FINAL_SAVE_POINT] + ([EVENT_LIMITER_OFF] if goal >= 1 else []) + \
+        ([EVENT_ISERIA_QUEEN] if goal == 2 else [])
+    world.get_location("Indalecio").access_rule = lambda state: state.has_all(need, player)
+    if goal >= 1:
+        keys = [EVENT_FINAL_SAVE_POINT] + (["Central City Pass"] if world.open_world else [])
+        world.get_location("Limiter Off (Filia, Central City)").access_rule = \
+            lambda state: state.has_all(keys, player)
+    if goal == 2:
+        cave = [EVENT_FINAL_SAVE_POINT] + (["Cave of Trials Pass", "Fun City Pass"] if world.open_world else [])
+        world.get_location("Iseria Queen (Cave of Trials)").access_rule = lambda state: state.has_all(cave, player)
+
+
 def set_rules(world):
     player = world.player
-    world.get_location("Indalecio").access_rule = lambda state: state.has(EVENT_FINAL_SAVE_POINT, player)
+    goal_rules(world)
     world.multiworld.completion_condition[player] = lambda state: state.has(EVENT_VICTORY, player)
-    side = {0: None, 1: "claude", 2: "rena"}[world.options.protagonist.value]
+    side = {0: None, 1: "claude", 2: "rena"}[world.options.story_route.value]
     teleporter = world.open_world and bool(world.options.expel_teleporter)
     if world.open_world:
         stage_rules(world)
+    o = world.options
+    expel = bool(o.expel_progression)
+    drop_mode = o.drop_progression.current_key
+    keys_in_drops = bool(o.area_keys_in_drops)
     for loc in world.multiworld.get_locations(player):
         if loc.address is None:
             continue
         row = ROW[loc.name]
-        expel = bool(world.options.expel_progression)
-        allowed = (open_world_progression(row, side, teleporter, expel) if world.open_world
-                   else "any" if may_hold_progression(row, side, expel) else "none")
+        modes = None
+        if row["type"] == "killer_move":
+            killer_rule(world, loc, row)
+            continue
+        if row["type"] == "craft":
+            # Item Creation works anywhere once a specialty is learned; never progression (the
+            # user, 2026-10-25: a craft check gives a random Archipelago item).
+            add_item_rule(loc, lambda item: not item.advancement)
+            continue
+        if row["type"] == "drop":
+            allowed, modes = drop_rule(row, side, world.open_world, teleporter, expel, drop_mode,
+                                       o.encounter_rate.value)
+            if allowed != "none" and loc.progress_type == LocationProgressType.EXCLUDED:
+                allowed = "none"
+            if allowed != "none" and drop_mode == "force" and drop_chance(row) >= FORCE_DROP_CHANCE:
+                world.forced_drops.add(loc.name)    # filled first (world.fill_hook)
+            if not keys_in_drops:
+                # area_keys_in_drops off: no area key (this world's or another Star Ocean
+                # player's) behind a fight's drop, in either world mode.
+                add_item_rule(loc, lambda item: not (item.game == GAME and item.code in KEY_OF))
+        elif world.open_world:
+            allowed = open_world_progression(row, side, teleporter, expel)
+        else:
+            allowed = "any" if may_hold_progression(row, side, expel) else "none"
         if allowed == "none":
             add_item_rule(loc, lambda item: not item.advancement)
         elif allowed == "expel keys":
             add_item_rule(loc, lambda item: not item.advancement
                           or (item.player == player and item.name in EXPEL_STORY_KEYS))
         if world.open_world:
-            modes = open_world_access(row, side, teleporter)
+            modes = modes or open_world_access(row, side, teleporter)
             loc.access_rule = lambda state, modes=modes: any(
                 (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in modes)
 
 
 __all__ = ["set_rules", "may_hold_progression", "proven_late", "proven_teleporter", "proven_at_gate", "early_stage",
-           "closes_at_gate", "open_world_access", "DISC_SWITCH_STAGE"]
+           "closes_at_gate", "open_world_access", "drop_rule", "drop_chance", "DISC_SWITCH_STAGE"]

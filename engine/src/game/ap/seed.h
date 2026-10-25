@@ -56,6 +56,13 @@ struct Location {
   int shop = -1;      // shop: the shop id (script B 0x6d's argument)
   int index = -1;     // shop: the entry in the shop's list (0 first)
   int shop_item = -1; // shop: the item the entry sells (optional: checked when given)
+  // v2 (docs/ap/seed_format.md "v2 fields"). craft: the item (1-1023) the creation must make;
+  // killer_move: the member is `character` (1-12), the learn tables' move (1-15), the level
+  // (display), the use count (record + 0x8a + 2 * move) that reaches it.
+  int craft_item = -1;
+  int move = -1;
+  int level = 0;
+  int uses = -1;
   // The value the seed's patches put where the location's item was (the chest's or gift's
   // item push): 0x400-0x270f for an item routine (give_item), 0x7f000000 and up for a Fol
   // routine (add money). The port gives the location's item there (or sends another
@@ -87,6 +94,13 @@ struct Door {
   std::string name;
   std::string purpose;       // the banner's ending for a missing key ("to sail to El"; "": none)
   int until = 0;             // the keys are needed only while the story's chapter is below this (0: always)
+  // v2 conditions (any world mode, story included): script flags that must all be set and
+  // encounters that must all be in the sidecar's goal_won; one banner per condition, flags
+  // first, then won (the first missing condition's shows).
+  std::vector<int> flags;
+  std::vector<int> won;
+  std::vector<std::string> banners;
+  bool has_conditions() const { return !flags.empty() || !won.empty(); }
 };
 
 struct Seed {
@@ -104,10 +118,10 @@ struct Seed {
   std::vector<int> start_flags;
   std::vector<int> goal_encounters;  // a victory in one of these is the goal (default: 539, 540)
   bool deathlink = false;            // options.deathlink
-  int protagonist = 0;               // options.protagonist: 0 any, 1 Claude, 2 Rena (New Game's choice)
+  int story_route = 0;               // options.story_route: 0 any, 1 Claude, 2 Rena (New Game's choice)
   // Phase 3 options (docs/ap/seed_format.md); the defaults play as the original.
   bool character_items = false;      // options.character_items: listed join sites become checks
-  bool first_drops = false;          // options.drops_as_checks == "first_drop"
+  bool first_drops = false;          // options.enemy_dropsanity == "first_drop"
   int exp_multiplier = 1;            // options.exp_multiplier, 1-10
   int fol_multiplier = 1;            // options.fol_multiplier, 1-10
   int encounter_rate = 100;          // options.encounter_rate, percent 0-200
@@ -116,6 +130,14 @@ struct Seed {
   bool expel_teleporter = false;     // options.expel_teleporter (default on in open_world)
   int shuffle_shops = 0;             // options.shuffle_shops: 0 off, 1 specials, 2 full
   std::vector<Door> doors;           // the seed's door table
+  // v2 goals and crafting (docs/ap/seed_format.md "v2 fields").
+  std::vector<int> goal_all;         // goal.all: every one must be won (then goal_encounters is not the goal)
+  std::vector<int> goal_flags;       // goal.flags: set at New Game and after every load
+  bool no_fail_crafting = false;     // options.no_fail_crafting: item creation never fails by chance
+  // v2 party (docs/ap/seed_format.md "Party v2") [party agent].
+  bool open_party = false;           // options.party_rules == "open": only story members, received members
+                                     // and the starting character join; no lockouts
+  int starting_character = 0;        // options.starting_character: party id 1-12 (0: none, the hero leads)
 };
 
 // The door id rule (tools/ap_doors.py).

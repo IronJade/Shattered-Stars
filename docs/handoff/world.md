@@ -240,7 +240,7 @@ Findings so far:
 
 Assignment (coordinator): character items, first-drop checks, traps (ambush / Fol loss /
 status), exp / fol multipliers and encounter_rate, DeathLink edge cases, plus (added by the
-coordinator) the seed's protagonist held at New Game. Everything is written up in
+coordinator) the seed's story_route held at New Game. Everything is written up in
 docs/ap/seed_format.md "Phase 3" (options, item kinds, check types, rules, the DeathLink
 safe-point table, sidecar keys, console). Seed fields agreed with the APWorld agent (now
 a1e6498ce791a7ac4; its predecessor ad2e106211b3b492c agreed the names: drop ids type 8, per-site
@@ -251,14 +251,14 @@ plan 0 from map 581).
 
 Port code (nothing committed; the coordinator commits):
 - seed.{h,cpp}: kinds character / trap, checks join / drop, options character_items,
-  drops_as_checks, exp/fol_multiplier, encounter_rate, protagonist (any / claude / rena);
+  enemy_dropsanity, exp/fol_multiplier, encounter_rate, story_route (any / claude / rena);
   out-of-range values fail the load; character_name / character_by_name.
 - ap.{h,cpp}: on_party_add (join sites by map + `at` or the innermost call - 4; held back
   unless received; check recorded), join_waiting (received characters join in free play
   through party_add_member + clear_bond: not in PA mode flags 2/4, 8 slots incl. reserve,
   Leon only with flag 1, Dias only without), spring_trap / start_ambush (field state 0x21
   with +0x264 = -group), on_enemy_drop, scale_battle_rewards, random_encounters_off /
-  scale_encounter_distance, required_protagonist, on_program (Scene: title / field / battle
+  scale_encounter_distance, required_story_route, on_program (Scene: title / field / battle
   / credits), DeathLink rules (dropped on the title, in the credits, in the ending =
   final boss 539/540 won or script flag 0x2f1; cleared by game over / load / new game; in
   the field it applies in free play or after 30 frames of player control inside a scene;
@@ -269,7 +269,7 @@ Port code (nothing committed; the coordinator commits):
   index -1, maps 71 / 277 from --map starts; menu agent told); field_program.cpp
   field_update_encounters (rate 0, distance scale); battle/result.cpp award_exp_money /
   roll_drops; boot/system.cpp run_program (ap::on_program); title/new_game.cpp
-  character_screen (protagonist lock).
+  character_screen (story_route lock).
 
 Verified:
 - ss_tests 78/0, ss_game_tests 104/0 (SS_DISC1, scratch XDG). Unit tests added: ap_phase3_seed,
@@ -286,7 +286,7 @@ Verified:
 - Game runs (scratchpad/world/ap3/runs): Ashton's choice site 71 0x7348 (check, held back /
   received: joins in free play, slot 1); traps on world map 2 (ambush group 50 stage 2, Fol
   50%, paralysis); encounter_rate 200% 10 encounters vs 5, 50% 3, 0% none; Berle 535: item 240
-  withheld, check sent, exp 99000 -> 297000; protagonist lock both ways; DeathLink: world map
+  withheld, check sent, exp 99000 -> 297000; story_route lock both ways; DeathLink: world map
   (at once), camp menu (waits for it to close), ambush transition (falls in the battle), the
   ship's losable Shin fight 517 (waits; the loss sends nothing; falls 30 frames after the
   field gets the controls back), the endings and credits from map 581 (both dropped).
@@ -298,7 +298,7 @@ Sent to the APWorld agent (a1e6498ce791a7ac4) after reviewing its phase-3 conten
 sites, pool, traps 0x50350001-5, 89 drop types, 41 boss encounters as type 9): list Leon's
 229 0x73dc in rena seeds (else the ship exception adds him free); check whether Celine's 74
 join is really temporary. Both answered (resolved): its locations.choose() drops only the
-OTHER protagonist's rows, so 229 0x73dc is listed in rena / any seeds; Celine 74 is temporary
+OTHER story_route's rows, so 229 0x73dc is listed in rena / any seeds; Celine 74 is temporary
 (she leaves at 524 0x72bc, 126 0x6710, 462 0x701c / 0x7030; its tool
 scratchpad/enemy/ap3/removes.py CHAR...). seed_format.md now names id types 8 (drop) and
 9 (boss).

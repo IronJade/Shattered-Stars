@@ -71,6 +71,30 @@ Container: u32 section count, then `(u32 section id, u32 offset)` pairs.
 
 964 map scripts parse on disc 1.
 
+## Field party sprite packs (entries `0xC27 + 2k` and `0xC67 + k`)
+
+`field_load_map` (map.cpp `map_resolve_entries`) loads two party packs into sprite pack slots 0
+and 1, one pre-built pack per member combination: pack A = `0xC27 + 2 * k` with k = bits 2-6
+of the party member mask (characters 3-7: Celine, Bowman, Dias, Precis, Ashton), pack B =
+`0xC67 + k` with k = bits 7-11 (characters 8-12: Leon, Opera, Ernest, Noel, Chisato). Claude
+and Rena (models 0 and 1) are in every pack A. The mask counts party slots with a positive id
+(active members; plus Private-Action members with script flag 2), so a member who joins on a
+map has no field sprite until the next map load. Records are keyed by model = character - 1
+(sprite pack format: `engine/src/game/field/sprite_pack.h`).
+
+Direction animations (sprite anim ids; `actor_resolve_anim` maps the 12 directions to 7 ids,
+the other 5 drawn mirrored: walk 0-6, stand 7-13, run 14-20):
+
+| Models | Ids | Shapes (AnimData frame count / mode / durations) |
+|---|---|---|
+| 0, 1 (Claude, Rena) | 0-20 | walk 3 frames ping-pong 8 vblanks each; stand 1 frame; run 6 frames 6 vblanks each |
+| 2-11 (the other ten) | 0-13 (no run) | walk and stand as the heroes' (identical shapes) |
+
+Scene animations (ids from 0x24) come from the sprite packs the map container registers
+(`field_load_map_sections`, slots 2 and up), keyed by model. The world map's party pack (entry 0x105C) has 21 animations for each hero and
+4 for each member. Checked with `scratchpad/leader/anims.py` (disc 1, packs `0xC27 + 62`
+and `0xC67 + 31`); used by the port's leader stand-in (`engine/src/game/field/leader.h`).
+
 ## Event script (map section 1, unpacked)
 
 | Offset | Field |
@@ -134,7 +158,7 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
     changes.
   - Chapter 35 is set at map 625 just before B 0x6a switches to disc 2 and the party moves
     to Energy Nede.
-- **Flag 1** is the protagonist: the new game sets it (state block +0x8c0 bit 1) in Claude's
+- **Flag 1** is the story_route: the new game sets it (state block +0x8c0 bit 1) in Claude's
   game; it is clear in Rena's.
 - **Flags 2 and 4** are Private Action mode: the world-map chunk scripts set both before a
   town's PA entrance. Towns register their PA events (talk handlers, ext 0xf3, trigger
@@ -163,6 +187,39 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   sets flag 500) and Opera's Hoffmann Ruins choice 1 (479 0x8250, right after her own join at
   0x8244; G[0x1be] = 9998, flag 141 cleared). Every other leave of an item character is
   temporary (`scratchpad/world/celine/leaves.txt` lists all 98 calls) [world agent].
+- **The story's party splits** [party agent, 2026-10-25; every ext 0xae / 0xaf site of the 820
+  field scripts with its conditions and return: `scratchpad/party/splits.md`]. A split stores
+  who it took out and its restore adds exactly those back: flags 758-769 (193 Linga, 468 the
+  tournament, 548 the ship, 398 chapter 53 -> 195, 469 / 474, 232, 401), **flags 490-496** (444,
+  the Front Line in Rena's game, chapter 26 step 1000: Claude, Celine, Ashton, Opera, Precis,
+  Ernest, Bowman -> 447 at step 3000). Members a split does not list stay in the party. The other
+  hero leaves and comes back through G[0xc5] (27 0x1050 chapter 5 step 3000 -> 61 0x4858 chapter
+  6 step 2100; 21 0x510 chapter 7 step 1000 -> 17 0x14ec chapter 8 step 0). **Flag 586**: the Fun
+  City arena's team choice (297 sets it, 304 clears it; 305 takes the others out and back by
+  locals). **Flag 2318**: the Cave of Trials' party choice (704 0x7820 sets it and takes the
+  members not chosen out; 0x6e74 adds them back, 0x6f54 clears it). **Flag 2326**: a Fun City
+  contest (689 sets it; 688 takes out all but G[0x20c] and adds them back at 0x966c, then
+  clears it). Leaves for good besides the four above: Leon in Rena's game at the Eluria colony
+  (234 0x74c8, chapter 31 step 1000, always) and Noel at the Cave of the Red Crystal (417 0x7db8,
+  choice 1 "you are needed here to protect the animals"). Two scenes put a non-hero alone into a
+  forced fight: map 12 (chapter 4 step 150, Rena's game: Rena out, Claude in, battle_c 0x6e44,
+  then back) and the tournament's fights (477: the hero out, Dias or, in Rena's game, Claude in).
+  Maps 0-3 / 826 (the world script) hold a join and a leave routine per member that no play
+  reaches (a debug menu). Most maps also carry a library routine (229: 0x214c) that takes every
+  active member out but four, runs a battle (0x1b94) and adds them back, all in one routine.
+- **The map library's choice routine** (0x484c on maps 144 and 169): a question window and a
+  choice. Pushed arguments, in order: x mode, y mode (0xf4241 / 0xf4242: placed by the
+  routine), question width, question lines, question string, choice width, **option count**,
+  options string, Fol window (1: the party's Fol in window 2 meanwhile). It opens the question
+  (ext 0x69, window 1), the choice (ext 0x68, window 0, as many lines as options) and waits on
+  ext 0xdf, which takes 2-4 options; returns the option (0-3) or -1 (cancelled) in R. The
+  ship NPCs use it: Port Hilton's sailor (169, routine 0x714c: refusals at chapter 18 step >=
+  6000 and chapters 23-24, the fare from 0x442c, flags 16 + 17, map_transfer_b to map 1), the
+  Hoffmann ship's soldier (169, 0x79c0, registered at chapters 23-27; his sail at 0x7cf8 uses no
+  locals and stores chapter 24 at 23), Herlie's sailor (144, 0x7298, flags 16 + 18). France
+  numbers map 169's strings one higher (the question is 0x6d, not 0x6c); Germany lays map
+  169's code out otherwise from 0x7c70 (+84 bytes). Archipelago's open world patches them
+  (docs/ap/seed_format.md "The harbour") [ships agent, 2026-10-25].
 - **Flags 145-151** are the Hoffmann Ruins switches. Each is set by its room's switch
   routine, called with the flag number (maps 494, 497, 501, 505, 509, 519, 522).
   - Flag 149 (map 509) turns the transfers of maps 506 / 510 from map 507 to its other

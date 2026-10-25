@@ -77,7 +77,8 @@ struct ItemList {
   void add_inventory() {                            // 0x80080c04: what can be sold
     for (int i = 0; i < 0x400; ++i) {
       const u16 e = read_u16(inventory + i * 2);
-      if ((e & 0x3FF) != 0 && (e >> 10 & 0x1F) != 0 && menu::item_data_get(e & 0x3FF, 0) != 0)
+      if ((e & 0x3FF) != 0 && (e >> 10 & 0x1F) != 0 && menu::item_data_get(e & 0x3FF, 0) != 0 &&
+          !ap::sell_locked(e & 0x3FF))  // Archipelago v2: the Silver Trumpet in an Iseria Queen goal [hooks agent]
         add(static_cast<s16>(e & 0x3FF), static_cast<s16>(e >> 10 & 0x1F));
     }
   }

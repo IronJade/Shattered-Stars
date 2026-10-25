@@ -15,8 +15,13 @@ KEY_BASE = ITEM_BASE + 0x40000      # an area key (open world): KEY_BASE + key n
 PARTY_ID = {"Claude": 1, "Rena": 2, "Celine": 3, "Bowman": 4, "Dias": 5, "Precis": 6, "Ashton": 7, "Leon": 8,
             "Opera": 9, "Ernest": 10, "Noel": 11, "Chisato": 12}
 CHARACTER_ITEMS = ("Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest", "Chisato")
-# The members that never join by an item: the protagonists and Noel (the story adds him).
+# The members that never join by an item under the story's party rules: the story_routes and
+# Noel (the story adds him). Open world's party rules make them items too, except the story
+# route's hero (docs/ap/seed_format.md, "Party v2").
 FIXED_MEMBERS = ("Claude", "Rena", "Noel")
+ALL_CHARACTER_ITEMS = CHARACTER_ITEMS + FIXED_MEMBERS
+CHARACTER_NAMES = tuple(sorted(PARTY_ID, key=PARTY_ID.get))     # by party id
+HEALERS = ("Rena", "Noel")      # the only members who learn healing spells (Rena alone revives)
 PARTY_SIZE = 8
 # Trap items and what the port does with them (docs/ap/seed_format.md, phase 3).
 TRAPS = {
@@ -30,7 +35,7 @@ TRAP_IDS = {name: TRAP_BASE + k for k, name in enumerate(TRAPS, start=1)}
 
 ITEM_NAME_TO_ID = {name: ITEM_BASE + n for n, name in ITEMS.items()}
 ITEM_NAME_TO_ID.update({f"{amount} Fol": FOL_BASE + amount for amount in FOL_AMOUNTS})
-ITEM_NAME_TO_ID.update({name: CHARACTER_BASE + PARTY_ID[name] for name in CHARACTER_ITEMS})
+ITEM_NAME_TO_ID.update({name: CHARACTER_BASE + PARTY_ID[name] for name in ALL_CHARACTER_ITEMS})
 ITEM_NAME_TO_ID.update(TRAP_IDS)
 # Area keys (open world, phase 4): one per world-map entrance group (data.KEY_GROUPS).
 KEY_OF = {KEY_BASE + g["key"]: g for g in KEY_GROUPS}
@@ -43,13 +48,13 @@ EXPEL_STORY_KEYS = frozenset(g["name"] for g in KEY_GROUPS if g["stage"] and g["
 START_KEYS = ("Arlia Pass", "Fun City Pass")
 GAME_ITEM = {ITEM_BASE + n: n for n in ITEMS}          # AP id -> game item number
 FOL_AMOUNT = {FOL_BASE + a: a for a in FOL_AMOUNTS}     # AP id -> Fol
-CHARACTER_OF = {CHARACTER_BASE + PARTY_ID[n]: n for n in CHARACTER_ITEMS}
+CHARACTER_OF = {CHARACTER_BASE + PARTY_ID[n]: n for n in ALL_CHARACTER_ITEMS}
 TRAP_OF = {v: k for k, v in TRAP_IDS.items()}
 
 ITEM_NAME_GROUPS = {
     "Fol": {f"{amount} Fol" for amount in FOL_AMOUNTS},
     "Equipment": {name for n, name in ITEMS.items() if any(lo <= n <= hi for lo, hi in USEFUL_RANGES)},
-    "Characters": set(CHARACTER_ITEMS),
+    "Characters": set(ALL_CHARACTER_ITEMS),
     "Traps": set(TRAPS),
     "Keys": set(KEY_NAME.values()),
 }
@@ -65,6 +70,8 @@ EVENT_ENERGY_NEDE = "Arrived on Energy Nede"
 EVENT_FINAL_SAVE_POINT = "Saved at the Final Save Point"
 EVENT_VICTORY = "Victory"
 EVENT_TELEPORTER = "Expel Teleporter"     # open world: Expel reachable again once the Synard flies (chapter 41)
+EVENT_LIMITER_OFF = "Limiter Off"         # goals: Filia's scene in Central City City Hall sets flag 556
+EVENT_ISERIA_QUEEN = "Iseria Queen defeated"   # goal indalecio_limiter_off_and_iseria_queen
 
 
 def stage_event(k):
@@ -77,9 +84,10 @@ class SO2Item(Item):
 
 
 def classification(name):
-    """Equipment and characters are useful. A character is never progression: every location
+    """Equipment and characters are useful. A character is not progression: every location
     that needs a member is excluded from progression (members rule each other out, which the
-    logic can't express), so nothing in the logic waits for one."""
+    logic can't express), so nothing in the logic waits for one. The exception,
+    killer_move_progression any, is applied in SO2World.create_item (progression_characters)."""
     code = ITEM_NAME_TO_ID[name]
     if code in KEY_OF:
         return ItemClassification.progression
@@ -91,6 +99,14 @@ def classification(name):
     if n is not None and any(lo <= n <= hi for lo, hi in USEFUL_RANGES):
         return ItemClassification.useful
     return ItemClassification.filler
+
+
+def pool_filler(item):
+    """The pool item a location adds that has no vanilla contents of its own (a craft): the
+    item itself when it is filler, else the filler item (equipment stays out, so the pool's
+    useful share doesn't grow)."""
+    name = ITEMS[item]
+    return name if classification(name) == ItemClassification.filler else FILLER_NAME
 
 
 def item_name(item, fol):

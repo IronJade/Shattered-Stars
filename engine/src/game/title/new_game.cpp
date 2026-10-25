@@ -379,9 +379,9 @@ void character_screen(Sequence& s) {
   s.result = 0;
   w->set_rect(0x24, 0x78, 0xE8, 0x72);
   int bright[2] = {0x100, 0};  // local_110 / local_10c
-  // Archipelago (port feature) [world agent]: a seed made for one protagonist's game starts
-  // on that protagonist and keeps the cursor there (the other side buzzes).
-  const int locked = ap::required_protagonist();
+  // Archipelago (port feature) [world agent]: a seed made for one story_route's game starts
+  // on that story_route and keeps the cursor there (the other side buzzes).
+  const int locked = ap::required_story_route();
   if (locked != 0) {
     w->selection = locked - 1;
     bright[0] = locked == 1 ? 0x100 : 0;
@@ -419,9 +419,9 @@ void character_screen(Sequence& s) {
       if (locked != 0 && (repeat & (kPadLeft | kPadRight)) != 0) {
         if (((repeat & kPadLeft) != 0 && w->selection > 0) || ((repeat & kPadRight) != 0 && w->selection < 1)) {
           sound_play_sfx(s.sound(), 7, 0, 0x7F40);  // (the name screen's refusal sound)
-          runtime::Runtime::get().log_once("ap-protagonist",
+          runtime::Runtime::get().log_once("ap-story_route",
                                            std::string("[ap] this seed is for ") + (locked == 1 ? "Claude" : "Rena") +
-                                               "'s game: the other protagonist cannot be chosen");
+                                               "'s game: the other story_route cannot be chosen");
         }
       } else if (repeat & kPadLeft) {
         if (--w->selection < 0) {

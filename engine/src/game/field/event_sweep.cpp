@@ -153,6 +153,36 @@ u16 pad_button(int i) {
   return v != 0 ? v : (i == 0 ? 0x40 : 0x20);
 }
 
+// SS_SWEEP_PRESS (field input; default "all", the presses described above), for measuring
+// the dialogue settings (game/field/message.h TextOptions) [dialogue agent]:
+//   choices  only choices are answered, each 30 frames after it comes up (confirm, every third
+//            cancel); nothing for windows, timed waits or waits that read the pad. With
+//            SS_AUTO_ADVANCE the windows move on by themselves.
+//   wait:N   choices the same way, and confirm for a window waiting for it (state 6 / 7) so
+//            that the press lands in the wait's N-th frame (MsgWindow::button_wait), the frame
+//            auto-advance at N frames would act in: the player auto-advance stands in for.
+//   none     no field input at all (a choice is never answered).
+// Each choice is logged ("choice on window W: ...") when it comes up and when answered.
+struct PressMode {
+  int kind = 0;  // 0 all, 1 choices, 2 wait, 3 none
+  int frames = 0;
+};
+const PressMode& press_mode() {
+  static const PressMode m = [] {
+    PressMode r;
+    const char* v = std::getenv("SS_SWEEP_PRESS");
+    if (v == nullptr || *v == 0 || std::strcmp(v, "all") == 0) return r;
+    if (std::strcmp(v, "choices") == 0) r.kind = 1;
+    if (std::strcmp(v, "none") == 0) r.kind = 3;
+    if (std::strncmp(v, "wait:", 5) == 0) {
+      r.kind = 2;
+      r.frames = std::max(1, std::atoi(v + 5));
+    }
+    return r;
+  }();
+  return m;
+}
+
 void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
   auto& rt = runtime::Runtime::get();
   const u64 now = rt.vblanks();
@@ -166,6 +196,40 @@ void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
     return;
   }
   if (mode != 1) return;
+  if (const PressMode& pm = press_mode(); pm.kind != 0) {
+    static u64 choice_since = 0, last_window_press = 0;
+    ScriptCtx* ctx = g_script_vm;
+    const int cw = ctx != nullptr && ctx->wait_state == 9 ? msg_window_get_state(msg_window(ctx->wait_param)) : 0;
+    if (ctx != nullptr && ctx->wait_state == 9 && (cw == -1 || cw == 1 || cw == 6 || cw == 7)) {
+      if (choice_since == 0) {
+        choice_since = now;
+        say("choice on window %d: %d options, window state %d", ctx->wait_param, ctx->choice_count, cw);
+      }
+      if (pm.kind != 3 && now == choice_since + 30) {
+        const bool cancel = ++g_sweep.choices % 3 == 0;
+        say("choice on window %d: %s after 30 frames", ctx->wait_param, cancel ? "cancel" : "confirm");
+        press_at(now + 1, cancel ? pad_button(1) : pad_button(0));
+      }
+      return;
+    }
+    if (choice_since != 0) say("choice on window %d over after %llu frames", ctx != nullptr ? ctx->wait_param : -1,
+                               static_cast<unsigned long long>(now - choice_since));
+    choice_since = 0;
+    if (pm.kind != 2 || now < last_window_press + 4) return;
+    // The press is read three frames on (scripted input at now + 1, latched by the pad at
+    // the next vblank, read at the start of the field frame after), by which time the window
+    // has counted three more frames of waiting.
+    for (int i = 0; i < kMsgWindowCount; ++i) {
+      MsgWindow* w = msg_window(i);
+      if (w == nullptr || (w->state != 6 && w->state != 7) || w->button_advance == 0) continue;
+      if (w->button_wait + 3 * std::max(1, globals().frame_ticks) >= pm.frames) {
+        press_at(now + 1, pad_button(0));
+        last_window_press = now;
+        break;
+      }
+    }
+    return;
+  }
   static u64 last_press = 0;
   if (now < last_press + 6) return;
   bool waiting = g_script_vm != nullptr && g_script_vm->wait_state == 9;
@@ -430,6 +494,16 @@ void event_sweep_frame(Field* f) {
     // relationship tables are +0x58 and +0xe8, 12 x 12); SS_SWEEP_FLAGS="n,...": script flags.
     // For driving the endings (docs/notes/endings.md) from a --map 581 start.
     FieldGlobals& g = globals();
+    // SS_SWEEP_PARTY_DROP="c,...": these characters leave the party for good first (their slot
+    // emptied: Rena's game alone from a --map start, which begins as Claude) [party agent].
+    for_each_item("SS_SWEEP_PARTY_DROP", [&](const char* v) {
+      const int c = std::atoi(v);
+      for (int i = 0; i < 8; ++i) {
+        u8* p = g.party + i * 0x60;
+        const s16 id = static_cast<s16>(p[0] | p[1] << 8);
+        if (id == c + 1 || id == -(c + 1)) p[0] = p[1] = 0;
+      }
+    });
     for_each_item("SS_SWEEP_PARTY", [&](const char* v) { party_add_member(g_script_vm, std::atoi(v)); });
     for_each_item("SS_SWEEP_CONFIG", [&](const char* v) {
       char* end = nullptr;
@@ -701,6 +775,29 @@ void event_sweep_frame(Field* f) {
       if (!count(is_idle)) return;
       if (s.played >= s.play.size() || s.play[s.played].map != map) {
         say("play: control on map %d after %zu of %zu steps; done", map, s.played, s.play.size());
+        {
+          // The story state where the play ended (chapter G[0xa0], step G[0xa4]); with
+          // SS_SWEEP_PLAY_DUMP=PATH, the blocks SS_STATE_DUMP writes; with
+          // SS_SWEEP_PLAY_STOP=1, the run ends there [dialogue agent].
+          FieldGlobals& g = globals();
+          s32 chapter = 0, step = 0;
+          std::memcpy(&chapter, g.script_globals + 0xA0, 4);
+          std::memcpy(&step, g.script_globals + 0xA4, 4);
+          say("play: story chapter %d step %d; %s", chapter, step, rng_signature().c_str());
+          if (const char* path = std::getenv("SS_SWEEP_PLAY_DUMP"); path != nullptr && *path != 0) {
+            const u8* block = static_cast<const u8*>(handoff_get(g.handoff, 9));
+            if (std::FILE* out = block != nullptr ? std::fopen(path, "wb") : nullptr) {
+              std::fwrite(block, 1, 0xA40, out);
+              std::fwrite(g.config, 1, 0x2A0, out);
+              std::fwrite(g.party, 1, 0x300, out);
+              std::fwrite(g.records, 1, 0x680, out);
+              std::fwrite(g.inventory, 1, 0xC28, out);
+              std::fclose(out);
+            }
+          }
+          if (std::getenv("SS_SWEEP_PLAY_STOP") != nullptr)
+            runtime::Runtime::get().frame_limit = runtime::Runtime::get().vblanks() + 2;
+        }
         s.phase = Phase::Done;
         // SS_SWEEP_PLAY_SWEEP=1: then sweep the map the play ended on (its entries, as a
         // sweep from a --map start would), e.g. to find the next exit of a route.

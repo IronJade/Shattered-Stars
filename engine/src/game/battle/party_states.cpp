@@ -784,7 +784,11 @@ void PartyUnit::begin_action() {
       return;
     case 7: case 8: case 9: case 0xA: case 0xB: case 0xC: case 0xD: case 0xE: case 0xF: case 0x10: case 0x11: {
       // A killer move: its voice (slot 39), the MP cost (slot 36), state kind + 9
-      // (0x10..0x1a, run by the character module's slot 37) and the use counter.
+      // (0x10..0x1a, run by the character module's slot 37) and the use counter: the move's
+      // proficiency, record +0x7e + 2 * kind = +0x8a + 2 * move (kind = move + 6), +1 per
+      // move that starts, up to 999 (store 0x800373b4). It is the only place killer-move
+      // proficiency grows (docs/handoff/killer_prof.md); the battle's charge levels
+      // (+0x2f2, pc_setup_killer_moves) keep the count from the battle's start.
       if (target == nullptr) break;
       pc_record_counter_dec(this, 2);
       play_move_voice(killer_index);

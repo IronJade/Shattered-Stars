@@ -225,7 +225,7 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
 | `shuffle_gifts` | on / off | scripted rewards |
 | `shuffle_shops` | off / specials / full | |
 | `character_items` | off / on | recruitments become items (logic respects the party size of 8) |
-| `drops_as_checks` | off / first_drop | first drop of each enemy type |
+| `enemy_dropsanity` | off / first_drop | first drop of each enemy type |
 | `exp_multiplier`, `fol_multiplier` | 1-10 | port-side, result screen |
 | `encounter_rate` | 0-200% | port-side |
 | `deathlink`, `traps` | on / off, percentage | |
@@ -236,7 +236,7 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
 1. **Foundations** (needs M7 battles and M8 "the game can be finished" first).
    - A disc reader tool, `tools/ap_extract.py`. It writes the location table (chests by flag,
      gifts by call site, shops, bosses by encounter, drops) and the item names as JSON.
-   - Region and story-order notes for both protagonists.
+   - Region and story-order notes for both story_routes.
    - The `game/ap` module skeleton, the seed file format and the sidecar save. Done on the
      port side (2026-10-22): [docs/ap/seed_format.md](ap/seed_format.md) covers the
      `.apso2` file, the checks and receive queue, and the sidecar; `--ap-seed FILE` or
@@ -253,9 +253,9 @@ The field side of Phase 1 is in [docs/ap/field.md](ap/field.md).
    traps, EXP / Fol / encounter options. Done (2026-10-23):
    - Port side ([seed_format.md](ap/seed_format.md), "Phase 3"): character items and join
      sites, first-drop checks, ambush / Fol loss / status traps, the multipliers and the
-     encounter rate, DeathLink safe points, the seed's protagonist at New Game.
+     encounter rate, DeathLink safe points, the seed's story_route at New Game.
    - APWorld ([apworld.md](ap/apworld.md)): the options `boss_checks`, `character_items`,
-     `drops_as_checks`, `traps`, `exp_multiplier`, `fol_multiplier`, `encounter_rate`; 560
+     `enemy_dropsanity`, `traps`, `exp_multiplier`, `fol_multiplier`, `encounter_rate`; 560
      location rows (41 bosses, 18 join sites, 89 first drops added); a party the story allows;
      the cave's gems kept in place; progression only where the late proof reaches.
    - Tests: the world's 66, AP's general 379, 60 seeds over 101 option combinations, and

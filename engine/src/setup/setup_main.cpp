@@ -11,7 +11,7 @@
 // Testing (never needs a click; run with SDL_VIDEO_DRIVER=offscreen):
 //   --screenshot FILE    render offscreen, write the window as a PNG after --frames N
 //                        frames (default 6) and exit; nothing is started or opened
-//   --page NAME          discs | display | sound | controls | memcards | mods | archipelago
+//   --page NAME          discs | display | sound | controls | gameplay | memcards | mods | archipelago
 //   --set KEY=VALUE      start as if the player had set KEY (not saved unless Save is pressed)
 //   --state NAME         quit-confirm | game-missing (show that dialog); capture-key /
 //                        capture-pad (Controls: waiting for a key / button for Cross)

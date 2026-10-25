@@ -106,7 +106,10 @@ if [ -n "$d1" ]; then
   shot controls-capture --page controls --set "disc1=$d1" --state capture-key
   shot controls-custom --page controls --set "disc1=$d1" --set key_cross=Space --set pad_r2=none \
     --set stick_deadzone=40 --set stick_dpad=0
-  shot memcards --page memcards --set "disc1=$d1" --set "memcard1=$f${sep}saves.mcd" --set "memcard2=$f${sep}blank.mcd"
+  shot gameplay --page gameplay --set "disc1=$d1"
+  shot gameplay-on --page gameplay --set "disc1=$d1" --set instant_text=1 --set auto_advance=1 \
+    --set auto_advance_delay=1500
+  shot memcards--page memcards --set "disc1=$d1" --set "memcard1=$f${sep}saves.mcd" --set "memcard2=$f${sep}blank.mcd"
   shot memcards-new --page memcards --set "disc1=$d1"
   shot memcards-clash --page memcards --set "disc1=$d1" --set "memcard1=$f${sep}saves.mcd" --set "memcard2=$f${sep}saves.mcd"
   shot mods --page mods --set "disc1=$d1" --set "mods=$f${sep}mods"

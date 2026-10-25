@@ -32,6 +32,7 @@
 #include "game/field/message.h"
 #include "game/field/notice.h"
 #include "game/field/screen.h"
+#include "game/field/script_vm.h"
 #include "game/field/tasks.h"
 #include "game/title/title_program.h"
 #include "runtime/libgpu.h"
@@ -548,4 +549,207 @@ TEST(field_choice_cursor) {
   msg_window_close(msg, 0);
   for (int i = 0; i < 12; ++i) run_frame(f, &bg);
   CHECK(msg_window(0) == nullptr);
+}
+
+// ---- Port settings: instant text and auto-advance (TextOptions, message.h) ----------------
+
+namespace {
+
+// Restores the original's behaviour when a test ends, whatever it set.
+struct TextOptionsGuard {
+  TextOptions saved = text_options();
+  ~TextOptionsGuard() { text_options() = saved; }
+};
+
+// What a window shows and where its text stands (the parts the settings must not change).
+std::string window_layout(const MsgWindow* w) {
+  std::string out;
+  char b[160];
+  std::snprintf(b, sizeof b, "state %d first %d used %d height %d page %d/%d off %d pending %d scroll %d/%d |", w->state,
+                w->first_line, w->used_lines, w->text_height, w->page_read, w->page_write, w->page_offset,
+                w->pending_glyphs, w->scroll_offset, w->scroll_pending);
+  out += b;
+  for (int i = 0; i < w->line_count; ++i) {
+    const MsgLine& l = w->lines[(w->first_line + i) % w->line_count];
+    // 'remaining' is the print cursor's count, read only from the line being printed; a
+    // finished line keeps whatever the last call on it left there.
+    if (i == w->used_lines % w->line_count) std::snprintf(b, sizeof b, " %d:%d/%d@%d", i, l.shown, l.remaining, l.height);
+    else std::snprintf(b, sizeof b, " %d:%d@%d", i, l.shown, l.height);
+    out += b;
+    for (int k = 0; k <= l.shown && k < 64; ++k) out += "," + std::to_string(l.glyph_x[k]);
+  }
+  return out;
+}
+
+struct WaitRun {
+  std::vector<std::string> waits;  // the layout at each confirm wait
+  int frames = 0;                  // until the window was gone
+  int scroll_frames = 0;           // frames that ended in state 5 (scrolling)
+  int first_wait = 0;              // frame of the first wait
+};
+
+// Map 7's string 91 (the Science Officer's long line) in a two-line window: the page waits
+// for confirm when the window is full, then the next lines scroll in. 'press_after': confirm
+// is pressed once a wait has lasted that many frames (0: never; auto-advance must move it).
+WaitRun run_waits(TestField* f, int press_after) {
+  MsgSystem* msg = msg_system() ? msg_system() : msg_system_create(new MsgSystem);
+  msg_window_destroy(msg, -1);
+  std::vector<u16> bg(320 * 224, 0x2108);
+  msg_window_open(msg, 3, 8, 32, 2, f->string(91), 0, 1);
+  MsgWindow* w = msg_window(0);
+  WaitRun r;
+  if (w == nullptr) return r;
+  w->hold = 0;
+  for (int frame = 1; frame <= 6000; ++frame) {
+    // button_wait: the frames this wait has lasted (0 at the end of the frame it began in).
+    const bool press = press_after > 0 && (w->state == 6 || w->state == 7) && w->button_wait >= press_after;
+    run_frame(f, &bg, press ? 0x40 : 0);
+    w = msg_window(0);
+    if (w == nullptr) {
+      r.frames = frame;
+      break;
+    }
+    if (w->state == 5) ++r.scroll_frames;
+    if ((w->state == 6 || w->state == 7) && w->button_wait == 0) {
+      r.waits.push_back(window_layout(w));
+      if (r.first_wait == 0) r.first_wait = frame;
+    }
+  }
+  return r;
+}
+
+}  // namespace
+
+// Instant text shows each page at once: the same waits with the same text laid out the
+// same way as the typewriter's, scrolling included, in far fewer frames.
+TEST(field_message_instant_text_same_pages_sooner) {
+  TestField* f = field();
+  if (!f) return;
+  TextOptionsGuard guard;
+  text_options() = TextOptions{};
+  const WaitRun typed = run_waits(f, 20);
+  text_options().instant = true;
+  const WaitRun instant = run_waits(f, 20);
+  std::printf("  typewriter: first wait at frame %d, %zu waits, gone at %d, %d scroll frames\n", typed.first_wait,
+              typed.waits.size(), typed.frames, typed.scroll_frames);
+  std::printf("  instant:    first wait at frame %d, %zu waits, gone at %d, %d scroll frames\n", instant.first_wait,
+              instant.waits.size(), instant.frames, instant.scroll_frames);
+  CHECK(typed.waits.size() >= 2);
+  CHECK(typed.waits == instant.waits);
+  for (size_t i = 0; i < typed.waits.size() && i < instant.waits.size(); ++i) {
+    if (typed.waits[i] != instant.waits[i])
+      std::printf("  wait %zu differs:\n    typed   %s\n    instant %s\n", i, typed.waits[i].c_str(), instant.waits[i].c_str());
+  }
+  CHECK(typed.frames > 0);
+  CHECK(instant.frames > 0);
+  CHECK(instant.frames < typed.frames);
+  CHECK(typed.scroll_frames > 0);
+  CHECK_EQ(instant.scroll_frames, 0);  // a scroll ends in the frame it starts
+  // The window opens in 10 frames; the first page is complete on the next one.
+  CHECK_EQ(instant.first_wait, 11);
+  msg_window_destroy(msg_system(), -1);
+}
+
+// Auto-advance moves a waiting window on exactly as a press of confirm at that moment would:
+// frame for frame the same window, with and without instant text.
+TEST(field_message_auto_advance_is_a_press) {
+  TestField* f = field();
+  if (!f) return;
+  TextOptionsGuard guard;
+  for (const bool instant : {false, true}) {
+    text_options() = TextOptions{instant, 0};
+    // The press lands in the window's 45th frame of waiting (the button_wait it counts
+    // whatever the settings), the frame auto-advance at 45 frames would act in.
+    MsgSystem* msg = msg_system() ? msg_system() : msg_system_create(new MsgSystem);
+    std::vector<u16> bg(320 * 224, 0x2108);
+    auto record = [&](bool auto_on) {
+      msg_window_destroy(msg, -1);
+      text_options().auto_advance_frames = auto_on ? 45 : 0;
+      msg_window_open(msg, 3, 8, 32, 2, f->string(91), 0, 1);
+      msg_window(0)->hold = 0;
+      std::vector<std::string> frames;
+      int waits_ended = 0;
+      for (int frame = 1; frame <= 6000; ++frame) {
+        MsgWindow* w = msg_window(0);
+        if (w == nullptr) break;
+        const bool waiting = w->state == 6 || w->state == 7;
+        const bool press = !auto_on && waiting && w->button_wait == 44;
+        if (waiting && w->button_wait == 44) ++waits_ended;
+        run_frame(f, &bg, press ? 0x40 : 0);
+        w = msg_window(0);
+        frames.push_back(w ? window_layout(w) + " wait " + std::to_string(w->button_wait) + " timer " +
+                                 std::to_string(w->timer)
+                           : std::string("gone"));
+      }
+      return std::make_pair(frames, waits_ended);
+    };
+    const auto pressed = record(false);
+    const auto automatic = record(true);
+    std::printf("  instant %d: %zu frames, %d waits, auto-advanced the same: %s\n", instant ? 1 : 0, pressed.first.size(),
+                pressed.second, pressed.first == automatic.first ? "yes" : "no");
+    CHECK(pressed.second >= 2);
+    CHECK_EQ(pressed.second, automatic.second);
+    CHECK(pressed.first == automatic.first);
+    CHECK(!automatic.first.empty() && automatic.first.back() == "gone");
+  }
+  msg_window_destroy(msg_system(), -1);
+}
+
+// Auto-advance never answers a choice: while the VM waits on one (wait state 9; its window
+// waits in state 6 meanwhile, and a press would be the answer) or on a field menu the
+// script asked for (0xe), the window keeps waiting; the player's own press still works.
+TEST(field_message_auto_advance_waits_at_choices) {
+  TestField* f = field();
+  if (!f) return;
+  TextOptionsGuard guard;
+  text_options() = TextOptions{true, 30};
+  MsgSystem* msg = msg_system() ? msg_system() : msg_system_create(new MsgSystem);
+  msg_window_destroy(msg, -1);
+  std::vector<u16> bg(320 * 224, 0x2108);
+  auto ctx = std::make_unique<ScriptCtx>();
+  ScriptCtx* saved_vm = g_script_vm;
+  g_script_vm = ctx.get();
+  for (const int wait_state : {9, 0xE}) {
+    // Map 7's shop prompt "Yes / No thank you" (ext 0x68, then ext 0xdf: a choice).
+    msg_window_open(msg, 2, 2, 0x11, 2, f->string(39), 0, 1);
+    MsgWindow* w = msg_window(0);
+    CHECK(w != nullptr);
+    if (!w) break;
+    ctx->wait_state = wait_state;
+    for (int i = 0; i < 600; ++i) run_frame(f, &bg);
+    CHECK_EQ(w->state, 6);  // still waiting after 10 seconds
+    CHECK(w->button_wait > 30);
+    ctx->wait_state = 0;  // answered (the answer's press moves the window on as well)
+    run_frame(f, &bg, 0x40);
+    CHECK_EQ(msg_window_status(msg, 0), 1);  // the page is done; the window holds
+    msg_window_destroy(msg, 0);
+  }
+  // Without the choice the same window moves on by itself after its 30 frames.
+  msg_window_open(msg, 2, 2, 0x11, 2, f->string(39), 0, 1);
+  MsgWindow* w = msg_window(0);
+  int frames = 0;
+  while (w != nullptr && msg_window_status(msg, 0) != 1 && frames < 200) {
+    run_frame(f, &bg);
+    ++frames;
+  }
+  CHECK_EQ(msg_window_status(msg, 0), 1);
+  CHECK_EQ(frames, 11 + 30);  // open (10), the page at once (1), then 30 frames of waiting
+  g_script_vm = saved_vm;
+  msg_window_destroy(msg, -1);
+}
+
+// With both settings off (the default) nothing changes: the defaults are off, and the
+// window still waits for the button indefinitely.
+TEST(field_message_settings_default_off) {
+  TestField* f = field();
+  if (!f) return;
+  CHECK(!text_options().instant);
+  CHECK_EQ(text_options().auto_advance_frames, 0);
+  MsgSystem* msg = msg_system() ? msg_system() : msg_system_create(new MsgSystem);
+  msg_window_destroy(msg, -1);
+  std::vector<u16> bg(320 * 224, 0x2108);
+  msg_window_open(msg, 2, 2, 0x11, 2, f->string(39), 0, 1);
+  for (int i = 0; i < 1200; ++i) run_frame(f, &bg);
+  CHECK_EQ(msg_window_status(msg, 0), 6);
+  msg_window_destroy(msg, -1);
 }

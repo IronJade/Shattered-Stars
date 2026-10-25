@@ -173,6 +173,7 @@ add_library(ss_game STATIC
   src/game/field/music.cpp
   src/game/field/stash.cpp
   src/game/field/encounter.cpp
+  src/game/field/leader.cpp
   src/game/field/worldmap_bg.cpp
   src/game/field/worldmap_camera.cpp
   src/game/field/worldmap_render.cpp
@@ -538,6 +539,7 @@ if(TARGET ss_ap_net)  # against a local Archipelago server (SS_AP_SERVER), skipp
   target_link_libraries(ss_game_tests PRIVATE ss_ap_net)
 endif()
 target_sources(ss_game_tests PRIVATE tests/test_ap.cpp)
+target_sources(ss_game_tests PRIVATE tests/test_leader.cpp)
 target_link_libraries(ss_game_tests PRIVATE ss_game ss_launcher)
 target_compile_options(ss_game_tests PRIVATE ${SS_WARNINGS})
 add_test(NAME ss_game_tests COMMAND ss_game_tests)

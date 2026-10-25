@@ -104,7 +104,7 @@ that holds its value (`value_at`, `form`):
   game as Claude, 4 as Rena, 60 at the end.
 - `step` is game_state +4 (byte 0xa4), the progress inside a chapter, set back to 0 at each
   chapter change.
-- **Flag 1** is the protagonist: set in Claude's game, clear in Rena's.
+- **Flag 1** is the story_route: set in Claude's game, clear in Rena's.
 - **Flags 2 and 4** are Private Action mode (below).
 
 ### The JSON (`docs/ap/field.json`)
@@ -188,7 +188,7 @@ The first sites per character (`characters` has them all, with their conditions)
 
 | Character | Where (map, offset) | Chapter | Conditions, in short |
 |---|---|---|---|
-| Claude / Rena | 9 (0x6ba0 / 0x6b94) | 4 | The other protagonist joins at the start. Map 9 adds Claude when flag 1 is clear and Rena when it is set. |
+| Claude / Rena | 9 (0x6ba0 / 0x6b94) | 4 | The other story_route joins at the start. Map 9 adds Claude when flag 1 is clear and Rena when it is set. |
 | Celine | 74 (0xafdc) | 11 | Step 0. She rejoins on map 124 (chapter 15, flag 1 set, if she is not in the party) and on map 125 (chapter 15, flag 112). |
 | Bowman | 208 (0x6bc4) | 22 | Steps 4000 / 5000. The scene's lines change with Ashton, Celine and Opera (party_has). |
 | Dias | 130 (0x5150) | 15 | Rena's game only (flag 1 clear). Then 434 and 477 (chapter 19; 477 has branches for both games), 439 (26, Rena's game), and 229 (30, the El beach, Rena's game: flag 762 set, 765 clear). |
@@ -277,7 +277,7 @@ main story in order: where each chapter starts, and under what conditions.
 What map 625 is, and how the party reaches it in each period, needs checking in play (open
 item).
 
-**Two protagonists.** Both games share this order. Flag 1 picks the branches: Rena's game
+**Two story_routes.** Both games share this order. Flag 1 picks the branches: Rena's game
 starts at chapter 4 on map 18, Claude's at chapter 3 on map 7.
 
 ### Regions

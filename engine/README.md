@@ -33,7 +33,7 @@ its `.bin`, or an `.iso` / `.img` image. Disc 2 is optional until the story asks
 **Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.01.00-win64.zip`)
 anywhere and run **`setup.exe`**. On the Discs page, choose Disc 1 (and Disc 2) with
 *Browse...*. The other pages are Display,
-Sound, Memory cards and Mods. Then press *Save & Play*. Or just run
+Sound, Controls, Gameplay, Memory cards, Mods and Archipelago. Then press *Save & Play*. Or just run
 `shattered-stars.exe`: it opens setup by itself while it has no disc.
 
 **To skip browsing,** put the disc images in the `discs` folder next to the game
@@ -130,6 +130,23 @@ Keyboard pad: arrows = d-pad, Z = Cross, X = Circle, A = Square, S = Triangle,
 Enter = Start, Backspace = Select, Q/W = L1/R1, 1/2 = L2/R2. Gamepads work through SDL and read as a DualShock in analog mode: the left stick walks
 (and works the d-pad in menus), and the game's Vibration setting drives the rumble.
 
+Dialogue (setup's **Gameplay** page; port enhancements, both off by default, every game
+mode including Archipelago seeds). With both off the messages behave exactly as the
+original's; with them on only the waiting changes, never what happens:
+
+- **Instant text** (`instant_text=1`): each message page appears at once, as if the message
+  speed were infinite, and lines that scroll up move at once. The text's own pauses and timed
+  waits, and the window's opening and closing, stay as they are.
+- **Auto-advance** (`auto_advance=1`, `auto_advance_delay=MS`, 100-10000, default 1000; setup
+  offers 0.5 / 1 / 1.5 / 2 / 3 seconds): a message waiting for the confirm button moves on by
+  itself once its page has been complete that long, exactly as a press of confirm would move
+  it on. It stops at every choice (yes / no, shops, inns, name entry) and never answers it.
+  The battle result screen's pages (which move on by themselves after 6 seconds) and the
+  post-battle equipment report move on the same way, as a confirm press would.
+
+Headless runs ignore these keys (tests play as the original); `SS_INSTANT_TEXT=0|1` and
+`SS_AUTO_ADVANCE=0|1|MS` set them for any run.
+
 Other modes:
 
 ```sh
@@ -201,13 +218,40 @@ Archipelago generator) and, once one is chosen, offline or online play:
   DeathLink and a DeathLink from anyone else ends the current battle or the field
   session, same as dying.
 - **The seed's play options** (each off by default, which plays as the original): New Game
-  starts the protagonist the seed was made for; recruitments can be items (a character
+  starts the story_route the seed was made for; recruitments can be items (a character
   joins when their item arrives, room permitting); the first drop of each enemy type can
   be a check; traps (an ambush, losing Fol, a status ailment); EXP / Fol multipliers
   (1-10); the random-encounter rate (0-200%). DeathLink waits for a safe moment (out of
   menus, scenes and story battles the party may lose) and is never sent for a scripted
   story defeat, nor received during the ending or the credits. `docs/ap/seed_format.md`
   "Phase 3" has the details.
+- **Open world** (`world_mode: open_world`): world-map entrances wait for their area's key
+  (a banner names a missing one) and the El voyage for its passes. Port Hilton's sailor
+  becomes a captain offering Cross / Hoffmann Ruins / El / Not now (El only when the story is
+  ready to sail and every pass has arrived), and never strands the party on the Lacour
+  continent; ships check their landing's key before the fare. `docs/ap/seed_format.md`
+  "Phase 4" has the details. On field maps the player walks as the Formation leader (camp
+  menu: Combat > Formation > Leader; the seed's starting character leads from the start), and
+  the hero's name in dialogue and speaker labels becomes the leader's; the hero returns on
+  world maps and for a scene that shows the leader as themselves, names them, or needs one of
+  the hero's own gestures. Presentation only: the story runs as with the hero
+  (`docs/ap/seed_format.md` "The leader stand-in"; debugging: `SS_LEADER_TRACE=1`,
+  `SS_LEADER_STANDIN=0|1`, `SS_LEADER_SLOT=N`).
+- **so2.apworld 0.2.0 seeds** (seed version 2): the Limiter Off goals (Clik's Filia meeting
+  preset, the Final Save Point floor's way to Indalecio shut, with a banner, until Filia's
+  scene in Central City and, for the Iseria Queen goal, her defeat; that goal's Silver
+  Trumpet can't be sold before The Evil Melody is composed); craftsanity (the first creation
+  of each listed item is a check, the item stays yours) and creation without failures; killer
+  moves' use counts as checks (checked after a battle or a load). `docs/ap/seed_format.md`
+  "v2 fields".
+- **Open-world party** (seed version 2, `party_rules: open`): besides the hero (both heroes
+  when the seed lets the player pick), only members whose item has arrived join, wherever the
+  story would add them; Leon and Dias join either game. Nobody recruited is ever overwritten
+  when the party is full. The story's splits (the tournament, Linga, the Front Line, the ship
+  to El, Mars...) still split the party, and a member they set aside rejoins once it is over;
+  a fight the story gives one member alone (Claude in Shingo Forest in Rena's game, the
+  tournament's fights) borrows that member for the fight only. A starting character joins at
+  the first free play and leads (`docs/ap/seed_format.md` "The party rules").
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP

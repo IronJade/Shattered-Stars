@@ -6,7 +6,7 @@
 #
 #   SS_DISC1=DISC1.cue tools/ap_e2e_so2.sh [BINARY]   (tools/ap_test_server.sh start, once, sets up)
 #
-# Claude plays with the phase-3 options character_items, drops_as_checks (first_drop) and
+# Claude plays with the phase-3 options character_items, enemy_dropsanity (first_drop) and
 # traps (20 %), and the phase-4 ones world_mode open_world and shuffle_shops full. Item plando
 # fixes the cross-world placements, so the run is the same every time:
 #   - Arlia's 200-Fol crate (map 18, flag 0x962; "Arlia Village: 200 Fol chest") holds Bob's
@@ -33,9 +33,15 @@
 #   6. A second session (a new game, no memory card) walks into Hearn's shop and buys one
 #      Sandals and three Lavenders: the Lavender slot's first copy is the check and gives the
 #      Spectacles, the other copies are the shop's own.
-#   7. After the port has quit, a tracker client logs in to Claude's slot and reads the
+#   7. A third session plays Dias, a second SO2 slot with a version-2 seed (so2.apworld 0.2.0:
+#      goal indalecio_limiter_off_and_iseria_queen, craftsanity, killer-move checks, no-fail
+#      crafting; story mode): goal.flags are set at the start; the console's final boss (`battle
+#      540`) is only one of goal.all's two wins (no goal yet); the Iseria Queen (`battle 561`)
+#      completes it and the goal goes out. Auto-advance (SS_AUTO_ADVANCE) moves the result
+#      screens on.
+#   8. After the port has quit, a tracker client logs in to Claude's slot and reads the
 #      server's view: the crate, the drop and the shop slot among the checked locations, and
-#      the client status 30 (goal).
+#      the client status 30 (goal); another reads Dias's client status (30).
 # The server runs with release / collect off, so the checked locations are exactly what was
 # sent. Output, logs and captures (frames 700: the window, 850: the first banner) in
 # scratchpad/ap_e2e_so2/ (AP_E2E_WORK to put them elsewhere). Every game run is under the
@@ -73,9 +79,9 @@ cat > "$W/players/Claude.yaml" <<'EOF'
 name: Claude
 game: "Star Ocean: The Second Story"
 "Star Ocean: The Second Story":
-  protagonist: claude
+  story_route: claude
   character_items: true
-  drops_as_checks: first_drop
+  enemy_dropsanity: first_drop
   traps: 20
   world_mode: open_world
   shuffle_shops: full
@@ -99,6 +105,16 @@ game: "Star Ocean: The Second Story"
       locations: ["Tile 10"]
       world: Bob
 EOF
+cat > "$W/players/Dias.yaml" <<'EOF'
+name: Dias
+game: "Star Ocean: The Second Story"
+"Star Ocean: The Second Story":
+  story_route: claude
+  goal: indalecio_limiter_off_and_iseria_queen
+  craftsanity: true
+  killer_move_checks: true
+  no_fail_crafting: true
+EOF
 cat > "$W/players/Bob.yaml" <<'EOF'
 name: Bob
 game: ChecksFinder
@@ -117,6 +133,7 @@ if [ -z "$zip" ]; then
 fi
 (cd "$W/out" && unzip -o -q "$zip")
 seed_file=$(ls "$W"/out/*_Claude.apso2 | head -1)
+seed_v2=$(ls "$W"/out/*_Dias.apso2 | head -1)
 
 cat > "$W/bob.py" <<'BOB'
 # Bob: connects, waits until Claude's crate sends him Map Width, then checks Tiles 1, 2, 4 and
@@ -162,9 +179,10 @@ cat > "$W/tracker.py" <<'TRACKER'
 # from Connected and the client status from the read-only data storage.
 import asyncio, json, sys, websockets
 async def main():
+    name = sys.argv[2] if len(sys.argv) > 2 else "Claude"
     async with websockets.connect(sys.argv[1], max_size=None) as ws:
         await ws.recv()  # RoomInfo
-        await ws.send(json.dumps([{"cmd": "Connect", "game": "Star Ocean: The Second Story", "name": "Claude",
+        await ws.send(json.dumps([{"cmd": "Connect", "game": "Star Ocean: The Second Story", "name": name,
                                    "password": "", "uuid": "tracker-ap-e2e-so2",
                                    "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
                                    "items_handling": 0, "tags": ["Tracker"], "slot_data": False}]))
@@ -238,7 +256,14 @@ XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PA
   SS_DEBUG_INPUT="50:fol 50000;3500:ap_status" \
   run_game "$W/game2.log" 300 --headless --debug --no-memcard --ap-seed "$seed_file" --frames 3700 --map 18 \
   --input "$walk"
+# Session 3: Dias's version-2 seed (goal.all 561 + 540): 540 first (one of two), then 561.
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 SS_AUTO_ADVANCE=1000 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Dias SS_MODS_DIR="$W/nomods" \
+  SS_DEBUG_INPUT="300:battle 540;2100:ap_status;2200:battle 561;4000:ap_status" \
+  run_game "$W/game3.log" 300 --headless --debug --no-memcard --ap-seed "$seed_v2" --frames 4100 --map 18 \
+  --battle-end 60:0
 "$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" > "$W/tracker.log" 2>&1
+"$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" Dias > "$W/tracker3.log" 2>&1
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
 
 fails=0
@@ -249,12 +274,12 @@ check_not() {  # FILE what pattern (must not appear)
   if grep -qE "$3" "$1"; then echo "FAIL $2"; fails=$((fails + 1)); else echo "PASS $2"; fi
 }
 check "$W/generate.log" "the multiworld generates (SO2 + ChecksFinder)" 'Creating final archive'
-if [ "$(grep -cE '^game2?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 2 ]; then
-  echo "PASS both game runs ran under the memory cap"
+if [ "$(grep -cE '^game[23]?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 3 ]; then
+  echo "PASS the three game runs ran under the memory cap"
 else
-  echo "FAIL both game runs ran under the memory cap"; fails=$((fails + 1))
+  echo "FAIL the three game runs ran under the memory cap"; fails=$((fails + 1))
 fi
-check_not "$W/memcap.txt" "... and neither died at it" 'at_cap True'
+check_not "$W/memcap.txt" "... and none died at it" 'at_cap True'
 check "$seed_file" "the crate holds Bob's Map Width" '"name": "Map Width"'
 check_not "$W/generate.log" "plando found every item in the pool" 'Could not remove'
 check "$seed_file" "the seed's party holds Celine (character_items)" '"Celine"'
@@ -279,5 +304,19 @@ check "$W/tracker.log" "the server's checked locations hold the crate" "checked_
 check "$W/tracker.log" "... and the drop" "checked_locations \[.*\b$DROP\b"
 check "$W/tracker.log" "... and the shop slot" "checked_locations \[.*\b$SHOP\b"
 check "$W/tracker.log" "the server's client status is 30 (goal)" '^client_status 30$'
+check "$seed_v2" "Dias's seed is version 2 (goal.all)" '"version": 2'
+if python3 -c 'import json, sys; sys.exit(json.load(open(sys.argv[1]))["goal"].get("all") != [561, 540])' "$seed_v2"; then
+  echo "PASS ... with goal.all 561 and 540"
+else
+  echo "FAIL ... with goal.all 561 and 540"; fails=$((fails + 1))
+fi
+check "$W/game3.log" "session 3: the port connects as Dias" '\[ap\] connected \(slot [0-9]+\)'
+check "$W/game3.log" "... goal.flags set at the start" '\[ap\] goal flags set \(2\)'
+check "$W/game3.log" "... 540 is one of goal.all's two wins" '\[ap\] goal: encounter 540 won \(goal_won 1, goal.all 2\)'
+check "$W/game3.log" "... no goal yet" 'slot Dias \| checks 0/[0-9]+ .*\| connected$'
+check "$W/game3.log" "... 561 completes goal.all" '\[ap\] goal: every encounter of goal.all won'
+check "$W/game3.log" "... the port's status" 'slot Dias \| checks 0/[0-9]+ .*\| connected \| goal'
+check "$W/server.log" "the server: Dias completed the goal" 'Dias.*has completed their goal'
+check "$W/tracker3.log" "the server's client status for Dias is 30 (goal)" '^client_status 30$'
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails

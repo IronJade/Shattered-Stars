@@ -8,6 +8,7 @@
 #include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/common/math.h"
+#include "game/field/leader.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
 #include "runtime/runtime.h"
@@ -26,10 +27,14 @@ const u8* script_string(ScriptCtx* ctx, s32 index) {
 }
 
 // A message window's text: the script's string, or (Archipelago, port feature) the message
-// of a seed placeholder given just before ("Got Blueberries." / "Sent Hookshot to Alice.").
+// of a seed placeholder given just before ("Got Blueberries." / "Sent Hookshot to Alice."),
+// or the captain's menu at Port Hilton in an open-world seed (ap::script_text); a script
+// string names the leader stand-in where it names the hero (open world: field/leader.h).
 const u8* message_text(ScriptCtx* ctx, s32 index) {
   if (const u8* text = ap::take_message_override()) return text;
-  return script_string(ctx, index);
+  const u8* own = script_string(ctx, index);
+  if (const u8* text = ap::script_text(index, own)) return text;
+  return leader_message_text(own);
 }
 
 // Two 16-bit inline halves combined (the second argument carries bits 16-31).
@@ -139,7 +144,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
           a[3] = 0;
         }
         a[1] = join(a[1], a[2]);
-        vm_svc_msg_window_open_default(script_string(ctx, a[1]), a[3], 1);
+        vm_svc_msg_window_open_default(leader_message_text(script_string(ctx, a[1])), a[3], 1);
         window = a[3];
       } else {
         if (named) {
@@ -148,7 +153,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
           vm_fetch_args(ctx, 1);
           a[1] = 0;
         }
-        vm_svc_msg_window_open_default(script_string(ctx, a[0]), a[1], 1);
+        vm_svc_msg_window_open_default(leader_message_text(script_string(ctx, a[0])), a[1], 1);
         window = a[1];
       }
       window_style(window, op == 0x6A || op == 0x6B, op == 0x6E || op == 0x6F);
@@ -555,7 +560,7 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
       const int leader = leader_slot();
       bool top = false;
       if (vm_svc_actor_exists(leader)) top = vm_svc_actor_get_view_y(leader) - cam_y > 0xB3;
-      vm_svc_notice_show(script_string(ctx, a[1]), a[3], 7, top ? 1 : 0);
+      vm_svc_notice_show(leader_message_text(script_string(ctx, a[1])), a[3], 7, top ? 1 : 0);
       break;
     }
     case 0xBA:  // music fade out

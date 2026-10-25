@@ -309,7 +309,7 @@ scratch XDG, SDL drivers, SKIP_REQUIREMENTS_UPDATE). Build: engine/build-enemy (
 - **2. The late proof: done.** `tools/ap_late_proof.py` (new) -> `docs/ap/late_proof.json`
   (new, 284 KB) -> `tools/ap_world_tables.py --late` (rows get `late`: games proven) ->
   `apworld/so2/rules.py may_hold_progression` (story bosses exempt; drops / joins never;
-  expel_progression off: no Expel; else proven in the protagonist's game, both under "any").
+  expel_progression off: no Expel; else proven in the story_route's game, both under "any").
   - State: the user's save at the Final Save Point (scratchpad/latesave/card.mcd frame 13;
     chapter 60, step 4000, flag 730, floor 8, previous map 681), minus 378 "done" flags
     (chests, gift guards, cave boss guards), minus the save's message speed G[0x1b8] (with it
@@ -383,7 +383,7 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
 1. A real end-to-end with an SO2 slot; then tick Phase 2 in CHECKLIST.md. **Done.**
 2. Boss checks: battles.json's boss encounters as locations, in the logic. **Done (APWorld).**
 3. Phase 3, APWorld side (the world agent a6cb3fe962f8c58f8 does the port side):
-   character_items, drops_as_checks, traps, exp / fol multipliers, encounter_rate.
+   character_items, enemy_dropsanity, traps, exp / fol multipliers, encounter_rate.
    **Written, world tests 55/55; docs and batch still to do.**
 4. Logic soundness: no progression where only the optimistic late evaluator says a map is
    open, unless a headless run proves it. **Method chosen and tested; the BFS not run yet.**
@@ -393,7 +393,7 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
 ### Task 1: done
 - `tools/ap_e2e_so2.sh` (new, mine; `tools/ap_e2e.sh` stays the world agent's, now 16/16
   with its phase-3 sessions) passes 12/12, twice:
-  - Generate.py, seed 4242, makes SO2 "Claude" (protagonist claude) plus ChecksFinder "Bob",
+  - Generate.py, seed 4242, makes SO2 "Claude" (story_route claude) plus ChecksFinder "Bob",
     with `--plando "bosses, items, connections, texts"`;
   - item plando puts Bob's Map Width in Arlia's 200-Fol crate (1347569665) and Claude's
     Resurrection Bottle on Bob's Tile 1;
@@ -408,7 +408,7 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
 - To add, as the world agent asks: phase-3 steps in ap_e2e_so2.sh.
   - Claude.yaml plando puts "Celine" and a trap ("Fol Loss Trap") on Bob's tiles, with
     `character_items: true`;
-  - a drop check with `drops_as_checks: first_drop`. The world agent suggests `battle 535`
+  - a drop check with `enemy_dropsanity: first_drop`. The world agent suggests `battle 535`
     (Berle, type 197, odds 255), but the APWorld makes no drop location for Berle: checked,
     type 197 is not in field.json enemy_drops, because Berle is met only in scripted fights.
     Use a random-encounter type instead (e.g. Gerel, type 17, groups 1 / 5; find a sure
@@ -458,10 +458,10 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
   - **Drops.** Each drop's region is the earliest region where the type is met. The pool item
     is the type's first drop.
   - **Missable reasons.** SOFT_REASONS = window, time-limited. Everything else is "hard":
-    private action, optional member, join, optional quest, losable, and protagonist-only
+    private action, optional member, join, optional quest, losable, and story_route-only
     under "any".
 - **APWorld** (`apworld/so2`):
-  - **options.py.** New options: boss_checks (default on), character_items, drops_as_checks
+  - **options.py.** New options: boss_checks (default on), character_items, enemy_dropsanity
     (off / first_drop), traps (0-100 %), exp_multiplier, fol_multiplier (1-10),
     encounter_rate (0-200). Three option groups.
   - **items.py.**
@@ -485,7 +485,7 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
     - create_items: characters replace join locations' Blueberries; traps % of the filler
       becomes traps.
     - slot_data and the seed's options gain boss_checks, character_items, characters,
-      drops_as_checks, traps and the multipliers.
+      enemy_dropsanity, traps and the multipliers.
   - **rules.py.** Drops get an item rule: never progression.
   - **test/test_world.py** (rewritten): 14 classes, 55 tests pass (3794 subtests).
 
@@ -526,9 +526,9 @@ Rolled over at ~430k tokens. Nothing of mine is running (no server, no sweeps, n
     `FLAGS='730,!1'` plays Rena's game from a --map start (--map always sets flag 1, Claude).
     Built and in the bin copy.
   - **Locations.** Generate an all-locations solo seed: missable include, cave on, boss
-    checks, one with protagonist claude and one with rena. Sweep with `SEED=...`. A chest or
+    checks, one with story_route claude and one with rena. Sweep with `SEED=...`. A chest or
     gift that fires logs `[ap] check ID`. Proven = checked in a sweep of a BFS-reached map,
-    in that protagonist's game.
+    in that story_route's game.
   - **Cave bosses.** The battle stub skips battle_exit_to_field, so no boss check is logged.
     Either count a cave boss proven when its map is reached and its battle starts (look for a
     trace of the encounter; SS_TRACE?), or keep cave bosses no-progression.
@@ -655,7 +655,7 @@ slots. Phase-4 logic is not built yet (after phase 3). The proposal as it was:
   - Story mode: 412 locations (311 chests, 101 gift sites); 2 key-item chests and 33
     key-flag sites stay vanilla. The pool is the vanilla contents. Events: Energy Nede, the
     Final Save Point, Victory.
-  - Options: goal, protagonist, missable_locations, expel_progression, cave_of_trials,
+  - Options: goal, story_route, missable_locations, expel_progression, cave_of_trials,
     death_link.
   - Tests:
     - so2's own: 30 passed;
@@ -672,7 +672,7 @@ slots. Phase-4 logic is not built yet (after phase 3). The proposal as it was:
 - **Open:**
   - phase 3 in the world (characters, drops, traps);
   - boss checks (47);
-  - the port enforcing the protagonist;
+  - the port enforcing the story_route;
   - map 463 / hub 625 (field.md open item 3);
   - the 129 computed reward calls.
 

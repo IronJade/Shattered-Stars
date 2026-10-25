@@ -16,8 +16,8 @@ stay in place. The entrances hang on three events, so the spheres follow the sto
 from BaseClasses import ItemClassification, Region
 
 from .data import DISC_SWITCH_STAGE, STAGES, STORY_GATES, TELEPORTER_STAGE
-from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_TELEPORTER, EVENT_VICTORY, KEY_NAME, SO2Item, \
-    stage_event
+from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_TELEPORTER, \
+    EVENT_VICTORY, KEY_NAME, SO2Item, stage_event
 from .locations import SO2Location
 
 REGIONS = ("Menu", "Expel", "Energy Nede", "Fienal", "Cave of Trials")
@@ -26,6 +26,11 @@ EVENTS = (  # (region, location name, event item)
     ("Fienal", "Final Save Point (Fienal 9F)", EVENT_FINAL_SAVE_POINT),
     ("Fienal", "Indalecio", EVENT_VICTORY),
 )
+# The goals' events (goal 1 and 2, goal 2): Filia's scene in Central City City Hall after the Final
+# Save Point (flag 556, Indalecio's limiter off), and the Iseria Queen at the bottom of the Cave
+# of Trials (summoned by the song composed from G-Celesta's Silver Trumpet).
+LIMITER_OFF_EVENT = ("Energy Nede", "Limiter Off (Filia, Central City)", EVENT_LIMITER_OFF)
+ISERIA_QUEEN_EVENT = ("Cave of Trials", "Iseria Queen (Cave of Trials)", EVENT_ISERIA_QUEEN)
 
 
 def create_regions(world):
@@ -39,6 +44,8 @@ def create_regions(world):
     regions["Fienal"].connect(regions["Cave of Trials"], "Virtual Expel",
                               lambda state: state.has(EVENT_FINAL_SAVE_POINT, player))
     events = list(EVENTS)
+    goal = world.options.goal.value
+    events += ([LIMITER_OFF_EVENT] if goal >= 1 else []) + ([ISERIA_QUEEN_EVENT] if goal == 2 else [])
     if world.open_world:
         # Open world: the story's stages as events, each needing the previous one and the keys of
         # the areas the story walks into in it (data.STAGES; docs/ap/apworld.md, "Open world").

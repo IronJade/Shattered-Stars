@@ -59,12 +59,15 @@ by hand as ordinary C++20 on top of SDL3 and OpenGL.
 - **Modern controls and display.** Keyboard or gamepad, every button rebindable, analog walking
   and rumble. Windowed, borderless or exclusive full screen at any size, in the original 4:3
   shape, with optional PlayStation-style dithering and vertical sync.
+- **Dialogue at your pace.** Optional instant text and auto-advance (off by default): message
+  pages appear at once and move on by themselves after a wait you choose, but never past a
+  choice, so the story's long scenes can play hands-free without changing what happens.
 - **Archipelago built in.** Play in an [Archipelago](#archipelago) multiworld with the network
   client inside the game. No separate client program is needed.
 - **Mods that never touch your discs.** Small, guarded patch files change chests, doors, items,
   shops and enemy stats as the game loads, managed from the setup program ([Mods](#mods-and-the-mod-manager)).
 - **A setup program.** Choose and verify your disc images, and set display, sound, controls,
-  memory cards, mods and Archipelago in one window.
+  dialogue, memory cards, mods and Archipelago in one window.
 
 ## Screenshots
 

@@ -14,7 +14,7 @@ The state is the user's own save at the Final Save Point (a Claude game: chapter
 every location's own "done" flags cleared, as for a player who skipped them all: each chest's
 opened flag, each gift's guard flags (the flags it sets and tests), and the flags a Cave of
 Trials boss fight needs clear. Rena's game is the same state with flag 1 cleared and the
-protagonist bytes swapped. The script globals and flags reach a `--map` start through
+story_route bytes swapped. The script globals and flags reach a `--map` start through
 SS_SCRIPT_GLOBALS and SS_SWEEP_FLAGS; the party is Claude, Rena and Noel (SS_SWEEP_PARTY).
 
 The search is breadth-first over event sweeps (SS_EVENT_SWEEP, engine/src/game/field/
@@ -194,7 +194,7 @@ def build_state(snap, field, game, kind="late"):
     for off in range(0, 0x2A0, 4):
         g = 0xA0 + off
         v = struct.unpack_from("<i", gs, off)[0]
-        # Chapter and step; the protagonist bytes (G[0xc4]); everything from the names on
+        # Chapter and step; the story_route bytes (G[0xc4]); everything from the names on
         # (quest states, the floor G[0x1cf], the previous map G[0x1c0]). Not the map, the
         # leader's place or the music, which the --map start sets, nor the message speed
         # (G[0x1b8], game_state +0x118: a setting; the save's slows the text enough that the
@@ -248,7 +248,7 @@ def proof_seed(path, teleporter=False):
         del entry["sites"]
     seed = {"format": "apso2", "version": 1, "seed": "late-proof", "game": "Star Ocean: The Second Story",
             "slot": {"name": "Proof", "id": 1},
-            "options": {"protagonist": "any", "expel_teleporter": teleporter},
+            "options": {"story_route": "any", "expel_teleporter": teleporter},
             "items": {str(data.ITEM_BASE + 757): {"name": "Blueberry", "kind": "item", "game_id": 757}},
             "locations": locs, "patches": lines, "start": {"items": [], "fol": 0, "flags": []},
             "goal": {"encounters": list(data.GOAL_ENCOUNTERS)}}

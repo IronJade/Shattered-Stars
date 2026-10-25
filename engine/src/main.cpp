@@ -54,6 +54,12 @@
 // run only) or config.ini's ap_seed key (not read by headless runs) turns it on; off without
 // a seed. [world agent]
 //
+// Dialogue (port feature, game/field/message.h TextOptions): config.ini's instant_text,
+// auto_advance and auto_advance_delay (set in setup's Gameplay page; launcher/settings.h).
+// Headless runs ignore them, so tests play as the original, unless SS_INSTANT_TEXT=0|1 or
+// SS_AUTO_ADVANCE=0|1|MS (1: on at the default delay; MS > 1: on, that many milliseconds)
+// say otherwise; the variables override config.ini on a windowed run too.
+//
 // IMAGE is a .cue, raw .bin or .iso of your own disc.
 
 #include <cstdio>
@@ -75,6 +81,7 @@
 #include "game/boot/system.h"
 #include "game/common/memcard.h"
 #include "game/field/debug_console.h"
+#include "game/field/message.h"
 #ifdef SS_HAVE_AP_NET
 #include "ap_net/client.h"
 #endif
@@ -416,6 +423,19 @@ int main(int argc, char** argv) {
     game::field::debug_console_install();
     rt.start_debug_console();
     rt.debug_overlay = true;
+  }
+  // Dialogue (see the top of this file).
+  {
+    launcher::TextSettings text = headless ? launcher::TextSettings{} : launcher::read_text(config);
+    if (const char* v = std::getenv("SS_INSTANT_TEXT"); v != nullptr && *v != 0) text.instant = std::atoi(v) != 0;
+    if (const char* v = std::getenv("SS_AUTO_ADVANCE"); v != nullptr && *v != 0) {
+      const int n = std::atoi(v);
+      text.auto_advance = n != 0;
+      if (n > 1) text.auto_advance_ms = n;
+    }
+    game::field::TextOptions& opts = game::field::text_options();
+    opts.instant = text.instant;
+    opts.auto_advance_frames = launcher::auto_advance_frames(text);
   }
   const launcher::DisplaySettings display = launcher::read_display(config);
   rt.gpu.dithering_enabled = reference_dither || display.dither;

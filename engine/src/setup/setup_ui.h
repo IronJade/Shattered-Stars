@@ -19,12 +19,12 @@ struct ImFont;
 union SDL_Event;
 
 // The setup program's window (port feature): every setting a player needs, so the game
-// itself never needs the command line. Pages: Discs, Display, Sound, Memory cards, Mods,
-// and Archipelago (seed file, server, slot, password). Save writes config.ini (keeping keys this
+// itself never needs the command line. Pages: Discs, Display, Sound, Controls, Gameplay
+// (instant text, auto-advance), Memory cards, Mods, and Archipelago (seed file, server, slot, password). Save writes config.ini (keeping keys this
 // version doesn't know); Save & Play also starts the game.
 namespace ss::setup {
 
-enum class Page { kDiscs, kDisplay, kSound, kControls, kMemoryCards, kMods, kArchipelago, kCount };
+enum class Page { kDiscs, kDisplay, kSound, kControls, kGameplay, kMemoryCards, kMods, kArchipelago, kCount };
 
 struct Options {
   bool from_game = false;  // the game started setup and waits for it (launcher/process.h)
@@ -62,6 +62,7 @@ struct Settings {
   launcher::DisplaySettings display;
   launcher::SoundSettings sound;
   launcher::ControlSettings controls;
+  launcher::TextSettings text;  // the Gameplay page's dialogue settings
   bool card_inserted[2] = {true, false};
   std::string card[2];
   std::string mods;
@@ -113,6 +114,7 @@ class App {
   void page_sound();
   void page_controls();
   void control_cell(int bit, bool gamepad, float width, bool duplicate);
+  void page_gameplay();
   void page_cards();
   void page_mods();
   void mods_list(const mods::Catalog& catalog, std::vector<mods::Slot>& order, float height);
