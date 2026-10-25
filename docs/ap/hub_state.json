@@ -1276,8 +1276,9 @@
    }
   }
  },
- "starts": {
-  "fun_city": {
+ "starts": [
+  {
+   "key": "fun_city",
    "name": "Fun City",
    "world": 2,
    "map": 279,
@@ -1286,23 +1287,34 @@
    "z": 68,
    "dir": 180,
    "door": 68686160,
+   "exit": "279:T4",
    "synard_expel": {
     "x": 51209,
     "y": -150,
     "z": 17464,
     "dir": 90,
-    "from": "map 17 0x1570, Virtual Arlia map 18 0x5a4"
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
    },
    "synard_nede": {
     "x": 81546,
     "y": -258,
     "z": 33880,
     "dir": 176,
-    "from": "map 279 0xa06c"
+    "from": "map 279 0xa06c, 0xaa34"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb0005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
    }
   },
-  "arlia": {
-   "name": "Arlia",
+  {
+   "key": "arlia",
+   "name": "Arlia Village",
    "world": 1,
    "map": 17,
    "x": -126,
@@ -1310,23 +1322,523 @@
    "z": -614,
    "dir": 90,
    "door": 59576065,
+   "exit": "17:T0",
    "synard_expel": {
     "x": 51209,
     "y": -150,
     "z": 17464,
     "dir": 90,
-    "from": "map 17 0x1570, Virtual Arlia map 18 0x5a4"
+    "from": "map 17 0x1570, 0x1b80, 0x1bc0"
    },
    "synard_nede": {
     "x": 81546,
     "y": -258,
     "z": 33880,
     "dir": 176,
-    "from": "map 279 0xa06c"
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb0005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "salva",
+   "name": "Town of Salva",
+   "world": 1,
+   "map": 44,
+   "x": 1673,
+   "y": 0,
+   "z": 263,
+   "dir": 178,
+   "door": 59576123,
+   "exit": "44:T4",
+   "synard_expel": {
+    "x": 43749,
+    "y": -150,
+    "z": 22168,
+    "dir": 291,
+    "from": "map 44 0x6d5c"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0xaae5",
+    "0x310": "0x5698",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb00123",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "cross",
+   "name": "Town of Cross",
+   "world": 1,
+   "map": 74,
+   "x": 393,
+   "y": 0,
+   "z": -47,
+   "dir": 180,
+   "door": 59576705,
+   "exit": "74:T0",
+   "synard_expel": {
+    "x": 48365,
+    "y": -150,
+    "z": 32644,
+    "dir": 270,
+    "from": "map 74 0x8070"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0xbced",
+    "0x310": "0x7f84",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb0010e",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "clik",
+   "name": "Port of Clik",
+   "world": 1,
+   "map": 108,
+   "x": -887,
+   "y": 0,
+   "z": 95,
+   "dir": 229,
+   "door": 59576779,
+   "exit": "108:T1",
+   "synard_expel": {
+    "x": 40754,
+    "y": -273,
+    "z": 66262,
+    "dir": 341,
+    "from": "map 108 0x6f10"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x9f32",
+    "0x310": "0x102d6",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb00155",
+    "0x32c": "0xfffffeef",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "mars",
+   "name": "Mars Village",
+   "world": 1,
+   "map": 124,
+   "x": 2008,
+   "y": -60,
+   "z": 4596,
+   "dir": 270,
+   "door": 59576152,
+   "exit": "124:T0",
+   "synard_expel": {
+    "x": 64059,
+    "y": -150,
+    "z": 44042,
+    "dir": 227,
+    "from": "map 124 0x7c8c"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0xfa3b",
+    "0x310": "0xac0a",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb000e3",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "herlie",
+   "name": "Town of Herlie",
+   "world": 1,
+   "map": 144,
+   "x": -295,
+   "y": 0,
+   "z": 1974,
+   "dir": 353,
+   "door": 59576210,
+   "exit": "144:T0",
+   "synard_expel": {
+    "x": 74378,
+    "y": -173,
+    "z": 38823,
+    "dir": 215,
+    "from": "map 144 0x6ac8, 0x743c"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x1228a",
+    "0x310": "0x97a7",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb000d7",
+    "0x32c": "0xffffff53",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "hilton",
+   "name": "Port Hilton",
+   "world": 1,
+   "map": 169,
+   "x": -3795,
+   "y": 0,
+   "z": 163,
+   "dir": 269,
+   "door": 59576800,
+   "exit": "169:T7",
+   "synard_expel": {
+    "x": 91889,
+    "y": -150,
+    "z": 32115,
+    "dir": 290,
+    "from": "map 169 0x6be8, 0x7310, 0x7d48"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x166f1",
+    "0x310": "0x7d73",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb00122",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "lacour",
+   "name": "Town of Lacour",
+   "world": 1,
+   "map": 211,
+   "x": 733,
+   "y": 0,
+   "z": 79,
+   "dir": 197,
+   "door": 59576877,
+   "exit": "211:T0",
+   "synard_expel": {
+    "x": 103192,
+    "y": -190,
+    "z": 24707,
+    "dir": 256,
+    "from": "map 211 0x6838"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x19318",
+    "0x310": "0x6083",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb00100",
+    "0x32c": "0xffffff42",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "linga",
+   "name": "Town of Linga",
+   "world": 1,
+   "map": 183,
+   "x": -3392,
+   "y": 0,
+   "z": -1182,
+   "dir": 340,
+   "door": 59576967,
+   "exit": "183:T27",
+   "synard_expel": {
+    "x": 90815,
+    "y": -150,
+    "z": 13368,
+    "dir": 27,
+    "from": "map 183 0x67fc"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x162bf",
+    "0x310": "0x3438",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb0001b",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "eluria_colony",
+   "name": "Eluria Colony",
+   "world": 1,
+   "map": 232,
+   "x": 971,
+   "y": 0,
+   "z": 16,
+   "dir": 188,
+   "door": 59577686,
+   "exit": "232:T0",
+   "synard_expel": {
+    "x": 16052,
+    "y": -255,
+    "z": 64393,
+    "dir": 330,
+    "from": "map 232 0xa4ac"
+   },
+   "synard_nede": {
+    "x": 81546,
+    "y": -258,
+    "z": 33880,
+    "dir": 176,
+    "from": "Fun City's: map 279 0xa06c"
+   },
+   "globals": {
+    "0x30c": "0x3eb4",
+    "0x310": "0xfb89",
+    "0x314": "0x13e8a",
+    "0x318": "0x8458",
+    "0x31c": "0xb0014a",
+    "0x32c": "0xffffff01",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "central_city",
+   "name": "Central City",
+   "world": 2,
+   "map": 235,
+   "x": 759,
+   "y": 0,
+   "z": 229,
+   "dir": 180,
+   "door": 68685969,
+   "exit": "235:T0",
+   "synard_expel": {
+    "x": 51209,
+    "y": -150,
+    "z": 17464,
+    "dir": 90,
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
+   },
+   "synard_nede": {
+    "x": 54840,
+    "y": -258,
+    "z": 24253,
+    "dir": 120,
+    "from": "map 235 0x676c"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0xd638",
+    "0x318": "0x5ebd",
+    "0x31c": "0x78005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "north_city",
+   "name": "North City",
+   "world": 2,
+   "map": 260,
+   "x": 9081,
+   "y": 0,
+   "z": -850,
+   "dir": 181,
+   "door": 68685998,
+   "exit": "260:T0",
+   "synard_expel": {
+    "x": 51209,
+    "y": -150,
+    "z": 17464,
+    "dir": 90,
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
+   },
+   "synard_nede": {
+    "x": 57503,
+    "y": -258,
+    "z": 27589,
+    "dir": 273,
+    "from": "map 260 0x67bc"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0xe09f",
+    "0x318": "0x6bc5",
+    "0x31c": "0x111005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "armlock",
+   "name": "Town of Armlock",
+   "world": 2,
+   "map": 306,
+   "x": 703,
+   "y": 30,
+   "z": -867,
+   "dir": 180,
+   "door": 68685597,
+   "exit": "306:T0",
+   "synard_expel": {
+    "x": 51209,
+    "y": -150,
+    "z": 17464,
+    "dir": 90,
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
+   },
+   "synard_nede": {
+    "x": 81595,
+    "y": -258,
+    "z": 21506,
+    "dir": 270,
+    "from": "map 306 0x570"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0x13ebb",
+    "0x318": "0x5402",
+    "0x31c": "0x10e005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "giveaway",
+   "name": "Giveaway",
+   "world": 2,
+   "map": 317,
+   "x": 1585,
+   "y": 0,
+   "z": 377,
+   "dir": 188,
+   "door": 68685555,
+   "exit": "317:T0",
+   "synard_expel": {
+    "x": 51209,
+    "y": -150,
+    "z": 17464,
+    "dir": 90,
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
+   },
+   "synard_nede": {
+    "x": 46820,
+    "y": -258,
+    "z": 42786,
+    "dir": 270,
+    "from": "map 317 0x4ad4"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0xb6e4",
+    "0x318": "0xa722",
+    "0x31c": "0x10e005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xfffffefe"
+   }
+  },
+  {
+   "key": "laqua",
+   "name": "L'Aqua",
+   "world": 2,
+   "map": 579,
+   "x": 92,
+   "y": 0,
+   "z": -2486,
+   "dir": 273,
+   "door": 68685923,
+   "exit": "579:T6",
+   "synard_expel": {
+    "x": 51209,
+    "y": -150,
+    "z": 17464,
+    "dir": 90,
+    "from": "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"
+   },
+   "synard_nede": {
+    "x": 71971,
+    "y": -208,
+    "z": 40740,
+    "dir": 188,
+    "from": "map 579 0x66e4"
+   },
+   "globals": {
+    "0x30c": "0xc809",
+    "0x310": "0x4438",
+    "0x314": "0x11923",
+    "0x318": "0x9f24",
+    "0x31c": "0xbc005a",
+    "0x32c": "0xffffff6a",
+    "0x330": "0xffffff30"
    }
   }
- },
- "start_random": "random: the APWorld picks one of `starts` (proposal: the two; more towns with their own Synard spot can be added: see notes)",
+ ],
+ "start_random": "hub_start random: the APWorld picks one of `starts` (every town of both worlds, the user's D9) and writes it as hub.start with its `globals` (the start's Synard words, which the port writes after hub.globals); fun_city / arlia pick those two.",
  "globals_table": [
   {
    "addr": "0xa0",
@@ -1750,7 +2262,7 @@
    "save": "0xc729",
    "cat": "vehicle",
    "hub": "0xc809",
-   "why": "Expel Synard x (+0x26c): Arlia's own spot (table A 0x19 set_point)"
+   "why": "Expel Synard x (+0x26c): Arlia's own spot (the start town's on an Expel start) (table A 0x19 set_point)"
   },
   {
    "addr": "0x310",
@@ -1766,7 +2278,7 @@
    "save": "0x11b25",
    "cat": "vehicle",
    "hub": "0x13e8a",
-   "why": "Energy Nede Synard x (+0x274): the start town's own spot (table A 0x19 set_point)"
+   "why": "Energy Nede Synard x (+0x274): the start town's own spot (Fun City's on an Expel start) (table A 0x19 set_point)"
   },
   {
    "addr": "0x318",
@@ -13431,8 +13943,7 @@
  "notes": [
   "The hub state holds no config data: relationship values (+0x58 / +0xe8), levels, inventory and Fol are New Game's.",
   "Flag 556 (Limiter Off) and 445 (the Clik Filia meeting, Claude's game) were set in the user's save; 556 is cleared (the limiter-off goals); 445 / 446 stay as the save has them and goal.flags presets both anyway.",
-  "Expel's Synard: the save already had Expel's spot set (the user flew on Virtual Expel), so the late state flew there too; the hub uses Arlia's own spot rather than where the user parked (R8: no first trip through the old man).",
-  "Energy Nede's Synard: the save parked it where the user last landed; the hub parks it at the start town's own spot (Fun City's for a start on Expel, where the arena's old man lands), so the party can always reach it on foot.",
+  "The Synards (D9: each town's start comes with its world's Synard spot): the save parked them where the user last landed; the hub parks the start world's Synard at the start town's own spot (the town's set_point, where its exit parks it) and the other world's where its way in lands: Expel's at Arlia's (Virtual Arlia's arrival stores it), Energy Nede's at Fun City's (the arena's old man lands there; map 303 stores it). So the party can always reach the Synard on foot (R8: no first trip through the old man). Each `starts` row carries its seven words (`globals`); hub.globals holds the default start's (Fun City).",
   "Optional bosses (Flarelizard 196, Nightmare 197, XINE 199, Ghost 211): their done flags are reset but their quests (G[0x1bc] Ashton 9999, G[0x1be] Opera 0, flags 113 / 141) are the save's, so none of them is armed at chapter 60; they stay excluded locations ('optional quest').",
   "Saved party order (+0x280..): cleared; otherwise A 0x17 (party_reload_changed) would move the save's members into slots."
  ]

@@ -16,6 +16,7 @@
 #include "ap_net/link.h"
 #include "game/battle/battle.h"
 #include "game/battle/unit.h"
+#include "game/boot/loader.h"
 #include "game/boot/system.h"
 #include "game/common/text_rules.h"
 #include "game/field/field.h"
@@ -27,6 +28,7 @@
 #include "game/field/vm_services.h"
 #include "runtime/region.h"
 #include "runtime/runtime.h"
+#include "util/sha256.h"
 
 namespace ss::game::ap {
 namespace {
@@ -123,6 +125,9 @@ struct Runtime {
   std::map<int, size_t> by_craft;        // item -> craft location index
   // v2 party [party agent]: the starting character becomes the Formation leader when they join.
   bool lead_start = false;
+  // The hub's New Game [hubcore agent]: the start's position, for the field's first map load.
+  bool start_position = false;
+  bool banners_measured = false;         // the seed doors' banners measured (first free play)
 };
 Runtime& rt() {
   static Runtime r;
@@ -751,7 +756,7 @@ std::string sidecar_path(const std::string& card_image, int save_index) {
 Json sidecar_json(const SaveState& s) {
   Json j = Json::object();
   j.set("format", Json::string("apso2-save"));
-  j.set("version", Json::number(static_cast<int64_t>(1)));
+  j.set("version", Json::number(static_cast<int64_t>(2)));  // 2: save_hash [hubcore agent]
   j.set("seed", Json::string(s.seed));
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
@@ -791,12 +796,14 @@ Json sidecar_json(const SaveState& s) {
     }
     j.set("stash", a);
   }
+  if (!s.save_hash.empty()) j.set("save_hash", Json::string(s.save_hash));  // version 2
   return j;
 }
 
 bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (j["format"].as_string() != "apso2-save") return fail(error, "not an apso2 save sidecar");
-  if (get_int_or(j["version"], 0) != 1) return fail(error, "unsupported sidecar version");
+  const int version = get_int_or(j["version"], 0);
+  if (version != 1 && version != 2) return fail(error, "unsupported sidecar version");
   SaveState r;
   r.seed = j["seed"].as_string();
   r.slot_name = j["slot_name"].as_string();
@@ -824,6 +831,7 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
     if (st.slot < 0 || st.slot > 7 || st.bytes.size() != 0x60 + 0xD0) return fail(error, "stash: a slot 0-7 and 0x130 bytes expected");
     r.stash.push_back(std::move(st));
   }
+  r.save_hash = j["save_hash"].as_string();  // version 2 (absent: empty, and a seed refuses the load)
   *s = std::move(r);
   return true;
 }
@@ -913,6 +921,7 @@ void start_with(Seed s) {
   r.killer_scan_pending = true;
   r.notices.clear();
   r.notice_text.clear();
+  r.banners_measured = false;
   hub_start(&r.seed);  // the hub's chapter lock and story views [hubvm agent]
   log("seed " + r.seed.seed + " slot " + r.seed.slot_name + ": " + std::to_string(r.seed.locations.size()) +
       " locations, " + std::to_string(r.seed.items.size()) + " item types, " + std::to_string(r.seed.patches.size()) +
@@ -1149,6 +1158,8 @@ std::string join_waiting(Runtime& r) {
   return "";
 }
 
+void measure_door_banners(Runtime& r);  // (below, with the doors)
+
 // New Game's first free play: the starting character (v2) and the seed's starting items, Fol and
 // flags, once per game (an ordinary save loaded without a sidecar counts as given).
 void give_start(Runtime& r) {
@@ -1217,6 +1228,7 @@ void free_play_update() {
     return;
   }
   hub_free_play();  // the hub: a story view whose boss was won ends [hubvm agent]
+  measure_door_banners(r);  // (once per seed: the font is loaded by now)
   give_start(r);
   keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
   party_v2_update(r);   // v2: split windows, temporary members, members back after a split
@@ -1269,8 +1281,79 @@ void on_new_game() {
   fresh_state(r);
   hub_reset();  // (a story view left on)
   r.goal_flags_pending = true;  // v2: goal.flags in the new game's first field frame
+  r.start_position = false;
   log("new game: a fresh state for seed " + r.seed.seed);
 }
+
+void on_new_game_state(u8* block, bool debug_start) {
+  Runtime& r = rt();
+  const HubState& h = r.seed.hub_state;
+  if (!r.on || !r.seed.hub || !h.on || block == nullptr) return;
+  const char* hub_state_env = std::getenv("SS_HUB_STATE");
+  if (debug_start && hub_state_env == nullptr) {
+    log("hub: a debug start (--map): the hub's New Game state not applied (SS_HUB_STATE=1 applies it there)");
+    return;
+  }
+  u8* gs = block + 0x220;     // game_state (script G[0xa0] ..)
+  u8* flags = block + 0x8C0;  // the script flags (0x170 bytes)
+  field::FieldGlobals& g = field::globals();
+  // The original New Game picked the hero (config +0x45: 0 Claude, 1 Rena) and stored its route
+  // flag (1, Claude's game) and bytes (+0x24 / +0x25); the names and the party are in place.
+  // A debug start is always Claude's branch; SS_HUB_STATE=rena builds Rena's game there (the
+  // hub proof's sweeps; the party is the test's business) [hubcore agent].
+  const bool claude = debug_start && hub_state_env != nullptr && std::string(hub_state_env) == "rena"
+                          ? false
+                          : g.config == nullptr || g.config[0x45] == 0;
+  auto set_flag = [&](int n) { flags[n >> 3] = static_cast<u8>(flags[n >> 3] | 1 << (n & 7)); };
+  auto put_words = [&](const std::vector<HubWord>& words) {
+    for (const HubWord& w : words) std::memcpy(gs + (w.addr - 0xA0), &w.value, 4);
+  };
+  std::memset(flags, 0, 0x170);
+  for (const int n : h.flags) set_flag(n);
+  put_words(h.globals);
+  const HubGame& game = h.games[claude ? 0 : 1];
+  for (const int n : game.flags) set_flag(n);
+  put_words(game.globals);
+  // The route flag stays New Game's (the hero picked): set in Claude's game, clear in Rena's.
+  flags[0] = static_cast<u8>(claude ? flags[0] | 2 : flags[0] & ~2);
+  const s32 chapter = h.chapter, step = h.step;
+  std::memcpy(gs, &chapter, 4);
+  std::memcpy(gs + 4, &step, 4);
+  if (g.config != nullptr) g.config[0x4C] = static_cast<u8>(h.disc - 1);
+  bool inserted = true;
+  if (g.loader != nullptr) inserted = game::loader_insert_disc(*g.loader, h.disc);
+  put_words(h.start_globals);
+  std::string where = "the debug start's map";
+  if (!debug_start) {
+    // The transfer to the start: the field's first map load places the leader there, facing
+    // 'dir' (degrees, as a map transfer's; game_state +0x18 holds 4096ths of a turn).
+    const s16 map = static_cast<s16>(h.start.map);
+    const s32 pos[3] = {h.start.x, h.start.y, h.start.z};
+    const s16 facing = static_cast<s16>(((h.start.dir % 360 + 360) % 360) * 4096 / 360);
+    std::memcpy(gs + 0x1A, &map, 2);
+    std::memcpy(gs + 8, pos, 12);
+    std::memcpy(gs + 0x18, &facing, 2);
+    r.start_position = true;
+    char buf[160];
+    std::snprintf(buf, sizeof buf, "%s (map %d at %d, %d, %d, facing %d)", h.start_name.empty() ? "the start" : h.start_name.c_str(),
+                  h.start.map, h.start.x, h.start.y, h.start.z, h.start.dir);
+    where = buf;
+  }
+  log(std::string("hub New Game: ") + (claude ? "Claude" : "Rena") + "'s game, " + std::to_string(h.flags.size()) + " flags, " +
+      std::to_string(h.globals.size()) + " globals (+" + std::to_string(game.flags.size()) + " / " +
+      std::to_string(game.globals.size()) + " the hero's, " + std::to_string(h.start_globals.size()) + " the start's), chapter " +
+      std::to_string(chapter) + " step " + std::to_string(step) + ", disc " + std::to_string(h.disc) +
+      (inserted ? "" : " (not available yet)") + "; " + where);
+}
+
+bool take_start_position() {
+  Runtime& r = rt();
+  const bool was = r.start_position;
+  r.start_position = false;
+  return was;
+}
+
+bool start_position_pending() { return rt().start_position; }
 
 namespace {
 // goal.all: every encounter in goal_won. Sets the goal (and sends it) the first time.
@@ -1284,12 +1367,14 @@ void goal_all_update(Runtime& r) {
 }
 }  // namespace
 
-void on_saved(const std::string& card_image, int save_index) {
+void on_saved(const std::string& card_image, int save_index, const u8* file, size_t length) {
   Runtime& r = rt();
   if (!r.on || card_image.empty()) return;
   const std::string path = sidecar_path(card_image, save_index);
   std::string err;
-  if (write_sidecar(path, r.state, &err)) {
+  SaveState s = r.state;
+  s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
+  if (write_sidecar(path, s, &err)) {
     log("saved " + path);
   } else {
     log("could not save the sidecar: " + err);
@@ -1325,6 +1410,7 @@ void on_loaded(const std::string& card_image, int save_index) {
       if (std::find(s.goal_won.begin(), s.goal_won.end(), enc) == s.goal_won.end()) s.goal_won.push_back(enc);
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
+  s.save_hash.clear();  // (the card's, not the running state's)
   r.state = s;
   goal_all_update(r);  // (the merge may complete goal.all)
   r.deathlink_in = false;  // (a load starts the game again)
@@ -1335,6 +1421,31 @@ void on_loaded(const std::string& card_image, int save_index) {
   // index are given again (this session keeps the server's whole list).
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
       std::to_string(s.received_index));
+}
+
+bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length) {
+  const Runtime& r = rt();
+  if (!r.on) return true;
+  const std::string path = card_image.empty() ? std::string() : sidecar_path(card_image, save_index);
+  std::string why;
+  SaveState s;
+  std::string err;
+  if (path.empty() || !read_sidecar(path, &s, &err)) {
+    why = "this save isn't from this Archipelago seed (no Archipelago state beside it: " + (path.empty() ? "no card file" : err) + ")";
+  } else if (s.seed != r.seed.seed || s.slot_name != r.seed.slot_name) {
+    why = "this save isn't from this Archipelago seed (its state is for seed " + s.seed + ", slot " + s.slot_name + ")";
+  } else if (s.save_hash.empty()) {
+    why = "this save was changed outside the game (its Archipelago state holds no hash of it)";
+  } else if (file == nullptr || util::save_digest(file, length) != s.save_hash) {
+    why = "this save was changed outside the game (it differs from the one this seed saved)";
+  }
+  if (why.empty()) return true;
+  if (const char* any = std::getenv("SS_AP_ANY_SAVE"); any != nullptr && std::string(any) == "1") {
+    log("save " + std::to_string(save_index + 1) + ": " + why + "; loaded anyway (SS_AP_ANY_SAVE=1)");
+    return true;
+  }
+  log("load refused, save " + std::to_string(save_index + 1) + (card_image.empty() ? "" : " of " + card_image) + ": " + why);
+  return false;
 }
 
 // ---- The server ----
@@ -1916,12 +2027,13 @@ int story_chapter() {
   return g == nullptr ? 0 : static_cast<int>(rd32s(g));
 }
 
-// The keys of a door the player lacks (open world): its `key`, or every one of its `keys` (a
-// one-way story point such as the El voyage needs them all); none once the chapter reaches the
-// door's `until` (an exit kept shut only while the story is inside the area).
+// The keys of a door the player lacks (open world; the hub's dungeon keys [hubcore agent]): its
+// `key`, or every one of its `keys` (a one-way story point such as the El voyage needs them all);
+// none once the chapter reaches the door's `until` (an exit kept shut only while the story is
+// inside the area).
 std::vector<int> missing_keys(const Door& d) {
   std::vector<int> out;
-  if (!rt().seed.open_world) return out;
+  if (!rt().seed.open_world && !rt().seed.hub) return out;
   if (d.until > 0 && story_chapter() >= d.until) return out;
   for (const int k : d.keys)
     if (!has_key(k)) out.push_back(k);
@@ -1986,6 +2098,35 @@ void door_refused(const Door& d, const std::string& purpose_override = "") {
   log("door " + std::to_string(d.id) + (d.name.empty() ? "" : " (" + d.name + ")") + ": locked, needs " + names);
 }
 
+// Every banner the seed's doors can show (each key's "X needed", with the purpose when it fits;
+// each condition's text), measured once the map font is loaded (the first free play): one over
+// the banner's width is logged; with SS_TRACE every width is [hubcore agent].
+void measure_door_banners(Runtime& r) {
+  if (r.banners_measured || field::msg_font_ref() == nullptr) return;
+  r.banners_measured = true;
+  std::set<std::string> seen;
+  int over = 0;
+  auto measure = [&](const Door& d, const std::string& text) {
+    if (text.empty() || !seen.insert(text).second) return;
+    const int w = banner_text_width(text);
+    runtime::Runtime::get().trace(("ap banner \"" + text + "\" " + std::to_string(w) + " px (door " + std::to_string(d.id) + ")").c_str());
+    if (w > kBannerTextMax) {
+      ++over;
+      log("door " + std::to_string(d.id) + ": banner \"" + text + "\" is " + std::to_string(w) + " px, over the banner's " +
+          std::to_string(kBannerTextMax));
+    }
+  };
+  for (const Door& d : r.seed.doors) {
+    for (const int k : d.keys) {
+      const std::string key = key_name(k);
+      const std::string with_purpose = key + " needed" + (d.purpose.empty() ? "" : " " + d.purpose);
+      measure(d, banner_text_width(with_purpose) > kBannerTextMax ? key + " needed" : with_purpose);
+    }
+    for (const std::string& b : d.banners) measure(d, b);
+  }
+  if (!seen.empty()) log("door banners measured: " + std::to_string(seen.size()) + ", " + std::to_string(over) + " too wide");
+}
+
 }  // namespace
 
 bool has_key(int key) {
@@ -2024,7 +2165,7 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
 
 bool door_blocked_at_trigger(int routine_at) {
   Runtime& r = rt();
-  // (Keys lock only in open world, v2 conditions in every mode: door_locked knows.)
+  // (Keys lock only in open world and the hub, v2 conditions in every mode: door_locked knows.)
   if (!r.on || routine_at < 0) return false;
   const int routine = na_offset(r.loaded_map, routine_at);
   if (routine < 0) return false;
@@ -2051,6 +2192,12 @@ bool on_map_transfer(int offset, s32* args) {
   if (door_locked(*d)) {
     door_refused(*d);
     return true;
+  }
+  // [hubcore agent] to.while_unbeaten: the redirect is off once that boss is won.
+  if (d->has_target && d->to_while_unbeaten >= 0 && goal_won(d->to_while_unbeaten)) {
+    log("door " + std::to_string(d->id) + ": encounter " + std::to_string(d->to_while_unbeaten) +
+        " won, the door's own target (map " + std::to_string(args[0]) + ")");
+    return false;
   }
   if (d->has_target) {
     char msg[160];
@@ -2426,7 +2573,8 @@ std::string status_text() {
   if (r.state.ambushes > 0) out += "\n  ambushes waiting " + std::to_string(r.state.ambushes);
   if (sd.open_world || !sd.doors.empty() || sd.shuffle_shops != 0) {
     std::snprintf(buf, sizeof buf, "\n  world %s | Expel teleporter %s | doors %zu (%zu ignored) | shops %s | keys",
-                  sd.open_world ? "open" : "story", sd.expel_teleporter ? "on" : "off", sd.doors.size(), r.bad_doors.size(),
+                  sd.open_world ? "open" : sd.hub ? "hub" : "story", sd.expel_teleporter ? "on" : "off", sd.doors.size(),
+                  r.bad_doors.size(),
                   sd.shuffle_shops == 2 ? "full" : sd.shuffle_shops == 1 ? "specials" : "off");
     out += buf;
     if (r.state.keys.empty()) out += " none";

@@ -65,7 +65,7 @@ Container: u32 section count, then `(u32 section id, u32 offset)` pairs.
 
 | Section | Contents |
 |---|---|
-| 0 | SLZ method 2 chain (not yet decoded; probably geometry / graphics) |
+| 0 | SLZ chain: block 0 the map scene (its cell grid at scene +0x80, docs/notes/field_part3.md 3.1.2: cell 0 list 14 the floor zones, 0x58 bytes each, list 15 the walls), block 1 the texture directory, then the 256x256 texture pages and the CLUT table (field/map.cpp `field_load_map_sections`; `tools/map_zones.py` lists a map's floor zones) |
 | 1 | SLZ block: the map's event script (below) |
 | 2 | SLZ block: not yet decoded (begins with a count and an offset table) |
 
@@ -228,6 +228,26 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   Fighting Arena, map 303 actor 25, sends the party to Arlia map 18.
 - **Flag 753**: set after the final boss (map 685, chapter 60). Map 18 registers its chests
   only while it is clear.
+- **The hub's P5 places** [hubcore agent, 2026-10-25; docs/ap/seed_format.md "Hub"]:
+  - Eluria Tower's door 557 -> 558 (routine 0x7808): at chapter <= 32 the story's scenes; later
+    (0x8584) a message, then the library walk 0x04d8 takes the leader to the door (-158, -3408)
+    and the routine waits for it (wait_state 5, actor idle), plays the door's sounds and
+    transfers (0x8658, map 558 at 1834, 0, 1, facing 180). Fired from anywhere but the door
+    region, the walk never ends (a sweep stalls there; walking in works). Confirmed.
+  - Map 558's stairs: its floor zones (scene cell 0 list 14) 0/1 (left, z 570..998) and 2/3
+    (right) are ramps from y 0 at x 685 down to y 450 at x -250, landings 8-11 at y 450, then 14-17
+    down to y 650. The regions at their foot (thread_start x 20..41 z 142..180, code 0x3c00; x
+    282..299 z 141..180, 0x3c60) transfer to map 559 (880, -60, 842) / (935, -54, -830) only
+    when actor_get_y(leader) > 400; the regions around them (0x3c44) call B 0x48
+    map_preload_owned(559). Confirmed (walked headless).
+  - Map 305 (the Fun City arena) set-up 0x9d9c, at chapter 57: step 0 calls 0x661c (the
+    transfer to 301), step 10 0x6c14, step 20 registers actor 16 (the Clerk) with talk 0x6e78
+    (ext 0x70 at 0x9e28): "Do intensive training" (choice 0: arena battles, back in 305), "Rest",
+    "Go see Narl" (choice 2: 0x71b8, Marsilio's scene: battle 532, step 2000, flag 2327, transfer
+    to 296 at -5, 0, 823). At 57 / 20 that talk is 305's only entry (no way out on foot).
+    Confirmed. The routine before the set-up ends (0x9d3c) by u8 G[0x217] (the arena
+    registration's state, 0-3) in 0x7c1c / 0x8220 / 0x8530 / 0x8e48, then 0x91c0 (the transfer
+    back to the antechamber 304 at 1339, 0, -6). Likely.
 
 ### Text
 

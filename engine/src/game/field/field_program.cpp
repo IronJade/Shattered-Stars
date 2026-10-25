@@ -164,6 +164,7 @@ void field_create_state_block() {
   auto* snapshot = static_cast<u8*>(handoff_get(g.handoff, 0xE));
   if (snapshot == nullptr) {
     // New game.
+    const bool debug_start = runtime::Runtime::get().debug_start_map >= 0;  // (--map; ap below)
     block[0x338] = 3;
     block[0x241] = 0x80;
     block[0x242] = block[0x243] = 0;
@@ -216,6 +217,9 @@ void field_create_state_block() {
                  {0x324, 0x80073520, 8}};
     for (const auto& n : names) std::memcpy(block + n.offset, field_data(n.address), n.bytes);
     std::memset(g.config + 0x10, 0, 12);  // config+0x10, +0x14 and money (+0x18)
+    // Archipelago (port feature), the hub [hubcore agent]: a hub seed's New Game state (flags,
+    // globals, chapter 60, disc 2, the start town) on top of the original's.
+    ap::on_new_game_state(block, debug_start);
   } else {
     // Loading a game: the snapshot holds game_state (0x2a0) and script flags (0x170).
     std::memcpy(gs, snapshot, 0x2A0);
@@ -892,8 +896,9 @@ void field_run(Field* f) {
   }
   field_bind_state_block(f);
   // A loaded game (or a return from another program) checks the disc in the drive
-  // against the state's (config +0x4c: 0 disc 1, 1 disc 2).
-  if (g.returning != 0 && g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0)
+  // against the state's (config +0x4c: 0 disc 1, 1 disc 2). So does the hub's New Game
+  // (Archipelago, disc 2) [hubcore agent].
+  if ((g.returning != 0 || ap::start_position_pending()) && g.loader->entry_size(g.config[0x4C] + 1 + 5) == 0)
     field_prompt_disc_change(f, g.config[0x4C] + 1, 0);
   if (g.field_flags[0x24] != 0) {
     // Back from another program (a battle).
@@ -941,6 +946,8 @@ void field_main_loop(Field* f) {
   // loaded game, not a return from a battle) puts the leader there instead of the map's
   // default spawn or the saved spot.
   bool keep_position = g.returning != 0;
+  // Archipelago, the hub's New Game [hubcore agent]: the start town's arrival (set in the state).
+  if (g.field_flags[0x24] == 0 && ap::take_start_position()) keep_position = true;
   if (auto& rt = runtime::Runtime::get(); rt.debug_start_pos_set && g.field_flags[0x24] == 0) {
     std::memcpy(g.game_state + 8, rt.debug_start_pos, 12);
     const s16 facing = static_cast<s16>(rt.debug_start_pos[3]), camera = static_cast<s16>(rt.debug_start_pos[4]);

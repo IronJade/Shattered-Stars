@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <set>
 #include <string_view>
 #include <fstream>
@@ -14,6 +15,7 @@
 #include "mods/zip.h"
 #include "psx/memory_card.h"
 #include "runtime/region.h"
+#include "util/sha256.h"
 
 #ifdef _WIN32
 #include <cwchar>
@@ -156,6 +158,44 @@ fs::path sidecar_of(const fs::path& card, int n) {
   char tail[32];
   std::snprintf(tail, sizeof tail, ".slot%02d.ap.json", n);
   return fs::path(p.native() + fs::path(tail).native());
+}
+
+// The save guard's stamp (game/ap load_allowed) [hubcore agent]: a sidecar's text with
+// "save_hash" set to 'digest' (replaced when there is one, else added as the first member) and
+// its version raised to 2. The sidecar is the game's own JSON (game/ap sidecar_json), so a text
+// edit is enough; empty when the text is not a JSON object.
+std::string stamp_sidecar(const std::string& text, const std::string& digest) {
+  std::string out = text;
+  const size_t open = out.find_first_not_of(" \t\r\n");
+  if (open == std::string::npos || out[open] != '{') return {};
+  const std::string key = "\"save_hash\"";
+  bool replaced = false;
+  for (size_t p = out.find(key); p != std::string::npos && !replaced; p = out.find(key, p + 1)) {
+    size_t q = out.find_first_not_of(" \t\r\n", p + key.size());
+    if (q == std::string::npos || out[q] != ':') continue;
+    q = out.find_first_not_of(" \t\r\n", q + 1);
+    if (q == std::string::npos || out[q] != '"') continue;
+    const size_t end = out.find('"', q + 1);
+    if (end == std::string::npos) return {};
+    out.replace(q + 1, end - q - 1, digest);
+    replaced = true;
+  }
+  if (!replaced) {
+    const size_t next = out.find_first_not_of(" \t\r\n", open + 1);
+    const bool empty = next != std::string::npos && out[next] == '}';
+    out.insert(open + 1, "\n \"save_hash\": \"" + digest + "\"" + (empty ? "" : ","));
+  }
+  const std::string vkey = "\"version\"";
+  for (size_t p = out.find(vkey); p != std::string::npos; p = out.find(vkey, p + 1)) {
+    size_t q = out.find_first_not_of(" \t\r\n", p + vkey.size());
+    if (q == std::string::npos || out[q] != ':') continue;
+    q = out.find_first_not_of(" \t\r\n", q + 1);
+    size_t end = q;
+    while (end < out.size() && std::isdigit(static_cast<unsigned char>(out[end]))) ++end;
+    if (end > q) out.replace(q, end - q, "2");
+    break;
+  }
+  return out;
 }
 
 // "AP_1_P1_Claude.apso2, AP_1_P2_Rena.apso2"
@@ -344,6 +384,7 @@ int adopt_seed_saves(const fs::path& seed_card, const std::vector<fs::path>& own
       return -1;
     }
     std::set<int> kept;
+    std::map<int, std::string> digests;  // save number -> its save_hash on the card [hubcore agent]
     {
       psx::MemoryCard copy;
       if (!copy.open(tmp, false) || !copy.formatted()) {
@@ -352,8 +393,14 @@ int adopt_seed_saves(const fs::path& seed_card, const std::vector<fs::path>& own
       }
       for (const psx::MemoryCard::File& f : copy.files()) {
         const int n = game_save_number(f.name);
-        if (n != 0 && numbers.count(n)) kept.insert(n);
-        else copy.erase(f.name);
+        if (n != 0 && numbers.count(n)) {
+          kept.insert(n);
+          std::vector<u8> block(psx::MemoryCard::kBlockSize, 0);
+          if (copy.read(f, 0, block.data(), static_cast<u32>(block.size())))
+            digests[n] = util::save_digest(block.data(), block.size());
+        } else {
+          copy.erase(f.name);
+        }
       }
       if (kept.empty()) {
         fs::remove(tmp, ec);
@@ -366,10 +413,18 @@ int adopt_seed_saves(const fs::path& seed_card, const std::vector<fs::path>& own
       fail(error, "can't write " + path_utf8(seed_card));
       return -1;
     }
+    // Each save's sidecar goes with it, stamped with the hash of the save as it is on the seed's
+    // card (the save guard, game/ap load_allowed): runs an earlier version saved stay playable.
     int adopted = 0;
     for (const int n : kept) {
-      fs::copy_file(sidecar_of(card, n), sidecar_of(seed_card, n), fs::copy_options::overwrite_existing, ec);
-      if (!ec) ++adopted;
+      std::ifstream in(sidecar_of(card, n), std::ios::binary);
+      const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+      const auto d = digests.find(n);
+      const std::string stamped = d == digests.end() ? std::string() : stamp_sidecar(text, d->second);
+      if (stamped.empty()) continue;
+      std::ofstream out(sidecar_of(seed_card, n), std::ios::binary | std::ios::trunc);
+      out << stamped;
+      if (out) ++adopted;
     }
     return adopted;
   }

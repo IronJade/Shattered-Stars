@@ -48,7 +48,7 @@ struct Sweep {
   int last_map_seen = -1;
   u32 choices = 0;   // choices answered in the current entry (every third is cancelled)
   u64 signature = 0; // what the script, the field and the windows were doing
-  struct Step { int map; char kind; int index; };
+  struct Step { int map; char kind; int index; int option = 0; };  // option: "MAP:K26:1" (below)
   std::vector<Step> play;  // SS_SWEEP_PLAY
   size_t played = 0;
   int still = 0;     // frames since it last changed
@@ -183,12 +183,15 @@ const PressMode& press_mode() {
   return m;
 }
 
+u16 g_hold_button = 0;  // a play step's option press (schedule_input), held until g_hold_until
+u64 g_hold_until = 0;
+
 void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
   auto& rt = runtime::Runtime::get();
   const u64 now = rt.vblanks();
   auto& in = rt.scripted_input;
   in.erase(in.upper_bound(now), in.end());
-  in[now + 1] = 0;
+  in[now + 1] = now + 1 < g_hold_until ? g_hold_button : 0;  // (a play step's option press, held)
   if (mode == 2) {
     for (u64 v = now + 1; v <= now + 600; ++v) {
       if (v % 8 == 0) press_at(v, pad_button(1));  // cancel
@@ -231,8 +234,34 @@ void schedule_input(int mode) {  // 0 none, 1 field, 2 menu
     return;
   }
   static u64 last_press = 0;
-  if (now < last_press + 6) return;
+  static int downs = 0;          // cursor moves made on the choice up now (a play step's option)
+  static u64 option_since = 0;   // when that choice came up
   bool waiting = g_script_vm != nullptr && g_script_vm->wait_state == 9;
+  if (!waiting) downs = 0, option_since = 0;
+  // SS_SWEEP_PLAY "MAP:K26:1": while that step plays, a choice takes option 1: 20 frames after it
+  // comes up the cursor goes down once (every 10 frames), then confirm (Arlia's guide's "go" is
+  // the second option) [hubcore agent].
+  const Sweep& sw = g_sweep;
+  const int option = sw.phase == Phase::Play && sw.played > 0 && sw.played <= sw.play.size() ? sw.play[sw.played - 1].option : 0;
+  if (waiting && option > 0) {
+    if (option_since == 0) option_since = now;
+    // (The choice reads the pad only once its window is up: state -1, 1, 6 or 7, as the VM's
+    // wait state 9 tests, and not while its cursor slides.)
+    const int cw = msg_window_get_state(msg_window(g_script_vm->wait_param));
+    const bool ready = (cw == -1 || cw == 1 || cw == 6 || cw == 7) && g_script_vm->choice_slide == 0;
+    if (!ready || now < option_since + 20 || now < last_press + 10) return;
+    // Held for 4 vblanks (the field reads the pad every other vblank at 30 fps), then released.
+    const u16 button = downs < option ? 0x4000 : pad_button(0);  // down, then confirm
+    g_hold_button = button;
+    g_hold_until = now + 5;
+    in[now + 1] = button;
+    say("choice on window %d: %s (option %d, cursor at %d)", g_script_vm->wait_param, downs < option ? "down" : "confirm", option,
+        g_script_vm->choice_selection);
+    if (downs < option && g_script_vm->choice_selection < option) ++downs;
+    last_press = now;
+    return;
+  }
+  if (now < last_press + 6) return;
   for (int i = 0; i < kMsgWindowCount && !waiting; ++i) {
     if (MsgWindow* w = msg_window(i)) {
       const int st = msg_window_get_state(w);
@@ -526,7 +555,8 @@ void event_sweep_frame(Field* f) {
     for_each_item("SS_SWEEP_PLAY", [&](const char* v) {
       char kind = 0;
       int map = -1, index = -1;
-      if (std::sscanf(v, "%d:%c%d", &map, &kind, &index) == 3) s.play.push_back({map, kind, index});
+      int option = 0;  // "MAP:ENTRY:N": the step's choices take option N (0 the first) [hubcore agent]
+      if (std::sscanf(v, "%d:%c%d:%d", &map, &kind, &index, &option) >= 3) s.play.push_back({map, kind, index, option});
     });
     if (!s.play.empty()) s.phase = Phase::Play;
     // SS_SWEEP_GOTO=MAP: once settled, load map MAP as field_update's state 1 does (pending

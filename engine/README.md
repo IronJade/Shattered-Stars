@@ -224,6 +224,12 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   `SS_AP_SEED_CARD=1`. When the card is new, the saves an earlier version made for that seed
   on the player's card (sidecars naming the seed and slot) are copied to it once; the
   player's card is left as it is (`launcher/ap_seed.h`).
+- **Only the seed's own saves load:** with a seed, a save loads only when its sidecar names
+  this seed and slot and holds the hash of the save as it was saved (`save_hash`); a save of
+  another seed or an ordinary game, one without its sidecar, or one changed on the card since
+  fails as a damaged save does ("The data could not be loaded"), and the log says why. A guard
+  against accidents and casual save editors, not cheat-proofing (`docs/ap/seed_format.md` "The
+  save sidecar"; headless tests that need an ordinary save set `SS_AP_ANY_SAVE=1`).
 - **Offline:** leave Server empty. The seed's patch lines join the world edits; chests
   record checks; received items are given in free play with a banner; each save's
   state is kept in a sidecar file next to the memory card (`memcard1.slot03.ap.json`),
@@ -270,13 +276,19 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   a fight the story gives one member alone (Claude in Shingo Forest in Rena's game, the
   tournament's fights) borrows that member for the fight only. A starting character joins at
   the first free play and leads (`docs/ap/seed_format.md` "The party rules").
-- **The hub** (seed version 3, `world_mode: hub`; in progress): the story stays at chapter 60
+- **The hub** (seed version 3, `world_mode: hub`; in progress): New Game starts after the Final
+  Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
+  town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens
+  with its key, Fienal once the seed's bosses are beaten. The story stays at chapter 60
   (scenes that would move the chapter or step on are held back, a log line each), and each
   story boss plays its original scene in its chamber: while the boss is unbeaten, the chamber
   sees that boss's own point in the story (a "story view"), and what the scene stores there is
-  dropped once it is over, except what the seed keeps. Debugging: `SS_HUB_TRACE=1` lists what a
-  scene stores in its view (`docs/ap/seed_format.md` "Hub", "The port: the chapter lock and the
-  story views").
+  dropped once it is over, except what the seed keeps. A door the hub needs (the arena
+  antechamber's into Marsilio's arena) leads there only while its boss is unbeaten. Saves keep
+  all of it. Debugging: `SS_HUB_TRACE=1` lists what a scene stores in its view;
+  `SS_HUB_STATE=1` builds the hub's New Game state on a `--map` debug start
+  (`docs/ap/seed_format.md` "Hub": "The port: the chapter lock and the story views", "The
+  port: New Game, the starts, the doors, P5").
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP

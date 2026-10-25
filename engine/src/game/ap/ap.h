@@ -49,6 +49,10 @@ struct SaveState {
     std::vector<u8> bytes;              // its member's slot (0x60) and record (0xd0), put back later
   };
   std::vector<Stash> stash;
+  // Sidecar version 2 [hubcore agent]: the save's bytes on the card as util::save_digest gives
+  // them ("sha256:..."), written at every save. With a seed a load needs it to match
+  // (load_allowed); never kept in the running state.
+  std::string save_hash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -80,8 +84,33 @@ void free_play_update();                            // the field's play state ca
 
 // Saves: the sidecar goes with the save; a load reads it (a new game starts fresh).
 void on_new_game();
-void on_saved(const std::string& card_image, int save_index);
+// The hub's New Game [hubcore agent] (docs/ap/seed_format.md "Hub", "Order at New Game"):
+// field_create_state_block's new game ('block': the state block, 0xa40 bytes; the original's
+// state is in it: the hero's route flag and bytes, the names, chapter 3 / 4) becomes the hub
+// seed's: its flags (all others cleared; the picked hero's route flag kept), its globals, the
+// hero's own flags and words, the chapter and step, the disc (config +0x4c, the disc inserted),
+// the start's Synard words and the start (game_state +0x1a map, +0x08 position, +0x18 facing),
+// which the first map load keeps (take_start_position). Nothing without a hub seed whose hub
+// block holds the state. A debug start (--map, 'debug_start') keeps its map: there the state is
+// applied only with SS_HUB_STATE=1 (Claude's game) or SS_HUB_STATE=rena (Rena's).
+void on_new_game_state(u8* block, bool debug_start);
+// The field's first map load after on_new_game_state: true once (the leader goes to the start's
+// position and facing instead of the map's default spot); start_position_pending peeks.
+bool take_start_position();
+bool start_position_pending();
+// 'file' (optional): the save as the card driver read it back after writing it ('length'
+// bytes available, a block); the sidecar then holds its hash (save_hash).
+void on_saved(const std::string& card_image, int save_index, const u8* file = nullptr, size_t length = 0);
 void on_loaded(const std::string& card_image, int save_index);
+// The save guard (all world modes; the user, 2026-10-25: "block save editing for the archi
+// runs") [hubcore agent]. Before a load reaches the game's memory (menu/menu_save.cpp
+// load_finish: the title's load screen and SS_LOAD_SAVE): with a seed on, a save loads only when
+// its sidecar names this seed and slot and holds the hash of the save as it is on the card
+// ('file', 'length' bytes read); otherwise false (the game's own "load failed") and a log line
+// says why. A guard against accidents and casual save editors, not against cheating (the port
+// is open source). Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
+// seed run clears every SS_* hook) lets any save load as before, logged.
+bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length);
 
 // ---- The server (phase 2) ----
 

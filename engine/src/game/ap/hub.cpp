@@ -9,7 +9,11 @@
 #include <set>
 
 #include "game/ap/ap.h"
+#include "game/field/fade.h"
 #include "game/field/field.h"
+#include "game/field/message.h"
+#include "game/field/script_vm.h"
+#include "runtime/runtime.h"
 
 // The hub's chapter lock and story views (hub.h; docs/ap/seed_format.md "Hub") [hubvm agent].
 namespace ss::game::ap {
@@ -36,7 +40,14 @@ struct View {
   bool won = false;                       // the boss was won in this view
   bool cut = false;                       // cut_to sent the scene's transfer elsewhere: end at the next load
   int party_swallowed = 0;
+  int settle = 0;                         // free-play frames in a row after the win (hub_free_play)
+  u64 settle_vblank = 0;                  // ... the last one's vblank
 };
+
+// Free-play frames in a row that end a won view (a sixth of a second at 60 Hz): well past the
+// battle's hand-back frame, and short enough that a walk straight back into a trigger region meets
+// the real state (the event sweep fires its next step after 20 idle frames).
+constexpr int kSettleFrames = 10;
 
 struct Hub {
   bool on = false;
@@ -176,6 +187,26 @@ void trace_store(const char* what, const std::string& where, long long value, bo
                taken ? "view" : "through");
 }
 
+// Why the field is not in free play by its own rule (field/leader.cpp free_play, the camp menu's
+// test field_menu_check plus the choice), or null: an event or talk running, the map's thread
+// waiting on the music (1), a fade (3), a transfer / load (8) or a choice (9), the controls locked
+// (ext 0x7b), a fade or a window up. (ap's in_free_play already has the controls on and depth 0.)
+const char* scene_busy() {
+  if (const field::ScriptCtx* c = field::g_script_vm) {
+    const s32 w = c->wait_state;
+    if (c->active_trigger != -1 || c->talk_active != 0) return "an event or talk";
+    if (c->depth > 0) return "a routine";
+    if (w == 1 || w == 3 || w == 8 || w == 9) return "the thread waits";
+  }
+  if (const u8* ff = field::globals().field_flags; ff != nullptr && ff[0x26] != 0) return "the controls locked";
+  if (field::ScreenFade* f = field::field_fade(); f != nullptr && field::fade_is_active(f, -1)) return "a fade";
+  if (field::MsgSystem* m = field::msg_system()) {
+    const int status = field::msg_window_status(m, -1);
+    if (status != 1 && status != -1) return "a window";
+  }
+  return nullptr;
+}
+
 }  // namespace
 
 // ---- The VM's hooks ----
@@ -312,19 +343,45 @@ void hub_map_loaded(int map) {
   if (h.view.on) return;
   for (size_t i = 0; i < h.bosses.size(); ++i) {
     const HubBoss& b = h.bosses[i];
-    if (!in_maps(b, map) || !game_matches(b) || goal_won(b.encounter)) continue;
+    if (!in_maps(b, map) || !game_matches(b)) continue;
+    // A won boss: no view, unless the scene's end is still to come by a walk (view.done_flag clear:
+    // the Field of Power's 604 vision after the Guardian at 603) [hubchambers].
+    const bool won = goal_won(b.encounter);
+    if (won && (!b.has_view || b.view.done_flag < 0 || real_flag(b.view.done_flag))) continue;
     if (!b.has_view) {
       say("chamber map " + std::to_string(map) + " (" + boss_label(b) + "): no story view, the scene plays at the hub's state");
       continue;
     }
     view_start(h, i, map);
+    if (won) {
+      h.view.won = true;
+      say("story view: " + boss_label(b) + " won before; on until flag " + std::to_string(b.view.done_flag) + " is set");
+    }
     return;
   }
 }
 
 void hub_free_play() {
   Hub& h = hub();
-  if (h.on && h.view.on && h.view.won && !h.bosses[h.view.boss].view.until_transfer) view_end(h, "free play after the battle");
+  View& v = h.view;
+  if (!h.on || !v.on || !v.won || h.bosses[v.boss].view.until_transfer) return;
+  // The scene must be over, not just handing the controls back for a frame: ap's free play (the
+  // controls on, the script at depth 0) holds for a frame or two when a battle returns to the field
+  // mid-scene, the scene's thread then waiting on the map's load (Shin 447: the view ended there and
+  // the aftermath's step store ran outside it). So the field's own free-play rule (field/leader.cpp
+  // free_play) for kSettleFrames frames in a row.
+  const u64 now = runtime::Runtime::get().vblanks();
+  const char* busy = scene_busy();
+  if (busy != nullptr) {
+    if (v.settle > 0 && tracing())
+      std::fprintf(stderr, "[ap] hub trace: free play at vblank %llu map %d not settled (%s)\n",
+                   static_cast<unsigned long long>(now), current_map(), busy);
+    v.settle = 0;
+    return;
+  }
+  v.settle = v.settle > 0 && now <= v.settle_vblank + 4 ? v.settle + 1 : 1;  // (field frames: 1-2 vblanks)
+  v.settle_vblank = now;
+  if (v.settle >= kSettleFrames) view_end(h, "free play after the battle");
 }
 
 bool hub_map_transfer(s32* args) {

@@ -205,10 +205,11 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
  "format": "apso2-save",
  "goal": false,
  "received_index": 1,
+ "save_hash": "sha256:9f2c...e41a",
  "seed": "smoke-1",
  "slot_name": "Claude",
  "start_given": true,
- "version": 1
+ "version": 2
 }
 ```
 
@@ -217,13 +218,42 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
 - `checked` lists the location ids in the order they were checked.
 - `start_given` records that the starting inventory is in the save.
 - `goal` records that the goal battle was won; it is sent again on every connect.
+- `save_hash` (version 2, 2026-10-25) is the save as it lies on the card: `"sha256:"` and the
+  SHA-256 of the save file's first N bytes, N = the save's own length (u16 at file +0x21a, the
+  summary's +0x1a; `util::save_digest`). The game takes it from what the card driver reads back
+  after writing the save. Version-1 sidecars (no hash) still read, but a seed refuses to load
+  their saves (below).
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
-a file. It reads the sidecar after a load (the load dialog, or `SS_LOAD_SAVE`):
+a file.
 
-- A save without a sidecar loads as an ordinary game: no checks, and no starting
-  inventory on top of it.
+**The save guard** (all world modes; the user, 2026-10-25: "block save editing for the archi
+runs"; `ap::load_allowed`, called by `menu/menu_save.cpp` `load_finish` before the save reaches
+the game's memory). With a seed on, a save loads only when its sidecar names this seed and slot
+and its `save_hash` is the hash of the save as the card holds it now. Refused: a save without a
+sidecar (an ordinary game's, or one copied without its `.ap.json`), another seed's or slot's, a
+sidecar without the hash (version 1, or the field stripped), and a save whose bytes changed on
+the card since it was saved. A refused load fails the way a damaged save does: the load screen
+shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
+"no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
+this save was changed outside the game (it differs from the one this seed saved)` / `... this
+save isn't from this Archipelago seed (...)`). This is a guard against accidents and casual save
+editors, not cheat-proofing: the port is open source, and anyone can recompute the hash.
+Without a seed nothing is checked and the card's bytes are the same as ever (only the sidecar
+gained a field). Headless tests that load ordinary saves with a seed set `SS_AP_ANY_SAVE=1`
+(logged "loaded anyway"); a windowed seed run clears every `SS_*` hook, so it can't.
+
+Runs in progress stay playable: when a seed's own card is made, the saves an earlier version
+made for the seed on the player's cards are copied to it (`launcher::adopt_seed_saves`) and each
+copied sidecar is stamped with its save's hash (and version 2). A seed card that a build from
+before the guard (2026-10-25, unreleased) already filled holds version-1 sidecars: their saves
+no longer load.
+
+After an allowed load the game reads the sidecar (the load dialog, or `SS_LOAD_SAVE`):
+
+- (Only with `SS_AP_ANY_SAVE=1`.) A save without a sidecar loads as an ordinary game: no
+  checks, and no starting inventory on top of it; another seed's sidecar is used anyway.
 - When the sidecar's seed matches, checks made since the save stay checked, because the
   multiworld keeps them.
 - Items still waiting are given in the loaded game.
@@ -522,6 +552,7 @@ built. No port change is needed.
 | `until` | open world: a chapter; the keys are needed only while the story's chapter (G[0xa0]) is below it (an exit kept shut while the story is inside the area) |
 | `purpose` | the banner's ending for a missing key ("to sail": "Eluria Pass needed to sail"; left out when the text would not fit the banner, 236 pixels) |
 | `to` | entrance shuffle: `{map, x, y, z, dir}` sent there instead (`dir` optional) |
+| `to.while_unbeaten` | (hub P5, 2026-10-25) an encounter id: the target applies only while it is not in the sidecar's `goal_won`; after the win the door is the original again (logged `door N: encounter E won, the door's own target (map M)`). The arena 305's door (see "Hub", P5) |
 
 - **Locked.** When a trigger region (field doors: thread_start regions; world-map entrances:
   ext 0x76) is about to start a routine whose seed doors all need a missing key, the routine
@@ -1066,7 +1097,8 @@ view until it is beaten. Without `world_mode: hub` none of this exists.
 - `options.world_mode`: `"hub"` (or 2). The chapter lock, the story views, the hub New Game and
   the dungeon keys run only then.
 - Reference only (the port reads the blocks below): `options.hub_start` (`fun_city`, `arlia`,
-  `random`: the APWorld picks the concrete `hub.start`), `options.fienal_requirement`
+  `random_town`: the APWorld picks the concrete `hub.start`, any of hub_state.json's 16 `starts`;
+  `options.hub_start_town` names it), `options.fienal_requirement`
   (`fields_and_berle`, `fields`, `all_bosses`: written as the gate door's `won`, below).
 - `party_rules` is `"open"` and characters are items (D7); `starting_character` works as in
   open world.
@@ -1145,25 +1177,31 @@ Read by the port:
 | `view.globals` | (optional) script globals redirected the same way: `{"0xADDR": value}` a 32-bit word (ADDR 4-aligned, >= 0xa8; all four bytes), or `{"0xADDR": {"size": 1 or 2, "value": v}}` for a byte / half global (only those bytes; ADDR aligned to its size): prefer it for the floor G[0x1cf] and the like |
 | `view.keep` | flags of `view.flags` whose value at the view's end is written to the real flags (the whitelist); everything else stored in the view is dropped |
 | `game` | optional: `"claude"` or `"rena"`: the chamber exists only in that hero's game (Varmillion 462 / Azamgil 463) |
-| `view.after_maps` | (proposed to hubvm, optional) maps the view goes on into when its scene transfers there from a view map, without turning the view on by themselves (an aftermath through a scene map: the Field of Courage's 625 vision, the Synard Plant's 271, the Field of Intelligence's 555 / 628 / 556) |
-| `view.until` | (proposed, optional) `"free_play"` (default: the view ends at the first free play after the win) or `"transfer"` (it lasts until a map outside `maps` / `after_maps` loads: the Field of Power, whose end scene in 604 is guarded only by flags) |
-| `view.cut_to` | (proposed, optional) `{map, x, y, z, dir}`: after the win, the scene's first transfer out of the view goes here instead (Berle 575: the scene goes on to 576, which stores chapter 34 and moves to the disc switch's scene map 625; cut_to = the tower's world-map arrival) |
+| `view.after_maps` | (optional) maps the view goes on into when its scene transfers there from a view map, without turning the view on by themselves (an aftermath through a scene or vision map: the Field of Courage's 625; the Synard Plant's 271; the Field of Intelligence's 555 / 628 / 556 and Rena's vision on Expel's 14; the Field of Power's visions 622 / 27 / 30; the Field of Love's 262 / 310; Mihne's 455; Armlock's 314) |
+| `view.until` | (optional) `"free_play"` (default: the view ends at the first free play after the win) or `"transfer"` (it lasts until a map outside `maps` / `after_maps` loads: the Field of Power, whose end scene in 604 is guarded only by flags) |
+| `view.cut_to` | (optional) `{map, x, y, z, dir}`: after the win, the scene's first transfer out of the view goes here instead (Berle 575: the scene goes on to 576, which stores chapter 34 and moves to the disc switch's scene map 625; cut_to = the tower's world-map arrival) |
+| `view.done_flag` | (optional, a script flag) after the win the view still comes on in its `maps` (marked won) until this REAL flag is set: an end scene the player reaches by a walk after the fight (the Field of Power: 163, set by 604's vision end; leaving 603 between the Guardian and that vision would otherwise run the flag-guarded vision at chapter 60 and strand the party on 622) [hubchambers] |
 
-- **The view ends** at the first map load outside `maps` (the scene's transfer out, or the
-  player walking out before the fight) or at the first free play (no event or talk running, no
-  fade or window up) after the boss battle was won. New Game and a load reset it. Party changes
-  (ext 0xae / 0xaf) and disc changes (B 0x6a) inside a view are dropped (D7; no scene reaches a
-  disc change before its cut).
+- **The view ends** at the first map load outside `maps` / `after_maps` (the scene's transfer
+  out, or the player walking out before the fight) or at free play after the boss battle was won:
+  the field's own free-play rule (no event or talk running, the map's thread not waiting on a
+  load, fade, music or choice, the controls unlocked, no fade or window up) held for 10 frames in a
+  row (a battle hands the field back mid-scene with the controls on for a frame or two).
+  New Game and a load reset it. Party changes (ext 0xae / 0xaf) and disc changes (B 0x6a)
+  inside a view are dropped (D7; no scene reaches a disc change before its cut).
 - **What a row's view lists** (tools/ap_hub_bosses.py; `view_flags_why` says why per flag).
   `chapter` / `step`: the scene's guard (`chapter <= N` reads as N; Bark has none and gets the
   chapter the story enters Mihne at, 55). `flags`: the flags the view's maps read whose value at
   that chapter differs from the hub's (the latest story scene storing it before that chapter
-  decides), and the flags stored in the view that the hub must not keep (story bookkeeping, the
-  party flags 740-744: dropped), each at its value at that story point; flag 745 (the scene
-  flag; a chamber's set-up fades in only while it is 0) at 0 wherever a scene stores it. Not
-  listed, so written through: the bosses' guards and their "won" flags, the Fields' 162-165,
-  key items 66-91, chest and gift flags. `keep`: Arcmene's flag 11 (its 12 is dropped: it makes
-  a disc of Nede's world map unwalkable and is clear in the late save).
+  decides), and the flags stored in the view that the hub must not keep (story bookkeeping:
+  dropped), each at its value at that story point; flag 745 (the scene flag; a chamber's set-up
+  fades in only while it is 0) at 0 wherever a scene stores it. Not listed, so written through:
+  the bosses' guards and their "won" flags, the Fields' 162-165, key items 66-91, chest and gift
+  flags, the item flags 740-744 (every map's set-up recomputes them from the inventory) and
+  door-arrival flags (curated `unlist`: the Field of Courage's 523 / 524, set by the door before
+  its transfer and cleared by the arrival). `keep`: Arcmene's flag 11 (its 12 is dropped: it
+  makes a disc of Nede's world map unwalkable and is clear in the late save). Every row is proven
+  headless by tools/ap_hub_chambers.py (both heroes; docs/handoff/hubchambers.md).
 
 Reference only (the port ignores them; the APWorld and the proofs read them):
 
@@ -1195,7 +1233,11 @@ chambers' encounters) with a banner; the Final Save Point's way to the final cor
 
 Nothing new: chamber victories go in `goal_won`; the hub state is built once at New Game and
 saved with the game. A save made in a view holds the real state (the view's values never
-reach it); loading it starts with the view off.
+reach it); loading it starts with the view off, and the loaded map's own load turns it back on
+in a chamber whose boss is unbeaten. The save guard ("The save sidecar") applies as in every
+mode. Proven headless (hubcore, 2026-10-25): a hub save and its load keep the hub (no second
+New Game: the party at the saved position, chapter 60 step 4000, the lock on), and a save made
+in Armlock 306 (Berle 535's view on) loads with the view on again.
 
 ### The port: the chapter lock and the story views (agent "hubvm", `engine/src/game/ap/hub.cpp`)
 
@@ -1231,21 +1273,29 @@ of it runs: the script VM tests one flag (`ap::g_hub_vm`) and takes the original
   keeps it (the field reloads the same map); a victory in the row's encounter goes in
   `goal_won` (as for any row's encounter, with or without a view) and marks the view won.
 - **A view's end.** At the first map load outside `maps` (the scene's transfer out, or the party
-  walking out before the fight: it comes back on re-entry) or at the first free play (field state
-  0, the player in control, no script running) after the win. The `keep` flags a script stored in
+  walking out before the fight: it comes back on re-entry) or at free play after the win: ap's
+  free play (field state 0, the player in control, script depth 0) and the field's own rule
+  (field/leader.cpp free_play: no event or talk, the thread not waiting on a load / fade / music /
+  choice, controls unlocked, no fade or window) held for 10 frames in a row [hubchambers: a battle
+  hands the field back mid-scene with the controls on and the thread at depth 0 waiting on the
+  map's load for a frame; Shin 447's view ended there and its aftermath ran outside it before
+  this rule]. The `keep` flags a script stored in
   the view are written to the real flags then (a chest flag among them records its check as
   usual); everything else it stored is dropped: `[ap] hub: story view off: map 2 (Arcmene,
   encounter 522; map 1088 loaded): dropped chapter 41, step 0, flag 12=1, flag 745=1; kept flag
   11=1`. New Game and a load turn a view off with nothing written back; a save holds the real
   state; a save loaded in a chamber whose boss is unbeaten turns its view on with the map's load.
-- **`view.after_maps`, `view.until`, `view.cut_to`** (hubdata's proposal, read by the port): a
+- **`view.after_maps`, `view.until`, `view.cut_to`, `view.done_flag`** (read by the port): a
   load of an `after_maps` map keeps a view on (it never starts one there); with `until:
   "transfer"` free play doesn't end the view, only a load outside `maps` / `after_maps` does;
   with `cut_to`, once the boss is won the first script transfer to a map outside `maps` /
   `after_maps` goes to `cut_to` instead (`story view: Berle, encounter 520: the transfer to map
   576 goes to map 557 (-92, 0, 1907) instead (cut_to)`, ahead of the seed's door table), and the
-  view ends at that load even if `cut_to.map` is one of `maps`. Unit-tested (ap_hub_view_keys);
-  not yet proven headless on their chambers.
+  view ends at that load even if `cut_to.map` is one of `maps`; with `done_flag`, a load of one of
+  `maps` after the win still turns the view on (won from the start) while that real flag is clear
+  (`story view: Guardian, encounter 525 won before; on until flag 163 is set`). Unit-tested
+  (ap_hub_view_keys) and proven headless on their chambers (tools/ap_hub_chambers.py:
+  magichand / power / power_out / lover / bark / synard / berle306 / tower, both heroes).
 - **`view.globals`.** `{"0xADDR": word}` redirects the word's four bytes (the neighbours at the
   seed's values); `{"0xADDR": {"size": 1 | 2 | 4, "value": v}}` (ADDR aligned to size) redirects
   only those bytes. 0xa8 <= ADDR, ADDR + size <= 0x340.
@@ -1257,3 +1307,55 @@ of it runs: the script VM tests one flag (`ap::g_hub_vm`) and takes the original
   Alen-Tax 61 and Arcmene 417 (views); docs/handoff/hubvm.md has the runs. Not flag 12 in
   Arcmene's `keep`: it is clear in the hub state and makes part of Nede's world map unwalkable.
 - `status_text` (console `ap`) shows `hub | lock chapter on step on | chambers N | story view ...`.
+
+### The port: New Game, the starts, the doors, P5 (agent "hubcore", `engine/src/game/ap/ap.cpp`)
+
+What the port does with the `hub` block's state, `hub.start`, the seed's `doors` in hub mode and
+the P5 rows (implemented 2026-10-25; docs/handoff/hubcore.md has the runs).
+
+- **New Game** (`on_new_game_state`, from the field's `field_create_state_block` new-game branch,
+  after the original's hero, names, party and chapter 3 / 4): only when `world_mode` is hub and
+  the `hub` block holds `flags` or `start` (a lock-only block builds nothing). The script flags
+  are cleared and `flags` set, then `globals`, `games[hero]` (flags, globals), the route flag
+  forced to the hero picked (flag 1 set in Claude's game, clear in Rena's), `chapter` / `step`,
+  config +0x4c = `disc` - 1 with the disc inserted (the insert-disc screen if disc 2 is
+  missing), `start.globals`, and the start: game_state +0x1a map, +0x08 position, +0x18 facing
+  (`dir` degrees as 4096ths). The field's first map load keeps that position
+  (`take_start_position`). Logged: `[ap] hub New Game: Claude's game, 1063 flags, 25 globals (+1
+  / 1 the hero's, 7 the start's), chapter 60 step 4000, disc 2; Fun City (map 279 at 470, 0,
+  68, facing 180)`. Then `start.items`, `goal.flags` and the starting character as in open world.
+  A `--map` debug start keeps its map: the state is applied there only with `SS_HUB_STATE=1`
+  (tests). A load never runs it (the snapshot branch).
+- **`hub.start`** is a row of hub_state.json `starts` copied whole (16 towns: Expel's Arlia,
+  Salva, Cross, Clik, Mars, Herlie, Port Hilton, Lacour, Linga, Eluria Colony; Energy Nede's Fun
+  City, Central City, North City, Armlock, Giveaway, Laqua). The port reads `name`, `map`, `x`,
+  `y`, `z`, `dir` (the arrival of the town's world-map entrance, checked open at the hub state)
+  and `globals` (the seven Synard words); `key`, `world`, `door`, `exit`, `synard_expel`,
+  `synard_nede` are for the APWorld and the proofs. The start world's Synard waits at the start
+  town's own spot (its script's `set_point`), the other world's at its arrival town (Expel:
+  Arlia, Nede: Fun City), whose arrival scripts re-park it. All 16 proven in both games (New Game
+  -> free play at the arrival -> the town's exit -> the world map, the Synard where the row
+  says). Armlock's start is Berle 535's chamber (its view is on from the arrival).
+- **Doors in hub mode.** Keys lock as in open world (`missing_keys`: open world or hub): a door
+  with its `routine` is refused at the trigger (nothing runs; the banner "<key> needed"), one
+  without at the transfer. The Fienal gate (68685691) has no key: its `won` (the requirement's
+  chambers) with one banner per boss, the first missing one shown. At the first free play every
+  banner the seed's doors can show is measured in the map font (`[ap] door banners measured: N,
+  M too wide`; at most 236 px): all 19 Fienal banners and every key text fit (widest "Defeat
+  Berle (Eluria Tower) first", 223 px). The Portal of Sealing is out of hub mode (no key, its
+  chest no location); Lasguss Mountain's key exists only when XINE is a location.
+- **P5: Eluria Tower.** 557 -> 558 needs nothing: walking into the door region runs the
+  routine (at chapter > 32 it walks the leader to the door first, which a sweep that fires the
+  routine from elsewhere never finishes). 558 -> 559 needs nothing: the stairs are ramps down
+  (floor zones y 0 -> 450) whose bottom regions transfer only when the leader's height is above
+  400 (0x3c00 / 0x3c60); walked on both sides. The climb (559 -> 575, Shin 519 at 569, Berle 520
+  at 575, then cut_to 557) works with Berle's view at chapter 33 **step 20**; at step 0, 573 ->
+  574 is shut and 566 -> 567 plays the 33/0 split scene, which strands the party on 627.
+- **P5: the arena 305 (Marsilio 532).** No door enters 305 at chapter 60. The seed's door
+  19929509 (the antechamber 304 -> the lobby 296) carries `to` {305, -13, 0, 276, 271} (the
+  registration's arrival) with `while_unbeaten` 532 (the APWorld's `hub.P5_DOORS`): while
+  Marsilio is unbeaten that door leads into 305, whose view (57/20) registers the Clerk (K16):
+  "Go see Narl" plays Marsilio's scene, and its transfer to 296 ends the view; after the win
+  the door leads to 296 again. 296 stays reachable from 299 / 300. Inside the view 305 has no
+  walk-out exit (the Clerk's training and rest keep the party there): a party that enters while
+  Marsilio is unbeaten leaves by winning (any way into 305, the paid registration at 297 too).

@@ -18,6 +18,7 @@
 #include "game/field/field.h"
 #include "game/field/script_vm.h"
 #include "test.h"
+#include "util/sha256.h"
 
 using namespace ss;
 using namespace ss::game;
@@ -261,6 +262,87 @@ TEST(ap_sidecar) {
   ap::on_new_game();
   ap::on_loaded(card, 5);  // no sidecar for save 6
   CHECK(ap::state().checked.empty() && ap::state().start_given);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+// The save guard [hubcore agent] (docs/ap/seed_format.md "The save sidecar"): with a seed, a
+// load needs this seed's sidecar holding the hash of the save as it is on the card.
+TEST(ap_save_guard) {
+  // SHA-256 (FIPS 180-2 examples: one block, two blocks, empty).
+  const std::string abc = "abc", two = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+  CHECK(util::sha256_hex(reinterpret_cast<const u8*>(abc.data()), abc.size()) ==
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  CHECK(util::sha256_hex(reinterpret_cast<const u8*>(two.data()), two.size()) ==
+        "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+  CHECK(util::sha256_hex(nullptr, 0) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+  ap::stop();
+  std::string error;
+  // A save as the card holds it: its length (0x1000) at +0x21a, the summary's +0x1a.
+  std::vector<u8> save(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 7 + 3);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+  const std::string digest = util::save_digest(save.data(), save.size());
+  CHECK(digest == "sha256:" + util::sha256_hex(save.data(), 0x1000));
+  const fs::path dir = scratch("guard");
+  const std::string card = (dir / "memcard1.mcd").string();
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));  // no seed: any save
+
+  ap::Seed s;
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::load_allowed(card, 0, save.data(), save.size()));  // an ordinary save (no sidecar)
+  // This seed's save: the sidecar (version 2) holds its hash, and it loads.
+  ap::on_saved(card, 0, save.data(), save.size());
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &back, &error));
+  CHECK(back.save_hash == digest);
+  {
+    std::ifstream in(ap::sidecar_path(card, 0));
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    CHECK(text.find("\"version\": 2") != std::string::npos && text.find(digest) != std::string::npos);
+  }
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  CHECK(ap::state().save_hash.empty());  // (never in the running state)
+  // An edited byte in the save: refused; a byte past its length is not the save's.
+  save[0x400] ^= 1;
+  CHECK(!ap::load_allowed(card, 0, save.data(), save.size()));
+  save[0x400] ^= 1;
+  save[0x1800] ^= 1;
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  save[0x1800] ^= 1;
+  // Another seed's save, another slot's: refused.
+  ap::SaveState other = back;
+  other.seed = "99999";
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+  CHECK(!ap::load_allowed(card, 1, save.data(), save.size()));
+  other = back;
+  other.slot_name = "Rena";
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 2), other, &error));
+  CHECK(!ap::load_allowed(card, 2, save.data(), save.size()));
+  // No hash (an earlier version's sidecar), or the field stripped from this one: refused.
+  other = back;
+  other.save_hash.clear();
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 3), other, &error));
+  CHECK(!ap::load_allowed(card, 3, save.data(), save.size()));
+  ap::Json stripped = ap::sidecar_json(back);
+  ap::Json copy = ap::Json::object();
+  for (const auto& [k, v] : stripped.items())
+    if (k != "save_hash") copy.set(k, v);
+  {
+    std::ofstream out(ap::sidecar_path(card, 4));
+    out << copy.dump();
+  }
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 4), &back, &error) && back.save_hash.empty());
+  CHECK(!ap::load_allowed(card, 4, save.data(), save.size()));
+  // A wrong hash (the sidecar edited to another save's): refused.
+  other = back;
+  other.save_hash = "sha256:" + util::sha256_hex(save.data(), 0x0FFF);
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 5), other, &error));
+  CHECK(!ap::load_allowed(card, 5, save.data(), save.size()));
   ap::stop();
   std::error_code ec;
   fs::remove_all(dir, ec);

@@ -51,6 +51,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ap_extract as A  # noqa: E402
 import ap_late_proof as L  # noqa: E402
+import so2_mod  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT_FLAGS = L.SCRIPT_FLAGS
@@ -85,15 +86,105 @@ KEY_ITEMS = range(66, 94)  # given as item 10000 + n by the shared give routine;
 
 # The globals (G[addr] = game_state + addr - 0xa0), per 4-byte word of the save.
 SYNARD_EXPEL = (51209, -150, 17464, 90)   # Arlia's own spot: Arlia 17 / 19 and Virtual Arlia (18 0x5a4)
-# Start points (D9). The arrival of the town's world-map entrance, and the town's own Synard
-# spot on its world (table A 0x19 set_point with constant arguments in the town's script). A
-# start on Expel keeps Energy Nede's spot at Fun City, where the arena's old man lands.
-STARTS = {
-    "fun_city": {"name": "Fun City", "world": 2, "door": 68686160, "map": 279, "x": 470, "y": 0, "z": 68, "dir": 180,
-                 "synard": (81546, -258, 33880, 176), "synard_from": "map 279 0xa06c"},
-    "arlia": {"name": "Arlia", "world": 1, "door": 59576065, "map": 17, "x": -126, "y": 0, "z": -614, "dir": 90,
-              "synard": SYNARD_EXPEL, "synard_from": "map 17 0x1570, Virtual Arlia map 18 0x5a4"},
-}
+SYNARD_NEDE = (81546, -258, 33880, 176)   # Fun City's own spot (279 0xa06c); the arena's old man (303) lands there
+# Start points (D9: Fun City (default), Arlia or random; the user: "random picks from any town in
+# both worlds"). One per town, the guide's towns (Expel 10, Energy Nede 6): the town's world-map
+# entrance whose arrival is the start (docs/ap/doors.json `to`, open at chapter 60 with no story
+# condition; the town's main square where it has its own entrance) and the sweep entry that walks
+# back out to the world map (`exit`, from the late proof's sweep of the map: the proofs use it).
+# The town's own Synard spot is read from its script: table A 0x19 set_point with constant
+# arguments (the town's exit parks the Synard there when the party came by air).
+#   key, name, world (1 Expel, 2 Energy Nede), world-map door, exit entry
+STARTS = [
+    ("fun_city", "Fun City", 2, 68686160, "T4"),
+    ("arlia", "Arlia Village", 1, 59576065, "T0"),
+    ("salva", "Town of Salva", 1, 59576123, "T4"),         # 44: the square's shop half (Inn)
+    ("cross", "Town of Cross", 1, 59576705, "T0"),         # 74: the main plaza
+    ("clik", "Port of Clik", 1, 59576779, "T1"),           # 108: its only entrance after chapter 14
+    ("mars", "Mars Village", 1, 59576152, "T0"),           # 124: the village green
+    ("herlie", "Town of Herlie", 1, 59576210, "T0"),       # 144: the market street
+    ("hilton", "Port Hilton", 1, 59576800, "T7"),          # 169: the harbour entrance
+    ("lacour", "Town of Lacour", 1, 59576877, "T0"),       # 211: the main plaza (chapter 60)
+    ("linga", "Town of Linga", 1, 59576967, "T27"),        # 183: the town plaza
+    ("eluria_colony", "Eluria Colony", 1, 59577686, "T0"),  # 232
+    ("central_city", "Central City", 2, 68685969, "T0"),   # 235: the central plaza
+    ("north_city", "North City", 2, 68685998, "T0"),       # 260: the town plaza
+    ("armlock", "Town of Armlock", 2, 68685597, "T0"),     # 306: the plaza (Berle 535's town chamber)
+    ("giveaway", "Giveaway", 2, 68685555, "T0"),           # 317: the town square
+    ("laqua", "L'Aqua", 2, 68685923, "T6"),                # 579: the street junction
+]
+
+
+def synard_spots(maps, m):
+    """The constant set_point calls (table A 0x19: world, x, y, z, facing) in map m's script,
+    direct or through a routine that pops its five arguments and passes them on: [(offset,
+    (world, x, y, z, dir))]."""
+    mp = map_of(maps)[m]
+    wrappers = set()
+    for s, e in mp.funcs:
+        body = [i[2] for i in mp.ins[s:e]]
+        if any(t.startswith("A_19") for t in body) and sum(t.startswith("pop_store") for t in body[:7]) == 5:
+            wrappers.add(mp.ins[s][0])
+    out = []
+    for n, i in enumerate(mp.ins):
+        if not (i[2].startswith("A_19") or (i[2].startswith("call ") and i[3] in wrappers)) or n < 5:
+            continue
+        args = [so2_mod.push_value(mp.ins[n - 5 + j]) for j in range(5)]
+        if any(a is None for a in args):
+            continue
+        out.append((i[0], tuple(a - (1 << 32) if a >= 1 << 31 else a for a in args)))
+    return out
+
+
+def holds_at_hub(cond, hub_flags):
+    """A doors.json condition ("not ((chapter == 9 && step == 0))", "flag[747] == 0") at the hub's
+    New Game state (chapter 60, step 4000, the hub's flags)."""
+    expr = re.sub(r"flag\[(\d+)\]", lambda m: str(int(int(m.group(1)) in hub_flags)), cond)
+    expr = expr.replace("&&", " and ").replace("||", " or ")
+    if re.search(r"[^\sa-z0-9()=!<>]|\b(?!and\b|or\b|not\b|chapter\b|step\b)[a-z_]+", expr):
+        raise ValueError(f"condition {cond!r} not understood")
+    return bool(eval(expr, {"__builtins__": {}}, {"chapter": 60, "step": 4000}))
+
+
+def starts_table(maps, hub_flags):
+    """Every start (STARTS) with its arrival (doors.json) and its Synard words: the start's world's
+    Synard at the town's own spot, the other world's where its way in lands (Expel: Arlia's, which
+    Virtual Arlia's arrival stores; Energy Nede: Fun City's, where the arena's old man lands and
+    which map 303 stores)."""
+    doors = {d["id"]: d for d in json.load(open(os.path.join(ROOT, "docs", "ap", "doors.json")))["doors"]}
+    out = []
+    for key, name, world, door, exit_entry in STARTS:
+        d = doors[door]
+        to = d["to"]
+        assert d.get("world") == world and d["to_area"] == name, (key, d.get("world"), d["to_area"])
+        assert all(holds_at_hub(c, hub_flags) for c in d["requires"]) and any(
+            all(holds_at_hub(c, hub_flags) for c in v.get("requires", [])) for v in d["via"]), (key, "shut at the hub state")
+        own = {a[1:] for _, a in synard_spots(maps, to["map"]) if a[0] == world - 1}
+        assert len(own) == 1, (key, to["map"], own)
+        own = tuple(own.pop())
+        ex = own if world == 1 else SYNARD_EXPEL
+        nd = own if world == 2 else SYNARD_NEDE
+        here = f"map {to['map']} " + ", ".join(f"{o:#x}" for o, a in synard_spots(maps, to["map"]) if a[0] == world - 1)
+        out.append({
+            "key": key, "name": name, "world": world, "map": to["map"], "x": to["x"], "y": to["y"], "z": to["z"],
+            "dir": to["dir"], "door": door, "exit": f"{to['map']}:{exit_entry}",
+            "synard_expel": {"x": ex[0], "y": ex[1], "z": ex[2], "dir": ex[3],
+                             "from": here if world == 1 else "Arlia's: map 17 0x1570, Virtual Arlia map 18 0x5a4"},
+            "synard_nede": {"x": nd[0], "y": nd[1], "z": nd[2], "dir": nd[3],
+                            "from": here if world == 2 else "Fun City's: map 279 0xa06c"},
+            "globals": synard_words(ex, nd),
+        })
+    return out
+
+
+def synard_words(ex, nd):
+    """The seven game-state words of the two Synard spots (table A 0x19 set_point's): Expel's
+    +0x26c x / +0x270 z / +0x28c y, Energy Nede's +0x274 x / +0x278 z / +0x290 y, the facings
+    +0x27c (Expel) / +0x27e (Energy Nede)."""
+    def u32(v):
+        return f"{v & 0xFFFFFFFF:#x}"
+    return {"0x30c": u32(ex[0]), "0x310": u32(ex[2]), "0x314": u32(nd[0]), "0x318": u32(nd[2]),
+            "0x31c": f"{(ex[3] & 0xFFFF) | (nd[3] & 0xFFFF) << 16:#x}", "0x32c": u32(ex[1]), "0x330": u32(nd[1])}
 
 
 def load_maps(disc1):
@@ -365,19 +456,17 @@ def build(args):
     words = {}
     for off in range(0, 0x2A0, 4):
         words[0xA0 + off] = struct.unpack_from("<I", gs, off)[0]
-    nede = STARTS[args.start]["synard"] if STARTS[args.start]["world"] == 2 else STARTS["fun_city"]["synard"]
-    ex = SYNARD_EXPEL
-
-    def u16pair(lo, hi):
-        return (lo & 0xFFFF) | ((hi & 0xFFFF) << 16)
+    starts = starts_table(maps, set(hub_flags))
+    chosen = next(st for st in starts if st["key"] == args.start)
+    sw = {int(k, 16): int(v, 16) for k, v in chosen["globals"].items()}
     spot = {
-        0x30C: (ex[0], "Expel Synard x (+0x26c): Arlia's own spot"),
-        0x310: (ex[2], "Expel Synard z (+0x270)"),
-        0x32C: (ex[1] & 0xFFFFFFFF, "Expel Synard y (+0x28c)"),
-        0x314: (nede[0], "Energy Nede Synard x (+0x274): the start town's own spot"),
-        0x318: (nede[2], "Energy Nede Synard z (+0x278)"),
-        0x330: (nede[1] & 0xFFFFFFFF, "Energy Nede Synard y (+0x290)"),
-        0x31C: (u16pair(ex[3], nede[3]), "Synard facings (+0x27c Expel, +0x27e Energy Nede)"),
+        0x30C: (sw[0x30C], "Expel Synard x (+0x26c): Arlia's own spot (the start town's on an Expel start)"),
+        0x310: (sw[0x310], "Expel Synard z (+0x270)"),
+        0x32C: (sw[0x32C], "Expel Synard y (+0x28c)"),
+        0x314: (sw[0x314], "Energy Nede Synard x (+0x274): the start town's own spot (Fun City's on an Expel start)"),
+        0x318: (sw[0x318], "Energy Nede Synard z (+0x278)"),
+        0x330: (sw[0x330], "Energy Nede Synard y (+0x290)"),
+        0x31C: (sw[0x31C], "Synard facings (+0x27c Expel, +0x27e Energy Nede)"),
     }
     gtable = []
     hub_globals = {}
@@ -448,14 +537,6 @@ def build(args):
                    "set_by_hub": sorted(f for f, r in rows.items() if r["late"] == 0 and r["hub"] == 1),
                    "kinds": dict(collections.Counter(r["kind"] for r in rows.values()))}
 
-    starts = {}
-    for key, s in STARTS.items():
-        nd = s["synard"] if s["world"] == 2 else STARTS["fun_city"]["synard"]
-        starts[key] = {"name": s["name"], "world": s["world"], "map": s["map"], "x": s["x"], "y": s["y"], "z": s["z"],
-                       "dir": s["dir"], "door": s["door"],
-                       "synard_expel": {"x": ex[0], "y": ex[1], "z": ex[2], "dir": ex[3], "from": STARTS["arlia"]["synard_from"]},
-                       "synard_nede": {"x": nd[0], "y": nd[1], "z": nd[2], "dir": nd[3], "from": STARTS["fun_city"]["synard_from"]
-                                       if s["world"] == 1 else s["synard_from"]}}
     return {
         "about": ("The hub's New Game state (world_mode: hub; docs/ap/seed_format.md 'Hub', docs/handoff/hub.md D1): "
                   "the late proof's state (the user's save at the Final Save Point, tools/ap_late_proof.py build_state) "
@@ -469,15 +550,16 @@ def build(args):
                        "done_flags": len(late_cleared)},
         "hub": {"chapter": 60, "step": 4000, "disc": 2, "flags": hub_flags,
                 "globals": {f"{g:#x}": f"{v:#x}" for g, v in sorted(hub_globals.items())},
-                "games": games, "start": {k: v for k, v in starts[args.start].items() if k in ("name", "map", "x", "y", "z", "dir")},
+                "games": games, "start": {k: v for k, v in chosen.items() if k in ("name", "map", "x", "y", "z", "dir")},
                 "lock": {"chapter": True, "step": True, "step_maps": [685]}},
         "counts": {"hub_flags": len(hub_flags), "late_flags": len(late_on | {1}),
                    "reset": len([f for f, r in table.items() if r["late"] == 1 and r["hub"] == 0]),
                    "set_by_hub": len([f for f, r in table.items() if r["late"] == 0 and r["hub"] == 1])},
         "categories": cats,
         "starts": starts,
-        "start_random": ("random: the APWorld picks one of `starts` (proposal: the two; more towns with their own "
-                         "Synard spot can be added: see notes)"),
+        "start_random": ("hub_start random: the APWorld picks one of `starts` (every town of both worlds, the user's "
+                         "D9) and writes it as hub.start with its `globals` (the start's Synard words, which the port "
+                         "writes after hub.globals); fun_city / arlia pick those two."),
         "globals_table": gtable,
         "chamber_guards": {str(e): {"name": names.get(e), "guard": {str(k): v for k, v in sorted(g["guard"].items())},
                                     "stored": {str(k): v for k, v in sorted(g["stored"].items())},
@@ -537,10 +619,12 @@ NOTES = [
     "The hub state holds no config data: relationship values (+0x58 / +0xe8), levels, inventory and Fol are New Game's.",
     "Flag 556 (Limiter Off) and 445 (the Clik Filia meeting, Claude's game) were set in the user's save; 556 is cleared "
     "(the limiter-off goals); 445 / 446 stay as the save has them and goal.flags presets both anyway.",
-    "Expel's Synard: the save already had Expel's spot set (the user flew on Virtual Expel), so the late state flew there "
-    "too; the hub uses Arlia's own spot rather than where the user parked (R8: no first trip through the old man).",
-    "Energy Nede's Synard: the save parked it where the user last landed; the hub parks it at the start town's own spot "
-    "(Fun City's for a start on Expel, where the arena's old man lands), so the party can always reach it on foot.",
+    "The Synards (D9: each town's start comes with its world's Synard spot): the save parked them where the user last "
+    "landed; the hub parks the start world's Synard at the start town's own spot (the town's set_point, where its exit "
+    "parks it) and the other world's where its way in lands: Expel's at Arlia's (Virtual Arlia's arrival stores it), "
+    "Energy Nede's at Fun City's (the arena's old man lands there; map 303 stores it). So the party can always reach "
+    "the Synard on foot (R8: no first trip through the old man). Each `starts` row carries its seven words "
+    "(`globals`); hub.globals holds the default start's (Fun City).",
     "Optional bosses (Flarelizard 196, Nightmare 197, XINE 199, Ghost 211): their done flags are reset but their quests "
     "(G[0x1bc] Ashton 9999, G[0x1be] Opera 0, flags 113 / 141) are the save's, so none of them is armed at chapter 60; "
     "they stay excluded locations ('optional quest').",
@@ -554,7 +638,7 @@ def main():
     ap.add_argument("--save", default=os.path.join(ROOT, "scratchpad", "latesave", "card.mcd"))
     ap.add_argument("--save-frame", type=int, default=13)
     ap.add_argument("--disc1", default=os.environ.get("SS_DISC1"))
-    ap.add_argument("--start", choices=sorted(STARTS), default="fun_city", help="the start point written in hub.start")
+    ap.add_argument("--start", choices=[k for k, *_ in STARTS], default="fun_city", help="the start point written in hub.start")
     ap.add_argument("-o", "--out", default=os.path.join(ROOT, "docs", "ap", "hub_state.json"))
     args = ap.parse_args()
     if not args.disc1:

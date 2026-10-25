@@ -923,7 +923,20 @@ TEST(ap_hub_story_view) {
   CHECK(ap::goal_won(191));
   ap::on_script_loaded(61, {});
   CHECK(ap::hub_view_on());
-  // Free play after the victory ends it: flag 11 kept, the rest dropped.
+  // The battle hands the field back mid-scene: the controls on and the thread at depth 0 for a
+  // frame or two, waiting on the map's load (wait 8): not the scene's end [hubchambers: Shin 447].
+  f.ctx.wait_state = 8;
+  for (int i = 0; i < 40; ++i) ap::hub_free_play();
+  CHECK(ap::hub_view_on());
+  f.ctx.wait_state = 0;
+  // Free play by the field's rule, 10 frames in a row, ends it: flag 11 kept, the rest dropped.
+  for (int i = 0; i < 9; ++i) ap::hub_free_play();
+  CHECK(ap::hub_view_on());
+  f.ctx.wait_state = 9;  // (a choice in between starts the count again)
+  ap::hub_free_play();
+  f.ctx.wait_state = 0;
+  for (int i = 0; i < 9; ++i) ap::hub_free_play();
+  CHECK(ap::hub_view_on());
   ap::hub_free_play();
   CHECK(!ap::hub_view_on());
   CHECK(f.flag(11) && !f.flag(744) && f.flag(745));
@@ -986,7 +999,7 @@ TEST(ap_hub_view_keys) {
   const std::string text = hub_seed_with(
       "{\"encounter\": 209, \"name\": \"Visseyer\", \"map\": 412}",
       "{\"encounter\": 527, \"name\": \"Guardian (Courage)\", \"map\": 642, \"view\": {\"chapter\": 42, \"step\": 0, \"after_maps\": [625]}},"
-      " {\"encounter\": 525, \"name\": \"Guardian (Power)\", \"map\": 603, \"maps\": [603, 604], \"view\": {\"chapter\": 42, \"step\": 0, \"until\": \"transfer\"}},"
+      " {\"encounter\": 525, \"name\": \"Guardian (Power)\", \"map\": 603, \"maps\": [603, 604], \"view\": {\"chapter\": 42, \"step\": 0, \"until\": \"transfer\", \"done_flag\": 163}},"
       " {\"encounter\": 520, \"name\": \"Berle\", \"map\": 575, \"maps\": [557, 575], \"view\": {\"chapter\": 33, \"step\": 0,"
       " \"cut_to\": {\"map\": 557, \"x\": -92, \"y\": 0, \"z\": 1907, \"dir\": 270}}}");
   ap::Seed s;
@@ -995,6 +1008,10 @@ TEST(ap_hub_view_keys) {
   CHECK(s.bosses.size() == 5 && s.bosses[2].view.after_maps == std::vector<int>{625} && s.bosses[3].view.until_transfer &&
         s.bosses[4].view.has_cut_to && s.bosses[4].view.cut_to.map == 557 && s.bosses[4].view.cut_to.z == 1907 &&
         s.bosses[4].view.cut_to.dir == 270);
+  CHECK(s.bosses[3].view.done_flag == 163 && s.bosses[2].view.done_flag == -1);
+  ap::Seed bad_done;
+  CHECK(!ap::load_seed_text(hub_seed_with("\"chapter\": 6, \"step\": 2100,", "\"chapter\": 6, \"step\": 2100, \"done_flag\": 5000,"), &bad_done, &error) &&
+        error.find("view.done_flag") != std::string::npos);
   ap::Seed bad;
   CHECK(!ap::load_seed_text(hub_seed_with("\"chapter\": 6, \"step\": 2100,", "\"chapter\": 6, \"step\": 2100, \"until\": \"later\","), &bad, &error) &&
         error.find("view.until") != std::string::npos);
@@ -1018,6 +1035,23 @@ TEST(ap_hub_view_keys) {
   ap::on_script_loaded(604, {});
   CHECK(ap::hub_view_encounter() == 525);
   ap::on_script_loaded(602, {});
+  CHECK(!ap::hub_view_on());
+  // done_flag [hubchambers]: won, but its end scene's flag 163 is still clear: the view comes back
+  // on in its maps (won from the start, so cut_to / free play act as after a win); once 163 is set,
+  // no more view.
+  set_flag(f, 163, false);
+  ap::on_script_loaded(603, {});
+  CHECK(ap::hub_view_encounter() == 525);
+  CHECK(ap::hub_status().find(", won)") != std::string::npos);
+  CHECK_EQ(hub_log_count("Guardian (Power), encounter 525 won before; on until flag 163 is set"), 1u);
+  ap::on_script_loaded(602, {});
+  CHECK(!ap::hub_view_on());
+  set_flag(f, 163, true);
+  ap::on_script_loaded(603, {});
+  CHECK(!ap::hub_view_on());
+  // A row without done_flag: once won, never again (Courage, 527, won here).
+  ap::on_battle_exit(527, 0);
+  ap::on_script_loaded(642, {});
   CHECK(!ap::hub_view_on());
   // cut_to: not before the win; the first transfer out after it; the view ends at that load.
   ap::on_script_loaded(575, {});

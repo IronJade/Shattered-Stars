@@ -171,6 +171,11 @@ bool parse_bosses(const Json& bj, std::vector<HubBoss>* out, std::string* error)
           return fail(error, where + ": view.until: free_play or transfer expected");
         boss.view.until_transfer = u.as_string() == "transfer";
       }
+      if (!v["done_flag"].is_null()) {  // [hubchambers]
+        boss.view.done_flag = get_int_or(v["done_flag"], -1);
+        if (boss.view.done_flag < 0 || boss.view.done_flag >= 0x170 * 8)
+          return fail(error, where + ": view.done_flag: a flag 0-2943 expected");
+      }
       if (const Json& c = v["cut_to"]; !c.is_null()) {
         int64_t x = 0, y = 0, z = 0;
         boss.view.cut_to.map = get_int_or(c["map"], -1);
@@ -216,6 +221,70 @@ bool parse_hub_lock(const Json& lj, Seed* s, std::string* error) {
     }
   }
   return true;
+}
+
+// The hub block's New Game state [hubcore agent] (docs/ap/seed_format.md "Hub"): `flags`,
+// `globals` {"0xADDR": word}, `games` {claude / rena: {flags, globals}}, `chapter`, `step`,
+// `disc`, `start` {name, map, x, y, z, dir, globals?}. Script global words go in the game state
+// past the route bytes (G[0xc4] .. G[0x33f], 4-aligned), never over the names or the message
+// speed (G[0xc8] .. G[0x1bb]: New Game's own and a setting); the map / position / music words
+// (G[0xa8] .. G[0xc3]) are the start's.
+bool parse_hub_words(const Json& gj, std::vector<HubWord>* out, std::string* error, const std::string& where) {
+  if (gj.is_null()) return true;
+  if (!gj.is_object()) return fail(error, where + " must be an object");
+  for (const auto& [key, val] : gj.items()) {
+    int64_t addr = 0, value = 0;
+    if (!get_int(Json::string(key), &addr) || !get_int(val, &value) || addr < 0xC4 || addr + 4 > 0x340 || (addr & 3) != 0 ||
+        (addr >= 0xC8 && addr < 0x1BC) || value < INT32_MIN || value > UINT32_MAX)
+      return fail(error, where + ": words at 0xc4-0x33c (4-aligned, not the names 0xc8-0x1bb) expected ('" + key + "')");
+    out->push_back({static_cast<int>(addr), static_cast<uint32_t>(value)});
+  }
+  return true;
+}
+bool parse_hub_flags(const Json& fj, std::vector<int>* out, std::string* error, const std::string& where) {
+  if (fj.is_null()) return true;
+  if (!fj.is_array()) return fail(error, where + " must be an array");
+  for (size_t k = 0; k < fj.size(); ++k) {
+    const int flag = get_int_or(fj[k], -1);
+    if (flag < 0 || flag >= 0x170 * 8) return fail(error, where + ": script flags 0-2943 expected");
+    out->push_back(flag);
+  }
+  return true;
+}
+bool parse_hub_state(const Json& hj, Seed* s, std::string* error) {
+  HubState& h = s->hub_state;
+  if (!s->hub || hj.is_null() || (!hj.has("flags") && !hj.has("start"))) return true;
+  h.on = true;
+  int64_t n = 0;
+  if (hj.has("chapter") && (!get_int(hj["chapter"], &n) || n < 0 || n > 255)) return fail(error, "hub.chapter: 0-255 expected");
+  if (hj.has("chapter")) h.chapter = static_cast<int>(n);
+  if (hj.has("step") && (!get_int(hj["step"], &n) || n < 0 || n > 0xFFFFFF)) return fail(error, "hub.step: 0-0xffffff expected");
+  if (hj.has("step")) h.step = static_cast<int>(n);
+  if (hj.has("disc") && (!get_int(hj["disc"], &n) || n < 1 || n > 2)) return fail(error, "hub.disc: 1 or 2 expected");
+  if (hj.has("disc")) h.disc = static_cast<int>(n);
+  if (!parse_hub_flags(hj["flags"], &h.flags, error, "hub.flags")) return false;
+  if (!parse_hub_words(hj["globals"], &h.globals, error, "hub.globals")) return false;
+  const Json& games = hj["games"];
+  if (!games.is_null() && !games.is_object()) return fail(error, "hub.games must be an object");
+  for (const auto& [key, gj] : games.items()) {
+    if (key != "claude" && key != "rena") return fail(error, "hub.games: claude or rena expected ('" + key + "')");
+    HubGame& game = h.games[key == "claude" ? 0 : 1];
+    if (!gj.is_object()) return fail(error, "hub.games." + key + " must be an object");
+    if (!parse_hub_flags(gj["flags"], &game.flags, error, "hub.games." + key + ".flags")) return false;
+    if (!parse_hub_words(gj["globals"], &game.globals, error, "hub.games." + key + ".globals")) return false;
+  }
+  const Json& st = hj["start"];
+  int64_t x = 0, y = 0, z = 0;
+  h.start.map = get_int_or(st["map"], -1);
+  if (!st.is_object() || h.start.map < 4 || h.start.map > 826 || !get_int(st["x"], &x) || !get_int(st["y"], &y) ||
+      !get_int(st["z"], &z))
+    return fail(error, "hub.start needs map (a field map, 4-826), x, y and z");
+  h.start.x = static_cast<int>(x);
+  h.start.y = static_cast<int>(y);
+  h.start.z = static_cast<int>(z);
+  h.start.dir = get_int_or(st["dir"], 90);
+  h.start_name = st["name"].as_string();
+  return parse_hub_words(st["globals"], &h.start_globals, error, "hub.start.globals");
 }
 
 }  // namespace
@@ -507,6 +576,10 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
       door.to.y = static_cast<int>(y);
       door.to.z = static_cast<int>(z);
       door.to.dir = get_int_or(t["dir"], -1);
+      // [hubcore agent] P5: a redirect that holds only while a boss is unbeaten.
+      door.to_while_unbeaten = get_int_or(t["while_unbeaten"], -1);
+      if (!t["while_unbeaten"].is_null() && door.to_while_unbeaten < 0)
+        return fail(error, where + ": to.while_unbeaten: an encounter id expected");
     }
     s.doors.push_back(door);
   }
@@ -514,6 +587,12 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   if (!parse_bosses(j["bosses"], &s.bosses, error)) return false;
   if (!j["hub"].is_null() && !j["hub"].is_object()) return fail(error, "hub must be an object");
   if (!parse_hub_lock(j["hub"]["lock"], &s, error)) return false;
+  if (!parse_hub_state(j["hub"], &s, error)) return false;  // [hubcore agent]
+  // D7 (docs/handoff/hub.md): characters are items in hub mode, under the open-world party rules.
+  if (s.hub) {
+    s.character_items = true;
+    s.open_party = true;
+  }
   *out = std::move(s);
   return true;
 }

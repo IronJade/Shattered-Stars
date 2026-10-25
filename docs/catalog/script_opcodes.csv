@@ -101,7 +101,7 @@ ext,0x9f,,actor_turn_to_actor,4,4,2 (inline),actor_cmd_turn_to_actor,confirmed
 ext,0xa0,,actor_play_anim,2,2,1 (inline),"actor_cmd_set_anim(actor, s16 anim)",confirmed
 ext,0xa1,,actor_is_busy,1,1,0 (inline),R = actor_is_busy(actor),confirmed
 ext,0xa2,,actor_wait,1,1,0 (inline),Wait state 5: until the actor's command queue is empty,confirmed
-ext,0xa3,,trigger_remove,1,1,0 (inline),Clears trigger slot n,confirmed
+ext,0xa3,,trigger_remove,1,1,0 (inline),Clears trigger slot n; e.g. map 642's Guardian scene removes its own region at its end (0x7868: G[0x344] holds the slot the set-up's thread_start_ex returned),confirmed
 ext,0xa4,,map_transfer_b,7,7,3 (inline),map_transfer; a6 -> game_state +0x1e,confirmed
 ext,0xa5,,map_preload,3,3,1 (inline),"(map, x, z): preloads the map container and party pack A for a coming transfer (map_resolve_entries; tagged with the active trigger)",confirmed
 ext,0xa6,,nop_a6,0,0,0 (inline),No handler,confirmed
@@ -141,7 +141,7 @@ ext,0xc7,,nop_c7,0,0,0 (inline),No handler,confirmed
 ext,0xc8,,play_sfx,3,3,1 (inline),"R = sound_play_sfx(id, (s8) pan, volume & 0xffff)",confirmed
 ext,0xc9,,sound_release_clip,1,1,0 (inline),sound_release_clip,confirmed
 ext,0xca,,sound_effect_playing,1,1,0 (inline),"R = id of effect slot a while it plays, else 0 (boot 0x8001a0ac)",confirmed
-ext,0xcb,,sound_start_clip,5,5,2 (inline),"sound_start_clip(slot, volume, pan, pitch, flag)",confirmed
+ext,0xcb,,sound_start_clip,5,5,2 (inline),"sound_start_clip(slot, volume, pan, pitch, flag); CONFLICT (hubchambers, 2026-10-25): the game's only two calls are stack-form and push 4 values (map 642 0x6e3c, Courage's Guardian; map 575 0x761c, Berle's tower scene): the port's 5-value fetch underflows the script value stack (ASan heap-buffer-overflow in script_vm.cpp push, no seed needed); the handler's stack-form count needs a look",conflict
 ext,0xcc,,sound_fade_in,1,1,0 (inline),boot 0x8001a82c(frames),confirmed
 ext,0xcd,,sound_fade_out_effects,1,1,0 (inline),sound_fade_out_effects(frames),confirmed
 ext,0xce,,sound_set_tempo,1,1,0 (inline),boot 0x8001a938((s8) a),confirmed

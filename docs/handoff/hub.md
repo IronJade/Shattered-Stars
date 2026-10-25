@@ -154,3 +154,26 @@ with the lock on, `--bosses`, e2e).
   every save and checked before a load (mismatch or missing hash on a seed's card: refused through
   the game's load-failed path, with a banner); adoption stamps the hash on earlier-version saves;
   a guard against accidents and casual editors, documented as not cheat-proof (open source).
+- 2026-10-25: **hubcore2 done** (log hubcore.md "hubcore2"; not committed): P5 (558 -> 559 needs
+  no override; the tower climb works on Berle 520 at 33/20; the arena via seed key
+  `to.while_unbeaten`: door 19929509 304 -> 296 leads to 305 while 532 is unbeaten), hub saves
+  (load keeps the hub; a view comes back in a chamber), **the save guard** (all AP modes: sidecar
+  seed / slot + `save_hash` SHA-256; refusals through the game's "data may be faulty" path;
+  adoption stamps the hash; `SS_AP_ANY_SAVE=1` for headless tests only), 22 hub smoke cases,
+  docs. Suites: ss_tests 99/0, ss_game_tests 170/0, smoke 161/0; APWorld 312 / 379, hub batch
+  96/96 0 errors.
+- 2026-10-25, **the user's rulings on hubcore2's two questions:**
+  - **Shigeo 281** (on the only Nede -> Expel route; crossing it starts his fight): **ask first**
+    ("Face Shigeo now?": yes plays the original scene and fight, no lets the party pass).
+  - **The arena 305** (inside Marsilio's view the Clerk is the only exit): **ask, and a port-side
+    exit**: "players will generally use the arena in Fun City as a way to level up their
+    characters. They need to be able to do that without being forced to go through Marsilio
+    first." So the arena's normal use (the ranking battles for levelling) must stay available
+    while Marsilio is unbeaten.
+  - Coordinator's design for both: the question at the chamber's entrance (the transfer into it);
+    yes turns the story view on (the original scene); no enters at the hub's own chapter 60 (281
+    an ordinary town map, the arena its normal self); inside Marsilio's view a way back out stays
+    open. Agent "hubask".
+- 2026-10-25: hubchambers stopped at ~700k (log hubchambers.md); found an engine bug: script
+  ext 0xCB (sound_start_clip) underflows the value stack in two scenes (575, 642; both call sites
+  push 4): a port bug in normal play too, for a fresh agent with REA.

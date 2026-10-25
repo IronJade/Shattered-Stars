@@ -568,6 +568,11 @@ void field_load_map(Field* f, int map, bool keep_position, int music_mode) {
         const bool m1 = rd16s(gs + 0x1A) == 1;
         s32 vpos[3] = {rd32(gs + (m1 ? 0x26C : 0x274)), rd32(gs + (m1 ? 0x28C : 0x290)), rd32(gs + (m1 ? 0x270 : 0x278))};
         actor_create(actor_system(), slot, slot, vpos, angle, brightness, 0xFFFF, 0xFFFF, 0x1000F);
+        // (SS_TRACE: where the Synard waits; the hub's starts park it [hubcore agent].)
+        runtime::Runtime::get().trace(("world: vehicle 1 (the Synard) " + std::string(riding ? "ridden" : "parked") + " at " +
+                                       std::to_string(vpos[0]) + "," + std::to_string(vpos[1]) + "," + std::to_string(vpos[2]) +
+                                       " on map " + std::to_string(rd16s(gs + 0x1A)))
+                                          .c_str());
         if (Actor* v = field_actor(slot)) {
           v->vehicle = 1;
           if (!riding) {

@@ -77,6 +77,15 @@ DUNGEONS = collections.OrderedDict([
 # Town chambers (no dungeon key: D4 opens towns): Berle at Armlock 306, Shigeo in Fun City 281,
 # Marsilio in the Fun City arena 305.
 TOWN_OF = {306: "Town of Armlock", 281: "Fun City", 305: "Fun City Fighting Arena"}
+ITEM_FLAGS = range(740, 745)   # recomputed from the inventory at every map's set-up (never listed)
+# Doors a dungeon group needs although the late state never took them (hubcore / hubworld, 2026-10-25):
+# the Synard view (chapter 38) makes 264's doors pick 269, and 272's door leads into the plant.
+EXTRA_DOORS = {"Synard Plant": {17308906: "264 -> 269 (0x7390, chapter <= 38: the Synard view's way in)",
+                                17308938: "264 -> 269 (0x7410, chapter <= 38: the Synard view's way in)",
+                                17832691: "272 -> 269 (0x677c, every transfer of the routine leads into the plant)"}}
+# Groups out of hub mode (the APWorld drops their key and chests): the Portal of Sealing is not
+# reached at chapter 60 (313 -> 400 only at 52/2000) and no cheap way in exists (hubcore, P5 look).
+NOT_IN_HUB = {"Portal of Sealing": "not reached at chapter 60 (313 -> 400 only at 52/2000); no P5 way in (hubcore)"}
 
 # Per-chamber decisions the scripts alone don't make (each with its reason). Keys:
 #   maps: the view's maps when the scene runs on into a room the cut should not reach;
@@ -89,14 +98,20 @@ CURATED = {
                                  "(hubvm: proven headless, 409:T6 -> 412)"},
     519: {"view": False, "p5": True, "note": "flag-guarded (flag 587 == 0, no chapter test): the hub clears 587; it plays "
                                  "inside Berle 520's tower view (chapter 33), on the way up"},
-    523: {"view": False, "note": "the Cross Cave key chest's guardians (set battle 523, flag 449 clear): the routine "
-                                 "has no story test; the hub clears 449 and the chest flag 2569. The chest's "
-                                 "handler stores chapter 13 / step 0 (dropped by the chapter lock)"},
+    523: {"view": False,
+          "trigger": [{"kind": "talk", "actor": 64, "routine": "0x6af8", "conditions": ["flag[449] == 0"]}],
+          "note": "the Cross Cave guardians (set battle 523, two Gargoyles): actor 64's talk (0x6af8) starts it while "
+                  "flag 449 is clear and sets 449 (no story test, no view); the hub clears 449 and the chest flag "
+                  "2569. The key chest (actor 60, 0x6660; key item 68) is separate: its handler stores chapter 13 / "
+                  "step 0 (dropped by the chapter lock) (hubchambers: proven headless, both games)"},
     520: {"p5": True, "maps": list(range(557, 576)), "cut_to": {"map": 557, "x": -92, "y": 0, "z": 1907, "dir": 270},
-          "note": "P5: the late state never got past 557 (door 557 -> 558, routine 0x7808, needs chapter > 32: "
-                  "a headless look). The view covers the whole tower at the climb's chapter 33, so Shin 569 "
-                  "plays on the way up. The cut must not follow the scene: 576 stores chapter 34 unconditionally "
-                  "and goes on to 625 (the disc switch's scene map); cut_to = the tower's world-map arrival"},
+          "step": 20,
+          "note": "P5: the late state never got past 557 (557 -> 558 by a real walk into the door region; 558 -> "
+                  "559 up the ramps: hubcore). The view covers the whole tower at the climb's chapter 33 STEP 20 "
+                  "(hubcore's headless BFS: at 33/0 573 -> 574 is shut and 566 -> 567 plays the 33/0 split scene, "
+                  "which goes to 627 and strands the party; at 33/20 the climb 559 ... 575 works), so Shin 569 plays "
+                  "on the way up. The cut must not follow the scene: 576 stores chapter 34 unconditionally and goes "
+                  "on to 625 (the disc switch's scene map); cut_to = the tower's world-map arrival"},
     521: {"maps": [264, 269], "after_maps": [271],
           "note": "P5: map 264 (Synard Reception Area, North City) sends its two doors (0x7390 / 0x7410) to 269 "
                   "at chapter <= 38, else to 270 (the plant's later version, same spot): the view on 264 opens "
@@ -107,27 +122,53 @@ CURATED = {
                   "not stay: it makes a disc of Nede's world map unwalkable; clear in the late save) and moves "
                   "computed (Central City). Noel's choice to stay (0x7db8) and party changes are dropped "
                   "(hubvm: proven headless with these flags, 418:T2 -> 417)"},
-    524: {"p5": False, "after_maps": [555, 628, 556],
+    524: {"p5": False, "after_maps": [555, 628, 556, 14],
           "note": "553's door picks 554 iff flag 175 is clear, which the hub state makes so (no view of 553 "
-                  "needed). Aftermath: 554 -> 555 (42: step 1000 -> 628, or step 1010 -> map 14, Shingo "
-                  "Forest: a vision in one game) -> ... -> 556 (sets 162). Map 14 is left out of after_maps "
-                  "(Expel; a headless look decides whether the vision must be followed or cut)"},
-    525: {"maps": [603, 604], "until": "transfer",
-          "note": "604's end scene (0x6870 / 0x688c) is guarded only by flags (528 == 1 && 163 == 0, flag 1 for "
-                  "the game), no chapter: after the Guardian it must run in the view (chapter 42), so the view "
-                  "lasts until the party leaves [603, 604]"},
-    527: {"after_maps": [625],
+                  "needed). Aftermath: 554 -> 555 (its arrival scene sets 176 and goes on by the hero: Claude's "
+                  "game step 1000 -> 628, a vision; Rena's game step 1010 -> map 14, Shingo Forest, her vision) "
+                  "-> 556 (the end scene: key item 82, flag 162, step 0). Map 14 is followed, not cut "
+                  "(hubchambers, proven headless in both games): cutting there would leave Rena's game on Expel "
+                  "with 556's end scene (key item 82, the Field's done flag 162) never played; map 14 is read "
+                  "from disc 2 like every Expel map in the hub, and the vision returns to 556 by its own transfer"},
+    525: {"maps": [603, 604], "until": "transfer", "after_maps": [622, 27, 30], "done_flag": 163,
+          "note": "604's end scene (region 0x6628) is guarded only by flags (528 == 1 && 163 == 0), no chapter: "
+                  "after the Guardian it must run in the view (chapter 42), so the view lasts until the party "
+                  "leaves [603, 604]. It is a vision by the hero: Claude's game step 2000 -> 622 -> (step 2020) "
+                  "604; Rena's game step 2010 -> 27 (Expel) -> 30 -> (step 2020) 604; 604's set-up at step 2020 "
+                  "gives key item 83 and sets 163 (in place). The vision maps are after_maps; done_flag 163: "
+                  "the player walks from 603 to 604 after the win, so a walk out in between must not leave the "
+                  "vision to run at chapter 60 on the way back (it would strand the party on 622 / 27 with 163 "
+                  "never set): the view comes back on in [603, 604] until 163 is set (hubchambers: proven "
+                  "headless in both games, and the walk-out case)"},
+    528: {"after_maps": [262, 310],
+          "note": "596's set-up runs the Lover scene (0x6864, sets 518), then in the same thread 0x7868: flag 508, "
+                  "step 10 and a vision by the hero: Claude's game -> 262, Rena's game -> 310 (Armlock); both "
+                  "store step 20, clear 508 and return to 596, whose set-up at step 20 (0x7a80) gives the key item, "
+                  "sets 519 and 165 (the Field's done flag) and stores step 0 (chapter 46 once the other three "
+                  "Fields are done: the view's). 508 is a view flag at 0 (stored 1 before it is read; dropped). "
+                  "No walk in between: no done_flag (hubchambers: proven headless in both games)"},
+    527: {"after_maps": [625], "unlist": [523, 524],
           "note": "Claude's game: the aftermath goes to 625 (the scene map) at step 10 for a vision and returns "
-                  "to 642 at step 20 (625 0x5aa0); Rena's game stays in 642 (key item 84, flag 164)"},
-    531: {"maps": [453, 454], "chapter": 55, "step": 0,
+                  "to 642 at step 20 (625 0x5aa0), whose set-up (0x78a0) gives key item 84 and sets 164; Rena's "
+                  "game the same in place. The scene asks 'Don't put statue on altar.' / 'Put statue on altar.': "
+                  "the second fights (flag 521, the way in from 641, is set in the hub). 523 / 524 pass through "
+                  "(unlisted): 641's door sets 523 just before its transfer and 642's set-up plays the arrival "
+                  "animation and clears it whatever the chapter (524 the same for 642 -> 641); a view copy would "
+                  "skip the animation and leave the real 523 set"},
+    531: {"maps": [453, 454], "chapter": 55, "step": 0, "after_maps": [455],
           "note": "P5: map 453's door (0x3bd0) goes to 455 when chapter > 55, to 454 otherwise; 454 registers "
                   "Bark's trigger unconditionally. View (55, 0) on [453, 454]; the scene stores step 1000 and "
-                  "moves to 455 (the cut)"},
+                  "moves to 455, whose 55/1000 set-up scene (0x661c) gives key item 89 (not in the hub state) and "
+                  "stores chapter 56 / step 0 in place: 455 is an after_map so that reward is not lost; the view "
+                  "ends at free play there (hubchambers)"},
     532: {"note": "P5: the arena 305 is not reached by the late state (doors from 279 0xa100, 297 by the "
                   "receptionist's choice 1, 301, 302): a headless look. The scene starts from an actor's talk "
                   "(registered at 57/20) and choice 2"},
-    535: {"note": "a town chamber (Armlock 306): the scene starts at 58/0 by a trigger region; the cut is the "
-                  "transfer to 314 (Portal of Sealing's side)"},
+    535: {"after_maps": [314],
+          "note": "a town chamber (Armlock 306): the scene starts at 58/0 by a trigger region (0x40); the aftermath "
+                  "stores step 1000 and goes to 314 (Armlock), whose 58/1000 set-up scene (0x538, dialogue only: "
+                  "no reward) stores step 2000 in place; 314 is an after_map so that conclusion plays, and the view "
+                  "ends at free play there (its chapter-58 actor left until the next load only shows a message)"},
 }
 
 
@@ -361,7 +402,11 @@ def build(args):
     m523, st523, pa523, r523 = stage[523]
     sites[523] = [{"map": m523, "routine": r523, "offset": None, "requires": ["flag[449] == 0"], "via": [],
                    "stage": st523, "param": pa523, "window": None}]
-    never = {1, 2, 4} | set(H.KEY_ITEMS) | set(H.FIELD_DONE)
+    # Never listed: the game / PA / save flags, key items, the Fields' done flags, and the item flags
+    # 740-744, which every map's set-up recomputes from the inventory (library routine, e.g. 642
+    # 0x5698: item_query 743 / 742 / 771 / 772 / 773 -> 741 / 740 / 742 / 743 / 744) for the map's
+    # per-frame item effects: not story state, the view's would equal the real ones (hubchambers).
+    never = {1, 2, 4} | set(H.KEY_ITEMS) | set(H.FIELD_DONE) | set(ITEM_FLAGS)
 
     rows = []
     for enc in H.HUB_ENCOUNTERS:
@@ -443,10 +488,13 @@ def build(args):
                 for f, v in cur.get("flags", {}).items():
                     vflags[f] = v
                     why[f] = "curated"
+                for f in cur.get("unlist", []):   # flags that must pass through (curated, with the reason)
+                    vflags.pop(f, None)
+                    why.pop(f, None)
                 row["view"] = {"chapter": ch, "step": st if st is not None else 0,
                                "flags": {str(f): v for f, v in sorted(vflags.items())},
                                "keep": sorted(cur.get("keep", []))}
-                for k in ("after_maps", "until", "cut_to"):
+                for k in ("after_maps", "until", "cut_to", "done_flag"):
                     if k in cur:
                         row["view"][k] = cur[k]
                 row["view_flags_why"] = {str(f): w for f, w in sorted(why.items())}
@@ -460,6 +508,8 @@ def build(args):
             row["p5"] = cur.get("p5", not any(row["late"].values()) and not set(vmaps) - {m})
             if cur.get("note"):
                 row["note"] = cur["note"]
+            if "trigger" in cur:   # (curated: a site field.json's via chain does not describe)
+                row["trigger"] = cur["trigger"]
             rows.append(row)
 
     # ---- dungeon keys ----
@@ -482,9 +532,12 @@ def build(args):
             src = set(d.get("maps", [d["map"]]))
             if to in mset and not (src & mset) and not d.get("world_script"):
                 used = any(to in edges.get(s, ()) for s in src) or (d.get("world") in (1, 2) and to in edges.get(d["world"], ()))
+                extra = EXTRA_DOORS.get(name, {}).get(d["id"])
                 ds.append({"id": d["id"], "map": d["map"], "routine": f"{d['routine']:#x}" if d.get("routine") is not None else None,
-                           "to": to, "world": d.get("world"), "late_edge": used,
+                           "to": to, "world": d.get("world"), "late_edge": used or extra is not None,
                            "requires": d.get("requires", [])[:3]})
+                if extra:
+                    ds[-1]["why"] = extra
         chests = sorted(f for m2 in ms for f in chests_by_map.get(m2, []))
         dungeons.append({
             "key": key, "name": f"{name} Key", "dungeon": name, "world": DUNGEONS[name]["world"], "maps": ms,
@@ -494,6 +547,9 @@ def build(args):
             "chests": len(chests),
             "late_reached_maps": len([m2 for m2 in ms if any(m2 in late_maps[g] for g in late_maps)]),
         })
+        if name in NOT_IN_HUB:
+            dungeons[-1]["hub"] = False
+            dungeons[-1]["why_not"] = NOT_IN_HUB[name]
     return {
         "about": ("The hub's boss chambers (story views) and dungeon keys: tools/ap_hub_bosses.py "
                   "(docs/ap/seed_format.md 'Hub', docs/handoff/hub.md). The APWorld copies `bosses` rows (encounter, "

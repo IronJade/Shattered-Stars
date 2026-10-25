@@ -25,6 +25,8 @@
 #include "mods/zip.h"
 #include "psx/memory_card.h"
 #include "test.h"
+#include "util/sha256.h"
+#include "game/ap/ap.h"
 
 using namespace ss;
 namespace fs = std::filesystem;
@@ -598,6 +600,18 @@ TEST(launcher_archipelago_seed_memcard) {
   }
   CHECK(fs::exists(seed_card.parent_path() / "memcard1.slot03.ap.json"));
   CHECK(!fs::exists(seed_card.parent_path() / "memcard1.slot07.ap.json"));
+  {
+    // [hubcore agent] The copied sidecar is stamped with the hash of its save on the seed's card
+    // (the save guard): "save_hash" first, the rest as it was.
+    psx::MemoryCard card;
+    CHECK(card.open(seed_card, false));
+    std::vector<u8> block(psx::MemoryCard::kBlockSize);
+    CHECK(card.read(card.files()[0], 0, block.data(), static_cast<u32>(block.size())));
+    std::ifstream in(seed_card.parent_path() / "memcard1.slot03.ap.json", std::ios::binary);
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    CHECK(text == "{\n \"save_hash\": \"" + util::save_digest(block.data(), block.size()) +
+                      "\",\n \"format\": \"apso2-save\",\n \"seed\": \"S1\",\n \"slot_name\": \"Cl\\u00e9o\"\n}\n");
+  }
   CHECK(!fs::exists(seed_card.parent_path() / "memcard1.mcd.tmp"));
   std::ifstream after_in(own, std::ios::binary);
   const std::string after((std::istreambuf_iterator<char>(after_in)), std::istreambuf_iterator<char>());
@@ -609,6 +623,48 @@ TEST(launcher_archipelago_seed_memcard) {
   const fs::path other = launcher::seed_memcard("S9", "Claude", dir / "ap");
   CHECK_EQ(launcher::adopt_seed_saves(other, {own}, "S9", "Claude", &error), 0);
   CHECK(!fs::exists(other));
+
+  // [hubcore agent] An earlier version's full sidecar (version 1, no hash) for a save with data:
+  // adopted, it reads as version 2 with the save's hash, and the guard lets that save load.
+  const fs::path own2 = dir / "own2" / "memcard1.mcd";
+  fs::create_directories(own2.parent_path());
+  std::vector<u8> save(psx::MemoryCard::kBlockSize);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 13 + 1);
+  save[0x21A] = 0x80;
+  save[0x21B] = 0x0B;  // length 0xb80
+  {
+    psx::MemoryCard card;
+    CHECK(card.open(own2, true));
+    CHECK(card.create("BASCUS-94421S02-S02", 1));
+    const auto f = card.find("BASCUS-94421S02-S02");
+    CHECK(f.has_value() && card.write(*f, 0, save.data(), static_cast<u32>(save.size())));
+  }
+  ss::game::ap::SaveState st;
+  st.seed = "S5";
+  st.slot_name = "Claude";
+  st.checked = {7, 8};
+  ss::game::ap::Json j = ss::game::ap::sidecar_json(st);
+  j.set("version", ss::game::ap::Json::number(static_cast<int64_t>(1)));
+  write_file(own2.parent_path() / "memcard1.slot02.ap.json", j.dump());
+  const fs::path seed5 = launcher::seed_memcard("S5", "Claude", dir / "ap");
+  CHECK_EQ(launcher::adopt_seed_saves(seed5, {own2}, "S5", "Claude", &error), 1);
+  ss::game::ap::SaveState back;
+  CHECK(ss::game::ap::read_sidecar((seed5.parent_path() / "memcard1.slot02.ap.json").string(), &back, &error));
+  CHECK(back.save_hash == util::save_digest(save.data(), save.size()) && back.checked.size() == 2);
+  {
+    std::ifstream in(seed5.parent_path() / "memcard1.slot02.ap.json", std::ios::binary);
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    CHECK(text.find("\"version\": 2") != std::string::npos);
+  }
+  ss::game::ap::Seed seed;
+  CHECK(ss::game::ap::load_seed_text(R"({"format": "apso2", "version": 1, "seed": "S5", "slot": {"name": "Claude", "id": 1},
+                                         "items": {}, "locations": []})",
+                                     &seed, &error));
+  ss::game::ap::start_with(seed);
+  CHECK(ss::game::ap::load_allowed(launcher::path_utf8(seed5), 1, save.data(), save.size()));
+  save[0x100] ^= 0xFF;
+  CHECK(!ss::game::ap::load_allowed(launcher::path_utf8(seed5), 1, save.data(), save.size()));
+  ss::game::ap::stop();
 }
 
 TEST(mods_install_and_remove) {

@@ -229,6 +229,31 @@ else
   echo "FAIL ap_save: sidecar or card differs"
   fail=1
 fi
+# The save guard [hubcore agent] (docs/ap/seed_format.md "The save sidecar"): with a seed, a save
+# loads only with this seed's sidecar holding the hash of the save as it is on the card. The save
+# just made loads; one byte changed in it on the card, the load fails as a damaged save does; a
+# save without a sidecar fails too. Without a seed the changed card is the game's own business.
+if grep -q '"save_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/save_ap.slot01.ap.json"; then echo "PASS ap_guard_hash: the sidecar holds the save's hash"; else echo "FAIL ap_guard_hash: no save_hash in the sidecar"; fail=1; fi
+guard_load() {  # guard_load NAME CARD [env...]
+  local name=$1 card=$2
+  shift 2
+  env "$@" SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_TRACE_LEADER=30 \
+    SS_MEMCARD1="$card" timeout 900 "$BIN" --headless --ap-seed "$WORK/tiny.apso2" --frames 90 </dev/null >"$WORK/$name.log" 2>&1
+}
+guard_load ap_guard_ok "$WORK/save_ap.mcd"
+check ap_guard_ok "this seed's save loads" '\[ap\] loaded .*save_ap\.slot01\.ap\.json: 1 checks'
+check ap_guard_ok "into the field" '\[leader\] vblank [0-9]+ map 18 state 0 '
+cp "$WORK/save_ap.mcd" "$WORK/guard.mcd"
+cp "$WORK/save_ap.slot01.ap.json" "$WORK/guard.slot01.ap.json"
+printf '\x5a' | dd of="$WORK/guard.mcd" bs=1 seek=$((0x2000 + 0x500)) conv=notrunc status=none
+guard_load ap_guard_edit "$WORK/guard.mcd"
+check ap_guard_edit "a changed save is refused" '\[ap\] load refused, save 1 of .*guard\.mcd: this save was changed outside the game'
+check ap_guard_edit "as a failed load" 'SS_LOAD_SAVE: no valid save at that position'
+if grep -q '\[leader\] vblank' "$WORK/ap_guard_edit.log"; then echo "FAIL ap_guard_edit: the changed save reached the field"; fail=1; fi
+guard_load ap_guard_plain "$WORK/save_plain.mcd"
+check ap_guard_plain "a save without the seed's state is refused" "\\[ap\\] load refused, save 1 of .*save_plain\\.mcd: this save isn't from this Archipelago seed"
+guard_load ap_guard_any "$WORK/guard.mcd" SS_AP_ANY_SAVE=1
+check ap_guard_any "SS_AP_ANY_SAVE=1 (tests) loads it, logged" 'changed outside the game .*; loaded anyway \(SS_AP_ANY_SAVE=1\)'
 
 # Archipelago phase 4 [world agent]: the open world. Map 17's door to Arlia (door 1116181,
 # routine 0x204c) needs key 1: walking in shows the banner and nothing transfers; once the key
@@ -413,10 +438,12 @@ if [ -f "$SAVE" ]; then
   check north_city "North City loads" 'field_load_map\(map=260'
   check north_city "leader in town" '\[leader\] vblank 1[0-9]0 map 260 state 0 '
   # Archipelago [world agent]: loading the save reads its sidecar (save 1: world.slot01.ap.json).
+  # This and the cases below load an ordinary save (or another run's sidecar) with a seed: the
+  # save guard would refuse them (ap_guard_*), so they run with the tests' SS_AP_ANY_SAVE=1.
   cp "$SAVE" "$WORK/world.mcd"
   printf '{"format": "apso2-save", "version": 1, "seed": "smoke-1", "slot_name": "Claude", "received_index": 3, "start_given": true, "checked": [1347569665]}\n' \
     >"$WORK/world.slot01.ap.json"
-  SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+  SS_AP_ANY_SAVE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
     SS_MEMCARD1="$WORK/world.mcd" timeout 900 "$BIN" --headless --ap-seed "$WORK/tiny.apso2" --frames 60 \
     </dev/null >"$WORK/ap_load.log" 2>&1
   check ap_load "a load reads the save's sidecar" '\[ap\] loaded .*world\.slot01\.ap\.json: 1 checks, received index 3'
@@ -431,7 +458,7 @@ if [ -f "$SAVE" ]; then
     shift 5
     cp "$SAVE" "$WORK/world.mcd"
     rm -f "$WORK/world.slot01.ap.json"
-    env "$@" SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE_LEADER=10 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
+    env "$@" SS_AP_ANY_SAVE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE_LEADER=10 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy \
       SS_MEMCARD1="$WORK/world.mcd" SS_DEBUG_INPUT="$dbg" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/$seed" \
       --frames "$frames" --input "$input" </dev/null >"$WORK/$name.log" 2>&1
   }
@@ -452,7 +479,7 @@ if [ -f "$SAVE" ]; then
   printf '{"format": "apso2", "version": 1, "seed": "smoke-4w", "slot": {"name": "Claude", "id": 1}, "options": {"world_mode": "open_world"}, "items": {"5300002": {"name": "North City Pass", "kind": "key", "key": 2}}, "locations": [], "doors": [{"id": 68685998, "routine": "0x42ac", "key": 2, "name": "Nede -> North City"}]}\n' >"$WORK/p4w.apso2"
   cp "$SAVE" "$WORK/world.mcd"
   rm -f "$WORK/world.slot01.ap.json"
-  SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE=1 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/world.mcd" \
+  SS_AP_ANY_SAVE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SS_TRACE=1 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/world.mcd" \
     SS_DEBUG_INPUT="300:ap_give key:2 Bob" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/p4w.apso2" --frames 520 \
     --map-pos 57219,-300,28622 --input "${NC_INPUT},100:down,160:none,400:up,470:none" </dev/null >"$WORK/ap_p4_world.log" 2>&1
   check ap_p4_world "the locked entrance does not run" '\[ap\] door 68685998 \(Nede -> North City\): locked, needs North City Pass'
@@ -558,5 +585,81 @@ check ap_hub_lock "the chapter stays 60" 'play: story chapter 60 step 4000'
 "${HUB_RUN[@]}" SS_SWEEP_PLAY="547:K60" timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/hubstory.apso2" --frames 2100 --map 547 \
   </dev/null >"$WORK/ap_hub_lock_story.log" 2>&1
 check ap_hub_lock_story "a story seed: the chest stores chapter 13 (the original)" 'play: story chapter 13 step 0'
+
+# Archipelago, the hub's New Game, starts, doors and P5 [hubcore agent] (docs/ap/seed_format.md
+# "Hub", "The port: New Game, the starts, the doors, P5"). Seeds from docs/ap/hub_state.json's
+# hub block and starts and hub_bosses.json's rows. New Game in each kind of start: Fun City
+# (Energy Nede, Claude's game), Arlia (Expel, Rena's) and Linga (one of random_town's other
+# towns): chapter 60 step 4000 on disc 2, the party at the start's arrival, its exit to the
+# world map, the Synard parked where the row says. Fun City's world map: the Cave of Red Crystal's
+# entrance (door 68686044) refused without its key and entered with it, Fienal's (68685691)
+# refused until Magichand (524) is won. The arena antechamber's door 304 -> 296 leads to
+# Marsilio's arena 305 while he is unbeaten (to.while_unbeaten) and to 296 after. Needs disc 2.
+D2="${SS_DISC2:-${SS_DISC1:+${SS_DISC1//Disc 1/Disc 2}}}"
+if [ -n "$D2" ] && [ -f "$D2" ]; then
+  python3 - "$WORK" <<'PY'
+import json, sys
+work = sys.argv[1]
+hs = json.load(open("docs/ap/hub_state.json"))
+hb = json.load(open("docs/ap/hub_bosses.json"))
+starts = {s["key"]: s for s in hs["starts"]}
+keys = {str(5390000 + g["key"]): {"kind": "key", "key": g["key"], "name": g["name"]} for g in hb["dungeons"]}
+rows = [{k: b[k] for k in ("encounter", "name", "map", "maps", "view", "game") if b.get(k) is not None} for b in hb["bosses"]]
+doors = [{"id": 68686044, "routine": "0x4364", "key": 13, "name": "Energy Nede -> Cave of Red Crystal"},
+         {"id": 68685691, "routine": "0x3de0", "won": [524], "banners": ["Defeat Magichand first"], "name": "Energy Nede -> Fienal"},
+         {"id": 19929509, "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271, "while_unbeaten": 532},
+          "name": "Fun City Fighting Arena (map 304 -> 305 while Marsilio is unbeaten)"}]
+def seed(name, hero, start, start_keys=()):
+    hub = dict(hs["hub"], start=dict(starts[start]))
+    s = {"format": "apso2", "version": 3, "seed": "smoke-" + name, "slot": {"name": "Hub", "id": 1},
+         "options": {"world_mode": "hub", "story_route": hero, "party_rules": "open", "character_items": True},
+         "items": keys, "locations": [], "hub": hub, "bosses": rows, "doors": doors}
+    if start_keys:
+        s["start"] = {"items": [keys[str(5390000 + k)] for k in start_keys]}
+    json.dump(s, open(f"{work}/{name}.apso2", "w"))
+seed("hubfc", "claude", "fun_city")
+seed("hubarlia", "rena", "arlia")
+seed("hublinga", "claude", "linga")
+seed("hubkey", "claude", "fun_city", (13,))
+PY
+  hub_ng() {  # hub_ng NAME SEED HERO FRAMES [env...]: New Game (the prologue skipped) with a hub seed
+    local name=$1 seed=$2 press=$3 frames=$4
+    shift 4
+    [ "$press" = claude ] && press=right || press=left
+    env "$@" SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 \
+      SS_TRACE_LEADER=50 timeout 900 "$BIN" --headless --debug --no-memcard --ap-seed "$WORK/$seed.apso2" --frames "$frames" \
+      --input "$NEWGAME_A,2000:$press,2006:none,$NEWGAME_B" </dev/null >"$WORK/$name.log" 2>&1
+  }
+  hub_ng ap_hub_ng_fc hubfc claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21,2:T10"
+  check ap_hub_ng_fc "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*chapter 60 step 4000, disc 2; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
+  check ap_hub_ng_fc "the party at the start" '\[leader\] vblank [0-9]+ map 279 state 0 pos 470,0,68 '
+  check ap_hub_ng_fc "the Synard by Fun City" 'world: vehicle 1 \(the Synard\) parked at 81546,-258,33880 on map 2'
+  check ap_hub_ng_fc "the dungeon door wants its key" '\[ap\] door 68686044 \(Energy Nede -> Cave of Red Crystal\): locked, needs Cave of Red Crystal Key'
+  check ap_hub_ng_fc "Fienal wants Magichand" '\[ap\] door 68685691 \(Energy Nede -> Fienal\): locked, needs encounter 524 won \("Defeat Magichand first"\)'
+  check ap_hub_ng_fc "the banners fit" '\[ap\] door banners measured: [0-9]+, 0 too wide'
+  check ap_hub_ng_fc "the chapter stays 60" 'play: story chapter 60 step 4000'
+  hub_ng ap_hub_ng_arlia hubarlia rena 3500 SS_TRACE=1 SS_SWEEP_PLAY="17:T0"
+  check ap_hub_ng_arlia "hub New Game at Arlia (Rena's game)" "\\[ap\\] hub New Game: Rena's game, [0-9]+ flags, .*chapter 60 step 4000, disc 2; Arlia Village \\(map 17 at -126, 0, -614, facing 90\\)"
+  check ap_hub_ng_arlia "the party at the start" '\[leader\] vblank [0-9]+ map 17 state 0 pos -126,0,-614 '
+  check ap_hub_ng_arlia "out to Expel's world map" 'play: control on map 1 after 1 of 1 steps'
+  check ap_hub_ng_arlia "the Synard by Arlia" 'world: vehicle 1 \(the Synard\) parked at 51209,-150,17464 on map 1'
+  hub_ng ap_hub_ng_linga hublinga claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="183:T27"
+  check ap_hub_ng_linga "hub New Game at Linga" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Town of Linga \\(map 183 at -3392, 0, -1182, facing 340\\)"
+  check ap_hub_ng_linga "out to Expel's world map" 'play: control on map 1 after 1 of 1 steps'
+  check ap_hub_ng_linga "the Synard by Linga" 'world: vehicle 1 \(the Synard\) parked at 90815,-150,13368 on map 1'
+  hub_ng ap_hub_key hubkey claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21"
+  check ap_hub_key "with the key the cave loads" 'field_load_map\(map=419 '
+  hub_ng ap_hub_fienal hubfc claude 3700 SS_TRACE=1 SS_BATTLE_STUB=1 SS_DEBUG_INPUT="3050:battle 524" SS_SWEEP_PLAY="279:T4,2:T10"
+  check ap_hub_fienal "Magichand won" '\[ap\] goal: encounter 524 won'
+  check ap_hub_fienal "then Fienal opens" 'field_load_map\(map=687 '
+  hub_ng ap_hub_arena hubfc claude 9000 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12,281:T3,297:T4,299:T2,304:T4,305:K16:2,296:T2,304:T4"
+  check ap_hub_arena "the antechamber's door leads to the arena" '\[ap\] door 19929509: map 296 \(-6, 0, 1014\) -> map 305 \(-13, 0, 276\)'
+  check ap_hub_arena "Marsilio's view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\): chapter 57 step 20'
+  check ap_hub_arena "Go see Narl: the fight, won" '\[ap\] goal: encounter 532 won'
+  check ap_hub_arena "the scene's way out ends the view" '\[ap\] hub: story view off: map 296 \(Marsilio, encounter 532; map 296 loaded\)'
+  check ap_hub_arena "after the win the door is the original" '\[ap\] door 19929509: encounter 532 won, the door.s own target \(map 296\)'
+else
+  echo "SKIP ap_hub_ng: no disc 2 image next to disc 1"
+fi
 
 exit $fail

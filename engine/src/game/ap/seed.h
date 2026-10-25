@@ -91,6 +91,10 @@ struct Door {
   std::vector<int> keys;     // ... or the keys it needs, all of them (`keys`; `key` is among them)
   bool has_target = false;
   DoorTarget to;
+  // to.while_unbeaten (the hub's P5 doors) [hubcore agent]: the target applies only while this
+  // encounter is not in the sidecar's goal_won; once it is won the door is the original again
+  // (-1: always). The arena antechamber's door 304 -> 296 leads to Marsilio's arena 305 so.
+  int to_while_unbeaten = -1;
   std::string name;
   std::string purpose;       // the banner's ending for a missing key ("to sail to El"; "": none)
   int until = 0;             // the keys are needed only while the story's chapter is below this (0: always)
@@ -124,6 +128,7 @@ struct StoryView {
   bool until_transfer = false;    // until "transfer": no end at free play, only at a map outside the view
   bool has_cut_to = false;        // cut_to: after the win, the first transfer out of the view goes here
   DoorTarget cut_to;
+  int done_flag = -1;             // done_flag: after the win the view still comes on in its maps until this real flag is set [hubchambers]
 };
 struct HubBoss {
   int encounter = -1;             // the boss battle: a victory records it (goal_won)
@@ -133,6 +138,30 @@ struct HubBoss {
   bool has_view = false;          // false: no view (a flag-guarded boss plays at the hub's state)
   StoryView view;
   int game = 0;                   // 0 both games, 1 only Claude's (script flag 1 set), 2 only Rena's
+};
+
+// The hub's New Game (the `hub` block's state; docs/ap/seed_format.md "Hub") [hubcore agent]:
+// what New Game builds after the original's own (hero, names, party, inventory): the flags (all
+// others cleared), the script global words, the picked hero's own flags and words, the chapter
+// and step, disc 2, and the start (a town's world-map arrival, with its Synard parking words).
+struct HubWord {
+  int addr = 0;                   // script global byte offset, 4-aligned (0xc4-0x33f; never the names)
+  uint32_t value = 0;
+};
+struct HubGame {
+  std::vector<int> flags;         // set after the hub's flags
+  std::vector<HubWord> globals;   // written after the hub's globals
+};
+struct HubState {
+  bool on = false;                // the block holds the state (`flags` / `start`): New Game builds it
+  int chapter = 60, step = 4000;  // G[0xa0] / G[0xa4]
+  int disc = 2;                   // 1 or 2 (config +0x4c)
+  std::vector<int> flags;         // every flag set; the others are cleared
+  std::vector<HubWord> globals;
+  HubGame games[2];               // [0] Claude's game, [1] Rena's
+  std::string start_name;
+  DoorTarget start;               // the field map and arrival (dir: degrees, a transfer's facing)
+  std::vector<HubWord> start_globals;  // start.globals: the start's Synard words, after games[hero]
 };
 
 struct Seed {
@@ -176,6 +205,7 @@ struct Seed {
   bool hub_lock_step = true;         // hub.lock.step: ... and step stores, except on hub_step_maps
   std::vector<int> hub_step_maps = {685};  // hub.lock.step_maps: maps whose step stores pass the lock
   std::vector<HubBoss> bosses;       // the seed's `bosses` (the chambers)
+  HubState hub_state;                // the `hub` block's New Game state [hubcore agent]
 };
 
 // The door id rule (tools/ap_doors.py).

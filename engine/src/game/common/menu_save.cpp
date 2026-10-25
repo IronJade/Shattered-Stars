@@ -743,8 +743,9 @@ void ProgressDialog::frame() {
       if (r == 1) {
         // Archipelago (port feature): its state goes in a sidecar file beside the card.
         // [world agent]
+        // [hubcore agent] A save's sidecar holds the hash of the save as the driver read it back.
         if (loading()) ap::on_loaded(memcard_image(slot), index);
-        else ap::on_saved(memcard_image(slot), index);
+        else ap::on_saved(memcard_image(slot), index, card->write_buffer, 0x2000);
         finish(0);
       } else {
         cancel();
@@ -953,6 +954,10 @@ int load_finish(MemoryCard* card, int slot) {
   if (s.status != 0x2282) return -1;
   if (s.flags & 0x1000) return 0;
   u8* file = s.buffer;
+  // Archipelago (port feature) [hubcore agent]: with a seed, only this seed's own saves as it
+  // saved them (game/ap load_allowed); any other fails here, before it reaches the game, as a
+  // damaged save does (the load screen's "load failed").
+  if (!ap::load_allowed(memcard_image(slot), s.index, file, 0x2000)) return -2;
   const u32 saved = static_cast<u32>(rd32s(file + 0x214));
   wr16(file + 0x218, 0);
   wr32(file + 0x210, 0);
