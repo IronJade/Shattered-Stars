@@ -313,11 +313,11 @@ def build(field, battles, late=None, doors=None):
         else:
             reasons = ["optional quest"] + [r for r in reasons if r != "optional member"]
         s0 = b["sites"][0]
+        # [cavenames 2026-10-25] A cave boss's place is its real floor (RELEASED_AREAS /
+        # CAVE_FLOORS, the same table skillsanity2 renamed the cave chests by), not the nearest
+        # map's banner text below it: that walk named Phoenix (809) "Level 11" (it's on 12),
+        # G-Celesta (815) "Level 12" (on 13), and Weirdbeast (711, its own arena) "Level 1".
         place = area_label(s0) or f"Map {s0['map']}"
-        if cls == "cave":   # the floor's banner (the nearest map at or below with one)
-            banners = field.get("map_names", {})
-            m = next((m for m in range(s0["map"], CAVE_OF_TRIALS.start - 1, -1) if banners.get(str(m))), None)
-            place = banners[str(m)][0] if m is not None else place
         label, place, _ = STORY_BOSSES.get(e) or OPTIONAL_BOSSES.get(e) or (
             " and ".join(dict.fromkeys(b["names"])), place, "")
         region = region_of(s0["map"], s0.get("world", worlds.get(s0["map"])))

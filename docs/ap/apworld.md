@@ -1180,7 +1180,13 @@ never` (above).
   Trials Weird Beast Arena" (`CAVE_FLOORS`, docs/modding/reference/map_names.csv). 76 names, the ids
   unchanged. Trackers read the names from each multiworld's own data package, so rooms generated
   before keep theirs; a seed with `cave_of_trials` fills otherwise (Archipelago sorts locations by
-  name). The cave's boss names are another rule's and unchanged.
+  name).
+- *Fixed: the Cave of Trials' boss names* (2026-10-25, agent cavenames): the boss fights' place
+  came from the nearest map's banner text below it, not `CAVE_FLOORS`, and disagreed with the
+  chests' floors for three of the thirteen: Phoenix ("Cave of Trials Level 11: Phoenix boss", map
+  809, really floor 12), G-Celesta ("Level 12", map 815, really floor 13), Weirdbeast ("Level 1",
+  map 711, its own arena, now "Cave of Trials Weird Beast Arena: Weirdbeast boss"). The other
+  ten already matched; ids unchanged.
 - *Hub mode: the skill guilds sell* (2026-10-25): the hub state no longer sets flags 700-711 (1063
   -> 1051 hub flags).
 - *Fixed: gift sites never hold progression* (2026-10-25, the user: "NPC gift checks should NOT
