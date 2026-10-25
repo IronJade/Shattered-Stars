@@ -129,6 +129,7 @@ rows, tools/ap_hub_chambers.py), docs/handoff/hubvm.md (a view's start / end), s
    doors into 281 and the 304 door ask yes / no): reasons in "Design (as built)".
 2. The question comes at every crossing of 281 until Shigeo is beaten (as ruled: "the question
    comes again next time"); the Nede <-> Expel route asks both ways.
+   (Superseded: the user answered "once per visit"; built by hubask2, below.)
 3. A save made in an asked chamber's view loads back into it (sidecar `hub_view`); neither room
    has a save point in normal play.
 4. The texts are APWorld data (hub.ASK), English in every release like the harbour's.
@@ -223,3 +224,83 @@ rows, tools/ap_hub_chambers.py), docs/handoff/hubvm.md (a view's start / end), s
    chosen id in the sidecar so `start_member` survives loads. Small separate hunks in ap.cpp /
    ap.h / seed.cpp / seed.h; I will write the exact hunks here before making them, or you take
    them, whichever you prefer (answer in docs/handoff/charselect.md "For charselect").
+
+## The user's answers to hubask's questions (2026-10-25)
+1. **Shigeo's question: once per visit to Fun City.** The user: "If the player wants to face him,
+   they would need to go to the world map and then back into Fun City to trigger the prompt
+   again." So after a No, the `ask` row stays quiet (281 an ordinary town, no question at the
+   doors) until a world-map load; the next entry into Fun City asks again. (A save / load in
+   between: the question may come again after the load, or not; pick the simpler and say which.)
+   To do: agent "hubask2" (queued), with a headless proof (No, walk 280 -> 281 -> 297 and back: no
+   second question; world map -> Fun City: asked again) and a smoke case.
+2. **The desk and the Clerk as menu options:** approved ("Absolutely").
+
+## For hubask2 (from charselect2, 2026-10-25 ~16:00)
+- seed.cpp's `starting_character` block and seed.h `starting_choices`, ap.h / ap.cpp's
+  `chosen_start` / `starting_choices` / `set_chosen_start` / the sidecar key `starting_character`
+  are mine ([charselect]); I changed only those (and fixed a -Wshadow there at 15:50).
+- Batches: compare against scratchpad/apworld2/batch/hub_cs / full_cs (`starting_character: any`
+  seeds changed); check.py reads the new list. The smoke's `hub_ng` takes `HUB_INPUT`.
+
+## hubask2 (agent "hubask2", 2026-10-25): once per visit
+Spec: "The user's answers to hubask's questions" item 1 above. Rules as hubask's (own build dir
+engine/build-hubask, headless, 4 GB cap, at most 2 game processes, scratch XDG, SS_AP_ANY_SAVE
+for ordinary saves, scratch in scratchpad/hubask/, no commits). Ownership: the `ask` code in
+hub.{h,cpp}, ap.cpp; small hunks in shared files with dated notes (seed.{h,cpp}, smoke and
+test_hub.py: charselect.md; hub.py: hubproof.md).
+
+### Design (as built)
+- **A row key `again`**: `"visit"` (the default) or `"always"` (the old behaviour: every door
+  asks). seed.h `HubAsk::once_per_visit`, seed.cpp parse_ask (anything else refused: "ask.again").
+- **Quiet** (hub.cpp `Hub::quiet`, a set of rows): `go_quiet` on a no at the question (a cancel
+  too), on the redirect door's no (its own target) and on an `options` entry out of the chamber
+  (the Clerk's "Leave the arena.": a no from inside). While quiet, `hub_ask_transfer` takes the
+  no at once without the question: a seed door that sent the transfer into the chamber goes to
+  its own target, else the chamber at the hub's state (decision no: "no story view (the answer
+  was no)").
+- **The visit ends** at a world map's load: hub_map_loaded with a world chunk's script (maps
+  909-980 Expel, 1048-1110 Energy Nede, 1113-1114 world map 3: field/map.cpp loads a chunk's
+  container for world maps 1-3) clears the set ("... the world map (map 1072): asks again").
+- **Save / load: the simpler one.** The quiet set is not saved: hub_reset (New Game, every load)
+  clears it, so after a load the next door asks again. No sidecar change.
+- **The arena**: same default. Its door (304 -> 305 / 296) is the one a player training at the
+  arena passes after every registration's battles (back to 304, out by its door): asked once per
+  visit now, not after each tournament. The desk's "Face Marsilio." stays offered while quiet (an
+  opt-in, approved as is); "Leave the arena." counts as the visit's no.
+- Logs: `ask: Shigeo, encounter 533: quiet until the party has been on a world map (once per
+  visit)`, `... door 19468777 (map 297 -> map 281): quiet this visit: the chamber at the hub's
+  state`, `... door 19929509 (map 304 -> map 305): quiet this visit: the door's own target (map
+  296)`, `... the world map (map 1072): asks again`.
+
+### Done and verified
+- Headless (engine/build-hubask, seed scratchpad/hubask/seeds/ask2.apso2 = ask.json + `"again":
+  "visit"` on both rows): **visitA2** (13000 frames, SS_SWEEP_PLAY `279:T0,280:T12:1,281:T3,
+  297:T0,281:T5,280:T12,281:T5,280:T0,279:T4,2:T27,279:T0,280:T12,281:T0`): 280 -> 281 asked,
+  no, quiet; 281 -> 297 -> 281 (door 19468777) quiet, no question, 281 at the hub's state;
+  281 -> 280 -> 281 (door 18356813) quiet; 280 -> 279 -> world map 2 ("the world map (map 1072):
+  asks again") -> 279 (2:T27, code word 4429) -> 280 -> 281 asked again, yes, the view on, the
+  strip's scene, battle 533 won, view off at free play (vblank ~9200; 13 of 13 steps). **visitB**:
+  the arena door 304:T4 no -> 296, back 296:T2 -> 304, 304:T4 quiet -> 296 (no question).
+- Trigger slots found (SS_TRACE "trigger N added ... code word"): 297:T0 -> 281, 281:T5 / T6 ->
+  280, 280:T0 -> 279, Energy Nede's world map 2:T27 -> Fun City 279.
+- Unit test ap_hub_ask (test_script_vm.cpp) extended: the default and the refusal of `again`;
+  no -> quiet -> the next door a no without the question -> a world map's script (1050) -> asked
+  again (cancel: quiet again) -> a load forgets (asked); Marsilio's door no -> quiet (its own
+  target) -> world map 3's script (1113) -> yes; the Clerk's way out -> quiet; the desk's option
+  still offered while quiet; `again` "always": asked at every door.
+- Smoke: ap_hub_ask_exit's last step now meets the quiet door (checks "the way out is a no for
+  the visit", "the door quiet: its own target"); new ap_hub_ask_visit (7 checks: the route above
+  to the second question, yes) and ap_hub_ask_visit_door (3 checks).
+- APWorld: hub.py ASK rows carry `"again": "visit"` (with a comment); test_hub.py TestHubAsk
+  checks it; the smoke's hub seed mirrors it. data.py regenerates identically (ASK is not in it).
+- Docs: seed_format.md (the bosses table's `ask`, the example, the key table's `again`, "Once per
+  visit", the two rows), the player guide (apworld/so2/docs/en_...md: once per visit, how to be
+  asked again, a load asks again), docs/ap/apworld.md, engine/README.md.
+- **Final suites (engine/build-hubask, final code):** ss_tests 99/0 (SS_DISC1), ss_game_tests
+  174/0 (ap_hub_ask extended), smoke 230 PASS / 0 FAIL, rc 0 (220 baseline + 10:
+  scratchpad/hubask/smoke3.log). APWorld: world tests 318 passed / 23089 subtests; AP general
+  379 passed; data.py regenerates identically; hub batch (players_hub -> hub_ask2, seeds 1-96)
+  96/96 exit 0, check.py 0 errors on 192 files, all 308 ask rows with `"again": "visit"`.
+
+### In progress
+- Nothing. Final report sent. No commits.

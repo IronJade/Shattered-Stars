@@ -7,6 +7,8 @@
 #include <initializer_list>
 #include <memory>
 #include <span>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "disc/slz.h"
@@ -14,9 +16,11 @@
 #include "game/boot/pad.h"
 #include "game/boot/stubs.h"
 #include "game/common/math.h"
+#include "game/common/program_image.h"
 #include "game/common/texture.h"
 #include "game/common/text_rules.h"
 #include "game/title/load_queue.h"
+#include "game/title/member_profiles.h"
 #include "game/title/text.h"
 #include "game/title/title_program.h"
 #include "game/title/window.h"
@@ -611,6 +615,356 @@ void skip_hero_screens(Sequence& s, int route) {
                character != 0 ? "Rena" : "Claude", s.name);
 }
 
+// ---- Archipelago (port feature) [charselect agent]: the character select ----------------------
+// Open world and hub seeds (options.starting_character "any" or a list: every member, the ones
+// the player may not pick dark; a named member: that member only, to confirm). The hero select's
+// format: its heading art, a face per member where the spotlights were (the Status page's
+// portraits, scaled), the highlighted member's picture behind (the renaming page's, 0xbd3 +
+// member: the hero select's own two are the same bytes), and the window of seven lines: the
+// heroes' original bios; for the others the name, the race and occupation and the favourite food
+// read from the disc in its own language (Status page pack 0xbb3, item pack 3000, drawn with
+// those packs' fonts), and four lines of our own (member_profiles.h).
+namespace charselect {
+
+// The faces: a grid of four by three on the side away from the picture, where the hero select
+// keeps its spotlit sprites, so that the picture's face stays clear; on a shade panel (the bio
+// window's own shade) that keeps them readable over the picture's edge.
+constexpr int kFaceSize = 22;
+constexpr int kGridColumns = 4, kGridX = 0x0E, kGridY = 0x2E, kGridStepX = 0x1C, kGridStepY = 0x19;
+constexpr int kFaceX = 0x240;                // VRAM (0x240, 0): free while New Game runs
+constexpr int kSlotX[2] = {0x140, 0x240};    // the hero select's portrait slots (y 0x100)
+constexpr int kFaceTpage = (kFaceX >> 6) | 0x100;  // 15-bit
+constexpr int kLineWidth = 0xE8 - 0x10;      // the window less its margins
+
+struct Segment {
+  std::vector<u8> codes;  // glyph codes, 0-terminated
+  int font = 0;           // 0 the title's, 1 the Status pack's, 2 the item pack's
+};
+struct Line {
+  std::vector<Segment> segments;
+  u32 palette = 0;
+};
+
+struct Data {
+  std::vector<u8> status_pack, item_pack;   // block 0 of 0xbb3 / 3000
+  std::vector<u8> fonts[3];                 // [0] unused (the title's stays in title_text())
+};
+
+std::vector<u8> load_entry_block(Loader* loader, int entry) {
+  std::vector<u8> raw(static_cast<size_t>(std::max(loader->entry_size(entry), 0)));
+  if (raw.empty()) return {};
+  loader->load_sync(raw.data(), entry, 0);
+  return unpack(raw, 0);
+}
+
+// Message 'index' of 'group' in a page pack (block 0 offsets: strings, font), up to its end or a
+// control code, 0-terminated.
+std::vector<u8> pack_message(const std::vector<u8>& pack, int group, int index) {
+  std::vector<u8> out;
+  if (pack.size() < 8) return {0};
+  const u8* strings = pack.data() + rd32(pack.data());
+  const u8* p = strings + rd32(strings + group * 4);
+  const u8* end = pack.data() + pack.size();
+  for (int n = index; n != 0 && p < end;)
+    if (*p++ == 0) --n;
+  while (p < end && *p != 0) {
+    const u32 c = *p > 0x7F && p + 1 < end ? (p[0] & 0x7Fu) | static_cast<u32>(p[1]) << 7 : *p;
+    if (c >= 0x4000) break;
+    const int n = *p > 0x7F ? 2 : 1;
+    out.insert(out.end(), p, p + n);
+    p += n;
+  }
+  out.push_back(0);
+  return out;
+}
+
+Segment ascii_segment(Window* w, const char* text) {
+  Segment seg;
+  seg.codes.assign(std::strlen(text) * 2 + 2, 0);
+  text_from_ascii(w, text, seg.codes.data());
+  return seg;
+}
+
+// Runs 'f' with the segment's font in title_text() (the renderer reads it there).
+template <typename F>
+auto with_font(Data& d, int font, F f) {
+  TitleText& text = title_text();
+  if (font != 0) std::swap(text.font, d.fonts[font]);
+  auto r = f();
+  if (font != 0) std::swap(text.font, d.fonts[font]);
+  return r;
+}
+
+int line_width(Window* w, Data& d, const Line& line) {
+  int width = 0;
+  for (const Segment& seg : line.segments)
+    width += with_font(d, seg.font, [&] { return text_width(w, seg.codes.data()); });
+  return width;
+}
+
+// The panel behind the faces (the faces are queued into its context before its shade).
+class FacePanel : public Window {
+ public:
+  FacePanel() : Window(0x30) {}
+  void draw() override { window_draw_shade_frame(this); }
+};
+
+class MemberWindow : public Window {
+ public:
+  explicit MemberWindow(Data& data) : Window(0x180), d(data) {}
+  void draw() override {
+    window_text_begin(this);
+    int y_ = 0;
+    for (const Line& line : lines) {
+      int x_ = 0;
+      for (const Segment& seg : line.segments)
+        x_ = static_cast<int>(with_font(d, seg.font, [&] { return text_draw(this, x_, y_, seg.codes.data(), line.palette); }) &
+                              0xFFFF);
+      y_ += 0x0E;
+    }
+    window_text_end(this);
+    window_draw_shade_frame(this);
+  }
+  Data& d;
+  std::vector<Line> lines;
+};
+
+void build_lines(MemberWindow* w, int member) {
+  Data& d = w->d;
+  w->lines.clear();
+  if (member <= 2) {  // the heroes: the original bios (title strings 0x20 + selection * 7)
+    for (int i = 0; i < 7; ++i) {
+      const u8* s = text_find(w, (member - 1) * 7 + i + 0x20);
+      Segment seg;
+      if (s != nullptr)
+        for (const u8* p = s;; ++p) {
+          seg.codes.push_back(*p);
+          if (*p == 0) break;
+        }
+      else
+        seg.codes.push_back(0);
+      w->lines.push_back({{seg}, static_cast<u32>(i == 0) << 2});
+    }
+    return;
+  }
+  const member_profiles::Profile& pr = member_profiles::kProfiles[member - 1];
+  w->lines.push_back({{ascii_segment(w, pr.name)}, 4});
+  Segment race{pack_message(d.status_pack, 0xB, member - 1), 1};
+  Segment job{pack_message(d.status_pack, 0xA, member - 1), 1};
+  Line facts{{race, ascii_segment(w, ". "), job}, 0};
+  if (line_width(w, d, facts) <= kLineWidth) {
+    w->lines.push_back(facts);
+  } else {  // (a long translation: race and occupation on their own lines)
+    w->lines.push_back({{race}, 0});
+    w->lines.push_back({{job}, 0});
+  }
+  const u8* food_id = program_data_at(0xBB2, 0x8007E000, 0x80081612 + static_cast<u32>(member) * 2);
+  const int food = food_id != nullptr ? food_id[0] | food_id[1] << 8 : 0;
+  w->lines.push_back({{Segment{pack_message(d.status_pack, 7, 2), 1}, ascii_segment(w, ": "),
+                       Segment{pack_message(d.item_pack, 3, food), 2}},
+                      0});
+  for (const char* text : pr.lines) {
+    if (text == nullptr || w->lines.size() >= 7) break;
+    Line line{{ascii_segment(w, text)}, 0};
+    if (line_width(w, d, line) > kLineWidth)
+      runtime::Runtime::get().log_once(std::string("charselect-wide-") + text,
+                                       std::string("[ap] character select: a line wider than the window: ") + text);
+    w->lines.push_back(std::move(line));
+  }
+}
+
+// The member's picture into portrait slot 'slot'; its width (0 when it does not load).
+int upload_portrait(Loader* loader, int slot, int member) {
+  const auto block = load_entry_block(loader, 0xBD3 + member);
+  const auto t = parse_texture_block(block);
+  if (!t) return 0;
+  upload_texture(runtime::Runtime::get().gpu, t->pixels.data(), 2, 0, kSlotX[slot], 0x100, t->width_px, t->height);
+  psyq::DrawSync(0);
+  return t->width_px;
+}
+
+// The Status page's 160 x 160 portraits (0x1170 + member; 0x10 bytes of header in every sector),
+// scaled to kFaceSize, two rows of six at (kFaceX, 0).
+void upload_faces(Loader* loader) {
+  std::vector<u16> faces(static_cast<size_t>(6 * kFaceSize * 2 * kFaceSize), 0);
+  for (int m = 1; m <= 12; ++m) {
+    std::vector<u8> raw(static_cast<size_t>(std::max(loader->entry_size(0x1170 + m), 0)));
+    if (raw.size() < 0x800) continue;
+    loader->load_sync(raw.data(), 0x1170 + m, 0);
+    std::vector<u8> tim;
+    for (size_t s = 0; s + 0x800 <= raw.size(); s += 0x800) tim.insert(tim.end(), raw.begin() + s + 0x10, raw.begin() + s + 0x800);
+    if (tim.size() < 20 || rd32(tim.data() + 4) != 2) continue;
+    const int w = tim[16] | tim[17] << 8, h = tim[18] | tim[19] << 8;
+    if (w <= 0 || h <= 0 || tim.size() < 20 + static_cast<size_t>(w * h * 2)) continue;
+    const int fx = ((m - 1) % 6) * kFaceSize, fy = ((m - 1) / 6) * kFaceSize;
+    for (int y = 0; y < kFaceSize; ++y)
+      for (int x = 0; x < kFaceSize; ++x) {
+        // A box filter over the source cells this texel covers (the colour channels averaged).
+        const int x0 = x * w / kFaceSize, x1 = (x + 1) * w / kFaceSize, y0 = y * h / kFaceSize, y1 = (y + 1) * h / kFaceSize;
+        int r = 0, g = 0, b = 0, n = 0;
+        for (int sy = y0; sy < y1; ++sy)
+          for (int sx = x0; sx < x1; ++sx) {
+            const u8* p = tim.data() + 20 + (sy * w + sx) * 2;
+            const int v = p[0] | p[1] << 8;
+            r += v & 0x1F, g += (v >> 5) & 0x1F, b += (v >> 10) & 0x1F, ++n;
+          }
+        if (n == 0) continue;
+        u16 v = static_cast<u16>((r / n) | (g / n) << 5 | (b / n) << 10);
+        if (v == 0) v = 0x8000;  // (black stays opaque)
+        faces[static_cast<size_t>((fy + y) * 6 * kFaceSize + fx + x)] = v;
+      }
+  }
+  upload_texture(runtime::Runtime::get().gpu, faces.data(), 2, 0, kFaceX, 0, 6 * kFaceSize, 2 * kFaceSize);
+  psyq::DrawSync(0);
+}
+
+void queue_tile(RenderContext* ctx, int x, int y, int w, int h, u32 colour) {
+  auto* t = screen_alloc_prims<psyq::TILE>(ctx->arena, 1);
+  psyq::setlen(t, 3);
+  std::memcpy(&t->r0, &colour, 3);
+  t->code = 0x60;
+  t->x0 = static_cast<s16>(x), t->y0 = static_cast<s16>(y);
+  t->w = static_cast<s16>(w), t->h = static_cast<s16>(h);
+  add_prim(ctx, t);
+}
+
+}  // namespace charselect
+
+// The character select. 'hero' is the story route's hero (1 / 2); 'fixed' a named starting
+// character (0: the player picks among 'choices', the hero always allowed: nobody extra);
+// 'last' the member picked before (back from the combat mode: the cursor starts there; 0 none).
+// Returns the member picked (the hero: nobody extra); s.result 1 when backed out.
+int member_select_screen(Sequence& s, int hero, int fixed, const std::vector<int>& choices, int last) {
+  using namespace charselect;
+  Loader* loader = s.t.loader;
+  Data data;
+  data.status_pack = load_entry_block(loader, 0xBB3);
+  data.item_pack = load_entry_block(loader, 3000);
+  for (int f = 1; f <= 2; ++f) {
+    const std::vector<u8>& pack = f == 1 ? data.status_pack : data.item_pack;
+    if (pack.size() >= 8) data.fonts[f].assign(pack.begin() + rd32(pack.data() + 4), pack.end());
+  }
+  upload_faces(loader);
+  auto selectable = [&](int m) {
+    return fixed != 0 ? m == fixed : (m == hero || std::find(choices.begin(), choices.end(), m) != choices.end());
+  };
+  int cursor = fixed != 0 ? fixed : last >= 1 && last <= 12 ? last : hero;
+  {
+    int count = 0;
+    for (int m = 1; m <= 12; ++m) count += selectable(m) ? 1 : 0;
+    std::fprintf(stderr, "[ap] character select opens: %s\n",
+                 fixed != 0 ? (std::string(member_profiles::kProfiles[fixed - 1].name) + " to confirm").c_str()
+                            : (std::to_string(count) + " of 12 to pick").c_str());
+  }
+  auto* w = new MemberWindow(data);
+  w->set_rect(8, 0x78, 0xE8, 0x72);
+  build_lines(w, cursor);
+  // The panel: the grid with the shade's soft margins (8 left and top, 0x10 right and bottom),
+  // its top under the heading and its bottom at the bio window's top.
+  auto* panel = new FacePanel;
+  {
+    const int columns = fixed != 0 ? 1 : kGridColumns, rows = fixed != 0 ? 1 : (12 + kGridColumns - 1) / kGridColumns;
+    const int left = kGridX - 0x0A, top = kGridY - 8;
+    const int right = kGridX + (columns - 1) * kGridStepX + kFaceSize + 0x12;
+    const int bottom = std::min(kGridY + (rows - 1) * kGridStepY + kFaceSize + 0x12, 0x78);
+    panel->set_rect(left, top, right - left, bottom - top);
+  }
+  int slot_member[2] = {cursor, 0}, slot_width[2] = {upload_portrait(loader, 0, cursor), 0};
+  int bright[2] = {0x100, 0}, front = 0;
+  int fade = 0xF0;
+  bool leaving = false;
+  s.result = 0;
+  pad_clear(s.t.pad, 0);
+  for (;;) {
+    deferred_delete_update();
+    screen_flip();
+    s.main->ot_head = screen_clear_ot(s.main->ot);
+    w->ctx->ot_head = screen_clear_ot(w->ctx->ot);
+    panel->ctx->ot_head = screen_clear_ot(panel->ctx->ot);
+    text_frame_begin();
+    if (fade != 0) queue_fade(w->ctx, fade + 8);
+    if (step_fade(fade, leaving, 0x20)) break;
+    const u16 pressed = pad_pressed(s.t.pad, 0);
+    const u16 repeat = pad_pressed_repeat(s.t.pad, 0);
+    pad_clear(s.t.pad, 0);
+    if (!leaving) {
+      if (pressed & kConfirm) {
+        if (selectable(cursor)) {
+          leaving = true;
+          s.result = 0;
+          sound_play_sfx(s.sound(), 2, 0, 0x7F40);
+        } else {
+          sound_play_sfx(s.sound(), 7, 0, 0x7F40);
+          runtime::Runtime::get().log_once("charselect-refused",
+                                           "[ap] character select: this seed's party has no place for that member");
+        }
+      } else if (pressed & kPadCircle) {
+        leaving = true;
+        s.result = 1;
+        sound_play_sfx(s.sound(), 6, 0, 0x7F40);
+      } else if (fixed == 0 && (repeat & (kPadLeft | kPadRight | kPadUp | kPadDown))) {
+        int next = cursor - 1;  // 0-11: three rows of four (no wrap)
+        if ((repeat & kPadLeft) && next % kGridColumns > 0) --next;
+        if ((repeat & kPadRight) && next % kGridColumns < kGridColumns - 1) ++next;
+        if ((repeat & kPadUp) && next >= kGridColumns) next -= kGridColumns;
+        if ((repeat & kPadDown) && next + kGridColumns < 12) next += kGridColumns;
+        if (next + 1 != cursor) {
+          cursor = next + 1;
+          sound_play_sfx(s.sound(), 1, 0, 0x7F40);
+          build_lines(w, cursor);
+          // The new picture goes into the slot behind, and comes to the front fading in.
+          front ^= 1;
+          if (slot_member[front] != cursor) {
+            slot_member[front] = cursor;
+            slot_width[front] = upload_portrait(loader, front, cursor);
+          }
+        }
+      }
+    }
+    new_game_draw_sprite(s.main, 8, 0x0C, 0x80, 0x20, 0, 0xA0, 5, 0x7801, 0x80, false);  // "Hero select"
+    new_game_draw_sprite(s.main, text::layout(text::lang()).screen3_subtitle_x, 0x1C, 0xD8, 0x10, 0, 0xD0, 0x25, 0x7806,
+                         0x70, true);  // "Select your character."
+    for (int c = 0; c < 2; ++c)
+      bright[c] = c == front ? std::min(bright[c] + 0x20, 0x100) : std::max(bright[c] - 0x20, 0);
+    // The pictures, right-aligned, the front one on top.
+    for (int k = 0; k < 2; ++k) {
+      const int c = k == 0 ? front : front ^ 1;
+      if (bright[c] == 0 || slot_width[c] == 0) continue;
+      new_game_draw_sprite(s.main, 0x138 - slot_width[c], 0, slot_width[c], 0xF0, 0, 0, ((kSlotX[c] & 0x3FF) >> 6) | 0x130, 0x7880,
+                           (bright[c] * 0x90) >> 8, bright[c] != 0x100);
+    }
+    // The faces (a named member: theirs alone, in the first place): the highlighted one lit in a
+    // frame, the others dimmer, those not to be picked dark; queued before the panel's shade, so
+    // drawn over it (an ordering table entry draws its last primitive first, as on the console).
+    for (int m = 1; m <= 12; ++m) {
+      if (fixed != 0 && m != fixed) continue;
+      const int i = m - 1, place = fixed != 0 ? 0 : i;
+      const int x = kGridX + (place % kGridColumns) * kGridStepX, y = kGridY + (place / kGridColumns) * kGridStepY;
+      const int level = m == cursor ? 0x80 : selectable(m) ? 0x58 : 0x20;
+      new_game_draw_sprite(panel->ctx, x, y, kFaceSize, kFaceSize, (i % 6) * kFaceSize, (i / 6) * kFaceSize, kFaceTpage, 0, level,
+                           false);
+      if (m == cursor) queue_tile(panel->ctx, x - 2, y - 2, kFaceSize + 4, kFaceSize + 4, selectable(m) ? 0x60E0F0 : 0x5050A0);
+    }
+    panel->draw();
+    w->draw();
+    queue_backdrop(s.main, 0, 0x303000, 0x303000, 0x606000);
+    new_game_sound_update(s.bank.data(), s.sequence.data());
+    text_frame_upload();
+    load_queue_update();
+    end_frame(s, 2, {s.main, panel->ctx, w->ctx});
+  }
+  psyq::VSync(2);
+  delete w;
+  delete panel;
+  // The hero select and the naming screen draw Claude / Rena from these slots.
+  upload_portrait(loader, 0, 1);
+  upload_portrait(loader, 1, 2);
+  if (s.countdown == 0) psyq::SetDispMask(1);
+  std::fprintf(stderr, "[ap] character select: %s%s\n", member_profiles::kProfiles[cursor - 1].name,
+               s.result != 0 ? " (backed out)" : cursor == hero ? " (the hero: nobody extra)" : "");
+  return cursor;
+}
+
 // LAB_80045ebc: Standard / Semi-active / Full Active.
 void combat_mode_screen(Sequence& s) {
   auto* w = new CombatModeWindow;
@@ -834,7 +1188,14 @@ int new_game_sequence(RenderContext** holder, char* name) {
   // Archipelago: with a seed's story_route (1 Claude, 2 Rena; 0 for "any", no seed or
   // Archipelago off) the hero select and the naming screen are skipped, both ways.
   const int route = ap::required_story_route();
-  enum class Step { Sound, Vibration, Character, Name, CombatMode, BattleRank, Done };
+  // [charselect agent] Open world and hub: the character select after the hero's name
+  // (options.starting_character "any" / a list: the player picks; a named member: to confirm).
+  const std::vector<int> choices = ap::starting_choices();
+  const int fixed_start = ap::seed_starting_character();
+  if (!choices.empty()) ap::set_chosen_start(0);  // (a pick from a New Game backed out to the title)
+  bool member_shown = false;
+  int member_picked = 0;  // (the cursor's place when the combat mode backs out to the select)
+  enum class Step { Sound, Vibration, Character, Name, Member, CombatMode, BattleRank, Done };
   Step step = s.result == 0 ? Step::Sound : Step::Done;
   while (step != Step::Done) {
     switch (step) {
@@ -867,7 +1228,7 @@ int new_game_sequence(RenderContext** holder, char* name) {
       case Step::Character:
         if (route != 0) {
           skip_hero_screens(s, route);
-          step = Step::CombatMode;
+          step = Step::Member;
           break;
         }
         character_screen(s);
@@ -890,11 +1251,37 @@ int new_game_sequence(RenderContext** holder, char* name) {
         psyq::SetDispMask(0);
         s.countdown = 2;
         psyq::VSync(2);
+        step = Step::Member;
+        break;
+      case Step::Member: {
+        const int hero = s.config()[0x45] + 1;
+        member_shown = !choices.empty() || (fixed_start != 0 && fixed_start != hero);
+        if (!member_shown) {
+          step = Step::CombatMode;
+          break;
+        }
+        const int picked = member_select_screen(s, hero, choices.empty() ? fixed_start : 0, choices, member_picked);
+        member_picked = 0;
+        if (s.result != 0) {
+          s.result = 0;
+          if (route != 0) async_load_cancel(hero == 2 ? 0xA79 : 0xA78, t.prologue_data.data());
+          step = route != 0 ? Step::Vibration : Step::Name;
+          break;
+        }
+        if (!choices.empty()) ap::set_chosen_start(picked == hero ? 0 : picked);
+        member_picked = picked;
+        psyq::SetDispMask(0);
+        s.countdown = 2;
+        psyq::VSync(2);
         step = Step::CombatMode;
         break;
+      }
       case Step::CombatMode:
         combat_mode_screen(s);
-        if (s.result != 0 && route != 0) {
+        if (s.result != 0 && member_shown) {
+          s.result = 0;
+          step = Step::Member;
+        } else if (s.result != 0 && route != 0) {
           async_load_cancel(s.config()[0x45] != 0 ? 0xA79 : 0xA78, t.prologue_data.data());
           step = Step::Vibration;
         } else if (s.result != 0) {

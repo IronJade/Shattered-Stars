@@ -113,8 +113,8 @@ bool parse_target(const Json& c, DoorTarget* out) {
   return true;
 }
 
-// A row's `ask` [hubask agent]: {text, answers?: [yes, no], doors?: [id], options?: [{map, window,
-// choice, text, to}]}. Lines of at most 34 characters (the windows' width), at most 3 of them.
+// A row's `ask` [hubask agent]: {text, answers?: [yes, no], doors?: [id], again?: "visit" | "always",
+// options?: [{map, window, choice, text, to}]}. Lines of at most 34 characters (the windows' width), at most 3 of them.
 bool parse_ask(const Json& a, HubAsk* out, const std::string& where, std::string* error) {
   if (a.is_null()) return true;
   if (!a.is_object()) return fail(error, where + ": ask must be an object");
@@ -141,6 +141,10 @@ bool parse_ask(const Json& a, HubAsk* out, const std::string& where, std::string
       if (!get_int(d[k], &id) || id < 0) return fail(error, where + ": ask.doors: door ids expected");
       out->doors.push_back(id);
     }
+  }
+  if (const Json& g = a["again"]; !g.is_null()) {  // [hubask2 agent]
+    if (g.as_string() != "visit" && g.as_string() != "always") return fail(error, where + ": ask.again: \"visit\" or \"always\" expected");
+    out->once_per_visit = g.as_string() == "visit";
   }
   if (const Json& o = a["options"]; !o.is_null()) {
     if (!o.is_array()) return fail(error, where + ": ask.options must be an array");
@@ -566,7 +570,20 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   } else if (!pr.is_null()) {
     return fail(error, "options.party_rules: story or open expected");
   }
-  if (const Json& sc = s.options["starting_character"]; !sc.is_null()) {
+  // [charselect agent] "any" or a list: the player picks at New Game (the character select).
+  const Json& sc = s.options["starting_character"];
+  if ((sc.is_string() && sc.as_string() == "any") || sc.is_array()) {
+    for (int id = 1; sc.is_string() && id <= kCharacterCount; ++id) s.starting_choices.push_back(id);
+    const Json& ex = s.options["exclude_characters"];
+    for (size_t i = 0; sc.is_string() && i < ex.size(); ++i)
+      std::erase(s.starting_choices, parse_character(ex[i]));
+    for (size_t i = 0; sc.is_array() && i < sc.size(); ++i) {
+      const int id = parse_character(sc[i]);
+      if (id == 0) return fail(error, "options.starting_character: a list of characters' names expected");
+      if (std::find(s.starting_choices.begin(), s.starting_choices.end(), id) == s.starting_choices.end())
+        s.starting_choices.push_back(id);
+    }
+  } else if (!sc.is_null()) {
     const bool none = (sc.is_string() && (sc.as_string().empty() || sc.as_string() == "hero")) ||
                       (sc.is_number() && sc.as_int(-1) == 0);
     if (!none) {

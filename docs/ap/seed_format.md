@@ -227,6 +227,11 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   asks first (its row's `ask`) whose story view was on when the save was made (the player had
   said yes). The load turns that view on again with the map's load; without it a load in such a
   chamber comes up at the hub's own state. Absent everywhere else.
+- `starting_character` (open world and hub, optional; agent "charselect", 2026-10-25): the party
+  id (1-12) of the member the player picked on New Game's character select (a seed whose
+  `options.starting_character` is `"any"` or a list), when that is not the hero. A load makes them
+  the starting character again (they count as received, as below). Absent: none (no pick, or
+  the hero picked); a value outside 1-12 reads as none.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -722,8 +727,8 @@ turns none of these features on is a version-1 seed the 0.02.00 port plays as it
 `version` is the lowest format that can play the seed:
 - **1** when the seed uses nothing below that an old port would ignore;
 - **2** when it uses any of: `goal.all`, `goal.flags`, a door with `flags` / `won`,
-  `party_rules: "open"`, a `starting_character`, `craft` or `killer_move` locations, or
-  `no_fail_crafting`.
+  `party_rules: "open"`, a `starting_character` (a name, or a list / `"any"`: the character
+  select), `craft` or `killer_move` locations, or `no_fail_crafting`.
 
 A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
 silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
@@ -746,7 +751,7 @@ applied them to the locations and items it wrote).
 | `no_fail_crafting` | true / false | false | **read**: item creation never fails by chance (below) |
 | `killer_move_checks` | true / false | false | reference; the checks are the seed's `killer_move` locations |
 | `killer_move_progression` | `never`, `hero`, `any` | `never` | reference |
-| `starting_character` | a character name (as `options.characters` spells them) or `null` | `null` | **read** (open world only; below) |
+| `starting_character` | a character name (as `options.characters` spells them), `null`, or a list of names (or `"any"`): the player picks at New Game | `null` | **read** (open world and hub; below) |
 | `exclude_characters` | list of names | `[]` | reference |
 | `party_rules` | `"story"`, `"open"` | `"story"` | **read**: the party rules (below) |
 | `apworld_version` | `"0.2.0"` | | reference |
@@ -843,11 +848,43 @@ Per goal:
   join as in the original, and the starting member takes one of the 8 places (the port skips
   a story join that finds no free slot rather than overwrite a received or starting member).
 
+**The character select** (port feature, agent "charselect", 2026-10-25; the user's request, the
+open world and the hub). `starting_character` as a **list of names** (or party ids): the player
+picks the starting member at New Game. so2.apworld 0.2.0 writes the list for `any`: the members
+this world's party can hold (the heroes and `characters`, at most 8; under the story's party
+rules every member not in `exclude_characters`); the logic counts on nobody extra, so the pick's
+own character item, when it comes, finds them in the party ("is in the party already"). `"any"`
+(the string) is read as all 12 but `exclude_characters`. A list or `"any"` is a v2 field ("The
+version rule"); a name in the list that is no member stops the seed loading ("a list of
+characters' names expected").
+- **The screen** (engine/src/game/title/new_game.cpp `member_select_screen`): after the hero's
+  name, or after the story route's skip; the hero select's format: its "Hero select" heading
+  art, the twelve members' faces (the Status page's portraits, entries 0x1171-0x117c, scaled) in
+  a grid of four by three on a shade panel on the left, the highlighted member's picture (the
+  renaming page's, 0xbd3 + member: the hero select's own two are the same bytes) on the right,
+  cross-fading as the cursor moves, and the bio window: Claude's and Rena's original bios; for
+  the others the name, the race and occupation (Status pack 0xbb3 groups 0xb / 0xa) and the
+  favourite food (group 7, item pack 3000; the Status overlay's table 0x80081612), read from the
+  disc in its own language, and four lines of our own (engine/src/game/title/member_profiles.h,
+  English in every release; when a release's race and occupation need two lines the last line
+  is left out). Members not in the list are dark and refused (sfx 7, log `character select:
+  this seed's party has no place for that member`); picking the hero means nobody extra. Circle
+  goes back to the naming screen (or to Vibration after the story route's skip); Circle on the
+  combat-mode screen comes back to the select, the cursor on the pick. Logs: `character select
+  opens: 10 of 12 to pick`, `character select: Celine Jules`, then at New Game `starting
+  character Celine: picked at New Game`, and the usual `joins at the first free play and leads`.
+- **A named member** (open world and hub, not the hero): the same screen with that member's face
+  alone, to confirm (Cross; `character select opens: Ashton Anchors to confirm`).
+- **`hero`, `null`, story mode, no seed, Archipelago off**: no screen (New Game is the
+  original's, or the story route's skip alone).
+- The pick is kept in the save's sidecar (`starting_character`, above).
+
 #### The party rules (what the port does; agent "party", `engine/src/game/ap/ap.cpp`)
 
 Read: `options.party_rules` (`"story"` / `"open"`; missing = story; anything else stops the
 seed loading) and `options.starting_character` (a name as `options.characters` spells them, a
-party id 1-12, or `null` / `"hero"` / `""` / 0 for none). Research: scratchpad/party/splits.md
+party id 1-12, or `null` / `"hero"` / `""` / 0 for none; a list or `"any"`: the character
+select above). Research: scratchpad/party/splits.md
 (every party join and leave in the 820 field scripts, disc 2's being the same, with its
 conditions and its return).
 
@@ -1185,7 +1222,7 @@ Read by the port:
 | `view.until` | (optional) `"free_play"` (default: the view ends at the first free play after the win) or `"transfer"` (it lasts until a map outside `maps` / `after_maps` loads: the Field of Power, whose end scene in 604 is guarded only by flags) |
 | `view.cut_to` | (optional) `{map, x, y, z, dir}`: after the win, the scene's first transfer out of the view goes here instead (Berle 575: the scene goes on to 576, which stores chapter 34 and moves to the disc switch's scene map 625; cut_to = the tower's world-map arrival) |
 | `view.done_flag` | (optional, a script flag) after the win the view still comes on in its `maps` (marked won) until this REAL flag is set: an end scene the player reaches by a walk after the fight (the Field of Power: 163, set by 604's vision end; leaving 603 between the Guardian and that vision would otherwise run the flag-guarded vision at chapter 60 and strand the party on 622) [hubchambers] |
-| `ask` | (optional) the chamber asks first (the user's rulings on Shigeo 281 and the arena 305; below, "The port: the questions"): `{"text", "answers"?, "doors"?, "options"?}`. While the boss is unbeaten its view comes on only after a yes [hubask] |
+| `ask` | (optional) the chamber asks first (the user's rulings on Shigeo 281 and the arena 305; below, "The port: the questions"): `{"text", "answers"?, "doors"?, "again"?, "options"?}`. While the boss is unbeaten its view comes on only after a yes; after a no the row is quiet until a world map (`again`) [hubask] |
 
 - **The view ends** at the first map load outside `maps` / `after_maps` (the scene's transfer
   out, or the player walking out before the fight) or at free play after the boss battle was won:
@@ -1377,7 +1414,7 @@ arena in Fun City as a way to level up their characters. They need to be able to
 being forced to go through Marsilio first"). A row's `ask`:
 
 ```json
-"ask": {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509],
+"ask": {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509], "again": "visit",
         "options": [{"map": 297, "window": "0x5c50", "choice": "0x5c6c", "text": "Face Marsilio.",
                      "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
                     {"map": 305, "window": "0x6ea8", "choice": "0x6ec4", "text": "Leave the arena.",
@@ -1389,13 +1426,27 @@ being forced to go through Marsilio first"). A row's `ask`:
 | `text` | the question: 1-3 lines (`\n`) of at most 34 characters (the port refuses more) |
 | `answers` | (optional) `[yes, no]`, default `["Yes.", "No."]` |
 | `doors` | (optional) the door ids (map * 65536 + offset / 4, NA) whose transfers into the chamber ask; absent: every script transfer into the chamber's `maps` from a map outside them asks |
+| `again` | (optional; agent "hubask2") when the question comes again after a no: `"visit"` (the default) once per visit: after a no, or an option out of the chamber, the row is quiet (each of its doors a no without the question) until the party has been on a world map; `"always"` at every door |
 | `options` | (optional) an extra last option on a choice the game already has: `map` (the script's map), `window` / `choice` (NA byte offsets of the options window's ext 0x68 and of the choice's ext 0xdc N; the port checks their words, and the `push R` / `pop_store L[n]` after the choice, in the loaded release's layout), `text` (the option's line), `to` {map, x, y, z, dir} where choosing it sends the party |
 
 - **While the boss is unbeaten the view comes on only after a yes.** A yes at a question, or an
   option whose `to` lies in the chamber, makes the next map load turn the view on; a no, a load
   (unless the save was made in the view: the sidecar's `hub_view`) or any other way in leaves the
   chamber at the hub's own state (chapter 60). Nothing is recorded: the boss stays unbeaten and
-  the question comes again at the next way in. Once the boss is won, `ask` does nothing.
+  the question comes again at the next way in (with `again` "visit", the next visit). Once the
+  boss is won, `ask` does nothing.
+- **Once per visit** (`again` "visit"; the user, 2026-10-25: "If the player wants to face him,
+  they would need to go to the world map and then back into Fun City to trigger the prompt
+  again"; agent "hubask2"). A no at the question (or a cancel), or an `options` entry whose `to`
+  lies outside the chamber (the Clerk's "Leave the arena."), makes the row quiet: its doors
+  then take the no without asking (a seed door's own target, else the chamber at the hub's
+  state), and the chamber's map is an ordinary map. A world map's load (its chunk scripts, maps
+  909-980, 1048-1110, 1113-1114) ends the visit: the next door asks again. Options into the
+  chamber (the desk's "Face Marsilio.") stay offered while the row is quiet. The quiet rows are
+  not saved: New Game and a load forget them (the next door asks). Logged: `... quiet until the
+  party has been on a world map (once per visit)`, `... door 19468777 (map 297 -> map 281): quiet
+  this visit: the chamber at the hub's state` (or `: the door's own target (map 296)`), `... the
+  world map (map 1072): asks again`.
 - **The question** (`hub_ask_transfer`, from `ap::on_map_transfer` after the door table). The
   transfer op hosts it: the op runs again (ip back on it, stack arguments back on the stack) while
   the question's phases run, as the game's own yes / no questions are laid out (map 297's fee):
@@ -1420,11 +1471,13 @@ being forced to go through Marsilio first"). A row's `ask`:
   exists only then anyway); elsewhere while the boss is unbeaten. A site whose words differ is
   logged and left alone (`... is not the shape the seed names ...; no extra option`).
 - **The two rows** (apworld/so2/hub.py `ASK`; proven headless, docs/handoff/hubask.md):
-  - Shigeo 533: `{"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"}`: the doors into
-    281 (from 280, 292 and 297) ask. Yes: his scene and fight; no: 281 at the hub's state, the
-    strip does nothing (walked across headless), the route on to 297 and Expel stays open.
-  - Marsilio 532 (above): the antechamber's door asks (yes: the arena with the view; no: the
-    lobby 296); the desk's first menu (297, the receptionist) reads "Hear an explanation. /
+  - Shigeo 533: `{"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?", "again": "visit"}`:
+    the doors into 281 (from 280, 292 and 297) ask. Yes: his scene and fight; no: 281 at the
+    hub's state, the strip does nothing (walked across headless), the route on to 297 and Expel
+    stays open, and the doors into 281 stay quiet until the party has been on the world map.
+  - Marsilio 532 (above): the antechamber's door asks once per visit (yes: the arena with the
+    view; no, or the Clerk's way out: the lobby 296, the door quiet until a world map: a player
+    training at the arena passes it to 296 without the question); the desk's first menu (297, the receptionist) reads "Hear an explanation. /
     Register. / Face Marsilio.": Face Marsilio goes into the arena with the view, Register is the
     arena as it is (no view: the fee, the battle mode, the ranking battles in 305, back to 304:
     the training any time); in his view the Clerk's menu reads "Do intensive training. / Rest. /

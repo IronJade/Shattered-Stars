@@ -43,6 +43,7 @@ class Party(NamedTuple):
     pool: list                  # the character items
     guaranteed: frozenset       # surely in the party in the end (craft member locks)
     possible: frozenset         # can ever be in the party
+    choices: tuple = ()         # starting_character "any": whom the player may pick at New Game
 
 
 class SO2Web(WebWorld):
@@ -98,29 +99,39 @@ class SO2World(World):
         open world's (choose_open_party). starting_character only in open world and hub mode.
         Hub mode: open world's rules with character items always (D7); no join scene runs at
         chapter 60, so under story_route "any" both heroes are items too (the one the player
-        picks at New Game is in the party already: their item does nothing)."""
+        picks at New Game is in the party already: their item does nothing).
+        starting_character "any" (open world and hub): the player picks at New Game's character
+        select, so the logic counts on nobody extra (start None) and the choices are the members
+        who can be in the party: the heroes and the pool (8 at most), or under the story's party
+        rules everyone not excluded. The pick's own item, when it comes, finds them in the party."""
         o = self.options
         heroes = self.story_members()
         start = self.choose_start(heroes)
+        pick = (self.open_world or self.hub) and o.starting_character.value == o.starting_character.option_any
+        order = items.CHARACTER_NAMES.index
         if self.hub:
             others = self.choose_open_party(heroes, start)
             pool = others if len(heroes) == 1 else \
-                sorted(set(others) | {h for h in heroes if h != start}, key=items.CHARACTER_NAMES.index)
+                sorted(set(others) | {h for h in heroes if h != start}, key=order)
             sure = (set(heroes) if len(heroes) == 1 else set()) | ({start} if start else set())
-            return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(heroes) | set(pool)))
+            choices = tuple(sorted(set(heroes) | set(pool), key=order)) if pick else ()
+            return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(heroes) | set(pool)), choices)
         fixed = set(items.FIXED_MEMBERS) | ({start} if start else set())
         if not (self.open_world and o.character_items):
             pool = self.choose_party()
             possible = (fixed | set(pool)) if o.character_items else set(items.CHARACTER_NAMES)
-            return Party("story", heroes, start, pool, frozenset(fixed), frozenset(possible))
+            choices = tuple(n for n in items.CHARACTER_NAMES
+                            if n in heroes or n not in o.exclude_characters.value) if pick else ()
+            return Party("story", heroes, start, pool, frozenset(fixed), frozenset(possible), choices)
         pool = self.choose_open_party(heroes, start)
         sure = set(heroes) | ({start} if start else set())
-        return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(pool)))
+        choices = tuple(sorted(set(heroes) | set(pool), key=order)) if pick else ()
+        return Party("open", heroes, start, pool, frozenset(sure), frozenset(sure | set(pool)), choices)
 
     def choose_start(self, heroes):
-        """starting_character, open world only: None (the hero leads), a named member, or under
-        "any" a random member who is neither a hero nor excluded. A named member wins over
-        exclude_characters; the hero of a one-hero route means nobody extra."""
+        """starting_character, open world and hub only: None (the hero leads, and under "any",
+        where the player picks at New Game: Party.choices), or a named member. A named member wins
+        over exclude_characters; the hero of a one-hero route means nobody extra."""
         o = self.options
         value = o.starting_character.value
         if value == o.starting_character.option_hero:
@@ -129,8 +140,7 @@ class SO2World(World):
             logging.warning(f"{self.player_name}: starting_character is for open world; ignored in story mode")
             return None
         if value == o.starting_character.option_any:
-            pick = [n for n in items.CHARACTER_NAMES if n not in heroes and n not in o.exclude_characters.value]
-            return self.random.choice(pick) if pick else None
+            return None
         name = items.CHARACTER_NAMES[value - 1]
         if name in o.exclude_characters.value:
             logging.warning(f"{self.player_name}: starting_character {name} is in exclude_characters; {name} starts")
@@ -311,6 +321,7 @@ class SO2World(World):
         if self.hub:
             return SEED_FORMAT_V3
         v2 = (o.goal.value != 0 or self.party_info.rules == "open" or self.party_info.start is not None
+              or bool(self.party_info.choices)
               or bool(o.craftsanity) or bool(o.no_fail_crafting) or bool(o.killer_move_checks))
         return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
 
@@ -343,7 +354,8 @@ class SO2World(World):
             "no_fail_crafting": bool(o.no_fail_crafting),
             "killer_move_checks": bool(o.killer_move_checks),
             "killer_move_progression": o.killer_move_progression.current_key,
-            "starting_character": p.start,
+            # A name, None, or (starting_character "any") the list New Game's select offers.
+            "starting_character": list(p.choices) if p.choices else p.start,
             "exclude_characters": sorted(o.exclude_characters.value, key=items.CHARACTER_NAMES.index),
             "party_rules": p.rules,
             "apworld_version": APWORLD_VERSION,

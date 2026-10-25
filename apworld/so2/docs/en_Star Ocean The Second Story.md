@@ -162,13 +162,16 @@ still waiting — and the whole game is open around you:
   and need none). Beating one is a location (`boss_checks`).
 - **Shigeo and Marsilio ask first.** Both wait in Fun City, on your way between the two worlds
   and in the arena you'll want for training, so neither is forced on you:
-  - Each door into Shigeo's street asks "Face Shigeo now?". Yes plays his scene and fight; No
-    lets you walk through the street (to the arena and the old man's way to Expel) without him.
+  - Your first step into Shigeo's street on each visit to Fun City asks "Face Shigeo now?". Yes
+    plays his scene and fight; No lets you walk through the street (to the arena and the old
+    man's way to Expel) without him, and he won't ask again until you've been out on the world
+    map: to face him later, leave Fun City for the world map and come back in.
   - The arena's receptionist offers "Face Marsilio." next to "Register.", and the arena's back
-    door asks "Face Marsilio now?". Yes takes you to his scene; there the Clerk adds "Leave the
+    door asks "Face Marsilio now?" (once per visit, like Shigeo; the receptionist always offers). Yes takes you to his scene; there the Clerk adds "Leave the
     arena." to his menu if you'd rather go back. **The arena itself can be used for training at
     any time**: "Register." gives the ordinary ranking battles, Marsilio or not.
-  - Saying No (or leaving) changes nothing: he stays unbeaten and you're asked again next time.
+  - Saying No (or leaving) changes nothing: he stays unbeaten and you're asked again on your next
+    visit. Loading a save asks again too.
 - **Fienal opens on `fienal_requirement`:** the four Fields' bosses and Berle in Armlock (the
   default), the four Fields' bosses only, or every boss outside Fienal. Fienal's entrance tells
   you which one is still missing ("Defeat Lover first"). Fienal has no key of its own. Your goal
@@ -236,10 +239,18 @@ With `world_mode: open_world`, the party rules are looser (story mode keeps the 
   party, one of them takes a random pool member's place, unless you've excluded both.
 - **`starting_character`** puts a member of your choice in the party from the very start, as
   the leader: you walk around as them, and the story calls them by name where it would name
-  the hero. The hero still stays in the party. `hero` (the default) means nobody extra; `any`
-  picks a random member who isn't the hero or excluded. A member you name starts even if you've
-  also excluded them. This works with or without `character_items`; without it, everyone else
-  joins through the story as usual.
+  the hero. The hero still stays in the party. `hero` (the default) means nobody extra. A member
+  you name starts even if you've also excluded them. This works with or without
+  `character_items`; without it, everyone else joins through the story as usual.
+- **`starting_character: any` lets you choose at New Game.** After the hero select (or straight
+  away, when `story_route` picks the hero), a character select in the style of the hero select
+  shows all twelve members: move over their faces to see each one's picture and a short profile
+  (the game's own race, occupation and favourite food, and a few lines about them; Claude and
+  Rena keep their original bios). Members this world can't have in the party are dark and can't
+  be picked. Picking the hero means nobody extra. Your pick then joins at the start and leads,
+  exactly as a named member would, and their character item, when it arrives, finds them in
+  the party already. With a named `starting_character` the same screen shows just that member,
+  to confirm. (Want the generator to pick for you? Use `random`.)
 
 ## Where does Expel stand?
 
@@ -282,7 +293,7 @@ Running away from a fight never counts.
 | `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items). |
 | `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
 | `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
-| `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: a random member who isn't the hero or excluded. See "In open world" above. |
+| `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: you pick on a character select at New Game, among the members this world allows. See "In open world" above. |
 | `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |
 | `missable_locations` | `exclude` (default), `include`, `remove` | How locations that can be missed for good are treated — see above. |
 | `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world). |

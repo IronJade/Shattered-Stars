@@ -2066,6 +2066,73 @@ TEST(ap_v2_starting_character) {
   ap::stop();
 }
 
+// [charselect agent] starting_character "any" or a list: the player picks at New Game's character
+// select. The seed's choices ("any" = all 12 but exclude_characters), the pick into the state and
+// the sidecar, and the pick as the starting character (the hero: nobody extra).
+TEST(ap_v2_starting_character_choice) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(
+      party_seed(open_options("claude", ", \"starting_character\": \"any\", \"exclude_characters\": [\"Bowman\", \"Opera\"]")), &s,
+      &error));
+  CHECK(s.starting_character == 0 && s.starting_choices == std::vector<int>({1, 2, 3, 5, 6, 7, 8, 10, 11, 12}));
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": [\"Celine\", \"Ashton\", 5, \"Celine\"]")), &s,
+                           &error));
+  CHECK(s.starting_character == 0 && s.starting_choices == std::vector<int>({3, 7, 5}));
+  CHECK(!ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": [\"Celine\", \"Nobody\"]")), &s, &error));
+  CHECK(error.find("a list of characters' names expected") != std::string::npos);
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Celine\"")), &s, &error));
+  CHECK(s.starting_character == 3 && s.starting_choices.empty());
+
+  PartyGame pg;
+  CHECK(ap::load_seed_text(
+      party_seed(open_options("claude", ", \"starting_character\": \"any\", \"exclude_characters\": [\"Bowman\", \"Opera\"]")), &s,
+      &error));
+  ap::start_with(s);
+  CHECK(ap::seed_starting_character() == 0 && ap::starting_choices().size() == 10);
+  pg.claude_game(true);
+  pg.members({1});
+  pg.at(7, 3, 0);
+  // Celine picked: she starts (joins at the first free play and leads), as a named one would.
+  ap::set_chosen_start(3);
+  ap::on_new_game();
+  CHECK(ap::state().chosen_start == 3 && ap::starting_member() == 3);
+  CHECK(ap::party_free_play_step() == "Celine joined the party");
+  CHECK(pg.party() == "1,3" && pg.sg.config[0x41] == 1 && ap::state().start_given);
+  // The sidecar keeps the pick (key "starting_character"); absent or out of range: none.
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.chosen_start == 3);
+  CHECK(ap::sidecar_json(ap::state())["starting_character"].as_int(0) == 3);
+  ap::Json j;
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 1}", &j, &error));
+  CHECK(ap::sidecar_from_json(j, &back, &error) && back.chosen_start == 0);
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 1, \"starting_character\": 13}", &j, &error));
+  CHECK(ap::sidecar_from_json(j, &back, &error) && back.chosen_start == 0);
+  // The hero picked (the screen passes 0; the hero's own id means the same): nobody extra, and
+  // nothing in the sidecar.
+  pg.members({1});
+  ap::set_chosen_start(0);
+  ap::on_new_game();
+  CHECK(ap::state().chosen_start == 0 && ap::starting_member() == 0 && ap::party_free_play_step().empty() && pg.party() == "1");
+  CHECK(ap::sidecar_json(ap::state())["starting_character"].is_null());
+  ap::set_chosen_start(1);
+  ap::on_new_game();
+  CHECK(ap::starting_member() == 0 && ap::party_free_play_step().empty() && pg.party() == "1");
+  // A pick is for one New Game only: the next starts without it.
+  ap::on_new_game();
+  CHECK(ap::state().chosen_start == 0 && ap::starting_member() == 0);
+  ap::stop();
+  // A seed without choices ignores a pick (its own named member, or none).
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Leon\"")), &s, &error));
+  ap::start_with(s);
+  pg.members({1});
+  ap::set_chosen_start(3);
+  ap::on_new_game();
+  CHECK(ap::state().chosen_start == 0 && ap::starting_member() == 8);
+  ap::stop();
+}
+
 // While the party is set aside for the hero alone (a Private Action's flags 2 / 4, or the map
 // library's isolate routine's flag 746), the party rules leave it alone.
 TEST(ap_v2_party_isolated) {

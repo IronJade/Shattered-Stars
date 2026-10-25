@@ -69,6 +69,9 @@ void hub_battle_won(int encounter); // a victory (outcome 0)
 
 // ---- The questions (a row's `ask`; the user's rulings on Shigeo 281 and the arena 305) ----
 // [hubask agent] While an ask row's boss is unbeaten its view comes on only with a yes.
+// [hubask2 agent] Once per visit (the row's `again` "visit", the default): after a no (or an
+// option out of the chamber) the row's doors are quiet, each a no without the question, until a
+// world map's script loads; New Game and a load forget it (the question comes at the next door).
 //
 // ap's on_map_transfer, after the seed's door table, for the transfer at door id 'door' ('own':
 // its map, transition, x, y, z, dir as the script gave them; 'args': as they go now): true when

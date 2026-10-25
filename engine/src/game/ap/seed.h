@@ -144,6 +144,9 @@ struct HubAsk {
   std::string yes = "Yes.", no = "No.";
   bool all_doors = true;          // no `doors`: every transfer into the chamber asks
   std::vector<int64_t> doors;     // ... else only these seed door ids (map * 65536 + offset / 4)
+  // [hubask2 agent] `again`: "visit" (default): after a no (or an option out of the chamber) the
+  // row is quiet, each door a no, until a world-map load; "always": every door asks.
+  bool once_per_visit = true;
   struct Option {
     int map = -1;                 // the map whose script holds the choice
     int window = -1;              // the byte offset (NA) of the op opening its options window (ext 0x68)
@@ -223,6 +226,9 @@ struct Seed {
   bool open_party = false;           // options.party_rules == "open": only story members, received members
                                      // and the starting character join; no lockouts
   int starting_character = 0;        // options.starting_character: party id 1-12 (0: none, the hero leads)
+  // [charselect agent] options.starting_character "any" or a list: the members the player may pick
+  // at New Game (party ids; "any" = all 12 but exclude_characters). Empty: no choice.
+  std::vector<int> starting_choices;
   // The hub [hubvm agent] (docs/ap/seed_format.md "Hub").
   bool hub = false;                  // options.world_mode == "hub": the chapter lock and the story views
   bool hub_lock_chapter = true;      // hub.lock.chapter: outside a view, chapter stores are dropped

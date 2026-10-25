@@ -57,6 +57,9 @@ struct SaveState {
   // (-1 none). The load turns that view on again with the map's load (the view's values were never
   // saved: the save holds the real state).
   int hub_view = -1;
+  // [charselect agent] The starting character the player picked at New Game (options.starting_character
+  // "any" or a list; party id, 0 none or the hero). Sidecar key "starting_character".
+  int chosen_start = 0;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -191,6 +194,13 @@ bool keeps_flag(int flag);
 // before the starting items and becomes the Formation leader (config +0x41).
 // The starting character in play: 0 without one or when it names the picked game's hero.
 int starting_member();
+// [charselect agent] New Game's character select (open world and hub). The seed's named starting
+// character (0 none), the members the player may pick (empty: no choice: options.starting_character
+// "any" or a list), and the pick (0 or the hero: nobody extra), kept for the game about to start
+// (on_new_game puts it in the state and the sidecar).
+int seed_starting_character();
+std::vector<int> starting_choices();
+void set_chosen_start(int id);
 // The split window on now that keeps member 'id' away (id 0: one keeping everyone away), or "";
 // the one that lets member 'id' in for a while, or "".
 std::string split_window_keeping(int id);

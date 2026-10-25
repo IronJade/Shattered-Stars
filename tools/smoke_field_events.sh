@@ -211,6 +211,55 @@ for hero in claude rena; do
     echo "FAIL ap_hero_$hero: the hero select or the naming screen showed"; fail=1
   fi
 done
+# The character select [charselect agent]: an open world seed with starting_character "any"
+# (Bowman and Opera excluded) picks a member at New Game, after the story route's skip: Opera is
+# refused, Celine picked, and she joins at the first free play and leads; a named member (Ashton)
+# is shown alone to confirm; "hero" shows nothing (the combat mode right after the skip). The
+# back paths: Circle on the select goes back to Vibration, Circle on the combat mode back to the
+# select (its cursor on the pick). NEWGAME_B 300 vblanks later (the select's presses between).
+NEWGAME_B3=$(echo "$NEWGAME_B" | tr ',' '\n' | awk -F: '{printf "%s%d:%s", (NR > 1 ? "," : ""), $1 + 300, $2}')
+for start in any Ashton hero; do
+  printf '{"format": "apso2", "version": 2, "seed": "smoke-cs", "slot": {"name": "P", "id": 1}, "options": {"story_route": "claude", "world_mode": "open_world", "party_rules": "story", "starting_character": "%s", "exclude_characters": ["Bowman", "Opera"]}, "items": {}, "locations": []}\n' \
+    $start >"$WORK/cs_$start.apso2"
+done
+CS_PICK="1960:down,1966:none,1990:down,1996:none,2020:cross,2026:none,2050:up,2056:none,2080:up,2086:none,2110:right,2116:none,2140:right,2146:none,2170:cross,2176:none"
+CS_BACK="1960:circle,1966:none,2100:cross,2106:none,2200:right,2206:none,2230:right,2236:none,2260:cross,2266:none,2350:circle,2356:none,2450:cross,2456:none"
+NEWGAME_B4=$(echo "$NEWGAME_B" | tr ',' '\n' | awk -F: '{printf "%s%d:%s", (NR > 1 ? "," : ""), $1 + 400, $2}')
+cs_run() {  # cs_run NAME SEED FRAMES INPUT
+  "${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=600 timeout 900 "$BIN" --headless --no-memcard --ap-seed "$WORK/$2.apso2" \
+    --frames "$3" --input "$4" </dev/null >"$WORK/$1.log" 2>&1
+}
+cs_run ap_cs_any cs_any 4300 "$NEWGAME_A,$CS_PICK,$NEWGAME_B3"
+cs_run ap_cs_named cs_Ashton 4300 "$NEWGAME_A,2170:cross,2176:none,$NEWGAME_B3"
+cs_run ap_cs_hero cs_hero 3700 "$NEWGAME_A,$NEWGAME_B"
+cs_run ap_cs_back cs_any 4300 "$NEWGAME_A,$CS_BACK,$NEWGAME_B4"
+check ap_cs_any "the select opens after the story route's skip" '\[ap\] character select opens: 10 of 12 to pick'
+check ap_cs_any "an excluded member is refused" '\[ap\] character select: this seed.s party has no place for that member'
+check ap_cs_any "Celine picked" '\[ap\] character select: Celine Jules$'
+check ap_cs_any "she starts the game" '\[ap\] starting character Celine: picked at New Game'
+check ap_cs_any "joins at the first free play" '\[ap\] starting character Celine: joins at the first free play and leads'
+check ap_cs_any "and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+check ap_cs_any "Claude's game (map 7)" '\[leader\] vblank 4200 map 7 state 0 '
+check ap_cs_named "a named member: the select to confirm" '\[ap\] character select opens: Ashton Anchors to confirm'
+check ap_cs_named "Cross confirms" '\[ap\] character select: Ashton Anchors$'
+check ap_cs_named "Ashton starts the game" '\[ap\] starting character Ashton: joins at the first free play and leads'
+check ap_cs_named "Claude's game (map 7)" '\[leader\] vblank 4200 map 7 state 0 '
+check ap_cs_hero "starting_character hero: the combat mode right after the skip" '\[trace\] 0x800489dc at vblank 1[0-9]{3}$'
+check ap_cs_hero "Claude's game (map 7)" '\[leader\] vblank 3600 map 7 state 0 '
+check ap_cs_back "Circle on the select: back to Vibration" '\[ap\] character select: Claude Kenni \(backed out\)'
+check ap_cs_back "Celine picked" '\[ap\] character select: Celine Jules$'
+check ap_cs_back "Circle on the combat mode: back to the select, Celine again" '\[trace\] 0x800489dc at vblank 2[0-9]{3}$'
+check ap_cs_back "she starts the game" '\[ap\] starting character Celine: joins at the first free play and leads'
+check ap_cs_back "Claude's game (map 7)" '\[leader\] vblank 4200 map 7 state 0 '
+for name in ap_cs_hero ap_hero_claude ap_hero_rena ap_hero_any; do
+  if [ -f "$WORK/$name.log" ] && grep -q '\[ap\] character select' "$WORK/$name.log"; then
+    echo "FAIL $name: the character select showed"; fail=1
+  fi
+done
+if [ "$(grep -c '\[ap\] character select: Celine Jules$' "$WORK/ap_cs_back.log")" != 2 ] ||
+   [ "$(grep -c '\[ap\] story route Claude' "$WORK/ap_cs_back.log")" != 2 ]; then
+  echo "FAIL ap_cs_back: two skips and two picks of Celine expected"; fail=1
+fi
 # A story battle the script lets the party lose (the ship, map 548: Shin, ext 0xb7 third
 # argument 0): a DeathLink received in it waits; the loss itself is no game over (nothing
 # sent), and the DeathLink applies once the field leaves the controls to the player.
@@ -615,8 +664,8 @@ starts = {s["key"]: s for s in hs["starts"]}
 keys = {str(5390000 + g["key"]): {"kind": "key", "key": g["key"], "name": g["name"]} for g in hb["dungeons"]}
 rows = [{k: b[k] for k in ("encounter", "name", "map", "maps", "view", "game") if b.get(k) is not None} for b in hb["bosses"]]
 # The two chambers that ask first (the APWorld's apworld/so2/hub.py ASK) [hubask agent].
-ask = {533: {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"},
-       532: {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509],
+ask = {533: {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?", "again": "visit"},
+       532: {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509], "again": "visit",
              "options": [{"map": 297, "window": "0x5c50", "choice": "0x5c6c", "text": "Face Marsilio.",
                           "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
                          {"map": 305, "window": "0x6ea8", "choice": "0x6ec4", "text": "Leave the arena.",
@@ -628,7 +677,7 @@ doors = [{"id": 68686044, "routine": "0x4364", "key": 13, "name": "Energy Nede -
          {"id": 68685691, "routine": "0x3de0", "won": [524], "banners": ["Defeat Magichand first"], "name": "Energy Nede -> Fienal"},
          {"id": 19929509, "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271, "while_unbeaten": 532},
           "name": "Fun City Fighting Arena (map 304 -> 305 while Marsilio is unbeaten)"}]
-def seed(name, hero, start, start_keys=(), fol=0):
+def seed(name, hero, start, start_keys=(), fol=0, starting=None):
     hub = dict(hs["hub"], start=dict(starts[start]))
     s = {"format": "apso2", "version": 3, "seed": "smoke-" + name, "slot": {"name": "Hub", "id": 1},
          "options": {"world_mode": "hub", "story_route": hero, "party_rules": "open", "character_items": True},
@@ -637,20 +686,24 @@ def seed(name, hero, start, start_keys=(), fol=0):
         s["start"] = {"items": [keys[str(5390000 + k)] for k in start_keys]}
     if fol:
         s["start"] = dict(s.get("start", {}), fol=fol)
+    if starting:  # [charselect agent] the character select
+        s["options"].update(starting_character=starting, exclude_characters=["Bowman", "Opera"])
     json.dump(s, open(f"{work}/{name}.apso2", "w"))
 seed("hubfc", "claude", "fun_city")
 seed("hubfol", "claude", "fun_city", fol=50000)  # (the arena's registration fee)
 seed("hubarlia", "rena", "arlia")
 seed("hublinga", "claude", "linga")
 seed("hubkey", "claude", "fun_city", (13,))
+seed("hubany", "claude", "fun_city", starting="any")
 PY
   hub_ng() {  # hub_ng NAME SEED HERO FRAMES [env...]: New Game (the prologue skipped) with a hub seed
     local name=$1 seed=$2 press=$3 frames=$4
     shift 4
-    # (the seed names the hero: New Game skips the hero select and the naming screen)
+    # (the seed names the hero: New Game skips the hero select and the naming screen; HUB_INPUT:
+    # other presses)
     env "$@" SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 \
       SS_TRACE_LEADER=50 timeout 900 "$BIN" --headless --debug --no-memcard --ap-seed "$WORK/$seed.apso2" --frames "$frames" \
-      --input "$NEWGAME_A,$NEWGAME_B" </dev/null >"$WORK/$name.log" 2>&1
+      --input "${HUB_INPUT:-$NEWGAME_A,$NEWGAME_B}" </dev/null >"$WORK/$name.log" 2>&1
   }
   hub_ng ap_hub_ng_fc hubfc claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21,2:T10"
   check ap_hub_ng_fc "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*chapter 60 step 4000, disc 2; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
@@ -669,6 +722,13 @@ PY
   check ap_hub_ng_linga "hub New Game at Linga" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Town of Linga \\(map 183 at -3392, 0, -1182, facing 340\\)"
   check ap_hub_ng_linga "out to Expel's world map" 'play: control on map 1 after 1 of 1 steps'
   check ap_hub_ng_linga "the Synard by Linga" 'world: vehicle 1 \(the Synard\) parked at 90815,-150,13368 on map 1'
+  # The character select in a hub game [charselect agent] (starting_character "any", Bowman and
+  # Opera excluded; the open world's presses): Celine joins at the hub's first free play.
+  HUB_INPUT="$NEWGAME_A,$CS_PICK,$NEWGAME_B3" hub_ng ap_hub_ng_cs hubany claude 3800 SS_TRACE=1
+  check ap_hub_ng_cs "the character select in a hub game" '\[ap\] character select opens: 10 of 12 to pick'
+  check ap_hub_ng_cs "Celine picked" '\[ap\] starting character Celine: picked at New Game'
+  check ap_hub_ng_cs "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
+  check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
   hub_ng ap_hub_key hubkey claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21"
   check ap_hub_key "with the key the cave loads" 'field_load_map\(map=419 '
   # (the win between the field's start, ~2714 since New Game skips the hero screens, and the walk)
@@ -720,14 +780,32 @@ PY
   check ap_hub_ask_register "a ranking battle starts" 'a battle at vblank'
   check ap_hub_ask_register "and the arena's own way back to 304" 'field_load_map\(map=304 '
   ask_none ap_hub_ask_register "no Marsilio" 'story view on: map 305|encounter 532 won'
-  hub_ng ap_hub_ask_exit hubfc claude 6000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T4,299:T2,304:T4,305:K16:3,304:T4:1"
+  hub_ng ap_hub_ask_exit hubfc claude 6000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T4,299:T2,304:T4,305:K16:3,304:T4"
   check ap_hub_ask_exit "the antechamber's door asks" '\[ap\] hub: ask: Marsilio, encounter 532: door 19929509 \(map 304 -> map 305\)'
   check ap_hub_ask_exit "yes: the arena with the view" '\[ap\] hub: story view on: map 305 \(Marsilio, encounter 532\)'
   check ap_hub_ask_exit "Leave the arena: out without the fight" '"Leave the arena." chosen: to map 304 \(1339, 0, -6\), out of the chamber'
   check ap_hub_ask_exit "the view ends at 304" '\[ap\] hub: story view off: map 304 \(Marsilio, encounter 532; map 304 loaded\)'
-  check ap_hub_ask_exit "asked again; no: the door's own target" '\[ap\] hub: ask: Marsilio, encounter 532: no: door 19929509 goes to its own target \(map 296\)'
+  check ap_hub_ask_exit "the way out is a no for the visit" '\[ap\] hub: ask: Marsilio, encounter 532: quiet until the party has been on a world map'
+  check ap_hub_ask_exit "the door quiet: its own target" '\[ap\] hub: ask: Marsilio, encounter 532: door 19929509 \(map 304 -> map 305\): quiet this visit: the door.s own target \(map 296\)'
   check ap_hub_ask_exit "the lobby 296" 'field_load_map\(map=296 '
   ask_none ap_hub_ask_exit "nothing won" 'encounter 532 won'
+  # Once per visit (the user's ruling; `again` "visit") [hubask2 agent]: after Shigeo's no the
+  # doors into 281 are quiet (297 -> 281, 280 -> 281: no question, 281 at the hub's state) until a
+  # world map: out by 279 to Energy Nede's, back into Fun City, and 280 -> 281 asks again (yes: his
+  # view). The arena's door alike: no (the lobby 296), back to 304, the door quiet (296 again).
+  hub_ng ap_hub_ask_visit hubfc claude 4800 SS_TRACE=1 SS_BATTLE_STUB=1 \
+    SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T0,281:T5,280:T12,281:T5,280:T0,279:T4,2:T27,279:T0,280:T12"
+  check ap_hub_ask_visit "no: quiet for the visit" '\[ap\] hub: ask: Shigeo, encounter 533: quiet until the party has been on a world map'
+  check ap_hub_ask_visit "297 -> 281 without the question" '\[ap\] hub: ask: Shigeo, encounter 533: door 19468777 \(map 297 -> map 281\): quiet this visit: the chamber at the hub.s state'
+  check ap_hub_ask_visit "280 -> 281 without the question" '\[ap\] hub: ask: Shigeo, encounter 533: door 18356813 \(map 280 -> map 281\): quiet this visit'
+  check ap_hub_ask_visit "the world map ends the visit" '\[ap\] hub: ask: Shigeo, encounter 533: the world map \(map 10[0-9][0-9]\): asks again'
+  check ap_hub_ask_visit "back in Fun City: yes, his view" '\[ap\] hub: story view on: map 281 \(Shigeo, encounter 533\)'
+  n=$(grep -c 'ask: Shigeo, encounter 533: door [0-9]* (map [0-9]* -> map 281): "' "$WORK/ap_hub_ask_visit.log")
+  if [ "$n" = 2 ]; then echo "PASS ap_hub_ask_visit: asked twice (the first entry and after the world map)"; else echo "FAIL ap_hub_ask_visit: asked twice (the first entry and after the world map): $n"; fail=1; fi
+  hub_ng ap_hub_ask_visit_door hubfc claude 4000 SS_TRACE=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY="279:T0,280:T12:1,281:T3,297:T4,299:T2,304:T4:1,296:T2,304:T4"
+  check ap_hub_ask_visit_door "the arena's door: no, the lobby" '\[ap\] hub: ask: Marsilio, encounter 532: no: door 19929509 goes to its own target \(map 296\)'
+  check ap_hub_ask_visit_door "then quiet: the lobby again" '\[ap\] hub: ask: Marsilio, encounter 532: door 19929509 \(map 304 -> map 305\): quiet this visit: the door.s own target \(map 296\)'
+  ask_none ap_hub_ask_visit_door "no arena, no view" 'story view on|field_load_map\(map=305 '
   rm -f "$WORK/askcard.mcd" "$WORK"/askcard.slot*.ap.json
   env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \
     SS_SAVE_ANYWHERE=1 SS_MEMCARD1="$WORK/askcard.mcd" timeout 900 "$BIN" --headless --ap-seed "$WORK/hubfc.apso2" --frames 2000 \

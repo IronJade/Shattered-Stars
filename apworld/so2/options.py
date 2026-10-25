@@ -51,8 +51,12 @@ class StartingCharacter(Choice):
     the party: you walk around as them, and the story calls them by name where it would name
     the hero. The story route's hero still stays in the party.
     hero: nobody extra; the hero leads, as in the original.
-    any: a random member (never one in exclude_characters, nor the hero).
-    A named member who is excluded still starts (this option wins). Ignored in story mode."""
+    any: you pick at New Game, on a character select after the hero's, among the members this
+      world allows (the heroes and the character items' members; never one in exclude_characters).
+      Picking the hero means nobody extra. The logic counts on nobody: your pick's own item, when
+      it comes, finds them in the party already. (random: the generator picks one of these values.)
+    A named member (shown on that screen to confirm) who is excluded still starts (this option
+    wins). Ignored in story mode."""
     display_name = "Starting Character"
     option_hero = 13
     option_any = 0

@@ -93,6 +93,9 @@ struct Hub {
   int text_index = -1;                    // the script string hub_script_text extends now ...
   const Site* text_site = nullptr;        // ... for this site
   std::vector<u8> question_text, answers_text, options_text;  // (alive while their windows show)
+  // [hubask2 agent] Rows (`again` "visit") answered no this visit: their doors are quiet (each a
+  // no) until a world-map load; New Game and a load forget them.
+  std::set<size_t> quiet;
 };
 
 Hub& hub() {
@@ -282,6 +285,16 @@ void put_lead_in(std::vector<u8>& out) {
 
 bool row_open(const HubBoss& b) { return b.ask.on && game_matches(b) && !goal_won(b.encounter); }
 
+// A world map's script (field/map.cpp: world maps 1-3 load a chunk's container, 0xc87 + these;
+// ap.cpp script_group) [hubask2 agent].
+bool world_map_script(int map) { return (map >= 909 && map <= 980) || (map >= 1048 && map <= 1110) || map == 1113 || map == 1114; }
+
+// [hubask2 agent] A no for this visit (a row with `again` "visit"): its doors quiet until a world map.
+void go_quiet(Hub& h, size_t row) {
+  if (!h.bosses[row].ask.once_per_visit || !h.quiet.insert(row).second) return;
+  say("ask: " + boss_label(h.bosses[row]) + ": quiet until the party has been on a world map (once per visit)");
+}
+
 std::string join_lines(const std::vector<std::string>& lines) {
   std::string out;
   for (const std::string& l : lines) out += (out.empty() ? "" : " / ") + l;
@@ -425,6 +438,7 @@ void hub_reset() {
   h.view = View{};
   h.ask = Ask{};            // [hubask agent] (a question left up; no answer kept)
   h.decision = Decision{};
+  h.quiet.clear();          // [hubask2 agent] (asked again after a load)
 }
 
 void hub_map_loaded(int map) {
@@ -434,6 +448,11 @@ void hub_map_loaded(int map) {
   const Decision decision = h.decision;
   h.decision = Decision{};
   h.ask = Ask{};
+  // [hubask2 agent] On a world map the visit is over: the quiet rows ask again at their doors.
+  if (!h.quiet.empty() && world_map_script(map)) {
+    for (const size_t i : h.quiet) say("ask: " + boss_label(h.bosses[i]) + ": the world map (map " + std::to_string(map) + "): asks again");
+    h.quiet.clear();
+  }
   if (h.view.on && (h.view.cut || !in_view_maps(h.bosses[h.view.boss], map)))
     view_end(h, "map " + std::to_string(map) + " loaded");
   if (h.view.on) return;
@@ -541,6 +560,23 @@ bool hub_ask_transfer(int64_t door, const s32* own, s32* args) {
       if (h.view.on && h.view.boss == i) continue;
       if (!b.ask.all_doors && std::find(b.ask.doors.begin(), b.ask.doors.end(), door) == b.ask.doors.end()) continue;
       if (h.decision.set && h.decision.boss == i) return false;  // (answered already: an extra option)
+      if (h.quiet.count(i) != 0) {
+        // [hubask2 agent] Answered no this visit: this door is a no without the question.
+        char buf[96];
+        std::snprintf(buf, sizeof buf, "door %lld (map %d -> map %d)", static_cast<long long>(door), map, args[0]);
+        if (!in_maps(b, own[0])) {
+          args[0] = own[0];
+          args[2] = own[2];
+          args[3] = own[3];
+          args[4] = own[4];
+          args[5] = own[5];
+          say("ask: " + boss_label(b) + ": " + buf + ": quiet this visit: the door's own target (map " + std::to_string(own[0]) + ")");
+        } else {
+          h.decision = Decision{true, i, false};
+          say("ask: " + boss_label(b) + ": " + buf + ": quiet this visit: the chamber at the hub's state");
+        }
+        return false;
+      }
       a = Ask{};
       a.phase = 1;
       a.boss = i;
@@ -643,10 +679,12 @@ bool hub_ask_transfer(int64_t door, const s32* own, s32* args) {
         args[5] = own[5];
         say("ask: " + boss_label(b) + ": no: door " + std::to_string(done.door) + " goes to its own target (map " +
             std::to_string(own[0]) + ")");
+        go_quiet(h, done.boss);  // [hubask2 agent]
         return false;
       }
       h.decision = Decision{true, done.boss, false};
       say("ask: " + boss_label(b) + ": no: map " + std::to_string(args[0]) + " at the hub's state");
+      go_quiet(h, done.boss);  // [hubask2 agent]
       return false;
     }
   }
@@ -744,6 +782,7 @@ bool hub_fetch(field::ScriptCtx* ctx) {
     char buf[128];
     std::snprintf(buf, sizeof buf, ": to map %d (%d, %d, %d)", o.to.map, o.to.x, o.to.y, o.to.z);
     say("ask: " + boss_label(b) + ": \"" + o.text + "\" chosen" + buf + (into ? ", with its story view" : ", out of the chamber"));
+    if (!into) go_quiet(h, s.boss);  // [hubask2 agent] (a no from inside)
     push(o.to.map);
     push(0);
     push(o.to.x);

@@ -500,7 +500,8 @@ Face Shigeo now?"; no lets the party pass (281 at the hub's own state). Marsilio
 antechamber's door asks (no: the lobby 296), the arena desk's first menu gets "Face Marsilio."
 beside "Register." (the normal arena: its ranking battles for training at any time), and in his
 view the Clerk's menu gets "Leave the arena." No answer records anything: the boss stays unbeaten
-and the question comes again. Logic: nothing changes (both are town chambers, keyless, open from
+and the question comes again on the next visit (`again: "visit"`, the user's ruling: after a no
+the row is quiet until the party has been on a world map; agent hubask2). Logic: nothing changes (both are town chambers, keyless, open from
 the start; a no only defers the location). The arena's gift (1349960704, map 305, the survival
 battle's prize) needs no Marsilio win any more: the normal arena is open while he is unbeaten, so
 its rule is the town's (none), as before.
@@ -645,15 +646,23 @@ be in the party and who can ever be.
 - **The story members:** the story route's hero, or Claude and Rena under story_route any (the
   player picks at New Game, so neither can be an item). The hero is never an item (slot 0 at New
   Game, the Private Actions; party_ships.md) and can't be excluded (a warning).
-- **`starting_character`** (open world, either party rules; default `hero`): hero means nobody
-  extra (the hero leads, as in the original); any, a random member who is neither a hero nor
-  excluded; a name, that member (it wins over `exclude_characters`, with a warning; the hero of
-  a one-hero route means nobody extra). Story mode ignores it (a warning). The member joins at
-  the start and leads (the port: the field sprite and the name swap, seed_format.md "Party
-  v2"). `hero` is the default rather than any because a random member would make every
+- **`starting_character`** (open world and hub, either party rules; default `hero`): hero means
+  nobody extra (the hero leads, as in the original); a name, that member (it wins over
+  `exclude_characters`, with a warning; the hero of a one-hero route means nobody extra; the
+  port shows them on New Game's character select to confirm). **any** (agent "charselect",
+  2026-10-25; until then a random member): the player picks at New Game on the port's character
+  select (seed_format.md "The character select"), so `Party.start` is None (the logic counts on
+  nobody extra: the pick is an ordinary pool member, "item" to `fighter_status`) and
+  `Party.choices` is whom the select offers: the story members and the pool (at most 8), or
+  under the story's party rules every member not excluded; the seed's `starting_character` is
+  that list. The pick's own item, when it comes, finds them in the party. A member the
+  generator picks: Archipelago's `random` (one of the option's values). Story mode ignores it (a
+  warning). The member joins at the start and leads (the port: the field sprite and the name
+  swap, seed_format.md "Party v2"). `hero` is the default because a start would make every
   open-world seed a version-2 seed and change the game for players who did not ask.
 - **The pool** (`choose_open_party`): every other member not excluded and not the start, as many
-  as fit 8 with the story members and the start (a random sample when more are allowed). No
+  as fit 8 with the story members and the start (a random sample when more are allowed; under
+  `any` the start's place goes to the pool too). No
   lockouts: Leon and Dias in either game, Bowman with Precis, Ashton with Opera and Ernest.
 - **The healer guarantee:** when none of the story members, the start and the pool is Rena or
   Noel (the only healers), an allowed healer takes a random pool member's place (the pool is
@@ -718,7 +727,7 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | `expel_teleporter` | true (default) / false | open world only: Fun City's arena takes the party back to Expel from chapter 36 |
 | `shuffle_shops` | off (default) / specials / full | shop slots as locations, never progression |
 | `story_route` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
-| `starting_character` | hero (default) / any / claude ... chisato | open world and hub mode: a member who joins at the start and leads; hero: nobody extra; any: a random member, not a hero or excluded ("Party v2") |
+| `starting_character` | hero (default) / any / claude ... chisato | open world and hub mode: a member who joins at the start and leads; hero: nobody extra; any: the player picks at New Game among the members this world allows (the port's character select; "Party v2") |
 | `exclude_characters` | a set of member names (default empty) | open world with character_items, hub mode: never in the pool, so they never join; not the hero |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
 | `expel_progression` | true (default) / false | false: no other world's progression in Expel; in open world our own Expel-story keys still may be there (the user's decision, 2026-10-23) |
@@ -737,8 +746,8 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | `encounter_rate` | 0-200 (default 100) | random-encounter frequency, percent |
 | `death_link` | false / true | written to the seed as `options.deathlink` |
 
-slot_data and the seed's `options` repeat them (`starting_character` as the member chosen, or
-null; `exclude_characters` as a list), with `seed_format`, `goal_encounters`, `characters` (the
+slot_data and the seed's `options` repeat them (`starting_character` as the member chosen, null,
+or under `any` the list of members New Game's select offers; `exclude_characters` as a list), with `seed_format`, `goal_encounters`, `characters` (the
 pool's members), `party_rules` ("story" / "open") and `apworld_version`. The port reads the
 phase-3 ones ([seed_format.md](seed_format.md), "Phase 3") and, of 0.2.0's, `no_fail_crafting`,
 `starting_character` and `party_rules` ("v2 fields").
@@ -974,6 +983,17 @@ Results (2026-10-25, hub mode; docs/handoff/hubworld.md):
   code: all 192 `.apso2` byte-identical to the batch before it (`compare.py`), and `check.py` 0
   errors.
 
+Results (2026-10-25, `starting_character: any` as New Game's pick; docs/handoff/charselect.md):
+- The world's tests: 318 passed; AP's general tests: 379 passed.
+- Both batches regenerated (players -> scratchpad/apworld2/batch/full_cs, players_hub -> hub_cs,
+  seeds 1-96): 96/96 exit 0 each, `check.py` 0 errors on 192 + 192 files (it now checks the
+  list: the heroes and the pool, at most 8, nobody excluded; under the story's party rules
+  everyone not excluded). Against the batches before (`full_hubask`, `hub_ask`;
+  `cs_identity.py`): every seed with no `any` slot byte-identical (142 / 138 files, story mode
+  among them); the 25 / 30 `any` slots differ as meant (no random start; the old start is in the
+  new list in every one, and where the party rules are open the pool has the start's place: one
+  member more), and with them the other slot of the same multiworld (the shared fill).
+
 ## Changes
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
@@ -993,7 +1013,9 @@ never` (above).
   ("Killer moves").
 - *Party v2* (open world with character_items): no lockouts, the other hero and Noel as items,
   three new join sites, `exclude_characters`, the healer guarantee; `starting_character`
-  (open world, default hero) ("Party v2").
+  (open world, default hero) ("Party v2"); `starting_character: any` is the player's pick at
+  New Game (the port's character select; the seed lists whom it offers), no longer a random
+  member.
 - slot_data and `options` gain the new options, `party_rules` and `apworld_version`; the seed
   gains `version` 2 when needed. Location and item ids of 0.1.1 are unchanged; the new ones are
   types 11 (crafts) and 12 (killer moves), the characters Claude, Rena and Noel.

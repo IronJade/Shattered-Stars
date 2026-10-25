@@ -151,16 +151,202 @@ in png/, never committed).
   scratchpad/charselect/shots/mock_options.png (facts | our own text | both, Celine highlighted,
   Bowman and Opera excluded), the original for comparison shots/hero_select_pair.png.
 
+- **The user's decisions (2026-10-25, through the coordinator):** text option 3 "Both" (the name;
+  a facts line read from the disc, "Expellian. Heraldic Wizard/Enchantress"; "Favorite Food: ...";
+  four lines of our own; Claude and Rena keep their original bios); our ten descriptions in one
+  data file in the source, listed here for review; heading: the original "Hero select" art with
+  "Select your character."; hubask has ended: make the ap.cpp / seed.cpp hunks myself (small;
+  hubask's save guard and `hub_view` must keep working). The coordinator committed the story
+  route skip with hubask's work; later edits go into the next commit.
+- **Port hunks (2026-10-25 15:10, mine, marked [charselect]):**
+  - seed.h `Seed::starting_choices` (party ids); seed.cpp: `options.starting_character` "any" =
+    all 12 minus `options.exclude_characters`, or a list of names / ids (each must parse; "a list of
+    characters' names expected"); a name / id / null / "hero" as before.
+  - ap.h: `SaveState::chosen_start` (sidecar key `starting_character`, a party id, written when
+    > 0, read back clamped 1-12); `seed_starting_character()`, `starting_choices()`,
+    `set_chosen_start(id)`.
+  - ap.cpp: `Runtime::chosen_start_pending`; `start_member` = the seed's named member, else the
+    state's `chosen_start` (still 0 when it is the picked game's hero); `party_v2` also on with a
+    pick; `on_new_game` moves the pending pick into the fresh state (only when the seed has
+    choices; log `starting character Celine: picked at New Game`), so the existing path
+    (give_start: joins at the first free play and leads) does the rest; sidecar write / read.
+- **The character select (2026-10-25 15:30), engine/src/game/title/new_game.cpp** (namespace
+  `charselect` + `member_select_screen`, before combat_mode_screen; data file
+  engine/src/game/title/member_profiles.h):
+  - Step::Member after the naming screen (or after the story route skip); shown when the seed has
+    choices, or names a member who is not the hero (then only that member, to confirm). Circle
+    goes back to Name (or to Vibration after a skip, cancelling the prologue load); Circle on the
+    combat mode goes back to Member when it was shown. With choices the pick goes to
+    `ap::set_chosen_start` (the hero: 0, nobody extra).
+  - Layout: heading + subtitle sprites as the hero select; 12 faces (the Status TIMs 0x1171-0x117c
+    box-filtered to 28 x 28 on the host, uploaded to VRAM (0x240, 0), 15-bit tpage 0x109) in two
+    rows of six at (0x0c + col * 0x24, 0x2c + row * 0x22), lit 0x80 under the cursor with a frame
+    tile (cyan; blue-grey when not selectable), 0x58 selectable, 0x20 not; drawn in the window's
+    context (in s.main the pictures covered them whatever the queue order: not understood; the
+    window context is drawn after s.main). The picture (0xbd3 + member) right-aligned at
+    0x138 - width, two VRAM slots (the hero select's (0x140 / 0x240, 0x100)) cross-fading like
+    the hero select; Claude / Rena re-uploaded into the slots on leaving (the hero select and the
+    naming screen draw them from there). Window 8, 0x78, 0xe8 x 0x72, shade frame.
+  - Text: heroes: title strings 0x20 + (m-1) * 7 (as the original). Others: line 0 the name
+    (member_profiles.h, palette 4); the race (pack 0xbb3 group 0xb) + ". " + occupation (group
+    0xa), split over two lines when wider than 0xd8 px; group 7 message 2 ("Favorite Food") + ": "
+    + the item name (item pack 3000 block 0, group 3, item from the Status overlay table
+    0x80081612 via `program_data_at(0xbb2, 0x8007e000, ...)`); then member_profiles.h's lines up
+    to 7 in all. Disc text is drawn with its own pack's font by swapping `title_text().font`
+    (same format, height 12). A line wider than the window logs once.
+  - Controls: d-pad over the grid (no wrap); Cross / Start picks (sfx 2) or refuses a member not
+    allowed (sfx 7, log `[ap] character select: this seed's party has no place for that member`);
+    Circle backs out (sfx 6); log `[ap] character select: Celine Jules`.
+  - Checked headless (scratchpad/charselect/ow_any.apso2: open world, Claude, "any", Bowman and
+    Opera excluded): the skip, the screen, Opera refused, Celine picked, `starting character
+    Celine: picked at New Game`, `joins at the first free play and leads`, "Celine leads".
+    Captures shots/cs_sheet.png (Claude, Rena, Leon, Opera refused, Celine) and cs_sheet3.png
+    (faces over the pictures). Suites after it: ss_tests 99/0, ss_game_tests 173/0 (smoke not
+    run since).
+- **The ten descriptions** (engine/src/game/title/member_profiles.h; ours, for the user's review):
+  - Celine: "A heraldic sorceress and treasure / hunter from Cross. Proud and quick / of tongue,
+    she loves fine things. / No old ruin escapes her notice." (charselect2: was "... fine things /
+    and unexplored ruins alike."; FR / DE split her race and occupation over two lines and drop
+    the last line, so it is now a sentence of its own)
+  - Bowman: "A pharmacist from Linga who mixes / his own medicines and fights with / his fists.
+    Easygoing, fond of his / pipe, and devoted to his wife."
+  - Dias: "A swordsman of rare skill who has / wandered alone since bandits took / his family. He
+    says little, trusts / few, and never lowers his guard."
+  - Precis: "A cheerful young inventor from / Linga who builds her own robots. / Tireless and
+    talkative, she is / never without a gadget in hand."
+  - Ashton: "A swordsman who fought a two- / headed dragon and was left with / its heads on his
+    back. Gloomy / about his luck, kind at heart."
+  - Leon: "A Fellpool prodigy, already a / heraldry scientist at Lacour. / Brilliant and proud, he
+    hides a / lonely heart behind sharp words."
+  - Opera: "A Tetragene who left her world to / find the man she loves. Bold and / warm, she
+    handles her heraldic gun / as surely as she trusts her heart."
+  - Ernest: "A Tetragene archaeologist who / travels the stars in search of / lost civilizations.
+    Calm, aloof, / and deadly with his whip."
+  - Noel: "A Nedian zoologist who looks after / a nature reserve. Gentle and a / little dreamy, he
+    understands / animals better than people."
+  - Chisato: "A Nedian newspaper reporter always / on the trail of the next scoop. / Energetic and
+    nosy, she never lets / a good story get away."
+
 ### In progress
-- Nothing: waiting for the user's choice of text for the character select (reported 15:45).
+- Nothing running. **Ended at ~390k tokens (rollover); a fresh agent continues from "Next steps".**
 
 ### Next steps
-- Report the research and the skip to the coordinator; the user picks the text option (facts,
-  our own short texts, or both).
-- Then items 2 and 3: the character select (title code, a new screen), the chosen member into
-  the AP runtime and the sidecar (a hook in ap.cpp: note to hubask), the APWorld change.
+1. Port tests: unit tests (engine/tests, next to `ap_v2_starting_character`) for seed parsing
+   ("any" minus exclude_characters, a list, a bad name), the sidecar round trip of
+   `starting_character`, and `start_member` with a pick (and with the hero picked: 0). Smoke cases
+   (tools/smoke_field_events.sh, after `ap_hero_*`): an open-world "any" seed (pick a member:
+   `picked at New Game`, `joins at the first free play and leads`; a refused member), a named
+   seed (`ow_ashton.apso2`: the confirmation screen, Cross), a hero seed / no seed (no screen:
+   trace 0x800489dc right after; the dumps proof as for the skip), Circle paths (Member -> Vibration
+   after a skip; CombatMode -> Member). Then ss_tests / ss_game_tests / smoke with counts.
+2. Check FR / DE (SS_DISC1 = the French / German cue, docs/handoff/regions.md): the facts line
+   splits when too wide; captures. Check the hub seed path (`hub_ng` with "any").
+3. The APWorld (item 3 of the spec), apworld/so2/world.py `choose_start` / `plan_party` /
+   slot data (line ~346 `"starting_character": p.start`): `any` = the player picks at New Game:
+   no random pick, `start` None for the logic, every allowed member stays in the pool; the seed
+   writes `starting_character` as the list of selectable members (heroes + pool, so the party
+   stays within 8; excluded never). options.py StartingCharacter docstring ("any: you pick at New
+   Game among the members this world allows"). Tests (apworld/so2/test), the hub batch and the
+   open-world batch with scratchpad/apworld2/batch/check.py at 0 errors; the identity check
+   (docs/handoff/apworld2.md "How to verify"): story seeds unchanged; open-world / hub seeds with
+   "any" change (no random start, the pool keeps the member who used to start, the list in the
+   seed). The version rule: a list / "any" is a v2 field (seed_format.md).
+4. Docs: seed_format.md (`starting_character` "any" / list, the character select, the sidecar key
+   `starting_character`), docs/ap/apworld.md, the player guide (en_Star Ocean The Second
+   Story.md: the option row and a New Game paragraph), engine/README.md one line.
+5. Report to the coordinator (no commits).
+
+## Log (agent "charselect2", started 2026-10-25, continues "charselect" from "Next steps")
+
+Same rules, build dir and scratch. Coordinator's extra items: the face grid over the portrait (a
+polish), and a short look at the draw order charselect could not explain.
+
+### Done
+- **The draw order, 2026-10-25.** Not a port bug. An ordering table entry is a LIFO list
+  (`psyq::addPrim` puts the primitive at the head, as PsyQ's does), and the title's contexts have
+  one entry each, so in one context what is queued last is drawn first (that is why the backdrop
+  is queued last). Experiment (scratch switch, removed): the faces queued in s.main *after* the
+  pictures were covered by them; queued *before* them they drew on top (shots/exp_sheet.png). So
+  "whatever the queue order" was a slip; nothing for the coordinator.
+- **The face grid (polish), 2026-10-25.** Before: 6 x 2 faces of 28 px over x 0x0c-0xdc, the
+  right-hand ones on the picture's face (the "red X" in cs_sheet3 is Claude's headband and skin
+  through the gaps between four faces). After: 4 x 3 faces of 22 px at (0x0e + col * 0x1c,
+  0x2e + row * 0x19), x 0x0c-0x78, i.e. on the side away from the picture where the hero select
+  keeps its spotlit sprites, so every picture's face is clear (the widest, Ashton 232 / Rena 228,
+  start at x 80 / 84 with the face from ~150); on a `FacePanel` (a Window whose draw is the bio
+  window's own `window_draw_shade_frame`, its context drawn between s.main and the bio window's),
+  so the faces read over a picture's edge (Ashton's dragon). A named member: their face alone in
+  the first place, the panel sized to it. Cursor: Left / Right in a row, Up / Down between rows,
+  no wrap. Captures: shots/grid_before_after.png (top before, bottom after: Claude, Bowman),
+  grid_after_a/b/c.png (Claude, Bowman, Leon, Chisato, Opera refused, Ashton, Rena, the Ashton
+  seed's one face).
+- **Unit test** `ap_v2_starting_character_choice` (engine/tests/test_ap.cpp): "any" minus
+  exclude_characters, a list (names, ids, duplicates once), a bad name, the pick into
+  the state and the free-play join, the sidecar round trip (absent / 13: none), the hero (0 or its
+  id: nobody extra), one New Game only, a seed without choices ignoring a pick.
+- **Screen polish:** a log line when the select opens (`[ap] character select opens: 10 of 12 to
+  pick` / `Ashton Anchors to confirm`, for the smoke); back from the combat mode the cursor
+  starts on the pick (was: on the hero); New Game clears a pick left from a sequence backed out
+  to the title.
+- **Smoke cases** (tools/smoke_field_events.sh, after `ap_hero_*`): `ap_cs_any` (Opera refused,
+  Celine picked, joins and leads, map 7), `ap_cs_named` (Ashton to confirm), `ap_cs_hero` (no
+  select: the combat mode at vblank 1870, map 7), `ap_cs_back` (Circle: select -> Vibration ->
+  select -> Celine -> combat mode -> Circle -> select on Celine -> Cross; two skips, two picks,
+  map 7); no select in `ap_hero_*`; hub: `ap_hub_ng_cs` (`hubany` seed, "any" minus Bowman / Opera:
+  Celine joins at the hub's first free play and leads). `hub_ng` takes `HUB_INPUT`.
+- **Suites (2026-10-25 15:35):** ss_tests 99/0, ss_game_tests 174/0, smoke **220 PASS / 0 FAIL**
+  (198 + 22 new; scratchpad/charselect/smoke3.log).
+- **FR / DE (2026-10-25):** all 12 captured (shots/fr_all.png, ge_all.png): heading and subtitle
+  art in each language ("Héros" / "Sélectionnez un héros.", "Held" / "Spielfigur wählen"), the
+  disc's race / occupation / food in French / German, the heroes' own bios. Only Celine's facts
+  split (FR "Magicien Héraldique/Enchanteresse", DE "Heraldischer Zauberer/Zauberin"), which drops
+  her description's last line: reworded so that it is a sentence of its own (member_profiles.h
+  comment says so). No line too wide in either.
+- **The APWorld (item 3):** world.py `Party.choices`; `choose_start` returns None for "any" (no
+  random pick); `plan_party` sets choices = heroes + pool (open world / hub), or every member not
+  excluded (story party rules); slot data `starting_character` = the list; `seed_version` v2 with
+  choices. options.py StartingCharacter docstring. Tests: TestPartyOpenAnyStart rewritten (start
+  None, pool 6, choices, the pick is "item"), new TestPartyAnyStartWithoutItems, TestHubAnyLean
+  `test_pick_at_new_game`; check_party_seed's seed check takes the list. World tests 318 passed,
+  AP general 379 passed.
+- **Docs:** seed_format.md (sidecar `starting_character`, the options row, "The character select"
+  under Party v2, the version rule, the read line); apworld.md (Party v2's starting_character,
+  the pool, slot data, the options table, Changes, Testing results); the player guide (the
+  bullet and the row); engine/README.md one line.
+- **Batches (2026-10-25 15:40-15:44):** players -> scratchpad/apworld2/batch/full_cs, players_hub
+  -> hub_cs, seeds 1-96: 96/96 exit 0 each; check.py 0 errors on 192 + 192 files (check.py now
+  reads the list: `take_choices`; backup check_pre_cs.py). Identity (cs_identity.py, vs
+  full_hubask / hub_ask): every seed without an `any` slot byte-identical (142 / 138 files, the
+  story ones among them); the 25 / 30 `any` slots and their multiworld partners differ: no random
+  start, the old start in the new list in all, the pool one member larger where the party rules
+  are open (10 / 29; the old start in it), versions unchanged. (hubask2 edited hub.py at 15:48,
+  after both batches.)
+- **More port checks:** a list seed with story_route any (scratchpad/charselect/ow_list.apso2):
+  hero select -> name -> select (4 of 12) -> Circle back to the naming screen -> name -> select ->
+  Precis refused -> Rena picked: she joins Claude's game and leads, map 7. No-seed New Game:
+  the first field frame's state dumps (Claude, Rena) byte-identical to charselect's from before
+  the select existed (runs/dump_none*.bin vs *2.bin). A -Wshadow in my seed.cpp hunk fixed.
+- **Notes left** in hubproof.md and hubask.md (for hubask2, who is editing seed.* / hub.*): the
+  batches to compare against, check.py's list, `HUB_INPUT`.
+- **Final suites (2026-10-25 ~16:20, the shared tree with hubask2's work in progress):** ss_tests
+  99/0, ss_game_tests 174/0, smoke **230 PASS / 0 FAIL** (scratchpad/charselect/smoke4.log, a
+  frozen copy of the build: 220 + hubask2's 10 new `ap_hub_ask_visit*` / exit checks; my 22 all
+  pass). APWorld: world tests 318 passed, AP general 379 passed, both batches 0 errors.
+
+### In progress (charselect2)
+- Nothing. Final report sent to the coordinator. Nothing committed.
+
+### Open
+- The user's review of the ten descriptions (member_profiles.h; Celine's last line reworded).
+- Our four lines stay English in FR / DE (the user's choice); translations would go in
+  member_profiles.h per release.
+- The port reads a list / "any" in any world mode (as it reads a named start); the APWorld writes
+  one only for open world and hub.
 
 ### How to verify
+- The character select: scratchpad/charselect/run.sh with ow_any.apso2 (or ow_ashton.apso2) and
+  `--input "$NGA,2000:right,..."` (NGA = the smoke's NEWGAME_A), `--capture DIR --capture-frames
+  1990,...`; the screen opens ~1880 after a story route skip.
 - `SS_DISC1=<cue> engine/build-charselect/ss_tests`, `engine/build-charselect/ss_game_tests`,
   `tools/smoke_field_events.sh engine/build-charselect/shattered-stars` (ap_hero_claude / _rena /
   _any, ap_hub_ng_*).
@@ -178,3 +364,22 @@ then `hub_ask_transfer`), `transfer_again`, the first line of `script_text`, `hu
 `on_script_loaded`, the sidecar's `hub_view` (sidecar_json / sidecar_from_json, on_saved,
 on_loaded), `glyph_text*`. A sidecar field for your starting character can sit beside `hub_view`
 (optional, absent = none; the reader takes missing keys).
+
+## For charselect (from hubask2, 2026-10-25 15:52)
+Small hunks in files you also edit (all marked [hubask2 agent]; nothing of yours touched):
+- engine/src/game/ap/seed.h: one field in `HubAsk` (`once_per_visit`, the row's `ask.again`).
+- engine/src/game/ap/seed.cpp: parse_ask's comment and 4 lines reading `ask.again` ("visit" /
+  "always").
+- tools/smoke_field_events.sh (hub block): the seed's `ask` rows get `"again": "visit"`;
+  ap_hub_ask_exit's last step is `304:T4` (the door is quiet after the Clerk's way out) with two
+  changed checks; new cases ap_hub_ask_visit and ap_hub_ask_visit_door after ap_hub_ask_exit.
+- apworld/so2/test/test_hub.py: one line in TestHubAsk (`again` == "visit").
+- apworld/so2/docs/en_Star Ocean The Second Story.md: the "Shigeo and Marsilio ask first" bullets
+  (once per visit).
+
+## Coordinator (2026-10-25): charselect2 done; commit pending
+Finished and verified (charselect2's report: ss_tests 99/0, ss_game_tests 174/0, smoke 230/0; world
+tests 318, AP general 379; full_cs / hub_cs 96/96 with check.py 0 errors; identity as described).
+Not committed yet: hubask2 is editing the same files (seed.*, hub.*, hub.py, test_hub.py, the smoke
+script); both go in one commit once hubask2 reports. The user still has to review the ten
+descriptions in engine/src/game/title/member_profiles.h.

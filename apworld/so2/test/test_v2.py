@@ -2,8 +2,8 @@
 fields"): drop progression and area keys in drops, craftsanity, party v2, the goals."""
 from BaseClasses import CollectionState, ItemClassification, LocationProgressType
 
-from ..items import KEY_OF, SO2Item
-from ..locations import ROW
+from ..items import CHARACTER_NAMES, KEY_OF, SO2Item
+from ..locations import ROW, fighter_status
 from .bases import SO2TestBase
 from .test_world import check_seed, fill, own_locations
 
@@ -282,7 +282,7 @@ class PartyChecks:
         check_seed(self, seed)
         o = seed["options"]
         self.assertEqual((seed["version"], o["party_rules"], o["characters"], o["starting_character"]),
-                         (2, "open", list(info.pool), info.start))
+                         (2, "open", list(info.pool), list(info.choices) if info.choices else info.start))
         for v in seed["items"].values():
             if v["kind"] == "character":
                 self.assertIn(v["character"], info.pool)
@@ -308,11 +308,31 @@ class TestPartyOpenAnyStart(SO2TestBase, PartyChecks):
                "starting_character": "any", "exclude_characters": ["Noel", "Claude"]}
 
     def test_any(self):
+        """[charselect agent] "any": the player picks at New Game among the heroes and the pool
+        (the seed's list); the logic counts on nobody extra, so the pool keeps that place."""
         info, joins = self.check_party_seed()
         self.assertEqual(info.story_members, ("Claude", "Rena"))
-        self.assertNotIn(info.start, (None, "Claude", "Rena", "Noel"))
-        self.assertEqual(len(info.pool), 5)
+        self.assertIsNone(info.start)
+        self.assertEqual(len(info.pool), 6)
+        self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n in ("Claude", "Rena") or n in info.pool))
+        self.assertNotIn("Noel", info.choices)
+        self.assertEqual(fighter_status(info.choices[2], info), "item")
         self.assertFalse({"Claude", "Rena"} & {ROW[loc.name]["character"] for loc in joins})
+
+
+class TestPartyAnyStartWithoutItems(SO2TestBase):
+    """[charselect agent] "any" under the story's party rules (no character items): every member
+    not excluded may be picked; nobody is counted on."""
+    options = {"world_mode": "open_world", "story_route": "rena", "starting_character": "any",
+               "exclude_characters": ["Dias"]}
+
+    def test_any(self):
+        info = self.world.party_info
+        self.assertEqual((info.rules, info.start, info.pool), ("story", None, []))
+        self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n != "Dias"))
+        self.assertNotIn("Dias", info.guaranteed)
+        o = self.world.fill_slot_data()
+        self.assertEqual((o["starting_character"], o["seed_format"]), (list(info.choices), 2))
 
 
 class TestPartyHealersExcluded(SO2TestBase, PartyChecks):

@@ -255,7 +255,9 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   ready to sail and every pass has arrived), and never strands the party on the Lacour
   continent; ships check their landing's key before the fare. `docs/ap/seed_format.md`
   "Phase 4" has the details. On field maps the player walks as the Formation leader (camp
-  menu: Combat > Formation > Leader; the seed's starting character leads from the start), and
+  menu: Combat > Formation > Leader; the seed's starting character leads from the start; with
+  `starting_character` "any" New Game adds a character select of all twelve in the hero select's
+  style, `docs/ap/seed_format.md` "The character select"), and
   the hero's name in dialogue and speaker labels becomes the leader's; the hero returns on
   world maps and for a scene that shows the leader as themselves, names them, or needs one of
   the hero's own gestures. Presentation only: the story runs as with the hero
@@ -286,7 +288,8 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   dropped once it is over, except what the seed keeps. A door the hub needs (the arena
   antechamber's into Marsilio's arena) leads there only while its boss is unbeaten. A chamber
   the seed marks `ask` asks first, in the game's own windows (Shigeo's street in Fun City: "Face
-  Shigeo now?"; no lets the party pass): its scene plays only after a yes; extra options on the
+  Shigeo now?"; no lets the party pass, and the street stays quiet until the party has been on
+  the world map: once per visit): its scene plays only after a yes; extra options on the
   game's own menus do the rest (the arena desk's "Face Marsilio.", beside "Register." for the
   ordinary arena; the Clerk's "Leave the arena." in Marsilio's scene). Saves keep all of it.
   Debugging: `SS_HUB_TRACE=1` lists what a scene stores in its view; `SS_HUB_STATE=1` builds

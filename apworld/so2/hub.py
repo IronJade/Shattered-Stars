@@ -88,9 +88,12 @@ P5_DOORS = (
 # desk's first menu (map 297) gets "Face Marsilio." beside "Register." (the normal arena), the
 # antechamber's door into 305 (P5_DOORS) asks (no: the lobby 296), and inside his view the Clerk's
 # menu gets "Leave the arena." (305 has no door of its own). No answer records anything.
+# Once per visit (the user, 2026-10-25: "they would need to go to the world map and then back into
+# Fun City to trigger the prompt again"): `again` "visit": after a no (or the Clerk's way out) the
+# row's doors are quiet until the party has been on a world map; the desk's option stays.
 ASK = {
-    533: {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?"},
-    532: {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509],
+    533: {"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?", "again": "visit"},
+    532: {"text": "Marsilio waits in the arena.\nFace Marsilio now?", "doors": [19929509], "again": "visit",
           "options": [{"map": 297, "window": "0x5c50", "choice": "0x5c6c", "text": "Face Marsilio.",
                        "to": {"map": 305, "x": -13, "y": 0, "z": 276, "dir": 271}},
                       {"map": 305, "window": "0x6ea8", "choice": "0x6ec4", "text": "Leave the arena.",

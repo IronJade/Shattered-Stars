@@ -368,6 +368,14 @@ class TestHubAnyLean(SO2TestBase, HubChecks):
         if self.world.party_info.start != "Claude":
             self.assertIn("Claude", self.world.progression_characters)
 
+    def test_pick_at_new_game(self):
+        """[charselect agent] starting_character "any": the player picks at New Game among the
+        party this world allows (both heroes, items here, and the pool); nobody is counted on."""
+        p = self.world.party_info
+        self.assertIsNone(p.start)
+        self.assertEqual(set(p.choices), set(p.pool) | {"Claude", "Rena"})
+        self.assertEqual(self.world.fill_slot_data()["starting_character"], list(p.choices))
+
 
 class TestHubFieldsOnlyNoChecks(SO2TestBase, HubChecks):
     options = {"world_mode": "hub", "story_route": "claude", "fienal_requirement": "fields", "boss_checks": False,
@@ -384,6 +392,7 @@ class TestHubAsk(unittest.TestCase):
             self.assertIn(enc, hub.CHAMBERS)
             lines = a["text"].split("\n")
             self.assertTrue(1 <= len(lines) <= 3 and all(1 <= len(l) <= 34 for l in lines), enc)
+            self.assertEqual(a.get("again"), "visit", enc)  # (the user: once per visit to Fun City)
             for d in a.get("doors", []):
                 self.assertIn(d, [p["id"] for p in hub.P5_DOORS if p["to"]["map"] == hub.CHAMBERS[enc]["map"]])
             for o in a.get("options", []):

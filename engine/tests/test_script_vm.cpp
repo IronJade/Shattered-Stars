@@ -1202,7 +1202,7 @@ TEST(ap_hub_ask) {
     CHECK(ap::load_seed_text(kAskSeed, &s, &error));
     const ap::HubAsk& a = s.bosses[1].ask;
     CHECK(s.bosses[0].ask.on && s.bosses[0].ask.all_doors && s.bosses[0].ask.text.size() == 2 &&
-          s.bosses[0].ask.yes == "Yes." && s.bosses[0].ask.no == "No.");
+          s.bosses[0].ask.yes == "Yes." && s.bosses[0].ask.no == "No." && s.bosses[0].ask.once_per_visit);
     CHECK(a.on && !a.all_doors && a.doors == std::vector<int64_t>{19922948} && a.options.size() == 2);
     CHECK(a.options[0].map == 297 && a.options[0].window == 4 && a.options[0].choice == 0x14 &&
           a.options[0].text == "Face Marsilio." && a.options[0].to.map == 305 && a.options[0].to.dir == 271);
@@ -1219,6 +1219,7 @@ TEST(ap_hub_ask) {
     CHECK(refused("\\nFace Shigeo now?", "\\na\\nb\\nc", "ask.text: 1-3 lines"));
     CHECK(refused("\"window\": \"0x4\", \"choice\": \"0x14\", \"text\": \"Face", "\"choice\": \"0x14\", \"text\": \"Face", "ask.options[0]"));
     CHECK(refused("\"doors\": [19922948]", "\"doors\": 5", "ask.doors must be an array"));
+    CHECK(refused("\"doors\": [19922948]", "\"doors\": [19922948], \"again\": \"never\"", "ask.again"));  // [hubask2 agent]
   }
   Fixture f;
   set_story(f, 60, 4000);
@@ -1245,25 +1246,40 @@ TEST(ap_hub_ask) {
   // A transfer inside the chamber never asks.
   s32 inside[7] = {281, 0, 0, 0, 0, 0, 0};
   CHECK(!ap::on_map_transfer(0x100, inside) && !ap::transfer_again());
-  // No (and a cancel): 281 at the hub's state; the question comes again next time; a load: no view.
-  for (const s32 answer : {1, -1}) {
+  // No: 281 at the hub's state, and the row is quiet for the visit [hubask2 agent]: the next door
+  // into 281 is a no without the question; a world map's load ends the visit, the door asks again
+  // (a cancel: no, quiet again); a load forgets the quiet (the door asks); a load: no view.
+  auto into_281 = [&](s32 answer) {  // (answer -2: quiet, no question)
     set_map(f, 297);
     ap::on_script_loaded(297, {});
     CHECK(!ap::hub_view_on());
     s32 back[7] = {281, 128, -5774, 0, -3487, 357, 130};
-    CHECK(ask_through(back, 0x47a4, answer));
-    CHECK(back[0] == 281);
+    if (answer == -2) CHECK(!ap::on_map_transfer(0x47a4, back) && !ap::transfer_again());
+    else CHECK(ask_through(back, 0x47a4, answer));
+    CHECK(back[0] == 281 && back[2] == -5774);
     set_map(f, 281);
     ap::on_script_loaded(281, {});
     CHECK(!ap::hub_view_on());
-  }
+  };
+  const std::string quiet = "ask: Shigeo, encounter 533: quiet until the party has been on a world map (once per visit)";
+  into_281(1);
+  CHECK_EQ(hub_log_count(quiet), 1u);
+  into_281(-2);
+  CHECK_EQ(hub_log_count("(map 297 -> map 281): quiet this visit: the chamber at the hub's state"), 1u);
+  set_map(f, 2);
+  ap::on_script_loaded(1050, {});  // (Energy Nede's world map: a chunk's script)
+  CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: the world map (map 1050): asks again"), 1u);
+  into_281(-1);
+  CHECK_EQ(hub_log_count(quiet), 2u);
   CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: no: map 281 at the hub's state"), 2u);
-  CHECK_EQ(hub_log_count("chamber map 281 (Shigeo, encounter 533): no story view (the answer was no)"), 2u);
+  CHECK_EQ(hub_log_count("chamber map 281 (Shigeo, encounter 533): no story view (the answer was no)"), 3u);
   CHECK(ap::hub_asked_view() == -1);
   ap::on_loaded("", 0);
   ap::on_script_loaded(281, {});
   CHECK(!ap::hub_view_on());
   CHECK_EQ(hub_log_count("no story view (not asked: a load or another way in)"), 1u);
+  into_281(1);
+  CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: no: map 281 at the hub's state"), 3u);
   // Marsilio: the antechamber's door (304 -> 296, sent into 305 by the seed door) asks; no is the
   // door's own target, yes the arena with its view.
   std::vector<u8> s304(0x1C + 0x14, 0);
@@ -1275,6 +1291,18 @@ TEST(ap_hub_ask) {
   CHECK(ask_through(door, 0x10, 1));
   CHECK(door[0] == 296 && door[2] == -6 && door[4] == 1014);
   CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: no: door 19922948 goes to its own target (map 296)"), 1u);
+  // [hubask2 agent] Quiet for the visit: the door's own target without the question; after a world
+  // map it asks again.
+  const std::string mquiet = "ask: Marsilio, encounter 532: quiet until the party has been on a world map (once per visit)";
+  CHECK_EQ(hub_log_count(mquiet), 1u);
+  s32 door_q[7] = {296, 0, -6, 0, 1014, 91, 128};
+  CHECK(!ap::on_map_transfer(0x10, door_q) && !ap::transfer_again() && door_q[0] == 296 && door_q[2] == -6 && door_q[4] == 1014);
+  CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: door 19922948 (map 304 -> map 305): quiet this visit: the door's own target (map 296)"), 1u);
+  set_map(f, 2);
+  ap::on_script_loaded(1113, {});  // (world map 3's script: any world map ends the visit)
+  CHECK_EQ(hub_log_count("ask: Marsilio, encounter 532: the world map (map 1113): asks again"), 1u);
+  set_map(f, 304);
+  ap::on_script_loaded(304, s304);
   s32 door2[7] = {296, 0, -6, 0, 1014, 91, 128};
   CHECK(ask_through(door2, 0x10, 0));
   CHECK(door2[0] == 305 && door2[2] == -13 && door2[4] == 276 && door2[5] == 271);
@@ -1324,6 +1352,10 @@ TEST(ap_hub_ask) {
   set_map(f, 304);
   ap::on_script_loaded(304, s304);
   CHECK(!ap::hub_view_on() && !ap::goal_won(532));
+  // [hubask2 agent] The Clerk's way out is a no from inside: the door is quiet for the visit.
+  CHECK_EQ(hub_log_count(mquiet), 2u);
+  s32 out[7] = {296, 0, -6, 0, 1014, 91, 128};
+  CHECK(!ap::on_map_transfer(0x10, out) && !ap::transfer_again() && out[0] == 296);
   // In 305 without the view (the normal arena) the Clerk's site adds nothing; another option of
   // the choice is the routine's own.
   set_map(f, 305);
@@ -1333,6 +1365,9 @@ TEST(ap_hub_ask) {
   CHECK(!ap::hub_fetch(&f.ctx));
   set_map(f, 297);
   ap::on_script_loaded(297, f.script);
+  f.ctx.ip = f.ctx.code + 5;  // [hubask2 agent] (quiet: the desk still offers "Face Marsilio.")
+  f.ctx.choice_count = 0;
+  CHECK(ap::hub_fetch(&f.ctx) && f.ctx.choice_count == 3);
   f.ctx.ip = f.ctx.code + 8;
   vm_set_r(1);
   CHECK(!ap::hub_fetch(&f.ctx));
@@ -1353,6 +1388,18 @@ TEST(ap_hub_ask) {
   s32 after[7] = {296, 0, -6, 0, 1014, 91, 128};
   CHECK(!ap::on_map_transfer(0x10, after) && !ap::transfer_again() && after[0] == 296);
   ap::stop();
+  // [hubask2 agent] `again` "always": every door asks.
+  {
+    std::string t = kAskSeed;
+    const std::string from = "\"ask\": {\"text\": \"Shigeo";
+    t.replace(t.find(from), from.size(), "\"ask\": {\"again\": \"always\", \"text\": \"Shigeo");
+    CHECK(start_hub(t));
+    into_281(1);
+    into_281(1);
+    CHECK_EQ(hub_log_count("ask: Shigeo, encounter 533: no: map 281 at the hub's state"), 2u);
+    CHECK_EQ(hub_log_count("quiet"), 0u);
+    ap::stop();
+  }
   // Without a hub seed: no question.
   set_map(f, 280);
   s32 none[7] = {281, 0, -3795, 0, -3406, 177, 136};

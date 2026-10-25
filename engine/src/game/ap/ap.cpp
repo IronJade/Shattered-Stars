@@ -126,6 +126,7 @@ struct Runtime {
   std::map<int, size_t> by_craft;        // item -> craft location index
   // v2 party [party agent]: the starting character becomes the Formation leader when they join.
   bool lead_start = false;
+  int chosen_start_pending = 0;  // [charselect agent] New Game's pick, until on_new_game
   // The hub's New Game [hubcore agent]: the start's position, for the field's first map load.
   bool start_position = false;
   bool banners_measured = false;         // the seed doors' banners measured (first free play)
@@ -399,13 +400,15 @@ int hero_id() { return script_flag(1) ? kClaude : kRena; }
 // The starting character in play: 0 without one, or when it names the picked game's hero
 // (possible under story_route "any": then nobody joins and the hero leads).
 int start_member(const Runtime& r) {
-  const int id = r.seed.starting_character;
+  const int id = r.seed.starting_character != 0 ? r.seed.starting_character : r.state.chosen_start;  // [charselect]
   return id >= 1 && id <= kCharacterCount && id != hero_id() ? id : 0;
 }
 
 // The v2 party rules are on: party_rules "open", or a starting character (open world with or
 // without character_items).
-bool party_v2(const Runtime& r) { return r.on && (r.seed.open_party || r.seed.starting_character != 0); }
+bool party_v2(const Runtime& r) {
+  return r.on && (r.seed.open_party || r.seed.starting_character != 0 || start_member(r) != 0);  // [charselect] a pick
+}
 
 // The story members: the hero, and under story_route "any" both heroes (the player picks the
 // game at New Game, so neither can be an item).
@@ -799,6 +802,7 @@ Json sidecar_json(const SaveState& s) {
   }
   if (!s.save_hash.empty()) j.set("save_hash", Json::string(s.save_hash));  // version 2
   if (s.hub_view >= 0) j.set("hub_view", Json::number(static_cast<int64_t>(s.hub_view)));  // [hubask agent]
+  if (s.chosen_start > 0) j.set("starting_character", Json::number(static_cast<int64_t>(s.chosen_start)));  // [charselect]
   return j;
 }
 
@@ -835,6 +839,8 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   }
   r.save_hash = j["save_hash"].as_string();  // version 2 (absent: empty, and a seed refuses the load)
   r.hub_view = static_cast<int>(j["hub_view"].as_int(-1));  // [hubask agent] (absent: none)
+  r.chosen_start = static_cast<int>(j["starting_character"].as_int(0));  // [charselect] (absent: none)
+  if (r.chosen_start < 0 || r.chosen_start > kCharacterCount) r.chosen_start = 0;
   *s = std::move(r);
   return true;
 }
@@ -1282,6 +1288,11 @@ void on_new_game() {
   Runtime& r = rt();
   if (!r.on) return;
   fresh_state(r);
+  // [charselect agent] the member picked at New Game's character select (0: nobody extra).
+  r.state.chosen_start = r.seed.starting_choices.empty() ? 0 : r.chosen_start_pending;
+  r.chosen_start_pending = 0;
+  if (r.state.chosen_start != 0)
+    log(std::string("starting character ") + character_name(r.state.chosen_start) + ": picked at New Game");
   hub_reset();  // (a story view left on)
   r.goal_flags_pending = true;  // v2: goal.flags in the new game's first field frame
   r.start_position = false;
@@ -1936,6 +1947,11 @@ bool keeps_flag(int flag) {
 }
 
 int starting_member() { return rt().on ? start_member(rt()) : 0; }
+
+// [charselect agent] New Game's character select.
+int seed_starting_character() { return rt().on ? rt().seed.starting_character : 0; }
+std::vector<int> starting_choices() { return rt().on ? rt().seed.starting_choices : std::vector<int>{}; }
+void set_chosen_start(int id) { rt().chosen_start_pending = id >= 1 && id <= kCharacterCount ? id : 0; }
 
 std::string split_window_keeping(int id) {
   const SplitWindow* w = party_v2(rt()) ? window_keeping(id) : nullptr;

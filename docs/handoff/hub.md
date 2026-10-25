@@ -200,3 +200,6 @@ with the lock on, `--bosses`, e2e).
   the Clerk use menu options rather than yes / no (the fee, the split party, no door in the ring).
 - 2026-10-25, the user on charselect: text option 3 ("Both": a facts line from the disc + four
   lines of our own; Claude and Rena keep their bios); reuse the "Hero select" heading art.
+- 2026-10-25, the user on hubask's questions: Shigeo asks **once per visit to Fun City** (after a
+  No, quiet until the party has been on the world map; queued as hubask2, hubask.md); the desk /
+  Clerk menu options approved.
