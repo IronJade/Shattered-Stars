@@ -64,6 +64,8 @@
 //
 // IMAGE is a .cue, raw .bin or .iso of your own disc.
 
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -74,6 +76,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "disc/archive.h"
 #include "disc/disc_image.h"
@@ -102,6 +105,10 @@
 #include "tools/viewer.h"
 #include "util/png.h"
 
+#ifndef _WIN32
+extern char** environ;
+#endif
+
 namespace {
 
 using namespace ss;
@@ -109,6 +116,32 @@ using namespace ss;
 bool env_set(const char* name) {
   const char* v = std::getenv(name);
   return v != nullptr && *v != 0;
+}
+
+// An Archipelago game is played as it is: every SS_* variable (the debugging and test hooks)
+// is cleared but 'keep'. Returns the names cleared. Nothing reads them before main().
+std::vector<std::string> clear_debug_environment(const std::vector<std::string>& keep) {
+  std::vector<std::string> names;
+#ifdef _WIN32
+  char** env = _environ;
+#else
+  char** env = environ;
+#endif
+  for (char** e = env; e != nullptr && *e != nullptr; ++e) {
+    std::string name(*e);
+    name = name.substr(0, name.find('='));
+    std::string upper = name;
+    for (char& c : upper) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));  // Windows: any case
+    if (upper.rfind("SS_", 0) == 0 && std::find(keep.begin(), keep.end(), upper) == keep.end()) names.push_back(name);
+  }
+  for (const std::string& n : names) {
+#ifdef _WIN32
+    _putenv_s(n.c_str(), "");
+#else
+    unsetenv(n.c_str());
+#endif
+  }
+  return names;
 }
 
 // Why there is nothing to boot from: one line about the image (if one was given), then how
@@ -365,8 +398,43 @@ int main(int argc, char** argv) {
   // Archipelago (game/ap): the seed is read before the memory cards (a seed plays on its own
   // card) and before any map (its patch lines join the world edits). A seed that does not load
   // stops the game (playing on would lose checks).
-  if (ap_seed.empty() && !headless) ap_seed = config.get("ap_seed");
+  // config.ini's ap_enabled (setup's Archipelago switch, default on) turns the chosen seed off
+  // without forgetting it: the game then plays as the original.
+  if (ap_seed.empty() && !headless && config.get_bool("ap_enabled", true)) ap_seed = config.get("ap_seed");
   if (!ap_seed_arg && !ap_seed.empty()) ap_seed_entry = config.get("ap_seed_entry");
+
+  // An Archipelago game is played as it is (the user, 2026-10-25: debugging is for games
+  // without a seed): in a windowed run with a seed, no debug console (--debug, and with it
+  // SS_DEBUG_INPUT), no debug start (--map, --map-pos, --battle, --battle-end), no scripted
+  // input or capture (--input, --capture), no card named for the run (the seed plays on its own
+  // card), and every SS_* hook cleared but the server's (SS_AP_SERVER / SLOT / GAME) and the
+  // mods and dialogue choices setup also makes. Headless runs (the tests) keep them all.
+  const bool ap_locked = !ap_seed.empty() && !headless;
+  if (ap_locked) {
+    std::vector<std::string> off;
+    if (debug_console) off.push_back("--debug");
+    if (runtime::Runtime::get().debug_start_map >= 0 || runtime::Runtime::get().debug_start_pos_set) off.push_back("--map");
+    if (!battle_spec.empty() || !battle_end.empty()) off.push_back("--battle");
+    if (!input_script.empty()) off.push_back("--input");
+    if (!capture_dir.empty()) off.push_back("--capture");
+    if (memcard_arg[0] || memcard_arg[1]) off.push_back("--memcard (for the seed)");
+    debug_console = false;
+    runtime::Runtime::get().debug_start_map = -1;
+    runtime::Runtime::get().debug_start_pos_set = false;
+    battle_spec.clear();
+    battle_end.clear();
+    input_script.clear();
+    capture_dir.clear();
+    memcard_arg[0] = memcard_arg[1] = false;
+    for (const std::string& n : clear_debug_environment({"SS_AP_SERVER", "SS_AP_SLOT", "SS_AP_GAME", "SS_MODS_DIR",
+                                                         "SS_MOD_ORDER", "SS_INSTANT_TEXT", "SS_AUTO_ADVANCE"}))
+      off.push_back(n);
+    if (!off.empty()) {
+      std::string list;
+      for (const std::string& o : off) list += (list.empty() ? "" : ", ") + o;
+      launcher::report("[ap] an Archipelago game plays without debugging; ignored: %s\n", list.c_str());
+    }
+  }
   game::ap::Seed ap_seed_head;  // the seed's id and slot, for its card
   if (!ap_seed.empty()) {
     std::string ap_error;

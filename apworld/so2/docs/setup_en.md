@@ -70,6 +70,12 @@ separate program to connect. Open the setup program's **Archipelago** page:
 Save and start the game (or Save & Play). It connects using the native client, the same way
 the game plays normally — there's no separate client window to manage.
 
+**Turning it off.** The switch beside **Archipelago** in setup's sidebar turns Archipelago off
+and on. Off, the game plays exactly as the original, on your ordinary memory cards; your seed,
+server and slot stay filled in for when you switch it back on. An Archipelago game itself has
+no debugging: the game's developer switches (`--debug` and the like) are ignored while a seed is
+being played.
+
 **Your saves.** Each seed (and slot) saves on its own memory card, which the game makes the
 first time you play it. Your ordinary memory cards aren't inserted while a seed is chosen, so a
 finished or unrandomized game can't be loaded into the seed by mistake, and the seed can never

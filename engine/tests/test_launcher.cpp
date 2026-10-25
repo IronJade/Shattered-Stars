@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "launcher/ap_seed.h"
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/process.h"
@@ -523,6 +524,42 @@ TEST(game_windowed_run_writes_its_log) {
   CHECK(contains(log2, "disc 1 image expected"));
   CHECK(contains(run.output, "disc 1 image expected"));  // and on stderr
   CHECK(log2.find('\r') == std::string::npos);           // "\n" line ends on every platform
+}
+
+// An Archipelago game is played as it is (the user, 2026-10-25): a windowed run with a seed
+// ignores --debug, the debug starts and the SS_* hooks, and plays on the seed's own card. With
+// config.ini's ap_enabled=0 (setup's switch) the seed isn't loaded at all: the original game.
+TEST(game_archipelago_runs_without_debugging) {
+  if (!game_available()) return;
+  const fs::path home = scratch("game_ap_locked");
+  const fs::path dir = home / "shattered-stars";
+  fs::create_directories(dir);
+  const fs::path seed = home / "lock.apso2";
+  write_file(seed, R"({"format": "apso2", "version": 1, "seed": "lock-1", "slot": {"name": "Claude", "id": 1},
+ "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21}},
+ "locations": [{"id": 1347569665, "name": "Arlia: crate by the store",
+                "check": {"type": "chest", "map": 18, "flag": "0x962"},
+                "item": {"player": 1, "kind": "fol", "amount": 5000, "name": "5000 Fol"}}]})");
+  const std::string base = "disc1=" + disc1_path() + "\naudio=0\nap_seed=" + launcher::path_utf8(seed) + "\n";
+  write_file(dir / "config.ini", base);
+  auto env = test_env(home);
+  env.emplace_back("SS_BATTLE_STUB", "1");
+  GameRun run = run_game({"--frames", "20", "--debug", "--map", "18"}, env);
+  if (contains(run.output, "game window could not be opened")) {
+    std::printf("  (no OpenGL window here: skipped)\n");
+    return;
+  }
+  CHECK_EQ(run.code, 0);
+  CHECK(contains(run.output, "[ap] an Archipelago game plays without debugging; ignored: --debug, --map"));
+  CHECK(contains(run.output, "SS_BATTLE_STUB"));
+  CHECK(contains(run.output, "[ap] seed lock-1"));
+  CHECK(contains(run.output, "[ap] the seed plays on its own memory card: " +
+                                 launcher::path_utf8(launcher::seed_memcard("lock-1", "Claude", dir / "archipelago"))));
+  // Archipelago off: no seed, nothing of it in the run.
+  write_file(dir / "config.ini", base + "ap_enabled=0\n");
+  run = run_game({"--frames", "20"}, env);
+  CHECK_EQ(run.code, 0);
+  CHECK(!contains(run.output, "[ap]"));
 }
 
 // Setup's header logo: the title picture from disc 1 (entry 12, block 0), decoded in memory.

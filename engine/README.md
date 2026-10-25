@@ -209,6 +209,14 @@ several Star Ocean seeds shows a slot list, saved as config.ini's `ap_seed_entry
 copies the chosen seed out to `archipelago/` next to config.ini at start-up,
 `launcher/ap_seed.h`) and, once one is chosen, offline or online play:
 
+- **On / off:** the switch on setup's Archipelago sidebar row (config.ini `ap_enabled`,
+  default on). Off, the game never loads the seed: the original game on the player's own
+  cards, the seed and server keys kept.
+- **No debugging in an Archipelago game:** a windowed run with a seed ignores `--debug` (and
+  `SS_DEBUG_INPUT`), `--map` / `--map-pos`, `--battle` / `--battle-end`, `--input`,
+  `--capture`, cards named for the run, and every `SS_*` variable but `SS_AP_SERVER` /
+  `SS_AP_SLOT` / `SS_AP_GAME`, `SS_MODS_DIR` / `SS_MOD_ORDER` and the dialogue ones, and logs
+  what it ignored. Headless runs (the tests) keep them all.
 - **Its own memory card:** a seed plays on `archipelago/<seed>_<slot>/memcard1.mcd` next
   to config.ini (slot 2 empty), never on the player's cards, so ordinary saves can't be
   loaded into a seed or overwritten by one; a card named for the run (`--memcardN`,

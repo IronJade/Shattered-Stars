@@ -69,6 +69,7 @@ struct Settings {
   std::string mod_order;  // config.ini's mod_order: the Mods page's list (mods/catalog.h)
   std::string ap_seed, ap_server, ap_slot, ap_password;  // Archipelago (config.ini's ap_* keys)
   std::string ap_seed_entry;  // the seed in an archive holding several (launcher/ap_seed.h)
+  bool ap_enabled = true;     // the sidebar's Archipelago switch (config.ini ap_enabled, default on)
   bool operator==(const Settings&) const = default;
 };
 

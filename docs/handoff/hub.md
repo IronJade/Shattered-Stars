@@ -64,7 +64,8 @@ seed blocks) → docs.
 | hubcore | Port: P1 hub New Game, the start option (every town: start points + Synard spots), sidecar, dungeon-key doors and the Fienal gate, P5 (Eluria Tower 557 -> 558, the arena 305, the Portal of Sealing look) | docs/handoff/hubcore.md |
 | hubchambers | The 22 chambers proven headless from the late state (SS_HUB_TRACE flag lists, in-place-ending re-fire, after_maps / until / cut_to, Fienal pairs D10, the map 14 vision), rows fixed in tools/ap_hub_bosses.py, a chamber runner in tools/ | docs/handoff/hubchambers.md |
 | hubworld | APWorld W6 (world_mode hub, regions, dungeon keys, boss locations, D6 / D9 options, characters as items, seed v3 blocks, tests, docs) | docs/handoff/hubworld.md |
-| (next) hubproof | W7: the late proof from the hub start with the lock, `--bosses`, e2e | |
+| hubcore2 | hubcore's rest: P5 (558 -> 559, the arena redirect while Marsilio is unbeaten), saves, smoke, docs | docs/handoff/hubcore.md |
+| hubproof | W7: the late-proof tool fix, the hub proof (docs/ap/hub_proof.json), `--bosses`, e2e, the APWorld switch from late_proof.json | docs/handoff/hubproof.md |
 
 ## Status
 
@@ -117,3 +118,39 @@ with the lock on, `--bosses`, e2e).
   gate only: 19 keys at most); Lasguss Mountain keeps its key only if XINE is a hub location; the
   Portal of Sealing gets a P5 look (hubcore) or its key and chest leave hub mode; the map 14
   vision: hubchambers decides (cut unless harmless).
+- 2026-10-25: **hubworld done** (docs/handoff/hubworld.md; not committed yet: it rests on hubcore's
+  `starts` in hub_state.json, so it goes in with hubcore's piece). `world_mode: hub` (2);
+  `hub_start` fun_city / arlia / **random_town** (Archipelago reserves the word "random"; picks
+  any of hubcore's 16 towns); `fienal_requirement` fields_and_berle / fields / all_bosses (under
+  story_route any, all_bosses leaves Varmillion / Azamgil out: the seed can't know the hero).
+  Locations: the late proof's 258 chests + 9 gifts (gifts filler), the Cave of Trials' 10 bosses,
+  XINE (filler until hubchambers confirms it plays: then `hub.CONFIRMED_OPTIONAL = {199}`), the 22
+  chambers (new hub-only "Cross Cave: Guardians boss"), shops / enemies / crafts / killer moves
+  at the hub state; not created: join sites, losable fights, unproven sites (Eluria Tower's 23
+  chests until hubproof). Keys only where a check lies behind them: 17 by default (18 with the
+  Cave of Trials), no Fienal key, the Portal of Sealing out (hubcore), Lasguss only with XINE.
+  Seed v3 with `hub`, 22 `bosses`, keyed `doors` and Fienal's requirement on door 68685691.
+  Verified: world tests 312 (240 before), AP general 379, data.py regenerates identically, hub
+  batch 96/96 with check.py 0 errors on 192 files (154 hub slots; check.py catches 10 of 10
+  mutated seeds), the old players' batch 192/192 identical to `full`. Waiting: hubchambers (XINE;
+  Synard Plant doors 17308906 / 17308938 / 17832691 into hub_bosses.json), hubproof (the hub
+  proof's reach replaces late_proof.json at the places marked "hubproof" in hub.py and the
+  tool's hub_tables).
+- 2026-10-25 (main session, the user's requests): setup and the game take Archipelago's
+  `AP_<seed>.zip` as it is (a slot list when it holds several Star Ocean seeds; Browse starts in
+  Archipelago's output folder), and **each seed plays on its own memory card**
+  (archipelago/<seed>_<slot>/memcard1.mcd; the player's cards are never inserted with a seed;
+  saves an earlier version made for the seed are copied over once). docs/handoff/setup.md.
+- 2026-10-25: **hubcore ended at ~477k** (pieces 1-3 done: P1 hub New Game both heroes, 16 starts
+  with Synard spots proven, keys lock doors in hub mode, the Fienal gate; P5 part: 557 -> 558 needs
+  no override; Berle 520's view must be chapter 33 step 20). Rulings in hubcore.md (Expel Synard
+  spot as done; the arena redirect only while 532 is unbeaten; Shigeo 281 on the Nede -> Expel
+  route: hubchambers walks it, the user decides if it forces the fight). hubcore2 and hubproof
+  started.
+
+- 2026-10-25, the user: **"we do need to block save editing for the archi runs, for sure."**
+  Given to hubcore2 (it owns ap.cpp and the saves item), all AP modes: a save loads only with a
+  sidecar naming this seed and slot; the sidecar holds a hash of the save's bytes, written at
+  every save and checked before a load (mismatch or missing hash on a seed's card: refused through
+  the game's load-failed path, with a banner); adoption stamps the hash on earlier-version saves;
+  a guard against accidents and casual editors, documented as not cheat-proof (open source).

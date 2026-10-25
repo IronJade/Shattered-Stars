@@ -65,6 +65,29 @@ into a seed or saves a seed over an unmodified save.
   copied"), the ordinary card's sha1 unchanged. Screenshots scratchpad/apzip/shots/saves*.png,
   cards.png.
 
+### Same day: the Archipelago switch and no debugging in an Archipelago game (the user)
+
+The user: "--debug should absolutely be blocked during an open and running archipelago game
+instance. It is only for non-archipelago runs"; a toggle on the sidebar's Archipelago tile to go
+back to a natural run; "None of it's options or settings should interfere with the game if
+archipelago is turned off. Natural and as the disc intended."
+
+- config.ini `ap_enabled` (default on; setup writes only `ap_enabled=0`). The game reads
+  config's ap_seed only when it is on (`--ap-seed` on the command line always plays).
+- Setup: a switch on the sidebar's Archipelago row (ImGuiSelectableFlags_AllowOverlap + an
+  InvisibleButton on the row's line; the status dot moves left of it; tooltip). Off: a warning
+  line on the page, no seed dot, the Memory cards page's seed note hidden, and the Mods page's
+  conflict analysis leaves the seed's lines out.
+- main.cpp: with a seed in a windowed run (`ap_locked`): --debug, --map / --map-pos, --battle /
+  --battle-end, --input, --capture and --memcardN (for the seed) are dropped, and every SS_*
+  variable is unset but SS_AP_SERVER / SS_AP_SLOT / SS_AP_GAME, SS_MODS_DIR / SS_MOD_ORDER,
+  SS_INSTANT_TEXT / SS_AUTO_ADVANCE (nothing reads SS_* before main). Logged once.
+- Test: game_archipelago_runs_without_debugging (ss_game_tests; windowed run on the offscreen
+  driver: --debug, --map 18 and SS_BATTLE_STUB=1 ignored, the seed's own card; ap_enabled=0: no
+  [ap] line at all). Screenshots scratchpad/apzip/shots/switch-on.png / switch-off.png.
+- Save editing (sidecar seed / slot check + save hash, refusal at load): given to hubcore2
+  (docs/handoff/hubcore.md), it owns ap.cpp.
+
 ## RESUME HERE (2026-10-23, packaging round: DONE; nothing running)
 
 All four packaging tasks this round are complete and verified; nothing left open for this

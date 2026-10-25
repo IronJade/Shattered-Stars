@@ -48,7 +48,14 @@ this file is the quick orientation.
    e2e 27/27, battles 564/564 identical to NA per release on the fixed build. The one port fault
    found (PAL never-clash spell list misread, `docs/handoff/soulmaster.md`) is fixed.
 5. **The hub open world (started 2026-10-25):** `docs/handoff/hub.md` (the user's decisions D1-D10,
-   the plan, the agents hubdata / hubvm / gifts and the next ones: hubcore, hubworld, hubproof).
+   the plan, the status). Done: hubdata, hubvm, gifts (committed), hubworld (APWorld, not
+   committed: it goes in with hubcore2's piece), hubcore (ended at its budget). Running at the
+   last update: hubcore2 (P5 rest, saves + **the save-editing block**, smoke, docs; log
+   hubcore.md), hubchambers, hubproof. Their logs say where each stands; the roster is
+   scratchpad/agents.txt. Commit each finished piece after a staged-tree build + suites.
+   **The user's Archipelago rules (2026-10-25):** AP off = the original game, untouched; a
+   windowed AP game allows no debugging; each seed on its own memory card; save editing
+   blocked (`docs/handoff/setup.md`, the 2026-10-25 entries; memory "ap-off-is-natural").
    **apv2 (2026-10-25):** start from `docs/handoff/apv2.md` (the user's requests verbatim, every
    decision, per-agent results and open items; agent logs ships, dialogue, apworld2, party,
    leader, hooks, killer_prof in docs/handoff/). Research notes in scratchpad/openworld/.
@@ -134,6 +141,11 @@ other suites (a failure is reported, never
 blocks the commit). Gaps and how to close them: `tools/refs/README.md`.
 
 ## Debug options
+
+Debugging is for games without an Archipelago seed (the user, 2026-10-25): a windowed run with
+a seed ignores every option below and every `SS_*` hook but the server's, the mods' and the
+dialogue's (`engine/src/main.cpp`, logged as `[ap] an Archipelago game plays without
+debugging; ignored: ...`). Headless runs keep them, seed or not, so the tests work.
 
 - `--map N` new game (Claude) on field map N; `--map-pos X,Y,Z[,FACING[,CAMERA]]` the
   leader's start (also after Continue); `SS_SCRIPT_GLOBALS="a0=6,a4=0x834"` script globals

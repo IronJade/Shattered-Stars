@@ -370,7 +370,9 @@ death received from them knocks out your party at the next safe moment.
    Archipelago's `output` folder; no need to unpack it) or a loose `.apso2`, pick your slot if
    the archive holds several Star Ocean players, and enter the room's address, your slot name
    and the password. Press **Save & Play**; the game connects as it starts. Each seed saves on
-   its own memory card, so your ordinary saves and the seed's never mix.
+   its own memory card, so your ordinary saves and the seed's never mix. The switch beside
+   **Archipelago** in setup's sidebar turns it off again: the original game, with the seed kept
+   for later.
 
 To play a seed on your own, leave the address empty: your locations are still shuffled and
 checked, and items from your own world are given to you. One seed works with the discs of any

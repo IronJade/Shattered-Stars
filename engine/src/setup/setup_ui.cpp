@@ -156,6 +156,7 @@ Settings App::read(const launcher::Config& c) const {
   s.mod_order = launcher::read_mod_order(c);
   s.ap_seed = c.get("ap_seed");
   s.ap_seed_entry = c.get("ap_seed_entry");
+  s.ap_enabled = c.get_bool("ap_enabled", true);
   s.ap_server = c.get("ap_server");
   s.ap_slot = c.get("ap_slot");
   s.ap_password = c.get("ap_password");
@@ -314,6 +315,8 @@ launcher::Config App::compose(const launcher::Config& base) const {
     if (value->empty()) c.erase(key);
     else c.set(key, *value);
   }
+  if (settings_.ap_enabled) c.erase("ap_enabled");  // on: the default
+  else c.set_bool("ap_enabled", false);
   return c;
 }
 
@@ -889,7 +892,9 @@ void App::sidebar() {
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, IM_COL32(50, 80, 140, 180));
     if (placeholder) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     const std::string label = std::string("    ") + kPageNames[i];
-    if (ImGui::Selectable(label.c_str(), selected, 0, ImVec2(0, row))) page_ = page;
+    const bool ap_row = page == Page::kArchipelago;  // its row holds the on / off switch too
+    if (ImGui::Selectable(label.c_str(), selected, ap_row ? ImGuiSelectableFlags_AllowOverlap : 0, ImVec2(0, row)))
+      page_ = page;
     if (placeholder) ImGui::PopStyleColor();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
@@ -911,15 +916,39 @@ void App::sidebar() {
       if (settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]))
         dot = kError;
     }
-    if (page == Page::kArchipelago && !settings_.ap_seed.empty()) {
+    if (page == Page::kArchipelago && !settings_.ap_seed.empty() && settings_.ap_enabled) {
       const SeedInfo& seed = seed_info(settings_.ap_seed, settings_.ap_seed_entry);
       dot = seed.ok ? kOk : !seed.choices.empty() && settings_.ap_seed_entry.empty() ? kWarning : kError;
+    }
+    float dot_x = b.x - em() * 0.8f;
+    if (ap_row) {
+      // Archipelago on / off: off plays the game as the original and keeps the seed and server.
+      const ImVec2 size(em() * 1.9f, em() * 1.0f);
+      const ImVec2 p0(b.x - size.x - em() * 0.55f, (a.y + b.y - size.y) * 0.5f);
+      ImGui::SameLine();  // on the row's own line, inside it: the layout stays as it was
+      ImGui::SetCursorScreenPos(p0);
+      if (ImGui::InvisibleButton("##ap-switch", size)) settings_.ap_enabled = !settings_.ap_enabled;
+      const bool hovered = ImGui::IsItemHovered();
+      if (hovered)
+        ImGui::SetTooltip("%s", settings_.ap_enabled
+                                    ? "Archipelago on: the game plays the chosen seed. Click to play the original "
+                                      "game; the seed and server settings are kept."
+                                    : "Archipelago off: the game plays as the original. Click to play the seed again.");
+      const float r = size.y * 0.5f;
+      ImVec4 on = kAccent;
+      if (hovered) on.w *= 0.8f;
+      const ImU32 track = settings_.ap_enabled ? ImGui::ColorConvertFloat4ToU32(on)
+                                               : (hovered ? IM_COL32(88, 95, 116, 255) : IM_COL32(70, 76, 94, 255));
+      dl->AddRectFilled(p0, ImVec2(p0.x + size.x, p0.y + size.y), track, r);
+      const float knob_x = settings_.ap_enabled ? p0.x + size.x - r : p0.x + r;
+      dl->AddCircleFilled(ImVec2(knob_x, p0.y + r), r - 2.5f, IM_COL32(235, 238, 245, 255), 16);
+      dot_x = p0.x - em() * 0.55f;
     }
     if (page == Page::kMods) {
       mods_analyse();
       dot = mods_enabled_broken_ ? kError : mods_warnings_ > 0 ? kWarning : 0;
     }
-    if (dot) dl->AddCircleFilled(ImVec2(b.x - em() * 0.8f, (a.y + b.y) * 0.5f), em() * 0.26f, dot, 12);
+    if (dot) dl->AddCircleFilled(ImVec2(dot_x, (a.y + b.y) * 0.5f), em() * 0.26f, dot, 12);
     if (placeholder) {
       const char* tag = "soon";
       ImGui::PushFont(nullptr, fonts_.size * 0.72f);
@@ -1681,7 +1710,7 @@ void App::page_cards() {
   heading("Memory cards");
   note("The game saves on memory card images, like a PlayStation's cards: one save takes one of a card's 15 "
        "blocks. The cards are files you can copy and back up. Emulators' raw cards (.mcd / .mcr) work too.");
-  if (!settings_.ap_seed.empty() && seed_info(settings_.ap_seed, settings_.ap_seed_entry).ok)
+  if (settings_.ap_enabled && !settings_.ap_seed.empty() && seed_info(settings_.ap_seed, settings_.ap_seed_entry).ok)
     status_line(Level::kInfo, "An Archipelago seed is chosen: the game plays on that seed's own memory card "
                               "(Archipelago page), not on these. They are used again once the seed is cleared.");
   card_field(1);
@@ -1723,13 +1752,14 @@ std::string App::mods_name(int source) const {
 
 void App::mods_analyse() {
   const mods::Catalog& c = mods_catalog();
-  const std::string seed_key = settings_.ap_seed + "\n" + settings_.ap_seed_entry;
+  // (Archipelago off: the game plays without the seed, so its edits don't count.)
+  const std::string seed_key = settings_.ap_enabled ? settings_.ap_seed + "\n" + settings_.ap_seed_entry : std::string();
   const std::string key = std::to_string(mods_generation_) + "\n" + settings_.mod_order + "\n" + seed_key;
   if (key == mods_analysis_key_) return;
   mods_analysis_key_ = key;
   mods_lines_.clear();
   // An Archipelago seed's edits come first in the game, and a mod never overrides them.
-  if (!settings_.ap_seed.empty()) {
+  if (!seed_key.empty() && !settings_.ap_seed.empty()) {
     auto it = mods_seed_lines_.find(seed_key);
     if (it == mods_seed_lines_.end()) {
       game::ap::Seed seed;
@@ -2100,6 +2130,10 @@ void App::page_mods() {
 
 void App::page_archipelago() {
   heading("Archipelago");
+  if (!settings_.ap_enabled)
+    status_line(Level::kWarning, "Archipelago is off (the switch beside Archipelago on the left): the game plays as "
+                                 "the original, on your own memory cards. The seed and server below are kept for "
+                                 "when you turn it on again.");
   note("Archipelago is a multiworld randomizer: items are shuffled across games, and players find each "
        "other's. Choose the archive the generator made (AP_<number>.zip, in Archipelago's output folder) "
        "or your .apso2 seed file; with a server, the game sends your checks and receives your items as you "

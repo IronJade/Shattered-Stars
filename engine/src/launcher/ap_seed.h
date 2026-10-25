@@ -18,6 +18,11 @@
 //   ap_seed         the seed the player chose: an .apso2, or an archive holding one
 //   ap_seed_entry   in an archive with several Star Ocean seeds, the one to play (its
 //                   name in the archive); empty when the archive holds one
+//   ap_enabled      0: setup's Archipelago switch is off; the game plays as the original and
+//                   the seed and server keys are kept (default 1)
+//
+// A windowed run with a seed allows no debugging (main.cpp): --debug, the debug starts and
+// the SS_* hooks are ignored; headless runs (the tests) keep them.
 namespace ss::launcher {
 
 // Archipelago's own folder, where its generator, Players/, worlds/ and output/ live, as
