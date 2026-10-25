@@ -27,6 +27,8 @@ struct ItemDef {
   int percent = 0;       // fol_loss: the share of the party's Fol lost (1-100)
   std::string status;    // status: "poison", "paralysis" or "stone"
   int key = 0;           // key: the area key's number, 1-255 (the doors it opens name it)
+  int skill = 0;         // skill: the skill id, 1-46 (skillsanity) [skillsanity2]
+  int move_index = -1;   // move: the record +0x3c index, 0-31 (with `character`) [skillsanity2]
 };
 
 // The party ids (handoff 3 slot +0; a script's party_add argument + 1).
@@ -63,6 +65,10 @@ struct Location {
   int move = -1;
   int level = 0;
   int uses = -1;
+  int skill_set = -1;   // guild: the set, 0-11 (flag 700 + set) [skillsanity2]
+  int move_index = -1;  // learn: the move's record +0x3c index (with `character`)
+  int skill = -1;       // learn: the skill a prize teaches (46, Float: special 0x12)
+  int price = -1;       // shop: this world's skill / move item sold at this price (skillsanity_shop_share)
   // The value the seed's patches put where the location's item was (the chest's or gift's
   // item push): 0x400-0x270f for an item routine (give_item), 0x7f000000 and up for a Fol
   // routine (add money). The port gives the location's item there (or sends another
@@ -207,6 +213,10 @@ struct Seed {
   std::vector<int> goal_encounters;  // a victory in one of these is the goal (default: 539, 540)
   bool deathlink = false;            // options.deathlink
   int story_route = 0;               // options.story_route: 0 any, 1 Claude, 2 Rena (New Game's choice)
+  // [difficulty agent] options.difficulty, New Game's Battle Rank (config +0x4f): 0 earth, 1 galaxy,
+  // 2 universe (set, the screen skipped), 3 any (the screen offered, unlocked or not); -1 the key
+  // missing (seeds before it): the original's rule (the screen only once the Voice Collection unlocks it).
+  int difficulty = -1;
   // Phase 3 options (docs/ap/seed_format.md); the defaults play as the original.
   bool character_items = false;      // options.character_items: listed join sites become checks
   bool first_drops = false;          // options.enemy_dropsanity == "first_drop"
@@ -236,6 +246,7 @@ struct Seed {
   std::vector<int> hub_step_maps = {685};  // hub.lock.step_maps: maps whose step stores pass the lock
   std::vector<HubBoss> bosses;       // the seed's `bosses` (the chambers)
   HubState hub_state;                // the `hub` block's New Game state [hubcore agent]
+  int skillsanity = 0;               // options.skillsanity: 0 none, 1 skills_only, 2 special_only, 3 insanity [skillsanity2]
 };
 
 // The door id rule (tools/ap_doors.py).

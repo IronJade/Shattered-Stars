@@ -188,18 +188,6 @@
    665,
    666,
    692,
-   700,
-   701,
-   702,
-   703,
-   704,
-   705,
-   706,
-   707,
-   708,
-   709,
-   710,
-   711,
    712,
    730,
    732,
@@ -1144,9 +1132,9 @@
   }
  },
  "counts": {
-  "hub_flags": 1063,
+  "hub_flags": 1051,
   "late_flags": 1088,
-  "reset": 24,
+  "reset": 36,
   "set_by_hub": 0
  },
  "categories": {
@@ -1263,15 +1251,28 @@
    "count": 966,
    "save_set": 966,
    "late_set": 966,
-   "hub_set": 965,
+   "hub_set": 953,
    "reset": [
-    84
+    84,
+    700,
+    701,
+    702,
+    703,
+    704,
+    705,
+    706,
+    707,
+    708,
+    709,
+    710,
+    711
    ],
    "set_by_hub": [],
    "kinds": {
-    "no setter": 854,
+    "no setter": 842,
     "key item": 19,
     "no story test": 92,
+    "skill guild": 12,
     "world script": 1
    }
   }
@@ -4357,99 +4358,99 @@
   },
   "700": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "701": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "702": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "703": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "704": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "705": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "706": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "707": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "708": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "709": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "710": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "711": {
    "cat": "other",
-   "kind": "no setter",
+   "kind": "skill guild",
    "save": 1,
    "late": 1,
-   "hub": 1,
-   "why": "no script stores it (set by native code or the save)"
+   "hub": 0,
+   "why": "a guild set bought (flag 700 + set): un-bought in the hub"
   },
   "712": {
    "cat": "other",

@@ -34,6 +34,7 @@ from worlds.generic.Rules import add_item_rule
 from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
 from .items import ALL_KEY_IDS, EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, \
     EVENT_LIMITER_OFF, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, stage_event
+from . import skillsanity
 from .locations import ROW
 from .regions import stage_rules
 
@@ -263,6 +264,7 @@ def killer_rule(world, loc, row):
         need = [EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT]
     if status == "item" and row["character"] in world.progression_characters:
         need.append(row["character"])
+    need += skillsanity.move_need(world, row)  # skillsanity special: the move itself [skillsanity2]
     loc.access_rule = lambda state, need=need: state.has_all(need, player)
     mode = o.killer_move_progression.current_key
     allowed = (mode == "any" and status in ("sure", "item")) or \
@@ -288,7 +290,9 @@ def goal_rules(world):
             lambda state: state.has_all(keys, player)
     if goal == 2:
         cave = [EVENT_FINAL_SAVE_POINT] + (["Cave of Trials Pass", "Fun City Pass"] if world.open_world else [])
-        world.get_location("Iseria Queen (Cave of Trials)").access_rule = lambda state: state.has_all(cave, player)
+        song = skillsanity.iseria_queen_need(world) or (lambda state: True)    # skillsanity: Musical Talent
+        world.get_location("Iseria Queen (Cave of Trials)").access_rule = \
+            lambda state: state.has_all(cave, player) and song(state)
 
 
 def set_rules(world):
@@ -311,10 +315,16 @@ def set_rules(world):
         if row["type"] == "killer_move":
             killer_rule(world, loc, row)
             continue
+        if row["type"] in ("guild", "learn"):     # skillsanity [skillsanity2]
+            skillsanity.set_location_rule(world, loc, row)
+            continue
         if row["type"] == "craft":
             # Item Creation works anywhere once a specialty is learned; never progression (the
-            # user, 2026-10-25: a craft check gives a random Archipelago item).
+            # user, 2026-10-25: a craft check gives a random Archipelago item). Skillsanity: the
+            # specialty's skills (a sure member's own, or the skill items).
             add_item_rule(loc, lambda item: not item.advancement)
+            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)):
+                loc.access_rule = rule
             continue
         if row["type"] == "drop":
             allowed, modes = drop_rule(row, side, world.open_world, teleporter, expel, drop_mode,

@@ -213,6 +213,42 @@ class KillerMoveProgression(Choice):
     default = option_never
 
 
+class Skillsanity(Choice):
+    """Skills, killer moves and spells as items. [skillsanity2]
+    none: as the original: skills bought in sets at the skill guilds, moves and spells learned by
+      level (or by their item or scene).
+    skills_only: buying a guild's set gives one check per skill in it (45 in the 12 sets), and each
+      skill is an item ("Skill: Perseverance") that lets the party learn it with SP, as buying the
+      set did. With the Cave of Trials, its Level 11 prize (Float) is a check and Float an item.
+      Members keep the skills they join with. Item Creation then needs its specialty's skills (a
+      member who joins with them, or the items), and so do craftsanity's locations.
+    special_only: every member knows the first killer move or spell of their list; the others are
+      items ("Claude: Shooting Stars"), and each point where one was learned is a check instead (a
+      level: "Claude Lv 7: Shooting Stars", Precis's and Opera's machines, the arena's Private
+      Action, the Cave of Trials' learn chests). A member who joins past a level gets its checks at
+      the join. Killer-move levels (killer_move_checks) then need the move.
+    insanity: both.
+    Guild checks and learn points never hold progression."""
+    display_name = "Skillsanity"
+    option_none = 0
+    option_skills_only = 1
+    option_special_only = 2
+    option_insanity = 3
+    default = option_none
+
+
+class SkillsanityShopShare(Range):
+    """With skillsanity and shuffle_shops: the share (percent) of this world's skill, killer move
+    and spell items (those the logic doesn't need) put in this world's shop slots, where each is sold
+    as itself: a move for its learn level x 100 Fol (an item-taught one 5000, a Cave of Trials prize
+    8000), a skill for its set's price / the set's size (Perseverance: 1600 / 4 = 400), Float 900.
+    Buying it is the slot's check. [skillsanity2]"""
+    display_name = "Skillsanity Shop Share"
+    range_start = 0
+    range_end = 100
+    default = 10
+
+
 class NoFailCrafting(Toggle):
     """Item Creation never fails by chance: every attempt makes the item the specialty picked
     (a member without the specialty's talents still makes the simplest results)."""
@@ -250,6 +286,24 @@ class EncounterRate(Range):
     range_start = 0
     range_end = 200
     default = 100
+
+
+class Difficulty(Choice):
+    """The game's difficulty (its Battle Rank): New Game sets it instead of asking.
+    earth: the normal game.
+    galaxy: monsters have half again their HP and attack.
+    universe: monsters have twice their HP and MP, two thirds more attack, a third more
+      intelligence, and better accuracy and evasion.
+    any: New Game asks, offering all three (the original offers the choice only after more than
+      half of the Voice Collection has been heard).
+    Only the monsters change: EXP, Fol, drops and encounters stay the same, so the logic is the
+    same on every difficulty."""
+    display_name = "Difficulty"
+    option_earth = 0
+    option_galaxy = 1
+    option_universe = 2
+    option_any = 3
+    default = option_earth
 
 
 class WorldMode(Choice):
@@ -342,10 +396,13 @@ class SO2Options(PerGameCommonOptions):
     no_fail_crafting: NoFailCrafting
     killer_move_checks: KillerMoveChecks
     killer_move_progression: KillerMoveProgression
+    skillsanity: Skillsanity                        # [skillsanity2]
+    skillsanity_shop_share: SkillsanityShopShare
     traps: Traps
     exp_multiplier: ExpMultiplier
     fol_multiplier: FolMultiplier
     encounter_rate: EncounterRate
+    difficulty: Difficulty
     death_link: DeathLink
 
 
@@ -353,7 +410,7 @@ option_groups = [
     OptionGroup("World", [WorldMode, HubStart, FienalRequirement, ExpelTeleporter, ShuffleShops]),
     OptionGroup("Locations", [StoryRoute, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
                               EnemyDropsanity, DropProgression, AreaKeysInDrops, Craftsanity, KillerMoveChecks,
-                              KillerMoveProgression]),
+                              KillerMoveProgression, Skillsanity, SkillsanityShopShare]),
     OptionGroup("Characters and items", [StartingCharacter, CharacterItems, ExcludeCharacters, Traps]),
-    OptionGroup("Battles and crafting", [ExpMultiplier, FolMultiplier, EncounterRate, NoFailCrafting]),
+    OptionGroup("Battles and crafting", [ExpMultiplier, FolMultiplier, EncounterRate, Difficulty, NoFailCrafting]),
 ]

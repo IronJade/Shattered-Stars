@@ -1,5 +1,6 @@
 #include "game/ap/ap.h"
 #include "game/ap/hub.h"
+#include "game/ap/skills.h"
 
 #include <algorithm>
 #include <climits>
@@ -175,6 +176,7 @@ void index_seed(Runtime& r) {
     if (l.type == "drop") r.by_enemy[l.enemy] = i;
     if (l.type == "shop") r.by_shop_slot[l.shop << 8 | l.index] = i;
   }
+  skills_index(r.seed);  // [skillsanity2]
   for (size_t i = 0; i < r.seed.doors.size(); ++i) {
     std::set<int> scripts;
     for (const int m : r.seed.doors[i].maps) scripts.insert(script_group(m));
@@ -733,6 +735,14 @@ bool give(const ItemDef& it, std::string* note = nullptr) {
     log("key " + std::to_string(it.key) + " (" + describe(it) + ") received");
     return true;
   }
+  if (it.kind == "skill") {  // skillsanity [skillsanity2]: the party may learn it
+    receive_skill(it.skill);
+    return true;
+  }
+  if (it.kind == "move") {  // skillsanity: the member knows it (now, or from their join)
+    receive_move(it.character, it.move_index);
+    return true;
+  }
   if (it.kind != "item") return true;  // (nothing to give for another player's item)
   int added = 0;
   for (int i = 0; i < it.count; ++i) added += field::inventory_add(g.inventory, it.game_id, 1, 1) != 0;
@@ -803,6 +813,8 @@ Json sidecar_json(const SaveState& s) {
   if (!s.save_hash.empty()) j.set("save_hash", Json::string(s.save_hash));  // version 2
   if (s.hub_view >= 0) j.set("hub_view", Json::number(static_cast<int64_t>(s.hub_view)));  // [hubask agent]
   if (s.chosen_start > 0) j.set("starting_character", Json::number(static_cast<int64_t>(s.chosen_start)));  // [charselect]
+  if (!s.skills.empty()) j.set("skills", ints(s.skills));  // skillsanity [skillsanity2]
+  if (!s.moves.empty()) j.set("moves", ints(s.moves));
   return j;
 }
 
@@ -841,6 +853,8 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   r.hub_view = static_cast<int>(j["hub_view"].as_int(-1));  // [hubask agent] (absent: none)
   r.chosen_start = static_cast<int>(j["starting_character"].as_int(0));  // [charselect] (absent: none)
   if (r.chosen_start < 0 || r.chosen_start > kCharacterCount) r.chosen_start = 0;
+  ints("skills", &r.skills);  // skillsanity [skillsanity2] (absent: none)
+  ints("moves", &r.moves);
   *s = std::move(r);
   return true;
 }
@@ -983,9 +997,22 @@ bool record_check(int64_t id, bool banner) {
 
 bool location_checked(int64_t id) { return record_check(id, true); }
 
+// [skillsanity2] A check the game reached with no item push of its own (a learn point, a guild
+// purchase): our own item comes at the next free play ("Got X"), another player's is "Sent".
+void deliver_check(int64_t id) {
+  Runtime& r = rt();
+  if (!r.on || is_checked(id)) return;
+  const Location* l = find_location(id);
+  if (l == nullptr || !record_check(id, true)) return;
+  if (l->item.own) r.pending.push_back({l->item.item, "", true});
+}
+
+SaveState& mutable_state() { return rt().state; }
+
 void on_flag_set(int flag) {
   Runtime& r = rt();
   if (!r.on) return;
+  if (flag >= 700 && flag <= 711) on_guild_flag(flag);  // skillsanity: a guild set bought [skillsanity2]
   const auto it = r.by_flag.find(flag);
   if (it == r.by_flag.end()) return;
   location_checked(r.seed.locations[it->second].id);
@@ -1196,6 +1223,7 @@ void give_start(Runtime& r) {
   for (const int flag : r.seed.start_flags)
     if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
   if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
+  skills_new_game();  // skillsanity: the heroes' moves [skillsanity2]
 }
 
 }  // namespace
@@ -1977,6 +2005,8 @@ int required_story_route() {
   const Runtime& r = rt();
   return r.on ? r.seed.story_route : 0;
 }
+
+int seed_difficulty() { return rt().on ? rt().seed.difficulty : -1; }  // [difficulty agent]
 
 void scale_battle_rewards(s32* exp, s32* fol) {
   Runtime& r = rt();

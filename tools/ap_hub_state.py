@@ -443,6 +443,13 @@ def build(args):
             hub, why = 0, why + "; given by a hub chamber's scene (cleared: the boss gives it)"
         else:
             hub = late
+        if 700 <= f <= 711:
+            # [skillsanity2] The skill guilds' sets (flag 700 + set, stored by the map library's
+            # purchase routine through an indexed store): un-bought in every hub seed (the user,
+            # 2026-10-25), so skillsanity's guild checks are there to make and, without it, the
+            # skills are bought as in the story. The hub proof's reach is unchanged (no map's
+            # access tests them).
+            kind, why, hub = "skill guild", "a guild set bought (flag 700 + set): un-bought in the hub", 0
         if f == 1:
             hub = None   # per game (games.claude / games.rena)
         table[f] = {"cat": cat, "kind": kind, "save": save, "late": late, "hub": hub, "why": why}

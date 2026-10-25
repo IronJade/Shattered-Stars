@@ -151,6 +151,11 @@ class TextRenderer {
   void draw_pack_message(int index);
   // field 0x800d84a8: 'value' (0-99) in group 0 digits, right-aligned 12 pixels past the pen.
   void draw_two_digits(int value);
+  // (Port) ASCII into the current line as text code 0x4006 draws a member's name: the default
+  // font, through the memory card's codes (group 1 of the default strings); a shop list's
+  // Archipelago item (skillsanity) [skillsanity2].
+  void draw_ascii(const char* text);
+  int measure_ascii(const char* text);  // its width in pixels (the pen is kept)
   s16 current_line() const { return current_; }
   s16 x() const { return x_; }
   s16 y() const { return y_; }

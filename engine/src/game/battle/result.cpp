@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "game/ap/ap.h"
+#include "game/ap/skills.h"
 #include "game/battle/bsfx.h"
 #include "game/battle/camera.h"
 #include "game/battle/combat.h"
@@ -13,6 +14,7 @@
 #include "game/battle/unit.h"
 #include "game/battle/voice.h"
 #include "game/boot/rng.h"
+#include "game/common/program_image.h"
 #include "game/common/screen.h"
 #include "game/common/text_rules.h"
 #include "game/field/message.h"
@@ -43,6 +45,8 @@ void wr32(u8* p, s32 v) { std::memcpy(p, &v, 4); }
 
 u8 ovl1981_u8(u32 address) {
   const u8* p = ovl1981_data(address);
+  // (Port) Outside a battle (the join level, game/ap/skills.cpp) the tables come from the disc.
+  if (p == nullptr) p = program_data_at(1981, 0x80085518u, address);
   return p != nullptr ? *p : 0;
 }
 
@@ -94,6 +98,8 @@ const u16* learn_from_table(LevelUpCtx* ctx, u32 table, s16 msg_base) {
     if (level == 0 || rd16(ctx->slot + 0x26) < static_cast<s16>(level)) break;
     const int idx = ovl1981_u8(table + 1) - 1;
     u8* flag = ctx->rec + 0x3C + idx;
+    // Archipelago (port feature, skillsanity): a learn point that is a location is its check.
+    if (ap::on_learn_point(rd16(ctx->slot), idx)) continue;
     if (*flag == 0) {
       *flag = 1;
       wr16(ctx->rec + 0x8C + idx * 2, 0);  // move proficiency
@@ -118,6 +124,7 @@ const u16* learn_spells_from_table(LevelUpCtx* ctx, u32 table, u32 class_spells,
       const u8* c = battle_data(class_spells + static_cast<u32>(i));
       if (c == nullptr || *c != spell) continue;
       u8* flag = ctx->rec + 0x3C + i;
+      if (ap::on_learn_point(rd16(ctx->slot), i)) break;  // Archipelago (skillsanity): its check
       if (*flag == 0) {
         *flag = 1;
         wr16(ctx->rec + 0x8C + i * 2, 0);
@@ -533,12 +540,13 @@ void levelup_gain_hp_mp_sp(LevelUpCtx* ctx) {
     wr16(s + off, rd16(s + off) + mp);
     if (999 < rd16(s + off)) wr16(s + off, 999);
   }
+  const u8* config = ctx->config != nullptr ? ctx->config : g.config;  // (port: outside a battle)
   const s32 v = (rd16(s + 0x26) * 3) / 10;
   s32 r = v;
   if (2 < v) r = static_cast<s32>(rng_range(static_cast<u32>(v)));
   s32 sp = (r - v / 2) + rd16(s + 0x26);
   if (sp < 1) sp = 1;
-  if (g.config[0x4D] != 0) sp += (sp * rd16(g.config + 0x196)) / 100;
+  if (config[0x4D] != 0) sp += (sp * rd16(config + 0x196)) / 100;
   u8* rec = ctx->rec;
   wr16(rec + 0x1A, rd16(rec + 0x1A) + sp);
   const s32 before = ctx->table[0];
@@ -599,6 +607,45 @@ const u16* levelup_learn_skills(LevelUpCtx* ctx, u8* slot, u8* rec) {
       for (u16& id : g_learned) id = 0;
       return g_learned;
   }
+}
+
+std::vector<LearnEntry> learn_table(int character) {
+  // The tables of levelup_learn_skills; a caster's class byte (slot +3) as its init sets it.
+  struct Table {
+    u32 table;
+    u32 class_spells;  // 0: a fighter (the index is the move number - 1)
+    int cls;
+  };
+  static const Table kTables[12] = {
+      {0x80087DD0, 0, 0},           {0x80087E74, 0x8006B1B8, 9},  {0x80087EA4, 0x8006B1E4, 11},
+      {0x80087DE8, 0, 0},           {0x80087E34, 0, 0},           {0x80087E24, 0, 0},
+      {0x80087E10, 0, 0},           {0x80087EFC, 0x8006B1D0, 10}, {0x80087E00, 0, 0},
+      {0x80087E4C, 0, 0},           {0x80087ED0, 0x8006B1FC, 12}, {0x80087E60, 0, 0}};
+  std::vector<LearnEntry> out;
+  if (character < 1 || character > 12) return out;
+  const Table& t = kTables[character - 1];
+  int count = 0;
+  if (t.class_spells != 0) {
+    const u8* c = battle_data(0x8006B1AB + static_cast<u32>(t.cls));
+    count = c != nullptr ? *c : 0;
+  }
+  for (u32 a = t.table;; a += 2) {
+    const u8 level = ovl1981_u8(a);
+    if (level == 0) break;
+    const u8 v = ovl1981_u8(a + 1);
+    if (t.class_spells == 0) {
+      out.push_back({level, v - 1});
+      continue;
+    }
+    for (int i = 0; i < count; ++i) {
+      const u8* c = battle_data(t.class_spells + static_cast<u32>(i));
+      if (c != nullptr && *c == v) {
+        out.push_back({level, i});
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 // ---- ResultScreen ----------------------------------------------------------------------

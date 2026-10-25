@@ -23,6 +23,8 @@ first six kinds below). The crafts and the killer-move levels (0.2.0) come from 
 | Crafts | 553 | `craftsanity` | type 11 + item: one per item Item Creation can make |
 | Killer-move levels | 133 (69 moves) | `killer_move_checks` | type 12 + (party id << 14) + (move << 10) + level |
 | Hub-only boss | 1: the Cross Cave guardians (set battle 523) | `world_mode: hub` with `boss_checks` | type 9 + encounter (`data.HUB_LOCATIONS`) |
+| Guild checks | 45 (12 sets) | `skillsanity: skills_only / insanity` | type 13 + (set << 8) + the skill's place in the set |
+| Learn points | 139 learn-table levels, 9 other learn points (3 in the cave), the Float prize (cave) | `skillsanity: special_only / insanity` (Float: `skills_only / insanity`) | type 14 + (party id << 8) + record index (Float: 46) |
 
 Hub mode (`world_mode: hub`, "Hub mode" below) uses only what the hub reaches of these rows.
 
@@ -86,6 +88,8 @@ Hub mode (`world_mode: hub`, "Hub mode" below) uses only what the hub reaches of
 | a trap: Ambush, Fol Loss (10 %), Poison, Paralysis, Stone | `0x50350000 + 1..5` | trap |
 | an area key (open world): "Salva Pass" ... (35) | `0x50360000 + N`, N 1-35 (data.KEY_GROUPS) | progression |
 | a dungeon key (hub mode): "Salva Drift Key" ... (19 registered, at most 18 in a seed) | `0x50370000 + N`, N = docs/ap/hub_bosses.json `dungeons[].key` 1-19 (data.HUB_DUNGEONS) | progression |
+| a skill (skillsanity): "Skill: Perseverance" ... (46) | `0x50380000 + skill id` | useful; progression when the logic needs it ("Skillsanity") |
+| a killer move or spell (skillsanity): "Claude: Shooting Stars" ... (148: every member's but the first) | `0x50390000 + (party id << 8) + record index` | useful; progression when the logic needs it |
 
 - **The pool** is the vanilla contents of this world's locations. A boss, join or drop
   location adds its vanilla item (a Blueberry for bosses and join sites); a craft adds the
@@ -649,6 +653,51 @@ drops take progression first), **never** (0.1.x's rule). In every mode (rules.py
 - **The check:** `{type: killer_move, character, move, level, uses}`, `uses` = level x the
   move's divisor in the armed table; the port compares the raw use count.
 
+## Skillsanity (`skillsanity`, `skillsanity_shop_share`; 0.2.0)
+
+The user's design and decisions (docs/handoff/skillsanity.md); the seed and the port:
+seed_format.md "Skillsanity"; the tables: `skills.py` (tools/ap_make_skills.py, from the disc),
+the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **skills_only**,
+**special_only**, **insanity** (both).
+
+- **Skills** (skills_only / insanity). Each of the 12 guild sets' purchase (flag 700 + set, at any
+  of its guilds: docs/notes/menu.md "Skill guilds") is one location per skill in it, "Skill Guild:
+  Sensibility 2 (1 of 4)" (45); each skill is an item, "Skill: Perseverance", that lets the party
+  learn it with SP. With `cave_of_trials`, the Level 11 prize (Float) is a location and Float an
+  item. Members keep the skills they join with. A guild check's access: any of its set's guilds
+  (open world: their towns' keys, data.GUILD_PLACES; hub mode: the towns, open). Never
+  progression (the user).
+- **Special** (special_only / insanity). Every member keeps their learn table's first move (Claude's
+  Air Slash, Rena's Heal, ...: known from the start or their join); every other killer move and
+  spell is an item ("Claude: Shooting Stars"), and each learn point a location: a learn-table level
+  ("Claude Lv 7: Shooting Stars", 139), Precis's and Opera's machines (the items 464-469 and the
+  arena's Private Action: "Precis: Holo-holograph (Holoprojector)", 6) and, with `cave_of_trials`,
+  the cave's learn chests ("Cave of Trials Level 4: Leon's Extinction", 3). Claude's Phase Gun is
+  left out (the user). A member who can never join has none; one who joins only by the player's
+  choice holds filler only (EXCLUDED). Access as killer moves': a learn level up to 30 from the disc
+  switch, any other from the Final Save Point (hub mode: from the start / Fienal opened); the
+  machines after the Final Save Point (hub: any time) with Machinery; the cave's in the cave.
+  Learn points hold no progression (they need a member and levels, which no proof places).
+- **Logic.** With skills shuffled, Item Creation needs its specialty (a sure member who joins
+  with its skills: Rena's Cooking, the heroes' and the starting character's; else the skill items:
+  `SPECIALTIES` / `SUPER_SPECIALTIES`), so craftsanity's locations need them; the Iseria Queen goal
+  needs Musical Talent's (the song at Musical 10); the machines Machinery's. With special shuffled a
+  killer-move level (killer_move_checks) needs its move. Those items are progression
+  (`world.skill_needs`); every other skill and move item is useful.
+- **Shops** (with `shuffle_shops`; the user's second extension). `skillsanity_shop_share` (0-100 %,
+  default 10): that share of this world's skill and move items that the logic doesn't need is
+  placed in this world's shop slots (DEFAULT ones) before the fill (`place_in_shops`; shop slots
+  stay progression-free, the user); such a slot (and any the fill gives one of them) carries a
+  `price` and the port sells the item as itself: a move its learn level x 100 Fol, an
+  item-taught move 5000, a cave prize 8000, Float 900, a skill its set's price / the set's size
+  (Sensibility 2 at Herlie: 1600 / 4 = 400).
+- **Hub mode:** the hub state no longer sets flags 700-711 (tools/ap_hub_state.py): the guilds sell
+  in every hub seed, skillsanity or not.
+- **The join level** (the port, open world and hub, whatever skillsanity says: seed_format.md "The
+  join level"): a member joins at the party's median level; under special, every learn point up to
+  it is checked at the join. The logic is unchanged by it (learn points count by the level the party
+  reaches).
+
 ## Party v2 (open world with `character_items`; 0.2.0)
 
 The new character rules are open world only (the user, 2026-10-25); story mode keeps the
@@ -754,16 +803,19 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | `no_fail_crafting` | false (default) / true | Item Creation never fails by chance (the port) |
 | `killer_move_checks` | false (default) / true | the 133 killer-move levels are locations ("Killer moves") |
 | `killer_move_progression` | never (default) / hero / any | which killer-move levels may hold progression |
+| `skillsanity` | none (default) / skills_only / special_only / insanity | skills, and / or killer moves and spells, as items; the guild sets' purchases and the learn points as locations ("Skillsanity") |
+| `skillsanity_shop_share` | 0-100 (default 10) | with shuffle_shops: the share of the non-progression skill / move items sold in this world's shops as themselves |
 | `traps` | 0-100 (default 0) | the share of filler turned into traps |
 | `exp_multiplier`, `fol_multiplier` | 1-10 (default 1) | the battle's EXP / Fol total |
 | `encounter_rate` | 0-200 (default 100) | random-encounter frequency, percent |
+| `difficulty` | earth (default) / galaxy / universe / any | New Game's Battle Rank: the port sets it and skips the screen; any: the screen offers all three. No logic change (it scales only the monsters' stats: "Difficulty" in seed_format.md) |
 | `death_link` | false / true | written to the seed as `options.deathlink` |
 
 slot_data and the seed's `options` repeat them (`starting_character` as the member chosen, null,
 or under `any` the list of members New Game's select offers; `exclude_characters` as a list), with `seed_format`, `goal_encounters`, `characters` (the
 pool's members), `party_rules` ("story" / "open") and `apworld_version`. The port reads the
 phase-3 ones ([seed_format.md](seed_format.md), "Phase 3") and, of 0.2.0's, `no_fail_crafting`,
-`starting_character` and `party_rules` ("v2 fields").
+`starting_character`, `party_rules` and `difficulty` ("v2 fields").
 
 ### DeathLink and the fights you can't win
 
@@ -796,7 +848,8 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
 `SO2World.seed_data()` writes:
 - `version`: 1, or 2 when the seed uses a field an older port would ignore (a limiter-off goal,
   `party_rules: "open"`, a starting character, craft or killer-move locations,
-  `no_fail_crafting`: `seed_version`; seed_format.md "The version rule"), so the 0.02.00 port
+  `no_fail_crafting`, a `difficulty` other than earth: `seed_version`; seed_format.md "The
+  version rule"), so the 0.02.00 port
   refuses such a seed instead of playing it wrong; 3 for a hub seed (and its `hub` and `bosses`
   blocks, "Hub mode" above);
 - every own location with its check (chest: map + flag; gift: map + call-site offset; boss:
@@ -820,6 +873,7 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
+| `skills.py`, `skillsanity.py` | skillsanity's tables (the guild sets, the skills, the starting skills, the specialties, the learn tables with each member's first move, the other learn points; generated by tools/ap_make_skills.py from the disc; do not edit) and its locations, items, logic and shop prices |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
 | `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`) |
@@ -830,6 +884,7 @@ Regenerate the tables after `tools/ap_extract.py` or a new late proof:
                                       # (+ hub_state.json + hub_bosses.json: the hub section) -> data.py
     tools/ap_make_crafts.py           # docs/ap/data/craft_results.csv + craft_decode.txt + the overlay -> crafts.py
     tools/ap_make_moves.py            # docs/ap/data/move_levels.csv -> moves.py
+    tools/ap_make_skills.py DISC1.cue # disc 1 + engine/src/game/field/characters.cpp -> skills.py
 
 Rerun the late proof after a change to the port's field code, the event sweep or field.json
 (about an hour per game; keep the machine's total at 6 game processes: `--jobs 3` each, or one
@@ -1042,6 +1097,33 @@ Results (2026-10-25, the hub proof; docs/handoff/hubproof.md):
   as docs/ap/late_proof.json, the same checks per map, maps and edges (the Cave of Trials L1 / L11
   bosses back).
 
+Results (2026-10-25, `difficulty`; docs/handoff/difficulty.md):
+- The world's tests: 341 passed (318 + test_difficulty.py's 23: default, galaxy, universe in
+  open world, any, universe in hub mode; each checks slot data, the version, the seed and that
+  Earth would choose the same locations of the same kinds); AP's general tests: 379 passed.
+- Identity (scratchpad/difficulty/batch, `id_compare.py`): seeds 1-16 (story / open-world
+  players) and 1-8 (hub players) generated with `difficulty: earth` and with `universe` (scalars,
+  so no roll): all 32 + 16 `.apso2` identical but for `options.difficulty` and the version (story
+  and open world 1 -> 2 where it was 1), and the spoilers identical but for the Difficulty line.
+- Mixed batches (`difficulty` weighted over all four): 32 + 16 seeds, exit 0; `check.py` (now with
+  the version rule's difficulty and a `difficulty` kind) 0 errors on 64 + 32 files; with the
+  identity batches 192 files, 0 errors.
+
+Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
+- The world's tests: 380 passed (29330 subtests; `test_skillsanity.py`: none, skills_only with
+  craftsanity, special_only in open world with killer moves, insanity in hub mode with shops,
+  insanity with the Iseria Queen goal). AP's general tests: 379 passed.
+- 96 seeds of each players set with `skillsanity` and the share random (scratchpad/apworld2/batch
+  players_sk, players_hub_sk -> scratchpad/skillsanity/batch sk_full, sk_hub): 96/96 exit 0 each,
+  `check.py` (new: the guild checks and learn points by the option, their ids and checks, never
+  progression, the item kinds, no first move as an item, every shop price) 0 errors on 192 + 192
+  files; 9938 and 8673 progression items in SO2 locations, of them own skill / move items 489 / 1366
+  and 453 / 1151; priced shop slots 3098 (90 slots) and 3519 (99).
+- The identity (skillsanity none: the players and players_hub sets as they were -> sk_id_full,
+  sk_id_hub; check.py 0 errors) against full_hp / hub_hp: every file is byte-identical but for
+  `options` (the new keys) and, in hub seeds, `hub.flags` without 700-711, except in the
+  multiworlds where a slot has `cave_of_trials` (the renamed cave locations change the fill).
+
 ## Changes
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
@@ -1064,6 +1146,12 @@ never` (above).
   (open world, default hero) ("Party v2"); `starting_character: any` is the player's pick at
   New Game (the port's character select; the seed lists whom it offers), no longer a random
   member.
+- *Difficulty* (2026-10-25, agent "difficulty"; the user's request): `difficulty` earth (default)
+  / galaxy / universe / any, in every world mode. The port sets the seed's Battle Rank at New Game
+  and skips the screen; `any` offers the screen with all three (the original offers it only once
+  more than half of the Voice Collection is heard, which a seed's own memory card never is). It
+  scales only the monsters' stats (HP, MP, attack, intelligence, accuracy, evasion), so the logic
+  is unchanged; a non-earth value makes a story / open-world seed version 2.
 - slot_data and `options` gain the new options, `party_rules` and `apworld_version`; the seed
   gains `version` 2 when needed. Location and item ids of 0.1.1 are unchanged; the new ones are
   types 11 (crafts) and 12 (killer moves), the characters Claude, Rena and Noel.
@@ -1083,6 +1171,18 @@ never` (above).
   fewer and places its items differently; seeds without it are unchanged. The port's fix makes
   0.1.x seeds safe: nothing is learned or written, and the chest gives or sends its location's
   item (when the member opens it). Skillsanity is to bring them back as learn points.
+- *Skillsanity* (2026-10-25, agent skillsanity2; the user's design): `skillsanity`, `skillsanity_shop_share`;
+  location types 13 (guild checks) and 14 (learn points), item ids 0x50380000 (skills) and
+  0x50390000 (moves); a seed with it is version 2 ("Skillsanity").
+- *The Cave of Trials by its real floors* (2026-10-25, the user's ruling): its chests and gifts were
+  all "Cave of Trials Level 1: ..." (0.1.x's name rule); now "Cave of Trials Level 7: ...", the
+  treasure vault (map 710) "Cave of Trials Treasure Vault", the Weird Beast's arena (711) "Cave of
+  Trials Weird Beast Arena" (`CAVE_FLOORS`, docs/modding/reference/map_names.csv). 76 names, the ids
+  unchanged. Trackers read the names from each multiworld's own data package, so rooms generated
+  before keep theirs; a seed with `cave_of_trials` fills otherwise (Archipelago sorts locations by
+  name). The cave's boss names are another rule's and unchanged.
+- *Hub mode: the skill guilds sell* (2026-10-25): the hub state no longer sets flags 700-711 (1063
+  -> 1051 hub flags).
 - *Fixed: gift sites never hold progression* (2026-10-25, the user: "NPC gift checks should NOT
   hold progression"). Before, the late proof let the 9 gift sites it reaches hold progression in
   story mode, and in open world Eluria Colony's 2 gifts could hold our own Expel-story keys

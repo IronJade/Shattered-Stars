@@ -53,6 +53,11 @@ CAVE_OF_TRIALS = range(698, 826)
 LEARN_CHESTS = {(740, 2675): ("Leon", "Extinction", "Cave of Trials Level 4"),
                 (798, 2657): ("Ashton", "tri-Ace", "Cave of Trials Level 10"),
                 (799, 2721): ("Celine", "Meteor Swarm", "Cave of Trials Level 10")}
+# Skillsanity [skillsanity2]: the skill guilds' maps (apworld/so2/skills.py SKILL_SETS; docs/notes/menu.md
+# "Skill guilds"): Cross, Port of Clik, Herlie, Hilton "Skill Power", Linga, Lacour, Armlock, Central
+# City, North City "Boondocks Office". data.GUILD_PLACES: each as a drop's place (its area, group and
+# proofs), for the guild checks' access.
+GUILD_MAPS = (80, 123, 147, 173, 190, 219, 316, 258, 264)
 CHARACTERS =["Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest",
               "Noel", "Chisato"]   # party_add's argument n (party id n + 1)
 # character_items shuffles the members who join by the player's choice or for part of the story
@@ -141,8 +146,20 @@ RELEASED_AREAS = {**dict.fromkeys((27, 29, 32), "Rena's House"), 38: "Rena's Roo
                   83: "Inn Kingdom Hotel", 143: "Town of Herlie",
                   **dict.fromkeys((398, 399, 401), "Town of Armlock"),
                   **dict.fromkeys((426, 427, 434, *range(467, 478)), "Port Hilton"),
-                  **dict.fromkeys((593, 594, 595), "North City"), **dict.fromkeys((617, 618, 619), "L'Aqua"),
-                  **dict.fromkeys(range(698, 826), "Cave of Trials Level 1")}
+                  **dict.fromkeys((593, 594, 595), "North City"), **dict.fromkeys((617, 618, 619), "L'Aqua")}
+# The Cave of Trials by its real floors (so2.apworld 0.2.0; the user, 2026-10-25: 0.1.x named every
+# cave map "Cave of Trials Level 1", the first floor's banner). Archipelago's trackers read the
+# names from each multiworld's own data package, so rooms generated before keep theirs. The floors
+# are docs/modding/reference/map_names.csv's (the game's "Cave of Trials Level N" banners and the
+# guide's walkthrough, pp. 130-133); two maps belong to no single floor: 710, the treasure vault
+# whose doors reach rooms of floors 2, 6 and 7, and 711, the Weird Beast's arena (Puffy's first,
+# unwinnable fight; its doors reach floors 5, 6 and 8).
+CAVE_FLOORS = {1: ((698, 709), (712, 715)), 2: ((716, 725),), 3: ((726, 736),), 4: ((737, 743),),
+               5: ((744, 755),), 6: ((756, 762),), 7: ((763, 774),), 8: ((775, 785),), 9: ((786, 793),),
+               10: ((794, 806),), 11: ((807, 808),), 12: ((809, 814), (816, 818)), 13: ((815, 815), (819, 825))}
+RELEASED_AREAS.update({m: f"Cave of Trials Level {floor}" for floor, spans in CAVE_FLOORS.items()
+                       for lo, hi in spans for m in range(lo, hi + 1)})
+RELEASED_AREAS.update({710: "Cave of Trials Treasure Vault", 711: "Cave of Trials Weird Beast Arena"})
 
 
 def area_label(rec):
@@ -417,6 +434,8 @@ def build(field, battles, late=None, doors=None):
             l["group"], near = gmap.get(l["map"], (None, False))
             if near:
                 l["group_near"] = True
+        guilds = {m: dict(drop_places([(m, worlds.get(m))], [], gmap, late or {}, groups)[0],
+                          area=field["map_areas"].get(str(m))) for m in GUILD_MAPS}
         names = {l["name"] for l in locs}
         if any(l["name"] in names for l in shops):
             raise SystemExit("a shop slot's name repeats a location's")
@@ -429,7 +448,8 @@ def build(field, battles, late=None, doors=None):
     numbers = {g["group"]: g["key"] for g in groups}
     exits = [dict(e, keys=[numbers[x] for x in e["groups"]]) for e in EXIT_GATES] if groups else []
     return {"items": items, "fol": fol, "locations": sorted(locs, key=lambda l: l["id"]), "goal": goal,
-            "groups": groups, "gates": story_gates(late or {}, groups, locs) if groups else [], "exits": exits}
+            "groups": groups, "gates": story_gates(late or {}, groups, locs) if groups else [], "exits": exits,
+            "guilds": guilds if groups else {}}
 
 
 # ---- Phase 4: open world (area keys, story stages) and shop slots ----------------------------
@@ -972,6 +992,13 @@ def write(data, path, sources):
         out += ["]", ""]
     if data.get("hub"):
         out = out[:-1] + write_hub(data["hub"])
+    if data.get("guilds"):
+        out = out[:-1] if out[-1] == "" else out
+        out += ["", "# Skillsanity: the skill guilds' maps as places (a drop's place: area, region, group, proofs),",
+                "# for the guild checks' access (any guild of the set).",
+                "GUILD_PLACES = {"]
+        out += [f"    {m}: {p!r}," for m, p in data["guilds"].items()]
+        out += ["}", ""]
     with open(path, "w", newline="\n") as f:
         f.write("\n".join(out))
 

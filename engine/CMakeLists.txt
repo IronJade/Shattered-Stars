@@ -289,6 +289,7 @@ target_sources(ss_game PRIVATE
   src/game/ap/seed.cpp
   src/game/ap/ap.cpp
   src/game/ap/hub.cpp
+  src/game/ap/skills.cpp
   src/game/battle/shatter.cpp
   src/game/battle/spell_mod_deep_freeze.cpp
   src/game/battle/spell_mod_noah.cpp

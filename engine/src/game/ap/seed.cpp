@@ -79,6 +79,16 @@ bool parse_item(const Json& j, ItemDef* out, std::string* error, const std::stri
     it.key = get_int_or(j["key"], 0);
     if (it.key < 1 || it.key > 255) return fail(error, where + ": key 1-255 expected");
     if (it.name.empty()) it.name = "Key " + std::to_string(it.key);
+  } else if (it.kind == "skill") {  // skillsanity [skillsanity2]: a skill the party may learn
+    it.skill = get_int_or(j["skill"], 0);
+    if (it.skill < 1 || it.skill > 46) return fail(error, where + ": skill 1-46 expected");
+    if (it.name.empty()) it.name = "Skill " + std::to_string(it.skill);
+  } else if (it.kind == "move") {  // skillsanity: a member's killer move or spell (record +0x3c + index)
+    it.character = parse_character(j["character"]);
+    it.move_index = get_int_or(j["index"], -1);
+    if (it.character == 0) return fail(error, where + ": a move needs its character (1-12 or a name)");
+    if (it.move_index < 0 || it.move_index > 31) return fail(error, where + ": a move needs its index (0-31)");
+    if (it.name.empty()) it.name = std::string(character_name(it.character)) + ": move " + std::to_string(it.move_index);
   } else if (it.kind != "foreign") {
     return fail(error, where + ": unknown kind '" + it.kind + "'");
   }
@@ -434,6 +444,7 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
       l.shop = get_int_or(c["shop"], -1);
       l.index = get_int_or(c["index"], -1);
       l.shop_item = get_int_or(c["item"], -1);
+      l.price = get_int_or(lj["price"], -1);  // skillsanity_shop_share [skillsanity2]
       if (l.shop < 0 || l.shop > 0xFF || l.index < 0 || l.index > 0xFF)
         return fail(error, where + ": a shop slot needs shop (0-255) and index (0-255)");
     } else if (l.type == "craft") {  // v2: the creation that makes this item
@@ -449,6 +460,21 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
       // room for more (32 counters, +0x8c + 2 * (move - 1) up to +0xca).
       if (l.move < 1 || l.move > 15) return fail(error, where + ": a killer move needs its move (1-15)");
       if (l.uses < 1 || l.uses > 999) return fail(error, where + ": a killer move needs uses (1-999)");
+    } else if (l.type == "guild") {  // skillsanity [skillsanity2]: a guild set's purchase (flag 700 + set)
+      l.skill_set = get_int_or(c["set"], -1);
+      l.index = get_int_or(c["index"], -1);
+      if (l.skill_set < 0 || l.skill_set > 11) return fail(error, where + ": a guild check needs its set (0-11)");
+    } else if (l.type == "learn") {  // skillsanity: a learn point (a level, an item, a scene) or the Float prize
+      l.skill = get_int_or(c["skill"], -1);
+      if (l.skill < 0) {
+        l.character = parse_character(c["character"]);
+        l.move_index = get_int_or(c["index"], -1);
+        l.level = get_int_or(c["level"], 0);
+        if (l.character == 0) return fail(error, where + ": a learn point needs its character (1-12 or a name)");
+        if (l.move_index < 0 || l.move_index > 31) return fail(error, where + ": a learn point needs its index (0-31)");
+      } else if (l.skill != 46) {
+        return fail(error, where + ": a learn point's skill is 46 (Float) only");
+      }
     } else if (l.type.empty()) {
       return fail(error, where + ": check.type missing");
     }
@@ -525,6 +551,16 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   } else if (!p.is_null() && !option_int(s.options, route_key, 0, 2, &s.story_route, error)) {
     return false;
   }
+  // [difficulty agent] New Game's Battle Rank: earth / galaxy / universe (or 0-2) set, any (3)
+  // offered; missing: the original's rule.
+  if (const Json& d = s.options["difficulty"]; d.is_string()) {
+    static const char* const kRanks[] = {"earth", "galaxy", "universe", "any"};
+    for (int i = 0; i < 4; ++i)
+      if (d.as_string() == kRanks[i]) s.difficulty = i;
+    if (s.difficulty < 0) return fail(error, "options.difficulty: earth, galaxy, universe or any expected");
+  } else if (!d.is_null() && !option_int(s.options, "difficulty", 0, 3, &s.difficulty, error)) {
+    return false;
+  }
   // Phase 3: the randomizer's play options. Without them (or at their defaults) the game
   // plays as the original.
   s.character_items = s.options["character_items"].as_bool(false);
@@ -562,6 +598,15 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     return false;
   }
   s.no_fail_crafting = s.options["no_fail_crafting"].as_bool(false);  // v2
+  if (const Json& ss = s.options["skillsanity"]; ss.is_string()) {  // [skillsanity2]
+    static const char* const kModes[] = {"none", "skills_only", "special_only", "insanity"};
+    s.skillsanity = -1;
+    for (int m = 0; m < 4; ++m)
+      if (ss.as_string() == kModes[m]) s.skillsanity = m;
+    if (s.skillsanity < 0) return fail(error, "options.skillsanity: none, skills_only, special_only or insanity expected");
+  } else if (!ss.is_null() && !option_int(s.options, "skillsanity", 0, 3, &s.skillsanity, error)) {
+    return false;
+  }
   // v2 party [party agent]: party_rules "story" (phase 3's rules, the default) or "open"; the
   // starting character by name (as options.characters spells them) or party id, null for none.
   if (const Json& pr = s.options["party_rules"]; pr.is_string()) {

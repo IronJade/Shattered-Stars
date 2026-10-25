@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include "game/ap/skills.h"
 
 #include "game/boot/pad.h"
 #include "game/boot/sound.h"
@@ -1155,6 +1156,7 @@ void vm_svc_party_slot_init(int slot, int character_id) {
   FieldGlobals& g = globals();
   if (g.party == nullptr || g.records == nullptr || slot < 0 || slot > 7) return;
   party_slot_init(g.party + slot * 0x60, g.records + slot * 0xD0, character_id);  // 0x8007a20c
+  ap::on_member_init(slot);  // Archipelago (port feature): the join level, skillsanity [skillsanity2]
 }
 void vm_svc_party_move_character_to_slot(int character, int slot) {
   TRACE("%d,%d", character, slot);

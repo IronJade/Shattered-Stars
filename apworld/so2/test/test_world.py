@@ -88,7 +88,7 @@ def check_seed(test, seed):
             test.assertNotEqual(l["item"]["classification"], "progression")
         item = l["item"]
         if item["player"] == test.player:
-            test.assertIn(item["kind"], ("item", "fol", "character", "trap", "key"))
+            test.assertIn(item["kind"], ("item", "fol", "character", "trap", "key", "skill", "move"))  # skillsanity
             test.assertIn(str(test.world.item_name_to_id[item["name"]]), seed["items"])
         else:
             test.assertIn("ap_id", item)

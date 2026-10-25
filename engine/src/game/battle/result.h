@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "core/types.h"
 #include "game/battle/window.h"
 
@@ -45,12 +47,22 @@ struct LevelUpCtx {
   s32 table[255] = {};       // [1..254] EXP to reach the next level
   u8* slot = nullptr;        // +0x3fc
   u8* rec = nullptr;         // +0x400
+  const u8* config = nullptr;  // (port) the config block outside a battle (the join level, game/ap/skills.cpp); null: the battle's
 };
 
 s32* exp_table_build(s32* table);                         // 0x80085518
 int levelup_apply(LevelUpCtx* ctx, u8* slot, u8* rec);    // 0x800855a4: levels gained
 void levelup_gain_hp_mp_sp(LevelUpCtx* ctx);              // 0x80085ab8
 const u16* levelup_learn_skills(LevelUpCtx* ctx, u8* slot, u8* rec);  // 0x80085764: 0-terminated ids
+
+// (Port) A member's learn table (party id 1-12) as levelup_learn_skills reads it: {level, the
+// record +0x3c index} in table order (a spell's index: its place in the class's spell list).
+// Outside a battle too (#1981 read from the disc). Empty without the data.
+struct LearnEntry {
+  int level = 0;
+  int index = 0;
+};
+std::vector<LearnEntry> learn_table(int character);
 
 ResultScreen* battle_result_screen();  // g_result_screen 0x8006fab8 (null when none)
 void result_screen_start();            // battle_main_loop at state 4: new + vtable[6]

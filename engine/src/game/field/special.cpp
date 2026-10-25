@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <utility>
+#include "game/ap/skills.h"
 
 #include "game/common/program_image.h"
 #include "game/field/bg.h"
@@ -169,11 +170,13 @@ void field_special_command(ScriptCtx* ctx, int op) {
       if (slot == -1) break;
       character_init_data(g.party + slot * 0x60, g.records + slot * 0xD0, 5);
       std::strcpy(reinterpret_cast<char*>(g.records + slot * 0xD0 + 0x24), reinterpret_cast<const char*>(gs + 0x78));
+      ap::on_member_init(slot);  // Archipelago (port feature): his data anew, as a join [skillsanity2]
       break;
     }
     case 0xE: g.sub_overlay_hook = 1; break;
     case 0xF: g.sub_overlay_hook = 0; break;
     case 0x12:
+      if (ap::on_float_prize()) break;  // Archipelago (port feature, skillsanity): its check [skillsanity2]
       for (int i = 0; i < 8; ++i)
         if (rd16s(g.party + i * 0x60) > 0 && g.records[i * 0xD0 + 0x8A] == 0) g.records[i * 0xD0 + 0x8A] = 1;
       break;

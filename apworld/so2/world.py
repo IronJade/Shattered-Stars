@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hub, items, locations, regions, rules
+from . import hub, items, locations, regions, rules, skillsanity
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -75,6 +75,7 @@ class SO2World(World):
         self.party_info = self.plan_party()
         self.party = self.party_info.pool
         self.chosen = (hub.choose if self.hub else locations.choose)(o, self.party_info)
+        skillsanity.plan(self)          # the skill and move items the logic needs [skillsanity2]
         self.forced_drops = set()       # drop_progression force (rules.set_rules)
         # Characters the logic needs (a member's killer-move levels that may hold progression need
         # their item when the member joins by it: killer_move_progression any, or hero for a hero
@@ -210,7 +211,7 @@ class SO2World(World):
             region.locations.append(loc)
 
     def create_item(self, name):
-        cls = items.classification(name)
+        cls = skillsanity.classify(self, name) or items.classification(name)
         if name in getattr(self, "progression_characters", ()):
             cls = ItemClassification.progression | ItemClassification.useful
         return items.SO2Item(name, cls, self.item_name_to_id[name], self.player)
@@ -221,7 +222,9 @@ class SO2World(World):
         # then the traps option's share of the filler turned into traps. The cave's gems are
         # locked at their own locations instead.
         names = [items.pool_filler(row["item"]) if row["type"] == "craft"
-                 else items.FILLER_NAME if row["type"] == "killer_move" else items.item_name(row["item"], row["fol"])
+                 else items.FILLER_NAME if row["type"] == "killer_move"
+                 else skillsanity.pool_name(row) if row["type"] in ("guild", "learn")
+                 else items.item_name(row["item"], row["fol"])
                  for row, _ in self.chosen]
         if self.hub:
             return self.create_hub_items(names)
@@ -249,6 +252,7 @@ class SO2World(World):
                 raise Exception(f"{self.player_name}: {len(keys)} keys but only {len(filler)} filler items to replace")
             for k, name in zip(sorted(self.random.sample(filler, len(keys))), keys):
                 pool[k] = self.create_item(name)
+        pool = skillsanity.place_in_shops(self, pool)   # skillsanity_shop_share [skillsanity2]
         filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
         count = len(filler) * self.options.traps.value // 100
         trap_names = sorted(items.TRAPS)
@@ -272,6 +276,7 @@ class SO2World(World):
             raise Exception(f"{self.player_name}: {len(extra)} keys and characters but only {len(filler)} filler items")
         for k, name in zip(sorted(self.random.sample(filler, len(extra))), extra):
             pool[k] = self.create_item(name)
+        pool = skillsanity.place_in_shops(self, pool)   # skillsanity_shop_share [skillsanity2]
         filler = [k for k, it in enumerate(pool) if it.classification == ItemClassification.filler]
         count = len(filler) * self.options.traps.value // 100
         trap_names = sorted(items.TRAPS)
@@ -322,7 +327,9 @@ class SO2World(World):
             return SEED_FORMAT_V3
         v2 = (o.goal.value != 0 or self.party_info.rules == "open" or self.party_info.start is not None
               or bool(self.party_info.choices)
-              or bool(o.craftsanity) or bool(o.no_fail_crafting) or bool(o.killer_move_checks))
+              or bool(o.craftsanity) or bool(o.no_fail_crafting) or bool(o.killer_move_checks)
+              or o.difficulty.value != 0
+              or o.skillsanity.value != 0)  # [skillsanity2] new item kinds and check types  # [difficulty agent] an older port would play it on Earth
         return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
 
     def fill_slot_data(self):
@@ -346,6 +353,7 @@ class SO2World(World):
             "exp_multiplier": o.exp_multiplier.value,
             "fol_multiplier": o.fol_multiplier.value,
             "encounter_rate": o.encounter_rate.value,
+            "difficulty": o.difficulty.current_key,  # [difficulty agent] New Game's Battle Rank (the port reads it)
             "death_link": bool(o.death_link),
             "goal": o.goal.current_key,
             "drop_progression": o.drop_progression.current_key,
@@ -354,6 +362,8 @@ class SO2World(World):
             "no_fail_crafting": bool(o.no_fail_crafting),
             "killer_move_checks": bool(o.killer_move_checks),
             "killer_move_progression": o.killer_move_progression.current_key,
+            "skillsanity": o.skillsanity.current_key,     # [skillsanity2] the port reads it
+            "skillsanity_shop_share": o.skillsanity_shop_share.value,
             # A name, None, or (starting_character "any") the list New Game's select offers.
             "starting_character": list(p.choices) if p.choices else p.start,
             "exclude_characters": sorted(o.exclude_characters.value, key=items.CHARACTER_NAMES.index),
@@ -385,6 +395,8 @@ class SO2World(World):
                 described = items.seed_item(item.name, item.code)
                 own_items[str(item.code)] = described
                 entry["item"] = dict(described, player=player, classification=cls)
+                if row["type"] == "shop" and skillsanity.is_skillsanity_item(item.code):
+                    entry["price"] = skillsanity.price_of(item.code)    # sold as itself [skillsanity2]
             else:
                 entry["item"] = {"player": item.player, "player_name": mw.get_player_name(item.player),
                                  "name": item.name, "ap_id": item.code, "classification": cls}

@@ -60,6 +60,10 @@ struct SaveState {
   // [charselect agent] The starting character the player picked at New Game (options.starting_character
   // "any" or a list; party id, 0 none or the hero). Sidecar key "starting_character".
   int chosen_start = 0;
+  // Skillsanity [skillsanity2]: skill items received (skill ids) and move items received
+  // (character * 256 + record index), each once, in the order they came.
+  std::vector<int> skills;
+  std::vector<int> moves;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -81,6 +85,8 @@ const std::vector<std::string>& seed_patch_lines();  // field/mods.cpp reads the
 const Location* find_location(int64_t id);
 bool location_checked(int64_t id);                  // records it; false for an unknown id
 bool is_checked(int64_t id);
+void deliver_check(int64_t id);                     // records it (once): our own item given in free play, another's "Sent" [skillsanity2]
+SaveState& mutable_state();                         // (game/ap/skills.cpp)
 void on_flag_set(int flag);                         // script flags: chests by opened flag
 
 // Received items: queued, then given in free play (inventory, Fol) with a notice.
@@ -220,6 +226,10 @@ bool party_has_character(int id);         // in a party slot, active or in reser
 // New Game's choice of story_route (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
 // seed's options.story_route; the locations the seed holds are that story_route's game's).
 int required_story_route();
+// [difficulty agent] New Game's Battle Rank (title new_game.cpp): the seed's options.difficulty,
+// 0 Earth / 1 Galaxy / 2 Universe (set, the screen skipped), 3 any (the screen offered); -1 without
+// a seed, with Archipelago off or a seed without the key (the original's rule).
+int seed_difficulty();
 
 // ---- Phase 4: the open world (doors and keys, the Expel teleporter), shop slots ----
 

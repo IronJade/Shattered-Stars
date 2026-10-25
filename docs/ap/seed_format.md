@@ -733,7 +733,9 @@ turns none of these features on is a version-1 seed the 0.02.00 port plays as it
 - **1** when the seed uses nothing below that an old port would ignore;
 - **2** when it uses any of: `goal.all`, `goal.flags`, a door with `flags` / `won`,
   `party_rules: "open"`, a `starting_character` (a name, or a list / `"any"`: the character
-  select), `craft` or `killer_move` locations, or `no_fail_crafting`.
+  select), `craft` or `killer_move` locations, `no_fail_crafting`, a `difficulty` other than
+  `earth` (an old port would play it on Earth), or `skillsanity` other than `none` (its item kinds
+  `skill` / `move`, its checks `guild` / `learn`, a shop slot's `price`) [skillsanity2].
 
 A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
 silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
@@ -759,10 +761,38 @@ applied them to the locations and items it wrote).
 | `starting_character` | a character name (as `options.characters` spells them), `null`, or a list of names (or `"any"`): the player picks at New Game | `null` | **read** (open world and hub; below) |
 | `exclude_characters` | list of names | `[]` | reference |
 | `party_rules` | `"story"`, `"open"` | `"story"` | **read**: the party rules (below) |
+| `difficulty` | `earth`, `galaxy`, `universe`, `any` (or 0-3) | `earth` | **read**: New Game's Battle Rank (below) |
 | `apworld_version` | `"0.2.0"` | | reference |
+| `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
+| `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
 and Leon / Dias in either game, under `party_rules: "open"`.
+
+### Difficulty (`difficulty`)
+
+The original's Battle Rank (the difficulty) is the config byte **+0x4f** (handoff 2): 0 Earth,
+1 Galaxy, 2 Universe. New Game writes it (title `new_game_sequence` 0x80042cc8: 0 after the
+combat mode, the Battle Rank screen's choice); the save keeps it (the config block is saved).
+The screen appears only when `g_battle_rank_unlocked` (title 0x8004ec28) is set, which only the
+Voice Collection does, in the same power-on, once more than half of the voices are heard in the
+cards' saves. The only reader is the battle's `enemy_read_stats` (0x80076298): Galaxy gives the
+monsters x1.5 attack and HP; Universe x5/3 attack, x2 HP, x2 MP (at most 999), +0x80 evasion,
++0x50 accuracy and x4/3 intelligence. EXP, Fol, drops and encounters do not change, so the
+APWorld's logic is the same on every value.
+
+What the port does (agent "difficulty", `engine/src/game/title/new_game.cpp`), after the combat
+mode (so after the story route's skip and the character select, and on every way back):
+- `earth` / `galaxy` / `universe`: config +0x4f is set and the Battle Rank screen is skipped,
+  whatever the Voice Collection unlocked (log `[ap] difficulty Universe (the seed's): New Game
+  skips the Battle Rank screen`).
+- `any`: the screen is offered with all three, unlocked or not (a seed's own memory card never
+  unlocks it); Circle goes back to the combat mode as in the original (logs `[ap] difficulty any
+  (the seed's): New Game offers the Battle Rank screen`, `[ap] difficulty: Galaxy picked`).
+- No seed, Archipelago off, or a seed without the key (before so2.apworld 0.2.0's option): the
+  original's rule.
+- A value outside these stops the seed from loading ("options.difficulty: earth, galaxy,
+  universe or any expected"). Continue loads the save's own difficulty; nothing is enforced on load.
 
 ### Goals
 
@@ -1099,6 +1129,78 @@ engine/tests/test_ap.cpp `ap_v2_*`; smoke cases `ap_v2_*`, `auto_wizard`.
   after loading the same card without its sidecar; the sell list in Hearn's shop with and
   without flag 53; the menu agent's creation plans on card spec2 with and without no-fail;
   killer moves on a modified spec2 save (counts past on load; a count rising in a battle).
+
+### The join level (open world and hub; port behaviour, agent "skillsanity2", 2026-10-25)
+
+The user's ruling (docs/handoff/skillsanity.md): in every seed with `world_mode` `open_world` or
+`hub` (any version: no seed field), a member who joins takes the median level of the party. Story
+mode, no seed and Archipelago off keep the original join levels.
+- **When:** every new member's starting data (the game's `party_slot_init`: a script's join, a
+  received or starting character's, a member let in for a while, the character select's pick),
+  and special 0xd's re-init of Dias. A member coming back from the bench or from being set aside
+  keeps their data. Code: `engine/src/game/ap/skills.cpp` `on_member_init`, from field
+  `vm_svc_party_slot_init`.
+- **The target:** the median level (slot +0x28) of the other members in the party's 8 slots (ids
+  1-12; anyone set aside, a negative id, not counted), an even count's middle two averaged and
+  rounded down, clamped to 1-255. Nobody else: their own level. So a starting character joins at
+  the hero's level (1 at New Game).
+- **Up:** the EXP the target level starts at, then the game's level-up routine
+  (battle/result.cpp `levelup_apply`: HP, MP, SP and the six attributes, random as in a battle)
+  and the learn tables' moves up to the target (`levelup_learn_skills`).
+- **Down** (the user's option 1; the gains are random and a recruit's join stats are authored, so
+  there is no exact inverse): the mean gain of each level from the target to their own taken off
+  (HP L*3/2 + 32 below level 50, 94 from it; MP 5; STR, INT, DEX, CON, slot +0x48 and record +6
+  by the growth table #1981 0x80087f94: base + (range - 1) / 2), each never below the lower of
+  Claude's and Rena's level-1 values (HP 100, MP 20, STR 5, INT 0, DEX 10, CON 2, slot +0x48 20,
+  record +6 10) and never raised by it; level and EXP as the target's; the learn tables' moves
+  above the target forgotten (they come back with the levels). SP and equipment as they join.
+- Logs: `[ap] join level: Ashton joins at level 1 (the party's median; their own 17): down, HP
+  1000 -> 288, 2 moves known`; `... joins at level 220 ...: up, HP 2500 -> 9999, SP 999, 10 moves
+  known`.
+
+### Skillsanity (`skillsanity`; agent "skillsanity2", 2026-10-25)
+
+The user's design (docs/handoff/skillsanity.md). `options.skillsanity`: `none` (the original),
+`skills_only`, `special_only` or `insanity` (both).
+
+**Skills** (`skills_only`, `insanity`):
+- **Item** `{"kind": "skill", "skill": N, "name": "Skill: Perseverance"}`, N 1-46 (the skill ids
+  of docs/notes/menu.md "Skill guilds"; AP id ITEM_BASE + 0x60000 + N). Received, the party may
+  learn the skill with SP as buying its set made it learnable (field `skill_book_allowed` answers
+  from the received skills instead of the sets' flags; the skill books too). The sidecar's
+  `skills` keeps them. Starting skills stay the members'.
+- **Check** `guild` `{set, index}`: set 0-11 (flag 700 + set), index the skill's place in the set.
+  Buying the set at any of its guilds (the purchase routine sets the flag) records all its checks
+  (`[ap] skillsanity: guild set 4 bought (flag 704): 3 checks`); our own items come at the next free
+  play ("Got X"), another player's are sent. The flag stays set (the guild says "you already know
+  that skill"), but opens nothing. Id ITEM_BASE + (13 << 21) + (set << 8) + index.
+- **Float** (the Cave of Trials Level 11 prize, special 0x12): check `learn` `{"skill": 46}` (id
+  ITEM_BASE + (14 << 21) + 46): the prize records it and teaches nothing.
+- Hub seeds clear flags 700-711 (hub_state.json, whatever skillsanity says): the guilds sell.
+
+**Killer moves and spells** (`special_only`, `insanity`):
+- **Item** `{"kind": "move", "character": C, "index": I, "name": "Claude: Shooting Stars"}`: C the
+  party id, I the record +0x3c index (a killer move's number - 1; a spell's place in the class's
+  list). AP id ITEM_BASE + 0x70000 + (C << 8) + I. Received, the member knows it at once if in the
+  party (any slot), else from their join (the sidecar's `moves`, character * 256 + index).
+- **Check** `learn` `{character, index, level?}` (`level` for display): the learn point of that
+  move. The port treats every learn point the seed lists as its check and does not teach the move:
+  the learn tables at a level-up (battle/result.cpp), script ext 0x73 (the Cave of Trials' learn
+  chests, the arena's Private Action), the items 464-469 (item effect `character_flag`: the first
+  use records it and is used up; later uses do nothing, the item kept). A learn point the seed
+  doesn't list teaches as the original. Id ITEM_BASE + (14 << 21) + (C << 8) + I.
+- **The first move:** at a join (and for the heroes at New Game's first free play) the member
+  knows their learn table's first move whatever their level; every listed learn point is forgotten
+  unless its move was received, and those up to the member's level are checked at once (`[ap]
+  skillsanity: Celine at level 220: 19 learn points checked, ...`). The Cave of Trials' learn
+  chests' scene still says "learned"; the move comes from its item.
+
+**Shops:** a `shop` location may carry `"price": N` when its item is this world's own `skill` /
+`move` item. While its check is open the slot sells that item as itself: the list shows its name
+(a move's "Member: " left out when the name would run under the mark and the price) with the
+Archipelago mark and the price, at most one, no game item behind it (no held count, no item
+viewer); buying it is the check (the item given). Once checked the entry is the shop's own again.
+`engine/src/game/field/menu_shop.cpp`, `ap::shop_ap_item`.
 
 ### Example (0.2.0, open world, version 2)
 

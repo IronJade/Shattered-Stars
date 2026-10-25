@@ -4,6 +4,7 @@ id), the traps (TRAP_BASE + n), open world's area keys (KEY_BASE + n) and hub mo
 (HUB_KEY_BASE + n). Story key items are script flags and stay where they are."""
 from BaseClasses import Item, ItemClassification
 
+from . import skillsanity
 from .data import DISC_SWITCH_STAGE, FOL_AMOUNTS, FOL_BASE, HUB_DUNGEONS, ITEM_BASE, ITEMS, KEY_GROUPS, USEFUL_RANGES
 
 GAME = "Star Ocean: The Second Story"
@@ -58,6 +59,9 @@ EXPEL_STORY_KEYS = frozenset(g["name"] for g in KEY_GROUPS if g["stage"] and g["
 # Open world's starting keys: the start (Arlia) and the teleporter's way back to Expel (Fun City),
 # which also opens Virtual Expel after the Final Save Point.
 START_KEYS = ("Arlia Pass", "Fun City Pass")
+# Skillsanity [skillsanity2]: the skills (SKILL_BASE + id) and the killer moves / spells (MOVE_BASE +
+# (party id << 8) + record index), skillsanity.py.
+ITEM_NAME_TO_ID.update(skillsanity.ITEM_NAME_TO_ID)
 GAME_ITEM = {ITEM_BASE + n: n for n in ITEMS}          # AP id -> game item number
 FOL_AMOUNT = {FOL_BASE + a: a for a in FOL_AMOUNTS}     # AP id -> Fol
 CHARACTER_OF = {CHARACTER_BASE + PARTY_ID[n]: n for n in ALL_CHARACTER_ITEMS}
@@ -70,6 +74,7 @@ ITEM_NAME_GROUPS = {
     "Traps": set(TRAPS),
     "Keys": set(KEY_NAME.values()),
     "Dungeon Keys": set(HUB_KEY_NAME.values()),
+    **skillsanity.ITEM_GROUPS,
 }
 
 # Items a script tests, so they stay at their own locations (locked there, never in the pool):
@@ -107,8 +112,8 @@ def classification(name):
         return ItemClassification.progression
     if code in TRAP_OF:
         return ItemClassification.trap
-    if code in CHARACTER_OF:
-        return ItemClassification.useful
+    if code in CHARACTER_OF or skillsanity.is_skillsanity_item(code):
+        return ItemClassification.useful    # (a skill or move the logic needs: SO2World.create_item)
     n = GAME_ITEM.get(code)
     if n is not None and any(lo <= n <= hi for lo, hi in USEFUL_RANGES):
         return ItemClassification.useful
@@ -140,4 +145,6 @@ def seed_item(name, code):
         return {"name": name, "kind": "key", "key": KEY_OF[code]["key"]}
     if code in HUB_KEY_OF:
         return {"name": name, "kind": "key", "key": HUB_KEY_OF[code]["key"]}
+    if skillsanity.is_skillsanity_item(code):
+        return skillsanity.seed_item(name, code)
     return {"name": name, "kind": "item", "game_id": GAME_ITEM[code], "count": 1}

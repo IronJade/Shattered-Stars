@@ -127,6 +127,26 @@ level 30 are expected from the disc switch, the rest from the Final Save Point. 
 may never join your party has no killer-move checks; one who only joins by your choice in the
 story holds only filler there.
 
+**Skillsanity** turns skills, killer moves and spells into items:
+- `skills_only`: buying a set at a skill guild doesn't teach its skills any more; it's one check
+  per skill in the set ("Skill Guild: Sensibility 2 (1 of 4)"). Each skill is an item ("Skill:
+  Perseverance"): once you have it, any member can learn it with SP on the Skills page, as
+  buying its set used to allow. Members keep the skills they join with. With the Cave of Trials
+  on, its Level 11 prize (Float) is a check too. Item Creation needs its specialty's skills, so
+  with craftsanity a craft may wait for the right skill items (Rena joins with Cooking's).
+- `special_only`: every member knows the first killer move or spell of their list from the start
+  (Claude's Air Slash, Rena's Heal...); every other one is an item ("Claude: Shooting Stars"), and
+  each place it was learned is a check instead: a level ("Claude Lv 7: Shooting Stars"), Precis's
+  and Opera's machines (using the Holoprojector and the other five; the arena's Private Action
+  for Holo-holograph), and the Cave of Trials' learn chests. A member who joins past a level gets
+  that level's checks at once. A move you receive before its member joins is waiting for them.
+  With killer-move checks, a move's levels need the move.
+- `insanity`: both. Guild checks and learn points never hold progression items.
+- With shop slots on, `skillsanity_shop_share` (default 10 %) puts some of your skill and move items
+  in your shops, sold as themselves with the Archipelago mark: a move for its learn level x 100 Fol
+  (an item-taught one 5000, a Cave of Trials prize 8000), a skill for its set's price divided by
+  the set's size (Perseverance: 1600 / 4 = 400), Float 900. You buy one; that's the slot's check.
+
 **Some locations can be missed for good**, and the `missable_locations` option decides what
 happens to them:
 - a scene closed by a chapter window, or a town that's changed too much to visit (by default,
@@ -212,6 +232,12 @@ item from someone else's world, it arrives the next time you're free to walk aro
 banner like "Received Revival Card from Alice."
 
 ## Who can join your party?
+
+**The join level** (open world and hub mode): a member who joins takes the median level of the
+party (the members with you, the one joining left out), up through the game's own level-ups or
+down by the levels' average gains (never below Claude's or Rena's level-1 values); their gear and
+SP stay as they come. A starting character joins at your hero's level, so at level 1 on New Game.
+Story mode keeps every member's own join level.
 
 With `character_items` on, Celine, Bowman, Precis, Ashton, Opera, Ernest, Chisato, Leon and
 Dias become items instead of joining at their story scene; the scene where they'd normally
@@ -310,7 +336,10 @@ Running away from a fight never counts.
 | `no_fail_crafting` | off (default), on | Item Creation never fails by chance. |
 | `killer_move_checks` | off (default), on | Each proficiency level of each killer move (133) is a location. |
 | `killer_move_progression` | `never` (default), `hero`, `any` | With `killer_move_checks`: whose killer-move levels may hold progression items — see "Killer-move checks" above. |
+| `skillsanity` | `none` (default), `skills_only`, `special_only`, `insanity` | Skills, and / or killer moves and spells, as items; guild purchases and learn points as checks — see "Skillsanity" above. |
+| `skillsanity_shop_share` | 0-100 (default 10) | With `shuffle_shops` and skillsanity: the share of your skill and move items sold in your shops as themselves. |
 | `traps` | 0-100 (default 0) | The percentage of this world's filler items replaced by traps. |
 | `exp_multiplier`, `fol_multiplier` | 1-10 (default 1) | Multiplies the EXP or Fol a battle awards. |
 | `encounter_rate` | 0-200% (default 100%) | How often random encounters occur. 0 turns them off. |
+| `difficulty` | `earth` (default), `galaxy`, `universe`, `any` | The game's difficulty. New Game sets it and doesn't ask. `galaxy`: monsters have half again their HP and attack; `universe`: twice their HP and MP, two thirds more attack, more intelligence, accuracy and evasion. `any`: New Game asks, offering all three (normally that choice appears only once more than half of the Voice Collection has been heard). EXP, Fol, drops and encounters stay the same, so the logic is the same on every difficulty. |
 | `death_link` | off (default), on | Standard DeathLink — see "DeathLink" above for the story's scripted-loss fights, which are the exception. |

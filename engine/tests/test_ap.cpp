@@ -14,8 +14,10 @@
 #include "ap_net/link.h"
 #include "game/ap/ap.h"
 #include "game/ap/json.h"
+#include "game/ap/skills.h"
 #include "game/battle/battle.h"
 #include "game/field/field.h"
+#include "game/field/item_effect.h"
 #include "game/field/script_vm.h"
 #include "test.h"
 #include "util/sha256.h"
@@ -599,6 +601,29 @@ TEST(ap_phase3_seed) {
   CHECK(seed_error(replace(phase3_seed("{}"), "\"percent\": 25", "\"percent\": 0"), "percent 1-100"));
   CHECK(seed_error(replace(phase3_seed("{}"), "\"status\": \"stone\"", "\"status\": \"sleep\""), "status poison"));
   CHECK(seed_error(replace(phase3_seed("{}"), "\"trap\": \"ambush\"", "\"trap\": \"meteor\""), "trap ambush"));
+}
+
+// [difficulty agent] options.difficulty: New Game's Battle Rank (title new_game.cpp).
+TEST(ap_difficulty_seed) {
+  ap::Seed s;
+  std::string error;
+  // A seed without the key (before the option): -1, the original's rule.
+  CHECK(ap::load_seed_text(kSeed, &s, &error) && s.difficulty == -1);
+  const char* const names[] = {"earth", "galaxy", "universe", "any"};
+  for (int i = 0; i < 4; ++i) {
+    const bool by_name = ap::load_seed_text(phase3_seed(std::string("{\"difficulty\": \"") + names[i] + "\"}"), &s, &error);
+    if (!by_name) std::fprintf(stderr, "  %s\n", error.c_str());
+    CHECK(by_name && s.difficulty == i);
+    CHECK(ap::load_seed_text(phase3_seed("{\"difficulty\": " + std::to_string(i) + "}"), &s, &error) && s.difficulty == i);
+  }
+  CHECK(seed_error(phase3_seed("{\"difficulty\": \"hard\"}"), "options.difficulty: earth, galaxy, universe or any"));
+  CHECK(seed_error(phase3_seed("{\"difficulty\": 4}"), "options.difficulty: 0-3"));
+  // The runtime: the seed's value while on; -1 off (no seed, or Archipelago off).
+  CHECK(ap::load_seed_text(phase3_seed("{\"difficulty\": \"universe\"}"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::seed_difficulty() == 2);
+  ap::stop();
+  CHECK(ap::seed_difficulty() == -1);
 }
 
 TEST(ap_character_items) {
@@ -2170,5 +2195,168 @@ TEST(ap_v2_party_isolated) {
     set_flag(pg.sg, flag, false);
   }
   CHECK(ap::party_free_play_step() == "Celine joined the party" && pg.party() == "1,3");
+  ap::stop();
+}
+
+// ---- The join level and skillsanity [skillsanity2] --------------------------------------------
+
+namespace {
+
+void put_level(std::vector<u8>& party, int slot, int id, int level) {
+  const s16 v = static_cast<s16>(id), l = static_cast<s16>(level);
+  std::memcpy(party.data() + slot * 0x60, &v, 2);
+  std::memcpy(party.data() + slot * 0x60 + 0x28, &l, 2);
+}
+s16 get16(const u8* p, int off) {
+  s16 v;
+  std::memcpy(&v, p + off, 2);
+  return v;
+}
+s32 get32(const u8* p, int off) {
+  s32 v;
+  std::memcpy(&v, p + off, 4);
+  return v;
+}
+
+std::string skills_seed(const std::string& mode) {
+  std::string t = replace(kSeed, "\"version\": 1", "\"version\": 2");
+  t = replace(t, "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}",
+              "\"options\": {\"story_route\": \"claude\", \"skillsanity\": \"" + mode + "\"}");
+  t = replace(t, "  \"locations\": [\n",
+              "  \"locations\": [\n"
+              "    {\"id\": 1373634816, \"name\": \"Skill Guild: Sensibility 2 (1 of 4)\", \"check\": {\"type\": \"guild\", \"set\": 5, \"index\": 0},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"skill\", \"skill\": 11, \"name\": \"Perseverance\"}},\n"
+              "    {\"id\": 1373634817, \"name\": \"Skill Guild: Sensibility 2 (2 of 4)\", \"check\": {\"type\": \"guild\", \"set\": 5, \"index\": 1},\n"
+              "     \"item\": {\"player\": 2, \"player_name\": \"Alice\", \"name\": \"Hookshot\"}},\n"
+              "    {\"id\": 1375731969, \"name\": \"Claude Lv 7: Shooting Stars\", \"check\": {\"type\": \"learn\", \"character\": \"Claude\", \"index\": 1, \"level\": 7},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"move\", \"character\": 3, \"index\": 3, \"name\": \"Celine: Thunderbolt\"}},\n"
+              "    {\"id\": 1375733768, \"name\": \"Precis: Holoprojector (Holo-holograph)\", \"check\": {\"type\": \"learn\", \"character\": 6, \"index\": 8},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 10}},\n"
+              "    {\"id\": 1373637632, \"name\": \"Cave of Trials Level 11: Float\", \"check\": {\"type\": \"learn\", \"skill\": 46},\n"
+              "     \"item\": {\"player\": 1, \"kind\": \"skill\", \"skill\": 46, \"name\": \"Float\"}},\n");
+  return t;
+}
+
+}  // namespace
+
+TEST(ap_join_target_level) {
+  std::vector<u8> party(0x300, 0);
+  CHECK(ap::join_target_level(party.data(), 0) == 0);  // nobody else
+  put_level(party, 0, 1, 12);
+  put_level(party, 3, 9, 40);  // the joiner
+  CHECK(ap::join_target_level(party.data(), 3) == 12);
+  put_level(party, 1, 2, 20);
+  CHECK(ap::join_target_level(party.data(), 3) == 16);  // an even count: the middle two, rounded down
+  put_level(party, 2, 3, 7);
+  CHECK(ap::join_target_level(party.data(), 3) == 12);  // 7, 12, 20
+  put_level(party, 4, -4, 90);                          // set aside: not counted
+  CHECK(ap::join_target_level(party.data(), 3) == 12);
+  put_level(party, 4, 4, 90);
+  put_level(party, 5, 5, 91);
+  CHECK(ap::join_target_level(party.data(), 3) == 20);  // 7 12 20 90 91
+  put_level(party, 0, 1, 300);
+  put_level(party, 1, 2, 300);
+  put_level(party, 2, 3, 300);
+  CHECK(ap::join_target_level(party.data(), 3) == 255);  // clamped
+}
+
+// Noel at 40 (his starting data) scaled down to 10: the growth table's mean gains taken off,
+// floored at the heroes' level-1 values (docs/handoff/skillsanity.md, the user's option 1).
+TEST(ap_join_scale_down) {
+  std::vector<u8> slot(0x60, 0), rec(0xD0, 0);
+  auto p32 = [&](int off, s32 v) { std::memcpy(slot.data() + off, &v, 4); };
+  auto p16 = [&](u8* b, int off, s16 v) { std::memcpy(b + off, &v, 2); };
+  p32(0x14, 2700), p32(0x18, 2700), p32(0x1C, 2700);
+  for (int off : {0x20, 0x22, 0x24}) p16(slot.data(), off, 340);
+  p16(slot.data(), 0x2A, 61), p16(slot.data(), 0x30, 55), p16(slot.data(), 0x3C, 50), p16(slot.data(), 0x48, 28);
+  p16(slot.data(), 0x28, 40), p16(rec.data(), 6, 30), p16(rec.data(), 0x1A, 290);
+  p32(0x10, 151862);
+  ap::Growth noel;  // {range, base}: STR (2,1), INT (3,1), DEX (2,1), CON (3,0), +0x48 (0,0), record +6 (1,0)
+  const u8 range[6] = {2, 3, 2, 3, 0, 1}, base[6] = {1, 1, 1, 0, 0, 0};
+  std::memcpy(noel.range, range, 6), std::memcpy(noel.base, base, 6);
+  ap::scale_down_stats(slot.data(), rec.data(), 10, noel);
+  CHECK(get16(slot.data(), 0x28) == 10 && get16(slot.data(), 0x26) == 10);
+  CHECK(get32(slot.data(), 0x10) == 1470);  // the EXP level 10 starts at
+  CHECK(get32(slot.data(), 0x14) == 645 && get32(slot.data(), 0x1C) == 645);
+  CHECK(get16(slot.data(), 0x20) == 190 && get16(slot.data(), 0x24) == 190);
+  CHECK(get16(slot.data(), 0x2A) == 16);  // STR 61 - 30 * 1.5
+  CHECK(get16(slot.data(), 0x3C) == 10);  // DEX floored (50 - 45)
+  CHECK(get16(slot.data(), 0x42) == 0);   // INT: 0 at every join, never raised
+  CHECK(get16(slot.data(), 0x30) == 25);  // CON 55 - 30
+  CHECK(get16(slot.data(), 0x48) == 28 && get16(rec.data(), 6) == 30);  // no gain in the table
+  CHECK(get16(rec.data(), 0x1A) == 290);  // SP as he joins
+  // Down to 1: the floors.
+  ap::scale_down_stats(slot.data(), rec.data(), 1, noel);
+  CHECK(get32(slot.data(), 0x10) == 0 && get16(slot.data(), 0x28) == 1);
+  CHECK(get32(slot.data(), 0x14) == 292 && get16(slot.data(), 0x2A) == 5);
+}
+
+TEST(ap_skillsanity_seed) {
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(skills_seed("insanity"), &s, &error));
+  CHECK(s.skillsanity == 3);
+  const ap::Location* guild = nullptr;
+  for (const ap::Location& l : s.locations)
+    if (l.id == 1373634816) guild = &l;
+  CHECK(guild != nullptr && guild->type == "guild" && guild->skill_set == 5 && guild->item.item.kind == "skill" &&
+        guild->item.item.skill == 11);
+  CHECK(ap::load_seed_text(skills_seed("none"), &s, &error) && s.skillsanity == 0);
+  CHECK(ap::load_seed_text(skills_seed("skills_only"), &s, &error) && s.skillsanity == 1);
+  CHECK(!ap::load_seed_text(skills_seed("all"), &s, &error));
+  CHECK(error.find("options.skillsanity") != std::string::npos);
+  CHECK(!ap::load_seed_text(replace(skills_seed("insanity"), "\"index\": 3, \"name\": \"Celine", "\"index\": 40, \"name\": \"Celine"), &s, &error));
+  CHECK(!ap::load_seed_text(replace(skills_seed("insanity"), "\"skill\": 46}", "\"skill\": 45}"), &s, &error));
+}
+
+TEST(ap_skillsanity_checks) {
+  ap::stop();
+  ScratchGame sg;
+  Records rec;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(skills_seed("insanity"), &s, &error));
+  ap::start_with(s);
+  CHECK(ap::skills_shuffled() && ap::specials_shuffled());
+  // A guild set bought: its checks (ours queued, Alice's sent); its skills are not opened by it.
+  set_flag(sg, 705, true);
+  ap::on_flag_set(705);
+  CHECK(ap::is_checked(1373634816) && ap::is_checked(1373634817));
+  CHECK(!field::skill_book_allowed(0xB));
+  ap::receive_skill(0xB);
+  CHECK(field::skill_book_allowed(0xB) && !field::skill_book_allowed(0xC));
+  // Learn points: a location is its check (once), no move taught; others as the original.
+  CHECK(ap::on_learn_point(1, 1) && ap::is_checked(1375731969));
+  CHECK(ap::on_learn_point(1, 1));
+  CHECK(!ap::on_learn_point(1, 3));
+  CHECK(ap::learn_point_state(6, 8) == 1);
+  ap::on_item_learn_point(6, 8);
+  CHECK(ap::learn_point_state(6, 8) == 0 && ap::is_checked(1375733768));
+  CHECK(ap::on_float_prize() && ap::is_checked(1373637632));
+  // Received moves: known at once in the party, else at the join.
+  sg.member(0, 1, 100);
+  ap::receive_move(1, 4);
+  CHECK(rec.data[0x3C + 4] == 1);
+  ap::receive_move(3, 3);
+  CHECK(ap::state().moves == (std::vector<int>{1 * 256 + 4, 3 * 256 + 3}));
+  sg.member(1, 3, 100);
+  const s16 level = 8;
+  std::memcpy(sg.party.data() + 0x60 + 0x28, &level, 2);
+  ap::on_member_init(1);
+  CHECK(rec.data[0xD0 + 0x3C + 3] == 1);
+  // The sidecar keeps them.
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error));
+  CHECK(back.skills == std::vector<int>{0xB} && back.moves == ap::state().moves);
+  ap::stop();
+  // skillsanity none: the guild flags open the skills (the original's table: a disc test), no
+  // learn point is a check.
+  CHECK(ap::load_seed_text(skills_seed("none"), &s, &error));
+  ap::start_with(s);
+  CHECK(!ap::skills_shuffled() && !ap::specials_shuffled());
+  CHECK(!ap::on_learn_point(1, 1) && !ap::on_float_prize() && ap::learn_point_state(6, 8) == -1);
+  ap::on_flag_set(705);
+  CHECK(!ap::is_checked(1373634816));
+  set_flag(sg, 705, false);
   ap::stop();
 }

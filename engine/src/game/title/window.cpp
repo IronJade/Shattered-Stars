@@ -490,6 +490,8 @@ void CombatModeWindow::draw() {
   window_draw_frame(this);
 }
 
+BattleRankWindow::BattleRankWindow() : Window(0x80) { runtime::Runtime::get().trace("0x80048cec"); }
+
 void BattleRankWindow::draw() {
   draw_text_lines(this, 7, 0x50, 4, 0x96);
   window_draw_frame(this);

@@ -1,6 +1,7 @@
 #include "game/field/item_effect.h"
 
 #include <cstring>
+#include "game/ap/skills.h"
 
 #include "game/boot/loader.h"
 #include "game/boot/rng.h"
@@ -404,6 +405,15 @@ void ItemEffect::character_flag(int character, int n) {
   one = 1;
   u8* record = party_selected_record();
   if (party_selected_char() == character && record != nullptr && record[n + 0x3C] == 0) {
+    // Archipelago (port feature, skillsanity): a learn point that is a location: its check the
+    // first time (the item used up), no effect after [skillsanity2].
+    if (const int point = ap::learn_point_state(character, n); point >= 0) {
+      if (point == 1) {
+        money_changed = 1;
+        if (apply_flag()) ap::on_item_learn_point(character, n);
+      }
+      return;
+    }
     money_changed = 1;
     if (apply_flag()) record[n + 0x3C] = 1;
   }
@@ -510,6 +520,9 @@ void ItemEffect::own_item() {
 // ==== Skills ==============================================================================
 
 bool skill_book_allowed(int skill) {
+  // Archipelago (port feature, skillsanity): the skill items received open the skills, not the
+  // guild sets' flags [skillsanity2].
+  if (ap::skills_shuffled()) return ap::skill_received(skill);
   for (int i = 0;; ++i) {
     const s8 v = static_cast<s8>(effect_byte(0x8008D2D8 + i));
     if (v == -1) return false;

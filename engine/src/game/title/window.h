@@ -105,7 +105,7 @@ class CombatModeWindow : public Window {
 // Battle Rank: Earth / Galaxy / Universe (ctor 0x80048cec, draw 0x80048d2c).
 class BattleRankWindow : public Window {
  public:
-  BattleRankWindow() : Window(0x80) {}
+  BattleRankWindow();
   void draw() override;
 };
 

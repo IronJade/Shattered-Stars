@@ -965,8 +965,9 @@ int member_select_screen(Sequence& s, int hero, int fixed, const std::vector<int
   return cursor;
 }
 
-// LAB_80045ebc: Standard / Semi-active / Full Active.
-void combat_mode_screen(Sequence& s) {
+// LAB_80045ebc: Standard / Semi-active / Full Active. 'rank_follows': the Battle Rank screen comes
+// next (the original's 0x8004ec28; [difficulty agent] or the seed's), which fades the music itself.
+void combat_mode_screen(Sequence& s, bool rank_follows) {
   auto* w = new CombatModeWindow;
   int fade = 0xF0;
   bool leaving = false;
@@ -982,7 +983,7 @@ void combat_mode_screen(Sequence& s) {
     pad_clear(s.t.pad, 0);
     if (!leaving) {
       if (pressed & kConfirm) {
-        if (!s.t.battle_rank_unlocked) sound_fade_out(s.sound(), 0x1E);
+        if (!rank_follows) sound_fade_out(s.sound(), 0x1E);
         leaving = true;
         s.result = 0;
         sound_play_sfx(s.sound(), 2, 0, 0x7F40);
@@ -1018,6 +1019,8 @@ void combat_mode_screen(Sequence& s) {
   if (s.countdown == 0) psyq::SetDispMask(1);
   config[0x4F] = 0;
 }
+
+constexpr const char* kRankNames[3] = {"Earth", "Galaxy", "Universe"};  // (for the logs)
 
 // LAB_800466cc: Earth / Galaxy / Universe (after the Voice Collection unlocks it).
 void battle_rank_screen(Sequence& s) {
@@ -1063,6 +1066,13 @@ void battle_rank_screen(Sequence& s) {
   psyq::VSync(2);
   delete w;
   if (s.countdown == 0) psyq::SetDispMask(1);
+}
+
+// Archipelago (port feature) [difficulty agent]: the seed's options.difficulty in config +0x4f
+// (as the Battle Rank screen leaves it), after the combat mode; the screen is skipped.
+void set_seed_difficulty(Sequence& s, int rank) {
+  s.config()[0x4F] = static_cast<u8>(rank);
+  std::fprintf(stderr, "[ap] difficulty %s (the seed's): New Game skips the Battle Rank screen\n", kRankNames[rank]);
 }
 
 }  // namespace
@@ -1195,6 +1205,12 @@ int new_game_sequence(RenderContext** holder, char* name) {
   if (!choices.empty()) ap::set_chosen_start(0);  // (a pick from a New Game backed out to the title)
   bool member_shown = false;
   int member_picked = 0;  // (the cursor's place when the combat mode backs out to the select)
+  // [difficulty agent] The seed's Battle Rank (options.difficulty): 0-2 set after the combat mode
+  // and the screen skipped; 3 ("any") the screen offered, unlocked or not (a seed's own memory card
+  // never unlocks it); -1 (no seed, Archipelago off, a seed without the key): the original's rule,
+  // the screen only once the Voice Collection unlocked it (0x8004ec28).
+  const int difficulty = ap::seed_difficulty();
+  const bool rank_screen = difficulty == 3 || (difficulty < 0 && t.battle_rank_unlocked);
   enum class Step { Sound, Vibration, Character, Name, Member, CombatMode, BattleRank, Done };
   Step step = s.result == 0 ? Step::Sound : Step::Done;
   while (step != Step::Done) {
@@ -1277,7 +1293,7 @@ int new_game_sequence(RenderContext** holder, char* name) {
         break;
       }
       case Step::CombatMode:
-        combat_mode_screen(s);
+        combat_mode_screen(s, rank_screen);
         if (s.result != 0 && member_shown) {
           s.result = 0;
           step = Step::Member;
@@ -1287,11 +1303,15 @@ int new_game_sequence(RenderContext** holder, char* name) {
         } else if (s.result != 0) {
           step = Step::Name;
         } else {
-          step = t.battle_rank_unlocked ? Step::BattleRank : Step::Done;
+          if (difficulty >= 0 && difficulty <= 2) set_seed_difficulty(s, difficulty);
+          step = rank_screen ? Step::BattleRank : Step::Done;
         }
         break;
       case Step::BattleRank:
+        if (difficulty == 3) std::fprintf(stderr, "[ap] difficulty any (the seed's): New Game offers the Battle Rank screen\n");
         battle_rank_screen(s);
+        if (difficulty == 3 && s.result == 0)
+          std::fprintf(stderr, "[ap] difficulty: %s picked\n", kRankNames[std::min<int>(s.config()[0x4F], 2)]);
         step = s.result != 0 ? Step::CombatMode : Step::Done;
         break;
       case Step::Done:

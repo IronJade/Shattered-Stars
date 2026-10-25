@@ -7,6 +7,7 @@
 
 #include "game/ap/ap.h"
 #include "game/ap/hub.h"
+#include "game/ap/skills.h"
 #include "game/boot/pad.h"
 #include "game/common/math.h"
 #include "game/field/leader.h"
@@ -187,6 +188,9 @@ void vm_exec_ext(ScriptCtx* ctx, u32 instr) {
         ap::on_give_item(a[1]);
         break;
       }
+      // Archipelago (port feature, skillsanity): a learn point that is a location is its check
+      // (the Cave of Trials' learn chests, the arena's Private Action) [skillsanity2].
+      if (ap::on_learn_point(a[0] + 1, a[1])) break;
       if (slot < 8) g.records[slot * 0xD0 + a[1] + 0x3C] = 1;
       break;
     }

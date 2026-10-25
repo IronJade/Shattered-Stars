@@ -260,6 +260,43 @@ if [ "$(grep -c '\[ap\] character select: Celine Jules$' "$WORK/ap_cs_back.log")
    [ "$(grep -c '\[ap\] story route Claude' "$WORK/ap_cs_back.log")" != 2 ]; then
   echo "FAIL ap_cs_back: two skips and two picks of Celine expected"; fail=1
 fi
+# The difficulty [difficulty agent]: options.difficulty earth / galaxy / universe sets the Battle
+# Rank (config +0x4f) after the combat mode and skips its screen (window 0x80048cec); "any" offers
+# it (Right Right Cross: Universe); no seed: the original (no screen without the Voice Collection's
+# unlock). Then encounter 1 from the debug console: its two monsters' HP 60 x1 / x1.5 / x2.
+for d in earth galaxy universe any; do
+  printf '{"format": "apso2", "version": 2, "seed": "smoke-diff", "slot": {"name": "P", "id": 1}, "options": {"story_route": "claude", "difficulty": "%s"}, "items": {}, "locations": []}\n' \
+    $d >"$WORK/diff_$d.apso2"
+done
+diff_run() {  # diff_run NAME SEEDARGS INPUT BATTLE_AT
+  "${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=600 SS_BATTLE_UNITS=0 SS_DEBUG_INPUT="$4:battle 1" timeout 900 "$BIN" --headless \
+    --debug --no-memcard $2 --frames $(($4 + 300)) --input "$3" </dev/null >"$WORK/$1.log" 2>&1
+}
+for d in earth galaxy universe; do diff_run ap_diff_$d "--ap-seed $WORK/diff_$d.apso2" "$NEWGAME_A,$NEWGAME_B" 3700; done
+diff_run ap_diff_any "--ap-seed $WORK/diff_any.apso2" \
+  "$NEWGAME_A,2151:start,2157:none,2250:right,2256:none,2280:right,2286:none,2310:cross,2316:none,${NEWGAME_B#2151:start,2157:none,}" 3900
+diff_run ap_diff_none "" "$NEWGAME_A,$NEWGAME_B" 3700
+check ap_diff_earth "Earth set, the screen skipped" '\[ap\] difficulty Earth \(the seed.s\): New Game skips the Battle Rank screen'
+check ap_diff_earth "the monsters as the original" '\[bunits\] b 0 .* e0 [-0-9,]+ hp 60 \| e1 [-0-9,]+ hp 60$'
+check ap_diff_galaxy "Galaxy set, the screen skipped" '\[ap\] difficulty Galaxy \(the seed.s\): New Game skips the Battle Rank screen'
+check ap_diff_galaxy "the monsters' HP x1.5" '\[bunits\] b 0 .* e0 [-0-9,]+ hp 90 \| e1 [-0-9,]+ hp 90$'
+check ap_diff_universe "Universe set, the screen skipped" '\[ap\] difficulty Universe \(the seed.s\): New Game skips the Battle Rank screen'
+check ap_diff_universe "the monsters' HP x2" '\[bunits\] b 0 .* e0 [-0-9,]+ hp 120 \| e1 [-0-9,]+ hp 120$'
+check ap_diff_universe "Claude's game (map 7)" '\[leader\] vblank 3600 map 7 state 0 '
+check ap_diff_any "any: the screen offered" '\[ap\] difficulty any \(the seed.s\): New Game offers the Battle Rank screen'
+check ap_diff_any "the Battle Rank screen opens" '\[trace\] 0x80048cec at vblank'
+check ap_diff_any "Universe picked" '\[ap\] difficulty: Universe picked'
+check ap_diff_any "the monsters' HP x2" '\[bunits\] b 0 .* e0 [-0-9,]+ hp 120 \| e1 [-0-9,]+ hp 120$'
+check ap_diff_none "no seed: Claude's game (map 7)" '\[leader\] vblank 3600 map 7 state 0 '
+check ap_diff_none "the monsters as the original" '\[bunits\] b 0 .* e0 [-0-9,]+ hp 60 \| e1 [-0-9,]+ hp 60$'
+for name in ap_diff_earth ap_diff_galaxy ap_diff_universe; do
+  if grep -q '\[trace\] 0x80048cec' "$WORK/$name.log"; then echo "FAIL $name: the Battle Rank screen showed"; fail=1; fi
+done
+for name in ap_diff_none ap_hero_claude ap_hero_rena ap_hero_any ap_cs_any; do  # (no seed, or no difficulty key)
+  if grep -q '\[trace\] 0x80048cec\|\[ap\] difficulty' "$WORK/$name.log"; then
+    echo "FAIL $name: the Battle Rank screen or a seed's difficulty without one"; fail=1
+  fi
+done
 # A story battle the script lets the party lose (the ship, map 548: Shin, ext 0xb7 third
 # argument 0): a DeathLink received in it waits; the loss itself is no game over (nothing
 # sent), and the DeathLink applies once the field leaves the controls to the player.
@@ -520,6 +557,54 @@ check ap_v2_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.
 check ap_v2_start "the starting character joins first" '\[ap\] Ashton joins the party \(slot 1\): Claude, Ashton'
 check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
 check ap_v2_start "no lockout: Dias in Claude's game" '\[ap\] Dias joins the party \(slot 2\)'
+# The join level (open world, hub) [skillsanity2]: the party's median (the hero's level 1 here).
+check ap_v2_start "the join level: the start at the hero's" '\[ap\] join level: Ashton joins at level 1 \(the party.s median; their own 17\): down, HP 1000 -> 288'
+check ap_v2_start "the join level: a received member" '\[ap\] join level: Dias joins at level 1 \(the party.s median; their own 35\): down'
+# Skillsanity [skillsanity2] (docs/ap/seed_format.md "Skillsanity"): Herlie's guildmaster (map 147,
+# K17) sells Knowledge 2 (flag 704): its 3 checks (ours given, Alice's sent), no skill opened by it.
+cat >"$WORK/skguild.apso2" <<'SEED'
+{"format": "apso2", "version": 2, "seed": "smoke-skguild", "slot": {"name": "Claude", "id": 1},
+ "options": {"skillsanity": "skills_only"}, "items": {},
+ "locations": [
+   {"id": 1372718336, "name": "Skill Guild: Knowledge 2 (1 of 3)", "check": {"type": "guild", "set": 4, "index": 0},
+    "item": {"player": 1, "kind": "skill", "skill": 4, "name": "Skill: Tool Knowledge"}},
+   {"id": 1372718337, "name": "Skill Guild: Knowledge 2 (2 of 3)", "check": {"type": "guild", "set": 4, "index": 1},
+    "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}},
+   {"id": 1372718338, "name": "Skill Guild: Knowledge 2 (3 of 3)", "check": {"type": "guild", "set": 4, "index": 2},
+    "item": {"player": 1, "kind": "fol", "amount": 500}}]}
+SEED
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="147:K17:0/0/0/0" SS_SCRIPT_GLOBALS="a0=16,a4=0" SS_DEBUG_INPUT="5:fol 50000" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/skguild.apso2" --frames 600 --map 147 </dev/null >"$WORK/ap_skill_guild.log" 2>&1
+check ap_skill_guild "a set bought is its checks" '\[ap\] skillsanity: guild set 4 bought \(flag 704\): 3 checks'
+check ap_skill_guild "ours given" '\[ap\] check 1372718336 \(Skill Guild: Knowledge 2 \(1 of 3\)\): Skill: Tool Knowledge'
+check ap_skill_guild "Alice's sent" '\[ap\] check 1372718337 \(Skill Guild: Knowledge 2 \(2 of 3\)\): Hookshot for Alice'
+# Special: Ashton starts (open world, joins at the hero's level 1) knowing only his first move,
+# Twin Stab; Cross Slash and Leaf Slash (his starting data's) become learn points to find.
+sed 's/"smoke-v2c"/"smoke-sksp"/; s/"story_route": "claude"/"story_route": "claude", "skillsanity": "special_only"/; s/"locations": \[\]}/"locations": [{"id": 1375735553, "name": "Ashton Lv 9: Cross Slash", "check": {"type": "learn", "character": 7, "index": 1, "level": 9}, "item": {"player": 1, "kind": "fol", "amount": 10}}, {"id": 1375735559, "name": "Ashton Lv 32: Leaf Slash", "check": {"type": "learn", "character": 7, "index": 7, "level": 32}, "item": {"player": 1, "kind": "fol", "amount": 10}}]}/' \
+  "$WORK/v2claude.apso2" >"$WORK/sksp.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/sksp.apso2" --frames 700 --map 7 </dev/null >"$WORK/ap_skill_join.log" 2>&1
+check ap_skill_join "the hero's first move at New Game" '\[ap\] skillsanity: Claude at level 1: 0 learn points checked'
+check ap_skill_join "the start: his moves to find" '\[ap\] skillsanity: Ashton at level 1: 0 learn points checked, 2 moves to find'
+# Shops (skillsanity_shop_share): Hearn's entries 0 and 2 sell Perseverance (400) and Claude's
+# Shooting Stars (700) as themselves: one each, no game item, Fol 50000 -> 48900.
+cat >"$WORK/skshop.apso2" <<'SEED'
+{"format": "apso2", "version": 2, "seed": "smoke-skshop", "slot": {"name": "Claude", "id": 1},
+ "options": {"shuffle_shops": "full", "skillsanity": "insanity"}, "items": {},
+ "locations": [
+   {"id": 1365246466, "name": "Arlia shop: Lavender", "check": {"type": "shop", "shop": 1, "index": 2, "item": 224}, "price": 700,
+    "item": {"player": 1, "kind": "move", "character": 1, "index": 1, "name": "Claude: Shooting Stars"}},
+   {"id": 1365246464, "name": "Arlia shop: Sandals", "check": {"type": "shop", "shop": 1, "index": 0}, "price": 400,
+    "item": {"player": 1, "kind": "skill", "skill": 11, "name": "Skill: Perseverance"}}]}
+SEED
+rm -f "$WORK/card.mcd"
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;2300:where" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/skshop.apso2" --frames 2400 --map 18 --input "$SHOP1" \
+  </dev/null >"$WORK/ap_skill_shop.log" 2>&1
+check ap_skill_shop "the skill sold as itself" '\[ap\] check 1365246464 \(Arlia shop: Sandals\): Skill: Perseverance'
+check ap_skill_shop "the skill may be learned" '\[ap\] skillsanity: skill 11 may be learned'
+check ap_skill_shop "the move sold as itself, known" '\[ap\] skillsanity: Claude knows move 1'
+check ap_skill_shop "one each at their prices" '\[debug\] map 26 \| state 0 .* Fol 48900 '
 sed 's/, "starting_character": "Ashton"//; s/"items": {/"items": {"5100002": {"name": "Rena", "kind": "character", "character": 2}, "5100003": {"name": "Celine", "kind": "character", "character": 3}, /' \
   "$WORK/v2claude.apso2" >"$WORK/v2linga.apso2"
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY=1,2 SS_SCRIPT_GLOBALS="a0=22,a4=3000" \

@@ -28,6 +28,7 @@ from .data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_LOCATIONS, HUB_MAPS, 
     HUB_STATE, LOCATIONS
 from .items import ALL_KEY_IDS, EVENT_FIENAL_OPEN, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_VICTORY, GAME, \
     HUB_KEY_NAME, HUB_KEYLESS, SO2Item
+from . import skillsanity
 from .locations import ROW, SOFT_REASONS, SO2Location, choose_crafts, choose_killer_moves
 from .rules import FORCE_DROP_CHANCE, MIN_DROP_CHANCE, drop_chance, killer_rule
 
@@ -197,6 +198,7 @@ def choose(options, party):
         out += choose_crafts(party)
     if options.killer_move_checks:
         out += choose_killer_moves(party, options.encounter_rate.value)
+    out += skillsanity.choose(options, party, hub_mode=True)    # [skillsanity2]
     return out
 
 
@@ -336,6 +338,8 @@ def set_rules(world):
     goal = o.goal.value
     need = ([EVENT_LIMITER_OFF] if goal >= 1 else []) + ([EVENT_ISERIA_QUEEN] if goal == 2 else [])
     world.get_location(EVENT_INDALECIO).access_rule = lambda state: state.has_all(need, player)
+    if goal == 2 and (song := skillsanity.iseria_queen_need(world)):    # skillsanity: Musical Talent
+        world.get_location(ISERIA_QUEEN_EVENT[1]).access_rule = song
     world.multiworld.completion_condition[player] = lambda state: state.has(EVENT_VICTORY, player)
     keys_in_drops = bool(o.area_keys_in_drops)
     for loc in world.multiworld.get_locations(player):
@@ -346,8 +350,13 @@ def set_rules(world):
         if kind == "killer_move":
             killer_rule(world, loc, row)
             continue
+        if kind in ("guild", "learn"):     # skillsanity [skillsanity2]
+            skillsanity.set_location_rule(world, loc, row)
+            continue
         if kind == "craft":
             add_item_rule(loc, lambda item: not item.advancement)
+            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)):
+                loc.access_rule = rule
             continue
         if kind == "drop":
             allowed, modes = drop_rule(world, row, side)

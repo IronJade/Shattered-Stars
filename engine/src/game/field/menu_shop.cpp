@@ -2,10 +2,12 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "disc/slz.h"
 #include "game/ap/ap.h"
+#include "game/ap/skills.h"
 #include "game/boot/pad.h"
 #include "game/common/menu_core.h"
 #include "game/common/menu_gfx.h"
@@ -57,6 +59,11 @@ struct ItemList {
     s16 item = 0;           // +2
     s16 have = 0;           // +4
     s16 cart = 0;           // +6
+    // (Port) Archipelago, skillsanity_shop_share [skillsanity2]: an open slot that sells this
+    // world's skill / move item as itself: its name and price; one at most, no game item.
+    bool ap = false;
+    s32 ap_price = 0;
+    std::string ap_name;
   };
   std::vector<Entry> entries;  // +0 count, +4 capacity, +0xc entries
   u8* inventory = nullptr;     // +8: handoff 6
@@ -108,6 +115,7 @@ class ShopList final : public menu::Dialog {
   void show_held(int item);       // 0x8007fb94
   bool change(int delta);         // 0x8007fd48
   s32 price(int item) const;      // 0x8007ff94
+  s32 entry_price(const ItemList::Entry& e) const { return e.ap ? e.ap_price : price(e.item); }
   void draw_row(menu::TextRenderer* r, s16 x, int index);  // 0x8007feac
   void upload_ap_mark();          // port (Archipelago)
 
@@ -318,6 +326,7 @@ int Shop::settle() {
     for (const ItemList::Entry& e : buy.entries) {
       if (e.cart == 0) continue;
       bought = 1;
+      if (e.ap) continue;  // (Archipelago, skillsanity: no game item; the check gives the skill or move)
       inventory_add(g.inventory, e.item, e.cart, 1);
     }
   } else {
@@ -584,6 +593,17 @@ ShopList::ShopList(Shop* shop) {
   buying_ = shop->buying;
   list_ = buying_ ? &shop->buy : &shop->sell;
   if (buying_) {
+    for (ItemList::Entry& e : list_->entries) {
+      // Archipelago (skillsanity): a slot selling this world's skill or move as itself.
+      const bool was = e.ap;
+      e.ap = ap::shop_ap_item(menu::globals().session->arg, e.index, e.item, &e.ap_name, &e.ap_price);
+      if (e.ap) {
+        e.have = 0;
+      } else if (was) {  // (bought: the game's item again, with the count held)
+        const int i = inventory_find(list_->inventory, e.item);
+        e.have = i < 0 ? 0 : static_cast<s16>(read_u16(list_->inventory + i * 2) >> 10 & 0x1F);
+      }
+    }
     for (const ItemList::Entry& e : list_->entries) {
       if (ap::shop_slot_open(menu::globals().session->arg, e.index, e.item)) {
         upload_ap_mark();  // Archipelago: an open slot on the list [shopboth agent]
@@ -663,6 +683,8 @@ bool ShopList::change(int delta) {
     if (cart < 0 || cart > e.have) cart -= delta;  // no more than is held
   } else if (cart < 0) {
     cart -= delta;
+  } else if (e.ap && cart > 1) {
+    cart -= delta;                                 // (Archipelago: one skill or move)
   } else if (cart + e.have > 0x14) {
     cart -= delta;                                 // 20 of a kind at most
   }
@@ -674,7 +696,7 @@ bool ShopList::change(int delta) {
 void ShopList::on_left_right(int n) {
   const int delta = n == 1 ? -1 : 1;
   if (change(delta)) {
-    const s32 p = price(list_->entries[static_cast<size_t>(choice_)].item);
+    const s32 p = entry_price(list_->entries[static_cast<size_t>(choice_)]);
     if (buying_ == 0) {
       shop_->sales += delta * p;
     } else {
@@ -688,7 +710,8 @@ void ShopList::on_left_right(int n) {
 
 void ShopList::on_cursor(int) {
   if (choice_ < 0 || choice_ >= list_->count()) return;
-  const int item = list_->entries[static_cast<size_t>(choice_)].item;
+  const ItemList::Entry& e = list_->entries[static_cast<size_t>(choice_)];
+  const int item = e.ap ? 0 : e.item;  // (Archipelago: no game item behind it)
   shop_->hover(item);
   show_held(item);
 }
@@ -732,9 +755,21 @@ void ShopList::draw_row(menu::TextRenderer* r, s16 x, int index) {
   std::erase_if(marks, [](const menu::TextIcon& i) { return i.tpage != 0; });
   const bool slot = buying_ && ap::shop_slot_open(menu::globals().session->arg, e.index, e.item);
   if (slot && ap_mark_ == 0) r->set_tables(2);
-  r->draw_current(r->message(e.item));
+  if (e.ap) {
+    // (Archipelago, skillsanity: the skill or move itself; a move whose "Member: " doesn't fit
+    // before the mark and the price goes without it.)
+    std::string name = e.ap_name;
+    int digits = 1;
+    for (s32 v = e.ap_price; v >= 10; v /= 10) ++digits;
+    const size_t colon = name.find(": ");
+    if (colon != std::string::npos && r->measure_ascii(name.c_str()) > 0x78 + (8 - digits) * 6 - kMarkSize - 3)
+      name = name.substr(colon + 2);
+    r->draw_ascii(name.c_str());
+  } else {
+    r->draw_current(r->message(e.item));
+  }
   if (slot && ap_mark_ == 0) r->set_tables(1);
-  const s32 cost = price(e.item);
+  const s32 cost = entry_price(e);
   if (slot && ap_mark_ != 0) {
     // After the name, left of the price's first digit (the price is right-aligned in 8 x 6 px).
     int digits = 1;

@@ -529,6 +529,17 @@ price x super specialty 6 level x 3 %. Buying a set makes its skills learnable b
   Leon's Extinction (map 740), Ashton's tri-Ace (798), Celine's Meteor Swarm (799). Items
   464-469 act through the item effect's `character_flag`; 465-469 come only from Machinery.
 
+- **The port, Archipelago (agent "skillsanity2", 2026-10-25; docs/ap/seed_format.md "Skillsanity",
+  "The join level").** With a seed's `skillsanity` skills on, `skill_book_allowed` answers from the
+  skill items received, not the flags (a purchase still sets its flag and is its set's checks);
+  with special on, the learn tables (levelup_learn_skills), ext 0x73, the items 464-469 and
+  special 0x12 (Float) record their learn point when the seed lists it instead of teaching, and a
+  joining member keeps only the first move (the table's first entry) plus the moves received.
+  Open world and hub: a new member (party_slot_init) takes the party's median level (up by
+  levelup_apply, down by the growth table's mean gains, floored at the heroes' level-1 values).
+  Neither without a seed. The shop list draws such a slot's skill or move by name through
+  TextRenderer::draw_ascii (the 0x4006 name path: the default font via the card's codes).
+
 ## Options (page 7, overlay 0xbc8)
 
 The page has two screens of options. Moving the cursor into a group of the other screen

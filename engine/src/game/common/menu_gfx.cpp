@@ -627,6 +627,57 @@ int TextRenderer::measure(const u8* text) {
   return pen_;
 }
 
+namespace {
+// ASCII to the default font's text codes, as text code 0x4006 converts a name (the card's codes,
+// each to its glyph(s) from group 1 of the default strings).
+void ascii_codes(const u8* strings, const char* text, u8 (&codes)[130]) {
+  u8 card[64] = {};
+  text_to_card_codes(text, card, sizeof(card));
+  size_t o = 0;
+  const u8* group1 = strings + read_u32(strings + 4);
+  for (const u8* p = card; *p != 0 && o + 2 < sizeof(codes); ++p) {
+    const u8* m = skip_messages(group1, *p);
+    codes[o++] = m[0];
+    if (m[0] >= 0x80) codes[o++] = m[1];
+  }
+  codes[o] = 0;
+}
+}  // namespace
+
+void TextRenderer::draw_ascii(const char* text) {
+  const u8* font = font_;
+  const u8* strings = strings_;
+  const s16 group = group_;
+  set_font(g_font, g_font_strings);
+  if (strings_ != nullptr && text != nullptr) {
+    u8 codes[130] = {};
+    ascii_codes(strings_, text, codes);
+    draw_text(lines_[current_], codes);
+  }
+  set_font(font, strings);
+  set_group(group);
+}
+
+int TextRenderer::measure_ascii(const char* text) {
+  const u8* font = font_;
+  const u8* strings = strings_;
+  const s16 group = group_;
+  const s16 pen = pen_;
+  int width = 0;
+  set_font(g_font, g_font_strings);
+  if (strings_ != nullptr && text != nullptr) {
+    u8 codes[130] = {};
+    ascii_codes(strings_, text, codes);
+    pen_ = 0;
+    draw_text(nullptr, codes);
+    width = pen_;
+  }
+  pen_ = pen;
+  set_font(font, strings);
+  set_group(group);
+  return width;
+}
+
 void TextRenderer::draw_text(TextLine* line, const u8* s) {
   for (;;) {
     u32 c = *s++;

@@ -9,6 +9,7 @@ from .crafts import CRAFTS
 from .data import HUB_BOSSES, HUB_LOCATIONS, ITEM_BASE, ITEMS, LOCATIONS
 from .items import GAME
 from .moves import MOVES, move_levels
+from . import skillsanity
 
 CRAFT_TYPE = 11
 CRAFT_ROWS = [{"id": ITEM_BASE + (CRAFT_TYPE << 21) + c["item"], "name": f"{c['specialty']}: {ITEMS[c['item']]}",
@@ -26,7 +27,8 @@ KILLER_ROWS = [{"id": ITEM_BASE + (KILLER_TYPE << 21) + (pid << 14) + (move << 1
                for level, uses in move_levels((who, pid, move, name, learn, div, top))]
 # Hub mode's own rows (data.HUB_LOCATIONS: the chambers that are no story-mode location, the Cross
 # Cave guardians); story mode and open world never choose them (`hub_only`).
-ALL_ROWS = LOCATIONS + CRAFT_ROWS + KILLER_ROWS + HUB_LOCATIONS
+# Skillsanity's guild checks and learn points (skillsanity.py) [skillsanity2].
+ALL_ROWS = LOCATIONS + CRAFT_ROWS + KILLER_ROWS + HUB_LOCATIONS + skillsanity.ROWS
 LOCATION_NAME_TO_ID = {row["name"]: row["id"] for row in ALL_ROWS}
 ROW = {row["name"]: row for row in ALL_ROWS}
 
@@ -43,6 +45,7 @@ for _row in CRAFT_ROWS:     # by specialty: every specialty that makes the item
         LOCATION_NAME_GROUPS.setdefault(_spec, set()).add(_row["name"])
 _CHAMBERS = {b["location"] for b in HUB_BOSSES}
 LOCATION_NAME_GROUPS["Boss Chambers"] = {r["name"] for r in LOCATIONS + HUB_LOCATIONS if r["id"] in _CHAMBERS}
+LOCATION_NAME_GROUPS.update(skillsanity.LOCATION_GROUPS)
 for _row in KILLER_ROWS:    # by member
     LOCATION_NAME_GROUPS.setdefault("Killer Moves", set()).add(_row["name"])
     LOCATION_NAME_GROUPS.setdefault(f"Killer Moves: {_row['character']}", set()).add(_row["name"])
@@ -103,6 +106,7 @@ def choose(options, party):
         out += choose_crafts(party)
     if options.killer_move_checks:
         out += choose_killer_moves(party, options.encounter_rate.value)
+    out += skillsanity.choose(options, party)
     return out
 
 
@@ -167,6 +171,8 @@ def seed_check(row):
     if t == "killer_move":
         return {"type": "killer_move", "character": row["party_id"], "move": row["move"], "level": row["level"],
                 "uses": row["uses"]}
+    if t in ("guild", "learn"):
+        return skillsanity.seed_check(row)
     return {"type": "gift", "map": row["map"], "offset": row["offset"]}
 
 
