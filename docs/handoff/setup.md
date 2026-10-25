@@ -3,6 +3,68 @@
 Owner area: the setup program, the launcher library, main.cpp's start-up, the platform window /
 audio, the packages, and the Archipelago network client (`engine/src/ap_net/`).
 
+## 2026-10-25 (main session): seeds from Archipelago's output archive, Browse in its output folder
+
+The user's request: setup asked for the `.apso2` itself, while Archipelago hands out the
+multiworld's `AP_<seed>.zip` (every game's files; the `.apso2` is one of them), and Browse should
+open Archipelago's own folder (`~/.local/share/Archipelago/output` on the user's Linux box).
+
+- `engine/src/launcher/ap_seed.{h,cpp}` (new): `archipelago_dir()` / `archipelago_output_dir()`
+  (as Archipelago's Utils.user_path / home_path: $XDG_DATA_HOME or ~/.local/share/Archipelago,
+  legacy ~/Archipelago; %ProgramData%\Archipelago; ~/Library/Application Support/Archipelago;
+  host.yaml's general_options.output_path, default "output"), `list_archive_seeds`,
+  `read_seed_text` (an .apso2, or an archive: the only seed, or the one named), `seed_file` (the
+  seed copied out to config_dir()/archipelago/, rewritten only when it changed). ss_launcher now
+  links ss_mods (the zip reader).
+- `mods/zip.{h,cpp}`: `ZipReader::open_file` reads only the end record and the directory, and each
+  entry from the file when it is read (a multiworld's archive can be large); `open()` /
+  `open_memory()` unchanged for mod packages.
+- config.ini: `ap_seed` = the .apso2 or the archive; new `ap_seed_entry` = the seed in an archive
+  holding several. `main.cpp`: `--ap-seed FILE` takes either, `--ap-seed-entry NAME`; the seed is
+  copied out before `game::ap::start` (ap.cpp / seed.cpp untouched).
+- Setup's Archipelago page: Browse filter ".zip, .apso2"; starts in the current seed's folder,
+  else Archipelago's output folder, else Downloads, else the disc folders; a "Your slot" list
+  (slot name + file name) when the archive holds several Star Ocean seeds (yellow status and
+  sidebar dot until one is chosen; a new Browse pick clears the choice); errors for an archive
+  with no Star Ocean seed. The mods page's seed lines read through the same path.
+- Tests (ss_game_tests, in test_mods.cpp): mods_zip_reader_from_file,
+  launcher_archipelago_seed_archives, launcher_archipelago_output_folder.
+- Checked by hand: the game with `--ap-seed` on a real generator archive
+  (scratchpad/deathlink/mw/out/AP_63564604658444247939.zip): loads, the copy is identical; a
+  two-seed archive (Python zipfile, deflated, + a 200 KB other game's file) stops with the list
+  of seeds without `--ap-seed-entry` and loads with it; setup screenshots (offscreen) of one /
+  choose / chosen / none in scratchpad/apzip/shots; `--do save` writes ap_seed + ap_seed_entry.
+- Docs: apworld/so2/docs/setup_en.md, README.md (How to play), engine/README.md, seed_format.md's
+  opening. Left for the next release: the wiki's Archipelago page and the release notes.
+
+### Same day: each seed on its own memory card (the user)
+
+The user: each seed being played must have its own memory card, so nobody loads a finished game
+into a seed or saves a seed over an unmodified save.
+
+- `launcher::seed_memcard(seed, slot)` = config_dir()/archipelago/<seed>_<slot>/memcard1.mcd
+  (characters a file system refuses -> '_'). `main.cpp` reads the seed before choosing cards:
+  with a seed, slot 1 = the seed's card and slot 2 empty; `--memcardN` / `SS_MEMCARDN` still win;
+  headless runs only with `SS_AP_SEED_CARD=1` (tests keep their cards and never touch the
+  settings folder otherwise).
+- `launcher::adopt_seed_saves`: when the seed's card doesn't exist yet, the first of the player's
+  cards (config memcard1 / memcard2) whose sidecars name this seed and slot is copied to it with
+  every other file erased, plus those sidecars; the player's card is never written. Logged as
+  `[ap] N save(s) of this seed copied from your memory card to ...`.
+- Setup: Archipelago page "Saves" (the seed's card: no saves yet / N saves / unreadable, Open
+  folder); Memory cards page note while a seed is chosen.
+- Not changed: ap.cpp's load handling (a save without this seed's sidecar still "starts fresh",
+  another seed's sidecar is still used with a log line). With per-seed cards only a hand-copied
+  save gets there; a refusal at load would be hubcore's file (ap.cpp), left for later if wanted.
+- Tests: launcher_archipelago_seed_memcard (path, sanitizing, adoption keeps only this seed's
+  save S03 of S01/S03/S05 + another game's file, \u escapes in the sidecar, once only, the
+  player's card byte-identical). Headless (scratchpad/apzip/e2e, scratch XDG_CONFIG_HOME,
+  SS_AP_SEED_CARD=1): a save under the real generator seed lands on
+  archipelago/63564604658444247939_Claude/memcard1.mcd + .slot01.ap.json and no memcard1.mcd is
+  made; the same save moved to the ordinary card is adopted on the next start ("1 save(s) ...
+  copied"), the ordinary card's sha1 unchanged. Screenshots scratchpad/apzip/shots/saves*.png,
+  cards.png.
+
 ## RESUME HERE (2026-10-23, packaging round: DONE; nothing running)
 
 All four packaging tasks this round are complete and verified; nothing left open for this

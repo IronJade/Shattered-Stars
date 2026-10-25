@@ -355,6 +355,7 @@ target_compile_options(ss_platform PRIVATE ${SS_WARNINGS})
 # The launcher library (port feature): config.ini, finding and identifying the player's
 # discs, and starting one program from the other. The game and the setup program share it.
 add_library(ss_launcher STATIC
+  src/launcher/ap_seed.cpp
   src/launcher/config.cpp
   src/launcher/discs.cpp
   src/launcher/process.cpp
@@ -365,7 +366,7 @@ target_include_directories(ss_launcher PUBLIC src)
 # It uses ss_core's disc reader, but doesn't declare it: that would move ss_core after
 # ss_platform on link lines, and ss_core's runtime needs the platform window. Programs
 # list ss_launcher before ss_core (ss_game brings ss_core).
-target_link_libraries(ss_launcher PUBLIC SDL3::SDL3)
+target_link_libraries(ss_launcher PUBLIC SDL3::SDL3 ss_mods)  # ss_mods: the .zip reader (launcher/ap_seed.h)
 target_compile_options(ss_launcher PRIVATE ${SS_WARNINGS})
 
 # Mods (port feature; docs/notes/mods.md): the patch-line grammar, mod packages and their

@@ -1,9 +1,12 @@
 # The seed file (`.apso2`) and the save sidecar
 
 Phase 1 of [the Archipelago plan](../archipelago_plan.md). The APWorld (`worlds/so2`) writes one
-`.apso2` file for each Star Ocean player in a multiworld. Shattered Stars reads it at start-up,
-from `--ap-seed FILE` (this run only) or the `ap_seed` key in config.ini, which the setup
-program sets. Without a seed, Archipelago is off and the game plays as the original.
+`.apso2` file for each Star Ocean player in a multiworld; Archipelago packs every player's file
+into the multiworld's `AP_<seed>.zip`. Shattered Stars reads the seed at start-up, from
+`--ap-seed FILE` (this run only) or the `ap_seed` key in config.ini, which the setup program
+sets. FILE is the `.apso2` or the archive; in an archive with several Star Ocean seeds,
+`--ap-seed-entry NAME` / config.ini's `ap_seed_entry` names the one to play (the game copies it
+out to `archipelago/` next to config.ini; `engine/src/launcher/ap_seed.h`). Without a seed, Archipelago is off and the game plays as the original.
 
 The reader is `engine/src/game/ap/ap.cpp` (`load_seed_text`); `engine/tests/test_ap.cpp` covers
 it. A seed that does not load stops the game with the reason ("locations[3]: a chest needs its
@@ -189,7 +192,10 @@ doesn't open is a banner.
 ## The save sidecar
 
 The Archipelago state of a save sits in a file next to the memory card, so the card stays
-byte-compatible with the console's.
+byte-compatible with the console's. A seed plays on its own card,
+`archipelago/<seed>_<slot_name>/memcard1.mcd` next to config.ini (`launcher::seed_memcard`), so
+its saves and sidecars never mix with ordinary ones; a card named for the run (`--memcardN`,
+`SS_MEMCARDN`) overrides it.
 
     memcard1.mcd, save 3  ->  memcard1.slot03.ap.json
 

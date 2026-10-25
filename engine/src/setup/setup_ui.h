@@ -68,6 +68,7 @@ struct Settings {
   std::string mods;
   std::string mod_order;  // config.ini's mod_order: the Mods page's list (mods/catalog.h)
   std::string ap_seed, ap_server, ap_slot, ap_password;  // Archipelago (config.ini's ap_* keys)
+  std::string ap_seed_entry;  // the seed in an archive holding several (launcher/ap_seed.h)
   bool operator==(const Settings&) const = default;
 };
 
@@ -94,10 +95,13 @@ class App {
  private:
   enum class Level { kOk, kInfo, kWarning, kError };
   enum class Target { kDisc1, kDisc2, kCard1, kCard2, kMods, kSeed, kModZip };
-  struct SeedInfo {  // a quick look at an .apso2 seed file (the game reads it in full)
+  struct SeedInfo {  // a quick look at a seed (the game reads it in full)
     bool ok = false;
     std::string error, seed, slot, game;
     size_t locations = 0;
+    std::string entry;  // in an archive: the seed read (its name in the archive)
+    // An archive with several Star Ocean seeds: each one's name and slot, to choose from.
+    std::vector<std::pair<std::string, std::string>> choices;
   };
   struct CardInfo {
     enum Kind { kNew, kNotACard, kDexDrive, kUnformatted, kReady } kind = kNew;
@@ -158,7 +162,7 @@ class App {
 
   const launcher::DiscInfo& disc_info(const std::string& path);
   const CardInfo& card_info(const std::string& path);
-  const SeedInfo& seed_info(const std::string& path);
+  const SeedInfo& seed_info(const std::string& path, const std::string& entry);
   Level disc_level(int n);
   bool disc1_ok() { return disc_info(settings_.disc1).kind == launcher::DiscKind::kDisc1; }
   // Why the chosen discs can't be played together (Disc 2 of another release than Disc 1's),

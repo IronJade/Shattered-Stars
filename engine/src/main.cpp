@@ -43,16 +43,18 @@
 // with both slots empty (testing; not remembered). The environment variables
 // SS_MEMCARD1 / SS_MEMCARD2 override the remembered paths for one run. Headless runs use
 // only cards named for the run (--memcardN, SS_MEMCARDN): otherwise both slots are empty,
-// so tests never create or write a card in the settings folder.
+// so tests never create or write a card in the settings folder. An Archipelago seed plays on
+// its own card instead of the player's (launcher/ap_seed.h seed_memcard).
 //
 // Window: config.ini's window / window_scale / resolution / monitor / vsync keys (set in
 // setup); F11 or Alt+Enter toggles fullscreen; Esc quits. Keys: arrows, Z (Cross), X (Circle),
 // A (Square), S (Triangle), Enter (Start), Backspace (Select), Q/W (L1/R1), 1/2 (L2/R2);
 // gamepads map directly (left stick = d-pad).
 //
-// Archipelago (port feature, docs/archipelago_plan.md): --ap-seed FILE (an .apso2 seed, this
-// run only) or config.ini's ap_seed key (not read by headless runs) turns it on; off without
-// a seed. [world agent]
+// Archipelago (port feature, docs/archipelago_plan.md): --ap-seed FILE (an .apso2 seed, or the
+// generator's AP_<seed>.zip holding it; this run only) or config.ini's ap_seed key (not read
+// by headless runs) turns it on; off without a seed. An archive with several Star Ocean seeds
+// needs --ap-seed-entry NAME (config.ini's ap_seed_entry; launcher/ap_seed.h). [world agent]
 //
 // Dialogue (port feature, game/field/message.h TextOptions): config.ini's instant_text,
 // auto_advance and auto_advance_delay (set in setup's Gameplay page; launcher/settings.h).
@@ -76,6 +78,7 @@
 #include "disc/archive.h"
 #include "disc/disc_image.h"
 #include "game/ap/ap.h"
+#include "game/ap/seed.h"
 #include "game/battle/battle_debug.h"
 #include "game/boot/pad.h"
 #include "game/boot/system.h"
@@ -85,6 +88,7 @@
 #ifdef SS_HAVE_AP_NET
 #include "ap_net/client.h"
 #endif
+#include "launcher/ap_seed.h"
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/process.h"
@@ -127,7 +131,7 @@ int usage(const char* argv0) {
   launcher::report(
                "usage: %s [--help] [--version] [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
-               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE]\n",
+               "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE [--ap-seed-entry NAME]]\n",
                argv0);
   return 2;
 }
@@ -161,6 +165,8 @@ int main(int argc, char** argv) {
   std::string capture_frames, input_script;
   std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
   std::string ap_seed;                  // --ap-seed FILE (Archipelago, game/ap)
+  std::string ap_seed_entry;            // --ap-seed-entry NAME (the seed in an archive)
+  bool ap_seed_arg = false;
   bool viewer = false, headless = false, config_changed = false, reference_dither = false,
        no_memcard = false, debug_console = false;
   int entry = 10;
@@ -208,6 +214,9 @@ int main(int argc, char** argv) {
       debug_console = true;
     } else if (arg == "--ap-seed" && has_value) {  // Archipelago seed (game/ap; this run only)
       ap_seed = launcher::path_utf8(std::filesystem::absolute(next()));
+      ap_seed_arg = true;
+    } else if (arg == "--ap-seed-entry" && has_value) {  // which seed of an AP_<seed>.zip
+      ap_seed_entry = next();
     } else if (arg == "--mods" && has_value) {  // world-edit patches (default: mods/ next to config.ini)
       runtime::Runtime::get().mods_dir = std::filesystem::absolute(next()).string();
     } else if (arg == "--map" && has_value) {
@@ -353,21 +362,61 @@ int main(int argc, char** argv) {
   if (!dump_dir.empty()) return tools::dump_textures(archive, entry, dump_dir);
   if (viewer) return tools::run_viewer(archive, entry, static_cast<int>(frames));
 
+  // Archipelago (game/ap): the seed is read before the memory cards (a seed plays on its own
+  // card) and before any map (its patch lines join the world edits). A seed that does not load
+  // stops the game (playing on would lose checks).
+  if (ap_seed.empty() && !headless) ap_seed = config.get("ap_seed");
+  if (!ap_seed_arg && !ap_seed.empty()) ap_seed_entry = config.get("ap_seed_entry");
+  game::ap::Seed ap_seed_head;  // the seed's id and slot, for its card
+  if (!ap_seed.empty()) {
+    std::string ap_error;
+    // The generator's archive: its Star Ocean seed is copied out next to config.ini.
+    std::filesystem::path seed_path;
+    if (!launcher::seed_file(launcher::utf8_path(ap_seed), ap_seed_entry, &seed_path, &ap_error)) {
+      launcher::fatal("Archipelago seed " + ap_seed + ": " + ap_error);
+      return 1;
+    }
+    ap_seed = launcher::path_utf8(seed_path);
+    if (!game::ap::load_seed_file(ap_seed, &ap_seed_head, &ap_error)) {
+      launcher::fatal("Archipelago seed: " + ap_error);
+      return 1;
+    }
+  }
+
   {
     // launcher::memcard_path: slot 1 defaults to memcard1.mcd next to config.ini; "none"
     // (an empty slot) comes back empty. Headless: only a card named for this run.
+    // With an Archipelago seed: the seed's own card in slot 1 and slot 2 empty, so a seed
+    // never loads an ordinary save or writes the player's cards (launcher/ap_seed.h); a card
+    // named for the run (--memcardN, SS_MEMCARDN) still wins. Headless runs use it only with
+    // SS_AP_SEED_CARD=1 (tests, with a scratch XDG_CONFIG_HOME).
+    const char* seed_card_env = std::getenv("SS_AP_SEED_CARD");
+    const bool seed_card = !ap_seed.empty() && (!headless || (seed_card_env && std::string(seed_card_env) == "1"));
     std::string cards[2];
     for (int i = 0; i < 2; ++i) {
       if (const char* env = std::getenv(i == 0 ? "SS_MEMCARD1" : "SS_MEMCARD2")) cards[i] = env;
-      else if (!headless || memcard_arg[i]) cards[i] = launcher::memcard_path(config, i + 1);
+      else if (memcard_arg[i]) cards[i] = launcher::memcard_path(config, i + 1);
+      else if (seed_card && i == 0) cards[i] = launcher::path_utf8(launcher::seed_memcard(ap_seed_head.seed, ap_seed_head.slot_name));
+      else if (seed_card) cards[i].clear();
+      else if (!headless) cards[i] = launcher::memcard_path(config, i + 1);
+    }
+    if (seed_card && !std::getenv("SS_MEMCARD1") && !memcard_arg[0]) {
+      // Once, when the seed's card is new: the saves an earlier version made for this seed on
+      // the player's own cards are copied to it (the player's cards stay as they are).
+      std::vector<std::filesystem::path> own;
+      for (int i = 1; i <= 2; ++i)
+        if (const std::string c = launcher::memcard_path(config, i); !c.empty() && c != "none") own.push_back(launcher::utf8_path(c));
+      std::string adopt_error;
+      const int adopted = launcher::adopt_seed_saves(launcher::utf8_path(cards[0]), own, ap_seed_head.seed,
+                                                     ap_seed_head.slot_name, &adopt_error);
+      if (adopted > 0) launcher::report("[ap] %d save(s) of this seed copied from your memory card to %s\n", adopted, cards[0].c_str());
+      else if (adopted < 0) launcher::report("[ap] this seed's saves could not be copied from your memory card: %s\n", adopt_error.c_str());
+      launcher::report("[ap] the seed plays on its own memory card: %s\n", cards[0].c_str());
     }
     auto slot = [&](const std::string& card) { return no_memcard || card.empty() || card == "none" ? nullptr : card.c_str(); };
     game::memcard_set_images(slot(cards[0]), slot(cards[1]));
   }
 
-  // Archipelago (game/ap): the seed is read before any map, so its patch lines join the
-  // world edits. A seed that does not load stops the game (playing on would lose checks).
-  if (ap_seed.empty() && !headless) ap_seed = config.get("ap_seed");
   if (!ap_seed.empty()) {
     std::string ap_error;
     if (!game::ap::start(ap_seed, &ap_error)) {

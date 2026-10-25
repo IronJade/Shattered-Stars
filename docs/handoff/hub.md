@@ -42,6 +42,9 @@ decisions, which override that design where they differ, and the plan.
   `area_keys_in_drops`; never shops, gifts or crafts.
 - Goals (indalecio / limiter_off / + Iseria Queen) work in hub mode too (Filia's scene needs
   chapter >= 58 and flag 730, which the hub has; the Clik flags are preset by `goal.flags`).
+- **Version (2026-10-25): hub mode ships in so2.apworld 0.2.0** (the user: "This is the first
+  major revision of the apworld as is. The rest have up to now been fixes."). No 0.3.0; 0.2.0
+  stays unreleased until the hub is done.
 
 ## The plan
 
@@ -58,9 +61,10 @@ seed blocks) → docs.
 | gifts | APWorld: gifts never progression, all modes (0.2.0) | docs/handoff/apworld2.md |
 | hubdata | W1 hub state data (`docs/ap/hub_state.json` + tool) and W3 the boss chamber table (chambers, guards, scene entry, story-view spec per boss), and the seed's `hub` / `bosses` format in seed_format.md | docs/handoff/hubdata.md |
 | hubvm | Port: P2 chapter lock and P6 story view in the script VM (var_ptr / flag_ptr), behind the hub seed | docs/handoff/hubvm.md |
-| (next) hubcore | Port: P1 hub New Game, start option, sidecar, chamber doors, P5 | |
-| (next) hubworld | APWorld W6 | |
-| (next) hubproof | W7 proofs | |
+| hubcore | Port: P1 hub New Game, the start option (every town: start points + Synard spots), sidecar, dungeon-key doors and the Fienal gate, P5 (Eluria Tower 557 -> 558, the arena 305, the Portal of Sealing look) | docs/handoff/hubcore.md |
+| hubchambers | The 22 chambers proven headless from the late state (SS_HUB_TRACE flag lists, in-place-ending re-fire, after_maps / until / cut_to, Fienal pairs D10, the map 14 vision), rows fixed in tools/ap_hub_bosses.py, a chamber runner in tools/ | docs/handoff/hubchambers.md |
+| hubworld | APWorld W6 (world_mode hub, regions, dungeon keys, boss locations, D6 / D9 options, characters as items, seed v3 blocks, tests, docs) | docs/handoff/hubworld.md |
+| (next) hubproof | W7: the late proof from the hub start with the lock, `--bosses`, e2e | |
 
 ## Status
 
@@ -108,3 +112,8 @@ with SS_HUB_TRACE, the in-place-ending re-fire check), then **hubworld** (APWorl
 hub, regions, 20 dungeon keys, boss locations, the Fienal option (D6), the start option (D9),
 characters forced to items, seed v3 blocks) and **hubproof** (the late proof from the hub start
 with the lock on, `--bosses`, e2e).
+- 2026-10-25 (new session): hubcore, hubchambers (split out of hubcore: the per-chamber checks run
+  from the late state and need no P1) and hubworld started. Rulings passed on: no Fienal key (D6
+  gate only: 19 keys at most); Lasguss Mountain keeps its key only if XINE is a hub location; the
+  Portal of Sealing gets a P5 look (hubcore) or its key and chest leave hub mode; the map 14
+  vision: hubchambers decides (cut unless harmless).

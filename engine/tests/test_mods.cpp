@@ -1,6 +1,7 @@
 // Mod packages (mods/catalog.h, docs/notes/mods.md): manifests, scanning the mods folder,
 // the load order and its defaults (loose patches on, packages off), conflict analysis,
-// .zip reading (stored and deflated) and installing / removing packages. The last test
+// .zip reading (stored and deflated, in memory or from the file), installing / removing
+// packages, and Archipelago's output archives (launcher/ap_seed.h). The last test
 // runs the game (SS_DISC1 and the game built next to the tests) to check that the engine
 // applies the enabled patches in the configured order. Scratch files go in
 // test_mods_scratch/ next to the test program; the player's settings are never read.
@@ -15,12 +16,14 @@
 #include <utility>
 #include <vector>
 
+#include "launcher/ap_seed.h"
 #include "launcher/config.h"
 #include "launcher/process.h"
 #include "launcher/settings.h"
 #include "mods/catalog.h"
 #include "mods/patch.h"
 #include "mods/zip.h"
+#include "psx/memory_card.h"
 #include "test.h"
 
 using namespace ss;
@@ -441,6 +444,171 @@ TEST(mods_zip_reader) {
   CHECK(!z.read(z.entries()[0], &out, &error));
   CHECK(contains(error, "checksum"));
   CHECK(!z.open_memory(std::vector<u8>{'P', 'K', 3, 4}, &error));
+}
+
+// The file-backed reader (open_file): the directory first, each entry when it is read.
+TEST(mods_zip_reader_from_file) {
+  const fs::path dir = scratch("zipfile");
+  std::string error;
+  std::vector<u8> out;
+  const std::string zip = make_zip({{"a/stored.txt", "hello", {}}, {"a/fixed.patch", kFixedText, kFixedDeflate}});
+  write_file(dir / "a.zip", zip);
+  mods::ZipReader z;
+  CHECK(z.open_file(dir / "a.zip", &error));
+  CHECK_EQ(z.entries().size(), 2u);
+  if (z.entries().size() == 2) {
+    CHECK(z.read(z.entries()[1], &out, &error));
+    CHECK(std::string(out.begin(), out.end()) == kFixedText);
+    CHECK(z.read(z.entries()[0], &out, &error));
+    CHECK(std::string(out.begin(), out.end()) == "hello");
+  }
+  // The file cut short after its directory was read: the entry's data is missing.
+  write_file(dir / "cut.zip", zip);
+  CHECK(z.open_file(dir / "cut.zip", &error));
+  write_file(dir / "cut.zip", zip.substr(0, 40));
+  CHECK(!z.read(z.entries()[0], &out, &error));
+  CHECK(!z.open_file(dir / "cut.zip", &error));
+  CHECK(!z.open_file(dir / "missing.zip", &error));
+  write_file(dir / "not.zip", "PK\x03\x04 not really");
+  CHECK(!z.open_file(dir / "not.zip", &error));
+  CHECK(contains(error, "not a .zip"));
+}
+
+// Archipelago's output archive (AP_<seed>.zip): every player's file, the spoiler log and the
+// server's file; the Star Ocean seeds are found by their extension, one chosen by name.
+TEST(launcher_archipelago_seed_archives) {
+  const fs::path dir = scratch("apzip");
+  std::string error, text, chosen;
+  std::vector<std::string> names;
+  const std::string claude = R"({"format": "apso2", "slot_name": "Claude"})";
+  const std::string rena = R"({"format": "apso2", "slot_name": "Rena"})";
+  write_file(dir / "AP_1.zip", make_zip({{"AP_1_Spoiler.txt", "spoiler", {}},
+                                         {"AP_1.archipelago", "server", {}},
+                                         {"AP_1_P1_Claude.apso2", claude, {}},
+                                         {"AP_1_P2_Link.aplttp", "patch", {}},
+                                         {"AP_1_P3_Rena.APSO2", rena, {}}}));
+  write_file(dir / "AP_2.ZIP", make_zip({{"AP_2_Spoiler.txt", "spoiler", {}}, {"AP_2_P1_Claude.apso2", claude, {}}}));
+  write_file(dir / "AP_3.zip", make_zip({{"AP_3_P1_Link.aplttp", "patch", {}}}));
+  write_file(dir / "loose.apso2", rena);
+
+  CHECK(launcher::is_seed_archive(dir / "AP_2.ZIP"));
+  CHECK(!launcher::is_seed_archive(dir / "loose.apso2"));
+  CHECK(launcher::list_archive_seeds(dir / "AP_1.zip", &names, &error));
+  CHECK_EQ(names.size(), 2u);
+  CHECK(names.size() == 2 && names[0] == "AP_1_P1_Claude.apso2" && names[1] == "AP_1_P3_Rena.APSO2");
+
+  // Several seeds: one must be named (by its name in the archive or its file name).
+  CHECK(!launcher::read_seed_text(dir / "AP_1.zip", "", &text, &chosen, &error));
+  CHECK(contains(error, "2 Star Ocean seeds") && contains(error, "AP_1_P3_Rena.APSO2"));
+  CHECK(launcher::read_seed_text(dir / "AP_1.zip", "AP_1_P3_Rena.APSO2", &text, &chosen, &error));
+  CHECK(text == rena && chosen == "AP_1_P3_Rena.APSO2");
+  CHECK(launcher::read_seed_text(dir / "AP_1.zip", "elsewhere/AP_1_P1_Claude.apso2", &text, &chosen, &error));
+  CHECK(text == claude && chosen == "AP_1_P1_Claude.apso2");
+  CHECK(!launcher::read_seed_text(dir / "AP_1.zip", "AP_1_P9_Nobody.apso2", &text, &chosen, &error));
+  CHECK(contains(error, "no seed AP_1_P9_Nobody.apso2"));
+  // One seed: taken without a name. None: said so. A loose file: read as it is.
+  CHECK(launcher::read_seed_text(dir / "AP_2.ZIP", "", &text, &chosen, &error));
+  CHECK(text == claude && chosen == "AP_2_P1_Claude.apso2");
+  CHECK(!launcher::read_seed_text(dir / "AP_3.zip", "", &text, &chosen, &error));
+  CHECK(contains(error, "no Star Ocean seed"));
+  CHECK(launcher::read_seed_text(dir / "loose.apso2", "ignored", &text, &chosen, &error));
+  CHECK(text == rena && chosen.empty());
+
+  // The game's file: copied out of the archive into the cache (rewritten only when it
+  // differs), or the loose file itself.
+  fs::path file;
+  const fs::path cache = dir / "cache";
+  CHECK(launcher::seed_file(dir / "AP_1.zip", "AP_1_P3_Rena.APSO2", &file, &error, cache));
+  CHECK(file == cache / "AP_1_P3_Rena.APSO2");
+  CHECK(launcher::read_seed_text(file, "", &text, nullptr, &error) && text == rena);
+  write_file(file, "stale");
+  CHECK(launcher::seed_file(dir / "AP_1.zip", "AP_1_P3_Rena.APSO2", &file, &error, cache));
+  CHECK(launcher::read_seed_text(file, "", &text, nullptr, &error) && text == rena);
+  CHECK(!fs::exists(cache / "AP_1_P3_Rena.APSO2.tmp"));
+  CHECK(!launcher::seed_file(dir / "AP_1.zip", "", &file, &error, cache));
+  CHECK(launcher::seed_file(dir / "loose.apso2", "", &file, &error, cache));
+  CHECK(file == dir / "loose.apso2");
+}
+
+// Where the Browse button starts for a seed: Archipelago's output folder, from host.yaml.
+TEST(launcher_archipelago_output_folder) {
+  const fs::path ap = scratch("apdir");
+  CHECK(launcher::archipelago_output_dir(ap).empty());  // no output folder yet
+  fs::create_directories(ap / "output");
+  CHECK(launcher::archipelago_output_dir(ap) == ap / "output");  // no host.yaml: the default
+  write_file(ap / "host.yaml", "general_options:\n  # Where to place output files\n  output_path: \"output\"\n");
+  CHECK(launcher::archipelago_output_dir(ap) == ap / "output");
+  fs::create_directories(ap / "seeds out");
+  write_file(ap / "host.yaml",
+             "server_options:\n  output_path: elsewhere\ngeneral_options:\r\n  output_path: 'seeds out'\r\n");
+  CHECK(launcher::archipelago_output_dir(ap) == ap / "seeds out");
+  const fs::path absolute = scratch("apdir_abs");
+  write_file(ap / "host.yaml", "general_options:\n  output_path: " + launcher::path_utf8(absolute) + "  # mine\n");
+  CHECK(launcher::archipelago_output_dir(ap) == absolute);
+  write_file(ap / "host.yaml", "general_options:\n  output_path: missing\n");
+  CHECK(launcher::archipelago_output_dir(ap).empty());
+  CHECK(launcher::archipelago_output_dir(fs::path()).empty());
+#if !defined(_WIN32) && !defined(__APPLE__)
+  // Linux: $XDG_DATA_HOME/Archipelago, as Archipelago's Utils.home_path.
+  const char* old = std::getenv("XDG_DATA_HOME");
+  const std::string saved = old ? old : "";
+  const fs::path data = scratch("xdg_data");
+  setenv("XDG_DATA_HOME", launcher::path_utf8(data).c_str(), 1);
+  const fs::path none = launcher::archipelago_dir();
+  fs::create_directories(data / "Archipelago" / "output");
+  CHECK(launcher::archipelago_dir() == data / "Archipelago");
+  CHECK(launcher::archipelago_output_dir() == data / "Archipelago" / "output");
+  CHECK(none != data / "Archipelago");
+  if (old) setenv("XDG_DATA_HOME", saved.c_str(), 1);
+  else unsetenv("XDG_DATA_HOME");
+#endif
+}
+
+// A seed plays on its own card: <base>/<seed>_<slot>/memcard1.mcd. The saves an earlier
+// version made for it on the player's card are copied over once; the player's card stays.
+TEST(launcher_archipelago_seed_memcard) {
+  const fs::path dir = scratch("apcard");
+  CHECK(launcher::seed_memcard("123", "Claude", dir / "ap") == dir / "ap" / "123_Claude" / "memcard1.mcd");
+  CHECK(launcher::seed_memcard("123", "a/b:c?. ", dir) == dir / "123_a_b_c_" / "memcard1.mcd");
+
+  // The player's card: saves 1, 3 and 5, another game's file; sidecars for 3 (this seed),
+  // 5 (another seed) and 7 (a save since deleted).
+  const fs::path own = dir / "memcard1.mcd";
+  {
+    psx::MemoryCard card;
+    CHECK(card.open(own, true));
+    for (const char* name : {"BASCUS-94421S02-S01", "BASCUS-94421S02-S03", "BASCES-02159S02-S05", "BESLES-OTHER"})
+      CHECK(card.create(name, 1));
+  }
+  write_file(dir / "memcard1.slot03.ap.json", "{\n \"format\": \"apso2-save\",\n \"seed\": \"S1\",\n \"slot_name\": \"Cl\\u00e9o\"\n}\n");
+  write_file(dir / "memcard1.slot05.ap.json", R"({"seed": "S2", "slot_name": "Cléo"})");
+  write_file(dir / "memcard1.slot07.ap.json", R"({"seed": "S1", "slot_name": "Cléo"})");
+  std::ifstream before_in(own, std::ios::binary);
+  const std::string before((std::istreambuf_iterator<char>(before_in)), std::istreambuf_iterator<char>());
+
+  std::string error;
+  const fs::path seed_card = launcher::seed_memcard("S1", "Cléo", dir / "ap");
+  CHECK_EQ(launcher::adopt_seed_saves(seed_card, {fs::path(), dir / "missing.mcd", own}, "S1", "Cléo", &error), 1);
+  {
+    psx::MemoryCard card;
+    CHECK(card.open(seed_card, false));
+    const auto files = card.files();
+    CHECK_EQ(files.size(), 1u);
+    CHECK(!files.empty() && files[0].name == "BASCUS-94421S02-S03");
+  }
+  CHECK(fs::exists(seed_card.parent_path() / "memcard1.slot03.ap.json"));
+  CHECK(!fs::exists(seed_card.parent_path() / "memcard1.slot07.ap.json"));
+  CHECK(!fs::exists(seed_card.parent_path() / "memcard1.mcd.tmp"));
+  std::ifstream after_in(own, std::ios::binary);
+  const std::string after((std::istreambuf_iterator<char>(after_in)), std::istreambuf_iterator<char>());
+  CHECK(after == before);  // the player's card is never changed
+  CHECK(fs::exists(dir / "memcard1.slot03.ap.json"));
+  // Only once: the seed's card exists now.
+  CHECK_EQ(launcher::adopt_seed_saves(seed_card, {own}, "S1", "Cléo", &error), 0);
+  // A seed with nothing on the player's card: no card made (the game makes a new one).
+  const fs::path other = launcher::seed_memcard("S9", "Claude", dir / "ap");
+  CHECK_EQ(launcher::adopt_seed_saves(other, {own}, "S9", "Claude", &error), 0);
+  CHECK(!fs::exists(other));
 }
 
 TEST(mods_install_and_remove) {

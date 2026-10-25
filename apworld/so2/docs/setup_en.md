@@ -45,15 +45,20 @@ about it is specific to this world.
 
 Generation is standard Archipelago generation: run it the same way you would for any
 multiworld (Archipelago's own `Generate` process, or however your group normally generates a
-room). This produces one output file per player. For a Star Ocean player, that file has the
-extension `.apso2` — that's the seed file Shattered Stars reads.
+room). Archipelago writes one archive for the whole multiworld, `AP_<number>.zip`, into its
+`output` folder (on Linux `~/.local/share/Archipelago/output`, on Windows
+`C:\ProgramData\Archipelago\output`). Inside it is one file per player; a Star Ocean player's
+ends in `.apso2`. Shattered Stars reads the archive as it is, so there's no need to unpack it,
+though a loose `.apso2` (one the host sent you on its own, say) works just as well.
 
 ## Connecting
 
 Shattered Stars has a native Archipelago client built into the game itself — you don't run a
 separate program to connect. Open the setup program's **Archipelago** page:
 
-1. **Seed file.** Click **Browse** and pick your `.apso2` file.
+1. **Seed.** Click **Browse** and pick the `AP_<number>.zip` archive (Browse opens Archipelago's
+   `output` folder) or your `.apso2` file. If the archive holds seeds for more than one Star
+   Ocean player, a **Your slot** list appears: choose yours.
 2. **Server address.** Enter the room's server address. The client works with either an
    insecure (`ws://`) or secure (`wss://`) server address — use whichever the room host gives
    you.
@@ -65,11 +70,20 @@ separate program to connect. Open the setup program's **Archipelago** page:
 Save and start the game (or Save & Play). It connects using the native client, the same way
 the game plays normally — there's no separate client window to manage.
 
+**Your saves.** Each seed (and slot) saves on its own memory card, which the game makes the
+first time you play it. Your ordinary memory cards aren't inserted while a seed is chosen, so a
+finished or unrandomized game can't be loaded into the seed by mistake, and the seed can never
+save over your ordinary saves. The Archipelago page shows the seed's card under **Saves** (with
+**Open folder**, for backups). Clear the seed to play on your ordinary cards again. Saves an
+earlier Shattered Stars made for the same seed on your ordinary card are copied onto the seed's
+card the first time (your card itself isn't changed).
+
 ## Playing Offline
 
-Shattered Stars can also play a generated `.apso2` seed file by itself, with no server and no
-multiworld connection. On setup's **Archipelago** page, choose the seed file and leave
-**Server** empty (or start the game with `--ap-seed FILE`). Your own locations are shuffled and
+Shattered Stars can also play a generated seed by itself, with no server and no multiworld
+connection. On setup's **Archipelago** page, choose the archive or the `.apso2` file and leave
+**Server** empty (or start the game with `--ap-seed FILE`, adding `--ap-seed-entry NAME` for an
+archive with several Star Ocean seeds). Your own locations are shuffled and
 checked as usual, but nothing is sent to or received from other players, since there's no one
 else's game to connect to. It's a good way to try the randomizer without hosting or joining a
 room.
@@ -89,6 +103,6 @@ room.
   slot name or password doesn't match the room — the client reports the refusal rather than
   silently failing to connect; double-check the slot name and password on the Archipelago page
   against what the room host gave you.
-- **A seed that won't load.** The seed file itself is checked when you pick it; if it isn't a
-  valid `.apso2` seed (or is damaged), setup will tell you rather than letting you start the
-  game with it.
+- **A seed that won't load.** The seed is checked when you pick it; if the archive holds no
+  Star Ocean seed (Star Ocean wasn't one of the games generated), or the seed isn't valid (or is
+  damaged), setup will tell you rather than letting you start the game with it.

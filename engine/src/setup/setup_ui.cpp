@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cctype>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
@@ -13,6 +14,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "game/ap/seed.h"
+#include "launcher/ap_seed.h"
 #include "launcher/process.h"
 #include "launcher/title_art.h"
 #include "platform/window.h"
@@ -153,32 +155,55 @@ Settings App::read(const launcher::Config& c) const {
   s.mods = launcher::path_utf8(launcher::mods_folder(c));
   s.mod_order = launcher::read_mod_order(c);
   s.ap_seed = c.get("ap_seed");
+  s.ap_seed_entry = c.get("ap_seed_entry");
   s.ap_server = c.get("ap_server");
   s.ap_slot = c.get("ap_slot");
   s.ap_password = c.get("ap_password");
   return s;
 }
 
-const App::SeedInfo& App::seed_info(const std::string& path) {
-  auto it = seed_cache_.find(path);
+const App::SeedInfo& App::seed_info(const std::string& path, const std::string& entry) {
+  const std::string key = path + "\n" + entry;
+  auto it = seed_cache_.find(key);
   if (it != seed_cache_.end()) return it->second;
-  // The game's own reader (game/ap/seed.h): what loads here loads in the game.
+  // The game's own readers (launcher/ap_seed.h, game/ap/seed.h): what loads here loads in the game.
   SeedInfo info;
   game::ap::Seed seed;
-  std::string error;
+  std::string text, error;
   std::error_code ec;
-  if (!fs::exists(launcher::utf8_path(path), ec)) {
+  const fs::path file = launcher::utf8_path(path);
+  if (!fs::exists(file, ec)) {
     info.error = "File not found. Was it moved or renamed?";
-  } else if (!game::ap::load_seed_file(launcher::path_utf8(launcher::utf8_path(path)), &seed, &error)) {
-    info.error = "This seed can't be used: " + error;
   } else {
-    info.ok = true;
-    info.seed = seed.seed;
-    info.slot = seed.slot_name;
-    info.game = seed.game;
-    info.locations = seed.locations.size();
+    std::vector<std::string> names;
+    if (launcher::is_seed_archive(file) && launcher::list_archive_seeds(file, &names, nullptr) && names.size() > 1) {
+      for (const std::string& name : names) {  // several players' seeds: each one's slot name
+        std::string slot = launcher::path_utf8(launcher::utf8_path(name).filename());
+        game::ap::Seed s;
+        if (launcher::read_seed_text(file, name, &text, nullptr, nullptr) && game::ap::load_seed_text(text, &s, nullptr))
+          slot = s.slot_name;
+        info.choices.emplace_back(name, slot);
+      }
+    }
+    if (!launcher::read_seed_text(file, entry, &text, &info.entry, &error)) {
+      if (!info.choices.empty() && entry.empty())
+        info.error = "This archive holds " + std::to_string(info.choices.size()) +
+                     " Star Ocean seeds: choose your slot below.";
+      else if (launcher::is_seed_archive(file) && !error.empty())  // "The archive holds no ..."
+        info.error = static_cast<char>(std::toupper(static_cast<unsigned char>(error[0]))) + error.substr(1);
+      else
+        info.error = "This seed can't be used: " + error;
+    } else if (!game::ap::load_seed_text(text, &seed, &error)) {
+      info.error = "This seed can't be used: " + error;
+    } else {
+      info.ok = true;
+      info.seed = seed.seed;
+      info.slot = seed.slot_name;
+      info.game = seed.game;
+      info.locations = seed.locations.size();
+    }
   }
-  return seed_cache_.emplace(path, info).first->second;
+  return seed_cache_.emplace(key, info).first->second;
 }
 
 const launcher::DiscInfo& App::disc_info(const std::string& path) {
@@ -281,6 +306,7 @@ launcher::Config App::compose(const launcher::Config& base) const {
   else c.set("mods", settings_.mods);
   launcher::write_mod_order(c, settings_.mod_order);
   const std::pair<const char*, const std::string*> ap_keys[] = {{"ap_seed", &settings_.ap_seed},
+                                                                {"ap_seed_entry", &settings_.ap_seed_entry},
                                                                 {"ap_server", &settings_.ap_server},
                                                                 {"ap_slot", &settings_.ap_slot},
                                                                 {"ap_password", &settings_.ap_password}};
@@ -433,7 +459,11 @@ void App::browse(Target target) {
     const fs::path dir = target == Target::kMods ? p : p.parent_path();
     if (fs::is_directory(dir, ec)) call->location = launcher::path_utf8(dir);
   }
-  if (call->location.empty() && target == Target::kModZip) {  // where browsers put downloads
+  if (call->location.empty() && target == Target::kSeed) {  // where Archipelago's generator writes
+    const fs::path output = launcher::archipelago_output_dir();
+    if (!output.empty()) call->location = launcher::path_utf8(output);
+  }
+  if (call->location.empty() && (target == Target::kModZip || target == Target::kSeed)) {  // where browsers put downloads
     if (const char* downloads = SDL_GetUserFolder(SDL_FOLDER_DOWNLOADS)) call->location = downloads;
   }
   if (call->location.empty()) {
@@ -450,7 +480,8 @@ void App::browse(Target target) {
   } else if (target == Target::kDisc1 || target == Target::kDisc2) {
     SDL_ShowOpenFileDialog(on_dialog, call, window_, disc_filters, 2, location, false);
   } else if (target == Target::kSeed) {
-    static const SDL_DialogFileFilter seed_filters[] = {{"Archipelago seed (.apso2)", "apso2"}, {"All files", "*"}};
+    static const SDL_DialogFileFilter seed_filters[] = {{"Archipelago seeds (.zip, .apso2)", "zip;apso2"},
+                                                        {"All files", "*"}};
     SDL_ShowOpenFileDialog(on_dialog, call, window_, seed_filters, 2, location, false);
   } else if (target == Target::kModZip) {
     static const SDL_DialogFileFilter zip_filters[] = {{"Mod packages (.zip)", "zip"}, {"All files", "*"}};
@@ -511,7 +542,10 @@ void App::apply_dialog_results() {
       case Target::kCard1: settings_.card[0] = chosen; break;
       case Target::kCard2: settings_.card[1] = chosen; break;
       case Target::kMods: settings_.mods = chosen; break;
-      case Target::kSeed: settings_.ap_seed = chosen; break;
+      case Target::kSeed:
+        settings_.ap_seed = chosen;
+        settings_.ap_seed_entry.clear();  // a new archive: its seed is chosen again
+        break;
       case Target::kModZip: mods_install(chosen); break;
     }
   }
@@ -877,7 +911,10 @@ void App::sidebar() {
       if (settings_.card_inserted[0] && settings_.card_inserted[1] && same_file(settings_.card[0], settings_.card[1]))
         dot = kError;
     }
-    if (page == Page::kArchipelago && !settings_.ap_seed.empty()) dot = seed_info(settings_.ap_seed).ok ? kOk : kError;
+    if (page == Page::kArchipelago && !settings_.ap_seed.empty()) {
+      const SeedInfo& seed = seed_info(settings_.ap_seed, settings_.ap_seed_entry);
+      dot = seed.ok ? kOk : !seed.choices.empty() && settings_.ap_seed_entry.empty() ? kWarning : kError;
+    }
     if (page == Page::kMods) {
       mods_analyse();
       dot = mods_enabled_broken_ ? kError : mods_warnings_ > 0 ? kWarning : 0;
@@ -1644,6 +1681,9 @@ void App::page_cards() {
   heading("Memory cards");
   note("The game saves on memory card images, like a PlayStation's cards: one save takes one of a card's 15 "
        "blocks. The cards are files you can copy and back up. Emulators' raw cards (.mcd / .mcr) work too.");
+  if (!settings_.ap_seed.empty() && seed_info(settings_.ap_seed, settings_.ap_seed_entry).ok)
+    status_line(Level::kInfo, "An Archipelago seed is chosen: the game plays on that seed's own memory card "
+                              "(Archipelago page), not on these. They are used again once the seed is cleared.");
   card_field(1);
   card_field(2);
 }
@@ -1683,19 +1723,23 @@ std::string App::mods_name(int source) const {
 
 void App::mods_analyse() {
   const mods::Catalog& c = mods_catalog();
-  const std::string key = std::to_string(mods_generation_) + "\n" + settings_.mod_order + "\n" + settings_.ap_seed;
+  const std::string seed_key = settings_.ap_seed + "\n" + settings_.ap_seed_entry;
+  const std::string key = std::to_string(mods_generation_) + "\n" + settings_.mod_order + "\n" + seed_key;
   if (key == mods_analysis_key_) return;
   mods_analysis_key_ = key;
   mods_lines_.clear();
   // An Archipelago seed's edits come first in the game, and a mod never overrides them.
   if (!settings_.ap_seed.empty()) {
-    auto it = mods_seed_lines_.find(settings_.ap_seed);
+    auto it = mods_seed_lines_.find(seed_key);
     if (it == mods_seed_lines_.end()) {
       game::ap::Seed seed;
-      std::string error;
+      std::string text;
       std::vector<std::string> lines;
-      if (game::ap::load_seed_file(settings_.ap_seed, &seed, &error)) lines = seed.patches;
-      it = mods_seed_lines_.emplace(settings_.ap_seed, std::move(lines)).first;
+      if (launcher::read_seed_text(launcher::utf8_path(settings_.ap_seed), settings_.ap_seed_entry, &text, nullptr,
+                                   nullptr) &&
+          game::ap::load_seed_text(text, &seed, nullptr))
+        lines = seed.patches;
+      it = mods_seed_lines_.emplace(seed_key, std::move(lines)).first;
     }
     for (size_t i = 0; i < it->second.size(); ++i)
       mods::add_line(it->second[i], "seed:" + std::to_string(i + 1), -1, &mods_lines_, nullptr);
@@ -2057,31 +2101,74 @@ void App::page_mods() {
 void App::page_archipelago() {
   heading("Archipelago");
   note("Archipelago is a multiworld randomizer: items are shuffled across games, and players find each "
-       "other's. Choose the seed file the generator made for you; with a server, the game sends your "
-       "checks and receives your items as you play.");
+       "other's. Choose the archive the generator made (AP_<number>.zip, in Archipelago's output folder) "
+       "or your .apso2 seed file; with a server, the game sends your checks and receives your items as you "
+       "play.");
 
   subheading(fonts_.bold, fonts_.size, "Seed");
   const char* browse_label = "Browse...";
   const char* clear_label = "Clear";
   const float reserve = button_width(browse_label) + button_width(clear_label) + ImGui::GetStyle().ItemSpacing.x * 2;
-  path_input("##seed", settings_.ap_seed, "A seed file from the Archipelago generator (.apso2)", reserve);
+  path_input("##seed", settings_.ap_seed, "The Archipelago generator's archive (.zip) or a seed file (.apso2)",
+             reserve);
   ImGui::SameLine();
   ImGui::BeginDisabled(dialog_open_);
   if (ImGui::Button(browse_label)) browse(Target::kSeed);
   ImGui::EndDisabled();
   ImGui::SameLine();
   ImGui::BeginDisabled(settings_.ap_seed.empty());
-  if (ImGui::Button(clear_label)) settings_.ap_seed.clear();
+  if (ImGui::Button(clear_label)) {
+    settings_.ap_seed.clear();
+    settings_.ap_seed_entry.clear();
+  }
   ImGui::EndDisabled();
   if (settings_.ap_seed.empty()) {
     status_line(Level::kInfo, "No seed: the game plays as the original.");
   } else {
-    const SeedInfo& seed = seed_info(settings_.ap_seed);
-    if (seed.ok)
-      status_line(Level::kOk, "Seed " + seed.seed + ", slot " + seed.slot + ": " +
-                                  plural(static_cast<int>(seed.locations), "location", "locations") + ".");
+    const SeedInfo& seed = seed_info(settings_.ap_seed, settings_.ap_seed_entry);
+    if (!seed.choices.empty()) {  // an archive with several Star Ocean players: whose seed this is
+      const float label_w = em() * 7;
+      field_label("Your slot", label_w);
+      ImGui::SetNextItemWidth(std::min(em() * 22, ImGui::GetContentRegionAvail().x));
+      std::string current = "Choose...";
+      for (const auto& [name, slot] : seed.choices)
+        if (name == seed.entry) current = slot;
+      if (ImGui::BeginCombo("##seed-entry", current.c_str())) {
+        for (const auto& [name, slot] : seed.choices) {
+          const std::string label = slot + "   (" + launcher::path_utf8(launcher::utf8_path(name).filename()) + ")";
+          if (ImGui::Selectable(label.c_str(), name == seed.entry)) settings_.ap_seed_entry = name;
+        }
+        ImGui::EndCombo();
+      }
+    }
+    // (the combo may have changed the choice: look again)
+    const SeedInfo& chosen = seed_info(settings_.ap_seed, settings_.ap_seed_entry);
+    if (chosen.ok)
+      status_line(Level::kOk, "Seed " + chosen.seed + ", slot " + chosen.slot + ": " +
+                                  plural(static_cast<int>(chosen.locations), "location", "locations") + ".");
     else
-      status_line(Level::kError, seed.error);
+      status_line(!chosen.choices.empty() && settings_.ap_seed_entry.empty() ? Level::kWarning : Level::kError,
+                  chosen.error);
+    if (chosen.ok) {
+      // The seed's own memory card (launcher/ap_seed.h): its saves never mix with ordinary ones.
+      subheading(fonts_.bold, fonts_.size, "Saves");
+      note("This seed saves on its own memory card, so a finished or ordinary game can't be loaded into it "
+           "and it never writes your memory cards (the Memory cards page). Each seed and slot gets its own.");
+      const fs::path card = launcher::seed_memcard(chosen.seed, chosen.slot);
+      const CardInfo& info = card_info(launcher::path_utf8(card));
+      const char* open_label = "Open folder";
+      if (info.kind == CardInfo::kNew)
+        status_line(Level::kInfo, "No saves yet: the card is made when the game starts (saves this seed made "
+                                  "on your own card with an earlier version are copied to it then).");
+      else if (info.kind == CardInfo::kReady)
+        status_line(Level::kOk, plural(info.saves, "save", "saves") + " on this seed's card.");
+      else
+        status_line(Level::kError, "This seed's card can't be read: " + launcher::path_utf8(card));
+      ImGui::BeginDisabled(info.kind == CardInfo::kNew);
+      if (ImGui::Button(open_label)) open_folder(card.parent_path());
+      ImGui::EndDisabled();
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", launcher::path_utf8(card).c_str());
+    }
   }
 
   subheading(fonts_.bold, fonts_.size, "Server");
@@ -2095,7 +2182,7 @@ void App::page_archipelago() {
     settings_.ap_server = clean_path(server);
   field_label("Slot name", label_w);
   ImGui::SetNextItemWidth(width);
-  const SeedInfo* seed = settings_.ap_seed.empty() ? nullptr : &seed_info(settings_.ap_seed);
+  const SeedInfo* seed = settings_.ap_seed.empty() ? nullptr : &seed_info(settings_.ap_seed, settings_.ap_seed_entry);
   const std::string slot_hint = seed && seed->ok ? "From the seed: " + seed->slot : std::string("Your slot name");
   ImGui::InputTextWithHint("##slot", slot_hint.c_str(), &settings_.ap_slot);
   field_label("Password", label_w);

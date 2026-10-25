@@ -203,9 +203,19 @@ Debugging switches (start on a map, battles, traces, headless runs) are listed i
 
 ## Archipelago
 
-Setup's **Archipelago** page loads a seed (*Browse...*, `.apso2` files from the
-Archipelago generator) and, once one is chosen, offline or online play:
+Setup's **Archipelago** page loads a seed (*Browse...*, starting in Archipelago's output
+folder: the generator's `AP_<seed>.zip` as it is, or a loose `.apso2`; an archive with
+several Star Ocean seeds shows a slot list, saved as config.ini's `ap_seed_entry`; the game
+copies the chosen seed out to `archipelago/` next to config.ini at start-up,
+`launcher/ap_seed.h`) and, once one is chosen, offline or online play:
 
+- **Its own memory card:** a seed plays on `archipelago/<seed>_<slot>/memcard1.mcd` next
+  to config.ini (slot 2 empty), never on the player's cards, so ordinary saves can't be
+  loaded into a seed or overwritten by one; a card named for the run (`--memcardN`,
+  `SS_MEMCARDN`) still wins, and headless runs use the seed's card only with
+  `SS_AP_SEED_CARD=1`. When the card is new, the saves an earlier version made for that seed
+  on the player's card (sidecars naming the seed and slot) are copied to it once; the
+  player's card is left as it is (`launcher/ap_seed.h`).
 - **Offline:** leave Server empty. The seed's patch lines join the world edits; chests
   record checks; received items are given in free play with a banner; each save's
   state is kept in a sidecar file next to the memory card (`memcard1.slot03.ap.json`),

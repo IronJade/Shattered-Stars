@@ -251,39 +251,99 @@ bool ZipReader::open(const std::filesystem::path& path, std::string* error, size
 
 bool ZipReader::open_memory(std::vector<u8> data, std::string* error) {
   data_ = std::move(data);
+  path_.clear();
+  file_size_ = data_.size();
   entries_.clear();
-  return parse(error);
+  return parse(data_.data(), data_.size(), error);
 }
 
-bool ZipReader::parse(std::string* error) {
+namespace {
+
+// Reads 'n' bytes at 'offset' of an open file into 'out'.
+bool read_at(std::ifstream& in, u64 offset, size_t n, std::vector<u8>* out) {
+  out->resize(n);
+  in.clear();
+  in.seekg(static_cast<std::streamoff>(offset));
+  return in && in.read(reinterpret_cast<char*>(out->data()), static_cast<std::streamsize>(n));
+}
+
+}  // namespace
+
+bool ZipReader::open_file(const std::filesystem::path& path, std::string* error) {
+  data_.clear();
+  entries_.clear();
+  path_.clear();
+  std::error_code ec;
+  const auto size = std::filesystem::file_size(path, ec);
+  if (ec) {
+    if (error) *error = "it can't be read (" + ec.message() + ")";
+    return false;
+  }
+  std::ifstream in(path, std::ios::binary);
+  // The end record lies within the last 64 KiB + 22 bytes (a comment); the directory
+  // before it is read separately, so a large archive is never read whole.
+  const size_t tail_size = static_cast<size_t>(std::min<u64>(size, 0xFFFF + 22));
+  std::vector<u8> tail;
+  if (!in || !read_at(in, size - tail_size, tail_size, &tail)) {
+    if (error) *error = "it can't be read";
+    return false;
+  }
+  Directory d;
+  if (!find_directory(tail.data(), tail.size(), size, &d, error)) return false;
+  std::vector<u8> cd;
+  if (!read_at(in, d.offset, d.size, &cd)) {
+    if (error) *error = "it can't be read";
+    return false;
+  }
+  if (!parse_directory(cd.data(), cd.size(), d.count, error)) return false;
+  path_ = path;
+  file_size_ = size;
+  return true;
+}
+
+bool ZipReader::find_directory(const u8* tail, size_t n, u64 total, Directory* d, std::string* error) {
   auto fail = [&](const char* why) {
     if (error) *error = why;
-    entries_.clear();
     return false;
   };
-  const size_t n = data_.size();
   if (n < 22) return fail("it is not a .zip archive");
   // The end-of-central-directory record: within the last 64 KiB + 22 bytes (a comment).
   size_t eocd = std::string::npos;
   const size_t lowest = n > 0xFFFF + 22 ? n - (0xFFFF + 22) : 0;
   for (size_t p = n - 22;; --p) {
-    if (le32(&data_[p]) == 0x06054B50u) {
+    if (le32(&tail[p]) == 0x06054B50u) {
       eocd = p;
       break;
     }
     if (p == lowest) break;
   }
   if (eocd == std::string::npos) return fail("it is not a .zip archive");
-  const u8* e = &data_[eocd];
+  const u8* e = &tail[eocd];
   const u32 disk = le16(e + 4), cd_disk = le16(e + 6), count = le16(e + 10), cd_size = le32(e + 12),
             cd_offset = le32(e + 16);
   if (disk != 0 || cd_disk != 0 || le16(e + 8) != count) return fail("multi-part archives aren't supported");
   if (count == 0xFFFF || cd_offset == 0xFFFFFFFFu) return fail("zip64 archives aren't supported");
-  if (static_cast<size_t>(cd_offset) + cd_size > eocd) return fail("the archive is damaged");
-  size_t p = cd_offset;
+  if (static_cast<u64>(cd_offset) + cd_size > total - n + eocd) return fail("the archive is damaged");
+  *d = Directory{count, cd_size, cd_offset};
+  return true;
+}
+
+bool ZipReader::parse(const u8* data, size_t n, std::string* error) {
+  Directory d;
+  if (!find_directory(data, n, n, &d, error)) return false;
+  return parse_directory(data + d.offset, d.size, d.count, error);
+}
+
+bool ZipReader::parse_directory(const u8* cd, size_t n, u32 count, std::string* error) {
+  auto fail = [&](const char* why) {
+    if (error) *error = why;
+    entries_.clear();
+    return false;
+  };
+  size_t p = 0;
   for (u32 i = 0; i < count; ++i) {
-    if (p + 46 > eocd || le32(&data_[p]) != 0x02014B50u) return fail("the archive is damaged");
-    const u8* h = &data_[p];
+    if (p + 46 > n || le32(&cd[p]) != 0x02014B50u) return fail("the archive is damaged");
+    const u8* h = &cd[p];
     ZipEntry z;
     const u32 flags = le16(h + 8);
     z.method = le16(h + 10);
@@ -292,7 +352,7 @@ bool ZipReader::parse(std::string* error) {
     z.size = le32(h + 24);
     const u32 name_len = le16(h + 28), extra_len = le16(h + 30), comment_len = le16(h + 32);
     z.local_offset = le32(h + 42);
-    if (p + 46 + name_len > eocd) return fail("the archive is damaged");
+    if (p + 46 + name_len > n) return fail("the archive is damaged");
     z.name.assign(reinterpret_cast<const char*>(h + 46), name_len);
     std::replace(z.name.begin(), z.name.end(), '\\', '/');
     z.directory = !z.name.empty() && z.name.back() == '/';
@@ -311,17 +371,35 @@ bool ZipReader::read(const ZipEntry& z, std::vector<u8>* out, std::string* error
     return false;
   };
   if (z.size > max_size) return fail("larger than allowed");
+  // The local header and the entry's data: from memory, or from the file (open_file).
+  std::ifstream in;
+  std::vector<u8> header, body;
+  const u8* local = nullptr;
+  const u8* stored = nullptr;
   const size_t p = z.local_offset;
-  if (p + 30 > data_.size() || le32(&data_[p]) != 0x04034B50u) return fail("the archive is damaged");
-  const size_t start = p + 30 + le16(&data_[p + 26]) + le16(&data_[p + 28]);
-  if (start + z.compressed > data_.size()) return fail("the archive is cut short");
+  if (path_.empty()) {
+    if (p + 30 > data_.size()) return fail("the archive is damaged");
+    local = &data_[p];
+  } else {
+    in.open(path_, std::ios::binary);
+    if (p + 30 > file_size_ || !in || !read_at(in, p, 30, &header)) return fail("the archive is damaged");
+    local = header.data();
+  }
+  if (le32(local) != 0x04034B50u) return fail("the archive is damaged");
+  const u64 start = p + 30 + le16(local + 26) + le16(local + 28);
+  if (start + z.compressed > file_size_) return fail("the archive is cut short");
+  if (path_.empty()) {
+    stored = &data_[static_cast<size_t>(start)];
+  } else {
+    if (!read_at(in, start, z.compressed, &body)) return fail("the archive is cut short");
+    stored = body.data();
+  }
   if (z.method == 0) {
     if (z.compressed != z.size) return fail("the archive is damaged");
-    out->assign(data_.begin() + static_cast<std::ptrdiff_t>(start),
-                data_.begin() + static_cast<std::ptrdiff_t>(start + z.size));
+    out->assign(stored, stored + z.size);
   } else if (z.method == 8) {
     std::string why;
-    if (!inflate(&data_[start], z.compressed, out, z.size, &why)) return fail(why);
+    if (!inflate(stored, z.compressed, out, z.size, &why)) return fail(why);
     if (out->size() != z.size) return fail("damaged compressed data");
   } else {
     return fail("compressed with a method this installer doesn't read (only stored and deflated)");

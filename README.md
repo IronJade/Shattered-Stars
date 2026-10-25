@@ -364,9 +364,13 @@ death received from them knocks out your party at the next safe moment.
 
 1. Copy `so2.apworld` into the `custom_worlds` folder of Archipelago 0.6.8 or newer, and set
    your options in a YAML file, starting from the template.
-2. Generate the multiworld as usual. Each Star Ocean player gets a seed file ending in `.apso2`.
-3. In the setup program's **Archipelago** page, choose the seed and enter the room's address,
-   your slot name and the password. Press **Save & Play**; the game connects as it starts.
+2. Generate the multiworld as usual. Archipelago writes `AP_<number>.zip` into its `output`
+   folder; each Star Ocean player's seed (`.apso2`) is inside it.
+3. In the setup program's **Archipelago** page, choose that archive (Browse starts in
+   Archipelago's `output` folder; no need to unpack it) or a loose `.apso2`, pick your slot if
+   the archive holds several Star Ocean players, and enter the room's address, your slot name
+   and the password. Press **Save & Play**; the game connects as it starts. Each seed saves on
+   its own memory card, so your ordinary saves and the seed's never mix.
 
 To play a seed on your own, leave the address empty: your locations are still shuffled and
 checked, and items from your own world are given to you. One seed works with the discs of any
