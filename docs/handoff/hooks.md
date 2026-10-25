@@ -134,7 +134,7 @@ docs/ap/seed_format.md, engine/README.md, docs/handoff/hooks.md. Scratch: scratc
 
 ## Next steps
 
-- Open items for the coordinator: the Art plan's 4-byte difference
+- (Resolved 2026-10-25 by artregress: the Art reference was recorded with the old menu-closing plan; re-recorded, 0 diffs; docs/handoff/artregress.md.) Open items for the coordinator: the Art plan's 4-byte difference
   from its Redux reference (pre-existing, not hooks); the player's L1 presses did not use a
   killer move in a console-started field battle (not investigated; the AI's use verified the
   after-battle scan).

@@ -360,9 +360,8 @@ screen and equipment report.
   level checks at the next free play after each battle / load (party slots only); auto-advance on
   battle/result.cpp wait_button and field/post_battle.cpp's equipment report. build-hooks:
   ss_tests 99/0, ss_game_tests 149/0 (7 ap_v2_*), smoke 120/0, ap_e2e_so2.sh 37/37 (a third,
-  version-2 session "Dias": 540 alone doesn't send the goal, 561 completes it). Open: the Art
-  creation plan differs from its Redux reference in 4 bytes, also on build-dialogue (check
-  against a clean HEAD build in the integration pass); L1 never fired a killer move in a
+  version-2 session "Dias": 540 alone doesn't send the goal, 561 completes it). Open: (the Art
+  creation plan's 4-byte difference was a stale reference, see below); L1 never fired a killer move in a
   console-started battle (not investigated); one smoke run concurrent with e2e failed ap_load /
   ap_p4_world once (passed alone and in the final sequential run).
 
@@ -387,12 +386,16 @@ screen and equipment report.
   156/0 (129 + dialogue 5, ships 1, hooks 7, leader 7, party 7), smoke 120/0
   (scratchpad/integration.log); ref_regress quick, apworld tests and e2e running
   (scratchpad/integration2.log).
-- **The Art creation 4-byte diff is older than this work:** a clean HEAD (dc37aed) build, build-
-  dialogue and build-hooks all differ from the Redux reference scratchpad/menu/artr in the same
-  bytes (inventory +0x9b new-item bit, records +0x1aa = record 2 +0xa, game_state +0x1c music
-  id), while the menu agent's port run of 2026-10-22 17:22 (scratchpad/menu/artp) matched. So a
-  commit between ad0fb2f and dc37aed regressed it (possibly in 0.02.00). Agent artregress
-  bisecting in a worktree (docs/handoff/artregress.md).
+- **The Art creation 4-byte diff: not a regression** (2026-10-25, agent artregress,
+  docs/handoff/artregress.md). The Redux reference scratchpad/menu/artr was recorded (10-22
+  09:51) with the old plan that closes the menu and dumps at frame 1750; at 17:31 crplan.py
+  rewrote every creation plan to keep the menu open (dump at END + 12) and runredux.sh
+  re-recorded ten cases but not Art. The 4 bytes are what closing the menu changes in the
+  original's field_update 0x8004c334 (music id back to the field track; the rescan flag
+  0x80076278 -> party_auto_equip / stat_calc_auto_equip, record 2 +0xa 0x4d -> 0x45, and
+  inventory_clear_new_flags 0x80030f84 clearing the new-item bit). A fresh Redux recording with
+  the current plan matches the port (ad0fb2f, dc37aed and the combined tree: 0 diffs). The fresh
+  recording is now scratchpad/menu/artr (the old one kept as artr_close1750).
 
 Later: the hub (story_flags.md section 4, decisions D1-D10 to re-ask then).
 
