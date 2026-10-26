@@ -165,9 +165,9 @@ for the PlayStation hardware.
 
 ### Written with AI
 
-In the open: most of this repository was written by **Claude**, Anthropic's AI model, working
-through Claude Code under the direction of the project's maintainer. That includes the
-reverse engineering and its function catalog, the C++ port, the setup program, the European,
+In the open: most of this repository was written or edited to work by **Claude**, Anthropic's AI model, working
+through Claude Code under the direction of the project's maintainer (IronJade). That includes the
+reverse engineering and its function catalog, the C++ ports capability to use PAL discs, the setup program, the European,
 French and German releases, all of the Archipelago work, and the documentation. The maintainer
 chose the project and its goals, made the design decisions, played and tested the port, and
 decides each release. Every commit Claude wrote says so with a `Co-Authored-By: Claude` line,
