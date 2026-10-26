@@ -74,6 +74,8 @@ hubproof, charselect (title / New Game): coordinate shared files through dated n
     described it correctly; slot 0 (unchanged) is the console-verified case.
 - Note for runners: a `--debug` run must have stdin from /dev/null, or the debug console thread
   holds stdin's lock and the process hangs in exit() (seen once here; my run.sh now redirects).
+  (2026-10-25, agent "cleanup": fixed, the reader no longer uses the C stream; the redirect is no
+  longer needed. docs/handoff/cleanup.md.)
 - Suites (engine/build-claudesword, with the fix): first pass ss_tests 99/0, ss_game_tests 173/0,
   smoke 208 PASS / 9 FAIL: the 9 were charselect's new ap_cs_* cases, added to the smoke script
   after my binary was built (their New Game code was newer than it). Rebuilt on the current tree

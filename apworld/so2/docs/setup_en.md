@@ -7,8 +7,9 @@ Shattered Stars, a native port of the game.
 
 - **The Shattered Stars release**, for Windows or Linux. It's a self-contained package; no
   separate emulator or runtime is needed.
-- **Your own Star Ocean: The Second Story disc images** (PlayStation, North American
-  release) — for example `.cue`/`.bin` pairs. Shattered Stars reads your discs at run time;
+- **Your own Star Ocean: The Second Story disc images** (PlayStation: the North American,
+  European, French or German release, both discs from the same one) — for example
+  `.cue`/`.bin` pairs. Shattered Stars reads your discs at run time;
   it does not ship with any game data, and there is nowhere to download it. You need to supply
   disc images you made from your own copy of the game.
 - **This world's `.apworld` file** and a YAML (below), like any other Archipelago game.
@@ -100,11 +101,18 @@ room.
   same game twice. Make sure this world's `.apworld` (or an unpacked copy of it) exists in
   only one of your Archipelago worlds locations — don't have it in both the main `worlds`
   folder and `custom_worlds` at the same time.
-- **Wrong disc image.** Shattered Stars only recognizes the North American release of Star
-  Ocean: The Second Story. A disc image from another region's release, or one that isn't this
-  game at all, will be identified as such on the Discs page rather than accepted — double check
-  you've pointed setup at the right disc 1 (and that disc 2 is nearby, since the game looks for
-  it automatically).
+- **Wrong disc image.** Shattered Stars plays the North American, European, French and German
+  releases of Star Ocean: The Second Story. A Japanese disc, a disc that isn't this game at all,
+  or two discs from different releases will be identified as such on the Discs page rather than
+  accepted — double check you've pointed setup at the right disc 1 (and that disc 2 is nearby,
+  since the game looks for it automatically). A seed works with any supported release.
+- **"... is not a valid option name for Star Ocean: The Second Story"** when generating from
+  an older YAML. Version 0.2.0 of this world renamed two options: `protagonist` is now
+  `story_route` and `drops_as_checks` is now `enemy_dropsanity`. Archipelago ignores the old
+  names and uses the defaults, so rename them in your YAML.
+- **"unsupported version 2 (this build reads 1)"** (or version 3) when choosing a seed. The seed
+  was made with version 0.2.0 of this world, which needs Shattered Stars 0.02.50 or newer:
+  update the port. Seeds from older versions of this world keep working on the newer port.
 - **Connection refused.** If the server turns down the connection — for example because the
   slot name or password doesn't match the room — the client reports the refusal rather than
   silently failing to connect; double-check the slot name and password on the Archipelago page

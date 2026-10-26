@@ -95,6 +95,18 @@ SS_DEBUG_INPUT="300:fol 1234;310:flag 5" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_D
   SS_MEMCARD1="$WORK/card.mcd" timeout 900 "$BIN" --headless --debug --frames 400 --map 18 </dev/null >"$WORK/debug_console.log" 2>&1
 check debug_console "fol command" '\[debug\] Fol 1234'
 check debug_console "flag command" '\[debug\] flag 5 = 0'
+# [cleanup] Its reader must not hold stdin at exit: with stdin a pipe that stays open (a line,
+# then nothing), the line runs and the game still exits at its last frame (it used to hang in
+# exit(), up to this timeout).
+mkfifo "$WORK/debug_stdin"
+{ printf 'help\n'; exec sleep 300; } >"$WORK/debug_stdin" &
+debug_feeder=$!
+SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/card.mcd" \
+  timeout 60 "$BIN" --headless --debug --frames 120 --map 18 <"$WORK/debug_stdin" >"$WORK/debug_exit.log" 2>&1
+echo "exit status $?" >>"$WORK/debug_exit.log"
+kill "$debug_feeder" 2>/dev/null
+check debug_exit "a line from a pipe runs" '\[debug\] commands \(numbers'
+check debug_exit "exits with stdin a pipe kept open" '^exit status 0$'
 
 # Archipelago (game/ap, docs/ap/seed_format.md) [world agent]: a one-chest seed. Its patch
 # line makes the 200-Fol crate pay 5000 and opening the crate records the check (its opened
@@ -829,6 +841,7 @@ seed("hubarlia", "rena", "arlia")
 seed("hublinga", "claude", "linga")
 seed("hubkey", "claude", "fun_city", (13,))
 seed("hubany", "claude", "fun_city", starting="any")
+seed("hubashton", "claude", "fun_city", starting="Ashton")  # [hubleader agent] the leader stand-in
 PY
   hub_ng() {  # hub_ng NAME SEED HERO FRAMES [env...]: New Game (the prologue skipped) with a hub seed
     local name=$1 seed=$2 press=$3 frames=$4
@@ -858,11 +871,33 @@ PY
   check ap_hub_ng_linga "the Synard by Linga" 'world: vehicle 1 \(the Synard\) parked at 90815,-150,13368 on map 1'
   # The character select in a hub game [charselect agent] (starting_character "any", Bowman and
   # Opera excluded; the open world's presses): Celine joins at the hub's first free play.
-  HUB_INPUT="$NEWGAME_A,$CS_PICK,$NEWGAME_B3" hub_ng ap_hub_ng_cs hubany claude 3800 SS_TRACE=1
+  HUB_INPUT="$NEWGAME_A,$CS_PICK,$NEWGAME_B3" hub_ng ap_hub_ng_cs hubany claude 3800 SS_TRACE=1 SS_LEADER_TRACE=1
   check ap_hub_ng_cs "the character select in a hub game" '\[ap\] character select opens: 10 of 12 to pick'
   check ap_hub_ng_cs "Celine picked" '\[ap\] starting character Celine: picked at New Game'
   check ap_hub_ng_cs "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
   check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+  check ap_hub_ng_cs "and walks Fun City in the hero's place (the leader stand-in)" '\[standin\] vblank [0-9]+ map 279 shows 2 \(stand-in'
+  # The leader stand-in in hub mode [hubleader agent] (field/leader.h; open world and hub): a named
+  # starting character (Ashton: the select to confirm) walks Fun City in Claude's place and the
+  # door out leads to the world map, where Claude shows (the world map keeps the hero). Then
+  # Alen-Tax's chamber (the --map approach 68 at the hub's state, its door into 61): the original
+  # scene through its story view with Ashton walking in and named where it names Claude (the
+  # speaker label and the lines), until the scene's own animation of Claude puts him back for the
+  # rest of the scene; the battle is won as without the stand-in.
+  HUB_INPUT="$NEWGAME_A,2170:cross,2176:none,$NEWGAME_B3" hub_ng ap_hub_leader_ng hubashton claude 3400 SS_TRACE=1 \
+    SS_LEADER_TRACE=1 SS_SWEEP_PLAY="279:T4"
+  check ap_hub_leader_ng "Ashton confirmed at New Game" '\[ap\] character select: Ashton Anchors$'
+  check ap_hub_leader_ng "he joins and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+  check ap_hub_leader_ng "Ashton walks Fun City in Claude's place" '\[standin\] vblank [0-9]+ map 279 shows 6 \(stand-in'
+  check ap_hub_leader_ng "out to the world map" 'field_load_map\(map=2 '
+  env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \
+    SS_EVENT_SWEEP=1 SS_BATTLE_STUB=1 SS_LEADER_TRACE=1 SS_SWEEP_PLAY="68:T6" timeout 900 "$BIN" --headless --no-memcard \
+    --ap-seed "$WORK/hubashton.apso2" --frames 3300 --map 68 </dev/null >"$WORK/ap_hub_leader_alentax.log" 2>&1
+  check ap_hub_leader_alentax "Alen-Tax's view" '\[ap\] hub: story view on: map 61 \(Alen-Tax, encounter 191\)'
+  check ap_hub_leader_alentax "Ashton walks into the scene" '\[standin\] vblank [0-9]+ map 61 shows 6 \(stand-in\)'
+  check ap_hub_leader_alentax "the scene names him where it names Claude" '\[standin\] vblank [0-9]+ map 61 message rewritten 1 6'
+  check ap_hub_leader_alentax "Claude's own scene animation: Claude for the rest" '\[standin\] vblank [0-9]+ map 61 shows 0 \(scene animation\)'
+  check ap_hub_leader_alentax "the fight, won" '\[ap\] goal: encounter 191 won'
   hub_ng ap_hub_key hubkey claude 3500 SS_TRACE=1 SS_SWEEP_PLAY="279:T4,2:T21"
   check ap_hub_key "with the key the cave loads" 'field_load_map\(map=419 '
   # (the win between the field's start, ~2714 since New Game skips the hero screens, and the walk)

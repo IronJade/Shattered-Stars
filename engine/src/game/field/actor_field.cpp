@@ -847,7 +847,7 @@ void fieldactor_draw(Actor* self, int arg) {
   if (g_globals.children_pass != 0) mirror_update(self);  // 0x801f9800 (#3106: mirror images)
   const s32 old_sprite_anim = self->sprite_anim;
   actor_resolve_anim(self);
-  // Port feature (Archipelago open world, field/leader.h): the walking actor drawn as the
+  // Port feature (Archipelago open world and hub, field/leader.h): the walking actor drawn as the
   // Formation leader; its own sprite fields are back when this returns.
   const LeaderSpriteSwap standin(self);
   s16 cam[2] = {0, 0};

@@ -9,7 +9,7 @@ reason)`), *PsyQ* (a library routine the port's runtime replaces), *unported*
 (`(unported: ...)`: a real game reaches it, it is not ported yet), *empty* (not yet
 looked at), *bad path* (the named file does not exist).
 
-Total: 5452 rows; confirmed 5452, likely 0, guess 0; ported 4463, not needed 901, PsyQ 88.
+Total: 5536 rows; confirmed 5536, likely 0, guess 0; ported 4547, not needed 901, PsyQ 88.
 
 | Module | Rows | Confirmed | Likely | Guess | Ported | Not needed | PsyQ | Unported | Empty | Bad path | Other |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -135,6 +135,17 @@ Total: 5452 rows; confirmed 5452, likely 0, guess 0; ported 4463, not needed 901
 | battle_spell_wind_of_destruction | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
 | boot | 660 | 660 | 0 | 0 | 213 | 411 | 36 |  |  |  |  |
 | credits_3107 | 63 | 63 | 0 | 0 | 27 | 36 |  |  |  |  |  |
+| de_battle | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| de_field | 8 | 8 | 0 | 0 | 8 |  |  |  |  |  |  |
+| de_field_sub3105 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| de_menu_0ba5 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| de_menu_0bb6 | 3 | 3 | 0 | 0 | 3 |  |  |  |  |  |  |
+| de_menu_0bbc | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| de_menu_0bc4 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| de_menu_0bc6 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| de_menu_0bc8 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| de_menu_0bce | 8 | 8 | 0 | 0 | 8 |  |  |  |  |  |  |
+| de_title | 13 | 13 | 0 | 0 | 13 |  |  |  |  |  |  |
 | field | 796 | 796 | 0 | 0 | 703 | 75 | 18 |  |  |  |  |
 | field_ovl_c1d | 108 | 108 | 0 | 0 | 92 | 16 |  |  |  |  |  |
 | field_ovl_c1e | 82 | 82 | 0 | 0 | 69 | 13 |  |  |  |  |  |
@@ -144,6 +155,18 @@ Total: 5452 rows; confirmed 5452, likely 0, guess 0; ported 4463, not needed 901
 | field_sub3106 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
 | field_sub3108 | 5 | 5 | 0 | 0 | 5 |  |  |  |  |  |  |
 | field_sub3109 | 8 | 8 | 0 | 0 | 7 | 1 |  |  |  |  |  |
+| fr_battle | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| fr_battle_ovl1981 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| fr_field | 8 | 8 | 0 | 0 | 8 |  |  |  |  |  |  |
+| fr_field_sub3105 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| fr_menu_0ba5 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| fr_menu_0bb6 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| fr_menu_0bbc | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| fr_menu_0bc4 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| fr_menu_0bc6 | 1 | 1 | 0 | 0 | 1 |  |  |  |  |  |  |
+| fr_menu_0bc8 | 2 | 2 | 0 | 0 | 2 |  |  |  |  |  |  |
+| fr_menu_0bce | 8 | 8 | 0 | 0 | 8 |  |  |  |  |  |  |
+| fr_title | 12 | 12 | 0 | 0 | 12 |  |  |  |  |  |  |
 | menu_0ba5 | 252 | 252 | 0 | 0 | 237 | 15 |  |  |  |  |  |
 | menu_0ba6 | 20 | 20 | 0 | 0 | 16 | 4 |  |  |  |  |  |
 | menu_0baa | 50 | 50 | 0 | 0 | 42 | 8 |  |  |  |  |  |

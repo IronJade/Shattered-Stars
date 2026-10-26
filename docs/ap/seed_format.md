@@ -21,7 +21,7 @@ so later versions can add to the file.
 | Key | Type | Meaning |
 |---|---|---|
 | `format` | `"apso2"` | required |
-| `version` | 1 or 2 | required; this build reads 1 and 2 (2: "v2 fields" below) |
+| `version` | 1, 2 or 3 | required; this build reads 1 to 3 (2: "v2 fields" below; 3: a hub seed, "Hub") |
 | `seed` | string | the multiworld's seed id (required); the save sidecar keeps it |
 | `game` | string | `"Star Ocean: The Second Story"` |
 | `slot` | `{name, id}` | this player's slot name and number |
@@ -725,7 +725,10 @@ seeds made by so2.apworld 0.1.1 get it with a port update (docs/handoff/ships.md
 
 Written by the APWorld agent "apworld2" (log `docs/handoff/apworld2.md`) for the port agents
 of wave 2. Everything here is additive: a 0.1.x seed reads as before, and a 0.2.0 seed that
-turns none of these features on is a version-1 seed the 0.02.00 port plays as it does today.
+turns none of these features on is a version-1 seed. (It still needs port 0.02.50: 0.2.0 names
+two options the new way only, `story_route` and `enemy_dropsanity`, which the 0.02.00 port
+doesn't read, so there it would lose its route and its first-drop checks. Release agent,
+2026-10-25.)
 
 ### The version rule
 
@@ -870,7 +873,7 @@ Per goal:
   only filler.
 - The APWorld keeps the party to 8: story members + starting character + `characters`.
 
-**`starting_character`** (open world only; `null` in story mode): when it names a member,
+**`starting_character`** (open world and hub; `null` in story mode): when it names a member,
 - that member joins at the first free play of a new game (before `start.items` are given, so
   the banner order is "X joined the party" first) and becomes the leader (the Formation leader,
   config +0x41): the field sprite follows the leader, and dialogue and speaker labels use the
@@ -982,8 +985,8 @@ conditions and its return).
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 
-In every seed with `world_mode: open_world` (any version; nothing else turns it on, and the
-starting character is only the usual way the leader gets set), on field maps:
+In every seed with `world_mode: open_world` or `hub` (any version; story mode and games without a
+seed never; the starting character is only the usual way the leader gets set), on field maps:
 
 - **Sprite.** The walking actor shows the Formation leader (config +0x41, the camp menu's
   Combat > Formation > Leader, the member the player controls in battle) whenever that slot
@@ -1017,8 +1020,19 @@ starting character is only the usual way the leader gets set), on field maps:
   Rena's game's Arlia events; byte-identical state dumps and rng signatures;
   docs/handoff/leader.md). Name lengths change
   how long the typewriter takes over a line, as renaming the hero does in the original.
+- **The hub** (agent "hubleader", 2026-10-25; the user's ruling: hub mode as well, D7): the same
+  rule everywhere, the boss chambers' original scenes (played through their story views)
+  included: the stand-in walks into a chamber and the scene names them where it names the hero,
+  until one of the latches above puts the hero back for the rest of the scene. The rule reads the
+  real party and the real flag 1 (the hero), never the view's. Headless (Ashton as the starting
+  character; tools/ap_hub_chambers.py `--starting-character`): Alen-Tax 61 (Ashton walks in,
+  "Ashton" in 5 lines and their speaker labels, then Claude's own scene animation latches Claude
+  for the rest), Bark 454 (the scene shows Ashton's own actor: Claude for the scene), 14 more
+  chambers of both games; state dumps byte-identical with `SS_LEADER_STANDIN=0`; hub New Game with
+  a named member and with the character select's pick (Fun City in the leader's place, the world
+  map with the hero), a save and its load (docs/handoff/hubleader.md).
 - Debugging (environment, never config.ini): `SS_LEADER_STANDIN=0` off, `=1` on without an
-  open-world seed; `SS_LEADER_SLOT=N` party slot N as the leader (presentation only);
+  open-world or hub seed; `SS_LEADER_SLOT=N` party slot N as the leader (presentation only);
   `SS_LEADER_TRACE=1` logs what the walking actor shows and why.
 
 ### Craftsanity (`craft` locations) and `no_fail_crafting`
@@ -1249,7 +1263,8 @@ view until it is beaten. Without `world_mode: hub` none of this exists.
   `options.hub_start_town` names it), `options.fienal_requirement`
   (`fields_and_berle`, `fields`, `all_bosses`: written as the gate door's `won`, below).
 - `party_rules` is `"open"` and characters are items (D7); `starting_character` works as in
-  open world.
+  open world, the leader stand-in included (below, "The leader stand-in": the chambers' scenes
+  too).
 
 ### The `hub` block (the state New Game builds)
 

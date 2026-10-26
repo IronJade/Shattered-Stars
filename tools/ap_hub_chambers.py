@@ -40,6 +40,10 @@ Usage:
   tools/ap_hub_chambers.py --list MAP [--game rena] [--route MAP:Tn,... --frames N]
                            the sweep's entry list of a map (to write specs), after walking a route
   tools/ap_hub_chambers.py --keys                      the chamber keys
+  --starting-character NAME   the seed's options.starting_character (the hub's leader stand-in,
+                              field/leader.h): the run also asserts NAME leads (Formation leader)
+                              and is drawn in the hero's place (SS_LEADER_TRACE), and lists the
+                              scene's messages that name NAME where they name the hero
 Needs SS_DISC1 (disc 1's .cue; disc 2 is found beside it). Known failure: courage (Claude's game)
 may abort at exit on the field VM's ext 0xCB stack underflow (docs/handoff/hubchambers.md).
 """
@@ -273,8 +277,9 @@ def hub_state(game):
     return glob_text, flag_text
 
 
-def write_seed(path, game):
-    """A hub seed with every hub_bosses.json row and one boss location per row."""
+def write_seed(path, game, starting=None):
+    """A hub seed with every hub_bosses.json row and one boss location per row (and
+    options.starting_character when given)."""
     rows = load_json("docs/ap/hub_bosses.json")["bosses"]
     seed = {
         "format": "apso2", "version": 3, "seed": "hubchambers", "game": "Star Ocean: The Second Story",
@@ -288,6 +293,8 @@ def write_seed(path, game):
         "doors": P5_DOORS,
         "hub": {"chapter": 60, "step": 4000, "lock": {"chapter": True, "step": True, "step_maps": [685]}},
     }
+    if starting:
+        seed["options"]["starting_character"] = starting
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.{os.getpid()}.tmp"   # (atomic: another runner may be reading it)
     with open(tmp, "w", encoding="utf-8") as f:
@@ -404,6 +411,12 @@ PARTY_DROP = re.compile(r"\[ap\] hub: story view: party_(add|remove) (\w+) at ma
 ENTRIES = re.compile(r"\[sweep\] map (\d+) vblank \d+ entries (\d+): ?(.*)$")
 SWEEP_DONE = re.compile(r"\[sweep\] map (\d+) vblank \d+ done entries (\d+)")
 DISC_DROP = re.compile(r"\[ap\] hub: disc switch")
+# The leader stand-in (--starting-character; SS_LEADER_TRACE=1) [hubleader agent].
+LEADS = re.compile(r"\[ap\] (\w+) leads \(Formation leader, slot (\d+)\)")
+STANDIN = re.compile(r"\[standin\] vblank (\d+) map (-?\d+) shows (\d+) \((.*)\)$")
+REWRITE = re.compile(r"\[standin\] vblank (\d+) map (-?\d+) message rewritten (\d+) (\d+)")
+MODELS = {n: i for i, n in enumerate(("Claude", "Rena", "Celine", "Bowman", "Dias", "Precis", "Ashton", "Opera",
+                                       "Ernest", "Leon", "Noel", "Chisato"))}
 
 
 def parse_log(path):
@@ -415,7 +428,8 @@ def parse_log(path):
                              ("play_done", PLAY_DONE), ("entry", ENTRY_START), ("step", PLAY_STEP), ("now_on", NOW_ON),
                              ("battle", BATTLE_AT), ("read", READ), ("fstore", FSTORE), ("gstore", GSTORE),
                              ("lock", LOCK), ("party", PARTY_DROP), ("disc", DISC_DROP), ("entries", ENTRIES),
-                             ("sweep_done", SWEEP_DONE)):
+                             ("sweep_done", SWEEP_DONE), ("leads", LEADS), ("standin", STANDIN),
+                             ("rewrite", REWRITE)):
                 m = rx.search(line)
                 if m:
                     ev.append((kind, m.groups()))
@@ -445,10 +459,30 @@ def check_walk(spec, ev, note):
     return out
 
 
-def check_chamber(spec, row, ev, diff, note):
+def check_standin(starting, ev):
+    """[(ok, what)] for --starting-character: the member leads and is drawn in the hero's place on
+    the run's field maps; the maps it showed on, what put the hero back for a scene (the latch) and
+    the messages rewritten to name the member (informational)."""
+    model = MODELS.get(starting)
+    leads = [d for k, d in ev if k == "leads"]
+    out = [(bool(leads) and leads[0][0] == starting, f"{starting} leads" + (f" (slot {leads[0][1]})" if leads else ""))]
+    shows = [d for k, d in ev if k == "standin"]
+    on = sorted({int(m) for v, m, n, why in shows if int(n) == model and why.startswith("stand-in")})
+    hero_why = sorted({f"{m}: {why}" for v, m, n, why in shows if int(n) != model and why not in ("off",)})
+    out.append((bool(on), f"stand-in drawn on maps {on or 'none'}"))
+    rw = [d for k, d in ev if k == "rewrite"]
+    per_map = {}
+    for v, m, n, mod in rw:
+        per_map[int(m)] = per_map.get(int(m), 0) + 1
+    out.append((True, f"messages naming {starting}: {len(rw)} " + str(dict(sorted(per_map.items())))
+                + (f"; hero shown: {'; '.join(hero_why)}" if hero_why else "")))
+    return out
+
+
+def check_chamber(spec, row, ev, diff, note, starting=None):
     """[(ok, what)] for a chamber run."""
     if spec.get("walk"):
-        return check_walk(spec, ev, note)
+        return check_walk(spec, ev, note) + (check_standin(starting, ev) if starting else [])
     enc, loc = spec["enc"], row["location"]
     out = []
     if note:
@@ -518,12 +552,16 @@ def check_chamber(spec, row, ev, diff, note):
         out.append((bool(lists) and bool(done) and len(wins) == 1 and len(ons) == spec.get("views", 1),
                     f"re-fire sweep of map {lists[0][0] if lists else '?'}: {lists[0][1] if lists else '?'} active entries "
                     f"({codes_left}), {'done' if done else 'NOT DONE'}, battles in run {battles}, boss battles {len(wins)}"))
+    if starting:
+        out += check_standin(starting, ev)
     return out
 
 
 def run_chamber(spec, args, rows):
     seed = os.path.join(args.work, "seeds", f"hub_{spec['game']}.apso2")
     env = dict(SS_SWEEP_PLAY=",".join(spec["play"]), **spec.get("env", {}))
+    if args.starting_character:
+        env["SS_LEADER_TRACE"] = "1"
     frames = spec.get("frames", 12000)
     if spec.get("sweep_after"):
         # The re-fire test: once the play is done, the sweep lists the room's ACTIVE entries (the
@@ -535,7 +573,7 @@ def run_chamber(spec, args, rows):
                                     pos=spec.get("pos"))
     ev = parse_log(log)
     diff = dump_diff(pre, post, spec["game"]) if os.path.exists(pre) and os.path.exists(post) else None
-    res = check_chamber(spec, rows.get(spec["enc"]), ev, diff, note)
+    res = check_chamber(spec, rows.get(spec["enc"]), ev, diff, note, args.starting_character)
     tr = summarize_trace(ev)
     with open(os.path.join(args.work, "runs", f"{spec['key']}.json"), "w") as f:
         json.dump({"key": spec["key"], "enc": spec["enc"], "results": res, "diff": diff and {k: (v if k != "words" else
@@ -571,11 +609,14 @@ def main():
     ap.add_argument("--frames", type=int, default=0, help="--list: the frame limit (default 400)")
     ap.add_argument("--keys", action="store_true")
     ap.add_argument("--verbose", "-v", action="store_true")
+    ap.add_argument("--starting-character", default=None, help="options.starting_character (the leader stand-in)")
     args = ap.parse_args()
+    if args.starting_character and args.starting_character not in MODELS:
+        sys.exit(f"--starting-character: one of {', '.join(MODELS)}")
     args.jobs = max(1, min(args.jobs, 2))
     rows = None
     for g in ("claude", "rena"):
-        rows = write_seed(os.path.join(args.work, "seeds", f"hub_{g}.apso2"), g)
+        rows = write_seed(os.path.join(args.work, "seeds", f"hub_{g}.apso2"), g, args.starting_character)
     if args.keys:
         for s in CHAMBERS:
             print(s["key"], s["enc"], s["game"])
@@ -592,7 +633,8 @@ def main():
             failed += not ok
             name = rows[spec["enc"]]["name"] if spec["enc"] in rows else spec.get("name", "")
             line = f"{'PASS' if ok else 'FAIL'} {spec['key']:14s} {spec['enc']:3d} {name[:20]:20s} {spec['game']:6s}"
-            shown = res if (args.verbose or not ok) else [r for r in res if r[1].startswith(("view end", "flags"))]
+            shown = res if (args.verbose or not ok) else [r for r in res if r[1].startswith(
+                ("view end", "flags", "stand-in", "messages naming"))]
             print(line + " | " + "; ".join(("" if r[0] else "!! ") + r[1] for r in shown), flush=True)
     print(f"{len(todo) - failed}/{len(todo)} chambers pass")
     return 1 if failed else 0

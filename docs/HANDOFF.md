@@ -29,6 +29,14 @@ this file is the quick orientation.
   Later: the hub open world (`scratchpad/openworld/story_flags.md` section 4).
 
 ### Resume here (a fresh session)
+0. **Release 0.02.50 (port) + so2.apworld 0.2.0, 2026-10-25: prepared, not yet published.** The RC
+   passed (docs/ap/release_checklist.md section 9; artifacts scratchpad/release/rc-0.02.50-dist/;
+   notes docs/release_notes/0.02.50.md). The user reviews, commits the whole working tree (tree hash
+   check in section 9: c3a0177296fe677d) and pushes; then the user's Windows machine (Remote Control
+   session "Windows Shattered-Stars") runs docs/handoff/windows_check.md on the pushed tree + the RC
+   Windows zip + the user's discs; then the user tags v0.02.50 and publishes (the draft gh command in
+   section 9) and pushes the wiki pages left in scratchpad/wiki. After the launch: docs/plans/next.md
+   (Phase A Archipelago tests guide; B port 0.03.00 Japan; C world 0.3.0 entrance rando).
 1. **No hourly checkpoint** (retired 2026-10-25, the user: no more need for hourly checkpoints
    or pushing, as long as workers write straight to disk). Don't recreate the cron; agents keep
    their logs and catalog rows current on disk. `tools/checkpoint.sh` still works by hand.

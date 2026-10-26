@@ -241,10 +241,7 @@ stop). Order: 1 join level, 2 guild / skill items, 3 moves and spells, 4 shops.
   380 passed.
 
 ### Release notes line
-- The join level (open world, hub): a member joins at the party's median level (up through the
-  game's level-ups, down by the average gains). Skillsanity (so2.apworld 0.2.0): skills, killer
-  moves and spells as items; guild purchases and learn points as checks; some sold in shops as
-  themselves. The Cave of Trials' locations are named by their real floor; hub seeds' guilds sell.
+(release notes: docs/release_notes/0.02.50.md)
 
 ### In progress
 - Nothing: done and verified (2026-10-25). Not committed (rule: no commits).

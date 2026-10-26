@@ -63,7 +63,7 @@ struct ItemList {
     // world's skill / move item as itself: its name and price; one at most, no game item.
     bool ap = false;
     s32 ap_price = 0;
-    std::string ap_name;
+    std::string ap_name{};  // (every member has a default: add() lists only the first four)
   };
   std::vector<Entry> entries;  // +0 count, +4 capacity, +0xc entries
   u8* inventory = nullptr;     // +8: handoff 6

@@ -192,7 +192,11 @@ bool MemoryCard::write_frame(int n, const u8* src) {
 
 void MemoryCard::save() const {
   if (path_.empty()) return;
-  const auto tmp = path_.string() + ".tmp";
+  // The temporary file as a path, not as path::string(): on Windows that string is UTF-8, but a
+  // narrow file name is read in the ANSI code page, so a card in a folder with a non-ASCII name
+  // (the user's profile folder, a seed's slot name) was never written [release agent, 0.02.50].
+  std::filesystem::path tmp = path_;
+  tmp += ".tmp";
   {
     std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
     out.write(reinterpret_cast<const char*>(data_.data()), static_cast<std::streamsize>(data_.size()));

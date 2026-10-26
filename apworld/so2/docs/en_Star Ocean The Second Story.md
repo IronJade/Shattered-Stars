@@ -1,6 +1,7 @@
 # Star Ocean: The Second Story
 
-Star Ocean: The Second Story is a PlayStation RPG (North American release) following Claude
+Star Ocean: The Second Story is a PlayStation RPG (the North American, European, French and
+German releases) following Claude
 and Rena across the planet Expel and the forgotten world of Energy Nede. This world is played
 through Shattered Stars, a from-scratch port that reads your own disc images at run time;
 there is no ROM or game data bundled with it.
@@ -212,11 +213,12 @@ scenes, the join scenes, the gifts of the story's earlier scenes (only the handf
 get after the Final Save Point stay), old Clik and its shops, Lacour's tournament and its war-time
 shops, the fights the story lets you lose (Dias at the tournament, Shin on the ship, Marsilio's
 first fight in Fienal, Zand) and the side quests' bosses the late game no longer offers (XINE in
-Lasguss Mountain stays, and can hold anything). What
-stays: the chests the game can still reach after the Final Save Point (185, or 258 with the Cave
-of Trials), the bosses above, and whatever else your options add (shops, drops, crafts, killer
-moves) as far as the hub reaches them. Eluria Tower's chests are not locations yet (the tower's
-upper floors are being checked in the port first).
+Lasguss Mountain stays, and can hold anything). Two more places are not locations in hub mode:
+the Portal of Sealing (its one chest, the Mind Ring) and the prize gift of Fun City's arena (the
+arena itself stays open for training). What stays: the chests the game can still reach after
+the Final Save Point (217, or 290 with the Cave of Trials; Eluria Tower's and the rooms of
+Fienal's maze among them), 7 gifts (9 with the cave), the bosses above, and whatever else your
+options add (shops, drops, crafts, killer moves) as far as the hub reaches them.
 
 Progression items in hub mode go only into those chests and the boss fights (and, by
 `drop_progression`, enemy drops); never into shops, gifts or crafts. Killer-move levels learned

@@ -66,10 +66,7 @@ Shared files (ap_world_tables.py, data.py): small hunks, dated notes in hubproof
   guide's counts; script_opcodes.csv ext 0x73 / ext 0xfc / A 0x21 (addresses, the bound, the port
   guard); field_part4.md the record layout (+0x3c u8[0x20], +0x5c u8[0x30], +0x8c u16[0x20]).
   original_bugs.md: not touched (the original passes valid indices only).
-- Release-notes line (for 0.03.00): "Archipelago: so2.apworld 0.1.x seeds with cave_of_trials no
-  longer corrupt memory at the Cave of Trials' three learn chests (Leon's Extinction, Ashton's
-  tri-Ace, Celine's Meteor Swarm): nothing is learned, and the chest gives or sends the item its
-  location holds. so2.apworld 0.2.0 drops those three locations."
+- Release-notes line: (release notes: docs/release_notes/0.02.50.md)
 
 ## In progress
 - Nothing: done, not committed (no commits by rule).

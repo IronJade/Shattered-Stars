@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <iterator>
 #include <thread>
 #include <vector>
@@ -14,11 +13,89 @@
 #include "platform/window.h"
 #include "util/png.h"
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <cerrno>
+#include <unistd.h>
+#endif
+
 namespace ss::runtime {
 namespace {
 
 // NTSC field rate: 60000 / 1001 Hz.
 constexpr auto kFieldPeriod = std::chrono::nanoseconds(16683333);
+
+// The debug console's reader (--debug) [cleanup]. It reads the OS handle itself (read(2) /
+// ReadFile), never the C stream: a std::getline(std::cin) waiting for a line holds stdin's
+// FILE lock, and exit() takes every stream's lock to flush it, so a --debug run whose stdin
+// stayed open (a terminal, a pipe) could hang in exit(). The thread is detached and exit()
+// ends it wherever it waits; the lines it reads go to a block that is never freed, so a line
+// arriving while the process exits never touches a destroyed Runtime.
+struct ConsoleInput {
+  std::mutex mutex;
+  std::deque<std::string> lines;
+};
+
+ConsoleInput& console_input() {
+  static ConsoleInput* input = new ConsoleInput;  // never freed (above)
+  return *input;
+}
+
+#ifdef _WIN32
+using StdinHandle = HANDLE;
+#else
+using StdinHandle = int;
+#endif
+
+// Up to 'n' bytes of stdin; 0 at its end or on an error.
+size_t read_stdin(StdinHandle in, char* buffer, size_t n) {
+#ifdef _WIN32
+  DWORD got = 0;
+  return ReadFile(in, buffer, static_cast<DWORD>(n), &got, nullptr) ? got : 0;
+#else
+  for (;;) {
+    const ssize_t got = ::read(in, buffer, n);
+    if (got >= 0) return static_cast<size_t>(got);
+    if (errno != EINTR) return 0;
+  }
+#endif
+}
+
+// Splits stdin into lines (without "\n" / "\r\n") until its end, as std::getline did: a
+// last line without its newline counts too. On Windows Ctrl+Z ends the input, as the C
+// runtime's text mode did.
+void console_reader(StdinHandle in) {
+  ConsoleInput& input = console_input();
+  std::string line;
+  bool more = true;
+  const auto push = [&] {
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    std::lock_guard<std::mutex> lock(input.mutex);
+    input.lines.push_back(std::move(line));
+    line.clear();
+  };
+  char buffer[512];
+  for (size_t got; more && (got = read_stdin(in, buffer, sizeof buffer)) != 0;) {
+    for (size_t i = 0; i < got && more; ++i) {
+#ifdef _WIN32
+      if (buffer[i] == 0x1A) {
+        more = false;
+        continue;
+      }
+#endif
+      if (buffer[i] == '\n') push();
+      else line += buffer[i];
+    }
+  }
+  if (!line.empty()) push();
+}
 
 }  // namespace
 
@@ -99,12 +176,19 @@ void Runtime::start_debug_console() {
   if (debug_console_) return;
   debug_console_ = true;
   std::fprintf(stderr, "[debug] console on: type 'help' and press Enter\n");
-  std::thread([this] {
-    for (std::string line; std::getline(std::cin, line);) {
-      std::lock_guard<std::mutex> lock(debug_mutex_);
-      debug_lines_.push_back(line);
-    }
-  }).detach();
+  console_input();  // made here, before the reader runs
+#ifdef _WIN32
+  // The process's stdin: what the C runtime's stdin was opened on (a redirected handle, or
+  // the console of its own that launcher::attach_console allocated for --debug).
+  const HANDLE in = GetStdHandle(STD_INPUT_HANDLE);
+  if (in == nullptr || in == INVALID_HANDLE_VALUE) {
+    std::fprintf(stderr, "[debug] no console input; only SS_DEBUG_INPUT commands run\n");
+    return;
+  }
+#else
+  const int in = STDIN_FILENO;
+#endif
+  std::thread(console_reader, in).detach();
 }
 
 void Runtime::debug_say(const std::string& text) {
@@ -124,8 +208,9 @@ void Runtime::vblank() {
   if (debug_console_) {
     std::deque<std::string> lines;
     {
-      std::lock_guard<std::mutex> lock(debug_mutex_);
-      lines.swap(debug_lines_);
+      ConsoleInput& input = console_input();
+      std::lock_guard<std::mutex> lock(input.mutex);
+      lines.swap(input.lines);
     }
     // Tests: SS_DEBUG_INPUT="VBLANK:command;VBLANK:command" types commands at set vblanks.
     static const char* scripted = std::getenv("SS_DEBUG_INPUT");

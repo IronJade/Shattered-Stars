@@ -416,3 +416,379 @@ re-run 86/0; the old unversioned `dist/` files deleted. `.apworld` rebuilt with 
 author, reloaded clean in `scratchpad/release/Archipelago` (restored to its custom_worlds
 state), one seed generated; `worlds/so2/test` re-run unchanged at 95/7986. Nothing committed,
 pushed or published; no server outside 127.0.0.1 contacted.
+
+## 0.02.50
+
+The release (the user's decision, 2026-10-25): **port 0.02.50, shipping so2.apworld 0.2.0.**
+Previous: v0.02.00 (2026-10-23, tag on fd687ad, port 0.02.00 + so2.apworld 0.1.1). Owner:
+the agent "release". The user reviews everything, then commits, tags and pushes; nothing here
+is committed or pushed.
+
+Rules (given): headless only; Wine only as the checklist / this log describe, WINEPREFIX under
+scratchpad/; own build dir engine/build-release2; SS_DISC1 = the NA disc 1 .cue (other
+releases in docs/handoff/regions.md); every game process under the 4 GB cap (tools/memcap.py),
+at most 2 at once; a scratch XDG_CONFIG_HOME per game run, never a flag that saves
+~/.config/shattered-stars/config.ini; long jobs in the background, every wait with a deadline,
+kill by exact PID; scratch in scratchpad/release/, not /tmp; cap output; no commits, no
+pushes; on a permission refusal stop and report the exact command; past ~400k tokens update
+this log and end the turn. Coordinator (mid-task): don't edit the wiki checkout (a separate
+"wiki" agent owns it, log docs/handoff/wiki.md); wiki facts the release changes go in a dated
+"For wiki" note there; check the wiki log first so the notes and README agree with it.
+
+The final bundles and RC run wait for "cleanup" (docs/handoff/cleanup.md) and "hubproof2"
+(docs/handoff/hubproof.md) to report done.
+
+### Status (2026-10-25)
+- Facts gathered (three read-only agents over the apv2 / hub / misc logs, then spot-checked in
+  the code: options.py, world.py fill_slot_data, seed.cpp, the v0.02.00 tag's seed.cpp,
+  Archipelago's Generate.py, data.py's location counts).
+- **Done, uncommitted:**
+  - `docs/release_notes/0.02.50.md` (new): what's new, the world 0.2.0 (hub mode, the options
+    table, the renames, what else changed), fixes, updating from 0.02.00 (seed / port table,
+    runs in progress), files, install, Archipelago how-to, known limitations; SHA-256 pending
+    the RC.
+  - Release-notes drafts moved out of the logs, each replaced by "(release notes:
+    docs/release_notes/0.02.50.md)": shopboth.md (the "Release notes line" block, now followed
+    by "## Done (continued)" for its e2e bullet; the "Next steps" pointer), skillsanity.md
+    ("### Release notes line"), cavefix.md (the "Release-notes line (for 0.03.00)" bullet),
+    setup.md (the "left for the next release" to-do gets the pointer). Task-spec lines that only
+    *ask* for a release-notes line (shopboth.md:32-34, cavefix.md:12, ships.md:154-157) are
+    the logs' rules, kept. No drafts in the hub*, apv2-wave, charselect, claudesword, cavenames,
+    vmfix, menufix, difficulty or apareas logs (apareas' 0.1.1 notes shipped in 0.02.00).
+  - Versions: `engine/CMakeLists.txt` `project(... VERSION 0.02.50)` + its SS_VERSION comment.
+    Readers checked: tools/build_linux.sh / build_windows.sh's sed (reads `0.02.50`),
+    tools/mod_check.py / mod_index.py's regex (`[0-9.]+`), mods/catalog.cpp compare_versions
+    (dot-separated integers: 0.02.50 > 0.02.00 > 0.01.00), setup_ui.cpp's header (string
+    concatenation), main.cpp / setup_main.cpp `--version`. so2.apworld 0.2.0 in both places it
+    lives: `apworld/so2/archipelago.json` `world_version` and `world.py` `APWORLD_VERSION` (the
+    seed's `apworld_version`); checklist section 1's table now names both. mods/index.json's
+    `verified_port_version` 0.01.00 left alone (it records when a mod was verified).
+  - README.md: the version badge, the download names, the Archipelago section (308 chests, the
+    new location kinds, the three world modes, the three goals). engine/README.md: the
+    example package name, the stale "North American release" disc line, the hub's "in
+    progress" dropped, one bullet for skillsanity / difficulty / join levels / shop slots.
+  - docs/handoff/wiki.md: a dated "For wiki" note with every fact the release changes (the
+    coordinator: the "wiki" agent owns the wiki checkout; it had written nothing new yet when
+    the notes were drafted, so there was nothing to reconcile).
+  - YAML template: a preliminary `tools/build_apworld.sh scratchpad/release/pre` (fresh
+    Archipelago copy scratchpad/release/apbuild/Archipelago, no worlds/so2): exit 0, so2.apworld
+    156K (27 files, no __pycache__; manifest `world_version` 0.2.0, `version` / 
+    `compatible_version` 7), template 21K. The final one is the RC's.
+- **Findings for the user (in the notes, or to decide):**
+  - **The old option names have no alias.** 0.1.x YAMLs with `protagonist:` /
+    `drops_as_checks:` generate with a warning ("... is not a valid option name ...",
+    Archipelago Generate.py) and the defaults (`any` / `off`). The notes tell players to rename
+    them; an alias would need a hidden option class (the user's call).
+  - **seed_format.md "v2 fields" (line ~727) and apworld.md Changes 0.2.0 say a 0.2.0 seed
+    with none of the new features is a version-1 seed "the 0.02.00 port plays as it does
+    today". Not quite:** 0.2.0 writes only `story_route` / `enemy_dropsanity`
+    (world.py fill_slot_data) and 0.02.00 reads only `protagonist` / `drops_as_checks`
+    (v0.02.00 seed.cpp:227, 238), so on 0.02.00 such a seed loses its route and its first-drop
+    checks. The notes say 0.2.0 seeds need 0.02.50. seed_format.md:24 also still says "this
+    build reads 1 and 2" (it reads 1-3). Not edited here (cleanup owns apworld.md's 0.2.0 line;
+    flagged for the coordinator).
+- **Waiting:** cleanup (log cleanup.md: "In progress: full rebuild, warning diff, exit proofs,
+  suites") and hubproof2 (hubproof.md: items 1-2 done, 3 the full late rerun running, 4 the
+  arena gift not run). The final bundles and RC wait for both.
+- Preliminary engine/build-release2 build (20:20): 339/339, exit 0; `shattered-stars --version`
+  prints `Shattered Stars 0.02.50`, `shattered-stars-setup --version` `Shattered Stars Setup
+  0.02.50`, exit 0, scratch XDG_CONFIG_HOME, no config.ini written (only the run log). 12
+  compiler warnings in the full build (message_draw.cpp x8, pad.cpp, event_sweep.cpp,
+  spell_windows.cpp, gpu.cpp): cleanup's warning diff covers them.
+- Also fixed (apworld/so2/docs, they ship inside so2.apworld): the game page and setup_en.md
+  still said "North American release" only (stale since 0.02.00) — now the four releases; two
+  new Troubleshooting entries: the renamed options ("... is not a valid option name ...") and
+  "unsupported version 2 (this build reads 1)" (a 0.2.0 seed needs port 0.02.50).
+- **The RC script:** `scratchpad/release/rc-0.02.50.sh PHASE...` (snapshot build linux wine
+  apworld e2e pytest batch suites winsuites sums verify cleanup, or `all`). The source is a
+  snapshot: a worktree at HEAD + `git diff HEAD --binary` + the untracked, not-ignored files
+  (the user commits that work after review, so the RC must include it); `verify` checks at the
+  end that the main tree's engine/ apworld/ tools/ mods/ LICENSE haven't moved. Phases follow
+  the checklist: 2.1 build_apworld (fresh Archipelago copy, no worlds/so2), 2.2 load in a clean
+  install + 5 seeds (template solo; SO2 + ChecksFinder; open world with every new option;
+  hub; story with the rest) + check.py + MultiServer on 127.0.0.1 (stopped by its PID), 2.3
+  tools/ap_e2e_so2.sh and ap_e2e_hub.sh adapted (sed, checked) to the packaged install and
+  run with the packaged Linux binary, 2.4 pytest worlds/so2/test + test/general (worlds/so2 ->
+  the snapshot), 2.5 a 48-seed batch (the skillsanity players sets, story / open and hub) +
+  check.py, 2.6 both bundles + contents + --version + glibc floor + smoke on the packaged
+  binary + Wine (version, 300-vblank boot), plus the engine suites (build-release2) and the
+  Windows suites under Wine (owed since 0.01.00). Wine: scratch prefix
+  scratchpad/release/rc-wine, `env -u HOME XDG_CONFIG_HOME=<scratch>` (config.cpp reads
+  XDG_CONFIG_HOME first on every platform), systemd-run MemoryMax=4G scopes.
+- **Trial run** (20:25-20:27, RC_DIST=scratchpad/release/pre-dist, the preliminary .apworld,
+  phases snapshot apworld pytest batch verify cleanup): every step rc 0. Loads with
+  world_version 0.2.0, authors IronJade, no failed loads, no manifest error; the 5 seeds
+  generate (versions 1 / 1 / 2 / 3 / 2), check.py 5 files 0 errors; "Hosting game at
+  127.0.0.1:38491", the embedded data package loaded; worlds/so2/test 380 passed (29315
+  subtests); test/general 379 passed (117748 subtests); batch 3 + 3 seeds exit 0, check.py 0
+  errors. `verify` said the tree moved (it did: my apworld/so2/docs edits and cleanup's), as
+  it should. The e2e adaptation tested on both scripts (sed output checked, `bash -n`).
+
+### Note from "cleanup" (2026-10-25 20:35): done, for the 0.02.50 notes
+All three fixes are in the working tree, not committed; details and proof in
+docs/handoff/cleanup.md. Suites on engine/build-cleanup: ss_tests 99/0, ss_game_tests 182/0,
+smoke 272/0 (270 + 2 new `debug_exit` checks). Files: engine/src/runtime/runtime.{h,cpp},
+engine/src/game/field/menu_shop.cpp, tools/smoke_field_events.sh, docs/ap/apworld.md,
+docs/handoff/claudesword.md (one line), docs/handoff/cleanup.md. Final bundles may go ahead
+(as far as cleanup is concerned).
+- Release-notes lines (the `--debug` exit hang; the apworld.md story-seed correction):
+  (release notes: docs/release_notes/0.02.50.md). The docs one is not player-facing; the
+  notes' "Updating from 0.02.00" makes no identity claim for story seeds.
+- Not for the notes (no user-visible change): the -Wmissing-field-initializers warning in
+  menu_shop.cpp (skillsanity shop rows) is gone. Warning diff vs c50b530: Linux 3 / 3, MinGW
+  27 / 27, the same pre-existing ones; no new warning.
+- Runners: `--debug` runs no longer need stdin from /dev/null.
+
+## For release (from wiki, 2026-10-25 ~20:35)
+
+Facts the wiki pass found that the release docs should have (the wiki follows the code / data
+in each case). Your "For wiki" note in wiki.md is folded into the wiki; the notes and the wiki
+agree on everything below except where marked.
+- **The player guide's hub counts are stale** (apworld/so2/docs/en_Star Ocean The Second
+  Story.md lines 217-219): "the chests the game can still reach after the Final Save Point (185,
+  or 258 with the Cave of Trials)" and "Eluria Tower's chests are not locations yet". data.py's
+  HUB_REACHED (the hub proof) holds 290 chests in both games, 73 in the cave (217 without it),
+  Eluria Tower's 23 and Fienal's 9 maze-room chests included; 9 gifts (7 + 2 in the cave);
+  apworld.md "Hub mode" says the same. hub.choose() takes them all. The wiki says 217 / 290.
+- **starting_character in hub mode:** options.py's StartingCharacter docstring and the player
+  guide's options row say the starting character stands in for the hero "on the field and in
+  dialogue" in open world *and hub mode*. The port's stand-in (engine/src/game/field/leader.cpp
+  candidate(), line ~190) applies only when `seed()->open_world`, i.e. world_mode
+  "open_world" (seed.cpp:582), matching the user's ruling in apv2.md ("This should only be in
+  'Open World' mode"). In a hub seed the starting character joins and leads the formation, but
+  the field sprite / name swap doesn't run. The wiki says "In open world you walk around as the
+  leader". Either the docstring / guide or the port needs a change (the user's call); not run.
+- **README.md, still 0.02.00 numbers:** the bug table (`| 43 | 20 | 8 | 3 | 6 | 2 | 1 | 83 |`)
+  is now 44 fixed (W4) / 20 / 8 / 4 kept: gameplay (W5) / 6 / 2 / 1 = **85**; the catalog
+  ("5,452 functions across 149 code modules", "4,463 are ported", and the mermaid box) is now
+  **5,536 functions across 172 modules** (149 North American + 23 French / German, those 84 rows
+  were already in 0.02.00), all confirmed; ported **4,547**, not needed 901, PsyQ 88.
+- **The catalog itself:** docs/catalog/functions.csv line 3528 (title 0x80042cc8
+  new_game_sequence) has an unquoted comma in its summary ("... after the combat mode, the rank
+  window's selection ..."), so it parses as 9 fields: its confidence reads as "the rank
+  window's ..." and its port as a bad path (added in e5e1ccb). And docs/catalog/COVERAGE.md is
+  stale (5452 rows; tools/catalog_coverage.py regenerates it once the row is quoted). Not
+  touched by me (main repo: this note only).
+- **engine/README.md** still calls the hub "(seed version 3, `world_mode: hub`; in progress)".
+- **Known limitations the notes could add** (all in the wiki's Known issues): with skillsanity
+  the Cave of Trials learn chests' scene still says the move was learned (skillsanity.md "Next
+  steps"); in open world a dash's afterimages show the hero, and a long scene keeps the hero
+  until free play (leader.md "Open items"); the captain's Hoffmann Ruins option at chapter 23
+  skips the soldier's first-time lines (ships.md "Open items").
+- **cavefix.md's release-notes line** says "(for 0.03.00)"; the release is 0.02.50.
+- **docs/images/setup-archipelago.png** predates the on / off switch and the page's "Saves"
+  part (the wiki keeps it; a new capture would show both).
+
+### Status 20:45
+- **cleanup: DONE** (its note above, 20:35; cleanup.md): menu_shop.cpp warning, the `--debug`
+  exit hang (runtime.{h,cpp}), apworld.md's story-seed line, a `debug_exit` smoke case; its
+  suites ss_tests 99/0, ss_game_tests 182/0, smoke 272/0. The hang fix is in the notes' Fixes.
+- **The wiki agent's "For release" note (above), acted on:** the player guide's hub counts
+  (217 / 290 chests, 7 / 9 gifts; Eluria Tower and the Fienal maze rooms are locations now),
+  README's bug table (85: 44 / 20 / 8 / 4 / 6 / 2 / 1, Highlights' "85 cases") and catalog
+  numbers (5,536 functions / 172 modules / 4,547 ported; checked with csv over functions.csv:
+  901 "(not needed", 88 "(PsyQ"), the notes' known limitations (afterimages / long scenes show
+  the hero; the captain's chapter-23 Hoffmann trip skips the soldier's lines; skillsanity's
+  learn spots still say "learned"). Answered in wiki.md. **Left for the user:**
+  starting_character's docstring / guide say the stand-in works in hub mode too, the port does
+  it in open world only (leader.cpp; apv2's ruling: open world only); functions.csv line 3528's
+  unquoted comma (9 fields; from e5e1ccb) and the stale COVERAGE.md; docs/images/
+  setup-archipelago.png predates the switch and the "Saves" line.
+- **Waiting: hubproof2** (hubproof.md: item 3, the full late-proof rerun, started 19:54, ~45
+  min; then item 4, the arena prize gift, which could add a location to data.py). The final
+  snapshot, bundles and RC run start when it reports done.
+
+### Status 20:50
+- **Coordinator (mid-task):** the user ruled the leader stand-in must apply in hub mode too
+  (as the option text says); agent "hubleader" (log docs/handoff/hubleader.md) fixes
+  leader.cpp and leaves a dated note here. **The final bundles and RC now wait for hubproof2
+  AND hubleader** (cleanup is done). The wiki agent's "For release" items are mine to handle:
+  done (README numbers, guide hub counts, engine README, cavefix's line) plus:
+  - **docs/catalog/functions.csv line 3528** (title 0x80042cc8 new_game_sequence): the
+    summary field quoted (it held an unquoted comma: 9 fields); one-line change, LF kept;
+    csv parse: 5536 rows, 0 with a wrong field count. **docs/catalog/COVERAGE.md** regenerated
+    (`tools/catalog_coverage.py`): 5536 rows, confirmed 5536, ported 4547, not needed 901,
+    PsyQ 88, empty 0, bad path 0; `--check` exit 0.
+  - **docs/images/setup-archipelago.png**: to regenerate after hubleader, as
+    docs/handoff/readme_shots.md did (`tools/setup_screenshots.sh` -> `archipelago-seed.png`,
+    920x660, Pillow optimize / RGB), with the final setup binary.
+- To do after hubleader: the notes' / READMEs' leader stand-in wording ("open world" -> "open
+  world and hub mode", as built).
+
+### Note from "hubleader" (2026-10-25 20:55): done, for the 0.02.50 notes
+The leader stand-in now applies in hub mode as well as open world (the user's ruling), in the
+working tree, not committed; details and proof in docs/handoff/hubleader.md. **The final bundles
+may go ahead as far as hubleader is concerned.**
+- The change: engine/src/game/field/leader.cpp `candidate()` gates on `open_world || hub` (story
+  mode, no seed, Archipelago off: unchanged). Nothing else needed: the starting character
+  already joined and led in hub mode.
+- For the notes: in hub mode you walk the field as the Formation leader (the starting character
+  from the start), and the story names them where it would name the hero, the bosses' original
+  scenes in their chambers included; the hero comes back on the world maps and for a scene that
+  shows the leader as themselves, names them, or needs one of the hero's own gestures (the same
+  rule and limits as open world: afterimages, long scenes). Presentation only. So the notes'
+  "Your leader walks the field. In open world, ..." (line ~125) becomes "In open world and hub
+  mode, ...". The option docstring and the player guide already said so; no APWorld change.
+- Proof (build-hubleader): hub New Game with a named member (Ashton) and with the character
+  select's pick (Celine): the leader walks Fun City, out to the world map; a save and its load;
+  16 chamber runs of both games with Ashton (tools/ap_hub_chambers.py `--starting-character`):
+  all PASS (Alen-Tax names Ashton in 5 lines, Varmillion in 18; Bark shows Ashton's own actor, so
+  Claude for that scene); state dumps byte-identical with the stand-in off (Alen-Tax, Bark,
+  Varmillion). Suites: ss_tests 99/0, ss_game_tests 182/0, smoke 282/0 (272 + 10 new hub checks).
+- Files: engine/src/game/field/{leader.cpp, leader.h, script_ext.cpp, actor_field.cpp} (the last
+  two comments only), engine/tests/test_leader.cpp, tools/ap_hub_chambers.py,
+  tools/smoke_field_events.sh, docs/ap/seed_format.md, engine/README.md,
+  docs/handoff/hubleader.md; the wiki checkout scratchpad/wiki/Archipelago.md (the leader
+  paragraph and the known issue: open world and hub mode; not committed or pushed).
+
+### Status 21:05
+- **hubleader: DONE** (its note above, 20:55). The notes' "Your leader walks the field" now says
+  open world and hub mode (the starting character from the start; the hub's boss scenes too).
+  engine/README.md and seed_format.md were updated by hubleader itself.
+- **Screenshots** (docs/handoff/readme_shots.md's way, after hubleader): engine/build-release2
+  rebuilt (7 steps, exit 0), `tools/setup_screenshots.sh engine/build-release2/shattered-stars-setup
+  scratchpad/release/shots/documentation-screenshots/setup-program-pages` (38 PNGs, exit 0; the
+  deep scratch path keeps the shown paths free of the disk's mount name), then Pillow
+  `convert('RGB').save(optimize=True, compress_level=9)`:
+  - docs/images/setup-archipelago.png <- archipelago-seed.png (920x660, 218K): the switch on the
+    sidebar row, the Gameplay page, "Setup · v0.02.50", the "Saves" part with Open folder; the
+    Password row now falls just below the fold (the page scrolls; the tool has no scroll action).
+    README.md's alt text and docs/images/README.md's line updated to match.
+  - docs/images/setup-discs.png <- discs-ok.png (198K): also stale (the "North American
+    release" text, no Gameplay page, no switch, no version); recaptured the same way.
+- **Waiting: hubproof2** (item 3 late_full: Rena's game ~30 min in at 20:56; then item 4).
+
+### Status 21:10: the final RC is running
+- **hubproof2: DONE** (hubproof.md "hubproof2 summary", 21:05): e2e hub 15/15; the hub proof
+  rerun on the current binary unchanged (claude 329 / rena 328); the full late-proof rerun from
+  scratch 278 / 278, identical to docs/ap/late_proof.json; the arena prize gift reachable (2000
+  Fol, no Marsilio win; a gift, so never progression; not made a location). **docs/ap/
+  hub_proof.json and apworld/so2/data.py unchanged.** Its one file: tools/ap_e2e_hub.sh (Bob's
+  YAML needs `ChecksFinder: {}`).
+- cleanup, hubproof2, hubleader and wiki all report done (scratchpad/agents.txt); no other
+  agent is editing engine/ apworld/ tools/.
+- Started `bash scratchpad/release/rc-0.02.50.sh all` (21:08; `timeout 21600`; output
+  scratchpad/release/rc-run.out; per-step lines in scratchpad/release/rc-0.02.50-dist/summary.txt).
+  If this session ends mid-run: read summary.txt, rerun only the failed phases
+  (`rc-0.02.50.sh PHASE...`; snapshot first if the worktree is gone), then write checklist
+  section 9 from it and fill the notes' SHA-256 block from SHA256SUMS.
+
+### Note from "hubproof2" (2026-10-25, 21:15): docs/ap/hub_proof.json is final for 0.02.50
+Superseding my 21:10 note above ("docs/ap/hub_proof.json ... unchanged"): the coordinator asked
+for a small follow-up after that — the 74 display-name strings in `rows` that had gone stale
+against the current area-name tables (commit `9f798b1`) are now refreshed in place. Nothing else
+in the file changed (same 329 ids, same `comparison` / `lock_drops` / `unlisted_dungeon_entries`
+/ `counts` / `bosses` / `bosses_pending`, reach unchanged); details and the full verification
+(every non-name field checked identical id by id, `tools/ap_world_tables.py -o` still cmp's
+identical, `worlds/so2/test/test_hub.py` 74 passed / 3082 subtests) are in docs/handoff/
+hubproof.md "hubproof2 (2026-10-25, 21:15)". **docs/ap/hub_proof.json is now final for 0.02.50**
+— no further hub-proof work pending on my end. Not committed (coordinator's call, as usual).
+
+### Status 21:12: RC restarted
+- Coordinator (21:09): prerequisites done; go ahead on the current tree; include the hub e2e
+  in 2.3 (it is: `rc_e2e_hub.sh`); keep the arena prize gift on the guide's / wiki's "left
+  out" lists; hubproof2 is refreshing only the location names in docs/ap/hub_proof.json (docs
+  only: not in the RC's source id, and no build reads the names).
+- The guide's hub "left out" paragraph didn't name the arena prize gift (nor the Portal of
+  Sealing), so I added both (apworld/so2/docs, which ships inside so2.apworld). The first RC
+  run (started 21:06, at its smoke step) was stopped by its exact PIDs so the .apworld would
+  carry that edit, cleaned up (`cleanup` phase), its output kept in
+  scratchpad/release/rc-aborted-2106/, and the RC restarted at 21:11 on the current tree.
+
+### Status 21:58: the Windows suites found a real Windows bug (fixed), and the Wine crash dialog
+**First RC (21:11-21:31), every step rc 0 except one:** Windows `ss_game_tests.exe` under Wine:
+182 tests, **2 failed** (launcher_archipelago_seed_memcard, ap_hub_story_view); everything
+else passed (results kept in scratchpad/release/rc-0.02.50-dist/, superseded below).
+
+**My fault, reported by the coordinator: a Wine crash dialog reached the user's desktop.**
+While bisecting I ran the Windows test program with `DISPLAY` and `WAYLAND_DISPLAY` unset;
+with WAYLAND_DISPLAY unset libwayland falls back to `wayland-0`, the user's compositor, so
+Wine's winewayland driver connected and winedbg's crash window appeared when
+field_text_layout_map7 crashed. Fixed for every later Wine run (and in rc-0.02.50.sh
+`wine_env`): `WAYLAND_DISPLAY=no-such-wayland-display`, DISPLAY unset,
+`WINEDLLOVERRIDES=winedbg.exe=d`, and in the scratch prefix (scratchpad/release/rc-wine/
+wineprefix, never ~/.wine) `HKCU\Software\Wine\WineDbg ShowCrashDialog=0` and
+`HKCU\Software\Wine\Drivers Graphics=null`; `wineserver -k` after each run, no Wine process
+left (checked with ps).
+
+**The causes** (a debug worktree, scratchpad/release/wincheck/, removed after):
+1. **A real Windows bug, since 0.01.00: saving fails when the card's folder name isn't
+   ASCII.** `psx::MemoryCard::save()` wrote `path_.string() + ".tmp"` through a narrow
+   ofstream. On Windows (MinGW libstdc++) `path::string()` is UTF-8, but a narrow file name is
+   read in the ANSI code page, so for "...\S1_Cléo\memcard1.mcd" the temporary file can't be
+   opened, the rename fails (the error ignored), and the card on disk never changes; the save
+   is only in memory. Proven with a 20-line MinGW probe under Wine (scratchpad/release/
+   wincheck/t.cpp: the fs::path overload writes, the `.string()` one doesn't). Players hit:
+   any Windows user whose profile path has a non-ASCII letter (%APPDATA%\ShatteredStars holds
+   memcard1.mcd), any custom card path with one, and a seed card whose slot name has one. The
+   failing test is exactly that (slot "Cléo": the adopted card kept 4 files instead of 1, its
+   erase never written). **Fix** (engine/src/psx/memory_card.cpp, 3 lines): the temporary
+   name is built as a `std::filesystem::path` (`tmp = path_; tmp += ".tmp"`), so the wide
+   open is used. Linux: byte-identical behaviour. In the notes' Fixes.
+2. **The crash (field_text_layout_map7) is a test-order effect, not reachable in the game.**
+   `program_data(0xc1c, 0x800734c8)` returned null in field_create_state_block. The program
+   image cache (engine/src/game/common/program_image.cpp `image_of`) cached an EMPTY image when
+   asked before any disc was open, and returned null forever after. In the Windows build the
+   cases run in another order (static registration order: ap_hub_story_view 25th on Linux,
+   174th on Windows): field_actor_walks_to_target_and_waits' `field_tables()` asks
+   `field_data()` before booting, which poisoned the cache; the next field test then booted
+   nothing (the system existed) and crashed. The game always opens the disc before reading a
+   program, so players never hit it. **Fix** (cheap, safe): with no archive open, `image_of`
+   returns an empty image without caching it, so the image is read once a disc is open.
+3. **ap_hub_story_view: a test-isolation effect.** In the Windows order it runs after
+   field_fade_in_matches_original, which leaves a fade queued in the global field fade; the
+   hub's free-play rule (scene_busy: "a fade") then never let the story view end. **Fix**
+   (engine/tests/test_script_vm.cpp, test only): the test empties the fade queue first.
+
+Verification after the three fixes: in the debug worktree, Windows `ss_game_tests.exe` under
+Wine **182 tests, 0 failed** (and the 131-173 subset that crashed: 44 / 0); Linux
+engine/build-release2 ss_tests 99/0, ss_game_tests 182/0. The RC runs again from scratch on
+the fixed tree.
+
+### Status 22:30: RC 0.02.50 GREEN, everything ready for the user's review
+**The final RC** (`rc-0.02.50.sh all`, 21:59-22:20, scratchpad/release/rc-0.02.50-dist/,
+written up as docs/ap/release_checklist.md section 9): every step rc 0. Snapshot of HEAD 9f798b1
++ the working tree (36 files changed, 4 untracked), tree unchanged at the end. so2.apworld 0.2.0
+(158,970 B) + template (21,341 B); clean-install load OK; 5 seeds (v1 / v1 / v2 / v3 / v2) + check.py
+0 errors; MultiServer on 127.0.0.1; e2e on the packaged binary and world: so2 37/37, hub 15/15;
+worlds/so2/test 380 passed (29310 subtests), test/general 379 passed (117754); batch 48 seeds
+(24 + 24) exit 0, check.py 0 errors on 96 files; Linux tarball 9,153,298 B (9 entries, glibc 2.36,
+--version 0.02.50, no config.ini), smoke on it 282/0/0; Windows zip 7,483,942 B, --version
+0.02.50, 300-vblank Arlia boot OK; Linux ss_tests 99/0, ss_game_tests 182/0; Windows under Wine
+ss_tests.exe 99/0, ss_game_tests.exe 182/0. SHA-256 in SHA256SUMS, the notes and section 9.
+The RC's sources' content id (commit-independent; section 9 has the one-liner):
+**c3a0177296fe677d** (618 files of engine/ apworld/ tools/ mods/ LICENSE).
+
+After the RC (docs only, not in that id): docs/ap/apworld.md (0.2.0 intro) and
+docs/ap/seed_format.md (line 24's "reads 1 and 2" -> 1 to 3; "v2 fields" intro) no longer
+claim a version-1 0.2.0 seed plays on port 0.02.00; the notes' intro names the Windows save fix.
+
+**Files I changed (all uncommitted):** docs/release_notes/0.02.50.md (new);
+docs/ap/release_checklist.md (section 1 table, section 3 names, section 6, section 9);
+docs/handoff/release.md (this log); docs/handoff/{shopboth,skillsanity,cavefix,setup}.md
+(release-notes drafts -> pointers); docs/handoff/wiki.md ("For wiki" notes); docs/ap/apworld.md,
+docs/ap/seed_format.md (the compatibility lines); engine/CMakeLists.txt (0.02.50); README.md;
+engine/README.md (also edited by hubleader); apworld/so2/docs/en_Star Ocean The Second Story.md,
+apworld/so2/docs/setup_en.md; docs/catalog/functions.csv (line 3528), docs/catalog/COVERAGE.md;
+docs/images/setup-archipelago.png, setup-discs.png, docs/images/README.md;
+engine/src/psx/memory_card.cpp, engine/src/game/common/program_image.cpp,
+engine/tests/test_script_vm.cpp (the Windows fixes). Scratch (git-ignored): scratchpad/release/
+(rc-0.02.50.sh, rc-0.02.50-dist/, rc-first-2111/, rc-aborted-2106/, pre/, pre-dist/, shots/,
+wincheck/ (logs and the MinGW probe), rc-wine/ (the prefix), rc-e2e-so2/, rc-e2e-hub/,
+apbuild/).
+
+**Other agents' uncommitted work in the same tree (the RC includes it):** cleanup
+(runtime.{h,cpp}, menu_shop.cpp, smoke_field_events.sh, apworld.md, claudesword.md, cleanup.md),
+hubleader (leader.{h,cpp}, script_ext.cpp, actor_field.cpp, test_leader.cpp,
+ap_hub_chambers.py, smoke_field_events.sh, seed_format.md, engine/README.md, hubleader.md),
+hubproof2 (ap_e2e_hub.sh, hubproof.md, docs/ap/hub_proof.json); docs/plans/next.md (untracked,
+not from this agent).
+
+**For the user before the tag:** review the three code fixes (memory_card.cpp,
+program_image.cpp, test_script_vm.cpp); the old YAML names (`protagonist`,
+`drops_as_checks`) have no alias (the notes say to rename; an alias would be a hidden option);
+commit (the content id above shows whether the commit matches the RC); then tag / push / the
+draft GitHub release (section 9's command) / the wiki push (scratchpad/wiki, the wiki agent's
+pages). HANDOFF.md's state section and scratchpad/agents.txt are the coordinator's.
+
+Nothing running: no game, Wine, server or build process left (checked); the worktrees removed.

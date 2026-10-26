@@ -27,10 +27,11 @@ Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
 ## First run
 
-You need images of your own discs, North American release: each disc's `.cue` file with
-its `.bin`, or an `.iso` / `.img` image. Disc 2 is optional until the story asks for it.
+You need images of your own discs, from the North American, European, French or German
+release (both from the same one): each disc's `.cue` file with its `.bin`, or an `.iso` /
+`.img` image. Disc 2 is optional until the story asks for it.
 
-**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.01.00-win64.zip`)
+**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.02.50-win64.zip`)
 anywhere and run **`setup.exe`**. On the Discs page, choose Disc 1 (and Disc 2) with
 *Browse...*. The other pages are Display,
 Sound, Controls, Gameplay, Memory cards, Mods and Archipelago. Then press *Save & Play*. Or just run
@@ -278,7 +279,7 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   a fight the story gives one member alone (Claude in Shingo Forest in Rena's game, the
   tournament's fights) borrows that member for the fight only. A starting character joins at
   the first free play and leads (`docs/ap/seed_format.md` "The party rules").
-- **The hub** (seed version 3, `world_mode: hub`; in progress): New Game starts after the Final
+- **The hub** (seed version 3, `world_mode: hub`): New Game starts after the Final
   Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
   town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens
   with its key, Fienal once the seed's bosses are beaten. The story stays at chapter 60
@@ -292,10 +293,22 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   the world map: once per visit): its scene plays only after a yes; extra options on the
   game's own menus do the rest (the arena desk's "Face Marsilio.", beside "Register." for the
   ordinary arena; the Clerk's "Leave the arena." in Marsilio's scene). Saves keep all of it.
+  The open-world party rules, the starting character and the leader stand-in apply as in the
+  open world: the player walks as the Formation leader, and the chambers' scenes name them
+  where they name the hero (`docs/ap/seed_format.md` "The leader stand-in").
   Debugging: `SS_HUB_TRACE=1` lists what a scene stores in its view; `SS_HUB_STATE=1` builds
   the hub's New Game state on a `--map` debug start; `SS_SWEEP_PLAY=MAP:K16:1/0/0` answers a
   step's choices one by one (`docs/ap/seed_format.md` "Hub": "The port: the chapter lock and the
   story views", "The port: New Game, the starts, the doors, P5", "The port: the questions").
+- **Skillsanity, difficulty and join levels** (seed version 2, any world mode unless noted):
+  with `skillsanity`, skills and killer moves / spells arrive as items, a guild purchase checks
+  each skill in its set, and each learn point is a check (members start with their first move
+  only); `skillsanity_shop_share` sells some of them in shops as themselves. `difficulty` sets
+  New Game's Battle Rank and skips its screen (`any`: the screen with all three). In open world
+  and hub mode a member joins at the party's median level, at any seed version (story mode, no
+  seed or Archipelago off: the original levels). Shop slots give what was bought and the
+  slot's check, marked with the Archipelago logo until checked. `docs/ap/seed_format.md`
+  "Skillsanity", "Difficulty", "The join level", "Shop slots".
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP

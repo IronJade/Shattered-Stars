@@ -35,7 +35,7 @@ open Archipelago's own folder (`~/.local/share/Archipelago/output` on the user's
   of seeds without `--ap-seed-entry` and loads with it; setup screenshots (offscreen) of one /
   choose / chosen / none in scratchpad/apzip/shots; `--do save` writes ap_seed + ap_seed_entry.
 - Docs: apworld/so2/docs/setup_en.md, README.md (How to play), engine/README.md, seed_format.md's
-  opening. Left for the next release: the wiki's Archipelago page and the release notes.
+  opening. Left for the next release: the wiki's Archipelago page and the release notes (release notes: docs/release_notes/0.02.50.md).
 
 ### Same day: each seed on its own memory card (the user)
 

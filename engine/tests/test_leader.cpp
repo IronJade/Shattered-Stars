@@ -121,6 +121,17 @@ TEST(leader_standin_follows_the_formation_leader) {
   }
   {
     Scene scene(true, 1);
+    ap::stop();
+    ap::Seed hub;
+    hub.seed = "hub";
+    hub.hub = true;
+    ap::start_with(hub);  // the hub (world_mode hub): as in the open world
+    CHECK(leader_standin(&s));
+    CHECK_EQ(s.model, 6);
+    CHECK_EQ(s.hero, 0);
+  }
+  {
+    Scene scene(true, 1);
     globals().field_flags[0x68] = 1;  // a world map
     CHECK(!leader_standin(&s));
   }

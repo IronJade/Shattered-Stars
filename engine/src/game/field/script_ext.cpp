@@ -31,7 +31,7 @@ const u8* script_string(ScriptCtx* ctx, s32 index) {
 // A message window's text: the script's string, or (Archipelago, port feature) the message
 // of a seed placeholder given just before ("Got Blueberries." / "Sent Hookshot to Alice."),
 // or the captain's menu at Port Hilton in an open-world seed (ap::script_text); a script
-// string names the leader stand-in where it names the hero (open world: field/leader.h).
+// string names the leader stand-in where it names the hero (open world and hub: field/leader.h).
 const u8* message_text(ScriptCtx* ctx, s32 index) {
   if (const u8* text = ap::take_message_override()) return text;
   const u8* own = script_string(ctx, index);

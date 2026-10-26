@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.24)
 # here in PROJECT_VERSION (checked: "0.01.00", not normalized to "0.1.0"), so this one line is
 # the single source: it reaches the code as SS_VERSION (below) and the release scripts read
 # it back out of this file (tools/build_linux.sh, tools/build_windows.sh).
-project(ShatteredStars LANGUAGES C CXX VERSION 0.02.00)
+project(ShatteredStars LANGUAGES C CXX VERSION 0.02.50)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -79,7 +79,7 @@ add_library(ss_core STATIC
   src/util/png.cpp)
 target_include_directories(ss_core PUBLIC src)
 target_compile_options(ss_core PRIVATE ${SS_WARNINGS})
-# SS_VERSION: "0.02.00" (PROJECT_VERSION above), a plain string literal everywhere that
+# SS_VERSION: "0.02.50" (PROJECT_VERSION above), a plain string literal everywhere that
 # links ss_core (the game, setup, both test binaries): --help / --version, setup's header.
 target_compile_definitions(ss_core PUBLIC SS_VERSION="${PROJECT_VERSION}")
 

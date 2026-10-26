@@ -127,10 +127,9 @@ agents: hubproof (docs/handoff/hubproof.md), hubask2 (hub.*, seed.*, hub.py; hub
 - Proof image: cap/proof_marks.png (marked list; after the checks; the order shop).
 
 ## Release notes line
-- Archipelago shop slots (`shuffle_shops`): the first purchase of a slot now gives what you
-  bought, every copy, and the slot's check too; a slot still to check has the Archipelago logo
-  after its name in the shop's list (the colour-2 mark 0.02.00 meant to show never drew).
-  Existing seeds are fixed by the port alone: no new seed needed.
+(release notes: docs/release_notes/0.02.50.md)
+
+## Done (continued)
 
 - tools/ap_e2e_so2.sh (AP_E2E_WORK=scratchpad/shopboth/e2e_so2, AP_E2E_PORT=38393): 37 PASS,
   0 FAIL (a real generated seed over a local server: "the shop slot's check pays the Spectacles",
@@ -142,7 +141,7 @@ agents: hubproof (docs/handoff/hubproof.md), hubask2 (hub.*, seed.*, hub.py; hub
 - Nothing: done and verified (2026-10-25). Not committed (rule: no commits).
 
 ## Next steps
-- Coordinator: commit (docs first). Release notes: the line above. Region discs (FR / DE names
+- Coordinator: commit (docs first). (release notes: docs/release_notes/0.02.50.md) Region discs (FR / DE names
   are longer): the mark is clamped left of the price's first digit, so a very long name may run
   under it; not captured on those discs.
 

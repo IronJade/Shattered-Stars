@@ -2,10 +2,10 @@
 
 #include "core/types.h"
 
-// The leader stand-in (Archipelago open world; port feature, not in the original;
+// The leader stand-in (Archipelago open world and hub; port feature, not in the original;
 // docs/ap/seed_format.md "Party v2", docs/handoff/leader.md).
 //
-// In a seed with `world_mode: open_world`, on field maps, the walking actor shows the Formation
+// In a seed with `world_mode: open_world` or `hub`, on field maps, the walking actor shows the Formation
 // leader (config +0x41: the member the camp menu's Combat > Formation > Leader picks, the one
 // the player controls in battle) when that member is active and is not the story's hero, and the
 // hero's name token in the map scripts' messages ({name:00} in Claude's game, {name:01} in
@@ -20,7 +20,7 @@
 //
 // One rule decides sprite and names together, so a box never shows a sprite and a name that
 // disagree. The stand-in shows unless:
-// - the seed is not open world, the map is a world map (the members' world sprites have 4 of
+// - the seed is not open world or hub, the map is a world map (the members' world sprites have 4 of
 //   the 21 animations), the leader is the hero or not an active member (a Private Action keeps
 //   only the hero), or a script has given the walking actor another model (the bunny, a
 //   disguise);
@@ -93,7 +93,7 @@ int leader_standin_anim(int id);
 bool leader_scene_latched();
 
 // Tests and debugging. SS_LEADER_STANDIN=0 turns the stand-in off, =1 on without an open-world
-// seed; SS_LEADER_SLOT=N takes party slot N as the Formation leader instead of config +0x41
+// or hub seed; SS_LEADER_SLOT=N takes party slot N as the Formation leader instead of config +0x41
 // (presentation only: config is not written). Read once; the setters override them (-2: the
 // environment's value).
 void leader_set_debug(int standin, int slot);

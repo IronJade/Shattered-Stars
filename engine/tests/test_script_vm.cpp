@@ -18,6 +18,7 @@
 #include "game/ap/hub.h"
 #include "game/ap/seed.h"
 #include "game/boot/system.h"
+#include "game/field/fade.h"
 #include "game/field/field.h"
 #include "game/field/message.h"
 #include "game/field/script_vm.h"
@@ -1027,6 +1028,9 @@ TEST(ap_hub_chapter_lock) {
 TEST(ap_hub_story_view) {
   ap::stop();
   Fixture f;
+  // No fade queued from an earlier test (a fade keeps the field out of free play, so the view
+  // would never end): the cases run in another order in the Windows build. [release agent]
+  if (field::ScreenFade* fade = field::field_fade()) fade->read = fade->write;  // the queue empty
   set_story(f, 60, 4000);
   set_flag(f, 1, true);     // Claude's game
   set_flag(f, 745, true);   // real 1, the view 0

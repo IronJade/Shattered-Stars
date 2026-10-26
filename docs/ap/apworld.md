@@ -1128,8 +1128,16 @@ Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
 
 **0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
 the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a
-version-1 seed the 0.02.00 port plays; story-mode seeds are 0.1.1's with `drop_progression:
-never` (above).
+version-1 seed, but it still needs port 0.02.50: 0.2.0 writes the renamed options only
+(`story_route`, `enemy_dropsanity`) and the 0.02.00 port reads only the old names
+(`protagonist`, `drops_as_checks`), so there it loses its route and its first-drop checks
+[release agent, 2026-10-25]. A story-mode seed with `drop_progression: never` (above)
+is 0.1.1's no longer in every case: with the same seed number, one with a `cave_of_trials`
+player places its items otherwise (3 cave locations fewer, the cave's names by floor), and so
+does one where 0.1.1 put progression on a gift site (gift sites never hold it now). Of the 16
+all-story seeds of the batch, the 3 without a cave player are 0.1.1's but for `options`; the 13
+with one differ, 3 of them (5 files) already before the cave change, likely from the gift rule
+(docs/handoff/cavefix.md).
 - *Goals:* `goal` indalecio (0.1.x's `final_boss`, kept as an alias) / indalecio_limiter_off /
   indalecio_limiter_off_and_iseria_queen, with the events "Limiter Off" and "Iseria Queen
   defeated", the seed's `goal.flags` / `goal.all` and the gate on the way to Indalecio

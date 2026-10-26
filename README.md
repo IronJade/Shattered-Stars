@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue.svg"></a>
-  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.02.00" src="https://img.shields.io/badge/version-0.02.00-informational.svg"></a>
+  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.02.50" src="https://img.shields.io/badge/version-0.02.50-informational.svg"></a>
   <a href="#getting-started"><img alt="Platforms: Windows and Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey.svg"></a>
   <a href="#how-it-was-made"><img alt="C++20, SDL3, OpenGL" src="https://img.shields.io/badge/C%2B%2B20-SDL3%20%C2%B7%20OpenGL-orange.svg"></a>
   <a href="#archipelago"><img alt="Archipelago: built in" src="https://img.shields.io/badge/Archipelago-built%20in-purple.svg"></a>
@@ -50,7 +50,7 @@ by hand as ordinary C++20 on top of SDL3 and OpenGL.
   random-number draws, unit positions and damage, sound driver calls and save data.
 - **Full speed, instant loading.** No slowdown when the screen gets busy, no waiting for the
   disc, and the world map runs at its full frame rate.
-- **Bugs fixed, gameplay untouched.** 83 cases in the original's code are documented, each
+- **Bugs fixed, gameplay untouched.** 85 cases in the original's code are documented, each
   with its decision. A bug is fixed only where the fix leaves hit timing, damage, difficulty
   and pacing exactly as they were,
   [measured against the original](#faithful-by-design-bugs-fixed-quirks-kept).
@@ -126,8 +126,8 @@ Japanese discs (SLPM-86105 / SLPM-86106) are recognised but not supported yet.
 Download the [latest release](https://github.com/IronJade/Shattered-Stars/releases/latest). Each release has two self-contained packages, with no
 installer and nothing else to install:
 
-- `ShatteredStars-0.02.00-win64.zip`
-- `ShatteredStars-0.02.00-linux-x86_64.tar.gz`
+- `ShatteredStars-0.02.50-win64.zip`
+- `ShatteredStars-0.02.50-linux-x86_64.tar.gz`
 
 ### First launch
 
@@ -159,7 +159,7 @@ for the PlayStation hardware.
 ```mermaid
 flowchart LR
     discs["Disc images<br/>(the player's own)"] --> read["Read every program<br/>archive and SLZ tools,<br/>disassembly, decompilation"]
-    read --> cat["Function catalog<br/>5,452 functions,<br/>all confirmed"]
+    read --> cat["Function catalog<br/>5,536 functions,<br/>all confirmed"]
     cat --> cpp["Hand-written C++20<br/>hardware layer<br/>and game code"]
     cpp --> cmp{"Compare with<br/>the original"}
     redux["Original game in<br/>PCSX-Redux,<br/>Lua recording scripts"] --> cmp
@@ -181,7 +181,7 @@ its SLZ compression, and disassemble the field event scripts.
 **2. Catalog everything.** Every function goes into
 [`docs/catalog/functions.csv`](docs/catalog/functions.csv) with its module, address, name,
 signature, summary, confidence, evidence and its place in the port. The catalog holds
-**5,452 functions across 149 code modules, every one confirmed**. Of those, 4,463 are ported
+**5,536 functions across 172 code modules, every one confirmed**. Of those, 4,547 are ported
 to C++, 901 aren't needed (dead code, stale copies, or hardware a PC doesn't have) and 88 are
 Sony library routines replaced by the port's runtime. A gap scanner searches every program for
 call targets the catalog lacks, and finds none. Globals, event-script opcodes and data formats
@@ -260,7 +260,7 @@ always runs at full speed.
 
 | Fixed | Avoided | Kept: intended | Kept: gameplay | Held | Not fixed yet | Not a bug | **Total** |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 43 | 20 | 8 | 3 | 6 | 2 | 1 | **83** |
+| 44 | 20 | 8 | 4 | 6 | 2 | 1 | **85** |
 
 Some examples from each class:
 
@@ -344,18 +344,27 @@ someone else is sent to them over the network. Shattered Stars has the Archipela
 built into the game.
 
 <p align="center">
-  <img src="docs/images/setup-archipelago.png" alt="The setup program's Archipelago page with a seed file loaded and a server address, slot name and password filled in" width="600">
+  <img src="docs/images/setup-archipelago.png" alt="The setup program's Archipelago page with a seed file loaded, the seed's own memory card under Saves, the on / off switch in the sidebar and a server address filled in" width="600">
 </p>
 
-**What is randomised.** Every chest (311) and every gift site (101: a scene, a Private Action
+**What is randomised.** Every chest (308) and every gift site (101: a scene, a Private Action
 or a prize table that hands you an item or Fol) always holds an item from the multiworld. The
 story's key items are never shuffled, so the story always carries on. Optionally, more
 locations join in: defeating bosses (41, on by default), party members joining you (they become
-items), the first drop of each enemy type (89) and shop slots (up to 550). An open-world mode
-locks the world map's entrances behind 35 area keys. Traps, EXP and Fol multipliers, the
-encounter rate and the post-game Cave of Trials are options too.
+items), the first drop of each enemy type (89), shop slots (up to 550), the first creation of
+each item with Item Creation (553), killer-move proficiency levels (133), and skills, killer
+moves and spells, whose guild purchases and learn points become checks. Traps, EXP and Fol
+multipliers, the encounter rate, the Battle Rank and the post-game Cave of Trials are options
+too.
 
-**The goal** is defeating Indalecio, the final boss, in Fienal.
+**Three ways to play.** The story mode follows the story as it is. The open world locks the
+world map's entrances behind 35 area keys and, with character items, builds your party from the
+members you receive. The hub mode starts after the Final Save Point with both worlds open: each
+dungeon opens with its key, each story boss waits in its chamber, and Fienal opens once the
+bosses are beaten.
+
+**The goal** is defeating Indalecio, the final boss, in Fienal: as he is, with his limiter off,
+or with his limiter off and the Iseria Queen beaten too.
 
 **DeathLink** is optional: a real Game Over sends a death to the other DeathLink players, and a
 death received from them knocks out your party at the next safe moment.

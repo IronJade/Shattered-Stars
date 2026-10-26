@@ -20,8 +20,8 @@
 #include "runtime/runtime.h"
 
 // The leader stand-in (leader.h): the rule, the walking actor's drawn sprite and the hero's
-// name token in script messages. Port feature (Archipelago open world); nothing here exists in
-// the original, and without an open-world seed none of it runs.
+// name token in script messages. Port feature (Archipelago open world and hub); nothing here
+// exists in the original, and without an open-world or hub seed none of it runs.
 namespace ss::game::field {
 namespace {
 
@@ -187,7 +187,10 @@ bool candidate(StandIn* out, const char** why) {
   const int forced = debug_standin();
   *why = "off";
   if (forced == 0) return false;
-  if (forced != 1 && !(ap::enabled() && ap::seed() != nullptr && ap::seed()->open_world)) return false;
+  // Open-world and hub seeds (the hub's chambers play their original scenes through story views:
+  // the same rule, latch and names as an open-world scene); story mode and non-AP games never.
+  if (forced != 1 && !(ap::enabled() && ap::seed() != nullptr && (ap::seed()->open_world || ap::seed()->hub)))
+    return false;
   FieldGlobals& g = globals();
   if (g.game_state == nullptr || g.config == nullptr || g.party == nullptr || g.field_flags == nullptr ||
       g.script_flags == nullptr)

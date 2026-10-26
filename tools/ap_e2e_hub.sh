@@ -97,6 +97,7 @@ EOF
 cat > "$W/players/Bob.yaml" <<'EOF'
 name: Bob
 game: ChecksFinder
+ChecksFinder: {}
 EOF
 (cd "$AP/Archipelago" && "$AP/ap-venv/bin/python" Generate.py --player_files_path "$W/players" --outputpath "$W/out" \
    --seed "$SEED" --plando "bosses, items, connections, texts" --spoiler 2) < /dev/null > "$W/generate.log" 2>&1

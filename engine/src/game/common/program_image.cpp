@@ -27,11 +27,17 @@ const Image& image_of(int entry) {
   static std::map<int, Image> images;
   auto it = images.find(entry);
   if (it == images.end()) {
+    // No disc open yet (a test asking before any boot): nothing to read, and nothing cached, so
+    // the image is read once a disc is open. (Cached empty, every later read gave null: a field
+    // test running after one that asked first crashed in field_create_state_block.) [release agent]
+    disc::Archive* archive = get_system()->loader.archive();
+    if (archive == nullptr) {
+      static const Image none;
+      return none;
+    }
     Image image;
-    if (disc::Archive* archive = get_system()->loader.archive()) {
-      if (auto packed = archive->read_entry(static_cast<u32>(entry))) {
-        if (auto unpacked = disc::slz::unpack_block(*packed, 0, 0, nullptr)) image.bytes = std::move(*unpacked);
-      }
+    if (auto packed = archive->read_entry(static_cast<u32>(entry))) {
+      if (auto unpacked = disc::slz::unpack_block(*packed, 0, 0, nullptr)) image.bytes = std::move(*unpacked);
     }
     if (!region::is_na()) {
       image.map = region::entry_map(entry, 0);

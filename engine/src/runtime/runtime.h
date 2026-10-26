@@ -105,9 +105,7 @@ class Runtime {
   u64 last_vsync_ = 0;
   std::chrono::steady_clock::time_point next_deadline_{};
   std::set<std::string> logged_;
-  bool debug_console_ = false;
-  std::mutex debug_mutex_;
-  std::deque<std::string> debug_lines_;
+  bool debug_console_ = false;  // its typed lines: runtime.cpp's ConsoleInput
   std::deque<std::string> debug_output_;
 };
 
