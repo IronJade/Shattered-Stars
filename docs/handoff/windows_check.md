@@ -187,3 +187,35 @@ as above.
    state change, **Quit** exits cleanly; audio pauses cleanly while the prompt is up (no pop or
    stutter) and resumes normally after Keep playing; keys/buttons held while the prompt is up
    don't leak into the game once it closes.
+
+### 2026-10-26: RC2 (877b771) on Windows 11: all checks PASS
+Run by the Windows agent with the RC2 files (zip 1d573a50…, so2.apworld aa57e9d9…, the dotted YAML
+adada8d0…), unpacked fresh into "…\Shattered Stars Ä\" and a plain path, a scratch APPDATA (the user's
+real %APPDATA%\ShatteredStars never created). Keys sent to the game window through the Windows API;
+command-line cases from PowerShell.
+- **Command line:** PASS. `--headless --memcard1`, `SS_MEMCARD1` + `SS_DISC1`, windowed `--disc1` +
+  `--memcard1` (save #1 / #3, Continue, load), `--ap-seed …\AP_….zip`, `--ap-seed-entry
+  "AP_…_P2_Cléo.apso2"`, `setup.exe --set "memcard2=…日本\…" --do save`, all under
+  "C:\Users\hitsu\ss-test\Test Ä 日本\": no crash, config.ini in UTF-8, the console shows Ä / 日本.
+- **Auto-detect:** PASS ("Found Disc 2 next to your Disc 1.", green).
+- **Log:** PASS: console and double-clicked runs log the seed, title, loaded, [mods], check and quit
+  prompt lines; no "pwnd->destroy" anywhere (the string is gone from the exe).
+- **Online:** PASS: "connecting … as Cléo (client version 0.6.8)", the server's Client(0.6.8);
+  "Cléo sent Star Ruby to Bowie", Bowie received it.
+- **Names and icon:** PASS: VersionInfo "Shattered Stars" / "Shattered Stars Setup", 0.02.50,
+  DreamGlyph Studios; no "WinThreads"; manifests asInvoker / PerMonitorV2 / Common Controls 6; Task
+  Manager descriptions and window titles right; setup.exe opens with no UAC prompt (double-click and
+  from the game); the gold star on the exes, both title bars, two taskbar buttons and Alt+Tab.
+- **Esc:** PASS (keyboard): the prompt, Left / Right / Enter, Esc Esc back, Esc Right Enter quits
+  (exit 0, ~1.2 s); audio without clicks across three prompts; works in borderless and exclusive
+  fullscreen (by the log and exit code); X / Alt+F4 quit at once.
+- **Core rerun:** PASS: card slots 1 and 2 on the 日本 cards, the seed's own card, the save guard
+  (a changed byte and a foreign save refused).
+- **Not covered:** a gamepad (none attached), display scaling above 100 %, fullscreen visuals
+  (screen capture can't see a fullscreen GL window).
+- **Observations (small, for a later update):** setup's font has no CJK glyphs (日本 shows as boxes
+  on the Memory cards page); a double-clicked run's closing "stopped after N vblanks" stdout line
+  isn't in the log; the --debug console window is titled with the exe's full path.
+
+**Released:** v0.02.50 on 877b771, published 2026-10-26 06:23 UTC
+(https://github.com/IronJade/Shattered-Stars/releases/tag/v0.02.50); the wiki pushed (a72a063).

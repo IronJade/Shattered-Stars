@@ -29,7 +29,7 @@ this file is the quick orientation.
   Later: the hub open world (`scratchpad/openworld/story_flags.md` section 4).
 
 ### Resume here (a fresh session)
-0. **Release 0.02.50 (port) + so2.apworld 0.2.0, 2026-10-25: prepared, not yet published.** The RC
+0. **Released 2026-10-26: v0.02.50 (port) + so2.apworld 0.2.0** (tag on 877b771, https://github.com/IronJade/Shattered-Stars/releases/tag/v0.02.50; wiki a72a063; Windows 11 RC2 check all PASS, docs/handoff/windows_check.md). Earlier state of this item: The RC
    passed (docs/ap/release_checklist.md section 9; artifacts scratchpad/release/rc-0.02.50-dist/;
    notes docs/release_notes/0.02.50.md). The user reviews, commits the whole working tree (tree hash
    check in section 9: c3a0177296fe677d) and pushes; then the user's Windows machine (Remote Control

@@ -860,3 +860,8 @@ the coordinator; nothing was committed.
   the recheck (windows_check.md); (3) if it passes: tag v0.02.50, push the tag, `gh release create`
   with docs/release_notes/0.02.50.md and the rc2 artifacts, then commit + push the wiki
   (scratchpad/wiki). Any failure: stop and report to the user. Never push dgs or refs/backup/*.
+- 2026-10-26: **released.** Windows RC2 recheck all PASS (windows_check.md). Tag v0.02.50 (lightweight,
+  on 877b771, as v0.01.00 / v0.02.00) pushed; `gh release create v0.02.50 --verify-tag --latest`
+  with the five rc2 artifacts (the four of 0.02.00 + SHA256SUMS), title "Shattered Stars 0.02.50",
+  notes docs/release_notes/0.02.50.md; published 06:23:51 UTC, latest; downloaded assets verify
+  against SHA256SUMS. Wiki pushed: a72a063.

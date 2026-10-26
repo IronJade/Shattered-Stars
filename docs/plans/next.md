@@ -155,3 +155,12 @@ own build dirs, memcap, at most 3 agents / 2 game processes each, scratch XDG_CO
 docs/handoff/, roll over at ~400k, commit verified pieces (or leave them for the user when the user
 says so), enhance never degrade, Archipelago off = the original game, no debugging in AP runs, no game
 data in git.
+
+## Small follow-ups from the 0.02.50 Windows check (any time)
+- Setup's font has no CJK glyphs: a Japanese folder name shows as boxes (Memory cards page). Phase B
+  (Japan) will need CJK text in setup anyway.
+- A double-clicked Windows run's closing "stopped after N vblanks" (main.cpp, printf to stdout) isn't
+  in shattered-stars.log; route it through util/log like the other lines.
+- The --debug console window on Windows is titled with the exe's full path; set its title.
+- Not covered on real Windows yet: a gamepad with the Esc prompt, display scaling above 100 %.
+
