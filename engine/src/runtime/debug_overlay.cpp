@@ -64,6 +64,11 @@ void draw_text(std::vector<u32>& px, int w, int h, int x, int y, int scale, cons
 
 }  // namespace
 
+u8 overlay_font_column(unsigned char ch, int col) {
+  const int index = (ch >= 0x20 && ch <= 0x7E) ? ch - 0x20 : '?' - 0x20;
+  return col >= 0 && col < 5 ? kFont[index][col] : 0;
+}
+
 void draw_debug_overlay(std::vector<u32>& pixels, int width, int height, const std::string& status,
                         const std::deque<std::string>& lines) {
   if (width <= 0 || height <= 0 || pixels.size() < static_cast<size_t>(width) * height) return;

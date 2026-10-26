@@ -2,7 +2,8 @@
 # Builds the Linux release and packs it as dist/ShatteredStars-<version>-linux-x86_64.tar.gz
 # (e.g. dist/ShatteredStars-0.01.00-linux-x86_64.tar.gz): shattered-stars (the game),
 # shattered-stars-setup (the settings window), the README, this project's own LICENSE, the
-# third-party licences and an empty discs/ folder for the player's disc images. The version
+# third-party licences, an empty discs/ folder for the player's disc images, and the optional
+# desktop entry (install-desktop-entry.sh, with desktop/: .desktop files, the icon). The version
 # is read from engine/CMakeLists.txt's project(... VERSION ...) line (the single source;
 # docs/ap/release_checklist.md section 1), so it never needs updating here by hand.
 #
@@ -65,6 +66,21 @@ cp "$build/shattered-stars" "$build/shattered-stars-setup" "$out/"
 strip "$out/shattered-stars" "$out/shattered-stars-setup"
 files=("$out/shattered-stars" "$out/shattered-stars-setup")
 
+# The desktop entry, optional (README.md, "Linux: the application menu and the taskbar"):
+# install-desktop-entry.sh adds desktop/'s two .desktop files (res/linux) and the icon
+# (res/icon, drawn by tools/make_icon.py) in hicolor sizes to the player's ~/.local/share.
+id=io.github.IronJade.ShatteredStars
+mkdir -p "$out/desktop/icons/hicolor/scalable/apps"
+cp "res/linux/$id.desktop" "res/linux/$id.Setup.desktop" "$out/desktop/"
+for size in 16 24 32 48 64 128 256; do
+  mkdir -p "$out/desktop/icons/hicolor/${size}x$size/apps"
+  cp "res/icon/shattered-stars-$size.png" "$out/desktop/icons/hicolor/${size}x$size/apps/$id.png"
+done
+cp res/icon/shattered-stars.svg "$out/desktop/icons/hicolor/scalable/apps/$id.svg"
+cp res/linux/install-desktop-entry.sh "$out/"
+chmod 644 "$out"/desktop/*.desktop
+chmod 755 "$out/install-desktop-entry.sh"
+
 if [ "$mode" = host ]; then
   # The SDL3 the programs were linked with.
   sdl=$(ldd "$build/shattered-stars" | awk '$1 == "libSDL3.so.0" { print $3 }')
@@ -93,6 +109,10 @@ printf '%s\n' \
   "Everything else is included: $sdl_note" \
   "Settings, memory cards and mods/: ~/.config/shattered-stars/ (or \$XDG_CONFIG_HOME)." \
   "Licence: MIT (LICENSE); third-party components: THIRD-PARTY-LICENSES.txt." \
+  "" \
+  "Optional: ./install-desktop-entry.sh adds both programs to your application menu with" \
+  "their icon (GNOME and KDE Plasma on Wayland need it to show the icon in the taskbar);" \
+  "./install-desktop-entry.sh --uninstall removes them again." \
   > "$out/README.txt"
 printf '%s\n' \
   "Put your Star Ocean: The Second Story disc images in this folder (North American" \

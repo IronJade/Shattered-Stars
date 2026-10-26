@@ -108,6 +108,12 @@ void audio_close() {
   close_wav();
 }
 
+void audio_pause(bool paused) {
+  if (g.stream == nullptr) return;
+  if (paused) SDL_PauseAudioStreamDevice(g.stream);
+  else SDL_ResumeAudioStreamDevice(g.stream);
+}
+
 void audio_vblank() {
   g.remainder += kFieldNumerator;
   const size_t frames = static_cast<size_t>(g.remainder / kFieldDenominator);

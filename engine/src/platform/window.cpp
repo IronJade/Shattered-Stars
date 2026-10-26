@@ -6,6 +6,7 @@
 #include <bit>
 #include <cstring>
 
+#include "platform/app_icon.h"
 #include "platform/gl.h"
 
 namespace ss::platform {
@@ -90,7 +91,9 @@ void Window::set_controls(const Controls& controls) {
   controls_ = controls;
   held_keys_.clear();
   held_buttons_.clear();
-  key_bits_ = button_bits_ = trigger_bits_ = 0;
+  swallowed_keys_.clear();
+  swallowed_buttons_.clear();
+  key_bits_ = button_bits_ = trigger_bits_ = swallowed_triggers_ = 0;
 }
 
 bool Window::sticks(u8 out[4]) const {
@@ -100,11 +103,32 @@ bool Window::sticks(u8 out[4]) const {
 }
 
 void Window::rumble(int small, int large) {
-  if (gamepad_ == nullptr) return;
+  rumble_small_ = small;
+  rumble_large_ = large;
+  if (gamepad_ == nullptr || modal_) return;
   const Uint16 low = static_cast<Uint16>((large < 0 ? 0 : large > 255 ? 255 : large) * 257);
   const Uint16 high = small != 0 ? 0xFFFF : 0;
   // The console keeps the motors at these levels until the game changes them.
   SDL_RumbleGamepad(gamepad_, low, high, low == 0 && high == 0 ? 0 : 60000);
+}
+
+void Window::set_modal(bool on) {  // [escquit]
+  if (on == modal_) return;
+  modal_ = on;
+  if (on && gamepad_ != nullptr) SDL_RumbleGamepad(gamepad_, 0, 0, 0);
+  if (!on) rumble(rumble_small_, rumble_large_);
+}
+
+void Window::picture_size(float aspect, int& width, int& height) const {
+  int win_w = 0, win_h = 0;
+  SDL_GetWindowSizeInPixels(window_, &win_w, &win_h);
+  width = win_w;
+  height = win_h;
+  if (win_h > 0 && static_cast<float>(win_w) / win_h > aspect) {
+    width = static_cast<int>(win_h * aspect);
+  } else {
+    height = static_cast<int>(win_w / aspect);
+  }
 }
 
 namespace {
@@ -177,6 +201,7 @@ bool Window::create(const std::string& title, const WindowOptions& options, std:
     if (error) *error = std::string("SDL_CreateWindow: ") + SDL_GetError();
     return false;
   }
+  set_window_icon(window_);  // the taskbar's and title bar's icon (platform/app_icon.h)
   if (display != 0)
     SDL_SetWindowPosition(window_, static_cast<int>(SDL_WINDOWPOS_CENTERED_DISPLAY(display)),
                           static_cast<int>(SDL_WINDOWPOS_CENTERED_DISPLAY(display)));
@@ -244,16 +269,27 @@ bool Window::next_event(bool& open, KeyEvent& out) {
       case SDL_EVENT_KEY_DOWN:
       case SDL_EVENT_KEY_UP: {
         const bool down = e.type == SDL_EVENT_KEY_DOWN;
+        const int key = static_cast<int>(e.key.key);
         const bool toggle = e.key.key == SDLK_F11 || (e.key.key == SDLK_RETURN && (e.key.mod & SDL_KMOD_ALT));
-        // The keys held now give the buttons (Alt+Enter is the full-screen switch, not a key).
-        std::erase(held_keys_, static_cast<int>(e.key.key));
-        if (down && !toggle) held_keys_.push_back(static_cast<int>(e.key.key));
+        // The keys held now give the buttons. The port's keys are none: Alt+Enter / F11 (the
+        // full-screen switch) and Esc (the quit prompt), whatever config.ini binds to them.
+        const bool port_key = toggle || e.key.key == SDLK_ESCAPE;
+        std::erase(held_keys_, key);
+        if (down && !port_key) held_keys_.push_back(key);
+        if (!down) std::erase(swallowed_keys_, key);
+        else if (modal_ && !e.key.repeat && !port_key && std::ranges::find(swallowed_keys_, key) == swallowed_keys_.end())
+          swallowed_keys_.push_back(key);
         key_bits_ = 0;
-        for (int k : held_keys_) key_bits_ |= pad_bits_for_key(controls_, k);
-        if (down && e.key.key == SDLK_ESCAPE) open = false;
+        for (int k : held_keys_)
+          if (std::ranges::find(swallowed_keys_, k) == swallowed_keys_.end()) key_bits_ |= pad_bits_for_key(controls_, k);
         if (down && !e.key.repeat && toggle) set_fullscreen(!fullscreen_);
         if (!e.key.repeat) {
-          out = KeyEvent{static_cast<int>(e.key.key), down};
+          HostKey host = HostKey::kNone;
+          if (e.key.key == SDLK_ESCAPE) host = HostKey::kEscape;
+          else if ((e.key.key == SDLK_RETURN || e.key.key == SDLK_KP_ENTER) && !toggle) host = HostKey::kEnter;
+          else if (e.key.key == SDLK_LEFT) host = HostKey::kLeft;
+          else if (e.key.key == SDLK_RIGHT) host = HostKey::kRight;
+          out = KeyEvent{key, down, port_key ? u16{0} : pad_bits_for_key(controls_, key), host};
           return true;
         }
         break;
@@ -263,7 +299,9 @@ bool Window::next_event(bool& open, KeyEvent& out) {
           gamepad_ = g;
           for (s16& a : axes_) a = 0;
           held_buttons_.clear();
-          button_bits_ = trigger_bits_ = 0;
+          swallowed_buttons_.clear();
+          button_bits_ = trigger_bits_ = swallowed_triggers_ = 0;
+          stick_dir_ = 0;
         }
         break;
       case SDL_EVENT_GAMEPAD_REMOVED:
@@ -272,16 +310,29 @@ bool Window::next_event(bool& open, KeyEvent& out) {
           gamepad_ = nullptr;
           for (s16& a : axes_) a = 0;
           held_buttons_.clear();
-          button_bits_ = trigger_bits_ = 0;
+          swallowed_buttons_.clear();
+          button_bits_ = trigger_bits_ = swallowed_triggers_ = 0;
+          stick_dir_ = 0;
         }
         break;
       case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
       case SDL_EVENT_GAMEPAD_BUTTON_UP: {
-        std::erase(held_buttons_, static_cast<int>(e.gbutton.button));
-        if (e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) held_buttons_.push_back(e.gbutton.button);
+        const bool down = e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
+        const int button = e.gbutton.button;
+        std::erase(held_buttons_, button);
+        if (down) held_buttons_.push_back(button);
+        if (!down) std::erase(swallowed_buttons_, button);
+        else if (modal_ && std::ranges::find(swallowed_buttons_, button) == swallowed_buttons_.end())
+          swallowed_buttons_.push_back(button);
         button_bits_ = 0;
-        for (int b : held_buttons_) button_bits_ |= pad_bits_for_button(controls_, b);
-        break;
+        for (int b : held_buttons_)
+          if (std::ranges::find(swallowed_buttons_, b) == swallowed_buttons_.end())
+            button_bits_ |= pad_bits_for_button(controls_, b);
+        const HostKey host = button == SDL_GAMEPAD_BUTTON_DPAD_LEFT    ? HostKey::kLeft
+                             : button == SDL_GAMEPAD_BUTTON_DPAD_RIGHT ? HostKey::kRight
+                                                                       : HostKey::kNone;
+        out = KeyEvent{0, down, pad_bits_for_button(controls_, button), host};
+        return true;
       }
       case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         // The game's pad module reads the sticks (and turns the left one into the d-pad).
@@ -289,7 +340,20 @@ bool Window::next_event(bool& open, KeyEvent& out) {
           switch (e.gaxis.axis) {
             case SDL_GAMEPAD_AXIS_RIGHTX: axes_[0] = e.gaxis.value; break;
             case SDL_GAMEPAD_AXIS_RIGHTY: axes_[1] = e.gaxis.value; break;
-            case SDL_GAMEPAD_AXIS_LEFTX: axes_[2] = e.gaxis.value; break;
+            case SDL_GAMEPAD_AXIS_LEFTX: {
+              axes_[2] = e.gaxis.value;
+              // The quit prompt takes the left stick as Left / Right too, as the game's menus do.
+              const int x = e.gaxis.value;
+              const int dir = x <= -16000 ? -1 : x >= 16000 ? 1 : (x > -8000 && x < 8000) ? 0 : stick_dir_;
+              if (dir != stick_dir_) {
+                stick_dir_ = dir;
+                if (modal_ && dir != 0) {
+                  out = KeyEvent{0, true, 0, dir < 0 ? HostKey::kLeft : HostKey::kRight};
+                  return true;
+                }
+              }
+              break;
+            }
             case SDL_GAMEPAD_AXIS_LEFTY: axes_[3] = e.gaxis.value; break;
             case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
             case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: {
@@ -299,6 +363,8 @@ bool Window::next_event(bool& open, KeyEvent& out) {
               const bool was = (trigger_bits_ & bits) != 0 && bits != 0;
               const bool now = e.gaxis.value > (was ? 12000 : 18000);
               trigger_bits_ = static_cast<u16>(now ? (trigger_bits_ | bits) : (trigger_bits_ & ~bits));
+              if (now && !was && modal_) swallowed_triggers_ |= bits;  // the quit prompt's (set_modal)
+              if (!now) swallowed_triggers_ &= static_cast<u16>(~bits);
               break;
             }
             default: break;
@@ -316,11 +382,7 @@ void Window::present(const u32* pixels, int width, int height, float aspect) {
   int win_w = 0, win_h = 0;
   SDL_GetWindowSizeInPixels(window_, &win_w, &win_h);
   int view_w = win_w, view_h = win_h;
-  if (win_h > 0 && static_cast<float>(win_w) / win_h > aspect) {
-    view_w = static_cast<int>(win_h * aspect);
-  } else {
-    view_h = static_cast<int>(win_w / aspect);
-  }
+  picture_size(aspect, view_w, view_h);
   gl::Viewport(0, 0, win_w, win_h);
   gl::ClearColor(0, 0, 0, 1);
   gl::Clear(gl::COLOR_BUFFER_BIT);

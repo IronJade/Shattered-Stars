@@ -29,19 +29,19 @@
 #include "game/field/vm_services.h"
 #include "runtime/region.h"
 #include "runtime/runtime.h"
+#include "util/log.h"
 #include "util/sha256.h"
+#include "util/utf8.h"
 
 namespace ss::game::ap {
 namespace {
 
-void log(const std::string& line) { std::fprintf(stderr, "[ap] %s\n", line.c_str()); }
+// stderr and the run's log (util/log.h: shattered-stars.log, for bug reports).
+void log(const std::string& line) { util::log_line("[ap] " + line); }
 
-// UTF-8 strings <-> paths (as launcher/config.h does; ss_game does not link the launcher).
-std::filesystem::path upath(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
-std::string ustr(const std::filesystem::path& p) {
-  const std::u8string u = p.u8string();
-  return std::string(u.begin(), u.end());
-}
+// UTF-8 strings <-> paths (util/utf8.h, as launcher/config.h; ss_game does not link the launcher).
+std::filesystem::path upath(const std::string& s) { return util::utf8_path(s); }
+std::string ustr(const std::filesystem::path& p) { return util::path_utf8(p); }
 
 bool fail(std::string* error, const std::string& what) {
   if (error != nullptr) *error = what;

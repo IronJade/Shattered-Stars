@@ -16,6 +16,7 @@
 #include "game/field/vm_services.h"
 #include "runtime/region.h"
 #include "runtime/runtime.h"
+#include "util/log.h"
 
 // The hub's chapter lock and story views (hub.h; docs/ap/seed_format.md "Hub") [hubvm agent].
 namespace ss::game::ap {
@@ -104,7 +105,7 @@ Hub& hub() {
 }
 
 void say(const std::string& line) {
-  std::fprintf(stderr, "[ap] hub: %s\n", line.c_str());
+  util::log_line("[ap] hub: " + line);
   Hub& h = hub();
   if (h.log.size() < 4096) h.log.push_back(line);
 }

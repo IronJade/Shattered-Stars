@@ -19,9 +19,16 @@ enum PadButton : u16 {
   kPadUp = 1 << 12, kPadRight = 1 << 13, kPadDown = 1 << 14, kPadLeft = 1 << 15,
 };
 
+// The keys the port itself knows, whatever the controls bind: the quit prompt's (Esc, Enter
+// or the keypad's, the Left / Right arrows; a gamepad's d-pad and left stick Left / Right,
+// the stick only while the prompt is up) [escquit].
+enum class HostKey : u8 { kNone, kEscape, kEnter, kLeft, kRight };
+
 struct KeyEvent {
-  int key = 0;  // SDL keycode
+  int key = 0;  // SDL keycode; 0 for a gamepad button
   bool down = false;
+  u16 bits = 0;  // the PS1 buttons it presses under the player's controls (none for Esc / F11)
+  HostKey host = HostKey::kNone;
 };
 
 // The player's controls (config.ini's key_* / pad_* keys, set in setup): for each PS1
@@ -58,7 +65,8 @@ std::vector<u32> display_order();
 
 // SDL3 window with an OpenGL 3.3 core context that presents an RGBA image.
 // F11 or Alt+Enter switches between the window and full screen (the configured
-// fullscreen kind, or borderless when the window mode is windowed).
+// fullscreen kind, or borderless when the window mode is windowed). Esc closes nothing
+// here: the game asks first (runtime/quit_prompt.h); like F11 it is never a PS1 button.
 class Window {
  public:
   Window() = default;
@@ -74,8 +82,8 @@ class Window {
     return create(title, options, error);
   }
 
-  // Handles pending events; returns false once the window should close.
-  // 'on_key' receives key presses for tools such as the viewer.
+  // Handles pending events; returns false once the window should close (its close button,
+  // Alt+F4). 'on_key' receives key and gamepad button presses and releases.
   template <typename F>
   bool pump(F&& on_key) {
     KeyEvent e;
@@ -83,8 +91,14 @@ class Window {
     while (next_event(open, e)) on_key(e);
     return open;
   }
-  u16 pad() const { return static_cast<u16>(key_bits_ | button_bits_ | trigger_bits_); }
+  u16 pad() const { return static_cast<u16>(key_bits_ | button_bits_ | (trigger_bits_ & ~swallowed_triggers_)); }
   void set_controls(const Controls& controls);
+  // While the port's quit prompt is up [escquit]: a key or button pressed now is the prompt's,
+  // and presses no PS1 button until it is released (also after the prompt has closed); what
+  // was held before keeps counting. The gamepad's motors stop, and get the game's levels back after.
+  void set_modal(bool on);
+  // The size 'present' scales a picture of this aspect to, in window pixels (letterboxed).
+  void picture_size(float aspect, int& width, int& height) const;
   // The open gamepad's sticks as a DualShock reports them (right X, right Y, left X,
   // left Y; 0x80 centred, 0 left / up); false without a gamepad.
   bool sticks(u8 out[4]) const;
@@ -117,6 +131,12 @@ class Window {
   Controls controls_ = Controls::defaults();
   std::vector<int> held_keys_, held_buttons_;  // what is down now, to recompute the bits
   u16 key_bits_ = 0, button_bits_ = 0, trigger_bits_ = 0;
+  // set_modal [escquit]: pressed while modal, not released yet (no bits); the last rumble.
+  bool modal_ = false;
+  std::vector<int> swallowed_keys_, swallowed_buttons_;
+  u16 swallowed_triggers_ = 0;
+  int rumble_small_ = 0, rumble_large_ = 0;
+  int stick_dir_ = 0;  // the left stick: -1 left, 1 right, 0 centred (the prompt's Left / Right)
 };
 
 }  // namespace ss::platform

@@ -8,12 +8,14 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "core/types.h"
 #include "psx/gpu.h"
 
 namespace ss::platform {
 class Window;
+struct KeyEvent;
 }
 
 // The host side of the console: the GPU instance, the window, and vertical-blank
@@ -55,6 +57,9 @@ class Runtime {
   // Runs once per vblank before the VSync callback: produces the field's sound
   // (44100 / 59.94 samples, clocking the sound driver's root counter) and outputs it.
   void (*audio_tick)() = nullptr;
+  // Pauses (true) and resumes the sound device while the quit prompt is up
+  // (platform::audio_pause; runtime/quit_prompt.h) [escquit].
+  void (*audio_pause)(bool paused) = nullptr;
 
   // Scripted controller input for tests: from each listed vblank on, port 0
   // holds the given buttons (replacing the window's controller).
@@ -93,7 +98,8 @@ class Runtime {
   void set_last_vsync(u64 v) { last_vsync_ = v; }
 
   // One vertical blank: runs the VSync callback, shows the display, handles window
-  // events and paces to 59.94 Hz. Throws QuitRequested to unwind the game.
+  // events and paces to 59.94 Hz. Throws QuitRequested to unwind the game: the window
+  // closed, the frame limit, or Quit on the quit prompt that Esc opens (ask_quit).
   void vblank();
   void log_once(const std::string& key, const std::string& message);
   // With SS_TRACE set, prints "[trace] <what> at vblank N" (aligns port and reference captures).
@@ -101,6 +107,15 @@ class Runtime {
 
  private:
   void present();
+  // The picture the window shows: the display (or black) with the debug overlay, the
+  // --capture image; then with the TV border put back (frame_border).
+  void screen(std::vector<u32>& pixels, int& w, int& h);
+  void frame_border(std::vector<u32>& pixels, int w, int& h) const;
+  // The window's events and SS_KEYS's (tests); Esc opens the quit prompt [escquit].
+  void host_events();
+  // The quit prompt (runtime/quit_prompt.h) over the paused game, 'input' the presses that
+  // came after the Esc; true for Quit (or the window closed while it was up).
+  bool ask_quit(std::vector<platform::KeyEvent>& input);
   u64 vblank_count_ = 0;
   u64 last_vsync_ = 0;
   std::chrono::steady_clock::time_point next_deadline_{};

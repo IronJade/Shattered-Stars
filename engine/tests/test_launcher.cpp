@@ -5,6 +5,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -17,11 +18,20 @@
 #include "launcher/config.h"
 #include "launcher/discs.h"
 #include "launcher/process.h"
+#include "launcher/report.h"
 #include "launcher/settings.h"
 #include "launcher/title_art.h"
 #include "game/boot/pad.h"
 #include "platform/window.h"
 #include "test.h"
+#include "util/log.h"
+#include "util/utf8.h"
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <bit>
 #include <set>
@@ -72,10 +82,10 @@ struct GameRun {
   std::string output;
 };
 
-GameRun run_game(const std::vector<std::string>& args, const std::vector<std::pair<std::string, std::string>>& env) {
+GameRun run_program(const fs::path& program, const std::vector<std::string>& args,
+                    const std::vector<std::pair<std::string, std::string>>& env) {
   GameRun run;
-  const fs::path game = launcher::sibling_program(launcher::kGameProgram);
-  std::vector<std::string> argv_strings = {launcher::path_utf8(game)};
+  std::vector<std::string> argv_strings = {launcher::path_utf8(program)};
   argv_strings.insert(argv_strings.end(), args.begin(), args.end());
   std::vector<const char*> argv;
   for (const std::string& a : argv_strings) argv.push_back(a.c_str());
@@ -106,6 +116,46 @@ GameRun run_game(const std::vector<std::string>& args, const std::vector<std::pa
   SDL_DestroyProcess(process);
   return run;
 }
+
+GameRun run_game(const std::vector<std::string>& args, const std::vector<std::pair<std::string, std::string>>& env) {
+  return run_program(launcher::sibling_program(launcher::kGameProgram), args, env);
+}
+
+// stderr into a file for a while (the log tests' lines would fill the test output).
+class StderrToFile {
+ public:
+  explicit StderrToFile(const fs::path& file) {
+    std::fflush(stderr);
+#ifdef _WIN32
+    saved_ = _dup(_fileno(stderr));
+    if (std::FILE* f = _wfopen(file.c_str(), L"wb")) {
+      _dup2(_fileno(f), _fileno(stderr));
+      std::fclose(f);
+    }
+#else
+    saved_ = dup(fileno(stderr));
+    if (std::FILE* f = std::fopen(file.c_str(), "wb")) {
+      dup2(fileno(f), fileno(stderr));
+      std::fclose(f);
+    }
+#endif
+  }
+  ~StderrToFile() {
+    std::fflush(stderr);
+#ifdef _WIN32
+    _dup2(saved_, _fileno(stderr));
+    _close(saved_);
+#else
+    dup2(saved_, fileno(stderr));
+    close(saved_);
+#endif
+  }
+  StderrToFile(const StderrToFile&) = delete;
+  StderrToFile& operator=(const StderrToFile&) = delete;
+
+ private:
+  int saved_ = -1;
+};
 
 // The environment of a headless test run: settings in 'config_home', no window or sound.
 std::vector<std::pair<std::string, std::string>> test_env(const fs::path& config_home) {
@@ -555,11 +605,184 @@ TEST(game_archipelago_runs_without_debugging) {
   CHECK(contains(run.output, "[ap] seed lock-1"));
   CHECK(contains(run.output, "[ap] the seed plays on its own memory card: " +
                                  launcher::path_utf8(launcher::seed_memcard("lock-1", "Claude", dir / "archipelago"))));
+  // The log has the game's own [ap] lines too (util/log.h), not only report()'s.
+  const std::string log = read_file(dir / "shattered-stars.log");
+  CHECK(contains(log, "[ap] seed lock-1 slot Claude: 1 locations"));
+  CHECK(contains(log, "[ap] the seed plays on its own memory card"));
+  CHECK(contains(log, "[ap] an Archipelago game plays without debugging"));
   // Archipelago off: no seed, nothing of it in the run.
   write_file(dir / "config.ini", base + "ap_enabled=0\n");
   run = run_game({"--frames", "20"}, env);
   CHECK_EQ(run.code, 0);
   CHECK(!contains(run.output, "[ap]"));
+}
+
+// The run's log (launcher/report.h) holds report()'s lines and the game's own (util/log.h), and
+// past its bound keeps the run's start, a line saying how much was left out, and the newest
+// lines; stderr gets every line as before.
+TEST(launcher_log_holds_game_lines_and_stays_bounded) {
+  const fs::path dir = scratch("log");
+  const fs::path log = dir / util::utf8_path("Test \xC3\x84") / "shattered-stars.log";
+  {
+    StderrToFile quiet(dir / "stderr.txt");
+    launcher::open_log(log);
+    launcher::set_log_limit(64 << 10);
+    launcher::report("Shattered Stars test run %d\n", 1);
+    util::log_line("[ap] seed log-1 slot Cl\xC3\xA9o: 1 locations");
+    for (int i = 0; i < 4000; ++i) util::log_line("[ap] server says: line " + std::to_string(i) + "." + std::string(60, '-'));
+    util::log_printf("[ap] the last line, %s\n", "printf-style");
+    launcher::close_log();
+  }
+  const std::string text = read_file(log);
+  CHECK(text.rfind("# Shattered Stars", 0) == 0);
+  CHECK(contains(text, "Shattered Stars test run 1\n"));
+  CHECK(contains(text, "[ap] seed log-1 slot Cl\xC3\xA9o: 1 locations\n"));  // the head stays
+  CHECK(contains(text, "line 3999."));
+  CHECK(contains(text, "[ap] the last line, printf-style\n"));
+  CHECK(!contains(text, "line 2000."));  // the middle went
+  CHECK(contains(text, "bytes of this run's messages left out here"));
+  CHECK(text.find("left out here") == text.rfind("left out here"));  // one such line
+  CHECK(text.size() <= (64u << 10) + 100);
+  const std::string err = read_file(dir / "stderr.txt");
+  CHECK(contains(err, "Shattered Stars test run 1\n"));
+  CHECK(contains(err, "line 2000."));
+  CHECK(contains(err, "[ap] the last line, printf-style\n"));
+  CHECK(!contains(err, "left out"));
+  // After close_log() nothing more goes to the file.
+  launcher::report("%s", "");
+  CHECK(read_file(log) == text);
+}
+
+#ifdef _WIN32
+// The double-clicked game on Windows (no console): stdout and stderr themselves go into the
+// log, so every line is in it once, raw stderr and stdout lines too, and the bound still holds.
+TEST(launcher_log_without_a_console) {
+  const fs::path dir = scratch("log_no_console");
+  const fs::path log = dir / util::utf8_path("Test \xC3\x84") / "shattered-stars.log";
+  std::fflush(stdout);
+  std::fflush(stderr);
+  const int out = _dup(_fileno(stdout)), err = _dup(_fileno(stderr));
+  launcher::set_console_for_tests(false);
+  launcher::open_log(log);
+  launcher::set_log_limit(16 << 10);
+  launcher::report("report line %d\n", 1);
+  util::log_line("[ap] seed nc-1 slot Cl\xC3\xA9o: 1 locations");
+  std::fprintf(stderr, "a raw stderr line\n");
+  std::printf("a stdout line\n");
+  for (int i = 0; i < 1000; ++i) util::log_line("[ap] server says: line " + std::to_string(i) + "." + std::string(60, '-'));
+  std::printf("the last stdout line\n");
+  util::log_line("[ap] the last line");
+  launcher::close_log();
+  launcher::set_console_for_tests(true);
+  std::fflush(stdout);
+  std::fflush(stderr);
+  _dup2(out, _fileno(stdout));
+  _dup2(err, _fileno(stderr));
+  _close(out);
+  _close(err);
+  const std::string text = read_file(log);
+  CHECK(text.rfind("# Shattered Stars", 0) == 0);
+  CHECK(contains(text, "report line 1\n"));
+  CHECK(contains(text, "[ap] seed nc-1 slot Cl\xC3\xA9o: 1 locations\n"));
+  CHECK(contains(text, "a raw stderr line\n"));
+  CHECK(contains(text, "a stdout line\n"));
+  CHECK(contains(text, "the last stdout line\n"));
+  CHECK(contains(text, "line 999."));
+  CHECK(!contains(text, "line 500."));
+  CHECK(text.find("[ap] the last line\n") != std::string::npos &&
+        text.find("[ap] the last line\n") == text.rfind("[ap] the last line\n"));  // once, not twice
+  CHECK(text.find("report line 1") == text.rfind("report line 1"));
+  CHECK(text.find("left out here") != std::string::npos && text.find("left out here") == text.rfind("left out here"));
+  CHECK(text.size() <= (16u << 10) + 100);
+}
+#endif
+
+// Paths with letters outside ASCII on the command line and in the environment (the 0.02.50
+// Windows check: "Ä" in --memcard1 aborted the game; Windows hands argv to main in the ANSI
+// code page, util/utf8.h): a disc, a card and a seed in a folder named "Test Ä 日本", a save
+// there and its load, with --memcard1 and with SS_MEMCARD1.
+TEST(game_command_line_non_ascii_paths) {
+  if (!game_available()) return;
+  const fs::path home = scratch("game_utf8");
+  const fs::path dir = home / util::utf8_path("Test \xC3\x84 \xE6\x97\xA5\xE6\x9C\xAC");
+  fs::create_directories(dir);
+  // Disc 1: a cue sheet in that folder for the same image (its FILE line the .bin's full path).
+  const fs::path disc = util::utf8_path(disc1_path());
+  fs::path disc_arg = disc;
+  std::string cue = read_file(disc);
+  const auto q1 = cue.find('"'), q2 = q1 == std::string::npos ? q1 : cue.find('"', q1 + 1);
+  if (disc.extension() == ".cue" && q2 != std::string::npos) {
+    cue.replace(q1 + 1, q2 - q1 - 1, util::path_utf8(disc.parent_path() / util::utf8_path(cue.substr(q1 + 1, q2 - q1 - 1))));
+    disc_arg = dir / util::utf8_path("Disc 1 \xC3\x84.cue");
+    write_file(disc_arg, cue);
+  }
+  const fs::path card = dir / "card.mcd";
+  const fs::path seed = dir / util::utf8_path("seed \xC3\x84.apso2");
+  write_file(seed, R"({"format": "apso2", "version": 1, "seed": "utf8-1", "slot": {"name": "Claude", "id": 1},
+ "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21}},
+ "locations": [{"id": 1347569665, "name": "Arlia: crate by the store",
+                "check": {"type": "chest", "map": 18, "flag": "0x962"},
+                "item": {"player": 1, "kind": "fol", "amount": 5000, "name": "5000 Fol"}}]})");
+  auto env = test_env(home);
+  env.emplace_back("SS_MODS_DIR", util::path_utf8(home / "no-mods"));
+  env.emplace_back("SS_SAVE_ANYWHERE", "1");
+  // The camp menu: Data > Save > slot 1 > #1 > Yes (tools/smoke_field_events.sh's ap_save).
+  const std::string save = "300:triangle,306:none,400:up,406:none,450:cross,456:none,550:cross,556:none,"
+                           "650:cross,656:none,750:cross,756:none,850:cross,856:none";
+  GameRun run = run_game({"--headless", "--disc1", util::path_utf8(disc_arg), "--memcard1", util::path_utf8(card),
+                          "--ap-seed", util::path_utf8(seed), "--frames", "1100", "--map", "18", "--input", save},
+                         env);
+  CHECK_EQ(run.code, 0);
+  CHECK(!contains(run.output, "Cannot convert"));
+  CHECK(contains(run.output, "[ap] seed utf8-1 slot Claude: 1 locations"));
+  const fs::path sidecar = dir / "card.slot01.ap.json";
+  CHECK(contains(run.output, "[ap] saved " + util::path_utf8(sidecar)));
+  std::error_code ec;
+  CHECK_EQ(fs::file_size(card, ec), 131072u);
+  CHECK(fs::exists(sidecar));
+  CHECK(!fs::exists(home / "shattered-stars" / "config.ini"));  // headless: nothing remembered
+  // The save loads from there: the card named on the command line, then in SS_MEMCARD1.
+  env.emplace_back("SS_LOAD_SAVE", "0");
+  run = run_game({"--headless", "--disc1", util::path_utf8(disc_arg), "--memcard1", util::path_utf8(card), "--ap-seed",
+                  util::path_utf8(seed), "--frames", "90"},
+                 env);
+  CHECK_EQ(run.code, 0);
+  CHECK(contains(run.output, "[ap] loaded " + util::path_utf8(sidecar) + ": 0 checks"));
+  env.emplace_back("SS_MEMCARD1", util::path_utf8(card));
+  env.emplace_back("SS_DISC1", util::path_utf8(disc_arg));
+  run = run_game({"--headless", "--ap-seed", util::path_utf8(seed), "--frames", "90"}, env);
+  CHECK_EQ(run.code, 0);
+  CHECK(contains(run.output, "[ap] loaded " + util::path_utf8(sidecar) + ": 0 checks"));
+}
+
+// Setup takes the same paths on its command line (--set memcard1=..."Test Ä"...: the other
+// abort of the Windows check), and Auto-detect with Disc 1 already set says what it found:
+// Disc 2 beside it (it said "Found Disc 2, but no Disc 1.").
+TEST(setup_command_line_non_ascii_and_autodetect) {
+  const fs::path setup = launcher::sibling_program(launcher::kSetupProgram);
+  if (setup.empty() || disc1_path().empty()) {
+    std::printf("  (skipped: setup not built next to the tests, or SS_DISC1 not set)\n");
+    return;
+  }
+  const fs::path home = scratch("setup_utf8");
+  const fs::path card = home / util::utf8_path("Test \xC3\x84") / "card.mcd";
+  fs::create_directories(card.parent_path());
+  GameRun run = run_program(setup,
+                            {"--set", "disc1=" + disc1_path(), "--set", "memcard1=" + util::path_utf8(card), "--do",
+                             "autodetect,save,quit", "--frames", "40"},
+                            test_env(home));
+  if (contains(run.output, "Setup could not")) {
+    std::printf("  (no window for setup here: skipped)\n");
+    return;
+  }
+  CHECK(!contains(run.output, "Cannot convert"));
+  const std::string ini = read_file(home / "shattered-stars" / "config.ini");
+  CHECK(contains(ini, "memcard1=" + util::path_utf8(card) + "\n"));
+  if (!disc2_path().empty()) {
+    CHECK(contains(run.output, "setup: autodetect: Found Disc 2 next to your Disc 1.\n"));
+    CHECK(contains(ini, "disc2="));
+  }
+  CHECK(!contains(run.output, "but no Disc 1"));
 }
 
 // Setup's header logo: the title picture from disc 1 (entry 12, block 0), decoded in memory.

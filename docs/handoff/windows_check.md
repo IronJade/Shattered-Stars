@@ -73,4 +73,117 @@ after the user has pushed the 0.02.50 release prep to GitHub. Coordinator: the L
   crashed under Wine in the RC run: a null read in field_create_state_block) passes on real Windows.
 
 ## Results
-(the Windows agent fills this in: date, bundle version, each check pass / fail with details)
+
+### 2026-10-25: the 0.02.50 RC (c9a8200) on Windows 11
+Run by the Windows agent (Remote Control session "Windows Shattered-Stars") with the RC's
+`ShatteredStars-0.02.50-win64.zip` (scratchpad/release/rc-0.02.50-dist) and so2.apworld 0.2.0,
+the files in `C:\Users\hitsu\Documents\Star Ocean 2\`, Archipelago freshly installed at
+`C:\ProgramData\Archipelago`. Written into the repo by winfix from the coordinator's relay (the
+Windows agent's summary: scratchpad/agents.txt "windows").
+
+**Passed:** every player-facing check of sections 1-3 (install and setup, memory cards and save
+slots, Archipelago in setup and in the game). The 0.02.50 fix for saves under a non-ASCII folder
+(engine/src/psx/memory_card.cpp, the RC's "Status 21:58") is confirmed on real Windows.
+**Not run:** section 4 (the native test suites): no toolchain on that machine.
+(The per-check pass list, if the coordinator has one beyond this summary, belongs here; release.md's
+coordinator section had none when this was written.)
+
+**Found (all fixed before tagging, the user's ruling; agent winfix, docs/handoff/winfix.md):**
+1. **Crash: a non-ASCII path on the command line aborts both programs.** E.g.
+   `shattered-stars.exe --headless --memcard1 "C:\...\Test Ä\card.mcd"` and
+   `setup.exe --set "memcard1=...Test Ä..."`: `terminate called after throwing an instance of
+   'std::filesystem::__cxx11::filesystem_error' what(): filesystem error: Cannot convert character
+   sequence: Illegal byte sequence`. argv arrives in the ANSI code page (Ä = 0xC4) and was read as
+   UTF-8; every path argument (--disc1/2, --memcard1/2, --ap-seed, ...) and the SS_* path variables
+   were affected. Players going through setup were not (Save & Play passes no arguments, and
+   config.ini is UTF-8).
+2. **Setup's Auto-detect** with Disc 1 already set filled Disc 2 correctly but said "Found Disc 2,
+   but no Disc 1."
+3. **"pwnd->destroy"** went to stderr every time a menu window closed (an original debug printf).
+4. **shattered-stars.log had only some [ap] lines** (the ones through report(): "plays on its own
+   memory card", "ignored"); the seed / title / check / saved / loaded lines reached the console only.
+5. **The Archipelago client announced Client(0.6.6)** (apclientpp's own version) to a 0.6.8 server.
+6. **Release-notes nit:** the notes name the YAML `Star.Ocean.The.Second.Story.yaml`, the checklist
+   `Star Ocean The Second Story.yaml`.
+
+**The fixes, in short:**
+1. Both programs take their arguments from `GetCommandLineW` and the SS_* variables from
+   `GetEnvironmentVariableW`, converted to UTF-8 once (engine/src/util/utf8.{h,cpp}); paths from
+   UTF-8 never throw (a string that isn't UTF-8, e.g. a config.ini Notepad saved as "ANSI", is read in
+   the ANSI code page), and a filesystem error that still escapes is reported and exits cleanly
+   (exit 1) instead of `std::terminate`. Console lines are written through `WriteConsoleW`, so "Ä"
+   shows as "Ä" in cmd / PowerShell. No UTF-8 `activeCodePage` manifest (not needed, Windows 10
+   1903+ only, process-wide; winfix.md).
+2. Auto-detect says "Found Disc 2 next to your Disc 1." (or "Found Disc 2. Your Disc 1 stays as it
+   is." when it came from a discs folder).
+3. The print is gone (a comment marks where the original has it).
+4. Every [ap], [port] and [mods] line goes through one reporter (engine/src/util/log.h) to the
+   console as before and to the log; the log stays under 4 MB (it keeps the run's first MB, a "left
+   out" line and the newest 2 MB). The game's own lines average ~55 bytes: a whole seed's checks and
+   items are ~80 KB; the bulk is the server's broadcast lines ("server says: X sent Y to Z", ~100
+   bytes, one per item found anywhere in the multiworld).
+5. The client announces the version the world targets: archipelago.json's `minimum_ap_version`,
+   0.6.8 (read by CMake); the game's "Archipelago: connecting to ..." line names it.
+6. The download really is `Star.Ocean.The.Second.Story.yaml` (GitHub turns spaces into dots; the
+   v0.01.00 and v0.02.00 assets are named so): the notes stay, the checklist and SHA256SUMS now
+   use that name too.
+
+### Recheck after the fixes (on the Windows machine, with the new bundle)
+Use a test settings folder (`set APPDATA=%USERPROFILE%\ss-test\appdata`) and a folder with a
+non-ASCII name, e.g. `%USERPROFILE%\ss-test\Test Ä 日本\` (copy Disc 1's .cue/.bin and an
+`AP_<seed>.zip` into it).
+1. **The CLI Ä cases** (from cmd or PowerShell): no crash, and the paths work:
+   - `shattered-stars.exe --headless --frames 600 --memcard1 "%USERPROFILE%\ss-test\Test Ä 日本\card.mcd"`
+     -> "stopped after 600 vblanks".
+   - `shattered-stars.exe --disc1 "...\Test Ä 日本\<Disc 1>.cue" --memcard1 "...\Test Ä 日本\card.mcd"`
+     (windowed): New Game, save to card 1, quit; the card is in that folder (131072 bytes);
+     Continue loads it. config.ini then holds both paths with "Ä" (UTF-8).
+   - `shattered-stars.exe --ap-seed "...\Test Ä 日本\AP_<seed>.zip"`: the seed loads ("[ap] seed ...").
+   - `set SS_MEMCARD1=...\Test Ä 日本\card.mcd` then `shattered-stars.exe --headless --frames 600`.
+   - `setup.exe --set "memcard1=...\Test Ä 日本\card.mcd"`: setup opens, the Memory cards page shows
+     the path; Save writes it to config.ini.
+   - The console shows "Ä" and "日本" in those paths as written (not "Ã„").
+2. **The Auto-detect message:** setup with Disc 1 chosen (Browse) and Disc 2 empty, no discs folder:
+   Auto-detect fills Disc 2 and says "Found Disc 2 next to your Disc 1." (green).
+3. **The log lines:** play a seed from a console; `%APPDATA%\ShatteredStars\shattered-stars.log`
+   holds the same [ap] lines as the console (seed, title, check, saved, loaded, ...). Double-clicked
+   too. No "pwnd->destroy" anywhere when menu windows close.
+4. **The client version:** connect to a room (local or archipelago.gg): the server's join message
+   says `Client(0.6.8)`, the game's log "Archipelago: connecting to ... (client version 0.6.8)",
+   and checks / items still flow.
+5. Optional, with a toolchain: `ss_tests.exe` (the utf8_* cases) and `ss_game_tests.exe`
+   (game_command_line_non_ascii_paths, setup_command_line_non_ascii_and_autodetect,
+   launcher_log_holds_game_lines_and_stays_bounded, launcher_log_without_a_console).
+6. **Icon and names** (docs/handoff/appicon.md; the gold shattered star on a midnight-blue tile):
+   - Explorer shows that icon on `shattered-stars.exe` and `setup.exe`; Properties -> Details:
+     "Shattered Stars" / "Shattered Stars Setup", product "Shattered Stars", version 0.02.50,
+     copyright "Copyright (c) 2026 DreamGlyph Studios".
+   - `setup.exe` starts without a UAC (administrator) prompt, double-clicked and from the game.
+   - The game's window is titled "Shattered Stars" (with `--debug`: "Shattered Stars - map ...").
+   - While each runs: the title bar, the taskbar and Alt+Tab show the icon, at 100% and at a
+     higher display scale (125-150%); Task Manager's Processes tab lists "Shattered Stars" /
+     "Shattered Stars Setup" with the icon (0.02.50 RC: "POSIX WinThreads for Windows").
+   - Any error box either program shows looks like a normal Windows 10/11 dialog (the manifest
+     asks for Common Controls 6).
+
+### Recheck for 0.02.50 RC2 (2026-10-26)
+
+Three more agents' work landed since the list above: winfix (items 1-5 above), appicon (item 6
+above), and escquit (the Esc quit confirmation, new this round). One pass on the real Windows
+machine with the RC2 bundle covers all three; same scratch `%APPDATA%` and `Test Ä 日本` folder
+as above.
+
+1. **winfix** — non-ASCII CLI paths and SS_* vars no longer crash (console shows Ä/日本
+   correctly); Auto-detect with Disc 1 set says "Found Disc 2 next to your Disc 1."; no
+   "pwnd->destroy" when a menu window closes; `shattered-stars.log` holds the same [ap]/[port]/
+   [mods] lines as the console; a room connection shows `Client(0.6.8)`, not `Client(0.6.6)`.
+2. **appicon** — the gold-star icon on both exes in Explorer, Task Manager, Alt+Tab and the
+   taskbar at 100% and 125-150% scale; Properties → Details: "Shattered Stars" /
+   "Shattered Stars Setup", version 0.02.50, copyright "Copyright (c) 2026 DreamGlyph Studios",
+   no "POSIX WinThreads for Windows"; `setup.exe` starts with no UAC prompt; window titles
+   "Shattered Stars" / "Shattered Stars Setup" (`--debug`: "Shattered Stars - map ...").
+3. **escquit** — Esc opens "Quit Shattered Stars?" (never an immediate close), by keyboard and
+   by gamepad; the same behavior windowed and fullscreen; **Keep playing** resumes with no
+   state change, **Quit** exits cleanly; audio pauses cleanly while the prompt is up (no pop or
+   stutter) and resumes normally after Keep playing; keys/buttons held while the prompt is up
+   don't leak into the game once it closes.

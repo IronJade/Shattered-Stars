@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 
@@ -20,9 +21,19 @@ namespace ss::launcher {
 // whether stderr reaches someone: a terminal, a pipe or a file.
 bool attach_console(bool own_console);
 
-// The run's log (overwritten): report() and fatal() lines go to it too. Without a
-// console (see above) stdout and stderr are redirected into it, so everything is kept.
+// The run's log (overwritten): report() and fatal() lines go to it too, and so do the game's
+// own message lines (util/log.h: "[ap] ...", "[port] ...", "[mods] ..."). Without a console
+// (see above) stdout and stderr are redirected into it, so everything is kept.
+// Bounded: past 4 MB (a long Archipelago session's server messages) it keeps the run's first
+// MB, a line saying how much was left out, and the newest 2 MB, so it never passes 4 MB by
+// more than a line.
 void open_log(const std::filesystem::path& file);
+// Tests: the log closed (stderr stays where it is), and another bound in bytes (0: 4 MB).
+void close_log();
+void set_log_limit(std::uintmax_t bytes);
+// Tests: as if stderr reached someone or no one (the double-clicked game: on Windows the next
+// open_log() then redirects stdout and stderr into the log).
+void set_console_for_tests(bool reaches);
 
 // A message for the player: stderr, and the log.
 void report(const char* format, ...)

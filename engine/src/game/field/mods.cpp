@@ -10,6 +10,8 @@
 #include "mods/catalog.h"
 #include "runtime/region.h"
 #include "runtime/runtime.h"
+#include "util/log.h"
+#include "util/utf8.h"
 
 namespace ss::game::field {
 namespace {
@@ -36,9 +38,7 @@ void write_le(u8* p, int size, u32 v) {
   for (int i = 0; i < size; ++i) p[i] = static_cast<u8>(v >> (8 * i));
 }
 
-std::filesystem::path utf8_path(const std::string& s) {
-  return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(s.data()), s.size()));
-}
+std::filesystem::path utf8_path(const std::string& s) { return util::utf8_path(s); }
 
 // The game's log of the load order (only when there are packages: with loose patches
 // alone the log is as it always was).
@@ -51,15 +51,15 @@ void log_order(const ss::mods::Catalog& catalog, const std::vector<ss::mods::Slo
     text += e.loose ? std::string(ss::mods::kLooseId) + " " + std::to_string(e.files.size()) + " file(s)"
                     : e.id + " " + e.manifest.version;
   }
-  std::fprintf(stderr, "[mods] load order: %s\n", text.empty() ? "(nothing enabled)" : text.c_str());
+  util::log_printf("[mods] load order: %s\n", text.empty() ? "(nothing enabled)" : text.c_str());
   for (const ss::mods::Slot& s : order) {
     const ss::mods::Entry& e = catalog.entries[static_cast<size_t>(s.entry)];
     if (e.loose) continue;
     if (!s.enabled)
-      std::fprintf(stderr, "[mods] %s %s is installed but not enabled (setup's Mods page enables it)\n", e.id.c_str(),
+      util::log_printf("[mods] %s %s is installed but not enabled (setup's Mods page enables it)\n", e.id.c_str(),
                    e.manifest.version.c_str());
     else if (!e.usable())
-      std::fprintf(stderr, "[mods] %s: %s; not loaded\n", e.id.c_str(), e.error.c_str());
+      util::log_printf("[mods] %s: %s; not loaded\n", e.id.c_str(), e.error.c_str());
   }
 }
 
@@ -71,19 +71,19 @@ void log_conflicts(const std::vector<ss::mods::Line>& lines, const ss::mods::Ana
     const std::string place = ss::mods::describe_place(a.patch);
     switch (c.relation) {
       case Relation::kOverride:
-        std::fprintf(stderr, "[mods] conflict: %s: %s is overridden by %s (later in the load order)\n", place.c_str(),
+        util::log_printf("[mods] conflict: %s: %s is overridden by %s (later in the load order)\n", place.c_str(),
                      a.label.c_str(), b.label.c_str());
         break;
       case Relation::kMismatch:
-        std::fprintf(stderr, "[mods] conflict: %s: %s and %s expect different values (%#x, %#x); at most one applies\n",
+        util::log_printf("[mods] conflict: %s: %s and %s expect different values (%#x, %#x); at most one applies\n",
                      place.c_str(), a.label.c_str(), b.label.c_str(), a.patch.expected, b.patch.expected);
         break;
       case Relation::kOverlap:
-        std::fprintf(stderr, "[mods] conflict: %s (%s) and %s (%s) overlap; the first applies first\n",
+        util::log_printf("[mods] conflict: %s (%s) and %s (%s) overlap; the first applies first\n",
                      a.label.c_str(), place.c_str(), b.label.c_str(), ss::mods::describe_place(b.patch).c_str());
         break;
       case Relation::kSeedWins:
-        std::fprintf(stderr, "[mods] conflict: %s: the Archipelago seed changes it too (%s); %s is skipped\n",
+        util::log_printf("[mods] conflict: %s: the Archipelago seed changes it too (%s); %s is skipped\n",
                      place.c_str(), a.label.c_str(), b.label.c_str());
         break;
       default: break;  // the same change, a line building on another, two lines of one mod: no news
@@ -106,16 +106,16 @@ const std::vector<Patch>& patches() {
   // packages, the loose *.patch files in name order, as always.
   auto& rt = runtime::Runtime::get();
   std::string dir = rt.mods_dir;
-  if (const char* env = std::getenv("SS_MODS_DIR"); env && *env) dir = env;
+  if (util::env_set("SS_MODS_DIR")) dir = *util::env("SS_MODS_DIR");
   std::string order_text = rt.mod_order;
-  if (const char* env = std::getenv("SS_MOD_ORDER")) order_text = env;
+  if (const auto env = util::env("SS_MOD_ORDER")) order_text = *env;
   const ss::mods::Catalog catalog = ss::mods::scan(dir.empty() ? std::filesystem::path() : utf8_path(dir), SS_VERSION);
   const bool dir_ok = catalog.folder_exists;
   const std::vector<ss::mods::Slot> order = ss::mods::resolve_order(catalog, order_text);
   if (catalog.has_packages()) log_order(catalog, order);
   ss::mods::read_lines(catalog, order, &lines, &bad);
   for (const ss::mods::BadLine& b : bad)
-    std::fprintf(stderr, "[mods] %s: not understood: %s\n", b.label.c_str(), b.text.c_str());
+    util::log_printf("[mods] %s: not understood: %s\n", b.label.c_str(), b.text.c_str());
   const ss::mods::Analysis an = ss::mods::analyse(lines);
   list.reserve(lines.size());
   for (size_t i = 0; i < lines.size(); ++i) {
@@ -134,7 +134,7 @@ const std::vector<Patch>& patches() {
   const ModsSummary s = mods_summary();
   std::string from = dir_ok ? dir : "";
   if (!seed_lines.empty()) from = dir_ok ? "the seed and " + dir : "the seed";
-  std::fprintf(stderr, "[mods] %d script, %d item, %d shop, %d enemy patch(es) from %s\n", s.script, s.item, s.shop,
+  util::log_printf("[mods] %d script, %d item, %d shop, %d enemy patch(es) from %s\n", s.script, s.item, s.shop,
                s.enemy, from.c_str());
   return list;
 }

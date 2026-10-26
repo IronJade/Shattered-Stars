@@ -18,8 +18,16 @@
 #include <set>
 #include <thread>
 
+#ifndef SS_AP_VERSION_MAJOR  // CMakeLists.txt: archipelago.json's minimum_ap_version
+#define SS_AP_VERSION_MAJOR 0
+#define SS_AP_VERSION_MINOR 6
+#define SS_AP_VERSION_BUILD 8
+#endif
+
 namespace ss::ap_net {
 namespace {
+
+const APClient::Version kAnnounced{SS_AP_VERSION_MAJOR, SS_AP_VERSION_MINOR, SS_AP_VERSION_BUILD};
 
 using json = nlohmann::json;
 
@@ -150,7 +158,7 @@ void Client::Impl::handlers() {
   c.set_room_info_handler([this] {
     std::list<std::string> tags;
     if (info.deathlink) tags.push_back("DeathLink");
-    client->ConnectSlot(info.slot, info.password, info.items_handling, tags);
+    client->ConnectSlot(info.slot, info.password, info.items_handling, tags, kAnnounced);
   });
   c.set_slot_connected_handler([this](const json& slot_data) {
     Event e;
@@ -328,6 +336,10 @@ std::string Client::location_name(int64_t location, int player) const {
   std::lock_guard<std::mutex> lock(impl_->client_mutex);
   if (!impl_->client) return {};
   return impl_->client->get_location_name(location, impl_->client->get_player_game(player));
+}
+
+std::string Client::announced_version() {
+  return std::to_string(kAnnounced.ma) + "." + std::to_string(kAnnounced.mi) + "." + std::to_string(kAnnounced.build);
 }
 
 bool Client::has_ssl() {

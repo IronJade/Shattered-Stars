@@ -256,9 +256,13 @@ void App::auto_detect(bool quiet) {
   const auto folders = launcher::disc_folders(launcher::config_dir());
   launcher::FoundDiscs found = launcher::find_discs(folders);
   const bool had_disc2 = disc_info(settings_.disc2).kind == DiscKind::kDisc2;
+  const bool had_disc1 = disc1_ok();  // a Disc 1 already chosen (kept when the folders have none)
+  bool near_disc1 = false;            // Disc 2 found beside that Disc 1
   if (found.disc2.empty() && !found.disc1.empty()) found.disc2 = launcher::find_disc2_near(launcher::utf8_path(found.disc1));
-  if (found.disc2.empty() && found.disc1.empty() && disc1_ok() && !had_disc2)
+  if (found.disc2.empty() && found.disc1.empty() && had_disc1 && !had_disc2) {
     found.disc2 = launcher::find_disc2_near(launcher::utf8_path(settings_.disc1));
+    near_disc1 = !found.disc2.empty();
+  }
   if (!found.disc1.empty()) settings_.disc1 = found.disc1;
   if (!found.disc2.empty()) settings_.disc2 = found.disc2;
   if (!found.disc1.empty() && !found.disc2.empty()) {
@@ -266,6 +270,10 @@ void App::auto_detect(bool quiet) {
     notice_level_ = Level::kOk;
   } else if (!found.disc1.empty()) {
     notice_ = "Found Disc 1 (no Disc 2 there).";
+    notice_level_ = Level::kOk;
+  } else if (!found.disc2.empty() && had_disc1) {
+    // Only a Disc 2 was found, and Disc 1 is already set (it stays).
+    notice_ = near_disc1 ? "Found Disc 2 next to your Disc 1." : "Found Disc 2. Your Disc 1 stays as it is.";
     notice_level_ = Level::kOk;
   } else if (!found.disc2.empty()) {
     notice_ = "Found Disc 2, but no Disc 1.";
@@ -381,7 +389,10 @@ void App::run_action(const std::string& action) {
     launcher::Config c = compose(config_);
     c.set(action.substr(4, eq - 4), action.substr(eq + 1));
     settings_ = read(c);
-  } else if (action == "autodetect") auto_detect(false);
+  } else if (action == "autodetect") {
+    auto_detect(false);
+    std::fprintf(stderr, "setup: autodetect: %s\n", notice_.c_str());  // for scripts: what the page now says
+  }
   else if (action == "save") save();
   else if (action == "play") play();
   else if (action == "quit") quit();

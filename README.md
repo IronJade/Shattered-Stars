@@ -139,8 +139,15 @@ installer and nothing else to install:
 4. Press **Save & Play**.
 
 After that, start the game directly with `shattered-stars.exe` or `./shattered-stars`. F11 or
-Alt+Enter switches between the window and full screen. Settings, memory cards and mods live in
-your user folder, so a new version can replace the old one without touching them.
+Alt+Enter switches between the window and full screen. Esc pauses the game and asks before
+quitting (**Keep playing** or **Quit**; unsaved progress is lost on Quit). Settings, memory
+cards and mods live in your user folder, so a new version can replace the old one without
+touching them.
+
+On Linux, `./install-desktop-entry.sh` (optional, in the package) adds the game and its setup
+program to your application menu with their icon, for your user only. GNOME and KDE Plasma on
+Wayland show a program's name and icon in the taskbar only once that is installed. Run it
+again after moving the folder; `./install-desktop-entry.sh --uninstall` removes it.
 
 The [Installing and Setup](https://github.com/IronJade/Shattered-Stars/wiki/Installing-and-Setup)
 and [Playing](https://github.com/IronJade/Shattered-Stars/wiki/Playing) pages cover every setup
@@ -155,6 +162,18 @@ Shattered Stars is a **hand port**. It follows the method of
 code with static recompilation. Every function of the original was read and understood, and
 the ones the game needs were rewritten by hand as readable C++, on top of a native replacement
 for the PlayStation hardware.
+
+### Written with AI
+
+In the open: most of this repository was written by **Claude**, Anthropic's AI model, working
+through Claude Code under the direction of the project's maintainer. That includes the
+reverse engineering and its function catalog, the C++ port, the setup program, the European,
+French and German releases, all of the Archipelago work, and the documentation. The maintainer
+chose the project and its goals, made the design decisions, played and tested the port, and
+decides each release. Every commit Claude wrote says so with a `Co-Authored-By: Claude` line,
+so the history shows which ones. None of it is taken on trust: every function is checked
+against the original game running in PCSX-Redux, as described below. The repository's history
+starts in October 2026; the maintainer's earlier work on the game is not part of it.
 
 ```mermaid
 flowchart LR
@@ -430,6 +449,8 @@ engine/
   src/         The C++20 source: hardware replacements, ported game code, setup, Archipelago client
   tests/       Unit, disc and game tests
 mods/          The curated mod list
+res/           The application icon (an original design drawn by tools/make_icon.py), the Windows
+               resource and manifest templates, the Linux .desktop files
 tools/         Disc, script and mod tools, comparison scripts, sweeps, packaging, the reference suite
 ```
 
@@ -474,6 +495,10 @@ keep their own licences; the release packages list them in `THIRD-PARTY-LICENSES
 
 **Made possible by**
 
+- [Claude](https://www.anthropic.com/claude) by Anthropic, through
+  [Claude Code](https://claude.com/claude-code): the AI that wrote most of the code, the
+  reverse-engineering notes and the documentation with the maintainer
+  (see [Written with AI](#written-with-ai))
 - [PCSX-Redux](https://github.com/grumpycoders/pcsx-redux), the reference every system was
   measured against
 - [Archipelago](https://archipelago.gg), the multiworld framework

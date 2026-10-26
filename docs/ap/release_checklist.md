@@ -14,7 +14,7 @@ different schedules and Archipelago can only read one of them as a real version:
 | What | Value | Set in |
 |---|---|---|
 | The APWorld (`world_version`) | `0.2.0` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) and `apworld/so2/world.py`'s `APWORLD_VERSION` (written into each seed's slot data as `apworld_version`; keep the two equal) |
-| Archipelago core this world targets (`minimum_ap_version`) | `0.6.8` | `apworld/so2/archipelago.json` |
+| Archipelago core this world targets (`minimum_ap_version`) | `0.6.8` | `apworld/so2/archipelago.json`; the port's client announces the same version (`engine/CMakeLists.txt` reads it from there at configure time) |
 | The port's own release version | **`0.02.50`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.02.50)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
 
 The port version is written `0.01.00`: two-digit minor and patch fields, chosen so either
@@ -37,14 +37,17 @@ ecosystem's `x.y.z` world-version convention for this one field. The two numbers
 unrelated on purpose: an apworld bump doesn't need a new port build and vice versa (section
 3's "ship beside, not inside" decision).
 
-The Archipelago client's version reporting (`engine/src/ap_net/client.cpp`): checked —
-`ConnectSlot(info.slot, info.password, info.items_handling, tags)` is called with no `ver`
-argument, so apclientpp's default `APCLIENTPP_VERSION_INITIALIZER` is sent. That `"version"`
-field in the `Connect` packet **is** the Archipelago network protocol version the client
-speaks (per the protocol: a compatibility check against the server), not a free-form
-client/game version — there is no second, separate "client version" field anywhere in
-`ap_net` to attach `SS_VERSION` to, and the task's rule not to touch the protocol version
-means nothing here needed changing. `tags` carries only `"DeathLink"` when that option is on.
+The Archipelago client's version reporting (`engine/src/ap_net/client.cpp`): the `"version"`
+field of the `Connect` packet is the Archipelago version the client speaks (the server checks it
+against the slot's minimum, and with `compatibility 0` against its own), not a free-form
+client/game version; there is no separate field to attach `SS_VERSION` to. Until 0.02.50's
+Windows check it was apclientpp's default (`APCLIENTPP_VERSION_INITIALIZER`, 0.6.6, its own
+release), so a 0.6.8 server listed the game as `Client(0.6.6)`. Since then `ConnectSlot` gets the
+world's `minimum_ap_version` (0.6.8; `engine/CMakeLists.txt` reads `apworld/so2/archipelago.json`
+and passes `SS_AP_VERSION_*` to `ss_ap_net`; 0.6.8 if the file is missing), so bumping the
+manifest bumps the client too; the configure log says "Archipelago client announces version
+...". Checked against the local server (`tools/ap_test_server.sh`): every `ap_net` case passes
+and the server logs `Client(0.6.8)`. `tags` carries only `"DeathLink"` when that option is on.
 
 ## 2. Verification commands and expected results
 
@@ -148,6 +151,14 @@ MINGW_SSL_SYSROOT=scratchpad/setup/mingw-ssl/usr/x86_64-w64-mingw32/sys-root/min
 objdump -T dist/ShatteredStars-0.01.00-linux-x86_64/shattered-stars | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
 SS_DISC1="<disc 1 .cue>" tools/smoke_field_events.sh dist/ShatteredStars-0.01.00-linux-x86_64/shattered-stars
 ```
+Desktop identity (from 0.02.50; `docs/handoff/appicon.md`): both `.exe`s carry one icon group
+(16, 24, 32, 48, 64, 128, 256 px), a version resource (ProductName `Shattered Stars`,
+FileDescription `Shattered Stars` / `Shattered Stars Setup`, FileVersion = the port version,
+and no `POSIX WinThreads` one) and a manifest (`asInvoker`): check with REA's
+`inspect_pe_resources` or `x86_64-w64-mingw32-objdump -s -j .rsrc`. The Linux bundle has
+`install-desktop-entry.sh` and `desktop/` (two `.desktop` files, `desktop-file-validate`
+clean, and `icons/hicolor/`).
+
 The version in the filename (and the top folder inside each archive) is read out of
 `engine/CMakeLists.txt` by the scripts themselves (section 1), not hand-written in the
 scripts — bumping the one `project(... VERSION ...)` line is enough. Both scripts also now
@@ -177,7 +188,7 @@ change needed):
 | Artifact | Path | From |
 |---|---|---|
 | The APWorld | `dist/so2.apworld` | `tools/build_apworld.sh` |
-| Its options template | `dist/Star Ocean The Second Story.yaml` | `tools/build_apworld.sh` (Archipelago's `Options.generate_yaml_templates`) |
+| Its options template | `dist/Star Ocean The Second Story.yaml`, uploaded and downloaded as `Star.Ocean.The.Second.Story.yaml` (GitHub turns the spaces of an asset's name into dots, as v0.01.00's and v0.02.00's assets show; the release notes and SHA256SUMS use that name) | `tools/build_apworld.sh` (Archipelago's `Options.generate_yaml_templates`) |
 | Linux release | `dist/ShatteredStars-<version>-linux-x86_64.tar.gz` (0.02.50: `ShatteredStars-0.02.50-linux-x86_64.tar.gz`) | `tools/build_linux.sh --container` |
 | Windows release | `dist/ShatteredStars-<version>-win64.zip` (0.02.50: `ShatteredStars-0.02.50-win64.zip`) | `tools/build_windows.sh` |
 
@@ -303,32 +314,63 @@ The game's own verification for 0.02.00 (sweeps, Redux checks, Archipelago proof
 end-to-end runs) is in docs/handoff/regions.md ("0.02.00 readiness"), docs/handoff/soulmaster.md
 and docs/handoff/elgate.md.
 
-## 9. Release candidate 0.02.50: verification run (2026-10-25)
+## 9. Release candidate 0.02.50: verification run (2026-10-25, superseded by RC2 2026-10-26)
 
-Port 0.02.50 with so2.apworld 0.2.0, the user's decision. Built and checked by
-`scratchpad/release/rc-0.02.50.sh all` (21:59-22:20; log, results and artifacts in
-`scratchpad/release/rc-0.02.50-dist/`, one line per step in its `summary.txt`). The source is a
-**snapshot of the working tree**, not a commit, because the user commits this release's work
-after review: a disposable worktree at HEAD `9f798b1` with `git diff HEAD --binary` applied and
-the untracked, not-ignored files copied in (36 files changed, 4 new; the diff is kept as
-`snapshot.diff`). At the end the script checked that the main tree's `engine/`, `apworld/`,
-`tools/`, `mods/` and `LICENSE` had not moved since the snapshot (tree id `5433b7658b8266a0`,
-unchanged). The worktree and the scratch Archipelago installs were removed afterwards. Nothing
-was tagged, committed, pushed or published, and no server outside 127.0.0.1 was contacted.
+### RC2 (2026-10-26): winfix + appicon + escquit on top of the pushed c9a8200
 
-| Check (section) | Result |
+The pushed commit `c9a8200` (tagged as the 0.02.50 RC and sent to the user's Windows machine)
+came back with six findings from `docs/handoff/windows_check.md`; the user ruled: fix all of it
+before tagging for real. Three agents did, all uncommitted on top of `c9a8200`:
+
+- **winfix**: non-ASCII command-line arguments and `SS_*` variables no longer crash either
+  program (UTF-16 argv/env on Windows); setup's Auto-detect message fixed; the original's
+  `"pwnd->destroy"` debug print removed; every `[ap]`/`[port]`/`[mods]` line now reaches
+  `shattered-stars.log`, bounded to 4 MB; the Archipelago client announces `0.6.8` instead of
+  apclientpp's default `0.6.6`; the template YAML's two names (as built vs. as GitHub serves it)
+  reconciled in the checklist and the RC script's `sums` phase.
+- **appicon**: an original icon (7 sizes), a Windows version resource (`ProductName`/
+  `FileDescription` "Shattered Stars" / "Shattered Stars Setup", `FileVersion` 0.02.50,
+  `CompanyName`/`LegalCopyright` "DreamGlyph Studios") and manifest (`asInvoker`, `PerMonitorV2`,
+  `supportedOS`, no `activeCodePage`), with the stray libwinpthread `"POSIX WinThreads for
+  Windows"` VERSIONINFO removed from both `.exe`s; app ids `io.github.IronJade.ShatteredStars`
+  (game) and `.Setup`; a Linux desktop entry (`desktop/`, `install-desktop-entry.sh`); both
+  programs' window titles ("Shattered Stars" / "Shattered Stars Setup").
+- **escquit**: Esc now opens a "Quit Shattered Stars?" overlay (Keep playing / Quit) instead of
+  closing at once, by keyboard or gamepad; the game pauses (no vblank/SPU/net poll) and audio is
+  paused, not stopped; the window's close button and Alt+F4 still close immediately.
+- **Coordinator**: both `LICENSE` files changed to "Copyright (c) 2026 DreamGlyph Studios"
+  (MIT text unchanged; `archipelago.json`'s `authors` stays `["IronJade"]`); README.md and the
+  wiki gained a "Written with AI" passage.
+- **This RC2 pass**: `apworld/so2/docs/setup_en.md` now names both the built template
+  (`Star Ocean The Second Story.yaml`) and the name GitHub gives the download
+  (`Star.Ocean.The.Second.Story.yaml`), since the apworld rebuild below ships that doc; folded
+  winfix's, appicon's and escquit's Windows recheck items into one "Recheck for 0.02.50 RC2"
+  list in `docs/handoff/windows_check.md`.
+
+Built and checked by `scratchpad/release/rc-0.02.50.sh all` again (2026-10-26, 00:31-00:53; log,
+results and artifacts in `scratchpad/release/rc-0.02.50-dist/`, appended to the same
+`summary.txt` as the first run — the first run's 21:59-22:20 lines above are still in that file
+as history). Source: a fresh snapshot (disposable worktree at HEAD `c9a8200` + `git diff HEAD
+--binary`, 41 files changed/1208 insertions/177 deletions + 29 untracked files copied in). At
+the end the main tree's `engine/`, `apworld/`, `tools/`, `mods/` and `LICENSE` were confirmed
+unchanged since the snapshot (tree id `5605ab1c0fa4ce01`). The worktree and scratch Archipelago
+installs were removed afterwards. Nothing was tagged, committed, pushed or published, and no
+server outside 127.0.0.1 was contacted. **Every phase exited 0; no FAIL anywhere** (checked
+individually against each phase's own log, not just the summary line).
+
+| Check (section) | Result (RC2, 2026-10-26) |
 |---|---|
-| 2.1 `tools/build_apworld.sh` (a fresh copy of the Archipelago install with no `worlds/so2`, so it packaged the snapshot's `apworld/so2`) | exit 0. `so2.apworld` 158,970 bytes, 27 files, no `__pycache__`; manifest `world_version` 0.2.0, `minimum_ap_version` 0.6.8, `authors` IronJade, `version` / `compatible_version` 7 (added by the packaging). Template `Star Ocean The Second Story.yaml`, 21,341 bytes. |
-| 2.2 the packaged world in a clean install (`custom_worlds/so2.apworld`, no `worlds/so2`) | loads: `world_version` 0.2.0, no failed world loads, no manifest error. Five seeds (`Generate.py --seed 90250`), each exit 0 with no traceback: the template as it is (solo; seed version 1), a multiworld with ChecksFinder (version 1), open world with every new option (character items, `starting_character: any`, an exclusion, full shops, traps, the cave, DeathLink, craftsanity, no-fail crafting, killer moves (`any`), skillsanity `insanity`, `drop_progression: force`, Galaxy, the Iseria Queen goal; version 2), hub mode (`random_town`, `all_bosses`, Rena, Celine, skills only, drops, specials, the cave, `difficulty: any`, Limiter Off; version 3), story mode with the rest (Rena, missables, no Expel progression, no boss checks, crafts, killer moves (`hero`), the multipliers, Universe; version 2). `check.py` over the five: 0 errors. `MultiServer.py` on the multiworld: "Hosting game at 127.0.0.1:38491", the world's embedded data package loaded; stopped by its PID. |
-| 2.3 port end to end, the packaged Linux binary against the packaged world | `tools/ap_e2e_so2.sh` and `tools/ap_e2e_hub.sh`, adapted by `sed` to the packaged install (the dev `worlds/so2` link replaced by a check that only `custom_worlds/so2.apworld` is there; checked before running): **37 / 37 PASS** (character items, first drops, traps, open world with full shops, the shop slot's item and check, the goal, the v2 Iseria Queen goal) and **15 / 15 PASS** (hub New Game, the key received, the locked door, Arcmene's chamber, the battle, the check, the tracker). |
-| 2.4 the world's tests and Archipelago's general tests (`worlds/so2` linked to the snapshot) | `worlds/so2/test`: **380 passed** (29310 subtests). `test/general`: **379 passed** (117754 subtests). |
-| 2.5 the apworld regression | a 48-seed batch (the skillsanity players sets of scratchpad/apworld2/batch: 24 story / open-world seeds and 24 hub seeds, 2 SO2 players + ChecksFinder each, seeds 9501-9524): 48 / 48 exit 0; `check.py` **0 errors** on 48 + 48 seed files (1939 and 1971 progression items in SO2 locations). The world's tests as in 2.4; the e2e as in 2.3. |
-| 2.6 `tools/build_linux.sh --container` | exit 0. `ShatteredStars-0.02.50-linux-x86_64.tar.gz`, 9,153,298 bytes, 9 entries (the versioned folder, `shattered-stars`, `shattered-stars-setup`, `README.md`, `README.txt`, `LICENSE`, `THIRD-PARTY-LICENSES.txt`, `discs/` with its note). glibc floor `2.36`. `--version`: `Shattered Stars 0.02.50` / `Shattered Stars Setup 0.02.50`, exit 0, no `config.ini` written. |
-| 2.6 smoke on the packaged Linux binary (from the main tree, with its fixtures) | **282 PASS / 0 FAIL / 0 SKIP**. |
-| 2.6 `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` set) | exit 0. `ShatteredStars-0.02.50-win64.zip`, 7,483,942 bytes: `shattered-stars.exe`, `setup.exe`, `SDL3.dll`, `README.md`, `LICENSE`, `THIRD-PARTY-LICENSES.txt`, `discs/`. |
-| 2.6 Windows under Wine (scratch prefix `scratchpad/release/rc-wine/wineprefix`; no display: DISPLAY unset, `WAYLAND_DISPLAY` pointed at nothing, the null display driver, winedbg and its crash dialog off; 4 GB scopes) | `shattered-stars.exe --version`: `Shattered Stars 0.02.50`. A 300-vblank headless boot onto Arlia (map 18): its triggers register (code words 491, 497, 478, ...), "stopped after 300 vblanks", exit 0. |
-| The engine suites (engine/build-release2, Linux) | `ss_tests` **99 / 0**, `ss_game_tests` **182 / 0**. |
-| The Windows suites under Wine (owed since 0.01.00; no Archipelago server, so its network cases skip) | `ss_tests.exe` **99 / 0**, `ss_game_tests.exe` **182 / 0**. |
+| 2.1 `tools/build_apworld.sh` (a fresh copy of the Archipelago install with no `worlds/so2`, so it packaged the snapshot's `apworld/so2`) | exit 0. `so2.apworld` 159,070 bytes (+100 bytes: the `setup_en.md` download-name note), 27 files, no `__pycache__`; manifest `world_version` 0.2.0, `minimum_ap_version` 0.6.8, `authors` IronJade, `version` / `compatible_version` 7 (added by the packaging). Template `Star Ocean The Second Story.yaml`, 21,341 bytes (unchanged). |
+| 2.2 the packaged world in a clean install (`custom_worlds/so2.apworld`, no `worlds/so2`) | loads: `world_version` 0.2.0, no failed world loads, no manifest error. Same five seeds as the first run (`Generate.py --seed 90250`), each exit 0 with no traceback, same versions (1 / 1 / 2 / 3 / 2). `check.py` over the five: 0 errors (same location/progression ranges as the first run — the apworld's logic is unchanged, only its docs). `MultiServer.py` on the multiworld: "Hosting game at 127.0.0.1:38491", the world's embedded data package loaded; stopped by its PID. |
+| 2.3 port end to end, the packaged Linux binary against the packaged world | **37 / 37 PASS** (so2: character items, first drops, traps, open world with full shops, the shop slot's item and check, the goal, the v2 Iseria Queen goal) and **15 / 15 PASS** (hub: New Game, the key received, the locked door, Arcmene's chamber, the battle, the check, the tracker) — both against the RC2 binary (Esc-quit-confirm, the new icon/version resource, and the UTF-8 argument/env handling all compiled in; none of the e2e scripts touch Esc or the icon, so no behavior difference from the first run was expected or seen). |
+| 2.4 the world's tests and Archipelago's general tests (`worlds/so2` linked to the snapshot) | `worlds/so2/test`: **380 passed** (29323 subtests). `test/general`: **379 passed** (117753 subtests). (Subtest counts vary a little run to run; both still fully green.) |
+| 2.5 the apworld regression | the same 48-seed batch: 48 / 48 exit 0; `check.py` **0 errors** on 48 + 48 seed files (1939 and 1971 progression items in SO2 locations, identical to the first run). |
+| 2.6 `tools/build_linux.sh --container` | exit 0. `ShatteredStars-0.02.50-linux-x86_64.tar.gz`, **9,407,748 bytes, 39 entries** (grew from 9: now also `desktop/` with two `.desktop` files + `icons/hicolor/{16,24,32,48,64,128,256}/apps/` + the scalable SVG, and `install-desktop-entry.sh`). glibc floor `2.36`. `--version`: `Shattered Stars 0.02.50` / `Shattered Stars Setup 0.02.50`, exit 0, no `config.ini` written. `LICENSE` reads "Copyright (c) 2026 DreamGlyph Studios"; `desktop-file-validate` on both `.desktop` files: exit 0. |
+| 2.6 smoke on the packaged Linux binary (from the main tree, with its fixtures) | **282 PASS / 0 FAIL / 0 SKIP** (unchanged). |
+| 2.6 `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` set) | exit 0. `ShatteredStars-0.02.50-win64.zip`, **7,800,956 bytes**, 9 entries: `shattered-stars.exe`, `setup.exe`, `SDL3.dll`, `README.md`, `LICENSE`, `THIRD-PARTY-LICENSES.txt`, `discs/`. Both `.exe`s re-inspected with REA's `inspect_pe_resources`: one `RT_GROUP_ICON` (7 images, 16-256 px), one `RT_VERSION` and one `RT_MANIFEST` resource each; UTF-16LE strings confirm `ProductName`/`FileDescription` "Shattered Stars" / "Shattered Stars Setup", `FileVersion`/assembly version `0.02.50`/`0.2.50.0`, `CompanyName`/`LegalCopyright` "DreamGlyph Studios", app ids `io.github.IronJade.ShatteredStars`(`.Setup`); manifest strings `asInvoker`, `PerMonitorV2`, `supportedOS`; **zero** occurrences of `"POSIX WinThreads"` in either file. |
+| 2.6 Windows under Wine (scratch prefix `scratchpad/release/rc-wine/wineprefix`; no display: DISPLAY unset, `WAYLAND_DISPLAY` pointed at nothing, the null display driver, winedbg and its crash dialog off; 4 GB scopes) | `shattered-stars.exe --version`: `Shattered Stars 0.02.50`. A 300-vblank headless boot onto Arlia (map 18): its triggers register (26 trigger lines), "stopped after 300 vblanks", exit 0. |
+| The engine suites (engine/build-release2, Linux) | `ss_tests` **103 / 0** (was 99 — 4 new `utf8_*` cases), `ss_game_tests` **193 / 0** (was 182 — 11 new: app_icon ×3, quit_prompt ×5 via window tests, the game-loop Esc cases, utf8/launcher-log cases). |
+| The Windows suites under Wine (no Archipelago server, so its network cases skip) | `ss_tests.exe` **103 / 0**, `ss_game_tests.exe` **194 / 0** (one more than Linux: the Windows-only `launcher_log_without_a_console` case). Zero `FAIL` in either log; the only skips are the optional region-disc and AP-server cases, as expected headless. |
 
 **What the Windows suites found** (the first RC, 21:11-21:31, had every step green but
 `ss_game_tests.exe` 182 / 2 failed; details in docs/handoff/release.md, "Status 21:58"):
@@ -343,7 +385,19 @@ was tagged, committed, pushed or published, and no server outside 127.0.0.1 was 
   reachable in the game), and the hub story-view test inherited a queued fade (the test now
   empties it).
 
-SHA-256 (`scratchpad/release/rc-0.02.50-dist/SHA256SUMS`; also in the release notes):
+SHA-256, RC2 (`scratchpad/release/rc-0.02.50-dist/SHA256SUMS`; also in the release notes).
+**Every sum changed from the first run** (winfix + appicon + escquit + the LICENSE/README/
+setup_en.md changes are all in these artifacts now):
+```
+22c42eed449683a4fe0fd363f0b383bdaf704729be475defcbfe6ae64e8c6f1b  ShatteredStars-0.02.50-linux-x86_64.tar.gz
+1d573a50e0c4ed8f1753496fa46884cc8e8e97820292f6eae75d8e4aef639e85  ShatteredStars-0.02.50-win64.zip
+aa57e9d991f2aaf97e4517f43a9139d46e1aa013730a8aef5061bf1e48780cf5  so2.apworld
+adada8d01d8bc01b568968124146fb8f02057b9c165575e50a39caff5d5b8914  Star.Ocean.The.Second.Story.yaml
+```
+(The template YAML's sum is unchanged — its content didn't move, only the apworld packaging
+around it did.)
+
+**First run (2026-10-25, c9a8200 only, superseded):**
 ```
 336faf3a33417d3a55dc0037c2025bf2aff23b43d70392a40638a3e8c3ae21f8  ShatteredStars-0.02.50-linux-x86_64.tar.gz
 44f08f3a21c0fc05e8406ee0be0bbdbbe085909dfa5b5f4200ef9d196c5e3932  ShatteredStars-0.02.50-win64.zip
@@ -353,14 +407,15 @@ adada8d01d8bc01b568968124146fb8f02057b9c165575e50a39caff5d5b8914  Star Ocean The
 
 Release notes for players: [`docs/release_notes/0.02.50.md`](../release_notes/0.02.50.md).
 
-**Publishing (the user's; not run).** The artifacts above were built from the snapshot, so they
-match the tree the user commits if that commit takes the working tree as it stood at 21:59 (the
-`engine/ apworld/ tools/ mods/ LICENSE` part; docs may differ). To check after committing, hash
-those sources' contents, which doesn't depend on the commit:
+**Publishing (the user's; not run).** The artifacts above were built from the RC2 snapshot, so
+they match the tree the user commits if that commit takes the working tree as it stood at
+00:31 on 2026-10-26 (the `engine/ apworld/ tools/ mods/ LICENSE` part; docs may differ). To
+check after committing, hash those sources' contents, which doesn't depend on the commit:
 
 ```sh
 git ls-files -co --exclude-standard -z -- engine apworld tools mods LICENSE | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-16
-# the RC's sources: c3a0177296fe677d (618 files)
+# the RC2's sources: 96c00f03f8432efb (630 files)
+# (the first run's sources, superseded: c3a0177296fe677d, 618 files)
 ```
 
 If it prints anything else, rerun `bash scratchpad/release/rc-0.02.50.sh all` before publishing.

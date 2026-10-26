@@ -35,7 +35,8 @@ namespace ss::launcher {
 std::filesystem::path config_dir();
 std::filesystem::path config_path();  // config_dir() / "config.ini"
 
-// UTF-8 strings <-> paths, the same on every platform (Windows paths are UTF-16 inside).
+// UTF-8 strings <-> paths, the same on every platform (Windows paths are UTF-16 inside);
+// never throwing (util/utf8.h).
 std::filesystem::path utf8_path(const std::string& s);
 std::string path_utf8(const std::filesystem::path& p);
 

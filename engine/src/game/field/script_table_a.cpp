@@ -8,6 +8,7 @@
 #include "game/ap/ap.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
+#include "util/log.h"
 
 namespace ss::game::field {
 namespace {
@@ -369,7 +370,7 @@ void vm_exec_table_a(ScriptCtx* ctx, u32 instr) {
         --ctx->ip;
         ctx->wait += 90;
       } else {
-        if (c.kind == ap::HarbourChoice::kJump) std::fprintf(stderr, "[ap] harbour: the Hoffmann sail is not at %#x\n", c.offset);
+        if (c.kind == ap::HarbourChoice::kJump) util::log_printf("[ap] harbour: the Hoffmann sail is not at %#x\n", c.offset);
         *ctx->value_sp++ = 0;
       }
       break;

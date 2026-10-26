@@ -39,8 +39,10 @@
 #include "launcher/config.h"
 #include "launcher/process.h"
 #include "launcher/report.h"
+#include "platform/app_icon.h"
 #include "setup/setup_ui.h"
 #include "util/png.h"
+#include "util/utf8.h"
 
 namespace {
 
@@ -76,7 +78,7 @@ std::string find_font(bool bold) {
   std::vector<std::string> candidates;
 #ifdef _WIN32
   std::string windir = "C:\\Windows";
-  if (const char* w = std::getenv("WINDIR"); w && *w) windir = w;
+  if (util::env_set("WINDIR")) windir = *util::env("WINDIR");
   for (const char* f : bold ? std::vector<const char*>{"segoeuib.ttf", "tahomabd.ttf", "arialbd.ttf"}
                             : std::vector<const char*>{"segoeui.ttf", "tahoma.ttf", "arial.ttf"})
     candidates.push_back(windir + "\\Fonts\\" + f);
@@ -207,7 +209,11 @@ constexpr unsigned kGlColorBufferBit = 0x4000, kGlRgba = 0x1908, kGlUnsignedByte
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
+  // The arguments as UTF-8: on Windows argv is in the ANSI code page (util/utf8.h).
+  util::Arguments utf8_args(argc, argv);
+  argc = utf8_args.argc();
+  argv = utf8_args.argv();
   launcher::attach_console(false);  // started from a terminal: messages go there
   for (int i = 1; i < argc; ++i) {  // --version / --help: print and exit, before anything else
     if (std::strcmp(argv[i], "--version") == 0) {
@@ -249,12 +255,13 @@ int main(int argc, char** argv) {
       return usage();
     }
   }
-  if (const char* script = std::getenv("SS_SETUP_SCRIPT"); script && *script)
-    for (const std::string& a : split(script)) options.actions.push_back(a);
+  if (util::env_set("SS_SETUP_SCRIPT"))
+    for (const std::string& a : split(*util::env("SS_SETUP_SCRIPT"))) options.actions.push_back(a);
   if (!screenshot.empty() && frames <= 0) frames = 6;
   const int quit_code = options.from_game ? launcher::kSetupQuit : 1;
 
-  SDL_SetAppMetadata("Shattered Stars Setup", nullptr, "org.shatteredstars.setup");
+  // Its name, version and app id on the desktop (platform/app_icon.h): its own taskbar entry.
+  platform::set_app_metadata(platform::kSetupName, SS_VERSION, platform::kSetupAppId, false);
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
     launcher::fatal(std::string("Setup could not start (SDL_Init: ") + SDL_GetError() + ").");
     return quit_code;
@@ -304,6 +311,7 @@ int main(int argc, char** argv) {
   } else {
     SDL_GL_SetSwapInterval(1);
   }
+  platform::set_window_icon(window);  // the taskbar's and title bar's icon
   SDL_SetWindowMinimumSize(window, static_cast<int>(640 * scale), static_cast<int>(480 * scale));
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(window);
@@ -462,4 +470,9 @@ int main(int argc, char** argv) {
   SDL_DestroyWindow(window);
   SDL_Quit();
   return exit_code;
+} catch (const std::filesystem::filesystem_error& e) {
+  // A path that can't be used (util/utf8.h converts without throwing; this is the net): said,
+  // and a clean exit (1: as Quit, so a game waiting on setup stops too) instead of std::terminate.
+  launcher::fatal(std::string("A file or folder could not be used: ") + e.what());
+  return 1;
 }

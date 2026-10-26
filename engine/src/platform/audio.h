@@ -28,5 +28,9 @@ struct AudioOptions {
 bool audio_open(const AudioOptions& options, std::string* error);
 void audio_close();  // finishes the WAV header and closes the device
 void audio_vblank();  // Runtime::audio_tick
+// The quit prompt (Runtime::audio_pause) [escquit]: the device stops playing and keeps what
+// is queued, so the sound goes on from the same sample when the game resumes. The SPU and the
+// WAV dump are not involved (no field runs while the prompt is up).
+void audio_pause(bool paused);
 
 }  // namespace ss::platform

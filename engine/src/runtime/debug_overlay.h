@@ -16,4 +16,8 @@ namespace ss::runtime {
 void draw_debug_overlay(std::vector<u32>& pixels, int width, int height, const std::string& status,
                         const std::deque<std::string>& lines);
 
+// The overlay's 5x7 font (the quit prompt's too, runtime/quit_prompt.h): column 'col' (0-4)
+// of 'ch' (' ' to '~', anything else as '?'), bit 0 the top row.
+u8 overlay_font_column(unsigned char ch, int col);
+
 }  // namespace ss::runtime

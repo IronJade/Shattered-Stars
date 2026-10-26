@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 
+#include "util/log.h"
 
 namespace ss::region {
 
@@ -77,7 +78,7 @@ void log_once(const std::string& key, const std::string& message) {
   static std::mutex lock;
   static std::set<std::string> logged;
   std::lock_guard<std::mutex> guard(lock);
-  if (logged.insert(key).second) std::fprintf(stderr, "[port] %s\n", message.c_str());
+  if (logged.insert(key).second) util::log_line("[port] " + message);  // stderr and the run's log
 }
 
 // A read of an NA address the region's image has no counterpart for. The first few per

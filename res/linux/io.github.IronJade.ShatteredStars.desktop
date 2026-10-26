@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Name=Shattered Stars
+GenericName=Role-Playing Game
+Comment=A native PC port that plays from your own disc images
+Exec=shattered-stars
+TryExec=shattered-stars
+Icon=io.github.IronJade.ShatteredStars
+Terminal=false
+Categories=Game;RolePlaying;
+Keywords=RPG;port;
+StartupWMClass=io.github.IronJade.ShatteredStars
+SingleMainWindow=true
+Actions=setup;
+
+[Desktop Action setup]
+Name=Setup
+Exec=shattered-stars-setup

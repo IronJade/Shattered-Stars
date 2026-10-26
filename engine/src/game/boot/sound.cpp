@@ -9,6 +9,7 @@
 
 #include "runtime/boot_exe.h"
 #include "runtime/libapi.h"
+#include "util/log.h"
 
 namespace ss::game {
 
@@ -25,7 +26,7 @@ int g_transfer_notify_arg = 0;
 // (Not Runtime::log_once: the driver is in ss_core, which tests link without a window.)
 void log_once(const char* key, const char* message) {
   static std::set<std::string> logged;
-  if (logged.insert(key).second) std::fprintf(stderr, "[port] %s\n", message);
+  if (logged.insert(key).second) util::log_printf("[port] %s\n", message);  // stderr and the run's log
 }
 
 void write_u16(u8* p, u16 v) {

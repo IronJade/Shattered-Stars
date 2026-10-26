@@ -42,7 +42,11 @@ Sound, Controls, Gameplay, Memory cards, Mods and Archipelago. Then press *Save 
 them in.
 
 **Linux:** the same two programs sit side by side in the build folder, `shattered-stars`
-(the game) and `shattered-stars-setup` (setup). They work the same way.
+(the game) and `shattered-stars-setup` (setup). They work the same way. The package also has
+`install-desktop-entry.sh` (optional): it adds both programs to your application menu with
+their icon, for your user only (`~/.local/share/applications` and `~/.local/share/icons`).
+GNOME and KDE Plasma on Wayland show a program's name and icon in the taskbar only once its
+desktop entry is installed. Run it again after moving the folder; `--uninstall` removes it.
 
 | | Windows | Linux |
 |---|---|---|
@@ -54,8 +58,11 @@ them in.
 | Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` |
 
 While playing, F11 or Alt+Enter switches between the window and full screen, and Esc
-quits. `config.ini` is plain `key=value` text: setup writes it, and keys it doesn't know
-are kept. The keys are listed in `src/launcher/config.h`.
+pauses the game and asks before quitting (Keep playing / Quit; `src/runtime/quit_prompt.h`).
+The window's close button and Alt+F4 quit at once. Esc and F11 are the port's own keys:
+they never press a game button, whatever `config.ini` binds to them. `config.ini` is plain
+`key=value` text: setup writes it, and keys it doesn't know are kept. The keys are listed in
+`src/launcher/config.h`.
 
 ## Build
 
@@ -88,7 +95,8 @@ byte), and its test suites pass under Wine (`engine/build-win/ss_tests.exe`,
 
 ```sh
 tools/build_linux.sh --container   # -> dist/ShatteredStars-<version>-linux-x86_64.tar.gz:
-                                   #    shattered-stars, shattered-stars-setup, README, LICENSE, discs/
+                                   #    shattered-stars, shattered-stars-setup, README, LICENSE, discs/,
+                                   #    install-desktop-entry.sh, desktop/ (.desktop files, icons)
 ```
 
 The release is built with podman in a Debian 12 container (`tools/linux-build/Containerfile`,
@@ -99,6 +107,20 @@ time. libstdc++ is linked in as well, so the player needs only glibc and OpenGL 
 repository is mounted read-only; the build goes to `engine/build-linux-container`. Without
 `--container` the script builds on this machine instead, with the system's SDL3 copied beside
 the programs. That build needs this machine's glibc (Fedora 44: 2.43).
+
+### Icon and program names
+
+The icon is an original design (a gold star broken into shards on a midnight-blue tile;
+nothing from the discs), drawn from vector shapes by `tools/make_icon.py` (pycairo and Pillow)
+into `res/icon/`: PNGs from 16 to 256 px, a Windows `.ico` and an SVG. Those files are
+committed, so the build never runs the script. The build compiles the 64, 128 and 256 px PNGs
+into both programs (`src/platform/app_icon.h`); on Windows each `.exe` also gets the `.ico`, a
+version resource (Task Manager and the taskbar call them "Shattered Stars" and "Shattered
+Stars Setup") and a manifest (`asInvoker`, so `setup.exe` is never taken for an installer),
+from `res/windows/`. The game's window is titled "Shattered Stars", setup's "Shattered Stars
+Setup". Both programs tell SDL their name and app id before it starts:
+`io.github.IronJade.ShatteredStars` and `io.github.IronJade.ShatteredStars.Setup`, the Wayland
+app_id / X11 window class that `res/linux/`'s `.desktop` files match.
 
 ### Setup program
 
@@ -197,7 +219,8 @@ them): `where`, `warp MAP [X Y Z [DIR]]`, `fol N`, `item ID [COUNT]`, `heal`,
 `flag N [0|1]`, `global OFF [VALUE]`, `battle ENC [STAGE]`, `noclip`, and with a seed
 `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]`. The status line
 (map, field state, the leader's position, Fol) and the console's last lines are shown
-over the top of the picture and in the window title; without `--debug` neither appears.
+over the top of the picture, and the status line in the window title ("Shattered Stars -
+map 18 | state 0 | ..."); without `--debug` neither appears.
 
 Debugging switches (start on a map, battles, traces, headless runs) are listed in
 `docs/HANDOFF.md`.
@@ -341,7 +364,7 @@ live RAM dumps; without `SS_DISC1` they are skipped and only the unit tests run.
 | `src/disc/` | disc image, archive table, SLZ |
 | `src/psx/` | replacements for the PS1 hardware (GPU, GTE, MDEC) |
 | `src/runtime/` | PsyQ-shaped libraries (libgpu, libgte, VSync) over the host |
-| `src/platform/` | SDL3 window, OpenGL presentation, input |
+| `src/platform/` | SDL3 window, OpenGL presentation, input, the programs' icon and app ids |
 | `src/game/` | ported game code, named as in `docs/catalog/functions.csv` |
 | `src/util/` | PNG writer |
 | `tests/` | unit and disc regression tests |

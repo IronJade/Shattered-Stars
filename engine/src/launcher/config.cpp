@@ -6,9 +6,7 @@
 #include <string>
 #include <system_error>
 
-#ifdef _WIN32
-#include <cwchar>
-#endif
+#include "util/utf8.h"
 
 namespace ss::launcher {
 namespace {
@@ -24,26 +22,15 @@ std::string trim(const std::string& s) {
 
 // An environment variable as a path; on Windows read as UTF-16 so any user name works.
 fs::path env_path(const char* name) {
-#ifdef _WIN32
-  std::wstring wide(name, name + std::char_traits<char>::length(name));
-  if (const wchar_t* v = _wgetenv(wide.c_str()); v && *v) return fs::path(v);
+  if (const auto v = util::env(name); v && !v->empty()) return util::utf8_path(*v);
   return {};
-#else
-  if (const char* v = std::getenv(name); v && *v) return fs::path(v);
-  return {};
-#endif
 }
 
 }  // namespace
 
-fs::path utf8_path(const std::string& s) {
-  return fs::path(std::u8string(reinterpret_cast<const char8_t*>(s.data()), s.size()));
-}
+fs::path utf8_path(const std::string& s) { return util::utf8_path(s); }
 
-std::string path_utf8(const fs::path& p) {
-  const std::u8string u = p.u8string();
-  return std::string(reinterpret_cast<const char*>(u.data()), u.size());
-}
+std::string path_utf8(const fs::path& p) { return util::path_utf8(p); }
 
 fs::path config_dir() {
   if (fs::path xdg = env_path("XDG_CONFIG_HOME"); !xdg.empty()) return xdg / "shattered-stars";

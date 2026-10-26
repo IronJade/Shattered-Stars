@@ -9,8 +9,10 @@
 // wss, zlib for compression) on a thread of its own. CMake target ss_ap_net.
 //
 // - It connects to the server, and on its room info connects the slot (ConnectSlot with
-//   the game, slot, password, items_handling and the DeathLink tag when asked for); a lost
-//   connection is retried by itself, and the slot connected again.
+//   the game, slot, password, items_handling, the DeathLink tag when asked for, and the
+//   version below); a lost connection is retried by itself, and the slot connected again.
+// - It announces the Archipelago version the world targets (announced_version(): from
+//   apworld/so2/archipelago.json's minimum_ap_version, CMakeLists.txt), not apclientpp's.
 // - "host:port" tries wss:// first, then ws:// (apclientpp); "ws://" / "wss://" choose.
 // - The data package (item, location and player names) is kept in memory for the run.
 // - Our own DeathLink bounces come back from the server; they are dropped here, so a
@@ -38,6 +40,9 @@ class Client final : public Link {
 
   // Whether this build can use wss:// (OpenSSL linked in).
   static bool has_ssl();
+
+  // The version the Connect packet announces, "0.6.8".
+  static std::string announced_version();
 
  private:
   struct Impl;

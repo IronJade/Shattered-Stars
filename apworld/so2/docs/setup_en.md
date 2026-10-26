@@ -34,8 +34,11 @@ Like any Archipelago game, your options are set in a YAML file. There are two wa
   **Options Creator**. Pick *Star Ocean: The Second Story*, set the options with buttons and
   sliders, and export the YAML.
 - **By hand:** the template for this world ships alongside its `.apworld` file as
-  `Star Ocean The Second Story.yaml`. Fill in the options you want (`world_mode`,
-  `character_items`, `traps`, and so on; see the game page for what each one does).
+  `Star Ocean The Second Story.yaml`. If you downloaded it from this project's GitHub release
+  page, the download is named `Star.Ocean.The.Second.Story.yaml` instead — GitHub turns the
+  spaces in a release asset's name into dots, but it's the same template file either way. Fill
+  in the options you want (`world_mode`, `character_items`, `traps`, and so on; see the game
+  page for what each one does).
 
 Put the finished YAML wherever you'd normally place a player YAML for generation: your
 Archipelago install's `players` folder, or wherever your group's generation process expects

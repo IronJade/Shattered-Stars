@@ -47,7 +47,8 @@
 // its own card instead of the player's (launcher/ap_seed.h seed_memcard).
 //
 // Window: config.ini's window / window_scale / resolution / monitor / vsync keys (set in
-// setup); F11 or Alt+Enter toggles fullscreen; Esc quits. Keys: arrows, Z (Cross), X (Circle),
+// setup); F11 or Alt+Enter toggles fullscreen; Esc asks before quitting (runtime/quit_prompt.h;
+// the window's close button quits at once). Keys: arrows, Z (Cross), X (Circle),
 // A (Square), S (Triangle), Enter (Start), Backspace (Select), Q/W (L1/R1), 1/2 (L2/R2);
 // gamepads map directly (left stick = d-pad).
 //
@@ -97,6 +98,7 @@
 #include "launcher/process.h"
 #include "launcher/report.h"
 #include "launcher/settings.h"
+#include "platform/app_icon.h"
 #include "platform/audio.h"
 #include "platform/window.h"
 #include "runtime/boot_exe.h"
@@ -104,6 +106,7 @@
 #include "runtime/runtime.h"
 #include "tools/viewer.h"
 #include "util/png.h"
+#include "util/utf8.h"
 
 #ifndef _WIN32
 extern char** environ;
@@ -113,10 +116,9 @@ namespace {
 
 using namespace ss;
 
-bool env_set(const char* name) {
-  const char* v = std::getenv(name);
-  return v != nullptr && *v != 0;
-}
+// Windows: the variables as UTF-8 (util/utf8.h), so a path in one works whatever its letters.
+bool env_set(const char* name) { return util::env_set(name); }
+std::string env_or(const char* name, const std::string& fallback = {}) { return util::env(name).value_or(fallback); }
 
 // An Archipelago game is played as it is: every SS_* variable (the debugging and test hooks)
 // is cleared but 'keep'. Returns the names cleared. Nothing reads them before main().
@@ -171,7 +173,13 @@ int usage(const char* argv0) {
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
+  // The arguments as UTF-8: on Windows argv is in the ANSI code page (util/utf8.h).
+  util::Arguments utf8_args(argc, argv);
+  argc = utf8_args.argc();
+  argv = utf8_args.argv();
+  // Its name, version and app id on the desktop (platform/app_icon.h), before SDL starts.
+  platform::set_app_metadata(platform::kGameName, SS_VERSION, platform::kGameAppId, true);
   // Messages (launcher/report.h): to the terminal the game was started from; a windowed
   // player's run also keeps them in shattered-stars.log beside config.ini (all of them on
   // Windows when the game was double-clicked). Headless and SS_DISC runs write no log.
@@ -206,21 +214,21 @@ int main(int argc, char** argv) {
   u64 frames = 0;
   bool audio_asked = false, disc1_arg = false, disc2_arg = false, memcard_arg[2] = {false, false};
   std::filesystem::path audio_wav;
-  if (const char* wav = std::getenv("SS_AUDIO_WAV"); wav && *wav) audio_wav = wav;
+  if (env_set("SS_AUDIO_WAV")) audio_wav = util::utf8_path(env_or("SS_AUDIO_WAV"));
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     auto next = [&]() -> const char* { return argv[++i]; };
     const bool has_value = i + 1 < argc;
     if ((arg == "--disc1" || arg == "--disc") && has_value) {
-      remember("disc1", launcher::path_utf8(std::filesystem::absolute(next())));
+      remember("disc1", util::absolute_utf8(next()));
       config_changed = disc1_arg = true;
     } else if (arg == "--disc2" && has_value) {
-      remember("disc2", launcher::path_utf8(std::filesystem::absolute(next())));
+      remember("disc2", util::absolute_utf8(next()));
       config_changed = disc2_arg = true;
     } else if (arg == "--viewer") {
       viewer = true;
     } else if (arg == "--dump" && has_value) {
-      dump_dir = next();
+      dump_dir = util::utf8_path(next());
     } else if (arg == "--entry" && has_value) {
       entry = std::atoi(next());
     } else if (arg == "--no-dither") {
@@ -231,7 +239,7 @@ int main(int argc, char** argv) {
       config_changed = true;
     } else if ((arg == "--memcard1" || arg == "--memcard2") && has_value) {
       const std::string value = next();
-      remember(arg.substr(2), value == "none" ? "none" : launcher::path_utf8(std::filesystem::absolute(value)));
+      remember(arg.substr(2), value == "none" ? "none" : util::absolute_utf8(value));
       config_changed = memcard_arg[arg == "--memcard2"] = true;
     } else if (arg == "--no-memcard") {
       no_memcard = true;
@@ -246,12 +254,12 @@ int main(int argc, char** argv) {
     } else if (arg == "--debug") {  // debug console on the terminal (game/field/debug_console.h)
       debug_console = true;
     } else if (arg == "--ap-seed" && has_value) {  // Archipelago seed (game/ap; this run only)
-      ap_seed = launcher::path_utf8(std::filesystem::absolute(next()));
+      ap_seed = util::absolute_utf8(next());
       ap_seed_arg = true;
     } else if (arg == "--ap-seed-entry" && has_value) {  // which seed of an AP_<seed>.zip
       ap_seed_entry = next();
     } else if (arg == "--mods" && has_value) {  // world-edit patches (default: mods/ next to config.ini)
-      runtime::Runtime::get().mods_dir = std::filesystem::absolute(next()).string();
+      runtime::Runtime::get().mods_dir = util::absolute_utf8(next());
     } else if (arg == "--map" && has_value) {
       runtime::Runtime::get().debug_start_map = std::atoi(next());
     } else if (arg == "--map-pos" && has_value) {  // X,Y,Z[,FACING[,CAMERA]] on the first map loaded
@@ -261,7 +269,7 @@ int main(int argc, char** argv) {
     } else if (arg == "--frames" && has_value) {
       frames = std::strtoull(next(), nullptr, 10);
     } else if (arg == "--capture" && has_value) {
-      capture_dir = next();
+      capture_dir = util::utf8_path(next());
     } else if (arg == "--capture-frames" && has_value) {
       capture_frames = next();
     } else if (arg == "--input" && has_value) {
@@ -274,7 +282,7 @@ int main(int argc, char** argv) {
       remember("audio", "0");
       config_changed = true;
     } else if (arg == "--audio-wav" && has_value) {
-      audio_wav = next();
+      audio_wav = util::utf8_path(next());
     } else if (arg == "--version") {  // prints and exits; never touches config.ini
       launcher::report("Shattered Stars %s\n", SS_VERSION);
       return 0;
@@ -293,8 +301,8 @@ int main(int argc, char** argv) {
     for (const std::string& key : remembered) saved.set(key, config.get(key));
     if (std::string save_error; !saved.save(&save_error)) launcher::report("%s\n", save_error.c_str());
   }
-  if (env_set("SS_DISC1")) config.set("disc1", std::getenv("SS_DISC1"));
-  if (env_set("SS_DISC2")) config.set("disc2", std::getenv("SS_DISC2"));
+  if (env_set("SS_DISC1")) config.set("disc1", env_or("SS_DISC1"));
+  if (env_set("SS_DISC2")) config.set("disc2", env_or("SS_DISC2"));
 
   // The boot disc (launcher/discs.h): the configured image if it is disc 1, else the first
   // disc 1 in the `discs` folders (silently, remembered), else the setup program. An image
@@ -462,13 +470,13 @@ int main(int argc, char** argv) {
     const bool seed_card = !ap_seed.empty() && (!headless || (seed_card_env && std::string(seed_card_env) == "1"));
     std::string cards[2];
     for (int i = 0; i < 2; ++i) {
-      if (const char* env = std::getenv(i == 0 ? "SS_MEMCARD1" : "SS_MEMCARD2")) cards[i] = env;
+      if (const auto env = util::env(i == 0 ? "SS_MEMCARD1" : "SS_MEMCARD2")) cards[i] = *env;
       else if (memcard_arg[i]) cards[i] = launcher::memcard_path(config, i + 1);
       else if (seed_card && i == 0) cards[i] = launcher::path_utf8(launcher::seed_memcard(ap_seed_head.seed, ap_seed_head.slot_name));
       else if (seed_card) cards[i].clear();
       else if (!headless) cards[i] = launcher::memcard_path(config, i + 1);
     }
-    if (seed_card && !std::getenv("SS_MEMCARD1") && !memcard_arg[0]) {
+    if (seed_card && !util::env("SS_MEMCARD1") && !memcard_arg[0]) {
       // Once, when the seed's card is new: the saves an earlier version made for this seed on
       // the player's own cards are copied to it (the player's cards stay as they are).
       std::vector<std::filesystem::path> own;
@@ -498,19 +506,18 @@ int main(int argc, char** argv) {
     std::string server = headless ? std::string() : config.get("ap_server");
     // [world agent] Tests: SS_AP_SERVER (+ SS_AP_SLOT) connects any run, headless ones too,
     // without config.ini (tools/ap_test_server.sh's local server; scratchpad/world/ap/e2e).
-    const char* test_server = std::getenv("SS_AP_SERVER");
-    if (test_server != nullptr && *test_server != 0) server = test_server;
+    if (env_set("SS_AP_SERVER")) server = env_or("SS_AP_SERVER");
     if (!server.empty()) {
       ap_net::ConnectInfo info;
       info.server = server;
       info.slot = config.get("ap_slot");
-      if (const char* s = std::getenv("SS_AP_SLOT"); s != nullptr && *s != 0) info.slot = s;
+      if (env_set("SS_AP_SLOT")) info.slot = env_or("SS_AP_SLOT");
       if (info.slot.empty() && game::ap::seed()) info.slot = game::ap::seed()->slot_name;
       info.password = config.get("ap_password");
       info.deathlink = game::ap::deathlink_enabled();
       // Tests: log in as another game's slot (SS_AP_GAME=ChecksFinder) until there is a
       // Star Ocean world to host.
-      if (const char* game_name = std::getenv("SS_AP_GAME"); game_name && *game_name) info.game = game_name;
+      if (env_set("SS_AP_GAME")) info.game = env_or("SS_AP_GAME");
       // This install's id for the server, made once (kept unless a test run).
       info.uuid = config.get("ap_uuid");
       if (info.uuid.empty()) {
@@ -524,7 +531,8 @@ int main(int argc, char** argv) {
           saved.save();
         }
       }
-      launcher::report("Archipelago: connecting to %s as %s\n", info.server.c_str(), info.slot.c_str());
+      launcher::report("Archipelago: connecting to %s as %s (client version %s)\n", info.server.c_str(), info.slot.c_str(),
+                       ap_net::Client::announced_version().c_str());
       game::ap::connect(std::make_unique<ap_net::Client>(info));
     }
 #endif
@@ -533,8 +541,7 @@ int main(int argc, char** argv) {
   auto& rt = runtime::Runtime::get();
   // The mods folder and its load order (mods/catalog.h). config.ini's order describes the
   // configured folder only: with --mods / SS_MODS_DIR the defaults apply (or SS_MOD_ORDER).
-  const char* mods_env = std::getenv("SS_MODS_DIR");
-  if (rt.mods_dir.empty() && !(mods_env && *mods_env)) rt.mod_order = launcher::read_mod_order(config);
+  if (rt.mods_dir.empty() && !env_set("SS_MODS_DIR")) rt.mod_order = launcher::read_mod_order(config);
   if (rt.mods_dir.empty()) rt.mods_dir = launcher::path_utf8(launcher::mods_folder(config));
   if (debug_console) {
     game::field::debug_console_install();
@@ -567,8 +574,8 @@ int main(int argc, char** argv) {
     if (!n.empty()) rt.capture_frames.insert(std::strtoull(n.c_str(), nullptr, 10));
 
   // SS_SHOT (see the top of this file): "VBLANK:path.png[,VBLANK:path2.png,...]".
-  if (const char* shot_env = std::getenv("SS_SHOT")) {
-    std::stringstream shots(shot_env);
+  if (const auto shot_env = util::env("SS_SHOT")) {
+    std::stringstream shots(*shot_env);
     for (std::string step; std::getline(shots, step, ',');) {
       const auto colon = step.find(':');
       if (colon == std::string::npos || colon == 0) continue;
@@ -613,7 +620,7 @@ int main(int argc, char** argv) {
     options.refresh = display.refresh;
     options.monitor = display.monitor;
     options.vsync = display.vsync;
-    if (!window.create("Star Ocean: The Second Story (Shattered Stars)", options, &error)) {
+    if (!window.create(platform::kGameName, options, &error)) {  // "Shattered Stars"
       launcher::fatal("The game window could not be opened (" + error + ").\n\nThe game needs OpenGL 3.3: "
                       "updating the graphics driver usually helps.");
       return 1;
@@ -653,6 +660,7 @@ int main(int argc, char** argv) {
   if (std::string audio_error; !platform::audio_open(audio, &audio_error))
     launcher::report("audio: %s\n", audio_error.c_str());
   rt.audio_tick = platform::audio_vblank;
+  rt.audio_pause = platform::audio_pause;  // while the quit prompt is up [escquit]
 
   try {
     game::Program program = game::boot_main(0, &archive);
@@ -673,12 +681,17 @@ int main(int argc, char** argv) {
     platform::audio_close();
     return 3;
   }
-  if (const char* vram_png = std::getenv("SS_VRAM_PNG")) {  // debugging: VRAM at exit
+  if (const auto vram_png = util::env("SS_VRAM_PNG")) {  // debugging: VRAM at exit
     std::vector<u32> pixels;
     rt.gpu.vram_to_rgba(pixels);
-    util::write_png(vram_png, pixels, 1024, 512);
+    util::write_png(util::utf8_path(*vram_png), pixels, 1024, 512);
   }
   platform::audio_close();
   std::printf("stopped after %llu vblanks\n", static_cast<unsigned long long>(rt.vblanks()));
   return 0;
+} catch (const std::filesystem::filesystem_error& e) {
+  // A path that can't be used (util/utf8.h converts without throwing; this is the net): said,
+  // and a clean exit instead of std::terminate.
+  launcher::fatal(std::string("A file or folder could not be used: ") + e.what());
+  return 1;
 }

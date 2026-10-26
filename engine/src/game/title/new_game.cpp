@@ -27,6 +27,7 @@
 #include "platform/window.h"
 #include "runtime/libgpu.h"
 #include "runtime/runtime.h"
+#include "util/log.h"
 
 namespace ss::game {
 namespace {
@@ -611,7 +612,7 @@ void skip_hero_screens(Sequence& s, int route) {
     name_box_commit(&box, s.name);
   }
   async_load(character != 0 ? 0xA79 : 0xA78, s.t.prologue_data.data(), -1);
-  std::fprintf(stderr, "[ap] story route %s (the seed's): New Game skips the hero select and the naming screen (%s)\n",
+  util::log_printf("[ap] story route %s (the seed's): New Game skips the hero select and the naming screen (%s)\n",
                character != 0 ? "Rena" : "Claude", s.name);
 }
 
@@ -852,7 +853,7 @@ int member_select_screen(Sequence& s, int hero, int fixed, const std::vector<int
   {
     int count = 0;
     for (int m = 1; m <= 12; ++m) count += selectable(m) ? 1 : 0;
-    std::fprintf(stderr, "[ap] character select opens: %s\n",
+    util::log_printf("[ap] character select opens: %s\n",
                  fixed != 0 ? (std::string(member_profiles::kProfiles[fixed - 1].name) + " to confirm").c_str()
                             : (std::to_string(count) + " of 12 to pick").c_str());
   }
@@ -960,7 +961,7 @@ int member_select_screen(Sequence& s, int hero, int fixed, const std::vector<int
   upload_portrait(loader, 0, 1);
   upload_portrait(loader, 1, 2);
   if (s.countdown == 0) psyq::SetDispMask(1);
-  std::fprintf(stderr, "[ap] character select: %s%s\n", member_profiles::kProfiles[cursor - 1].name,
+  util::log_printf("[ap] character select: %s%s\n", member_profiles::kProfiles[cursor - 1].name,
                s.result != 0 ? " (backed out)" : cursor == hero ? " (the hero: nobody extra)" : "");
   return cursor;
 }
@@ -1072,7 +1073,7 @@ void battle_rank_screen(Sequence& s) {
 // (as the Battle Rank screen leaves it), after the combat mode; the screen is skipped.
 void set_seed_difficulty(Sequence& s, int rank) {
   s.config()[0x4F] = static_cast<u8>(rank);
-  std::fprintf(stderr, "[ap] difficulty %s (the seed's): New Game skips the Battle Rank screen\n", kRankNames[rank]);
+  util::log_printf("[ap] difficulty %s (the seed's): New Game skips the Battle Rank screen\n", kRankNames[rank]);
 }
 
 }  // namespace
@@ -1308,10 +1309,10 @@ int new_game_sequence(RenderContext** holder, char* name) {
         }
         break;
       case Step::BattleRank:
-        if (difficulty == 3) std::fprintf(stderr, "[ap] difficulty any (the seed's): New Game offers the Battle Rank screen\n");
+        if (difficulty == 3) util::log_printf("[ap] difficulty any (the seed's): New Game offers the Battle Rank screen\n");
         battle_rank_screen(s);
         if (difficulty == 3 && s.result == 0)
-          std::fprintf(stderr, "[ap] difficulty: %s picked\n", kRankNames[std::min<int>(s.config()[0x4F], 2)]);
+          util::log_printf("[ap] difficulty: %s picked\n", kRankNames[std::min<int>(s.config()[0x4F], 2)]);
         step = s.result != 0 ? Step::CombatMode : Step::Done;
         break;
       case Step::Done:

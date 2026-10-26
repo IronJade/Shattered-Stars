@@ -1461,7 +1461,8 @@ void Widget::on_close() {
     auto* w = static_cast<Widget*>(e.task);
     if (w->parent != nullptr && w->parent == this) {
       w->on_close();
-      std::fprintf(stderr, "pwnd->destroy\n");
+      // The original printf()s "pwnd->destroy" here, a debug line for its TTY; the port
+      // doesn't (it reached the player's terminal and log at every menu window's close).
     }
   }
   s->windows->kill(this);

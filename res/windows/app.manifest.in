@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- The application manifest of @SS_RC_FILENAME@ (port feature), embedded by
+     res/windows/app.rc.in; engine/CMakeLists.txt configures one copy per program. -->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="@SS_RC_ASSEMBLY_NAME@" version="@SS_RC_VERSION_DOTS@"
+                    processorArchitecture="amd64"/>
+  <description>@SS_RC_DESCRIPTION@</description>
+
+  <!-- Run with the player's own rights, never elevated. Without this, Windows' installer
+       detection treats a program named setup.exe as an installer and asks for administrator
+       rights before it starts. -->
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>  <!-- Windows 10 and 11 -->
+      <supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/>  <!-- Windows 8.1 -->
+      <supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}"/>  <!-- Windows 8 -->
+      <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>  <!-- Windows 7 -->
+    </application>
+  </compatibility>
+
+  <!-- Per-monitor DPI aware (v2, falling back to v1, then to system-aware before Windows 10
+       1607): the same awareness SDL 3 declares by itself when its video starts
+       (SDL_WINDOWS_DPI_AWARENESS unset), so the two never disagree. Both programs ask for
+       SDL_WINDOW_HIGH_PIXEL_DENSITY windows and scale by the display's content scale. -->
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+    </windowsSettings>
+  </application>
+
+  <!-- Common Controls 6: SDL's message boxes (launcher::fatal) use the system's task dialog,
+       which needs it, instead of SDL's own older dialog. -->
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0"
+                        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
+</assembly>

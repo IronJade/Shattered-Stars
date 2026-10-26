@@ -242,3 +242,17 @@ port" if wanted once verified). The user reviews, then commits and pushes the wi
   "José", a custom card path, or a seed's slot name like "Cléo"): the save seemed to work but the
   card on disk never changed. Fixed in 0.02.50 (engine/src/psx/memory_card.cpp); Linux was never
   affected. docs/release_notes/0.02.50.md "Fixes" words it for players.
+
+## For wiki (from winfix, 2026-10-26: the Windows check's fixes, in 0.02.50)
+Facts the wiki pages may want (uncommitted code; docs/handoff/winfix.md):
+- **shattered-stars.log** (beside config.ini, written by every windowed run on Windows *and*
+  Linux) now holds the game's own `[ap]`, `[port]` and `[mods]` lines as well as the launcher's,
+  on every platform: Installing-and-Managing-Mods.md ~line 189 and Making-a-Mod.md ~line 423 can
+  say the log has the mod lines on Linux too ("On Linux, start the game from a terminal" is no
+  longer needed). It is replaced at each start and stays under 4 MB (it keeps the run's first MB,
+  a "left out" line and the newest 2 MB).
+- **Windows command line:** paths with any letters (Ä, 日本, ...) now work in every option
+  (--disc1/2, --memcard1/2, --ap-seed, --mods, setup's --set) and in the SS_* variables.
+- **Archipelago:** the client announces version 0.6.8 to the server (was 0.6.6); the game's
+  "Archipelago: connecting to ..." line names it.
+- **Setup's Auto-detect** with Disc 1 set says "Found Disc 2 next to your Disc 1."

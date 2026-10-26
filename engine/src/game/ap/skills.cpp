@@ -13,11 +13,12 @@
 #include "game/boot/system.h"
 #include "game/common/program_image.h"
 #include "game/field/field.h"
+#include "util/log.h"
 
 namespace ss::game::ap {
 namespace {
 
-void log(const std::string& line) { std::fprintf(stderr, "[ap] %s\n", line.c_str()); }
+void log(const std::string& line) { util::log_line("[ap] " + line); }  // stderr and the run's log
 
 s16 rd16s(const u8* p) {
   s16 v;

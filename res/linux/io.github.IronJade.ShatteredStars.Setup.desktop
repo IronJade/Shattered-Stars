@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Shattered Stars Setup
+Comment=Choose the disc images, display, sound, controls and mods for Shattered Stars
+Exec=shattered-stars-setup
+TryExec=shattered-stars-setup
+Icon=io.github.IronJade.ShatteredStars
+Terminal=false
+Categories=Game;RolePlaying;
+Keywords=settings;setup;
+StartupWMClass=io.github.IronJade.ShatteredStars.Setup
+SingleMainWindow=true

@@ -196,8 +196,10 @@ int run_viewer(disc::Archive& archive, int entry, int max_frames) {
   std::vector<u32> pixels;
   int w = 0, h = 0;
   for (int frame = 0; max_frames <= 0 || frame < max_frames; ++frame) {
+    bool escape = false;  // Esc closes the viewer (the window itself no longer does)
     const bool running = window.pump([&](const platform::KeyEvent& k) {
       if (!k.down) return;
+      if (k.key == SDLK_ESCAPE) escape = true;
       int step = 0;
       if (k.key == SDLK_RIGHT) step = 1;
       if (k.key == SDLK_LEFT) step = -1;
@@ -218,7 +220,7 @@ int run_viewer(disc::Archive& archive, int entry, int max_frames) {
       if (k.key == SDLK_V) vram_view = !vram_view;
       dirty = true;
     });
-    if (!running) break;
+    if (!running || escape) break;
     if (dirty && loaded) {
       if (vram_view || loaded->blocks.empty()) {
         loaded->gpu.vram_to_rgba(pixels);

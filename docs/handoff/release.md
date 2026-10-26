@@ -792,3 +792,71 @@ draft GitHub release (section 9's command) / the wiki push (scratchpad/wiki, the
 pages). HANDOFF.md's state section and scratchpad/agents.txt are the coordinator's.
 
 Nothing running: no game, Wine, server or build process left (checked); the worktrees removed.
+
+## Coordinator (2026-10-25, after the RC)
+- The user reviewed and pushed: c9a8200 on origin/main (tree hash c3a0177296fe677d = the RC's).
+- The user: no backwards compatibility for 0.1.x option names (`protagonist`, `drops_as_checks`):
+  the warning + the release notes' rename advice stand.
+- Windows validation sent to the user's Windows machine (Remote Control session "Windows
+  Shattered-Stars"): docs/handoff/windows_check.md, files in C:\Users\hitsu\Documents\Star Ocean 2\,
+  Archipelago freshly installed at C:\ProgramData\Archipelago. After its checks come back good: the
+  gh release (section 9's draft command) and the wiki push (scratchpad/wiki), both the user's go.
+- The user (2026-10-25): the copyright holder is **DreamGlyph Studios** (the user's company):
+  both LICENSE files now read "Copyright (c) 2026 DreamGlyph Studios" (MIT text unchanged), and the
+  Windows version resource uses CompanyName "DreamGlyph Studios" / LegalCopyright "Copyright (c) 2026
+  DreamGlyph Studios" (agent appicon). The GitHub account and links stay IronJade; archipelago.json's
+  "authors" stays ["IronJade"] (display metadata; upstream maintainers are listed by GitHub handle).
+
+## RC2 (2026-10-26, agent "rc2"): winfix + appicon + escquit, rerun and checked
+
+The Windows machine's recheck (`docs/handoff/windows_check.md`) found six issues in the pushed
+`c9a8200`; the user ruled fix-all-before-tagging. Three agents fixed them, uncommitted on top of
+`c9a8200`: **winfix** (non-ASCII CLI args/env, the log routing, the client version, Auto-detect's
+message, the `"pwnd->destroy"` print, the YAML's two names), **appicon** (the icon, Windows
+version resource and manifest, app ids, the Linux desktop entry, window titles, the stray
+libwinpthread VERSIONINFO), **escquit** (the Esc quit confirmation). The coordinator also set
+both LICENSE files to "Copyright (c) 2026 DreamGlyph Studios" and added a "Written with AI"
+passage to README.md and the wiki. This pass: `apworld/so2/docs/setup_en.md` now names both the
+built template name and the dotted name GitHub gives the downloaded asset (so2.apworld ships
+that doc, so it had to land before the rebuild below); folded winfix's / appicon's / escquit's
+Windows recheck items into one "Recheck for 0.02.50 RC2" list in `docs/handoff/windows_check.md`.
+
+Ran `scratchpad/release/rc-0.02.50.sh all` (00:31-00:53; background, no stray `&`/`disown` —
+an earlier attempt that used those was caught and killed cleanly by exact PID before it got past
+the Linux build, with no damage: the main tree was never touched, only a disposable worktree and
+a podman build that had already finished on its own). **Every phase exited 0, no FAIL in any
+underlying log** (checked `ss_tests.log`, `ss_game_tests.log`, both Wine logs, both e2e logs,
+both pytest logs and the smoke log individually, not just the summary's one-line-per-step view):
+build (apworld 159,070 B; Linux tarball 9,407,748 B; Windows zip 7,800,956 B), Linux checks
+(39-entry archive, `--version` 0.02.50, glibc 2.36, smoke 282/0/0), Wine (`--version` 0.02.50,
+300-vblank Arlia boot), apworld load + 5 seeds + check.py (0 errors) + a 127.0.0.1 MultiServer,
+e2e (so2 37/37, hub 15/15), pytest (`worlds/so2/test` 380 passed/29323 subtests, `test/general`
+379 passed/117753 subtests), the 48+48-seed batch (0 errors), the engine suites (Linux
+`ss_tests` 103/0, `ss_game_tests` 193/0; Windows under Wine `ss_tests.exe` 103/0,
+`ss_game_tests.exe` 194/0 — one more than Linux, the Windows-only `launcher_log_without_a_console`
+case, as documented by winfix). SHA-256 and the tree-hash one-liner both changed from the first
+RC (every artifact carries the three agents' work now); new values in
+`docs/ap/release_checklist.md` section 9 and `docs/release_notes/0.02.50.md`.
+
+Bundle spot-checks beyond the script: re-extracted both archives and confirmed by hand — both
+Windows `.exe`s carry one `RT_GROUP_ICON` (7 sizes), one `RT_VERSION` (strings: "Shattered
+Stars" / "Shattered Stars Setup", `0.02.50`, "DreamGlyph Studios", zero occurrences of `"POSIX
+WinThreads"`) and one `RT_MANIFEST` (`asInvoker`, `PerMonitorV2`, `supportedOS`, the
+`io.github.IronJade.*` app ids), via REA's `inspect_pe_resources` plus a UTF-16LE `strings`
+pass; the Linux tarball has `desktop/` and `install-desktop-entry.sh`
+(`desktop-file-validate` clean); both bundles' `LICENSE` reads "Copyright (c) 2026 DreamGlyph
+Studios", and both carry `THIRD-PARTY-LICENSES.txt`.
+
+Nothing tagged, committed, pushed or published; no server outside 127.0.0.1 contacted. Scratch:
+`scratchpad/release/rc2-inspect/` (the re-extracted bundles for the spot-checks above) can be
+deleted once the user is done reviewing; everything else needed is under
+`scratchpad/release/rc-0.02.50-dist/`. All files changed are listed in this pass's report to
+the coordinator; nothing was committed.
+- The user (2026-10-26): "When the release candidate is finished here on the linux box, lets push to
+  git, and have the windows machine run testing through it's paces with the minor fixes and updates
+  and then push the tag and full release of 0.02.50 and world 0.2.0 out to GH." So, in order, the
+  coordinator: (1) after rc2 passes, commits the whole working tree (one commit; tree hash = rc2's)
+  and pushes origin main; (2) the user copies rc2's Windows zip to the Windows machine, which runs
+  the recheck (windows_check.md); (3) if it passes: tag v0.02.50, push the tag, `gh release create`
+  with docs/release_notes/0.02.50.md and the rc2 artifacts, then commit + push the wiki
+  (scratchpad/wiki). Any failure: stop and report to the user. Never push dgs or refs/backup/*.

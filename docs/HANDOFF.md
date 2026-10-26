@@ -191,6 +191,12 @@ debugging; ignored: ...`). Headless runs keep them, seed or not, so the tests wo
   headless run opens no window otherwise; this opens a second, hidden one just to render
   into and read back with `glReadPixels`.
 - `SS_DEBUG_INPUT="VBLANK:cmd;VBLANK:cmd"` types debug console commands at set vblanks (with `--debug`).
+- `SS_KEYS="VBLANK:key,key,...;VBLANK:..."` (tests; default off) presses the port's keys as the
+  window would, headless too: the first at that vblank, then one per frame of the quit prompt
+  (`runtime/quit_prompt.h`, Esc) while it is up. Keys: escape, enter, left, right, cross, circle,
+  start, triangle, close (the window's close button), wait (a frame without a key). With
+  `SS_SHOT` at that vblank, each prompt frame is also written, as `NAME-prompt0.png`, ...
+  The game itself still takes its buttons from `--input`.
 - `--ap-seed FILE` loads an Archipelago seed (docs/ap/seed_format.md; console `ap_status`,
   `ap_check ID`, `ap_give ITEM [FROM]`; `[ap]` log lines). `SS_AP_SERVER=ws://localhost:PORT`
   (+ `SS_AP_SLOT`, `SS_AP_GAME`) connects any run to a local server, headless ones too;
@@ -213,7 +219,9 @@ debugging; ignored: ...`). Headless runs keep them, seed or not, so the tests wo
 - No game code or assets in git; data is read from the user's discs at run time. One
   exception, the user's decision (2026-10-23): a handful of documentation screenshots of the
   port running, in `docs/images/` only, used by the README and wiki. Nothing else from the
-  discs (no extracted textures, sprites, audio, logos or data files).
+  discs (no extracted textures, sprites, audio, logos or data files). The application icon
+  (`res/icon/`) is an original design drawn from vector shapes by `tools/make_icon.py`;
+  change it there, never with game art, a logo or a trademark.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).
 - Never touch `~/.config/shattered-stars/config.ini` (no `--audio` / `--no-audio` or other
