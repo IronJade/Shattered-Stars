@@ -232,7 +232,8 @@ Same-state rule: with nobody on the bench every path is today's (the 8 first; th
   skills on / off), Tactics, Status and the Specialty page's settings (killer moves, spells on /
   off for battle) yes; field specialties (Oracle, music, Practice, Scout, Familiar), spell casts
   and Link Combo no (built in piece 5b, docs/handoff/partybuild.md).
-Not scheduled or built yet; build it together with heroslot (D1-D4 decided, docs/handoff/heroslot.md).
+Built on branch party-bench together with heroslot (D1-D4, docs/handoff/heroslot.md): docs/handoff/partybuild.md
+(pieces 2-6), docs/ap/seed_format.md "The bench". The APWorld part (6. above) waits for Phase A.
 
 - B1 Party Order layout: **right column flips Reserve / Bench** (L1 / R1; front four always on
   screen) / three narrow columns, all 12 at once without HP / MP gauges (mock-up B) / three

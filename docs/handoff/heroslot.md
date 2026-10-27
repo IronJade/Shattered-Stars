@@ -143,9 +143,10 @@ starting character so the port's lead() does not reset +0x41):
 
 **The user's answers (2026-10-26), all four decided:** D1 "Hero goes to slot 1"; D2 yes, the
 lead stays with the starting member across scenes; D3 yes, the starting member goes back to slot
-0 after a scene reorders the party; D4 the save card keeps the hero's name. Not built yet: the
-12-member bench study (docs/handoff/bench.md) came next, since both touch the same join and
-party-order code.
+0 after a scene reorders the party; D4 the save card keeps the hero's name. Built together with
+the 12-member bench (docs/handoff/bench.md) on branch party-bench, since both touch the same join
+and party-order code: docs/handoff/partybuild.md (piece 1), docs/ap/seed_format.md "The hero in
+slot 1".
 
 - D1 where the hero goes: **slot 1** (recommended: "the back" of a two-member party at the join;
   later joins fill 2-7; the hero keeps fighting, levelling and gaining relations) / **slot 7**

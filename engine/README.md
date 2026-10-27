@@ -249,7 +249,8 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   on the player's card (sidecars naming the seed and slot) are copied to it once; the
   player's card is left as it is (`launcher/ap_seed.h`).
 - **Only the seed's own saves load:** with a seed, a save loads only when its sidecar names
-  this seed and slot and holds the hash of the save as it was saved (`save_hash`); a save of
+  this seed and slot and holds the hash of the save as it was saved (`save_hash`, and with a
+  bench `bench_hash` over the save and the bench); a save of
   another seed or an ordinary game, one without its sidecar, or one changed on the card since
   fails as a damaged save does ("The data could not be loaded"), and the log says why. A guard
   against accidents and casual save editors, not cheat-proofing (`docs/ap/seed_format.md` "The
@@ -306,12 +307,13 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   slot 1), and the order the player leaves in the camp menu (who is in slot 0, who leads) comes
   back after a scene reorders the party, except inside a split or a Private Action
   (`docs/ap/seed_format.md` "The hero in slot 1"; debugging: `SS_HEROSLOT_ORDER=LEAD,FIRST`).
-  With `options.bench` (seed version 4; open world with the open party rules, and the hub;
-  work in progress on branch `party-bench`) four bench places the port keeps follow the 8
-  slots: a member received with the 8 taken joins the bench, kept whole (slot and record) in
-  the save's sidecar, guarded like the save; the camp menu's Party Order flips its right column
-  between the reserve and the bench with L1 / R1, and a pick survives the flip; the camp
-  menu's member list, Equipment, Skills, Status, Specialty and Tactics (the same flip) work on
+  With `options.bench` (seed version 4; open world with the open party rules, and the hub)
+  four bench places the port keeps follow the 8 slots: a member received with the 8 taken
+  joins the bench, kept whole (slot and record) in the save's sidecar (`bench`, guarded by
+  `bench_hash`; the sidecar is version 3 only while someone is benched or lent, so an older
+  port refuses it rather than drop them; the card's 8 slots stay a valid console party); the
+  camp menu's Party Order flips its right column between the reserve and the bench with L1 /
+  R1, and a pick survives the flip; the camp menu's member list, Equipment, Skills, Status, Specialty and Tactics (the same flip) work on
   benched members where they are. Benched members are managed, not used: their settings can be
   changed, but their field specialties, spell casts and Link Combo are refused. A fight the
   story makes a benched member make alone (Claude in Shingo Forest, the tournament's) lends

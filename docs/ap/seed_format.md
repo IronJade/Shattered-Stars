@@ -813,6 +813,7 @@ applied them to the locations and items it wrote).
 | `apworld_version` | `"0.2.0"` | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
+| `bench` | true / false (or 1 / 0) | off when absent (the APWorld's option: on by default, B7; not written by 0.2.x) | **read** with `party_rules: "open"` in open world, and in the hub: the 12-member bench, seed version 4 ("The bench" below) |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
 and Leon / Dias in either game, under `party_rules: "open"`.
@@ -1081,8 +1082,31 @@ the starting character, Archipelago off) keeps the party order exactly as before
 
 The user's decisions B1-B8 (docs/handoff/bench.md, 2026-10-26), with a separate store the port
 owns (the user: "Lets go with a separate store from the start, as then we own the method to
-maintain the benched members equipment and settings"). Work in progress on branch
-`party-bench`; this section grows with it.
+maintain the benched members equipment and settings"). Built on branch `party-bench` (agents
+"partybuild" to "partybuild6", 2026-10-26 / 27; docs/handoff/partybuild.md).
+
+**The contract** (what a seed, a save and an older port can count on):
+- **The seed.** `options.bench` (true / 1) turns the bench on, read only with `party_rules:
+  "open"` in open world and in the hub; anywhere else it reads as off. A seed with it is
+  **version 4** (open world and hub alike; "The version rule"): a port that reads 1 to 3
+  refuses it instead of playing a pool of up to 12 members with 8 places. Without it the seed's
+  version is what its other fields need, and the game is the 8-slot game, byte for byte.
+- **The heroslot keys** (`leader`, `slot_0`: "The save sidecar"; any open-world or hub seed with
+  a starting member who is not the hero, bench or not): written only when set, no version
+  change; an older port ignores them and keeps the card's order.
+- **The bench keys.** `bench` (the occupied places 8-11, 0x130 bytes each), `lent` (members lent
+  for a fight and the place each keeps) and `bench_hash` (the save's bytes, the four places and
+  the loans) are written only while someone is benched or lent. **The sidecar version is 3
+  exactly then**, else 2 (with `save_hash`): a port that reads sidecars 1 and 2 refuses a save
+  with members on the bench instead of loading it without them. A save with an empty bench is
+  the 8-slot sidecar. The card never holds a benched member: its 8 slots are always a valid
+  party for the console game or an older port (the benched members, and what they wear, are
+  only in the sidecar).
+- **The guard.** With a seed, `bench_hash` must match the save, the bench and the loans
+  (edited, stripped or moved here: refused like an edited save); stripping the bench keys
+  altogether only loses the benched members.
+- **What is not stored:** nothing per character id changes (relations, names, flags); the
+  stash's `by` ("The party rules") is the slot borrowing's, bench or not.
 
 - **`options.bench`** (true / 1; seed version 4): read only with `party_rules: "open"` in open
   world, and in the hub (where the party rules are always open); story mode and the story's
@@ -1229,11 +1253,13 @@ maintain the benched members equipment and settings"). Work in progress on branc
   Private Action; Party Order locked in a Private Action and in the windows around the
   party-order saves; a loan never takes a borrower's slot; the tournament with heroslot, A 0x16 /
   0x15 / 0x17: nobody lost); smoke `ap_bench_m12`, `ap_bench_t477`.
-- Open (for the user; the same on main for a received Dias, docs/handoff/shingofix.md): the
-  tournament's specials rewrite Dias's own data after his fights (0xc: level 35, EXP 96982, HP
-  2500; 0xd: his starting data again). A lent Dias goes back to the bench with that, as a
-  received Dias in the 8 keeps it today; shingofix's option (b), his own bytes back after his
-  last fight, would fit a loan directly (the bytes lent are known).
+- Not built here (queued on main): the tournament's specials rewrite Dias's own data after his
+  fights (0xc: level 35, EXP 96982, HP 2500; 0xd: his starting data again), so a lent Dias goes
+  back to the bench with that today, as a received Dias in the 8 keeps it on main. The user's
+  decision (2026-10-27, docs/handoff/shingofix.md on main: "b) Save his data before the
+  tournament rewrites him, and restore it after his last fight") is queued for a follow-up agent
+  on main; it covers a lent Dias too: his bytes at the tournament's first loan, back on his
+  bench place once the window is over.
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

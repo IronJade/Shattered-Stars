@@ -95,7 +95,8 @@ Specs: docs/handoff/heroslot.md (D1-D4 decided), docs/handoff/bench.md (B1-B8 de
    one flips reserve / bench with L1 / R1); the refusal rules.
 5. The other camp pages (Equipment, Skills, Status, Specialty, Tactics) for bench members.
 6. Lending for solo fights (B4), inns not healing the bench (B8), endings unchanged (B5).
-7. Docs: seed_format.md, engine/README.md, docs/catalog.
+   Done: 93f64c1, 677f1e2.
+7. Docs: seed_format.md, engine/README.md, docs/catalog. Done (the commit after 677f1e2).
 
 ## Status
 
@@ -355,6 +356,78 @@ agent "partybuild2" continues from here (2026-10-26).
     loans, the borrowed slot, inns and endings) was refused once by an editor permission
     problem (not the user; the coordinator, 2026-10-27); partybuild6 stopped there and resumed
     on the coordinator's word.
+- **Piece 6 committed** (93f64c1 docs, 677f1e2 port): the frozen binary bin_p6 and smoke copy
+  smoke_p6.sh: **smoke 339 PASS / 0 FAIL, rc 0** (scratchpad/partybuild/smoke11.log; the new
+  ap_bench_m12 8/8, ap_bench_t477 7/7); ss_tests 103/0, ss_game_tests 201/0 (ss_tests12.log,
+  ss_game_tests12.log). Patch: scratchpad/partybuild/piece6.patch.
+- **Piece 7 (docs): done** (committed after this line): seed_format.md "The bench" opens with
+  the contract (the seed: options.bench, version 4; the heroslot keys; the bench keys and the
+  sidecar version 3 exactly while someone is benched or lent; the guard; what is not stored),
+  the options table's `bench` row, the open Dias item pointing at the user's decision (b) on
+  main; engine/README.md's Archipelago section (no longer "work in progress"; bench_hash in the
+  save guard line); docs/catalog/formats.md (the A 0x16 / A 0x17 spans, in piece 6's docs
+  commit); heroslot.md / bench.md marked built; the merge plan below.
+- **Final suites:** pieces 6 and 7 change no code after the piece-6 runs (the committed code is
+  byte for byte bin_p6's source; smoke_p6.sh is the committed script), so those runs are the
+  final ones: ss_tests 103/0, ss_game_tests 201/0, smoke 339/0.
+- **party-bench is complete on the port side** (pieces 1-7). Not done here, by the rules: the
+  merge into main (plan below), the APWorld part (Phase A: PARTY_SIZE 12, options.bench default
+  on, seed version 4, the player guide), removing the untracked `analysis` symlink from the
+  worktree once nothing needs the North City smoke case there.
+
+## Merging party-bench into main (partybuild6, 2026-10-27; for the coordinator, not done here)
+
+Previewed read-only: `git merge-tree --write-tree main <party-bench with pieces 6 / 7>` (no ref,
+index or working tree touched; scratchpad/partybuild/merge_preview.txt). Main side since the merge
+base c445867: pendingsave (2f95d6f, 48f6746), queuebypass (93dedbc, a62de4d), shingofix (1ab7000,
+a1827a9, 7af0d7e, 14c2bf8), hellseed (seed.{h,cpp} `hell_seed`, setup, main.cpp, test_ap_hell.cpp,
+the 0.2.1 world / docs), the 0.2.1 APWorld and the player guide. Clean: restore_stash /
+stash_reserve_slot / borrow_slot / `Stash::by` (identical text on both sides), the give path
+(queuebypass's `give()` wrapper: party-bench never calls give()), seed.cpp, README, catalog,
+bench.md, the player guide, the smoke script (both sides' cases kept), CMakeLists. **Conflicts (5
+files), every one "keep both":**
+- `engine/src/game/ap/ap.h`: SaveState: main's `Give` / `pending` / `pending_hash` and the
+  branch's `lead` / `first` / `bench` / `bench_hash` / `lent` (all of them); load_allowed's
+  comment: both sentences (pending_hash, bench_hash).
+- `engine/src/game/ap/seed.h`: Seed: `hell_seed` and `bench` (both).
+- `engine/src/game/ap/ap.cpp`:
+  - after borrow_slot: an empty side vs the loans' block (level_exp, holds_borrower): take the
+    branch's (the brace placement is the diff's, not a real difference).
+  - party_v2_update's stash loop: the branch's extra `if (who != 0 && loan_index(r, who) >= 0)`
+    before main's keep line: take it (main's line stays as it is).
+  - sidecar_json's version line becomes
+    `s.pending.empty() && s.bench.empty() && s.lent.empty() ? 2 : 3`, comment "3: items waiting,
+    a bench or a lent member (only then: an older port refuses the sidecar instead of dropping
+    them)"; the keys: main's `pending` / `pending_hash` block and the branch's `leader` / `slot_0`
+    / `bench` / `lent` / `bench_hash` block, both.
+  - sidecar_from_json: the version comment "(3: items waiting, a bench or a loan)"; main's
+    `pending` parse and the branch's heroslot / bench / lent parse, both.
+  - on_saved: main's pending + pending_hash and the branch's bench_hash, both.
+  - on_loaded: `s.pending.clear(); s.pending_hash.clear(); s.bench_hash.clear();`; then main's
+    `r.pending = std::move(queue);`, the branch's `r.order_from_load` and the `benched` string,
+    and one log line: main's text plus `+ benched` at the end.
+  - load_allowed: main's pending check and the branch's bench check as two `else if`s (either
+    message).
+- `engine/tests/test_ap.cpp`: main's pending tests and the branch's ap_bench_store at the same
+  place after ap_save_guard: both.
+- `docs/ap/seed_format.md`: the sidecar list (main's `pending` and `stash`'s `by` bullets, the
+  branch's `leader` / `slot_0`, `bench` / `bench_hash`, `lent`), the guard paragraph (both
+  sentences), the options table (`hell_seed` and `bench` rows): all kept; the sidecar version
+  wording to one rule: version 3 exactly when items wait, someone is benched or a member is
+  lent, else 2.
+- Numbers: **seed version 4 = the bench** (hellseed adds no version: "party-bench keeps 4, a
+  hell-specific port feature would take 5", docs/handoff/hellseed.md on main); **sidecar
+  version 3** is shared by pending, bench and lent (one reader: 1-3).
+- After the merge: build, ss_tests, ss_game_tests (main's ap_v2_party_borrow_moved, the pending
+  and full-inventory tests and the branch's bench tests together), and the full smoke (main's
+  ap_v2_m12_full and the branch's ap_bench_m12 check the same borrowed-slot log line). The
+  branch's launcher stamp_sidecar change (never lowers a version 3) also keeps a pending
+  sidecar's 3.
+- Open on main that touches the bench: the user's decision (b) on the tournament's Dias (save
+  his bytes before special 0xc, restore after his last fight; queued for a follow-up agent,
+  docs/handoff/shingofix.md) must cover a lent Dias too (his bytes at the tournament's first
+  loan back on his bench place when the window ends); today a lent Dias goes back to the bench
+  with 0xc / 0xd's data, as a received Dias in the 8 keeps it on main.
 
 ## Working notes (partybuild2)
 
