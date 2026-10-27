@@ -49,7 +49,10 @@ class StoryRoute(Choice):
 class StartingCharacter(Choice):
     """Open world and hub mode: a member who joins you at the start, whatever the story route, and leads
     the party: you walk around as them, and the story calls them by name where it would name
-    the hero. The story route's hero still stays in the party.
+    the hero. 
+    
+    [The story route's hero stays in the party no matter what.]
+    
     hero: nobody extra; the hero leads, as in the original.
     any: you pick at New Game, on a character select after the hero's, among the members this
       world allows (the heroes and the character items' members; never one in exclude_characters).

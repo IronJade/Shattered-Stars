@@ -3,9 +3,12 @@
 // 0x80069d8c, 0x8006ad40, 0x8006afd8, 0x8006b630; ext 0x76 / 0x77 run world-map
 // overlay code (#3102 0x800829fc) that only touches the trigger table.
 #include <cstdio>
+#include <cstring>
 
 #include "game/ap/ap.h"
 #include "game/common/math.h"
+#include "game/field/actor_field.h"
+#include "game/field/actors.h"
 #include "game/field/screen.h"
 #include "game/field/script_vm.h"
 #include "game/field/vm_services.h"
@@ -54,6 +57,58 @@ bool project(const u8* scene, const VmVector& world, s16* sx, s16* sy) {
   return true;
 }
 
+// Archipelago (port feature; open world and the hub) [salvadrift agent]: a door region the seed
+// keeps shut works as a shut door. The original never leaves the hero walking about in a door's
+// region (its transfer starts at once; where a routine refuses by itself, as Alen's room 53
+// 0x6c08 does at flag 2 or chapter 7, it walks the hero back out), and past some of them no wall
+// stops anyone: the ramp behind Alen's bookcase (map 53) ends in open space where the hero walks
+// on at the ramp's last height, hidden behind the room; past Salva's barricade (map 43) the hero
+// climbs the cliff picture. So once ap::door_blocked_at_trigger refuses a region, the hero gets
+// no further in than the step that entered it: while they touch the region, a step that ends
+// deeper along that step's line goes back to where they stood; any other step stands. The
+// banner comes once per approach (until the hero is kShutNear away from the region). A door that
+// opens meanwhile (its key received) fires at the next step in, not under a hero standing still.
+// Field maps only (world-map entrances lie on open land); not when the entering step is unknown
+// (the first scan on a map or after a scene: the hero walks on, as before). Archipelago off, or
+// the door open: none of this runs.
+constexpr s32 kShutNear = 8;  // trigger-point units (pixels on a field map) around the region
+struct ShutDoor {
+  const ScriptCtx* ctx = nullptr;  // the scan before: its script, map, vblank, the hero's spot
+  int map = -1;
+  u64 vblank = 0;
+  s32 pos[3] = {0, 0, 0};
+  int slot = -1;                   // the refused region (-1 none)
+  s32 spot[3] = {0, 0, 0};         // where the hero stands in it
+  s32 entry_x = 0, entry_z = 0;    // where that step ended (x, z; 20.12)
+  s32 in_x = 0, in_z = 0;          // the step that entered it (x, z; 20.12)
+};
+ShutDoor g_shut;
+
+// The hero (at px, pz) touches the refused region: does this step end deeper than the entering
+// one (by more than two such steps: the walk drifts a little on ramps)?
+bool shut_door_deeper(s32 px, s32 pz) {
+  const s64 dx = static_cast<s64>(px - g_shut.entry_x) >> 4, dz = static_cast<s64>(pz - g_shut.entry_z) >> 4;
+  const s64 ix = g_shut.in_x >> 4, iz = g_shut.in_z >> 4;
+  return dx * ix + dz * iz > 2 * (ix * ix + iz * iz);
+}
+
+// A deeper step goes back to the spot; another stands and is the new spot.
+void shut_door_step(int leader, s32 px, s32 py, s32 pz) {
+  if (!shut_door_deeper(px, pz)) {
+    g_shut.spot[0] = px;
+    g_shut.spot[1] = py;
+    g_shut.spot[2] = pz;
+    return;
+  }
+  Actor* a = field_actor(leader);
+  if (a == nullptr) return;
+  a->x = g_shut.spot[0];
+  a->y = g_shut.spot[1];
+  a->z = g_shut.spot[2];
+  fieldactor_place(a);  // its view position (the triggers' point) and floor zone
+  std::memcpy(g_shut.pos, g_shut.spot, sizeof g_shut.pos);
+}
+
 }  // namespace
 
 int trigger_alloc_slot(ScriptCtx* ctx) {
@@ -94,6 +149,26 @@ void trigger_check_regions(ScriptCtx* ctx) {
   const s32 y = py >> 12;
   s32 x, z;
   leader_trigger_point(leader, &x, &z);
+  // [salvadrift agent] The hero's spot at the scan before, when it was this map's, a moment ago;
+  // the approach to a shut door lasts while the hero stays near its region (kShutNear).
+  const int map = vm_rd16(g.game_state + 0x1A);
+  const u64 now = runtime::Runtime::get().vblanks();
+  const bool same_map = g.field_flags[0x68] == 0 && g_shut.ctx == ctx && g_shut.map == map;
+  const bool had_spot = same_map && now - g_shut.vblank <= 8;
+  const s32 before[3] = {g_shut.pos[0], g_shut.pos[1], g_shut.pos[2]};
+  g_shut.ctx = ctx;
+  g_shut.map = map;
+  g_shut.vblank = now;
+  g_shut.pos[0] = px;
+  g_shut.pos[1] = py;
+  g_shut.pos[2] = pz;
+  if (g_shut.slot >= 0) {
+    const Trigger& t = ctx->triggers[g_shut.slot];
+    if (!same_map || t.active == 0 || x < t.min_x - kShutNear || t.max_x + kShutNear < x || z < t.min_z - kShutNear ||
+        t.max_z + kShutNear < z) {
+      g_shut.slot = -1;
+    }
+  }
   // Once one quad has contained the point this stays set for the rest of the scan (as
   // on the console), so a later region only needs its bounding box to pass.
   bool inside = false;
@@ -142,11 +217,38 @@ void trigger_check_regions(ScriptCtx* ctx) {
     }
     if (!started) {
       if (button) ctx->last_trigger = -1;
+      // [salvadrift agent] In the shut door's region on the same approach (ShutDoor): no second
+      // banner; a step further in goes back. Once the door has opened (its key received), a step
+      // further in fires the region as a new approach would. (A button region refuses each press.)
+      if (i == g_shut.slot && !button) {
+        if (ap::door_shut_at_trigger(static_cast<int>(t.code - ctx->code) * 4) || !shut_door_deeper(px, pz)) {
+          ctx->last_trigger = i;
+          shut_door_step(leader, px, py, pz);
+          return;
+        }
+        g_shut.slot = -1;
+        ctx->last_trigger = -1;
+      }
       if (i != ctx->last_trigger && i != ctx->active_trigger) {
         // Archipelago (port feature; open world) [world agent]: a locked door's routine does
         // not start (nor its music fade); the region fires again only once left.
         if (ap::door_blocked_at_trigger(static_cast<int>(t.code - ctx->code) * 4)) {
           ctx->last_trigger = i;
+          // [salvadrift agent] ... and the hero goes no further in (ShutDoor).
+          g_shut.slot = had_spot ? i : -1;
+          if (had_spot) {
+            g_shut.spot[0] = px;
+            g_shut.spot[1] = py;
+            g_shut.spot[2] = pz;
+            g_shut.entry_x = px;
+            g_shut.entry_z = pz;
+            g_shut.in_x = px - before[0];
+            g_shut.in_z = pz - before[2];
+            char line[112];
+            std::snprintf(line, sizeof line, "shut door region %d: leader %d,%d,%d, entered along %d,%d (1/256)", i,
+                          px >> 12, py >> 12, pz >> 12, g_shut.in_x >> 4, g_shut.in_z >> 4);
+            runtime::Runtime::get().trace(line);
+          }
           return;
         }
         vm_push_frame(ctx);
