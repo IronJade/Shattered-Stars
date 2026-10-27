@@ -328,20 +328,20 @@ shop,where,index,item,item_name,command
 52,map 446 Lacour Front Line: Lacour front line Arsenal,7,0x2af,Plate Mail,python3 tools/so2_mod.py shop DISC.cue 52 7 ITEM
 52,map 446 Lacour Front Line: Lacour front line Arsenal,8,0x2cb,Fine Shield,python3 tools/so2_mod.py shop DISC.cue 52 8 ITEM
 52,map 446 Lacour Front Line: Lacour front line Arsenal,9,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 52 9 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 53 0 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 53 1 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 53 2 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 53 3 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),4,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 53 4 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),5,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 53 5 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),6,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 53 6 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),7,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 53 7 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),8,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 53 8 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),9,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 53 9 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),10,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 53 10 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),11,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 53 11 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),12,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 53 12 ITEM
-53,map 233 Eluria Colony: Weapons Shop (Arsenal),13,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 53 13 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),0,0x2f3,Aquaberry,python3 tools/so2_mod.py shop DISC.cue 53 0 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),1,0x2f4,Blackberry,python3 tools/so2_mod.py shop DISC.cue 53 1 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),2,0x2f5,Blueberry,python3 tools/so2_mod.py shop DISC.cue 53 2 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),3,0x36,Spectacles,python3 tools/so2_mod.py shop DISC.cue 53 3 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),4,0x115,Resurrection Bottle,python3 tools/so2_mod.py shop DISC.cue 53 4 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),5,0x103,Cure Paralysis,python3 tools/so2_mod.py shop DISC.cue 53 5 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),6,0x302,Cure Stone,python3 tools/so2_mod.py shop DISC.cue 53 6 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),7,0x1a2,Pet Food,python3 tools/so2_mod.py shop DISC.cue 53 7 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),8,0x117,Seafood,python3 tools/so2_mod.py shop DISC.cue 53 8 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),9,0x118,Fruit,python3 tools/so2_mod.py shop DISC.cue 53 9 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),10,0x119,Grain,python3 tools/so2_mod.py shop DISC.cue 53 10 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),11,0x11a,Meat,python3 tools/so2_mod.py shop DISC.cue 53 11 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),12,0x11b,Vegetables,python3 tools/so2_mod.py shop DISC.cue 53 12 ITEM
+53,map 233 Eluria Colony: Arsenal (shop: items and ingredients),13,0x11c,Egg/Dairy Products,python3 tools/so2_mod.py shop DISC.cue 53 13 ITEM
 54,map 259 Central City: Weapons Shop Hyper-on-Hyper,0,0x1f3,Ignite Sword,python3 tools/so2_mod.py shop DISC.cue 54 0 ITEM
 54,map 259 Central City: Weapons Shop Hyper-on-Hyper,1,0x213,Scyther,python3 tools/so2_mod.py shop DISC.cue 54 1 ITEM
 54,map 259 Central City: Weapons Shop Hyper-on-Hyper,2,0x222,Pain Cestus,python3 tools/so2_mod.py shop DISC.cue 54 2 ITEM

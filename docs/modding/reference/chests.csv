@@ -5,12 +5,12 @@ map,map_name,flag,flag_dec,handler_word,contents,item,fol,can_hold,also_on,comma
 21,"Arlia Village: north: fountain square, at night",0x961,2401,0x28a,Leather Armor,0x2a5,,items,18,python3 tools/so2_mod.py chest DISC.cue 21 0x961 --item ITEM
 21,"Arlia Village: north: fountain square, at night",0x962,2402,0x292,200 Fol,,200,items or Fol,18,python3 tools/so2_mod.py chest DISC.cue 21 0x962 --fol N
 21,"Arlia Village: north: fountain square, at night",0x963,2403,0x29b,Resurrection Bottle,0x115,,items,18,python3 tools/so2_mod.py chest DISC.cue 21 0x963 --item ITEM
-25,"Arlia Village: villager's house, bedroom",0x964,2404,0x17,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x964 --item ITEM
-25,"Arlia Village: villager's house, bedroom",0x965,2405,0x1f,Rose Hips,0xdd,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x965 --item ITEM
-33,Arlia Village: villager's house near the square,0x966,2406,0x447,Strawberry Jam,0x2f6,,items,,python3 tools/so2_mod.py chest DISC.cue 33 0x966 --item ITEM
+25,"Arlia Village: Newlyweds' House, bedroom",0x964,2404,0x17,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x964 --item ITEM
+25,"Arlia Village: Newlyweds' House, bedroom",0x965,2405,0x1f,Rose Hips,0xdd,,items,,python3 tools/so2_mod.py chest DISC.cue 25 0x965 --item ITEM
+33,Arlia Village: Carpenter's House,0x966,2406,0x447,Strawberry Jam,0x2f6,,items,,python3 tools/so2_mod.py chest DISC.cue 33 0x966 --item ITEM
 38,Arlia Village: Rena's Room,0x960,2400,0x3f,Blackberry,0x2f4,,items,40,python3 tools/so2_mod.py chest DISC.cue 38 0x960 --item ITEM
-40,Rena's Room: entrance / threshold area,0x960,2400,0x17,Blackberry,0x2f4,,items,38,python3 tools/so2_mod.py chest DISC.cue 40 0x960 --item ITEM
-50,"Alen's Mansion: interior room, about 1 door in from the entrance",0x967,2407,0x1a37,Portrait B,0x7,,items,,python3 tools/so2_mod.py chest DISC.cue 50 0x967 --item ITEM
+40,"Rena's Room: Rena's Room, at night",0x960,2400,0x17,Blackberry,0x2f4,,items,38,python3 tools/so2_mod.py chest DISC.cue 40 0x960 --item ITEM
+50,"Alen's Mansion: Alen's Mansion, bedroom",0x967,2407,0x1a37,Portrait B,0x7,,items,,python3 tools/so2_mod.py chest DISC.cue 50 0x967 --item ITEM
 59,Town of Salva: Jewelry Store Fairy Tear,0x968,2408,0x131a,Heavy Ring,0x5e,,items,,python3 tools/so2_mod.py chest DISC.cue 59 0x968 --item ITEM
 64,"Salva Drift: mine tunnel, deeper",0x969,2409,0xf05,Silver,0x1a5,,items,,python3 tools/so2_mod.py chest DISC.cue 64 0x969 --item ITEM
 64,"Salva Drift: mine tunnel, deeper",0x9c7,2503,0xf0d,Blueberry,0x2f5,,items,,python3 tools/so2_mod.py chest DISC.cue 64 0x9c7 --item ITEM
@@ -31,23 +31,23 @@ map,map_name,flag,flag_dec,handler_word,contents,item,fol,can_hold,also_on,comma
 72,"Salva Drift: interior room, about 2 doors in from the entrance",0x96d,2413,0xf05,Brigandine,0x2ac,,items,,python3 tools/so2_mod.py chest DISC.cue 72 0x96d --item ITEM
 92,Armory: Armory,0x9fa,2554,0x1995,Wooden Shield,0x2c5,,items,,python3 tools/so2_mod.py chest DISC.cue 92 0x9fa --item ITEM
 92,Armory: Armory,0x9fb,2555,0x199d,Leather Helm,0x28f,,items,,python3 tools/so2_mod.py chest DISC.cue 92 0x9fb --item ITEM
-100,The Prince's Chambers: entrance / threshold area,0x9fc,2556,0x1a0a,500 Fol,,500,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 100 0x9fc --fol N
+100,The Prince's Chambers: The Prince's Chambers,0x9fc,2556,0x1a0a,500 Fol,,500,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 100 0x9fc --fol N
 117,Port of Clik: The House on the Hill,0x9f6,2550,0x19f7,Lyre,0x32,,items,,python3 tools/so2_mod.py chest DISC.cue 117 0x9f6 --item ITEM
 119,Port of Clik: Restaurant The Big Potato,0x9f7,2551,0x1a00,Seafood,0x117,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f7 --item ITEM
 119,Port of Clik: Restaurant The Big Potato,0x9f8,2552,0x1a08,Grain,0x119,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f8 --item ITEM
 119,Port of Clik: Restaurant The Big Potato,0x9f9,2553,0x1a10,Vegetables,0x11b,,items,,python3 tools/so2_mod.py chest DISC.cue 119 0x9f9 --item ITEM
-132,"Elder's House: interior room, about 1 door in from the entrance",0x973,2419,0x1d8c,Silence Card,0x1b,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x973 --item ITEM
-132,"Elder's House: interior room, about 1 door in from the entrance",0x974,2420,0x1d94,Sour Syrup,0xfb,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x974 --item ITEM
-132,"Elder's House: interior room, about 1 door in from the entrance",0x975,2421,0x1d9c,Purple Mist,0x49,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x975 --item ITEM
+132,"Elder's House: Elder's House, study",0x973,2419,0x1d8c,Silence Card,0x1b,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x973 --item ITEM
+132,"Elder's House: Elder's House, study",0x974,2420,0x1d94,Sour Syrup,0xfb,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x974 --item ITEM
+132,"Elder's House: Elder's House, study",0x975,2421,0x1d9c,Purple Mist,0x49,,items,,python3 tools/so2_mod.py chest DISC.cue 132 0x975 --item ITEM
 139,Mars Village: Celine's Room,0x976,2422,0x121e,Silk Robe,0x2ab,,items,,python3 tools/so2_mod.py chest DISC.cue 139 0x976 --item ITEM
 157,"Town of Herlie: Eleanor's House, upstairs",0x97c,2428,0x1282,Ring of Sadness,0x68,,items,,python3 tools/so2_mod.py chest DISC.cue 157 0x97c --item ITEM
 163,"Zand's Mansion: parlor (checkerboard floor), front room",0x97d,2429,0x1204,Ringed Mail,0x2aa,,items,,python3 tools/so2_mod.py chest DISC.cue 163 0x97d --item ITEM
 163,"Zand's Mansion: parlor (checkerboard floor), front room",0x97e,2430,0x120c,Sinclair Sabre,0x1eb,,items,,python3 tools/so2_mod.py chest DISC.cue 163 0x97e --item ITEM
 166,Zand's Mansion: storage room (barrels),0x97f,2431,0x1204,Leather Boots,0x2df,,items,,python3 tools/so2_mod.py chest DISC.cue 166 0x97f --item ITEM
 166,Zand's Mansion: storage room (barrels),0x980,2432,0x120c,1200 Fol,,1200,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 166 0x980 --fol N
-277,Noel's House: entrance / threshold area,0xa36,2614,0x1cbe,Nature's Life Force,0xaf,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa36 --item ITEM
-277,Noel's House: entrance / threshold area,0xa37,2615,0x1cc6,Pet Food,0x1a2,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa37 --item ITEM
-277,Noel's House: entrance / threshold area,0xa38,2616,0x1cce,50000 Fol,,50000,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 277 0xa38 --fol N
+277,Noel's House: Noel's House,0xa36,2614,0x1cbe,Nature's Life Force,0xaf,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa36 --item ITEM
+277,Noel's House: Noel's House,0xa37,2615,0x1cc6,Pet Food,0x1a2,,items,,python3 tools/so2_mod.py chest DISC.cue 277 0xa37 --item ITEM
+277,Noel's House: Noel's House,0xa38,2616,0x1cce,50000 Fol,,50000,items or Fol,,python3 tools/so2_mod.py chest DISC.cue 277 0xa38 --fol N
 332,Giveaway: Nede History Research Lab,0x9a4,2468,0x1df8,Fairy Glass,0xee,,items,,python3 tools/so2_mod.py chest DISC.cue 332 0x9a4 --item ITEM
 351,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",0x981,2433,0xefb,Cure Stone,0x302,,items,,python3 tools/so2_mod.py chest DISC.cue 351 0x981 --item ITEM
 351,"Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",0x982,2434,0xf03,Sweet Syrup,0xfc,,items,,python3 tools/so2_mod.py chest DISC.cue 351 0x982 --item ITEM
