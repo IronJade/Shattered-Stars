@@ -76,21 +76,34 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
   with files / next / how to verify / rules given). Roll over at ~400k context: update and stop.
 
 ## State
-- In progress (uncommitted): tools/ap_tracker_maps.py (rooms, doors, room_groups, checks' "room",
-  format_minor 1, regions in screen coordinates), docs/ap/tracker_maps.json (regenerated),
-  engine/src/tools/tracker_maps.cpp (room images: background 1:1 under a label strip, a letter box
-  per doorway; draw_text / draw_text_box; 1:1 blit). Build dir engine/build-mapdoors (built).
-- Measured: 791 rooms in 66 groups (104.7 M px), 1771 doorways (1818 markers, 6 clamped), 2007
-  doors (1834 with a way back), 378 scene transfers; full render 21 s, 859 images (68 + 791),
-  rooms 93 MB + area/world 40 MB = 133 MB on disk.
-- Names done: 33 maps renamed in docs/modding/reference/map_names.csv (place / notes / basis only;
-  `area` and `kind` untouched), each with its evidence in map_names_evidence.csv (map, place,
-  previous, basis, evidence: banner, script text described not quoted, shop stock, doors,
-  thumbnail). tools/test_mod_reference.py 21 OK. Not regenerated (not my files): the modding
-  reference tables docs/modding/reference/maps.csv / doors.csv (`tools/mod_reference.py DISC1.cue`
+- Done (committed ae78aa2): names: 33 maps renamed in docs/modding/reference/map_names.csv
+  (place / notes / basis only; `area` and `kind` untouched), each with its evidence in
+  map_names_evidence.csv (map, place, previous, basis, evidence: banner, script text described
+  not quoted, shop stock, doors, thumbnail). tools/test_mod_reference.py 21 OK. Not regenerated
+  (not my files): docs/modding/reference/maps.csv / doors.csv (`tools/mod_reference.py DISC1.cue`
   picks the new names up).
-- Next: docs (tracker_maps.md 1.1 + part 2 spec), tests
-  (test_tracker_maps.cpp, ap_tracker_maps_test.py), A/B + smoke, commits (names; layout; renderer).
+- Done, verified, being committed: layout 1.1 (tools/ap_tracker_maps.py, docs/ap/tracker_maps.json,
+  docs/ap/tracker_maps.md with "Rooms", "Door ids" contract and "For the pack (part 2)"), the
+  port's renderer (engine/src/tools/tracker_maps.cpp: rooms 1:1 under a label strip, a letter
+  box per doorway; draw_text / draw_text_box; 1:1 blit), tests (engine/tests/test_tracker_maps.cpp
+  new tracker_layout_rooms + two rooms in tracker_disc_command; tools/ap_tracker_maps_test.py
+  covers rooms, prints time and sizes), release notes (docs/release_notes/0.03.00.md).
+- Measured: 793 rooms in 66 groups (105.0 M px), 1775 doorways (1822 markers, 6 clamped), 2011
+  doors (1836 with a way back), 378 scene transfers; 31 maps with a background not reached
+  (opening/story scenes, door-less Mountain Palace maps, unused slots). Full render 20.8 s,
+  861 images (68 + 793), 134.6 MB (rooms 93.1 MB); placeholder rooms ~2.8 MB (2.5 MB zipped,
+  PIL default font) on top of today's 3.1 MB pack zip. Both within budget: no cut needed.
+- Results: ss_game_tests SS_TEST=tracker_ 7/7 (with SS_DISC1); e2e 861/861 images, sizes,
+  same bytes twice, nothing stray, XDG untouched; NA/EU/FR/DE disc 1 renders byte-identical
+  (861 each); A/B vs the baseline (worktree of ae78aa2 in scratchpad/mapdoors/base): 12 headless
+  runs, 20 files, 0 differ; today's pack generator builds from the 1.1 layout (scratchpad output)
+  and tools/ap_poptracker_test.py 23 OK; smoke: see Log.
+- How to verify: `SS_DISC1=... python3 tools/ap_tracker_maps.py --check`;
+  `SS_TEST=tracker_ SS_DISC1=... prlimit --as=$((4<<30)) engine/build-mapdoors/ss_game_tests`;
+  `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-mapdoors/shattered-stars --scratch scratchpad/mapdoors/e2e`;
+  spot checks: `SS_TRACKER_DOTS=1 SS_TRACKER_ONLY=rooms/18. python3 scratchpad/mapdoors/run.py
+  engine/build-mapdoors/shattered-stars LOG 300 --render-tracker-maps scratchpad/mapdoors/outN`;
+  regions: scratchpad/mapdoors/regions.sh; A/B: scratchpad/mapdoors/ab.sh.
 
 ## Findings
 - **Trigger regions are in screen coordinates, not world ones** (trigger_check_regions tests the

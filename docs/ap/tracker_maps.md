@@ -21,7 +21,8 @@ each check's dot on the same pixel. This file describes that layout. B4 (the pac
 - The port compiles the JSON in (engine/CMakeLists.txt makes
   `generated/tracker_layout_data.cpp` from it), so no extra file ships. A layout change
   needs a port build. Pack and port agree as long as both were built from the same JSON.
-  `format` changes only when the meaning of a field changes.
+  `format` changes only when the meaning of a field changes; `format_minor` counts additions
+  a reader of the same `format` can ignore (1.1 added the rooms and their doors).
 
 Regenerate it when place checks change (new rows in data.py), when map names change, or when
 the generator's rules change, then rebuild the port and the pack.
@@ -31,10 +32,13 @@ the generator's rules change, then rebuild the port and the pack.
 | Key | Meaning |
 |---|---|
 | `format` | 1 |
+| `format_minor` | 1 (format 1.1: `rooms`, `room_groups`, `style.door`, checks' `room`; a format 1 reader ignores them) |
 | `source` | `tools/ap_tracker_maps.py` |
 | `pack_uid` | `so2_shattered_stars` (the override folder is `user-override/<pack_uid>/`) |
-| `style` | `margin`, `gap` (px), `label_height` (px), `background` / `label_colour` (`#rrggbb`), `dot` {`size`, `colour`, `outline`}: what the port uses; the pack may use them too |
+| `style` | `margin`, `gap` (px), `label_height` (px), `background` / `label_colour` (`#rrggbb`), `dot` {`size`, `colour`, `outline`}, `door` {`fill`, `text`, `outline`} (a room's door letter boxes): what the port uses; the pack may use them too |
 | `images` | the images, in order: area images (by area name), then the world maps |
+| `rooms` | (1.1) one image per field map an area's doors reach, by map number: "Rooms" below |
+| `room_groups` | (1.1) the rooms of each area, in door order: "Rooms" below |
 | `checks` | AP location name -> its dot (every place check: chest, gift, boss, join) |
 | `area_only` | AP location name -> reason, for place checks without a dot (empty today) |
 
@@ -121,8 +125,9 @@ area image belongs to exactly one dot.
 | `x`, `y` | the dot's centre in that image |
 | `map` | the field map it is in |
 | `how` | how the spot was found (below) |
-| `world` | [x, y, z]: the world position projected (absent for `map`) |
+| `world` | [x, y, z]: the world position projected (absent for `map` and `region`: a trigger region is not a world position) |
 | `clamped` | true when that position projects outside the background (the dot is moved to the nearest edge pixel) |
+| `room` | (1.1) {`image`, `x`, `y`}: the same dot on the map's room image (`images/rooms/<map>.png`) |
 
 `how`:
 - `chest`: the chest's own position, from the constant arguments of `chest_create` (script
@@ -130,9 +135,16 @@ area image belongs to exactly one dot.
 - `actor`: the actor the routine giving the check belongs to (ext 0x70 actor_create, 0xf3
   actor_create with a pickpocket entry); for gifts and joins handed over by someone.
 - `region`: the trigger region that starts that routine (ext 0x74 / 0x75 thread_start, 0xd8 /
-  0xd9 trigger_add_button), on the scene's floor. If the region's centre is off the background,
-  the dot goes to the middle of the part of the region that is on it; if none of it is,
-  the dot is clamped.
+  0xd9 trigger_add_button). A field map's trigger regions are in **screen coordinates**, not
+  world ones: trigger_check_regions tests the leader's actor +0x74 / +0x76 (its projected
+  screen point) while field_state +0x68 (3D mode) is 0, as on every field map
+  (docs/notes/field_part4.md 2). So the region's background pixels are its corners minus the
+  view origin (MapScene +0x28 / +0x2c), no projection. If the region's centre is off the
+  background, the dot goes to the middle of the part of the region that is on it; if none of
+  it is, the dot is clamped. (The first layout projected the corners as floor points; the
+  1.1 layout corrects the 48 `region` checks. Checked over every field map's doors: the way
+  back's arrival point lands within 40 px of the door's region for 1636 of 1846 doors read
+  this way, 86 read the old way.)
 - `spawn`: the routine is reached only from the map's own code (a scene on entering, a deeper
   call chain), so the dot is the map's default spawn point (MapScene +0x14).
 - `map`: as `spawn`, but the spawn point is off the background, so the dot is the
@@ -152,11 +164,102 @@ Several checks often share a dot: one NPC hands out several gifts, and Fienal's 
 of Trials' chest rooms reuse the same spots. A pack can make one map location with one
 section per check at each distinct (image, x, y).
 
-Coverage (layout of 2026-10-27): 472 place checks (308 chests, 101 gifts, 42 bosses, 21
-joins), all with a dot. By `how`: chest 308, actor 65, region 48, spawn 50, map 1; 11 clamped
-(trigger regions entirely off screen: map-entry triggers). `area_only` is empty. 66 area images
-(242 map rectangles; the largest is Salva Drift, 2024x1720 at 1/1) and 2 world maps (35 group
-dots).
+Coverage (layout 1.1 of 2026-10-27): 472 place checks (308 chests, 101 gifts, 42 bosses, 21
+joins), all with a dot and a room dot. By `how`: chest 308, actor 65, region 48, spawn 50,
+map 1; none clamped. `area_only` is empty. 66 area images (242 map rectangles; the largest is
+Salva Drift, 2024x1720 at 1/1) and 2 world maps (35 group dots). 793 rooms in 66 groups
+(105.0 M pixels), 1775 doorways (1822 markers, 6 clamped) holding 2011 doors (1836 with a way
+back), and 378 transfers started by the maps' own code.
+
+## Rooms (format 1.1)
+
+Each field map an area's doors reach also has an image of its own, so a path can be followed
+room by room: `images/rooms/<map>.png`. The area images stay as each area's overview. A room
+image is the map's whole background at its own size (1:1), under a label strip with the map's
+number and name, and a small box with a letter beside each doorway. A door's destination is
+**never drawn**: with the entrance randomiser (Phase C) it differs per seed and may be unknown
+until found, so the tracker shows it from data (part 2, below). Only static things are on the
+image.
+
+`rooms[]` (by map number):
+
+| Key | Meaning |
+|---|---|
+| `path` | `images/rooms/<map>.png` |
+| `map` | field map number |
+| `name` | the place name from map_names.csv, or the map's area where that name is only a door-graph placeholder |
+| `label` | the label strip's text: `"<map> <name>"` |
+| `area` | the room's group (`room_groups[].area`): its area image's AP area, or a world-map entrance group without one |
+| `width`, `height` | image size: the background's width, and its height plus the strip |
+| `bg_y` | the strip's height: the background is drawn at (0, `bg_y`), 1:1 |
+| `font_scale` | the text scale (1 to 4): about 20 px high once PopTracker fits the image into a 1000 x 800 panel (`max(1, min(4, (20 max(4 w, 5 h) + 14000) // 28000))`) |
+| `location_size` | 12 x `font_scale`: the location square the boxes are kept clear of (around each check dot and door point); the pack's room maps should use it |
+| `label_box` | [x, y, w, h] of the strip: [0, 0, `width`, `bg_y`] |
+| `scene_doors` | (when there are any) transfers started by the map's own code (a scene on entering, a story event), not by a trigger: `to` records (below) with no spot. Not drawn |
+| `doors` | the door markers: one per doorway trigger spot, by letter |
+
+Each door marker:
+
+| Key | Meaning |
+|---|---|
+| `letter` | A, B, C... (AA after Z) in doorway id order within the room |
+| `id` | the doorway id (below) |
+| `x`, `y` | the trigger's spot in the room image (where the pack puts the door's location): a region's centre, as a `region` check's dot is placed (screen coordinates minus the view origin; off the background: the middle of its visible part); an actor's projected position (a door given by talking to someone) |
+| `box` | [x, y, w, h] of the letter box, beside the spot and clear of the check dots, the other spots (`location_size` squares) and the other boxes |
+| `how` | `region` or `actor` |
+| `clamped` | true when no part of the trigger is on the background (moved to the nearest edge pixel) |
+| `to` | the doorway's **vanilla** destinations, the default only: [{`door`, `map`, `back`, `conditional`}] |
+
+Each `to` record: `door` (the door id), `map` (the map it sends the party to; 1 / 2 / 3 are the
+world maps), `back` (when found: the doorway id in the target map that leads back here, nearest
+the arrival point: the other end of this entrance), `conditional` (true when the transfer only
+happens in some story states: doors.json `requires`).
+
+Text (the strip, the letters): the overlay's 5x7 font at `font_scale` (advance 6 x scale), at
+(x + 2 scale, y + (h - 7 scale) / 2) inside its box, cut with `..` to fit w - 4 scale. The
+strip is `style.background` with `style.label_colour` text; a letter box is `style.door.fill`
+with a `font_scale`-wide `style.door.outline` border and `style.door.text` letters. A
+placeholder may use any font, but the same boxes.
+
+### Door ids (a contract for Phase C and the world's logic export)
+
+- A **door** is one record of docs/ap/doors.json: one map-transfer instruction. Its id is
+  doors.json's `id`, `map * 65536 + offset / 4` (the NA script's map, the lowest map of a
+  shared script; offset = the instruction's byte offset). It never changes while the discs and
+  that rule stay the same, and it is already the id the seed's `doors` overrides use
+  (seed_format.md, phase 4).
+- A **doorway** is what the player walks into: the doors started by one trigger. Doors of one
+  routine (story variants of one exit: 125 doorways send the party to more than one map
+  depending on the story), or whose triggers sit on the same pixel, are one doorway. Its id is
+  the **lowest door id** in it. A doorway whose routine two trigger regions start has two
+  markers with the same id and letter.
+- Recommended for Phase C: an entrance is a doorway, named from its id (for example
+  `"Door 1180128"`), and the entrance randomiser sends every door of a doorway to the same new
+  destination (the seed's `doors` gives each door id its `to`). The vanilla pairing of two
+  entrances is `to[].back`. The tracker's live state is keyed by doorway id.
+- Letters are for people: stable as long as the room's set of doorways is, but never a key.
+
+### Room groups
+
+`room_groups[]` (by name): {`area`, `image` (the area image's path, or null for a group with
+none), `world` (1 Expel, 2 Energy Nede: the world map its entrance is on), `entrances` (the maps
+the world-map entrance leads to), `rooms` (its maps, by door distance from the entrances, then
+by number)}. Every room is in exactly one group, so a map has one room tab.
+
+Which maps: the groups are the area images (seeded with their maps) and the world-map entrance
+groups (`KEY_GROUPS`) with no area image, seeded with their entrance maps (an entrance into a
+place that has an area image joins that image: map 231 joins Eluria Colony; L'Aqua is the one
+such group today). From the seeds, breadth first and nearest group first: (1) over any door to a
+map of one of the group's places (map_names.csv `area` of its seeds); (2) then over two-way doors
+with trigger regions both ways to any map still without a group (buildings that have places of
+their own, such as Cross Castle's rooms); (3) then over a one-way door with a trigger region
+into a map whose own such doors lead back into the group (in through one door, out through
+another: Bowman's House). A map in two area images belongs to the one whose name is its place,
+else the first by name. World maps and maps without a background are never rooms. Not reached
+(so not drawn): 31 maps with a background: opening and story scenes (Planet Milocinia and
+Claude's arrival 4-8, Inn Hilton Island at night 168-182, the Outer Wall 617-619, the
+Transporter Portal of Sealing 313, the fanzine hall 122), Mountain Palace maps without doors
+(340-356) and unused slots (0, 28, 643, 697, 826).
 
 ## For the pack (B4)
 
@@ -170,11 +273,57 @@ dots).
   `<Documents>/PopTracker/user-override`, then the program's own folder
   (src/poptracker.cpp). The port's default target follows the same order (below).
 
+## For the pack (part 2): rooms, doors and the live door panel
+
+What the pack generator (`tools/ap_poptracker.py`) needs to do with format 1.1. Nothing here
+changes the format 1 parts above.
+
+- **Room images.** A placeholder per room, exactly `width` x `height`: `style.background`, a flat
+  box for the background area (0, `bg_y`, `width`, `height - bg_y`), the `label` in the
+  `label_box` strip, and each door's letter in its `box` (`style.door`). The same boxes the
+  port draws, so a player's render lines up. Root paths `images/rooms/<map>.png`, not in a
+  variant folder (as the area images). Measured: 793 placeholders are about 2.8 MB (2.5 MB
+  zipped) drawn with PIL's default font; the pack zip was 3.1 MB.
+- **Maps.** One PopTracker map per room (`room_<map>`, `img` = `path`, `location_size` = the
+  room's `location_size`).
+- **Tabs.** Area > Room: each area tab becomes `tabbed` with the area image first ("Overview")
+  and then one tab per room in `room_groups[].rooms` order (title: the room's `label`). A group
+  with no area image (`image` null: L'Aqua) gets a tab of rooms only. Each room is in exactly
+  one group, so map -> tab path is a function: the door clicks and scripts/map_tabs.lua (the
+  player's own map, `so2_map_*`) can both switch to the room's tab rather than the area's.
+- **Checks on rooms.** Each check's location gets a second map location `{map: room_<map>, x,
+  y}` from `checks[].room`, so a room tab shows the same squares as the overview.
+- **Door locations.** One location per door marker, at the marker's `x`, `y` on its room
+  (the letter box sits beside it, clear of every square): name `"<map> <letter>"`, one section
+  named `"Door <letter>"`. Doors are not Archipelago locations: no UT name, no AP id, never
+  counted (see the click below), always visible.
+- **The live door panel.** PopTracker cannot write text on a map image, so each room tab
+  shows a panel beside the map (a layout of items whose text the pack's Lua sets with
+  `BadgeText` / an overlay): one line per letter, `"A -> 412 Salva Drift"`. The destination of
+  doorway `id` comes from:
+  - vanilla (no entrance randomiser): a door table the pack ships, built from `rooms[].doors[].to`
+    (doorway id -> its destinations: map, and the other end's doorway id `back`);
+  - Phase C (entrance randomiser): the seed's pairings in slot_data (doorway id -> doorway id,
+    which gives the map), and for entrances not found yet the found-entrances data-storage key
+    (UT's `found_entrances_datastorage_key`): until then the line reads `"A -> ?"`.
+  A doorway with several vanilla destinations (story variants: 125 doorways) lists each map,
+  the conditional ones marked.
+- **Click switching.** `ScriptHost:AddOnLocationSectionChangedHandler` on the door sections:
+  when a door section is clicked, set its `AvailableChestCount` back to 1 (a door never counts
+  as checked), look up the doorway's live destination (as the panel), and send
+  `Tracker:UiHint("ActivateTab", name)` for each tab title on the destination room's tab path
+  (a world map: the world map's tab). Unknown destination: no switch. Several destinations: the
+  first unconditional one, else the first.
+- **Names.** Room names come from `rooms[].name` (map_names.csv `place`, with its evidence in
+  map_names_evidence.csv for the renamed ones); a destination that is not a room (a world map,
+  an undrawn map) can use map_names.csv or the world image's `name`.
+
 ## The port's command
 
 `shattered-stars --render-tracker-maps [DIR]` (tools/tracker_maps.h) reads disc 1 (as the
 game finds it: SS_DISC1, `--disc1`, config.ini or the `discs` folders) and writes every image
-above as a PNG under DIR. It writes nothing else: no config.ini, no log, no saves, no cards. It
+above as a PNG under DIR: the area and world images, then the rooms (format 1.1: 861 images in
+all, about 135 MB, in about 21 s on the development machine). It writes nothing else: no config.ini, no log, no saves, no cards. It
 needs no window and no seed.
 
 Without DIR it uses PopTracker's override folder for the pack: the first existing
@@ -186,8 +335,9 @@ Documents folders on Windows; elsewhere `$HOME`, and `$XDG_DOCUMENTS_DIR`, else
 `~/Documents` when it exists, else `$HOME`.
 
 Testing switches: `SS_TRACKER_DOTS=1` also draws each check's dot (to check the layout:
-PopTracker draws its own location squares, so players don't want these), and
-`SS_TRACKER_ONLY=a,b` renders only the images whose path contains one of these.
+PopTracker draws its own location squares, so players don't want these; on a room, each door's
+spot too, in the door colour), and `SS_TRACKER_ONLY=a,b` renders only the images whose path
+contains one of these (`rooms/18.` for one room, `rooms/` for all of them).
 
 ### The setup button
 
