@@ -107,6 +107,17 @@ To see what a location needs, type `/explain` and its name in UT (for example
 `/explain Town of Salva: Heavy Ring chest`): it prints the location's rule, with what you have in
 green and what is missing in red.
 
+**Story mode follows the story.** Story mode's chapters need no items, so by the logic alone almost
+every location is reachable from the start. While the game (Shattered Stars 0.03.00 or later) is
+connected to the room it tells the server which chapter you are in, and UT then lists only what the
+story has reached: a chest in a town you haven't reached yet comes into the list when the story takes
+you there, Energy Nede's after the disc switch, the Cave of Trials after the Final Save Point. It
+follows the chapter as you play (and goes back if you load an earlier save). Before the game has
+connected UT lists everything the logic allows, as in open world and hub mode, which have no story
+awareness. To turn it off, set `enforce_deferred_entrances: "off"` under `universal_tracker` in
+Archipelago's `host.yaml`. The PopTracker pack does the same, and shows the checks later in the
+story in blue.
+
 The tracker updates when the server hears of a check, so checks you make while the game is
 offline appear once Shattered Stars reconnects and sends them. If UT says "The world has informed
 UT that your options are incompatible", type `/faris_asked` in it: the message names the

@@ -1664,7 +1664,7 @@ reads slot data (it takes its options from the .apso2), so new keys there are sa
 |---|---|---|
 | `logic_version` | `1` | The world's logic version (`apworld/so2/ut.py` `LOGIC_VERSION`). It is bumped whenever the same slot data would make other logic: other locations, regions, rules or events. A room from 0.2.0 or 0.2.1 has no key: version 1. |
 | `exclude_locations` | sorted list of location names | The player's `exclude_locations` (Generate already expanded any group to its names). Universal Tracker shows them in its excluded group. |
-| `tracker` | object, below | The world's resolved logic as data ("The tracker export"), for trackers that don't run the world: the PopTracker pack evaluates it. A room from 0.2.0 or 0.2.1 has none (the pack is then a checklist). |
+| `tracker` | object, below | The world's resolved logic as data ("The tracker export"), for trackers that don't run the world: the PopTracker pack evaluates it. In story mode it carries the story's points too (`story`, "Story awareness"). A room from 0.2.0 or 0.2.1 has none (the pack is then a checklist). |
 
 **What Universal Tracker restores** (yaml-less; `apworld/so2/ut.py`; docs/ap/apworld.md
 "Trackers"). UT builds the world again on the player's machine from the slot data alone, with a
@@ -1804,7 +1804,58 @@ default (359 locations, 4 rule bodies), 15-16 KB with character items, crafts, k
 Skillsanity, 24 KB at the richest (1,840 locations); open world 9.6-34 KB (the default-like mixes
 10-17 KB), **35 KB at the richest** (1,988 locations, 259 rule bodies); hub 11-26 KB, 26 KB at the
 richest (1,754 locations). Grouping the locations by (region, rule) keeps a third off an
-`{"id": [region, rule]}` map (52 KB at the richest).
+`{"id": [region, rule]}` map (52 KB at the richest). Story mode's `story` key (next) adds 4.3 KB by
+default, 5.2 KB with the party options and 12.8 KB at the richest (8.7, 21.5 and 37.3 KB in all).
+
+#### Story awareness (`story`, story mode only; optional)
+
+In story mode the stages need no items, so nearly every check is in logic from the start. The port
+publishes the story's position while connected (`so2_story_{team}_{slot}` = `{"chapter": C,
+"step": S}`, docs/ap/data_storage.md); with this key a tracker can hold back what the story has not
+reached yet (docs/plans/trackers.md B6, decision D8). It is written only in story mode
+(`apworld/so2/story.py` `export`); open world and hub mode have none (their stages and dungeons are
+keyed). A format-1 reader that doesn't know it ignores it and shows the plain logic. Universal
+Tracker doesn't read it: it builds the same thing from the world (docs/ap/apworld.md "Story
+awareness").
+
+```json
+"story": {
+ "key": "so2_story_{team}_{slot}",
+ "stages": [["Shingo Forest and Arlia", 3, 0], ["Salva and Salva Drift", 5, 0], ["Cross", 9, 0], ...,
+            ["The last chapters", 58, 0], ["the Final Save Point", 60, 4000]],
+ "events": [["Arrived on Energy Nede", 13], ["Saved at the Final Save Point", 24]],
+ "locations": [[2, 1347602432, 1347611648, ...], [3, 1347645440, 1347645441, ...], ...,
+               [24, 1347990528, 1349863425, ...]]
+}
+```
+
+(Story mode with the default options, seed 1: 322 of its 359 locations listed, in 21 groups; 1347602432
+is Alen's Mansion's Portrait B chest in Salva, point 2; 1347990528 the King's Room's 10000 Fol chest
+and 1349863425 Lacour's Sinclair Sabre gift, chapter-60 scenes on Expel, point 24.)
+
+| Key | Value |
+|---|---|
+| `key` | the data-storage key the position comes from (`{team}`, `{slot}`: the `Connected` packet's). |
+| `stages` | the story's **points**, in order, `[name, chapter, step]`: the 23 stages of `data.STAGES`, each reached at its first chapter (step 0), then the Final Save Point at chapter 60 step 4000. A position (C, S) **has reached point k** when (C, S) is at or after point k's (chapter, step), compared as a pair; it has reached as many points as there are at or before it (0 before chapter 3). |
+| `events` | `[name, k]`: an event of the export's `events` (by its item's name) that is collected only once point k is reached, on top of its rule: the disc switch (point 13, chapter 36) and the Final Save Point (point 24). Everything that hangs on them follows: the regions behind them, the killer moves and learn levels counted from them, the goal's events. |
+| `locations` | groups `[k, id, ...]`, k ascending, ids ascending: the locations in logic only once point k is reached, on top of their rule. A location not listed needs point 1 (Expel from the start). |
+
+**The evaluation with a position** (the reference `TrackerLogic.evaluate(counts, story)`, the pack's
+`logic.lua`): the sweep above, but an event of `story.events` whose point is not reached is not
+collected; a location is in logic when, besides its region and rule, its point is reached. What the
+items alone put in logic but the story hasn't reached is **later in the story** (`View.later`; the
+pack shows it as Inspect). Without a position (no key yet, `null`, or a value that isn't
+`{"chapter": number, ...}`) the evaluation is the plain one.
+
+**Where the points come from** (`story.py`; docs/ap/apworld.md "Story awareness"): a stage begins
+where the story stores its first chapter (each chapter value is stored in exactly one place,
+docs/ap/field.md "Story order"); the Final Save Point is chapter 60 step 4000 (stored when Cyril
+falls, map 674, the room before the save point; Indalecio stores 5000). A location's point is the
+first stage in which the story can take the party there: its area's entrance group's first stage,
+a gift's first chapter, a story boss's chapter, a drop's or guild check's earliest place, a member's
+story join (killer moves, learn levels); Expel after the disc switch, the Cave of Trials and Lacour's
+chapter-60 King's Room only through Virtual Expel (point 24); what has no stage of its own follows its
+region (Expel from point 1, Energy Nede from 13).
 
 ## Hub (`world_mode: hub`)
 

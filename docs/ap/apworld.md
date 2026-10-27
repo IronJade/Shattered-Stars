@@ -1260,22 +1260,120 @@ the locations in logic and the goal. The pack's `scripts/logic.lua` is the same 
   passes, the "region" kind behind an entrance (an indirect condition), the goal, a deferred
   entrance (`to` -1) reaching nothing until `connect`; unknown formats and kinds refused. TestTrackerExportSize: at most 64 KB at the richest mix of each mode.
 
+### Story awareness (both trackers, story mode; trackers.md B6, decision D8, 0.2.2)
+
+The user (2026-10-27): "Story awareness in story mode would be a fantastic addition, yes." Story
+mode's stages need no items, so a tracker following the logic alone lists nearly every check from
+the start, though the party can't walk to most of them yet. The port publishes how far the story
+has got (`so2_story_{team}_{slot}` = `{"chapter": C, "step": S}`: docs/ap/data_storage.md), and
+with it both trackers show only what the story has reached; the PopTracker pack also marks what
+comes later in the story. One source of truth, `apworld/so2/story.py`, used by both:
+
+- **The points.** Stage k of data.STAGES is reached when the port reports its first chapter: each
+  chapter value is stored in exactly one place in the game's scripts (docs/ap/field.md "Story
+  order"; tools/ap_world_tables.py STAGES lists each stage's chapters from those stores), so a
+  stage begins with the store of its first chapter. A 24th point, **the Final Save Point**, is
+  chapter 60 step 4000: step 4000 is stored when Cyril falls (map 674, Floor 7, under chapter 60
+  step 3000), the room before the final ascent to the save point (map 671), and Indalecio stores
+  5000 (map 685) (the step stores: scratchpad/enemy/ap5/steps.json, from tools/ap_extract.py's story
+  points); the late proof's state, a save made at the Final Save Point, is chapter 60 step 4000
+  ("The late proof"). Saving there sets flag 730, which opens Virtual Expel; the key has no flags,
+  so the point is the step before the save.
+
+  | Point | Reached at (chapter, step) | Point | Reached at |
+  |---|---|---|---|
+  | 1 Shingo Forest and Arlia | 3 (Rena's game starts at 4) | 13 Energy Nede | 36 (map 618, after the disc switch's 35) |
+  | 2 Salva and Salva Drift | 5 | 14 Synard | 38 |
+  | 3 Cross | 9 | 15 Noel | 39 |
+  | 4 Cross Cave | 12 | 16 Cave of Red Crystal | 40 |
+  | 5 Clik and Mars | 14 | 17 Central City | 41 |
+  | 6 Herlie | 16 | 18 The four fields | 42 |
+  | 7 Lacour's tournament | 18 | 19 L'Aqua | 46 |
+  | 8 Linga and its sanctuary | 20 | 20 Fienal's first visit | 48 |
+  | 9 Hilton and Hoffmann Ruins | 23 | 21 Armlock and Mihne | 52 |
+  | 10 Lacour Front Line | 26 | 22 Fun City | 57 |
+  | 11 El | 29 | 23 The last chapters | 58 |
+  | 12 Eluria Tower | 32 | 24 the Final Save Point | 60, step 4000 |
+
+- **A location's point** (`location_stage`): the first stage in which the story can take the party
+  there, from the data the open world's logic already uses: its area's entrance group's first stage
+  (data.KEY_GROUPS `stage`, rules.early_stage), raised to the stage of a gift's first chapter (its
+  `window`); a story boss's chapter; a first drop's or guild check's earliest place; a member's story
+  join for his or her killer moves and learn levels (a member who joins by a character item: any
+  time). Expel is left behind at the disc switch, so an Expel place the story first reaches after
+  stage 12 (Lacour's chapter-60 gifts), Lacour's King's Room (a chapter-60 scene, an Energy Nede row
+  behind an Expel entrance) and the Cave of Trials are reached through Virtual Expel: point 24. What
+  has no stage of its own follows its region: Item Creation and the areas the story never walks into
+  (Lasguss Mountain, the Mountain Palace, a world map's drops) from point 1 in Expel, Giveaway and
+  the Gallery from 13 on Energy Nede; Fienal's floors from 23 (as open world counts them).
+- **The events** (`EVENT_STAGES`): the disc switch ("Arrived on Energy Nede") needs point 13, the
+  Final Save Point point 24, on top of their rules; so the regions behind them, the killer moves and
+  learn levels counted from them (Energy Nede for levels up to 30, the Final Save Point above) and
+  the goal's events follow the story too.
+- So a location is reachable for the story when its own point and every story event its rule needs
+  are reached. An approximation where it must be one: a stage is the unit (a gift whose first chapter
+  is in the middle of its stage shows from the stage's start), and Fienal is entered at chapter 60
+  step 1000, two chapters into its stage.
+
+**Universal Tracker** (UT's documented deferred events: worlds/tracker/docs/apworld-integration.md
+"Deferred Entrances", map-integration.md "Deferred events"). Only in UT's own regeneration of a
+story-mode room (`re_gen_passthrough`) and only while host.yaml's `enforce_deferred_entrances` is
+not `"off"` (UT's default is `"default"`; absent, as in UT's fuzzer and every real generation, counts
+as off):
+- `story.prepare` (end of set_rules) adds 23 events `Story reached: <point>` (points 2-24) in Menu,
+  open (True_) until the port reports, and puts each location's and story event's point on top of
+  its rule (`And(rule, Has("Story reached: <point>"))`, still Rule Builder rules, so `/explain`
+  names the point); then it sets **this world's** `found_entrances_datastorage_key` to
+  `("so2_story_{team}_{player}",)`, the port's key. Open world and hub mode never set it, so UT
+  watches no key there.
+- UT's client formats the key, Gets and SetNotifies it, and calls
+  `SO2World.reconnect_found_entrances(key, value)` on each Retrieved / SetReply (then updates the
+  tracker, with a fresh state each time). `story.reconnect` opens the events of the points the
+  position has reached and shuts the later ones (a position that goes back, an earlier save
+  loaded, shuts them again). `null` (the port never connected) or a value that isn't a position
+  opens them all: UT then shows what the logic alone says, as before. So does `"off"`.
+- So UT lists only what the story has reached; a later check is out of logic until its chapter.
+  `logic_version` stays 1: the same room, with no position, is the same logic.
+
+**The PopTracker pack** reads the export's `story` key (docs/ap/seed_format.md "Story awareness":
+the points, the story events, the locations' points), written by `story.export` from the same
+`overlay(world)`, and evaluates it as the reference does (`tools/ap_tracker_logic.py`
+`evaluate(counts, story)`: `View.locations`, `View.later`); a section in logic by the items but later
+in the story shows as Inspect (docs/ap/poptracker.md "Story awareness").
+
+**Tests.** test/test_story.py (19 tests): the points (the stages' first chapters in order, the Final
+Save Point last, `reached` of positions and of values that aren't one); every story-mode location's
+point (the Cave of Trials 24, Energy Nede and Fienal 13 or later, Expel's places 12 or before or 24,
+story bosses in their chapter's stage, Lacour's chapter-60 gifts and the King's Room 24); no story
+key outside story mode; the export's shape; a real generation has no story events. Per story mix
+(story default, story party, story party rena; the room generated and filled, rebuilt in UT's way
+with enforce `"default"`, UT's client steps mirrored): UT watches `so2_story_0_1` (`so2_story_2_7`
+for team 2, slot 7); with no position, `null` or a bad value, sphere by sphere, UT's in-logic set is
+the room's own, as with enforce `"off"` (no events, no key); at 27 story positions (before the
+story, each point, chapter 60 steps 3000 and 5000) on the first, a middle and the last sphere's
+items, UT's in-logic set equals the reference evaluator's on the room's export, only grows, is the
+plain set less `later`, and going back to chapter 3 shuts the later points again; with every item,
+Expel's locations alone before the disc switch, Energy Nede's at chapter 36 and not at 35 step 9999,
+nothing of the Cave of Trials before the Final Save Point. Open world and hub (enforce `"default"`
+and `"on"`): no key, no events, no `story` in the export.
+
 ## Files
 
 | File | Contents |
 |---|---|
-| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `create_hub_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` / `slot_options`; Universal Tracker's hooks (`ut_can_gen_without_yaml`, `interpret_slot_data`, `custom_ut_sort`) |
+| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `create_hub_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` / `slot_options`; Universal Tracker's hooks (`ut_can_gen_without_yaml`, `interpret_slot_data`, `custom_ut_sort`, `reconnect_found_entrances`) |
 | `ut.py` | Universal Tracker ("Trackers"): `LOGIC_VERSION`, the slot data -> option table `SLOT_OPTIONS`, `NO_EFFECT`, `restore` / `check_restored`, `refuse` (UT's `TrackerException`), `sort_key` |
 | `hub.py` | hub mode: `choose` (the locations), `needed_keys`, `fienal_won`, `create_regions`, `set_rules`, `drop_rule`, the seed's `hub` / `bosses` / `doors` (`seed_hub`, `seed_bosses`, `seed_doors`); `OUT_OF_HUB` (the Portal of Sealing), `CONFIRMED_OPTIONAL` (waiting on hubchambers) |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `logic.py` | rules as data ("Rules as data"): the Rule Builder builders `need`, `ways`, `any_of`, `both`; `open_by_default`; `RESOLVED_KINDS`, `as_rule` |
 | `tracker_export.py` | the slot data's `tracker` key ("The logic export"): `export(world)`, `FORMAT` |
+| `story.py` | story awareness ("Story awareness"): the points (`POINTS`, `FINAL_SAVE_POINT`), `reached`, `location_stage`, `overlay`, the export's `story` key (`export`), Universal Tracker's deferred story events (`prepare`, `reconnect`) |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
 | `skills.py`, `skillsanity.py` | skillsanity's tables (the guild sets, the skills, the starting skills, the specialties, the learn tables with each member's first move, the other learn points; generated by tools/ap_make_skills.py from the disc; do not edit) and its locations, items, logic and shop prices |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
-| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`, the rules as data in `test_logic.py`, the logic export and its reference evaluator in `test_tracker.py`) |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`, the rules as data in `test_logic.py`, the logic export and its reference evaluator in `test_tracker.py`, story awareness in `test_story.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 

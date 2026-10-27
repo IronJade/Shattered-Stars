@@ -20,7 +20,7 @@ packet: the team counts from 0, the slot from 1. Universal Tracker spells the sa
 | Key | Value | Written |
 |---|---|---|
 | `so2_map_{team}_{slot}` | `{"map": M}`; on a world map `{"map": M, "x": X, "z": Z}` | when it changes, at most twice a second |
-| `so2_story_{team}_{slot}` | `{"chapter": C, "step": S}` | when it changes, at most twice a second |
+| `so2_story_{team}_{slot}` | `{"chapter": C, "step": S}` | when it changes, at most twice a second (read by both trackers' story awareness: "Reading the keys") |
 | `so2_entrances_{team}_{slot}` | reserved for Phase C (below) | not written yet |
 
 Examples: `{"map":26}` (Hearn's general store in Arlia), `{"map":1,"x":51200,"z":18500}` (on
@@ -94,6 +94,21 @@ compare `map` with the previous value and skip position-only updates.
     scratchpad/ap/ap-venv/bin/python tools/ap_ds_read.py ws://localhost:38281 Claude --watch 60
 
 prints `retrieved` lines for both keys, then a `set` line for each change for 60 seconds.
+
+**Who reads `so2_story_*`** (story awareness, story mode only: docs/ap/apworld.md "Story awareness";
+the points a position has reached: docs/ap/seed_format.md "Story awareness"):
+- **Universal Tracker** (so2.apworld 0.2.2): in its regeneration of a story-mode room, unless
+  host.yaml's `enforce_deferred_entrances` is `"off"`, the world sets its
+  `found_entrances_datastorage_key` to `so2_story_{team}_{player}`; UT then Gets and SetNotifies it
+  and hands each value to the world's `reconnect_found_entrances`, which opens the deferred story
+  events of the points the position has reached and shuts the later ones. UT lists only what the
+  story has reached. Open world and hub mode don't watch it.
+- **The PopTracker pack** (1.0.0): already subscribed (Clear handler: Get + SetNotify); a value sets
+  the Chapter item and the step, and the logic holds back the story's events and locations of points
+  not reached yet (the export's `story` key, story mode only): sections in logic by the items but
+  later in the story show as Inspect. The "Story" setting item turns it off.
+- Before the port has ever connected (`null`), or with a value that isn't `{"chapter": number, ...}`,
+  both show the plain logic. Both follow the value as it is, also backwards (an earlier save loaded).
 
 Universal Tracker (B6): `map_page_setting_key = "so2_map_{team}_{player}"` with a
 `map_page_index` that maps the value's `map` to a page; `location_setting_key` may name the same

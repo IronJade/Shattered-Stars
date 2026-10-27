@@ -52,11 +52,20 @@ What it shows:
   world's own rules say it is in logic with what the slot has received (and the items clicked in
   the panel), and red when not: the same as Universal Tracker. A room from 0.2.0 / 0.2.1 has no
   logic in it: every check shows as reachable (a checklist).
+- **Story awareness** (story mode, with port 0.03.00 connected to the room): story mode's stages need
+  no items, so the logic alone puts nearly every check in reach from the start. The pack follows how
+  far the story has got (the port's `so2_story_*` key) and shows a check in logic by the items but
+  **later in the story** in blue (PopTracker's Inspect: "seen, not yet to be had"); green is what the
+  story has reached, red what needs items. It follows the chapter live, also backwards when an
+  earlier save is loaded. Before the port has reported (or with an older port), and in open world
+  and hub mode, everything is as the logic alone says. The **Chapter** item shows the chapter;
+  clicking it sets one by hand (left +1, right -1; 0 = none), for play without the port connected.
+  The **Story** item (on by default) turns story awareness off.
 - **Status**: the logic banner at the top ("not connected", "logic unavailable for this room:
   checklist", "logic: from the room", or "logic needs a newer pack: checklist" for a room of a
-  later world whose export this pack can't read), the story chapter the port reports, and **Auto
-  tab** (on by default): with port 0.03.00 connected to the room, the map tabs follow the map the
-  party is on.
+  later world whose export this pack can't read), the story chapter the port reports, **Story**
+  (story awareness, on by default) and **Auto tab** (on by default): with port 0.03.00 connected to
+  the room, the map tabs follow the map the party is on.
 - **Hints**: hinted locations in this world are highlighted (priority, avoid, ...).
 - Checks reach the tracker through the server, so checks made while the port is offline show up
   once it reconnects and sends them.
@@ -67,7 +76,7 @@ What it shows:
 |---|---|---|
 | `manifest.json` | uid `so2_shattered_stars`, `package_version` 1.0.0, `game_name` "Star Ocean: The Second Story" (the AP game name), platform PC, author DreamGlyph Studios, variants `map` ("Map Tracker") and `items_only` ("Items Only"), each with the flag `ap` only (never `apmanual` / `aphintgame`), min and target PopTracker 0.36.0, `versions_url` | generator |
 | `settings.json` | smooth scaling for items and maps (the badges and maps are drawn larger than shown) | generator |
-| `items/items.json` | 286 items: 35 area keys, 18 dungeon keys, 12 characters, 5 traps (consumables), 46 skills, 148 moves (264 mapped to AP ids); the logic banner (`so2_logic_*`, progressive), the chapter (`so2_chapter`), auto tab (`so2_auto_tab`), the refresh counter (`so2_rev`, in no layout); 18 settings (`opt_<key>` toggles, `opt_<key>_<value>` progressive stages) | generator |
+| `items/items.json` | 286 items: 35 area keys, 18 dungeon keys, 12 characters, 5 traps (consumables), 46 skills, 148 moves (264 mapped to AP ids); the logic banner (`so2_logic_*`, progressive), the chapter (`so2_chapter`), story awareness (`so2_story_aware`), auto tab (`so2_auto_tab`), the refresh counter (`so2_rev`, in no layout); 18 settings (`opt_<key>` toggles, `opt_<key>_<value>` progressive stages) | generator |
 | `locations/places.json` | region (Expel, Energy Nede, Fienal, Cave of Trials) -> area -> a location per dot (472 place checks, 408 dots) | generator |
 | `locations/world.json` | "Expel World Map" / "Energy Nede World Map" -> a location per area group, whose sections are `ref`s to the place checks of the group's areas | generator |
 | `locations/boards.json` | Shops (52 cells, 550 checks), Item Creation (26, 553), Killer Moves (8, 133), Guilds and Learning (25, 194), Enemy Drops (19, 89) | generator |
@@ -147,7 +156,8 @@ All hand-written files are in `tools/poptracker/`, short and generic; the genera
   - **Data storage** (Retrieved and SetReply): hints highlight this world's hinted sections; a new
     `map` in `so2_map_*` activates `SO2_MAP_TABS[map]` tab by tab with `UiHint("ActivateTab")`
     when Auto tab is on (position-only updates on a world map change nothing); `so2_story_*` sets
-    `SO2.story` and the Chapter item and calls `so2_story_changed(story)` when it exists (B6).
+    `SO2.story` and the Chapter item and calls `so2_story_changed(story)` (logic.lua: the story
+    view is redone and the rules re-run, also for a step-only change).
 
 ## Logic
 
@@ -161,7 +171,7 @@ all in `tools/poptracker/logic.lua`:
 | `so2_logic_load(slot_data)` | by the Clear handler, once per connect, after `SO2.exists` and the items are set | read `slot_data.tracker` (B3's export; absent in rooms from 0.2.0 / 0.2.1 or a world without it); set `SO2_LOGIC.mode` and the banner: `so2_set_logic_status("on")` with logic, `"checklist"` without, `"newer"` for an export of a format the pack doesn't read |
 | `so2_logic_items_changed(code)` | after any item changes (received, clicked, reset) | drop memoized results (keep it cheap: it runs once per changed item) |
 | `so2_access(id)` | by PopTracker for each visible section, whenever an item changed | `id` is the AP location id as a **string**; return an `AccessibilityLevel` |
-| `so2_story_changed(story)` | optional; on each `so2_story_*` value | B6's story awareness |
+| `so2_story_changed(story)` | optional; on each `so2_story_*` value, after the Chapter item | story awareness: logic.lua drops its story view and calls `so2_refresh()` |
 
 Inputs an evaluator has: `so2_item_count(ap_item_id)` (items by AP id, as the export names them),
 `SO2.slot_data`, `SO2.exists`, `SO2.story`. If what `so2_access` returns changes without an item
@@ -193,8 +203,31 @@ export", "The evaluation") step for step:
   "region" body (an indirect condition, CanReachRegion) is evaluated too. So such a room needs no
   new evaluator, only more data (docs/ap/seed_format.md "The tracker export").
 
-It returns only `Normal` and `None`: the export knows what is in logic, not what is possible out of
-logic, so there is no `SequenceBreak` (yellow).
+It returns `Normal`, `Inspect` (story awareness, next) and `None`: the export knows what is in logic,
+not what is possible out of logic, so there is no `SequenceBreak` (yellow).
+
+**Story awareness** (story mode; the export's optional `story` key, docs/ap/seed_format.md "Story
+awareness"; docs/ap/apworld.md "Story awareness" for where the points come from):
+- **The position** (`so2_story_position()`): the Chapter item's count (the port's `so2_story_*` sets
+  it; a click changes it), with the port's step while the port's chapter is the item's (else step
+  0); Chapter 0 is no position.
+- **The points reached** (`so2_story_stage()`): how many of `story.stages` ({name, chapter, step},
+  compared as pairs) are at or before the position; nil (no story awareness) without the export's
+  `story` key (open world, hub, rooms before 0.2.2), without a position, or with the **Story**
+  setting item (`so2_story_aware`, a toggle, on by default) off.
+- **A second sweep** (`so2_story_view()`, kept until the items or the points reached change): the
+  same algorithm, but an event of `story.events` whose point isn't reached is not collected
+  (the disc switch at point 13, the Final Save Point at 24, so the regions and rules behind them
+  wait too); `so2_story_in_logic(id)`: the location's region reached, its rule holding, and its
+  point (`story.locations`; unlisted: 1) reached.
+- **`so2_access(id)`**: `None` when not in logic by the items; else `Inspect` when the story view
+  says not yet ("later in the story"), else `Normal`. **Why Inspect**: it is PopTracker's level for
+  "checkable but not collectible", drawn blue, distinct from red (red says items are missing,
+  something to act on; a check later in the story needs nothing but playing on) and from yellow
+  (`SequenceBreak` says it can be had now out of logic, which isn't so: the party can't get there
+  yet). Hiding such checks (`None`) would lose the "you will get here" view the user asked for.
+- A step-only change (chapter 60 step 3000 -> 4000, the Final Save Point) changes no item, so
+  `so2_story_changed` re-runs the rules itself (`so2_refresh()`).
 
 ## Images (all original)
 
@@ -241,7 +274,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (23 tests, about 6 seconds with the build; run by `check`):
+`tools/ap_poptracker_test.py` (24 tests, about 13 seconds with the build; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -276,6 +309,15 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
   items); an entrance left unconnected (`to` -1) reaches nothing until `so2_logic_connect` names
   its region, and then the result is the reference's again; a room without the export, and one with
   an export of a newer format, are a checklist with their banners.
+- **Story awareness** (`test_story_is_the_reference`): in the three story rooms, for the empty state,
+  the items before the first sphere and every item, at 14 story positions sent as the port sends
+  them (a SetReply of `so2_story_0_1`: chapter 0, 3, 5, 12, 24 step 500, 35 step 9999, 36, 41, 48,
+  57, 58, 60 steps 3000, 4000 and 5000), every section is `Normal` exactly for the reference's
+  locations in logic for the story (`evaluate(counts, story)`), `Inspect` for its `later` ones and
+  `None` for the rest; each value re-runs the rules (`so2_rev` moves, the step-only change too); the
+  Story item off gives the plain logic and on again the story's; Chapter set by hand counts as a
+  position (step 0), and 0 as none; a value that isn't a position (or `null`) changes nothing. The
+  13 other rooms (open world, hub) with the same values never show `Inspect`.
 
 **Pack checker.** `check` runs PopTracker/pack-checker v1.7.0 (what PopTracker/pack-checker-action
 runs) with `--strict` on the zip and on the folder, against the published schemas
