@@ -910,3 +910,54 @@ Steps: 1 version bump; 2 the two notes; 3 README + wiki (+ apworld/so2/docs down
 - apworld/so2/docs/*.md have no download link (setup_en.md says "this project's GitHub release
   page" generically): no rebuild; the world package stays benchworld's (apworld/so2 unchanged
   since 64a7d20).
+- **Commits:** 2a35882 (docs: notes, README, engine/README, checklist section 1, this log), 12a3a6c
+  (port: the version, the build scripts' JOBS).
+- **RC script:** scratchpad/release/rc-0.02.51.sh (from rc-0.02.50.sh): the committed tree in a
+  worktree; JOBS=4; the world NOT rebuilt: dist/apworld-0.2.1's package, checked file by file
+  against the snapshot's apworld/so2 (31 files, archipelago.json + the packaging's version 7);
+  seeds: the five of 0.02.50 + nobench + hell (bench v4 in open / hub, hell_seed true), the
+  checker tools/ap_batch_check.py, three of them byte-compared with the dev world's; no-game-data
+  greps on both archives; desktop-file-validate; upload sets DIST/port/ and DIST/apworld/, one
+  SHA256SUMS each; pytest / batch optional (not in "all"). Trial (snapshot + package check +
+  apworld phase) 12:40: all rc 0, check 7 files 0 errors, dev-identical, server on 127.0.0.1.
+- **RC started 12:40** (`rc-0.02.51.sh all`, timeout 6 h; scratchpad/release/rc251-run.out;
+  per-step lines scratchpad/release/rc-0.02.51-dist/summary.txt). If this session ends mid-run:
+  read summary.txt, rerun the failed phases (snapshot first if the worktree is gone).
+- Meanwhile: the wiki (scratchpad/wiki, uncommitted).
+- **Wiki (scratchpad/wiki, uncommitted, for the coordinator to commit and push with the releases):**
+  - Archipelago.md: 0.2.1 / 0.02.51 header and IMPORTANT box (bench seeds need 0.02.51; "unsupported
+    version 4"); "What you need" (the world's own release, apworld-v0.2.1); where progression goes
+    (guild checks / learn levels may hold it); the open-world / hub party with the bench; a new "The
+    bench" subsection (Party Order / Tactics flip, managed not used, loans, saves); the join level
+    (the bench doesn't count); the starting character in the first place, the hero second, the
+    order kept; open world's starting passes (North City + Noel's House unless teleporter and
+    expel_progression are both on); killer moves and skillsanity progression rules; a new "Hell
+    seeds" section; hub progression; options table (bench, expel_teleporter, expel_progression,
+    encounter_rate); installing (the world's release); the hell warning on setup's page; the
+    sidecar keeps items waiting / bench / Dias; the full-inventory banner; known issues (the
+    warning is English); troubleshooting ("unsupported version 4", the North City Pass fill
+    error); a new "What changed in 0.2.1" (the world, your seeds, and Shattered Stars 0.02.51).
+  - Home.md (version 0.02.51 / world 0.2.1 released on its own, the download line, "a party of up
+    to twelve"), FAQ.md (downloads: the two releases; which world version), Contributing.md and
+    Installing-and-Managing-Mods.md (0.02.51 examples), Installing-and-Setup.md (the hell seed's
+    warning on the Archipelago page), Bugs-Fixed-and-Quirks-Kept.md ("And in 0.02.51": the five
+    Archipelago fixes, no "Since" column: their first versions aren't recorded).
+- **Windows recheck list:** docs/handoff/windows_check.md "Recheck for 0.02.51" (written; committed
+  after the RC, since a commit during the run would move HEAD under the verify phase).
+- **RC 0.02.51 GREEN** (12:40-13:02, `rc-0.02.51.sh all`, exit 0, no step rc != 0, no FAIL in any
+  log; written up as docs/ap/release_checklist.md section 11): snapshot 12a3a6c (no uncommitted
+  source), tree unchanged at the end; Linux tarball 9,484,490 B (39 entries, no game data,
+  --version 0.02.51, glibc 2.36, desktop entries valid), smoke 373/0/0; Windows zip 7,875,246 B (9
+  entries, no game data, version resource 0.02.51 / DreamGlyph Studios, no WinThreads), Wine
+  --version + Arlia boot; the world's package = the snapshot's apworld/so2 file for file, loads as
+  0.2.1, seven seeds (bench v4 in open / hub, nobench v2, hell_seed) 0 checker errors and
+  dev-identical, MultiServer on 127.0.0.1; e2e so2 37/37, hub 15/15; Linux ss_tests 103/0,
+  ss_game_tests 207/0; Windows (Wine) 103/0, 208/0. Content id 7a190be7a51cceae (646 files).
+  SHA-256: port 6021fd98... (tar.gz) / d75c22c2... (zip); world 83af433f... / 93c41087...
+  (unchanged). Upload sets: scratchpad/release/rc-0.02.51-dist/port/ and .../apworld/, each with
+  its SHA256SUMS. Sums filled into docs/release_notes/0.02.51.md (0.2.1.md's already matched).
+- Nothing running (no Wine, server or game process; the worktree and scratch installs removed).
+- **Left for the coordinator:** the user's tag-name confirmation; the Windows recheck
+  (windows_check.md "Recheck for 0.02.51"); then section 11's commands (push main, the two tags,
+  the two gh releases, the wiki commit + push). Optional: docs/images/setup-archipelago.png still
+  shows "Setup · v0.02.50" (tools/setup_screenshots.sh, as for 0.02.50).

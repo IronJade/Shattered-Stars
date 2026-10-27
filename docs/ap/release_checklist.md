@@ -506,3 +506,73 @@ gh release create <tag> "$D/so2.apworld" "$D/Star.Ocean.The.Second.Story.yaml" \
 ```
 
 The tag's name is the user's to choose (the port's releases are `v0.0X.YY`).
+
+**Released apart (2026-10-27):** the world is published as its own GitHub release, tag
+`apworld-v0.2.1`, beside the port's `v0.02.51` (section 11 has both commands).
+
+## 11. Release candidate 0.02.51 + so2.apworld 0.2.1 as two releases (2026-10-27, agent release251)
+
+The user (2026-10-27) asked for the port and the world as **separate GitHub releases on the same
+repo**, so either can be updated, and its notes edited, on its own. Two releases:
+
+| Release | Tag | Title | Assets | Notes |
+|---|---|---|---|---|
+| The port | `v0.02.51` | Shattered Stars 0.02.51 | the Linux and Windows bundles + `SHA256SUMS` | `docs/release_notes/0.02.51.md` (marked Latest) |
+| The world | `apworld-v0.2.1` | so2.apworld 0.2.1 | `so2.apworld`, `Star.Ocean.The.Second.Story.yaml` + `SHA256SUMS` | `docs/release_notes/0.2.1.md` (not Latest) |
+
+The notes link each other by those tags; README.md and the wiki link `apworld-v0.2.1` for the world
+(`releases/latest` stays the port's). To use other tag names: `grep -rn 'v0\.02\.51\|apworld-v0\.2\.1'
+README.md docs/release_notes scratchpad/wiki` and the commands below.
+
+Built and checked by `scratchpad/release/rc-0.02.51.sh all` (12:40-13:02; adapted from
+rc-0.02.50.sh: builds with `JOBS=4`; the world is **not rebuilt**, dist/apworld-0.2.1 is section
+10's package, checked file by file against the snapshot; log, results and the two upload sets in
+`scratchpad/release/rc-0.02.51-dist/`). Source: the committed tree, a disposable worktree at
+`12a3a6c` (the release-prep commits 2a35882 + 12a3a6c on 3bce4a2), no uncommitted or untracked
+source; the main tree unchanged at the end (tree id `7b567444d1b8f613`). **Every step exited 0; no
+FAIL in any log.**
+
+| Check | Result (2026-10-27) |
+|---|---|
+| `tools/build_linux.sh --container` | exit 0. `ShatteredStars-0.02.51-linux-x86_64.tar.gz`, **9,484,490 bytes, 39 entries** (the versioned folder; `desktop/` + `install-desktop-entry.sh` as in 0.02.50), no game data (no disc image, card, seed or asset file in the list). `--version`: `Shattered Stars 0.02.51` / `Shattered Stars Setup 0.02.51`, no `config.ini` written. glibc floor `2.36`. `LICENSE` "Copyright (c) 2026 DreamGlyph Studios", `THIRD-PARTY-LICENSES.txt` present; `desktop-file-validate` on both `.desktop` files: exit 0 |
+| smoke on the packaged Linux binary | **373 PASS / 0 FAIL / 0 SKIP** (282 at 0.02.50: the bench, hero-slot, pending, queue, door and Dias cases since) |
+| `tools/build_windows.sh` (`MINGW_SSL_SYSROOT` set) | exit 0. `ShatteredStars-0.02.51-win64.zip`, **7,875,246 bytes, 9 entries** (`shattered-stars.exe`, `setup.exe`, `SDL3.dll`, `README.md`, `LICENSE`, `THIRD-PARTY-LICENSES.txt`, `discs/` with its note), no game data. Version resource of both `.exe`s: `FileVersion` 0.02.51, `CompanyName` DreamGlyph Studios; no "POSIX WinThreads" |
+| Windows under Wine (scratch prefix, no display, 4 GB scopes) | `shattered-stars.exe --version`: `Shattered Stars 0.02.51`; a 300-vblank headless boot onto Arlia (map 18): 26 trigger lines, "stopped after 300 vblanks" |
+| The world's package (dist/apworld-0.2.1, section 10) | `so2.apworld` 186,265 bytes: its 31 files equal the snapshot's 31 tracked `apworld/so2` files byte for byte, `archipelago.json` but for the packaging's `version` / `compatible_version` 7; no `__pycache__`; manifest `world_version` 0.2.1, `minimum_ap_version` 0.6.8, `authors` IronJade. Template 24,325 bytes |
+| 2.2 the packaged world in a clean install | loads as 0.2.1, no failed loads, no manifest error. Seven seeds (`Generate.py --seed 90251`), each exit 0, no traceback: solo (template, v1), SO2 + ChecksFinder (v1), open world with every new option (**v4, bench**), the same with `bench: false` (v2), hub (**v4, bench**), story (v2), a hell seed (story, `encounter_rate: 0`, killer moves, `special_only`: v2, **`hell_seed` true**). `tools/ap_batch_check.py` over the seven: **0 errors**. The solo, hub and hell seeds generated again with the dev world: the `.apso2` files identical. `MultiServer.py` on the multiworld: "Hosting game at 127.0.0.1:38491", the embedded data package loaded; stopped by its PID |
+| 2.3 e2e, the packaged Linux binary against the packaged world | so2 **37 / 37 PASS**, hub **15 / 15 PASS** |
+| 2.4 / 2.5 pytest and batches | not rerun: the world's source is unchanged since section 10's runs (benchworld, 64a7d20: 699 / 379 / 752 passed; batches 96/96, 0 errors) |
+| The engine suites (engine/build-release2, Linux) | `ss_tests` **103 / 0**, `ss_game_tests` **207 / 0** (23 optional cases skipped as at 0.02.50: region discs, AP server, reference logs) |
+| The Windows suites under Wine | `ss_tests.exe` **103 / 0**, `ss_game_tests.exe` **208 / 0** (the Windows-only `launcher_log_without_a_console` the one more) |
+
+SHA-256 (`scratchpad/release/rc-0.02.51-dist/port/SHA256SUMS` and `.../apworld/SHA256SUMS`; also in
+the two release notes):
+```
+6021fd980bdadbbec7afafa17548a7a9e002acd754236e9ad52ea0f58e08903d  ShatteredStars-0.02.51-linux-x86_64.tar.gz
+d75c22c29ff3059a686a4f44daec15f30fedff11b5c8f2ef2c82d74cda3d9d92  ShatteredStars-0.02.51-win64.zip
+
+83af433fa5f17a09e59b29eae859efd9df945e3b3eaefc59b04d6749f019849f  so2.apworld
+93c41087a011bb2e8c54419c3a7ca1c44d96b2ccd1c8583a4fb277728eb7d035  Star.Ocean.The.Second.Story.yaml
+```
+
+The RC's sources' content id (commit-independent; section 9's one-liner):
+**`7a190be7a51cceae`** (646 files of engine/ apworld/ tools/ mods/ LICENSE). The commits after
+12a3a6c are docs only; if the one-liner prints anything else at the tag, rerun the RC.
+
+**Publishing (the coordinator's, after the user's checks; not run).** Both tags lightweight, on the
+pushed `main` (as v0.01.00 - v0.02.50); the world's release first, so the port's ends up Latest:
+
+```sh
+D=scratchpad/release/rc-0.02.51-dist
+git push origin main
+C=$(git rev-parse HEAD)
+git tag apworld-v0.2.1 "$C" && git tag v0.02.51 "$C"
+git push origin apworld-v0.2.1 v0.02.51
+gh release create apworld-v0.2.1 "$D/apworld/so2.apworld" "$D/apworld/Star.Ocean.The.Second.Story.yaml" \
+  "$D/apworld/SHA256SUMS" --verify-tag --latest=false --title "so2.apworld 0.2.1" \
+  --notes-file docs/release_notes/0.2.1.md
+gh release create v0.02.51 "$D/port/ShatteredStars-0.02.51-linux-x86_64.tar.gz" \
+  "$D/port/ShatteredStars-0.02.51-win64.zip" "$D/port/SHA256SUMS" --verify-tag --latest \
+  --title "Shattered Stars 0.02.51" --notes-file docs/release_notes/0.02.51.md
+(cd scratchpad/wiki && git add -A && git commit -m "0.02.51 and so2.apworld 0.2.1: ..." && git push origin master)
+```
