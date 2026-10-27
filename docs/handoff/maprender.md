@@ -55,23 +55,31 @@ docs/ap/apworld.md, docs/release_notes/0.2.2.md (agent "utworld" works there in 
   with files / next / how to verify / rules given). Roll over at ~400k context: update and stop.
 
 ## State
-- Done:
-  - Layout generator tools/ap_tracker_maps.py -> docs/ap/tracker_maps.json (format doc
-    docs/ap/tracker_maps.md). 472/472 place checks placed (chest 308, actor 65, region 48,
-    spawn 50, map 1; 11 clamped), area_only empty; 66 area images (242 map rects), 2 world maps
-    (35 group dots).
-  - Port: util/deflate.{h,cpp} (zlib + compressed RGB PNG), tools/tracker_maps.{h,cpp} (field
-    background composer, layout reader, labels, optional dots, default override folder),
-    main.cpp hook `--render-tracker-maps [DIR]`, CMake embeds the JSON
-    (generated/tracker_layout_data.cpp). Field images render and look right (Arlia, Salva Drift,
-    Town of Cross, CoT vault checked; chest dots verified against game captures of maps 18, 25).
-- In progress: world-map top-down render (images/maps/world_*.png are skipped by the command
-  for now; the pack's placeholders stay for those).
-- Next: commit docs + generator/JSON; world render; tests (unit: deflate round trip via
-  mods::inflate, override dir resolution, PNG sizes match layout, determinism, nothing outside
-  DIR); smoke A/B; release notes section.
-- How to verify: `SS_DISC1=... python3 tools/ap_tracker_maps.py --check`;
-  `SS_TRACKER_DOTS=1 SS_TRACKER_ONLY=arlia python3 scratchpad/maprender/run.py
+- Done (committed): 4575b00 docs (tracker_maps.md, this log), 8cafcf7 generator + JSON, e3bcf6b /
+  8cc77d3 world views (Energy Nede cropped to its playable disc).
+- Done (verified, being committed): the port command.
+  - util/deflate.{h,cpp}: zlib stream (LZ77 + dynamic Huffman) and compressed RGB PNGs.
+  - tools/tracker_maps.{h,cpp}: field backgrounds composed in a private VRAM (all sprites whose
+    window holds some scroll position; animations frame 0; colour step 0; parallax maps put
+    together from 320x224 screens at their own scroll); world maps drawn flat from above (terrain
+    blocks, chunk-container textures, lowest first, water last, 3x supersampled); labels (5x7
+    overlay font at 2x); SS_TRACKER_DOTS=1 / SS_TRACKER_ONLY=...; default folder = PopTracker's
+    search order.
+  - main.cpp: `--render-tracker-maps [DIR]` (no config write, no log, no setup; returns after the
+    archives open). CMake embeds docs/ap/tracker_maps.json (generated/tracker_layout_data.cpp).
+  - engine/tests/test_tracker_maps.cpp (6 cases) and tools/ap_tracker_maps_test.py (e2e).
+- Results: ss_game_tests 222/0 (216 + 6 new; the disc cases ran with SS_DISC1); e2e 9/9 checks
+  (68 images, 41.5 MB, the same bytes twice, nothing else written, XDG untouched, default folder
+  under a scratch HOME/PopTracker); A/B vs HEAD 8cc77d3's binary: 12 headless runs, 20 files,
+  0 differ; NA, EU, FR and DE disc 1 render byte-identical images (all 68); full render 7 s,
+  ~250 MB RSS; MinGW -fsyntax-only clean for the new files. Smoke (smoke_field_events.sh):
+  running.
+- Next: finish smoke; commit docs (release notes, tracker_maps.md, this log) then code; report.
+- How to verify:
+  `SS_DISC1=... python3 tools/ap_tracker_maps.py --check`;
+  `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-maprender/shattered-stars`;
+  `SS_TEST=tracker_ SS_DISC1=... engine/build-maprender/ss_game_tests`;
+  spot checks: `SS_TRACKER_DOTS=1 SS_TRACKER_ONLY=arlia python3 scratchpad/maprender/run.py
   engine/build-maprender/shattered-stars LOG 300 --render-tracker-maps scratchpad/maprender/outN`.
 
 ## Research notes
@@ -92,8 +100,11 @@ docs/ap/apworld.md, docs/release_notes/0.2.2.md (agent "utworld" works there in 
   actor_create (x,y,z = a[2..4]); ext 0x74/0x75 thread_start corners a[0..7]; ext 0xd8/0xd9
   trigger_add_button corners a[1..8] (stack) / a[3..10] (inline).
 - World maps: torus 9x7 blocks of 0x3000 (0x1b000 x 0x15000); terrain blocks are textured
-  polygons (docs/notes/field_overlay_c1e.md). Image mapping chosen: x/54, (0x15000 - z)/54
-  (north = +z up, assumed from the default camera looking along +z; to verify with the render).
+  polygons (docs/notes/field_overlay_c1e.md; decoders in worldmap_render.cpp draw_type_*),
+  vertices relative to the block centre; every chunk container of a world carries the same
+  texture set (checked: map 1 72/72, map 2 63/63). Image mapping x right, +z up: verified
+  north-up / east-right with the guide (Salva north of Arlia; Herlie on Cross's east coast).
+  Map 1 block 0x30: the chapter 0xf+ version (0x1013) is drawn.
 - PopTracker overrides (scratchpad/trackers/poptracker src/poptracker.cpp, core/pack.cpp,
   core/fs.h): search order cwd/user-override, <home>/PopTracker/user-override,
   <documents>/PopTracker/user-override, appPath/user-override, ../share/poptracker; the first
@@ -115,3 +126,15 @@ docs/ap/apworld.md, docs/release_notes/0.2.2.md (agent "utworld" works there in 
 
 ## Log
 - 2026-10-27: research, generator, field renderer, command hook; first renders checked.
+- 2026-10-27: layout committed; world renderer (dots line up with the towns); parallax maps fixed
+  (green keys and black gaps gone); tests, e2e, A/B, regions; release notes section.
+
+## Open / for later
+- 11 dots are clamped (trigger regions entirely off the background: map-entry triggers); 50 use
+  the map's spawn point (routine reached only from the map's own code), 1 the map centre.
+- Labels come from map_names.csv; maps whose name is a door-graph placeholder get
+  "<area> <map>" (e.g. most of Salva Drift). Better names would come from map_names.csv.
+- Shops are not placed (boards in the plan); their NPCs could be placed the same way (ext 0xf3
+  registrations) if B4 wants shop locations on the maps.
+- A setup-program button for the command would help Windows players (today: run it from a
+  terminal, or a shortcut with the argument).

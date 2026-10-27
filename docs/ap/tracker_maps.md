@@ -74,7 +74,9 @@ the one that gives the squarest image.
 
 The port draws the whole background into the rectangle. It is box-filtered to `w`x`h`, in a
 fixed state: no scroll window, animations at their first frame, colour cycles at their first
-step. The label goes in the strip (the 5x7 overlay font at 2x, cut with `..` to fit). The
+step. A map with parallax layers (the Heraldry Forest, Lacour, the Fields of Intelligence and
+Power: 9 maps) has no single picture, so it is put together from 320x224 screens. Each screen
+is drawn at its own scroll position, as the game shows it there. The label goes in the strip (the 5x7 overlay font at 2x, cut with `..` to fit). The
 rest of the image is `style.background`. A placeholder should fill the same rectangles (for
 example a flat colour with the map's label), so that a player's override lines up with the
 dots.
