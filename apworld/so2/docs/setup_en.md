@@ -119,6 +119,10 @@ room.
 - **"unsupported version 2 (this build reads 1)"** (or version 3) when choosing a seed. The seed
   was made with version 0.2.0 or later of this world, which needs Shattered Stars 0.02.50 or newer:
   update the port. Seeds from older versions of this world keep working on the newer port.
+- **"unsupported version 4 (this build reads 1 to 3)"**: the seed has the bench (version 0.2.1 of
+  this world, the `bench` option, on by default in open world with `character_items` and in hub
+  mode), which needs Shattered Stars 0.02.51 or newer. Update the port, or generate again with
+  `bench: false`.
 - **Connection refused.** If the server turns down the connection — for example because the
   slot name or password doesn't match the room — the client reports the refusal rather than
   silently failing to connect; double-check the slot name and password on the Archipelago page

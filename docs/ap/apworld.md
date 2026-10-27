@@ -801,7 +801,8 @@ archipelago seed read throw a warning that the seed being loaded is a "Hell Seed
 The new character rules are open world only (the user, 2026-10-25); story mode keeps the
 story's party rules ("The party" above). `world.plan_party` returns the `Party`: the rules
 (`party_rules` in the seed), the story members, the starting member, the pool, who is sure to
-be in the party and who can ever be.
+be in the party and who can ever be. With the bench (0.2.1, on by default; "The bench" below)
+the party has 12 places instead of 8.
 
 - **The story members:** the story route's hero, or Claude and Rena under story_route any (the
   player picks at New Game, so neither can be an item). The hero is never an item (slot 0 at New
@@ -813,8 +814,9 @@ be in the party and who can ever be.
   2026-10-25; until then a random member): the player picks at New Game on the port's character
   select (seed_format.md "The character select"), so `Party.start` is None (the logic counts on
   nobody extra: the pick is an ordinary pool member, "item" to `fighter_status`) and
-  `Party.choices` is whom the select offers: the story members and the pool (at most 8), or
-  under the story's party rules every member not excluded; the seed's `starting_character` is
+  `Party.choices` is whom the select offers: the story members and the pool (at most 8; with the
+  bench every member not excluded), or under the story's party rules every member not excluded;
+  the seed's `starting_character` is
   that list. The pick's own item, when it comes, finds them in the party. A member the
   generator picks: Archipelago's `random` (one of the option's values). Story mode ignores it (a
   warning). The member joins at the start and leads (the port: the field sprite and the name
@@ -822,15 +824,51 @@ be in the party and who can ever be.
   open-world seed a version-2 seed and change the game for players who did not ask.
 - **The pool** (`choose_open_party`): every other member not excluded and not the start, as many
   as fit 8 with the story members and the start (a random sample when more are allowed; under
-  `any` the start's place goes to the pool too). No
+  `any` the start's place goes to the pool too); with the bench, 12 (`world.party_size()`), so
+  every one of them. No
   lockouts: Leon and Dias in either game, Bowman with Precis, Ashton with Opera and Ernest.
-- **The healer guarantee:** when none of the story members, the start and the pool is Rena or
-  Noel (the only healers), an allowed healer takes a random pool member's place (the pool is
-  full then); with both excluded, none (the player's choice).
+- **The healer guarantee** (without the bench): when none of the story members, the start and
+  the pool is Rena or Noel (the only healers), an allowed healer takes a random pool member's
+  place (the pool is full then); with both excluded, none (the player's choice).
 - **Join sites:** every non-story member's, the three new ones included; all EXCLUDED. Members
   not in the pool (and neither story members nor the start) never join.
 - Open world without character_items keeps the story's party rules (`party_rules: "story"`),
   plus the starting member.
+
+### The bench (`bench`; 0.2.1, on by default)
+
+The user (2026-10-26, docs/handoff/bench.md "The user's answers" B7: "a `bench` option, on by
+default"; 2026-10-27: "Bench needs to be rolled into the 0.02.51 + 0.2.1 release"), to "make
+every character obtainable ... keep from causing any issues wherein the user gets a full party
+and there are 4 checks that were the character items ... It also guarantees that the player can
+choose to use whoever they would like in the party." The port keeps a bench of four places (8-11)
+after the game's 8 slots: a member received with the 8 full joins the bench, and Party Order
+swaps anyone but the hero between the party and the bench (seed_format.md "The bench", port
+0.02.51; built on branch party-bench, docs/handoff/partybuild.md).
+
+- **Where it applies** (`world.bench_applies()`, kept as `world.bench`): open world with
+  `character_items` (`party_rules: "open"`) and hub mode, exactly where the port reads
+  `options.bench`. Story mode and open world without character_items keep the story's party
+  rules and the game's 8 places; the option is ignored there (open world without
+  character_items: a warning; story mode: an info line, since the option is on by default).
+- **The party:** `world.party_size()` 12 (items.BENCH_PARTY_SIZE = PARTY_SIZE 8 + BENCH_SIZE 4).
+  The pool is every member not excluded but the story members and the start, with no random draw
+  (the world's RNG is not touched there), so every character item a player could want is in the
+  pool, and none is left out by a draw. The healer guarantee has nothing to do (both healers are
+  in unless excluded) and is skipped. `starting_character: any` offers every member not
+  excluded.
+- **The logic is unchanged:** a received member can be swapped in at any free play, so every
+  pool member is "item" to `fighter_status` (their killer-move and learn levels need their item,
+  which is then progression where those may hold it), the story members and the start "sure".
+  The members the 8 places would have left out add their killer-move levels, crafts and learn
+  levels (`Party.possible` is every member not excluded).
+- **The seed:** `options.bench: true` (slot data `bench`) and **version 4** (`SEED_FORMAT_V4`,
+  open world and hub alike), only where the bench applies: a port that reads 1 to 3 (0.02.50)
+  refuses the seed ("unsupported version 4") instead of playing up to 12 members in 8 places.
+  Without it `bench` is absent and the seed is byte for byte what it was before the option
+  (Testing, "Results ... the bench": all 288 release-workflow seeds with `bench: false` pinned).
+- **Off** (`bench: false`): 0.2.0's 8 places, the random pool and the healer guarantee, seed
+  version 2 (open world) or 3 (hub).
 
 ## Goals (`goal`; 0.2.0)
 
@@ -889,6 +927,7 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 | `story_route` | any (default) / claude / rena | claude / rena: the other game's locations are left out and the port starts that game; any: one-game locations are missable |
 | `starting_character` | hero (default) / any / claude ... chisato | open world and hub mode: a member who joins at the start and leads; hero: nobody extra; any: the player picks at New Game among the members this world allows (the port's character select; "Party v2") |
 | `exclude_characters` | a set of member names (default empty) | open world with character_items, hub mode: never in the pool, so they never join; not the hero |
+| `bench` | true (default) / false | open world with character_items, hub mode: 12 places (the game's 8 and the port's bench of 4), the pool every member not excluded, no healer guarantee; seed version 4 ("The bench"); ignored elsewhere |
 | `missable_locations` | exclude (default) / include / remove | exclude: EXCLUDED (filler only); include: soft reasons become ordinary; remove: left out with their items |
 | `expel_progression` | true (default) / false | false: no other world's progression in Expel; in open world our own Expel-story keys still may be there (the user's decision, 2026-10-23) |
 | `cave_of_trials` | false (default) / true | add the Cave of Trials (after the Final Save Point) |
@@ -911,7 +950,8 @@ The port already sends a seed door to `to` (an arrival point of the game) and
 
 slot_data and the seed's `options` repeat them (`starting_character` as the member chosen, null,
 or under `any` the list of members New Game's select offers; `exclude_characters` as a list), with `seed_format`, `goal_encounters`, `characters` (the
-pool's members), `party_rules` ("story" / "open") and `apworld_version`. The port reads the
+pool's members), `party_rules` ("story" / "open") and `apworld_version`; `bench: true` only where
+the bench applies (absent otherwise, like `hell_seed`). The port reads the
 phase-3 ones ([seed_format.md](seed_format.md), "Phase 3") and, of 0.2.0's, `no_fail_crafting`,
 `starting_character`, `party_rules` and `difficulty` ("v2 fields").
 
@@ -949,7 +989,7 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
   `no_fail_crafting`, a `difficulty` other than earth: `seed_version`; seed_format.md "The
   version rule"), so the 0.02.00 port
   refuses such a seed instead of playing it wrong; 3 for a hub seed (and its `hub` and `bosses`
-  blocks, "Hub mode" above);
+  blocks, "Hub mode" above); 4 for a seed with the bench, open world or hub ("The bench");
 - every own location with its check (chest: map + flag; gift: map + call-site offset; boss:
   encounter; join: map + offset + character; drop: enemy type; craft: item; killer move:
   character + move + level + uses) and its item (own: kind and its fields; another player's:
@@ -1024,6 +1064,38 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
 
+Results (2026-10-27, 0.2.1: the bench; docs/handoff/benchworld.md):
+- The world's tests: **699 passed** (50730 subtests; was 634; `python -m unittest`: 699, OK).
+  test_party.py's `BenchChecks` (party_size 12, no healer guarantee; the pool every allowed
+  member in party order, drawn without touching the world's RNG; fighter_status "item" for each,
+  "sure" for the heroes and the start; the select every member not excluded; version 4, slot data
+  `bench`) over 6 mixes: the default on, any start, healers excluded, a named start, received
+  members (killer moves any, special_only, craftsanity: all 133 killer-move levels and all crafts
+  in the world, and each of Claude's game's 11 pool members' killer-move and learn levels
+  depending on their item alone, `assertAccessDependency`), and ignored in story mode / without
+  character_items; the 5 earlier party v2 mixes pinned `bench: false`. test_hub.py's HubChecks
+  bench-aware (version 4, every member not excluded) with a no-bench mix (version 3, 8 places);
+  test_v2.py open-world killer moves with and without the bench. AP's general tests: 379 passed
+  (117745 subtests). `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 752 passed (56003).
+- Identity: the three release sets with `bench: "false"` appended to each SO2 YAML
+  (scratchpad/benchworld/players_off; `bench` in a YAML as a plain value draws no random number,
+  and an option left out takes its default without one), seeds 1-96, against
+  scratchpad/hellseed/batch (made at b2d7a75, whose apworld/so2 is HEAD's before this change):
+  **all 288 seeds identical** (288 rc's; 480 .apso2 byte for byte; 288 spoilers but for their new
+  "Bench: No" line, one per SO2 player; scratchpad/benchworld/identity.py, identity.txt); the
+  checker's output the same but its new `('bench', False)` count.
+- The release workflow with the bench on by default (scratchpad/benchworld/on): story_open, hub,
+  solo_noexpel **96/96 each, `ap_batch_check.py` 0 errors**; bench seeds (version 4) 60 of 192 /
+  168 of 192 / 49 of 96 (every open-world player with character_items and every hub player). The
+  checker learned the bench: `options.bench` only `true`, only where it applies, exactly when the
+  spoiler's "Bench:" line is Yes there; version 4 (hub and open world); 12 places, the pool every
+  allowed member in party order; the select every member not excluded.
+- Solo fills with the bench (killer0's fillrate3.py, 100 seeds each; scratchpad/benchworld/fill):
+  open world with character_items; + killer moves any, special_only, Claude's game (11
+  progression characters a seed, 133 killer-move locations, 60 progression moves); + expel off,
+  boss checks off, killer moves any (7 progression characters); hub; hub + killer moves any,
+  special_only, Rena's game (11): **0/100 FillError each, every seed accessible and beatable**.
+
 Results (2026-10-27, 0.2.1: the hell seed; docs/handoff/hellseed.md):
 - The world's tests: **634 passed** (44972 subtests; was 537): `test_hell.py` (the table above),
   test_skillsanity.py's helpers hell-aware (`may_hold`, `learn_need`) and its encounter_rate 0 mix
@@ -1067,9 +1139,9 @@ tested with `assertAccessDependency` (every location checked unless noted):
 |---|---|---|
 | test_world.py | story mode: default, story_route claude, missables remove / include, the cave, expel_progression off, late proof (any, rena), bosses off, drops and traps, shops full / specials | (story mode has no items of its own: the events, the late proof's rule, `can_fill`) |
 | test_open_world.py | open world default, Rena with full shops and the cave, no teleporter, expel_progression off (the North City Pass fill failure's reproducer, below) | every pool area key -> exactly the locations and story stages whose every way needs it; each El voyage pass -> the voyage stage, all of them -> the Final Save Point and the goal (through the events); the Hilton and Lacour passes -> the Herlie stage; a landing's key -> its area's early-only chests |
-| test_party.py | the story's party rules (any / claude / rena), party v2 (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero | `PartyChecks.party_size()` / `healer_guaranteed()`: the hooks a bench option overrides |
-| test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks; a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
-| test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
+| test_party.py | the story's party rules (any / claude / rena), party v2 with `bench: false` (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero; 0.2.1's bench (`BenchChecks`: the default on, any start's select, healers excluded, a named start, received members with killer moves / learn levels / crafts, ignored in story mode and without character_items) | every pool member's killer-move and learn levels -> their character item (the bench: all 11 members of Claude's game); `PartyChecks.party_size()` / `healer_guaranteed()`, which `BenchChecks` overrides (12, none) |
+| test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks (all with the bench, the default: version 4, every member not excluded), no bench (version 3, 8 places); a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
+| test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, open world any with and without the bench, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
 | test_skillsanity.py | none, skills_only with crafts, special_only in open world, insanity in hub with shops, insanity with the Iseria Queen; 0.2.1: guilds in open world (with and without expel_progression) and in story mode (both), learn levels in open world, with character items and in hub mode, encounter_rate 0 (skills_only: not a hell seed; insanity: a hell seed), solo_noexpel seed 75's mix | every skill / move item the logic needs -> the crafts, Machinery learn points, the Iseria Queen and killer levels whose every way needs it; each Musical Talent skill -> the Queen, both -> the goal; 0.2.1 (listed): Knowledge 1 -> the Cross / Linga / Central City Pass (not Clik's), the Nede guilds -> the Central City / Armlock Pass, the dear sets -> the Hoffmann Pass (swept), the early / late learn levels -> the Eluria Tower / Mihne Pass (swept), each pool member -> their learn levels; every mix: what each guild check / learn point may hold (shop slots: nothing, our own skill / move items neither), each learn level's exact needs |
 | test_hell.py | 0.2.1's hell seed: the rule's truth table and the fee line (`unittest.TestCase`); seed 75's mix with encounter_rate 0 (the reproducer: WorldTestBase's test_fill) and its Claude neighbour; open world with guilds (teleporter on / off); story mode and hub mode with killer moves and insanity; encounter_rate 1 (killer moves; insanity): ordinary; the patch line and `hell_seed` over 8 mixes | open world: every killer-move level, learn level and guild check -> the Red Crystal Pass (stage 16, swept), none needs the Mihne Pass (the Final Save Point); without the teleporter Knowledge 1 -> the Central City Pass (an Expel guild's early way dropped), with it not; story mode: each from the disc switch alone (every item, no event: none); hub mode: each from the start (every item, no event); what each may hold |
 | test_difficulty.py | earth, galaxy, universe (open world, hub), any | (no logic change: the same locations as on Earth) |
@@ -1378,12 +1450,14 @@ docs/handoff/skilllogic.md):
 
 ## Changes
 
-**0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md and
-hellseed.md, the user's decisions). No new item, location or option; one new seed field,
-`hell_seed` (display only), and the port's 0.02.50 plays its seeds (skilllogic2's headless proofs:
-a key and a character given from a guild check and from learn points; docs/handoff/skilllogic.md
-"Step 3"; hellseed's: the arena's fee waived by the seed's patch line, docs/handoff/hellseed.md).
-Port 0.02.51 adds the hell seed's warning in setup and the log.
+**0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md,
+hellseed.md and benchworld.md, the user's decisions). No new item or location; one new option,
+`bench` (on by default), and two new seed fields, `hell_seed` (display only) and `bench` (with
+seed version 4). The port's 0.02.50 plays every 0.2.1 seed without the bench (skilllogic2's
+headless proofs: a key and a character given from a guild check and from learn points;
+docs/handoff/skilllogic.md "Step 3"; hellseed's: the arena's fee waived by the seed's patch line,
+docs/handoff/hellseed.md); a bench seed (version 4) needs 0.02.51, which also adds the hell
+seed's warning in setup and the log.
 - *Fixed: open world with `expel_progression` or the teleporter off couldn't fill solo*
   (docs/handoff/aptests.md "World bug"). The first Energy Nede stages need the North City and
   Noel's House Passes, and before them Energy Nede has no location of this world that may hold
@@ -1416,8 +1490,20 @@ Port 0.02.51 adds the hell seed's warning in setup and the log.
   failed every solo fill (0.2.1's known limitation until then); now 0 of 100 fail, and two
   neighbours likewise. No seed of the release workflow rolls `encounter_rate` 0: all 288 are
   byte-identical to the batches before (Testing, "Results ... the hell seed").
+- *The bench* (the user, 2026-10-26 / 27: B7 "a `bench` option, on by default", "Bench needs to
+  be rolled into the 0.02.51 + 0.2.1 release"; "Party v2", "The bench"): open world with
+  character_items and hub mode get 12 places (the port's bench of 4 after the game's 8), so the
+  pool is every member not excluded, with no random draw and no healer guarantee, and
+  `starting_character: any` offers every member not excluded. The logic is unchanged (every pool
+  member is "item"); the members the 8 places used to leave out bring their killer-move levels,
+  crafts and learn levels. The seed says `bench: true` and is version 4 (a 0.02.50 port refuses
+  it). Story mode and open world without character_items ignore it. With `bench: false` every
+  seed is byte for byte the one before the option (all 288 of the release workflow's seeds,
+  pinned; spoilers but their "Bench: No" line).
 - Seeds where no open-world player has either option off and no player has skillsanity on are
-  0.2.0's but for `apworld_version`: the passes' change alone kept 111 of the 192 batch seeds
+  0.2.0's but for `apworld_version` (and, with the bench on by default, every open-world player
+  with character_items and every hub player is now a bench player, whose pool, locations and
+  seed version change; the comparisons below were made before the option or with it off): the passes' change alone kept 111 of the 192 batch seeds
   (Testing, "Results ... 0.2.1"); in the others that player starts with the passes, or a
   skillsanity player's guild checks and learn levels take progression, and the fill places the
   multiworld otherwise (skilllogic: every changed seed has a skillsanity player; Testing,

@@ -903,7 +903,7 @@ applied them to the locations and items it wrote).
 | `apworld_version` | `"0.2.1"` (0.2.0 and later) | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
-| `bench` | true / false (or 1 / 0) | off when absent (the APWorld's option: on by default, B7; not written by 0.2.x) | **read** with `party_rules: "open"` in open world, and in the hub: the 12-member bench, seed version 4 ("The bench" below) |
+| `bench` | true / false (or 1 / 0) | off when absent (the APWorld's option: on by default, B7; so2.apworld 0.2.1 writes `true` exactly where the bench applies, and nothing otherwise) | **read** with `party_rules: "open"` in open world, and in the hub: the 12-member bench, seed version 4 ("The bench" below) |
 | `hell_seed` | `true`, only on a hell seed (absent on every other seed) | absent (false) | **read**, display only: setup's warning and a log line ("The hell seed" below; so2.apworld 0.2.1) [hellseed] |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
@@ -1009,7 +1009,9 @@ Per goal:
   (map 9, offset 0x6b94), Claude's in Rena's game (map 12, 0x6e08) and Noel's (map 277,
   0x6fe0), listed only when that member is not a story member. Like every join site they hold
   only filler.
-- The APWorld keeps the party to 8: story members + starting character + `characters`.
+- The APWorld keeps the party to 8: story members + starting character + `characters`; with
+  the bench (`options.bench`, so2.apworld 0.2.1, on by default) to 12, so `characters` is then
+  every member not excluded but the story members and the starting character ("The bench").
 
 **`starting_character`** (open world and hub; `null` in story mode): when it names a member,
 - that member joins at the first free play of a new game (before `start.items` are given, so
@@ -1208,6 +1210,13 @@ maintain the benched members equipment and settings"). Built on branch `party-be
 - **`options.bench`** (true / 1; seed version 4): read only with `party_rules: "open"` in open
   world, and in the hub (where the party rules are always open); story mode and the story's
   party rules keep 8 members and their lockouts, and there the key reads as off.
+- **What the APWorld writes** (so2.apworld 0.2.1, agent "benchworld"; docs/ap/apworld.md "The
+  bench"): its `bench` option is on by default, and applies exactly where the port reads it
+  (open world with character_items, and hub mode). There the seed has `options.bench: true`
+  (slot data `bench` too) and version 4; `characters` is every member not in
+  `exclude_characters` but the story members and the starting character (no random choice, no
+  healer swap); a `starting_character` list (`"any"`) is every member not excluded. Elsewhere,
+  or with the option off, `bench` is absent and the seed is what it was before the option.
 - **The store.** Four bench places, 8-11, after the game's 8 slots (0-3 the front, 4-7 the
   reserve). A member is what the game's own Party Order swap moves: the party slot (0x60 bytes)
   and the character record (0xd0 bytes), so a benched member keeps everything (equipment,

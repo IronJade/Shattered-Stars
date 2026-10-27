@@ -233,9 +233,9 @@ still waiting — and the whole game is open around you:
 - **`hub_start`** picks where New Game puts you: Fun City (the default), Arlia, or `random_town`,
   any town of either world.
 - **Party members are always items** (whatever `character_items` says): nobody joins through a
-  story scene there. `starting_character` and `exclude_characters` work as in open world. With
-  `story_route: any` both Claude and Rena are items too; the one you pick at New Game is already
-  with you, so their item does nothing.
+  story scene there. `starting_character`, `exclude_characters` and the bench work as in open
+  world. With `story_route: any` both Claude and Rena are items too; the one you pick at New Game
+  is already with you, so their item does nothing.
 
 **What hub mode leaves out.** Everything the late game can't reach any more: the story's
 scenes, the join scenes, the gifts of the story's earlier scenes (only the handful you can still
@@ -266,7 +266,7 @@ banner like "Received Revival Card from Alice."
 ## Who can join your party?
 
 **The join level** (open world and hub mode): a member who joins takes the median level of the
-party (the members with you, the one joining left out), up through the game's own level-ups or
+party (the members in its eight places, the one joining left out; the bench doesn't count), up through the game's own level-ups or
 down by the levels' average gains (never below Claude's or Rena's level-1 values); their gear and
 SP stay as they come. A starting character joins at your hero's level, so at level 1 on New Game.
 Story mode keeps every member's own join level.
@@ -292,12 +292,27 @@ With `world_mode: open_world`, the party rules are looser (story mode keeps the 
   item: the other hero (Rena in Claude's game, Claude in Rena's), Noel, Leon and Dias in either
   game, Bowman together with Precis, Ashton together with Opera and Ernest. With `story_route:
   any` both Claude and Rena join through the story, since you pick between them at New Game.
-  The pool holds as many members as fit the party's 8 places with the hero and your starting
-  character, picked at random when more are allowed. Members who aren't in the pool never join.
-- **`exclude_characters`** keeps the members you list out of the pool, to make room for the ones
-  you want. The hero can't be excluded.
-- **A healer is guaranteed.** Rena and Noel are the only healers, so if neither would be in your
-  party, one of them takes a random pool member's place, unless you've excluded both.
+  With the bench (below, on by default) the pool holds every member you haven't excluded.
+  Without it, the pool holds as many members as fit the party's 8 places with the hero and your
+  starting character, picked at random when more are allowed. Members who aren't in the pool
+  never join.
+- **The bench** (`bench`, on by default; needs Shattered Stars 0.02.51). Besides the game's 8
+  places (4 in front, 4 in reserve), the game keeps a bench of 4 more, so all 12 members fit and
+  every one you haven't excluded is an item. A member who arrives with the 8 places full joins
+  the bench. In the camp menu's **Party Order**, L1 / R1 flips the right-hand column between the
+  reserve and the bench, and you swap anyone but the hero in and out, your first pick held
+  across the flip. Benched members keep their equipment, levels and skills, and you can manage
+  them in the camp menu, but they aren't in play until you bring them in: no Private Actions,
+  specialties, field spells or Link Combos, inns don't heal them, and the endings don't count
+  them. When the story needs a benched member for a fight they make alone (Claude in Shingo
+  Forest in Rena's game, Dias or Claude at the Lacour tournament), they're lent for it and go
+  back to the bench afterwards. Set `bench: false` for the classic 8 (and a seed that also plays
+  on Shattered Stars 0.02.50).
+- **`exclude_characters`** keeps the members you list out of the pool (without the bench, to make
+  room for the ones you want). The hero can't be excluded.
+- **A healer is guaranteed** without the bench. Rena and Noel are the only healers, so if neither
+  would be in your party, one of them takes a random pool member's place, unless you've excluded
+  both. With the bench both are in the pool unless you exclude them.
 - **`starting_character`** puts a member of your choice in the party from the very start, as
   the leader: you walk around as them, and the story calls them by name where it would name
   the hero. The hero still stays in the party, right behind them: your starting member takes
@@ -312,7 +327,7 @@ With `world_mode: open_world`, the party rules are looser (story mode keeps the 
   shows all twelve members: move over their faces to see each one's picture and a short profile
   (the game's own race, occupation and favourite food, and a few lines about them; Claude and
   Rena keep their original bios). Members this world can't have in the party are dark and can't
-  be picked. Picking the hero means nobody extra. Your pick then joins at the start and leads,
+  be picked (with the bench, only the ones you excluded). Picking the hero means nobody extra. Your pick then joins at the start and leads,
   exactly as a named member would, and their character item, when it arrives, finds them in
   the party already. With a named `starting_character` the same screen shows just that member,
   to confirm. (Want the generator to pick for you? Use `random`.)
@@ -364,6 +379,7 @@ Running away from a fight never counts.
 | `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
 | `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: you pick on a character select at New Game, among the members this world allows. See "In open world" above. |
 | `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |
+| `bench` | on (default), off | Open world with `character_items`, and hub mode: the party has 12 places, the game's 8 and a bench of 4, so every member you haven't excluded is an item, and Party Order swaps anyone but the hero between the party and the bench. Needs Shattered Stars 0.02.51; off keeps the classic 8. Ignored elsewhere. See "In open world" above. |
 | `missable_locations` | `exclude` (default), `include`, `remove` | How locations that can be missed for good are treated — see above. |
 | `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world, where you also start with the North City Pass and the Noel's House Pass). |
 | `cave_of_trials` | off (default), on | Add the Cave of Trials, a very hard postgame dungeon, and its chests, gifts and bosses (in hub mode behind the Cave of Trials Key). |
