@@ -200,14 +200,36 @@ being loaded is a "Hell Seed" as well."
      seed.cpp reads it, setup_ui.{h,cpp} SeedInfo.hell + the kWarning status_line, main.cpp logs
      `[ap] <warning>` after ap::start, tests/test_ap_hell.cpp + CMakeLists line. NOT in ap.cpp
      (shingofix's uncommitted edits there; never stage ap.cpp / ap.h / tests/test_ap.cpp).
-2. [ ] Port: seed.cpp reads `hell_seed`; setup's Archipelago page warns; the game logs the line;
+2. [x] Port: seed.cpp reads `hell_seed`; setup's Archipelago page warns; the game logs the line;
    unit test; setup captures if headless. ss_tests, ss_game_tests, full smoke. Commit.
-3. [ ] Docs: options.py docstrings, apworld.md, player guide, seed_format.md, 0.2.1 notes, 0.02.51.
+   - (11:50) Frozen source: scratchpad/hellseed/src = `git archive` of HEAD b2d7a75 + my 7 port
+     files (CMakeLists.txt, main.cpp, seed.{h,cpp}, setup_ui.{h,cpp}, tests/test_ap_hell.cpp), so
+     shingofix's uncommitted ap.cpp / ap.h / event_sweep.cpp / smoke edits stay out. Build dir
+     engine/build-hellseed (Ninja, RelWithDebInfo, deps from build-hubleader) from it:
+     scratchpad/hellseed/build/build.sh. Then cap/run.sh (setup PNGs + game log, hell and
+     ordinary: cap/hell.apso2 = batch/hell/3 open world, cap/ordinary.apso2 = batch/solo/75) and
+     smoke/run.sh (ss_tests, ss_game_tests, the full smoke from the frozen tree).
+   - The log check is a scripted run (cap/run.sh), not a smoke case: shingofix has uncommitted
+     edits in tools/smoke_field_events.sh.
+   - Build (10:49): rc 0, 3 warnings, none in my files (gpu.cpp, event_sweep.cpp, spell_windows.cpp).
+   - Captures (cap/run.sh): **cap/setup-hell.png** (the kWarning line under "Seed 8471...,
+     slot Claude: 644 locations.") and **cap/setup-ordinary.png** (no new line); the game, headless
+     300 frames: hell `[ap] Hell Seed: no random battles. ...` right after the `[ap] seed` line;
+     ordinary: no such line.
+   - **ss_tests 103/0, ss_game_tests 197/0 (ap_hell_seed PASS), full smoke 294 PASS / 0 FAIL**
+     (smoke/run.sh: HEAD b2d7a75's tools/smoke_field_events.sh from the frozen tree, against
+     engine/build-hellseed; scratch XDG; 4 GB cap). The 7 files tested = the working tree's (cmp).
+   - Committed (docs first): seed_format.md (my hunks only; shingofix's own were committed by them
+     meanwhile), release_notes/0.02.51.md (my lines; shingofix committed the file's skeleton with
+     their Fixes line), this file; then the port commit.
+3. [x] (done with steps 1 and 2) Docs: options.py docstrings, apworld.md, player guide, seed_format.md, 0.2.1 notes, 0.02.51.
 4. [ ] Package dist/apworld-0.2.1/ (load alone, solo, seed 75, seed 75 + enc 0, ChecksFinder).
 
 ## Commits (hellseed2)
-- Step 1: the docs commit (handoff, apworld.md, 0.2.1 notes, player guide), then the world commit
-  (apworld/so2 code + tests, tools/ap_batch_check.py).
+- Step 1: ae78ab9 (docs: handoff, apworld.md, 0.2.1 notes, player guide), b2d7a75 (world: apworld/so2
+  code + tests, tools/ap_batch_check.py).
+- Step 2: docs (seed_format.md, 0.02.51.md, this file), then the port (seed.{h,cpp}, setup_ui.{h,cpp},
+  main.cpp, CMakeLists.txt, tests/test_ap_hell.cpp).
 
 ## Files touched
 - docs/handoff/hellseed.md (this file).

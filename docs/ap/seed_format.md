@@ -81,7 +81,8 @@ applied.
 
 A chest's contents are its handler's push. `tools/so2_mod.py chest DISC MAP FLAG (--item ID |
 --fol N)` prints the line. For example, `script 18 0x82c 0xffffff38 0xffffec78` makes Arlia's
-200-Fol crate (flag 0x962) pay 5000 Fol.
+200-Fol crate (flag 0x962) pay 5000 Fol. A hell seed also carries `script 297 0x177f 0x120007d0
+0x12000000`, the Fun City arena's fee waived ("The hell seed" below; so2.apworld 0.2.1).
 
 ### Placeholders (chests and gifts)
 
@@ -834,6 +835,7 @@ applied them to the locations and items it wrote).
 | `apworld_version` | `"0.2.1"` (0.2.0 and later) | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
+| `hell_seed` | `true`, only on a hell seed (absent on every other seed) | absent (false) | **read**, display only: setup's warning and a log line ("The hell seed" below; so2.apworld 0.2.1) [hellseed] |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
 and Leon / Dias in either game, under `party_rules: "open"`.
@@ -1285,6 +1287,31 @@ The user's design (docs/handoff/skillsanity.md). `options.skillsanity`: `none` (
 Archipelago mark and the price, at most one, no game item behind it (no held count, no item
 viewer); buying it is the check (the item given). Once checked the entry is the shop's own again.
 `engine/src/game/field/menu_shop.cpp`, `ap::shop_ap_item`.
+
+### The hell seed (`hell_seed`, the arena's fee; so2.apworld 0.2.1) [hellseed]
+
+A **hell seed** (the user, 2026-10-27: "usually called a "hell" seed, where the grind is
+intentionally made preposterously hard"; docs/ap/apworld.md "The hell seed") is one with
+`encounter_rate` 0 and `killer_move_checks` on or `skillsanity` `special_only` / `insanity` (learn
+points). With no random battles, its only battles to train in are the Fun City arena's, so the
+APWorld writes two things on it, and on no other seed:
+- **The fee's patch line** (an ordinary `patches` line, version 1): `script 297 0x177f 0x120007d0
+  0x12000000`. Map 297 (the Fighting Arena's desk), routine 0x5c20: `push 0x7d0` (2000 Fol, then
+  Bargaining's +/- 3 % a level) at 0x5dfc becomes `push 0`: "An entry fee of 0 FOL", the Fol test
+  never fails, nothing is taken. The word is the same on NA, Europe, France and Germany
+  (docs/handoff/hellseed.md "Fee proofs": 7000 Fol after registering without the line, 9000 with
+  it, on each). Every arena fight is an ordinary battle: killer-move uses count, the fighter gets
+  the EXP and the party the Fol.
+- **`options.hell_seed: true`** (slot data too). Display only: the port plays the seed exactly as
+  without it (the fee comes from the patch line). Setup's Archipelago page shows a warning under
+  the seed's line, and the game logs the same line when it loads the seed (`[ap] Hell Seed: no
+  random battles. Killer-move levels and learn points are trained in the Fun City arena, which is
+  free on this seed. Expect a very long grind.`; `game::ap::kHellSeedWarning`, seed.h). Absent:
+  no warning.
+
+No new version: the patch line is a version-1 feature and `hell_seed` changes nothing a port does,
+and a hell seed is version 2 or 3 anyway (killer-move checks, skillsanity, hub). An older port
+plays it the same, without the warning.
 
 ### Example (0.2.0, open world, version 2)
 
