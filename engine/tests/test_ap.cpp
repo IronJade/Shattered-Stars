@@ -19,6 +19,7 @@
 #include "game/field/field.h"
 #include "game/field/item_effect.h"
 #include "game/field/script_vm.h"
+#include "game/field/special.h"
 #include "test.h"
 #include "util/sha256.h"
 
@@ -2341,6 +2342,160 @@ TEST(ap_v2_party_borrow_moved) {
     CHECK(ap::sidecar_from_json(j, &back, &error) && back.stash.size() == 1);
     CHECK(back.stash[0].by == (std::string(by) == ", \"by\": 5" ? 5 : 0));
   }
+}
+
+// [shingofix agent] The tournament's kept Dias (the user's option b): a received or starting Dias
+// keeps his own data through map 477's specials 0xc / 0xd: his slot saved before 0xc, his record
+// before the first 0xd (his own until then), both back after his last fight there (Claude's game
+// 10200, Rena's 16500), with a save and load in between (the sidecar's `tournament_dias`, version
+// 3, under the save guard). The story's Dias and a game without a seed: as before.
+TEST(ap_tournament_dias) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  auto slot_bytes = [&](int i) { return std::vector<u8>(pg.sg.party.begin() + i * 0x60, pg.sg.party.begin() + (i + 1) * 0x60); };
+  auto rec_bytes = [&](int i) { return std::vector<u8>(pg.rec.data.begin() + i * 0xD0, pg.rec.data.begin() + (i + 1) * 0xD0); };
+  auto put16 = [](u8* p, int v) { const s16 x = static_cast<s16>(v); std::memcpy(p, &x, 2); };
+  auto put32 = [](u8* p, s32 v) { std::memcpy(p, &v, 4); };
+  auto level = [&](int i) { s16 v; std::memcpy(&v, pg.sg.party.data() + i * 0x60 + 0x28, 2); return static_cast<int>(v); };
+  // Dias in slot 3: level 50, EXP 123456, HP 3000, a weapon (record +0xc) and a name.
+  auto dias = [&] {
+    pg.members({1, 2, 3, 5});
+    u8* p = pg.sg.party.data() + 3 * 0x60;
+    put16(p + 0x28, 50);
+    put32(p + 0x10, 123456);
+    put32(p + 0x14, 3000);
+    put32(p + 0x18, 3000);
+    put16(pg.rec.data.data() + 3 * 0xD0 + 0xC, 0x1234);
+    std::memcpy(pg.rec.data.data() + 3 * 0xD0 + 0x24, "Dias", 5);
+  };
+  const fs::path dir = pg.dir / "td";
+  fs::create_directories(dir);
+  const std::string card = (dir / "memcard1.mcd").string();
+  std::vector<u8> save(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 5 + 1);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+
+  // Claude's game, Dias received.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  dias();
+  pg.received({5});
+  const std::vector<u8> slot_in = slot_bytes(3);
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);  // (after his first fight: his fixed stats)
+  CHECK(level(3) == 35 && ap::state().tournament_dias == slot_in);
+  CHECK(ap::sidecar_json(ap::state())["version"].as_int(0) == 3);
+  // His record is still his own: the player's change to it counts.
+  put16(pg.rec.data.data() + 3 * 0xD0 + 0xC, 0x2222);
+  const std::vector<u8> rec_in = rec_bytes(3);
+  pg.at(477, 19, 6200);
+  field::field_special_command(nullptr, 0xD);  // (after his second: his starting data again)
+  CHECK(ap::state().tournament_dias.size() == 0x130);
+  CHECK(std::vector<u8>(ap::state().tournament_dias.begin() + 0x60, ap::state().tournament_dias.end()) == rec_in);
+  CHECK(rec_bytes(3) != rec_in);  // (0xd wrote his record: at least the name in game_state +0x78)
+  // A save between fights, and a load of it into a fresh game: the copy comes from the sidecar.
+  ap::on_saved(card, 0, save.data(), save.size());
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &back, &error));
+  CHECK(back.tournament_dias == ap::state().tournament_dias && !back.tournament_dias_hash.empty());
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  {
+    // Edited, stripped of its hash, or moved to another save: refused.
+    ap::SaveState other = back;
+    other.tournament_dias[0x28] ^= 1;
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, save.data(), save.size()));
+    other = back;
+    other.tournament_dias_hash.clear();
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, save.data(), save.size()));
+    std::vector<u8> moved = save;
+    moved[0x400] ^= 1;
+    other = back;
+    other.save_hash = util::save_digest(moved.data(), moved.size());
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, moved.data(), moved.size()));
+  }
+  ap::stop();
+  ap::start_with(s);
+  pg.claude_game(true);
+  CHECK(ap::state().tournament_dias.empty());
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().tournament_dias == back.tournament_dias && ap::state().tournament_dias_hash.empty());
+  // Free play between fights keeps it; the fight at 10200, his last: his own data back.
+  CHECK(ap::party_free_play_step().empty() && ap::state().tournament_dias.size() == 0x130);
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(slot_bytes(3) == slot_in && rec_bytes(3) == rec_in && ap::state().tournament_dias.empty());
+  CHECK(ap::sidecar_json(ap::state())["tournament_dias"].is_null() && ap::sidecar_json(ap::state())["version"].as_int(0) == 2);
+  ap::stop();
+
+  // Rena's game, Dias the starting character: 10200's 0xd is not his last (16500 is); set aside
+  // after it, he comes back as he was, in reserve.
+  CHECK(ap::load_seed_text(party_seed(open_options("rena", ", \"starting_character\": \"Dias\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(false);
+  dias();
+  pg.received({});
+  const std::vector<u8> slot_r = slot_bytes(3), rec_r = rec_bytes(3);
+  pg.at(477, 19, 6500);
+  field::field_special_command(nullptr, 0xC);
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(ap::state().tournament_dias.size() == 0x130 && level(3) != 50);
+  pg.at(477, 19, 16500);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(slot_bytes(3) == slot_r && rec_bytes(3) == rec_r && ap::state().tournament_dias.empty());
+  // Held past the tournament (not seen): the next free play puts him back, set aside as he is.
+  pg.at(477, 19, 6500);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(!ap::state().tournament_dias.empty());
+  field::party_remove_member(nullptr, 4);
+  pg.at(1, 20, 0);
+  ap::party_free_play_step();
+  std::vector<u8> aside = slot_r;
+  aside[0] = 0xFB;  // (-5: set aside)
+  aside[1] = 0xFF;
+  CHECK(slot_bytes(3) == aside && ap::state().tournament_dias.empty());
+  ap::stop();
+
+  // The story's Dias (not received, no starting Dias): rewritten as before, nothing held.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  dias();
+  pg.received({});
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(level(3) == 35 && ap::state().tournament_dias.empty());
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(ap::state().tournament_dias.empty() && level(3) != 50);
+  ap::stop();
+  // No seed: as before.
+  dias();
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(level(3) == 35);
+
+  // The sidecar: absent reads as none; a wrong size, bad hex or another member is unreadable.
+  ap::Json j;
+  const std::string head = "{\"format\": \"apso2-save\", \"version\": 3, \"tournament_dias\": \"";
+  const std::string ok = "0500" + std::string(0x60 * 2 - 4, '0');  // (Dias's slot alone)
+  for (const auto& [text, good] : std::vector<std::pair<std::string, bool>>{
+           {ok, true}, {"fbff" + std::string(0x130 * 2 - 4, '0'), true}, {ok.substr(0, 0x5F * 2), false},
+           {"0700" + ok.substr(4), false}, {"zz" + ok.substr(2), false}, {ok + "00", false}}) {
+    CHECK(ap::Json::parse(head + text + "\"}", &j, &error));
+    ap::SaveState st;
+    CHECK(ap::sidecar_from_json(j, &st, &error) == good);
+  }
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 2}", &j, &error));
+  ap::SaveState none;
+  CHECK(ap::sidecar_from_json(j, &none, &error) && none.tournament_dias.empty());
 }
 
 // The starting character: joins at the first free play, before the starting items, and leads;

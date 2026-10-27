@@ -81,6 +81,13 @@ struct SaveState {
   };
   std::vector<Give> pending;
   std::string pending_hash;
+  // [shingofix agent] The tournament's kept Dias (docs/ap/seed_format.md `tournament_dias`): his
+  // slot (0x60) as it was before the tournament's first rewrite of him (special 0xc / 0xd), and
+  // his record (0xd0) as it was before its first rewrite (0xd), when that has come; put back after
+  // his last fight there. Empty: none held. Written only when held; `tournament_dias_hash` (the
+  // save's bytes and these) guards it like pending_hash and is never kept in the running state.
+  std::vector<u8> tournament_dias;
+  std::string tournament_dias_hash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -245,6 +252,14 @@ std::string split_window_needing(int id);
 // Free play's party step at once (the start's join, the split windows, temporary members, the
 // join queue): the banner it would show ("" none). Tests.
 std::string party_free_play_step();
+// [shingofix agent] The tournament's specials 0xc / 0xd (field/special.cpp) rewrite Dias's slot
+// 'slot' (0xc his fixed stats; 0xd his starting data again, the record too: 'record'). Before: a
+// kept Dias (received, or the starting character) has the part about to be rewritten saved
+// first, once (SaveState::tournament_dias). After: once his last fight there is over (chapter 19
+// step 10200 in Claude's game, 16500 in Rena's), his own data go back. Nothing for the story's
+// Dias, or without a seed.
+void before_dias_rewrite(int slot, bool record);
+void after_dias_rewrite(int slot);
 // Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
 // the drop is not given, it was the enemy type's first-drop check). Both leave the game's
 // values alone without a seed or with the options off.

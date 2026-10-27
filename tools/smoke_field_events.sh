@@ -673,6 +673,39 @@ check ap_v2_m12_full "Claude borrows Rena's slot" '\[ap\] Claude borrows slot 1 
 check ap_v2_m12_full "he goes back to it first" '\[ap\] Claude back to the slot they borrowed \(1, from 0\), Ashton to 0'
 check ap_v2_m12_full "Rena back in it" '\[ap\] Rena back in slot 1 \(Claude leaves it\)'
 check ap_v2_m12_full "all 8 stay" 'party Rena, Ashton, Celine, Bowman, Precis, Leon, Opera, Noel$'
+# The tournament's kept Dias [shingofix agent] (docs/ap/seed_format.md `tournament_dias`): Claude's
+# game, Dias the starting character (level 1, poisoned by a trap) fights his first fight (477, step
+# 4400); special 0xc makes him the story's Dias (level 35), his own slot held. 476's "Is your
+# preparation OK?" -> No opens the camp menu: a save there keeps the held Dias in the sidecar
+# (version 3, guarded). A new session loads it and fights his last fight (step 10200: special 0xd
+# rewrites him again, then his own data go back): he leaves the tournament byte for byte as he came.
+sed 's/"smoke-v2c"/"smoke-v2cd"/; s/"Ashton"/"Dias"/' "$WORK/v2claude.apso2" >"$WORK/v2cdias.apso2"
+TD_RUN=(env SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_BATTLE_STUB=1 SS_AUTO_ADVANCE=1 SS_INSTANT_TEXT=1 SS_MEMCARD1="$WORK/tdias.mcd")
+TD_SAVE="7600:down,7606:none,7700:cross,7706:none,7900:up,7906:none,8000:cross,8006:none,8100:cross,8106:none,8200:cross,8206:none,8300:cross,8306:none,8400:cross,8406:none"
+"${TD_RUN[@]}" SS_SAVE_ANYWHERE=1 SS_SCRIPT_GLOBALS="a0=19,a4=0" SS_STATE_DUMP="1400:$WORK/tdias_in.state" \
+  SS_DEBUG_INPUT="300:ap_give trap:status:poison Bob;1480:global 0xa4 4400;1500:warp 477" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2cdias.apso2" --frames 8600 --map 18 --input "$TD_SAVE" </dev/null >"$WORK/ap_tdias_save.log" 2>&1
+check ap_tdias_save "his first fight's 0xc: his slot held" '\[ap\] Dias \(kept\) before the tournament rewrites his stats: his slot saved \(level 1, EXP 0\)'
+check ap_tdias_save "a save in 476's camp menu" '\[ap\] saved .*tdias\.slot01\.ap\.json'
+if grep -q '"version": 3' "$WORK/tdias.slot01.ap.json" && grep -q '"tournament_dias": "05000804' "$WORK/tdias.slot01.ap.json" \
+   && grep -q '"tournament_dias_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/tdias.slot01.ap.json"; then
+  echo "PASS ap_tdias_save: the sidecar holds him (version 3, poisoned, guarded)"
+else
+  echo "FAIL ap_tdias_save: the sidecar holds him (version 3, poisoned, guarded)"; fail=1
+fi
+"${TD_RUN[@]}" SS_LOAD_SAVE=0 SS_STATE_DUMP="5990:$WORK/tdias_out.state" SS_DEBUG_INPUT="60:global 0xa4 10200;160:ap_status;300:warp 477 force" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2cdias.apso2" --frames 6000 </dev/null >"$WORK/ap_tdias_load.log" 2>&1
+check ap_tdias_load "a new session loads it" '\[ap\] loaded .*tdias\.slot01\.ap\.json'
+check ap_tdias_load "with him held" 'tournament: Dias.s own data held \(level 1, EXP 0, slot\)'
+check ap_tdias_load "his last fight's 0xd: his record held too" '\[ap\] Dias \(kept\) before the tournament rewrites him: his record saved'
+check ap_tdias_load "then all of him back" '\[ap\] Dias back as he was before the tournament \(level 1, EXP 0; the tournament.s level 35, EXP 96982\): his last fight there is over'
+# His slot (id word aside: the scene sets him aside) and record, slot 1, before and after.
+td_bytes() { dd if="$1" bs=1 skip=$((0xD42)) count=$((0x5E)) status=none; dd if="$1" bs=1 skip=$((0x10B0)) count=$((0xD0)) status=none; }
+if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
+  echo "PASS ap_tdias_load: Dias leaves the tournament byte for byte as he came"
+else
+  echo "FAIL ap_tdias_load: Dias leaves the tournament byte for byte as he came"; fail=1
+fi
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 </dev/null >"$WORK/ap_v2_t477.log" 2>&1
 check ap_v2_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament'

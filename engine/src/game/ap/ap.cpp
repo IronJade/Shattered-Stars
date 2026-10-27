@@ -887,6 +887,39 @@ Json sidecar_pending(const std::string& path) {
   return j["pending"];
 }
 
+// [shingofix agent] The tournament's kept Dias in the sidecar (`tournament_dias`): his held bytes
+// as lowercase hex; their guard (`tournament_dias_hash`): "sha256:" of the save's bytes as
+// util::save_digest takes them, then the held bytes themselves (tied to the save, as pending_hash).
+std::string hex_of(const std::vector<u8>& bytes) {
+  static const char* const kHex = "0123456789abcdef";
+  std::string hex;
+  for (const u8 b : bytes) {
+    hex += kHex[b >> 4];
+    hex += kHex[b & 15];
+  }
+  return hex;
+}
+bool bytes_of_hex(const std::string& hex, std::vector<u8>* out) {
+  auto nib = [](char c) { return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1; };
+  if (hex.size() % 2 != 0) return false;
+  out->clear();
+  for (size_t k = 0; k < hex.size(); k += 2) {
+    const int hi = nib(hex[k]), lo = nib(hex[k + 1]);
+    if (hi < 0 || lo < 0) return false;
+    out->push_back(static_cast<u8>(hi << 4 | lo));
+  }
+  return true;
+}
+std::string tournament_dias_digest(const u8* file, size_t length, const std::vector<u8>& dias) {
+  size_t n = file != nullptr && length >= 0x21C ? static_cast<size_t>(file[0x21A] | file[0x21B] << 8) : 0;
+  if (n > length) n = length;
+  if (n > 0x2000) n = 0x2000;
+  std::vector<u8> data;
+  if (n > 0) data.assign(file, file + n);
+  data.insert(data.end(), dias.begin(), dias.end());
+  return "sha256:" + util::sha256_hex(data.data(), data.size());
+}
+
 // A check whose own item the game gives again once a save from before it is loaded: a chest or a
 // gift (their flags come back with the save; opened again, the placeholder gives again). Any other
 // check stays checked and never fires again, so its item is owed to a game that lacks it.
@@ -897,8 +930,8 @@ Json sidecar_json(const SaveState& s) {
   Json j = Json::object();
   j.set("format", Json::string("apso2-save"));
   // 2: save_hash [hubcore agent]; 3: items waiting (only then: an older port refuses the sidecar
-  // instead of dropping them) [pendingsave agent].
-  j.set("version", Json::number(static_cast<int64_t>(s.pending.empty() ? 2 : 3)));
+  // instead of dropping them) [pendingsave agent], or the tournament's Dias held [shingofix agent].
+  j.set("version", Json::number(static_cast<int64_t>(s.pending.empty() && s.tournament_dias.empty() ? 2 : 3)));
   j.set("seed", Json::string(s.seed));
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
@@ -948,13 +981,17 @@ Json sidecar_json(const SaveState& s) {
     j.set("pending", pending_json(s.pending));
     if (!s.pending_hash.empty()) j.set("pending_hash", Json::string(s.pending_hash));
   }
+  if (!s.tournament_dias.empty()) {  // [shingofix agent] (none held: no key)
+    j.set("tournament_dias", Json::string(hex_of(s.tournament_dias)));
+    if (!s.tournament_dias_hash.empty()) j.set("tournament_dias_hash", Json::string(s.tournament_dias_hash));
+  }
   return j;
 }
 
 bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (j["format"].as_string() != "apso2-save") return fail(error, "not an apso2 save sidecar");
   const int version = get_int_or(j["version"], 0);
-  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: items waiting)
+  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: items waiting, Dias held)
   SaveState r;
   r.seed = j["seed"].as_string();
   r.slot_name = j["slot_name"].as_string();
@@ -1012,6 +1049,16 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
     r.pending.push_back(std::move(g));
   }
   r.pending_hash = j["pending_hash"].as_string();
+  // [shingofix agent] The tournament's Dias (absent: none held): his slot (0x60 bytes) or slot and
+  // record (0x130), Dias's id first; anything else makes the sidecar unreadable.
+  if (!j["tournament_dias"].is_null()) {
+    const Json& d = j["tournament_dias"];
+    if (!d.is_string() || !bytes_of_hex(d.as_string(), &r.tournament_dias) ||
+        (r.tournament_dias.size() != 0x60 && r.tournament_dias.size() != 0x130) ||
+        std::abs(static_cast<int>(static_cast<s16>(r.tournament_dias[0] | r.tournament_dias[1] << 8))) != kDias)
+      return fail(error, "tournament_dias: Dias's 0x60 or 0x130 bytes expected");
+  }
+  r.tournament_dias_hash = j["tournament_dias_hash"].as_string();
   *s = std::move(r);
   return true;
 }
@@ -1466,6 +1513,10 @@ bool give_next(Runtime& r) {
 
 }  // namespace
 
+namespace {
+void tournament_dias_update(Runtime& r);  // [shingofix agent] (below)
+}  // namespace
+
 void free_play_update() {
   Runtime& r = rt();
   if (!r.on) return;
@@ -1506,6 +1557,7 @@ void free_play_update() {
   measure_door_banners(r);  // (once per seed: the font is loaded by now)
   give_start(r);
   keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
+  tournament_dias_update(r);  // (a kept Dias still held after the tournament) [shingofix agent]
   party_v2_update(r);   // v2: split windows, temporary members, members back after a split
   if (r.killer_scan_pending) {  // v2: after a battle or a load, the killer moves' use counts
     r.killer_scan_pending = false;
@@ -1653,6 +1705,8 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   // [pendingsave agent] The items still to give go with the save, guarded with its bytes.
   s.pending.assign(r.pending.begin(), r.pending.end());
   s.pending_hash = s.pending.empty() ? std::string() : pending_digest(file, length, pending_json(s.pending));
+  // [shingofix agent] The tournament's Dias held, guarded with the save's bytes.
+  s.tournament_dias_hash = s.tournament_dias.empty() ? std::string() : tournament_dias_digest(file, length, s.tournament_dias);
   s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
   if (write_sidecar(path, s, &err)) {
     log("saved " + path);
@@ -1719,6 +1773,7 @@ void on_loaded(const std::string& card_image, int save_index) {
   s.save_hash.clear();  // (the card's, not the running state's)
   s.pending.clear();     // (the queue below; never in the running state) [pendingsave agent]
   s.pending_hash.clear();
+  s.tournament_dias_hash.clear();  // (the save's guard, never the running state's) [shingofix agent]
   hub_resume_view(s.hub_view);  // [hubask agent] the asked chamber's view the save was made in
   s.hub_view = -1;
   r.state = s;
@@ -1754,6 +1809,10 @@ bool load_allowed(const std::string& card_image, int save_index, const u8* file,
              pending_digest(file, length, sidecar_pending(path)) != s.pending_hash) {
     // [pendingsave agent] The items waiting: edited, stripped, or moved here from another save.
     why = "this save was changed outside the game (its waiting items differ from the ones this seed saved)";
+  } else if ((!s.tournament_dias.empty() || !s.tournament_dias_hash.empty()) &&
+             tournament_dias_digest(file, length, s.tournament_dias) != s.tournament_dias_hash) {
+    // [shingofix agent] Dias's held data: edited, stripped, or moved here from another save.
+    why = "this save was changed outside the game (its Dias held for the tournament differs from the one this seed saved)";
   }
   if (why.empty()) return true;
   if (const char* any = std::getenv("SS_AP_ANY_SAVE"); any != nullptr && std::string(any) == "1") {
@@ -2268,10 +2327,80 @@ std::string split_window_needing(int id) {
   return w != nullptr ? w->what : "";
 }
 
+// ---- The tournament's kept Dias [shingofix agent] ----
+// Map 477's fights (chapter 19; docs/catalog/formats.md "The tournament's fights") rewrite Dias:
+// after his first fight there special 0xc (his fixed stats, slot only), after later ones 0xd (his
+// starting data again, slot and record, then the join level). The story's Dias is a stand-in
+// made for the tournament; a kept Dias (received, or the starting character) is the player's. The
+// user's decision (docs/handoff/shingofix.md, option b): "Save his data before the tournament
+// rewrites him, and restore it after his last fight." Each part is saved before its first
+// rewrite (the record only at the first 0xd: until then it is his own, the player's changes to it
+// included). His last fight there: step 10200 in Claude's game (4400 / 6200 / 10200), 16500 in
+// Rena's (6500 / 10200 / 11500 / 16500); each is followed by 0xd, after which he gets his data
+// back. Should one still be held after that (not seen), the next free play puts it back.
+namespace {
+constexpr int kTournamentChapter = 19;
+s32 tournament_dias_last() { return kTournamentChapter * 0x10000 + (script_flag(1) ? 10200 : 16500); }
+bool in_tournament() {
+  const s32 at = story_position();
+  return at >= kTournamentChapter * 0x10000 + 1000 && at <= kTournamentChapter * 0x10000 + 0xFFFF;
+}
+
+std::string level_exp_of(const u8* slot) {
+  return "level " + std::to_string(rd16s(slot + 0x28)) + ", EXP " + std::to_string(rd32s(slot + 0x10));
+}
+
+// The held data back in slot 'slot' (its id word kept: active or set aside); the record only
+// when it was saved (else it was never rewritten).
+void restore_tournament_dias(Runtime& r, int slot, const char* why) {
+  field::FieldGlobals& g = field::globals();
+  u8* p = party_slot(slot);
+  std::vector<u8>& d = r.state.tournament_dias;
+  if (p == nullptr || g.records == nullptr || (d.size() != 0x60 && d.size() != 0x130)) return;
+  const std::string story = level_exp_of(p);
+  u8 id[2];
+  std::memcpy(id, p, 2);
+  std::memcpy(p, d.data(), 0x60);
+  std::memcpy(p, id, 2);
+  if (d.size() == 0x130) std::memcpy(g.records + slot * 0xD0, d.data() + 0x60, 0xD0);
+  d.clear();
+  log("Dias back as he was before the tournament (" + level_exp_of(p) + "; the tournament's " + story + "): " + why);
+}
+
+// Free play: a Dias still held once the tournament (or his part of it) is over goes back.
+void tournament_dias_update(Runtime& r) {
+  if (r.state.tournament_dias.empty() || (in_tournament() && story_position() <= tournament_dias_last())) return;
+  const int slot = slot_of_character(kDias);
+  if (slot >= 0) restore_tournament_dias(r, slot, "the tournament is over");
+}
+}  // namespace
+
+void before_dias_rewrite(int slot, bool record) {
+  Runtime& r = rt();
+  std::vector<u8>& d = r.state.tournament_dias;
+  if (!r.on || d.size() == 0x130 || (d.size() == 0x60 && !record) || !protected_member(r, kDias) || !in_tournament()) return;
+  field::FieldGlobals& g = field::globals();
+  const u8* p = party_slot(slot);
+  if (p == nullptr || g.records == nullptr || (rd16s(p) != kDias && rd16s(p) != -kDias)) return;
+  const bool first = d.empty();
+  if (first) d.assign(p, p + 0x60);
+  if (record) d.insert(d.end(), g.records + slot * 0xD0, g.records + (slot + 1) * 0xD0);
+  log(std::string("Dias (kept) before the tournament rewrites ") + (record ? "him" : "his stats") + ": his " +
+      (first && record ? "slot and record" : first ? "slot" : "record") + " saved (" +
+      level_exp_of(first ? p : d.data()) + "), back after his last fight there");
+}
+
+void after_dias_rewrite(int slot) {
+  Runtime& r = rt();
+  if (!r.on || r.state.tournament_dias.empty() || story_position() < tournament_dias_last()) return;
+  restore_tournament_dias(r, slot, "his last fight there is over");
+}
+
 std::string party_free_play_step() {
   Runtime& r = rt();
   if (!r.on) return "";
   give_start(r);
+  tournament_dias_update(r);
   party_v2_update(r);
   return join_waiting(r);
 }
@@ -2993,6 +3122,9 @@ std::string status_text() {
     for (const int id : r.state.temporary) out += std::string(" | ") + character_name(id) + " for a while";
     if (!r.state.stash.empty()) out += " | borrowed slots " + std::to_string(r.state.stash.size());
   }
+  if (r.state.tournament_dias.size() >= 0x60)  // [shingofix agent]
+    out += "\n  tournament: Dias's own data held (" + level_exp_of(r.state.tournament_dias.data()) +
+           (r.state.tournament_dias.size() == 0x130 ? ", slot and record)" : ", slot)");
   return out;
 }
 
