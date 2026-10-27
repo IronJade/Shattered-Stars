@@ -38,7 +38,8 @@ workflow, docs/ap/release_checklist.md). Not a unit test: it runs UT's own clien
    reconnect_found_entrances; then once with host.yaml's enforce_deferred_entrances "off", where UT
    lists the world's own again. Then the key goes back to null (no position) for the spheres' points.
 Exit status 0 when every point matches. XDG_CACHE_HOME / XDG_DATA_HOME point under --ut-dir, so the
-clients' data package cache stays there.
+clients' data package cache stays there; so does XDG_RUNTIME_DIR (with DISPLAY, WAYLAND_DISPLAY and
+DBUS_SESSION_BUS_ADDRESS unset: no window, no dialog, no session bus).
 
 Run with the scratch install's Python (any directory):
   SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_ut_check.py \\
@@ -142,9 +143,14 @@ def env_for(ut_dir, ap):
                XDG_CACHE_HOME=os.path.join(ut_dir, "cache"), XDG_DATA_HOME=os.path.join(ut_dir, "data"))
     env.pop("PYTHONHOME", None)
     # Headless: no display and no session bus, so nothing UT or AP does can open a dialog or window
-    # on the desktop (a missing folder makes them ask with one); it fails instead.
+    # on the desktop (a missing folder makes them ask with one); it fails instead. XDG_RUNTIME_DIR
+    # too: libdbus falls back to $XDG_RUNTIME_DIR/bus without DBUS_SESSION_BUS_ADDRESS.
     for name in ("DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS"):
         env.pop(name, None)
+    run = os.path.join(ut_dir, "run")
+    os.makedirs(run, exist_ok=True)
+    os.chmod(run, 0o700)
+    env["XDG_RUNTIME_DIR"] = run
     return env
 
 
