@@ -64,6 +64,10 @@ by hand as ordinary C++20 on top of SDL3 and OpenGL.
   choice, so the story's long scenes can play hands-free without changing what happens.
 - **Archipelago built in.** Play in an [Archipelago](#archipelago) multiworld with the network
   client inside the game. No separate client program is needed.
+- **Trackers that follow you.** [Universal Tracker](#trackers) rebuilds your room without your
+  YAML, and a PopTracker pack shows the world's own logic on maps and boards. While you play, the
+  game tells them which map you're on and how far the story has got, and it draws the pack's maps
+  from your own disc.
 - **Mods that never touch your discs.** Small, guarded patch files change chests, doors, items,
   shops and enemy stats as the game loads, managed from the setup program ([Mods](#mods-and-the-mod-manager)).
 - **A setup program.** Choose and verify your disc images, and set display, sound, controls,
@@ -129,8 +133,11 @@ with no installer and nothing else to install:
 - `ShatteredStars-0.02.51-win64.zip`
 - `ShatteredStars-0.02.51-linux-x86_64.tar.gz`
 
-The Archipelago world has releases of its own, apart from the game's
-([so2.apworld 0.2.1](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.1); see [Archipelago](#archipelago)).
+The Archipelago world and the PopTracker pack have releases of their own, apart from the game's:
+[so2.apworld 0.2.2](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.2) (see
+[Archipelago](#archipelago)) and
+[PopTracker pack 1.0.0](https://github.com/IronJade/Shattered-Stars/releases/tag/poptracker-v1.0.0)
+(see [Trackers](#trackers)).
 
 ### First launch
 
@@ -420,10 +427,35 @@ supported release.
 
 This is a custom world, not yet part of Archipelago itself, so it has releases of its own,
 apart from the game's: download `so2.apworld` and its YAML template
-(`Star.Ocean.The.Second.Story.yaml`) from [so2.apworld 0.2.1](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.1), or build them with
-`tools/build_apworld.sh`. A seed made with the bench needs Shattered Stars 0.02.51. Every
+(`Star.Ocean.The.Second.Story.yaml`) from [so2.apworld 0.2.2](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.2), or build them with
+`tools/build_apworld.sh`. A seed made with the bench needs Shattered Stars 0.02.51 or later. Every
 option, the fights you can't win, and troubleshooting are on the
 [Archipelago](https://github.com/IronJade/Shattered-Stars/wiki/Archipelago) page.
+
+### Trackers
+
+Two popular Archipelago trackers work with this world. They connect to your room next to the
+game, and show what you have received and checked as the server knows it.
+
+- **[Universal Tracker](https://github.com/FarisTheAncient/Archipelago/releases)** lists the
+  locations you can reach now, by the world's own logic. With so2.apworld 0.2.2 it needs no YAML:
+  it rebuilds your room from the room's own data, and `/explain <location>` says what a location
+  needs.
+- **The PopTracker pack** (`so2_shattered_stars`, from
+  [its own release](https://github.com/IronJade/Shattered-Stars/releases/tag/poptracker-v1.0.0))
+  shows every check on maps and boards, green when it is in logic and red when not, from the logic
+  the room carries. It updates itself through PopTracker.
+- **They follow your game.** While it is connected (Shattered Stars 0.03.00), the game keeps the
+  map you're on and the story's chapter in the server's data storage: PopTracker's tabs switch to
+  your map, and in story mode both trackers show only what the story has reached (PopTracker shows
+  the rest in blue).
+- **Maps from your own disc.** The pack ships only plain stand-in maps. The setup program's
+  **Render tracker maps for PopTracker** button (or `shattered-stars --render-tracker-maps`) draws
+  every area, every room and both world maps from your disc 1 into PopTracker's override folder for
+  the pack, so nothing from the game is ever published.
+
+Setup and troubleshooting: [Trackers](https://github.com/IronJade/Shattered-Stars/wiki/Trackers)
+on the wiki.
 
 ## Building from source
 
@@ -448,7 +480,8 @@ SS_DISC1=".../Disc 1.cue" tools/smoke_field_events.sh engine/build/shattered-sta
 
 Release packages are built with `tools/build_linux.sh --container` (in a pinned Debian 12
 container, for glibc 2.36 and newer) and `tools/build_windows.sh` (cross-compiled with
-MinGW-w64). Details, build options and the `.apworld` build are on
+MinGW-w64), the world with `tools/build_apworld.sh` and the PopTracker pack with
+`tools/build_poptracker.sh all`. Details, build options and the `.apworld` build are on
 [Building from Source](https://github.com/IronJade/Shattered-Stars/wiki/Building-from-Source).
 
 ## Project layout
@@ -466,7 +499,8 @@ engine/
 mods/          The curated mod list
 res/           The application icon (an original design drawn by tools/make_icon.py), the Windows
                resource and manifest templates, the Linux .desktop files
-tools/         Disc, script and mod tools, comparison scripts, sweeps, packaging, the reference suite
+tools/         Disc, script and mod tools, comparison scripts, sweeps, packaging, the reference suite,
+               the PopTracker pack's generator (tools/ap_poptracker.py, its Lua in tools/poptracker/)
 ```
 
 ## Contributing

@@ -64,7 +64,12 @@ docs/ap/release_checklist.md section 11.
    developers); poptracker-1.0.0.md new (needs, what it shows, install, updates, maps from your
    disc + portable PopTracker, limitations, files, how it was checked, licence). Sums TODO.
    **Done.**
-4. README.md: tracker features and the three downloads. (pending)
+4. README.md: a "Trackers that follow you" highlight; "Download" names the world's and the pack's
+   own releases (apworld-v0.2.2, poptracker-v1.0.0); a new "Trackers" subsection under
+   Archipelago (UT, the pack, following the game, maps from your own disc, the wiki link); the
+   world link -> 0.2.2; tools/ line and the build line name the pack's generator / build script.
+   **Left for B7b's bump** (checklist 12.1): the badge and the two package names (still 0.02.51).
+   **Done.**
 5. Wiki (scratchpad/wiki, uncommitted): Trackers page + links. (pending)
 6. docs/plans/next.md: Phase B status, Phase C pointer. (pending)
 
