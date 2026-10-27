@@ -223,13 +223,34 @@ being loaded is a "Hell Seed" as well."
      meanwhile), release_notes/0.02.51.md (my lines; shingofix committed the file's skeleton with
      their Fixes line), this file; then the port commit.
 3. [x] (done with steps 1 and 2) Docs: options.py docstrings, apworld.md, player guide, seed_format.md, 0.2.1 notes, 0.02.51.
-4. [ ] Package dist/apworld-0.2.1/ (load alone, solo, seed 75, seed 75 + enc 0, ChecksFinder).
+4. [x] Package dist/apworld-0.2.1/ (load alone, solo, seed 75, seed 75 + enc 0, ChecksFinder).
+   - `tools/build_apworld.sh dist/apworld-0.2.1` from HEAD 674e81b (apworld/ and tools/ clean; the
+     old files kept in scratchpad/hellseed/pkg/old): so2.apworld 182160 bytes, 31 files (HEAD's 30
+     tracked byte for byte + the merged archipelago.json: 0.2.1 / 7 / 7).
+   - **sha256: so2.apworld `8a66353b9a93066b1fb5144c0ec9fe77e212058e0eacd1a857df80419660f7cb`;
+     "Star Ocean The Second Story.yaml" `45fa58f2d484fbb2e54ff89151e8faa7a9e69f0c265559878504576fba1ce0f9`.**
+   - pkg/run.sh (an AP copy without worlds/so2, deleted after): zipimporter, 0.2.1,
+     failed_world_loads {}; Generate.py exit 0, one .apso2, no error / traceback / exception each:
+     template solo 777, solo_noexpel at 75 (= batch/solo/75), seed 75's options 1-3, + encounter_rate
+     0 at 1-3 (hell_seed true + fee line each), + ChecksFinder 777. Template / s75 / multi outputs
+     byte-identical to skilllogic's package run. pkg/out/s75e0_1's seed in build-hellseed: the
+     `[ap] Hell Seed: ...` line (cap/game-pkg_hell.log).
+   - Docs: release_checklist.md section 10 (+ the test count line), the 0.2.1 notes' sums.
 
 ## Commits (hellseed2)
 - Step 1: ae78ab9 (docs: handoff, apworld.md, 0.2.1 notes, player guide), b2d7a75 (world: apworld/so2
   code + tests, tools/ap_batch_check.py).
-- Step 2: docs (seed_format.md, 0.02.51.md, this file), then the port (seed.{h,cpp}, setup_ui.{h,cpp},
-  main.cpp, CMakeLists.txt, tests/test_ap_hell.cpp).
+- Step 2: a1db872 (docs: seed_format.md, 0.02.51.md, this file), 674e81b (port: seed.{h,cpp},
+  setup_ui.{h,cpp}, main.cpp, CMakeLists.txt, tests/test_ap_hell.cpp).
+- Step 4: docs (release_checklist.md section 10, 0.2.1 notes' sums, this file). dist/ is ignored.
+
+## Open for the user / coordinator
+- The release itself (tag, upload, wiki): the user's. Nothing pushed, tagged or published.
+- Keep scratchpad/hellseed/batch (the identity evidence) and scratchpad/skilllogic/batch until
+  0.2.1 is released; engine/build-hellseed and scratchpad/hellseed/src (the frozen tree) can go
+  once 0.02.51 is built from main.
+- Not done: a smoke case for the log line (tools/smoke_field_events.sh had another agent's
+  uncommitted edits); the line is covered by test_ap_hell (the constant) and cap/run.sh.
 
 ## Files touched
 - docs/handoff/hellseed.md (this file).
