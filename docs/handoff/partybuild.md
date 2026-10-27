@@ -252,6 +252,48 @@ agent "partybuild2" continues from here (2026-10-26).
   sidecar keys (`bench`, `bench_hash`, `leader`, `slot_0`, `lent`, version 3) and the player
   guide under apworld/so2/docs/ will need care when party-bench is merged. Don't merge main
   into party-bench from here.
+  - Main gained the pending-items save fix (2f95d6f, 48f6746): sidecar keys `pending` /
+    `pending_hash`, and the sidecar is version 3 when items are pending. The expected conflict
+    is the version line, which becomes "bench, lent and pending all empty ? 2 : 3".
+  - On main, `lead_start` (the Formation leader flag) can be lost in a rare save window; the
+    `leader` sidecar key here (heroslot D2) covers it.
+- **Piece 5 committed: 3599885** (partybuild5; smoke9.log 319/0 read first).
+- **Piece 6's draft set aside:** scratchpad/partybuild/piece6_wip.patch (ap.h / ap.cpp only;
+  the worktree's ap.{h,cpp} reverted to HEAD so 5b builds alone). Restore with
+  `git apply ../../partybuild/piece6_wip.patch` from the worktree once 5b is committed.
+- **Piece 5b in progress** (uncommitted in the worktree): party.{h,cpp}
+  `party_selected_benched()`; menu_specialty.{h,cpp} `SpecialtyUse` /
+  `specialty_use_allowed()` (benched: killer moves and spell on / off allowed; field
+  specialties, spell casts, Link Combo refused with sfx 7), greyed specialties, spells not
+  marked usable, the LC button icon hidden, `draw_help` note ("Benched: can't use" on the
+  list, "Benched / no cast" on the spells page); menu_camp.cpp (Items / Options: a benched
+  member left selected is replaced by the first of the 8, for the super specialty page);
+  test_ap.cpp `ap_bench_specialty_uses`; a log line at each refusal (`bench_refused()`:
+  "[ap] bench: NAME is on the bench: WHAT refused"); smoke case `ap_bench_use` (after
+  ap_bench_camp_load; its card is ap_bench_save's, copied after ap_bench_load as
+  bcard_use.mcd); docs (seed_format.md "Benched members are managed, not used" + "Checked",
+  bench.md's answers, engine/README.md). Built rc 0; ss_tests 103/0, ss_game_tests 199/0
+  (ss_tests10.log, ss_game_tests10.log); bench slice 21/21 (p5b/slice1.log).
+  - Proofs (scratchpad/partybuild/p5b/: env.sh, mkcard.sh makes noel.mcd, run.sh; the input
+    in s3.input): Noel (benched) learns Danger Sense with his SP 290 -> 288 (Scout with it),
+    his Scout refused, Rena (benched by Party Order) Heal refused and switched off; the
+    sidecar: Noel's SP, skill 13, stamina figures; Rena's +0x3c = -1; no MP spent. Control on
+    bin_p5 (s3p5): Scout's dialog opens at the same input. Captures for the user:
+    p5b/use_sheet.png.
+  - Frozen for the full smoke: bin_p5b/, smoke_p5b.sh, piece5b.patch (all of 5b with docs).
+    **Full smoke smoke10.log: 324 PASS / 0 FAIL, rc=0. Piece 5b committed** (the commit after
+    3599885 on party-bench; `git log` has its hash).
+- **Stop ordered (2026-10-27):** a mandatory port fix (the give queue must not stall behind an
+  item that doesn't fit the inventory) runs on main; the machine takes two agents. Do NOT
+  start piece 6 until resumed. Next after resuming: piece 6 (`git apply
+  ../../partybuild/piece6_wip.patch`, compile, unit test, smoke at map 12 and tournament 477,
+  docs, commit), then piece 7.
+  - A session crash (memory pressure, 2026-10-27) interrupted it; a failed permission prompt
+    before that. New limits from the coordinator: **at most 1 game process at a time**, builds
+    -j4, nothing heavy alongside a build.
+  - Readings for the user (5b): killer-move slots and spell on / off stay allowed from the
+    bench (their own settings, as Skills' battle skills); Link Combo refused (choosing a
+    partner can clear front members' links); renaming from Status allowed.
 
 ## Working notes (partybuild2)
 

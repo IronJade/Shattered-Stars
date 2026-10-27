@@ -312,7 +312,9 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   the save's sidecar, guarded like the save; the camp menu's Party Order flips its right column
   between the reserve and the bench with L1 / R1, and a pick survives the flip; the camp
   menu's member list, Equipment, Skills, Status, Specialty and Tactics (the same flip) work on
-  benched members where they are (`docs/ap/seed_format.md` "The bench").
+  benched members where they are. Benched members are managed, not used: their settings can be
+  changed, but their field specialties, spell casts and Link Combo are refused
+  (`docs/ap/seed_format.md` "The bench").
 - **The hub** (seed version 3, `world_mode: hub`): New Game starts after the Final
   Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
   town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens

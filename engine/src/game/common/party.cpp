@@ -81,6 +81,7 @@ u8* party_place_record(int place) {
   if (place >= 8) return place < 12 && g.places_bound ? g.places.record[place - 8] : nullptr;
   return g.records ? g.records + place * 0xD0 : nullptr;
 }
+bool party_selected_benched() { return g.places_bound && g.selected >= 8 && g.selected < 12; }
 
 int stat_group_offset(int group) {
   switch (group) {

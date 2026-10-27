@@ -352,6 +352,15 @@ void CampMenu::on_confirm(int n) {
       default:
         finish(command_);
         select_member();
+        if (party_selected_benched()) {
+          // [partybuild agent] Items (Item Creation, the super specialties) and Options act with
+          // the 8: a benched member picked earlier in this menu is not theirs (benched members are
+          // managed, not used; docs/handoff/bench.md B2). The first member of the 8 is.
+          int first = 0;
+          for (int i = 7; i >= 0; --i)
+            if (party_slot_active(i) != 0) first = i;
+          party_select(first);
+        }
         break;
     }
   } else {

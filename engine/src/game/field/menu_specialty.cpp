@@ -2,8 +2,10 @@
 
 #include <cstring>
 #include <span>
+#include <string>
 #include <vector>
 
+#include "game/ap/seed.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
@@ -19,6 +21,7 @@
 #include "game/field/field.h"
 #include "game/field/post_battle.h"
 #include "runtime/libgpu.h"
+#include "util/log.h"
 
 namespace ss::game::field {
 namespace {
@@ -128,6 +131,14 @@ bool field_spell(u32 id) {
   }
 }
 
+// [partybuild agent] A use the bench refuses (specialty_use_allowed): the dispatch's sound 7
+// stays, and the log says so (the smoke runs read it).
+bool bench_refused(SpecialtyUse use, const std::string& what) {
+  if (specialty_use_allowed(use)) return false;
+  util::log_line(std::string("[ap] bench: ") + ap::character_name(party_selected_char()) + " is on the bench: " + what + " refused");
+  return true;
+}
+
 // ---- Message boxes in a ConfirmDialog --------------------------------------------------
 
 menu::MessageBox* new_message(s16 group) {
@@ -225,6 +236,7 @@ class SpecialtyPage final : public menu::Panel {
   void on_button2(int n) override;                                     // [15] 0x8007eae8
   void on_button3(int n) override;                                     // [16] 0x8007ea38
   void on_member_changed() override;                                   // [21] 0x8007f2c8
+  void draw_help() override;                                           // [22] (the bench's note) [partybuild agent]
   void draw_member() override;                                         // [23] 0x8007f314
 
   void show_killer(int id);                // 0x8007ef74
@@ -1138,6 +1150,8 @@ void SpecialtyPage::setup_list() {
   menu::TextBox* b = list_;
   b->set_group(0);
   b->pen(0x10, 0x10, 0xE);
+  // (A benched member's specialties are greyed: specialty_use_allowed [partybuild agent].)
+  const bool greyed = !specialty_use_allowed(SpecialtyUse::kSpecialty);
   for (int i = 0; i < count_; ++i) {
     s16 e = entries_[i];
     if (e < 0) {
@@ -1147,7 +1161,13 @@ void SpecialtyPage::setup_list() {
       b->set_group(4);
       e = static_cast<s16>(e - 1);
     }
-    b->add_message(e);
+    if (greyed && entries_[i] > 0) {
+      b->text->set_colour(4);
+      b->add_message(e);
+      b->text->set_colour(1);
+    } else {
+      b->add_message(e);
+    }
   }
   help_flags = 1;
 }
@@ -1160,7 +1180,7 @@ void SpecialtyPage::setup_killer() {
   help_flags = 1;
   party_update_link_combos();
   if (party_find_link_partner(party_selected_char()) == 0) {
-    if (wears_link_item()) help_flags |= 2;
+    if (wears_link_item() && specialty_use_allowed(SpecialtyUse::kLinkCombo)) help_flags |= 2;
     if (party_selected_record()[0x3B] == 0) {
       set_ = 0;
       cursor->add_grid(&set_, 0, 1, 2, 0, 0x20, 0, 0x3A, list_);
@@ -1254,7 +1274,7 @@ void SpecialtyPage::draw_spell(menu::TextRenderer* r, s16 x, int index) {
   s32 v = spells_[index];
   if (v == 0) return;
   r->set_pen_x(x);
-  const bool usable = field_spell(static_cast<u32>(v < 0 ? -v : v));
+  const bool usable = field_spell(static_cast<u32>(v < 0 ? -v : v)) && specialty_use_allowed(SpecialtyUse::kCastSpell);
   r->set_tables(usable ? 3 : 2);
   r->draw_pack_message(usable ? 0x10 : 0x12);
   r->set_pen_x(x + 0xC);
@@ -1365,6 +1385,7 @@ void SpecialtyPage::on_confirm(int n) {
   switch (state_) {
     case 2: {
       if (party_find_link_partner(party_selected_char()) != 0) return;
+      if (bench_refused(SpecialtyUse::kKillerMoves, "killer moves")) return;
       auto* d = new KillerMoveList(this);
       open_child(1, d);
       int set = 0, slot;
@@ -1381,12 +1402,15 @@ void SpecialtyPage::on_confirm(int n) {
       s32 v = spells_[choice_];
       if (v < 0) v = -v;
       if (!field_spell(static_cast<u32>(v))) return;
+      if (bench_refused(SpecialtyUse::kCastSpell, "a spell cast")) return;   // (sfx 7) [partybuild agent]
       auto* t = new SpellTarget(this);
       open_child(9, t);
       t->set_spell(v, choice_);
       break;
     }
     case 1:
+      if (entries_[choice_] > 0 && bench_refused(SpecialtyUse::kSpecialty, "specialty " + std::to_string(entries_[choice_])))
+        return;   // (sfx 7) [partybuild agent]
       g_specialty = entries_[choice_];
       switch (g_specialty) {
         case 2: open_child(3, new OracleDialog(this)); break;
@@ -1415,6 +1439,7 @@ void SpecialtyPage::on_cancel(int n) {
 
 void SpecialtyPage::on_button2(int n) {
   if (wears_link_item() && state_ == 2) {
+    if (bench_refused(SpecialtyUse::kLinkCombo, "the Link Combo")) return;   // (sfx 7) [partybuild agent]
     open_child(2, new LinkComboDialog);
     n = -n;
   }
@@ -1422,7 +1447,7 @@ void SpecialtyPage::on_button2(int n) {
 }
 
 void SpecialtyPage::on_button3(int n) {
-  if (state_ == 3) {
+  if (state_ == 3 && specialty_use_allowed(SpecialtyUse::kSpellToggle)) {
     const s32 v = spells_[choice_];
     if (v != 0) {
       spells_[choice_] = -v;
@@ -1459,6 +1484,27 @@ void SpecialtyPage::on_member_changed() {
   draw_member();
 }
 
+// [partybuild agent] A benched member (Archipelago's bench): a note where the game's logo goes,
+// in the list (their specialties greyed) and in the spells (after the ON / OFF button's icon,
+// which stays: switching a spell for battle is theirs to set).
+void SpecialtyPage::draw_help() {
+  Panel::draw_help();
+  if (!party_selected_benched()) return;
+  if (state_ == 1) {
+    logo_state = 2;   // (no logo)
+    logo_phase = 0;
+    help->pen_at(0xA4, 4);
+    help->add_string("Benched: can't use");
+  } else if (state_ == 3) {
+    logo_state = 3;   // (the button icons at rest, open)
+    logo_phase = 0;
+    help->pen_at(0xF8, 0);
+    help->add_string("Benched");
+    help->pen_at(0xF8, 8);
+    help->add_string("no cast");
+  }
+}
+
 void SpecialtyPage::draw_member() {
   Panel::draw_member();
   if (!member_box) return;
@@ -1475,6 +1521,11 @@ void SpecialtyPage::draw_member() {
 }
 
 }  // namespace
+
+bool specialty_use_allowed(SpecialtyUse use) {
+  if (!party_selected_benched()) return true;
+  return use == SpecialtyUse::kKillerMoves || use == SpecialtyUse::kSpellToggle;
+}
 
 void menu_page02_update(menu::MenuPageLoader* p) {
   switch (p->substate) {

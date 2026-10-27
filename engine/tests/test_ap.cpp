@@ -21,6 +21,7 @@
 #include "game/common/party.h"
 #include "game/field/field.h"
 #include "game/field/item_effect.h"
+#include "game/field/menu_specialty.h"
 #include "game/field/script_vm.h"
 #include "test.h"
 #include "util/sha256.h"
@@ -2667,6 +2668,59 @@ TEST(ap_bench_camp_pages) {
   CHECK(places.slot[1][0x26] == 0x55 && places.slot[1][0x27] == 0x55);
 
   ss::game::menu::globals().config = menu_config0;
+  party_bind(config0, inventory0, slots0, records0);
+  party_select(selected0);
+}
+
+// [partybuild agent] Benched members are managed, not used (the user, 2026-10-27): on the
+// Specialty page a benched member keeps their killer moves and which spells they use in battle,
+// but no field specialty, no spell cast, no Link Combo. A member of the 8 (the reserve too) and
+// a game without the bench: everything, as the original.
+TEST(ap_bench_specialty_uses) {
+  using ss::game::field::SpecialtyUse;
+  using ss::game::field::specialty_use_allowed;
+  u8* const config0 = party_config();
+  u8* const inventory0 = party_inventory();
+  u8* const slots0 = party_slots();
+  u8* const records0 = party_records();
+  const int selected0 = party_get_selected();
+  std::vector<u8> config(0x2A0, 0), inventory(0xC28, 0), slots(0x300, 0), records(0x680, 0);
+  std::vector<u8> bench_slots(4 * 0x60, 0), bench_records(4 * 0xD0, 0);
+  party_bind(config.data(), inventory.data(), slots.data(), records.data());
+  PartyPlaces places;
+  for (int i = 0; i < 4; ++i) {
+    places.slot[i] = bench_slots.data() + i * 0x60;
+    places.record[i] = bench_records.data() + i * 0xD0;
+  }
+  const s16 noel = 0xB, celine = 3;
+  std::memcpy(slots.data() + 5 * 0x60, &celine, 2);   // Celine in the reserve (slot 5)
+  std::memcpy(places.slot[0], &noel, 2);              // Noel on the bench (place 8)
+  const SpecialtyUse all[] = {SpecialtyUse::kSpecialty, SpecialtyUse::kCastSpell, SpecialtyUse::kLinkCombo,
+                              SpecialtyUse::kKillerMoves, SpecialtyUse::kSpellToggle};
+  auto allowed = [&](bool specialty, bool cast, bool link, bool killer, bool toggle) {
+    const bool want[] = {specialty, cast, link, killer, toggle};
+    for (int i = 0; i < 5; ++i)
+      if (specialty_use_allowed(all[i]) != want[i]) return false;
+    return true;
+  };
+  // No bench bound: the original's page.
+  party_select(5);
+  CHECK(!party_selected_benched() && allowed(true, true, true, true, true));
+  party_bind_places(&places);
+  // A reserve member with the bench bound: as before.
+  party_select(5);
+  CHECK(!party_selected_benched() && allowed(true, true, true, true, true));
+  // Noel on the bench: his own settings only.
+  party_select(8);
+  CHECK(party_selected_benched() && party_selected_char() == noel);
+  CHECK(allowed(false, false, false, true, true));
+  // Back to a front slot: everything again; unbound with a place selected: slot 0, everything.
+  party_select(0);
+  CHECK(!party_selected_benched() && allowed(true, true, true, true, true));
+  party_select(8);
+  party_bind_places(nullptr);
+  CHECK(party_get_selected() == 0 && !party_selected_benched() && allowed(true, true, true, true, true));
+
   party_bind(config0, inventory0, slots0, records0);
   party_select(selected0);
 }

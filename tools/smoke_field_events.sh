@@ -735,6 +735,8 @@ fi
 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
   timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_load.log" 2>&1
 check ap_bench_load "the save loads with Noel on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Noel$'
+cp "$WORK/bcard.mcd" "$WORK/bcard_use.mcd"   # (for ap_bench_use below)
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard_use.slot01.ap.json"
 cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard.slot01.ap.json.ok"
 python3 -c 'import json,sys; p=sys.argv[1]; j=json.load(open(p)); b=j["bench"][0]["bytes"]; j["bench"][0]["bytes"]=b[:0x60*2+0x18]+("ff" if b[0x60*2+0x18:0x60*2+0x1a]!="ff" else "fe")+b[0x60*2+0x1a:]; json.dump(j,open(p,"w"))' \
   "$WORK/bcard.slot01.ap.json"
@@ -790,6 +792,43 @@ fi
 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
   timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_camp_load.log" 2>&1
 check ap_bench_camp_load "the save loads with Opera on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Opera$'
+# Benched members are managed, not used (the user, 2026-10-27) [partybuild agent]: ap_bench_save's
+# card (Noel on the bench, place 8), with the guild set holding Danger Sense opened (flag 705).
+# Party Order sends Rena to the bench (place 9); Skills: benched Noel learns Danger Sense with his
+# own SP (Scout comes with it); Specialty: his Scout is refused, and R2 to Rena: her Heal is not
+# cast but is switched off for battle; the save keeps the SP, the skill and the switch, nobody's
+# MP spent.
+USE_PO="200:triangle,206:none,350:down,356:none,370:down,376:none,390:down,396:none,410:down,416:none,430:down,436:none,450:down,456:none,500:cross,506:none,600:down,606:none,650:cross,656:none,950:down,956:none,990:down,996:none,1030:cross,1036:none,1070:r1,1076:none,1110:right,1116:none,1150:up,1156:none,1190:cross,1196:none,1300:circle,1306:none"
+USE_SKILL="1450:up,1456:none,1470:up,1476:none,1490:up,1496:none,1530:cross,1536:none"
+f=1570; for i in 1 2 3 4 5 6 7 8; do USE_SKILL="$USE_SKILL,$f:down,$((f+6)):none"; f=$((f+20)); done
+USE_SKILL="$USE_SKILL,1780:cross,1786:none"
+f=1950; for i in 1 2 3 4 5 6; do USE_SKILL="$USE_SKILL,$f:down,$((f+6)):none"; f=$((f+20)); done
+USE_SKILL="$USE_SKILL,2120:cross,2126:none,2550:cross,2556:none,2650:circle,2656:none"
+USE_SPEC="2750:up,2756:none,2770:up,2776:none,2790:up,2796:none,2830:cross,2836:none,2900:cross,2906:none,3050:down,3056:none,3100:cross,3106:none,3200:r2,3206:none,3350:cross,3356:none,3400:square,3406:none,3550:circle,3556:none,3650:circle,3656:none"
+USE_SAVE=$(echo "$PO_SAVE" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 1900, a[2]}}')
+cp "$WORK/bcard_use.slot01.ap.json" "$WORK/bcard_use_before.json"
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard_use.mcd" \
+  SS_DEBUG_INPUT="100:flag 705 1" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/bench.apso2" --frames 4900 \
+  --input "$USE_PO,$USE_SKILL,$USE_SPEC,$USE_SAVE" </dev/null >"$WORK/ap_bench_use.log" 2>&1
+check ap_bench_use "Rena to the bench" '\[ap\] Party Order closed: Ashton, Claude, Celine, Bowman, Precis, Leon, Opera \| bench: Noel, Rena$'
+check ap_bench_use "benched Noel's Scout refused" '\[ap\] bench: Noel is on the bench: specialty 9 refused$'
+check ap_bench_use "benched Rena casts no Heal" '\[ap\] bench: Rena is on the bench: a spell cast refused$'
+check ap_bench_use "the save" '\[ap\] saved .*bcard_use\.slot01\.ap\.json'
+if python3 -c '
+import json, struct, sys
+def bench(p):
+    return {e["place"]: bytes.fromhex(e["bytes"]) for e in json.load(open(p))["bench"]}
+a, b = bench(sys.argv[1]), bench(sys.argv[2])
+h = lambda x, o: struct.unpack_from("<h", x, o)[0]
+noel0, noel, rena = a[8], b[8], b[9]
+ok = h(noel, 0) == 11 and h(rena, 0) == 2
+ok = ok and 0 < h(noel0, 0x60 + 0x1A) - h(noel, 0x60 + 0x1A) and noel0[0x60 + 0x5C + 13] == 0 and noel[0x60 + 0x5C + 13] == 1
+ok = ok and h(noel, 0x24) == h(noel0, 0x24) and rena[0x60 + 0x3C] == 0xFF and h(rena, 0x24) == h(rena, 0x22)
+sys.exit(0 if ok else 1)' "$WORK/bcard_use_before.json" "$WORK/bcard_use.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_use: Noel's SP paid for Danger Sense, Rena's Heal off for battle, no MP spent"
+else
+  echo "FAIL ap_bench_use: Noel's SP paid for Danger Sense, Rena's Heal off for battle, no MP spent"; fail=1
+fi
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.

@@ -1130,13 +1130,23 @@ maintain the benched members equipment and settings"). Work in progress on branc
   the player changes stays with the benched member and is saved with the bench. Tactics flips
   its right column as Party Order does (L1 / R1: the reserve or the bench), and a benched
   member's box opens their orders. The camp menu's stat pass (the figures derived from level
-  and equipment that Equipment and Status show) runs over the bench too. A benched member may
-  use the Specialty page as a reserve member may (Oracle, music, Practice, Scout, Familiar, a
-  field spell paid with their own MP); what involves the party stays with the 8 slots: spell
-  targets, Link Combo partners (the front four), item use and Item Creation, super
-  specialties, and the Equipment Wizard at the menu's close (a benched member's equipment stays
-  as they left it). Killer-move sets can be changed; their voices load when the member comes
-  into the front four.
+  and equipment that Equipment and Status show) runs over the bench too.
+- **Benched members are managed, not used** (the user, 2026-10-27: "They can be there, they can
+  be brought in, but they are not there without explicitly bringing them in to be used."). A
+  benched member's own settings can be changed: equipment, skills (with their own SP; battle
+  skills on / off), Tactics orders, killer moves in their slots, which spells they use in
+  battle (on / off), and their name (Status). They do nothing in the game from the bench: on
+  the Specialty page their field specialties (Oracle, Musical Talent, Practice, Scout,
+  Familiar) are greyed and refused, their spells are not marked castable and a cast is
+  refused, and the Link Combo button is gone (a partner is one of the front four, and choosing
+  one can end the front members' own links); each refusal is the menu's refusal sound, logged
+  as `[ap] bench: Noel is on the bench: specialty 9 refused`. The help bar says so where the
+  game's logo goes: "Benched: can't use" on the list, "Benched / no cast" beside the spells'
+  ON / OFF button. What involves the party stays with the 8 slots, as for anyone outside them:
+  spell targets, item use and Item Creation, super specialties (a benched member picked earlier
+  in the menu is not the one Items uses: the first of the 8 is), and the Equipment Wizard at
+  the menu's close (a benched member's equipment stays as they left it). Killer-move voices
+  load when the member comes into the front four.
 - Checked (2026-10-26): a save with Noel and Ernest benched, Precis (slot 5) to place 9 across
   the flip and Noel (place 8) to slot 3: every member's 0x130 bytes moved as they were, the
   state, config and inventory identical to a control run that cancelled the same picks (the
@@ -1152,6 +1162,13 @@ maintain the benched members equipment and settings"). Work in progress on branc
   `ap_bench_camp_pages` (the accessors on a bench place; the stat pass gives a benched member
   the bytes the same member gets in a slot; unbound, the store is left alone); smoke
   `ap_bench_camp` (benched Opera's weapon and orders, the save, its reload).
+- Checked (2026-10-27, managed, not used): the save with Noel benched, the guild set with Danger
+  Sense opened (script flag 705); Party Order sends Rena to the bench; benched Noel learns
+  Danger Sense with his own SP (290 -> 288; Scout comes with it); his Scout is refused (the
+  piece-before build opened Scout's dialog at the same input); R2 to Rena: her Heal is refused
+  and switched off for battle; the save: Noel's SP, skill and the stamina it gives, Rena's
+  Heal off, nobody's MP spent. Unit test `ap_bench_specialty_uses` (the rule for a slot, a
+  reserve slot, a bench place, unbound); smoke `ap_bench_use`.
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

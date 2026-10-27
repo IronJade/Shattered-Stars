@@ -22,4 +22,18 @@ namespace ss::game::field {
 
 void menu_page02_update(menu::MenuPageLoader* p);   // field 0x800354dc
 
+// [partybuild agent] Archipelago's bench (docs/handoff/bench.md B2; the user, 2026-10-27:
+// benched members are managed, not used). A benched member (party_selected_benched: a place
+// 8-11 the camp menu binds) keeps the page's settings, their killer moves and which spells
+// they use in battle, but does nothing in the game from the bench: no field specialty, no
+// spell cast, no Link Combo (it would pair them with the front four). Everyone else: all of it.
+enum class SpecialtyUse {
+  kSpecialty,     // Oracle, Musical Talent, Practice, Scout, Familiar
+  kCastSpell,     // a healing / curing spell from the member's MP
+  kLinkCombo,     // the Link Combo dialog (a partner from the front four)
+  kKillerMoves,   // the killer moves in their slots
+  kSpellToggle,   // a spell on / off for battle
+};
+bool specialty_use_allowed(SpecialtyUse use);
+
 }  // namespace ss::game::field

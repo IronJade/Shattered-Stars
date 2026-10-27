@@ -36,6 +36,7 @@ const PartyPlaces* party_bound_places();            // null: unbound
 int party_place_count();                            // 8, or 12 with places 8-11 bound
 u8* party_place_slot(int place);    // 0-7: party_slots() + place * 0x60; 8-11 bound: that place's slot; else null
 u8* party_place_record(int place);  // the same for the record
+bool party_selected_benched();      // the selected member is in a bound place 8-11 (on the bench)
 
 // Stat ids: bits 0-4 group, bits 8-11 index. The kind table (title 0x8004b5d0 / field
 // 0x80071968) says whether a group lives in the record (bit 0, else the party slot)
