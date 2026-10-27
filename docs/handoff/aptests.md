@@ -155,24 +155,37 @@ teleporter's old man needs stage 16, the Synard).
 - test/general after the restructure: **379 passed** (117751 subtests; the count varies with the
   random fills), as the baseline (scratchpad/aptests/after_general.log).
 
+- **The release workflow** (verified 2026-10-26 ~22:00): tools/ap_batch.sh (SET OUT FIRST LAST;
+  SET story_open / hub / a directory), tools/ap_batch_check.py (scratchpad/apworld2/batch/check.py
+  with ROOT from its own path and the AP dir from SO2_AP_DIR or the cwd: a 2-line diff, the
+  checks unchanged), tools/ap_batch_players/{story_open,hub} (players_sk, players_hub_sk). Both
+  sets, seeds 1-96, into scratchpad/aptests/after/: 96/96 exit 0 each, 0 checker errors on 192 +
+  192; scratchpad/aptests/identity.sh: **all 576 files (384 .apso2 + 192 spoilers) byte-identical
+  to the baseline manifest**, the seed lines and the checker output identical.
+- Docs: apworld.md "Testing" (the scoped AP_TEST_WORLDS run, how the tests follow the guide, the
+  per-file table of mixes and access dependencies, the known bug's reproducer, the workflow
+  script) and a "Results (2026-10-26 ...)" entry; release_checklist.md 2.4 (the scoped run, the
+  expected counts) and 2.5 (tools/ap_batch.sh); next.md Phase A status.
+
 ## In progress
-- The release workflow: tools/ap_batch.sh, tools/ap_batch_check.py (scratchpad/apworld2/batch
-  check.py with relative paths; the checks unchanged, diff = 2 lines), tools/ap_batch_players/
-  {story_open,hub} (players_sk, players_hub_sk copied). Running both sets 1-96 into
-  scratchpad/aptests/after/ to compare with base/manifest.txt (byte for byte) and the check
-  outputs. Docs written, not committed: apworld.md "Testing", release_checklist.md 2.4 / 2.5,
-  next.md Phase A status.
+- Nothing: Phase A is done (but the world bug, the user's call).
 
 ## Next steps
-1. The release-workflow script in tools/ (the 96-seed batches + check.py), then the
-   byte-identical check against scratchpad/aptests/base/manifest.txt.
-2. Docs: apworld.md "Testing" (the AP_TEST_WORLDS form, the classes, the workflow script),
-   release_checklist.md 2.4 / 2.5, next.md Phase A status.
-3. When the world fix lands (another assignment): take the three expectedFailure decorators off.
+1. The world fix (another assignment, after the user's decision): take the three
+   expectedFailure decorators off TestOpenWorldNoExpelProgression; re-count the keys' spots with
+   scratchpad/aptests/ncp_spots.py and fillrate.py (keep both); consider a solo expel-off players
+   set for tools/ap_batch.sh (every set has ChecksFinder today, which is how the bug hid).
+2. The bench (after party-bench): a mix in test_party.py overriding PartyChecks.party_size() /
+   healer_guaranteed(), with `bench` in its options.
+3. Clean-up when nothing needs them: scratchpad/aptests/base and after, the
+   old scratchpad/apworld2/batch copies (base / after: 193 MB each).
 
 ## How to verify
 - World tests: `cd scratchpad/ap/Archipelago && SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((4<<30))
-  ../ap-venv/bin/python -m pytest -q -n 4 -p no:cacheprovider --durations=30 worlds/so2/test`.
+  ../ap-venv/bin/python -m pytest -q -n 4 -p no:cacheprovider --durations=30 worlds/so2/test`
+  (expect 430 passed, 3 xfailed); `-rxX` lists the xfails.
+- The workflow: `tools/ap_batch.sh story_open OUT 1 96` (and `hub`); exit 0 = all generate and 0
+  checker errors. Identity vs the baseline: scratchpad/aptests/identity.sh (reads after/).
 - The bug: `SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python Generate.py --player_files_path
   ../../aptests/solo/players --outputpath ../../aptests/solo/out --seed 1` (rc 1, FillError);
   `PYTHONPATH=$PWD ../ap-venv/bin/python ../../aptests/fillrate.py 10 world_mode=open_world

@@ -918,6 +918,54 @@ ModuleUpdate waits at a prompt. Link the world in:
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python Generate.py --player_files_path P --outputpath O --seed N
 
+Scoped to this world, as Archipelago's testing guide (docs/tests.md, "Running Tests for Specific
+Worlds") runs it: `AP_TEST_WORLDS` names world folders, and implies `-m world` (the general tests
+that iterate over every world, scoped to so2, plus worlds/so2/test and test/multiworld's
+two-player fill for so2). Name the test directories, or add `--continue-on-collection-errors`
+(the venv has no flask for test/webhost):
+
+    AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
+
+**The tests follow the guide** (2026-10-26, docs/handoff/aptests.md; the guide re-read live, the
+same as the checkout's copy at 54803be): an empty `test/__init__.py`; the base in `test/bases.py`
+(`SO2TestBase(WorldTestBase)`, `game = GAME`, plus the shared helpers and
+`assertSweptAccessDependency`: the guide's dependency check through event chains); files
+`test_*.py`, classes `Test*` (one option mix each: WorldTestBase's three default tests run for
+every one) or `unittest.TestCase` where no multiworld is needed (TestDoorValidator, TestHubAsk);
+checks shared by several mixes in `...Checks` mixins, never collected alone; no
+runner-specific features (`python -m unittest` runs them too); each test under a second (the
+slowest about 0.8 s at `-n 4` on a loaded machine; `pytest --durations=30`). The logic is
+tested with `assertAccessDependency` (every location checked unless noted):
+
+| File | Mixes (classes) | What the access dependencies cover |
+|---|---|---|
+| test_world.py | story mode: default, story_route claude, missables remove / include, the cave, expel_progression off, late proof (any, rena), bosses off, drops and traps, shops full / specials | (story mode has no items of its own: the events, the late proof's rule, `can_fill`) |
+| test_open_world.py | open world default, Rena with full shops and the cave, no teleporter, expel_progression off (the bug's reproducer, below) | every pool area key -> exactly the locations and story stages whose every way needs it; each El voyage pass -> the voyage stage, all of them -> the Final Save Point and the goal (through the events); the Hilton and Lacour passes -> the Herlie stage; a landing's key -> its area's early-only chests |
+| test_party.py | the story's party rules (any / claude / rena), party v2 (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero | `PartyChecks.party_size()` / `healer_guaranteed()`: the hooks a bench option overrides |
+| test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks; a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
+| test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
+| test_skillsanity.py | none, skills_only with crafts, special_only in open world, insanity in hub with shops, insanity with the Iseria Queen | every skill / move item the logic needs -> the crafts, Machinery learn points, the Iseria Queen and killer levels whose every way needs it; each Musical Talent skill -> the Queen, both -> the goal |
+| test_difficulty.py | earth, galaxy, universe (open world, hub), any | (no logic change: the same locations as on Earth) |
+| test_doors.py | `unittest.TestCase` | the door validator on a made-up table |
+
+A known world bug is in the suite as a reproducer: `TestOpenWorldNoExpelProgression`'s three
+tests that fill are `@unittest.expectedFailure` (open world, expel_progression off and the
+teleporter on: North City Pass has no legal spot in a solo world, so every solo fill raises
+FillError; docs/handoff/aptests.md "World bug"). They start passing with the fix; take the
+decorators off then.
+
+**The release workflow** (many random seeds, outside the unit tests, as the guide asks):
+`tools/ap_batch.sh SET OUT FIRST LAST` generates seeds FIRST..LAST of a players set
+(`story_open`: two SO2 players, story 1 : open world 2, every option random, and ChecksFinder;
+`hub`: one SO2 player in hub mode, one hub / story / open world 3 : 1 : 1, and ChecksFinder;
+tools/ap_batch_players/) with Generate.py into OUT/<seed>/, then `tools/ap_batch_check.py`
+checks every .apso2 (OUT.check.txt); exit 0 only when every seed generated and no file has an
+error. A problem a batch finds gets a minimal reproducer in the tests (one option mix), as the
+phase-4 batch's expel_progression fill failures did (`TestOpenWorldNoExpelProgression`):
+
+    tools/ap_batch.sh story_open scratchpad/batch/full 1 96     # ~5 min
+    tools/ap_batch.sh hub scratchpad/batch/hub 1 96
+
 Results (2026-10-23, phase 4):
 - The world's tests: 95 passed (7986 subtests; 22 classes: phase 3's 17, plus TestOpenWorld,
   TestOpenWorldRenaShops, TestOpenWorldNoTeleporter (keys and starting keys, a stage needing its
@@ -1123,6 +1171,22 @@ Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
   sk_id_hub; check.py 0 errors) against full_hp / hub_hp: every file is byte-identical but for
   `options` (the new keys) and, in hub seeds, `hub.flags` without 700-711, except in the
   multiworlds where a slot has `cave_of_trials` (the renamed cave locations change the fill).
+
+Results (2026-10-26, the tests to Archipelago's testing guide; docs/handoff/aptests.md; tests and
+tools only, no world change):
+- The world's tests: 430 passed, 3 xfailed (30148 subtests; was 380 passed, 29338): every old
+  test kept (one class renamed), plus the access dependencies of the table above and the new
+  mix `TestOpenWorldNoExpelProgression`. Slowest test 0.81 s (before 0.55 s), at `-n 4` with the
+  machine's load at ~20 on 20 cores; `python -m unittest` agrees. AP's general tests: 379 passed,
+  before and after. `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 433 passed before.
+- The release workflow (`tools/ap_batch.sh`, both sets, seeds 1-96): 96/96 exit 0 each,
+  `tools/ap_batch_check.py` 0 errors on 192 + 192 files (9924 / 8673 progression items); every
+  .apso2 and spoiler byte-identical to the same seeds through the old scratchpad/apworld2/batch
+  run_batch.sh / check.py, and the checker's output identical too.
+- A world bug, found by the new mix and left for the user (a 0.2.x): open world with
+  `expel_progression` off and the teleporter on can't generate solo, North City Pass having no
+  legal spot (Generate.py FillError on every solo seed; with two SO2 players and no other game
+  too). The batches never saw it: each of their multiworlds has a ChecksFinder player.
 
 ## Changes
 

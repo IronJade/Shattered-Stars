@@ -124,8 +124,14 @@ ln -sfn "$PWD/apworld/so2" scratchpad/release/Archipelago/worlds/so2
 cd scratchpad/release/Archipelago
 SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test
 SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pytest -q -n 8 test/general
+# the guide's scoped run (docs/tests.md "Running Tests for Specific Worlds"): the general
+# tests that iterate over worlds, scoped to so2, plus worlds/so2/test (test/webhost needs flask)
+AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
 ```
-Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
+Since 2026-10-26 (docs/handoff/aptests.md) worlds/so2/test follows Archipelago's testing guide
+(docs/ap/apworld.md "Testing"); expected then: **430 passed, 3 xfailed** (the expel_progression
+bug's reproducer, until its fix: then 433 passed and the decorators come off), each test under a
+second (`--durations=30`). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
 **379 passed, 116984 subtests**. No apworld failures appeared; see section 4 for the three
 style-only fixes made after the upstream gap analysis, re-verified with the same counts.
 
@@ -135,9 +141,14 @@ Already green at phase 4 (95 passed / 7986 subtests, AP general 379 / 116983, a 
 dev symlink) — re-run after any further apworld change:
 ```sh
 SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test   # in scratchpad/ap/Archipelago
-scratchpad/enemy/ap5/batch/run_batch.sh <first> <last>; scratchpad/enemy/ap5/batch/check.py <out>   # 20+ seeds
+tools/ap_batch.sh story_open scratchpad/batch/full 1 96    # the release workflow: exit 0 = all generate, 0 checker errors
+tools/ap_batch.sh hub scratchpad/batch/hub 1 96
 SS_DISC1="<disc 1 .cue>" tools/ap_e2e_so2.sh
 ```
+(Since 2026-10-26 the batches are `tools/ap_batch.sh` + `tools/ap_batch_check.py` with the players
+sets in tools/ap_batch_players/: the 0.2.0 release's scratchpad/apworld2/batch run_batch.sh,
+check.py, players_sk and players_hub_sk, moved; the same Generate.py call, so the same files per
+seed. The older `scratchpad/enemy/ap5/batch` lines below are history.)
 This pass only touched `regions.py`, `doors.py`, `patches.py` and `test/test_doors.py` for
 line-length wraps with no behavior change (confirmed: `ast.parse` succeeds, and
 `worlds/so2/test` still reports 95 passed / 7986 subtests before and after). Nothing here

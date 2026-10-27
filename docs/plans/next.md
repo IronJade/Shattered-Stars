@@ -41,6 +41,15 @@ commit 54803be of 2026-10-03, match the live pages). Re-read the live pages when
 **Goal:** apworld/so2/test follows the guide, so the world's tests are what upstream expects and run
 fast in Archipelago's CI.
 
+**Status (2026-10-26, agent aptests; docs/handoff/aptests.md):** done (the tests only; no world
+change). The suite restructured (bases.py helpers; test_open_world.py, test_party.py split out;
+assertAccessDependency for the area keys, the El voyage, the ship routes, the dungeon keys, the
+Fienal requirement, skillsanity's skills, killer-move items); 430 passed + 3 xfailed, each test
+under a second; the batches moved to `tools/ap_batch.sh` / `tools/ap_batch_check.py`; docs updated.
+**It found a world bug, left for the user:** open world with expel_progression off and the
+teleporter on can't generate solo (North City Pass has no legal spot); reproducer and candidate
+fixes in the handoff, "World bug". The fix (a 0.2.x) takes the 3 expectedFailure decorators off.
+
 What the guide asks, and where the world stands (2026-10-25):
 
 | Guide | State now | To do |
