@@ -34,30 +34,30 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 1,Expel: overworld,32,124,Mars Village: village green (entrance),0,2160,0,3847,270,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 32 --to NEW_MAP
 1,Expel: overworld,33,581,L'Aqua: overgrown garden path (former aquarium grounds),0,0,0,0,0,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 33 --to NEW_MAP
 1,Expel: overworld,34,581,L'Aqua: overgrown garden path (former aquarium grounds),0,0,0,0,0,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 34 --to NEW_MAP
-4,"Arlia Village: interior room, about 1 door in from the entrance",0,5,"Arlia Village: interior room, about 2 doors in from the entrance",1,427,0,-160,0,,,python3 tools/so2_mod.py door DISC.cue 4 0 --to NEW_MAP
-5,"Arlia Village: interior room, about 2 doors in from the entrance",0,6,"Arlia Village: interior room, about 3 doors in from the entrance",2,785,0,-131,180,,,python3 tools/so2_mod.py door DISC.cue 5 0 --to NEW_MAP
-6,"Arlia Village: interior room, about 3 doors in from the entrance",0,14,Shingo Forest: entrance / threshold area,2,-1674,0,383,340,,,python3 tools/so2_mod.py door DISC.cue 6 0 --to NEW_MAP
-7,Planet Milocinia: Planet Milocinia,0,8,Arlia Village: entrance / threshold area,2,-259,0,892,88,,,python3 tools/so2_mod.py door DISC.cue 7 0 --to NEW_MAP
-8,Arlia Village: entrance / threshold area,0,4,"Arlia Village: interior room, about 1 door in from the entrance",2,3264,0,31,180,,,python3 tools/so2_mod.py door DISC.cue 8 0 --to NEW_MAP
+4,Planet Milocinia: cavern passage (the opening),0,5,Planet Milocinia: cavern with machine wreckage (the opening),1,427,0,-160,0,,,python3 tools/so2_mod.py door DISC.cue 4 0 --to NEW_MAP
+5,Planet Milocinia: cavern with machine wreckage (the opening),0,6,Planet Milocinia: cavern of the transporter device (the opening),2,785,0,-131,180,,,python3 tools/so2_mod.py door DISC.cue 5 0 --to NEW_MAP
+6,Planet Milocinia: cavern of the transporter device (the opening),0,14,Shingo Forest: entrance / threshold area,2,-1674,0,383,340,,,python3 tools/so2_mod.py door DISC.cue 6 0 --to NEW_MAP
+7,Planet Milocinia: Planet Milocinia,0,8,Planet Milocinia: cavern below the landing site (the opening),2,-259,0,892,88,,,python3 tools/so2_mod.py door DISC.cue 7 0 --to NEW_MAP
+8,Planet Milocinia: cavern below the landing site (the opening),0,4,Planet Milocinia: cavern passage (the opening),2,3264,0,31,180,,,python3 tools/so2_mod.py door DISC.cue 8 0 --to NEW_MAP
 9,Shingo Forest: entrance / threshold area,0,10,Shingo Forest: entrance / threshold area,0,-461,0,-559,51,,,python3 tools/so2_mod.py door DISC.cue 9 0 --to NEW_MAP
 9,Shingo Forest: entrance / threshold area,1,17,Arlia Village: south: bridge and forest path,128,-145,0,465,270,,,python3 tools/so2_mod.py door DISC.cue 9 1 --to NEW_MAP
 10,Shingo Forest: entrance / threshold area,0,9,Shingo Forest: entrance / threshold area,0,240,0,5825,266,,,python3 tools/so2_mod.py door DISC.cue 10 0 --to NEW_MAP
 10,Shingo Forest: entrance / threshold area,1,9,Shingo Forest: entrance / threshold area,2,265,0,5948,266,,,python3 tools/so2_mod.py door DISC.cue 10 1 --to NEW_MAP
 10,Shingo Forest: entrance / threshold area,2,9,Shingo Forest: entrance / threshold area,2,265,0,5948,266,,,python3 tools/so2_mod.py door DISC.cue 10 2 --to NEW_MAP
-10,Shingo Forest: entrance / threshold area,3,11,Lacour Front Line: world-map entrance,1,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 10 3 --to NEW_MAP
-11,Lacour Front Line: world-map entrance,0,10,Shingo Forest: entrance / threshold area,1,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 11 0 --to NEW_MAP
-11,Lacour Front Line: world-map entrance,1,439,Lacour Front Line: camp (hub),130,-133,0,139,57,,,python3 tools/so2_mod.py door DISC.cue 11 1 --to NEW_MAP
-11,Lacour Front Line: world-map entrance,2,447,"Meeting Room: Meeting Room, third tent",130,-108,0,1,233,,,python3 tools/so2_mod.py door DISC.cue 11 2 --to NEW_MAP
+10,Shingo Forest: entrance / threshold area,3,11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),1,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 10 3 --to NEW_MAP
+11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),0,10,Shingo Forest: entrance / threshold area,1,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 11 0 --to NEW_MAP
+11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),1,439,Lacour Front Line: camp (hub),130,-133,0,139,57,,,python3 tools/so2_mod.py door DISC.cue 11 1 --to NEW_MAP
+11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),2,447,"Meeting Room: Meeting Room, third tent",130,-108,0,1,233,,,python3 tools/so2_mod.py door DISC.cue 11 2 --to NEW_MAP
 12,Shingo Forest: entrance / threshold area,0,10,Shingo Forest: entrance / threshold area,0,1098,0,1073,264,,,python3 tools/so2_mod.py door DISC.cue 12 0 --to NEW_MAP
 12,Shingo Forest: entrance / threshold area,1,14,Shingo Forest: entrance / threshold area,0,-1476,0,491,213,,,python3 tools/so2_mod.py door DISC.cue 12 1 --to NEW_MAP
 12,Shingo Forest: entrance / threshold area,2,39,Arlia Village: entrance / threshold area,2,43,0,-113,228,,,python3 tools/so2_mod.py door DISC.cue 12 2 --to NEW_MAP
 14,Shingo Forest: entrance / threshold area,0,12,Shingo Forest: entrance / threshold area,1,-401,0,-861,157,,,python3 tools/so2_mod.py door DISC.cue 14 0 --to NEW_MAP
 14,Shingo Forest: entrance / threshold area,1,12,Shingo Forest: entrance / threshold area,0,-472,0,-749,128,,,python3 tools/so2_mod.py door DISC.cue 14 1 --to NEW_MAP
 14,Shingo Forest: entrance / threshold area,2,12,Shingo Forest: entrance / threshold area,0,-472,0,-749,128,,,python3 tools/so2_mod.py door DISC.cue 14 2 --to NEW_MAP
-14,Shingo Forest: entrance / threshold area,3,16,Arlia Village: entrance / threshold area,2,-541,0,202,255,,,python3 tools/so2_mod.py door DISC.cue 14 3 --to NEW_MAP
+14,Shingo Forest: entrance / threshold area,3,16,Shingo Forest: clearing with a wrecked machine,2,-541,0,202,255,,,python3 tools/so2_mod.py door DISC.cue 14 3 --to NEW_MAP
 14,Shingo Forest: entrance / threshold area,4,556,"Field of Intelligence: Boss-area transporter chamber, C",2,-155,0,223,270,,,python3 tools/so2_mod.py door DISC.cue 14 4 --to NEW_MAP
-15,"Arlia Village: interior room, about 2 doors in from the entrance",0,42,"Arlia Village: interior room, about 1 door in from the entrance",2,0,0,0,37,,,python3 tools/so2_mod.py door DISC.cue 15 0 --to NEW_MAP
-16,Arlia Village: entrance / threshold area,0,12,Shingo Forest: entrance / threshold area,2,-472,0,-749,128,,,python3 tools/so2_mod.py door DISC.cue 16 0 --to NEW_MAP
+15,Shingo Forest: Shingo Forest in sepia (a flashback; map 14 tinted),0,42,"Arlia Village: interior room, about 1 door in from the entrance",2,0,0,0,37,,,python3 tools/so2_mod.py door DISC.cue 15 0 --to NEW_MAP
+16,Shingo Forest: clearing with a wrecked machine,0,12,Shingo Forest: entrance / threshold area,2,-472,0,-749,128,,,python3 tools/so2_mod.py door DISC.cue 16 0 --to NEW_MAP
 17,Arlia Village: south: bridge and forest path,0,49,Alen's Mansion: grounds / path to the mansion,2,0,0,0,0,,,python3 tools/so2_mod.py door DISC.cue 17 0 --to NEW_MAP
 17,Arlia Village: south: bridge and forest path,1,19,Arlia Village: side yard off the south square (planet-gate ornament),1,-45,0,-251,92,,,python3 tools/so2_mod.py door DISC.cue 17 1 --to NEW_MAP
 17,Arlia Village: south: bridge and forest path,2,21,"Arlia Village: north: fountain square, at night",2,477,0,-28,0,,,python3 tools/so2_mod.py door DISC.cue 17 2 --to NEW_MAP
@@ -133,7 +133,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 41,Arlia Village: villager's house (unidentified owner),1,36,Arlia Village: waterside path behind the Mayor's house,2,65,0,367,269,,,python3 tools/so2_mod.py door DISC.cue 41 1 --to NEW_MAP
 41,Arlia Village: villager's house (unidentified owner),2,21,"Arlia Village: north: fountain square, at night",2,369,0,236,21,,,python3 tools/so2_mod.py door DISC.cue 41 2 --to NEW_MAP
 42,"Arlia Village: interior room, about 1 door in from the entrance",0,21,"Arlia Village: north: fountain square, at night",2,917,0,200,180,,,python3 tools/so2_mod.py door DISC.cue 42 0 --to NEW_MAP
-42,"Arlia Village: interior room, about 1 door in from the entrance",1,11,Lacour Front Line: world-map entrance,2,-135,0,-104,0,,,python3 tools/so2_mod.py door DISC.cue 42 1 --to NEW_MAP
+42,"Arlia Village: interior room, about 1 door in from the entrance",1,11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),2,-135,0,-104,0,,,python3 tools/so2_mod.py door DISC.cue 42 1 --to NEW_MAP
 42,"Arlia Village: interior room, about 1 door in from the entrance",2,37,"Arlia Village: Mayor's house, back porch, at night",2,55,0,247,270,,,python3 tools/so2_mod.py door DISC.cue 42 2 --to NEW_MAP
 43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,289,279,335,358,,,python3 tools/so2_mod.py door DISC.cue 43 0 --to NEW_MAP
 43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",1,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,296,275,-162,14,,,python3 tools/so2_mod.py door DISC.cue 43 1 --to NEW_MAP
@@ -163,8 +163,8 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 46,Alen's Mansion: Alen's Mansion (inside),4,49,Alen's Mansion: grounds / path to the mansion,0,41,0,186,272,,,python3 tools/so2_mod.py door DISC.cue 46 4 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),5,50,"Alen's Mansion: Alen's Mansion, bedroom",0,-78,0,146,271,,,python3 tools/so2_mod.py door DISC.cue 46 5 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),6,47,"Alen's Mansion: interior room, about 1 door in from the entrance",0,-35,0,104,270,,,python3 tools/so2_mod.py door DISC.cue 46 6 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),7,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 7 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),8,52,Arlia Village: Alen's study (passage to Salva Drift),0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 8 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),7,53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 7 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),8,52,Alen's Mansion: Alen's study (passage to Salva Drift),0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 8 --to NEW_MAP
 47,"Alen's Mansion: interior room, about 1 door in from the entrance",0,46,Alen's Mansion: Alen's Mansion (inside),0,113,120,-34,183,,,python3 tools/so2_mod.py door DISC.cue 47 0 --to NEW_MAP
 48,Town of Salva: gate toward Alen's Mansion,0,46,Alen's Mansion: Alen's Mansion (inside),2,-10,0,168,273,,,python3 tools/so2_mod.py door DISC.cue 48 0 --to NEW_MAP
 48,Town of Salva: gate toward Alen's Mansion,1,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",2,-823,24,-647,39,,,python3 tools/so2_mod.py door DISC.cue 48 1 --to NEW_MAP
@@ -172,12 +172,12 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 49,Alen's Mansion: grounds / path to the mansion,0,46,Alen's Mansion: Alen's Mansion (inside),0,-139,120,84,3,,,python3 tools/so2_mod.py door DISC.cue 49 0 --to NEW_MAP
 50,"Alen's Mansion: Alen's Mansion, bedroom",0,46,Alen's Mansion: Alen's Mansion (inside),0,-140,120,-83,3,,,python3 tools/so2_mod.py door DISC.cue 50 0 --to NEW_MAP
 51,"Alen's Mansion: Alen's Mansion, dining room",0,46,Alen's Mansion: Alen's Mansion (inside),0,-153,0,31,27,,,python3 tools/so2_mod.py door DISC.cue 51 0 --to NEW_MAP
-52,Arlia Village: Alen's study (passage to Salva Drift),0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,37,0,25,250,,,python3 tools/so2_mod.py door DISC.cue 52 0 --to NEW_MAP
-52,Arlia Village: Alen's study (passage to Salva Drift),1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 52 1 --to NEW_MAP
-52,Arlia Village: Alen's study (passage to Salva Drift),2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 52 2 --to NEW_MAP
-53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",0,17,Arlia Village: south: bridge and forest path,2,-126,0,-614,90,,,python3 tools/so2_mod.py door DISC.cue 53 0 --to NEW_MAP
-53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 53 1 --to NEW_MAP
-53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 53 2 --to NEW_MAP
+52,Alen's Mansion: Alen's study (passage to Salva Drift),0,53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",2,37,0,25,250,,,python3 tools/so2_mod.py door DISC.cue 52 0 --to NEW_MAP
+52,Alen's Mansion: Alen's study (passage to Salva Drift),1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 52 1 --to NEW_MAP
+52,Alen's Mansion: Alen's study (passage to Salva Drift),2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 52 2 --to NEW_MAP
+53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",0,17,Arlia Village: south: bridge and forest path,2,-126,0,-614,90,,,python3 tools/so2_mod.py door DISC.cue 53 0 --to NEW_MAP
+53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 53 1 --to NEW_MAP
+53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 53 2 --to NEW_MAP
 54,Town of Salva: Inn The Hopping Penguin,0,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,824,0,-657,358,,,python3 tools/so2_mod.py door DISC.cue 54 0 --to NEW_MAP
 54,Town of Salva: Inn The Hopping Penguin,1,55,"Town of Salva: Inn The Hopping Penguin, guest rooms",0,-104,0,-77,357,,,python3 tools/so2_mod.py door DISC.cue 54 1 --to NEW_MAP
 55,"Town of Salva: Inn The Hopping Penguin, guest rooms",0,54,Town of Salva: Inn The Hopping Penguin,0,-5,52,74,0,,,python3 tools/so2_mod.py door DISC.cue 55 0 --to NEW_MAP
@@ -189,9 +189,9 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 60,Town of Salva: rocky dockside edge of the square,0,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",2,-1649,0,625,333,,,python3 tools/so2_mod.py door DISC.cue 60 0 --to NEW_MAP
 60,Town of Salva: rocky dockside edge of the square,1,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",2,1243,0,329,178,,,python3 tools/so2_mod.py door DISC.cue 60 1 --to NEW_MAP
 60,Town of Salva: rocky dockside edge of the square,2,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1437,0,408,322,,,python3 tools/so2_mod.py door DISC.cue 60 2 --to NEW_MAP
-61,"Salva Drift: interior room, about 4 doors in from the entrance",0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 61 0 --to NEW_MAP
+61,"Salva Drift: interior room, about 4 doors in from the entrance",0,53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",2,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 61 0 --to NEW_MAP
 61,"Salva Drift: interior room, about 4 doors in from the entrance",1,68,"Salva Drift: interior room, about 3 doors in from the entrance",0,-5820,0,-1254,44,,,python3 tools/so2_mod.py door DISC.cue 61 1 --to NEW_MAP
-62,Salva Drift: mine tunnel entrance,0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",128,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 62 0 --to NEW_MAP
+62,Salva Drift: mine tunnel entrance,0,53,"Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",128,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 62 0 --to NEW_MAP
 62,Salva Drift: mine tunnel entrance,1,65,"Salva Drift: interior room, about 1 door in from the entrance",0,-369,0,-2215,179,,,python3 tools/so2_mod.py door DISC.cue 62 1 --to NEW_MAP
 63,Town of Salva: Salva Drift,0,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1770,0,-720,47,,,python3 tools/so2_mod.py door DISC.cue 63 0 --to NEW_MAP
 63,Town of Salva: Salva Drift,1,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1770,0,-720,47,,,python3 tools/so2_mod.py door DISC.cue 63 1 --to NEW_MAP
@@ -1243,7 +1243,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 439,Lacour Front Line: camp (hub),0,438,Lacour Front Line: forward position,0,-14444,0,-2444,10,,,python3 tools/so2_mod.py door DISC.cue 439 0 --to NEW_MAP
 439,Lacour Front Line: camp (hub),1,446,Lacour Front Line: Lacour front line Arsenal,0,-45,0,469,270,,,python3 tools/so2_mod.py door DISC.cue 439 1 --to NEW_MAP
 439,Lacour Front Line: camp (hub),2,445,Lacour Front Line: General Store Lacour Store,0,209,0,-344,90,,,python3 tools/so2_mod.py door DISC.cue 439 2 --to NEW_MAP
-439,Lacour Front Line: camp (hub),3,11,Lacour Front Line: world-map entrance,2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 439 3 --to NEW_MAP
+439,Lacour Front Line: camp (hub),3,11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 439 3 --to NEW_MAP
 440,Lacour Front Line: path to the command tents,0,445,Lacour Front Line: General Store Lacour Store,0,-283,0,612,0,,,python3 tools/so2_mod.py door DISC.cue 440 0 --to NEW_MAP
 440,Lacour Front Line: path to the command tents,1,444,"Meeting Room: Meeting Room, second tent",0,-41,0,1557,180,,,python3 tools/so2_mod.py door DISC.cue 440 1 --to NEW_MAP
 441,Meeting Room: Meeting Room (Lacour Front Line command tent),0,444,"Meeting Room: Meeting Room, second tent",0,-258,0,2531,180,,,python3 tools/so2_mod.py door DISC.cue 441 0 --to NEW_MAP
@@ -1262,8 +1262,8 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 446,Lacour Front Line: Lacour front line Arsenal,0,439,Lacour Front Line: camp (hub),0,178,0,177,179,,,python3 tools/so2_mod.py door DISC.cue 446 0 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",0,444,"Meeting Room: Meeting Room, second tent",0,-1244,0,-60,0,,,python3 tools/so2_mod.py door DISC.cue 447 0 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",1,439,Lacour Front Line: camp (hub),130,-151,0,61,269,,,python3 tools/so2_mod.py door DISC.cue 447 1 --to NEW_MAP
-447,"Meeting Room: Meeting Room, third tent",2,11,Lacour Front Line: world-map entrance,2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 447 2 --to NEW_MAP
-447,"Meeting Room: Meeting Room, third tent",3,11,Lacour Front Line: world-map entrance,2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 447 3 --to NEW_MAP
+447,"Meeting Room: Meeting Room, third tent",2,11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 447 2 --to NEW_MAP
+447,"Meeting Room: Meeting Room, third tent",3,11,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 447 3 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",4,439,Lacour Front Line: camp (hub),130,-151,0,61,269,,,python3 tools/so2_mod.py door DISC.cue 447 4 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",5,439,Lacour Front Line: camp (hub),130,-151,0,61,269,,,python3 tools/so2_mod.py door DISC.cue 447 5 --to NEW_MAP
 448,"Meeting Room: Lacour Front Line, lookout",0,444,"Meeting Room: Meeting Room, second tent",0,-1244,0,-60,0,,,python3 tools/so2_mod.py door DISC.cue 448 0 --to NEW_MAP

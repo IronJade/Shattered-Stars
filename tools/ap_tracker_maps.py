@@ -479,41 +479,60 @@ def is_room_map(m, names):
     return m not in WORLD_MAPS and m < 900 and (names.get(m) or {}).get("kind") != "world"
 
 
-def room_groups(area_maps, entrance_of, extra_groups, adj, doors, names, dd):
+def room_groups(area_maps, entrance_of, extra_groups, adj, doors, names, dd, named_entrances=None):
     """{map: group} and {group: entrance maps} for every field map drawn as a room.
 
-    The groups are the area images (seeded with their maps) and the world-map entrance groups
-    with no area image (seeded with their entrance maps). From the seeds, breadth first and
-    nearest group first: (1) over any door to a map of one of the group's places (map_names.csv
-    `area` of its seeds); (2) then over two-way doors with trigger regions both ways, to any
-    map still without a group (buildings with places of their own). A map in two area images
-    belongs to the one whose name is its place, else the first by name."""
+    The groups are the area images (seeded with their maps, and with the entrance maps of the
+    world-map entrance group of the same name: `named_entrances`) and the world-map entrance
+    groups with no area image (seeded with their entrance maps). From the seeds, breadth first
+    and nearest group first: (1) over any door to a map of one of the group's places
+    (map_names.csv `area` of its seeds), a map reached by two groups at once going to the one
+    named as its place; (2) then over two-way doors with trigger regions both
+    ways, to any map still without a group (buildings with places of their own). A map in two
+    area images belongs to the one whose name is its place, else the first by name."""
     place = {m: (r.get("area") or "") for m, r in names.items()}
     seeds = {}
     for g in sorted(area_maps):
         for m in sorted(area_maps[g]):
             seeds.setdefault(m, []).append(g)
+    for g in sorted(named_entrances or {}):
+        # a town's world-map entrance belongs to the area of the same name even when that
+        # area's checks (its image) are elsewhere: Port Hilton's harbour 169 / 171 (its image is
+        # the Lacour coliseum of the released "Port Hilton" rows), North City's plaza 260 / 261
+        for m in sorted(named_entrances[g]):
+            if dd.scene(m) is not None and is_room_map(m, names) and g not in seeds.get(m, []):
+                seeds.setdefault(m, []).append(g)
     for g in sorted(extra_groups):
         for m in sorted(extra_groups[g]):
             if dd.scene(m) is not None and is_room_map(m, names):
                 # an entrance into a place that has an area image of its own joins that image
                 seeds.setdefault(m, []).append(place.get(m) if place.get(m) in area_maps else g)
     home = {m: sorted(gs, key=lambda g: (g != place.get(m), g))[0] for m, gs in seeds.items()}
+    seeds_of_groups = {g for gs in seeds.values() for g in gs}
     places = collections.defaultdict(set)
     for m, gs in seeds.items():
         for g in gs:
-            places[g].add(place.get(m))
+            # a seed whose place is another group's name doesn't make that place this group's
+            # (Arlia Village's 16 is a Shingo Forest map; Rena's Room's 38 an Arlia Village one)
+            if place.get(m) == g or place.get(m) not in seeds_of_groups:
+                places[g].add(place.get(m))
 
     def ok(n):
         return n not in home and is_room_map(n, names) and dd.scene(n) is not None
 
-    queue = collections.deque(sorted(home, key=lambda m: (home[m], m)))
-    while queue:
-        m = queue.popleft()
-        for n in sorted(adj.get(m, ())):
-            if ok(n) and place.get(n) in places[home[m]]:
-                home[n] = home[m]
-                queue.append(n)
+    # breadth first in layers: a map two groups reach at the same distance goes to the one named
+    # as its place (Shingo Forest's 14, between Shingo Forest's 12 and Arlia Village's 16, whose
+    # place is Shingo Forest), else the first by name
+    frontier = sorted(home)
+    while frontier:
+        claims = collections.defaultdict(set)
+        for m in frontier:
+            for n in adj.get(m, ()):
+                if ok(n) and place.get(n) in places[home[m]]:
+                    claims[n].add(home[m])
+        for n, gs in claims.items():
+            home[n] = sorted(gs, key=lambda g: (g != place.get(n), g))[0]
+        frontier = sorted(claims)
     directed = collections.defaultdict(set)
     for d in doors["doors"]:
         t = d["to"]["map"]
@@ -884,7 +903,8 @@ def build(disc_path):
             extra[g["group"]] = g["maps"]
             entrance_of[g["group"]] = g["maps"]
             group_world[g["group"]] = g["world"]
-    home, entrances = room_groups(image_maps, entrance_of, extra, adj, doors, names, dd)
+    named = {g["group"]: g["maps"] for g in groups if g["group"] in image_maps}
+    home, entrances = room_groups(image_maps, entrance_of, extra, adj, doors, names, dd, named)
     rooms, room_groups_out, room_px = build_rooms(dd, names, doors, adj, home, entrances, image_maps, check_px,
                                                   group_world, group_image)
     for name, (m, x, y) in room_px.items():

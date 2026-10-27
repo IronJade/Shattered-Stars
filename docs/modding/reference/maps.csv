@@ -3,19 +3,19 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 1,"1, 2",Expel: overworld,Expel,overworld,world,35,0,,,"0-3, 826",map_names.csv
 2,2,Energy Nede: overworld,Energy Nede,overworld,world,35,0,,,"0-3, 826",map_names.csv
 3,,world map 3: overworld,world map 3,overworld,world,35,0,,,"0-3, 826",map_names.csv
-4,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,1,0,,yes,,map_names.csv
-5,1,"Arlia Village: interior room, about 2 doors in from the entrance",Arlia Village,"interior room, about 2 doors in from the entrance",town,1,0,,,,map_names.csv
-6,1,"Arlia Village: interior room, about 3 doors in from the entrance",Arlia Village,"interior room, about 3 doors in from the entrance",town,1,0,,,,map_names.csv
+4,1,Planet Milocinia: cavern passage (the opening),Planet Milocinia,cavern passage (the opening),dungeon,1,0,,yes,,map_names.csv
+5,1,Planet Milocinia: cavern with machine wreckage (the opening),Planet Milocinia,cavern with machine wreckage (the opening),dungeon,1,0,,,,map_names.csv
+6,1,Planet Milocinia: cavern of the transporter device (the opening),Planet Milocinia,cavern of the transporter device (the opening),dungeon,1,0,,,,map_names.csv
 7,1,Planet Milocinia: Planet Milocinia,Planet Milocinia,Planet Milocinia,interior,1,0,,,,map_names.csv
-8,1,Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
+8,1,Planet Milocinia: cavern below the landing site (the opening),Planet Milocinia,cavern below the landing site (the opening),dungeon,1,0,,,,map_names.csv
 9,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,2,0,,yes,,map_names.csv
 10,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,4,0,,,,map_names.csv
-11,1,Lacour Front Line: world-map entrance,Lacour Front Line,world-map entrance,field,3,0,,,,map_names.csv
+11,1,Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted),Shingo Forest,Shingo Forest in sepia (a flashback; map 10 tinted),field,3,0,,,,map_names.csv
 12,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,3,0,,,,map_names.csv
-13,1,Lacour Front Line: unidentified part (not connected to the rest of the cluster by any two-way door found),Lacour Front Line,unidentified part (not connected to the rest of the cluster by any two-way door found),field,0,0,,,,map_names.csv
+13,1,Shingo Forest: Shingo Forest in sepia (a flashback; map 12 tinted),Shingo Forest,Shingo Forest in sepia (a flashback; map 12 tinted),field,0,0,,,,map_names.csv
 14,"1, 2",Shingo Forest: entrance / threshold area,Shingo Forest,entrance / threshold area,field,5,0,,,,map_names.csv
-15,1,"Arlia Village: interior room, about 2 doors in from the entrance",Arlia Village,"interior room, about 2 doors in from the entrance",town,1,0,,,,map_names.csv
-16,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
+15,1,Shingo Forest: Shingo Forest in sepia (a flashback; map 14 tinted),Shingo Forest,Shingo Forest in sepia (a flashback; map 14 tinted),field,1,0,,,,map_names.csv
+16,"1, 2",Shingo Forest: clearing with a wrecked machine,Shingo Forest,clearing with a wrecked machine,field,1,0,,,,map_names.csv
 17,"1, 2",Arlia Village: south: bridge and forest path,Arlia Village,south: bridge and forest path,town,8,0,,,,map_names.csv
 18,"1, 2",Arlia Village: north: fountain square,Arlia Village,north: fountain square,town,7,3,,,,map_names.csv
 19,"1, 2",Arlia Village: side yard off the south square (planet-gate ornament),Arlia Village,side yard off the south square (planet-gate ornament),town,1,0,,,,map_names.csv
@@ -51,8 +51,8 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 49,"1, 2",Alen's Mansion: grounds / path to the mansion,Alen's Mansion,grounds / path to the mansion,town,1,0,,,,map_names.csv
 50,"1, 2","Alen's Mansion: Alen's Mansion, bedroom",Alen's Mansion,"Alen's Mansion, bedroom",interior,1,1,,,,map_names.csv
 51,"1, 2","Alen's Mansion: Alen's Mansion, dining room",Alen's Mansion,"Alen's Mansion, dining room",interior,1,0,,,,map_names.csv
-52,"1, 2",Arlia Village: Alen's study (passage to Salva Drift),Arlia Village,Alen's study (passage to Salva Drift),town,3,0,,,,map_names.csv
-53,"1, 2","Arlia Village: Alen's study, guarded (passage to Salva Drift)",Arlia Village,"Alen's study, guarded (passage to Salva Drift)",town,3,0,,,,map_names.csv
+52,"1, 2",Alen's Mansion: Alen's study (passage to Salva Drift),Alen's Mansion,Alen's study (passage to Salva Drift),interior,3,0,,,,map_names.csv
+53,"1, 2","Alen's Mansion: Alen's study, guarded (passage to Salva Drift)",Alen's Mansion,"Alen's study, guarded (passage to Salva Drift)",interior,3,0,,,,map_names.csv
 54,"1, 2",Town of Salva: Inn The Hopping Penguin,Town of Salva,Inn The Hopping Penguin,interior,2,0,,,,map_names.csv
 55,"1, 2","Town of Salva: Inn The Hopping Penguin, guest rooms",Town of Salva,"Inn The Hopping Penguin, guest rooms",town,1,0,,,,map_names.csv
 56,"1, 2",Town of Salva: Jam Store Dolphin Kick,Town of Salva,Jam Store Dolphin Kick,interior,1,0,3,,,map_names.csv

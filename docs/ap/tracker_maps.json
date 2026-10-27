@@ -14,7 +14,7 @@
    {"map": 26, "label": "Hearn's General Store (inside)", "x": 8, "y": 560, "w": 320, "h": 240, "bg_w": 320, "bg_h": 240, "label_y": 544},
    {"map": 33, "label": "Carpenter's House", "x": 336, "y": 560, "w": 488, "h": 240, "bg_w": 488, "bg_h": 240, "label_y": 544},
    {"map": 34, "label": "Mayor Regis's House, 1F", "x": 8, "y": 824, "w": 480, "h": 480, "bg_w": 480, "bg_h": 480, "label_y": 808},
-   {"map": 16, "label": "Arlia Village 16", "x": 496, "y": 824, "w": 320, "h": 250, "bg_w": 320, "bg_h": 250, "label_y": 808}
+   {"map": 16, "label": "clearing with a wrecked machine", "x": 496, "y": 824, "w": 320, "h": 250, "bg_w": 320, "bg_h": 250, "label_y": 808}
   ]},
   {"path": "images/maps/armlock.png", "kind": "area", "area": "Armlock", "width": 528, "height": 302, "scale": "1/1", "maps": [
    {"map": 306, "label": "town plaza (terracotta rooftops)", "x": 8, "y": 24, "w": 512, "h": 270, "bg_w": 512, "bg_h": 270, "label_y": 8}
@@ -430,16 +430,16 @@
    {"letter": "B", "id": 661947, "x": 315, "y": 363, "box": [322, 358, 9, 11], "how": "region", "to": [{"door": 661947, "map": 12, "back": 793014}]},
    {"letter": "C", "id": 662203, "x": 294, "y": 287, "box": [301, 282, 9, 11], "how": "region", "to": [{"door": 662203, "map": 9, "back": 596404}]}
   ]},
-  {"path": "images/rooms/11.png", "map": 11, "name": "world-map entrance", "label": "11 world-map entrance", "area": "Lacour Front Line", "width": 480, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 480, 10], "scene_doors": [{"door": 727506, "map": 13}, {"door": 727580, "map": 10, "conditional": true}, {"door": 727656, "map": 439, "back": 28777638, "conditional": true}, {"door": 727664, "map": 447, "conditional": true}], "doors": []},
+  {"path": "images/rooms/11.png", "map": 11, "name": "Shingo Forest in sepia (a flashback; map 10 tinted)", "label": "11 Shingo Forest in sepia (a flashback; map 10 tinted)", "area": "Shingo Forest", "width": 480, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 480, 10], "scene_doors": [{"door": 727506, "map": 13}, {"door": 727580, "map": 10, "conditional": true}, {"door": 727656, "map": 439, "back": 28777638, "conditional": true}, {"door": 727664, "map": 447, "conditional": true}], "doors": []},
   {"path": "images/rooms/12.png", "map": 12, "name": "Shingo Forest", "label": "12 Shingo Forest", "area": "Shingo Forest", "width": 480, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 480, 10], "scene_doors": [{"door": 793784, "map": 10, "back": 661947}], "doors": [
    {"letter": "A", "id": 793014, "x": 15, "y": 304, "box": [22, 299, 9, 11], "how": "region", "to": [{"door": 793014, "map": 10, "back": 661947}]},
    {"letter": "B", "id": 793021, "x": 285, "y": 118, "box": [292, 113, 9, 11], "how": "region", "to": [{"door": 793021, "map": 14}]},
    {"letter": "C", "id": 793842, "x": 237, "y": 148, "box": [244, 143, 9, 11], "how": "region", "to": [{"door": 793842, "map": 39}]}
   ]},
-  {"path": "images/rooms/13.png", "map": 13, "name": "Lacour Front Line", "label": "13 Lacour Front Line", "area": "Lacour Front Line", "width": 480, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 480, 10], "scene_doors": [{"door": 858562, "map": 15}], "doors": []},
+  {"path": "images/rooms/13.png", "map": 13, "name": "Shingo Forest in sepia (a flashback; map 12 tinted)", "label": "13 Shingo Forest in sepia (a flashback; map 12 tinted)", "area": "Shingo Forest", "width": 480, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 480, 10], "scene_doors": [{"door": 858562, "map": 15}], "doors": []},
   {"path": "images/rooms/14.png", "map": 14, "name": "Shingo Forest", "label": "14 Shingo Forest", "area": "Shingo Forest", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 924317, "map": 12, "back": 793021}, {"door": 924583, "map": 12, "back": 793021}, {"door": 924910, "map": 12, "back": 793021}, {"door": 925153, "map": 16}, {"door": 925456, "map": 556}], "doors": []},
-  {"path": "images/rooms/15.png", "map": 15, "name": "Arlia Village", "label": "15 Arlia Village", "area": "Rena's Room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 989633, "map": 42}], "doors": []},
-  {"path": "images/rooms/16.png", "map": 16, "name": "Arlia Village", "label": "16 Arlia Village", "area": "Arlia Village", "width": 320, "height": 260, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 1055495, "map": 12}], "doors": []},
+  {"path": "images/rooms/15.png", "map": 15, "name": "Shingo Forest in sepia (a flashback; map 14 tinted)", "label": "15 Shingo Forest in sepia (a flashback; map 14 tinted)", "area": "Shingo Forest", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 989633, "map": 42}], "doors": []},
+  {"path": "images/rooms/16.png", "map": 16, "name": "clearing with a wrecked machine", "label": "16 clearing with a wrecked machine", "area": "Arlia Village", "width": 320, "height": 260, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 1055495, "map": 12}], "doors": []},
   {"path": "images/rooms/17.png", "map": 17, "name": "south: bridge and forest path", "label": "17 south: bridge and forest path", "area": "Arlia Village", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "scene_doors": [{"door": 1114994, "map": 49}, {"door": 1115057, "map": 19}, {"door": 1115139, "map": 21}, {"door": 1115493, "map": 1}], "doors": [
    {"letter": "A", "id": 1115881, "x": 419, "y": 25, "box": [433, 20, 18, 22], "how": "region", "to": [{"door": 1115881, "map": 1, "conditional": true}, {"door": 1115898, "map": 1, "conditional": true}]},
    {"letter": "A", "id": 1115881, "x": 506, "y": 43, "box": [474, 32, 18, 22], "how": "region", "to": [{"door": 1115881, "map": 1, "conditional": true}, {"door": 1115898, "map": 1, "conditional": true}]},
@@ -459,12 +459,12 @@
    {"letter": "G", "id": 1181691, "x": 258, "y": 105, "box": [272, 94, 18, 22], "how": "actor", "to": [{"door": 1181691, "map": 303, "back": 19862399, "conditional": true}]}
   ]},
   {"path": "images/rooms/19.png", "map": 19, "name": "side yard off the south square (planet-gate ornament)", "label": "19 side yard off the south square (planet-gate ornament)", "area": "Arlia Village", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 1245681, "map": 17, "back": 1115905, "conditional": true}, {"door": 1245780, "map": 1, "conditional": true}, {"door": 1246133, "map": 1}], "doors": []},
-  {"path": "images/rooms/20.png", "map": 20, "name": "south: bridge and forest path, at night", "label": "20 south: bridge and forest path, at night", "area": "Rena's Room", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "doors": [
+  {"path": "images/rooms/20.png", "map": 20, "name": "south: bridge and forest path, at night", "label": "20 south: bridge and forest path, at night", "area": "Arlia Village", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "doors": [
    {"letter": "A", "id": 1310756, "x": 269, "y": 282, "box": [283, 271, 18, 22], "how": "region", "to": [{"door": 1310756, "map": 22}]},
    {"letter": "B", "id": 1310795, "x": 332, "y": 166, "box": [346, 155, 18, 22], "how": "region", "to": [{"door": 1310795, "map": 22}]},
    {"letter": "C", "id": 1311146, "x": 507, "y": 138, "box": [475, 127, 18, 22], "how": "region", "to": [{"door": 1311146, "map": 21, "back": 1376783}]}
   ]},
-  {"path": "images/rooms/21.png", "map": 21, "name": "north: fountain square, at night", "label": "21 north: fountain square, at night", "area": "Rena's Room", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "scene_doors": [{"door": 1376324, "map": 38}, {"door": 1376373, "map": 35, "back": 2294197}, {"door": 1376671, "map": 29, "back": 1901191, "conditional": true}], "doors": [
+  {"path": "images/rooms/21.png", "map": 21, "name": "north: fountain square, at night", "label": "21 north: fountain square, at night", "area": "Arlia Village", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "scene_doors": [{"door": 1376324, "map": 38}, {"door": 1376373, "map": 35, "back": 2294197}, {"door": 1376671, "map": 29, "back": 1901191, "conditional": true}], "doors": [
    {"letter": "A", "id": 1376783, "x": 4, "y": 153, "box": [18, 142, 18, 22], "how": "region", "to": [{"door": 1376783, "map": 20, "back": 1311146}]},
    {"letter": "B", "id": 1376797, "x": 393, "y": 289, "box": [407, 278, 18, 22], "how": "region", "to": [{"door": 1376797, "map": 35, "back": 2294197}]},
    {"letter": "C", "id": 1376821, "x": 441, "y": 293, "box": [455, 282, 18, 22], "how": "region", "to": [{"door": 1376821, "map": 37, "back": 2424975}]},
@@ -490,7 +490,7 @@
    {"letter": "C", "id": 1771233, "x": 129, "y": 136, "box": [136, 131, 9, 11], "how": "actor", "to": [{"door": 1771233, "map": 30, "back": 1966685, "conditional": true}]},
    {"letter": "C", "id": 1771233, "x": 202, "y": 137, "box": [209, 132, 9, 11], "how": "actor", "to": [{"door": 1771233, "map": 30, "back": 1966685, "conditional": true}]}
   ]},
-  {"path": "images/rooms/29.png", "map": 29, "name": "Rena's House (inside), at night", "label": "29 Rena's House (inside), at night", "area": "Rena's Room", "width": 376, "height": 330, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 376, 10], "scene_doors": [{"door": 1900824, "map": 41}], "doors": [
+  {"path": "images/rooms/29.png", "map": 29, "name": "Rena's House (inside), at night", "label": "29 Rena's House (inside), at night", "area": "Arlia Village", "width": 376, "height": 330, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 376, 10], "scene_doors": [{"door": 1900824, "map": 41}], "doors": [
    {"letter": "A", "id": 1901134, "x": 106, "y": 62, "box": [113, 57, 9, 11], "how": "region", "to": [{"door": 1901134, "map": 21, "back": 1376864}]},
    {"letter": "B", "id": 1901191, "x": 282, "y": 306, "box": [289, 301, 9, 11], "how": "region", "to": [{"door": 1901191, "map": 21, "back": 1376864, "conditional": true}]},
    {"letter": "C", "id": 1901205, "x": 129, "y": 19, "box": [136, 14, 9, 11], "how": "region", "to": [{"door": 1901205, "map": 32, "back": 2097213}]}
@@ -512,7 +512,7 @@
    {"letter": "A", "id": 2228483, "x": 123, "y": 362, "box": [137, 351, 18, 22], "how": "region", "to": [{"door": 2228483, "map": 18, "back": 1180176}]},
    {"letter": "B", "id": 2228497, "x": 315, "y": 206, "box": [329, 195, 18, 22], "how": "region", "to": [{"door": 2228497, "map": 36, "back": 2359377}]}
   ]},
-  {"path": "images/rooms/35.png", "map": 35, "name": "Mayor Regis's House, 1F, at night", "label": "35 Mayor Regis's House, 1F, at night", "area": "Rena's Room", "width": 480, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 480, 20], "scene_doors": [{"door": 2293808, "map": 42}], "doors": [
+  {"path": "images/rooms/35.png", "map": 35, "name": "Mayor Regis's House, 1F, at night", "label": "35 Mayor Regis's House, 1F, at night", "area": "Arlia Village", "width": 480, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 480, 20], "scene_doors": [{"door": 2293808, "map": 42}], "doors": [
    {"letter": "A", "id": 2293875, "x": 195, "y": 225, "box": [209, 214, 18, 22], "how": "region", "to": [{"door": 2293875, "map": 42}]},
    {"letter": "B", "id": 2294197, "x": 123, "y": 362, "box": [137, 351, 18, 22], "how": "region", "to": [{"door": 2294197, "map": 21, "back": 1376797}]},
    {"letter": "C", "id": 2294211, "x": 315, "y": 206, "box": [329, 195, 18, 22], "how": "region", "to": [{"door": 2294211, "map": 37, "back": 2424961}]}
@@ -523,7 +523,7 @@
    {"letter": "C", "id": 2359605, "x": 200, "y": 119, "box": [214, 108, 18, 22], "how": "actor", "to": [{"door": 2359605, "map": 36, "back": 2359605, "conditional": true}]},
    {"letter": "C", "id": 2359605, "x": 243, "y": 211, "box": [257, 200, 18, 22], "how": "actor", "to": [{"door": 2359605, "map": 36, "back": 2359605, "conditional": true}]}
   ]},
-  {"path": "images/rooms/37.png", "map": 37, "name": "Mayor's house, back porch, at night", "label": "37 Mayor's house, back porch, at night", "area": "Rena's Room", "width": 480, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 480, 20], "doors": [
+  {"path": "images/rooms/37.png", "map": 37, "name": "Mayor's house, back porch, at night", "label": "37 Mayor's house, back porch, at night", "area": "Arlia Village", "width": 480, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 480, 20], "doors": [
    {"letter": "A", "id": 2424961, "x": 280, "y": 242, "box": [294, 231, 18, 22], "how": "region", "to": [{"door": 2424961, "map": 35, "back": 2294211}]},
    {"letter": "B", "id": 2424975, "x": 272, "y": 480, "box": [286, 469, 18, 22], "how": "region", "to": [{"door": 2424975, "map": 21, "back": 1376821}]}
   ]},
@@ -536,7 +536,7 @@
    {"letter": "A", "id": 2621451, "x": 91, "y": 215, "box": [98, 210, 9, 11], "how": "region", "to": [{"door": 2621451, "map": 32, "back": 2097227}]}
   ]},
   {"path": "images/rooms/41.png", "map": 41, "name": "villager's house (unidentified owner)", "label": "41 villager's house (unidentified owner)", "area": "Arlia Village", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 2687343, "map": 644}, {"door": 2687750, "map": 36, "conditional": true}, {"door": 2687758, "map": 21, "conditional": true}], "doors": []},
-  {"path": "images/rooms/42.png", "map": 42, "name": "Arlia Village", "label": "42 Arlia Village", "area": "Rena's Room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 2753000, "map": 21}, {"door": 2753133, "map": 11}, {"door": 2753261, "map": 37}], "doors": []},
+  {"path": "images/rooms/42.png", "map": 42, "name": "Arlia Village", "label": "42 Arlia Village", "area": "Arlia Village", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 2753000, "map": 21}, {"door": 2753133, "map": 11}, {"door": 2753261, "map": 37}], "doors": []},
   {"path": "images/rooms/43.png", "map": 43, "name": "square, outer half (path to Salva Drift and Alen's Mansion)", "label": "43 square, outer half (path to Salva Drift and Alen's Mansion)", "area": "Town of Salva", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "scene_doors": [{"door": 2825744, "map": 60, "back": 3940923}], "doors": [
    {"letter": "A", "id": 2824588, "x": 113, "y": 525, "box": [127, 510, 18, 22], "how": "region", "to": [{"door": 2824588, "map": 44, "back": 2890533}]},
    {"letter": "B", "id": 2824602, "x": 330, "y": 525, "box": [344, 510, 18, 22], "how": "region", "to": [{"door": 2824602, "map": 44, "back": 2890540}]},
@@ -589,12 +589,12 @@
   {"path": "images/rooms/51.png", "map": 51, "name": "Alen's Mansion, dining room", "label": "51 Alen's Mansion, dining room", "area": "Alen's Mansion", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 3346919, "x": 185, "y": 68, "box": [192, 63, 9, 11], "how": "region", "to": [{"door": 3346919, "map": 46, "back": 3019340}]}
   ]},
-  {"path": "images/rooms/52.png", "map": 52, "name": "Alen's study (passage to Salva Drift)", "label": "52 Alen's study (passage to Salva Drift)", "area": "Arlia Village", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/52.png", "map": 52, "name": "Alen's study (passage to Salva Drift)", "label": "52 Alen's study (passage to Salva Drift)", "area": "Alen's Mansion", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 3414773, "x": 238, "y": 148, "box": [245, 143, 9, 11], "how": "region", "to": [{"door": 3414773, "map": 53, "conditional": true}]},
    {"letter": "B", "id": 3414780, "x": 128, "y": 223, "box": [135, 218, 9, 11], "how": "region", "to": [{"door": 3414780, "map": 46, "back": 3019400}]},
    {"letter": "C", "id": 3414860, "x": 178, "y": 139, "box": [185, 134, 9, 11], "how": "region", "to": [{"door": 3414860, "map": 62, "conditional": true}]}
   ]},
-  {"path": "images/rooms/53.png", "map": 53, "name": "Alen's study, guarded (passage to Salva Drift)", "label": "53 Alen's study, guarded (passage to Salva Drift)", "area": "Arlia Village", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 3480302, "map": 17}], "doors": [
+  {"path": "images/rooms/53.png", "map": 53, "name": "Alen's study, guarded (passage to Salva Drift)", "label": "53 Alen's study, guarded (passage to Salva Drift)", "area": "Alen's Mansion", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 3480302, "map": 17}], "doors": [
    {"letter": "A", "id": 3480310, "x": 128, "y": 223, "box": [135, 218, 9, 11], "how": "region", "to": [{"door": 3480310, "map": 46, "back": 3019400}]},
    {"letter": "B", "id": 3480401, "x": 178, "y": 139, "box": [185, 134, 9, 11], "how": "region", "to": [{"door": 3480401, "map": 62, "back": 4068143, "conditional": true}]}
   ]},
@@ -1058,13 +1058,13 @@
    {"letter": "A", "id": 10883562, "x": 8, "y": 278, "box": [15, 273, 9, 11], "how": "region", "to": [{"door": 10883562, "map": 165, "back": 10818026}]},
    {"letter": "B", "id": 10883576, "x": 464, "y": 196, "box": [471, 191, 9, 11], "how": "region", "to": [{"door": 10883576, "map": 162, "back": 10621432}]}
   ]},
-  {"path": "images/rooms/167.png", "map": 167, "name": "Food Store Munchies", "label": "167 Food Store Munchies", "area": "Tavern Stone", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
+  {"path": "images/rooms/167.png", "map": 167, "name": "Food Store Munchies", "label": "167 Food Store Munchies", "area": "Port Hilton", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
    {"letter": "A", "id": 10951308, "x": 4, "y": 198, "box": [18, 187, 18, 22], "how": "region", "to": [{"door": 10951308, "map": 169, "back": 11082386}]},
    {"letter": "B", "id": 10951368, "x": 70, "y": 172, "box": [84, 161, 18, 22], "how": "region", "to": [{"door": 10951368, "map": 174, "back": 11410059, "conditional": true}]},
    {"letter": "C", "id": 10951432, "x": 426, "y": 161, "box": [440, 150, 18, 22], "how": "region", "to": [{"door": 10951432, "map": 175, "back": 11475592}]},
    {"letter": "D", "id": 10953415, "x": 130, "y": 198, "box": [144, 187, 18, 22], "how": "actor", "to": [{"door": 10953415, "map": 169, "back": 11082386, "conditional": true}, {"door": 10955821, "map": 174, "back": 11410059, "conditional": true}]}
   ]},
-  {"path": "images/rooms/169.png", "map": 169, "name": "harbor entrance (city gate, cargo crane)", "label": "169 harbor entrance (city gate, cargo crane)", "area": "Tavern Stone", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "scene_doors": [{"door": 11084308, "map": 548}, {"door": 11084998, "map": 548}], "doors": [
+  {"path": "images/rooms/169.png", "map": 169, "name": "harbor entrance (city gate, cargo crane)", "label": "169 harbor entrance (city gate, cargo crane)", "area": "Port Hilton", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "scene_doors": [{"door": 11084308, "map": 548}, {"door": 11084998, "map": 548}], "doors": [
    {"letter": "A", "id": 11082386, "x": 633, "y": 201, "box": [601, 190, 18, 22], "how": "region", "to": [{"door": 11082386, "map": 167, "back": 10951308}]},
    {"letter": "B", "id": 11082446, "x": 541, "y": 180, "box": [555, 169, 18, 22], "how": "region", "to": [{"door": 11082446, "map": 173, "back": 11345299, "conditional": true}]},
    {"letter": "C", "id": 11082500, "x": 197, "y": 252, "box": [165, 238, 18, 22], "how": "region", "to": [{"door": 11082500, "map": 1}]},
@@ -1074,32 +1074,33 @@
    {"letter": "F", "id": 11083619, "x": 252, "y": 155, "box": [220, 144, 18, 22], "how": "actor", "to": [{"door": 11083619, "map": 1, "conditional": true}]},
    {"letter": "F", "id": 11083619, "x": 288, "y": 149, "box": [279, 113, 18, 22], "how": "actor", "to": [{"door": 11083619, "map": 1, "conditional": true}]}
   ]},
-  {"path": "images/rooms/173.png", "map": 173, "name": "Skill Guild Skill Power", "label": "173 Skill Guild Skill Power", "area": "Tavern Stone", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/171.png", "map": 171, "name": "pier (boat docks)", "label": "171 pier (boat docks)", "area": "Port Hilton", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 11215108, "map": 169, "back": 11082675}, {"door": 11215531, "map": 1}], "doors": []},
+  {"path": "images/rooms/173.png", "map": 173, "name": "Skill Guild Skill Power", "label": "173 Skill Guild Skill Power", "area": "Port Hilton", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 11345299, "x": 207, "y": 238, "box": [214, 233, 9, 11], "how": "region", "to": [{"door": 11345299, "map": 169, "back": 11082446}]}
   ]},
   {"path": "images/rooms/174.png", "map": 174, "name": "Tavern Stone", "label": "174 Tavern Stone", "area": "Tavern Stone", "width": 424, "height": 346, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 424, 10], "doors": [
    {"letter": "A", "id": 11410059, "x": 207, "y": 321, "box": [214, 316, 9, 11], "how": "region", "to": [{"door": 11410059, "map": 167, "back": 10951368}]}
   ]},
-  {"path": "images/rooms/175.png", "map": 175, "name": "Inn Hilton Island", "label": "175 Inn Hilton Island", "area": "Tavern Stone", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/175.png", "map": 175, "name": "Inn Hilton Island", "label": "175 Inn Hilton Island", "area": "Port Hilton", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 11475592, "x": 156, "y": 228, "box": [163, 223, 9, 11], "how": "region", "to": [{"door": 11475592, "map": 167, "back": 10951432}]},
    {"letter": "B", "id": 11475655, "x": 302, "y": 130, "box": [309, 125, 9, 11], "how": "region", "to": [{"door": 11475655, "map": 177, "back": 11606666}]},
    {"letter": "C", "id": 11475717, "x": 15, "y": 132, "box": [22, 127, 9, 11], "how": "region", "to": [{"door": 11475717, "map": 179, "back": 11737449}]},
    {"letter": "D", "id": 11475827, "x": 146, "y": 98, "box": [153, 93, 9, 11], "how": "actor", "to": [{"door": 11475827, "map": 182, "conditional": true}, {"door": 11475839, "map": 181, "conditional": true}]}
   ]},
-  {"path": "images/rooms/177.png", "map": 177, "name": "Inn Hilton Island, guest hallway (A)", "label": "177 Inn Hilton Island, guest hallway (A)", "area": "Tavern Stone", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
+  {"path": "images/rooms/177.png", "map": 177, "name": "Inn Hilton Island, guest hallway (A)", "label": "177 Inn Hilton Island, guest hallway (A)", "area": "Port Hilton", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
    {"letter": "A", "id": 11606666, "x": 11, "y": 206, "box": [25, 195, 18, 22], "how": "region", "to": [{"door": 11606666, "map": 175, "back": 11475655, "conditional": true}]},
    {"letter": "B", "id": 11606730, "x": 103, "y": 235, "box": [117, 224, 18, 22], "how": "region", "to": [{"door": 11606730, "map": 181, "back": 11868821, "conditional": true}]},
    {"letter": "C", "id": 11606795, "x": 313, "y": 234, "box": [327, 223, 18, 22], "how": "region", "to": [{"door": 11606795, "map": 181, "back": 11868821, "conditional": true}]},
    {"letter": "D", "id": 11606860, "x": 529, "y": 235, "box": [543, 224, 18, 22], "how": "region", "to": [{"door": 11606860, "map": 181, "back": 11868821, "conditional": true}]}
   ]},
-  {"path": "images/rooms/179.png", "map": 179, "name": "Inn Hilton Island, guest hallway (B)", "label": "179 Inn Hilton Island, guest hallway (B)", "area": "Tavern Stone", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
+  {"path": "images/rooms/179.png", "map": 179, "name": "Inn Hilton Island, guest hallway (B)", "label": "179 Inn Hilton Island, guest hallway (B)", "area": "Port Hilton", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
    {"letter": "A", "id": 11737449, "x": 629, "y": 207, "box": [597, 196, 18, 22], "how": "region", "to": [{"door": 11737449, "map": 175, "back": 11475717, "conditional": true}]},
    {"letter": "B", "id": 11737514, "x": 536, "y": 236, "box": [550, 225, 18, 22], "how": "region", "to": [{"door": 11737514, "map": 181, "back": 11868821, "conditional": true}]},
    {"letter": "C", "id": 11737579, "x": 323, "y": 235, "box": [337, 224, 18, 22], "how": "region", "to": [{"door": 11737579, "map": 181, "back": 11868821, "conditional": true}]},
    {"letter": "D", "id": 11737643, "x": 110, "y": 234, "box": [124, 223, 18, 22], "how": "region", "to": [{"door": 11737643, "map": 181, "back": 11868821, "conditional": true}]},
    {"letter": "E", "id": 11737821, "x": 341, "y": 208, "box": [355, 197, 18, 22], "how": "region", "to": [{"door": 11737821, "map": 181, "back": 11868821}, {"door": 11738255, "map": 181, "back": 11868821}]}
   ]},
-  {"path": "images/rooms/181.png", "map": 181, "name": "Inn Hilton Island, guest room", "label": "181 Inn Hilton Island, guest room", "area": "Tavern Stone", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 11869705, "map": 179, "back": 11737821}], "doors": [
+  {"path": "images/rooms/181.png", "map": 181, "name": "Inn Hilton Island, guest room", "label": "181 Inn Hilton Island, guest room", "area": "Port Hilton", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 11869705, "map": 179, "back": 11737821}], "doors": [
    {"letter": "A", "id": 11868821, "x": 160, "y": 72, "box": [167, 67, 9, 11], "how": "region", "to": [{"door": 11868821, "map": 177, "back": 11606730, "conditional": true}, {"door": 11868829, "map": 177, "back": 11606795, "conditional": true}, {"door": 11868837, "map": 177, "back": 11606860, "conditional": true}, {"door": 11868845, "map": 179, "back": 11737514, "conditional": true}, {"door": 11868853, "map": 179, "back": 11737821, "conditional": true}, {"door": 11868861, "map": 179, "back": 11737643, "conditional": true}]}
   ]},
   {"path": "images/rooms/183.png", "map": 183, "name": "town plaza (University district; most shops open off it)", "label": "183 town plaza (University district; most shops open off it)", "area": "Town of Linga", "width": 512, "height": 532, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 512, 20], "scene_doors": [{"door": 12001709, "map": 207}, {"door": 12002306, "map": 196, "back": 12851643}, {"door": 12004606, "map": 209}], "doors": [
@@ -1408,7 +1409,7 @@
   {"path": "images/rooms/259.png", "map": 259, "name": "Weapons Shop Hyper-on-Hyper", "label": "259 Weapons Shop Hyper-on-Hyper", "area": "Central City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 16980424, "x": 307, "y": 159, "box": [291, 154, 9, 11], "how": "region", "to": [{"door": 16980424, "map": 235, "back": 15407621}]}
   ]},
-  {"path": "images/rooms/260.png", "map": 260, "name": "town plaza (round garden, shops around)", "label": "260 town plaza (round garden, shops around)", "area": "Field of Love", "width": 320, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17046904, "map": 261}, {"door": 17046911, "map": 261}], "doors": [
+  {"path": "images/rooms/260.png", "map": 260, "name": "town plaza (round garden, shops around)", "label": "260 town plaza (round garden, shops around)", "area": "North City", "width": 320, "height": 370, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17046904, "map": 261}, {"door": 17046911, "map": 261}], "doors": [
    {"letter": "A", "id": 17045988, "x": 161, "y": 358, "box": [168, 353, 9, 11], "how": "region", "to": [{"door": 17045988, "map": 261, "conditional": true}, {"door": 17046008, "map": 2, "conditional": true}]},
    {"letter": "B", "id": 17046019, "x": 26, "y": 309, "box": [33, 304, 9, 11], "how": "region", "to": [{"door": 17046019, "map": 275, "back": 18029022}]},
    {"letter": "C", "id": 17046043, "x": 285, "y": 306, "box": [292, 301, 9, 11], "how": "region", "to": [{"door": 17046043, "map": 276, "back": 18094558}]},
@@ -1423,29 +1424,29 @@
    {"letter": "J", "id": 17047534, "x": 196, "y": 140, "box": [180, 122, 9, 11], "how": "actor", "to": [{"door": 17047534, "map": 262, "conditional": true}]},
    {"letter": "K", "id": 17047587, "x": 215, "y": 140, "box": [222, 135, 9, 11], "how": "actor", "to": [{"door": 17047587, "map": 262, "conditional": true}]}
   ]},
-  {"path": "images/rooms/261.png", "map": 261, "name": "plaza, garden edge (notice board)", "label": "261 plaza, garden edge (notice board)", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17113397, "map": 260, "back": 17045988}, {"door": 17114250, "map": 2}, {"door": 17116103, "map": 260, "back": 17045988}, {"door": 17116652, "map": 260, "back": 17045988}], "doors": []},
-  {"path": "images/rooms/262.png", "map": 262, "name": "park path (toward the Four Fields transporter)", "label": "262 park path (toward the Four Fields transporter)", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17177602, "map": 596}, {"door": 17177982, "map": 260, "back": 17047344}, {"door": 17178327, "map": 260, "back": 17047344}, {"door": 17178707, "map": 260, "back": 17047344}], "doors": []},
+  {"path": "images/rooms/261.png", "map": 261, "name": "plaza, garden edge (notice board)", "label": "261 plaza, garden edge (notice board)", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17113397, "map": 260, "back": 17045988}, {"door": 17114250, "map": 2}, {"door": 17116103, "map": 260, "back": 17045988}, {"door": 17116652, "map": 260, "back": 17045988}], "doors": []},
+  {"path": "images/rooms/262.png", "map": 262, "name": "park path (toward the Four Fields transporter)", "label": "262 park path (toward the Four Fields transporter)", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17177602, "map": 596}, {"door": 17177982, "map": 260, "back": 17047344}, {"door": 17178327, "map": 260, "back": 17047344}, {"door": 17178707, "map": 260, "back": 17047344}], "doors": []},
   {"path": "images/rooms/263.png", "map": 263, "name": "Synard Office", "label": "263 Synard Office", "area": "Synard Plant", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17243118, "map": 269, "back": 17636766}], "doors": [
    {"letter": "A", "id": 17243125, "x": 29, "y": 167, "box": [36, 162, 9, 11], "how": "region", "to": [{"door": 17243125, "map": 269, "back": 17636766}]}
   ]},
-  {"path": "images/rooms/264.png", "map": 264, "name": "Synard Reception Area", "label": "264 Synard Reception Area", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/264.png", "map": 264, "name": "Synard Reception Area", "label": "264 Synard Reception Area", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17308906, "x": 296, "y": 176, "box": [303, 171, 9, 11], "how": "region", "to": [{"door": 17308906, "map": 269, "back": 17636794, "conditional": true}, {"door": 17308911, "map": 270, "back": 17701533, "conditional": true}]},
    {"letter": "B", "id": 17308938, "x": 247, "y": 97, "box": [254, 92, 9, 11], "how": "region", "to": [{"door": 17308938, "map": 269, "back": 17636780, "conditional": true}, {"door": 17308943, "map": 270, "back": 17701519, "conditional": true}]},
    {"letter": "C", "id": 17309082, "x": 114, "y": 138, "box": [121, 133, 9, 11], "how": "region", "to": [{"door": 17309082, "map": 272, "back": 17833156, "conditional": true}]},
    {"letter": "D", "id": 17309096, "x": 15, "y": 225, "box": [22, 220, 9, 11], "how": "region", "to": [{"door": 17309096, "map": 260, "back": 17046139}]}
   ]},
-  {"path": "images/rooms/265.png", "map": 265, "name": "Tool Shop Blue Flask", "label": "265 Tool Shop Blue Flask", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/265.png", "map": 265, "name": "Tool Shop Blue Flask", "label": "265 Tool Shop Blue Flask", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17373681, "x": 201, "y": 231, "box": [208, 226, 9, 11], "how": "region", "to": [{"door": 17373681, "map": 260, "back": 17046091}]},
    {"letter": "B", "id": 17373695, "x": 192, "y": 61, "box": [199, 56, 9, 11], "how": "region", "to": [{"door": 17373695, "map": 268, "back": 17570245}]}
   ]},
-  {"path": "images/rooms/266.png", "map": 266, "name": "Library Encyclopedia", "label": "266 Library Encyclopedia", "area": "Field of Love", "width": 320, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 320, 20], "doors": [
+  {"path": "images/rooms/266.png", "map": 266, "name": "Library Encyclopedia", "label": "266 Library Encyclopedia", "area": "North City", "width": 320, "height": 500, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 320, 20], "doors": [
    {"letter": "A", "id": 17438197, "x": 192, "y": 494, "box": [206, 478, 18, 22], "how": "region", "to": [{"door": 17438197, "map": 260, "back": 17046115}]}
   ]},
   {"path": "images/rooms/267.png", "map": 267, "name": "Transporter", "label": "267 Transporter", "area": "Noel's House", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17503740, "x": 125, "y": 131, "box": [132, 126, 9, 11], "how": "region", "to": [{"door": 17503740, "map": 278, "back": 18226782}]},
    {"letter": "B", "id": 17503794, "x": 306, "y": 211, "box": [290, 206, 9, 11], "how": "region", "to": [{"door": 17503794, "map": 272, "back": 17833308}]}
   ]},
-  {"path": "images/rooms/268.png", "map": 268, "name": "Chisato's home (above Tool Shop Blue Flask)", "label": "268 Chisato's home (above Tool Shop Blue Flask)", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/268.png", "map": 268, "name": "Chisato's home (above Tool Shop Blue Flask)", "label": "268 Chisato's home (above Tool Shop Blue Flask)", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17570245, "x": 190, "y": 101, "box": [197, 96, 9, 11], "how": "region", "to": [{"door": 17570245, "map": 265, "back": 17373695}]}
   ]},
   {"path": "images/rooms/269.png", "map": 269, "name": "Synard Plant", "label": "269 Synard Plant", "area": "Synard Plant", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17636222, "map": 271}, {"door": 17636759, "map": 263, "back": 17243125}], "doors": [
@@ -1453,7 +1454,7 @@
    {"letter": "B", "id": 17636780, "x": 27, "y": 105, "box": [34, 100, 9, 11], "how": "region", "to": [{"door": 17636780, "map": 264, "back": 17308938}]},
    {"letter": "C", "id": 17636794, "x": 27, "y": 204, "box": [34, 199, 9, 11], "how": "region", "to": [{"door": 17636794, "map": 264, "back": 17308906}]}
   ]},
-  {"path": "images/rooms/270.png", "map": 270, "name": "Synard Plant", "label": "270 Synard Plant", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/270.png", "map": 270, "name": "Synard Plant", "label": "270 Synard Plant", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17701519, "x": 27, "y": 105, "box": [34, 100, 9, 11], "how": "region", "to": [{"door": 17701519, "map": 264, "back": 17308938}]},
    {"letter": "B", "id": 17701533, "x": 27, "y": 204, "box": [34, 199, 9, 11], "how": "region", "to": [{"door": 17701533, "map": 264, "back": 17308906}]}
   ]},
@@ -1461,21 +1462,21 @@
    {"letter": "A", "id": 17767264, "x": 27, "y": 105, "box": [34, 100, 9, 11], "how": "region", "to": [{"door": 17767264, "map": 264}]},
    {"letter": "B", "id": 17767271, "x": 27, "y": 204, "box": [34, 199, 9, 11], "how": "region", "to": [{"door": 17767271, "map": 264}]}
   ]},
-  {"path": "images/rooms/272.png", "map": 272, "name": "Director's Office", "label": "272 Director's Office", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17832691, "map": 269}], "doors": [
+  {"path": "images/rooms/272.png", "map": 272, "name": "Director's Office", "label": "272 Director's Office", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "scene_doors": [{"door": 17832691, "map": 269}], "doors": [
    {"letter": "A", "id": 17833156, "x": 42, "y": 228, "box": [49, 223, 9, 11], "how": "region", "to": [{"door": 17833156, "map": 264, "back": 17309082}]},
    {"letter": "B", "id": 17833308, "x": 32, "y": 158, "box": [39, 153, 9, 11], "how": "region", "to": [{"door": 17833308, "map": 267, "back": 17503794, "conditional": true}, {"door": 17833321, "map": 267, "back": 17503794, "conditional": true}, {"door": 17833329, "map": 267, "back": 17503794, "conditional": true}]}
   ]},
-  {"path": "images/rooms/273.png", "map": 273, "name": "Inn Landscape", "label": "273 Inn Landscape", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/273.png", "map": 273, "name": "Inn Landscape", "label": "273 Inn Landscape", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17895996, "x": 111, "y": 231, "box": [118, 226, 9, 11], "how": "region", "to": [{"door": 17895996, "map": 260, "back": 17046067}]},
    {"letter": "B", "id": 17896010, "x": 121, "y": 84, "box": [128, 79, 9, 11], "how": "region", "to": [{"door": 17896010, "map": 274, "back": 17963464}]}
   ]},
-  {"path": "images/rooms/274.png", "map": 274, "name": "Inn Landscape, guest room", "label": "274 Inn Landscape, guest room", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/274.png", "map": 274, "name": "Inn Landscape, guest room", "label": "274 Inn Landscape, guest room", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 17963464, "x": 134, "y": 239, "box": [141, 234, 9, 11], "how": "region", "to": [{"door": 17963464, "map": 273, "back": 17896010}]}
   ]},
-  {"path": "images/rooms/275.png", "map": 275, "name": "Smiley's Grocery", "label": "275 Smiley's Grocery", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/275.png", "map": 275, "name": "Smiley's Grocery", "label": "275 Smiley's Grocery", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 18029022, "x": 308, "y": 188, "box": [292, 183, 9, 11], "how": "region", "to": [{"door": 18029022, "map": 260, "back": 17046019}]}
   ]},
-  {"path": "images/rooms/276.png", "map": 276, "name": "Account Weapons", "label": "276 Account Weapons", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/276.png", "map": 276, "name": "Account Weapons", "label": "276 Account Weapons", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 18094558, "x": 24, "y": 192, "box": [31, 187, 9, 11], "how": "region", "to": [{"door": 18094558, "map": 260, "back": 17046043}]}
   ]},
   {"path": "images/rooms/277.png", "map": 277, "name": "Noel's House", "label": "277 Noel's House", "area": "Noel's House", "width": 320, "height": 410, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
@@ -2128,16 +2129,16 @@
    {"letter": "A", "id": 28842377, "x": 165, "y": 244, "box": [172, 239, 9, 11], "how": "region", "to": [{"door": 28842377, "map": 445, "back": 29170057}]},
    {"letter": "B", "id": 28842438, "x": 164, "y": 49, "box": [171, 44, 9, 11], "how": "region", "to": [{"door": 28842438, "map": 444, "back": 29104583, "conditional": true}]}
   ]},
-  {"path": "images/rooms/441.png", "map": 441, "name": "Meeting Room (Lacour Front Line command tent)", "label": "441 Meeting Room (Lacour Front Line command tent)", "area": "Lacour meeting room", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
+  {"path": "images/rooms/441.png", "map": 441, "name": "Meeting Room (Lacour Front Line command tent)", "label": "441 Meeting Room (Lacour Front Line command tent)", "area": "Meeting Room", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "doors": [
    {"letter": "A", "id": 28907913, "x": 439, "y": 175, "box": [453, 164, 18, 22], "how": "region", "to": [{"door": 28907913, "map": 444, "back": 29104524}]}
   ]},
-  {"path": "images/rooms/442.png", "map": 442, "name": "Lacour Front Line Field Hospital", "label": "442 Lacour Front Line Field Hospital", "area": "Lacour meeting room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/442.png", "map": 442, "name": "Lacour Front Line Field Hospital", "label": "442 Lacour Front Line Field Hospital", "area": "Meeting Room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 28973467, "x": 205, "y": 238, "box": [212, 233, 9, 11], "how": "region", "to": [{"door": 28973467, "map": 444, "back": 29104531, "conditional": true}]}
   ]},
-  {"path": "images/rooms/443.png", "map": 443, "name": "Commander's Office", "label": "443 Commander's Office", "area": "Lacour meeting room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/443.png", "map": 443, "name": "Commander's Office", "label": "443 Commander's Office", "area": "Meeting Room", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 29039003, "x": 16, "y": 208, "box": [23, 203, 9, 11], "how": "region", "to": [{"door": 29039003, "map": 444, "back": 29104597}]}
   ]},
-  {"path": "images/rooms/444.png", "map": 444, "name": "Meeting Room, second tent", "label": "444 Meeting Room, second tent", "area": "Lacour meeting room", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "scene_doors": [{"door": 29105514, "map": 440, "back": 28842438, "conditional": true}], "doors": [
+  {"path": "images/rooms/444.png", "map": 444, "name": "Meeting Room, second tent", "label": "444 Meeting Room, second tent", "area": "Meeting Room", "width": 640, "height": 260, "bg_y": 20, "font_scale": 2, "location_size": 24, "label_box": [0, 0, 640, 20], "scene_doors": [{"door": 29105514, "map": 440, "back": 28842438, "conditional": true}], "doors": [
    {"letter": "A", "id": 29104524, "x": 95, "y": 210, "box": [109, 199, 18, 22], "how": "region", "to": [{"door": 29104524, "map": 441, "back": 28907913}]},
    {"letter": "B", "id": 29104531, "x": 346, "y": 107, "box": [360, 96, 18, 22], "how": "region", "to": [{"door": 29104531, "map": 442, "back": 28973467}]},
    {"letter": "C", "id": 29104583, "x": 256, "y": 250, "box": [270, 238, 18, 22], "how": "region", "to": [{"door": 29104583, "map": 440, "back": 28842438, "conditional": true}]},
@@ -2773,12 +2774,12 @@
    {"letter": "A", "id": 38670056, "x": 627, "y": 246, "box": [595, 235, 18, 22], "how": "region", "to": [{"door": 38670056, "map": 589, "back": 38604536}]},
    {"letter": "B", "id": 38670072, "x": 6, "y": 102, "box": [20, 91, 18, 22], "how": "region", "to": [{"door": 38670072, "map": 592, "back": 38802597, "conditional": true}, {"door": 38670077, "map": 591, "back": 38737061, "conditional": true}]}
   ]},
-  {"path": "images/rooms/591.png", "map": 591, "name": "star platform (approach to switch 1)", "label": "591 star platform (approach to switch 1)", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/591.png", "map": 591, "name": "star platform (approach to switch 1)", "label": "591 star platform (approach to switch 1)", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 38737061, "x": 316, "y": 181, "box": [300, 176, 9, 11], "how": "region", "to": [{"door": 38737061, "map": 590, "back": 38670072}]},
    {"letter": "B", "id": 38737077, "x": 218, "y": 14, "box": [225, 10, 9, 11], "how": "region", "to": [{"door": 38737077, "map": 594, "back": 38933668, "conditional": true}, {"door": 38737082, "map": 593, "back": 38868132, "conditional": true}]},
    {"letter": "C", "id": 38737105, "x": 82, "y": 13, "box": [89, 10, 9, 11], "how": "region", "to": [{"door": 38737105, "map": 594, "back": 38933696, "conditional": true}, {"door": 38737110, "map": 593, "back": 38868160, "conditional": true}]}
   ]},
-  {"path": "images/rooms/592.png", "map": 592, "name": "star platform (approach to switch 2)", "label": "592 star platform (approach to switch 2)", "area": "North City", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
+  {"path": "images/rooms/592.png", "map": 592, "name": "star platform (approach to switch 2)", "label": "592 star platform (approach to switch 2)", "area": "Field of Love", "width": 320, "height": 250, "bg_y": 10, "font_scale": 1, "location_size": 12, "label_box": [0, 0, 320, 10], "doors": [
    {"letter": "A", "id": 38802597, "x": 316, "y": 181, "box": [300, 176, 9, 11], "how": "region", "to": [{"door": 38802597, "map": 590, "back": 38670072}]},
    {"letter": "B", "id": 38802613, "x": 218, "y": 14, "box": [225, 10, 9, 11], "how": "region", "to": [{"door": 38802613, "map": 594, "back": 38933668, "conditional": true}, {"door": 38802618, "map": 593, "back": 38868132, "conditional": true}]},
    {"letter": "C", "id": 38802641, "x": 82, "y": 13, "box": [89, 10, 9, 11], "how": "region", "to": [{"door": 38802641, "map": 594, "back": 38933696, "conditional": true}, {"door": 38802646, "map": 593, "back": 38868160, "conditional": true}]}
@@ -3763,8 +3764,8 @@
   ]}
  ],
  "room_groups": [
-  {"area": "Alen's Mansion", "image": "images/maps/alens_mansion.png", "world": 1, "entrances": [50], "rooms": [50, 46, 47, 49, 51]},
-  {"area": "Arlia Village", "image": "images/maps/arlia_village.png", "world": 1, "entrances": [17, 19], "rooms": [17, 19, 18, 22, 23, 24, 53, 25, 26, 27, 32, 33, 34, 36, 39, 52, 31, 40, 41, 644, 645, 646, 16]},
+  {"area": "Alen's Mansion", "image": "images/maps/alens_mansion.png", "world": 1, "entrances": [50], "rooms": [50, 46, 47, 49, 51, 52, 53]},
+  {"area": "Arlia Village", "image": "images/maps/arlia_village.png", "world": 1, "entrances": [17, 19], "rooms": [17, 19, 18, 21, 22, 23, 24, 20, 25, 26, 27, 29, 32, 33, 34, 35, 36, 37, 39, 41, 42, 31, 40, 644, 645, 646, 16]},
   {"area": "Armlock", "image": "images/maps/armlock.png", "world": 2, "entrances": [306, 307], "rooms": [306, 307, 308, 309, 310, 311, 314, 316, 312, 315]},
   {"area": "Armory", "image": "images/maps/armory.png", "world": 1, "entrances": [92], "rooms": [92, 91, 98, 99]},
   {"area": "Cave of Red Crystal", "image": "images/maps/cave_of_red_crystal.png", "world": 2, "entrances": [419], "rooms": [419, 413, 414, 416, 415, 418]},
@@ -3792,7 +3793,7 @@
   {"area": "Eluria Tower", "image": "images/maps/eluria_tower.png", "world": 1, "entrances": [557], "rooms": [557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 626, 627, 569, 570, 571, 572, 573, 574, 575, 576]},
   {"area": "Field of Courage", "image": "images/maps/field_of_courage.png", "world": 2, "entrances": [629], "rooms": [629, 630, 631, 632, 633, 635, 636, 637, 639, 640, 634, 638, 641, 642]},
   {"area": "Field of Intelligence", "image": "images/maps/field_of_intelligence.png", "world": 2, "entrances": [549], "rooms": [549, 551, 552, 553, 550, 554, 556, 555, 628]},
-  {"area": "Field of Love", "image": "images/maps/field_of_love.png", "world": 2, "entrances": [588], "rooms": [588, 589, 590, 260, 261, 262, 264, 265, 266, 268, 270, 272, 273, 274, 275, 276, 594, 595, 596]},
+  {"area": "Field of Love", "image": "images/maps/field_of_love.png", "world": 2, "entrances": [588], "rooms": [588, 589, 590, 591, 592, 594, 595, 596]},
   {"area": "Field of Power", "image": "images/maps/field_of_power.png", "world": 2, "entrances": [597], "rooms": [597, 607, 608, 613, 614, 615, 616, 598, 599, 605, 606, 609, 610, 611, 612, 600, 601, 602, 603, 604, 30, 622, 620, 621, 625, 623, 624]},
   {"area": "Fienal", "image": "images/maps/fienal.png", "world": 2, "entrances": [687], "rooms": [687, 657, 655, 648, 654, 656, 658, 647, 653, 660, 649, 650, 652, 659, 661, 662, 663, 664, 665, 667, 669, 673, 675, 679, 680, 681, 682, 651, 666, 668, 670, 672, 674, 677, 683, 671, 676, 678, 684, 685]},
   {"area": "Fun City", "image": "images/maps/fun_city.png", "world": 2, "entrances": [279], "rooms": [279, 280, 305, 281, 282, 283, 287, 288, 289, 294, 296, 297, 298, 301, 302, 304, 284, 285, 290, 291, 292, 293, 295, 299, 300, 688, 689, 286, 303]},
@@ -3802,26 +3803,26 @@
   {"area": "King's Room", "image": "images/maps/kings_room.png", "world": 1, "entrances": [429], "rooms": [429, 425, 423, 424]},
   {"area": "L'Aqua", "image": null, "world": 2, "entrances": [579, 686], "rooms": [579, 686, 577, 578, 580, 587, 581, 582, 585, 583, 584, 586]},
   {"area": "Lacour Castle Registration", "image": "images/maps/lacour_castle_registration.png", "world": 1, "entrances": [420], "rooms": [420, 421, 422]},
-  {"area": "Lacour Front Line", "image": "images/maps/lacour_front_line.png", "world": 1, "entrances": [438], "rooms": [438, 439, 11, 445, 446, 13, 440]},
-  {"area": "Lacour meeting room", "image": "images/maps/lacour_meeting_room.png", "world": 1, "entrances": [447], "rooms": [447, 444, 441, 442, 443]},
+  {"area": "Lacour Front Line", "image": "images/maps/lacour_front_line.png", "world": 1, "entrances": [438], "rooms": [438, 439, 445, 446, 440]},
+  {"area": "Lacour meeting room", "image": "images/maps/lacour_meeting_room.png", "world": 1, "entrances": [447], "rooms": [447]},
   {"area": "Lasguss Mountain", "image": "images/maps/lasguss_mountain.png", "world": 1, "entrances": [381, 382], "rooms": [381, 382, 383, 384, 385]},
   {"area": "Mars", "image": "images/maps/mars.png", "world": 2, "entrances": [463], "rooms": [463]},
   {"area": "Mars Village", "image": "images/maps/mars_village.png", "world": 1, "entrances": [124, 125, 126, 127], "rooms": [124, 125, 126, 127, 128, 129, 130, 134, 135, 136, 138, 140, 141, 465, 133, 137, 456, 462, 139, 457, 464, 458, 460, 461, 459, 466]},
-  {"area": "Meeting Room", "image": "images/maps/meeting_room.png", "world": 1, "entrances": [448], "rooms": [448]},
+  {"area": "Meeting Room", "image": "images/maps/meeting_room.png", "world": 1, "entrances": [448], "rooms": [448, 444, 441, 442, 443]},
   {"area": "Mihne Cavern", "image": "images/maps/mihne_cavern.png", "world": 2, "entrances": [449], "rooms": [449, 450, 451, 452, 453, 454, 455]},
   {"area": "Mountain Palace", "image": "images/maps/mountain_palace.png", "world": 1, "entrances": [355], "rooms": [355, 379, 342, 343, 344, 347, 350, 357, 358, 362, 365, 367, 376, 377, 378, 380, 341, 351, 363, 364, 366, 368, 372, 373, 374, 348, 359, 361, 369, 370, 371, 375, 360]},
   {"area": "Noel's House", "image": "images/maps/noels_house.png", "world": 2, "entrances": [277], "rooms": [277, 278, 267]},
-  {"area": "North City", "image": "images/maps/north_city.png", "world": 2, "entrances": [593], "rooms": [593, 591, 592]},
-  {"area": "Port Hilton", "image": "images/maps/port_hilton.png", "world": 1, "entrances": [477], "rooms": [477, 469, 472, 473, 474, 476, 468, 470, 471, 434, 467, 475, 426, 427, 428, 431, 432, 433, 435, 436, 437]},
+  {"area": "North City", "image": "images/maps/north_city.png", "world": 2, "entrances": [260, 261], "rooms": [260, 261, 262, 264, 265, 266, 273, 275, 276, 268, 270, 272, 274, 593]},
+  {"area": "Port Hilton", "image": "images/maps/port_hilton.png", "world": 1, "entrances": [169, 171], "rooms": [169, 171, 167, 173, 175, 177, 179, 181, 426, 427, 428, 431, 432, 433, 434, 435, 436, 437, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477]},
   {"area": "Port of Clik", "image": "images/maps/port_of_clik.png", "world": 1, "entrances": [107, 108, 112], "rooms": [107, 108, 112, 105, 111, 113, 114, 115, 116, 117, 109, 118, 119, 121, 123, 106, 110, 120]},
-  {"area": "Rena's Room", "image": "images/maps/renas_room.png", "world": 1, "entrances": [38], "rooms": [38, 21, 20, 29, 35, 37, 42, 15]},
+  {"area": "Rena's Room", "image": "images/maps/renas_room.png", "world": 1, "entrances": [38], "rooms": [38]},
   {"area": "Rosalia's Room", "image": "images/maps/rosalias_room.png", "world": 1, "entrances": [430], "rooms": [430]},
   {"area": "Salva Drift", "image": "images/maps/salva_drift.png", "world": 1, "entrances": [64], "rooms": [64, 65, 62, 66, 68, 61, 67, 72, 70, 69, 71]},
   {"area": "Sanctuary of Linga", "image": "images/maps/sanctuary_of_linga.png", "world": 1, "entrances": [402], "rooms": [402, 403, 405, 406, 404, 407, 408, 409, 410, 411, 412]},
-  {"area": "Shingo Forest", "image": "images/maps/shingo_forest.png", "world": 1, "entrances": [9], "rooms": [9, 10, 12, 14]},
+  {"area": "Shingo Forest", "image": "images/maps/shingo_forest.png", "world": 1, "entrances": [9], "rooms": [9, 10, 11, 12, 13, 14, 15]},
   {"area": "Ship to El", "image": "images/maps/ship_to_el.png", "world": 1, "entrances": [548], "rooms": [548]},
   {"area": "Synard Plant", "image": "images/maps/synard_plant.png", "world": 2, "entrances": [269], "rooms": [269, 263, 271]},
-  {"area": "Tavern Stone", "image": "images/maps/tavern_stone.png", "world": 1, "entrances": [169], "rooms": [169, 167, 173, 174, 175, 177, 179, 181]},
+  {"area": "Tavern Stone", "image": "images/maps/tavern_stone.png", "world": 1, "entrances": [174], "rooms": [174]},
   {"area": "The Prince's Chambers", "image": "images/maps/the_princes_chambers.png", "world": 1, "entrances": [100], "rooms": [100, 102, 101, 103, 104, 96, 97]},
   {"area": "Town of Cross", "image": "images/maps/town_of_cross.png", "world": 1, "entrances": [73, 74, 87], "rooms": [73, 74, 87, 75, 76, 77, 78, 83, 86, 88, 89, 79, 80, 81, 82, 84, 85, 90, 95, 93, 94]},
   {"area": "Town of Herlie", "image": "images/maps/town_of_herlie.png", "world": 1, "entrances": [144, 145], "rooms": [144, 145, 142, 146, 156, 157, 147, 148, 149, 150, 151, 152, 153, 154, 155]},

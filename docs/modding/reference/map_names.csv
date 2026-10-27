@@ -3,19 +3,19 @@ map,disc,area,place,kind,notes,basis
 1,1,Expel,overworld,world,,contents;doors
 2,1,Energy Nede,overworld,world,,contents;doors
 3,1,world map 3,overworld,world,,contents;doors
-4,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
-5,1,Arlia Village,"interior room, about 2 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
-6,1,Arlia Village,"interior room, about 3 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+4,1,Planet Milocinia,cavern passage (the opening),dungeon,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
+5,1,Planet Milocinia,cavern with machine wreckage (the opening),dungeon,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
+6,1,Planet Milocinia,cavern of the transporter device (the opening),dungeon,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
 7,1,Planet Milocinia,Planet Milocinia,interior,,banner
-8,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+8,1,Planet Milocinia,cavern below the landing site (the opening),dungeon,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
 9,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
 10,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
-11,1,Lacour Front Line,world-map entrance,field,,doors
+11,1,Shingo Forest,Shingo Forest in sepia (a flashback; map 10 tinted),field,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
 12,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
-13,1,Lacour Front Line,unidentified part (not connected to the rest of the cluster by any two-way door found),field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+13,1,Shingo Forest,Shingo Forest in sepia (a flashback; map 12 tinted),field,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
 14,1,Shingo Forest,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
-15,1,Arlia Village,"interior room, about 2 doors in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
-16,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+15,1,Shingo Forest,Shingo Forest in sepia (a flashback; map 14 tinted),field,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
+16,1,Shingo Forest,clearing with a wrecked machine,field,area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;thumbnail
 17,1,Arlia Village,south: bridge and forest path,town,,banner;thumbnail;doors
 18,1,Arlia Village,north: fountain square,town,,banner;thumbnail;doors
 19,1,Arlia Village,side yard off the south square (planet-gate ornament),town,,thumbnail;doors
@@ -51,8 +51,8 @@ map,disc,area,place,kind,notes,basis
 49,1,Alen's Mansion,grounds / path to the mansion,town,reached from Arlia Village map 17,doors
 50,1,Alen's Mansion,"Alen's Mansion, bedroom",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 51,1,Alen's Mansion,"Alen's Mansion, dining room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
-52,1,Arlia Village,Alen's study (passage to Salva Drift),town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text
-53,1,Arlia Village,"Alen's study, guarded (passage to Salva Drift)",town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
+52,1,Alen's Mansion,Alen's study (passage to Salva Drift),interior,renamed 2026-10-27 from the game data (map_names_evidence.csv); area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;text;thumbnail
+53,1,Alen's Mansion,"Alen's study, guarded (passage to Salva Drift)",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv); area set 2026-10-27 from the door graph and thumbnails (map_names_area_evidence.csv),doors;text;thumbnail
 54,1,Town of Salva,Inn The Hopping Penguin,interior,,banner
 55,1,Town of Salva,"Inn The Hopping Penguin, guest rooms",town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 56,1,Town of Salva,Jam Store Dolphin Kick,interior,,banner
