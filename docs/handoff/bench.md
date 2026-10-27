@@ -227,7 +227,16 @@ Same-state rule: with nobody on the bench every path is today's (the 8 first; th
 - B6 Join level: **median over the 8 slots** (today's rule).
 - B7 APWorld: **a `bench` option, on by default** (the user, 2026-10-26).
 - B8 Inns heal the bench: **no**.
-Not scheduled or built yet; build it together with heroslot (D1-D4 decided, docs/handoff/heroslot.md).
+- B2 narrowed (the user, 2026-10-27, verbatim): "Benched members are not live in the game, so
+  follow your recommendation on that. I think introducing them as viable when they are not
+  currently, until they enter the party or the reserves breaks the play of the game. They can be
+  there, they can be brought in, but they are not there without explicitly bringing them in to
+  be used." So benched members are **managed, not used**: Equipment, Skills (their SP, battle
+  skills on / off), Tactics, Status and the Specialty page's settings (killer moves, spells on /
+  off for battle) yes; field specialties (Oracle, music, Practice, Scout, Familiar), spell casts
+  and Link Combo no (built in piece 5b, docs/handoff/partybuild.md).
+Built on branch party-bench together with heroslot (D1-D4, docs/handoff/heroslot.md): docs/handoff/partybuild.md
+(pieces 2-6), docs/ap/seed_format.md "The bench". The APWorld part (6. above) waits for Phase A.
 
 - B1 Party Order layout: **right column flips Reserve / Bench** (L1 / R1; front four always on
   screen) / three narrow columns, all 12 at once without HP / MP gauges (mock-up B) / three

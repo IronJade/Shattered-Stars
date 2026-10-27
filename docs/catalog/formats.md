@@ -223,7 +223,15 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   script of disc 1 (disc 2's are the same)]: A 0x15 party_compact (55 sites on 26 maps: 17, 27, 61,
   124, 125, 130, 135, 209, 211, 229, 230, 234, 305, 422, 434, 437, 439, 444, 447, 462, 468, 477
   (before each tournament fight), 479, 548, 688, 704), A 0x16 / A 0x17
-  save / restore the order (305, 479, 688; restore also 304, 469, 704), B 0x29 / B 0x2a
+  save / restore the order (A 0x16 at 305, 468, 479, 688, 704; A 0x17 at 304, 469 twice, 479,
+  688, 704. The spans [partybuild6, 2026-10-27; scratchpad/heroslot/slots_d1.txt and
+  scratchpad/partybuild/dis/]: the arena 305 0x283d0 -> 304 0x1bd30 (flag 586 meanwhile); the
+  tournament 468 0x801c (its start, before G[0xa4] = 1500 at 0x8134) -> 469 0x21d90 / 0x291d0;
+  479 0x7148 -> 0x7c20 inside one scene (Opera out, A 0x15, battle 0xd3, then joins 8 and 9
+  after the restore); Fun City's contest 688 0x175f0 -> 0x259e0 (flag 2326 cleared right after,
+  then map 689); the Cave of Trials 704 0x1e070 (flag 2318 set right after) -> 0x1bd20 (flag
+  2318 cleared right after). Free play inside a span happens only inside those flags' or the
+  tournament's windows), B 0x29 / B 0x2a
   isolate / restore (the hero to slot 0 for a Private Action and every member back to its saved
   slot after: the map library's PA wrappers, one pair per map), ext 0xa8 special 1 / 2 on map 12
   only (routine 0x6db8, Rena's game chapter 4 step 150: special 1 = Claude's name "????" and

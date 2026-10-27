@@ -162,8 +162,9 @@ fs::path sidecar_of(const fs::path& card, int n) {
 
 // The save guard's stamp (game/ap load_allowed) [hubcore agent]: a sidecar's text with
 // "save_hash" set to 'digest' (replaced when there is one, else added as the first member) and
-// its version raised to 2. The sidecar is the game's own JSON (game/ap sidecar_json), so a text
-// edit is enough; empty when the text is not a JSON object.
+// its version raised to 2 (a higher one kept: 3, a bench [partybuild agent]). The sidecar is the
+// game's own JSON (game/ap sidecar_json), so a text edit is enough; empty when the text is not a
+// JSON object.
 std::string stamp_sidecar(const std::string& text, const std::string& digest) {
   std::string out = text;
   const size_t open = out.find_first_not_of(" \t\r\n");
@@ -192,7 +193,7 @@ std::string stamp_sidecar(const std::string& text, const std::string& digest) {
     q = out.find_first_not_of(" \t\r\n", q + 1);
     size_t end = q;
     while (end < out.size() && std::isdigit(static_cast<unsigned char>(out[end]))) ++end;
-    if (end > q) out.replace(q, end - q, "2");
+    if (end == q + 1 && out[q] < '2') out.replace(q, 1, "2");
     break;
   }
   return out;

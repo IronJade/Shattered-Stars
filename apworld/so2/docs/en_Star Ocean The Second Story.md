@@ -300,7 +300,11 @@ With `world_mode: open_world`, the party rules are looser (story mode keeps the 
   party, one of them takes a random pool member's place, unless you've excluded both.
 - **`starting_character`** puts a member of your choice in the party from the very start, as
   the leader: you walk around as them, and the story calls them by name where it would name
-  the hero. The hero still stays in the party. `hero` (the default) means nobody extra. A member
+  the hero. The hero still stays in the party, right behind them: your starting member takes
+  the first place in the party (the one you control in battle, first in every menu) and the hero
+  the second. Whatever order you leave in the camp menu (Party Order, and Formation > Leader)
+  comes back after a story scene shuffles the party, once the scene is over. `hero` (the
+  default) means nobody extra. A member
   you name starts even if you've also excluded them. This works with or without
   `character_items`; without it, everyone else joins through the story as usual.
 - **`starting_character: any` lets you choose at New Game.** After the hero select (or straight

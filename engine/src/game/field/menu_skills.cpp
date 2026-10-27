@@ -252,6 +252,7 @@ SuperDetail::SuperDetail(menu::TextBox* members) : members_(members) {
   box_ = new menu::TitledBox;
   box_->set_rect(0, 0x58, 0x138, 0x70, 1);
   choice_ = static_cast<s16>(party_get_selected());
+  if (choice_ >= 8) choice_ = 0;  // a benched member (the grid is the 8 slots') [partybuild agent]
   cursor->add_grid(&choice_, 1, 4, 2, 0, 0x1E, 0x16, 0x28, members_);
   show_members();
 }

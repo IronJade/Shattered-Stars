@@ -7,7 +7,9 @@
 #include <tuple>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
+#include "game/boot/system.h"
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
@@ -127,7 +129,8 @@ class CampMenu final : public menu::Panel {
   void select_member();                                // 0x8007ed28
 
   s16 command_ = 0;                        // +0x34
-  menu::TextBox* members_[8] = {};         // +0x98
+  menu::TextBox* members_[12] = {};        // +0x98 (8; 12 with the bench [partybuild agent])
+  int rows_ = 8;                           // [partybuild agent] the member rows: 8, 12 with the bench
   menu::TextBox* commands_ = nullptr;      // +0xb8
   menu::TextBox* time_ = nullptr;          // +0xbc
   menu::Cursor* saved_cursor_ = nullptr;   // +0xc0
@@ -184,7 +187,10 @@ CampMenu::CampMenu() {
   }
   commands_ = new menu::TextBox;
   time_ = new menu::TextBox;
-  for (int i = 7; i >= 0; --i) members_[i] = new menu::TextBox;
+  // Archipelago (port feature): with the bench's places bound, the bench's four rows follow the 8
+  // slots' (docs/handoff/bench.md B2) [partybuild agent].
+  rows_ = party_place_count();
+  for (int i = rows_ - 1; i >= 0; --i) members_[i] = new menu::TextBox;
   mode_ = 0;
   commands_->set_rect(0, 0, 0x68, 0xB8, 0);
   commands_->pen_at(0, 0);
@@ -205,9 +211,9 @@ CampMenu::CampMenu() {
     const s16 y0 = static_cast<s16>(0x88 + 0x15 * i), y1 = static_cast<s16>(0x98 + 0x15 * i);
     commands_->add_icon(quad(0x5A, y0, 0xE0, 0x30, 0x62, y0, 0xE8, 0x30, 0x5A, y1, 0xE0, 0x40, 0x62, y1, 0xE8, 0x40, 0x7850, 0x16));
   }
-  for (int i = 0; i < 8; ++i) members_[i]->set_rect(0x58, 8 + 0x2E * i, 0xE0, 0x2E, 0);
+  for (int i = 0; i < rows_; ++i) members_[i]->set_rect(0x58, 8 + 0x2E * i, 0xE0, 0x2E, 0);
   const int selected = party_get_selected();
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < rows_; ++i) {
     party_select(i);
     if (party_selected_char() == 0) continue;
     menu::TextBox* box = members_[i];
@@ -286,7 +292,7 @@ void CampMenu::on_close() {
 void CampMenu::frame() {
   // The member boxes follow the member list's scroll.
   const s32 scroll = menu::globals().session->member_scroll * -0x2E;
-  for (menu::TextBox* box : members_) box->dy = static_cast<s16>((scroll < 0 ? scroll + 3 : scroll) >> 2);
+  for (int i = 0; i < rows_; ++i) members_[i]->dy = static_cast<s16>((scroll < 0 ? scroll + 3 : scroll) >> 2);
   update_time();
   Panel::frame();
 }
@@ -334,7 +340,7 @@ void CampMenu::on_confirm(int n) {
         // Pick a member first: a second hand cursor on the party list.
         commands_->slot = static_cast<u16>(commands_->slot - 2);
         saved_cursor_ = push_cursor();
-        cursor->add_list(&session->member, &session->member_scroll, 8, 4, 0x60, 0x20, 0x2E);
+        cursor->add_list(&session->member, &session->member_scroll, static_cast<s16>(rows_), 4, 0x60, 0x20, 0x2E);
         ++mode_;
         break;
       case 6:
@@ -346,6 +352,15 @@ void CampMenu::on_confirm(int n) {
       default:
         finish(command_);
         select_member();
+        if (party_selected_benched()) {
+          // [partybuild agent] Items (Item Creation, the super specialties) and Options act with
+          // the 8: a benched member picked earlier in this menu is not theirs (benched members are
+          // managed, not used; docs/handoff/bench.md B2). The first member of the 8 is.
+          int first = 0;
+          for (int i = 7; i >= 0; --i)
+            if (party_slot_active(i) != 0) first = i;
+          party_select(first);
+        }
         break;
     }
   } else {
@@ -761,6 +776,40 @@ void menu_launcher_finish(MenuLauncher* l) {
   l->buffer.shrink_to_fit();
 }
 
+// [partybuild agent] Archipelago's bench (docs/handoff/bench.md): the camp menu shows the members
+// on the bench too (Party Order's flip), whose sprites the field did not load (its packs follow the
+// 8 slots at the map's load, map.cpp map_resolve_entries). The packs of every member the menu can
+// show (the 8 slots and the bench) whose graphics no cache slot holds are read from the disc for
+// this menu (the same pack files, by the same member mask) and searched after the field's. Nothing
+// without a bench seed.
+std::vector<std::vector<u8>> bench_sprite_packs() {
+  std::vector<std::vector<u8>> packs;
+  const ap::Bench* bench = ap::bench_store();
+  const u8* party = globals().party;
+  disc::Archive* archive = get_system()->loader.archive();
+  if (bench == nullptr || party == nullptr || archive == nullptr) return packs;
+  u32 shown = 0;
+  for (int i = 0; i < 8; ++i)
+    if (const s16 id = static_cast<s16>(rd16(party + i * 0x60)); id >= 1 && id <= 12) shown |= 1u << (id - 1);
+  for (int i = 0; i < ap::kBenchPlaces; ++i)
+    if (const int id = bench->id(i); id >= 1 && id <= 12) shown |= 1u << (id - 1);
+  u32 missing = 0;
+  for (int id = 1; id <= 12; ++id)
+    if ((shown >> (id - 1) & 1) != 0 && !menu::sprite_gfx_cached(static_cast<u32>(id - 1))) missing |= 1u << (id - 1);
+  if (missing == 0) return packs;
+  std::vector<int> entries;
+  if ((missing & 0x7C) != 0) entries.push_back(static_cast<int>(((missing & 0x7C) >> 2) * 2 + 0xC27));
+  if ((missing & 0xF80) != 0) entries.push_back(static_cast<int>(((missing & 0xF80) >> 7) + 0xC67));
+  for (const int entry : entries) {
+    auto packed = archive->read_entry(static_cast<u32>(entry));
+    if (!packed) continue;
+    auto out = disc::slz::unpack_block(*packed, 0, 0, nullptr);
+    if (out && out->size() >= 4) packs.push_back(std::move(*out));
+  }
+  std::fprintf(stderr, "[menu] bench: member sprites 0x%03x from the disc (%zu packs)\n", missing, packs.size());
+  return packs;
+}
+
 // ==== Runners ===============================================================================
 
 int menu_run_camp(MenuLauncher* l) {
@@ -769,6 +818,19 @@ int menu_run_camp(MenuLauncher* l) {
   callways_before_menu(callways());
   FieldGlobals& g = globals();
   int result = 0;
+  // [partybuild agent] The bench's sprites for this menu (bench_sprite_packs above), and its places
+  // 8-11 for the menu's pages (party_bind_places: the camp page's rows, Equipment, Skills, Status,
+  // Specialty and Tactics work on a benched member where they are; docs/handoff/bench.md B2).
+  const std::vector<std::vector<u8>> bench_packs = bench_sprite_packs();
+  menu::set_extra_sprite_packs(bench_packs.empty() ? nullptr : &bench_packs);
+  PartyPlaces bench_places;
+  if (ap::Bench* b = ap::bench_store()) {
+    for (int i = 0; i < ap::kBenchPlaces; ++i) {
+      bench_places.slot[i] = b->slot(i);
+      bench_places.record[i] = b->record(i);
+    }
+    party_bind_places(&bench_places);
+  }
   {
     menu::MenuSession session;
     run_menu(session, [](menu::MenuSession& s) { s.start_page = 1; });
@@ -785,6 +847,8 @@ int menu_run_camp(MenuLauncher* l) {
       wr16(g.game_state + 0x264, 0);
     }
   }
+  menu::set_extra_sprite_packs(nullptr);
+  party_bind_places(nullptr);
   if (Callways* c = callways()) callways_after_menu(c);
   return result;
 }
@@ -999,6 +1063,9 @@ void field_menu_check(Field* f) {
     return;
   // boot 0x800134d8 (mem_set_alloc_fail_hook) installs 0x8004b760, which evicts a preload
   // and retries when the heap runs out: not needed on the host.
+  // Archipelago (port feature), heroslot D2 / D3: a scene's reorder put right before the menu
+  // shows the order [partybuild agent].
+  if (g_menu_request == 0) ap::on_camp_menu_opening();
   if (g_menu_request == 0) {
     sound_play_sfx(g.sound, 2, 0, 0x7F40);
     if ((g.script_flags[2] & 0x10) != 0 && g_script_vm != nullptr) {
@@ -1163,6 +1230,9 @@ void field_menu_update(Field* f) {
   actor_sys_mark_all_dirty(actors);
   wr16(g.field_flags + 0x10, static_cast<u16>(f->saved_control));
   f->state = 0;
+  // Archipelago (port feature), heroslot D2 / D3: the camp menu's order is the player's
+  // [partybuild agent].
+  if (g_menu_request == 0 || g_menu_request == 1) ap::on_camp_menu_closed();
   if (g_script_vm != nullptr) vm_call_sync(g_script_vm, static_cast<u16>(g_script_vm->menu_close_entry));
   g_menu_request = 0;
   if (result != 5 && result != 6) fade_push(field_fade(), 1, 0xF, 0, 0);

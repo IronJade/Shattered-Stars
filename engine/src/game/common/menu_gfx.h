@@ -236,5 +236,10 @@ void sprite_set(Sprite* s, const s16 pos_gfx_anim[4], s16 scale, u32 colour, s16
 void sprite_draw(Sprite* s, const RenderContext* ctx, int slot);  // title 0x80067eec
 void sprite_step(Sprite* s);                            // title 0x80068554
 const u8* sprite_find_pack(u32 anim, u32 gfx);          // title 0x80069098
+// [partybuild agent] Archipelago's bench (docs/handoff/bench.md): sprite packs the port loads for
+// a menu session (the members on the bench, whose packs the field did not load), searched after
+// the entry cache's slots when those have no match; null: none (the original's search only).
+void set_extra_sprite_packs(const std::vector<std::vector<u8>>* packs);
+bool sprite_gfx_cached(u32 gfx);   // a cache slot (or an extra pack) holds graphics 'gfx'
 
 }  // namespace ss::game::menu

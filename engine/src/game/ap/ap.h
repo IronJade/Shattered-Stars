@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "core/types.h"
+#include "game/ap/bench.h"
 #include "game/ap/json.h"
 #include "game/ap/seed.h"
 
@@ -65,6 +66,24 @@ struct SaveState {
   // (character * 256 + record index), each once, in the order they came.
   std::vector<int> skills;
   std::vector<int> moves;
+  // [partybuild agent] heroslot D2 / D3 (open world and hub, a starting member who is not the
+  // hero; docs/handoff/heroslot.md): the member the player left leading (config +0x41's) and in
+  // slot 0 at the last camp-menu close or save (at New Game: the starting member, the hero in
+  // slot 1). Party ids, 0 none. Sidecar keys "leader" / "slot_0" (written only when set).
+  int lead = 0;
+  int first = 0;
+  // [partybuild agent] The bench (game/ap/bench.h; options.bench): places 8-11, a member's slot
+  // and record each. Sidecar key "bench" (only with someone benched: then sidecar version 3),
+  // guarded by "bench_hash" (bench_digest: the save's bytes and the bench's), which, like
+  // save_hash, is never kept in the running state. A load takes the sidecar's bench as it is.
+  Bench bench;
+  std::string bench_hash;
+  // [partybuild agent] B4: benched members lent to the 8 for a fight the story makes them make
+  // alone (a split window needing them: Claude in Shingo Forest in Rena's game, Dias / Claude at
+  // the tournament). Their bench place stays theirs (empty, never given to a join) until they go
+  // back to it. Sidecar key "lent" (only with a loan: then sidecar version 3), in "bench_hash".
+  using Loan = BenchLoan;
+  std::vector<Loan> lent;
   // [pendingsave agent] The give queue as the save was made: items still to come in free play,
   // in order (docs/ap/seed_format.md "The save sidecar", `pending`). A check's own item is kept as
   // its location (the item is the seed's); anything else (the courier's overflow, the console)
@@ -158,7 +177,9 @@ void on_loaded(const std::string& card_image, int save_index);
 // ('file', 'length' bytes read); otherwise false (the game's own "load failed") and a log line
 // says why. A guard against accidents and casual save editors, not against cheating (the port
 // is open source). A sidecar with items waiting [pendingsave agent] also needs its pending_hash
-// to match the save and the list (an edited, stripped or moved list is refused the same way).
+// to match the save and the list (an edited, stripped or moved list is refused the same way);
+// one with a bench or a lent member [partybuild agent] its bench_hash (the save and the bench:
+// an edited bench, or one moved to another save, is refused the same way).
 // Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
 // seed run clears every SS_* hook) lets any save load as before, logged.
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length);
@@ -252,6 +273,17 @@ std::string split_window_needing(int id);
 // Free play's party step at once (the start's join, the split windows, temporary members, the
 // join queue): the banner it would show ("" none). Tests.
 std::string party_free_play_step();
+// [partybuild agent] heroslot (docs/handoff/heroslot.md D1-D3; open world and hub, a starting
+// member who is not the hero, else nothing). D1: the starting member's join at New Game puts
+// them in slot 0 and the hero in slot 1, and they lead (config +0x41 = 0). D2 / D3: the port
+// remembers the leader and the slot-0 member the player left (the camp menu's close, a save);
+// at free play a scene's reorder is undone (that member back in slot 0, the leader's slot in
+// config +0x41 again), except while the party is set aside or split (a Private Action, a split
+// window, temporary members, the endings, a hub story view), when nothing is remembered either.
+// field/menu_camp.cpp calls these as the camp menu opens (the button: the order is put right
+// first) and after it closes (not after a load).
+void on_camp_menu_opening();
+void on_camp_menu_closed();
 // [shingofix agent] The tournament's specials 0xc / 0xd (field/special.cpp) rewrite Dias's slot
 // 'slot' (0xc his fixed stats; 0xd his starting data again, the record too: 'record'). Before: a
 // kept Dias (received, or the starting character) has the part about to be rewritten saved
@@ -269,6 +301,23 @@ bool on_enemy_drop(int enemy_type, int item);
 bool random_encounters_off();             // encounter_rate 0
 s32 scale_encounter_distance(s32 distance);  // the distance to the next one, * 100 / rate
 bool party_has_character(int id);         // in a party slot, active or in reserve
+// [partybuild agent] The bench (game/ap/bench.h): a bench seed is playing (options.bench).
+bool bench_enabled();
+// The bench's store (places 8-11), null without a bench seed. The camp menu's pages read and
+// change it (field/menu_combat.cpp Party Order; docs/handoff/bench.md B1 / B2).
+Bench* bench_store();
+// Party Order with the bench (docs/handoff/bench.md Design 2). Locked (no member goes to or comes
+// from the bench): while the party is set aside or split (a Private Action, a split window, temporary
+// members, a borrowed slot, the endings, a hub story view: heroslot's locked states).
+bool bench_locked();
+// A swap between a game slot holding 'in_slot' (its party id as the slot has it: negative for a
+// member set aside, 0 empty) and a bench place holding 'benched' (0 empty): why it is refused (and
+// logged), or null. Refused: anything while locked; a member set aside; the hero; a temporary
+// member; a benched member whom a split window keeps away now (into the 8). The page's own rule
+// (a front member left who can fight) is the page's.
+const char* bench_swap_refused(int in_slot, int benched);
+// The page closed with the bench on: the party and the bench to the log.
+void on_bench_order_closed();
 // New Game's choice of story_route (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
 // seed's options.story_route; the locations the seed holds are that story_route's game's).
 int required_story_route();

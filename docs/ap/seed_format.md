@@ -243,6 +243,32 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   `options.starting_character` is `"any"` or a list), when that is not the hero. A load makes them
   the starting character again (they count as received, as below). Absent: none (no pick, or
   the hero picked); a value outside 1-12 reads as none.
+- `leader` / `slot_0` (open world and hub with a starting character who is not the hero,
+  optional; agent "partybuild", 2026-10-26): the party ids (1-12) of the member the player left
+  leading (config +0x41's) and in party slot 0, as of the save (or the last camp-menu close).
+  "The hero in slot 1" (under Party v2) puts that order back after a scene reorders it.
+  Absent (a save from before, or no starting character): the loaded party's order is taken at
+  the first free play; a value outside 1-12 reads as none.
+- `bench` / `bench_hash` (a bench seed with someone on the bench; agent "partybuild",
+  2026-10-26): the bench's members, places 8-11 ("The bench" under Party v2), each
+  `{"place": 8-11, "bytes": "<hex>"}` with the member's party slot (0x60 bytes) and record
+  (0xd0 bytes), as the stash's entries; only the places that hold someone. `bench_hash` is
+  `"sha256:"` and the SHA-256 of the save's bytes as `save_hash` takes them followed by the four
+  places' 0x130 bytes (zeros for an empty place). Written only with someone benched (the
+  sidecar is then version 3: "The sidecar's version" below); with nobody benched neither key is
+  written. A load takes the bench as the sidecar holds it (no merge: it is the save's state, not
+  the multiworld's); a load without a sidecar, and New Game, start with an empty bench. A place outside 8-11 or given twice, other than 0x130 bytes,
+  or a member that is no party id 1-12 (or benched twice) makes the sidecar unreadable.
+- `lent` (a bench seed with a benched member lent for a fight; agent "partybuild6",
+  2026-10-27): `[{"id": 1-12, "place": 8-11}]`, the members lent from the bench to the 8 for a
+  fight the story makes them make alone ("Loans" under "The bench") and the place each keeps.
+  Their bytes are in the card's 8 slots meanwhile, their place empty. Written only with a loan
+  out (version 3, below); `bench_hash` is then written even with nobody else benched; it covers
+  the loans (each loan's id and place, one byte each, after the four places; no loan adds
+  nothing, so a bench's hash is unchanged). Absent: no loan. A loan of no member 1-12, of a
+  benched member, to a place outside 8-11 or a taken one, or given twice makes the sidecar
+  unreadable. A loan's borrowed slot is a `stash` entry like a temporary member's, its `by` the
+  lent member (`by` below).
 - `pending` (optional; agent "pendingsave", 2026-10-27): the items still waiting to be given in
   free play when the save was made, in order. A check that brings items (a guild set under
   skillsanity, a boss, a craft, a killer-move level, learn points at a join...) queues them, and
@@ -256,8 +282,8 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   fitted in part is the item itself with the count left. Whether an entry was set aside is not
   written: a load tries every entry again, and one still without room is set aside again with its
   banner.
-  Written only with something waiting; then the sidecar is **version 3**, so a port from before
-  2026-10-27 refuses the save instead of dropping the items. Absent: nothing waits.
+  Written only with something waiting (then version 3, below: a port from before refuses the save
+  instead of dropping the items). Absent: nothing waits.
 - `pending_hash` (with `pending`): `"sha256:"` and the SHA-256 of the save's bytes (the same N
   bytes as `save_hash`) followed by the text of `pending` as `ap::Json::dump` writes it (keys
   sorted, one-space indent). The guard reads the list and writes it again before hashing, so
@@ -283,10 +309,11 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   him, and restore it after his last fight"): his slot (0x60 bytes) is saved before the first
   rewrite, his record (0xd0) before the first 0xd (0xc leaves it alone, so until then it is his
   own and any change the player makes to it counts), and both go back right after his last fight
-  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then. The
-  key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
-  record). Written only while held; then the sidecar is **version 3**, so a port from before
-  refuses the save rather than leave him with the tournament's data. Absent: nothing held. Any
+  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then (a
+  benched Dias is lent to the 8 for each fight; one held while he is on the bench goes back to
+  his bench place: "Loans" under "The bench"). The key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
+  record). Written only while held (then version 3, below: a port from before refuses the save
+  rather than leave him with the tournament's data). Absent: nothing held. Any
   other length, a non-hex character or another member's id makes the sidecar unreadable.
 - `tournament_dias_hash` (with `tournament_dias`): `"sha256:"` and the SHA-256 of the save's bytes
   (the same N bytes as `save_hash`) followed by the held bytes themselves.
@@ -296,6 +323,14 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
  "tournament_dias_hash": "sha256:51d6...5e76",
  "version": 3
 ```
+
+**The sidecar's version** (one rule for every key above): **3** exactly when the save holds
+something an older port would drop: items waiting (`pending`), someone on the bench (`bench`), a
+member lent from it (`lent`), or the tournament's Dias held (`tournament_dias`); else **2**, the
+same bytes as before those keys existed. `leader`, `slot_0`, `starting_character`, `hub_view` and
+the stash's `by` need no new version (a port from before ignores them). A port from before
+0.02.51 reads 1 and 2 and refuses a 3 ("unsupported sidecar version"), so such a save does not
+load there rather than lose what the keys hold; this port reads 1 to 3.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -311,10 +346,14 @@ the card since it was saved. A sidecar with items waiting also needs `pending_ha
 save and the list: an edited, extended or reordered `pending`, one without its hash or a hash
 without its list, or the list beside another save is refused (log `... this save was changed
 outside the game (its waiting items differ from the ones this seed saved)`). Both keys removed
-leave a sidecar with nothing waiting: it loads, and only the items are lost. A sidecar holding the
-tournament's Dias needs `tournament_dias_hash` to match the save and the held bytes the same way
-(`... its Dias held for the tournament differs from the one this seed saved`); both keys removed
-load, and Dias keeps the tournament's data. A refused load fails the way a damaged save does: the load screen
+leave a sidecar with nothing waiting: it loads, and only the items are lost. A sidecar with a
+bench (or a loan) needs `bench_hash` to match the save, the bench and the loans the same way: an
+edited bench or loan, a bench or loan without its hash, a hash without its bench, or a bench moved
+here from another save is refused (`... its bench differs from the one this seed saved`);
+stripping all of them only loses the benched members (a lent member stays in the 8). A sidecar
+holding the tournament's Dias needs `tournament_dias_hash` to match the save and the held bytes
+the same way (`... its Dias held for the tournament differs from the one this seed saved`); both
+keys removed load, and Dias keeps the tournament's data. A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -834,9 +873,14 @@ doesn't read, so there it would lose its route and its first-drop checks. Releas
 A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
 silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
 slot_data's `seed_format` is the same number. (The port reads both since 2026-10-25, and 3
-(a hub seed, "Hub" below) since the hub's port work the same day; it refuses 4 and up:
-"unsupported version 4 (this build reads 1 to 3)". It reads the v2 fields in a version-1 seed
-too.)
+(a hub seed, "Hub" below) since the hub's port work the same day. It reads the v2 fields in a
+version-1 seed too.)
+
+- **4** when `options.bench` is on (the 12-member bench, "The bench" under Party v2; agent
+  "partybuild", 2026-10-26), in an open-world or a hub seed. A port that reads 1 to 3 refuses
+  it ("unsupported version 4 (this build reads 1 to 3)") instead of playing a 12-member pool
+  with 8 places; this port reads 1 to 4 and refuses 5 and up ("unsupported version 5 (this
+  build reads 1 to 4)").
 
 ### New `options` keys
 
@@ -859,6 +903,7 @@ applied them to the locations and items it wrote).
 | `apworld_version` | `"0.2.1"` (0.2.0 and later) | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
+| `bench` | true / false (or 1 / 0) | off when absent (the APWorld's option: on by default, B7; not written by 0.2.x) | **read** with `party_rules: "open"` in open world, and in the hub: the 12-member bench, seed version 4 ("The bench" below) |
 | `hell_seed` | `true`, only on a hell seed (absent on every other seed) | absent (false) | **read**, display only: setup's warning and a log line ("The hell seed" below; so2.apworld 0.2.1) [hellseed] |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
@@ -945,7 +990,7 @@ Per goal:
 **`party_rules: "open"`** (`world_mode: open_world` with `character_items`):
 - **The story members** join through the story as usual: the hero (the story route picked at
   New Game), and under `story_route: "any"` both Claude and Rena. The hero is always in the
-  party (slot 0, Private Actions).
+  party (Private Actions need them; slot 1 behind a starting character, "The hero in slot 1").
 - **Every other member** joins only through their item (received, or found at one of this
   player's locations) or as the starting character. Their item is `{"kind": "character",
   "character": N}` as in phase 3; N may now be 1 Claude, 2 Rena or 11 Noel (the other hero
@@ -968,9 +1013,10 @@ Per goal:
 
 **`starting_character`** (open world and hub; `null` in story mode): when it names a member,
 - that member joins at the first free play of a new game (before `start.items` are given, so
-  the banner order is "X joined the party" first) and becomes the leader (the Formation leader,
-  config +0x41): the field sprite follows the leader, and dialogue and speaker labels use the
-  leader's name where the hero's would be (the user, 2026-10-25: "Yes, swap names");
+  the banner order is "X joined the party" first), takes party slot 0 with the hero in slot 1
+  ("The hero in slot 1" below) and becomes the leader (the Formation leader, config +0x41):
+  the field sprite follows the leader, and dialogue and speaker labels use the leader's name
+  where the hero's would be (the user, 2026-10-25: "Yes, swap names");
 - they count as received: never refused, never overwritten, rejoining after a parting
   (`kPartings`) like a received member, and a story join of them while present is a no-op;
 - when it names the hero of the game the player picked (possible under `story_route: "any"`),
@@ -1081,6 +1127,241 @@ conditions and its return).
   (Celine at 124, Leon at 230), the starting character at New Game (Claude's game map 7: Ashton;
   Rena's game map 18: Leon), Dias joining Claude's game; smoke `ap_v2_m12`, `ap_v2_t477`,
   `ap_v2_start`, `ap_v2_linga` (docs/handoff/party.md).
+
+#### The hero in slot 1 (what the port does; agent "partybuild", `engine/src/game/ap/ap.cpp`)
+
+The user's decisions D1-D4 (docs/handoff/heroslot.md, 2026-10-26). In a seed with `world_mode:
+open_world` or `hub` whose starting character (named, or picked at the character select) is
+not the picked game's hero; every other seed (story mode, no starting character, the hero as
+the starting character, Archipelago off) keeps the party order exactly as before.
+
+- **D1, the join** (New Game's first free play): the starting member joins through the game's
+  join (slot 1), then takes slot 0 and the hero slot 1 (the game's own swap of slots and records,
+  as the camp menu's Party Order page makes it), and leads (config +0x41 = 0). Log `heroslot:
+  Ashton takes slot 0, Claude slot 1: Ashton, Claude`, then `Ashton leads (Formation leader,
+  slot 0)`. The hero keeps fighting, levelling and gaining relation points (the front four).
+  Nothing changes before that free play: the opening scenes are written for the hero alone.
+- **The order the player leaves** ("the lead" and "the slot-0 member"): at the join, the
+  starting member for both; afterwards whoever is in config +0x41's slot and in slot 0 when the
+  camp menu closes or a save is made (the sidecar's `leader` / `slot_0`). A player who moves the
+  hero back to slot 0, or makes someone else the leader, keeps that order.
+- **D3 then D2, at every free play** (and as the camp menu opens): when a scene moved the
+  slot-0 member (active, in slots 1-7) they go back to slot 0, the member there taking their
+  slot (unless the front four would be left with nobody able to fight); when the leader is
+  active in the front four and config +0x41 points elsewhere (a scene's reorder, or a battle
+  inside a split re-pointing it, party_validate_before_battle), it points at the leader again.
+  Logs `heroslot: Ashton back in slot 0 (from 2), Rena to 2: Ashton, Rena`, `heroslot: Opera leads
+  again (Formation leader, slot 0; was 1)`.
+- **Not while the party is set aside or split**: a Private Action (script flags 2 / 4, or 746 the
+  isolate routine's), a split window keeping everyone away or letting a member in for a fight
+  (map 12's Shingo Forest, the tournament, Linga, Mars, the Front Line, the ship, the arenas
+  ...), temporary members or a borrowed slot still in the party, the endings (flag 0x2f1), a
+  hub story view. Then the story's order stands, and a camp-menu close does not change what is
+  remembered; the order comes back at the first free play after.
+- **D4**: the save card's title keeps the hero's name and level (save_build reads config +0x45,
+  the hero, by id).
+- The leader stand-in is unchanged: the walking actor is the hero's whatever the order; config
+  +0x41 = 0 now names the starting member, so the stand-in shows them, and the game's own
+  fallbacks (the Party Order page's close, party_validate_before_battle: the first active slot)
+  land on them too.
+- Checked: unit test `ap_heroslot`; headless (docs/handoff/partybuild.md): Claude's opening with
+  Ashton (`--map 7` to map 12's first free play) against the build before: the dumps differ only
+  by the two members' places and config +0x41, rng and vblank identical; no starting character
+  and a story seed: dumps identical; map 12 in Rena's game (Ashton back in slot 0 at map 17),
+  Linga with a battle inside the split (Opera leads again), the tournament at 19 / 4400 (dumps
+  identical inside its window), a debug battle with [Ashton, Claude] (Ashton controlled, both
+  gain the EXP); smoke `ap_hs_m12`, `ap_hs_linga`, `ap_hs_t477`, `ap_hs_save`, `ap_hs_load`.
+- Debugging (environment, never config.ini): `SS_HEROSLOT_ORDER=LEAD,FIRST` (party ids) gives a
+  `--map` start the order a game in progress remembers, its start (the starting member's join,
+  the starting items) counted as given.
+
+#### The bench (what the port does; agent "partybuild", `engine/src/game/ap/bench.h`)
+
+The user's decisions B1-B8 (docs/handoff/bench.md, 2026-10-26), with a separate store the port
+owns (the user: "Lets go with a separate store from the start, as then we own the method to
+maintain the benched members equipment and settings"). Built on branch `party-bench` (agents
+"partybuild" to "partybuild6", 2026-10-26 / 27; docs/handoff/partybuild.md).
+
+**The contract** (what a seed, a save and an older port can count on):
+- **The seed.** `options.bench` (true / 1) turns the bench on, read only with `party_rules:
+  "open"` in open world and in the hub; anywhere else it reads as off. A seed with it is
+  **version 4** (open world and hub alike; "The version rule"): a port that reads 1 to 3
+  refuses it instead of playing a pool of up to 12 members with 8 places. Without it the seed's
+  version is what its other fields need, and the game is the 8-slot game, byte for byte.
+- **The heroslot keys** (`leader`, `slot_0`: "The save sidecar"; any open-world or hub seed with
+  a starting member who is not the hero, bench or not): written only when set, no version
+  change; an older port ignores them and keeps the card's order.
+- **The bench keys.** `bench` (the occupied places 8-11, 0x130 bytes each), `lent` (members lent
+  for a fight and the place each keeps) and `bench_hash` (the save's bytes, the four places and
+  the loans) are written only while someone is benched or lent. **The sidecar version is 3
+  exactly then**, else 2 (with `save_hash`): a port that reads sidecars 1 and 2 refuses a save
+  with members on the bench instead of loading it without them. A save with an empty bench is
+  the 8-slot sidecar. The card never holds a benched member: its 8 slots are always a valid
+  party for the console game or an older port (the benched members, and what they wear, are
+  only in the sidecar).
+- **The guard.** With a seed, `bench_hash` must match the save, the bench and the loans
+  (edited, stripped or moved here: refused like an edited save); stripping the bench keys
+  altogether only loses the benched members.
+- **What is not stored:** nothing per character id changes (relations, names, flags); the
+  stash's `by` ("The party rules") is the slot borrowing's, bench or not.
+
+- **`options.bench`** (true / 1; seed version 4): read only with `party_rules: "open"` in open
+  world, and in the hub (where the party rules are always open); story mode and the story's
+  party rules keep 8 members and their lockouts, and there the key reads as off.
+- **The store.** Four bench places, 8-11, after the game's 8 slots (0-3 the front, 4-7 the
+  reserve). A member is what the game's own Party Order swap moves: the party slot (0x60 bytes)
+  and the character record (0xd0 bytes), so a benched member keeps everything (equipment,
+  skills, killer moves and their use counts, talents, tactics, level, EXP, HP / MP, status).
+  The game's blocks stay 8 places: no original code sees the bench, and the memory card's 8
+  slots stay a valid party for the original game or an older port (without the benched members
+  and what they wear). The bench is in the sidecar (`bench`, `bench_hash` above).
+- **Joins.** A received member (or the story's join of a member the port keeps) with all 8
+  slots taken goes to the first free bench place before anything else (before the reserve slot
+  of a member the port does not keep; with the bench full they wait as before). The member is
+  built as the game's join builds one (its starting data straight into the place, the join
+  level of the median over the 8 slots, skillsanity's pass, no Link Combo partner). Banner
+  `Noel joined the party (bench)`; log `[ap] Noel joins the bench (place 8): Ashton, Claude, ...
+  | bench: Noel`. Never the hero, never a temporary member. With room in the 8 a member joins
+  there as before.
+- **A benched member is in the party** for the port: a later join of theirs adds nobody, and
+  the story's own join of a benched member is skipped (B4: they stay benched; log `join Noel at
+  map 277 ...: on the bench: stays there`); the story's leaves find no slot. A received move
+  (skillsanity) is learned in the benched record, and the killer-move scan reads its use counts.
+- **Loans** (B4: "lent only for solo fights"). The split windows that let a member in for a fight
+  they make alone (Claude in Shingo Forest, map 12, in Rena's game; Dias's fights and, in Rena's
+  game, Claude's at the tournament, maps 468-477) lend a benched member instead of skipping
+  their join: their own bytes (not a new join's) go into the slot the game's join would give a
+  new member (the first slot not active: an empty one, or a reserve one whose member moves to the
+  next empty slot), else a reserve slot of a member the port does not keep, else the first
+  reserve slot borrowed (its member's bytes stashed, as for a temporary member, with `by` the
+  lent member). Their bench place stays theirs, empty: no join takes it. Log `[ap] join Claude at
+  map 12 ...: lent from the bench (place 8, level 17, EXP 8677) for Shingo Forest (map 12), slot
+  1: Ashton, Claude, (Rena)`. They go back to that place with what the fight gave them (EXP, HP,
+  status; the Link Combo bond cleared, as Party Order clears it behind the front four) at the
+  first free play where the story has set them aside or no window needs them, or at once when
+  the story's join puts back the member whose slot they borrowed (the borrowed slot first goes
+  back to them wherever a scene moved them, as for a temporary member); their slot is empty
+  again, or holds its own member again. Log `[ap] Claude back on the bench (place 8, level 17,
+  EXP 8682): the window that needed them is over`. Inside the window a join of theirs (a fight
+  again) is the game's join; outside it the story's join adds nobody (`... lent from the bench:
+  back to it at the next free play`). Party Order and the order memory (heroslot) are locked
+  while a loan is out. A save keeps the loan (`lent` above).
+- **The story's own party moves never see the bench** (the user, 2026-10-27: Private Actions read
+  the party and the reserves, slots 0-7, never the bench). No benched member comes into slots 0-7
+  inside a Private Action (B 0x29 / 0x2a): no loan then (`... on the bench: stays there (a
+  Private Action: no loan)`), and Party Order's bench moves are refused. Nor inside a saved party
+  order (A 0x16 / 0x17) with free play in it: the arena (305 -> 304), the tournament (468 ->
+  469), Fun City's contest (688) and the Cave of Trials (704) lie in windows that lock the bench;
+  map 479's pair is inside one scene. The tournament's loans are the story's own joins of its
+  fighter there (as the original's temporary Dias): no saved member leaves for the bench, so A
+  0x17 finds every one it can. A loan never overwrites or stashes the slot of a member who
+  borrowed one while that stash waits; with no other slot the member stays benched (`... needed
+  for the tournament ... but there is no slot (none free, none of a member it may take): stays on
+  the bench`). Party Order is locked while any slot is borrowed.
+- **Inns, heals and the endings see the 8 slots only** (B8 no, B5 none for now): the game's heal
+  routines (party_restore_hp_all / _mp_all: inns, scripts) and the endings' "in the party" test
+  (script ext 0xb1, party_find_slot) read the 8 slots, so a benched member is neither healed nor
+  counted for an ending, with no port code.
+- **Party Order** (camp menu > Combat > Replacement; B1, the user's pick: Option A of
+  scratchpad/bench/shots/mock_party_order.png). With a bench seed the page keeps its two
+  columns of four: the left one is always the front four (slots 0-3); the right one shows the
+  reserve (slots 4-7) or, after L1 / R1 (the menus' page buttons, config buttons 4 / 5), the
+  bench (places 8-11). The help bar says which, where the game's logo goes on other pages
+  (`L1/R1: Reserve 5-8` / `L1/R1: Bench 9-12`, the buttons named as the config has them). A pick
+  is one of the 12 places, so a first pick survives the flip: any two places change places,
+  the reserve and the bench included. The held pick's hand hides while its column is off
+  screen, and the help bar's second line names who is held (`Held: Precis`); with the bench
+  locked it says `Bench locked`. While open, the page works on a copy of the 8 slots and the
+  bench (every box reads the copy); closing it writes the copy back and then does what the
+  original's close does (a new front member's voices; the Link Combo bonds of everyone behind
+  the front four, the bench included; the leader's slot if it emptied). Log `[ap] Party Order
+  closed: Ashton, Claude, ... | bench: Opera`. The bench members' sprites, which the field did
+  not load (its packs follow the 8 slots at the map's load), are read from the disc for the
+  camp menu (the same pack files; stderr `[menu] bench: member sprites 0x600 from the disc`).
+  Without a bench seed the original page opens, untouched (L1 / R1 do nothing there).
+- **Refused moves** (sfx 7, logged `[ap] Party Order: Claude <-> an empty bench place refused:
+  the hero never goes to the bench`): the hero to the bench; a member set aside (a negative
+  slot id) with a bench place either way; a temporary member to the bench; a benched member
+  into the 8 while a split window keeps them away (Leon away, Dias away); and any move to or
+  from the bench while the party is the story's (locked: a Private Action, flags 2 / 4 / 746, a
+  split window keeping everyone away or letting someone in for a fight, temporary members, a
+  borrowed slot, the endings, a hub story view). As on the original page, a swap that leaves no
+  front member able to fight is undone. Swaps inside the 8, and inside the bench, are as today.
+- **The camp menu's other pages** (B2: benched members there too). With a bench seed the camp
+  menu's member list has 12 rows, the bench's four after the 8 (an empty place is a blank row,
+  as an empty slot is). Equipment, Skills, Status and Specialty open on a benched member, and
+  L2 / R2 go through all 12. The pages work on the bench place itself (the camp menu points the
+  selected-member accessors at it while it runs; nothing is copied into the 8 slots), so what
+  the player changes stays with the benched member and is saved with the bench. Tactics flips
+  its right column as Party Order does (L1 / R1: the reserve or the bench), and a benched
+  member's box opens their orders. The camp menu's stat pass (the figures derived from level
+  and equipment that Equipment and Status show) runs over the bench too.
+- **Benched members are managed, not used** (the user, 2026-10-27: "They can be there, they can
+  be brought in, but they are not there without explicitly bringing them in to be used."). A
+  benched member's own settings can be changed: equipment, skills (with their own SP; battle
+  skills on / off), Tactics orders, killer moves in their slots, which spells they use in
+  battle (on / off), and their name (Status). They do nothing in the game from the bench: on
+  the Specialty page their field specialties (Oracle, Musical Talent, Practice, Scout,
+  Familiar) are greyed and refused, their spells are not marked castable and a cast is
+  refused, and the Link Combo button is gone (a partner is one of the front four, and choosing
+  one can end the front members' own links); each refusal is the menu's refusal sound, logged
+  as `[ap] bench: Noel is on the bench: specialty 9 refused`. The help bar says so where the
+  game's logo goes: "Benched: can't use" on the list, "Benched / no cast" beside the spells'
+  ON / OFF button. What involves the party stays with the 8 slots, as for anyone outside them:
+  spell targets, item use and Item Creation, super specialties (a benched member picked earlier
+  in the menu is not the one Items uses: the first of the 8 is), and the Equipment Wizard at
+  the menu's close (a benched member's equipment stays as they left it). Killer-move voices
+  load when the member comes into the front four.
+- Checked (2026-10-26): a save with Noel and Ernest benched, Precis (slot 5) to place 9 across
+  the flip and Noel (place 8) to slot 3: every member's 0x130 bytes moved as they were, the
+  state, config and inventory identical to a control run that cancelled the same picks (the
+  game's stat pass recomputes a member's derived figures, slot +0x2c..+0x4c and record +0x2..
+  +0xa, whenever the camp menu reopens with them in the 8); no seed: the page, its captures and
+  the state dumps byte-identical to the baseline build, L1 / R1 pressed. Unit test
+  `ap_bench_swap_rules`; smoke `ap_bench_swap`.
+- Checked (2026-10-27, the other pages): the same save; Noel (place 8) through the member list's
+  ninth row into Equipment (the picker's figures for him; his weapon off), L2 / R2 to Ernest,
+  Status, Specialty, Skills, then Tactics on the bench page (his next orders), and a save: in
+  the sidecar only Noel's weapon, orders and Equipment Wizard bit changed, plus the derived
+  figures of both (the stat pass filled in those a bench join leaves at zero). Unit test
+  `ap_bench_camp_pages` (the accessors on a bench place; the stat pass gives a benched member
+  the bytes the same member gets in a slot; unbound, the store is left alone); smoke
+  `ap_bench_camp` (benched Opera's weapon and orders, the save, its reload).
+- Checked (2026-10-27, managed, not used): the save with Noel benched, the guild set with Danger
+  Sense opened (script flag 705); Party Order sends Rena to the bench; benched Noel learns
+  Danger Sense with his own SP (290 -> 288; Scout comes with it); his Scout is refused (the
+  piece-before build opened Scout's dialog at the same input); R2 to Rena: her Heal is refused
+  and switched off for battle; the save: Noel's SP, skill and the stamina it gives, Rena's
+  Heal off, nobody's MP spent. Unit test `ap_bench_specialty_uses` (the rule for a slot, a
+  reserve slot, a bench place, unbound); smoke `ap_bench_use`.
+- Checked (2026-10-27, loans; agent "partybuild6"): map 12 in Rena's game with Claude benched
+  (debugging: `SS_BENCH=1` puts him there before the map's own scene) and all 8 slots taken, a
+  real battle: Claude lent into Rena's slot (her bytes stashed) at level 17, EXP 8677; special 1
+  moves him to slot 0; he fights the monster alone and wins (encounter 190); Rena's join puts him
+  back in the slot he borrowed first, Ashton to slot 0, and Claude on the bench at EXP 8679; at
+  map 17 all 8 are there (the build before the borrowed-slot fix had lost Ashton here). With room
+  in the 8 (Ashton, Rena) he is lent into Rena's slot (she moves to the next empty one) and goes
+  back at the first free play, EXP 8677 -> 8682. The tournament (477, Claude's game, all 8
+  taken): Dias lent into Claude's slot for his fight, the status line names the loan, and
+  Claude's join after it puts Claude back and Dias on the bench. Not reached headless: a free
+  play inside the tournament (map 476 then holds a menu; the unit tests play that sequence).
+  Unit tests `ap_bench_loans` (both scenes with and without room, a second fight, the sidecar
+  and its guard, inns and ext 0xb1 on the 8 only) and `ap_bench_loan_rules` (no loan in a
+  Private Action; Party Order locked in a Private Action and in the windows around the
+  party-order saves; a loan never takes a borrower's slot; the tournament with heroslot, A 0x16 /
+  0x15 / 0x17: nobody lost); smoke `ap_bench_m12`, `ap_bench_t477`.
+- The tournament's kept Dias with the bench (`tournament_dias` above, port 0.02.51; agent
+  "benchmerge", 2026-10-27). A benched Dias is lent into the 8 for each of his fights, so the
+  specials' hooks find him there: his slot is saved before 0xc and his record before the first
+  0xd (until then the record is his own: an Equipment change on the bench between fights
+  counts), and right after his last fight his own data go back into his lent slot, which the
+  loan then takes back to his bench place. A copy still held once the tournament is over while
+  he is on the bench (not seen) is put on his bench place at the next free play (the bench's id
+  word kept, the record only when held, its Link Combo bond cleared as for any benched member);
+  that runs before the loans return. Unit test `ap_tournament_dias` (a lent Dias for 4400 / 6200
+  / 10200, back on the bench as he was; a save between fights with `bench` and
+  `tournament_dias`, each with its hash; the safety net on the bench, slot alone and slot and
+  record).
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 
@@ -1379,7 +1660,8 @@ view until it is beaten. Without `world_mode: hub` none of this exists.
 ### The version and the options
 
 - `version`: **3**. A wave-2 port refuses it ("unsupported version 3 (this build reads 1 and
-  2)") instead of playing a hub seed as a story game.
+  2)") instead of playing a hub seed as a story game. A hub seed with `options.bench` is
+  version 4 ("The bench" under Party v2).
 - `options.world_mode`: `"hub"` (or 2). The chapter lock, the story views, the hub New Game and
   the dungeon keys run only then.
 - Reference only (the port reads the blocks below): `options.hub_start` (`fun_city`, `arlia`,

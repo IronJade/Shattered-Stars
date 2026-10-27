@@ -193,11 +193,11 @@ void scale_down_stats(u8* slot, u8* rec, int target, const Growth& g) {
   wr16(slot + 0x26, target);
 }
 
-void on_member_init(int slot) {
-  const Seed* s = seed();
-  if (!enabled() || s == nullptr || slot < 0 || slot > 7 || party_base() == nullptr || records_base() == nullptr) return;
-  u8* sl = party_base() + slot * 0x60;
-  u8* rec = records_base() + slot * 0xD0;
+namespace {
+
+// A new member's slot 'sl' and record 'rec' after the game's party_slot_init: party slot 'slot',
+// or -1 for a bench place [partybuild agent] (the median then over all 8 slots).
+void member_init(const Seed* s, u8* sl, u8* rec, int slot) {
   const int character = rd16s(sl);
   if (character < 1 || character > kCharacterCount) return;
   const int own = rd16s(sl + 0x28);
@@ -240,6 +240,20 @@ void on_member_init(int slot) {
     }
   }
   if (specials_shuffled()) special_pass(rec, character, level);
+}
+
+}  // namespace
+
+void on_member_init(int slot) {
+  const Seed* s = seed();
+  if (!enabled() || s == nullptr || slot < 0 || slot > 7 || party_base() == nullptr || records_base() == nullptr) return;
+  member_init(s, party_base() + slot * 0x60, records_base() + slot * 0xD0, slot);
+}
+
+void on_bench_member_init(u8* slot, u8* rec) {
+  const Seed* s = seed();
+  if (!enabled() || s == nullptr || slot == nullptr || rec == nullptr || party_base() == nullptr) return;
+  member_init(s, slot, rec, -1);
 }
 
 // ---- Skillsanity -----------------------------------------------------------------------------
@@ -321,9 +335,13 @@ void receive_move(int character, int index) {
   std::vector<int>& v = mutable_state().moves;
   if (std::find(v.begin(), v.end(), move_key(character, index)) == v.end()) v.push_back(move_key(character, index));
   const int slot = slot_of(character);
+  const int benched = slot < 0 ? mutable_state().bench.find(character) : -1;  // [partybuild agent]
   if (slot >= 0 && records_base() != nullptr) {
     know(records_base() + slot * 0xD0, index);
     log(std::string("skillsanity: ") + character_name(character) + " knows move " + std::to_string(index));
+  } else if (benched >= 0) {  // (the bench keeps their record)
+    know(mutable_state().bench.record(benched), index);
+    log(std::string("skillsanity: ") + character_name(character) + " knows move " + std::to_string(index) + " (on the bench)");
   } else {
     log(std::string("skillsanity: ") + character_name(character) + "'s move " + std::to_string(index) + " waits for their join");
   }

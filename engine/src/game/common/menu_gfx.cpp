@@ -901,22 +901,48 @@ void sprite_set(Sprite* s, const s16 v[4], s16 scale, u32 colour, s16 mode) {
   s->mode = mode;
 }
 
+namespace {
+const std::vector<std::vector<u8>>* g_extra_packs = nullptr;  // [partybuild agent]
+
+// A pack file's group holding graphics 'gfx' (any animation when 'any').
+const u8* find_in(const std::vector<u8>& data, u32 anim, u32 gfx, bool any) {
+  if (data.size() < 4) return nullptr;
+  const u8* base = data.data();
+  const u32 count = read_u32(base);
+  for (u32 i = 0; i < count; ++i) {
+    const u8* pack = base + read_u32(base + 4 + i * 4);
+    const u32 n = read_u32(pack);
+    for (u32 e = 0; e < n; ++e) {
+      const u8* entry = pack + 4 + e * 28;
+      if (read_u32(entry) == gfx && (any || (read_u32(entry + 4) <= anim && anim <= read_u32(entry + 8)))) return pack;
+    }
+  }
+  return nullptr;
+}
+}  // namespace
+
 const u8* sprite_find_pack(u32 anim, u32 gfx) {
   for (int slot = 0; slot < 16; ++slot) {
     const std::vector<u8>* data = entry_cache_slot(slot);
     if (!data) continue;
-    const u8* base = data->data();
-    const u32 count = read_u32(base);
-    for (u32 i = 0; i < count; ++i) {
-      const u8* pack = base + read_u32(base + 4 + i * 4);
-      const u32 n = read_u32(pack);
-      for (u32 e = 0; e < n; ++e) {
-        const u8* entry = pack + 4 + e * 28;
-        if (read_u32(entry) == gfx && read_u32(entry + 4) <= anim && anim <= read_u32(entry + 8)) return pack;
-      }
-    }
+    if (const u8* pack = find_in(*data, anim, gfx, false)) return pack;
   }
+  if (g_extra_packs != nullptr)  // [partybuild agent] the bench's packs
+    for (const std::vector<u8>& data : *g_extra_packs)
+      if (const u8* pack = find_in(data, anim, gfx, false)) return pack;
   return nullptr;
+}
+
+void set_extra_sprite_packs(const std::vector<std::vector<u8>>* packs) { g_extra_packs = packs; }
+
+bool sprite_gfx_cached(u32 gfx) {
+  for (int slot = 0; slot < 16; ++slot)
+    if (const std::vector<u8>* data = entry_cache_slot(slot); data != nullptr && find_in(*data, 0, gfx, true) != nullptr)
+      return true;
+  if (g_extra_packs != nullptr)
+    for (const std::vector<u8>& data : *g_extra_packs)
+      if (find_in(data, 0, gfx, true) != nullptr) return true;
+  return false;
 }
 
 void sprite_step(Sprite* s) {

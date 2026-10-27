@@ -35,7 +35,7 @@ void mod_percent(u8* slot, int off, int pct) {
 
 StatCalc::StatCalc(bool adjust_levels) {
   const int saved = party_get_selected();
-  for (int i = 0; i < 8 && adjust_levels; ++i) {
+  for (int i = 0; i < party_place_count() && adjust_levels; ++i) {  // (12 with the bench's places [partybuild agent])
     party_select(i);
     if (party_selected_char() == 0) continue;
     u8* slot = party_selected_slot();
@@ -75,7 +75,7 @@ void StatCalc::load_items() {
 
 void StatCalc::all() {
   const int saved = party_get_selected();
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < party_place_count(); ++i) {  // (12 with the bench's places [partybuild agent])
     party_select(i);
     if (party_selected_char() != 0) member();
   }

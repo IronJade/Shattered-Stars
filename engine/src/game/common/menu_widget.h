@@ -421,7 +421,7 @@ class Panel : public Widget {
   ItemViewer* viewer = nullptr;  // +0x50
   s32 info_mode = 0;             // +0x54: 0 description, 1 figures (2 with session +0x1f)
   s32 viewer_item = 0;           // +0x58
-  s16 members[8] = {};        // +0x5c
+  s16 members[12] = {};       // +0x5c (8; 12 with the bench's places [partybuild agent])
   s16 member = 0;             // +0x6c
   s16 member_count = 0;       // +0x6e
   TextBox* info = nullptr;    // +0x70

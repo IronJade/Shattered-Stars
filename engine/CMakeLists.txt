@@ -314,6 +314,7 @@ target_sources(ss_game PRIVATE
   src/game/ap/json.cpp
   src/game/ap/seed.cpp
   src/game/ap/ap.cpp
+  src/game/ap/bench.cpp
   src/game/ap/hub.cpp
   src/game/ap/skills.cpp
   src/game/battle/shatter.cpp

@@ -247,6 +247,10 @@ struct Seed {
   std::vector<HubBoss> bosses;       // the seed's `bosses` (the chambers)
   HubState hub_state;                // the `hub` block's New Game state [hubcore agent]
   int skillsanity = 0;               // options.skillsanity: 0 none, 1 skills_only, 2 special_only, 3 insanity [skillsanity2]
+  // [partybuild agent] options.bench (seed version 4; docs/handoff/bench.md): 12 members, the
+  // game's 8 slots and four bench places the port keeps (game/ap/bench.h). Only with
+  // party_rules "open" in open world, and in the hub; anywhere else it reads as off.
+  bool bench = false;
   // [hellseed] options.hell_seed (so2.apworld 0.2.1; absent: false): a "hell seed", encounter_rate 0
   // with killer-move checks or learn points, trained only in the Fun City arena, whose fee the seed
   // waives with an ordinary patch line. Display only: setup's Archipelago page and the game's log

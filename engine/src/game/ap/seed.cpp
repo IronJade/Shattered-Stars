@@ -389,9 +389,10 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
   Seed s;
   s.version = get_int_or(j["version"], 0);
   // 1: phases 1-4; 2: a seed using any v2 field (docs/ap/seed_format.md "The version rule");
-  // 3: a hub seed (docs/ap/seed_format.md "Hub") [hubvm agent].
-  if (s.version < 1 || s.version > 3)
-    return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1 to 3)");
+  // 3: a hub seed (docs/ap/seed_format.md "Hub") [hubvm agent]; 4: a seed with the bench
+  // (options.bench) [partybuild agent].
+  if (s.version < 1 || s.version > 4)
+    return fail(error, "unsupported version " + std::to_string(s.version) + " (this build reads 1 to 4)");
   s.seed = j["seed"].as_string();
   if (s.seed.empty()) return fail(error, "seed (the multiworld's seed id) missing");
   s.slot_name = j["slot"]["name"].as_string();
@@ -719,6 +720,9 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     s.character_items = true;
     s.open_party = true;
   }
+  // [partybuild agent] The bench: open world with party_rules "open", and the hub (story mode and
+  // the story's party rules keep 8 members, with their lockouts).
+  s.bench = s.options["bench"].as_bool(false) && s.open_party && (s.open_world || s.hub);
   *out = std::move(s);
   return true;
 }

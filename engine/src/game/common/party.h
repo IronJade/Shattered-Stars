@@ -23,6 +23,21 @@ void party_select(int slot);       // title 0x800340c0 / field 0x800331c8
 u8* party_selected_slot();         // title 0x8004ddcc / field 0x8007407c
 u8* party_selected_record();       // title 0x8004ddd0 / field 0x80074080
 
+// [partybuild agent] Archipelago's bench (game/ap/bench.h; docs/handoff/bench.md): places 8-11
+// beside the 8 slots, which only the port's menus see. While they are bound, party_select(8-11)
+// points the selected-member accessors at that place's slot (0x60 bytes) and record (0xd0);
+// unbound (the original's state, and every game without a bench), places 8-11 do not exist.
+struct PartyPlaces {
+  u8* slot[4] = {};
+  u8* record[4] = {};
+};
+void party_bind_places(const PartyPlaces* places);  // null: unbound
+const PartyPlaces* party_bound_places();            // null: unbound
+int party_place_count();                            // 8, or 12 with places 8-11 bound
+u8* party_place_slot(int place);    // 0-7: party_slots() + place * 0x60; 8-11 bound: that place's slot; else null
+u8* party_place_record(int place);  // the same for the record
+bool party_selected_benched();      // the selected member is in a bound place 8-11 (on the bench)
+
 // Stat ids: bits 0-4 group, bits 8-11 index. The kind table (title 0x8004b5d0 / field
 // 0x80071968) says whether a group lives in the record (bit 0, else the party slot)
 // and whether it is 32-bit (bit 1).

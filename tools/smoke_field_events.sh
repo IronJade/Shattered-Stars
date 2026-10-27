@@ -250,7 +250,9 @@ check ap_cs_any "an excluded member is refused" '\[ap\] character select: this s
 check ap_cs_any "Celine picked" '\[ap\] character select: Celine Jules$'
 check ap_cs_any "she starts the game" '\[ap\] starting character Celine: picked at New Game'
 check ap_cs_any "joins at the first free play" '\[ap\] starting character Celine: joins at the first free play and leads'
-check ap_cs_any "and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+# heroslot D1 [partybuild agent]: the starting member takes slot 0, the hero slot 1.
+check ap_cs_any "she takes slot 0, Claude slot 1" '\[ap\] heroslot: Celine takes slot 0, Claude slot 1: Celine, Claude'
+check ap_cs_any "and leads" '\[ap\] Celine leads \(Formation leader, slot 0\)'
 check ap_cs_any "Claude's game (map 7)" '\[leader\] vblank 4200 map 7 state 0 '
 check ap_cs_named "a named member: the select to confirm" '\[ap\] character select opens: Ashton Anchors to confirm'
 check ap_cs_named "Cross confirms" '\[ap\] character select: Ashton Anchors$'
@@ -699,9 +701,22 @@ check ap_tdias_load "a new session loads it" '\[ap\] loaded .*tdias\.slot01\.ap\
 check ap_tdias_load "with him held" 'tournament: Dias.s own data held \(level 1, EXP 0, slot\)'
 check ap_tdias_load "his last fight's 0xd: his record held too" '\[ap\] Dias \(kept\) before the tournament rewrites him: his record saved'
 check ap_tdias_load "then all of him back" '\[ap\] Dias back as he was before the tournament \(level 1, EXP 0; the tournament.s level 35, EXP 96982\): his last fight there is over'
-# His slot (id word aside: the scene sets him aside) and record, slot 1, before and after.
-td_bytes() { dd if="$1" bs=1 skip=$((0xD42)) count=$((0x5E)) status=none; dd if="$1" bs=1 skip=$((0x10B0)) count=$((0xD0)) status=none; }
-if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
+# His slot (id word aside: the scene sets him aside) and record, before and after, wherever he
+# stands (heroslot [benchmerge agent]: a starting Dias takes slot 0 at New Game, and the
+# tournament's scene leaves him in slot 1).
+td_bytes() {
+  local i v
+  for i in 0 1 2 3 4 5 6 7; do
+    v=$(od -An -t d2 -j $((0xCE0 + i * 0x60)) -N 2 "$1" 2>/dev/null | tr -d ' ')
+    if [ "$v" = 5 ] || [ "$v" = -5 ]; then
+      dd if="$1" bs=1 skip=$((0xCE2 + i * 0x60)) count=$((0x5E)) status=none
+      dd if="$1" bs=1 skip=$((0xFE0 + i * 0xD0)) count=$((0xD0)) status=none
+      return
+    fi
+  done
+}
+if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c)" = 302 ] \
+   && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
   echo "PASS ap_tdias_load: Dias leaves the tournament byte for byte as he came"
 else
   echo "FAIL ap_tdias_load: Dias leaves the tournament byte for byte as he came"; fail=1
@@ -713,7 +728,8 @@ check ap_v2_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_DEBUG_INPUT="600:ap_give Dias Bob" \
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 1000 --map 7 </dev/null >"$WORK/ap_v2_start.log" 2>&1
 check ap_v2_start "the starting character joins first" '\[ap\] Ashton joins the party \(slot 1\): Claude, Ashton'
-check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+check ap_v2_start "heroslot D1: Ashton to slot 0, Claude to slot 1" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude'
+check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 0\)'
 check ap_v2_start "no lockout: Dias in Claude's game" '\[ap\] Dias joins the party \(slot 2\)'
 # The join level (open world, hub) [skillsanity2]: the party's median (the hero's level 1 here).
 check ap_v2_start "the join level: the start at the hero's" '\[ap\] join level: Ashton joins at level 1 \(the party.s median; their own 17\): down, HP 1000 -> 288'
@@ -770,6 +786,234 @@ sed 's/, "starting_character": "Ashton"//; s/"items": {/"items": {"5100002": {"n
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2linga.apso2" --frames 1800 --map 193 </dev/null >"$WORK/ap_v2_linga.log" 2>&1
 check ap_v2_linga "the split keeps Rena out" '\[ap\] Rena waits: Linga \(193 -> 195\) keeps the party apart'
 check ap_v2_linga "back once it is over" '\[ap\] Rena joins the party \(slot [0-7]\)'
+
+# heroslot [partybuild agent] (docs/handoff/heroslot.md D1-D3; open world and hub, a starting
+# member who is not the hero): the order the player left comes back after a scene reorders it,
+# never inside a split. SS_HEROSLOT_ORDER=LEAD,FIRST gives a --map start the order a game in
+# progress remembers (Ashton in slot 0 and leading). Map 12 (Rena's game, chapter 4 step 150):
+# the scene ends [Rena, (Claude), Ashton]; at the first free play (map 17) Claude leaves and
+# Ashton is back in slot 0. Linga (Opera starting) with a battle inside the split: the battle
+# points config +0x41 at Claude; after the split Opera leads again. The tournament (477): nothing
+# changes inside its window. A save keeps the order in the sidecar ("leader", "slot_0").
+sed 's/"story_route": "rena"/"story_route": "rena", "starting_character": "Ashton"/' "$WORK/v2rena.apso2" >"$WORK/hsrena.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,1 SS_SWEEP_CONFIG=45=1,41=0 SS_SWEEP_PLAY="999:T0" \
+  SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_INSTANT_TEXT=1 SS_AUTO_ADVANCE=500 SS_SWEEP_PRESS=choices SS_SWEEP_PLAY_STOP=1 \
+  SS_HEROSLOT_ORDER=7,7 timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/hsrena.apso2" --frames 14000 \
+  --map 12 </dev/null >"$WORK/ap_hs_m12.log" 2>&1
+check ap_hs_m12 "Claude in for the fight only" '\[ap\] join Claude at map 12 .*: for a while \(Shingo Forest \(map 12\)\): Ashton, Claude, \(Rena\)'
+check ap_hs_m12 "Claude leaves at the first free play" '\[ap\] Claude leaves the party: the window that needed them is over \(Rena, Ashton\)'
+check ap_hs_m12 "Ashton back in slot 0" '\[ap\] heroslot: Ashton back in slot 0 \(from 2\), Rena to 2: Ashton, Rena'
+check ap_hs_m12 "on map 17 (chapter 5 step 2000)" 'play: story chapter 5 step 2000'
+sed 's/"items": {/"items": {"5100009": {"name": "Opera", "kind": "character", "character": 9}, /; s/"story_route": "claude"/"story_route": "claude", "starting_character": "Opera"/' \
+  "$WORK/v2linga.apso2" >"$WORK/hslinga.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=8,0,1,2 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=22,a4=3000" \
+  SS_HEROSLOT_ORDER=9,9 SS_DEBUG_INPUT="5:ap_give Rena Bob;6:ap_give Celine Bob;7:ap_give Opera Bob;900:battle 1;1500:global 0xa4 5100" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/hslinga.apso2" --frames 3000 --map 193 </dev/null >"$WORK/ap_hs_linga.log" 2>&1
+check ap_hs_linga "the split keeps Opera out" '\[ap\] Opera waits: Linga \(193 -> 195\) keeps the party apart'
+check ap_hs_linga "a battle inside it" '\[ap\] a battle at vblank'
+check ap_hs_linga "Opera back after it" '\[ap\] Opera joins the party \(slot 0\)'
+check ap_hs_linga "and she leads again" '\[ap\] heroslot: Opera leads again \(Formation leader, slot 0; was 1\)'
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,0 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
+  SS_HEROSLOT_ORDER=7,7 timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 \
+  </dev/null >"$WORK/ap_hs_t477.log" 2>&1
+check ap_hs_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament.*\): Ashton, Dias, \(Claude\)'
+check ap_hs_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.s game\): the game.s join'
+if grep -qE '\[ap\] heroslot: .*(back in slot 0|leads again)' "$WORK/ap_hs_t477.log"; then
+  echo "FAIL ap_hs_t477: the order changed inside the tournament's window"; fail=1
+else
+  echo "PASS ap_hs_t477: the order left alone inside the tournament's window"
+fi
+rm -f "$WORK/hscard.mcd" "$WORK"/hscard.slot*.ap.json
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/hscard.mcd" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2claude.apso2" --frames 1100 --map 18 --input "$SAVE_INPUT" \
+  </dev/null >"$WORK/ap_hs_save.log" 2>&1
+check ap_hs_save "Ashton takes slot 0 at his join" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude'
+check ap_hs_save "the save" '\[ap\] saved .*hscard\.slot01\.ap\.json'
+if grep -q '"leader": 7' "$WORK/hscard.slot01.ap.json" 2>/dev/null && grep -q '"slot_0": 7' "$WORK/hscard.slot01.ap.json"; then
+  echo "PASS ap_hs_save: the sidecar keeps the order"
+else
+  echo "FAIL ap_hs_save: the sidecar keeps the order"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_TRACE_LEADER=30 \
+  SS_MEMCARD1="$WORK/hscard.mcd" SS_STATE_DUMP="100:$WORK/hs_load.state" timeout 900 "$BIN" --headless \
+  --ap-seed "$WORK/v2claude.apso2" --frames 120 </dev/null >"$WORK/ap_hs_load.log" 2>&1
+check ap_hs_load "the save loads" '\[ap\] loaded .*hscard\.slot01\.ap\.json'
+hs_word() { od -An -t d2 -j "$1" -N 2 "$WORK/hs_load.state" 2>/dev/null | tr -d ' '; }
+if [ "$(hs_word $((0xA40 + 0x2A0)))" = 7 ] && [ "$(hs_word $((0xA40 + 0x2A0 + 0x60)))" = 1 ] && [ "$(od -An -t u1 -j $((0xA40 + 0x41)) -N 1 "$WORK/hs_load.state" | tr -d ' ')" = 0 ] \
+   && ! grep -q 'heroslot: the order kept (the loaded game' "$WORK/ap_hs_load.log"; then
+  echo "PASS ap_hs_load: Ashton in slot 0 and leading, Claude in slot 1, the order the sidecar's"
+else
+  echo "FAIL ap_hs_load: Ashton in slot 0 and leading, Claude in slot 1, the order the sidecar's"; fail=1
+fi
+
+# The bench [partybuild agent] (docs/handoff/bench.md; options.bench, seed version 4): with the 8
+# slots taken a received member joins a bench place (built as the game's join, at the 8's
+# median level); the save's sidecar keeps the bench (version 3, "bench" / "bench_hash") and a
+# load brings it back; an edited bench is refused like an edited save.
+sed 's/"smoke-v2c"/"smoke-bench"/; s/"version": 2/"version": 4/; s/"starting_character": "Ashton"/"starting_character": "Ashton", "bench": true/' \
+  "$WORK/v2claude.apso2" >"$WORK/bench.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY=1,2,3,5,7,8 SS_DEBUG_INPUT="600:ap_give Noel Bob;700:ap_give Ernest Bob" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/bench.apso2" --frames 1000 --map 7 </dev/null >"$WORK/ap_bench_join.log" 2>&1
+check ap_bench_join "Ashton's join fills the 8" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+$'
+check ap_bench_join "Noel to the bench" '\[ap\] Noel joins the bench \(place 8\): Ashton, Claude, .* \| bench: Noel$'
+check ap_bench_join "at the 8's median level" '\[ap\] join level: Noel joins at '
+check ap_bench_join "Ernest next to him" '\[ap\] Ernest joins the bench \(place 9\): .* \| bench: Noel, Ernest$'
+rm -f "$WORK/bcard.mcd" "$WORK"/bcard.slot*.ap.json
+# (received members join one banner at a time, about 350 frames each: the save comes 2700 frames later)
+BENCH_SAVE_INPUT=$(echo "$SAVE_INPUT" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 2700, a[2]}}')
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  SS_DEBUG_INPUT="100:ap_give Rena Bob;110:ap_give Celine Bob;120:ap_give Bowman Bob;130:ap_give Precis Bob;140:ap_give Leon Bob;150:ap_give Opera Bob;160:ap_give Noel Bob" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/bench.apso2" --frames 3800 --map 18 --input "$BENCH_SAVE_INPUT" \
+  </dev/null >"$WORK/ap_bench_save.log" 2>&1
+check ap_bench_save "Noel to the bench" '\[ap\] Noel joins the bench \(place 8\)'
+check ap_bench_save "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if grep -q '"version": 3' "$WORK/bcard.slot01.ap.json" 2>/dev/null && grep -q '"place": 8' "$WORK/bcard.slot01.ap.json" \
+   && grep -q '"bench_hash": "sha256:' "$WORK/bcard.slot01.ap.json"; then
+  echo "PASS ap_bench_save: the sidecar keeps the bench (version 3, its hash)"
+else
+  echo "FAIL ap_bench_save: the sidecar keeps the bench (version 3, its hash)"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_load.log" 2>&1
+check ap_bench_load "the save loads with Noel on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Noel$'
+cp "$WORK/bcard.mcd" "$WORK/bcard_use.mcd"   # (for ap_bench_use below)
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard_use.slot01.ap.json"
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard.slot01.ap.json.ok"
+python3 -c 'import json,sys; p=sys.argv[1]; j=json.load(open(p)); b=j["bench"][0]["bytes"]; j["bench"][0]["bytes"]=b[:0x60*2+0x18]+("ff" if b[0x60*2+0x18:0x60*2+0x1a]!="ff" else "fe")+b[0x60*2+0x1a:]; json.dump(j,open(p,"w"))' \
+  "$WORK/bcard.slot01.ap.json"
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_guard.log" 2>&1
+check ap_bench_guard "an edited bench is refused" '\[ap\] load refused, save 1 .*: this save was changed outside the game \(its bench differs from the one this seed saved\)'
+mv "$WORK/bcard.slot01.ap.json.ok" "$WORK/bcard.slot01.ap.json"
+# Party Order with the bench (B1: the right column flips reserve / bench with L1 / R1; a pick
+# survives the flip): the save above, Opera (slot 7) picked, R1, Noel (place 8) picked: they change
+# places (the hand goes back to Opera's box, now the bench's place 11); Claude to the empty place 9
+# is refused (the hero); the save keeps Opera on the bench.
+PO_NAV="200:triangle,206:none,350:down,356:none,370:down,376:none,390:down,396:none,410:down,416:none,430:down,436:none,450:down,456:none,500:cross,506:none,600:down,606:none,650:cross,656:none"
+PO_ACT="950:right,956:none,990:down,996:none,1030:down,1036:none,1070:down,1076:none,1110:cross,1116:none,1150:r1,1156:none,1190:up,1196:none,1230:up,1236:none,1270:up,1276:none,1310:cross,1316:none,1350:up,1356:none,1390:up,1396:none,1430:left,1436:none,1470:cross,1476:none,1510:right,1516:none,1550:cross,1556:none,1600:circle,1606:none,1660:circle,1666:none,1720:circle,1726:none,1780:circle,1786:none"
+PO_SAVE="1900:triangle,1906:none,2000:up,2006:none,2050:cross,2056:none,2150:cross,2156:none,2250:cross,2256:none,2350:cross,2356:none,2450:cross,2456:none,2550:left,2556:none,2600:cross,2606:none,2700:cross,2706:none,2800:cross,2806:none"
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 3000 --input "$PO_NAV,$PO_ACT,$PO_SAVE" </dev/null >"$WORK/ap_bench_swap.log" 2>&1
+check ap_bench_swap "the hero stays off the bench" '\[ap\] Party Order: Claude <-> an empty bench place refused: the hero never goes to the bench'
+check ap_bench_swap "Opera and Noel change places across the flip" '\[ap\] Party Order closed: Ashton, Claude, Rena, Celine, Bowman, Precis, Leon, Noel \| bench: Opera$'
+check ap_bench_swap "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if python3 -c 'import json,sys; b=json.load(open(sys.argv[1]))["bench"]; sys.exit(0 if len(b) == 1 and b[0]["place"] == 8 and b[0]["bytes"].startswith("0900") else 1)' \
+     "$WORK/bcard.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_swap: the sidecar's bench holds Opera"
+else
+  echo "FAIL ap_bench_swap: the sidecar's bench holds Opera"; fail=1
+fi
+# The camp menu's pages on a benched member (B2) [partybuild agent]: the save above, Opera on the
+# bench (place 8, the member list's ninth row). Equipment takes her weapon off; Tactics (R1: the
+# bench) gives her the next orders; the save keeps both in the sidecar's bench (record +0xc the
+# weapon, +0x38 the orders, +0x3a bit 0 the Equipment Wizard off) and nothing else of hers changes
+# but the figures the camp menu's stat pass derives (slot +0x2c..+0x4d, record +0x2..+0xb); the
+# save loads (its bench hash agrees).
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard_camp_before.json"
+CAMP_EQUIP="200:triangle,206:none,350:down,356:none,370:down,376:none,420:cross,426:none,450:down,456:none,470:down,476:none,490:down,496:none,510:down,516:none,530:down,536:none,550:down,556:none,570:down,576:none,590:down,596:none,650:cross,656:none,900:cross,906:none,1050:cross,1056:none,1200:circle,1206:none"
+CAMP_TACTICS="1400:down,1406:none,1420:down,1426:none,1440:down,1446:none,1460:down,1466:none,1500:cross,1506:none,1600:cross,1606:none,1900:r1,1906:none,1950:right,1956:none,2000:cross,2006:none,2150:down,2156:none,2200:cross,2206:none,2400:circle,2406:none,2500:circle,2506:none,2600:circle,2606:none"
+CAMP_SAVE=$(echo "$PO_SAVE" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 900, a[2]}}')
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 3900 --input "$CAMP_EQUIP,$CAMP_TACTICS,$CAMP_SAVE" </dev/null >"$WORK/ap_bench_camp.log" 2>&1
+check ap_bench_camp "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if python3 -c '
+import json, sys
+def opera(p):
+    return next(bytes.fromhex(e["bytes"]) for e in json.load(open(p))["bench"] if e["place"] == 8)
+a, b = opera(sys.argv[1]), opera(sys.argv[2])
+derived = set(range(0x2C, 0x4E)) | set(range(0x60 + 2, 0x60 + 0xC))
+mine = {0x60 + 0xC, 0x60 + 0xD, 0x60 + 0x38, 0x60 + 0x3A}
+diff = {i for i in range(0x130) if a[i] != b[i]}
+ok = b[0:2] == bytes([9, 0]) and a[0x6C:0x6E] != bytes(2) and b[0x6C:0x6E] == bytes(2) and a[0x98] != b[0x98] and b[0x9A] & 1
+sys.exit(0 if ok and diff <= derived | mine else 1)' "$WORK/bcard_camp_before.json" "$WORK/bcard.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_camp: benched Opera's weapon off and new orders in the sidecar, nothing else of hers changed"
+else
+  echo "FAIL ap_bench_camp: benched Opera's weapon off and new orders in the sidecar, nothing else of hers changed"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_camp_load.log" 2>&1
+check ap_bench_camp_load "the save loads with Opera on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Opera$'
+# Benched members are managed, not used (the user, 2026-10-27) [partybuild agent]: ap_bench_save's
+# card (Noel on the bench, place 8), with the guild set holding Danger Sense opened (flag 705).
+# Party Order sends Rena to the bench (place 9); Skills: benched Noel learns Danger Sense with his
+# own SP (Scout comes with it); Specialty: his Scout is refused, and R2 to Rena: her Heal is not
+# cast but is switched off for battle; the save keeps the SP, the skill and the switch, nobody's
+# MP spent.
+USE_PO="200:triangle,206:none,350:down,356:none,370:down,376:none,390:down,396:none,410:down,416:none,430:down,436:none,450:down,456:none,500:cross,506:none,600:down,606:none,650:cross,656:none,950:down,956:none,990:down,996:none,1030:cross,1036:none,1070:r1,1076:none,1110:right,1116:none,1150:up,1156:none,1190:cross,1196:none,1300:circle,1306:none"
+USE_SKILL="1450:up,1456:none,1470:up,1476:none,1490:up,1496:none,1530:cross,1536:none"
+f=1570; for i in 1 2 3 4 5 6 7 8; do USE_SKILL="$USE_SKILL,$f:down,$((f+6)):none"; f=$((f+20)); done
+USE_SKILL="$USE_SKILL,1780:cross,1786:none"
+f=1950; for i in 1 2 3 4 5 6; do USE_SKILL="$USE_SKILL,$f:down,$((f+6)):none"; f=$((f+20)); done
+USE_SKILL="$USE_SKILL,2120:cross,2126:none,2550:cross,2556:none,2650:circle,2656:none"
+USE_SPEC="2750:up,2756:none,2770:up,2776:none,2790:up,2796:none,2830:cross,2836:none,2900:cross,2906:none,3050:down,3056:none,3100:cross,3106:none,3200:r2,3206:none,3350:cross,3356:none,3400:square,3406:none,3550:circle,3556:none,3650:circle,3656:none"
+USE_SAVE=$(echo "$PO_SAVE" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 1900, a[2]}}')
+cp "$WORK/bcard_use.slot01.ap.json" "$WORK/bcard_use_before.json"
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard_use.mcd" \
+  SS_DEBUG_INPUT="100:flag 705 1" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/bench.apso2" --frames 4900 \
+  --input "$USE_PO,$USE_SKILL,$USE_SPEC,$USE_SAVE" </dev/null >"$WORK/ap_bench_use.log" 2>&1
+check ap_bench_use "Rena to the bench" '\[ap\] Party Order closed: Ashton, Claude, Celine, Bowman, Precis, Leon, Opera \| bench: Noel, Rena$'
+check ap_bench_use "benched Noel's Scout refused" '\[ap\] bench: Noel is on the bench: specialty 9 refused$'
+check ap_bench_use "benched Rena casts no Heal" '\[ap\] bench: Rena is on the bench: a spell cast refused$'
+check ap_bench_use "the save" '\[ap\] saved .*bcard_use\.slot01\.ap\.json'
+if python3 -c '
+import json, struct, sys
+def bench(p):
+    return {e["place"]: bytes.fromhex(e["bytes"]) for e in json.load(open(p))["bench"]}
+a, b = bench(sys.argv[1]), bench(sys.argv[2])
+h = lambda x, o: struct.unpack_from("<h", x, o)[0]
+noel0, noel, rena = a[8], b[8], b[9]
+ok = h(noel, 0) == 11 and h(rena, 0) == 2
+ok = ok and 0 < h(noel0, 0x60 + 0x1A) - h(noel, 0x60 + 0x1A) and noel0[0x60 + 0x5C + 13] == 0 and noel[0x60 + 0x5C + 13] == 1
+ok = ok and h(noel, 0x24) == h(noel0, 0x24) and rena[0x60 + 0x3C] == 0xFF and h(rena, 0x24) == h(rena, 0x22)
+sys.exit(0 if ok else 1)' "$WORK/bcard_use_before.json" "$WORK/bcard_use.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_use: Noel's SP paid for Danger Sense, Rena's Heal off for battle, no MP spent"
+else
+  echo "FAIL ap_bench_use: Noel's SP paid for Danger Sense, Rena's Heal off for battle, no MP spent"; fail=1
+fi
+# Loans (B4: a benched member is lent for a fight the story makes them make alone) [partybuild
+# agent]. SS_BENCH=ID puts a member on the bench before a --map start's scene. Map 12 (Rena's game,
+# chapter 4 step 150, all 8 slots taken, a real battle): benched Claude is lent into Rena's slot
+# (her bytes stashed), special 1 moves him to slot 0, he fights the monster alone and wins; Rena's
+# join puts him back in the slot he borrowed first (Ashton stays), then on the bench with the
+# fight's EXP; the 8 all there at the first free play (map 17).
+sed 's/"smoke-v2r"/"smoke-benchr"/; s/"version": 2/"version": 4/; s/"starting_character": "Ashton"/"starting_character": "Ashton", "bench": true/' \
+  "$WORK/hsrena.apso2" >"$WORK/benchrena.apso2"
+LOAN_IN=$(for f in $(seq 1480 16 8000); do printf '%d:cross,%d:none,' "$f" $((f + 6)); done)
+env SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 \
+  SS_SWEEP_PARTY=6,1,2,3,5,7,8,10 SS_SWEEP_CONFIG=45=1,41=0 SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_INSTANT_TEXT=1 \
+  SS_AUTO_ADVANCE=500 SS_SWEEP_PRESS=choices SS_SWEEP_PLAY_STOP=1 SS_HEROSLOT_ORDER=7,7 SS_BENCH=1 \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/benchrena.apso2" --frames 16000 --map 12 --input "${LOAN_IN%,}" \
+  </dev/null >"$WORK/ap_bench_m12.log" 2>&1
+check ap_bench_m12 "Claude on the bench, the 8 taken" '\[ap\] Claude joins the bench \(place 8\): Ashton, \(Rena\), Celine, Bowman, Precis, Leon, Opera, Noel \| bench: Claude$'
+check ap_bench_m12 "lent into Rena's slot as he is" '\[ap\] join Claude at map 12 .*: lent from the bench \(place 8, level 17, EXP 8677\) for Shingo Forest \(map 12\), slot 1: Ashton, Claude, Celine'
+check ap_bench_m12 "Rena's bytes stashed" '\[ap\] Claude borrows slot 1 of Rena '
+check ap_bench_m12 "the fight won" '\[battle\] exit: encounter 190 outcome 0 '
+check ap_bench_m12 "back to the slot he borrowed first" '\[ap\] Claude back to the slot they borrowed \(1, from 0\), Ashton to 0'
+check ap_bench_m12 "Rena back in it" '\[ap\] Rena back in slot 1 \(Claude leaves it\)'
+check ap_bench_m12 "the 8 all there, Claude benched" '\[ap\] heroslot: Ashton back in slot 0 \(from 1\), Rena to 1: Ashton, Rena, Celine, Bowman, Precis, Leon, Opera, Noel \| bench: Claude$'
+LOAN_EXP=$(sed -n 's/.*Claude back on the bench (place 8, level [0-9]*, EXP \([0-9]*\)).*/\1/p' "$WORK/ap_bench_m12.log" | head -1)
+if [ -n "$LOAN_EXP" ] && [ "$LOAN_EXP" -gt 8677 ]; then
+  echo "PASS ap_bench_m12: back on the bench with the fight's EXP (8677 -> $LOAN_EXP)"
+else
+  echo "FAIL ap_bench_m12: back on the bench with the fight's EXP (8677 -> ${LOAN_EXP:-none})"; fail=1
+fi
+# The tournament (477, Claude's game, chapter 19 step 4400, all 8 slots taken): benched Dias is
+# lent for his fight into Claude's slot (Claude's bytes stashed); Claude's join after it puts
+# Claude back and Dias on the bench; the order is left alone inside the window.
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,0,1,2,3,5,7,8 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
+  SS_HEROSLOT_ORDER=7,7 SS_BENCH=5 SS_DEBUG_INPUT="400:ap_status;950:ap_status" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/bench.apso2" --frames 1000 --map 477 </dev/null >"$WORK/ap_bench_t477.log" 2>&1
+check ap_bench_t477 "Dias lent into Claude's slot" '\[ap\] join Dias at map 477 .*: lent from the bench \(place 8, level 17, EXP 8677\) for the tournament .*, slot 1: Ashton, Dias, Rena'
+check ap_bench_t477 "the loan in the status" 'party Ashton, Dias, Rena, Celine, Bowman, Precis, Leon, Opera \| split: the tournament .* \| borrowed slots 1 \| Dias lent from the bench \(place 8\)$'
+check ap_bench_t477 "his fight" '\[ap\] a battle at vblank'
+check ap_bench_t477 "Claude's join: Dias back on the bench" '\[ap\] Dias back on the bench \(place 8, level [0-9]+, EXP [0-9]+\): the slot they borrowed goes back'
+check ap_bench_t477 "Claude back in his slot" '\[ap\] Claude back in slot 1 \(Dias leaves it\)'
+check ap_bench_t477 "the 8 and the bench after it" 'party Ashton, Claude, Rena, Celine, Bowman, Precis, Leon, Opera \| bench: Dias \| split: the tournament'
+if grep -qE '\[ap\] heroslot: .*(back in slot 0|leads again)' "$WORK/ap_bench_t477.log"; then
+  echo "FAIL ap_bench_t477: the order left alone inside the tournament's window"; fail=1
+else
+  echo "PASS ap_bench_t477: the order left alone inside the tournament's window"
+fi
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
@@ -1021,7 +1265,7 @@ PY
   check ap_hub_ng_cs "the character select in a hub game" '\[ap\] character select opens: 10 of 12 to pick'
   check ap_hub_ng_cs "Celine picked" '\[ap\] starting character Celine: picked at New Game'
   check ap_hub_ng_cs "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
-  check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+  check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 0\)'
   check ap_hub_ng_cs "and walks Fun City in the hero's place (the leader stand-in)" '\[standin\] vblank [0-9]+ map 279 shows 2 \(stand-in'
   # The leader stand-in in hub mode [hubleader agent] (field/leader.h; open world and hub): a named
   # starting character (Ashton: the select to confirm) walks Fun City in Claude's place and the
@@ -1033,7 +1277,7 @@ PY
   HUB_INPUT="$NEWGAME_A,2170:cross,2176:none,$NEWGAME_B3" hub_ng ap_hub_leader_ng hubashton claude 3400 SS_TRACE=1 \
     SS_LEADER_TRACE=1 SS_SWEEP_PLAY="279:T4"
   check ap_hub_leader_ng "Ashton confirmed at New Game" '\[ap\] character select: Ashton Anchors$'
-  check ap_hub_leader_ng "he joins and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+  check ap_hub_leader_ng "he joins and leads" '\[ap\] Ashton leads \(Formation leader, slot 0\)'
   check ap_hub_leader_ng "Ashton walks Fun City in Claude's place" '\[standin\] vblank [0-9]+ map 279 shows 6 \(stand-in'
   check ap_hub_leader_ng "out to the world map" 'field_load_map\(map=2 '
   env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \
