@@ -86,41 +86,66 @@ the story distinctly), following the chapter live.
   so2_story_aware ("Story", on). Inspect chosen: PopTracker's "checkable not collectible", blue,
   distinct from red (items missing) and yellow (out of logic now).
 
-### Done (not committed yet)
-- Code: apworld/so2/story.py (new), world.py (story import, reconnect_found_entrances, prepare in
-  set_rules), tracker_export.py (story key), test/test_story.py (new, 19 tests), test_tracker.py
-  (shape allows story); tools/ap_tracker_logic.py (story), tools/poptracker/logic.lua (story),
-  autotracking/archipelago.lua (comment), tools/ap_poptracker.py (so2_story_aware item, Status
-  layout), tools/ap_poptracker_test.py (test_story_is_the_reference), tools/ap_ut_check.py (step 5:
-  story points, --no-story), tools/ap_poptracker_smoke.py (step 7: a story room, Inspect in the
-  probe, --no-story).
-- Tests: world suite 882 passed (68k subtests, 10.6 s); test_story 19 passed (2.8 s; UT == reference
-  at 27 positions x 3 spheres x 3 mixes); pack tests 24 OK (13 s).
-- Docs drafted: seed_format.md "Story awareness", apworld.md "Story awareness" + Files,
-  data_storage.md "Who reads so2_story_*", poptracker.md (players, Lua, Logic "Story awareness",
-  Testing), setup_en.md (UT section), release_notes/0.2.2.md.
-- Baseline batch: scratchpad/storyaware/batch_base from the frozen farm scratchpad/storyaware/ap_base
-  (real top-level scripts, worlds/so2 = git archive HEAD 812f9f6).
+### Done (status: DONE)
+- Commits: 61eace6 (docs), 60884fb (APWorld + reference + tools/ap_ut_check.py), c326fba (pack),
+  then the docs of the results and the chapter-0 fix (docs first, then code: see git log).
+- The chapter -> stage mapping: story.POINTS = data.STAGES' first chapters (step 0) + the Final Save
+  Point (60, 4000); table in docs/ap/apworld.md "Story awareness", evidence there.
+- Final proofs on the final code (md5s unchanged during the round, scratchpad/storyaware/final_round.txt):
+  - batch_final vs batch_base (frozen HEAD 812f9f6): ALL IDENTICAL BUT THE STORY KEY: 288 seeds, 480
+    .apso2 + 288 spoilers byte for byte, multidata equal less tracker.story in the 93 story-mode slots
+    (59 / 13 / 21; 4.2-12.8 KB), checker the same (0 errors): identity_final.txt.
+  - World tests 882 passed, 3 skipped (67988 subtests); SO2_SLOW_TESTS 885 passed (68692; 60 story
+    rooms); AP_TEST_WORLDS=so2 test/general worlds/so2 935 passed, 3 skipped.
+  - Pack: tools/build_poptracker.sh all: 401 files, 287 items, strict checker "Validated 10 files" x2,
+    versions.json ok (sha256 1cc996fd...), 24 tests OK; smoke2 37/37 (story room: fresh 583 Normal;
+    chapter 3 37 + 546 Inspect; 12 108/475; 36 291/292; 60/3000 393/190; 60/4000 583/0).
+  - Real UT with the packaged so2.apworld (223,553 bytes, world_version 0.2.1): UT MATCHES THE WORLD,
+    59 comparisons; story slot (578 by items): 142 204 227 319 426 450 532 532 578 at chapters 3, 9,
+    12, 20, 36, 41, 58, 60/3000, 60/4000; enforce off 578 (ut_check_packaged.txt).
+- Found and fixed on the way: test_story.py first loaded the reference from a wrong path, so its
+  UT-vs-reference comparison was skipped silently; now @needs_reference (test_tracker.REFERENCE). It
+  then showed chapter 0 differing; fixed in all three: chapter <= 0 is no position, a position
+  reaches at least point 1.
+
+### Open (for the coordinator / the user)
+- Not a user decision, but worth a look in a GUI: PopTracker's Inspect is blue by default; a player
+  may recolour it in PopTracker's settings. If the user prefers red (None) for "later in the story",
+  it is one line in logic.lua's so2_access.
+- Old rooms (0.2.0 / 0.2.1, no export): no story awareness (checklist as before). A generator-written
+  per-location table could give them "later in the story" too; not done (location_stage needs the
+  room's options for joins; recommend not, since 0.2.2 rooms have it exactly).
+- Approximations documented (apworld.md "Story awareness"): a stage is the unit (a gift's first
+  chapter mid-stage shows from the stage's start); Fienal from point 23 (chapter 58) though it is
+  entered at chapter 60 step 1000; the Final Save Point is the step before the save (60/4000);
+  areas the story never walks into follow their region.
+- B6's map half (UT map tab, the pack's doors) is still to come (queued after mapdoors).
+- B7: release checklist rows: tools/ap_ut_check.py now has step 5 (story; --no-story skips),
+  tools/ap_poptracker_smoke.py step 7 (story room on PORT + 1; --no-story skips), SO2_SLOW_TESTS
+  covers TestStoryManySeeds.
 
 ### In progress
-- Baseline batch finishing (solo_noexpel); then: the real UT run, the new batch, the pack build and
-  the smoke.
-
-### Next
-1. tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld --ut-dir scratchpad/storyaware/ap_ut
-   --port 38411 (display variables unset).
-2. md5 of apworld/so2 frozen; new batch scratchpad/storyaware/batch_new on the live farm; identity
-   (identity_le.py adapted: identical but `tracker.story` in story-mode slots).
-3. tools/build_poptracker.sh all; smoke with --scratch scratchpad/storyaware/smoke --port 38421.
-4. SO2_SLOW_TESTS, test/general; tools/build_apworld.sh scratchpad/storyaware/dist.
-5. Commit docs, then code; results into the docs.
+- (none)
 
 ### How to verify
 - cd scratchpad/ap/Archipelago; SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test
+  (SO2_SLOW_TESTS=1 for TestStoryManySeeds)
 - SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_test.py
 - python3 tools/ap_tracker_logic.py SLOT_DATA.json [ITEM_ID ...] chapter=C[,S]
+- env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30))
+  scratchpad/ap/ap-venv/bin/python tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld
+  [--apworld DIST/so2.apworld] --ut-dir scratchpad/storyaware/ap_ut --port 38441
+- the same env: tools/ap_poptracker_smoke.py --scratch scratchpad/storyaware/smoke --port 38431
+- batches: scratchpad/storyaware/run_batches.sh AP_DIR OUT (baseline farm: cp -as + real top-level
+  scripts + git archive of the old apworld/so2), then identity.py OLD NEW from scratchpad/ap/Archipelago
 
 ## Log
 - 2026-10-27: started; log created.
 - 2026-10-27: design settled (above); story.py, the UT hooks, the export key, the reference, the Lua,
   the pack toggle, tests written; world 882 passed, pack 24 OK; docs drafted; baseline batch running.
+- 2026-10-27: docs committed (61eace6); real UT matches with the story points (moved onto the fresh
+  room: the story holds back up to 436 of 578); APWorld committed (60884fb); new batch running.
+- 2026-10-27: batch identical but the story key; pack committed (c326fba) after the smoke 37/37;
+  the silently skipped reference comparison found and fixed (chapter 0 semantics); final round running.
+- 2026-10-27: final round on the final code: batch identical but the story key, smoke 37/37, pack
+  checked, world 882 / slow 885 / general 935, the real UT with the package 59/59. Done.

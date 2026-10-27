@@ -107,8 +107,8 @@ the points a position has reached: docs/ap/seed_format.md "Story awareness"):
   the Chapter item and the step, and the logic holds back the story's events and locations of points
   not reached yet (the export's `story` key, story mode only): sections in logic by the items but
   later in the story show as Inspect. The "Story" setting item turns it off.
-- Before the port has ever connected (`null`), or with a value that isn't `{"chapter": number, ...}`,
-  both show the plain logic. Both follow the value as it is, also backwards (an earlier save loaded).
+- Before the port has ever connected (`null`), or with a value that isn't `{"chapter": number, ...}`
+  with a chapter above 0, both show the plain logic. Both follow the value as it is, also backwards (an earlier save loaded).
 
 Universal Tracker (B6): `map_page_setting_key = "so2_map_{team}_{player}"` with a
 `map_page_index` that maps the value's `map` to a page; `location_setting_key` may name the same

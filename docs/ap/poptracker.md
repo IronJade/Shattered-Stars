@@ -76,7 +76,7 @@ What it shows:
 |---|---|---|
 | `manifest.json` | uid `so2_shattered_stars`, `package_version` 1.0.0, `game_name` "Star Ocean: The Second Story" (the AP game name), platform PC, author DreamGlyph Studios, variants `map` ("Map Tracker") and `items_only` ("Items Only"), each with the flag `ap` only (never `apmanual` / `aphintgame`), min and target PopTracker 0.36.0, `versions_url` | generator |
 | `settings.json` | smooth scaling for items and maps (the badges and maps are drawn larger than shown) | generator |
-| `items/items.json` | 286 items: 35 area keys, 18 dungeon keys, 12 characters, 5 traps (consumables), 46 skills, 148 moves (264 mapped to AP ids); the logic banner (`so2_logic_*`, progressive), the chapter (`so2_chapter`), story awareness (`so2_story_aware`), auto tab (`so2_auto_tab`), the refresh counter (`so2_rev`, in no layout); 18 settings (`opt_<key>` toggles, `opt_<key>_<value>` progressive stages) | generator |
+| `items/items.json` | 287 items: 35 area keys, 18 dungeon keys, 12 characters, 5 traps (consumables), 46 skills, 148 moves (264 mapped to AP ids); the logic banner (`so2_logic_*`, progressive), the chapter (`so2_chapter`), story awareness (`so2_story_aware`), auto tab (`so2_auto_tab`), the refresh counter (`so2_rev`, in no layout); 18 settings (`opt_<key>` toggles, `opt_<key>_<value>` progressive stages) | generator |
 | `locations/places.json` | region (Expel, Energy Nede, Fienal, Cave of Trials) -> area -> a location per dot (472 place checks, 408 dots) | generator |
 | `locations/world.json` | "Expel World Map" / "Energy Nede World Map" -> a location per area group, whose sections are `ref`s to the place checks of the group's areas | generator |
 | `locations/boards.json` | Shops (52 cells, 550 checks), Item Creation (26, 553), Killer Moves (8, 133), Guilds and Learning (25, 194), Enemy Drops (19, 89) | generator |
@@ -212,7 +212,8 @@ awareness"; docs/ap/apworld.md "Story awareness" for where the points come from)
   it; a click changes it), with the port's step while the port's chapter is the item's (else step
   0); Chapter 0 is no position.
 - **The points reached** (`so2_story_stage()`): how many of `story.stages` ({name, chapter, step},
-  compared as pairs) are at or before the position; nil (no story awareness) without the export's
+  compared as pairs) are at or before the position, at least 1 (a chapter before 3 is the story's
+  start); nil (no story awareness) without the export's
   `story` key (open world, hub, rooms before 0.2.2), without a position, or with the **Story**
   setting item (`so2_story_aware`, a toggle, on by default) off.
 - **A second sweep** (`so2_story_view()`, kept until the items or the points reached change): the
@@ -310,9 +311,9 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
   its region, and then the result is the reference's again; a room without the export, and one with
   an export of a newer format, are a checklist with their banners.
 - **Story awareness** (`test_story_is_the_reference`): in the three story rooms, for the empty state,
-  the items before the first sphere and every item, at 14 story positions sent as the port sends
-  them (a SetReply of `so2_story_0_1`: chapter 0, 3, 5, 12, 24 step 500, 35 step 9999, 36, 41, 48,
-  57, 58, 60 steps 3000, 4000 and 5000), every section is `Normal` exactly for the reference's
+  the items before the first sphere and every item, at 15 story positions sent as the port sends
+  them (a SetReply of `so2_story_0_1`: chapter 0 (no position), 2 (the first point), 3, 5, 12, 24
+  step 500, 35 step 9999, 36, 41, 48, 57, 58, 60 steps 3000, 4000 and 5000), every section is `Normal` exactly for the reference's
   locations in logic for the story (`evaluate(counts, story)`), `Inspect` for its `later` ones and
   `None` for the rest; each value re-runs the rules (`so2_rev` moves, the step-only change too); the
   Story item off gives the plain logic and on again the story's; Chapter set by hand counts as a
@@ -325,7 +326,9 @@ runs) with `--strict` on the zip and on the folder, against the published schema
 schema, warns about JSON / Lua compatibility and hidden or dead files in zips, unsupported images
 and misleading extensions, the minimum PopTracker version, and dead `ref` / `parent` references.
 Result for 1.0.0: "Validated 10 files", no warnings, exit 0 (also lax). versions.json also passes
-the packlist's `versions.schema.json`.
+the packlist's `versions.schema.json`. With story awareness (storyaware, 2026-10-27): 401 files, 287
+items, strict "Validated 10 files" for the zip and the folder, versions.json ok (sha256 aac3c4dc...),
+24 tests OK.
 
 **PopTracker itself**: tools/ap_poptracker_smoke.py ("Smoke test" below) loads the pack in the real
 PopTracker 0.36.0, headless, against a local room.
@@ -395,6 +398,30 @@ start PopTracker with `--load-pack so2_shattered_stars --pack-variant map|items_
 localhost:38391 --ap-slot Tester`, and quit it with SIGINT after 40 seconds (it saves its state on
 quit). Then it checks the log and the saved state
 (`saves/so2_shattered_stars/1.0.0/<variant>/autosave.json`).
+
+**Story awareness, in PopTracker itself** (step 7; `--no-story` skips it). A second room, one
+story-mode slot "Storyteller" (killer moves, the Cave of Trials, boss checks; seed 4243) on PORT + 1;
+PopTracker (Map Tracker, the same probe, which also reports the sections it shows as Inspect)
+connects to it. Fresh, before any story key, its Normal sections must be the world's own in logic and
+none Inspect. Then a client of the slot, as the port (items_handling 0b001), Sets
+`so2_story_{team}_{slot}` the port's way (one replace, want_reply false) at chapter 3, 12, 36, 60
+step 3000 and 60 step 4000 (a step-only change): each time PopTracker's Normal sections must be the
+reference evaluator's for the room's export with that position, its Inspect ones the reference's
+`later`, and the rest None.
+
+Result with story awareness (2026-10-27, pack 1.0.0 as built by storyaware, so2.apworld 0.2.2's
+export with `story`): **37/37 checks pass** (the 24 below and 13 for step 7). The
+story room, 583 locations in logic by its 3 starting items (Normal sections / Inspect "later in the
+story"):
+
+| Position | fresh (no key) | chapter 3 | 12 | 36 | 60, step 3000 | 60, step 4000 |
+|---|---|---|---|---|---|---|
+| Normal | 583 | 37 | 108 | 291 | 393 | 583 |
+| Inspect | 0 | 546 | 475 | 292 | 190 | 0 |
+
+each the reference's exactly, the rest None; the step-only change moved 190 sections from Inspect to
+Normal (the Final Save Point: 80 killer-move levels learned above level 30, 91 checks in the Cave of
+Trials, Lacour's 18 chapter-60 gifts and the King's Room's chest). No Lua error or warning.
 
 Result with the evaluator (2026-10-27, pack 1.0.0, so2.apworld 0.2.2's export): **24/24 checks
 pass**. The logic: fresh, 115 of the room's 1,293 locations in logic (the 2 starting passes);

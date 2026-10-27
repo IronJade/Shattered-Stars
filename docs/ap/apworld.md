@@ -1331,7 +1331,7 @@ as off):
   tracker, with a fresh state each time). `story.reconnect` opens the events of the points the
   position has reached and shuts the later ones (a position that goes back, an earlier save
   loaded, shuts them again). `null` (the port never connected) or a value that isn't a position
-  opens them all: UT then shows what the logic alone says, as before. So does `"off"`.
+  (or has chapter 0 or below) opens them all: UT then shows what the logic alone says, as before. So does `"off"`.
 - So UT lists only what the story has reached; a later check is out of logic until its chapter.
   `logic_version` stays 1: the same room, with no position, is the same logic.
 
@@ -1341,21 +1341,46 @@ the points, the story events, the locations' points), written by `story.export` 
 `evaluate(counts, story)`: `View.locations`, `View.later`); a section in logic by the items but later
 in the story shows as Inspect (docs/ap/poptracker.md "Story awareness").
 
-**Tests.** test/test_story.py (19 tests): the points (the stages' first chapters in order, the Final
-Save Point last, `reached` of positions and of values that aren't one); every story-mode location's
+**Tests.** test/test_story.py (20 tests, one of them under SO2_SLOW_TESTS): the points (the stages'
+first chapters in order, the Final Save Point last, `reached` of positions, at least the first point,
+and of values that aren't one, chapter 0 among them); every story-mode location's
 point (the Cave of Trials 24, Energy Nede and Fienal 13 or later, Expel's places 12 or before or 24,
 story bosses in their chapter's stage, Lacour's chapter-60 gifts and the King's Room 24); no story
 key outside story mode; the export's shape; a real generation has no story events. Per story mix
 (story default, story party, story party rena; the room generated and filled, rebuilt in UT's way
 with enforce `"default"`, UT's client steps mirrored): UT watches `so2_story_0_1` (`so2_story_2_7`
 for team 2, slot 7); with no position, `null` or a bad value, sphere by sphere, UT's in-logic set is
-the room's own, as with enforce `"off"` (no events, no key); at 27 story positions (before the
-story, each point, chapter 60 steps 3000 and 5000) on the first, a middle and the last sphere's
+the room's own, as with enforce `"off"` (no events, no key); at 27 story positions (chapter 2,
+before the first one stored, each point, chapter 60 steps 3000 and 5000) on the first, a middle and the last sphere's
 items, UT's in-logic set equals the reference evaluator's on the room's export, only grows, is the
 plain set less `later`, and going back to chapter 3 shuts the later points again; with every item,
 Expel's locations alone before the disc switch, Energy Nede's at chapter 36 and not at 35 step 9999,
 nothing of the Cave of Trials before the Final Save Point. Open world and hub (enforce `"default"`
-and `"on"`): no key, no events, no `story` in the export.
+and `"on"`): no key, no events, no `story` in the export. `SO2_SLOW_TESTS=1` (TestStoryManySeeds):
+20 rooms per story mix (60), UT equal to the reference at all 27 positions with the start's items and
+with every item.
+
+**The real Universal Tracker** (tools/ap_ut_check.py step 5, Tracker_v0.3.6, the four-slot room of
+seed 2026, display variables unset): on the fresh room a client of the story slot (UTStory: character
+items, crafts, killer moves, Skillsanity insanity; 578 locations in logic by the items) Sets
+its `so2_story_{team}_{slot}` (from its `Connected`) as the port does, and each time UT headless lists exactly the reference's set, as does
+TrackerCore in-process after `reconnect_found_entrances`:
+
+| Position (chapter, step) | 3 | 9 | 12 | 20 | 36 | 41 | 58 | 60, 3000 | 60, 4000 |
+|---|---|---|---|---|---|---|---|---|---|
+| UT in logic | 142 | 204 | 227 | 319 | 426 | 450 | 532 | 532 | 578 |
+| later in the story | 436 | 374 | 351 | 259 | 152 | 128 | 46 | 46 | 0 |
+
+With host.yaml's `enforce_deferred_entrances: "off"` (at chapter 3) UT lists all 578 again; with the
+key back to `null` the four spheres' points match the world's own as before (UT MATCHES THE WORLD:
+every point of the four slots, the CLI and TrackerCore).
+
+**The real generation is unchanged** but the export's new key (2026-10-27): the three release sets
+(tools/ap_batch.sh, seeds 1-96 each) from the committed world against a frozen copy of the world
+before it (HEAD 812f9f6 in a farm with real top-level scripts, scratchpad/storyaware/identity.py):
+288 of 288 seeds identical, 480 .apso2 and 288 spoilers byte for byte, the 288 multidata equal once
+`tracker.story` is taken out of the 93 story-mode slots (59, 13 and 21 in the three sets; 4.2 to
+12.8 KB each), present in exactly those, and the checker's output the same (0 errors).
 
 ## Files
 
@@ -1422,6 +1447,23 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 (the venv has no flask for test/webhost):
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
+
+Results (2026-10-27, 0.2.2: story awareness; docs/handoff/storyaware.md; "Story awareness" above):
+- The world's tests: **882 passed**, 3 skipped (67988 subtests), 10.9 s at `-n 6`: test_story.py's
+  19 (UT's deferred story events equal to the reference's `evaluate(counts, story)` at 27 positions,
+  three story mixes) and test_tracker.py's shape test allowing `story`. `SO2_SLOW_TESTS=1`: **885
+  passed** (68692 subtests, 35 s), TestStoryManySeeds' 60 rooms among them. `AP_TEST_WORLDS=so2 ...
+  pytest test/general worlds/so2`: **935 passed**, 3 skipped (73299 subtests).
+- Identity: the three release sets, seeds 1-96, from a frozen copy of HEAD 812f9f6's world and from
+  the final code (md5s checked): **all 288 seeds identical but the new key**, `tracker.story` in the
+  93 story-mode slots (scratchpad/storyaware/identity.py; "The real generation is unchanged" above).
+- The PopTracker pack (tools/ap_poptracker_test.py): Lua equal to the reference with story positions
+  in the three story rooms, never Inspect in the 13 others; the real PopTracker 0.36.0 smoke 37/37,
+  its story room following a story key Set as the port does (docs/ap/poptracker.md "Smoke test").
+- The real UT (tools/ap_ut_check.py, Tracker_v0.3.6, the packaged so2.apworld built from the final
+  code, 223,553 bytes, world version 0.2.1 unchanged): **UT MATCHES THE WORLD**, 59 comparisons: the
+  four slots' five points (CLI and TrackerCore), the logic_version 2 room refused, and the story
+  slot's nine story positions (CLI and TrackerCore) and enforce "off" ("Story awareness" above).
 
 Results (2026-10-27, 0.2.2: the logic export and 0.2.0 Skillsanity rooms; docs/handoff/logicexport.md;
 "The logic export" and "Older rooms" above):

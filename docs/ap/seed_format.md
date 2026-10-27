@@ -1836,7 +1836,7 @@ and 1349863425 Lacour's Sinclair Sabre gift, chapter-60 scenes on Expel, point 2
 | Key | Value |
 |---|---|
 | `key` | the data-storage key the position comes from (`{team}`, `{slot}`: the `Connected` packet's). |
-| `stages` | the story's **points**, in order, `[name, chapter, step]`: the 23 stages of `data.STAGES`, each reached at its first chapter (step 0), then the Final Save Point at chapter 60 step 4000. A position (C, S) **has reached point k** when (C, S) is at or after point k's (chapter, step), compared as a pair; it has reached as many points as there are at or before it (0 before chapter 3). |
+| `stages` | the story's **points**, in order, `[name, chapter, step]`: the 23 stages of `data.STAGES`, each reached at its first chapter (step 0), then the Final Save Point at chapter 60 step 4000. A position (C, S) **has reached point k** when (C, S) is at or after point k's (chapter, step), compared as a pair; it has reached as many points as there are at or before it, and always the first (a chapter before 3 is the story's start). |
 | `events` | `[name, k]`: an event of the export's `events` (by its item's name) that is collected only once point k is reached, on top of its rule: the disc switch (point 13, chapter 36) and the Final Save Point (point 24). Everything that hangs on them follows: the regions behind them, the killer moves and learn levels counted from them, the goal's events. |
 | `locations` | groups `[k, id, ...]`, k ascending, ids ascending: the locations in logic only once point k is reached, on top of their rule. A location not listed needs point 1 (Expel from the start). |
 
@@ -1844,8 +1844,9 @@ and 1349863425 Lacour's Sinclair Sabre gift, chapter-60 scenes on Expel, point 2
 `logic.lua`): the sweep above, but an event of `story.events` whose point is not reached is not
 collected; a location is in logic when, besides its region and rule, its point is reached. What the
 items alone put in logic but the story hasn't reached is **later in the story** (`View.later`; the
-pack shows it as Inspect). Without a position (no key yet, `null`, or a value that isn't
-`{"chapter": number, ...}`) the evaluation is the plain one.
+pack shows it as Inspect). Without a position (no key yet, `null`, a value that isn't
+`{"chapter": number, ...}`, or chapter 0 or below, which no game in progress has) the evaluation is
+the plain one.
 
 **Where the points come from** (`story.py`; docs/ap/apworld.md "Story awareness"): a stage begins
 where the story stores its first chapter (each chapter value is stored in exactly one place,
