@@ -247,7 +247,17 @@ struct Seed {
   std::vector<HubBoss> bosses;       // the seed's `bosses` (the chambers)
   HubState hub_state;                // the `hub` block's New Game state [hubcore agent]
   int skillsanity = 0;               // options.skillsanity: 0 none, 1 skills_only, 2 special_only, 3 insanity [skillsanity2]
+  // [hellseed] options.hell_seed (so2.apworld 0.2.1; absent: false): a "hell seed", encounter_rate 0
+  // with killer-move checks or learn points, trained only in the Fun City arena, whose fee the seed
+  // waives with an ordinary patch line. Display only: setup's Archipelago page and the game's log
+  // warn the player (kHellSeedWarning); nothing plays differently because of it.
+  bool hell_seed = false;
 };
+
+// [hellseed] What setup's Archipelago page shows and the game logs for a hell seed.
+inline constexpr const char* kHellSeedWarning =
+    "Hell Seed: no random battles. Killer-move levels and learn points are trained in the Fun City arena, "
+    "which is free on this seed. Expect a very long grind.";
 
 // The door id rule (tools/ap_doors.py).
 constexpr int64_t door_id(int map, int offset) { return static_cast<int64_t>(map) * 65536 + offset / 4; }

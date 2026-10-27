@@ -100,6 +100,7 @@ class App {
     bool ok = false;
     std::string error, seed, slot, game;
     size_t locations = 0;
+    bool hell = false;  // options.hell_seed: the page warns (game::ap::kHellSeedWarning) [hellseed]
     std::string entry;  // in an archive: the seed read (its name in the archive)
     // An archive with several Star Ocean seeds: each one's name and slot, to choose from.
     std::vector<std::pair<std::string, std::string>> choices;

@@ -598,6 +598,7 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     return false;
   }
   s.no_fail_crafting = s.options["no_fail_crafting"].as_bool(false);  // v2
+  s.hell_seed = s.options["hell_seed"].as_bool(false);  // [hellseed] display only (seed.h)
   if (const Json& ss = s.options["skillsanity"]; ss.is_string()) {  // [skillsanity2]
     static const char* const kModes[] = {"none", "skills_only", "special_only", "insanity"};
     s.skillsanity = -1;

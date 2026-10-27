@@ -202,6 +202,7 @@ const App::SeedInfo& App::seed_info(const std::string& path, const std::string& 
       info.slot = seed.slot_name;
       info.game = seed.game;
       info.locations = seed.locations.size();
+      info.hell = seed.hell_seed;
     }
   }
   return seed_cache_.emplace(key, info).first->second;
@@ -2194,6 +2195,8 @@ void App::page_archipelago() {
     else
       status_line(!chosen.choices.empty() && settings_.ap_seed_entry.empty() ? Level::kWarning : Level::kError,
                   chosen.error);
+    // [hellseed] A hell seed (no random battles; the training is the Fun City arena's): say so.
+    if (chosen.ok && chosen.hell) status_line(Level::kWarning, game::ap::kHellSeedWarning);
     if (chosen.ok) {
       // The seed's own memory card (launcher/ap_seed.h): its saves never mix with ordinary ones.
       subheading(fonts_.bold, fonts_.size, "Saves");

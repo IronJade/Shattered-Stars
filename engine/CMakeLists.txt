@@ -667,6 +667,7 @@ if(TARGET ss_ap_net)  # against a local Archipelago server (SS_AP_SERVER), skipp
 endif()
 target_sources(ss_game_tests PRIVATE tests/test_ap.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_ap_hub.cpp)  # the hub's New Game, doors, sidecar [hubcore agent]
+target_sources(ss_game_tests PRIVATE tests/test_ap_hell.cpp)  # the hell seed's hell_seed and fee line [hellseed]
 target_sources(ss_game_tests PRIVATE tests/test_leader.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_quit_prompt.cpp)  # Esc asks before quitting [escquit]
 target_sources(ss_game_tests PRIVATE tests/test_app_icon.cpp)  # the icon and app ids [appicon agent]
