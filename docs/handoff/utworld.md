@@ -87,19 +87,31 @@ Agent "utworld", started 2026-10-27. Coordinator log: docs/handoff/phaseb.md. Pl
 - Identity: batch_base2 vs batch_new (first after-change batch): ALL 288 identical but the new keys.
 - Docs: apworld.md Testing results 0.2.2, Trackers, Files, Changes; seed_format.md; setup_en.md; 0.2.2.md.
 
-## In progress
-- Final batch on the final code: scratchpad/utworld/batch_new2 (code md5s in scratchpad/utworld/final_code.md5).
+- Final batch on the final code (scratchpad/utworld/batch_new2; code md5s unchanged during it) vs batch_base2:
+  ALL 288 IDENTICAL but the new keys (480 .apso2 + 288 spoilers byte for byte, checker output identical,
+  multidata equal but every SO2 slot's slot data gaining exactly logic_version 1 and exclude_locations []).
+  scratchpad/utworld/identity.txt. Stale batch_base / batch_new removed.
+- Commits: 605368a (Docs), b35eadf (APWorld: ut.py, world.py, hub.py, test_ut.py, tools/ap_ut_check.py).
 
-## Next
-1. identity.py batch_base2 batch_new2 -> ALL IDENTICAL expected.
-2. Commit: docs first (seed_format.md, apworld.md, setup_en.md?, 0.2.2.md, utworld.md), then World (ut.py,
-   world.py, hub.py, test_ut.py, tools/ap_ut_check.py). setup_en.md is in apworld/so2/docs (packaged): with docs.
-3. Final report (SubagentHandback).
+## Status: DONE (B1). Nothing in progress.
+
+## Open / for the user or the next agent
+- The user's own 0.2.0 hub room is refused (0.2.0 + skillsanity: OLD_LOGIC). Keep refusing (D10), or accept
+  such rooms with a logged warning (UT would list some guild checks / learn levels later than 0.2.0's logic)?
+- release_checklist.md rows for tools/ap_ut_check.py and the slow tests: B7 (not in my file list).
+- B2 (Rule Builder) must keep ut.check_restored callable in generate_early (slot_options has no
+  region-dependent keys); B3's `tracker` export belongs in fill_slot_data, not slot_options, and
+  check_restored skips NEW_KEYS only: add "tracker" to ut.NEW_KEYS (or skip it) when B3 lands.
+- Bump ut.LOGIC_VERSION with any logic change (docs/ap/apworld.md "Trackers": when to bump).
+- APWORLD_VERSION / world_version still 0.2.1 (the release bumps them; messages then say 0.2.2).
 
 ## How to verify
 - cd scratchpad/ap/Archipelago; SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test/test_ut.py
+- SO2_SLOW_TESTS=1 ... pytest -q worlds/so2/test/test_ut.py -k ManySeeds   (320 rooms)
 - PYTHONPATH=. ../ap-venv/bin/python ../../utworld/mutate.py   (EVERY MUTATION CAUGHT)
 - PYTHONPATH=. ../ap-venv/bin/python ../../utworld/oldroom.py check ../../utworld/rooms_020.json
 - PYTHONPATH=. ../ap-venv/bin/python ../../utworld/identity.py ../../utworld/batch_base2 ../../utworld/batch_new2
 - SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_ut_check.py
   --tracker scratchpad/ap_ut/tracker.apworld [--apworld scratchpad/utworld/dist/so2.apworld]
+- Shadow Archipelago copies (cp -as farms) need real top-level scripts: Python resolves a linked script's
+  directory for sys.path[0] and would import the shared install's modules and worlds.
