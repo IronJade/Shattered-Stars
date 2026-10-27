@@ -8,13 +8,12 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <system_error>
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
-#include "disc/archive.h"
-#include "disc/disc_image.h"
 #include "game/ap/seed.h"
 #include "launcher/ap_seed.h"
 #include "launcher/process.h"
@@ -122,6 +121,14 @@ App::App(SDL_Window* window, const Fonts& fonts, const Textures& textures, Optio
 }
 
 App::~App() {
+  // A tracker render still running (the window closed, or Save & Play): it stops before its
+  // next image, so every PNG written so far is whole, and its thread is joined here.
+  const bool rendering = tracker_job_.status().running;
+  tracker_job_.stop();
+  if (rendering) {
+    tracker_status_ = tracker_job_.status();
+    tracker_render_finished();
+  }
   if (logo_ && textures_.destroy) textures_.destroy(logo_);
 }
 
@@ -413,7 +420,11 @@ void App::run_action(const std::string& action) {
   else if (action == "mods-down") mods_move(1);
   else if (action == "mods-remove") open_remove_popup_ = mods_selected_entry() >= 0;
   else if (action == "mods-show-info") mods_scroll_to_info_ = true;
-  else if (action == "render-tracker-maps") start_tracker_render();
+  else if (action == "render-tracker-maps") {
+    start_tracker_render();
+    tracker_scroll_ = true;  // scripts can't scroll: the Trackers section in view, as for a click
+  }
+  else if (action.rfind("wait-tracker-render", 0) == 0) {}  // over: frame() held it until then
   else std::fprintf(stderr, "setup: unknown action '%s'\n", action.c_str());
 }
 
@@ -431,37 +442,38 @@ void App::open_folder(const fs::path& folder) {
 // the same command as `--render-tracker-maps` with no DIR (PopTracker's own search order), so
 // a Windows player never needs a terminal. Reads Disc 1 only and writes only the pack's PNGs
 // under PopTracker's user-override folder; no config change (settings on screen are not
-// touched, saved or not), no save, no card.
+// touched, saved or not), no save, no card. The render runs on a thread of its own
+// (setup/tracker_job.h: its own disc handle, a copy of the path), so the window goes on
+// drawing and shows its progress.
 void App::start_tracker_render() {
-  if (tracker_render_busy_) return;  // already running; the button is disabled meanwhile
-  tracker_render_busy_ = true;
-  tracker_render_done_ = false;
-}
-
-void App::run_tracker_render() {
-  tracker_render_busy_ = false;
-  tracker_render_done_ = true;
-  tracker_render_ok_ = false;
-  tracker_render_dir_.clear();
+  if (tracker_status_.running) return;  // already running; the button is disabled meanwhile
   tracker_render_error_.clear();
   if (!disc1_ok()) {  // the usual message (bottom_bar / the unsaved-changes popup say the same)
     tracker_render_error_ = "Choose a valid Disc 1 image first.";
     return;
   }
-  std::string error;
-  const auto disc = disc::DiscImage::open(launcher::utf8_path(settings_.disc1), &error);
-  disc::Archive archive;
-  if (!disc || !archive.open(*disc, &error)) {
-    tracker_render_error_ = error.empty() ? "Your Disc 1 image could not be read." : error;
-    return;
-  }
+  // The folder is resolved here, on the window's thread (it reads the environment).
   const fs::path dir = tools::poptracker_override_dir();
-  tools::TrackerRenderOptions options;  // the real render for a player: every image, no dots
-  const int rc = tools::render_tracker_maps(archive, dir, options);
   tracker_render_dir_ = launcher::path_utf8(dir);
-  tracker_render_ok_ = rc == 0;
-  if (!tracker_render_ok_)
-    tracker_render_error_ = "Some map images could not be rendered (shattered-stars-setup's own console has details).";
+  if (tracker_job_.start(settings_.disc1, dir)) {  // every image, no dots: the real render
+    tracker_render_frame_ = frame_;
+    std::printf("setup: tracker maps: rendering into %s\n", tracker_render_dir_.c_str());
+    std::fflush(stdout);
+  }
+  tracker_status_ = tracker_job_.status();
+}
+
+void App::tracker_render_finished() {
+  using Outcome = TrackerRenderJob::Outcome;
+  const TrackerRenderJob::Status& st = tracker_status_;
+  const char* what = st.outcome == Outcome::kDone      ? "done"
+                     : st.outcome == Outcome::kErrors  ? "done, with errors"
+                     : st.outcome == Outcome::kStopped ? "stopped"
+                     : st.outcome == Outcome::kNoDisc  ? "disc 1 not readable"
+                                                       : "failed";
+  std::printf("setup: tracker maps: %s (%d of %d images; %d frames drawn while it ran)\n", what, st.done, st.total,
+              frame_ - tracker_render_frame_);
+  std::fflush(stdout);
 }
 
 struct DialogCall {
@@ -779,10 +791,10 @@ void field_label(const char* text, float width) {
 void App::frame() {
   ++frame_;
   apply_dialog_results();
-  // The tracker-render button (or the scripted action below) sets tracker_render_busy_ during
-  // THIS function on some earlier frame; running it here, before the page draws, means the
-  // frame that set it shows "Rendering..." and the work itself happens on the next one.
-  if (tracker_render_busy_ && !tracker_render_done_) run_tracker_render();
+  // The tracker render's progress for this frame (it runs on its own thread).
+  const bool was_rendering = tracker_status_.running;
+  tracker_status_ = tracker_job_.status();
+  if (was_rendering && !tracker_status_.running) tracker_render_finished();
   if (frame_ == 1) {
     if (!disc1_ok() && settings_.disc1.empty() && options_.sets.empty()) auto_detect(true);
     if (options_.state == "quit-confirm") open_quit_popup_ = true;
@@ -798,8 +810,14 @@ void App::frame() {
     }
   } else if (!options_.actions.empty()) {  // one scripted action per frame
     const std::string action = options_.actions.front();
-    options_.actions.erase(options_.actions.begin());
-    run_action(action);
+    // wait-tracker-render[:N] holds the script while the render runs (until N images are done).
+    script_waiting_ = action.rfind("wait-tracker-render", 0) == 0 && tracker_status_.running &&
+                      (action.size() <= 20 || action[19] != ':' ||
+                       tracker_status_.done < std::atoi(action.c_str() + 20));
+    if (!script_waiting_) {
+      options_.actions.erase(options_.actions.begin());
+      run_action(action);
+    }
   }
   if (settings_ != saved_) saved_message_.clear();
   update_logo();
@@ -2292,23 +2310,49 @@ void App::page_archipelago() {
              : "The game connects when it starts. Checks found while it can't reach the server are sent later.");
 
   subheading(fonts_.bold, fonts_.size, "Trackers");
+  if (tracker_scroll_) {  // the scripted action (a click is in view already)
+    ImGui::SetScrollHereY(0.0f);
+    tracker_scroll_ = false;
+  }
   note("PopTracker can follow your run (map and checks) from your own disc's artwork: this renders it "
        "once, into PopTracker's own folder, from this disc only. Nothing is shared or published.");
   const char* render_label = "Render tracker maps for PopTracker";
-  ImGui::BeginDisabled(!disc1_ok() || tracker_render_busy_);
+  const TrackerRenderJob::Status& st = tracker_status_;
+  ImGui::BeginDisabled(!disc1_ok() || st.running);
   if (ImGui::Button(render_label)) start_tracker_render();
   ImGui::EndDisabled();
   if (!disc1_ok() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     ImGui::SetTooltip("%s", "Choose a valid Disc 1 image first.");
-  if (tracker_render_busy_) {
-    status_line(Level::kInfo, "Rendering tracker maps... this can take a few seconds.");
-  } else if (tracker_render_done_) {
-    if (tracker_render_ok_) {
-      status_line(Level::kOk, "Done: the tracker maps were written to " + tracker_render_dir_ + ".");
-      if (ImGui::Button("Open folder")) open_folder(launcher::utf8_path(tracker_render_dir_));
-    } else {
-      status_line(Level::kError, tracker_render_error_);
-    }
+  using Outcome = TrackerRenderJob::Outcome;
+  if (!tracker_render_error_.empty()) {
+    status_line(Level::kError, tracker_render_error_);
+  } else if (st.running) {
+    const std::string count = st.total > 0 ? std::to_string(st.done) + " of " + std::to_string(st.total) + " images"
+                                           : std::string("Starting...");
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, IM_COL32(80, 135, 225, 255));
+    ImGui::ProgressBar(st.total > 0 ? static_cast<float>(st.done) / static_cast<float>(st.total) : 0.0f,
+                       ImVec2(std::min(em() * 22, ImGui::GetContentRegionAvail().x), 0), count.c_str());
+    ImGui::PopStyleColor();
+    const std::string now = st.name.empty()    ? std::string()
+                            : st.kind == "room"  ? "room " + st.name
+                            : st.kind == "world" ? "the world map of " + st.name
+                                                 : "the area map of " + st.name;
+    status_line(Level::kInfo, now.empty() ? "Rendering the tracker maps..." : "Rendering " + now + "...");
+    note("Setup can be used meanwhile. Closing it stops the render; the images written by then are kept.");
+  } else if (st.outcome == Outcome::kDone) {
+    status_line(Level::kOk, "Done: " + std::to_string(st.total) + " tracker map images were written to " +
+                                tracker_render_dir_ + ".");
+    if (ImGui::Button("Open folder")) open_folder(launcher::utf8_path(tracker_render_dir_));
+  } else if (st.outcome == Outcome::kErrors) {
+    status_line(Level::kError,
+                "Some map images could not be rendered (shattered-stars-setup's own console has details).");
+  } else if (st.outcome == Outcome::kStopped) {
+    status_line(Level::kWarning, "Stopped after " + std::to_string(st.done) + " of " + std::to_string(st.total) +
+                                     " images. Render again for the rest.");
+  } else if (st.outcome == Outcome::kNoDisc) {
+    status_line(Level::kError, st.detail.empty() ? "Your Disc 1 image could not be read." : st.detail);
+  } else if (st.outcome == Outcome::kFailed) {
+    status_line(Level::kError, "The tracker maps could not be rendered: " + st.detail);
   }
 }
 

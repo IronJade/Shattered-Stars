@@ -425,6 +425,15 @@ int main(int argc, char** argv) try {
       for (std::string item; std::getline(list, item, ',');)
         if (!item.empty()) options.only.push_back(item);
     }
+    // Progress in the console besides each image's own line: the count at the start and
+    // every 100 images (the setup's button shows the same in its window).
+    options.progress = [&](const tools::TrackerRenderProgress& p) {
+      if (p.done == 0 && !p.path.empty())
+        std::printf("tracker maps: rendering %d image(s) into %s\n", p.total, util::path_utf8(tracker_maps_dir).c_str());
+      else if (p.done % 100 == 0 && !p.path.empty())
+        std::printf("tracker maps: %d of %d done\n", p.done, p.total);
+      return true;
+    };
     return tools::render_tracker_maps(archive, tracker_maps_dir, options);
   }
 

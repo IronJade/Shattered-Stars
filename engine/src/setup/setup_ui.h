@@ -13,6 +13,7 @@
 #include "launcher/discs.h"
 #include "launcher/settings.h"
 #include "mods/catalog.h"
+#include "setup/tracker_job.h"
 
 struct SDL_Window;
 struct ImFont;
@@ -38,8 +39,10 @@ struct Options {
   // close button), set:KEY=VALUE (as if typed in); on the Mods page mods-install:ZIP,
   // mods-select:ID, mods-toggle:ID, mods-up, mods-down, mods-remove (asks; never confirmed),
   // mods-show-info (scrolls to the selected mod's details); on the Archipelago page
-  // render-tracker-maps (the "Render tracker maps for PopTracker" button; the work runs on
-  // the frame after this one, see App::run_tracker_render).
+  // render-tracker-maps (the "Render tracker maps for PopTracker" button, scrolled into view:
+  // the render starts on its own thread and the frames go on), wait-tracker-render (the next actions wait, and
+  // the frames meanwhile don't count towards --frames, until the render has finished) and
+  // wait-tracker-render:N (the same until N images are done).
   std::vector<std::string> actions;
 };
 
@@ -82,6 +85,10 @@ class App {
 
   void frame();  // the UI for one frame (between ImGui::NewFrame and ImGui::Render)
   bool done() const { return done_; }
+  // The tracker maps are being rendered (the window wants frames to show the progress).
+  bool working() const { return tracker_status_.running; }
+  // A scripted wait-tracker-render is waiting (test runs: these frames don't count).
+  bool waiting() const { return script_waiting_; }
   int exit_code() const { return exit_code_; }
   void request_close();  // the window's close button
   void forget_file_checks() {  // focus regained: files may have changed
@@ -149,13 +156,13 @@ class App {
   void run_action(const std::string& action);
   void open_folder(const std::filesystem::path& folder);
   // Archipelago page, "Trackers": --render-tracker-maps (tools/tracker_maps.h) from a button,
-  // so Windows players never need a terminal. start_tracker_render() marks the request (the
-  // button, or the scripted action "render-tracker-maps"); run_tracker_render() does the
-  // (blocking, ~a few seconds) work at the top of the next frame(), so the page can show
-  // "Rendering..." for the frame in between. Reads the disc only, writes only PNGs under
-  // PopTracker's own override folder; no config change, no saves.
+  // so Windows players never need a terminal. start_tracker_render() (the button, or the
+  // scripted action "render-tracker-maps") starts it on its own thread (setup/tracker_job.h);
+  // each frame() takes a copy of its progress for the page. Reads the disc only, writes only
+  // PNGs under PopTracker's own override folder; no config change, no saves. Closing the
+  // window stops it after the image in progress (~App).
   void start_tracker_render();
-  void run_tracker_render();
+  void tracker_render_finished();  // the frame that sees it finish: a line on stdout for scripts
 
   // The Mods page (mods/catalog.h): the folder's packages, rescanned when the folder
   // changes, after an install or removal, and when the window regains focus; the conflict
@@ -215,10 +222,13 @@ class App {
   bool show_password_ = false;
 
   // The Archipelago page's "Render tracker maps for PopTracker" button (tools/tracker_maps.h).
-  bool tracker_render_busy_ = false;  // requested; the work runs at the top of the next frame
-  bool tracker_render_done_ = false;  // a result (ok/error/dir) is ready below
-  bool tracker_render_ok_ = false;
-  std::string tracker_render_dir_, tracker_render_error_;
+  TrackerRenderJob tracker_job_;
+  TrackerRenderJob::Status tracker_status_;  // this frame's copy
+  std::string tracker_render_dir_;           // where it writes (resolved at the start)
+  std::string tracker_render_error_;         // refused before starting (no valid Disc 1)
+  int tracker_render_frame_ = 0;             // the frame it started on
+  bool script_waiting_ = false;              // a wait-tracker-render action holds the script
+  bool tracker_scroll_ = false;              // the scripted action: scroll the section into view
 
   mods::Catalog mods_catalog_;
   bool mods_scanned_ = false;

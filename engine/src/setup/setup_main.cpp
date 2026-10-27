@@ -17,8 +17,11 @@
 //                        capture-pad (Controls: waiting for a key / button for Cross)
 //   --do A,B,...         actions, one per frame: autodetect, save, play, quit, close,
 //                        set:KEY=VALUE, render-tracker-maps (Archipelago page; the PopTracker
-//                        map images from the disc, tools/tracker_maps.h) (also
-//                        SS_SETUP_SCRIPT="A,B,...", which reaches setup when the game starts it)
+//                        map images from the disc, tools/tracker_maps.h, on a thread of its
+//                        own), wait-tracker-render[:N] (hold the script until the render is
+//                        over, or N images are done; those frames don't count for --frames)
+//                        (also SS_SETUP_SCRIPT="A,B,...", which reaches setup when the game
+//                        starts it)
 //   --renderer gl|sdl    OpenGL 3.3 (default) or SDL's renderer (the fallback when OpenGL
 //                        can't start)
 //   --frames N           stop after N frames
@@ -389,7 +392,9 @@ int main(int argc, char** argv) try {
           app.request_close();
         if (ev.type == SDL_EVENT_WINDOW_FOCUS_GAINED) app.forget_file_checks();
       };
-      if (screenshot.empty() && busy <= 0 && SDL_WaitEventTimeout(&e, 250)) handle(e);
+      // Idle: wait for an event, but draw at least 4 times a second (10 while the tracker
+      // maps render, for the progress bar).
+      if (screenshot.empty() && busy <= 0 && SDL_WaitEventTimeout(&e, app.working() ? 100 : 250)) handle(e);
       while (SDL_PollEvent(&e)) handle(e);
       busy = any ? 8 : busy - 1;
       if (screenshot.empty() && (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)) {
@@ -402,7 +407,11 @@ int main(int argc, char** argv) try {
       ImGui::NewFrame();
       app.frame();
       ImGui::Render();
-      ++frame;
+      if (app.waiting()) {  // a scripted wait-tracker-render: not a frame of --frames
+        if (!screenshot.empty()) SDL_Delay(10);  // test runs draw unthrottled: leave the CPU to the render
+      } else {
+        ++frame;
+      }
 
       int pw = 0, ph = 0;
       SDL_GetWindowSizeInPixels(window, &pw, &ph);

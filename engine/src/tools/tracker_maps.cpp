@@ -916,10 +916,28 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     dots.push_back({c["image"].as_string(), {static_cast<int>(c["x"].as_int()), static_cast<int>(c["y"].as_int())}});
 
   int written = 0, failed = 0;
+  // Each PNG is written under a temporary name beside it and renamed into place, so a run cut
+  // short (the setup window closed, the process killed) never leaves a partly written image
+  // under the name PopTracker reads.
   auto write = [&](const std::string& rel, const fs::path& path, const Canvas& canvas) {
     std::error_code ec;
     fs::create_directories(path.parent_path(), ec);
-    if (ec || !util::write_png_rgb(path, canvas.pixels, canvas.width, canvas.height, &error)) {
+    fs::path part = path;
+    part += ".part";
+    bool ok = !ec && util::write_png_rgb(part, canvas.pixels, canvas.width, canvas.height, &error);
+    if (ok) {
+      fs::rename(part, path, ec);
+      if (ec) {  // a system that won't rename over an existing file: remove it first
+        std::error_code ignore;
+        fs::remove(path, ignore);
+        ec.clear();
+        fs::rename(part, path, ec);
+      }
+      ok = !ec;
+    }
+    if (!ok) {
+      std::error_code ignore;
+      fs::remove(part, ignore);
       std::fprintf(stderr, "tracker maps: %s: %s\n", rel.c_str(), ec ? ec.message().c_str() : error.c_str());
       ++failed;
       return;
@@ -929,10 +947,26 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     std::fflush(stdout);
   };
   const Json& images = layout["images"];
+  const Json& rooms = layout["rooms"];
+  // Progress (options.progress): before each image, then once at the end.
+  int total = 0, started = 0;
+  for (size_t i = 0; i < images.size(); ++i) total += wanted(images[i]["path"].as_string(), options);
+  for (size_t i = 0; i < rooms.size(); ++i) total += wanted(rooms[i]["path"].as_string(), options);
+  bool stopped = false;
+  auto next = [&](const std::string& rel, const char* kind, const std::string& name) {
+    if (options.progress && !options.progress(TrackerRenderProgress{started, total, rel, kind, name})) {
+      stopped = true;
+      return false;
+    }
+    ++started;
+    return true;
+  };
   for (size_t i = 0; i < images.size(); ++i) {
     const Json& img = images[i];
     const std::string rel = img["path"].as_string();
     if (!wanted(rel, options)) continue;
+    const bool world = img["kind"].as_string() == "world";
+    if (!next(rel, world ? "world" : "area", img[world ? "name" : "area"].as_string())) break;
     const auto path = image_path(dir, rel);
     const int W = static_cast<int>(img["width"].as_int()), H = static_cast<int>(img["height"].as_int());
     if (!path || W <= 0 || H <= 0 || W > 4096 || H > 4096) {
@@ -994,11 +1028,11 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     if (c.has("room"))
       room_dots.push_back({c["room"]["image"].as_string(),
                            {static_cast<int>(c["room"]["x"].as_int()), static_cast<int>(c["room"]["y"].as_int())}});
-  const Json& rooms = layout["rooms"];
-  for (size_t i = 0; i < rooms.size(); ++i) {
+  for (size_t i = 0; i < rooms.size() && !stopped; ++i) {
     const Json& room = rooms[i];
     const std::string rel = room["path"].as_string();
     if (!wanted(rel, options)) continue;
+    if (!next(rel, "room", room["label"].as_string())) break;
     const auto path = image_path(dir, rel);
     const int W = static_cast<int>(room["width"].as_int()), H = static_cast<int>(room["height"].as_int());
     const int bg_y = static_cast<int>(room["bg_y"].as_int());
@@ -1033,6 +1067,12 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     }
     write(rel, *path, canvas);
   }
+  if (stopped) {
+    std::printf("tracker maps: stopped after %d of %d image(s); %d written to %s\n", started, total, written,
+                util::path_utf8(dir).c_str());
+    return kTrackerRenderStopped;
+  }
+  if (options.progress) options.progress(TrackerRenderProgress{started, total, {}, {}, {}});
   std::printf("tracker maps: %d image(s) written to %s%s\n", written, util::path_utf8(dir).c_str(),
               failed ? ", with errors" : "");
   return failed ? 1 : 0;

@@ -552,7 +552,9 @@ if(SS_BUILD_SETUP)
   # for PopTracker" button runs the same code as --render-tracker-maps (self-contained: it
   # needs only disc::Archive and game::ap::Json, both already linked here) [portcheck], so
   # setup need not link all of ss_game (the field/battle VM setup never uses).
+  # setup/tracker_job.cpp runs that render on a thread of its own [setupthread].
   add_executable(shattered-stars-setup WIN32 src/setup/setup_main.cpp src/setup/setup_ui.cpp
+                 src/setup/tracker_job.cpp
                  src/game/ap/seed.cpp src/game/ap/json.cpp src/tools/tracker_maps.cpp
                  "${CMAKE_CURRENT_BINARY_DIR}/generated/tracker_layout_data.cpp")
   if(WIN32)
@@ -560,7 +562,8 @@ if(SS_BUILD_SETUP)
   endif()
   ss_windows_resources(shattered-stars-setup setup.exe "Shattered Stars Setup" setup
                        io.github.IronJade.ShatteredStars.Setup)
-  target_link_libraries(shattered-stars-setup PRIVATE ss_launcher ss_mods ss_core ss_platform ss_imgui)
+  find_package(Threads REQUIRED)
+  target_link_libraries(shattered-stars-setup PRIVATE ss_launcher ss_mods ss_core ss_platform ss_imgui Threads::Threads)
   target_compile_options(shattered-stars-setup PRIVATE ${SS_WARNINGS})
   if(WIN32)
     add_custom_command(TARGET shattered-stars-setup POST_BUILD
@@ -703,6 +706,10 @@ target_sources(ss_game_tests PRIVATE tests/test_ap_hub.cpp)  # the hub's New Gam
 target_sources(ss_game_tests PRIVATE tests/test_ap_hell.cpp)  # the hell seed's hell_seed and fee line [hellseed]
 target_sources(ss_game_tests PRIVATE tests/test_ap_ds.cpp)  # the tracker keys in data storage [dskeys agent]
 target_sources(ss_game_tests PRIVATE tests/test_tracker_maps.cpp)  # --render-tracker-maps [maprender]
+# The setup button's render thread (setup/tracker_job.h; no ImGui in it) [setupthread].
+target_sources(ss_game_tests PRIVATE tests/test_tracker_job.cpp src/setup/tracker_job.cpp)
+find_package(Threads REQUIRED)
+target_link_libraries(ss_game_tests PRIVATE Threads::Threads)
 target_sources(ss_game_tests PRIVATE tests/test_leader.cpp)
 target_sources(ss_game_tests PRIVATE tests/test_quit_prompt.cpp)  # Esc asks before quitting [escquit]
 target_sources(ss_game_tests PRIVATE tests/test_app_icon.cpp)  # the icon and app ids [appicon agent]
