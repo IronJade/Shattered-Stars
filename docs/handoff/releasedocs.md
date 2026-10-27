@@ -50,7 +50,10 @@ docs/ap/release_checklist.md section 11.
    test with command and expected result, sums / upload sets, the Windows check, drafts ->
    publish order world, pack, port; versions.json after the pack's release; the wiki push; D7
    listing only on the user's word). **Done.**
-2. docs/handoff/windows_check.md: "Recheck for 0.03.00". (pending)
+2. docs/handoff/windows_check.md: "Recheck for 0.03.00" (13 items: version, setup's button incl.
+   the first real setup.exe run, the CLI, PopTracker install / connect / autotrack / story / rendered
+   maps / offline / old room, Universal Tracker incl. /explain and story awareness, a TODO item for
+   maptab, a glance at the rest). **Done.**
 3. Release notes 0.03.00.md, 0.2.2.md, poptracker-1.0.0.md. (pending)
 4. README.md: tracker features and the three downloads. (pending)
 5. Wiki (scratchpad/wiki, uncommitted): Trackers page + links. (pending)
@@ -64,6 +67,8 @@ docs/ap/release_checklist.md section 11.
   tests (rooms, doors, panel, click), the smoke's door-click step, `SS_TEST=tracker_` counts if
   the layout changes, and one row "the map tabs" (layout --check after the area audit, UT's map
   tab loading headless).
+- docs/handoff/windows_check.md "Recheck for 0.03.00" item 11 (TODO (maptab)): the room maps,
+  the door panel, click switching, auto tab to rooms, UT's map tab.
 
 ## Facts not confirmed / sources that disagree
 

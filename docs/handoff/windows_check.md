@@ -277,3 +277,142 @@ Seeds (generate on the Windows machine, `Generate.py` or the Launcher, each from
    `--memcard1 "…\Test Ä 日本\card.mcd"` run doesn't crash.
 8. Optional, with a toolchain: `ss_tests.exe` / `ss_game_tests.exe` (the RC ran them under Wine:
    section 11).
+
+## Recheck for 0.03.00 (written 2026-10-27, agent releasedocs; to run with the 0.03.00 drafts)
+
+For the Windows machine, with the three drafts of docs/ap/release_checklist.md section 12
+(`gh release download TAG --repo IronJade/Shattered-Stars`, then `sha256sum -c SHA256SUMS` or
+`Get-FileHash` against each release's SHA256SUMS):
+
+- the port, `v0.03.00`: `ShatteredStars-0.03.00-win64.zip`;
+- the world, `apworld-v0.2.2`: `so2.apworld` 0.2.2 and `Star.Ocean.The.Second.Story.yaml`;
+- the PopTracker pack, `poptracker-v1.0.0`: `so2_shattered_stars_1.0.0.zip`.
+
+New programs for this pass (players' own, both third-party): **PopTracker 0.36.0** for Windows
+(https://github.com/black-sliver/PopTracker/releases, the Windows zip) and **Universal Tracker
+0.3.6** (`tracker.apworld` of https://github.com/FarisTheAncient/Archipelago/releases, tag
+`Tracker_v0.3.6`). Archipelago 0.6.8 or newer as before, in `C:\ProgramData\Archipelago`.
+
+Same rules as above: a scratch `%APPDATA%` (`set APPDATA=%USERPROFILE%\ss-test\appdata`), the
+`Test Ä 日本` folder, never the user's own saves. Replace the old `so2.apworld` in
+`C:\ProgramData\Archipelago\custom_worlds` with the 0.2.2 one (one copy only).
+
+**The PopTracker folder is the real one.** The map render's default target is PopTracker's own
+override folder for this pack, which is what the feature is for: `PopTracker\user-override\
+so2_shattered_stars` under `%USERPROFILE%` if PopTracker keeps its folder there (it makes
+`%USERPROFILE%\PopTracker\packs` when it installs a pack), else under `Documents`. It writes only
+PNGs, and only in that folder. Before starting, note whether `%USERPROFILE%\PopTracker` and
+`Documents\PopTracker` exist, and whether an `so2_shattered_stars` folder is already in either; say
+in the results which folder the render used. If Documents is redirected (OneDrive), say so too.
+
+What changed for a Windows player since 0.02.51: the version; while connected to its room the game
+writes its map and story position to the server (for trackers); setup's Archipelago page has a
+new **Trackers** part with the **Render tracker maps for PopTracker** button; the
+`--render-tracker-maps [DIR]` command; the world 0.2.2 (Universal Tracker without a YAML,
+`/explain`, story awareness, the logic for PopTracker); the pack. Nothing else in the game
+changed, so the 0.02.51 items get a glance only.
+
+Seeds (generate on the Windows machine, each from its own YAML):
+- **story**: the template as it is (story mode). For story awareness.
+- **open**: `world_mode: open_world`, `character_items: true`, `craftsanity: true`,
+  `killer_move_checks: true`. For the logic colours (green / red).
+- Optional, **old**: any seed made with so2.apworld 0.2.1 (the `apworld-v0.2.1` release; swap the
+  `.apworld` back to 0.2.2 after generating). For the older-room behaviour.
+
+Host each on a local server (the Launcher's Host, or `ArchipelagoServer.exe`) and play it with the
+game connected (setup's Archipelago page: the room's address `localhost:38281`, the slot name).
+
+1. **The version.** `shattered-stars.exe --version` / `setup.exe --version`: "Shattered Stars
+   0.03.00" / "Shattered Stars Setup 0.03.00"; setup's header "Setup · v0.03.00"; Explorer ->
+   Properties -> Details on both `.exe`s: version 0.03.00 (file version 0.3.0.0), "DreamGlyph
+   Studios", no "POSIX WinThreads".
+2. **Setup's render button** (setup's Archipelago page; scroll down to **Trackers**). **This is
+   setup.exe's first real run of it:** setup.exe has never run under Wine; the render's thread did,
+   inside `ss_game_tests.exe` (docs/handoff/setupthread.md).
+   - With no Disc 1 chosen (a fresh scratch `%APPDATA%`): the button is disabled, its tooltip
+     "Choose a valid Disc 1 image first.", and nothing is written.
+   - With Disc 1 chosen: press it. A progress bar ("150 of 861 images") and the image in progress
+     ("Rendering room 92 Armory...", "Rendering the area map of Arlia Village...") move while it
+     runs; the button stays disabled; the rest of setup keeps working meanwhile (switch pages,
+     scroll, the window redraws, no "Not responding"). It takes about 20 s on the development
+     machine; note the time here.
+   - At the end: "Done: 861 tracker map images were written to <folder>." with **Open folder**,
+     which opens Explorer there. The folder holds `images\maps\` (68 PNGs: 66 areas, 2 world maps)
+     and `images\rooms\` (793 PNGs), about 135 MB, no `.part` file, nothing else. config.ini
+     unchanged by the button (its time and contents), no memory card touched.
+   - Close setup (the window's X) halfway through a second render: setup closes within a moment
+     (no hang); the folder holds whole PNGs only (no `.part`); pressing the button again renders
+     all 861.
+3. **The command line** (PowerShell or cmd):
+   - `shattered-stars.exe --render-tracker-maps`: the console lists the images, "rendering 861
+     image(s) into <folder>" first and "300 of 861 done" every 100; exit code 0; the same folder as
+     the button's; no window opens; no `shattered-stars.log` line, no config.ini change.
+   - `shattered-stars.exe --render-tracker-maps "%USERPROFILE%\ss-test\Test Ä 日本\maps"`: 861 PNGs
+     there, the console shows the path as written, exit 0.
+   - Without a disc anywhere (a scratch `%APPDATA%` with no config.ini, no `discs` folder): exit 1
+     with the no-disc message, nothing written.
+4. **PopTracker: install and load.** Start PopTracker 0.36.0 and drag `so2_shattered_stars_1.0.0.zip`
+   into its window (or copy it into `%USERPROFILE%\PopTracker\packs`). Load -> "Star Ocean: The
+   Second Story (Shattered Stars)" -> **Map Tracker**: the item column (Keys, Party, Skills, Moves,
+   Room) on the left, the map tabs (Expel, Energy Nede, Fienal, Cave of Trials, the boards) on the
+   right; the banner "not connected". **Items Only** loads too. No error box.
+5. **PopTracker: connect and autotrack** (the open seed). With the game connected to the room,
+   click **AP** in PopTracker and connect to the same room and slot (and password). Then:
+   - the banner "Logic: from the room"; the Room tab shows the seed's options;
+   - the squares green where the check is in logic, red where items are missing; only the room's
+     own locations show;
+   - open a chest in the game: its square clears in PopTracker within a moment; an item received
+     appears in the item column;
+   - walk from one map to another (Arlia's streets into Hearn's general store, then out to the
+     world map): PopTracker's tabs follow by themselves (**Auto tab**, on by default); walking on
+     the world map doesn't switch tabs; with Auto tab off they stay;
+   - the server's console lists the game and PopTracker on the slot at once; nothing breaks for the
+     game while PopTracker is connected.
+6. **PopTracker: story awareness** (the story seed, with the game connected). The **Chapter** item
+   shows the chapter the game reports, and rises with the story. Checks in places the
+   story hasn't reached show **blue** (PopTracker's "Inspect": in logic by the items, later in the
+   story); the ones it has reached green; red ones need items. Play into the next stage (Salva,
+   chapter 5) or load a later save: blue squares turn green live; load an earlier save: they go
+   blue again. The **Story** item off: nearly everything green (the plain logic); on: back. With the
+   game not connected, clicking Chapter (left +1, right -1) sets a chapter by hand.
+   **For the user:** does blue read well for "later in the story"? (Red is a one-line change in
+   tools/poptracker/logic.lua's `so2_access`; docs/handoff/storyaware.md "Open".)
+7. **PopTracker: the rendered maps.** After item 2 or 3, reload the pack (or restart PopTracker):
+   the area maps show the real rooms from the disc instead of the plain stand-ins, each room's name
+   in the strip above it; the squares sit on the chests and on the people who hand things out (look
+   at Arlia Village: the 200 Fol crate; Salva; a dungeon); the two world maps show the terrain from
+   above with the squares on the towns. Nothing changes in the pack's own files (the override
+   folder only).
+8. **PopTracker: offline play.** Play a check with the game offline (setup's Address empty, or the
+   server stopped), then connect again: the check reaches the server, and PopTracker clears it, on
+   the reconnect; the map tab and the chapter follow once the game is connected again.
+9. **PopTracker: an older room** (optional, the old seed): the banner "Logic unavailable for this
+   room: checklist", every square shown as reachable, no blue; auto tab still works with the game
+   connected.
+10. **Universal Tracker.** Put `tracker.apworld` and so2.apworld 0.2.2 in `custom_worlds` (one
+    so2.apworld), restart the Launcher: **Universal Tracker** is listed. Open it and connect to the
+    room with the slot name; **no YAML** in its Players folder is needed (none should be there for
+    this game). Then:
+    - its tracker tab lists the locations in logic and still to check, in story order (Arlia's
+      first, the Cave of Trials last, then the skill guilds, learn levels, Item Creation and killer
+      moves);
+    - `/explain Town of Salva: Heavy Ring chest` (or any location) prints its rule, what you have
+      green and what is missing red;
+    - with the game connected and checking, the list shrinks as checks are made;
+    - **story awareness** (the story seed, the game connected): UT lists only what the story has
+      reached (a fresh story game: the first stage's places, Shingo Forest and Arlia); entering the next stage adds
+      that stage's checks live; with `enforce_deferred_entrances: "off"` under `universal_tracker`
+      in `C:\ProgramData\Archipelago\host.yaml` (restart UT) it lists everything the logic allows;
+    - the game, PopTracker and UT all connected to the slot at once: each works.
+    - Optional, the old seed: UT tracks a 0.2.1 room with 0.2.2 installed.
+11. **TODO (maptab): the room maps, the door panel and click switching.** Agent "maptab" is
+    building them (docs/handoff/maptab.md). To fill from its log: in PopTracker, an area tab's
+    Overview and room tabs, the lettered doors on the rendered rooms, the door panel's
+    "A -> 412 ..." lines, clicking a door (or its panel line) opens the destination room's tab,
+    auto tab to the room the party is in; in Universal Tracker, its map tab (following the game,
+    the player icon on the world maps if built).
+12. **A glance at the rest** (unchanged since 0.02.51, which passed): Esc opens "Quit Shattered
+    Stars?"; the gold-star icon on both `.exe`s, the title bars and the taskbar; the bundle
+    unpacked into "…\Shattered Stars Ä\" starts and saves; a seed's New Game, a check, a save and
+    a load; the bench seed's Party Order flip.
+13. Optional, with a toolchain: `ss_tests.exe` / `ss_game_tests.exe` (the RC runs them under Wine).
