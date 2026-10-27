@@ -1,21 +1,39 @@
 """Skillsanity (docs/ap/apworld.md "Skillsanity"; docs/handoff/skillsanity.md) [skillsanity2]: the
 guild checks, the learn points, the skill and move items, their logic and the shop prices."""
-from BaseClasses import CollectionState, ItemClassification, LocationProgressType
+from BaseClasses import CollectionState, LocationProgressType
 
 from .. import skillsanity
 from ..locations import ROW, fighter_status
 from ..skills import LEARN, SKILL_SETS
-from .bases import SO2TestBase
-from .test_world import check_seed, fill, own_locations, own_pool
+from .bases import SO2TestBase, check_seed, fill, own_locations, own_pool, progression_item, rows_of
 
 
-def rows_of(test, kind):
-    return [ROW[loc.name] for loc in own_locations(test) if ROW[loc.name]["type"] == kind]
-
-
-def progression_item(test):
-    from ..items import SO2Item
-    return SO2Item("test key", ItemClassification.progression, None, test.player + 1)
+def skill_ways(test, loc):
+    """Skillsanity: the ways the logic reaches a location, as the skill / move items each way
+    needs (any one will do; events and character items aside): a craft one of its specialties'
+    (skillsanity.specialty_needs: a sure member's starting skills, or the items), a learn point
+    taught by an item (Machinery) Machinery's, the Iseria Queen Musical Talent's (the song), a
+    killer-move level its move (special shuffled, not the member's first); anything else none."""
+    world = test.world
+    skills_on, _ = skillsanity.modes(world.options)
+    if loc.address is None:
+        if loc.name == "Iseria Queen (Cave of Trials)" and skills_on:
+            return skillsanity.specialty_needs(world, "Musical Talent") or [()]
+        return [()]
+    row = ROW[loc.name]
+    if row["type"] == "craft" and skills_on:
+        ways = []
+        for spec in row["specialties"]:
+            found = skillsanity.specialty_needs(world, spec)
+            if not found:
+                return [()]
+            ways += found
+        return ways
+    if row["type"] == "learn" and row.get("how") == "item" and skills_on:
+        return skillsanity.specialty_needs(world, "Machinery") or [()]
+    if row["type"] == "killer_move":
+        return [tuple(skillsanity.move_need(world, row))]
+    return [()]
 
 
 class SkillsanityChecks:
@@ -44,6 +62,21 @@ class SkillsanityChecks:
         # No first move is an item or a location.
         for who, index in skillsanity.FIRST.items():
             self.assertNotIn(skillsanity.move_item(who, index), skillsanity.MOVE_ITEMS)
+
+    def test_skill_items(self):
+        """What each skill or move item the logic needs opens (assertAccessDependency, every
+        location checked): the locations whose every way needs it (skill_ways); nothing else.
+        With skills or specials shuffled and something needing them, at least one opens some."""
+        ways = {loc.name: skill_ways(self, loc) for loc in self.multiworld.get_locations(self.player)}
+        pool = {i.name for i in own_pool(self)}
+        opened = 0
+        for name in sorted(self.world.skill_needs):
+            self.assertIn(name, pool)
+            needs = [n for n, w in ways.items() if all(name in k for k in w)]
+            with self.subTest(item=name):
+                self.assertAccessDependency(needs, [[name]])
+            opened += bool(needs)
+        self.assertEqual(opened > 0, bool(self.world.skill_needs))
 
     def test_seed(self):
         fill(self)
@@ -165,3 +198,8 @@ class TestInsanityIseriaQueen(SO2TestBase, SkillsanityChecks):
         state.collect(self.world.create_item("Skill: Musical Notation"), True)
         state.sweep_for_advancements()
         self.assertTrue(loc.can_reach(state))
+        # The guide's way: each skill alone keeps the Queen out, and without them the goal too.
+        for n in ("Skill: Music Instrument", "Skill: Musical Notation"):
+            with self.subTest(item=n):
+                self.assertAccessDependency([loc.name], [[n]], only_check_listed=True)
+        self.assertSweptAccessDependency([loc.name, "Indalecio"], [["Skill: Music Instrument", "Skill: Musical Notation"]])

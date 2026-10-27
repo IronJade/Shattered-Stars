@@ -1,17 +1,11 @@
 """so2.apworld 0.2.0's features (docs/ap/apworld.md, "Changes"; docs/ap/seed_format.md, "v2
-fields"): drop progression and area keys in drops, craftsanity, party v2, the goals."""
-from BaseClasses import CollectionState, ItemClassification, LocationProgressType
+fields"): drop progression and area keys in drops, craftsanity, the goals, killer moves. Party v2:
+test_party.py."""
+from BaseClasses import CollectionState, LocationProgressType
 
-from ..items import CHARACTER_NAMES, KEY_OF, SO2Item
+from ..items import KEY_OF
 from ..locations import ROW, fighter_status
-from .bases import SO2TestBase
-from .test_world import check_seed, fill, own_locations
-
-SIDES = {0: None, 1: "claude", 2: "rena"}
-
-
-def progression_item(test, player=None):
-    return SO2Item("test key", ItemClassification.progression, None, test.player + 1 if player is None else player)
+from .bases import SO2TestBase, check_seed, doors_json, fill, own_locations, progression_item
 
 
 # ---- Enemy drops: drop_progression, area_keys_in_drops ----
@@ -27,7 +21,7 @@ class DropChecks:
     def rule_of(self, row):
         from ..rules import drop_rule
         o = self.world.options
-        return drop_rule(row, SIDES[o.story_route.value], self.world.open_world,
+        return drop_rule(row, self.side, self.world.open_world,
                          self.world.open_world and bool(o.expel_teleporter), bool(o.expel_progression),
                          o.drop_progression.current_key, o.encounter_rate.value)
 
@@ -233,169 +227,6 @@ class TestNoFailOnly(SO2TestBase):
         self.assertFalse(any(ROW[loc.name]["type"] == "craft" for loc in own_locations(self)))
 
 
-# ---- Party v2 (open world with character_items; starting_character) ----
-
-class PartyChecks:
-    """Open world's party: the heroes, the starting member and the pool make at most 8; nobody
-    excluded is in the pool; Rena or Noel is in the party unless both are excluded; the join
-    sites are those of every non-story member; the seed says so."""
-
-    def check_party(self, info):
-        from ..items import CHARACTER_NAMES, HEALERS, PARTY_SIZE
-        o = self.world.options
-        heroes = self.world.story_members()
-        members = set(heroes) | ({info.start} if info.start else set()) | set(info.pool)
-        self.assertEqual(len(info.pool), len(set(info.pool)))
-        self.assertLessEqual(len(members), PARTY_SIZE)
-        self.assertFalse(set(info.pool) & set(heroes))
-        self.assertNotIn(info.start, info.pool)
-        excluded = set(o.exclude_characters.value)
-        self.assertFalse(set(info.pool) & excluded)
-        allowed = [n for n in CHARACTER_NAMES if n not in heroes and n != info.start and n not in excluded]
-        if len(allowed) + len(heroes) + (info.start not in (None, *heroes)) <= PARTY_SIZE:
-            self.assertEqual(sorted(info.pool), sorted(allowed))
-        else:
-            self.assertEqual(len(members), PARTY_SIZE)
-        if not set(HEALERS) <= excluded or set(HEALERS) & (set(heroes) | {info.start}):
-            self.assertTrue(members & set(HEALERS), members)
-
-    def test_party(self):
-        self.check_party_seed()
-
-    def check_party_seed(self):
-        info = self.world.party_info
-        self.assertEqual(info.rules, "open")
-        for _ in range(30):
-            heroes = self.world.story_members()
-            self.check_party(info._replace(pool=self.world.choose_open_party(heroes, info.start)))
-        self.check_party(info)
-        from ..items import CHARACTER_OF
-        pool = sorted(CHARACTER_OF[i.code] for i in self.multiworld.itempool
-                      if i.player == self.player and i.code in CHARACTER_OF)
-        self.assertEqual(pool, sorted(info.pool))
-        joins = [loc for loc in own_locations(self) if ROW[loc.name]["type"] == "join"]
-        for loc in joins:
-            self.assertEqual(loc.progress_type, LocationProgressType.EXCLUDED, loc.name)
-            self.assertNotIn(ROW[loc.name]["character"], info.story_members, loc.name)
-        fill(self)
-        seed = self.world.seed_data()
-        check_seed(self, seed)
-        o = seed["options"]
-        self.assertEqual((seed["version"], o["party_rules"], o["characters"], o["starting_character"]),
-                         (2, "open", list(info.pool), list(info.choices) if info.choices else info.start))
-        for v in seed["items"].values():
-            if v["kind"] == "character":
-                self.assertIn(v["character"], info.pool)
-        return info, joins
-
-
-class TestPartyOpenClaude(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude"}
-
-    def test_open_members(self):
-        info, joins = self.check_party_seed()
-        self.assertIsNone(info.start)
-        self.assertEqual(len(info.pool), 7)
-        listed = {ROW[loc.name]["character"] for loc in joins}
-        self.assertIn("Rena", listed)       # Rena's first join (map 9) in Claude's game
-        self.assertIn("Noel", listed)
-        self.assertNotIn("Claude", listed)
-        self.assertIn("Leon", listed)
-
-
-class TestPartyOpenAnyStart(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "any",
-               "starting_character": "any", "exclude_characters": ["Noel", "Claude"]}
-
-    def test_any(self):
-        """[charselect agent] "any": the player picks at New Game among the heroes and the pool
-        (the seed's list); the logic counts on nobody extra, so the pool keeps that place."""
-        info, joins = self.check_party_seed()
-        self.assertEqual(info.story_members, ("Claude", "Rena"))
-        self.assertIsNone(info.start)
-        self.assertEqual(len(info.pool), 6)
-        self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n in ("Claude", "Rena") or n in info.pool))
-        self.assertNotIn("Noel", info.choices)
-        self.assertEqual(fighter_status(info.choices[2], info), "item")
-        self.assertFalse({"Claude", "Rena"} & {ROW[loc.name]["character"] for loc in joins})
-
-
-class TestPartyAnyStartWithoutItems(SO2TestBase):
-    """[charselect agent] "any" under the story's party rules (no character items): every member
-    not excluded may be picked; nobody is counted on."""
-    options = {"world_mode": "open_world", "story_route": "rena", "starting_character": "any",
-               "exclude_characters": ["Dias"]}
-
-    def test_any(self):
-        info = self.world.party_info
-        self.assertEqual((info.rules, info.start, info.pool), ("story", None, []))
-        self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n != "Dias"))
-        self.assertNotIn("Dias", info.guaranteed)
-        o = self.world.fill_slot_data()
-        self.assertEqual((o["starting_character"], o["seed_format"]), (list(info.choices), 2))
-
-
-class TestPartyHealersExcluded(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
-               "exclude_characters": ["Rena", "Noel", "Celine", "Bowman"]}
-
-    def test_no_healer(self):
-        info, _ = self.check_party_seed()
-        self.assertFalse({"Rena", "Noel"} & set(info.pool))
-        self.assertEqual(sorted(info.pool), ["Ashton", "Chisato", "Dias", "Ernest", "Leon", "Opera", "Precis"])
-
-
-class TestPartyHealerGuarantee(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
-               "starting_character": "leon"}
-
-    def test_healer(self):
-        from ..items import HEALERS
-        for _ in range(60):     # 6 of 10: the draw leaves out both healers about a third of the time
-            pool = self.world.choose_open_party(("Claude",), "Leon")
-            self.assertTrue(set(pool) & set(HEALERS), pool)
-            self.assertEqual(len(pool), 6)
-
-
-class TestPartyStartRena(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "rena",
-               "starting_character": "leon", "exclude_characters": ["Leon", "Bowman"]}
-
-    def test_named_start_wins(self):
-        info, joins = self.check_party_seed()
-        self.assertEqual(info.start, "Leon")
-        self.assertIn("Claude", {ROW[loc.name]["character"] for loc in joins})
-
-
-class TestStartWithoutItems(SO2TestBase):
-    options = {"world_mode": "open_world", "starting_character": "chisato", "story_route": "rena"}
-
-    def test_start_only(self):
-        info = self.world.party_info
-        self.assertEqual((info.rules, info.start, info.pool), ("story", "Chisato", []))
-        self.assertFalse(any(ROW[loc.name]["type"] == "join" for loc in own_locations(self)))
-        o = self.world.fill_slot_data()
-        self.assertEqual((o["starting_character"], o["party_rules"], o["seed_format"]), ("Chisato", "story", 2))
-
-
-class TestStartIgnoredInStory(SO2TestBase):
-    options = {"starting_character": "ashton", "character_items": True}
-
-    def test_story(self):
-        info = self.world.party_info
-        self.assertEqual((info.rules, info.start), ("story", None))
-        self.assertEqual(self.world.seed_version(), 1)
-        self.assertFalse(any(ROW[loc.name].get("open_only") for loc in own_locations(self)))
-
-
-class TestHeroStart(SO2TestBase):
-    options = {"world_mode": "open_world", "starting_character": "claude", "story_route": "claude"}
-
-    def test_hero_is_nobody_extra(self):
-        self.assertIsNone(self.world.party_info.start)
-        self.assertEqual(self.world.seed_version(), 1)
-
-
 # ---- Goals ----
 
 class GoalChecks:
@@ -447,7 +278,6 @@ class GoalChecks:
         if self.goal == 2:
             self.assertEqual(seed["goal"]["all"], [561, 540])
             self.assertEqual(gate["won"], [561])
-        from .test_world import doors_json
         table = doors_json()
         if table is not None:
             from ..doors import validate_doors
@@ -531,6 +361,21 @@ class KillerChecks:
         return locs, held
 
 
+    def test_killer_move_items(self):
+        """What a character item opens (assertAccessDependency, every location checked): with
+        killer_move_progression any (or hero, for a hero who is an item), the killer-move levels
+        of a member who joins by an item need the item (world.progression_characters); nothing
+        else does."""
+        from ..locations import fighter_status
+        info = self.world.party_info
+        for who in sorted(self.world.progression_characters):
+            levels = [loc.name for loc in self.killer_locations() if ROW[loc.name]["character"] == who]
+            with self.subTest(character=who):
+                self.assertEqual(fighter_status(who, info), "item")
+                self.assertTrue(levels)
+                self.assertAccessDependency(levels, [[who]])
+
+
 class TestKillerStory(SO2TestBase, KillerChecks):
     options = {"killer_move_checks": True}
 
@@ -564,6 +409,7 @@ class TestKillerAnyItems(SO2TestBase, KillerChecks):
     def test_any(self):
         locs, held = self.check_killer_moves()
         self.assertGreater(held, 30)
+        self.assertTrue(self.world.progression_characters)     # test_killer_move_items has some
         chars = {ROW[loc.name]["character"] for loc in locs}
         self.assertLessEqual(chars, {"Claude"} | set(self.world.party))
 

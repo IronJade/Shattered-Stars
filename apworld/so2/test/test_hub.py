@@ -2,40 +2,22 @@
 docs/ap/seed_format.md "Hub"): the locations the hub reaches, the dungeon keys, the chambers, the
 Fienal requirement, where progression may go, the party, the version-3 seed. WorldTestBase's own
 tests run for every class too (every location reachable with all items, the fill)."""
-import json
-import os
 import unittest
 
-from BaseClasses import CollectionState, ItemClassification, LocationProgressType
+from BaseClasses import CollectionState, LocationProgressType
 
 from .. import hub
-from ..data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_SHOPS, HUB_STARTS, HUB_STATE, LOCATIONS
-from ..items import ALL_KEY_IDS, CHARACTER_OF, HUB_KEY_NAME, HUB_KEY_OF, KEY_OF, PARTY_SIZE, SO2Item
+from ..data import HUB_BOSSES, HUB_DROPS, HUB_SHOPS, HUB_STARTS, HUB_STATE, LOCATIONS
+from ..items import ALL_KEY_IDS, CHARACTER_OF, HUB_KEY_NAME, HUB_KEY_OF, KEY_OF, PARTY_SIZE
 from ..locations import ROW
-from .bases import SO2TestBase
-from .test_world import check_seed, fill, own_locations, own_pool
-
-SIDES = {0: None, 1: "claude", 2: "rena"}
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-
-def doors_json():
-    path = os.path.join(ROOT, "docs", "ap", "doors.json")
-    return json.load(open(path)) if os.path.exists(path) else None
-
-
-def other_progression(test):
-    return SO2Item("test key", ItemClassification.progression, None, test.player + 1)
+from .bases import SO2TestBase, check_seed, doors_json, fill, own_locations, own_pool, progression_item
 
 
 class HubChecks:
     """Every hub option mix: the checks below, plus WorldTestBase's."""
 
-    def side(self):
-        return SIDES[self.world.options.story_route.value]
-
     def games(self):
-        return hub.games_of(self.side())
+        return hub.games_of(self.side)
 
     def rows(self):
         return [ROW[loc.name] for loc in own_locations(self)]
@@ -49,7 +31,7 @@ class HubChecks:
         """No join site, no losable fight, nothing the hub can't reach in the player's game(s);
         chests, gifts and the cave's / optional bosses proven by the hub proof (data.HUB_REACHED),
         shops open and enemy types met at the hub state, the chambers of this game."""
-        side = self.side()
+        side = self.side
         for row in self.rows():
             kind = row["type"]
             self.assertNotEqual(kind, "join", row["name"])
@@ -74,7 +56,7 @@ class HubChecks:
         """The 22 chambers (boss_checks): this game's, as locations; their region is their
         dungeon's (with its key) or a town's; under story_route any the hero's chamber (Varmillion,
         Azamgil) is filler only."""
-        side = self.side()
+        side = self.side
         locs = {loc.name: loc for loc in own_locations(self)}
         chambers = [r for r in LOCATIONS + hub.HUB_LOCATIONS if r["id"] in hub.CHAMBER_LOCATIONS]
         self.assertEqual(len(chambers), 22)
@@ -153,7 +135,7 @@ class HubChecks:
         elif value == 1:
             self.assertEqual(won, [524, 525, 527, 528])
         else:
-            side = self.side()
+            side = self.side
             want = [b["encounter"] for b in HUB_BOSSES if b["dungeon"] != hub.FIENAL and b.get("game") in (None, side)]
             self.assertEqual(won, want)
         keys = list(dict.fromkeys(HUB_KEY_NAME[hub.CHAMBERS[e]["dungeon"]] for e in won
@@ -173,12 +155,42 @@ class HubChecks:
         # The goal: everything collected reaches Victory.
         self.assertTrue(self.multiworld.can_beat_game(self.multiworld.get_all_state(False)))
 
+    def test_dungeon_keys(self):
+        """What each dungeon key opens (assertAccessDependency, every location checked): what lies
+        in its dungeon (the region its locked doors lead to: chests, gifts, its chamber, a cave
+        learn point, the Iseria Queen in the cave), a first drop met only there, and the Fienal
+        gate when one of the requirement's chambers is in the dungeon; nothing else."""
+        gate = {HUB_KEY_NAME[hub.CHAMBERS[e]["dungeon"]] for e in self.world.fienal_won
+                if hub.CHAMBERS[e]["dungeon"] in hub.keyed(self.world)}
+        for g in self.world.hub_keys:
+            key = HUB_KEY_NAME[g["dungeon"]]
+            needs = [loc.name for loc in self.multiworld.get_locations(self.player)
+                     if loc.parent_region.name == g["dungeon"]]
+            needs += [loc.name for loc in own_locations(self) if ROW[loc.name]["type"] == "drop"
+                      and all(key in m for m in hub.drop_rule(self.world, ROW[loc.name], self.side)[1])]
+            if key in gate:
+                needs.append(hub.EVENT_FIENAL_GATE)
+            with self.subTest(key=key):
+                self.assertAccessDependency(needs, [[key]])
+
+    def test_fienal_gate_needs_each_key(self):
+        """D6 the guide's way: the Fienal gate can't be reached without any one of the
+        requirement's keys; without them all the goal can't either (assertSweptAccessDependency:
+        through the events), with them it can."""
+        keys = list(dict.fromkeys(HUB_KEY_NAME[hub.CHAMBERS[e]["dungeon"]] for e in self.world.fienal_won
+                                  if hub.CHAMBERS[e]["dungeon"] in hub.keyed(self.world)))
+        self.assertTrue(keys)
+        for key in keys:
+            with self.subTest(key=key):
+                self.assertAccessDependency([hub.EVENT_FIENAL_GATE], [[key]], only_check_listed=True)
+        self.assertSweptAccessDependency([hub.EVENT_FIENAL_GATE, hub.EVENT_INDALECIO], [keys])
+
     def test_progression_rules(self):
         """Progression only in a chamber, a chest or cave boss the proof reached in every game
         the player may play (an optional boss only once hubchambers confirmed it), drops per
         drop_progression; never in a gift, a shop, a craft, an EXCLUDED location, or Expel with
         expel_progression off."""
-        other = other_progression(self)
+        other = progression_item(self)
         st = self.multiworld.state
         expel = bool(self.world.options.expel_progression)
         held = 0
@@ -197,7 +209,7 @@ class HubChecks:
             elif kind == "boss":
                 self.assertEqual(ok, expel or row["region"] != "Expel", loc.name)
             elif kind == "drop":
-                cls, _ = hub.drop_rule(self.world, row, self.side())
+                cls, _ = hub.drop_rule(self.world, row, self.side)
                 self.assertEqual(ok, cls == "any", loc.name)
             held += ok
         self.assertGreater(held, len(self.world.hub_keys))
