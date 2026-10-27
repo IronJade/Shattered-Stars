@@ -233,7 +233,13 @@ class Skillsanity(Choice):
       Action, the Cave of Trials' learn chests). A member who joins past a level gets its checks at
       the join. Killer-move levels (killer_move_checks) then need the move.
     insanity: both.
-    Guild checks and learn points never hold progression."""
+    Guild checks and learn levels may hold progression (encounter_rate above 0). A guild check is
+    expected once one of its set's guilds is in reach (a set of 2700 Fol and up from the end of the
+    Hilton and Hoffmann Ruins stage; story mode from the disc switch; hub mode once Fienal opens);
+    a learn level, of a member the logic counts on, as killer moves are (up to level 30 from the
+    disc switch, the rest from the Final Save Point; hub mode from the start / once Fienal opens).
+    The machines, the Cave of Trials' learn chests and Float never hold progression, and neither
+    do shop slots. [skilllogic2, 0.2.1]"""
     display_name = "Skillsanity"
     option_none = 0
     option_skills_only = 1

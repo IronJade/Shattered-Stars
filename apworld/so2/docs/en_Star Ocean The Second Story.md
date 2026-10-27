@@ -144,7 +144,17 @@ story holds only filler there.
   for Holo-holograph), and the Cave of Trials' learn chests. A member who joins past a level gets
   that level's checks at once. A move you receive before its member joins is waiting for them.
   With killer-move checks, a move's levels need the move.
-- `insanity`: both. Guild checks and learn points never hold progression items.
+- `insanity`: both.
+- Guild checks and learn levels may hold progression items (keys, characters, other worlds'
+  progression), like any other check that's in reach, unless `encounter_rate` is 0 (no battles:
+  no Fol and no levels). A guild check is expected once one of its set's guilds is in reach: the
+  cheaper sets (up to 1600 Fol) right away, the 2700-4500 Fol sets once you've finished Hilton and
+  the Hoffmann Ruins (in story mode from the disc switch, in hub mode once Fienal opens). With
+  `expel_progression` off, only the guilds on Energy Nede count. A learn level counts as killer
+  moves do: up to level 30 from the disc switch, the rest from the Final Save Point (hub mode:
+  from the start, the rest once Fienal opens), and only for members the logic can count on; a
+  member who joins through their character item needs it first. Precis's and Opera's machines,
+  the Cave of Trials' learn chests and Float never hold progression, and shops never do.
 - With shop slots on, `skillsanity_shop_share` (default 10 %) puts some of your skill and move items
   in your shops, sold as themselves with the Archipelago mark: a move for its learn level x 100 Fol
   (an item-taught one 5000, a Cave of Trials prize 8000), a skill for its set's price divided by
@@ -223,8 +233,9 @@ Fienal's maze among them), 7 gifts (9 with the cave), the bosses above, and what
 options add (shops, drops, crafts, killer moves) as far as the hub reaches them.
 
 Progression items in hub mode go only into those chests and the boss fights (and, by
-`drop_progression`, enemy drops); never into shops, gifts or crafts. Killer-move levels learned
-past level 30 are expected once Fienal is open.
+`drop_progression`, enemy drops; with skillsanity, guild checks and learn levels); never into
+shops, gifts or crafts. Killer-move levels and learn levels past level 30, and the guild sets of
+2700 Fol and up, are expected once Fienal is open.
 
 ## What does another player's item look like?
 
@@ -292,7 +303,8 @@ reach that point in the story) can take you back to Expel at any time; in story 
 character reopens it — Virtual Expel — once you've saved at the game's last save point. Two
 design decisions follow from this:
 - shops never hold progression items, in any mode, as above;
-- with `expel_progression` off, no other player's progression items are placed in Expel — but
+- with `expel_progression` off, no other player's progression items are placed in Expel (and a
+  skillsanity guild check counts only through its set's guild on Energy Nede) — but
   this world's own area keys that the Expel story itself needs to reach the disc switch can
   still appear there, since the story picks them up on its own before Expel closes behind you.
   In `open_world` you then start with the North City Pass and the Noel's House Pass, the first

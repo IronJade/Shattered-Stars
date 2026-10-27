@@ -188,8 +188,9 @@ games each location was proven in into its row (`late`).
   (the story fights them); join sites, shop slots, gift sites and crafts never may (the user,
   2026-10-25: an NPC gift check should never hold progression, this world's own keys or another
   world's alike, whatever the proof reaches); first drops follow `drop_progression` ("Enemy
-  drops" below: their places are judged by the same proofs) and killer-move levels
-  `killer_move_progression` ("Killer moves"); with `expel_progression` off, nothing in Expel may.
+  drops" below: their places are judged by the same proofs), killer-move levels
+  `killer_move_progression` ("Killer moves"), and skillsanity's guild checks and learn levels
+  their own rules (0.2.1: "Skillsanity"); with `expel_progression` off, nothing in Expel may.
 - **Conservative by design:** every entry starts from the map's arrival state, so doors behind
   switches, puzzles the save had not solved or a choice's other answers stay shut; such
   locations only lose the right to hold progression.
@@ -215,7 +216,8 @@ bosses:
   outright, the user, 2026-10-25): the table's gift row and this proof still matter for open
   world's reachability ("Open world" below), not for what a gift may hold.
 - So a seed puts progression in at most 258 chests, the 21 story bosses and 10 cave
-  bosses (fewer with the options): every multiworld in the batch below filled.
+  bosses (fewer with the options; options add drops, killer-move levels and, from 0.2.1,
+  skillsanity's guild checks and learn levels): every multiworld in the batch below filled.
 - Rerun the proof after a change to the port's field code, the event sweep or field.json
   ("Files", below).
 
@@ -223,7 +225,8 @@ bosses:
 (Ashton rules out Opera), so every member-gated location is excluded instead. The one
 exception (0.2.0) is `killer_move_progression: any`, where a killer-move level of a member who
 joins by their item needs the item, which is then progression; the pool never holds two
-members who rule each other out, so a received member always joins ("Killer moves").
+members who rule each other out, so a received member always joins ("Killer moves"). Skillsanity's
+learn levels (0.2.1) do the same for such a member ("Skillsanity").
 
 ## Open world (`world_mode: open_world`, phase 4)
 
@@ -657,7 +660,9 @@ drops take progression first), **never** (0.1.x's rule). In every mode (rules.py
   joins by their item also needs the item, which becomes progression
   (`world.progression_characters`: Archipelago's CollectionState counts only progression
   items); under never and hero the item is not required (nothing there holds progression, and
-  full accessibility reaches every item anyway).
+  full accessibility reaches every item anyway), unless the item is progression anyway: under
+  skillsanity special the member's learn levels need it (0.2.1, `skillsanity.learn_characters`),
+  and then their killer-move levels need it too.
 - **The check:** `{type: killer_move, character, move, level, uses}`, `uses` = level x the
   move's divisor in the armed table; the port compares the raw use count.
 
@@ -672,9 +677,9 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
   of its guilds: docs/notes/menu.md "Skill guilds") is one location per skill in it, "Skill Guild:
   Sensibility 2 (1 of 4)" (45); each skill is an item, "Skill: Perseverance", that lets the party
   learn it with SP. With `cave_of_trials`, the Level 11 prize (Float) is a location and Float an
-  item. Members keep the skills they join with. A guild check's access: any of its set's guilds
-  (open world: their towns' keys, data.GUILD_PLACES; hub mode: the towns, open). Never
-  progression (the user).
+  item. Members keep the skills they join with. A guild check's access and what it may hold:
+  "Progression at guild checks and learn levels" below (0.2.1; 0.2.0: any of the set's guilds,
+  never progression).
 - **Special** (special_only / insanity). Every member keeps their learn table's first move (Claude's
   Air Slash, Rena's Heal, ...: known from the start or their join); every other killer move and
   spell is an item ("Claude: Shooting Stars"), and each learn point a location: a learn-table level
@@ -684,8 +689,41 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
   left out (the user). A member who can never join has none; one who joins only by the player's
   choice holds filler only (EXCLUDED). Access as killer moves': a learn level up to 30 from the disc
   switch, any other from the Final Save Point (hub mode: from the start / Fienal opened); the
-  machines after the Final Save Point (hub: any time) with Machinery; the cave's in the cave.
-  Learn points hold no progression (they need a member and levels, which no proof places).
+  machines after the Final Save Point (hub: any time) with Machinery; the cave's in the cave. What
+  a learn point may hold: below (0.2.1; 0.2.0: never progression).
+- **Progression at guild checks and learn levels** (0.2.1; the user, 2026-10-27: "let learn points
+  hold progression, and the skill guilds should also be able to hold progression, as long as they
+  are within reach routing wise ... You can beat the game without ever visiting an item shop";
+  docs/handoff/skilllogic.md; `skillsanity.guild_rule`, `learn_rule`, `learn_characters`). Item
+  shops stay progression-free. Neither holds progression with `encounter_rate` 0 (no Fol, no
+  levels).
+  - *Learn levels* (learn-table levels only) of a member the logic counts on (fighter_status
+    "sure", or "item": then the level needs the member's character item, which becomes
+    progression, as with `killer_move_progression: any`); a "maybe" member's stay EXCLUDED. Access
+    as above; in open world under the story's party rules Noel's early levels also need stage 15
+    (his house; `STORY_JOINS`), unless he is the starting character. Story mode needs no item to
+    reach him, so the disc switch stands for it there.
+  - *Never progression:* Precis's and Opera's machines (465-469 come only from rare Machinery
+    results, 464 from a shuffled gift or a Private Action), the cave's three learn chests (the
+    late proof didn't reach them) and Float (no proof covers the prize).
+  - *Guild checks:* each of the set's guilds is a place, as a first drop's are (`rules.drop_rule`):
+    judged as a chest on the guild's map (story mode: the late proof, outside Expel with
+    expel_progression off; open world: `open_world_progression` / `open_world_access`, so never a
+    guild that closes at the El voyage, Port of Clik's; hub mode: the hub proof's maps in every game,
+    outside Expel with expel_progression off). The check holds the best class of its places and is
+    reached only through the places of that class. Every set has a late-proven guild on Energy Nede
+    (Central City, North City or Armlock), so with battles every guild check may hold progression.
+  - *The Fol* (the user: "Fol rule is fine as written"). Random battles pay a set (Earth, Fol x1,
+    the floor; docs/ap/battles.json's enemy Fol over field.json's encounter tables): Expel's world
+    map ~460 a battle, Mars ~400, the Sanctuary of Linga ~920, Hoffmann Ruins ~2100, Eluria Tower
+    ~3500; Energy Nede's world map ~520, its dungeons 2400-3600. A set up to 1600 Fol (the 1 and 2
+    sets) counts from any guild that sells it (its first guilds: Cross, stage 3, 300-400 Fol;
+    Herlie, stage 5, 1500-1600: about four world-map battles). A set from `DEAR_PRICE` 2700 (the 3
+    sets, 2700-4500 Fol) counts through an Expel guild only from the end of stage `FOL_STAGE` 9
+    (Hilton and Hoffmann Ruins: two Hoffmann battles pay the dearest); Energy Nede's guilds come
+    later anyway. Story mode (no stage events): a cheap set from the start through a proven Expel
+    guild, a dear one, and any set through an Energy Nede guild, from the disc switch. Hub mode:
+    the cheap sets from the start, the dear ones once Fienal opens.
 - **Logic.** With skills shuffled, Item Creation needs its specialty (a sure member who joins
   with its skills: Rena's Cooking, the heroes' and the starting character's; else the skill items:
   `SPECIALTIES` / `SUPER_SPECIALTIES`), so craftsanity's locations need them; the Iseria Queen goal
