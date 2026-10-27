@@ -140,4 +140,87 @@ special 0xc / 0xd finding (options above).
 So: when Dias is a kept member (a starting member or a received character) and the tournament's
 specials 0xc / 0xd rewrite him (run t4400dias), the port saves his 0x130 bytes (slot + record)
 before 0xc and puts them back after his last fight there; the fights keep the story's Dias.
-Not built yet (queued for a follow-up agent, port 0.02.51).
+Built by shingofix (second assignment, 2026-10-27): below.
+
+## Second assignment: the tournament's kept Dias (option b)
+
+### Step 1: baseline of the combined HEAD (33ce4b8: the Shingo fix + hellseed2's 674e81b)
+
+engine/build-shingofix rebuilt at HEAD; frozen in scratchpad/shingofix/head/: ss_tests 103 / 0,
+ss_game_tests 198 / 0, full smoke (head/smoke.log, from a frozen copy) 311 PASS / 0 FAIL, rc 0.
+
+### Where "his last fight" ends (from the scripts, disc 1; specials 0xc / 0xd are called on map 477
+only: scratchpad/shingofix/scan_a8.py over all 827 maps)
+
+- Claude's game: Dias fights at steps 4400 (then 0xc at 0x6b40), 6200 (0xd 0x6d88), 10200 (0xd
+  0x6ea8; the final; 469 ends the tournament at 10400). Last: 10200.
+- Rena's game: 6500 (0xc 0x7e74), 10200 (0xd 0x81a4), 11500 (no special), 16500 (0xd 0x806c);
+  Claude's fights 8500 / 12600 / 19500 (the final, against Dias). Last: 16500.
+- Each special runs right after the fight, while Dias is still active (party_find_slot), then the
+  leave routine 0x63e4 sets him aside and the hero rejoins.
+
+### The design
+
+- By character, not by slot: SaveState::tournament_dias (ap.h) holds his bytes; hooks in
+  field/special.cpp around 0xc / 0xd (`ap::before_dias_rewrite(slot, record)`,
+  `ap::after_dias_rewrite(slot)`), the slot being wherever 0xc / 0xd find him.
+- Kept = `protected_member(Dias)` (received, or the starting character); in the tournament
+  (chapter 19, step >= 1000). The story's (temporary) Dias: nothing held.
+- His slot (0x60) is saved before the first rewrite (0xc); his record (0xd0) only before the first
+  0xd, because 0xc leaves the record alone: until then it is his own, and an equipment change the
+  player makes between fights is his (saving the record before 0xc would duplicate gear unequipped
+  in between, or lose gear equipped in between).
+- Restore: after the 0xd of his last fight (step >= 10200 Claude's game / 16500 Rena's), in the
+  slot 0xd used, the id word kept (active; the scene then sets him aside). A safety net: a copy still
+  held at a free play once past that step or out of the tournament goes back into his slot in the
+  8 (id word kept: active or set aside); not seen.
+- Sidecar `tournament_dias` (hex: 0x60 or 0x130 bytes, Dias's id first) + `tournament_dias_hash`
+  (sha256 of the save's first N bytes, then the held bytes), only when held; then version 3. The
+  load guard refuses an edited / stripped / moved copy. Older sidecars load (no key: none held).
+- Debug aids: console `warp MAP force` (also inside a scene: 476's main routine never returns).
+
+### For the merge of party-bench (the lent Dias)
+
+On party-bench a benched Dias is lent into the 8 for his tournament fights (lend_from_bench) and
+goes back to his bench place after each (bench_back, "as they are now"). With this fix merged:
+- He is kept (received / starting), so before_dias_rewrite saves him at his first 0xc while lent
+  (he is in the 8 then: the hook sees his slot). Nothing to add.
+- The restore at his last fight's 0xd lands in his lent slot (he is still in the 8); the loan then
+  returns him to his bench place carrying his own data (bench_back copies the slot as it is, after
+  the restore, and clears record +0x3b / +0xce / +0xcf as for any benched member). Nothing to add,
+  provided `tournament_dias_update(r)` stays BEFORE the loan returns in the free-play step (it is
+  before party_v2_update here: keep it so in party_free_play_step and free_play_update).
+- The merge must add: the safety net's restore when he is on the bench. In
+  `tournament_dias_update`, `slot_of_character(kDias) < 0` currently waits; on party-bench, when
+  `bench_index(r, kDias) >= 0`, restore into `r.state.bench.slot(i)` / `record(i)` instead (slot
+  0x60 with the bench's id word kept; record 0xd0 only when held: size 0x130), then clear the copy.
+  Also: Party Order / bench moves of Dias while a copy is held need no lock (the copy is by
+  character), but `bench_digest` need not cover it (the copy has its own hash).
+- Tests to extend after the merge: ap_tournament_dias with a benched Dias lent for 4400 / 6200 /
+  10200 (back on the bench as he was), and the safety net with him benched.
+
+
+### Proof and tests (second assignment)
+
+- Headless chain (scratchpad/shingofix/runs/dA, dB; seed seeds/v2claude_dias.apso2: Claude's
+  game, open world, Dias the starting character):
+  - dA (map 18, chapter 19 step 0, no sweep): Dias joins at level 1, a poison trap; step 4400,
+    warp 477: his fight, then `his slot saved (level 1, EXP 0)`; story Dias L35 / EXP 96982 /
+    HP 2500 meanwhile; 476's question -> No -> camp menu -> Data > Save: sidecar version 3,
+    `tournament_dias` "05000804..." (poisoned), `tournament_dias_hash`.
+  - dB (load, SS_LOAD_SAVE=0, the guard's own path): the copy back from the sidecar; step 10200,
+    `warp 477 force`: the final; `his record saved`, 0xd, `Dias back as he was before the
+    tournament (level 1, EXP 0; the tournament's level 35, EXP 96982)`; 469 at 10400.
+  - dcmp.py runs/dA_in.state runs/dB_z.state: slot and record equal (status 8 included); only
+    the id word's sign differs (the scene sets him aside, as the story does).
+  - Same state: the story's Dias (seed v2claude, Dias not received) and AP off (no seed) at 477
+    step 4400: state dumps and logs identical between head/ (before) and bin3/ (after).
+- engine/tests/test_ap.cpp `ap_tournament_dias`: Claude's game (received Dias: 0xc holds the
+  slot; a record change before the first 0xd counts; 0xd holds the record; save, guard refusals
+  (edited, stripped hash, moved), load into a fresh game; 10200 restores; version back to 2);
+  Rena's game (starting Dias: 10200 keeps, 16500 restores; the safety net in chapter 20 with him
+  set aside); the story's Dias and no seed unchanged; sidecar parsing.
+- Smoke: ap_tdias_save / ap_tdias_load (8 checks: the chain above, ~16 s); 6 of 8 fail on the
+  binary from before (head/).
+- Suites (frozen in scratchpad/shingofix/final2/): ss_tests 103 / 0, ss_game_tests 199 / 0, full
+  smoke 319 PASS / 0 FAIL, rc 0.

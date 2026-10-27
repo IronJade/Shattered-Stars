@@ -275,6 +275,27 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   sidecar from before), the temporary member found in the 8 is taken. Written with every new
   stash; no new version: a port from before ignores it and puts the stash back by its slot, as it did. A
   value outside 1-12 reads as absent.
+- `tournament_dias` (agent "shingofix", 2026-10-27; port 0.02.51): the kept Dias's own data
+  while the Lacour tournament has rewritten him. Map 477's fights rewrite Dias after his first
+  fight (special 0xc: his fixed stats, level 35) and after later ones (0xd: his starting data
+  again, then the join level). A kept Dias (received, or the starting character; not the story's
+  stand-in) keeps his own (the user's decision: "Save his data before the tournament rewrites
+  him, and restore it after his last fight"): his slot (0x60 bytes) is saved before the first
+  rewrite, his record (0xd0) before the first 0xd (0xc leaves it alone, so until then it is his
+  own and any change the player makes to it counts), and both go back right after his last fight
+  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then. The
+  key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
+  record). Written only while held; then the sidecar is **version 3**, so a port from before
+  refuses the save rather than leave him with the tournament's data. Absent: nothing held. Any
+  other length, a non-hex character or another member's id makes the sidecar unreadable.
+- `tournament_dias_hash` (with `tournament_dias`): `"sha256:"` and the SHA-256 of the save's bytes
+  (the same N bytes as `save_hash`) followed by the held bytes themselves.
+
+```json
+ "tournament_dias": "05000804...",
+ "tournament_dias_hash": "sha256:51d6...5e76",
+ "version": 3
+```
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -290,7 +311,10 @@ the card since it was saved. A sidecar with items waiting also needs `pending_ha
 save and the list: an edited, extended or reordered `pending`, one without its hash or a hash
 without its list, or the list beside another save is refused (log `... this save was changed
 outside the game (its waiting items differ from the ones this seed saved)`). Both keys removed
-leave a sidecar with nothing waiting: it loads, and only the items are lost. A refused load fails the way a damaged save does: the load screen
+leave a sidecar with nothing waiting: it loads, and only the items are lost. A sidecar holding the
+tournament's Dias needs `tournament_dias_hash` to match the save and the held bytes the same way
+(`... its Dias held for the tournament differs from the one this seed saved`); both keys removed
+load, and Dias keeps the tournament's data. A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -1021,6 +1045,9 @@ conditions and its return).
     (map 12's specials 1 / 2, the tournament's A 0x15 compaction before and after each fight):
     the stash remembers who borrowed it (`by`), and they go back to the borrowed slot first, the
     member there to theirs, so the stash never lands on another member (port 0.02.51).
+  - a kept Dias (received, or the starting character) fights the tournament as the story's Dias
+    (its specials 0xc / 0xd rewrite him) and leaves it with his own data: the sidecar's
+    `tournament_dias` above (port 0.02.51).
   Outside every window (free play, not in a Private Action) a member recruited for good who is in
   reserve rejoins ("Celine joined the party"). The windows: Rena at home (Claude's game, 5/0-1000),
   Claude away (Rena's game, 5/2000-2500), the other hero away (5/3000-6/2100, 7/1000-8/0), Mars
