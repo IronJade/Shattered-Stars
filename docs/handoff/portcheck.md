@@ -306,8 +306,15 @@ message (the code path was exercised directly via the scripted action, bypassing
 disabled state, confirming the defensive check inside `run_tracker_render` and not just the
 button's `BeginDisabled`).
 
-**Commits:** none yet at this point in the log -- see the Log for the final commit ids once made.
+**Commits:** `c43294f` (docs: tracker_maps.md "The setup button", 0.03.00 draft, this log),
+`b25fa5b` (the setup button: setup_ui.h/.cpp, setup_main.cpp, CMakeLists.txt).
 
 **Nothing left open** from this brief. Smaller things noticed but out of scope (not acted on):
 the Archipelago page's "Trackers" section lands just past the default 920x660 window's fold
 (same as other content on this page already does; the page scrolls, no visual bug).
+
+## Log (continued)
+- 2026-10-27 16:5x: committed c43294f (docs) and b25fa5b (the setup button). Cleaned the
+  remaining big scratch (see above); kept engine/build-portcheck / -asan, scratchpad/portcheck's
+  logs, scratchpad/portcheck/asan (the libasan copy) and the e2e output. **portcheck done**;
+  reported to the coordinator.
