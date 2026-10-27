@@ -134,3 +134,10 @@ bin0 (main before the fix), binw0 (main + the sweep aid, for the tournament base
 
 Commits 1ab7000 (docs) and a1827a9 (port) on main, not pushed. Open for the coordinator: the
 special 0xc / 0xd finding (options above).
+
+## The user's decision on the tournament's Dias (2026-10-27)
+"b) Save his data before the tournament rewrites him, and restore it after his last fight."
+So: when Dias is a kept member (a starting member or a received character) and the tournament's
+specials 0xc / 0xd rewrite him (run t4400dias), the port saves his 0x130 bytes (slot + record)
+before 0xc and puts them back after his last fight there; the fights keep the story's Dias.
+Not built yet (queued for a follow-up agent, port 0.02.51).
