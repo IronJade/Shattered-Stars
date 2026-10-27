@@ -81,8 +81,8 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
    assertAccessDependency for guild checks (area keys, Stage 9 / disc switch / Fienal tiers) and
    learn points (disc switch / Final Save Point, character items); tests that guild checks and
    learn points may hold progression and item shops still can't.
-3. [ ] Port proofs (headless, engine/build-skilllogic): a key and a character at a guild check, a
-   key at a learn point, from a hand-edited .apso2.
+3. [x] Port proofs (headless, engine/build-skilllogic): a key and a character at a guild check, a
+   key at a learn point, from a hand-edited .apso2. **No port change needed** (below, "Step 3").
 4. [ ] Batches story_open / hub / solo_noexpel 96/96, checker 0 errors (extend ap_batch_check.py if
    it asserts these never hold progression). Identity: seeds without skillsanity byte-identical to
    scratchpad/ncpfix/v021; list the changed seeds (each must have skillsanity on). AP general suite
@@ -139,5 +139,33 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
   killer level progression though those levels are EXCLUDED. For the user (limitation, or a
   follow-up); not changed here.
 
+### Step 3: port proofs (2026-10-27 ~09:10; scratchpad/skilllogic/port: run.sh NAME args, seeds/,
+### runs/, cards/ copies of scratchpad/latesave/card.mcd)
+- Binary: engine/build-skilllogic/shattered-stars (built 06:51 from HEAD; engine/ unchanged since
+  c445867, clean tree at the run), not rebuilt. By reading: guild sets (skills.cpp on_guild_flag)
+  and learn points (the join's passed levels and the level-up's on_learn_point) both call
+  ap.cpp deliver_check, which queues an own item in `pending`; the free-play loop gives it
+  through give() (keys: state.keys; characters: characters_waiting -> join_waiting).
+- **Guild** (seeds/guild.apso2, open world + character_items; runs/guild.log; the smoke's
+  ap_skill_guild setup: SS_EVENT_SWEEP=1 SS_BATTLE_STUB=1 SS_SWEEP_PLAY=147:K17:0/0/0/0
+  SS_SCRIPT_GLOBALS=a0=16,a4=0 SS_DEBUG_INPUT="5:fol 50000;1400:where", --no-memcard --debug
+  --frames 1500 --map 147): Herlie's K17 sells Knowledge 2 -> "guild set 4 bought (flag 704): 3
+  checks", "(1 of 3): Salva Pass", "(2 of 3): Celine", "(3 of 3): Hookshot for Alice", "key 2
+  (Salva Pass) received", "given Salva Pass", "given Celine", "Celine joins the party (slot 1)";
+  Fol 50000 -> 48500.
+- **Learn points** (seeds/learn.apso2 = skillsanity's late_sp.apso2 with Celine Lv 4 -> our
+  Central City Pass, Lv 6 -> our Ashton; runs/learn3.log; the late save: SS_EVENT_SWEEP=1
+  SS_BATTLE_STUB=1 SS_SWEEP_PLAY=999:T0 SS_SWEEP_PARTY_DROP=2,3,4,5,6,7,8,9,11 SS_SWEEP_PARTY=4
+  SS_AP_ANY_SAVE=1 SS_LOAD_SAVE=0 SS_MEMCARD1=cards/late3.mcd, SS_DEBUG_INPUT "300:ap_give
+  Celine Bob" + ap_status every 1000, --debug --frames 12000): Celine joins at 220, her passed
+  learn points fire: "(Celine Lv 4: Thunderbolt): Central City Pass", "(Celine Lv 6: Wind Blade):
+  Ashton"; then "key 28 (Central City Pass) received", "given Central City Pass", "given Ashton",
+  "Ashton joins the party (slot 4)"; ap_status waiting 2 -> 0, checks 28/28.
+  Note: in this sweep harness free play comes only now and then (runs/learn.log, 4000 frames,
+  ended with the two still waiting; learn2.log: Celine herself given only at ~1550): the
+  harness's timing, not the port (the same queue as every other check).
+- The level-up path (on_learn_point, battle result) wasn't run (needs a battle with EXP); it calls
+  the same deliver_check.
+
 ### Next
-- Step 3 (port proofs), then 4-6.
+- Step 4 (batches, identity, suites), then 5-6.
