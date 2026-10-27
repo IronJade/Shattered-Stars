@@ -509,6 +509,12 @@ Order: **B1** -> **B5** (in parallel, port side) -> **B2** -> **B3** ->
   handles ER with no change: regions, entrances and the region sweep are already in format 1. For
   non-spoiling display the pack shows a pairing only once it is in the entrances key.
   `poptracker_entrance_mapping` / entrance sections serve UT's map tab.
+- **Door labels are live (the user, 2026-10-27).** "Those labels for doors may need to be live ... the
+  logic engine needs to be able to follow routes to get from one place to another. The tracker would
+  need the correct toMap draws for each door." So no destination is baked into a map image; each door
+  has a stable door id (docs/ap/tracker_maps.md) that is also Phase C's entrance name, and the trackers
+  show its destination from the seed's data (vanilla door table, or ER pairings + the found key). The
+  logic export names its entrances, so the pack's evaluator follows routes through randomised doors.
 - **Shared groundwork.** The area table B4 builds is what er-model needs for its entrance table:
   world-map entrances per area, arrivals and positions. B2's Rule Builder provides the indirect
   conditions Generic ER requires. Build them once and share.

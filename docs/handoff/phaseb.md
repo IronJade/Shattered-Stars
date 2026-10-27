@@ -31,6 +31,17 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   Part 1 (names, doors + per-room images in the layout, the port's renderer): agent mapdoors.
   Part 2 (pack: door sections, Area > Room tabs, the click handler, smoke): after logicexport,
   together with B6.
+  **Then (the user, verbatim): "Those labels for doors may need to be live. Keep in mind if we move
+  forward with the Entrance Randomiser and the unconnected doors, the logic engine needs to be able to
+  follow routes to get from one place to another. The tracker would need the correct toMap draws for
+  each door."** Design (sent to mapdoors and logicexport): no destination baked into any image; images
+  carry the room's own number/name and a lettered door marker (A, B, C...) per door; destinations are
+  live (PopTracker: item BadgeText in a per-room door panel "A -> 412 ...", filled from a vanilla door
+  table in the pack, or under ER from slot_data pairings + the found-entrances key; clicking a marker or
+  panel item opens the live destination's tab; marker colour from logic). A stable **door id** per door
+  (mapdoors defines it in docs/ap/tracker_maps.md) = Phase C's entrance name; the logic export names
+  every entrance and leaves room for per-door / deferred entrances and a region -> map hint, so ER
+  needs more data, not a new evaluator.
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
