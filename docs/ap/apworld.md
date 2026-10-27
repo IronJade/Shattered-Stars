@@ -1157,11 +1157,24 @@ one, 17 mixes x 5 seeds (scratchpad/utworld/oldroom.py): every mix without Skill
 hell seed matches in every sphere (story, open world with every party shape, the teleporter off,
 hub); a hell seed (`encounter_rate: 0` with killer moves, which 0.2.1 made a hell seed) would fail
 the check above (its rebuilt `hell_seed`); and with `skillsanity` on, 0.2.1's new guild-check and
-learn-level rules make UT list fewer locations in 13 of 25 seeds although the slot data restores
-cleanly. So `ut.restore` refuses a 0.2.0 room with `skillsanity` other than `none` or with
-`encounter_rate` 0 and `killer_move_checks` (`ut.OLD_LOGIC`: "Track it with so2.apworld 0.2.0 and
-your YAML in Universal Tracker's Players folder"); with that, every 0.2.0 room tested either
-matches in every sphere or is refused.
+learn-level rules make UT list fewer locations, although the slot data restores cleanly.
+- **0.2.0 hell seeds are refused** (`ut.OLD_LOGIC`: "Track it with so2.apworld 0.2.0 and your YAML in
+  Universal Tracker's Players folder").
+- **0.2.0 Skillsanity rooms are tracked with a warning** (the user, 2026-10-27: "accept with a
+  warning", on the condition that the rebuilt logic is conservative). Measured
+  (scratchpad/logicexport/oldroom_subset.py over the same 85 rooms: at every sphere, UT's in-logic
+  unchecked locations against the room's own sphere, and nothing left after the last): of the 45
+  Skillsanity rooms (9 mixes: story, open world and hub with insanity, skills_only and
+  special_only), **29 list fewer at some sphere and none ever lists more**, 16 match exactly; the
+  user's own 0.2.0 hub room (insanity; its multidata's 13 spheres, read in memory) lists 36 fewer
+  at sphere 1 and 6 at sphere 10, never more. So such a room's checks show in UT late, never early.
+  `ut.restore` logs (`ut.OLD_LOGIC_WARNINGS`): "This room was made with so2.apworld 0.2.0 with
+  Skillsanity on: 0.2.1 changed the logic of Skillsanity's guild checks and learn levels, so
+  Universal Tracker may show some of them later than they really became reachable (never earlier).
+  Regenerate the room with so2.apworld 0.2.2 or later for exact tracking." UT prints it in its log.
+
+With that, every 0.2.0 room tested matches in every sphere, is a subset with the warning, or is
+refused (a hell seed).
 
 **Tests.** test/test_ut.py (see "Testing"): `ut_rebuild` / `in_logic` mirror UT's TMain and
 updateTracker without UT installed, and each mix class runs UT's fuzzer-hook check (for every
@@ -1194,6 +1207,59 @@ way updateTracker does), and its list in custom_ut_sort's order.
     SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python \
         tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld [--apworld dist/so2.apworld]
 
+### The logic export (for PopTracker; trackers.md B3, 0.2.2)
+
+A tracker that can't run the world (the PopTracker pack's Lua: decision D2, no game logic copied
+into Lua) reads the world's logic from the slot data instead: `fill_slot_data`'s **`tracker`** key,
+written by `tracker_export.export(world)` (format 1: docs/ap/seed_format.md "The tracker export").
+- **What it walks.** The world as it stands when fill_slot_data runs (after connect_entrances, so
+  an entrance randomizer's final graph is the one exported): the regions (the origin first), every
+  entrance, every event (a location with no id holding an event item: the story stages, the Disc
+  Switch, the Final Save Point, Fienal's gate, the goals), every location with an id, and the
+  completion condition. Each spot's rule is a Rule Builder resolved rule ("Rules as data"), written
+  as a JSON body: `true` / `false`, `["has", ref, n]`, `["all", ref...]`, `["any", ref...]`,
+  `["and", rule...]`, `["or", rule...]`. Items are AP ids, events their item's name. Entrances are
+  `[name, from, to, rule]`.
+- **Interned.** Each body is in the `rules` table once (children first: an `and` / `or` names its
+  children by index); spots name their rule by index; the locations come in groups of the same
+  (region, rule). The resolved rules are often one shared object, so the walk memoises by identity
+  too. At the richest open world: 1,988 locations, 259 bodies, 35 KB.
+- **Not in the .apso2** (seed_data writes `slot_options()` only): the port never sees it, and the
+  seeds stay byte for byte 0.2.1's. Universal Tracker ignores it (`ut.NEW_KEYS`: check_restored
+  skips it; a rebuilt world exports the same, which test_ut's room check also compares).
+- **Its own version**, `format`, is what a tracker checks; `ut.LOGIC_VERSION` is unchanged (the
+  logic is). A new rule kind (Phase C's CanReachRegion: `["region", r]`, which both evaluators read
+  already) needs its form in tracker_export first; anything else raises a TypeError at generation.
+- **Room for the entrance randomizer** (the user, 2026-10-27: the logic engine must "follow routes
+  to get from one place to another" through unconnected doors): per-door entrances named by their
+  door ids, deferred entrances written with `to` -1 and connected by the trackers when found
+  (`TrackerLogic.connect`, the pack's `so2_logic_connect`), and optional keys such as a region ->
+  map ids hint, all within format 1 (seed_format.md "The tracker export"). No ER is built yet.
+
+**The reference evaluator** (`tools/ap_tracker_logic.py`, plain Python, no Archipelago): from an
+export and a dict of received item counts, the region sweep and events to a fixpoint, then each
+location's access; `TrackerLogic(export).evaluate(counts)` gives the reached regions, the events,
+the locations in logic and the goal. The pack's `scripts/logic.lua` is the same algorithm in Lua.
+
+**Tests** (test/test_tracker.py; the evaluator is loaded from the repo's tools/, so from a packaged
+.apworld these skip):
+- One class per mix of test_ut.MIXES (16: story, open world, hub, bench on and off, the start
+  shapes, the healer guarantee, the teleporter off, the hell seed, the rich hub, excluded
+  locations): the room (seed 11) generated and filled, its export read through JSON as a tracker
+  gets it. At every sphere of the generation (the items found so far, the precollected ones first,
+  as the server sends them), after the last, on the empty state, with every item and on 8 random
+  item states, the reference's reached regions, events, locations in logic and goal are the
+  world's own (a CollectionState with those items and the events swept), and its unchecked
+  locations in logic are the sphere's. Each test well under a second (0.5 s at the most).
+- `SO2_SLOW_TESTS=1` (TestTrackerManySeeds): the same for 20 seeds per mix, 320 rooms.
+- TestTrackerExport: the shape (origin first, every region, entrance, event and location once,
+  equal bodies once, children before parents, refs that are this world's item ids or events); the
+  round trip (each body read back as Rule Builder rules resolves to the spot's own rule, the goal
+  too); every resolved kind has a form, any other raises; not in slot_options.
+- TestReferenceEvaluator: a hand-made export for counts, events counted per location, several
+  passes, the "region" kind behind an entrance (an indirect condition), the goal, a deferred
+  entrance (`to` -1) reaching nothing until `connect`; unknown formats and kinds refused. TestTrackerExportSize: at most 64 KB at the richest mix of each mode.
+
 ## Files
 
 | File | Contents |
@@ -1202,13 +1268,14 @@ way updateTracker does), and its list in custom_ut_sort's order.
 | `ut.py` | Universal Tracker ("Trackers"): `LOGIC_VERSION`, the slot data -> option table `SLOT_OPTIONS`, `NO_EFFECT`, `restore` / `check_restored`, `refuse` (UT's `TrackerException`), `sort_key` |
 | `hub.py` | hub mode: `choose` (the locations), `needed_keys`, `fienal_won`, `create_regions`, `set_rules`, `drop_rule`, the seed's `hub` / `bosses` / `doors` (`seed_hub`, `seed_bosses`, `seed_doors`); `OUT_OF_HUB` (the Portal of Sealing), `CONFIRMED_OPTIONAL` (waiting on hubchambers) |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
-| `logic.py` | rules as data ("Rules as data"): the Rule Builder builders `need`, `ways`, `any_of`, `both`; `open_by_default`; `RESOLVED_KINDS`, `as_rule` (for the tracker export) |
+| `logic.py` | rules as data ("Rules as data"): the Rule Builder builders `need`, `ways`, `any_of`, `both`; `open_by_default`; `RESOLVED_KINDS`, `as_rule` |
+| `tracker_export.py` | the slot data's `tracker` key ("The logic export"): `export(world)`, `FORMAT` |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
 | `skills.py`, `skillsanity.py` | skillsanity's tables (the guild sets, the skills, the starting skills, the specialties, the learn tables with each member's first move, the other learn points; generated by tools/ap_make_skills.py from the disc; do not edit) and its locations, items, logic and shop prices |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
-| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`, the rules as data in `test_logic.py`) |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`, the rules as data in `test_logic.py`, the logic export and its reference evaluator in `test_tracker.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 

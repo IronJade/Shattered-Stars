@@ -1655,15 +1655,16 @@ plays it the same, without the warning.
 ## Slot data and trackers (so2.apworld 0.2.2)
 
 The **slot data** (what the Archipelago server hands every client of the slot on connect) is the
-.apso2's `options` object less `deathlink` (which seed_data adds), plus two keys for trackers
+.apso2's `options` object less `deathlink` (which seed_data adds), plus three keys for trackers
 that the .apso2 does not carry, so the seed file stays exactly as 0.2.1 wrote it
-(`SO2World.slot_options()` is the common part, `fill_slot_data()` adds the two). The port never
+(`SO2World.slot_options()` is the common part, `fill_slot_data()` adds the three). The port never
 reads slot data (it takes its options from the .apso2), so new keys there are safe for it.
 
 | Key | Value | Meaning |
 |---|---|---|
 | `logic_version` | `1` | The world's logic version (`apworld/so2/ut.py` `LOGIC_VERSION`). It is bumped whenever the same slot data would make other logic: other locations, regions, rules or events. A room from 0.2.0 or 0.2.1 has no key: version 1. |
 | `exclude_locations` | sorted list of location names | The player's `exclude_locations` (Generate already expanded any group to its names). Universal Tracker shows them in its excluded group. |
+| `tracker` | object, below | The world's resolved logic as data ("The tracker export"), for trackers that don't run the world: the PopTracker pack evaluates it. A room from 0.2.0 or 0.2.1 has none (the pack is then a checklist). |
 
 **What Universal Tracker restores** (yaml-less; `apworld/so2/ut.py`; docs/ap/apworld.md
 "Trackers"). UT builds the world again on the player's machine from the slot data alone, with a
@@ -1702,13 +1703,108 @@ incompatible", and its `/faris_asked` command prints our message, for example:
     so2.apworld beside tracker.apworld (the one the room was generated with).
 
 Rooms from 0.2.0 and 0.2.1 have no `logic_version` and are version 1 when they restore cleanly,
-except a 0.2.0 room with `skillsanity` on or with a hell seed's options (`encounter_rate` 0 with
-`killer_move_checks`): 0.2.1 changed those rules (`ut.OLD_LOGIC`), so it is refused with "Track it
-with so2.apworld 0.2.0 and your YAML in Universal Tracker's Players folder". A 0.1.x room names no
-`apworld_version` and lacks keys: refused.
+except a 0.2.0 room with a hell seed's options (`encounter_rate` 0 with `killer_move_checks`): 0.2.1
+changed those rules (`ut.OLD_LOGIC`), so it is refused with "Track it with so2.apworld 0.2.0 and
+your YAML in Universal Tracker's Players folder". A 0.2.0 room with `skillsanity` on is tracked,
+with a warning in UT's log (`ut.OLD_LOGIC_WARNINGS`): 0.2.1's rules for Skillsanity's guild checks
+and learn levels are stricter than 0.2.0's, so UT may show some of them later than they became
+reachable, never earlier (measured: docs/ap/apworld.md "Older rooms"); regenerating the room with
+0.2.2 makes it exact. A 0.1.x room names no `apworld_version` and lacks keys: refused.
 
 The rule for a tracker is the same as for the port: install **the so2.apworld the room was
 generated with**. UT also warns when the installed world's data package differs from the room's.
+
+### The tracker export (`tracker`, format 1)
+
+`apworld/so2/tracker_export.py` writes it in `fill_slot_data`, after every step of the generation
+(so an entrance randomizer's final graph is the one exported, Phase C): the world's regions, every
+entrance, every event, every location with an id and the completion condition, each with its
+Rule Builder rule (docs/ap/apworld.md "Rules as data"), as plain JSON. A tracker evaluates it with
+no game knowledge: the PopTracker pack's `scripts/logic.lua` (docs/ap/poptracker.md "Logic"), and
+the reference evaluator `tools/ap_tracker_logic.py`, which the world's tests prove equal to the
+world's own logic (test/test_tracker.py). Universal Tracker doesn't need it (it runs the world).
+
+An open world with the default options (seed 1; 118 rule bodies, 64 location groups):
+
+```json
+"tracker": {
+ "format": 1,
+ "regions": ["Menu", "Expel", "Energy Nede", "Fienal", "Cave of Trials"],
+ "rules": [true, ["has", "Arrived on Energy Nede", 1], ["has", "Saved at the Final Save Point", 1],
+           ["has", "Stage 12 done", 1], ["has", 1345716225, 1],
+           ["all", 1345716225, 1345716226, "Stage 1 done"], ...,
+           ["or", 28, 29, 4], ...],
+ "entrances": [["New Game", 0, 1, 0], ["Disc Switch", 1, 2, 1], ["To Fienal", 2, 3, 0],
+               ["Virtual Expel", 3, 4, 2]],
+ "events": [["Arrived on Energy Nede", 1, 3], ["Stage 1 done", 1, 4], ["Stage 2 done", 1, 5], ...],
+ "locations": [[1, 3, 1364328967, 1364328968], [1, 4, 1349664768, 1349666816, 1349675008], ...],
+ "goal": 117
+}
+```
+
+(1345716225 is the Arlia Pass, 1345716226 the Salva Pass; the Disc Switch event, "Arrived on
+Energy Nede", needs Stage 12; the entrance Expel -> Energy Nede needs that event.)
+
+| Key | Value |
+|---|---|
+| `format` | 1. A tracker reads only the formats it knows; a new one (a change an older evaluator would get wrong) bumps it, and the pack shows such a room as a checklist with "Logic needs a newer pack". |
+| `regions` | region names; **index 0 is the origin** (`Menu`), where the sweep starts. Regions, entrances, events and rules are named by their 0-based index. |
+| `rules` | the rule bodies, each once (equal rules share one index); an `and` / `or` names its children by index, always lower than its own. |
+| `entrances` | `[name, from, to, rule]`: the entrance's name (hub mode: `Into Salva Drift` ...), region, region, rule. `to` is **-1** for an entrance not connected yet (none today: Phase C's deferred entrances), which reaches nothing until a tracker connects it. |
+| `events` | `[name, region, rule]`: an event (a location with no id holding an event item, such as `Stage 1 done` or `Victory`); `name` is the event item's, which is what rules read. |
+| `locations` | groups `[region, rule, id, id, ...]`: the AP location ids in that region with that rule, ids ascending, groups by (region, rule). Every location of the slot is in exactly one group. |
+| `goal` | the completion condition's rule (`Has Victory`). |
+
+A rule body is one of:
+
+| Body | Holds when |
+|---|---|
+| `true` / `false` | always / never |
+| `["has", ref, n]` | the player has at least `n` of `ref` |
+| `["all", ref, ...]` | at least one of each ref |
+| `["any", ref, ...]` | at least one of some ref |
+| `["and", rule, ...]` | every child rule holds |
+| `["or", rule, ...]` | some child rule holds |
+| `["region", region]` | that region is reached (no rule of this world makes it yet: the room left for Rule Builder's CanReachRegion in Phase C; both evaluators read it) |
+
+A **ref** is an AP item id (a number: how many of it the slot has received; every item a rule names
+is progression in this world) or an event's name (a string: how many of that event's locations are
+reached). These are Rule Builder's resolved kinds (`True_`, `False_`, `Has`, `HasAll`, `HasAny`,
+`And`, `Or`: `logic.RESOLVED_KINDS`); the export refuses any other kind (a TypeError at generation).
+
+**The evaluation** (both evaluators, step for step): start with region 0 reached and no events;
+repeat passes until a pass changes nothing: each entrance from a reached region whose rule holds
+reaches its region; each event in a reached region whose rule holds is collected (once). Every kind
+is monotone (more items, events or regions never make a rule fail), so this is the least fixpoint,
+the state Archipelago's own region and event sweeps reach. A location is **in logic** when its region
+is reached and its rule holds. Rule results can be memoised within a pass (and the last pass's memo
+serves the locations); the whole result holds until the items change.
+
+**Room for the entrance randomizer (Phase C), with no new format.** The user (2026-10-27): "if we
+move forward with the Entrance Randomiser and the unconnected doors, the logic engine needs to be
+able to follow routes to get from one place to another." The evaluators already sweep over named
+entrances with no game knowledge, so an entrance-randomized room is only more data:
+- **per-door entrances**: many more regions and entrances, each entrance named by its door id
+  (agent "mapdoors" is defining them in docs/ap/tracker_maps.md); the export is written after
+  `connect_entrances`, so it is the randomized graph;
+- **unconnected (deferred) entrances**: `to` -1 until the player finds where the door leads; a
+  tracker then connects it (`TrackerLogic.connect(name, region)` in the reference,
+  `so2_logic_connect(name, region)` in the pack, both tested) from the slot data's pairings or the
+  found-entrances data-storage key (trackers.md section 6);
+- **optional keys** a format-1 reader ignores may be added, such as a region -> map ids hint for
+  drawing a door's destination, or the pairings themselves.
+
+A new `format` is only for a change an older reader would get wrong: a new rule body kind (beyond
+`region`, which both read already) or a key whose meaning changes. Readers ignore keys they don't
+know.
+
+**Size** (compact JSON, as the server sends it; test/test_tracker.py keeps it at or under 64 KB at the
+richest mix of each mode, every check option on; test_ut.py's mixes, seeds 1-3): story 4.4 KB by
+default (359 locations, 4 rule bodies), 15-16 KB with character items, crafts, killer moves and
+Skillsanity, 24 KB at the richest (1,840 locations); open world 9.6-34 KB (the default-like mixes
+10-17 KB), **35 KB at the richest** (1,988 locations, 259 rule bodies); hub 11-26 KB, 26 KB at the
+richest (1,754 locations). Grouping the locations by (region, rule) keeps a third off an
+`{"id": [region, rule]}` map (52 KB at the richest).
 
 ## Hub (`world_mode: hub`)
 

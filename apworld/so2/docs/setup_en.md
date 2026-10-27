@@ -113,6 +113,12 @@ UT that your options are incompatible", type `/faris_asked` in it: the message n
 `so2.apworld` this room needs (a room made with a newer version of this world than the one
 installed, for example).
 
+A room generated with version 0.2.0 of this world tracks with 0.2.2 too. With Skillsanity on, UT
+warns in its log that 0.2.1 changed the logic of Skillsanity's guild checks and learn levels: some
+of them may show up later than they really became reachable (never earlier). Regenerate the room
+with 0.2.2 or later for exact tracking. A 0.2.0 room with `encounter_rate: 0` and killer-move checks
+(what 0.2.1 made a hell seed) can't be tracked with 0.2.2: use 0.2.0 and your YAML.
+
 ## Playing Offline
 
 Shattered Stars can also play a generated seed by itself, with no server and no multiworld

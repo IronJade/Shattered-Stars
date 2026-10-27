@@ -12,10 +12,12 @@ cannot drift from the world: `tools/ap_poptracker.py` writes it, `tools/build_po
 hashes and checks it, `tools/ap_poptracker_test.py` tests it. Its hand-written Lua lives in
 `tools/poptracker/`. The build output (`dist/poptracker/`) is never committed.
 
-Status (pack 1.0.0 as built by B4a): everything but the logic. Each location's access goes
-through one function, `so2_access` (scripts/logic.lua), which shows every location the room has
-as reachable (a checklist) and says so in the banner. B4b replaces that function's body with an
-evaluator over the room's logic export (B3, `slot_data["tracker"]`): see "The logic seam".
+Status (pack 1.0.0): built by B4a (the pack) and B4b (its logic). Each location's access goes
+through one function, `so2_access` (scripts/logic.lua), a generic evaluator of the room's logic
+export (`slot_data["tracker"]`, so2.apworld 0.2.2's: docs/ap/seed_format.md "The tracker export"),
+so the pack shows exactly what the world's own rules say, for every option and seed, with no game
+logic of its own (decision D2). Rooms from 0.2.0 and 0.2.1 have no export: a checklist, said in the
+banner. See "Logic".
 
 ## For players
 
@@ -46,9 +48,15 @@ What it shows:
   traps received (counts), skills and moves (skillsanity), and **Room**: the room's options from its
   slot data (mode, goal, route, shops, missables, drops, skillsanity, killer moves, Fienal
   requirement, crafts, bosses, Cave of Trials, teleporter, bench, hell seed).
+- **Logic.** With a room from so2.apworld 0.2.2 or later, a check is green (reachable) when the
+  world's own rules say it is in logic with what the slot has received (and the items clicked in
+  the panel), and red when not: the same as Universal Tracker. A room from 0.2.0 / 0.2.1 has no
+  logic in it: every check shows as reachable (a checklist).
 - **Status**: the logic banner at the top ("not connected", "logic unavailable for this room:
-  checklist", "logic: from the room"), the story chapter the port reports, and **Auto tab** (on by
-  default): with port 0.03.00 connected to the room, the map tabs follow the map the party is on.
+  checklist", "logic: from the room", or "logic needs a newer pack: checklist" for a room of a
+  later world whose export this pack can't read), the story chapter the port reports, and **Auto
+  tab** (on by default): with port 0.03.00 connected to the room, the map tabs follow the map the
+  party is on.
 - **Hints**: hinted locations in this world are highlighted (priority, avoid, ...).
 - Checks reach the tracker through the server, so checks made while the port is offline show up
   once it reconnects and sends them.
@@ -124,7 +132,7 @@ All hand-written files are in `tools/poptracker/`, short and generic; the genera
   server sent), `so2_refresh()` (bumps `so2_rev` so PopTracker re-runs the rules after a Lua-only
   change), `so2_set_logic_status(key)` (the banner), and a watch on every item code that calls
   `so2_logic_items_changed(code)`.
-- `logic.lua`: the logic seam (next section).
+- `logic.lua`: the evaluator ("Logic", next).
 - `autotracking/archipelago.lua`: the AP handlers.
   - **Clear** (each connect): resets every mapped section (count, highlight) and item, the chapter;
     sets the Room settings from the slot data (`SO2_SETTINGS`; a missing key: `absent`, else the
@@ -141,27 +149,52 @@ All hand-written files are in `tools/poptracker/`, short and generic; the genera
     when Auto tab is on (position-only updates on a world map change nothing); `so2_story_*` sets
     `SO2.story` and the Chapter item and calls `so2_story_changed(story)` when it exists (B6).
 
-## The logic seam (for B4b)
+## Logic
 
-Every section's access rule is `^$so2_access|<AP location id>`. The `^` makes PopTracker read the
+**The seam.** Every section's access rule is `^$so2_access|<AP location id>`. The `^` makes PopTracker read the
 return value as an **AccessibilityLevel** (`None`, `SequenceBreak`, `Normal`, ...), so an evaluator
 can show out-of-logic-but-possible (yellow) as well as reachable and unreachable. The contracts,
 all in `tools/poptracker/logic.lua`:
 
 | Function | Called | Contract |
 |---|---|---|
-| `so2_logic_load(slot_data)` | by the Clear handler, once per connect, after `SO2.exists` and the items are set | read `slot_data.tracker` (B3's export; absent in rooms from 0.2.0 / 0.2.1 or a world without it); set `SO2_LOGIC.mode` and the banner: `so2_set_logic_status("on")` with logic, `"checklist"` without |
+| `so2_logic_load(slot_data)` | by the Clear handler, once per connect, after `SO2.exists` and the items are set | read `slot_data.tracker` (B3's export; absent in rooms from 0.2.0 / 0.2.1 or a world without it); set `SO2_LOGIC.mode` and the banner: `so2_set_logic_status("on")` with logic, `"checklist"` without, `"newer"` for an export of a format the pack doesn't read |
 | `so2_logic_items_changed(code)` | after any item changes (received, clicked, reset) | drop memoized results (keep it cheap: it runs once per changed item) |
 | `so2_access(id)` | by PopTracker for each visible section, whenever an item changed | `id` is the AP location id as a **string**; return an `AccessibilityLevel` |
 | `so2_story_changed(story)` | optional; on each `so2_story_*` value | B6's story awareness |
 
 Inputs an evaluator has: `so2_item_count(ap_item_id)` (items by AP id, as the export names them),
 `SO2.slot_data`, `SO2.exists`, `SO2.story`. If what `so2_access` returns changes without an item
-change (an export loaded late, a story change), call `so2_refresh()`. Don't change items inside
-`so2_access` (PopTracker warns about items toggled during rule evaluation). Today
-(`B4a`): `so2_logic_load` sets "checklist", `so2_access` returns `AccessibilityLevel.Normal`.
-The tests' Lua stub (tools/ap_poptracker_test.py `TestLua`) runs the scripts in Lua 5.4 and is the
-place to test the evaluator against B3's Python reference.
+change (an export loaded late, a story change), call `so2_refresh()` (the Clear handler calls it
+after `so2_logic_load`). Don't change items inside `so2_access` (PopTracker warns about items
+toggled during rule evaluation).
+
+**The evaluator** (`tools/poptracker/logic.lua`, about 150 lines, no game knowledge). It is the
+reference evaluator's algorithm (`tools/ap_tracker_logic.py`; docs/ap/seed_format.md "The tracker
+export", "The evaluation") step for step:
+- `so2_logic_load` indexes the export's location groups by AP id (`loc[id] = {region, rule, ...}`)
+  when its `format` is one the pack reads (`SO2_LOGIC_FORMATS`: 1).
+- On the first `so2_access` after an item change, one **sweep**: region 0 reached, no events; passes
+  until one changes nothing (an entrance from a reached region whose rule holds reaches its region;
+  an event in a reached region whose rule holds is collected once). Rule results are memoised per
+  pass (`holds(v, k)`), and item counts per item state (`so2_item_count(ap_id)`: the pack's mapped
+  item, so a click counts, else what the server sent); events count by name.
+- `so2_access(id)` is then a lookup: `Normal` when the location's region is reached and its rule
+  holds (the last pass's memo), else `None`. A location the export doesn't list, and every location
+  without an export, is `Normal` (checklist).
+- `so2_logic_items_changed` (every item change: received, clicked, reset) drops the result; the next
+  `so2_access` sweeps again. A sweep is about fifty rule evaluations a pass and a few passes.
+- Helpers for B6 and tests: `so2_logic_view()` (the current result: `reached` regions, `got`
+  events), `so2_in_logic(id)` (true / false / nil), `so2_goal_in_logic()`.
+- **Entrance randomizer (Phase C), already read:** entrances are named (`{name, from, to, rule}`),
+  the export is the randomized graph, an entrance with `to` -1 (not connected yet: a deferred one)
+  reaches nothing, and `so2_logic_connect(name, region)` connects it when the player finds it (from
+  the slot data's pairings or the found-entrances data-storage key; it re-runs the rules). The
+  "region" body (an indirect condition, CanReachRegion) is evaluated too. So such a room needs no
+  new evaluator, only more data (docs/ap/seed_format.md "The tracker export").
+
+It returns only `Normal` and `None`: the export knows what is in logic, not what is possible out of
+logic, so there is no `SequenceBreak` (yellow).
 
 ## Images (all original)
 
@@ -208,7 +241,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (18 tests, about 6 seconds with the build; run by `check`):
+`tools/ap_poptracker_test.py` (23 tests, about 6 seconds with the build; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -229,6 +262,20 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
   data-storage keys; items, a repeated index, traps, an unmapped item; a check; hints; auto tab
   switching (and not on position-only updates, and not with Auto tab off); the chapter; a
   reconnect resets. Every section's rules run.
+- **Logic** (`TestLuaLogic`): the pack's evaluator against the reference (tools/ap_tracker_logic.py,
+  which the world's tests prove equal to the world's logic) on the exports of 16 rooms, one per
+  option mix of the world's UT tests (test_ut.MIXES: story, open world, hub, bench on and off, the
+  rich hub, the hell seed, ...), each generated and filled (seed 21). For the empty state, the items
+  found before each sphere (the precollected ones first), every item and three random states (246
+  item states, 243,885 section evaluations in all), the items go through the pack's Item handler, and every section's own access
+  rule (`^$so2_access|<id>`, as PopTracker runs it) must be `Normal` exactly for the reference's
+  locations in logic and `None` for the rest of the room's; the reached regions, events and goal
+  agree. Also: every item a room's rules name is one of the pack's mapped items (so its change
+  reaches the evaluator through the item watch, and PopTracker runs the rules again); a received
+  item and a click on a mapped item (and its undo) change the result at once (the memo follows the
+  items); an entrance left unconnected (`to` -1) reaches nothing until `so2_logic_connect` names
+  its region, and then the result is the reference's again; a room without the export, and one with
+  an export of a newer format, are a checklist with their banners.
 
 **Pack checker.** `check` runs PopTracker/pack-checker v1.7.0 (what PopTracker/pack-checker-action
 runs) with `--strict` on the zip and on the folder, against the published schemas
@@ -286,14 +333,34 @@ spelling). Needs `websockets` (in the AP venv) and `cryptography` (installed int
 
 Steps: generate an open-world room (character items, crafts, killer moves, drops, shop specials,
 skills) with the scratch Archipelago, host it on 127.0.0.1:38391 (MultiServer, `--disable_save`,
-stopped at the end); play the port's part as a client of the slot (checks for the three lowest
-missing locations and a craft, then `so2_map_0_1` = `{"map": 26}` and `so2_story_0_1` =
-`{"chapter": 12, "step": 100}`); start PopTracker with `--load-pack so2_shattered_stars
---pack-variant map|items_only --ap-host localhost:38391 --ap-slot Tester`, and quit it with SIGINT
-after 40 seconds (it saves its state on quit). Then it checks the log and the saved state
+stopped at the end).
+
+**The logic, in PopTracker itself.** PopTracker (Map Tracker) connects to the fresh room with a
+probe added through its own user-override folder: the override's `scripts/init.lua` is the pack's
+plus one `ScriptHost:LoadScript` of `scripts/so2_smoke_probe.lua` (PopTracker reads scripts through
+the override folder too); the pack's `logic.lua`, `so2.lua` and autotracking load from the zip
+unchanged. The probe, a frame handler that walks the room's sections 100 a frame, prints whenever
+it changes the set of unchecked sections that **PopTracker itself** shows as reachable
+(`LocationSection.AccessibilityLevel`, PopTracker's own evaluation of each `^$so2_access|<id>`).
+A client of the slot then plays: at three points (fresh; after it has checked every location then
+in logic, and the server sent the items found there; the same again) that set must equal the
+world's own: the room rebuilt from its slot data in Universal Tracker's way (test_ut.py's
+`ut_rebuild` / `in_logic`), its unchecked locations in logic. The override is removed afterwards.
+
+Then the port's part as a client of the slot (checks for the three lowest missing locations and a
+craft, then `so2_map_0_1` = `{"map": 26}` and `so2_story_0_1` = `{"chapter": 12, "step": 100}`);
+start PopTracker with `--load-pack so2_shattered_stars --pack-variant map|items_only --ap-host
+localhost:38391 --ap-slot Tester`, and quit it with SIGINT after 40 seconds (it saves its state on
+quit). Then it checks the log and the saved state
 (`saves/so2_shattered_stars/1.0.0/<variant>/autosave.json`).
 
-Result (2026-10-27, pack 1.0.0): **20/20 checks pass** (both variants). What it showed: the pack loads ("so2_shattered_stars 1.0.0 (map) loaded"), PopTracker connects to the room
+Result with the evaluator (2026-10-27, pack 1.0.0, so2.apworld 0.2.2's export): **24/24 checks
+pass**. The logic: fresh, 115 of the room's 1,293 locations in logic (the 2 starting passes);
+after the first round of checks (117 items received) 99 of the 1,178 unchecked; after the second
+(216 items) 40 of 1,079: each time PopTracker's reachable sections were exactly the world's, and
+its unreachable ones the rest. No Lua error or warning.
+
+Result before the evaluator (2026-10-27, pack 1.0.0 as built by B4a): **20/20 checks pass** (both variants). What it showed: the pack loads ("so2_shattered_stars 1.0.0 (map) loaded"), PopTracker connects to the room
 as a tracker (the server: "Tester (Team #1) tracking Star Ocean: The Second Story has joined.
 Client(0.5.1), ['PopTracker', 'NoText', 'Tracker']"), applies the slot data (the Room settings,
 the banner), shows the received items (the starting Arlia Pass and Fun City Pass, and the Salva
@@ -306,7 +373,8 @@ now carry their AP location names, and the smoke test fails on any warning.
 
 **A GUI check** (for a person, optional): install the zip in PopTracker's `packs` folder, load
 "Star Ocean: The Second Story (Shattered Stars)" > Map Tracker, connect to a room with the AP
-button, and look at: the banner ("Logic unavailable for this room: checklist"), the Room tab, a
+button, and look at: the banner ("Logic: from the room" with a 0.2.2 room; "Logic unavailable for
+this room: checklist" with an older one), the green and red squares, the Room tab, a
 world map's squares, an area map's squares and their popups (one entry per check), the boards'
 cells, and (with port 0.03.00 connected to the same room) the tabs following the party. With
 `shattered-stars --render-tracker-maps` run first, the area maps show the real backgrounds and the
