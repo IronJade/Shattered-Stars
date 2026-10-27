@@ -95,6 +95,15 @@ docs/ap/release_checklist.md section 11.
    ids, named entrances in the export, the live door panel seam, the reserved found-entrances key
    and the story's deferred events as the model, CanReachRegion, logic_version). **Done.**
 
+## Status: DONE (2026-10-27). Nothing in progress.
+
+For the next agent (B7b, after maptab): fill every **TODO (maptab)** from docs/handoff/maptab.md
+(`grep -rn 'TODO (maptab)' docs/ap/release_checklist.md docs/handoff/windows_check.md
+docs/release_notes scratchpad/wiki`), then the version bumps of checklist 12.1 (README's badge and
+package names are still 0.02.51 on purpose), the RC by section 12, the sums into the three notes,
+the Windows check, and the publishing of 12.6 with the user's go-ahead. The wiki is uncommitted in
+scratchpad/wiki (11 files: Trackers.md new, 10 changed).
+
 ## Placeholders left for maptab
 
 - docs/ap/release_checklist.md section 12: rows and notes marked **TODO (maptab)**: the UT map
@@ -145,3 +154,10 @@ docs/ap/release_checklist.md section 11.
 ## Commits
 
 - fd6add9 log started.
+- a48f06d checklist section 12.
+- 020d89f Windows recheck for 0.03.00.
+- b395002 the three release notes.
+- 8e5cb16 README.
+- 98432ce log: the wiki.
+- 57381fa next.md.
+- (this log's last update follows.)
