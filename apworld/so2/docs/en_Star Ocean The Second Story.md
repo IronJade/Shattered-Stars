@@ -126,9 +126,10 @@ count in small steps get three checks, at 100, 200 and 300 uses). By default
 route's hero's moves hold them (Claude's; Rena has no killer moves), `any` every member the
 logic can count on (the hero, the starting character, and members who join through their
 character item, in which case that character becomes a progression item). Moves learned by
-level 30 are expected from the disc switch, the rest from the Final Save Point. A member who
-may never join your party has no killer-move checks; one who only joins by your choice in the
-story holds only filler there.
+level 30 are expected from the disc switch, the rest from the Final Save Point (on a hell seed,
+all of them from the Fun City arena: see "Hell seeds" below). A member who may never join your
+party has no killer-move checks; one who only joins by your choice in the story holds only
+filler there.
 
 **Skillsanity** turns skills, killer moves and spells into items:
 - `skills_only`: buying a set at a skill guild doesn't teach its skills any more; it's one check
@@ -147,7 +148,7 @@ story holds only filler there.
 - `insanity`: both.
 - Guild checks and learn levels may hold progression items (keys, characters, other worlds'
   progression), like any other check that's in reach, unless `encounter_rate` is 0 (no battles:
-  no Fol and no levels). A guild check is expected once one of its set's guilds is in reach: the
+  no Fol and no levels; but see "Hell seeds" below). A guild check is expected once one of its set's guilds is in reach: the
   cheaper sets (up to 1600 Fol) right away, the 2700-4500 Fol sets once you've finished Hilton and
   the Hoffmann Ruins (in story mode from the disc switch, in hub mode once Fienal opens). With
   `expel_progression` off, only the guilds on Energy Nede count. A learn level counts as killer
@@ -159,6 +160,22 @@ story holds only filler there.
   in your shops, sold as themselves with the Archipelago mark: a move for its learn level x 100 Fol
   (an item-taught one 5000, a Cave of Trials prize 8000), a skill for its set's price divided by
   the set's size (Perseverance: 1600 / 4 = 400), Float 900. You buy one; that's the slot's check.
+
+**Hell seeds.** `encounter_rate: 0` (no random battles) together with `killer_move_checks`, or
+with `skillsanity` `special_only` or `insanity` (learn levels), makes a **hell seed**: a game
+where the grind is meant to be preposterously hard. With no random battles, the only fights you
+can train in are the **Fun City Fighting Arena**'s (the desk in Fun City: Duel, Bullying, Team
+and Survival; any member in your party may enter). On a hell seed:
+- the arena is **free** (registering normally costs 2,000 Fol); every fight still pays its EXP
+  and Fol, and killer-move uses count there as in any battle;
+- killer-move levels, learn levels and skill guild checks are expected from the arena and may
+  hold progression items: in story mode from the disc switch, in open world once you've finished
+  the Cave of Red Crystal (with the Fun City Pass, which you start with), in hub mode from the
+  start. A key you need may well sit behind a long stretch of arena fights;
+- the setup program warns you when you choose the seed ("Hell Seed: no random battles. ...",
+  Shattered Stars 0.02.51 and later), and the game logs the same line.
+`encounter_rate: 0` without those options is an ordinary seed: the arena's fee stays, and guild
+checks and drops hold no progression.
 
 **Some locations can be missed for good**, and the `missable_locations` option decides what
 happens to them:
@@ -359,6 +376,6 @@ Running away from a fight never counts.
 | `skillsanity_shop_share` | 0-100 (default 10) | With `shuffle_shops` and skillsanity: the share of your skill and move items sold in your shops as themselves. |
 | `traps` | 0-100 (default 0) | The percentage of this world's filler items replaced by traps. |
 | `exp_multiplier`, `fol_multiplier` | 1-10 (default 1) | Multiplies the EXP or Fol a battle awards. |
-| `encounter_rate` | 0-200% (default 100%) | How often random encounters occur. 0 turns them off. |
+| `encounter_rate` | 0-200% (default 100%) | How often random encounters occur. 0 turns them off; with `killer_move_checks` or learn levels (Skillsanity `special_only` / `insanity`) that makes a hell seed, trained in a free Fun City arena — see "Hell seeds" above. |
 | `difficulty` | `earth` (default), `galaxy`, `universe`, `any` | The game's difficulty. New Game sets it and doesn't ask. `galaxy`: monsters have half again their HP and attack; `universe`: twice their HP and MP, two thirds more attack, more intelligence, accuracy and evasion. `any`: New Game asks, offering all three (normally that choice appears only once more than half of the Voice Collection has been heard). EXP, Fol, drops and encounters stay the same, so the logic is the same on every difficulty. |
 | `death_link` | off (default), on | Standard DeathLink — see "DeathLink" above for the story's scripted-loss fights, which are the exception. |

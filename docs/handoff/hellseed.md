@@ -118,6 +118,97 @@ preposterously hard."
 - `--map 297` hub starts on NA, Europe, France, Germany (r_*): 7000 without, 9000 with, on each
   (German text seen: "Empfangsdame / Willkommen in der Kampfturnierarena").
 
+## Phase 2 (build): agent "hellseed2" from here (2026-10-27; hellseed passed its context budget)
+Rules as above, plus: one other agent ("shingofix") works in engine/src/game/ap/ap.cpp's stash /
+borrow code and party scenes on main: stay out of ap.cpp's party code. Build dir
+engine/build-hellseed (deps from engine/build-hubleader/_deps), -j4.
+
+### The user's words on the port (2026-10-27, verbatim)
+"For the Hell seeds, we should have the setup archipelago seed read throw a warning that the seed
+being loaded is a "Hell Seed" as well."
+
+### The design (as built by hellseed, checked by hellseed2 against the WIP)
+- **Hell seed** (apworld/so2/hell.py `is_hell_seed`): encounter_rate 0 and (killer_move_checks or
+  skillsanity special_only / insanity, i.e. learn points). `trained(options)`: encounter_rate > 0
+  or a hell seed (the party has battles to train in).
+- **Rules on a hell seed** (everything else unchanged): killer-move levels (rules.killer_rule),
+  learn points (skillsanity.learn_rule) and guild checks (skillsanity.guild_rule; the arena pays
+  its enemies' Fol) count from "the Fun City arena is reachable" (`arena_need`): story mode the
+  disc switch, open world stage 16 done + Fun City Pass, hub mode nothing; plus their usual member,
+  move and character-item needs. They may hold progression as with battles (EXCLUDED / "maybe"
+  members still none). Guild checks in open world: each place's way combined with the arena
+  (`arena_way`: stage >= 16, + Fun City Pass); an Expel place's own early way dropped (Expel closes
+  at the El voyage, before the arena opens). Story mode: every set from the disc switch. Hub: every
+  set from the start (ok places only). Drops stay progression-free at encounter_rate 0.
+- **Seed**: world.py adds `hell.FEE_PATCH` = `script 297 0x177f 0x120007d0 0x12000000` to
+  `patches` and `hell_seed: true` to slot data / seed options, on hell seeds only (absent
+  otherwise). No new seed version (phase 1 decision; party-bench keeps 4, a hell-specific port
+  feature would take 5).
+- WIP files (uncommitted at the handoff): hell.py (new), locations.py, hub.py, rules.py,
+  skillsanity.py, world.py, test/bases.py (check_seed: patch line and `hell_seed` iff hell),
+  test/test_v2.py (TestKillerNoEncounters is now a hell-seed test). hellseed2's check: matches the
+  design above; no other `encounter_rate` reader needs it (drop_rule / hub drops stay as they are).
+
+### Steps (hellseed2)
+1. [x] World side (2026-10-27 ~11:40; committed, "Commits" below): test_skillsanity.py helpers hell-aware; test/test_hell.py; fill rates
+   (fillrate3.py, 100 each, seed 75 + enc 0 and two neighbours); batches story_open / hub /
+   solo_noexpel 96/96, checker 0 errors, identity vs scratchpad/skilllogic/batch; world tests,
+   AP general, scoped. Commit (docs first).
+   - (10:20) test_skillsanity.py: `hell` imported; may_hold / learn_need / the held assertion use
+     hell.trained / arena_need; TestSkillsanityNoEncounters is now skills_only + enc 0 (not hell)
+     + test_not_hell; new TestSkillsanityHellInsanity (story, insanity, enc 0: guilds from the
+     switch). New test/test_hell.py: TestHellRule (truth table, the patch line), HellChecks mixin
+     (rule, arena_need, what trained locations hold, seed data), TestHellSeed75 (+ Claude),
+     TestHellOpenGuilds, TestHellStory, TestHellHub, TestNotHellLowEncounters(+Skills),
+     TestHellMarks (8 mixes: patch line / hell_seed iff). test_hell + test_skillsanity + test_v2:
+     all pass (t/hell3.log: test_hell 74 passed).
+   - Fill rates (scratchpad/hellseed/fill/run.sh, killer0's fillrate3.py; summary.txt): seed 75 +
+     enc 0, + story_route claude, + killer_move_progression any: **0/100 FillError each, all
+     accessible and beatable**; 133 killer locations and 60 progression moves a seed.
+   - tools/ap_batch_check.py: `hell_seed(o)` / `trained(o)` / `check_hell` (the patch line and
+     options.hell_seed iff a hell seed, from the options); sk_may_hold and both killer branches use
+     trained(o). On the old batches (scratchpad/skilllogic/batch): output identical (0 errors).
+   - Batches (10:27-; scratchpad/hellseed/batch/run.sh -> sk_full, sk_hub, solo; identity.py OLD
+     NEW: every .apso2 + spoiler by sha256): story_open and hub 96/96, rc 0, checker 0 errors
+     (check output identical to skilllogic's), **byte-identical 96/96 each**; solo_noexpel the
+     same: **all 288 seeds (768 files) byte-identical** (batch/identity.txt), 0 seeds with an SO2
+     player at encounter_rate 0, checker output identical on all three.
+   - Extra batch with encounter_rate 0 (batch/players_hell: solo_noexpel's YAML with
+     encounter_rate 0, expel_progression and killer_move_checks random; seeds 1-64): **64/64
+     generate, checker 0 errors** (55 hell seeds: 29 open, 14 story, 12 hub; 9 ordinary);
+     progression at killer levels / learn levels / guild checks 166 / 488 / 306. Checker's
+     check_hell refuses each made-up error (fee line missing / present, hell_seed missing / false).
+   - Suites (suites/run.sh; -n 4, prlimit 8 GB): world 633 passed, general **379 passed** (117745),
+     scoped 686, unittest 633 OK. Mutations (dbg/mutate.py, mutate.txt / mutate2.txt): each part
+     caught but two: arena_way's stage floor (TestHellOpenGuilds has teleporter + expel_progression
+     on, where the El voyage needs the keys up to the Synard anyway) -> new
+     TestHellOpenGuildsNoTeleporter.test_arena_guilds catches it; "Expel early ways kept" is
+     equivalent (with the teleporter the early way mapped to stage 16 equals the teleporter's way;
+     without it Expel guilds are "expel keys", never the best class): kept as a safeguard.
+     Final: world **634 passed** (44972), scoped **687** (50303), unittest 634 OK.
+   - Reproducer: hell.is_hell_seed forced False -> TestHellSeed75 / Claude test_fill FillError
+     ("13 more progression items than there are available locations"); restored (cmp).
+   - Docs: apworld.md Results block + test table row; 0.2.1 notes' test sums.
+   - test_hell.py + TestHellOpenGuildsNoTeleporter (an Expel guild's early way dropped: Knowledge 1
+     needs the Central City Pass without the teleporter; with it, Cross counts through it).
+   - Docs drafted while the batches ran (uncommitted): seed_format.md (`hell_seed` row, "The hell
+     seed" section, the Patches example), apworld.md ("The hell seed" section, killer moves /
+     skillsanity notes, 0.2.1 changelog bullet; results still to add), release_notes/0.2.1.md
+     (new section, TO CONFIRM limitation removed), new release_notes/0.02.51.md (minimal draft),
+     the player guide (en_*.md "Hell seeds", setup_en.md).
+   - Port edits written (uncommitted, not yet built): seed.h `hell_seed` + `kHellSeedWarning`,
+     seed.cpp reads it, setup_ui.{h,cpp} SeedInfo.hell + the kWarning status_line, main.cpp logs
+     `[ap] <warning>` after ap::start, tests/test_ap_hell.cpp + CMakeLists line. NOT in ap.cpp
+     (shingofix's uncommitted edits there; never stage ap.cpp / ap.h / tests/test_ap.cpp).
+2. [ ] Port: seed.cpp reads `hell_seed`; setup's Archipelago page warns; the game logs the line;
+   unit test; setup captures if headless. ss_tests, ss_game_tests, full smoke. Commit.
+3. [ ] Docs: options.py docstrings, apworld.md, player guide, seed_format.md, 0.2.1 notes, 0.02.51.
+4. [ ] Package dist/apworld-0.2.1/ (load alone, solo, seed 75, seed 75 + enc 0, ChecksFinder).
+
+## Commits (hellseed2)
+- Step 1: the docs commit (handoff, apworld.md, 0.2.1 notes, player guide), then the world commit
+  (apworld/so2 code + tests, tools/ap_batch_check.py).
+
 ## Files touched
 - docs/handoff/hellseed.md (this file).
 - scratchpad/hellseed/ (m279 / m297 / m305 disassembly; port/: gen.py, run.sh, dump.py, grid.py,

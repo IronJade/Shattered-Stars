@@ -62,7 +62,10 @@ separate program to connect. Open the setup program's **Archipelago** page:
 
 1. **Seed.** Click **Browse** and pick the `AP_<number>.zip` archive (Browse opens Archipelago's
    `output` folder) or your `.apso2` file. If the archive holds seeds for more than one Star
-   Ocean player, a **Your slot** list appears: choose yours.
+   Ocean player, a **Your slot** list appears: choose yours. A **hell seed** (`encounter_rate: 0`
+   with killer-move checks or learn levels) gets a warning under the seed's line ("Hell Seed: no
+   random battles. ...", Shattered Stars 0.02.51 and later): all the training is in Fun City's
+   arena, free on that seed.
 2. **Server address.** Enter the room's server address. The client works with either an
    insecure (`ws://`) or secure (`wss://`) server address — use whichever the room host gives
    you.
