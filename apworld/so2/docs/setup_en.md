@@ -98,8 +98,9 @@ later) lists the locations you can reach now, by this world's own logic, from wh
 you have received and checked. It needs no YAML for this game (version 0.2.2 of this world and
 later):
 
-1. Put `tracker.apworld` (from UT's releases) and **the same `so2.apworld` the room was generated
-   with** into Archipelago's `custom_worlds` folder, then restart the Launcher.
+1. Put `tracker.apworld` (from UT's releases) and **`so2.apworld` 0.2.2 or later** (or the room's
+   own version, if that is newer) into Archipelago's `custom_worlds` folder, then restart the
+   Launcher. Rooms generated with 0.2.0 to 0.2.2 track with 0.2.2 (see the end of this section).
 2. Open **Universal Tracker** from the Launcher and connect to the room with your slot name (and
    the password), like a text client. The game can be connected at the same time.
 
