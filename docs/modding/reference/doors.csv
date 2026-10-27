@@ -1,6 +1,6 @@
 map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 1,Expel: overworld,0,71,"Salva Drift: dark cave bridge, dead end off the tunnel",0,-1157,0,966,270,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 0 --to NEW_MAP
-1,Expel: overworld,1,385,Lasguss Mountain: entrance / threshold area,0,-1009,0,8,0,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 1 --to NEW_MAP
+1,Expel: overworld,1,385,Lasguss Mountain: XINE's home (mountaintop nest),0,-1009,0,8,0,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 1 --to NEW_MAP
 1,Expel: overworld,2,808,Cave of Trials: Cave of Trials Level 11,0,-1248,0,117,180,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 2 --to NEW_MAP
 1,Expel: overworld,3,794,Cave of Trials: Cave of Trials Level 10,0,336,0,-162,257,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 3 --to NEW_MAP
 1,Expel: overworld,4,313,Transporter Portal of Sealing: Transporter Portal of Sealing,0,650,-195,667,180,"0-3, 826",world script: the world maps' warp list,python3 tools/so2_mod.py door DISC.cue 1 4 --to NEW_MAP
@@ -65,10 +65,10 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 17,Arlia Village: south: bridge and forest path,4,9,Shingo Forest: entrance / threshold area,128,-61,0,2721,85,,,python3 tools/so2_mod.py door DISC.cue 17 4 --to NEW_MAP
 17,Arlia Village: south: bridge and forest path,5,18,Arlia Village: north: fountain square,0,230,0,-133,0,,,python3 tools/so2_mod.py door DISC.cue 17 5 --to NEW_MAP
 17,Arlia Village: south: bridge and forest path,6,23,Arlia Village: Belding Church (inside),0,224,0,106,198,,,python3 tools/so2_mod.py door DISC.cue 17 6 --to NEW_MAP
-17,Arlia Village: south: bridge and forest path,7,24,"Arlia Village: villager's house, living room",0,547,0,-336,180,,,python3 tools/so2_mod.py door DISC.cue 17 7 --to NEW_MAP
+17,Arlia Village: south: bridge and forest path,7,24,Arlia Village: Newlyweds' House,0,547,0,-336,180,,,python3 tools/so2_mod.py door DISC.cue 17 7 --to NEW_MAP
 18,Arlia Village: north: fountain square,0,17,Arlia Village: south: bridge and forest path,0,110,0,-457,180,,,python3 tools/so2_mod.py door DISC.cue 18 0 --to NEW_MAP
 18,Arlia Village: north: fountain square,1,26,Arlia Village: Hearn's General Store (inside),0,553,0,-420,180,,,python3 tools/so2_mod.py door DISC.cue 18 1 --to NEW_MAP
-18,Arlia Village: north: fountain square,2,33,Arlia Village: villager's house near the square,0,-276,0,241,272,,,python3 tools/so2_mod.py door DISC.cue 18 2 --to NEW_MAP
+18,Arlia Village: north: fountain square,2,33,Arlia Village: Carpenter's House,0,-276,0,241,272,,,python3 tools/so2_mod.py door DISC.cue 18 2 --to NEW_MAP
 18,Arlia Village: north: fountain square,3,34,"Arlia Village: Mayor Regis's House, 1F",0,221,0,371,181,,,python3 tools/so2_mod.py door DISC.cue 18 3 --to NEW_MAP
 18,Arlia Village: north: fountain square,4,36,Arlia Village: waterside path behind the Mayor's house,0,570,0,216,180,,,python3 tools/so2_mod.py door DISC.cue 18 4 --to NEW_MAP
 18,Arlia Village: north: fountain square,5,27,Arlia Village: Rena's House (inside),0,368,-20,255,181,,,python3 tools/so2_mod.py door DISC.cue 18 5 --to NEW_MAP
@@ -87,9 +87,9 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 22,"Arlia Village: bridge path, at night",0,39,Arlia Village: entrance / threshold area,2,43,0,-113,228,,,python3 tools/so2_mod.py door DISC.cue 22 0 --to NEW_MAP
 22,"Arlia Village: bridge path, at night",1,17,Arlia Village: south: bridge and forest path,130,-122,0,-535,90,,,python3 tools/so2_mod.py door DISC.cue 22 1 --to NEW_MAP
 23,Arlia Village: Belding Church (inside),0,17,Arlia Village: south: bridge and forest path,0,-380,0,-46,41,,,python3 tools/so2_mod.py door DISC.cue 23 0 --to NEW_MAP
-24,"Arlia Village: villager's house, living room",0,17,Arlia Village: south: bridge and forest path,0,-237,0,-317,90,,,python3 tools/so2_mod.py door DISC.cue 24 0 --to NEW_MAP
-24,"Arlia Village: villager's house, living room",1,25,"Arlia Village: villager's house, bedroom",0,510,0,-382,180,,,python3 tools/so2_mod.py door DISC.cue 24 1 --to NEW_MAP
-25,"Arlia Village: villager's house, bedroom",0,24,"Arlia Village: villager's house, living room",0,-466,157,-516,2,,,python3 tools/so2_mod.py door DISC.cue 25 0 --to NEW_MAP
+24,Arlia Village: Newlyweds' House,0,17,Arlia Village: south: bridge and forest path,0,-237,0,-317,90,,,python3 tools/so2_mod.py door DISC.cue 24 0 --to NEW_MAP
+24,Arlia Village: Newlyweds' House,1,25,"Arlia Village: Newlyweds' House, bedroom",0,510,0,-382,180,,,python3 tools/so2_mod.py door DISC.cue 24 1 --to NEW_MAP
+25,"Arlia Village: Newlyweds' House, bedroom",0,24,Arlia Village: Newlyweds' House,0,-466,157,-516,2,,,python3 tools/so2_mod.py door DISC.cue 25 0 --to NEW_MAP
 26,Arlia Village: Hearn's General Store (inside),0,18,Arlia Village: north: fountain square,0,405,0,-183,90,,,python3 tools/so2_mod.py door DISC.cue 26 0 --to NEW_MAP
 27,Arlia Village: Rena's House (inside),0,18,Arlia Village: north: fountain square,3,369,0,236,21,,,python3 tools/so2_mod.py door DISC.cue 27 0 --to NEW_MAP
 27,Arlia Village: Rena's House (inside),1,30,Field of Power: Rena's opening dream (vision of the four Fields),2,-267,0,135,0,,,python3 tools/so2_mod.py door DISC.cue 27 1 --to NEW_MAP
@@ -111,8 +111,8 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 31,"Arlia Village: interior room, about 1 door in from the entrance",1,14,Shingo Forest: entrance / threshold area,2,-1813,0,335,179,,,python3 tools/so2_mod.py door DISC.cue 31 1 --to NEW_MAP
 32,"Arlia Village: Rena's House (inside), at night, variant",0,22,"Arlia Village: bridge path, at night",1,125,0,134,90,,,python3 tools/so2_mod.py door DISC.cue 32 0 --to NEW_MAP
 32,"Arlia Village: Rena's House (inside), at night, variant",1,29,"Arlia Village: Rena's House (inside), at night",0,-278,134,-60,104,,,python3 tools/so2_mod.py door DISC.cue 32 1 --to NEW_MAP
-32,"Arlia Village: Rena's House (inside), at night, variant",2,40,Rena's Room: entrance / threshold area,0,43,0,-113,228,,,python3 tools/so2_mod.py door DISC.cue 32 2 --to NEW_MAP
-33,Arlia Village: villager's house near the square,0,18,Arlia Village: north: fountain square,0,778,0,-117,90,,,python3 tools/so2_mod.py door DISC.cue 33 0 --to NEW_MAP
+32,"Arlia Village: Rena's House (inside), at night, variant",2,40,"Rena's Room: Rena's Room, at night",0,43,0,-113,228,,,python3 tools/so2_mod.py door DISC.cue 32 2 --to NEW_MAP
+33,Arlia Village: Carpenter's House,0,18,Arlia Village: north: fountain square,0,778,0,-117,90,,,python3 tools/so2_mod.py door DISC.cue 33 0 --to NEW_MAP
 34,"Arlia Village: Mayor Regis's House, 1F",0,18,Arlia Village: north: fountain square,0,912,0,145,90,,,python3 tools/so2_mod.py door DISC.cue 34 0 --to NEW_MAP
 34,"Arlia Village: Mayor Regis's House, 1F",1,36,Arlia Village: waterside path behind the Mayor's house,0,133,0,-46,270,,,python3 tools/so2_mod.py door DISC.cue 34 1 --to NEW_MAP
 35,"Arlia Village: Mayor Regis's House, 1F, at night",0,42,"Arlia Village: interior room, about 1 door in from the entrance",1,-135,0,-104,0,,,python3 tools/so2_mod.py door DISC.cue 35 0 --to NEW_MAP
@@ -128,7 +128,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 38,Arlia Village: Rena's Room,1,30,Field of Power: Rena's opening dream (vision of the four Fields),3,88,0,54,137,,,python3 tools/so2_mod.py door DISC.cue 38 1 --to NEW_MAP
 38,Arlia Village: Rena's Room,2,30,Field of Power: Rena's opening dream (vision of the four Fields),3,88,0,54,137,,,python3 tools/so2_mod.py door DISC.cue 38 2 --to NEW_MAP
 39,Arlia Village: entrance / threshold area,0,31,"Arlia Village: interior room, about 1 door in from the entrance",3,84,0,45,149,,,python3 tools/so2_mod.py door DISC.cue 39 0 --to NEW_MAP
-40,Rena's Room: entrance / threshold area,0,32,"Arlia Village: Rena's House (inside), at night, variant",0,88,0,54,137,,,python3 tools/so2_mod.py door DISC.cue 40 0 --to NEW_MAP
+40,"Rena's Room: Rena's Room, at night",0,32,"Arlia Village: Rena's House (inside), at night, variant",0,88,0,54,137,,,python3 tools/so2_mod.py door DISC.cue 40 0 --to NEW_MAP
 41,Arlia Village: villager's house (unidentified owner),0,644,"Arlia Village: interior room, about 1 door in from the entrance",2,0,0,0,0,,,python3 tools/so2_mod.py door DISC.cue 41 0 --to NEW_MAP
 41,Arlia Village: villager's house (unidentified owner),1,36,Arlia Village: waterside path behind the Mayor's house,2,65,0,367,269,,,python3 tools/so2_mod.py door DISC.cue 41 1 --to NEW_MAP
 41,Arlia Village: villager's house (unidentified owner),2,21,"Arlia Village: north: fountain square, at night",2,369,0,236,21,,,python3 tools/so2_mod.py door DISC.cue 41 2 --to NEW_MAP
@@ -159,28 +159,28 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 46,Alen's Mansion: Alen's Mansion (inside),0,48,Town of Salva: gate toward Alen's Mansion,0,-999,0,-734,25,,,python3 tools/so2_mod.py door DISC.cue 46 0 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),1,48,Town of Salva: gate toward Alen's Mansion,0,-999,0,-734,25,,,python3 tools/so2_mod.py door DISC.cue 46 1 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),2,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-823,24,-647,39,,,python3 tools/so2_mod.py door DISC.cue 46 2 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),3,51,"Alen's Mansion: interior room, about 1 door in from the entrance",0,-175,0,23,0,,,python3 tools/so2_mod.py door DISC.cue 46 3 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),3,51,"Alen's Mansion: Alen's Mansion, dining room",0,-175,0,23,0,,,python3 tools/so2_mod.py door DISC.cue 46 3 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),4,49,Alen's Mansion: grounds / path to the mansion,0,41,0,186,272,,,python3 tools/so2_mod.py door DISC.cue 46 4 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),5,50,"Alen's Mansion: interior room, about 1 door in from the entrance",0,-78,0,146,271,,,python3 tools/so2_mod.py door DISC.cue 46 5 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),5,50,"Alen's Mansion: Alen's Mansion, bedroom",0,-78,0,146,271,,,python3 tools/so2_mod.py door DISC.cue 46 5 --to NEW_MAP
 46,Alen's Mansion: Alen's Mansion (inside),6,47,"Alen's Mansion: interior room, about 1 door in from the entrance",0,-35,0,104,270,,,python3 tools/so2_mod.py door DISC.cue 46 6 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),7,53,Arlia Village: entrance / threshold area,0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 7 --to NEW_MAP
-46,Alen's Mansion: Alen's Mansion (inside),8,52,Arlia Village: entrance / threshold area,0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 8 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),7,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 7 --to NEW_MAP
+46,Alen's Mansion: Alen's Mansion (inside),8,52,Arlia Village: Alen's study (passage to Salva Drift),0,12,0,103,271,,,python3 tools/so2_mod.py door DISC.cue 46 8 --to NEW_MAP
 47,"Alen's Mansion: interior room, about 1 door in from the entrance",0,46,Alen's Mansion: Alen's Mansion (inside),0,113,120,-34,183,,,python3 tools/so2_mod.py door DISC.cue 47 0 --to NEW_MAP
 48,Town of Salva: gate toward Alen's Mansion,0,46,Alen's Mansion: Alen's Mansion (inside),2,-10,0,168,273,,,python3 tools/so2_mod.py door DISC.cue 48 0 --to NEW_MAP
 48,Town of Salva: gate toward Alen's Mansion,1,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",2,-823,24,-647,39,,,python3 tools/so2_mod.py door DISC.cue 48 1 --to NEW_MAP
 48,Town of Salva: gate toward Alen's Mansion,2,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-472,0,-342,36,,,python3 tools/so2_mod.py door DISC.cue 48 2 --to NEW_MAP
 49,Alen's Mansion: grounds / path to the mansion,0,46,Alen's Mansion: Alen's Mansion (inside),0,-139,120,84,3,,,python3 tools/so2_mod.py door DISC.cue 49 0 --to NEW_MAP
-50,"Alen's Mansion: interior room, about 1 door in from the entrance",0,46,Alen's Mansion: Alen's Mansion (inside),0,-140,120,-83,3,,,python3 tools/so2_mod.py door DISC.cue 50 0 --to NEW_MAP
-51,"Alen's Mansion: interior room, about 1 door in from the entrance",0,46,Alen's Mansion: Alen's Mansion (inside),0,-153,0,31,27,,,python3 tools/so2_mod.py door DISC.cue 51 0 --to NEW_MAP
-52,Arlia Village: entrance / threshold area,0,53,Arlia Village: entrance / threshold area,2,37,0,25,250,,,python3 tools/so2_mod.py door DISC.cue 52 0 --to NEW_MAP
-52,Arlia Village: entrance / threshold area,1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 52 1 --to NEW_MAP
-52,Arlia Village: entrance / threshold area,2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 52 2 --to NEW_MAP
-53,Arlia Village: entrance / threshold area,0,17,Arlia Village: south: bridge and forest path,2,-126,0,-614,90,,,python3 tools/so2_mod.py door DISC.cue 53 0 --to NEW_MAP
-53,Arlia Village: entrance / threshold area,1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 53 1 --to NEW_MAP
-53,Arlia Village: entrance / threshold area,2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 53 2 --to NEW_MAP
+50,"Alen's Mansion: Alen's Mansion, bedroom",0,46,Alen's Mansion: Alen's Mansion (inside),0,-140,120,-83,3,,,python3 tools/so2_mod.py door DISC.cue 50 0 --to NEW_MAP
+51,"Alen's Mansion: Alen's Mansion, dining room",0,46,Alen's Mansion: Alen's Mansion (inside),0,-153,0,31,27,,,python3 tools/so2_mod.py door DISC.cue 51 0 --to NEW_MAP
+52,Arlia Village: Alen's study (passage to Salva Drift),0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,37,0,25,250,,,python3 tools/so2_mod.py door DISC.cue 52 0 --to NEW_MAP
+52,Arlia Village: Alen's study (passage to Salva Drift),1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 52 1 --to NEW_MAP
+52,Arlia Village: Alen's study (passage to Salva Drift),2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 52 2 --to NEW_MAP
+53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",0,17,Arlia Village: south: bridge and forest path,2,-126,0,-614,90,,,python3 tools/so2_mod.py door DISC.cue 53 0 --to NEW_MAP
+53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",1,46,Alen's Mansion: Alen's Mansion (inside),0,131,0,41,183,,,python3 tools/so2_mod.py door DISC.cue 53 1 --to NEW_MAP
+53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,62,Salva Drift: mine tunnel entrance,128,2339,-462,23,179,,,python3 tools/so2_mod.py door DISC.cue 53 2 --to NEW_MAP
 54,Town of Salva: Inn The Hopping Penguin,0,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,824,0,-657,358,,,python3 tools/so2_mod.py door DISC.cue 54 0 --to NEW_MAP
-54,Town of Salva: Inn The Hopping Penguin,1,55,"Town of Salva: interior room, about 1 door in from the entrance",0,-104,0,-77,357,,,python3 tools/so2_mod.py door DISC.cue 54 1 --to NEW_MAP
-55,"Town of Salva: interior room, about 1 door in from the entrance",0,54,Town of Salva: Inn The Hopping Penguin,0,-5,52,74,0,,,python3 tools/so2_mod.py door DISC.cue 55 0 --to NEW_MAP
+54,Town of Salva: Inn The Hopping Penguin,1,55,"Town of Salva: Inn The Hopping Penguin, guest rooms",0,-104,0,-77,357,,,python3 tools/so2_mod.py door DISC.cue 54 1 --to NEW_MAP
+55,"Town of Salva: Inn The Hopping Penguin, guest rooms",0,54,Town of Salva: Inn The Hopping Penguin,0,-5,52,74,0,,,python3 tools/so2_mod.py door DISC.cue 55 0 --to NEW_MAP
 56,Town of Salva: Jam Store Dolphin Kick,0,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,808,0,133,358,,,python3 tools/so2_mod.py door DISC.cue 56 0 --to NEW_MAP
 57,Town of Salva: House,0,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",0,803,0,388,358,,,python3 tools/so2_mod.py door DISC.cue 57 0 --to NEW_MAP
 58,Town of Salva: Tavern Rough & Tumble,0,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-944,0,590,324,,,python3 tools/so2_mod.py door DISC.cue 58 0 --to NEW_MAP
@@ -189,9 +189,9 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 60,Town of Salva: rocky dockside edge of the square,0,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",2,-1649,0,625,333,,,python3 tools/so2_mod.py door DISC.cue 60 0 --to NEW_MAP
 60,Town of Salva: rocky dockside edge of the square,1,44,"Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store)",2,1243,0,329,178,,,python3 tools/so2_mod.py door DISC.cue 60 1 --to NEW_MAP
 60,Town of Salva: rocky dockside edge of the square,2,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1437,0,408,322,,,python3 tools/so2_mod.py door DISC.cue 60 2 --to NEW_MAP
-61,"Salva Drift: interior room, about 4 doors in from the entrance",0,53,Arlia Village: entrance / threshold area,2,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 61 0 --to NEW_MAP
+61,"Salva Drift: interior room, about 4 doors in from the entrance",0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",2,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 61 0 --to NEW_MAP
 61,"Salva Drift: interior room, about 4 doors in from the entrance",1,68,"Salva Drift: interior room, about 3 doors in from the entrance",0,-5820,0,-1254,44,,,python3 tools/so2_mod.py door DISC.cue 61 1 --to NEW_MAP
-62,Salva Drift: mine tunnel entrance,0,53,Arlia Village: entrance / threshold area,128,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 62 0 --to NEW_MAP
+62,Salva Drift: mine tunnel entrance,0,53,"Arlia Village: Alen's study, guarded (passage to Salva Drift)",128,-30,0,-54,91,,,python3 tools/so2_mod.py door DISC.cue 62 0 --to NEW_MAP
 62,Salva Drift: mine tunnel entrance,1,65,"Salva Drift: interior room, about 1 door in from the entrance",0,-369,0,-2215,179,,,python3 tools/so2_mod.py door DISC.cue 62 1 --to NEW_MAP
 63,Town of Salva: Salva Drift,0,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1770,0,-720,47,,,python3 tools/so2_mod.py door DISC.cue 63 0 --to NEW_MAP
 63,Town of Salva: Salva Drift,1,43,"Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",0,-1770,0,-720,47,,,python3 tools/so2_mod.py door DISC.cue 63 1 --to NEW_MAP
@@ -254,17 +254,17 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 82,Town of Cross: Restaurant Forum (inside),2,75,"Town of Cross: shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",0,-517,0,-332,47,,,python3 tools/so2_mod.py door DISC.cue 82 2 --to NEW_MAP
 83,Town of Cross: Inn Kingdom Hotel (inside),0,87,"Town of Cross: main plaza (roundabout), story-state variant",0,-241,0,336,335,,,python3 tools/so2_mod.py door DISC.cue 83 0 --to NEW_MAP
 83,Town of Cross: Inn Kingdom Hotel (inside),1,74,Town of Cross: main plaza (roundabout),0,-241,0,336,335,,,python3 tools/so2_mod.py door DISC.cue 83 1 --to NEW_MAP
-83,Town of Cross: Inn Kingdom Hotel (inside),2,84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",0,-123,0,175,269,,,python3 tools/so2_mod.py door DISC.cue 83 2 --to NEW_MAP
-83,Town of Cross: Inn Kingdom Hotel (inside),3,85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",2,46,0,75,359,,,python3 tools/so2_mod.py door DISC.cue 83 3 --to NEW_MAP
-83,Town of Cross: Inn Kingdom Hotel (inside),4,85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",2,46,0,75,359,,,python3 tools/so2_mod.py door DISC.cue 83 4 --to NEW_MAP
-83,Town of Cross: Inn Kingdom Hotel (inside),5,84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",2,-123,0,175,269,,,python3 tools/so2_mod.py door DISC.cue 83 5 --to NEW_MAP
-84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",0,83,Town of Cross: Inn Kingdom Hotel (inside),0,43,0,-200,89,,,python3 tools/so2_mod.py door DISC.cue 84 0 --to NEW_MAP
-84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",1,85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",0,288,0,26,195,,,python3 tools/so2_mod.py door DISC.cue 84 1 --to NEW_MAP
-84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",2,85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",2,288,0,26,195,,,python3 tools/so2_mod.py door DISC.cue 84 2 --to NEW_MAP
-85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",0,84,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",0,-176,0,-490,359,,,python3 tools/so2_mod.py door DISC.cue 85 0 --to NEW_MAP
-85,"Inn Kingdom Hotel: interior room, about 1 door in from the entrance",1,83,Town of Cross: Inn Kingdom Hotel (inside),2,43,0,-200,89,,,python3 tools/so2_mod.py door DISC.cue 85 1 --to NEW_MAP
+83,Town of Cross: Inn Kingdom Hotel (inside),2,84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",0,-123,0,175,269,,,python3 tools/so2_mod.py door DISC.cue 83 2 --to NEW_MAP
+83,Town of Cross: Inn Kingdom Hotel (inside),3,85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",2,46,0,75,359,,,python3 tools/so2_mod.py door DISC.cue 83 3 --to NEW_MAP
+83,Town of Cross: Inn Kingdom Hotel (inside),4,85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",2,46,0,75,359,,,python3 tools/so2_mod.py door DISC.cue 83 4 --to NEW_MAP
+83,Town of Cross: Inn Kingdom Hotel (inside),5,84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",2,-123,0,175,269,,,python3 tools/so2_mod.py door DISC.cue 83 5 --to NEW_MAP
+84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",0,83,Town of Cross: Inn Kingdom Hotel (inside),0,43,0,-200,89,,,python3 tools/so2_mod.py door DISC.cue 84 0 --to NEW_MAP
+84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",1,85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",0,288,0,26,195,,,python3 tools/so2_mod.py door DISC.cue 84 1 --to NEW_MAP
+84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",2,85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",2,288,0,26,195,,,python3 tools/so2_mod.py door DISC.cue 84 2 --to NEW_MAP
+85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",0,84,"Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",0,-176,0,-490,359,,,python3 tools/so2_mod.py door DISC.cue 85 0 --to NEW_MAP
+85,"Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",1,83,Town of Cross: Inn Kingdom Hotel (inside),2,43,0,-200,89,,,python3 tools/so2_mod.py door DISC.cue 85 1 --to NEW_MAP
 86,Town of Cross: Cross Cathedral (inside),0,74,Town of Cross: main plaza (roundabout),0,-232,0,-255,61,,,python3 tools/so2_mod.py door DISC.cue 86 0 --to NEW_MAP
-86,Town of Cross: Cross Cathedral (inside),1,100,The Prince's Chambers: entrance / threshold area,2,5,0,326,273,,,python3 tools/so2_mod.py door DISC.cue 86 1 --to NEW_MAP
+86,Town of Cross: Cross Cathedral (inside),1,100,The Prince's Chambers: The Prince's Chambers,2,5,0,326,273,,,python3 tools/so2_mod.py door DISC.cue 86 1 --to NEW_MAP
 87,"Town of Cross: main plaza (roundabout), story-state variant",0,89,"Town of Cross: back street, story-state variant",0,-124,0,359,276,,,python3 tools/so2_mod.py door DISC.cue 87 0 --to NEW_MAP
 87,"Town of Cross: main plaza (roundabout), story-state variant",1,83,Town of Cross: Inn Kingdom Hotel (inside),0,315,0,10,184,,,python3 tools/so2_mod.py door DISC.cue 87 1 --to NEW_MAP
 87,"Town of Cross: main plaza (roundabout), story-state variant",2,88,"Town of Cross: shop plaza, story-state variant",0,126,0,-473,181,,,python3 tools/so2_mod.py door DISC.cue 87 2 --to NEW_MAP
@@ -272,23 +272,23 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 88,"Town of Cross: shop plaza, story-state variant",1,81,Town of Cross: Bar Mikado (inside),0,117,0,95,178,,,python3 tools/so2_mod.py door DISC.cue 88 1 --to NEW_MAP
 89,"Town of Cross: back street, story-state variant",0,87,"Town of Cross: main plaza (roundabout), story-state variant",0,-98,0,-485,90,,,python3 tools/so2_mod.py door DISC.cue 89 0 --to NEW_MAP
 90,"Cross Castle, First Floor: Cross Castle, First Floor",0,78,Town of Cross: castle gate bridge,128,-372,0,-11,0,,,python3 tools/so2_mod.py door DISC.cue 90 0 --to NEW_MAP
-90,"Cross Castle, First Floor: Cross Castle, First Floor",1,91,"Cross Castle, First Floor: entrance / threshold area",0,353,100,-54,3,,,python3 tools/so2_mod.py door DISC.cue 90 1 --to NEW_MAP
-90,"Cross Castle, First Floor: Cross Castle, First Floor",2,97,"Cross Castle, First Floor: entrance / threshold area",0,242,-30,189,264,,,python3 tools/so2_mod.py door DISC.cue 90 2 --to NEW_MAP
+90,"Cross Castle, First Floor: Cross Castle, First Floor",1,91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,353,100,-54,3,,,python3 tools/so2_mod.py door DISC.cue 90 1 --to NEW_MAP
+90,"Cross Castle, First Floor: Cross Castle, First Floor",2,97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,242,-30,189,264,,,python3 tools/so2_mod.py door DISC.cue 90 2 --to NEW_MAP
 90,"Cross Castle, First Floor: Cross Castle, First Floor",3,95,Throne Room: Throne Room,0,124,0,2,180,,,python3 tools/so2_mod.py door DISC.cue 90 3 --to NEW_MAP
-90,"Cross Castle, First Floor: Cross Castle, First Floor",4,96,"Cross Castle, First Floor: entrance / threshold area",0,253,-21,-186,83,,,python3 tools/so2_mod.py door DISC.cue 90 4 --to NEW_MAP
-90,"Cross Castle, First Floor: Cross Castle, First Floor",5,91,"Cross Castle, First Floor: entrance / threshold area",0,-353,100,-53,183,,,python3 tools/so2_mod.py door DISC.cue 90 5 --to NEW_MAP
-91,"Cross Castle, First Floor: entrance / threshold area",0,92,Armory: Armory,0,14,0,234,273,,,python3 tools/so2_mod.py door DISC.cue 91 0 --to NEW_MAP
-91,"Cross Castle, First Floor: entrance / threshold area",1,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-47,0,257,270,,,python3 tools/so2_mod.py door DISC.cue 91 1 --to NEW_MAP
-91,"Cross Castle, First Floor: entrance / threshold area",2,98,Cross Castle Kitchen: Cross Castle Kitchen,0,268,0,-446,92,,,python3 tools/so2_mod.py door DISC.cue 91 2 --to NEW_MAP
-91,"Cross Castle, First Floor: entrance / threshold area",3,99,Soldiers' Compartment: Soldiers' Compartment,0,-41,0,-459,93,,,python3 tools/so2_mod.py door DISC.cue 91 3 --to NEW_MAP
-91,"Cross Castle, First Floor: entrance / threshold area",4,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-46,0,-263,90,,,python3 tools/so2_mod.py door DISC.cue 91 4 --to NEW_MAP
-92,Armory: Armory,0,91,"Cross Castle, First Floor: entrance / threshold area",0,-3,0,-195,93,,,python3 tools/so2_mod.py door DISC.cue 92 0 --to NEW_MAP
+90,"Cross Castle, First Floor: Cross Castle, First Floor",4,96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,253,-21,-186,83,,,python3 tools/so2_mod.py door DISC.cue 90 4 --to NEW_MAP
+90,"Cross Castle, First Floor: Cross Castle, First Floor",5,91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,-353,100,-53,183,,,python3 tools/so2_mod.py door DISC.cue 90 5 --to NEW_MAP
+91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,92,Armory: Armory,0,14,0,234,273,,,python3 tools/so2_mod.py door DISC.cue 91 0 --to NEW_MAP
+91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",1,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-47,0,257,270,,,python3 tools/so2_mod.py door DISC.cue 91 1 --to NEW_MAP
+91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",2,98,Cross Castle Kitchen: Cross Castle Kitchen,0,268,0,-446,92,,,python3 tools/so2_mod.py door DISC.cue 91 2 --to NEW_MAP
+91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",3,99,Soldiers' Compartment: Soldiers' Compartment,0,-41,0,-459,93,,,python3 tools/so2_mod.py door DISC.cue 91 3 --to NEW_MAP
+91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",4,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-46,0,-263,90,,,python3 tools/so2_mod.py door DISC.cue 91 4 --to NEW_MAP
+92,Armory: Armory,0,91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,-3,0,-195,93,,,python3 tools/so2_mod.py door DISC.cue 92 0 --to NEW_MAP
 93,Waiting Room: Waiting Room,0,95,Throne Room: Throne Room,0,-22,0,-321,0,,,python3 tools/so2_mod.py door DISC.cue 93 0 --to NEW_MAP
 94,The King's Private Chambers: The King's Private Chambers,0,95,Throne Room: Throne Room,0,-236,0,110,270,,,python3 tools/so2_mod.py door DISC.cue 94 0 --to NEW_MAP
-95,Throne Room: Throne Room,0,97,"Cross Castle, First Floor: entrance / threshold area",0,-453,0,128,270,,,python3 tools/so2_mod.py door DISC.cue 95 0 --to NEW_MAP
+95,Throne Room: Throne Room,0,97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,-453,0,128,270,,,python3 tools/so2_mod.py door DISC.cue 95 0 --to NEW_MAP
 95,Throne Room: Throne Room,1,93,Waiting Room: Waiting Room,0,315,0,0,180,,,python3 tools/so2_mod.py door DISC.cue 95 1 --to NEW_MAP
 95,Throne Room: Throne Room,2,94,The King's Private Chambers: The King's Private Chambers,0,-78,0,-207,93,,,python3 tools/so2_mod.py door DISC.cue 95 2 --to NEW_MAP
-95,Throne Room: Throne Room,3,96,"Cross Castle, First Floor: entrance / threshold area",0,-441,0,-119,90,,,python3 tools/so2_mod.py door DISC.cue 95 3 --to NEW_MAP
+95,Throne Room: Throne Room,3,96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,-441,0,-119,90,,,python3 tools/so2_mod.py door DISC.cue 95 3 --to NEW_MAP
 95,Throne Room: Throne Room,4,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 4 --to NEW_MAP
 95,Throne Room: Throne Room,5,90,"Cross Castle, First Floor: Cross Castle, First Floor",2,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 5 --to NEW_MAP
 95,Throne Room: Throne Room,6,90,"Cross Castle, First Floor: Cross Castle, First Floor",3,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 6 --to NEW_MAP
@@ -296,25 +296,25 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 95,Throne Room: Throne Room,8,90,"Cross Castle, First Floor: Cross Castle, First Floor",3,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 8 --to NEW_MAP
 95,Throne Room: Throne Room,9,90,"Cross Castle, First Floor: Cross Castle, First Floor",3,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 9 --to NEW_MAP
 95,Throne Room: Throne Room,10,90,"Cross Castle, First Floor: Cross Castle, First Floor",2,-500,129,2,0,,,python3 tools/so2_mod.py door DISC.cue 95 10 --to NEW_MAP
-96,"Cross Castle, First Floor: entrance / threshold area",0,95,Throne Room: Throne Room,0,69,0,412,270,,,python3 tools/so2_mod.py door DISC.cue 96 0 --to NEW_MAP
-96,"Cross Castle, First Floor: entrance / threshold area",1,103,"Cross Castle, First Floor: entrance / threshold area",0,-6,0,-54,90,,,python3 tools/so2_mod.py door DISC.cue 96 1 --to NEW_MAP
-96,"Cross Castle, First Floor: entrance / threshold area",2,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-158,131,420,270,,,python3 tools/so2_mod.py door DISC.cue 96 2 --to NEW_MAP
-97,"Cross Castle, First Floor: entrance / threshold area",0,104,"Cross Castle, First Floor: entrance / threshold area",0,-5,0,146,270,,,python3 tools/so2_mod.py door DISC.cue 97 0 --to NEW_MAP
-97,"Cross Castle, First Floor: entrance / threshold area",1,95,Throne Room: Throne Room,0,43,0,-422,90,,,python3 tools/so2_mod.py door DISC.cue 97 1 --to NEW_MAP
-97,"Cross Castle, First Floor: entrance / threshold area",2,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-163,132,-432,90,,,python3 tools/so2_mod.py door DISC.cue 97 2 --to NEW_MAP
-98,Cross Castle Kitchen: Cross Castle Kitchen,0,91,"Cross Castle, First Floor: entrance / threshold area",0,-247,0,188,273,,,python3 tools/so2_mod.py door DISC.cue 98 0 --to NEW_MAP
-99,Soldiers' Compartment: Soldiers' Compartment,0,91,"Cross Castle, First Floor: entrance / threshold area",0,247,0,189,273,,,python3 tools/so2_mod.py door DISC.cue 99 0 --to NEW_MAP
-100,The Prince's Chambers: entrance / threshold area,0,102,The Prince's Chambers: entrance / threshold area,0,-260,0,-83,90,,,python3 tools/so2_mod.py door DISC.cue 100 0 --to NEW_MAP
-100,The Prince's Chambers: entrance / threshold area,1,78,Town of Cross: castle gate bridge,2,107,0,-17,180,,,python3 tools/so2_mod.py door DISC.cue 100 1 --to NEW_MAP
-101,The Princess' Chamber: The Princess' Chamber,0,102,The Prince's Chambers: entrance / threshold area,0,258,0,-78,90,,,python3 tools/so2_mod.py door DISC.cue 101 0 --to NEW_MAP
-102,The Prince's Chambers: entrance / threshold area,0,104,"Cross Castle, First Floor: entrance / threshold area",0,-75,180,156,270,,,python3 tools/so2_mod.py door DISC.cue 102 0 --to NEW_MAP
-102,The Prince's Chambers: entrance / threshold area,1,101,The Princess' Chamber: The Princess' Chamber,0,100,0,334,273,,,python3 tools/so2_mod.py door DISC.cue 102 1 --to NEW_MAP
-102,The Prince's Chambers: entrance / threshold area,2,100,The Prince's Chambers: entrance / threshold area,0,5,0,326,273,,,python3 tools/so2_mod.py door DISC.cue 102 2 --to NEW_MAP
-102,The Prince's Chambers: entrance / threshold area,3,103,"Cross Castle, First Floor: entrance / threshold area",0,-72,180,-81,90,,,python3 tools/so2_mod.py door DISC.cue 102 3 --to NEW_MAP
-103,"Cross Castle, First Floor: entrance / threshold area",0,102,The Prince's Chambers: entrance / threshold area,0,-345,0,3,0,,,python3 tools/so2_mod.py door DISC.cue 103 0 --to NEW_MAP
-103,"Cross Castle, First Floor: entrance / threshold area",1,96,"Cross Castle, First Floor: entrance / threshold area",0,-439,0,123,270,,,python3 tools/so2_mod.py door DISC.cue 103 1 --to NEW_MAP
-104,"Cross Castle, First Floor: entrance / threshold area",0,102,The Prince's Chambers: entrance / threshold area,0,336,0,-2,180,,,python3 tools/so2_mod.py door DISC.cue 104 0 --to NEW_MAP
-104,"Cross Castle, First Floor: entrance / threshold area",1,97,"Cross Castle, First Floor: entrance / threshold area",0,-453,0,-123,90,,,python3 tools/so2_mod.py door DISC.cue 104 1 --to NEW_MAP
+96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,95,Throne Room: Throne Room,0,69,0,412,270,,,python3 tools/so2_mod.py door DISC.cue 96 0 --to NEW_MAP
+96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",1,103,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,-6,0,-54,90,,,python3 tools/so2_mod.py door DISC.cue 96 1 --to NEW_MAP
+96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",2,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-158,131,420,270,,,python3 tools/so2_mod.py door DISC.cue 96 2 --to NEW_MAP
+97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,104,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,-5,0,146,270,,,python3 tools/so2_mod.py door DISC.cue 97 0 --to NEW_MAP
+97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",1,95,Throne Room: Throne Room,0,43,0,-422,90,,,python3 tools/so2_mod.py door DISC.cue 97 1 --to NEW_MAP
+97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",2,90,"Cross Castle, First Floor: Cross Castle, First Floor",0,-163,132,-432,90,,,python3 tools/so2_mod.py door DISC.cue 97 2 --to NEW_MAP
+98,Cross Castle Kitchen: Cross Castle Kitchen,0,91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,-247,0,188,273,,,python3 tools/so2_mod.py door DISC.cue 98 0 --to NEW_MAP
+99,Soldiers' Compartment: Soldiers' Compartment,0,91,"Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen",0,247,0,189,273,,,python3 tools/so2_mod.py door DISC.cue 99 0 --to NEW_MAP
+100,The Prince's Chambers: The Prince's Chambers,0,102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",0,-260,0,-83,90,,,python3 tools/so2_mod.py door DISC.cue 100 0 --to NEW_MAP
+100,The Prince's Chambers: The Prince's Chambers,1,78,Town of Cross: castle gate bridge,2,107,0,-17,180,,,python3 tools/so2_mod.py door DISC.cue 100 1 --to NEW_MAP
+101,The Princess' Chamber: The Princess' Chamber,0,102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",0,258,0,-78,90,,,python3 tools/so2_mod.py door DISC.cue 101 0 --to NEW_MAP
+102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",0,104,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,-75,180,156,270,,,python3 tools/so2_mod.py door DISC.cue 102 0 --to NEW_MAP
+102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",1,101,The Princess' Chamber: The Princess' Chamber,0,100,0,334,273,,,python3 tools/so2_mod.py door DISC.cue 102 1 --to NEW_MAP
+102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",2,100,The Prince's Chambers: The Prince's Chambers,0,5,0,326,273,,,python3 tools/so2_mod.py door DISC.cue 102 2 --to NEW_MAP
+102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",3,103,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,-72,180,-81,90,,,python3 tools/so2_mod.py door DISC.cue 102 3 --to NEW_MAP
+103,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",0,-345,0,3,0,,,python3 tools/so2_mod.py door DISC.cue 103 0 --to NEW_MAP
+103,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",1,96,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,-439,0,123,270,,,python3 tools/so2_mod.py door DISC.cue 103 1 --to NEW_MAP
+104,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",0,102,"The Prince's Chambers: Cross Castle, hall of the royal chambers",0,336,0,-2,180,,,python3 tools/so2_mod.py door DISC.cue 104 0 --to NEW_MAP
+104,"Cross Castle, First Floor: Cross Castle, stairs to the royal chambers",1,97,"Cross Castle, First Floor: Cross Castle, corridor to the Throne Room",0,-453,0,-123,90,,,python3 tools/so2_mod.py door DISC.cue 104 1 --to NEW_MAP
 105,"Port of Clik: market square (stairs, fountain statue)",0,109,Port of Clik: docks (boats moored),0,-418,0,222,0,,,python3 tools/so2_mod.py door DISC.cue 105 0 --to NEW_MAP
 105,"Port of Clik: market square (stairs, fountain statue)",1,109,Port of Clik: docks (boats moored),0,-418,0,-328,0,,,python3 tools/so2_mod.py door DISC.cue 105 1 --to NEW_MAP
 105,"Port of Clik: market square (stairs, fountain statue)",2,107,Port of Clik: harbor plaza (canal),0,-1088,-130,-26,3,,,python3 tools/so2_mod.py door DISC.cue 105 2 --to NEW_MAP
@@ -365,7 +365,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 124,Mars Village: village green (entrance),6,126,Mars Village: village street (shops),0,-2856,0,-420,314,,,python3 tools/so2_mod.py door DISC.cue 124 6 --to NEW_MAP
 124,Mars Village: village green (entrance),7,465,Mars Village: Heraldry Forest,128,-2,0,1105,270,,,python3 tools/so2_mod.py door DISC.cue 124 7 --to NEW_MAP
 124,Mars Village: village green (entrance),8,465,Mars Village: Heraldry Forest,130,-2,0,1105,270,,,python3 tools/so2_mod.py door DISC.cue 124 8 --to NEW_MAP
-124,Mars Village: village green (entrance),9,131,Elder's House: entrance / threshold area,0,530,-9,1180,259,,,python3 tools/so2_mod.py door DISC.cue 124 9 --to NEW_MAP
+124,Mars Village: village green (entrance),9,131,Elder's House: Elder's House,0,530,-9,1180,259,,,python3 tools/so2_mod.py door DISC.cue 124 9 --to NEW_MAP
 124,Mars Village: village green (entrance),10,128,Mars Village: Tool Shop Roof's,0,151,0,243,271,,,python3 tools/so2_mod.py door DISC.cue 124 10 --to NEW_MAP
 125,Mars Village: bridge over the millpond,0,124,Mars Village: village green (entrance),2,2060,0,3362,270,,,python3 tools/so2_mod.py door DISC.cue 125 0 --to NEW_MAP
 125,Mars Village: bridge over the millpond,1,126,Mars Village: village street (shops),2,-1503,-80,-6339,75,,,python3 tools/so2_mod.py door DISC.cue 125 1 --to NEW_MAP
@@ -387,12 +387,12 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 130,"Mars Village: Inn Finn's, guest room",1,129,Mars Village: Bar O'Shane,2,270,126,-110,0,,,python3 tools/so2_mod.py door DISC.cue 130 1 --to NEW_MAP
 130,"Mars Village: Inn Finn's, guest room",2,129,Mars Village: Bar O'Shane,0,270,126,-110,0,,,python3 tools/so2_mod.py door DISC.cue 130 2 --to NEW_MAP
 130,"Mars Village: Inn Finn's, guest room",3,126,Mars Village: village street (shops),2,348,0,-1104,44,,,python3 tools/so2_mod.py door DISC.cue 130 3 --to NEW_MAP
-131,Elder's House: entrance / threshold area,0,124,Mars Village: village green (entrance),2,1010,0,2469,0,,,python3 tools/so2_mod.py door DISC.cue 131 0 --to NEW_MAP
-131,Elder's House: entrance / threshold area,1,126,Mars Village: village street (shops),2,-1217,0,-3112,44,,,python3 tools/so2_mod.py door DISC.cue 131 1 --to NEW_MAP
-131,Elder's House: entrance / threshold area,2,124,Mars Village: village green (entrance),0,992,0,2545,336,,,python3 tools/so2_mod.py door DISC.cue 131 2 --to NEW_MAP
-131,Elder's House: entrance / threshold area,3,132,"Elder's House: interior room, about 1 door in from the entrance",0,301,-1,-122,270,,,python3 tools/so2_mod.py door DISC.cue 131 3 --to NEW_MAP
-131,Elder's House: entrance / threshold area,4,124,Mars Village: village green (entrance),2,1261,0,2250,157,,,python3 tools/so2_mod.py door DISC.cue 131 4 --to NEW_MAP
-132,"Elder's House: interior room, about 1 door in from the entrance",0,131,Elder's House: entrance / threshold area,0,133,-9,83,79,,,python3 tools/so2_mod.py door DISC.cue 132 0 --to NEW_MAP
+131,Elder's House: Elder's House,0,124,Mars Village: village green (entrance),2,1010,0,2469,0,,,python3 tools/so2_mod.py door DISC.cue 131 0 --to NEW_MAP
+131,Elder's House: Elder's House,1,126,Mars Village: village street (shops),2,-1217,0,-3112,44,,,python3 tools/so2_mod.py door DISC.cue 131 1 --to NEW_MAP
+131,Elder's House: Elder's House,2,124,Mars Village: village green (entrance),0,992,0,2545,336,,,python3 tools/so2_mod.py door DISC.cue 131 2 --to NEW_MAP
+131,Elder's House: Elder's House,3,132,"Elder's House: Elder's House, study",0,301,-1,-122,270,,,python3 tools/so2_mod.py door DISC.cue 131 3 --to NEW_MAP
+131,Elder's House: Elder's House,4,124,Mars Village: village green (entrance),2,1261,0,2250,157,,,python3 tools/so2_mod.py door DISC.cue 131 4 --to NEW_MAP
+132,"Elder's House: Elder's House, study",0,131,Elder's House: Elder's House,0,133,-9,83,79,,,python3 tools/so2_mod.py door DISC.cue 132 0 --to NEW_MAP
 133,"Mars Village: Celine's House, hallway (to Celine's Room)",0,135,Mars Village: Celine's House,0,-7,175,-157,0,,,python3 tools/so2_mod.py door DISC.cue 133 0 --to NEW_MAP
 133,"Mars Village: Celine's House, hallway (to Celine's Room)",1,139,Mars Village: Celine's Room,0,128,0,-253,166,,,python3 tools/so2_mod.py door DISC.cue 133 1 --to NEW_MAP
 134,Mars Village: village house interior (dim room),0,124,Mars Village: village green (entrance),2,1617,0,1554,90,,,python3 tools/so2_mod.py door DISC.cue 134 0 --to NEW_MAP
@@ -639,63 +639,63 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 210,Town of Lacour: Weapons Shop Counterpunch,2,215,Town of Lacour: Food Store Carnival,0,366,0,545,270,,,python3 tools/so2_mod.py door DISC.cue 210 2 --to NEW_MAP
 211,Town of Lacour: main plaza (round garden),0,210,Town of Lacour: Weapons Shop Counterpunch,0,518,0,29,275,,,python3 tools/so2_mod.py door DISC.cue 211 0 --to NEW_MAP
 211,Town of Lacour: main plaza (round garden),1,221,Town of Lacour: Inn The Lacour Hotel,0,312,0,-5,180,,,python3 tools/so2_mod.py door DISC.cue 211 1 --to NEW_MAP
-211,Town of Lacour: main plaza (round garden),2,212,"Town of Lacour: interior room, about 1 door in from the entrance",0,13,0,-932,271,,,python3 tools/so2_mod.py door DISC.cue 211 2 --to NEW_MAP
+211,Town of Lacour: main plaza (round garden),2,212,Town of Lacour: alley between the main plaza and the castle path,0,13,0,-932,271,,,python3 tools/so2_mod.py door DISC.cue 211 2 --to NEW_MAP
 211,Town of Lacour: main plaza (round garden),3,225,Town of Lacour: Tavern La Coeur of Lacour,0,5,0,58,273,,,python3 tools/so2_mod.py door DISC.cue 211 3 --to NEW_MAP
-211,Town of Lacour: main plaza (round garden),4,216,"Town of Lacour: interior room, about 1 door in from the entrance",0,-32,0,-608,89,,,python3 tools/so2_mod.py door DISC.cue 211 4 --to NEW_MAP
+211,Town of Lacour: main plaza (round garden),4,216,Town of Lacour: back street (to House Red Roof),0,-32,0,-608,89,,,python3 tools/so2_mod.py door DISC.cue 211 4 --to NEW_MAP
 211,Town of Lacour: main plaza (round garden),5,214,Town of Lacour: side alley off the plaza,0,633,0,4,31,,,python3 tools/so2_mod.py door DISC.cue 211 5 --to NEW_MAP
 211,Town of Lacour: main plaza (round garden),6,225,Town of Lacour: Tavern La Coeur of Lacour,2,24,0,-105,231,,,python3 tools/so2_mod.py door DISC.cue 211 6 --to NEW_MAP
-212,"Town of Lacour: interior room, about 1 door in from the entrance",0,211,Town of Lacour: main plaza (round garden),0,-489,0,-13,0,,,python3 tools/so2_mod.py door DISC.cue 212 0 --to NEW_MAP
-212,"Town of Lacour: interior room, about 1 door in from the entrance",1,213,Town of Lacour: statued path to the castle gate,0,75,0,-5,180,,,python3 tools/so2_mod.py door DISC.cue 212 1 --to NEW_MAP
-212,"Town of Lacour: interior room, about 1 door in from the entrance",2,213,Town of Lacour: statued path to the castle gate,1,75,0,-5,180,,,python3 tools/so2_mod.py door DISC.cue 212 2 --to NEW_MAP
-213,Town of Lacour: statued path to the castle gate,0,212,"Town of Lacour: interior room, about 1 door in from the entrance",0,-97,0,-1834,98,,,python3 tools/so2_mod.py door DISC.cue 213 0 --to NEW_MAP
+212,Town of Lacour: alley between the main plaza and the castle path,0,211,Town of Lacour: main plaza (round garden),0,-489,0,-13,0,,,python3 tools/so2_mod.py door DISC.cue 212 0 --to NEW_MAP
+212,Town of Lacour: alley between the main plaza and the castle path,1,213,Town of Lacour: statued path to the castle gate,0,75,0,-5,180,,,python3 tools/so2_mod.py door DISC.cue 212 1 --to NEW_MAP
+212,Town of Lacour: alley between the main plaza and the castle path,2,213,Town of Lacour: statued path to the castle gate,1,75,0,-5,180,,,python3 tools/so2_mod.py door DISC.cue 212 2 --to NEW_MAP
+213,Town of Lacour: statued path to the castle gate,0,212,Town of Lacour: alley between the main plaza and the castle path,0,-97,0,-1834,98,,,python3 tools/so2_mod.py door DISC.cue 213 0 --to NEW_MAP
 213,Town of Lacour: statued path to the castle gate,1,421,"Lacour Castle Registration: Registration, entrance hall (from the castle grounds)",0,8,0,616,273,,,python3 tools/so2_mod.py door DISC.cue 213 1 --to NEW_MAP
 213,Town of Lacour: statued path to the castle gate,2,421,"Lacour Castle Registration: Registration, entrance hall (from the castle grounds)",128,8,0,616,273,,,python3 tools/so2_mod.py door DISC.cue 213 2 --to NEW_MAP
-213,Town of Lacour: statued path to the castle gate,3,224,"Town of Lacour: interior room, about 1 door in from the entrance",1,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 213 3 --to NEW_MAP
+213,Town of Lacour: statued path to the castle gate,3,224,"Town of Lacour: Inn The Lacour Hotel, guest room",1,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 213 3 --to NEW_MAP
 214,Town of Lacour: side alley off the plaza,0,211,Town of Lacour: main plaza (round garden),2,483,0,-3,211,,,python3 tools/so2_mod.py door DISC.cue 214 0 --to NEW_MAP
 214,Town of Lacour: side alley off the plaza,1,211,Town of Lacour: main plaza (round garden),2,483,0,-3,211,,,python3 tools/so2_mod.py door DISC.cue 214 1 --to NEW_MAP
 214,Town of Lacour: side alley off the plaza,2,211,Town of Lacour: main plaza (round garden),2,483,0,-3,211,,,python3 tools/so2_mod.py door DISC.cue 214 2 --to NEW_MAP
 214,Town of Lacour: side alley off the plaza,3,211,Town of Lacour: main plaza (round garden),2,483,0,-3,211,,,python3 tools/so2_mod.py door DISC.cue 214 3 --to NEW_MAP
 215,Town of Lacour: Food Store Carnival,0,210,Town of Lacour: Weapons Shop Counterpunch,0,591,0,-706,95,,,python3 tools/so2_mod.py door DISC.cue 215 0 --to NEW_MAP
 215,Town of Lacour: Food Store Carnival,1,219,Town of Lacour: Skill Guild Lacour Skills,0,174,0,294,272,,,python3 tools/so2_mod.py door DISC.cue 215 1 --to NEW_MAP
-216,"Town of Lacour: interior room, about 1 door in from the entrance",0,211,Town of Lacour: main plaza (round garden),0,-231,0,464,270,,,python3 tools/so2_mod.py door DISC.cue 216 0 --to NEW_MAP
-216,"Town of Lacour: interior room, about 1 door in from the entrance",1,226,Town of Lacour: House Red Roof,0,230,0,-113,180,,,python3 tools/so2_mod.py door DISC.cue 216 1 --to NEW_MAP
-216,"Town of Lacour: interior room, about 1 door in from the entrance",2,217,"Town of Lacour: interior room, about 2 doors in from the entrance",0,-548,0,-25,179,,,python3 tools/so2_mod.py door DISC.cue 216 2 --to NEW_MAP
-217,"Town of Lacour: interior room, about 2 doors in from the entrance",0,216,"Town of Lacour: interior room, about 1 door in from the entrance",0,-377,0,60,359,,,python3 tools/so2_mod.py door DISC.cue 217 0 --to NEW_MAP
-217,"Town of Lacour: interior room, about 2 doors in from the entrance",1,218,"Town of Lacour: interior room, about 1 door in from the entrance",0,82,0,-896,246,,,python3 tools/so2_mod.py door DISC.cue 217 1 --to NEW_MAP
-218,"Town of Lacour: interior room, about 1 door in from the entrance",0,217,"Town of Lacour: interior room, about 2 doors in from the entrance",0,-1120,130,-6,359,,,python3 tools/so2_mod.py door DISC.cue 218 0 --to NEW_MAP
-218,"Town of Lacour: interior room, about 1 door in from the entrance",1,228,Town of Lacour: Blacksmith Gamgee's Forge,0,63,0,0,180,,,python3 tools/so2_mod.py door DISC.cue 218 1 --to NEW_MAP
+216,Town of Lacour: back street (to House Red Roof),0,211,Town of Lacour: main plaza (round garden),0,-231,0,464,270,,,python3 tools/so2_mod.py door DISC.cue 216 0 --to NEW_MAP
+216,Town of Lacour: back street (to House Red Roof),1,226,Town of Lacour: House Red Roof,0,230,0,-113,180,,,python3 tools/so2_mod.py door DISC.cue 216 1 --to NEW_MAP
+216,Town of Lacour: back street (to House Red Roof),2,217,Town of Lacour: stairway street,0,-548,0,-25,179,,,python3 tools/so2_mod.py door DISC.cue 216 2 --to NEW_MAP
+217,Town of Lacour: stairway street,0,216,Town of Lacour: back street (to House Red Roof),0,-377,0,60,359,,,python3 tools/so2_mod.py door DISC.cue 217 0 --to NEW_MAP
+217,Town of Lacour: stairway street,1,218,Town of Lacour: street by Blacksmith Gamgee's Forge,0,82,0,-896,246,,,python3 tools/so2_mod.py door DISC.cue 217 1 --to NEW_MAP
+218,Town of Lacour: street by Blacksmith Gamgee's Forge,0,217,Town of Lacour: stairway street,0,-1120,130,-6,359,,,python3 tools/so2_mod.py door DISC.cue 218 0 --to NEW_MAP
+218,Town of Lacour: street by Blacksmith Gamgee's Forge,1,228,Town of Lacour: Blacksmith Gamgee's Forge,0,63,0,0,180,,,python3 tools/so2_mod.py door DISC.cue 218 1 --to NEW_MAP
 219,Town of Lacour: Skill Guild Lacour Skills,0,215,Town of Lacour: Food Store Carnival,0,299,0,-386,41,,,python3 tools/so2_mod.py door DISC.cue 219 0 --to NEW_MAP
 220,Town of Lacour: Weapons Shop Slayer,0,210,Town of Lacour: Weapons Shop Counterpunch,0,115,0,-485,5,,,python3 tools/so2_mod.py door DISC.cue 220 0 --to NEW_MAP
 221,Town of Lacour: Inn The Lacour Hotel,0,211,Town of Lacour: main plaza (round garden),0,-295,0,-425,34,,,python3 tools/so2_mod.py door DISC.cue 221 0 --to NEW_MAP
-221,Town of Lacour: Inn The Lacour Hotel,1,222,"Town of Lacour: interior room, about 1 door in from the entrance",0,-89,0,154,270,,,python3 tools/so2_mod.py door DISC.cue 221 1 --to NEW_MAP
-221,Town of Lacour: Inn The Lacour Hotel,2,223,"Town of Lacour: interior room, about 1 door in from the entrance",0,-85,0,-567,90,,,python3 tools/so2_mod.py door DISC.cue 221 2 --to NEW_MAP
-221,Town of Lacour: Inn The Lacour Hotel,3,224,"Town of Lacour: interior room, about 1 door in from the entrance",2,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 221 3 --to NEW_MAP
-221,Town of Lacour: Inn The Lacour Hotel,4,224,"Town of Lacour: interior room, about 1 door in from the entrance",2,-20,0,107,183,,,python3 tools/so2_mod.py door DISC.cue 221 4 --to NEW_MAP
-222,"Town of Lacour: interior room, about 1 door in from the entrance",0,221,Town of Lacour: Inn The Lacour Hotel,0,43,0,-208,90,,,python3 tools/so2_mod.py door DISC.cue 222 0 --to NEW_MAP
-222,"Town of Lacour: interior room, about 1 door in from the entrance",1,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 1 --to NEW_MAP
-222,"Town of Lacour: interior room, about 1 door in from the entrance",2,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 2 --to NEW_MAP
-222,"Town of Lacour: interior room, about 1 door in from the entrance",3,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 3 --to NEW_MAP
-223,"Town of Lacour: interior room, about 1 door in from the entrance",0,221,Town of Lacour: Inn The Lacour Hotel,0,43,0,208,270,,,python3 tools/so2_mod.py door DISC.cue 223 0 --to NEW_MAP
-223,"Town of Lacour: interior room, about 1 door in from the entrance",1,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 1 --to NEW_MAP
-223,"Town of Lacour: interior room, about 1 door in from the entrance",2,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 2 --to NEW_MAP
-223,"Town of Lacour: interior room, about 1 door in from the entrance",3,212,"Town of Lacour: interior room, about 1 door in from the entrance",2,-200,0,-933,1,,,python3 tools/so2_mod.py door DISC.cue 223 3 --to NEW_MAP
-223,"Town of Lacour: interior room, about 1 door in from the entrance",4,224,"Town of Lacour: interior room, about 1 door in from the entrance",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 4 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",0,223,"Town of Lacour: interior room, about 1 door in from the entrance",0,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 0 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",1,223,"Town of Lacour: interior room, about 1 door in from the entrance",0,-10,0,-215,180,,,python3 tools/so2_mod.py door DISC.cue 224 1 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",2,223,"Town of Lacour: interior room, about 1 door in from the entrance",0,-10,0,-485,180,,,python3 tools/so2_mod.py door DISC.cue 224 2 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",3,222,"Town of Lacour: interior room, about 1 door in from the entrance",0,-12,0,70,180,,,python3 tools/so2_mod.py door DISC.cue 224 3 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",4,222,"Town of Lacour: interior room, about 1 door in from the entrance",0,-10,0,-204,180,,,python3 tools/so2_mod.py door DISC.cue 224 4 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",5,222,"Town of Lacour: interior room, about 1 door in from the entrance",0,-7,0,-479,180,,,python3 tools/so2_mod.py door DISC.cue 224 5 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",6,212,"Town of Lacour: interior room, about 1 door in from the entrance",2,-200,0,-933,1,,,python3 tools/so2_mod.py door DISC.cue 224 6 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",7,223,"Town of Lacour: interior room, about 1 door in from the entrance",0,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 7 --to NEW_MAP
-224,"Town of Lacour: interior room, about 1 door in from the entrance",8,223,"Town of Lacour: interior room, about 1 door in from the entrance",2,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 8 --to NEW_MAP
+221,Town of Lacour: Inn The Lacour Hotel,1,222,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-89,0,154,270,,,python3 tools/so2_mod.py door DISC.cue 221 1 --to NEW_MAP
+221,Town of Lacour: Inn The Lacour Hotel,2,223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-85,0,-567,90,,,python3 tools/so2_mod.py door DISC.cue 221 2 --to NEW_MAP
+221,Town of Lacour: Inn The Lacour Hotel,3,224,"Town of Lacour: Inn The Lacour Hotel, guest room",2,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 221 3 --to NEW_MAP
+221,Town of Lacour: Inn The Lacour Hotel,4,224,"Town of Lacour: Inn The Lacour Hotel, guest room",2,-20,0,107,183,,,python3 tools/so2_mod.py door DISC.cue 221 4 --to NEW_MAP
+222,"Town of Lacour: Inn The Lacour Hotel, hallway",0,221,Town of Lacour: Inn The Lacour Hotel,0,43,0,-208,90,,,python3 tools/so2_mod.py door DISC.cue 222 0 --to NEW_MAP
+222,"Town of Lacour: Inn The Lacour Hotel, hallway",1,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 1 --to NEW_MAP
+222,"Town of Lacour: Inn The Lacour Hotel, hallway",2,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 2 --to NEW_MAP
+222,"Town of Lacour: Inn The Lacour Hotel, hallway",3,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 222 3 --to NEW_MAP
+223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,221,Town of Lacour: Inn The Lacour Hotel,0,43,0,208,270,,,python3 tools/so2_mod.py door DISC.cue 223 0 --to NEW_MAP
+223,"Town of Lacour: Inn The Lacour Hotel, hallway",1,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 1 --to NEW_MAP
+223,"Town of Lacour: Inn The Lacour Hotel, hallway",2,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 2 --to NEW_MAP
+223,"Town of Lacour: Inn The Lacour Hotel, hallway",3,212,Town of Lacour: alley between the main plaza and the castle path,2,-200,0,-933,1,,,python3 tools/so2_mod.py door DISC.cue 223 3 --to NEW_MAP
+223,"Town of Lacour: Inn The Lacour Hotel, hallway",4,224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,10,0,-244,93,,,python3 tools/so2_mod.py door DISC.cue 223 4 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",0,223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 0 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",1,223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-10,0,-215,180,,,python3 tools/so2_mod.py door DISC.cue 224 1 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",2,223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-10,0,-485,180,,,python3 tools/so2_mod.py door DISC.cue 224 2 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",3,222,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-12,0,70,180,,,python3 tools/so2_mod.py door DISC.cue 224 3 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",4,222,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-10,0,-204,180,,,python3 tools/so2_mod.py door DISC.cue 224 4 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",5,222,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-7,0,-479,180,,,python3 tools/so2_mod.py door DISC.cue 224 5 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",6,212,Town of Lacour: alley between the main plaza and the castle path,2,-200,0,-933,1,,,python3 tools/so2_mod.py door DISC.cue 224 6 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",7,223,"Town of Lacour: Inn The Lacour Hotel, hallway",0,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 7 --to NEW_MAP
+224,"Town of Lacour: Inn The Lacour Hotel, guest room",8,223,"Town of Lacour: Inn The Lacour Hotel, hallway",2,-10,0,61,180,,,python3 tools/so2_mod.py door DISC.cue 224 8 --to NEW_MAP
 225,Town of Lacour: Tavern La Coeur of Lacour,0,211,Town of Lacour: main plaza (round garden),0,-356,0,267,0,,,python3 tools/so2_mod.py door DISC.cue 225 0 --to NEW_MAP
 225,Town of Lacour: Tavern La Coeur of Lacour,1,211,Town of Lacour: main plaza (round garden),0,-356,0,267,0,,,python3 tools/so2_mod.py door DISC.cue 225 1 --to NEW_MAP
 225,Town of Lacour: Tavern La Coeur of Lacour,2,211,Town of Lacour: main plaza (round garden),2,-223,0,269,270,,,python3 tools/so2_mod.py door DISC.cue 225 2 --to NEW_MAP
-226,Town of Lacour: House Red Roof,0,216,"Town of Lacour: interior room, about 1 door in from the entrance",0,-202,0,-351,359,,,python3 tools/so2_mod.py door DISC.cue 226 0 --to NEW_MAP
-226,Town of Lacour: House Red Roof,1,227,"Town of Lacour: interior room, about 1 door in from the entrance",0,229,0,-174,180,,,python3 tools/so2_mod.py door DISC.cue 226 1 --to NEW_MAP
-227,"Town of Lacour: interior room, about 1 door in from the entrance",0,226,Town of Lacour: House Red Roof,0,-17,107,-154,5,,,python3 tools/so2_mod.py door DISC.cue 227 0 --to NEW_MAP
-228,Town of Lacour: Blacksmith Gamgee's Forge,0,218,"Town of Lacour: interior room, about 1 door in from the entrance",0,90,0,-1459,91,,,python3 tools/so2_mod.py door DISC.cue 228 0 --to NEW_MAP
+226,Town of Lacour: House Red Roof,0,216,Town of Lacour: back street (to House Red Roof),0,-202,0,-351,359,,,python3 tools/so2_mod.py door DISC.cue 226 0 --to NEW_MAP
+226,Town of Lacour: House Red Roof,1,227,"Town of Lacour: House Red Roof, back room",0,229,0,-174,180,,,python3 tools/so2_mod.py door DISC.cue 226 1 --to NEW_MAP
+227,"Town of Lacour: House Red Roof, back room",0,226,Town of Lacour: House Red Roof,0,-17,107,-154,5,,,python3 tools/so2_mod.py door DISC.cue 227 0 --to NEW_MAP
+228,Town of Lacour: Blacksmith Gamgee's Forge,0,218,Town of Lacour: street by Blacksmith Gamgee's Forge,0,90,0,-1459,91,,,python3 tools/so2_mod.py door DISC.cue 228 0 --to NEW_MAP
 229,El Beach: entrance / threshold area,0,230,"El Beach: interior room, about 1 door in from the entrance",1,155,0,-239,272,,,python3 tools/so2_mod.py door DISC.cue 229 0 --to NEW_MAP
 229,El Beach: entrance / threshold area,1,548,Ship to El: Ship to El,2,701,0,-616,67,,,python3 tools/so2_mod.py door DISC.cue 229 1 --to NEW_MAP
 229,El Beach: entrance / threshold area,2,548,Ship to El: Ship to El,2,701,0,-616,67,,,python3 tools/so2_mod.py door DISC.cue 229 2 --to NEW_MAP
@@ -705,8 +705,8 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 230,"El Beach: interior room, about 1 door in from the entrance",0,229,El Beach: entrance / threshold area,0,-5,0,-191,271,,,python3 tools/so2_mod.py door DISC.cue 230 0 --to NEW_MAP
 232,Eluria Colony: outpost clearing (entrance),0,625,disc-swap trigger,0,-1500,0,2000,0,,,python3 tools/so2_mod.py door DISC.cue 232 0 --to NEW_MAP
 232,Eluria Colony: outpost clearing (entrance),1,234,Eluria Colony: Leader's House,0,-302,0,591,272,,,python3 tools/so2_mod.py door DISC.cue 232 1 --to NEW_MAP
-232,Eluria Colony: outpost clearing (entrance),2,233,Eluria Colony: Weapons Shop (Arsenal),0,297,0,-2,180,,,python3 tools/so2_mod.py door DISC.cue 232 2 --to NEW_MAP
-233,Eluria Colony: Weapons Shop (Arsenal),0,232,Eluria Colony: outpost clearing (entrance),0,-529,165,41,338,,,python3 tools/so2_mod.py door DISC.cue 233 0 --to NEW_MAP
+232,Eluria Colony: outpost clearing (entrance),2,233,Eluria Colony: Arsenal (shop: items and ingredients),0,297,0,-2,180,,,python3 tools/so2_mod.py door DISC.cue 232 2 --to NEW_MAP
+233,Eluria Colony: Arsenal (shop: items and ingredients),0,232,Eluria Colony: outpost clearing (entrance),0,-529,165,41,338,,,python3 tools/so2_mod.py door DISC.cue 233 0 --to NEW_MAP
 234,Eluria Colony: Leader's House,0,232,Eluria Colony: outpost clearing (entrance),0,31,265,-1026,67,,,python3 tools/so2_mod.py door DISC.cue 234 0 --to NEW_MAP
 235,Central City: central plaza (garden roundabout),0,236,Central City: plaza courtyard (garden corner),0,-35,0,-244,92,,,python3 tools/so2_mod.py door DISC.cue 235 0 --to NEW_MAP
 235,Central City: central plaza (garden roundabout),1,237,Central City: garden courtyard (steps to Tavern & Inn Brandywine),0,108,0,-903,127,,,python3 tools/so2_mod.py door DISC.cue 235 1 --to NEW_MAP
@@ -796,11 +796,11 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 264,North City: Synard Reception Area,4,272,Director's Office: Director's Office,0,-171,0,-587,298,,,python3 tools/so2_mod.py door DISC.cue 264 4 --to NEW_MAP
 264,North City: Synard Reception Area,5,260,"North City: town plaza (round garden, shops around)",0,-11086,1808,-4748,0,,,python3 tools/so2_mod.py door DISC.cue 264 5 --to NEW_MAP
 265,North City: Tool Shop Blue Flask,0,260,"North City: town plaza (round garden, shops around)",0,-2480,1206,3012,349,,,python3 tools/so2_mod.py door DISC.cue 265 0 --to NEW_MAP
-265,North City: Tool Shop Blue Flask,1,268,"North City: Tool Shop Blue Flask, upstairs room",0,-103,165,-232,358,,,python3 tools/so2_mod.py door DISC.cue 265 1 --to NEW_MAP
+265,North City: Tool Shop Blue Flask,1,268,North City: Chisato's home (above Tool Shop Blue Flask),0,-103,165,-232,358,,,python3 tools/so2_mod.py door DISC.cue 265 1 --to NEW_MAP
 266,North City: Library Encyclopedia,0,260,"North City: town plaza (round garden, shops around)",0,-15008,2026,1506,351,,,python3 tools/so2_mod.py door DISC.cue 266 0 --to NEW_MAP
 267,Transporter: Transporter,0,278,Noel's House: Transporter,0,-322,-101,152,92,,,python3 tools/so2_mod.py door DISC.cue 267 0 --to NEW_MAP
 267,Transporter: Transporter,1,272,Director's Office: Director's Office,0,-370,0,-1113,0,,,python3 tools/so2_mod.py door DISC.cue 267 1 --to NEW_MAP
-268,"North City: Tool Shop Blue Flask, upstairs room",0,265,North City: Tool Shop Blue Flask,0,-225,0,31,89,,,python3 tools/so2_mod.py door DISC.cue 268 0 --to NEW_MAP
+268,North City: Chisato's home (above Tool Shop Blue Flask),0,265,North City: Tool Shop Blue Flask,0,-225,0,31,89,,,python3 tools/so2_mod.py door DISC.cue 268 0 --to NEW_MAP
 269,Synard Plant: entrance / threshold area,0,271,Synard Plant: entrance / threshold area,2,-872,400,-675,270,,,python3 tools/so2_mod.py door DISC.cue 269 0 --to NEW_MAP
 269,Synard Plant: entrance / threshold area,1,263,Synard Office: Synard Office,0,2399,400,-570,1,,,python3 tools/so2_mod.py door DISC.cue 269 1 --to NEW_MAP
 269,Synard Plant: entrance / threshold area,2,263,Synard Office: Synard Office,0,2399,400,-570,1,,,python3 tools/so2_mod.py door DISC.cue 269 2 --to NEW_MAP
@@ -821,9 +821,9 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 274,"North City: Inn Landscape, guest room",0,273,North City: Inn Landscape,0,-288,0,-57,43,,,python3 tools/so2_mod.py door DISC.cue 274 0 --to NEW_MAP
 275,North City: Smiley's Grocery,0,260,"North City: town plaza (round garden, shops around)",0,8189,130,921,270,,,python3 tools/so2_mod.py door DISC.cue 275 0 --to NEW_MAP
 276,North City: Account Weapons,0,260,"North City: town plaza (round garden, shops around)",0,7905,0,-2189,90,,,python3 tools/so2_mod.py door DISC.cue 276 0 --to NEW_MAP
-277,Noel's House: entrance / threshold area,0,278,Noel's House: Transporter,0,-740,42,712,317,,,python3 tools/so2_mod.py door DISC.cue 277 0 --to NEW_MAP
+277,Noel's House: Noel's House,0,278,Noel's House: Transporter,0,-740,42,712,317,,,python3 tools/so2_mod.py door DISC.cue 277 0 --to NEW_MAP
 278,Noel's House: Transporter,0,267,Transporter: Transporter,0,152,-101,597,315,,,python3 tools/so2_mod.py door DISC.cue 278 0 --to NEW_MAP
-278,Noel's House: Transporter,1,277,Noel's House: entrance / threshold area,0,165,0,-772,91,,,python3 tools/so2_mod.py door DISC.cue 278 1 --to NEW_MAP
+278,Noel's House: Transporter,1,277,Noel's House: Noel's House,0,165,0,-772,91,,,python3 tools/so2_mod.py door DISC.cue 278 1 --to NEW_MAP
 279,Fun City: entrance gate (ticket booths),0,280,Fun City: Fun City Central Square,2,-1603,0,140,180,,,python3 tools/so2_mod.py door DISC.cue 279 0 --to NEW_MAP
 279,Fun City: entrance gate (ticket booths),1,305,"Fun City: Fighting Arena, forecourt ring",0,12,0,348,91,,,python3 tools/so2_mod.py door DISC.cue 279 1 --to NEW_MAP
 279,Fun City: entrance gate (ticket booths),2,280,Fun City: Fun City Central Square,0,-1603,0,140,180,,,python3 tools/so2_mod.py door DISC.cue 279 2 --to NEW_MAP
@@ -1105,8 +1105,8 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 383,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,382,Lasguss Mountain: entrance / threshold area,0,-396,208,-251,322,,,python3 tools/so2_mod.py door DISC.cue 383 0 --to NEW_MAP
 383,"Lasguss Mountain: interior room, about 1 door in from the entrance",1,384,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,-33,274,-63,270,,,python3 tools/so2_mod.py door DISC.cue 383 1 --to NEW_MAP
 384,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,383,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,203,883,-1036,1,,,python3 tools/so2_mod.py door DISC.cue 384 0 --to NEW_MAP
-384,"Lasguss Mountain: interior room, about 1 door in from the entrance",1,385,Lasguss Mountain: entrance / threshold area,0,-898,0,-11,180,,,python3 tools/so2_mod.py door DISC.cue 384 1 --to NEW_MAP
-385,Lasguss Mountain: entrance / threshold area,0,384,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,122,898,-353,85,,,python3 tools/so2_mod.py door DISC.cue 385 0 --to NEW_MAP
+384,"Lasguss Mountain: interior room, about 1 door in from the entrance",1,385,Lasguss Mountain: XINE's home (mountaintop nest),0,-898,0,-11,180,,,python3 tools/so2_mod.py door DISC.cue 384 1 --to NEW_MAP
+385,Lasguss Mountain: XINE's home (mountaintop nest),0,384,"Lasguss Mountain: interior room, about 1 door in from the entrance",0,122,898,-353,85,,,python3 tools/so2_mod.py door DISC.cue 385 0 --to NEW_MAP
 386,Heraldry Weapons Laboratory: derelict workshop (broken machinery),0,396,Heraldry Weapons Laboratory: collapsed structure (exposed pipes),0,-608,0,440,1,,,python3 tools/so2_mod.py door DISC.cue 386 0 --to NEW_MAP
 387,"Heraldry Weapons Laboratory: derelict quarters (piano, chest)",0,389,Heraldry Weapons Laboratory: ruined hallway (overgrown),0,-586,0,-298,24,,,python3 tools/so2_mod.py door DISC.cue 387 0 --to NEW_MAP
 388,Heraldry Weapons Laboratory: pipe trench,0,389,Heraldry Weapons Laboratory: ruined hallway (overgrown),0,-784,0,-1933,67,,,python3 tools/so2_mod.py door DISC.cue 388 0 --to NEW_MAP
@@ -1254,7 +1254,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 444,"Meeting Room: Meeting Room, second tent",2,440,Lacour Front Line: path to the command tents,0,-2021,750,5,0,,,python3 tools/so2_mod.py door DISC.cue 444 2 --to NEW_MAP
 444,"Meeting Room: Meeting Room, second tent",3,447,"Meeting Room: Meeting Room, third tent",0,-108,0,1,222,,,python3 tools/so2_mod.py door DISC.cue 444 3 --to NEW_MAP
 444,"Meeting Room: Meeting Room, second tent",4,443,Commander's Office: Commander's Office,0,-296,0,623,0,,,python3 tools/so2_mod.py door DISC.cue 444 4 --to NEW_MAP
-444,"Meeting Room: Meeting Room, second tent",5,448,"Meeting Room: interior room, about 1 door in from the entrance",0,-108,0,1,222,,,python3 tools/so2_mod.py door DISC.cue 444 5 --to NEW_MAP
+444,"Meeting Room: Meeting Room, second tent",5,448,"Meeting Room: Lacour Front Line, lookout",0,-108,0,1,222,,,python3 tools/so2_mod.py door DISC.cue 444 5 --to NEW_MAP
 444,"Meeting Room: Meeting Room, second tent",6,440,Lacour Front Line: path to the command tents,2,-2021,750,5,0,,,python3 tools/so2_mod.py door DISC.cue 444 6 --to NEW_MAP
 444,"Meeting Room: Meeting Room, second tent",7,422,"Lacour Castle Throne Room: Throne Room, main chamber",130,-215,0,0,180,,,python3 tools/so2_mod.py door DISC.cue 444 7 --to NEW_MAP
 445,Lacour Front Line: General Store Lacour Store,0,440,Lacour Front Line: path to the command tents,0,-210,0,5,180,,,python3 tools/so2_mod.py door DISC.cue 445 0 --to NEW_MAP
@@ -1266,7 +1266,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 447,"Meeting Room: Meeting Room, third tent",3,11,Lacour Front Line: world-map entrance,2,660,0,512,0,,,python3 tools/so2_mod.py door DISC.cue 447 3 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",4,439,Lacour Front Line: camp (hub),130,-151,0,61,269,,,python3 tools/so2_mod.py door DISC.cue 447 4 --to NEW_MAP
 447,"Meeting Room: Meeting Room, third tent",5,439,Lacour Front Line: camp (hub),130,-151,0,61,269,,,python3 tools/so2_mod.py door DISC.cue 447 5 --to NEW_MAP
-448,"Meeting Room: interior room, about 1 door in from the entrance",0,444,"Meeting Room: Meeting Room, second tent",0,-1244,0,-60,0,,,python3 tools/so2_mod.py door DISC.cue 448 0 --to NEW_MAP
+448,"Meeting Room: Lacour Front Line, lookout",0,444,"Meeting Room: Meeting Room, second tent",0,-1244,0,-60,0,,,python3 tools/so2_mod.py door DISC.cue 448 0 --to NEW_MAP
 449,Mihne Cavern: entrance / threshold area,0,450,"Mihne Cavern: interior room, about 1 door in from the entrance",0,-604,0,1990,308,,,python3 tools/so2_mod.py door DISC.cue 449 0 --to NEW_MAP
 449,Mihne Cavern: entrance / threshold area,1,451,"Mihne Cavern: interior room, about 1 door in from the entrance",0,874,0,1919,183,,,python3 tools/so2_mod.py door DISC.cue 449 1 --to NEW_MAP
 450,"Mihne Cavern: interior room, about 1 door in from the entrance",0,449,Mihne Cavern: entrance / threshold area,0,-398,0,-4244,90,,,python3 tools/so2_mod.py door DISC.cue 450 0 --to NEW_MAP
@@ -2433,7 +2433,7 @@ map,map_name,index,target,target_name,mode,x,y,z,dir,same_script,note,command
 1048,Energy Nede: overworld terrain chunk (not a separate destination),12,236,Central City: plaza courtyard (garden corner),128,484,0,216,180,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 12 --to NEW_MAP
 1048,Energy Nede: overworld terrain chunk (not a separate destination),13,260,"North City: town plaza (round garden, shops around)",128,9081,0,-850,181,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 13 --to NEW_MAP
 1048,Energy Nede: overworld terrain chunk (not a separate destination),14,261,"North City: plaza, garden edge (notice board)",128,7880,0,-994,182,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 14 --to NEW_MAP
-1048,Energy Nede: overworld terrain chunk (not a separate destination),15,277,Noel's House: entrance / threshold area,128,-1,0,-32,271,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 15 --to NEW_MAP
+1048,Energy Nede: overworld terrain chunk (not a separate destination),15,277,Noel's House: Noel's House,128,-1,0,-32,271,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 15 --to NEW_MAP
 1048,Energy Nede: overworld terrain chunk (not a separate destination),16,419,Cave of Red Crystal: entrance / threshold area,128,49,0,6205,266,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 16 --to NEW_MAP
 1048,Energy Nede: overworld terrain chunk (not a separate destination),17,629,Field of Courage: entrance cavern (warning sign),128,-134,0,2236,272,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 17 --to NEW_MAP
 1048,Energy Nede: overworld terrain chunk (not a separate destination),18,597,Field of Power: entrance passage (narrow cavern),128,-817,0,1282,1,1048-1110,one script for all maps in same_script: patch each map you want changed,python3 tools/so2_mod.py door DISC.cue 1048 18 --to NEW_MAP

@@ -23,8 +23,8 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 21,1,"Arlia Village: north: fountain square, at night",Arlia Village,"north: fountain square, at night",cutscene,7,3,,,,map_names.csv
 22,1,"Arlia Village: bridge path, at night",Arlia Village,"bridge path, at night",cutscene,2,0,,,,map_names.csv
 23,"1, 2",Arlia Village: Belding Church (inside),Arlia Village,Belding Church (inside),interior,1,0,,,,map_names.csv
-24,"1, 2","Arlia Village: villager's house, living room",Arlia Village,"villager's house, living room",interior,2,0,,,,map_names.csv
-25,"1, 2","Arlia Village: villager's house, bedroom",Arlia Village,"villager's house, bedroom",interior,1,2,,,,map_names.csv
+24,"1, 2",Arlia Village: Newlyweds' House,Arlia Village,Newlyweds' House,interior,2,0,,,,map_names.csv
+25,"1, 2","Arlia Village: Newlyweds' House, bedroom",Arlia Village,"Newlyweds' House, bedroom",interior,1,2,,,,map_names.csv
 26,"1, 2",Arlia Village: Hearn's General Store (inside),Arlia Village,Hearn's General Store (inside),interior,1,0,1,,,map_names.csv
 27,"1, 2",Arlia Village: Rena's House (inside),Arlia Village,Rena's House (inside),interior,7,0,,,,map_names.csv
 28,1,Arlia Village: (unused map slot),Arlia Village,(unused map slot),special,0,0,,,,map_names.csv
@@ -32,14 +32,14 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 30,2,Field of Power: Rena's opening dream (vision of the four Fields),Field of Power,Rena's opening dream (vision of the four Fields),cutscene,5,0,,,,map_names.csv
 31,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,2,0,,,,map_names.csv
 32,1,"Arlia Village: Rena's House (inside), at night, variant",Arlia Village,"Rena's House (inside), at night, variant",cutscene,3,0,,,,map_names.csv
-33,"1, 2",Arlia Village: villager's house near the square,Arlia Village,villager's house near the square,interior,1,1,,,,map_names.csv
+33,"1, 2",Arlia Village: Carpenter's House,Arlia Village,Carpenter's House,interior,1,1,,,,map_names.csv
 34,"1, 2","Arlia Village: Mayor Regis's House, 1F",Arlia Village,"Mayor Regis's House, 1F",interior,2,0,,,,map_names.csv
 35,1,"Arlia Village: Mayor Regis's House, 1F, at night",Arlia Village,"Mayor Regis's House, 1F, at night",cutscene,4,0,,,,map_names.csv
 36,"1, 2",Arlia Village: waterside path behind the Mayor's house,Arlia Village,waterside path behind the Mayor's house,town,3,0,,,,map_names.csv
 37,1,"Arlia Village: Mayor's house, back porch, at night",Arlia Village,"Mayor's house, back porch, at night",cutscene,2,0,,,,map_names.csv
 38,"1, 2",Arlia Village: Rena's Room,Arlia Village,Rena's Room,interior,3,1,,,,map_names.csv
 39,1,Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,1,0,,,,map_names.csv
-40,1,Rena's Room: entrance / threshold area,Rena's Room,entrance / threshold area,interior,1,1,,,,map_names.csv
+40,1,"Rena's Room: Rena's Room, at night",Rena's Room,"Rena's Room, at night",interior,1,1,,,,map_names.csv
 41,1,Arlia Village: villager's house (unidentified owner),Arlia Village,villager's house (unidentified owner),interior,3,0,,,,map_names.csv
 42,1,"Arlia Village: interior room, about 1 door in from the entrance",Arlia Village,"interior room, about 1 door in from the entrance",town,3,0,,,,map_names.csv
 43,"1, 2","Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)",Town of Salva,"square, outer half (path to Salva Drift and Alen's Mansion)",town,10,0,,,,map_names.csv
@@ -49,12 +49,12 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 47,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
 48,1,Town of Salva: gate toward Alen's Mansion,Town of Salva,gate toward Alen's Mansion,town,3,0,,,,map_names.csv
 49,"1, 2",Alen's Mansion: grounds / path to the mansion,Alen's Mansion,grounds / path to the mansion,town,1,0,,,,map_names.csv
-50,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,1,,,,map_names.csv
-51,"1, 2","Alen's Mansion: interior room, about 1 door in from the entrance",Alen's Mansion,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
-52,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,3,0,,,,map_names.csv
-53,"1, 2",Arlia Village: entrance / threshold area,Arlia Village,entrance / threshold area,town,3,0,,,,map_names.csv
+50,"1, 2","Alen's Mansion: Alen's Mansion, bedroom",Alen's Mansion,"Alen's Mansion, bedroom",interior,1,1,,,,map_names.csv
+51,"1, 2","Alen's Mansion: Alen's Mansion, dining room",Alen's Mansion,"Alen's Mansion, dining room",interior,1,0,,,,map_names.csv
+52,"1, 2",Arlia Village: Alen's study (passage to Salva Drift),Arlia Village,Alen's study (passage to Salva Drift),town,3,0,,,,map_names.csv
+53,"1, 2","Arlia Village: Alen's study, guarded (passage to Salva Drift)",Arlia Village,"Alen's study, guarded (passage to Salva Drift)",town,3,0,,,,map_names.csv
 54,"1, 2",Town of Salva: Inn The Hopping Penguin,Town of Salva,Inn The Hopping Penguin,interior,2,0,,,,map_names.csv
-55,"1, 2","Town of Salva: interior room, about 1 door in from the entrance",Town of Salva,"interior room, about 1 door in from the entrance",town,1,0,,,,map_names.csv
+55,"1, 2","Town of Salva: Inn The Hopping Penguin, guest rooms",Town of Salva,"Inn The Hopping Penguin, guest rooms",town,1,0,,,,map_names.csv
 56,"1, 2",Town of Salva: Jam Store Dolphin Kick,Town of Salva,Jam Store Dolphin Kick,interior,1,0,3,,,map_names.csv
 57,"1, 2",Town of Salva: House,Town of Salva,House,interior,1,0,,,,map_names.csv
 58,"1, 2",Town of Salva: Tavern Rough & Tumble,Town of Salva,Tavern Rough & Tumble,interior,1,0,,,,map_names.csv
@@ -83,27 +83,27 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 81,"1, 2",Town of Cross: Bar Mikado (inside),Town of Cross,Bar Mikado (inside),interior,2,0,,,,map_names.csv
 82,"1, 2",Town of Cross: Restaurant Forum (inside),Town of Cross,Restaurant Forum (inside),interior,3,0,9,,,map_names.csv
 83,"1, 2",Town of Cross: Inn Kingdom Hotel (inside),Town of Cross,Inn Kingdom Hotel (inside),interior,6,0,,,,map_names.csv
-84,"1, 2","Inn Kingdom Hotel: interior room, about 1 door in from the entrance",Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
-85,"1, 2","Inn Kingdom Hotel: interior room, about 1 door in from the entrance",Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,2,0,,,,map_names.csv
+84,"1, 2","Inn Kingdom Hotel: Inn Kingdom Hotel, hallway",Inn Kingdom Hotel,"Inn Kingdom Hotel, hallway",interior,3,0,,,,map_names.csv
+85,"1, 2","Inn Kingdom Hotel: Inn Kingdom Hotel, guest room",Inn Kingdom Hotel,"Inn Kingdom Hotel, guest room",interior,2,0,,,,map_names.csv
 86,"1, 2",Town of Cross: Cross Cathedral (inside),Town of Cross,Cross Cathedral (inside),interior,2,0,,,,map_names.csv
 87,1,"Town of Cross: main plaza (roundabout), story-state variant",Town of Cross,"main plaza (roundabout), story-state variant",town,3,0,,,,map_names.csv
 88,1,"Town of Cross: shop plaza, story-state variant",Town of Cross,"shop plaza, story-state variant",town,2,0,,,,map_names.csv
 89,1,"Town of Cross: back street, story-state variant",Town of Cross,"back street, story-state variant",town,1,0,,,,map_names.csv
 90,"1, 2","Cross Castle, First Floor: Cross Castle, First Floor","Cross Castle, First Floor","Cross Castle, First Floor",interior,6,0,,,,map_names.csv
-91,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,5,0,,,,map_names.csv
+91,"1, 2","Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen","Cross Castle, First Floor","Cross Castle, hall to the Armory and Kitchen",interior,5,0,,,,map_names.csv
 92,"1, 2",Armory: Armory,Armory,Armory,interior,1,2,,,,map_names.csv
 93,"1, 2",Waiting Room: Waiting Room,Waiting Room,Waiting Room,interior,1,0,,,,map_names.csv
 94,"1, 2",The King's Private Chambers: The King's Private Chambers,The King's Private Chambers,The King's Private Chambers,interior,1,0,,,,map_names.csv
 95,"1, 2",Throne Room: Throne Room,Throne Room,Throne Room,interior,11,0,,,,map_names.csv
-96,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,3,0,,,,map_names.csv
-97,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,3,0,,,,map_names.csv
+96,"1, 2","Cross Castle, First Floor: Cross Castle, corridor to the Throne Room","Cross Castle, First Floor","Cross Castle, corridor to the Throne Room",interior,3,0,,,,map_names.csv
+97,"1, 2","Cross Castle, First Floor: Cross Castle, corridor to the Throne Room","Cross Castle, First Floor","Cross Castle, corridor to the Throne Room",interior,3,0,,,,map_names.csv
 98,"1, 2",Cross Castle Kitchen: Cross Castle Kitchen,Cross Castle Kitchen,Cross Castle Kitchen,interior,1,0,,,,map_names.csv
 99,"1, 2",Soldiers' Compartment: Soldiers' Compartment,Soldiers' Compartment,Soldiers' Compartment,interior,1,0,,,,map_names.csv
-100,"1, 2",The Prince's Chambers: entrance / threshold area,The Prince's Chambers,entrance / threshold area,interior,2,1,,,,map_names.csv
+100,"1, 2",The Prince's Chambers: The Prince's Chambers,The Prince's Chambers,The Prince's Chambers,interior,2,1,,,,map_names.csv
 101,"1, 2",The Princess' Chamber: The Princess' Chamber,The Princess' Chamber,The Princess' Chamber,interior,1,0,,,,map_names.csv
-102,"1, 2",The Prince's Chambers: entrance / threshold area,The Prince's Chambers,entrance / threshold area,interior,4,0,,,,map_names.csv
-103,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,2,0,,,,map_names.csv
-104,"1, 2","Cross Castle, First Floor: entrance / threshold area","Cross Castle, First Floor",entrance / threshold area,interior,2,0,,,,map_names.csv
+102,"1, 2","The Prince's Chambers: Cross Castle, hall of the royal chambers",The Prince's Chambers,"Cross Castle, hall of the royal chambers",interior,4,0,,,,map_names.csv
+103,"1, 2","Cross Castle, First Floor: Cross Castle, stairs to the royal chambers","Cross Castle, First Floor","Cross Castle, stairs to the royal chambers",interior,2,0,,,,map_names.csv
+104,"1, 2","Cross Castle, First Floor: Cross Castle, stairs to the royal chambers","Cross Castle, First Floor","Cross Castle, stairs to the royal chambers",interior,2,0,,,,map_names.csv
 105,1,"Port of Clik: market square (stairs, fountain statue)",Port of Clik,"market square (stairs, fountain statue)",town,8,0,15 16,,,map_names.csv
 106,1,"Port of Clik: market square (stairs, fountain statue)",Port of Clik,"market square (stairs, fountain statue)",town,2,0,15 16,,,map_names.csv
 107,1,Port of Clik: harbor plaza (canal),Port of Clik,harbor plaza (canal),town,8,0,,,,map_names.csv
@@ -130,8 +130,8 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 128,"1, 2",Mars Village: Tool Shop Roof's,Mars Village,Tool Shop Roof's,interior,1,0,22,,,map_names.csv
 129,"1, 2",Mars Village: Bar O'Shane,Mars Village,Bar O'Shane,interior,2,0,,,,map_names.csv
 130,"1, 2","Mars Village: Inn Finn's, guest room",Mars Village,"Inn Finn's, guest room",interior,4,0,,,,map_names.csv
-131,"1, 2",Elder's House: entrance / threshold area,Elder's House,entrance / threshold area,interior,5,0,,,,map_names.csv
-132,"1, 2","Elder's House: interior room, about 1 door in from the entrance",Elder's House,"interior room, about 1 door in from the entrance",interior,1,3,,,,map_names.csv
+131,"1, 2",Elder's House: Elder's House,Elder's House,Elder's House,interior,5,0,,,,map_names.csv
+132,"1, 2","Elder's House: Elder's House, study",Elder's House,"Elder's House, study",interior,1,3,,,,map_names.csv
 133,"1, 2","Mars Village: Celine's House, hallway (to Celine's Room)",Mars Village,"Celine's House, hallway (to Celine's Room)",interior,2,0,,,,map_names.csv
 134,1,Mars Village: village house interior (dim room),Mars Village,village house interior (dim room),interior,1,0,,,,map_names.csv
 135,"1, 2",Mars Village: Celine's House,Mars Village,Celine's House,interior,3,0,,,,map_names.csv
@@ -211,28 +211,28 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 209,"1, 2",Town of Linga: gate / archway at the edge of the plaza,Town of Linga,gate / archway at the edge of the plaza,town,2,0,,,,map_names.csv
 210,"1, 2",Town of Lacour: Weapons Shop Counterpunch,Town of Lacour,Weapons Shop Counterpunch,interior,3,0,37 38 39,,,map_names.csv
 211,"1, 2",Town of Lacour: main plaza (round garden),Town of Lacour,main plaza (round garden),town,7,0,,,,map_names.csv
-212,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
+212,"1, 2",Town of Lacour: alley between the main plaza and the castle path,Town of Lacour,alley between the main plaza and the castle path,interior,3,0,,,,map_names.csv
 213,"1, 2",Town of Lacour: statued path to the castle gate,Town of Lacour,statued path to the castle gate,town,4,0,,,,map_names.csv
 214,"1, 2",Town of Lacour: side alley off the plaza,Town of Lacour,side alley off the plaza,town,4,0,,,,map_names.csv
 215,"1, 2",Town of Lacour: Food Store Carnival,Town of Lacour,Food Store Carnival,interior,2,0,41 42 43 44 88,,,map_names.csv
-216,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,3,0,,,,map_names.csv
-217,"1, 2","Town of Lacour: interior room, about 2 doors in from the entrance",Town of Lacour,"interior room, about 2 doors in from the entrance",interior,2,0,,,,map_names.csv
-218,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,2,0,,,,map_names.csv
+216,"1, 2",Town of Lacour: back street (to House Red Roof),Town of Lacour,back street (to House Red Roof),interior,3,0,,,,map_names.csv
+217,"1, 2",Town of Lacour: stairway street,Town of Lacour,stairway street,interior,2,0,,,,map_names.csv
+218,"1, 2",Town of Lacour: street by Blacksmith Gamgee's Forge,Town of Lacour,street by Blacksmith Gamgee's Forge,interior,2,0,,,,map_names.csv
 219,"1, 2",Town of Lacour: Skill Guild Lacour Skills,Town of Lacour,Skill Guild Lacour Skills,interior,1,0,,,,map_names.csv
 220,"1, 2",Town of Lacour: Weapons Shop Slayer,Town of Lacour,Weapons Shop Slayer,interior,1,0,40,,,map_names.csv
 221,"1, 2",Town of Lacour: Inn The Lacour Hotel,Town of Lacour,Inn The Lacour Hotel,interior,5,0,,,,map_names.csv
-222,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,4,0,,,,map_names.csv
-223,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,5,0,,,,map_names.csv
-224,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,9,0,,,,map_names.csv
+222,"1, 2","Town of Lacour: Inn The Lacour Hotel, hallway",Town of Lacour,"Inn The Lacour Hotel, hallway",interior,4,0,,,,map_names.csv
+223,"1, 2","Town of Lacour: Inn The Lacour Hotel, hallway",Town of Lacour,"Inn The Lacour Hotel, hallway",interior,5,0,,,,map_names.csv
+224,"1, 2","Town of Lacour: Inn The Lacour Hotel, guest room",Town of Lacour,"Inn The Lacour Hotel, guest room",interior,9,0,,,,map_names.csv
 225,"1, 2",Town of Lacour: Tavern La Coeur of Lacour,Town of Lacour,Tavern La Coeur of Lacour,interior,3,0,,,,map_names.csv
 226,"1, 2",Town of Lacour: House Red Roof,Town of Lacour,House Red Roof,interior,2,0,,,,map_names.csv
-227,"1, 2","Town of Lacour: interior room, about 1 door in from the entrance",Town of Lacour,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+227,"1, 2","Town of Lacour: House Red Roof, back room",Town of Lacour,"House Red Roof, back room",interior,1,0,,,,map_names.csv
 228,"1, 2",Town of Lacour: Blacksmith Gamgee's Forge,Town of Lacour,Blacksmith Gamgee's Forge,interior,1,0,,,,map_names.csv
 229,"1, 2",El Beach: entrance / threshold area,El Beach,entrance / threshold area,field,6,0,,,,map_names.csv
 230,"1, 2","El Beach: interior room, about 1 door in from the entrance",El Beach,"interior room, about 1 door in from the entrance",field,1,0,,,,map_names.csv
 231,"1, 2",Eluria Colony: shipwreck beach (opening cutscene),Eluria Colony,shipwreck beach (opening cutscene),special,0,0,,,,map_names.csv
 232,"1, 2",Eluria Colony: outpost clearing (entrance),Eluria Colony,outpost clearing (entrance),field,3,0,,,,map_names.csv
-233,"1, 2",Eluria Colony: Weapons Shop (Arsenal),Eluria Colony,Weapons Shop (Arsenal),interior,1,0,53,,,map_names.csv
+233,"1, 2",Eluria Colony: Arsenal (shop: items and ingredients),Eluria Colony,Arsenal (shop: items and ingredients),interior,1,0,53,,,map_names.csv
 234,"1, 2",Eluria Colony: Leader's House,Eluria Colony,Leader's House,interior,1,0,,,,map_names.csv
 235,2,Central City: central plaza (garden roundabout),Central City,central plaza (garden roundabout),town,7,0,,,,map_names.csv
 236,2,Central City: plaza courtyard (garden corner),Central City,plaza courtyard (garden corner),town,1,0,,,,map_names.csv
@@ -267,7 +267,7 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 265,2,North City: Tool Shop Blue Flask,North City,Tool Shop Blue Flask,interior,2,0,61,,,map_names.csv
 266,2,North City: Library Encyclopedia,North City,Library Encyclopedia,interior,1,0,,,,map_names.csv
 267,2,Transporter: Transporter,Transporter,Transporter,special,2,0,,,,map_names.csv
-268,2,"North City: Tool Shop Blue Flask, upstairs room",North City,"Tool Shop Blue Flask, upstairs room",interior,1,0,,,,map_names.csv
+268,2,North City: Chisato's home (above Tool Shop Blue Flask),North City,Chisato's home (above Tool Shop Blue Flask),interior,1,0,,,,map_names.csv
 269,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,5,0,,,,map_names.csv
 270,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,2,0,,,,map_names.csv
 271,2,Synard Plant: entrance / threshold area,Synard Plant,entrance / threshold area,interior,3,0,,,,map_names.csv
@@ -276,7 +276,7 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 274,2,"North City: Inn Landscape, guest room",North City,"Inn Landscape, guest room",interior,1,0,,,,map_names.csv
 275,2,North City: Smiley's Grocery,North City,Smiley's Grocery,interior,1,0,62,,,map_names.csv
 276,2,North City: Account Weapons,North City,Account Weapons,interior,1,0,60,,,map_names.csv
-277,2,Noel's House: entrance / threshold area,Noel's House,entrance / threshold area,interior,1,3,,,,map_names.csv
+277,2,Noel's House: Noel's House,Noel's House,Noel's House,interior,1,3,,,,map_names.csv
 278,2,Noel's House: Transporter,Noel's House,Transporter,interior,2,0,,,,map_names.csv
 279,2,Fun City: entrance gate (ticket booths),Fun City,entrance gate (ticket booths),town,5,0,,,,map_names.csv
 280,2,Fun City: Fun City Central Square,Fun City,Fun City Central Square,town,11,0,,,,map_names.csv
@@ -384,7 +384,7 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 382,"1, 2",Lasguss Mountain: entrance / threshold area,Lasguss Mountain,entrance / threshold area,field,2,0,,,,map_names.csv
 383,"1, 2","Lasguss Mountain: interior room, about 1 door in from the entrance",Lasguss Mountain,"interior room, about 1 door in from the entrance",field,2,0,,,,map_names.csv
 384,"1, 2","Lasguss Mountain: interior room, about 1 door in from the entrance",Lasguss Mountain,"interior room, about 1 door in from the entrance",field,2,0,,,,map_names.csv
-385,"1, 2",Lasguss Mountain: entrance / threshold area,Lasguss Mountain,entrance / threshold area,field,1,0,,yes,,map_names.csv
+385,"1, 2",Lasguss Mountain: XINE's home (mountaintop nest),Lasguss Mountain,XINE's home (mountaintop nest),field,1,0,,yes,,map_names.csv
 386,2,Heraldry Weapons Laboratory: derelict workshop (broken machinery),Heraldry Weapons Laboratory,derelict workshop (broken machinery),dungeon,1,0,,,,map_names.csv
 387,2,"Heraldry Weapons Laboratory: derelict quarters (piano, chest)",Heraldry Weapons Laboratory,"derelict quarters (piano, chest)",dungeon,1,1,,,,map_names.csv
 388,2,Heraldry Weapons Laboratory: pipe trench,Heraldry Weapons Laboratory,pipe trench,dungeon,1,0,,,,map_names.csv
@@ -447,7 +447,7 @@ map,discs,name,area,place,kind,doors,chests,shops,save_point,same_script,name_fr
 445,"1, 2",Lacour Front Line: General Store Lacour Store,Lacour Front Line,General Store Lacour Store,interior,2,0,50,,,map_names.csv
 446,"1, 2",Lacour Front Line: Lacour front line Arsenal,Lacour Front Line,Lacour front line Arsenal,field,1,0,52,,,map_names.csv
 447,"1, 2","Meeting Room: Meeting Room, third tent",Meeting Room,"Meeting Room, third tent",interior,6,0,,,,map_names.csv
-448,1,"Meeting Room: interior room, about 1 door in from the entrance",Meeting Room,"interior room, about 1 door in from the entrance",interior,1,0,,,,map_names.csv
+448,1,"Meeting Room: Lacour Front Line, lookout",Meeting Room,"Lacour Front Line, lookout",interior,1,0,,,,map_names.csv
 449,2,Mihne Cavern: entrance / threshold area,Mihne Cavern,entrance / threshold area,dungeon,2,2,,,,map_names.csv
 450,2,"Mihne Cavern: interior room, about 1 door in from the entrance",Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,3,3,,,,map_names.csv
 451,2,"Mihne Cavern: interior room, about 1 door in from the entrance",Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,3,4,,,,map_names.csv
