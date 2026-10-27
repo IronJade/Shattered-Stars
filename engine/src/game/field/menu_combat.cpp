@@ -491,12 +491,34 @@ void BenchOrderPage::show_held() {
   }
 }
 
+// The help bar of a page whose right column flips (Party Order, Tactics): the page's name, and in
+// the logo's place which column the right side shows ("L1/R1: Reserve 5-8"), with 'second' (if
+// any) on a line under it.
+void draw_flip_help(menu::Panel* page, int bench_page, const std::string& second) {
+  page->help->add_message(menu::globals().session->page_id);
+  page->logo_state = 2;  // (no logo: the hint goes there)
+  page->logo_phase = 0;
+  const u8* config = party_config();
+  std::string hint = button_name(read_u16(config + 8)) + "/" + button_name(read_u16(config + 0xA)) + ": ";
+  hint += bench_page != 0 ? "Bench 9-12" : "Reserve 5-8";
+  page->help->pen_at(0xA4, second.empty() ? 4 : 0);
+  page->help->add_string(hint.c_str());
+  if (!second.empty()) {
+    page->help->pen_at(0xA4, 8);
+    page->help->add_string(second.c_str());
+  }
+}
+
+// The page buttons (config buttons 4 / 5: L1 / R1 unless the player changed them, the lists'
+// page up / down) in 'pressed'.
+bool page_button(u32 pressed) {
+  const u8* config = party_config();
+  return (pressed & (read_u16(config + 8) | read_u16(config + 0xA))) != 0;
+}
+
 void BenchOrderPage::draw_help() {
-  help->add_message(menu::globals().session->page_id);
-  // In the logo's place: which column the right side shows; under it, the member held while
-  // their column is off screen, else whether the bench is locked now.
-  logo_state = 2;
-  logo_phase = 0;
+  // Under the hint: the member held while their column is off screen, else whether the bench is
+  // locked now.
   std::string held;
   if (state_ == 1 && !shown(first_place_)) {
     const u8* slot = slots_ + first_place_ * 0x60;
@@ -505,22 +527,13 @@ void BenchOrderPage::draw_help() {
   } else if (ap::bench_locked()) {
     held = "Bench locked";
   }
-  const u8* config = party_config();
-  std::string hint = button_name(read_u16(config + 8)) + "/" + button_name(read_u16(config + 0xA)) + ": ";
-  hint += bench_page_ != 0 ? "Bench 9-12" : "Reserve 5-8";
-  help->pen_at(0xA4, held.empty() ? 4 : 0);
-  help->add_string(hint.c_str());
-  if (!held.empty()) {
-    help->pen_at(0xA4, 8);
-    help->add_string(held.c_str());
-  }
+  draw_flip_help(this, bench_page_, held);
 }
 
 // The menus' page buttons (config buttons 4 / 5: L1 / R1 unless the player changed them, the
 // lists' page up / down) flip the right column; they do nothing on the original's page.
 void BenchOrderPage::on_pressed(u32 buttons) {
-  const u8* config = party_config();
-  if ((buttons & (read_u16(config + 8) | read_u16(config + 0xA))) == 0) return;
+  if (!page_button(buttons)) return;
   bench_page_ = 1 - bench_page_;
   refresh();
   show_held();
@@ -576,6 +589,73 @@ void BenchOrderPage::on_cancel(int n) {
     first_place_ = -1;
   }
   Widget::on_cancel(-n);
+}
+
+// ==== Tactics with the bench [partybuild agent] ==========================================
+// Archipelago (port feature; docs/handoff/bench.md B2: a benched member's orders too). Opened only
+// with a bench seed; every other game opens TacticsPage above as it is. The same boxes and flip as
+// BenchOrderPage: the right column shows the reserve or, after L1 / R1, the bench, and a box's
+// member gets their orders (OrdersDialog on the place: the bench's places are bound in the camp
+// menu, menu_camp.cpp menu_run_camp).
+class BenchTacticsPage final : public menu::Panel {
+ public:
+  BenchTacticsPage();
+  void on_child_done(int, int state, int) override {
+    if (state == 3) refresh();
+  }
+  void on_confirm(int n) override;
+  void on_pressed(u32 buttons) override;
+  void draw_help() override { draw_flip_help(this, bench_page_, ""); }
+
+ private:
+  int place(int box) const { return box >= 4 && bench_page_ != 0 ? box + 4 : box; }
+  void refresh();
+  s16 choice_ = 0;
+  menu::TextBox* boxes_[8] = {};
+  int bench_page_ = 0;
+};
+
+BenchTacticsPage::BenchTacticsPage() {
+  menu::strings_set(menu::globals().data.data());
+  menu::TextRenderer::set_default_font(menu::strings_block(1), menu::strings_block(0));
+  create_help();
+  make_member_boxes(boxes_);
+  refresh();
+  cursor->add_grid(&choice_, 1, 2, 4, 0, 0x20, 0x9C, 0x32, nullptr);
+}
+
+void BenchTacticsPage::refresh() {
+  const int selected = party_get_selected();
+  for (int i = 0; i < 8; ++i) {
+    party_select(place(i));
+    menu::TextBox* b = boxes_[i];
+    b->clear();
+    b->set_font_group(menu::strings_block(1), menu::strings_block(0), 4);
+    const int character = party_selected_char();
+    if (character == 0) continue;
+    b->pen_at(8, 0);
+    b->add_party_character(static_cast<s16>(read_u16(party_selected_slot())), 6, 0x1000);
+    b->pen_at(0x28, 0xC);
+    b->add_message_lines(char_class(character) * 6 + party_selected_record()[0x38], 1);
+  }
+  party_select(selected);
+}
+
+void BenchTacticsPage::on_confirm(int n) {
+  const int slot = place(box_slot(choice_));
+  if (party_slot_active(slot) == 0) return;
+  auto* d = new OrdersDialog;
+  open_child(1, d);
+  d->set_member(slot);
+  Widget::on_confirm(n);
+}
+
+void BenchTacticsPage::on_pressed(u32 buttons) {
+  if (!page_button(buttons)) return;
+  bench_page_ = 1 - bench_page_;
+  refresh();
+  sound = 1;
+  input_delay = 4;
 }
 
 // ==== Formation: the leader (Dialog, 0x54 bytes, vtable 0x80080838; 0x800801ac) ==========
@@ -864,7 +944,14 @@ void simple_page(menu::MenuPageLoader* p) {
 
 }  // namespace
 
-void menu_page08_update(menu::MenuPageLoader* p) { simple_page<TacticsPage>(p); }
+void menu_page08_update(menu::MenuPageLoader* p) {
+  // Archipelago (port feature): with a bench seed, the page with the bench [partybuild agent].
+  if (ap::bench_enabled()) {
+    simple_page<BenchTacticsPage>(p);
+  } else {
+    simple_page<TacticsPage>(p);
+  }
+}
 void menu_page09_update(menu::MenuPageLoader* p) {
   // Archipelago (port feature): with a bench seed, the page with the bench [partybuild agent].
   if (ap::bench_enabled()) {

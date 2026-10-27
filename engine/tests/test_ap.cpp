@@ -16,6 +16,9 @@
 #include "game/ap/json.h"
 #include "game/ap/skills.h"
 #include "game/battle/battle.h"
+#include "game/common/menu_core.h"
+#include "game/common/menu_stats.h"
+#include "game/common/party.h"
 #include "game/field/field.h"
 #include "game/field/item_effect.h"
 #include "game/field/script_vm.h"
@@ -2602,6 +2605,70 @@ TEST(ap_bench_swap_rules) {
   ap::mutable_state().stash.clear();
   CHECK(!ap::bench_locked());
   ap::stop();
+}
+
+// [partybuild agent] The camp menu's pages on a benched member (docs/handoff/bench.md B2): with
+// places 8-11 bound (menu_camp.cpp menu_run_camp binds the store), the selected-member accessors
+// reach a bench place, and the camp menu's stat pass gives a benched member exactly the figures
+// the same member gets in a slot; unbound (every game without a bench), places 8-11 do not exist
+// and the pass leaves the store alone.
+TEST(ap_bench_camp_pages) {
+  using ss::game::menu::StatCalc;
+  u8* const config0 = party_config();
+  u8* const inventory0 = party_inventory();
+  u8* const slots0 = party_slots();
+  u8* const records0 = party_records();
+  const int selected0 = party_get_selected();
+  u8* const menu_config0 = ss::game::menu::globals().config;
+  std::vector<u8> config(0x2A0, 0), inventory(0xC28, 0), slots(0x300, 0), records(0x680, 0);
+  std::vector<u8> bench_slots(4 * 0x60, 0), bench_records(4 * 0xD0, 0);
+  party_bind(config.data(), inventory.data(), slots.data(), records.data());
+  ss::game::menu::globals().config = config.data();
+  PartyPlaces places;
+  for (int i = 0; i < 4; ++i) {
+    places.slot[i] = bench_slots.data() + i * 0x60;
+    places.record[i] = bench_records.data() + i * 0xD0;
+  }
+  // The same member twice: in slot 2 and on the bench (place 9); the figures the pass derives
+  // (and the level copy +0x26) hold stale bytes first.
+  u8 member[0x130];
+  for (int i = 0; i < 0x130; ++i) member[i] = static_cast<u8>(i * 7 + 3);
+  const s16 id = 6, level = 12;
+  std::memcpy(member, &id, 2);
+  member[2] = 0;
+  std::memcpy(member + 0x28, &level, 2);
+  // Nothing worn: the seven equipment words (record +0xc..+0x18; read from the slot's same
+  // offsets when the stat-kind table is not there, as in a test without the program image).
+  std::memset(member + 0xC, 0, 0xE);
+  std::memset(member + 0x60 + 0xC, 0, 0xE);
+  std::memcpy(slots.data() + 2 * 0x60, member, 0x60);
+  std::memcpy(records.data() + 2 * 0xD0, member + 0x60, 0xD0);
+  std::memcpy(places.slot[1], member, 0x60);
+  std::memcpy(places.record[1], member + 0x60, 0xD0);
+
+  CHECK(party_place_count() == 8 && party_place_slot(9) == nullptr && party_place_record(9) == nullptr);
+  party_bind_places(&places);
+  CHECK(party_place_count() == 12 && party_place_slot(9) == places.slot[1] && party_place_record(11) == places.record[3]);
+  CHECK(party_place_slot(2) == slots.data() + 2 * 0x60 && party_place_slot(12) == nullptr);
+  party_select(9);
+  CHECK(party_get_selected() == 9 && party_selected_slot() == places.slot[1] && party_selected_record() == places.record[1]);
+  CHECK(party_selected_char() == id && party_slot_active(9) == id && party_slot_active(10) == 0);
+  // The pass (the camp page's StatCalc: the level copy, then every member's figures).
+  { StatCalc calc(true); }
+  CHECK(party_get_selected() == 9);
+  CHECK(std::memcmp(places.slot[1], slots.data() + 2 * 0x60, 0x60) == 0);
+  CHECK(std::memcmp(places.record[1], records.data() + 2 * 0xD0, 0xD0) == 0);
+  CHECK(std::memcmp(places.slot[1] + 0x26, &level, 2) == 0);  // (the pass ran on the place)
+  // Unbound: a place left selected falls back to slot 0, and the pass leaves the store alone.
+  party_bind_places(nullptr);
+  CHECK(party_get_selected() == 0 && party_place_count() == 8 && party_place_slot(9) == nullptr);
+  std::memset(places.slot[1] + 0x26, 0x55, 2);
+  { StatCalc calc(true); }
+  CHECK(places.slot[1][0x26] == 0x55 && places.slot[1][0x27] == 0x55);
+
+  ss::game::menu::globals().config = menu_config0;
+  party_bind(config0, inventory0, slots0, records0);
+  party_select(selected0);
 }
 
 TEST(ap_v2_party_isolated) {

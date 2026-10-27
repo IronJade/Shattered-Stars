@@ -1122,6 +1122,21 @@ maintain the benched members equipment and settings"). Work in progress on branc
   split window keeping everyone away or letting someone in for a fight, temporary members, a
   borrowed slot, the endings, a hub story view). As on the original page, a swap that leaves no
   front member able to fight is undone. Swaps inside the 8, and inside the bench, are as today.
+- **The camp menu's other pages** (B2: benched members there too). With a bench seed the camp
+  menu's member list has 12 rows, the bench's four after the 8 (an empty place is a blank row,
+  as an empty slot is). Equipment, Skills, Status and Specialty open on a benched member, and
+  L2 / R2 go through all 12. The pages work on the bench place itself (the camp menu points the
+  selected-member accessors at it while it runs; nothing is copied into the 8 slots), so what
+  the player changes stays with the benched member and is saved with the bench. Tactics flips
+  its right column as Party Order does (L1 / R1: the reserve or the bench), and a benched
+  member's box opens their orders. The camp menu's stat pass (the figures derived from level
+  and equipment that Equipment and Status show) runs over the bench too. A benched member may
+  use the Specialty page as a reserve member may (Oracle, music, Practice, Scout, Familiar, a
+  field spell paid with their own MP); what involves the party stays with the 8 slots: spell
+  targets, Link Combo partners (the front four), item use and Item Creation, super
+  specialties, and the Equipment Wizard at the menu's close (a benched member's equipment stays
+  as they left it). Killer-move sets can be changed; their voices load when the member comes
+  into the front four.
 - Checked (2026-10-26): a save with Noel and Ernest benched, Precis (slot 5) to place 9 across
   the flip and Noel (place 8) to slot 3: every member's 0x130 bytes moved as they were, the
   state, config and inventory identical to a control run that cancelled the same picks (the
@@ -1129,6 +1144,14 @@ maintain the benched members equipment and settings"). Work in progress on branc
   +0xa, whenever the camp menu reopens with them in the 8); no seed: the page, its captures and
   the state dumps byte-identical to the baseline build, L1 / R1 pressed. Unit test
   `ap_bench_swap_rules`; smoke `ap_bench_swap`.
+- Checked (2026-10-27, the other pages): the same save; Noel (place 8) through the member list's
+  ninth row into Equipment (the picker's figures for him; his weapon off), L2 / R2 to Ernest,
+  Status, Specialty, Skills, then Tactics on the bench page (his next orders), and a save: in
+  the sidecar only Noel's weapon, orders and Equipment Wizard bit changed, plus the derived
+  figures of both (the stat pass filled in those a bench join leaves at zero). Unit test
+  `ap_bench_camp_pages` (the accessors on a bench place; the stat pass gives a benched member
+  the bytes the same member gets in a slot; unbound, the store is left alone); smoke
+  `ap_bench_camp` (benched Opera's weapon and orders, the save, its reload).
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

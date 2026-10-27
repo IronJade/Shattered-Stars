@@ -304,7 +304,9 @@ void KillerMoveList::draw_item(menu::TextBox* box, int slot, int index) {
 void KillerMoveList::on_confirm(int n) {
   party_selected_record()[0xCC + slot_ + set_ * 2] = static_cast<u8>(ids_[choice_]);
   finish(0);
-  if (g_voice_reload_member) g_voice_reload_member(party_get_selected());
+  // (A benched member has no voice slot: their front slot's voices load when they come in
+  // [partybuild agent].)
+  if (g_voice_reload_member && party_get_selected() < 8) g_voice_reload_member(party_get_selected());
   Widget::on_confirm(n);
 }
 

@@ -129,7 +129,8 @@ class CampMenu final : public menu::Panel {
   void select_member();                                // 0x8007ed28
 
   s16 command_ = 0;                        // +0x34
-  menu::TextBox* members_[8] = {};         // +0x98
+  menu::TextBox* members_[12] = {};        // +0x98 (8; 12 with the bench [partybuild agent])
+  int rows_ = 8;                           // [partybuild agent] the member rows: 8, 12 with the bench
   menu::TextBox* commands_ = nullptr;      // +0xb8
   menu::TextBox* time_ = nullptr;          // +0xbc
   menu::Cursor* saved_cursor_ = nullptr;   // +0xc0
@@ -186,7 +187,10 @@ CampMenu::CampMenu() {
   }
   commands_ = new menu::TextBox;
   time_ = new menu::TextBox;
-  for (int i = 7; i >= 0; --i) members_[i] = new menu::TextBox;
+  // Archipelago (port feature): with the bench's places bound, the bench's four rows follow the 8
+  // slots' (docs/handoff/bench.md B2) [partybuild agent].
+  rows_ = party_place_count();
+  for (int i = rows_ - 1; i >= 0; --i) members_[i] = new menu::TextBox;
   mode_ = 0;
   commands_->set_rect(0, 0, 0x68, 0xB8, 0);
   commands_->pen_at(0, 0);
@@ -207,9 +211,9 @@ CampMenu::CampMenu() {
     const s16 y0 = static_cast<s16>(0x88 + 0x15 * i), y1 = static_cast<s16>(0x98 + 0x15 * i);
     commands_->add_icon(quad(0x5A, y0, 0xE0, 0x30, 0x62, y0, 0xE8, 0x30, 0x5A, y1, 0xE0, 0x40, 0x62, y1, 0xE8, 0x40, 0x7850, 0x16));
   }
-  for (int i = 0; i < 8; ++i) members_[i]->set_rect(0x58, 8 + 0x2E * i, 0xE0, 0x2E, 0);
+  for (int i = 0; i < rows_; ++i) members_[i]->set_rect(0x58, 8 + 0x2E * i, 0xE0, 0x2E, 0);
   const int selected = party_get_selected();
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < rows_; ++i) {
     party_select(i);
     if (party_selected_char() == 0) continue;
     menu::TextBox* box = members_[i];
@@ -288,7 +292,7 @@ void CampMenu::on_close() {
 void CampMenu::frame() {
   // The member boxes follow the member list's scroll.
   const s32 scroll = menu::globals().session->member_scroll * -0x2E;
-  for (menu::TextBox* box : members_) box->dy = static_cast<s16>((scroll < 0 ? scroll + 3 : scroll) >> 2);
+  for (int i = 0; i < rows_; ++i) members_[i]->dy = static_cast<s16>((scroll < 0 ? scroll + 3 : scroll) >> 2);
   update_time();
   Panel::frame();
 }
@@ -336,7 +340,7 @@ void CampMenu::on_confirm(int n) {
         // Pick a member first: a second hand cursor on the party list.
         commands_->slot = static_cast<u16>(commands_->slot - 2);
         saved_cursor_ = push_cursor();
-        cursor->add_list(&session->member, &session->member_scroll, 8, 4, 0x60, 0x20, 0x2E);
+        cursor->add_list(&session->member, &session->member_scroll, static_cast<s16>(rows_), 4, 0x60, 0x20, 0x2E);
         ++mode_;
         break;
       case 6:
@@ -805,9 +809,19 @@ int menu_run_camp(MenuLauncher* l) {
   callways_before_menu(callways());
   FieldGlobals& g = globals();
   int result = 0;
-  // [partybuild agent] The bench's sprites for this menu (bench_sprite_packs above).
+  // [partybuild agent] The bench's sprites for this menu (bench_sprite_packs above), and its places
+  // 8-11 for the menu's pages (party_bind_places: the camp page's rows, Equipment, Skills, Status,
+  // Specialty and Tactics work on a benched member where they are; docs/handoff/bench.md B2).
   const std::vector<std::vector<u8>> bench_packs = bench_sprite_packs();
   menu::set_extra_sprite_packs(bench_packs.empty() ? nullptr : &bench_packs);
+  PartyPlaces bench_places;
+  if (ap::Bench* b = ap::bench_store()) {
+    for (int i = 0; i < ap::kBenchPlaces; ++i) {
+      bench_places.slot[i] = b->slot(i);
+      bench_places.record[i] = b->record(i);
+    }
+    party_bind_places(&bench_places);
+  }
   {
     menu::MenuSession session;
     run_menu(session, [](menu::MenuSession& s) { s.start_page = 1; });
@@ -825,6 +839,7 @@ int menu_run_camp(MenuLauncher* l) {
     }
   }
   menu::set_extra_sprite_packs(nullptr);
+  party_bind_places(nullptr);
   if (Callways* c = callways()) callways_after_menu(c);
   return result;
 }

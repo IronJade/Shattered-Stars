@@ -2119,7 +2119,7 @@ void Panel::draw_member() {
 void Panel::build_members() {
   const int selected = party_get_selected();
   member_count = 0;
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < party_place_count(); ++i) {  // (8; 12 with the bench's places [partybuild agent])
     party_select(i);
     if (party_selected_char() == 0) continue;
     bool ok = true;

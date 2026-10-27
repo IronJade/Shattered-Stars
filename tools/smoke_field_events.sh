@@ -760,6 +760,36 @@ if python3 -c 'import json,sys; b=json.load(open(sys.argv[1]))["bench"]; sys.exi
 else
   echo "FAIL ap_bench_swap: the sidecar's bench holds Opera"; fail=1
 fi
+# The camp menu's pages on a benched member (B2) [partybuild agent]: the save above, Opera on the
+# bench (place 8, the member list's ninth row). Equipment takes her weapon off; Tactics (R1: the
+# bench) gives her the next orders; the save keeps both in the sidecar's bench (record +0xc the
+# weapon, +0x38 the orders, +0x3a bit 0 the Equipment Wizard off) and nothing else of hers changes
+# but the figures the camp menu's stat pass derives (slot +0x2c..+0x4d, record +0x2..+0xb); the
+# save loads (its bench hash agrees).
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard_camp_before.json"
+CAMP_EQUIP="200:triangle,206:none,350:down,356:none,370:down,376:none,420:cross,426:none,450:down,456:none,470:down,476:none,490:down,496:none,510:down,516:none,530:down,536:none,550:down,556:none,570:down,576:none,590:down,596:none,650:cross,656:none,900:cross,906:none,1050:cross,1056:none,1200:circle,1206:none"
+CAMP_TACTICS="1400:down,1406:none,1420:down,1426:none,1440:down,1446:none,1460:down,1466:none,1500:cross,1506:none,1600:cross,1606:none,1900:r1,1906:none,1950:right,1956:none,2000:cross,2006:none,2150:down,2156:none,2200:cross,2206:none,2400:circle,2406:none,2500:circle,2506:none,2600:circle,2606:none"
+CAMP_SAVE=$(echo "$PO_SAVE" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 900, a[2]}}')
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 3900 --input "$CAMP_EQUIP,$CAMP_TACTICS,$CAMP_SAVE" </dev/null >"$WORK/ap_bench_camp.log" 2>&1
+check ap_bench_camp "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if python3 -c '
+import json, sys
+def opera(p):
+    return next(bytes.fromhex(e["bytes"]) for e in json.load(open(p))["bench"] if e["place"] == 8)
+a, b = opera(sys.argv[1]), opera(sys.argv[2])
+derived = set(range(0x2C, 0x4E)) | set(range(0x60 + 2, 0x60 + 0xC))
+mine = {0x60 + 0xC, 0x60 + 0xD, 0x60 + 0x38, 0x60 + 0x3A}
+diff = {i for i in range(0x130) if a[i] != b[i]}
+ok = b[0:2] == bytes([9, 0]) and a[0x6C:0x6E] != bytes(2) and b[0x6C:0x6E] == bytes(2) and a[0x98] != b[0x98] and b[0x9A] & 1
+sys.exit(0 if ok and diff <= derived | mine else 1)' "$WORK/bcard_camp_before.json" "$WORK/bcard.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_camp: benched Opera's weapon off and new orders in the sidecar, nothing else of hers changed"
+else
+  echo "FAIL ap_bench_camp: benched Opera's weapon off and new orders in the sidecar, nothing else of hers changed"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_camp_load.log" 2>&1
+check ap_bench_camp_load "the save loads with Opera on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Opera$'
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.

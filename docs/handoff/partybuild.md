@@ -51,6 +51,16 @@ Specs: docs/handoff/heroslot.md (D1-D4 decided), docs/handoff/bench.md (B1-B8 de
   Private Action (flags 2 / 4 / 746), a split window keeping everyone away, a window needing a
   member for a while, temporary members / a stash present, the endings, a hub story view.
   Sidecar keys `leader` / `slot_0` (party ids, written only when set).
+- **Benched members are managed, not used** (the user, 2026-10-27, verbatim: "Benched members
+  are not live in the game, so follow your recommendation on that. I think introducing them as
+  viable when they are not currently, until they enter the party or the reserves breaks the play
+  of the game. They can be there, they can be brought in, but they are not there without
+  explicitly bringing them in to be used."). Allowed for a benched member (B2): Equipment,
+  Skills (spending their SP, battle skills on / off), Tactics orders, Status, the Specialty page
+  for viewing. Refused: every Specialty action (Oracle, music, Practice, Scout, Familiar, any
+  other specialty use), field spells cast by them (their MP, on anyone), anything else where a
+  benched member does something in the game: the menu's refusal sound and, where it fits the
+  page, a short help-bar note.
 
 ## Plan (pieces, each committed once verified)
 
@@ -177,6 +187,71 @@ agent "partybuild2" continues from here (2026-10-26).
   - Note for piece 5: StatCalc::all covers the 8 only, so a benched member's derived figures are
     those from when they left the 8 (or from their join); B2's camp menu should run the stat
     pass over the bench too.
+
+- partybuild3 stopped at ~362k context (2026-10-26: an image Read denied by the session's old
+  auto mode, since turned off). **Agent "partybuild4"** continues (2026-10-27).
+- **Piece 4 committed** (7a43580; partybuild4): the full smoke rerun from the frozen binary
+  bin_p4 and a frozen script copy passed 316/0 (scratchpad/partybuild/smoke8.log; smoke7.log
+  had ended early when partybuild3's session stopped).
+- **Piece 5 (B2: the other camp pages on benched members): verified** (ss_tests 103/0,
+  ss_game_tests 198/0; full smoke: see below). Files: menu_camp.cpp (menu_run_camp binds the
+  store's places 8-11 for the whole camp menu; CampMenu rows_ = party_place_count(): 12 rows),
+  menu_widget.{h,cpp} (Panel::build_members over the places, members[12]: L2 / R2 through
+  12), menu_stats.cpp (StatCalc's level pass and all() over the places), menu_combat.cpp
+  (BenchTacticsPage: Tactics with the same flip; draw_flip_help / page_button shared with
+  BenchOrderPage), menu_skills.cpp (SuperDetail's 8-slot grid starts at 0 for a benched
+  member), menu_specialty.cpp (no voice reload for places 8-11), test_ap.cpp
+  ap_bench_camp_pages, smoke ap_bench_camp / ap_bench_camp_load, seed_format.md ("The camp
+  menu's other pages", "Checked (2026-10-27 ...)"), engine/README.md.
+  - Readings (in seed_format.md; for the user to overrule): a benched member may use the
+    Specialty page as a reserve member may (Oracle, music, Practice, Scout, Familiar, field
+    spells with their own MP); spell targets, Link Combo partners (the front four, as the
+    original), item use, Item Creation, super specialties and the Equipment Wizard at the
+    menu's close stay with the 8. Link Combo from a benched member: as from a reserve member
+    (party_find_link_partner scans the front four only, in the original too).
+  - Proofs (scratchpad/partybuild/p5/; card p4/bcard.mcd: bench Noel, Ernest): eqtac run:
+    Noel's weapon off (Equipment), his orders +1 (Tactics, bench page), save: in the sidecar
+    only Noel's weapon / orders / EW bit and both benched members' derived figures differ
+    (p5/benchdec.py before after). The stat pass filled in derived figures a bench join leaves
+    at zero (Status shows them). Negative control: ap_bench_camp fails on bin_p4.
+  - The flock of white sprites after the camp menu closes on map 18 (p5/eqw_sheet.png) is the
+    map's own effect: the piece-4 binary shows it at the same frames (p5/eqw_p4_sheet.png).
+  - Captures for the user: p4/eq_sheet.png (member list rows 9-12, Equipment for Noel, R2 to
+    Ernest, Status), p5/tac_sheet.png (Tactics: reserve page, R1 bench page, Noel's orders, the
+    new order kept across L1 / R1), p5/spsk_sheet.png (Specialty and Skills for Noel / Ernest,
+    L2 / R2), p5/eqtac_sheet.png (the picker's figures for a benched member, the save).
+
+- partybuild4 stopped (2026-10-27: its permission prompts failed). **Agent "partybuild5"**
+  continues (2026-10-27): commit piece 5, then piece 5b (below), 6, 7.
+- State partybuild4 left (from its final report):
+  - Piece 4 committed 7a43580: smoke 316/0 (smoke8.log), ss_tests 103/0, ss_game_tests 197/0.
+  - Piece 5: ss_tests 103/0, ss_game_tests 198/0 (new ap_bench_camp_pages); smoke
+    ap_bench_camp / ap_bench_camp_load pass (bench slice 16/16; they fail on the piece-4
+    binary); the sidecar proof (only Noel's weapon / orders / EW bit and both benched members'
+    derived figures changed). The full smoke from frozen bin_p5 + smoke_p5.sh into smoke9.log
+    had finished unread: **read by partybuild5: 319 PASS / 0 FAIL, rc=0**. Patch for piece 5
+    alone (with its docs and handoff notes): scratchpad/partybuild/piece5.patch
+    (`git apply --cached ../../partybuild/piece5.patch` from the worktree).
+  - Piece 6 (loans for solo fights) written in ap.h / ap.cpp by partybuild4, NOT compiled: a
+    sidecar key `lent` (version 3 when a loan is out); the benched member's own bytes go into
+    the slot the game's join would use (else a borrowed reserve slot), their bench place kept
+    empty; at free play they go back with what the fight gave them, once the window ends or
+    they are set aside; Party Order stays locked while a loan is out. Inns not healing the
+    bench (B8) and the endings ignoring it (B5) need no code: those routines read the 8 slots.
+  - Captures for the user: shots/po_sheet.png, p4/eq_sheet.png, p5/tac_sheet.png,
+    p5/spsk_sheet.png, p5/eqtac_sheet.png.
+  - The white-sprite flock after the menu closes on map 18 shows with the piece-4 binary at
+    the same frames: not from this work.
+- **Piece 5b (new, the user's decision of 2026-10-27, see the design section): benched members
+  are managed, not used.** Equipment, Skills (SP, battle skills on / off), Tactics, Status and
+  viewing the Specialty page stay; every Specialty action and field spells cast by a benched
+  member are refused (the menu's refusal sound, a help-bar note where it fits). This replaces
+  piece 5's reading "a benched member may use the Specialty page as a reserve member may".
+- Merge care (for the coordinator): main is being changed by "pendingsave" (the give queue and
+  the save sidecar in engine/src/game/ap/ap.cpp) and "skilllogic2" (apworld/). ap.cpp, the
+  sidecar keys (`bench`, `bench_hash`, `leader`, `slot_0`, `lent`, version 3) and the player
+  guide under apworld/so2/docs/ will need care when party-bench is merged. Don't merge main
+  into party-bench from here.
 
 ## Working notes (partybuild2)
 
