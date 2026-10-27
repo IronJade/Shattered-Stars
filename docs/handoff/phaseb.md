@@ -30,7 +30,8 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | started 2026-10-27 |
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
 | World | B3 logic export + 0.2.0 Skillsanity rooms accepted with a warning | (after B2) | | queued |
-| World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | started 2026-10-27 (layout from maprender) |
+| World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
+| Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | started 2026-10-27 |
 | World | B4b the pack's logic evaluator | (after B3) | | queued |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
@@ -89,3 +90,9 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
   pack"). Later, not blocking: a setup button for the command (Windows players); shopkeeper dots if
   wanted; better map labels in map_names.csv; the Windows build itself not run (MinGW syntax only).
   packgen (B4a) started alongside rulebuilder.
+- 2026-10-27: rulebuilder committed B2 (0cc0bda, 1d879a2), finishing. packgen done: logic seam
+  `^$so2_access|<id>` in tools/poptracker/logic.lua (docs/ap/poptracker.md "The logic seam"); Lua tests
+  via lupa in scratchpad/ap/ap-venv; PopTracker 0.36.0 AppImage + pack checker kept in
+  scratchpad/packgen/ for B4b/B7. For the user (needed at B7): versions.json location (proposal:
+  tools/poptracker/versions.json on main) and which release carries the pack zip. For B7: checklist
+  rows `tools/build_poptracker.sh all`, tools/ap_poptracker_smoke.py. portcheck started.
