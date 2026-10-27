@@ -2,8 +2,6 @@
 area keys and the starting ones, the story's stages, the ship landings, where progression may go,
 the El voyage gate, the teleporter, the seed's doors; what each key opens (assertAccessDependency).
 WorldTestBase's default tests run for every class too."""
-import unittest
-
 from BaseClasses import CollectionState, ItemClassification, LocationProgressType
 
 from ..locations import ROW
@@ -58,9 +56,13 @@ class OpenWorldChecks:
     teleporter = True
 
     def test_keys_and_start(self):
+        """The Arlia and Fun City passes at the start, and the North City Pass too unless the
+        teleporter and expel_progression are both on (0.2.1: with either off it has no spot in a
+        solo world, TestOpenWorldNoExpelProgression); every other key in the pool."""
         from ..data import KEY_GROUPS
         from ..items import KEY_OF, START_KEYS
-        start = set(START_KEYS) | (set() if self.teleporter else {"North City Pass"})
+        later = self.teleporter and bool(self.world.options.expel_progression)
+        start = set(START_KEYS) | (set() if later else {"North City Pass"})
         pre = {i.name for i in self.multiworld.precollected_items[self.player]}
         self.assertEqual(pre & {g["name"] for g in KEY_GROUPS}, start)
         keys = [i for i in own_pool(self) if i.code in KEY_OF]
@@ -411,25 +413,12 @@ class TestOpenWorldNoTeleporter(SO2TestBase, OpenWorldChecks):
 
 
 class TestOpenWorldNoExpelProgression(SO2TestBase, OpenWorldChecks):
-    """Open world with expel_progression off (the phase-4 batch's reproducer: three seeds of the
-    first 64-seed batch, 2026-10-23, failed to fill, the Expel-story keys having nowhere to go;
-    fixed by letting our own Expel-story keys stay where a proof reached: test_progression_rules)."""
+    """Open world with expel_progression off, a solo world (the reproducer of two fill failures:
+    three seeds of the first 64-seed batch, 2026-10-23, the Expel-story keys having nowhere to go,
+    fixed by letting our own Expel-story keys stay where a proof reached, test_progression_rules;
+    and every solo seed with the teleporter on, found by this class 2026-10-26, the North City
+    Pass having no legal spot: a Nede key the first Nede stage needs, kept out of Expel, with
+    nothing on Energy Nede reached before it. 0.2.1 gives it at the start: test_keys_and_start.
+    docs/handoff/aptests.md "World bug"). WorldTestBase's test_fill and this mix's fills
+    (test_voyage_gate_placements, test_seed_doors) are the reproducer."""
     options = {"world_mode": "open_world", "expel_progression": False, "story_route": "rena"}
-
-    # KNOWN WORLD BUG (found 2026-10-26 by this class; docs/handoff/aptests.md "World bug: North
-    # City Pass has no legal spot"): with open_world, expel_progression off and the teleporter on,
-    # North City Pass has no legal spot in a solo world (a Nede key the first Nede stage needs, kept
-    # out of Expel, and nothing on Energy Nede is reached before it), so every solo fill raises
-    # FillError. These three are this class's tests that fill; each fails at the fill only. When the
-    # world fix lands they pass: take the expectedFailure off then (an unexpected success fails).
-    @unittest.expectedFailure
-    def test_fill(self):
-        super().test_fill()
-
-    @unittest.expectedFailure
-    def test_voyage_gate_placements(self):
-        super().test_voyage_gate_placements()
-
-    @unittest.expectedFailure
-    def test_seed_doors(self):
-        super().test_seed_doors()

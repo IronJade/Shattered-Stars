@@ -570,7 +570,9 @@ def check(path):
         if keys != set(KEYS):
             errs.append(f"keys in the items table: {len(keys)}")
         start = {i["name"] for i in s["start"]["items"] if i["kind"] == "key"}
-        want = {"Arlia Pass", "Fun City Pass"} | (set() if o["expel_teleporter"] else {"North City Pass"})
+        # The North City Pass too unless the teleporter and expel_progression are both on (0.2.1).
+        later = o["expel_teleporter"] and o["expel_progression"]
+        want = {"Arlia Pass", "Fun City Pass"} | (set() if later else {"North City Pass"})
         if start != want:
             errs.append(f"starting keys {sorted(start)}")
         if not o["expel_teleporter"] and any(

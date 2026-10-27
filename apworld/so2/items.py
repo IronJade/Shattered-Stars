@@ -57,7 +57,8 @@ ALL_KEY_IDS = frozenset(KEY_OF) | frozenset(HUB_KEY_OF)    # any Star Ocean key 
 # Keys the Expel story needs (the disc switch can't be reached without them).
 EXPEL_STORY_KEYS = frozenset(g["name"] for g in KEY_GROUPS if g["stage"] and g["stage"] <= DISC_SWITCH_STAGE)
 # Open world's starting keys: the start (Arlia) and the teleporter's way back to Expel (Fun City),
-# which also opens Virtual Expel after the Final Save Point.
+# which also opens Virtual Expel after the Final Save Point. The North City Pass too unless
+# expel_teleporter and expel_progression are both on (world.create_items).
 START_KEYS = ("Arlia Pass", "Fun City Pass")
 # Skillsanity [skillsanity2]: the skills (SKILL_BASE + id) and the killer moves / spells (MOVE_BASE +
 # (party id << 8) + record index), skillsanity.py.
