@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hell, hub, items, locations, logic, regions, rules, skillsanity, ut
+from . import hell, hub, items, locations, logic, regions, rules, skillsanity, tracker_export, ut
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -400,10 +400,13 @@ class SO2World(World):
     def fill_slot_data(self):
         """The slot data (docs/ap/seed_format.md "Slot data and trackers"): slot_options, then for
         trackers `logic_version` (ut.LOGIC_VERSION: Universal Tracker refuses a room whose logic
-        this world doesn't reproduce) and `exclude_locations` (UT shows them excluded). Those two
-        are not in the .apso2's `options` (seed_data), which stays as it was."""
+        this world doesn't reproduce), `exclude_locations` (UT shows them excluded) and `tracker`,
+        this world's resolved logic for trackers that don't run the world (tracker_export: the
+        PopTracker pack). Those three are not in the .apso2's `options` (seed_data), which stays as
+        it was."""
         return dict(self.slot_options(), logic_version=ut.LOGIC_VERSION,
-                    exclude_locations=sorted(self.options.exclude_locations.value))
+                    exclude_locations=sorted(self.options.exclude_locations.value),
+                    tracker=tracker_export.export(self))
 
     def slot_options(self):
         """The options, the party and the values derived from them: the .apso2's `options` and

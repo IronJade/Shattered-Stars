@@ -312,7 +312,7 @@ class TestUTRoom(SO2TestBase):
         encounter_rate 0 with killer-move checks a hell seed: a 0.2.0 room with either is refused
         (oldroom.py measured 13 of 25 skillsanity rooms off), a 0.2.1 one is 0.2.2's logic."""
         for value in ("skills_only", "special_only", "insanity"):
-            mw = setup_multiworld(SO2World, ("generate_early",), 9, {"skillsanity": value, "world_mode": "hub"})
+            mw = setup_multiworld(SO2World, UT_STEPS, 9, {"skillsanity": value, "world_mode": "hub"})
             room = {k: v for k, v in room_slot_data(mw.worlds[1]).items() if k not in ut.NEW_KEYS}
             with self.subTest(skillsanity=value, apworld_version="0.2.1"):
                 self.assertEqual(ut_rebuild(dict(room, apworld_version="0.2.1"), 77).worlds[1].party,
@@ -402,7 +402,7 @@ class TestUTCoverage(unittest.TestCase):
         known = set(ut.SLOT_OPTIONS) | RESTORED_CHOICES | DERIVED | set(ut.NEW_KEYS)
         for label in ("story default", "open hell", "hub full", "open full"):
             with self.subTest(label):
-                mw = setup_multiworld(SO2World, ("generate_early",), 3, MIXES[label])
+                mw = setup_multiworld(SO2World, UT_STEPS, 3, MIXES[label])
                 self.assertEqual(set(mw.worlds[1].fill_slot_data()) - known, set())
 
 

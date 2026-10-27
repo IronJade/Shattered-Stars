@@ -34,7 +34,7 @@ from .options import CHARACTER_NAMES
 
 LOGIC_VERSION = 1           # this world's logic; bump when the same slot data would make other logic
 LOGIC_VERSIONS = (1,)       # the room logic versions this world reproduces (a room without the key: 1)
-NEW_KEYS = ("logic_version", "exclude_locations")   # 0.2.2's keys: not in the .apso2, absent from older rooms
+NEW_KEYS = ("logic_version", "exclude_locations", "tracker")  # 0.2.2's keys: not in the .apso2, absent from older rooms
 
 # Rooms made before logic_version whose logic differs from version 1 (docs/ap/apworld.md "Trackers",
 # "Older rooms": 0.2.0 rooms rebuilt here, 17 mixes x 5 seeds): apworld_version -> (does the room's
