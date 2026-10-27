@@ -224,3 +224,10 @@ goes back to his bench place after each (bench_back, "as they are now"). With th
   binary from before (head/).
 - Suites (frozen in scratchpad/shingofix/final2/): ss_tests 103 / 0, ss_game_tests 199 / 0, full
   smoke 319 PASS / 0 FAIL, rc 0.
+
+### Done (second assignment)
+
+Commits 591b36d (docs) and e500f2f (port) on main, not pushed. Scratch: scratchpad/shingofix/
+run.sh (NOSWEEP=, CARD=, KEEPCARD=, MAP=load), dcmp.py, lvl.py, scan_a8.py, mini_tdias.sh,
+runs/dA* / dB* / same_*, head/ (combined-HEAD binary and its smoke log), final2/ (the fixed build's
+binaries, smoke copy and logs).
