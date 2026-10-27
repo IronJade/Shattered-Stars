@@ -45,22 +45,28 @@ Agent "benchworld", started 2026-10-27 ~11:45. Scratch: scratchpad/benchworld/.
    the coordinator 2026-10-27): seed_format.md (the `bench` row, Party v2's "keeps the party to
    8", "What the APWorld writes" under the bench) and the player guide (en_*.md: the pool, the
    bench bullet, exclude / healer / select, hub, options row; setup_en.md: "unsupported version 4").
-7. [ ] End-to-end proof on main's merged port (engine/build-benchworld, deps from
-   engine/build-hubleader/_deps, -j4; headless); rebuild dist/apworld-0.2.1/ (checklist), sha256.
+7. [x] End-to-end proof on main's merged port; dist/apworld-0.2.1/ rebuilt and verified.
 
-## Status (2026-10-27 ~12:35)
-- Steps 1-6 done and verified; committing (docs first, then world + tests + tools).
-- Results (also in apworld.md "Results ... the bench"):
+## Status (2026-10-27 ~12:30): DONE (steps 1-7)
+- Commits: 809276c (docs), 64a7d20 (world + tests + tools), then the step-7 docs commit
+  (release_checklist.md section 10, 0.2.1 sums, apworld.md e2e bullet, this file).
+- Results (also in apworld.md "Results ... the bench" and release_checklist.md section 10):
   - Identity: scratchpad/benchworld/players_off = tools/ap_batch_players/* with `  bench: "false"`
     appended to each SO2 YAML; run_off.sh -> off/{sk_full,sk_hub,solo}; identity.py
     ../hellseed/batch off -> identity.txt: 96/96 identical each (480 .apso2 byte for byte, 288
     spoilers but their "Bench: No" lines); the checker's output the same but `('bench', False)`.
     The baseline was made at b2d7a75; apworld/so2 unchanged from then to 51e3aa7 (git log).
   - on/: story_open, hub, solo_noexpel 96/96, 0 checker errors; bench seeds 60/192, 168/192, 49/96.
-  - fill/summary.txt: open, open_moves, open_noexpel, hub, hub_moves: 0/100 FillError each, all
-    accessible and beatable.
+  - fill/summary.txt: open, open_moves, open_noexpel, hub, hub_moves: 0/100 FillError each.
+  - Suites: world 699 (50730), general 379 (117745), scoped 752 (56003), unittest 699 OK.
+  - E2E (scratchpad/benchworld/e2e/run.sh, engine/build-benchworld built from main after the
+    merge, -j4, rc 0): runA/B/C.log, shots/ (frame01180.png: the bench view, "Held: Leon").
+  - Package (scratchpad/benchworld/pkg: build.log, run.sh, out/, dev/; old files in pkg/old):
+    so2.apworld 186265 bytes, 31 files, sha256 83af433fa5f17a09e59b29eae859efd9df945e3b3eaefc59b04d6749f019849f;
+    YAML 93c41087a011bb2e8c54419c3a7ca1c44d96b2ccd1c8583a4fb277728eb7d035. Version stays 0.2.1.
 - Design note: the option is on by default, so story mode logs an info line (not a warning) when
   ignoring it; open world without character_items logs a warning.
+- Not done (not asked): no tag, push or publish. engine/build-benchworld can go when not needed.
 
 ## Key files
 apworld/so2/{options,items,world}.py; apworld/so2/test/{test_party,test_hub,test_v2,test_difficulty}.py;

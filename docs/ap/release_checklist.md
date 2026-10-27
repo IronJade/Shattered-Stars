@@ -133,7 +133,7 @@ Since 2026-10-26 (docs/handoff/aptests.md) worlds/so2/test follows Archipelago's
 bug's reproducer, until its fix); since 0.2.1 (docs/handoff/ncpfix.md) **449 passed**, the
 decorators gone and the mix `TestOpenWorldNoExpelProgressionNoBosses` added, each test under a
 second (`--durations=30`); since skillsanity progression (still 0.2.1, docs/handoff/skilllogic.md)
-**537 passed**; since the hell seed (still 0.2.1, docs/handoff/hellseed.md) **634 passed**. Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
+**537 passed**; since the hell seed (still 0.2.1, docs/handoff/hellseed.md) **634 passed**; since the bench (still 0.2.1, docs/handoff/benchworld.md) **699 passed** (scoped 752). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
 **379 passed, 116984 subtests**. No apworld failures appeared; see section 4 for the three
 style-only fixes made after the upstream gap analysis, re-verified with the same counts.
 
@@ -452,19 +452,37 @@ gh release create v0.02.50 \
 pushed `main`. The wiki's pages for 0.02.50 are uncommitted in `scratchpad/wiki` (the "wiki"
 agent's log, docs/handoff/wiki.md), to push with the release.
 
-## 10. so2.apworld 0.2.1: verification run (2026-10-26, agent ncpfix; redone 2026-10-27, agents skilllogic2 and hellseed2)
+## 10. so2.apworld 0.2.1: verification run (2026-10-26, agent ncpfix; redone 2026-10-27, agents skilllogic2, hellseed2 and benchworld)
 
 The North City and Noel's House passes at the start unless the teleporter and expel_progression
-are both on, skillsanity's guild checks and learn levels may hold progression, and the hell seed
+are both on, skillsanity's guild checks and learn levels may hold progression, the hell seed
 (`encounter_rate` 0 with killer-move checks or learn points: the arena's fee waived by a patch
-line, `hell_seed`, the arena rules) (docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md,
-skilllogic.md, hellseed.md). Shattered Stars 0.02.50 plays 0.2.1 seeds (the port gives a key and
-a character from a guild check and from learn points, skilllogic.md "Step 3"; the fee line is an
-ordinary version-1 patch); 0.02.51 ships with it and adds the hell seed's warning (setup's
-Archipelago page, the log). Notes: docs/release_notes/0.2.1.md (draft). The run below is
-hellseed2's, from HEAD 674e81b (skilllogic2's run from 9a44244: 173130 bytes, 537 / 379 / 590
-tests, sums bdca8abe... / 8980fbe6..., superseded; ncpfix's first: 166651 bytes, sums
-657098e9... / 21d81e67..., superseded).
+line, `hell_seed`, the arena rules), and the bench (the `bench` option, on by default: 12 places
+in open world with character_items and hub mode, `options.bench`, seed version 4)
+(docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md, skilllogic.md, hellseed.md,
+benchworld.md). Shattered Stars 0.02.50 plays 0.2.1 seeds without the bench (the port gives a key
+and a character from a guild check and from learn points, skilllogic.md "Step 3"; the fee line is
+an ordinary version-1 patch); a bench seed is version 4 and needs 0.02.51, which ships with it
+(the bench, party-bench merged at 319f5ba) and adds the hell seed's warning (setup's Archipelago
+page, the log). Notes: docs/release_notes/0.2.1.md (draft). The run below is benchworld's, from
+HEAD 64a7d20 (hellseed2's from 674e81b: 182160 bytes, 634 / 379 / 687 tests, sums 8a66353b... /
+45fa58f2..., superseded; skilllogic2's from 9a44244: 173130 bytes, sums bdca8abe... /
+8980fbe6..., superseded; ncpfix's first: 166651 bytes, sums 657098e9... / 21d81e67...,
+superseded).
+
+| Check | Result |
+|---|---|
+| `tools/build_apworld.sh dist/apworld-0.2.1` (benchworld, HEAD 64a7d20) | `so2.apworld` (186265 bytes, 31 files: HEAD's 30 tracked files of apworld/so2 byte for byte and the merged `archipelago.json`: `world_version` 0.2.1, `compatible_version` 7, `version` 7; `test/` in, no `__pycache__`) and `Star Ocean The Second Story.yaml` (24325 bytes, with `bench` in "Characters and items") |
+| Packaged world alone (benchworld: scratchpad/benchworld/pkg/run.sh, an AP copy without `worlds/so2`, the `.apworld` in `custom_worlds`; deleted after) | loads by zipimporter as 0.2.1, `failed_world_loads` empty; Generate.py at seed 777, exit 0, one `.apso2` each, nothing matching error / traceback / exception: the template's defaults solo (story: version 1, no `bench`); open world with character_items, Claude's game, starting_character any, Leon excluded (**the bench: version 4, `bench` true, 10 characters, the select 11**); the same with `bench: false` (version 2, 7 characters, the select 8); hub mode with a starting Ashton (version 4, `bench` true, 11 characters); the open-world player with ChecksFinder (version 4). Every `.apso2` and spoiler byte-identical to the dev world's. The open, no-bench and hub seeds load in the merged port (engine/build-benchworld): `[ap] seed ...`, no refusal |
+| End to end on the merged port (benchworld: scratchpad/benchworld/e2e/run.sh, headless) | a generated bench seed (open world, character_items, Claude's game, starting Ashton, `start_inventory` the other 10 members; version 4): New Game (`--map 18`): Ashton slot 0, Claude slot 1; six fill the 8, Opera / Ernest / Noel / Chisato join the bench (places 8-11); the save's sidecar version 3 with the 4 places; loaded, Party Order: Leon (slot 7) held across R1's flip and swapped with Opera (place 8), Claude to the bench refused; closed `Ashton, Claude, Rena, Celine, Bowman, Dias, Precis, Opera \| bench: Leon, Ernest, Noel, Chisato`; saved and loaded again with that bench |
+| `worlds/so2/test` (`-n 4`; benchworld) | **699 passed**, 50730 subtests; `python -m unittest`: 699, OK |
+| `test/general` (`-n 4`; benchworld) | **379 passed**, 117745 subtests |
+| `AP_TEST_WORLDS=so2 ... test/general worlds/so2` (benchworld) | **752 passed**, 56003 subtests |
+| Batches (benchworld) | with `bench: "false"` appended to the sets' SO2 YAMLs: all 288 seeds identical to hellseed2's (480 .apso2 byte for byte, the spoilers but their "Bench: No" lines); as they are (the bench on by default): story_open, hub, solo_noexpel **96/96 each, 0 checker errors** (bench seeds 60 / 168 / 49; the checker knows the bench) |
+| Bench fills (benchworld, fillrate3.py) | open world with character_items; + killer moves any and special_only; + expel / boss checks off and killer moves any; hub; hub + killer moves any and special_only: **0/100 FillError each**, all accessible and beatable |
+| SHA-256 (benchworld) | `83af433fa5f17a09e59b29eae859efd9df945e3b3eaefc59b04d6749f019849f  so2.apworld`, `93c41087a011bb2e8c54419c3a7ca1c44d96b2ccd1c8583a4fb277728eb7d035  Star.Ocean.The.Second.Story.yaml` |
+
+hellseed2's run (superseded by the above; kept for the record):
 
 | Check | Result |
 |---|---|

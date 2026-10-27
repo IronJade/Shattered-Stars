@@ -1095,6 +1095,14 @@ Results (2026-10-27, 0.2.1: the bench; docs/handoff/benchworld.md):
   progression characters a seed, 133 killer-move locations, 60 progression moves); + expel off,
   boss checks off, killer moves any (7 progression characters); hub; hub + killer moves any,
   special_only, Rena's game (11): **0/100 FillError each, every seed accessible and beatable**.
+- End to end on the merged port (main 319f5ba's engine, engine/build-benchworld; headless;
+  scratchpad/benchworld/e2e/run.sh): a generated bench seed (open world, character_items, Claude's
+  game, starting Ashton, `start_inventory` the other 10 members): New Game puts Ashton in slot 0
+  and Claude in slot 1, six members fill the 8 and Opera, Ernest, Noel and Chisato join the bench
+  (places 8-11); the save keeps them (sidecar version 3); after a load, Party Order holds Leon
+  (slot 7) across R1's flip to the bench and swaps him with Opera (place 8), refuses Claude to the
+  bench, and the save and a second load keep `bench: Leon, Ernest, Noel, Chisato`. The packaged
+  world's open-world (bench and `bench: false`) and hub seeds load in the same build.
 
 Results (2026-10-27, 0.2.1: the hell seed; docs/handoff/hellseed.md):
 - The world's tests: **634 passed** (44972 subtests; was 537): `test_hell.py` (the table above),
