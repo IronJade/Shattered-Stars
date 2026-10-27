@@ -2655,6 +2655,77 @@ TEST(ap_tournament_dias) {
   field::field_special_command(nullptr, 0xC);
   CHECK(level(3) == 35);
 
+  // [benchmerge agent] A bench seed (Claude's game), Dias received and benched, the 8 taken: he is
+  // lent for each fight (Claude's slot borrowed) and back on the bench after it. The rewrites
+  // reach him in the 8; after his last fight his own data go back to the bench with him.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"bench\": true")), &s, &error) && s.bench);
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.at(7, 3, 0);
+  pg.members({1, 7, 2, 3, 4, 6, 8, 9});
+  pg.received({2, 3, 4, 5, 6, 7, 8, 9});
+  ap::mutable_state().characters_waiting = {5};
+  CHECK(ap::party_free_play_step() == "Dias joined the party (bench)" && ap::state().bench.id(0) == 5);
+  ap::Bench& bench = ap::mutable_state().bench;
+  put16(bench.slot(0) + 0x28, 50);
+  put32(bench.slot(0) + 0x10, 123456);
+  put32(bench.slot(0) + 0x14, 3000);
+  put32(bench.slot(0) + 0x18, 3000);
+  put16(bench.record(0) + 0xC, 0x1234);
+  std::memcpy(bench.record(0) + 0x24, "Dias", 5);
+  auto bench_slot = [&] { return std::vector<u8>(bench.slot(0), bench.slot(0) + 0x60); };
+  auto bench_rec = [&] { return std::vector<u8>(bench.record(0), bench.record(0) + 0xD0); };
+  const std::vector<u8> bslot_in = bench_slot();
+  // One fight: Claude set aside, Dias's join lends him, the special right after it while he is
+  // still in, Claude's join: Dias back on the bench as he is then.
+  auto fight = [&](s32 step, int special) {
+    pg.at(477, 19, step);
+    pg.leave(1);
+    CHECK(!pg.join(5, 0x63d0, 0x6704));
+    CHECK(pg.party() == "5,7,2,3,4,6,8,9" && ap::state().lent.size() == 1 && ap::state().bench.id(0) == 0);
+    field::field_special_command(nullptr, special);
+    pg.leave(5);
+    CHECK(pg.join(1, 0x63d0, 0x6b78));
+    CHECK(pg.party() == "1,7,2,3,4,6,8,9" && ap::state().lent.empty() && ap::state().stash.empty() &&
+          ap::state().bench.id(0) == 5);
+  };
+  fight(4400, 0xC);
+  CHECK(ap::state().tournament_dias == bslot_in && bench_slot() != bslot_in);
+  // His record on the bench is still his own: the player's change to it counts.
+  put16(bench.record(0) + 0xC, 0x2222);
+  const std::vector<u8> brec_in = bench_rec();
+  fight(6200, 0xD);
+  CHECK(ap::state().tournament_dias.size() == 0x130 &&
+        std::vector<u8>(ap::state().tournament_dias.begin() + 0x60, ap::state().tournament_dias.end()) == brec_in);
+  {
+    // A save between fights holds both, each with its hash (version 3), and loads.
+    ap::on_saved(card, 2, save.data(), save.size());
+    ap::SaveState sc;
+    CHECK(ap::read_sidecar(ap::sidecar_path(card, 2), &sc, &error) && sc.tournament_dias == ap::state().tournament_dias);
+    CHECK(sc.bench == ap::state().bench && !sc.bench_hash.empty() && !sc.tournament_dias_hash.empty());
+    CHECK(ap::sidecar_json(sc)["version"].as_int(0) == 3 && ap::load_allowed(card, 2, save.data(), save.size()));
+  }
+  CHECK(ap::party_free_play_step().empty() && ap::state().tournament_dias.size() == 0x130);
+  fight(10200, 0xD);
+  CHECK(bench_slot() == bslot_in && bench_rec() == brec_in && ap::state().tournament_dias.empty());
+  CHECK(ap::sidecar_json(ap::state())["tournament_dias"].is_null());
+  // The safety net with him on the bench (not seen): held past the tournament, the next free play
+  // puts it on his bench place (the bench's id word kept); his slot alone leaves his record as is.
+  fight(4400, 0xC);
+  put16(bench.record(0) + 0xC, 0x3333);
+  const std::vector<u8> brec2 = bench_rec();
+  pg.at(1, 20, 0);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(bench_slot() == bslot_in && bench_rec() == brec2 && ap::state().tournament_dias.empty());
+  // Slot and record held: both back.
+  fight(4400, 0xC);
+  fight(6200, 0xD);
+  CHECK(ap::state().tournament_dias.size() == 0x130 && bench_rec() != brec2);
+  pg.at(1, 20, 0);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(bench_slot() == bslot_in && bench_rec() == brec2 && ap::state().tournament_dias.empty());
+  ap::stop();
+
   // The sidecar: absent reads as none; a wrong size, bad hex or another member is unreadable.
   ap::Json j;
   const std::string head = "{\"format\": \"apso2-save\", \"version\": 3, \"tournament_dias\": \"";

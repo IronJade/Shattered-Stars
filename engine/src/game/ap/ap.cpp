@@ -2777,6 +2777,10 @@ std::string split_window_needing(int id) {
 // included). His last fight there: step 10200 in Claude's game (4400 / 6200 / 10200), 16500 in
 // Rena's (6500 / 10200 / 11500 / 16500); each is followed by 0xd, after which he gets his data
 // back. Should one still be held after that (not seen), the next free play puts it back.
+// [benchmerge agent] A benched Dias is lent to the 8 for each of his fights (B4): the hooks find
+// him there, his last fight's restore lands in his lent slot, and the loan takes his own data back
+// to his bench place (tournament_dias_update runs before the loans return at free play). Held while
+// he is on the bench: the safety net puts it back on his bench place.
 namespace {
 constexpr int kTournamentChapter = 19;
 s32 tournament_dias_last() { return kTournamentChapter * 0x10000 + (script_flag(1) ? 10200 : 16500); }
@@ -2789,28 +2793,52 @@ std::string level_exp_of(const u8* slot) {
   return "level " + std::to_string(rd16s(slot + 0x28)) + ", EXP " + std::to_string(rd32s(slot + 0x10));
 }
 
-// The held data back in slot 'slot' (its id word kept: active or set aside); the record only
-// when it was saved (else it was never rewritten).
-void restore_tournament_dias(Runtime& r, int slot, const char* why) {
-  field::FieldGlobals& g = field::globals();
-  u8* p = party_slot(slot);
+// The held data back in slot bytes 'p' (its id word kept: active, set aside or benched) and
+// record 'record'; the record only when it was saved (else it was never rewritten). 'where'
+// follows the log's figures ("" for the 8).
+void restore_dias_bytes(Runtime& r, u8* p, u8* record, const std::string& where, const char* why) {
   std::vector<u8>& d = r.state.tournament_dias;
-  if (p == nullptr || g.records == nullptr || (d.size() != 0x60 && d.size() != 0x130)) return;
   const std::string story = level_exp_of(p);
   u8 id[2];
   std::memcpy(id, p, 2);
   std::memcpy(p, d.data(), 0x60);
   std::memcpy(p, id, 2);
-  if (d.size() == 0x130) std::memcpy(g.records + slot * 0xD0, d.data() + 0x60, 0xD0);
+  if (d.size() == 0x130) std::memcpy(record, d.data() + 0x60, 0xD0);
   d.clear();
-  log("Dias back as he was before the tournament (" + level_exp_of(p) + "; the tournament's " + story + "): " + why);
+  log("Dias back as he was before the tournament (" + level_exp_of(p) + "; the tournament's " + story + ")" + where + ": " + why);
+}
+
+// The held data back in slot 'slot' of the 8.
+void restore_tournament_dias(Runtime& r, int slot, const char* why) {
+  field::FieldGlobals& g = field::globals();
+  u8* p = party_slot(slot);
+  const std::vector<u8>& d = r.state.tournament_dias;
+  if (p == nullptr || g.records == nullptr || (d.size() != 0x60 && d.size() != 0x130)) return;
+  restore_dias_bytes(r, p, g.records + slot * 0xD0, "", why);
 }
 
 // Free play: a Dias still held once the tournament (or his part of it) is over goes back.
 void tournament_dias_update(Runtime& r) {
   if (r.state.tournament_dias.empty() || (in_tournament() && story_position() <= tournament_dias_last())) return;
   const int slot = slot_of_character(kDias);
-  if (slot >= 0) restore_tournament_dias(r, slot, "the tournament is over");
+  if (slot >= 0) {
+    restore_tournament_dias(r, slot, "the tournament is over");
+    return;
+  }
+  // [benchmerge agent] On the bench (benched again by then; a lent Dias is in the 8, above): his
+  // bench place takes it, the bench's id word kept and the record only when held, its Link Combo
+  // bond cleared as for any benched member (bench_back).
+  const int i = bench_index(r, kDias);
+  const size_t n = r.state.tournament_dias.size();
+  if (i < 0 || (n != 0x60 && n != 0x130)) return;
+  Bench& b = r.state.bench;
+  restore_dias_bytes(r, b.slot(i), b.record(i), " on the bench (place " + std::to_string(kBenchFirst + i) + ")",
+                     "the tournament is over");
+  if (n == 0x130) {
+    b.record(i)[0x3B] = 0;
+    b.record(i)[0xCE] = 0;
+    b.record(i)[0xCF] = 0;
+  }
 }
 }  // namespace
 
