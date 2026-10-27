@@ -59,7 +59,8 @@ Specs: docs/handoff/heroslot.md (D1-D4 decided), docs/handoff/bench.md (B1-B8 de
    benched), load / save round trip, the load guard; options.bench, seed versions 1-4.
 3. The AP join path to the bench; bench-aware lookups (receive_move, the killer scan, the median
    over the 8 slots).
-4. Party Order: three columns scrolling two at a time; the refusal rules.
+4. Party Order: B1 changed by the user (below): Option A of the mock-up (two columns, the right
+   one flips reserve / bench with L1 / R1); the refusal rules.
 5. The other camp pages (Equipment, Skills, Status, Specialty, Tactics) for bench members.
 6. Lending for solo fights (B4), inns not healing the bench (B8), endings unchanged (B5).
 7. Docs: seed_format.md, engine/README.md, docs/catalog.
@@ -131,6 +132,51 @@ agent "partybuild2" continues from here (2026-10-26).
 
 - **partybuild2 rolled over here** (~350k context, 2026-10-26): pieces 1-3 and the merge are
   committed; next is piece 4 (notes below). A fresh agent starts from this file.
+- **Agent "partybuild3"** continues from here (2026-10-26), pieces 4-7.
+- **B1 changed (the user, 2026-10-26, verbatim):** "In scratchpad/bench/shots/mock_party_order.png
+  it shows Option A as 2 pages of 2 columns. The party(active) and the reserve, and on an R1/L1
+  press it changes page and shows the reserves and the bench. That I believe is better than the 3
+  columns that cut off text." Built as the mock's panels A: the left column always the front four
+  (slots 0-3, full boxes), the right column the reserve (4-7) or, after L1 / R1, the bench
+  (8-11); a first pick survives the flip. **Alternative reading (for the user to say if meant):**
+  "page 2 shows the reserve and the bench side by side" (the front four off screen on page 2).
+  The mock shows the front four plus the bench, and the user pointed at the mock, so the mock
+  was built.
+- **Piece 4 (Party Order with the bench): done** (ss_tests 103/0, ss_game_tests 197/0, smoke
+  slice ap_bench_* all PASS; full smoke: see below). Files: menu_combat.cpp (BenchOrderPage,
+  used only when ap::bench_enabled(); PartyOrderPage untouched but draw_member_box's body moved
+  to draw_order_box), party.{h,cpp} (PartyPlaces: party_bind_places / party_bound_places /
+  party_place_count / party_place_slot / party_place_record; party_select(8-11) when bound),
+  menu_widget.cpp (draw_party_status via party_place_slot; add_party_character scans the bound
+  places), menu_gfx.{h,cpp} (set_extra_sprite_packs / sprite_gfx_cached: sprite_find_pack falls
+  back to extra packs), menu_camp.cpp (bench_sprite_packs: the camp menu reads the packs of
+  members the field did not load, 0xC27 + 2k / 0xC67 + b as map.cpp), ap.{h,cpp} (bench_store,
+  bench_locked = order_locked, bench_swap_refused, on_bench_order_closed), test_ap.cpp
+  (ap_bench_swap_rules), smoke ap_bench_swap, seed_format.md ("Party Order", "Refused moves",
+  "Checked"), engine/README.md.
+  - The flip uses the menus' page buttons (config buttons 4 / 5 = L1 / R1 by default; Widget's
+    on_shoulder is config 6 / 7 = L2 / R2, the member switch, not used here). The hint replaces
+    the logo in the help bar (logo_state pinned to 2): `L1/R1: Reserve 5-8` / `L1/R1: Bench
+    9-12` (8x8 font, 144 px from 0xA4), second line `Held: Precis` when the held pick is off
+    screen, else `Bench locked` when locked. The held hand: the first cursor's flag 1 cleared
+    (Cursor::update skips its draw) while its column is off screen.
+  - Working copy: 12 x 0x60 + 12 x 0xd0 in the page; party_bind(work) + party_bind_places(work
+    8-11) for the page's life (nothing else runs during the menu: menu_run_camp is a blocking
+    loop; AP gives only in free play). The destructor copies back (8 slots, then the store,
+    bench bonds cleared), rebinds what was bound before, then the original close's steps.
+  - Proofs (scratchpad/partybuild/p4/): bcard.mcd (Ashton, Claude, Rena, Celine | Bowman,
+    Precis, Leon, Opera | bench Noel, Ernest; made by ap_give on map 18, bench.apso2). po2 vs
+    po2c (control, picks cancelled): memb.py: every member's 0x130 bytes identical except the
+    stat pass's derived figures (slot +0x2c..+0x4c, record +0x2..+0xa; StatCalc::all runs for
+    the 8 when the camp menu page is rebuilt, item bonuses only once item_data is in); state /
+    config / inventory identical. No seed (bench study's eight.mcd, swap 0 <-> 7 with L1 / R1
+    pressed): state dump and three captures byte-identical to the baseline binary (base/).
+  - Captures for the user: scratchpad/partybuild/shots/po1..po7 and po_sheet(_x2).png (reserve
+    page, bench page after R1, Precis picked, R1 with Precis held off screen ("Held: Precis"),
+    Precis benched, Noel held with L1 back on the reserve, the camp menu with Noel in).
+  - Note for piece 5: StatCalc::all covers the 8 only, so a benched member's derived figures are
+    those from when they left the 8 (or from their join); B2's camp menu should run the stat
+    pass over the bench too.
 
 ## Working notes (partybuild2)
 

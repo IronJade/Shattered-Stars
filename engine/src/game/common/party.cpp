@@ -16,6 +16,9 @@ struct Party {
   int selected = 0;               // title 0x8004ddc8 / field 0x80074078
   u8* slot = nullptr;             // title 0x8004ddcc / field 0x8007407c
   u8* record = nullptr;           // title 0x8004ddd0 / field 0x80074080
+  // [partybuild agent] Places 8-11 (the bench), when bound.
+  PartyPlaces places;
+  bool places_bound = false;
 } g;
 
 // The library's constant tables are the same bytes in the title and field images;
@@ -48,6 +51,12 @@ u8* party_records() { return g.records; }
 int party_get_selected() { return g.selected; }
 
 void party_select(int slot) {
+  if (slot >= 8 && slot < 12 && g.places_bound) {  // [partybuild agent] a bench place
+    g.slot = g.places.slot[slot - 8];
+    g.selected = slot;
+    g.record = g.places.record[slot - 8];
+    return;
+  }
   g.slot = g.party ? g.party + slot * 0x60 : nullptr;
   g.selected = slot;
   g.record = g.records ? g.records + slot * 0xD0 : nullptr;
@@ -55,6 +64,23 @@ void party_select(int slot) {
 
 u8* party_selected_slot() { return g.slot; }
 u8* party_selected_record() { return g.record; }
+
+// [partybuild agent] Places 8-11 (party.h).
+void party_bind_places(const PartyPlaces* places) {
+  g.places_bound = places != nullptr;
+  g.places = places != nullptr ? *places : PartyPlaces{};
+  if (g.selected >= 8) party_select(g.places_bound ? g.selected : 0);  // (unbound: no place 8-11 left)
+}
+const PartyPlaces* party_bound_places() { return g.places_bound ? &g.places : nullptr; }
+int party_place_count() { return g.places_bound ? 12 : 8; }
+u8* party_place_slot(int place) {
+  if (place >= 8) return place < 12 && g.places_bound ? g.places.slot[place - 8] : nullptr;
+  return g.party ? g.party + place * 0x60 : nullptr;
+}
+u8* party_place_record(int place) {
+  if (place >= 8) return place < 12 && g.places_bound ? g.places.record[place - 8] : nullptr;
+  return g.records ? g.records + place * 0xD0 : nullptr;
+}
 
 int stat_group_offset(int group) {
   switch (group) {

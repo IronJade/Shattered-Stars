@@ -1097,6 +1097,38 @@ maintain the benched members equipment and settings"). Work in progress on branc
   (skillsanity) is learned in the benched record, and the killer-move scan reads its use counts.
   (Being worked on: a fight the story makes a benched member make alone, which lends them for
   that window.)
+- **Party Order** (camp menu > Combat > Replacement; B1, the user's pick: Option A of
+  scratchpad/bench/shots/mock_party_order.png). With a bench seed the page keeps its two
+  columns of four: the left one is always the front four (slots 0-3); the right one shows the
+  reserve (slots 4-7) or, after L1 / R1 (the menus' page buttons, config buttons 4 / 5), the
+  bench (places 8-11). The help bar says which, where the game's logo goes on other pages
+  (`L1/R1: Reserve 5-8` / `L1/R1: Bench 9-12`, the buttons named as the config has them). A pick
+  is one of the 12 places, so a first pick survives the flip: any two places change places,
+  the reserve and the bench included. The held pick's hand hides while its column is off
+  screen, and the help bar's second line names who is held (`Held: Precis`); with the bench
+  locked it says `Bench locked`. While open, the page works on a copy of the 8 slots and the
+  bench (every box reads the copy); closing it writes the copy back and then does what the
+  original's close does (a new front member's voices; the Link Combo bonds of everyone behind
+  the front four, the bench included; the leader's slot if it emptied). Log `[ap] Party Order
+  closed: Ashton, Claude, ... | bench: Opera`. The bench members' sprites, which the field did
+  not load (its packs follow the 8 slots at the map's load), are read from the disc for the
+  camp menu (the same pack files; stderr `[menu] bench: member sprites 0x600 from the disc`).
+  Without a bench seed the original page opens, untouched (L1 / R1 do nothing there).
+- **Refused moves** (sfx 7, logged `[ap] Party Order: Claude <-> an empty bench place refused:
+  the hero never goes to the bench`): the hero to the bench; a member set aside (a negative
+  slot id) with a bench place either way; a temporary member to the bench; a benched member
+  into the 8 while a split window keeps them away (Leon away, Dias away); and any move to or
+  from the bench while the party is the story's (locked: a Private Action, flags 2 / 4 / 746, a
+  split window keeping everyone away or letting someone in for a fight, temporary members, a
+  borrowed slot, the endings, a hub story view). As on the original page, a swap that leaves no
+  front member able to fight is undone. Swaps inside the 8, and inside the bench, are as today.
+- Checked (2026-10-26): a save with Noel and Ernest benched, Precis (slot 5) to place 9 across
+  the flip and Noel (place 8) to slot 3: every member's 0x130 bytes moved as they were, the
+  state, config and inventory identical to a control run that cancelled the same picks (the
+  game's stat pass recomputes a member's derived figures, slot +0x2c..+0x4c and record +0x2..
+  +0xa, whenever the camp menu reopens with them in the 8); no seed: the page, its captures and
+  the state dumps byte-identical to the baseline build, L1 / R1 pressed. Unit test
+  `ap_bench_swap_rules`; smoke `ap_bench_swap`.
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

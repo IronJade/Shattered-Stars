@@ -523,6 +523,15 @@ int TextBox::add_character(s16 id, s16 cflags, s16 anim_, s16 scale) {
 
 int TextBox::add_party_character(int character, s16 anim_, s16 scale) {
   u8 status = 0;
+  if (party_place_count() > 8) {
+    // [partybuild agent] With the bench's places bound (game/common/party.h), the member's own
+    // status wherever they are (the 8 slots or a place; the Party Order page's working copy).
+    for (int i = 0; i < party_place_count(); ++i) {
+      const u8* slotp = party_place_slot(i);
+      if (slotp != nullptr && static_cast<s16>(read_u16(slotp)) == character) status = slotp[2];
+    }
+    return add_character(static_cast<s16>(character), status, anim_, scale);
+  }
   for (int i = 0; i < 8; ++i) {
     const u8* slotp = globals().party + i * 0x60;
     if (static_cast<s16>(read_u16(slotp)) == character) status = slotp[2];
@@ -714,7 +723,8 @@ void TextBox::draw_party_status(BoxElement& e) {
   if (e.state == 0x10) {
     hp = e.status[0], hp_max = e.status[1], mp = e.status[2], mp_max = e.status[3];
   } else {
-    const u8* p = party_slots() + e.state * 0x60;
+    const u8* p = party_place_slot(e.state);  // (party_slots() + index * 0x60; a bench place 8-11 [partybuild agent])
+    if (p == nullptr) return;
     hp = static_cast<s16>(read_u16(p + 0x1C));
     hp_max = static_cast<s16>(read_u16(p + 0x18));
     mp = static_cast<s16>(read_u16(p + 0x24));

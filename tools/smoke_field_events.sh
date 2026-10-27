@@ -742,6 +742,24 @@ SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_
   timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_guard.log" 2>&1
 check ap_bench_guard "an edited bench is refused" '\[ap\] load refused, save 1 .*: this save was changed outside the game \(its bench differs from the one this seed saved\)'
 mv "$WORK/bcard.slot01.ap.json.ok" "$WORK/bcard.slot01.ap.json"
+# Party Order with the bench (B1: the right column flips reserve / bench with L1 / R1; a pick
+# survives the flip): the save above, Opera (slot 7) picked, R1, Noel (place 8) picked: they change
+# places (the hand goes back to Opera's box, now the bench's place 11); Claude to the empty place 9
+# is refused (the hero); the save keeps Opera on the bench.
+PO_NAV="200:triangle,206:none,350:down,356:none,370:down,376:none,390:down,396:none,410:down,416:none,430:down,436:none,450:down,456:none,500:cross,506:none,600:down,606:none,650:cross,656:none"
+PO_ACT="950:right,956:none,990:down,996:none,1030:down,1036:none,1070:down,1076:none,1110:cross,1116:none,1150:r1,1156:none,1190:up,1196:none,1230:up,1236:none,1270:up,1276:none,1310:cross,1316:none,1350:up,1356:none,1390:up,1396:none,1430:left,1436:none,1470:cross,1476:none,1510:right,1516:none,1550:cross,1556:none,1600:circle,1606:none,1660:circle,1666:none,1720:circle,1726:none,1780:circle,1786:none"
+PO_SAVE="1900:triangle,1906:none,2000:up,2006:none,2050:cross,2056:none,2150:cross,2156:none,2250:cross,2256:none,2350:cross,2356:none,2450:cross,2456:none,2550:left,2556:none,2600:cross,2606:none,2700:cross,2706:none,2800:cross,2806:none"
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 3000 --input "$PO_NAV,$PO_ACT,$PO_SAVE" </dev/null >"$WORK/ap_bench_swap.log" 2>&1
+check ap_bench_swap "the hero stays off the bench" '\[ap\] Party Order: Claude <-> an empty bench place refused: the hero never goes to the bench'
+check ap_bench_swap "Opera and Noel change places across the flip" '\[ap\] Party Order closed: Ashton, Claude, Rena, Celine, Bowman, Precis, Leon, Noel \| bench: Opera$'
+check ap_bench_swap "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if python3 -c 'import json,sys; b=json.load(open(sys.argv[1]))["bench"]; sys.exit(0 if len(b) == 1 and b[0]["place"] == 8 and b[0]["bytes"].startswith("0900") else 1)' \
+     "$WORK/bcard.slot01.ap.json" 2>/dev/null; then
+  echo "PASS ap_bench_swap: the sidecar's bench holds Opera"
+else
+  echo "FAIL ap_bench_swap: the sidecar's bench holds Opera"; fail=1
+fi
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.

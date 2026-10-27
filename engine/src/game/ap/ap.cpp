@@ -2228,6 +2228,45 @@ bool party_has_character(int id) { return slot_of_character(id) >= 0; }
 
 bool bench_enabled() { return bench_on(rt()); }
 
+// [partybuild agent] The bench in the camp menu (docs/handoff/bench.md B1 / Design 2).
+Bench* bench_store() { return bench_on(rt()) ? &rt().state.bench : nullptr; }
+
+bool bench_locked() {
+  const Runtime& r = rt();
+  return bench_on(r) && order_locked(r);
+}
+
+const char* bench_swap_refused(int in_slot, int benched) {
+  Runtime& r = rt();
+  if (!bench_on(r) || (in_slot == 0 && benched == 0)) return nullptr;  // (nothing moves)
+  const char* why = nullptr;
+  const int out = in_slot < 0 ? -in_slot : in_slot;
+  std::string away;
+  if (order_locked(r)) {
+    why = "the party is set aside or split now";
+  } else if (in_slot < 0) {
+    why = "a member set aside keeps their slot";
+  } else if (in_slot != 0 && in_slot == hero_id()) {
+    why = "the hero never goes to the bench";
+  } else if (in_slot != 0 && in_list(r.state.temporary, in_slot)) {
+    why = "a member here for a while never goes to the bench";
+  } else if (benched != 0 && window_keeping(benched) != nullptr) {
+    away = std::string("away for ") + window_keeping(benched)->what;
+    why = away.c_str();
+  }
+  if (why == nullptr) return nullptr;
+  static std::string last;
+  last = why;
+  log(std::string("Party Order: ") + (out != 0 ? character_name(out) : "an empty slot") + " <-> " +
+      (benched != 0 ? character_name(benched) : "an empty bench place") + " refused: " + last);
+  return last.c_str();
+}
+
+void on_bench_order_closed() {
+  if (!bench_on(rt())) return;
+  log("Party Order closed: " + party_line());
+}
+
 int required_story_route() {
   const Runtime& r = rt();
   return r.on ? r.seed.story_route : 0;

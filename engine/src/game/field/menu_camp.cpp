@@ -9,6 +9,7 @@
 #include "disc/slz.h"
 #include "game/ap/ap.h"
 #include "game/boot/pad.h"
+#include "game/boot/system.h"
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
 #include "game/common/menu_core.h"
@@ -762,6 +763,40 @@ void menu_launcher_finish(MenuLauncher* l) {
   l->buffer.shrink_to_fit();
 }
 
+// [partybuild agent] Archipelago's bench (docs/handoff/bench.md): the camp menu shows the members
+// on the bench too (Party Order's flip), whose sprites the field did not load (its packs follow the
+// 8 slots at the map's load, map.cpp map_resolve_entries). The packs of every member the menu can
+// show (the 8 slots and the bench) whose graphics no cache slot holds are read from the disc for
+// this menu (the same pack files, by the same member mask) and searched after the field's. Nothing
+// without a bench seed.
+std::vector<std::vector<u8>> bench_sprite_packs() {
+  std::vector<std::vector<u8>> packs;
+  const ap::Bench* bench = ap::bench_store();
+  const u8* party = globals().party;
+  disc::Archive* archive = get_system()->loader.archive();
+  if (bench == nullptr || party == nullptr || archive == nullptr) return packs;
+  u32 shown = 0;
+  for (int i = 0; i < 8; ++i)
+    if (const s16 id = static_cast<s16>(rd16(party + i * 0x60)); id >= 1 && id <= 12) shown |= 1u << (id - 1);
+  for (int i = 0; i < ap::kBenchPlaces; ++i)
+    if (const int id = bench->id(i); id >= 1 && id <= 12) shown |= 1u << (id - 1);
+  u32 missing = 0;
+  for (int id = 1; id <= 12; ++id)
+    if ((shown >> (id - 1) & 1) != 0 && !menu::sprite_gfx_cached(static_cast<u32>(id - 1))) missing |= 1u << (id - 1);
+  if (missing == 0) return packs;
+  std::vector<int> entries;
+  if ((missing & 0x7C) != 0) entries.push_back(static_cast<int>(((missing & 0x7C) >> 2) * 2 + 0xC27));
+  if ((missing & 0xF80) != 0) entries.push_back(static_cast<int>(((missing & 0xF80) >> 7) + 0xC67));
+  for (const int entry : entries) {
+    auto packed = archive->read_entry(static_cast<u32>(entry));
+    if (!packed) continue;
+    auto out = disc::slz::unpack_block(*packed, 0, 0, nullptr);
+    if (out && out->size() >= 4) packs.push_back(std::move(*out));
+  }
+  std::fprintf(stderr, "[menu] bench: member sprites 0x%03x from the disc (%zu packs)\n", missing, packs.size());
+  return packs;
+}
+
 // ==== Runners ===============================================================================
 
 int menu_run_camp(MenuLauncher* l) {
@@ -770,6 +805,9 @@ int menu_run_camp(MenuLauncher* l) {
   callways_before_menu(callways());
   FieldGlobals& g = globals();
   int result = 0;
+  // [partybuild agent] The bench's sprites for this menu (bench_sprite_packs above).
+  const std::vector<std::vector<u8>> bench_packs = bench_sprite_packs();
+  menu::set_extra_sprite_packs(bench_packs.empty() ? nullptr : &bench_packs);
   {
     menu::MenuSession session;
     run_menu(session, [](menu::MenuSession& s) { s.start_page = 1; });
@@ -786,6 +824,7 @@ int menu_run_camp(MenuLauncher* l) {
       wr16(g.game_state + 0x264, 0);
     }
   }
+  menu::set_extra_sprite_packs(nullptr);
   if (Callways* c = callways()) callways_after_menu(c);
   return result;
 }

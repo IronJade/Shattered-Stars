@@ -2557,6 +2557,53 @@ TEST(ap_bench_join) {
   ap::stop();
 }
 
+// [partybuild agent] Party Order with the bench (docs/handoff/bench.md Design 2): which moves to or
+// from the bench the page refuses (field/menu_combat.cpp BenchOrderPage asks bench_swap_refused).
+TEST(ap_bench_swap_rules) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::bench_swap_refused(1, 11) == nullptr && ap::bench_store() == nullptr);  // (no seed: nothing)
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"bench\": true")), &s, &error) && s.bench);
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.at(7, 3, 0);
+  pg.members({1, 2, 3, 4, 6, 7, 8, 9});
+  pg.received({2, 3, 4, 6, 7, 8, 9, 10, 11});
+  CHECK(ap::bench_store() != nullptr && !ap::bench_locked());
+  // Allowed: a member to the bench (the starting member too), one from it, into an empty slot.
+  CHECK(ap::bench_swap_refused(3, 0) == nullptr && ap::bench_swap_refused(3, 11) == nullptr);
+  CHECK(ap::bench_swap_refused(7, 0) == nullptr && ap::bench_swap_refused(0, 11) == nullptr);
+  CHECK(ap::bench_swap_refused(0, 0) == nullptr);
+  // Refused: the hero, a member set aside (either way), a temporary member (the party locked too).
+  CHECK(ap::bench_swap_refused(1, 11) != nullptr && ap::bench_swap_refused(1, 0) != nullptr);
+  CHECK(ap::bench_swap_refused(-3, 0) != nullptr && ap::bench_swap_refused(-3, 11) != nullptr);
+  ap::mutable_state().temporary = {5};
+  CHECK(ap::bench_locked() && ap::bench_swap_refused(5, 0) != nullptr && ap::bench_swap_refused(3, 11) != nullptr);
+  ap::mutable_state().temporary.clear();
+  // A benched member a split keeps away stays benched (Leon away from chapter 25 step 3000); the
+  // others come and go.
+  pg.at(422, 25, 3000);
+  CHECK(!ap::bench_locked() && ap::bench_swap_refused(3, 8) != nullptr && ap::bench_swap_refused(3, 11) == nullptr);
+  pg.at(7, 3, 0);
+  // Locked: a Private Action (flags 2 / 4), the isolate routine (746), the endings (0x2f1), a
+  // window keeping everyone away (the Mars window, chapter 15), a borrowed slot.
+  for (const int flag : {2, 4, 746, 0x2F1}) {
+    set_flag(pg.sg, flag, true);
+    CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 11) != nullptr && ap::bench_swap_refused(0, 0) == nullptr);
+    set_flag(pg.sg, flag, false);
+  }
+  pg.at(124, 15, 2000);
+  CHECK(ap::bench_locked() && ap::bench_swap_refused(0, 11) != nullptr);
+  pg.at(7, 3, 0);
+  ap::mutable_state().stash.push_back({4, std::vector<u8>(0x130)});
+  CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 0) != nullptr);
+  ap::mutable_state().stash.clear();
+  CHECK(!ap::bench_locked());
+  ap::stop();
+}
+
 TEST(ap_v2_party_isolated) {
   ap::stop();
   PartyGame pg;

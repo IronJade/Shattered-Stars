@@ -251,6 +251,21 @@ s32 scale_encounter_distance(s32 distance);  // the distance to the next one, * 
 bool party_has_character(int id);         // in a party slot, active or in reserve
 // [partybuild agent] The bench (game/ap/bench.h): a bench seed is playing (options.bench).
 bool bench_enabled();
+// The bench's store (places 8-11), null without a bench seed. The camp menu's pages read and
+// change it (field/menu_combat.cpp Party Order; docs/handoff/bench.md B1 / B2).
+Bench* bench_store();
+// Party Order with the bench (docs/handoff/bench.md Design 2). Locked (no member goes to or comes
+// from the bench): while the party is set aside or split (a Private Action, a split window, temporary
+// members, a borrowed slot, the endings, a hub story view: heroslot's locked states).
+bool bench_locked();
+// A swap between a game slot holding 'in_slot' (its party id as the slot has it: negative for a
+// member set aside, 0 empty) and a bench place holding 'benched' (0 empty): why it is refused (and
+// logged), or null. Refused: anything while locked; a member set aside; the hero; a temporary
+// member; a benched member whom a split window keeps away now (into the 8). The page's own rule
+// (a front member left who can fight) is the page's.
+const char* bench_swap_refused(int in_slot, int benched);
+// The page closed with the bench on: the party and the bench to the log.
+void on_bench_order_closed();
 // New Game's choice of story_route (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
 // seed's options.story_route; the locations the seed holds are that story_route's game's).
 int required_story_route();
