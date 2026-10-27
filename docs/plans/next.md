@@ -84,7 +84,7 @@ player's own disc into PopTracker's user-override folder; nothing from the disc 
   member who isn't the hero takes slot 0 and the lead; the hero goes to slot 1; the lead and slot 0
   follow that member across scenes; the save card keeps the hero's name. ~3 days.
 - **12-member bench** (docs/handoff/bench.md, B1-B8 decided): places 8-11 kept by the port in the
-  save sidecar, swapped on Party Order (three columns scrolling two at a time), editable in the
+  save sidecar, swapped on Party Order (L1/R1 flips the right column between reserve and bench), editable in the
   other camp pages, a `bench` apworld option (every member not excluded becomes an item). Port
   ~10-14 days, APWorld ~1-1.5, docs ~0.5-1.
 
