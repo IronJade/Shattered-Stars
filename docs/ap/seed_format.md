@@ -309,8 +309,9 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   him, and restore it after his last fight"): his slot (0x60 bytes) is saved before the first
   rewrite, his record (0xd0) before the first 0xd (0xc leaves it alone, so until then it is his
   own and any change the player makes to it counts), and both go back right after his last fight
-  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then. The
-  key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
+  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then (a
+  benched Dias is lent to the 8 for each fight; one held while he is on the bench goes back to
+  his bench place: "Loans" under "The bench"). The key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
   record). Written only while held (then version 3, below: a port from before refuses the save
   rather than leave him with the tournament's data). Absent: nothing held. Any
   other length, a non-hex character or another member's id makes the sidecar unreadable.
@@ -1349,13 +1350,18 @@ maintain the benched members equipment and settings"). Built on branch `party-be
   Private Action; Party Order locked in a Private Action and in the windows around the
   party-order saves; a loan never takes a borrower's slot; the tournament with heroslot, A 0x16 /
   0x15 / 0x17: nobody lost); smoke `ap_bench_m12`, `ap_bench_t477`.
-- Not built here (queued on main): the tournament's specials rewrite Dias's own data after his
-  fights (0xc: level 35, EXP 96982, HP 2500; 0xd: his starting data again), so a lent Dias goes
-  back to the bench with that today, as a received Dias in the 8 keeps it on main. The user's
-  decision (2026-10-27, docs/handoff/shingofix.md on main: "b) Save his data before the
-  tournament rewrites him, and restore it after his last fight") is queued for a follow-up agent
-  on main; it covers a lent Dias too: his bytes at the tournament's first loan, back on his
-  bench place once the window is over.
+- The tournament's kept Dias with the bench (`tournament_dias` above, port 0.02.51; agent
+  "benchmerge", 2026-10-27). A benched Dias is lent into the 8 for each of his fights, so the
+  specials' hooks find him there: his slot is saved before 0xc and his record before the first
+  0xd (until then the record is his own: an Equipment change on the bench between fights
+  counts), and right after his last fight his own data go back into his lent slot, which the
+  loan then takes back to his bench place. A copy still held once the tournament is over while
+  he is on the bench (not seen) is put on his bench place at the next free play (the bench's id
+  word kept, the record only when held, its Link Combo bond cleared as for any benched member);
+  that runs before the loans return. Unit test `ap_tournament_dias` (a lent Dias for 4400 / 6200
+  / 10200, back on the bench as he was; a save between fights with `bench` and
+  `tournament_dias`, each with its hash; the safety net on the bench, slot alone and slot and
+  record).
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

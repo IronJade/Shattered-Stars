@@ -375,6 +375,13 @@ agent "partybuild2" continues from here (2026-10-26).
   on, seed version 4, the player guide), removing the untracked `analysis` symlink from the
   worktree once nothing needs the North City smoke case there.
 
+- **Agent "benchmerge"** (2026-10-27; the user: "Bench needs to be rolled into the 0.02.51 + 0.2.1
+  release"): `git merge main` (51e3aa7) into party-bench, the lent / benched Dias addition, suites,
+  same-state check, release notes. Scratch: `<main repo>/scratchpad/benchmerge/`. Rules: as above,
+  plus at most 1 heavy job at a time, builds -j4; another agent ("benchworld") builds the
+  APWorld's `bench` option on main meanwhile: never touch the main checkout. Progress in "Merging
+  party-bench into main" below ("Done by benchmerge").
+
 ## Merging party-bench into main (partybuild6, 2026-10-27; for the coordinator, not done here)
 
 Previewed read-only: `git merge-tree --write-tree main <party-bench with pieces 6 / 7>` (no ref,
@@ -428,6 +435,76 @@ files), every one "keep both":**
   docs/handoff/shingofix.md) must cover a lent Dias too (his bytes at the tournament's first
   loan back on his bench place when the window ends); today a lent Dias goes back to the bench
   with 0xc / 0xd's data, as a received Dias in the 8 keeps it on main.
+
+### Done by benchmerge (2026-10-27): main 51e3aa7 merged into party-bench
+
+- **The merge commit d85d6cd** (`git merge main`, no rebase). The five conflicting files of the preview,
+  each resolved by keeping both sides and read hunk by hunk afterwards:
+  - `ap.h`: SaveState holds the branch's `lead` / `first` / `bench` / `bench_hash` / `lent`, then
+    main's `Give` / `pending` / `pending_hash` and shingofix's `tournament_dias` /
+    `tournament_dias_hash`; load_allowed's comment names pending_hash and bench_hash; the heroslot
+    camp-menu hooks and main's `before_dias_rewrite` / `after_dias_rewrite` side by side.
+  - `seed.h`: `bench` and `hell_seed`.
+  - `ap.cpp`: the loans block after borrow_slot and the loan keep line in party_v2_update's stash
+    loop (the branch's; main's keep line as it is); sidecar_json's version
+    `s.pending.empty() && s.bench.empty() && s.lent.empty() && s.tournament_dias.empty() ? 2 : 3`
+    and every key of both; sidecar_from_json both parses (version comment: items waiting, Dias
+    held, a bench or a loan); on_saved computes bench_hash, pending + pending_hash and
+    tournament_dias_hash; on_loaded clears bench_hash, pending, pending_hash and
+    tournament_dias_hash, sets order_from_load, takes main's queue, and logs main's line with the
+    bench part at its end; load_allowed: main's pending and Dias checks, then the bench's;
+    party_free_play_step: debug_bench, tournament_dias_update, party_v2_update (the Dias restore
+    before the loans return, as in free_play_update).
+  - `test_ap.cpp`: ap_bench_store and main's ap_pending_save one after the other (the shared
+    tail split back to each test); 55 TESTs = 42 at the base + 5 main + 8 branch.
+  - `seed_format.md`: one sidecar list (`leader` / `slot_0`, `bench` / `bench_hash`, `lent`,
+    `pending` / `pending_hash`, the stash's `by`, `tournament_dias` / `tournament_dias_hash`), one
+    version paragraph ("The sidecar's version": 3 exactly with items waiting, a bench, a loan or
+    the tournament's Dias held, else 2; each key's bullet points to it), one guard paragraph
+    (pending_hash, bench_hash, tournament_dias_hash), both options rows (`bench`, `hell_seed`).
+  - Merged on their own and read: the player guide (the branch's starting_character paragraph on
+    main's text), engine/README.md (its guard line now names all three hashes), the smoke script
+    (both sides' cases), CMakeLists (test_ap_hell.cpp). docs/release_notes/0.02.51.md is main's
+    alone (no conflict).
+- **The lent / benched Dias** (shingofix's "For the merge of party-bench"): tournament_dias_update,
+  with Dias in none of the 8 and on the bench, puts the held copy on his bench place (the bench's id
+  word kept, the record only for a 0x130 copy, record +0x3b / +0xce / +0xcf cleared as bench_back
+  does), log `Dias back as he was before the tournament (...) on the bench (place 8): the tournament
+  is over`; restore_tournament_dias and it share restore_dias_bytes (the 8's log line unchanged).
+  ap_tournament_dias grew a bench part: Dias received and benched, the 8 taken, lent for 4400 /
+  6200 / 10200 (0xc holds his slot, a change to his bench record between fights counts, 0xd holds
+  the record, a save between fights carries `bench` and `tournament_dias` with both hashes and
+  loads, after 10200 he is back on the bench byte for byte as he came); the safety net on the
+  bench with his slot alone (his record left as it is) and with slot and record.
+- **A real interaction found by the smoke (main's case, fixed in the script):** ap_tdias_load
+  compared party slot 1 at fixed offsets before and after the tournament. With heroslot (D1) a
+  starting Dias takes slot 0 at New Game and the tournament's scene leaves him set aside in slot 1,
+  so slot 1 held Claude at the start. Dias's own bytes were identical (scratchpad/benchmerge/
+  tdias_in.state slot 0 vs tdias_out.state slot 1: slot and record equal); the check now finds the
+  slot holding Dias in each dump (and needs his 302 bytes there). The game is right; the check
+  assumed the old slot.
+- **Suites** (frozen binary scratchpad/benchmerge/bin1 = the build of the merge plus the Dias
+  addition; the commits after it change no code): ss_tests 103 / 0, ss_game_tests 207 / 0
+  (u1_*.log; 199 main + 201 branch - 193 shared); full smoke from frozen copies: smoke1.log (the
+  script as merged) 372 PASS / 1 FAIL (ap_tdias_load's slot check, above), smoke2.log (the fixed
+  script) **373 PASS / 0 FAIL, rc 0**, main's cases (ap_hub_mansion, ap_p4_door, ap_pend_*,
+  ap_aside_*, ap_v2_m12_full, ap_tdias_*) and the branch's (ap_hs_*, ap_bench_*) among them;
+  ap_hell_seed is a unit test (test_ap_hell.cpp) and passes. The merge commit's own ap.cpp /
+  test_ap.cpp (without the Dias addition) checked with -fsyntax-only (benchmerge/syncheck_as.py).
+- **Same state** (benchmerge/same.py; main's HEAD code = scratchpad/shingofix/final2's binary,
+  e500f2f; one capped process at a time): Claude's opening (--map 7 to map 12's first free play),
+  the tournament (477, chapter 19 step 4400, Dias added by the sweep) and a camp-menu save on map
+  18, each with no seed, story mode (partybuild/seeds/story.apso2) and open world without a
+  starting member, bench off (ow_claude.apso2): all 9 state dumps and logs byte-identical, and the
+  saves' cards and sidecars too (runs/, same1.out).
+- **Docs:** docs/release_notes/0.02.51.md (What's new: the starting member leads from the first
+  place; the 12-member bench; Updating: a save with a bench or a loan, and a bench seed, need
+  0.02.51), seed_format.md (the Dias with the bench), this section.
+- **For the coordinator before merging into main:** party-bench now contains main up to 51e3aa7;
+  main's later commits (benchworld's APWorld `bench` option and anything else) merge on top. Likely
+  touch points: seed_format.md's options table row `bench` ("not written by 0.2.x": 0.2.1 now
+  writes it), the player guide (apworld/so2/docs), 0.02.51.md / 0.2.1.md. The untracked `analysis`
+  symlink stays in the worktree until it is removed.
 
 ## Working notes (partybuild2)
 
