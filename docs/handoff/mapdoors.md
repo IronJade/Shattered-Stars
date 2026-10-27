@@ -82,7 +82,8 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
   not quoted, shop stock, doors, thumbnail). tools/test_mod_reference.py 21 OK. Not regenerated
   (not my files): docs/modding/reference/maps.csv / doors.csv (`tools/mod_reference.py DISC1.cue`
   picks the new names up).
-- Done, committed (0163425 docs, 389d650 layout; renderer + tests + notes next): layout 1.1 (tools/ap_tracker_maps.py, docs/ap/tracker_maps.json,
+- **Assignment complete** (2026-10-27). Done, committed (0163425 docs, 389d650 layout, 6430541
+  notes, 3e7a2d1 renderer + tests): layout 1.1 (tools/ap_tracker_maps.py, docs/ap/tracker_maps.json,
   docs/ap/tracker_maps.md with "Rooms", "Door ids" contract and "For the pack (part 2)"), the
   port's renderer (engine/src/tools/tracker_maps.cpp: rooms 1:1 under a label strip, a letter
   box per doorway; draw_text / draw_text_box; 1:1 blit), tests (engine/tests/test_tracker_maps.cpp
@@ -123,7 +124,8 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
 - 2026-10-27: log created; design change recorded; room set + door extraction + renderer drafted;
   region coordinate fix found and applied.
 - 2026-10-27: names committed (ae78aa2); layout 1.1 committed (0163425, 389d650); renderer verified
-  (unit 7/7 tracker_, 223/0 all, e2e, regions, A/B, smoke 373/0).
+  (unit 7/7 tracker_, 223/0 all, e2e, regions, A/B, smoke 373/0); notes + renderer committed
+  (6430541, 3e7a2d1). Scratch cleaned (baseline worktree removed, renders and decoded text deleted).
 - Open, for the coordinator / the user: (1) the setup button now takes ~20 s (was ~7 s) and runs
   on the setup window's thread, so the window does not redraw meanwhile: a worker thread in
   engine/src/setup/setup_ui.cpp (not my file) would fix that; the CLI is fine. (2) map_names.csv
