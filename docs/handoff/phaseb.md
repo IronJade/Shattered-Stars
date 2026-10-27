@@ -21,9 +21,9 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | Lane | Order | Agent | Log | State |
 |---|---|---|---|---|
 | World | B1 UT yaml-less | utworld | docs/handoff/utworld.md | started 2026-10-27 |
-| Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | started 2026-10-27 |
+| Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
 | World | B2 Rule Builder | (after B1) | | queued |
-| Port | map render command (D5) | (after B5) | | queued: research + layout contract first |
+| Port | map render command (D5) | maprender | docs/handoff/maprender.md | started 2026-10-27: research + layout data first |
 | World | B3 logic export | (after B2) | | queued |
 | World | B4 PopTracker pack generator | (after B3; needs the map layout contract) | | queued |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
@@ -69,3 +69,6 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
 ## Log
 - 2026-10-27: coordinator log written; utworld (B1) and dskeys (B5) started.
 - 2026-10-27: D8 answered yes (story awareness in story mode, part of B6).
+- 2026-10-27: dskeys done (keys `so2_map_{team}_{slot}` {map[,x,z]} and `so2_story_{team}_{slot}`
+  {chapter,step}; docs/ap/data_storage.md). Notes for later: ASan not run on the net change; a
+  `--map` debug start begins at chapter 3 step 0. maprender started.
