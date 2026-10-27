@@ -82,7 +82,7 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
   not quoted, shop stock, doors, thumbnail). tools/test_mod_reference.py 21 OK. Not regenerated
   (not my files): docs/modding/reference/maps.csv / doors.csv (`tools/mod_reference.py DISC1.cue`
   picks the new names up).
-- Done, verified, being committed: layout 1.1 (tools/ap_tracker_maps.py, docs/ap/tracker_maps.json,
+- Done, committed (0163425 docs, 389d650 layout; renderer + tests + notes next): layout 1.1 (tools/ap_tracker_maps.py, docs/ap/tracker_maps.json,
   docs/ap/tracker_maps.md with "Rooms", "Door ids" contract and "For the pack (part 2)"), the
   port's renderer (engine/src/tools/tracker_maps.cpp: rooms 1:1 under a label strip, a letter
   box per doorway; draw_text / draw_text_box; 1:1 blit), tests (engine/tests/test_tracker_maps.cpp
@@ -97,7 +97,8 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
   same bytes twice, nothing stray, XDG untouched; NA/EU/FR/DE disc 1 renders byte-identical
   (861 each); A/B vs the baseline (worktree of ae78aa2 in scratchpad/mapdoors/base): 12 headless
   runs, 20 files, 0 differ; today's pack generator builds from the 1.1 layout (scratchpad output)
-  and tools/ap_poptracker_test.py 23 OK; smoke: see Log.
+  and tools/ap_poptracker_test.py 23 OK; smoke (tools/smoke_field_events.sh) 373 PASS / 0 FAIL;
+  full ss_game_tests 223/0 (with SS_DISC1).
 - How to verify: `SS_DISC1=... python3 tools/ap_tracker_maps.py --check`;
   `SS_TEST=tracker_ SS_DISC1=... prlimit --as=$((4<<30)) engine/build-mapdoors/ss_game_tests`;
   `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-mapdoors/shattered-stars --scratch scratchpad/mapdoors/e2e`;
@@ -121,6 +122,16 @@ docs/release_notes/0.2.2.md (agent "logicexport" edits those). Checking today's 
 ## Log
 - 2026-10-27: log created; design change recorded; room set + door extraction + renderer drafted;
   region coordinate fix found and applied.
+- 2026-10-27: names committed (ae78aa2); layout 1.1 committed (0163425, 389d650); renderer verified
+  (unit 7/7 tracker_, 223/0 all, e2e, regions, A/B, smoke 373/0).
+- Open, for the coordinator / the user: (1) the setup button now takes ~20 s (was ~7 s) and runs
+  on the setup window's thread, so the window does not redraw meanwhile: a worker thread in
+  engine/src/setup/setup_ui.cpp (not my file) would fix that; the CLI is fine. (2) map_names.csv
+  `area` errors seen (52/53 are Salva, filed under Arlia Village): `area` drives the pack's tabs,
+  so left alone. (3) docs/modding/reference/maps.csv / doors.csv want a regeneration
+  (`tools/mod_reference.py DISC1.cue`) for the 33 new names (not my files). (4) Phase C: the
+  door id contract (doorway id = lowest doors.json id; ER sends a doorway's doors together) is a
+  recommendation in tracker_maps.md, to be confirmed when ER is designed.
 
 ## Design change from the user (2026-10-27, via the coordinator), verbatim
 "Those labels for doors may need to be live. Keep in mind if we move forward with the Entrance

@@ -349,7 +349,9 @@ Windows player never needs a terminal for the command above. It runs the same co
 whichever Disc 1 is on screen (saved or not) and the default folder, same as
 `--render-tracker-maps` with no DIR. The button is disabled with "Choose a valid Disc 1 image
 first." until a disc is picked, same tooltip as the bottom bar's Save / Save & Play; while it
-runs the page says "Rendering tracker maps..."; afterwards it says how many images and where, with
+runs the page says "Rendering tracker maps..." (with the rooms of format 1.1 that is about 20 s
+on the development machine, and the render runs on the setup window's own thread, so the
+window does not redraw meanwhile); afterwards it says how many images and where, with
 an **Open folder** button next to it, or the error if the disc couldn't be read. Nothing on the
 page is saved by this button, and no save or memory card is touched. Scriptable the same way as
 every other setup action: `--do render-tracker-maps` / `SS_SETUP_SCRIPT=...,render-tracker-maps`
