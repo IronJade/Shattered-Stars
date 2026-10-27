@@ -489,7 +489,7 @@ class Pack:
             by_area.setdefault(img["area"], {}).setdefault((c["x"], c["y"]), []).append(r)
         self.region_of_area = {}
         tree = {reg: [] for reg in REGIONS}
-        self.area_sections = {}     # area -> [(path, section name)] for the world dots' refs
+        self.area_sections = {}     # area -> [(AP location name, section path)] for the world dots' refs
         used_names = set()
         for img in area_images:
             area = img["area"]
@@ -510,7 +510,8 @@ class Pack:
                 used_names.add(loc_name)
                 path = f"{area_path}/{loc_name}"
                 secs = [self.section(path, loc_name, r, s) for r, s in zip(rs, shorts)]
-                self.area_sections.setdefault(area, []).extend(f"{path}/{s['name']}" for s in secs)
+                self.area_sections.setdefault(area, []).extend(
+                    (clean(r["name"]), f"{path}/{s['name']}") for r, s in zip(rs, secs))
                 children.append({"name": loc_name, "sections": secs,
                                  "map_locations": [{"map": self.map_of_image[img["path"]], "x": x, "y": y}]})
             tree[region].append({"name": clean(area), "children": children})
@@ -537,7 +538,9 @@ class Pack:
                     continue
                 title = self.group_title(dot["group"], areas)
                 dot["title"] = title
-                refs = [{"ref": p} for a in areas for p in self.area_sections[a]]
+                # a ref still needs a name unique in its location (PopTracker warns about
+                # duplicate sections otherwise): the AP location name, which UT also matches
+                refs = [{"name": name, "ref": path} for a in areas for name, path in self.area_sections[a]]
                 children.append({"name": clean(title), "sections": refs,
                                  "map_locations": [{"map": self.map_of_image[img["path"]], "x": dot["x"],
                                                     "y": dot["y"]}]})

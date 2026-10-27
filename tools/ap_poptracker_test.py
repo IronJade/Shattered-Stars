@@ -391,7 +391,7 @@ local function add_locations(nodes, parent)
     for _, node in ipairs(nodes) do
         local id = parent and (parent .. "/" .. node.name) or node.name
         for _, sec in ipairs(node.sections or {}) do
-            if sec.name then
+            if sec.name and not sec.ref then
                 STUB.sections[id .. "/" .. sec.name] = {ChestCount = 1, AvailableChestCount = 1, Highlight = 0,
                     access = sec.access_rules[1], visible = sec.visibility_rules[1]}
             end
