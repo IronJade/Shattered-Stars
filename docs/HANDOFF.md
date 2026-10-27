@@ -224,6 +224,10 @@ debugging; ignored: ...`). Headless runs keep them, seed or not, so the tests wo
   change it there, never with game art, a logo or a trademark.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).
+  Third-party programs (Universal Tracker, PopTracker, Wine, Archipelago's clients) run with
+  `DISPLAY`, `WAYLAND_DISPLAY` and `DBUS_SESSION_BUS_ADDRESS` unset (or under
+  `~/.local/bin/xvfb-run`), so a missing folder or a prompt can't open a dialog on the user's
+  desktop: on 2026-10-27 UT's folder picker did, and the user answered it.
 - Never touch `~/.config/shattered-stars/config.ini` (no `--audio` / `--no-audio` or other
   flags that save the config; use `--headless` and `SS_*` variables) or
   `~/.config/pcsx-redux`; run PCSX-Redux only with `-cli` and a scratch HOME, on scratch

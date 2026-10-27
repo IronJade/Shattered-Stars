@@ -17,6 +17,10 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   conservative (UT's in-logic set a subset of the room's own at every sphere, over utworld's oldroom.py
   rooms); a seed that breaks it keeps the refusal. 0.2.0 hell seeds stay refused. Assigned to the B3
   agent (it edits ut.py too).
+- PopTracker pack distribution (the user, 2026-10-27): versions.json at `tools/poptracker/versions.json`
+  on main (raw URL), as recommended; the pack zip in **its own release**, tag `poptracker-vX.Y.Z`
+  (1.0.0 first), not Latest, notes linking the port and world releases ("It's own release works for
+  me. We are already doing that with the apworld anyway."). build_poptracker.sh defaults to that tag.
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
@@ -27,7 +31,7 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 |---|---|---|---|---|
 | World | B1 UT yaml-less | utworld | docs/handoff/utworld.md | **done** 2026-10-27 (605368a, b35eadf, 12fe31d; world tests 783, test_ut 84, slow 320 rooms, general 379, batches 288/288 identical, real UT 20/20 points) |
 | Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
-| World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | started 2026-10-27 |
+| World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | **done** 2026-10-27 (0cc0bda 1d879a2 64a2c7d; 288 batch seeds identical incl. multidata, 93M truth values equal, world tests 788, general 379, slow 789, UT 20/20, /explain readable; no slowdown) |
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
 | World | B3 logic export + 0.2.0 Skillsanity rooms accepted with a warning | (after B2) | | queued |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
@@ -96,3 +100,14 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
   scratchpad/packgen/ for B4b/B7. For the user (needed at B7): versions.json location (proposal:
   tools/poptracker/versions.json on main) and which release carries the pack zip. For B7: checklist
   rows `tools/build_poptracker.sh all`, tools/ap_poptracker_smoke.py. portcheck started.
+- 2026-10-27: rulebuilder done. For B3: equal resolved rules are one object (intern by identity);
+  `logic.as_rule(r).to_dict()` serialises; events have names, no AP id; plain spots carry True_. For
+  Phase C: CanReachRegion must be added to logic.RESOLVED_KINDS / as_rule.
+- **Incident (2026-10-27): a desktop dialog.** tools/ap_ut_check.py's UT copy had no Players folder,
+  so UT opened a kdialog folder picker on the user's desktop (utworld's run; the user answered it,
+  and the pick, ~/.local/share/Archipelago/Players, stuck in scratchpad/ap_ut's host.yaml;
+  rulebuilder's run hit it again). Fixed by the coordinator: the script makes an empty Players folder
+  in its copy, forces UT's player_files_path to it, and runs everything without DISPLAY /
+  WAYLAND_DISPLAY / DBUS_SESSION_BUS_ADDRESS so no dialog can open; scratchpad/ap_ut's host.yaml
+  repointed. Every agent brief that runs third-party GUIs-with-headless-modes now says: strip the
+  display variables.

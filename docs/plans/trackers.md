@@ -534,6 +534,8 @@ pack ships original placeholder maps at fixed paths; a port command renders each
 D8-D10 not asked yet. **2026-10-27:** D8 **yes** (the user: "Story awareness in story mode would be a
 fantastic addition, yes."); D10 taken as recommended (docs/handoff/phaseb.md); 0.2.0 Skillsanity rooms
 (0.2.1 changed those rules) are accepted with a warning if the rebuilt logic is conservative (the user).
+D4 settled: versions.json at tools/poptracker/versions.json on main; the pack zip in its own release,
+`poptracker-vX.Y.Z` (the user, 2026-10-27).
 
 **Party change that affects this plan (decided 2026-10-26, not built):** a 12-member party (a
 `bench` option: places 8-11 kept by the port; docs/handoff/bench.md). With the bench on, the

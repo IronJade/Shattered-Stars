@@ -202,7 +202,7 @@ pack's files at the zip's root, sorted, fixed timestamps: the same inputs give t
 the sha256 is reproducible), its `.sha256`, `versions.json` (the committed
 `tools/poptracker/versions.json` if there is one, with this version's entry first: `package_version`,
 `download_url` = `https://github.com/IronJade/Shattered-Stars/releases/download/<TAG>/<zip>`,
-default TAG `apworld-v0.2.2`, `sha256`, `changelog`) and `ut_name_mapping.json`. `check` runs the
+default TAG `poptracker-v<version>`, `sha256`, `changelog`) and `ut_name_mapping.json`. `check` runs the
 pack checker, checks versions.json against the zip, and runs the tests. The version is
 `PACK_VERSION` in tools/ap_poptracker.py.
 
@@ -241,12 +241,14 @@ the packlist's `versions.schema.json`.
 **PopTracker itself**: tools/ap_poptracker_smoke.py ("Smoke test" below) loads the pack in the real
 PopTracker 0.36.0, headless, against a local room.
 
-## Distribution (proposal; the user decides what is published and where)
+## Distribution (decided by the user, 2026-10-27)
 
-- The zip is a release asset of IronJade/Shattered-Stars (D4), beside so2.apworld: by default the
-  `apworld-v0.2.2` release (pack 1.0.0 ships with world 0.2.2).
+- The zip is the asset of **its own release** on IronJade/Shattered-Stars (D4), tag
+  `poptracker-v<version>` (pack 1.0.0: `poptracker-v1.0.0`), not marked Latest, its notes linking the
+  port and world releases, like the port's `v0.0X.YY` and the world's `apworld-vX.Y.Z` (the user:
+  "It's own release works for me. We are already doing that with the apworld anyway.").
 - `versions.json` (what `manifest.versions_url` points to; PopTracker checks it for updates) at a
-  stable raw URL. **Proposed: `tools/poptracker/versions.json` on main**, read as
+  stable raw URL: **`tools/poptracker/versions.json` on main** (the user: as recommended), read as
   `https://raw.githubusercontent.com/IronJade/Shattered-Stars/main/tools/poptracker/versions.json`
   (the generator's default `--versions-url`). Committing it after the release is one more docs-style
   commit on main, it lives with the generator, and there is no second branch to keep. The common
