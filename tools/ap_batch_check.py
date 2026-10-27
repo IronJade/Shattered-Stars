@@ -30,9 +30,53 @@ ROW = {r["id"]: r for r in ALL_ROWS}
 from worlds.so2 import skillsanity as SK  # noqa: E402  [skillsanity2]
 
 
+def sk_may_hold(row, s, it):
+    """[skilllogic2] Whether a guild check or learn point may hold this progression item (the user,
+    2026-10-27; docs/ap/apworld.md "Skillsanity"), worked out here from the options and data.py, not
+    from the world's code: nothing with encounter_rate 0 (no Fol, no levels); a learn point only at a
+    learn-table level of a member the logic counts on (sure: the heroes, the starting character, and
+    Noel under the story's party rules; hub mode only a one-hero route's hero; or a member of the
+    character-item pool); a guild check where one of its set's guilds could hold it as a chest on the
+    guild's map would: story mode as `allowed`, open world as `allowed_open` and never a guild the
+    story reaches before the El voyage that the voyage proof didn't, hub mode a guild whose map the
+    hub proof reached in every game (outside Expel with expel_progression off)."""
+    o = s["options"]
+    if o["encounter_rate"] == 0:
+        return False
+    side = None if o["story_route"] == "any" else o["story_route"]
+    games = ("claude", "rena") if side is None else (side,)
+    heroes = {"Claude", "Rena"} if side is None else {side.capitalize()}
+    start = o["starting_character"]
+    if isinstance(start, list):     # "any": the player's pick; the logic counts on nobody extra (take_choices)
+        start = None
+    if row["type"] == "learn":
+        if row.get("how") != "level":
+            return False
+        if o["world_mode"] == "hub":
+            sure = (heroes if side else set()) | {start}
+        elif o["party_rules"] == "open":
+            sure = heroes | {start}
+        else:
+            sure = {"Claude", "Rena", "Noel", start}
+        return row["character"] in sure or row["character"] in o["characters"]
+    expel = o["expel_progression"]
+    places = [data.GUILD_PLACES[m] for m in row["guild_maps"]]
+    if o["world_mode"] == "hub":
+        return any(all(m in data.HUB_MAPS[g] for g in games for m in p["maps"]) and (expel or p["region"] != "Expel")
+                   for p in places)
+    rows = [(p, {"type": "chest", "id": None, "region": p["region"], "group": p.get("group"),
+                 "group_near": p.get("group_near"), "late": p.get("late", []), "tele": p.get("tele", [])})
+            for p in places]
+    if o["world_mode"] == "open_world":
+        return any(allowed_open(pr, side, expel, o["expel_teleporter"], it, s["slot"]["id"])
+                   and not (before_gate(pr) and not all(g in p.get("voyage", ()) for g in games)) for p, pr in rows)
+    return any(allowed(pr, side, expel) for _, pr in rows)
+
+
 def check_skillsanity(s, errs):
     """[skillsanity2] Skillsanity: the guild checks and learn points by the option (ids, checks,
-    never progression), the item kinds, no first move as an item, the shop prices."""
+    progression only where sk_may_hold allows: skilllogic2, 2026-10-27), the item kinds, no first
+    move as an item, the shop prices."""
     o = s["options"]
     mode = o.get("skillsanity", "none")
     skills_on, specials_on = mode in ("skills_only", "insanity"), mode in ("special_only", "insanity")
@@ -47,6 +91,7 @@ def check_skillsanity(s, errs):
         if v["kind"] == "move" and SK.FIRST.get(NAMES[v["character"] - 1]) == v["index"]:
             errs.append(f"skillsanity: a first move as an item ({v['name']})")
     guild = 0
+    o["_sk_prog"] = collections.Counter()
     for l in s["locations"]:
         row = ROW.get(l["id"])
         if row is None:
@@ -56,7 +101,9 @@ def check_skillsanity(s, errs):
             if l["check"] != SK.seed_check(row):
                 errs.append(f"{row['name']}: skillsanity check")
             if it.get("classification") == "progression":
-                errs.append(f"{row['name']}: progression at a skillsanity location")
+                o["_sk_prog"][row["type"]] += 1
+                if not sk_may_hold(row, s, it):
+                    errs.append(f"{row['name']}: progression at a skillsanity location")
             if row["type"] == "guild":
                 guild += 1
                 if not skills_on or l["id"] != 0x50320000 + (13 << 21) + (row["set"] << 8) + row["index"]:
@@ -294,6 +341,8 @@ def check_hub(s, errs, locs):
             ok = (o["drop_progression"] != "never" and o["encounter_rate"] > 0 and chance0(row) >= MIN_DROP_CHANCE
                   and every and any(any(all(m in data.HUB_MAPS[g] for g in games) for m in p["maps"])
                                     and (o["expel_progression"] or p["region"] != "Expel") for p in row["places"]))
+        elif t in ("guild", "learn"):
+            ok = True   # check_skillsanity (sk_may_hold) [skilllogic2]
         elif t == "killer_move":
             mode = o["killer_move_progression"]
             heroes = ("Claude", "Rena") if side is None else (side.capitalize(),)
@@ -499,6 +548,8 @@ def check(path):
                 drops_prog[0] += 1
             elif row["type"] == "craft":
                 ok = False
+            elif row["type"] in ("guild", "learn"):
+                ok = True   # check_skillsanity (sk_may_hold) [skilllogic2]
             elif row["type"] == "killer_move":
                 mode = o["killer_move_progression"]
                 ok = o["encounter_rate"] > 0 and (
@@ -521,6 +572,11 @@ def check(path):
                         errs.append(f"gate key {it['name']} at {row['name']}, no place the voyage proof reached")
                 elif row["type"] == "killer_move":
                     errs.append(f"gate key {it['name']} at the killer move {row['name']}")
+                elif row["type"] == "guild":    # [skilllogic2] a guild the story reaches before the voyage
+                    if not drop_gate_ok({"places": [data.GUILD_PLACES[m] for m in row["guild_maps"]]}, side):
+                        errs.append(f"gate key {it['name']} at {row['name']}, no guild the voyage proof reached")
+                elif row["type"] == "learn":    # (from the disc switch at the earliest)
+                    errs.append(f"gate key {it['name']} at the learn point {row['name']}")
                 elif not (before_gate(row) and gate_proven(row, side)):
                     errs.append(f"gate key {it['name']} at {row['name']}, not proven reachable at the voyage")
         if row["type"] in ("chest", "gift") and row["item"] in PUZZLE:
@@ -578,8 +634,10 @@ def check(path):
             errs.append(f"starting keys {sorted(start)}")
         if not o["expel_teleporter"] and any(
                 l["item"].get("classification") == "progression" and ROW[l["id"]]["region"] == "Expel"
-                and ROW[l["id"]]["type"] not in ("boss", "drop", "craft", "killer_move")
+                and ROW[l["id"]]["type"] not in ("boss", "drop", "craft", "killer_move", "guild", "learn")
                 and l["item"].get("name") not in EXPEL_KEYS for l in locs):
+            # (guild checks and learn points: their row's region is nominal; sk_may_hold judges
+            # them by their guilds and members [skilllogic2])
             errs.append("teleporter off: progression other than Expel keys in Expel")
     elif s["doors"] or o["expel_teleporter"]:
         errs.append("story mode with doors or the teleporter")
@@ -636,11 +694,13 @@ def check(path):
 def main():
     files = sorted(glob.glob(os.path.join(sys.argv[1], "*", "*.apso2")))
     bad, sizes, progs, combos = 0, [], [], set()
+    sk_prog = collections.Counter()     # [skilllogic2] progression at guild checks / learn points
     kinds = collections.Counter()
     for f in files:
         errs, n, prog, combo, o = check(f)
         sizes.append(n)
         progs.append(prog)
+        sk_prog.update(o.get("_sk_prog", {}))
         combos.add(combo)
         for k in ("boss_checks", "character_items", "cave_of_trials", "expel_progression"):
             kinds[(k, bool(o[k]))] += 1
@@ -670,6 +730,7 @@ def main():
     print(f"{len(files)} seeds files, {bad} with errors; locations {min(sizes)}-{max(sizes)}; progression placed "
           f"in SO2 locations {min(progs)}-{max(progs)} (total {sum(progs)}); {len(combos)} option combinations")
     print(dict(sorted(kinds.items(), key=str)))
+    print(f"progression at skillsanity locations: guild checks {sk_prog['guild']}, learn points {sk_prog['learn']}")
 
 
 if __name__ == "__main__":
