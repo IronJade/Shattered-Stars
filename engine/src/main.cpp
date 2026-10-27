@@ -13,6 +13,9 @@
 // SS_DISC1 / SS_DISC2 runs never open setup and never write config.ini.
 //   shattered-stars --viewer [--entry N]                 texture viewer
 //   shattered-stars --dump DIR --entry N                 write an entry's textures as PNGs
+//   shattered-stars --render-tracker-maps [DIR]          the PopTracker pack's map images from your
+//                                                        disc (tools/tracker_maps.h; DIR: PopTracker's
+//                                                        user-override folder); writes only those PNGs
 //
 // Display: --no-dither / --dither (remembered); --reference-dither draws like
 // PCSX-Redux's software renderer for comparisons (gouraud-only dithering, blending before
@@ -104,6 +107,7 @@
 #include "runtime/boot_exe.h"
 #include "runtime/region.h"
 #include "runtime/runtime.h"
+#include "tools/tracker_maps.h"
 #include "tools/viewer.h"
 #include "util/png.h"
 #include "util/utf8.h"
@@ -165,6 +169,7 @@ int usage(const char* argv0) {
   launcher::report("Shattered Stars %s\n", SS_VERSION);
   launcher::report(
                "usage: %s [--help] [--version] [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
+               "       [--render-tracker-maps [DIR]]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
                "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE [--ap-seed-entry NAME]]\n",
                argv0);
@@ -184,12 +189,16 @@ int main(int argc, char** argv) try {
   // player's run also keeps them in shattered-stars.log beside config.ini (all of them on
   // Windows when the game was double-clicked). Headless and SS_DISC runs write no log.
   {
-    bool headless_run = false, debug_run = false;
+    bool headless_run = false, debug_run = false, maps_run = false;
     for (int i = 1; i < argc; ++i) {
       headless_run = headless_run || std::strcmp(argv[i], "--headless") == 0;
       debug_run = debug_run || std::strcmp(argv[i], "--debug") == 0;
+      maps_run = maps_run || std::strcmp(argv[i], "--render-tracker-maps") == 0;
     }
-    launcher::attach_console(debug_run);
+    // --render-tracker-maps writes only its PNGs: no log beside config.ini; its progress goes
+    // to a console (one of its own when started without a terminal).
+    launcher::attach_console(debug_run || maps_run);
+    headless_run = headless_run || maps_run;
     if (!headless_run && !env_set("SS_DISC1") && !env_set("SS_DISC2"))
       launcher::open_log(launcher::config_dir() / "shattered-stars.log");
   }
@@ -203,6 +212,8 @@ int main(int argc, char** argv) try {
     remembered.push_back(key);
   };
   std::filesystem::path dump_dir, capture_dir;
+  std::filesystem::path tracker_maps_dir;  // --render-tracker-maps [DIR]
+  bool tracker_maps = false;
   std::string capture_frames, input_script;
   std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
   std::string ap_seed;                  // --ap-seed FILE (Archipelago, game/ap)
@@ -229,6 +240,9 @@ int main(int argc, char** argv) try {
       viewer = true;
     } else if (arg == "--dump" && has_value) {
       dump_dir = util::utf8_path(next());
+    } else if (arg == "--render-tracker-maps") {  // tools/tracker_maps.h; DIR optional
+      tracker_maps = true;
+      if (has_value && std::strncmp(argv[i + 1], "--", 2) != 0) tracker_maps_dir = util::utf8_path(next());
     } else if (arg == "--entry" && has_value) {
       entry = std::atoi(next());
     } else if (arg == "--no-dither") {
@@ -296,8 +310,8 @@ int main(int argc, char** argv) try {
   // Tests and scripts: SS_DISC1 / SS_DISC2 choose the images for this run only. Such runs,
   // and headless ones, never write config.ini and never open setup.
   const bool discs_from_env = env_set("SS_DISC1") || env_set("SS_DISC2");
-  const bool may_write = !headless && !discs_from_env;
-  if (config_changed && !headless) {
+  const bool may_write = !headless && !discs_from_env && !tracker_maps;
+  if (config_changed && !headless && !tracker_maps) {
     for (const std::string& key : remembered) saved.set(key, config.get(key));
     if (std::string save_error; !saved.save(&save_error)) launcher::report("%s\n", save_error.c_str());
   }
@@ -348,7 +362,7 @@ int main(int argc, char** argv) try {
     }
     if (!bootable(config.get("disc1"))) {
       print_no_disc(config.get("disc1"));
-      return may_write ? 1 : usage(argv[0]);
+      return may_write || tracker_maps ? 1 : usage(argv[0]);
     }
     // Disc 2 (optional): an image given for this run (SS_DISC2, --disc2) as it is; else the
     // configured image if it is disc 2, else one next to disc 1 or in the `discs` folders.
@@ -402,6 +416,17 @@ int main(int argc, char** argv) try {
   }
   if (!dump_dir.empty()) return tools::dump_textures(archive, entry, dump_dir);
   if (viewer) return tools::run_viewer(archive, entry, static_cast<int>(frames));
+  if (tracker_maps) {  // reads disc 1 only and writes only PNGs under the folder (no config, no saves)
+    if (tracker_maps_dir.empty()) tracker_maps_dir = tools::poptracker_override_dir();
+    tools::TrackerRenderOptions options;
+    options.dots = util::env("SS_TRACKER_DOTS").value_or("") == "1";
+    if (const auto only = util::env("SS_TRACKER_ONLY")) {
+      std::stringstream list(*only);
+      for (std::string item; std::getline(list, item, ',');)
+        if (!item.empty()) options.only.push_back(item);
+    }
+    return tools::render_tracker_maps(archive, tracker_maps_dir, options);
+  }
 
   // Archipelago (game/ap): the seed is read before the memory cards (a seed plays on its own
   // card) and before any map (its patch lines join the world edits). A seed that does not load
