@@ -188,3 +188,19 @@ Documents folders on Windows; elsewhere `$HOME`, and `$XDG_DOCUMENTS_DIR`, else
 Testing switches: `SS_TRACKER_DOTS=1` also draws each check's dot (to check the layout:
 PopTracker draws its own location squares, so players don't want these), and
 `SS_TRACKER_ONLY=a,b` renders only the images whose path contains one of these.
+
+### The setup button
+
+The setup program's **Archipelago** page has a **Render tracker maps for PopTracker** button
+(engine/src/setup/setup_ui.cpp, `App::start_tracker_render` / `App::run_tracker_render`), so a
+Windows player never needs a terminal for the command above. It runs the same code
+(`tools::render_tracker_maps`, linked straight into `shattered-stars-setup` alongside
+`tools::poptracker_override_dir`; not the whole `ss_game`, which that code doesn't need) against
+whichever Disc 1 is on screen (saved or not) and the default folder, same as
+`--render-tracker-maps` with no DIR. The button is disabled with "Choose a valid Disc 1 image
+first." until a disc is picked, same tooltip as the bottom bar's Save / Save & Play; while it
+runs the page says "Rendering tracker maps..."; afterwards it says how many images and where, with
+an **Open folder** button next to it, or the error if the disc couldn't be read. Nothing on the
+page is saved by this button, and no save or memory card is touched. Scriptable the same way as
+every other setup action: `--do render-tracker-maps` / `SS_SETUP_SCRIPT=...,render-tracker-maps`
+(the render itself runs on the frame after the action, so give at least one more frame).
