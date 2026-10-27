@@ -167,7 +167,7 @@ TEST(ap_seed_errors) {
   CHECK(seed_error("not json", "not JSON"));
   CHECK(seed_error("[]", "JSON object"));
   CHECK(seed_error(replace(kSeed, "\"apso2\"", "\"other\""), "format"));
-  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 4"), "unsupported version 4 (this build reads 1 to 3)"));
+  CHECK(seed_error(replace(kSeed, "\"version\": 1", "\"version\": 5"), "unsupported version 5 (this build reads 1 to 4)"));
   CHECK(seed_error(replace(kSeed, "\"seed\": \"12345678901234567890\",", ""), "seed"));
   CHECK(seed_error(replace(kSeed, "\"flag\": \"0x962\"", "\"flag\": 9999"), "locations[0]: a chest needs"));
   CHECK(seed_error(replace(kSeed, "\"id\": 1347569664", "\"id\": 1347569665"), "locations[1]: id 1347569665 repeated"));
@@ -345,6 +345,175 @@ TEST(ap_save_guard) {
   other.save_hash = "sha256:" + util::sha256_hex(save.data(), 0x0FFF);
   CHECK(ap::write_sidecar(ap::sidecar_path(card, 5), other, &error));
   CHECK(!ap::load_allowed(card, 5, save.data(), save.size()));
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+// The bench store [partybuild agent] (game/ap/bench.h; docs/handoff/bench.md): its places, the
+// sidecar's "bench" (version 3 only with someone benched) and "bench_hash" (the save guard),
+// options.bench and seed version 4.
+TEST(ap_bench_store) {
+  ap::stop();
+  std::string error;
+  // A member's bytes: slot +0 the party id, the rest a pattern (record included).
+  auto member = [](int id, u8 fill) {
+    std::array<u8, ap::kMemberBytes> m{};
+    m.fill(fill);
+    const s16 v = static_cast<s16>(id);
+    std::memcpy(m.data(), &v, 2);
+    return m;
+  };
+  ap::Bench b;
+  CHECK(b.empty() && b.count() == 0 && b.free_index() == 0 && b.find(3) == -1);
+  const auto celine = member(3, 0x5A), ernest = member(11, 0xC3);
+  b.put(0, celine.data(), celine.data() + ap::kSlotBytes);
+  b.put(2, ernest.data(), ernest.data() + ap::kSlotBytes);
+  CHECK(!b.empty() && b.count() == 2 && b.id(0) == 3 && b.id(1) == 0 && b.id(2) == 11 && b.free_index() == 1);
+  CHECK(b.find(11) == 2 && b.find(3) == 0 && b.find(4) == -1 && b.find(0) == -1);
+  CHECK(std::memcmp(b.record(2), ernest.data() + ap::kSlotBytes, ap::kRecordBytes) == 0);
+  // The sidecar's form: the occupied places only, read back the same; absent: empty.
+  const ap::Json bj = ap::bench_json(b);
+  CHECK(bj.size() == 2 && bj[0]["place"].as_int(0) == 8 && bj[1]["place"].as_int(0) == 10 &&
+        bj[0]["bytes"].as_string().size() == ap::kMemberBytes * 2);
+  ap::Bench back;
+  CHECK(ap::bench_from_json(bj, &back, &error) && back == b);
+  CHECK(ap::bench_from_json(ap::Json(), &back, &error) && back.empty());
+  // Refused: a place outside 8-11 or twice, other than 0x130 bytes or not hex, no member (an id
+  // outside 1-12, a set-aside one's negative id), a member twice.
+  auto refused = [&](const std::string& text, const std::string& want) {
+    ap::Json j;
+    std::string perr;
+    if (!ap::Json::parse(text, &j, &perr)) return false;
+    ap::Bench t;
+    std::string e;
+    const bool ok = !ap::bench_from_json(j, &t, &e) && e.find(want) != std::string::npos;
+    if (!ok) std::fprintf(stderr, "  expected '%s', got '%s'\n", want.c_str(), e.c_str());
+    return ok;
+  };
+  const std::string hex = bj[0]["bytes"].as_string();
+  auto entry = [](int place, const std::string& bytes) {
+    return "{\"place\": " + std::to_string(place) + ", \"bytes\": \"" + bytes + "\"}";
+  };
+  CHECK(refused("{}", "an array"));
+  CHECK(refused("[" + entry(7, hex) + "]", "a place 8-11"));
+  CHECK(refused("[" + entry(12, hex) + "]", "a place 8-11"));
+  CHECK(refused("[" + entry(9, hex) + ", " + entry(9, bj[1]["bytes"].as_string()) + "]", "each once"));
+  CHECK(refused("[" + entry(8, hex.substr(2)) + "]", "0x130 bytes"));
+  CHECK(refused("[" + entry(8, "zz" + hex.substr(2)) + "]", "0x130 bytes"));
+  CHECK(refused("[" + entry(8, "0000" + hex.substr(4)) + "]", "party id 1-12"));
+  CHECK(refused("[" + entry(8, "0d00" + hex.substr(4)) + "]", "party id 1-12"));
+  CHECK(refused("[" + entry(8, "fdff" + hex.substr(4)) + "]", "party id 1-12"));
+  CHECK(refused("[" + entry(8, hex) + ", " + entry(11, hex) + "]", "benched twice"));
+
+  // The sidecar: nobody benched -> version 2 and no key (today's sidecar); a bench -> version 3.
+  ap::SaveState st;
+  st.seed = "12345678901234567890";
+  st.slot_name = "Claude";
+  ap::Json j = ap::sidecar_json(st);
+  CHECK(j["version"].as_int(0) == 2 && !j.has("bench") && !j.has("bench_hash"));
+  st.bench = b;
+  st.bench_hash = "sha256:00";
+  j = ap::sidecar_json(st);
+  CHECK(j["version"].as_int(0) == 3 && j["bench"].size() == 2 && j["bench_hash"].as_string() == "sha256:00");
+  ap::SaveState sback;
+  CHECK(ap::sidecar_from_json(j, &sback, &error) && sback.bench == b && sback.bench_hash == "sha256:00");
+  ap::Json bad = ap::Json::object();
+  for (const auto& [k, v] : j.items()) bad.set(k, k == "bench" ? ap::Json::object() : v);
+  CHECK(!ap::sidecar_from_json(bad, &sback, &error) && error.find("bench") != std::string::npos);
+  ap::Json v4 = ap::Json::object();
+  for (const auto& [k, v] : j.items()) v4.set(k, k == "version" ? ap::Json::number(static_cast<int64_t>(4)) : v);
+  CHECK(!ap::sidecar_from_json(v4, &sback, &error));
+
+  // options.bench: open world with party_rules "open", and the hub; seed version 4.
+  const std::string open_options =
+      "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\", \"world_mode\": \"open_world\", "
+      "\"party_rules\": \"open\", \"bench\": true}";
+  const std::string story_options = "\"options\": {\"story_route\": \"claude\", \"goal\": \"indalecio\"}";
+  const std::string bench_seed = replace(replace(kSeed, story_options, open_options), "\"version\": 1", "\"version\": 4");
+  ap::Seed s;
+  CHECK(ap::load_seed_text(bench_seed, &s, &error) && s.version == 4 && s.bench && s.open_world && s.open_party);
+  CHECK(ap::load_seed_text(replace(bench_seed, "\"party_rules\": \"open\", ", ""), &s, &error) && !s.bench);
+  CHECK(ap::load_seed_text(replace(bench_seed, "\"open_world\"", "\"story\""), &s, &error) && !s.bench);
+  CHECK(ap::load_seed_text(replace(bench_seed, "\"bench\": true", "\"bench\": 0"), &s, &error) && !s.bench);
+  CHECK(ap::load_seed_text(replace(bench_seed, "\"bench\": true", "\"bench\": 1"), &s, &error) && s.bench);
+  CHECK(!ap::bench_enabled());
+  ap::Seed story;
+  CHECK(ap::load_seed_text(kSeed, &story, &error) && !story.bench);
+  ap::start_with(story);
+  CHECK(!ap::bench_enabled());
+  ap::stop();
+
+  // The guard through the running game (the save as ap_save_guard's: its length 0x1000).
+  CHECK(ap::load_seed_text(bench_seed, &s, &error));
+  ap::start_with(s);
+  CHECK(ap::bench_enabled() && ap::state().bench.empty());
+  std::vector<u8> save(0x2000), other(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) {
+    save[i] = static_cast<u8>(i * 7 + 3);
+    other[i] = static_cast<u8>(i * 5 + 1);
+  }
+  save[0x21A] = other[0x21A] = 0x00;
+  save[0x21B] = other[0x21B] = 0x10;
+  const fs::path dir = scratch("bench");
+  const std::string card = (dir / "memcard1.mcd").string();
+  // Nobody benched: today's sidecar (version 2, no bench keys), and it loads.
+  ap::on_saved(card, 0, save.data(), save.size());
+  {
+    std::ifstream in(ap::sidecar_path(card, 0));
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    CHECK(text.find("\"version\": 2") != std::string::npos && text.find("bench") == std::string::npos);
+  }
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  // Two benched: version 3, the bench and its hash; it loads, and the load takes the bench.
+  ap::mutable_state().bench = b;
+  ap::on_saved(card, 1, save.data(), save.size());
+  CHECK(ap::state().bench_hash.empty());  // (never in the running state)
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 1), &sback, &error));
+  CHECK(sback.bench == b && sback.bench_hash == ap::bench_digest(save.data(), save.size(), b));
+  CHECK(sback.bench_hash != ap::bench_digest(save.data(), save.size(), ap::Bench{}));
+  CHECK(sback.bench_hash != ap::bench_digest(other.data(), other.size(), b));
+  CHECK(ap::load_allowed(card, 1, save.data(), save.size()));
+  ap::mutable_state().bench = ap::Bench{};
+  ap::on_loaded(card, 1);
+  CHECK(ap::state().bench == b && ap::state().bench_hash.empty());
+  // A sidecar without a bench (save 1's, nobody benched) loads an empty bench.
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().bench.empty());
+  // A byte of a benched member edited: refused (the save itself unchanged).
+  ap::SaveState edited = sback;
+  edited.bench.record(2)[0x0C] ^= 1;
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 2), edited, &error));
+  CHECK(!ap::load_allowed(card, 2, save.data(), save.size()));
+  // The bench stripped (its hash kept), or a bench added without a hash: refused. Both stripped:
+  // only the benched members are gone, which loads (nothing gained).
+  ap::Json stripped = ap::sidecar_json(sback), copy = ap::Json::object();
+  for (const auto& [k, v] : stripped.items())
+    if (k != "bench") copy.set(k, v);
+  {
+    std::ofstream out(ap::sidecar_path(card, 3));
+    out << copy.dump();
+  }
+  CHECK(!ap::load_allowed(card, 3, save.data(), save.size()));
+  edited = sback;
+  edited.bench_hash.clear();
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 4), edited, &error));
+  CHECK(!ap::load_allowed(card, 4, save.data(), save.size()));
+  edited.bench = ap::Bench{};
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 5), edited, &error));
+  CHECK(ap::load_allowed(card, 5, save.data(), save.size()));
+  // The bench moved to another save (that save's own save_hash, this bench's bench_hash): refused.
+  edited = sback;
+  edited.save_hash = util::save_digest(other.data(), other.size());
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 6), edited, &error));
+  CHECK(!ap::load_allowed(card, 6, other.data(), other.size()));
+  edited.bench_hash = ap::bench_digest(other.data(), other.size(), b);
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 6), edited, &error));
+  CHECK(ap::load_allowed(card, 6, other.data(), other.size()));
+  // A save made without the card's bytes (no hash at all): refused like any such save.
+  ap::mutable_state().bench = b;
+  ap::on_saved(card, 7);
+  CHECK(!ap::load_allowed(card, 7, save.data(), save.size()));
   ap::stop();
   std::error_code ec;
   fs::remove_all(dir, ec);

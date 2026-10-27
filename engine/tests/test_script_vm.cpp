@@ -972,7 +972,7 @@ TEST(ap_hub_seed) {
   CHECK(refused(hub_seed_with("\"game\": \"rena\"", "\"game\": \"ashton\""), "game: claude or rena"));
   CHECK(refused(hub_seed_with("\"world_mode\": \"hub\"", "\"world_mode\": \"hubs\""), "story, open_world or hub"));
   CHECK(refused(hub_seed_with("\"step\": 2100,", ""), "view.step missing"));
-  CHECK(refused(hub_seed_with("\"version\": 3", "\"version\": 4"), "unsupported version 4"));
+  CHECK(refused(hub_seed_with("\"version\": 3", "\"version\": 5"), "unsupported version 5"));  // (4: the bench [partybuild agent])
 }
 
 TEST(ap_hub_chapter_lock) {

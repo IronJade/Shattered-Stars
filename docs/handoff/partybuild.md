@@ -88,6 +88,18 @@ agent "partybuild2" continues from here (2026-10-26).
     debug battle: Ashton controlled, both gain EXP. New smoke cases ap_hs_m12, ap_hs_linga,
     ap_hs_t477, ap_hs_save, ap_hs_load pass. Full suites (partybuild2, 2026-10-26): ss_tests
     103/0, ss_game_tests 194/0, smoke 300/0 (scratchpad/partybuild/smoke2.log).
+- **Merge of main (c445867) committed** (8be778b; no conflicts): ss_tests 103/0,
+  ss_game_tests 194/0, smoke 303/0.
+- **Piece 2 (the bench store): done** (committed once its smoke passed). New files
+  engine/src/game/ap/bench.{h,cpp} (struct Bench: places 8-11 of 0x130 bytes; bench_json /
+  bench_from_json; bench_digest). ap.h SaveState `bench` + `bench_hash`; ap.cpp sidecar
+  (version 3 only with someone benched; keys only then), on_saved (bench_hash), on_loaded
+  (taken as is), load_allowed (bench_hash must match: edited / stripped / moved refused),
+  bench_on / bench_enabled. seed.{h,cpp}: options.bench (only with party_rules open in open
+  world, and the hub), versions 1-4. launcher stamp_sidecar no longer lowers a version 3.
+  Tests: ap_bench_store; version messages in ap_seed_errors and test_script_vm. Docs:
+  seed_format.md (sidecar keys, the guard, the version rule, "The bench" section).
+  ss_tests 103/0, ss_game_tests 195/0.
 - Leftovers: symlink `analysis` in the worktree root -> the main repo's analysis/ (the North
   City smoke case needs the user's save). UNTRACKED, not ignored: never commit it; remove it
   when the work is done (or a local exclude in the worktree's info/exclude).

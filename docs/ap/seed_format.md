@@ -238,6 +238,17 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   "The hero in slot 1" (under Party v2) puts that order back after a scene reorders it.
   Absent (a save from before, or no starting character): the loaded party's order is taken at
   the first free play; a value outside 1-12 reads as none.
+- `bench` / `bench_hash` (a bench seed with someone on the bench; agent "partybuild",
+  2026-10-26): the bench's members, places 8-11 ("The bench" under Party v2), each
+  `{"place": 8-11, "bytes": "<hex>"}` with the member's party slot (0x60 bytes) and record
+  (0xd0 bytes), as the stash's entries; only the places that hold someone. `bench_hash` is
+  `"sha256:"` and the SHA-256 of the save's bytes as `save_hash` takes them followed by the four
+  places' 0x130 bytes (zeros for an empty place). A sidecar with them is **version 3** (an older
+  port refuses it instead of dropping the benched members); with nobody benched neither key is
+  written and the sidecar is today's version 2. A load takes the bench as the sidecar holds it
+  (no merge: it is the save's state, not the multiworld's); a load without a sidecar, and New
+  Game, start with an empty bench. A place outside 8-11 or given twice, other than 0x130 bytes,
+  or a member that is no party id 1-12 (or benched twice) makes the sidecar unreadable.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -249,7 +260,10 @@ the game's memory). With a seed on, a save loads only when its sidecar names thi
 and its `save_hash` is the hash of the save as the card holds it now. Refused: a save without a
 sidecar (an ordinary game's, or one copied without its `.ap.json`), another seed's or slot's, a
 sidecar without the hash (version 1, or the field stripped), and a save whose bytes changed on
-the card since it was saved. A refused load fails the way a damaged save does: the load screen
+the card since it was saved. A sidecar with a bench also needs `bench_hash` to match the save and
+the bench: an edited bench, a bench without its hash, a hash without its bench, or a bench
+moved here from another save is refused the same way (`... its bench differs from the one this
+seed saved`); stripping both only loses the benched members. A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -758,9 +772,14 @@ doesn't read, so there it would lose its route and its first-drop checks. Releas
 A 0.02.00 port refuses version 2 ("unsupported version 2 (this build reads 1)") instead of
 silently ignoring a gate, a party rule or a goal condition. A wave-2 port reads 1 and 2.
 slot_data's `seed_format` is the same number. (The port reads both since 2026-10-25, and 3
-(a hub seed, "Hub" below) since the hub's port work the same day; it refuses 4 and up:
-"unsupported version 4 (this build reads 1 to 3)". It reads the v2 fields in a version-1 seed
-too.)
+(a hub seed, "Hub" below) since the hub's port work the same day. It reads the v2 fields in a
+version-1 seed too.)
+
+- **4** when `options.bench` is on (the 12-member bench, "The bench" under Party v2; agent
+  "partybuild", 2026-10-26), in an open-world or a hub seed. A port that reads 1 to 3 refuses
+  it ("unsupported version 4 (this build reads 1 to 3)") instead of playing a 12-member pool
+  with 8 places; this port reads 1 to 4 and refuses 5 and up ("unsupported version 5 (this
+  build reads 1 to 4)").
 
 ### New `options` keys
 
@@ -1047,6 +1066,24 @@ the starting character, Archipelago off) keeps the party order exactly as before
   `--map` start the order a game in progress remembers, its start (the starting member's join,
   the starting items) counted as given.
 
+#### The bench (what the port does; agent "partybuild", `engine/src/game/ap/bench.h`)
+
+The user's decisions B1-B8 (docs/handoff/bench.md, 2026-10-26), with a separate store the port
+owns (the user: "Lets go with a separate store from the start, as then we own the method to
+maintain the benched members equipment and settings"). Work in progress on branch
+`party-bench`; this section grows with it.
+
+- **`options.bench`** (true / 1; seed version 4): read only with `party_rules: "open"` in open
+  world, and in the hub (where the party rules are always open); story mode and the story's
+  party rules keep 8 members and their lockouts, and there the key reads as off.
+- **The store.** Four bench places, 8-11, after the game's 8 slots (0-3 the front, 4-7 the
+  reserve). A member is what the game's own Party Order swap moves: the party slot (0x60 bytes)
+  and the character record (0xd0 bytes), so a benched member keeps everything (equipment,
+  skills, killer moves and their use counts, talents, tactics, level, EXP, HP / MP, status).
+  The game's blocks stay 8 places: no original code sees the bench, and the memory card's 8
+  slots stay a valid party for the original game or an older port (without the benched members
+  and what they wear). The bench is in the sidecar (`bench`, `bench_hash` above).
+
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 
 In every seed with `world_mode: open_world` or `hub` (any version; story mode and games without a
@@ -1319,7 +1356,8 @@ view until it is beaten. Without `world_mode: hub` none of this exists.
 ### The version and the options
 
 - `version`: **3**. A wave-2 port refuses it ("unsupported version 3 (this build reads 1 and
-  2)") instead of playing a hub seed as a story game.
+  2)") instead of playing a hub seed as a story game. A hub seed with `options.bench` is
+  version 4 ("The bench" under Party v2).
 - `options.world_mode`: `"hub"` (or 2). The chapter lock, the story views, the hub New Game and
   the dungeon keys run only then.
 - Reference only (the port reads the blocks below): `options.hub_start` (`fun_city`, `arlia`,

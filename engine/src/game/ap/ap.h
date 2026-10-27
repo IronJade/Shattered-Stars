@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "core/types.h"
+#include "game/ap/bench.h"
 #include "game/ap/json.h"
 #include "game/ap/seed.h"
 
@@ -70,6 +71,12 @@ struct SaveState {
   // slot 1). Party ids, 0 none. Sidecar keys "leader" / "slot_0" (written only when set).
   int lead = 0;
   int first = 0;
+  // [partybuild agent] The bench (game/ap/bench.h; options.bench): places 8-11, a member's slot
+  // and record each. Sidecar key "bench" (only with someone benched: then sidecar version 3),
+  // guarded by "bench_hash" (bench_digest: the save's bytes and the bench's), which, like
+  // save_hash, is never kept in the running state. A load takes the sidecar's bench as it is.
+  Bench bench;
+  std::string bench_hash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -127,7 +134,9 @@ void on_loaded(const std::string& card_image, int save_index);
 // its sidecar names this seed and slot and holds the hash of the save as it is on the card
 // ('file', 'length' bytes read); otherwise false (the game's own "load failed") and a log line
 // says why. A guard against accidents and casual save editors, not against cheating (the port
-// is open source). Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
+// is open source). A sidecar with a bench [partybuild agent] also needs its bench_hash to match
+// the save and the bench (an edited bench, or one moved to another save, is refused the same
+// way). Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
 // seed run clears every SS_* hook) lets any save load as before, logged.
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length);
 
@@ -240,6 +249,8 @@ bool on_enemy_drop(int enemy_type, int item);
 bool random_encounters_off();             // encounter_rate 0
 s32 scale_encounter_distance(s32 distance);  // the distance to the next one, * 100 / rate
 bool party_has_character(int id);         // in a party slot, active or in reserve
+// [partybuild agent] The bench (game/ap/bench.h): a bench seed is playing (options.bench).
+bool bench_enabled();
 // New Game's choice of story_route (title new_game.cpp): 0 free, 1 Claude, 2 Rena (the
 // seed's options.story_route; the locations the seed holds are that story_route's game's).
 int required_story_route();

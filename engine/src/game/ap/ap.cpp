@@ -429,6 +429,10 @@ bool protected_member(const Runtime& r, int id) { return character_received(r, i
 // Who may join under party_rules "open".
 bool permitted(const Runtime& r, int id) { return story_member(r, id) || protected_member(r, id); }
 
+// [partybuild agent] The bench (game/ap/bench.h): a bench seed (options.bench, which the seed
+// reader keeps only with party_rules "open" in open world, and in the hub).
+bool bench_on(const Runtime& r) { return r.on && r.seed.bench; }
+
 // The story's position: chapter G[0xa0] * 0x10000 + step G[0xa4] (steps stay below 0x10000;
 // G[0xa0] is game_state +0, the same bytes).
 s32 story_position() {
@@ -863,7 +867,9 @@ std::string sidecar_path(const std::string& card_image, int save_index) {
 Json sidecar_json(const SaveState& s) {
   Json j = Json::object();
   j.set("format", Json::string("apso2-save"));
-  j.set("version", Json::number(static_cast<int64_t>(2)));  // 2: save_hash [hubcore agent]
+  // 2: save_hash [hubcore agent]; 3: a bench (only then: an older port refuses the sidecar
+  // instead of dropping the benched members) [partybuild agent].
+  j.set("version", Json::number(static_cast<int64_t>(s.bench.empty() ? 2 : 3)));
   j.set("seed", Json::string(s.seed));
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
@@ -910,13 +916,17 @@ Json sidecar_json(const SaveState& s) {
   if (!s.moves.empty()) j.set("moves", ints(s.moves));
   if (s.lead > 0) j.set("leader", Json::number(static_cast<int64_t>(s.lead)));  // heroslot [partybuild agent]
   if (s.first > 0) j.set("slot_0", Json::number(static_cast<int64_t>(s.first)));
+  if (!s.bench.empty()) {  // the bench [partybuild agent] (nobody benched: no key)
+    j.set("bench", bench_json(s.bench));
+    if (!s.bench_hash.empty()) j.set("bench_hash", Json::string(s.bench_hash));
+  }
   return j;
 }
 
 bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (j["format"].as_string() != "apso2-save") return fail(error, "not an apso2 save sidecar");
   const int version = get_int_or(j["version"], 0);
-  if (version != 1 && version != 2) return fail(error, "unsupported sidecar version");
+  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: a bench)
   SaveState r;
   r.seed = j["seed"].as_string();
   r.slot_name = j["slot_name"].as_string();
@@ -955,6 +965,10 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   r.first = static_cast<int>(j["slot_0"].as_int(0));
   if (r.lead < 0 || r.lead > kCharacterCount) r.lead = 0;
   if (r.first < 0 || r.first > kCharacterCount) r.first = 0;
+  // The bench [partybuild agent] (absent: empty; anything else than its places refuses the sidecar).
+  std::string bench_error;
+  if (!bench_from_json(j["bench"], &r.bench, &bench_error)) return fail(error, bench_error);
+  r.bench_hash = j["bench_hash"].as_string();
   *s = std::move(r);
   return true;
 }
@@ -1543,6 +1557,8 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   if (heroslot_on(r) && !order_locked(r)) remember_order(r, "a save");
   SaveState s = r.state;
   s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
+  // The bench's guard [partybuild agent]: the save's bytes and the bench's (with someone benched).
+  s.bench_hash = file != nullptr && !s.bench.empty() ? bench_digest(file, length, s.bench) : std::string();
   s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
   if (write_sidecar(path, s, &err)) {
     log("saved " + path);
@@ -1581,6 +1597,7 @@ void on_loaded(const std::string& card_image, int save_index) {
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   s.save_hash.clear();  // (the card's, not the running state's)
+  s.bench_hash.clear();  // (the same; the bench itself is the save's, taken as it is) [partybuild agent]
   hub_resume_view(s.hub_view);  // [hubask agent] the asked chamber's view the save was made in
   s.hub_view = -1;
   r.state = s;
@@ -1613,6 +1630,9 @@ bool load_allowed(const std::string& card_image, int save_index, const u8* file,
     why = "this save was changed outside the game (its Archipelago state holds no hash of it)";
   } else if (file == nullptr || util::save_digest(file, length) != s.save_hash) {
     why = "this save was changed outside the game (it differs from the one this seed saved)";
+  } else if ((!s.bench.empty() || !s.bench_hash.empty()) && bench_digest(file, length, s.bench) != s.bench_hash) {
+    // [partybuild agent] The bench: edited, stripped, or moved here from another save.
+    why = "this save was changed outside the game (its bench differs from the one this seed saved)";
   }
   if (why.empty()) return true;
   if (const char* any = std::getenv("SS_AP_ANY_SAVE"); any != nullptr && std::string(any) == "1") {
@@ -2143,6 +2163,8 @@ void on_camp_menu_closed() {
 }
 
 bool party_has_character(int id) { return slot_of_character(id) >= 0; }
+
+bool bench_enabled() { return bench_on(rt()); }
 
 int required_story_route() {
   const Runtime& r = rt();
