@@ -237,8 +237,12 @@ named "<area> Pass" (`tools/ap_world_tables.py` KEY_NAMES; "Map 231 Pass" for th
 area the story visits at chapters 24-25, "Fienal Pass" for map 687, Fienal's entrance). The
 seed's `doors` lists all 66 with their key; `apworld/so2/doors.py` validates it in the tests.
 **Starting keys:** the Arlia Pass (the start) and the Fun City Pass (the teleporter's way back
-to Expel, and the only way to Virtual Expel), plus the North City Pass with the teleporter off
-(else nothing on Energy Nede is reachable after the switch).
+to Expel, and the only way to Virtual Expel), plus the North City Pass unless the teleporter
+and `expel_progression` are both on. The first Energy Nede stage needs it and nothing on Energy
+Nede is reachable before it (the teleporter's old man needs the Synard, stage 16), so it must sit
+in Expel; with either option off Expel holds only our Expel-story keys (below), and it would
+have no legal spot in a solo world (0.2.0 gave it at the start with the teleporter off only; with
+the teleporter on and expel_progression off, every solo fill failed: 0.2.1, "Changes").
 
 **The story's stages** (data.STAGES, from every chapter / step store with its conditions and
 the area of its map; `scratchpad/enemy/ap5/steps.py`): 23 stages, 12 on Expel (chapters 3-35)
@@ -940,7 +944,7 @@ tested with `assertAccessDependency` (every location checked unless noted):
 | File | Mixes (classes) | What the access dependencies cover |
 |---|---|---|
 | test_world.py | story mode: default, story_route claude, missables remove / include, the cave, expel_progression off, late proof (any, rena), bosses off, drops and traps, shops full / specials | (story mode has no items of its own: the events, the late proof's rule, `can_fill`) |
-| test_open_world.py | open world default, Rena with full shops and the cave, no teleporter, expel_progression off (the bug's reproducer, below) | every pool area key -> exactly the locations and story stages whose every way needs it; each El voyage pass -> the voyage stage, all of them -> the Final Save Point and the goal (through the events); the Hilton and Lacour passes -> the Herlie stage; a landing's key -> its area's early-only chests |
+| test_open_world.py | open world default, Rena with full shops and the cave, no teleporter, expel_progression off (the North City Pass fill failure's reproducer, below) | every pool area key -> exactly the locations and story stages whose every way needs it; each El voyage pass -> the voyage stage, all of them -> the Final Save Point and the goal (through the events); the Hilton and Lacour passes -> the Herlie stage; a landing's key -> its area's early-only chests |
 | test_party.py | the story's party rules (any / claude / rena), party v2 (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero | `PartyChecks.party_size()` / `healer_guaranteed()`: the hooks a bench option overrides |
 | test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks; a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
 | test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
@@ -948,23 +952,28 @@ tested with `assertAccessDependency` (every location checked unless noted):
 | test_difficulty.py | earth, galaxy, universe (open world, hub), any | (no logic change: the same locations as on Earth) |
 | test_doors.py | `unittest.TestCase` | the door validator on a made-up table |
 
-A known world bug is in the suite as a reproducer: `TestOpenWorldNoExpelProgression`'s three
-tests that fill are `@unittest.expectedFailure` (open world, expel_progression off and the
-teleporter on: North City Pass has no legal spot in a solo world, so every solo fill raises
-FillError; docs/handoff/aptests.md "World bug"). They start passing with the fix; take the
-decorators off then.
+A fixed world bug stays in the suite as its reproducer: `TestOpenWorldNoExpelProgression` (open
+world, expel_progression off, the teleporter on, a solo world) fills in WorldTestBase's
+test_fill, test_voyage_gate_placements and test_seed_doors. Before 0.2.1 the North City Pass had
+no legal spot there and every solo fill raised FillError (docs/handoff/aptests.md "World bug");
+the three were `@unittest.expectedFailure` until the fix (0.2.1: the pass at the start,
+test_keys_and_start; docs/handoff/ncpfix.md).
 
 **The release workflow** (many random seeds, outside the unit tests, as the guide asks):
 `tools/ap_batch.sh SET OUT FIRST LAST` generates seeds FIRST..LAST of a players set
 (`story_open`: two SO2 players, story 1 : open world 2, every option random, and ChecksFinder;
 `hub`: one SO2 player in hub mode, one hub / story / open world 3 : 1 : 1, and ChecksFinder;
-tools/ap_batch_players/) with Generate.py into OUT/<seed>/, then `tools/ap_batch_check.py`
-checks every .apso2 (OUT.check.txt); exit 0 only when every seed generated and no file has an
-error. A problem a batch finds gets a minimal reproducer in the tests (one option mix), as the
-phase-4 batch's expel_progression fill failures did (`TestOpenWorldNoExpelProgression`):
+`solo_noexpel` (0.2.1): one SO2 player alone, `expel_progression` off, open world / story / hub
+3 : 1 : 1, the rest random, so no other game's locations take what this world can't place, as
+ChecksFinder's hid 0.2.0's North City Pass failure; tools/ap_batch_players/) with Generate.py
+into OUT/<seed>/, then `tools/ap_batch_check.py` checks every .apso2 (OUT.check.txt); exit 0
+only when every seed generated and no file has an error. A problem a batch finds gets a minimal
+reproducer in the tests (one option mix), as the phase-4 batch's expel_progression fill
+failures did (`TestOpenWorldNoExpelProgression`):
 
     tools/ap_batch.sh story_open scratchpad/batch/full 1 96     # ~5 min
     tools/ap_batch.sh hub scratchpad/batch/hub 1 96
+    tools/ap_batch.sh solo_noexpel scratchpad/batch/solo 1 96
 
 Results (2026-10-23, phase 4):
 - The world's tests: 95 passed (7986 subtests; 22 classes: phase 3's 17, plus TestOpenWorld,

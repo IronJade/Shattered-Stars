@@ -71,7 +71,9 @@ doesn't change the goal.
   - **Stone Trap** — turns one active party member to stone.
 - **Area keys**, if `world_mode` is `open_world`. Thirty-five keys, each named after an area
   ("Salva Pass", "Fienal Pass", and so on), unlock that area's entrances on the world map. These
-  are progression items and are placed in the multiworld like any other progression item.
+  are progression items and are placed in the multiworld like any other progression item. You
+  start with the Arlia Pass and the Fun City Pass, and with the North City Pass too unless
+  `expel_teleporter` and `expel_progression` are both on.
 - **Dungeon keys**, if `world_mode` is `hub`. One per dungeon ("Salva Drift Key", "Field of
   Power Key", and so on, up to 18), each unlocking every door into its dungeon. Progression
   items. See "Hub mode" below.
@@ -293,6 +295,8 @@ design decisions follow from this:
 - with `expel_progression` off, no other player's progression items are placed in Expel — but
   this world's own area keys that the Expel story itself needs to reach the disc switch can
   still appear there, since the story picks them up on its own before Expel closes behind you.
+  In `open_world` you then start with the North City Pass, the first pass Energy Nede's story
+  needs: nothing there can be reached before it, and it can't wait in Expel either.
 
 ## DeathLink
 
@@ -321,13 +325,13 @@ Running away from a fight never counts.
 | `world_mode` | `story` (default), `open_world`, `hub` | `open_world`: the 35 area keys lock the world map's entrances until you find them. `hub`: start after the Final Save Point with everything open, a key per dungeon and the bosses waiting — see "Hub mode" above. |
 | `hub_start` | `fun_city` (default), `arlia`, `random_town` | Hub mode only: where New Game puts you; `random_town` is any town of either world. |
 | `fienal_requirement` | `fields_and_berle` (default), `fields`, `all_bosses` | Hub mode only: the bosses that open Fienal (the four Fields' and Berle in Armlock; the Fields' only; every boss outside Fienal). |
-| `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items). |
+| `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items); you also start with the North City Pass. |
 | `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations: the first time you buy a slot's item you get what you buy, and the slot's check too. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
 | `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
 | `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: you pick on a character select at New Game, among the members this world allows. See "In open world" above. |
 | `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |
 | `missable_locations` | `exclude` (default), `include`, `remove` | How locations that can be missed for good are treated — see above. |
-| `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world). |
+| `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world, where you also start with the North City Pass). |
 | `cave_of_trials` | off (default), on | Add the Cave of Trials, a very hard postgame dungeon, and its chests, gifts and bosses (in hub mode behind the Cave of Trials Key). |
 | `boss_checks` | on (default), off | Defeating a boss (story, side quest or Cave of Trials) is a location. Indalecio is always the goal, never a location. |
 | `character_items` | off (default), on | Party members join through items instead of their story scene — see "Who can join your party?" above (open world has no lockouts). Always on in hub mode. |
