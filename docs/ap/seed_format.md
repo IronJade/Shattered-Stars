@@ -249,6 +249,16 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   (no merge: it is the save's state, not the multiworld's); a load without a sidecar, and New
   Game, start with an empty bench. A place outside 8-11 or given twice, other than 0x130 bytes,
   or a member that is no party id 1-12 (or benched twice) makes the sidecar unreadable.
+- `lent` (a bench seed with a benched member lent for a fight; agent "partybuild6",
+  2026-10-27): `[{"id": 1-12, "place": 8-11}]`, the members lent from the bench to the 8 for a
+  fight the story makes them make alone ("Loans" under "The bench") and the place each keeps.
+  Their bytes are in the card's 8 slots meanwhile, their place empty. A sidecar with a loan is
+  **version 3** too, and `bench_hash` is then written even with nobody else benched; it covers
+  the loans (each loan's id and place, one byte each, after the four places; no loan adds
+  nothing, so a bench's hash is unchanged). Absent: no loan. A loan of no member 1-12, of a
+  benched member, to a place outside 8-11 or a taken one, or given twice makes the sidecar
+  unreadable. A loan's borrowed slot is a `stash` entry like a temporary member's, its `by` the
+  lent member (main's shingofix, port 0.02.51, documents `by`).
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -260,10 +270,11 @@ the game's memory). With a seed on, a save loads only when its sidecar names thi
 and its `save_hash` is the hash of the save as the card holds it now. Refused: a save without a
 sidecar (an ordinary game's, or one copied without its `.ap.json`), another seed's or slot's, a
 sidecar without the hash (version 1, or the field stripped), and a save whose bytes changed on
-the card since it was saved. A sidecar with a bench also needs `bench_hash` to match the save and
-the bench: an edited bench, a bench without its hash, a hash without its bench, or a bench
-moved here from another save is refused the same way (`... its bench differs from the one this
-seed saved`); stripping both only loses the benched members. A refused load fails the way a damaged save does: the load screen
+the card since it was saved. A sidecar with a bench (or a loan) also needs `bench_hash` to match
+the save, the bench and the loans: an edited bench or loan, a bench or loan without its hash, a
+hash without its bench, or a bench moved here from another save is refused the same way (`...
+its bench differs from the one this seed saved`); stripping all of them only loses the benched
+members (a lent member stays in the 8). A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -1095,8 +1106,41 @@ maintain the benched members equipment and settings"). Work in progress on branc
   the story's own join of a benched member is skipped (B4: they stay benched; log `join Noel at
   map 277 ...: on the bench: stays there`); the story's leaves find no slot. A received move
   (skillsanity) is learned in the benched record, and the killer-move scan reads its use counts.
-  (Being worked on: a fight the story makes a benched member make alone, which lends them for
-  that window.)
+- **Loans** (B4: "lent only for solo fights"). The split windows that let a member in for a fight
+  they make alone (Claude in Shingo Forest, map 12, in Rena's game; Dias's fights and, in Rena's
+  game, Claude's at the tournament, maps 468-477) lend a benched member instead of skipping
+  their join: their own bytes (not a new join's) go into the slot the game's join would give a
+  new member (the first slot not active: an empty one, or a reserve one whose member moves to the
+  next empty slot), else a reserve slot of a member the port does not keep, else the first
+  reserve slot borrowed (its member's bytes stashed, as for a temporary member, with `by` the
+  lent member). Their bench place stays theirs, empty: no join takes it. Log `[ap] join Claude at
+  map 12 ...: lent from the bench (place 8, level 17, EXP 8677) for Shingo Forest (map 12), slot
+  1: Ashton, Claude, (Rena)`. They go back to that place with what the fight gave them (EXP, HP,
+  status; the Link Combo bond cleared, as Party Order clears it behind the front four) at the
+  first free play where the story has set them aside or no window needs them, or at once when
+  the story's join puts back the member whose slot they borrowed (the borrowed slot first goes
+  back to them wherever a scene moved them, as for a temporary member); their slot is empty
+  again, or holds its own member again. Log `[ap] Claude back on the bench (place 8, level 17,
+  EXP 8682): the window that needed them is over`. Inside the window a join of theirs (a fight
+  again) is the game's join; outside it the story's join adds nobody (`... lent from the bench:
+  back to it at the next free play`). Party Order and the order memory (heroslot) are locked
+  while a loan is out. A save keeps the loan (`lent` above).
+- **The story's own party moves never see the bench** (the user, 2026-10-27: Private Actions read
+  the party and the reserves, slots 0-7, never the bench). No benched member comes into slots 0-7
+  inside a Private Action (B 0x29 / 0x2a): no loan then (`... on the bench: stays there (a
+  Private Action: no loan)`), and Party Order's bench moves are refused. Nor inside a saved party
+  order (A 0x16 / 0x17) with free play in it: the arena (305 -> 304), the tournament (468 ->
+  469), Fun City's contest (688) and the Cave of Trials (704) lie in windows that lock the bench;
+  map 479's pair is inside one scene. The tournament's loans are the story's own joins of its
+  fighter there (as the original's temporary Dias): no saved member leaves for the bench, so A
+  0x17 finds every one it can. A loan never overwrites or stashes the slot of a member who
+  borrowed one while that stash waits; with no other slot the member stays benched (`... needed
+  for the tournament ... but there is no slot (none free, none of a member it may take): stays on
+  the bench`). Party Order is locked while any slot is borrowed.
+- **Inns, heals and the endings see the 8 slots only** (B8 no, B5 none for now): the game's heal
+  routines (party_restore_hp_all / _mp_all: inns, scripts) and the endings' "in the party" test
+  (script ext 0xb1, party_find_slot) read the 8 slots, so a benched member is neither healed nor
+  counted for an ending, with no port code.
 - **Party Order** (camp menu > Combat > Replacement; B1, the user's pick: Option A of
   scratchpad/bench/shots/mock_party_order.png). With a bench seed the page keeps its two
   columns of four: the left one is always the front four (slots 0-3); the right one shows the
@@ -1169,6 +1213,27 @@ maintain the benched members equipment and settings"). Work in progress on branc
   and switched off for battle; the save: Noel's SP, skill and the stamina it gives, Rena's
   Heal off, nobody's MP spent. Unit test `ap_bench_specialty_uses` (the rule for a slot, a
   reserve slot, a bench place, unbound); smoke `ap_bench_use`.
+- Checked (2026-10-27, loans; agent "partybuild6"): map 12 in Rena's game with Claude benched
+  (debugging: `SS_BENCH=1` puts him there before the map's own scene) and all 8 slots taken, a
+  real battle: Claude lent into Rena's slot (her bytes stashed) at level 17, EXP 8677; special 1
+  moves him to slot 0; he fights the monster alone and wins (encounter 190); Rena's join puts him
+  back in the slot he borrowed first, Ashton to slot 0, and Claude on the bench at EXP 8679; at
+  map 17 all 8 are there (the build before the borrowed-slot fix had lost Ashton here). With room
+  in the 8 (Ashton, Rena) he is lent into Rena's slot (she moves to the next empty one) and goes
+  back at the first free play, EXP 8677 -> 8682. The tournament (477, Claude's game, all 8
+  taken): Dias lent into Claude's slot for his fight, the status line names the loan, and
+  Claude's join after it puts Claude back and Dias on the bench. Not reached headless: a free
+  play inside the tournament (map 476 then holds a menu; the unit tests play that sequence).
+  Unit tests `ap_bench_loans` (both scenes with and without room, a second fight, the sidecar
+  and its guard, inns and ext 0xb1 on the 8 only) and `ap_bench_loan_rules` (no loan in a
+  Private Action; Party Order locked in a Private Action and in the windows around the
+  party-order saves; a loan never takes a borrower's slot; the tournament with heroslot, A 0x16 /
+  0x15 / 0x17: nobody lost); smoke `ap_bench_m12`, `ap_bench_t477`.
+- Open (for the user; the same on main for a received Dias, docs/handoff/shingofix.md): the
+  tournament's specials rewrite Dias's own data after his fights (0xc: level 35, EXP 96982, HP
+  2500; 0xd: his starting data again). A lent Dias goes back to the bench with that, as a
+  received Dias in the 8 keeps it today; shingofix's option (b), his own bytes back after his
+  last fight, would fit a loan directly (the bytes lent are known).
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

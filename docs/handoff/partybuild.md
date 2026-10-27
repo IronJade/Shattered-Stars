@@ -61,6 +61,28 @@ Specs: docs/handoff/heroslot.md (D1-D4 decided), docs/handoff/bench.md (B1-B8 de
   other specialty use), field spells cast by them (their MP, on anyone), anything else where a
   benched member does something in the game: the menu's refusal sound and, where it fits the
   page, a short help-bar note.
+- **The story's own party moves never see the bench** (the coordinator, 2026-10-27, from
+  docs/handoff/shingofix.md on main and the user's decision: "private actions ... should only ever
+  read the party (active) and the reserves, and not the bench characters, until they are brought
+  back into the active game world; slots 0-7"):
+  1. Never move a benched member into slots 0-7 between the PA isolate and restore (B 0x29 /
+     0x2a) or between A 0x16 and A 0x17. Built: Party Order's bench moves are refused while
+     `order_locked` (PAs: flags 2 / 4 / 746; every A 0x16 / 0x17 span with free play inside lies
+     in a window that keeps everyone away: the arena 305 -> 304 (flag 586), the tournament 468 ->
+     469 (chapter 19 from step 1000), Fun City's contest 688 (flag 2326), the Cave of Trials 704
+     (flag 2318, set right after its A 0x16 and cleared right after its A 0x17); map 479's pair is
+     inside one scene: scratchpad/partybuild/dis/map479.dis); a loan is never made during a PA
+     (`on_party_add`: "on the bench: stays there (a Private Action: no loan)"). Reading for the
+     coordinator: the tournament's loans fall between 468's A 0x16 and 469's A 0x17 by design
+     (B4; the story's own join of its fighter, as the original's temporary Dias): no saved member
+     leaves the 8 for the bench, so A 0x17 finds every saved member it can (unit test).
+  2. Keep `Stash::by` and the keep-by-borrower test exactly as main has them (a1827a9); the loans'
+     stash goes through the same path (`stash_reserve_slot` sets `by`; the loans' own keep line is
+     a separate `if` before main's, so main's line stays as it is).
+  3. Refuse bench or loan moves that would take a borrower out of the 8 while a stash exists:
+     Party Order is locked while `stash` (or `lent`) is non-empty; a loan never overwrites or
+     stashes a slot whose member borrowed one (`holds_borrower`): with no other slot the member
+     stays benched.
 
 ## Plan (pieces, each committed once verified)
 
@@ -296,6 +318,43 @@ agent "partybuild2" continues from here (2026-10-26).
   - Readings for the user (5b): killer-move slots and spell on / off stay allowed from the
     bench (their own settings, as Skills' battle skills); Link Combo refused (choosing a
     partner can clear front members' links); renaming from Status allowed.
+
+- **Agent "partybuild6"** continues (2026-10-27): piece 6, piece 7, the final suites, the merge
+  plan. Limits: 1 game process at a time, builds -j4.
+- **Piece 6 (loans, B4 / B5 / B8): built, unit-tested** (uncommitted while the docs and smoke
+  cases are written). partybuild4's draft applied and reviewed, plus:
+  - `bench_hash` covers the loans (bench_digest's optional loans: id and place, one byte each,
+    after the four places; none adds nothing) and is written with a loan out even with nobody
+    else benched; load_allowed checks it then. `SaveState::Loan` = `BenchLoan` (bench.h).
+  - A lent member's story join: inside the window needing them the game's join (another fight);
+    outside it nobody is added (back to the bench at the next free play).
+  - Log lines with level and EXP (`lent from the bench (place 8, level 17, EXP 8677)`,
+    `back on the bench (place 8, level 17, EXP 8682)`); `loaded ...: ..., lent: Claude`.
+  - Debug switch `SS_BENCH=ID,...` (environment, as SS_HEROSLOT_ORDER): these members joined to
+    the bench at the first join or free play (a --map scene test needs Claude benched before
+    map 12's own scene).
+  - **Found: a member lost at Shingo Forest with all 8 slots taken** (Rena's game, also on main
+    without the bench: Claude a temporary member): map 12's special 1 moves Claude off the slot
+    he borrowed, and putting Rena back overwrote Ashton. Fixed here with `Stash::by`; the
+    coordinator had it fixed on main the same way (shingofix: 1ab7000, a1827a9, 7af0d7e). The
+    code here now matches main's text (borrow_slot split, the borrower lambda, the keep line).
+  - Rules 1-3 above; unit tests `ap_bench_loans` (Shingo Forest full and with room, the
+    tournament full and with room, a second fight, the sidecar / guard, B8 heals and B5's ext
+    0xb1 on the 8 only) and `ap_bench_loan_rules` (rule 1: no loan in a PA, Party Order locked
+    in a PA and in the four A 0x16 / 0x17 windows; rule 3: Dias's loan refused where it would
+    overwrite Claude's borrowed slot; heroslot's tournament with A 0x16 / 0x15 / 0x17: nobody
+    lost, Dias back on the bench with the fight's EXP). ss_tests 103/0, ss_game_tests 201/0
+    (ss_tests11.log, ss_game_tests11.log).
+  - Runs (scratchpad/partybuild/p6/, run.sh; seeds bench_rena.apso2 = v2rena + Ashton + bench,
+    bench.apso2): m12b (Claude benched, room: a real battle, Claude acting alone against the
+    monster 2000 -> 0 HP, encounter 190 won; back on the bench EXP 8677 -> 8682; Ashton back
+    in slot 0), m12c2 (all 8 taken: Claude borrows Rena's slot, special 1 moves him, he goes back
+    to it first; end state all 8: `[7, 2, 3, 4, 6, 8, 9, 11]`; m12c, before the fix, had lost
+    Ashton), t477a / t477b (Dias lent for his fight, Claude's join after it).
+  - **Blocked step, now cleared:** partybuild6's edit of docs/ap/seed_format.md ("The bench":
+    loans, the borrowed slot, inns and endings) was refused once by an editor permission
+    problem (not the user; the coordinator, 2026-10-27); partybuild6 stopped there and resumed
+    on the coordinator's word.
 
 ## Working notes (partybuild2)
 

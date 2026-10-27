@@ -313,8 +313,12 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   between the reserve and the bench with L1 / R1, and a pick survives the flip; the camp
   menu's member list, Equipment, Skills, Status, Specialty and Tactics (the same flip) work on
   benched members where they are. Benched members are managed, not used: their settings can be
-  changed, but their field specialties, spell casts and Link Combo are refused
-  (`docs/ap/seed_format.md` "The bench").
+  changed, but their field specialties, spell casts and Link Combo are refused. A fight the
+  story makes a benched member make alone (Claude in Shingo Forest, the tournament's) lends
+  them to the 8 as they are, and they go back to their bench place with what the fight gave
+  them; the story's Private Actions and party-order saves never see the bench, and inns and the
+  endings read the 8 slots only (`docs/ap/seed_format.md` "The bench"; debugging: `SS_BENCH=ID,...`
+  puts members on the bench for a `--map` scene test).
 - **The hub** (seed version 3, `world_mode: hub`): New Game starts after the Final
   Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
   town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens
