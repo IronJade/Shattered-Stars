@@ -126,6 +126,11 @@ ss_game_tests 198 / 0, full smoke (final/smoke.log) 311 PASS / 0 FAIL, rc 0.
 
 ## Scratch
 
-scratchpad/shingofix/: run.sh, t477.sh, tour.sh, party.py, lvl.py, seeds/, runs/, bin0 (main),
-bin1 / bin2 (fix), binw0 (main + the sweep aid), wt0 (git worktree, detached at HEAD + the
-event_sweep hunk + a test copy; remove with `git worktree remove --force scratchpad/shingofix/wt0`).
+scratchpad/shingofix/: run.sh, t477.sh, tour.sh, mini_smoke.sh, party.py, lvl.py, seeds/, runs/,
+bin0 (main before the fix), binw0 (main + the sweep aid, for the tournament baseline), final/
+(the fixed binaries, smoke copy and suite logs). The baseline worktree wt0 was removed.
+
+## Done
+
+Commits 1ab7000 (docs) and a1827a9 (port) on main, not pushed. Open for the coordinator: the
+special 0xc / 0xd finding (options above).
