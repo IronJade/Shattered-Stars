@@ -268,6 +268,13 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
  "version": 3
 ```
 
+- `stash` entries' `by` (agents "partybuild6" / "shingofix", 2026-10-27; port 0.02.51): the
+  party id (1-12) of the member who borrowed the slot (a temporary member; "The party rules"
+  below). The stash goes back to that member's slot even after a scene moved them; absent (a
+  sidecar from before), the temporary member found in the 8 is taken. Written with every new
+  stash; no new version: a port from before ignores it and puts the stash back by its slot, as it did. A
+  value outside 1-12 reads as absent.
+
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
 a file.
@@ -1008,7 +1015,10 @@ conditions and its return).
     `temporary` and leave the party (their slot emptied) at the first free play after the window.
     With every slot kept, such a member borrows the first reserve slot; its member's slot and
     record go to the sidecar's `stash` and come back when anything joins that member, when the
-    borrower is out of the party, or after the window.
+    borrower is out of the party, or after the window. A scene may move the borrower meanwhile
+    (map 12's specials 1 / 2, the tournament's A 0x15 compaction before and after each fight):
+    the stash remembers who borrowed it (`by`), and they go back to the borrowed slot first, the
+    member there to theirs, so the stash never lands on another member (port 0.02.51).
   Outside every window (free play, not in a Private Action) a member recruited for good who is in
   reserve rejoins ("Celine joined the party"). The windows: Rena at home (Claude's game, 5/0-1000),
   Claude away (Rena's game, 5/2000-2500), the other hero away (5/3000-6/2100, 7/1000-8/0), Mars
