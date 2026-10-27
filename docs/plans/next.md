@@ -79,6 +79,24 @@ before it carry the bug fixes, the hell seed and the bench.
 See `docs/plans/trackers.md`. Map images (decided 2026-10-26): rendered by the port from the
 player's own disc into PopTracker's user-override folder; nothing from the disc is published.
 
+**Status (2026-10-27; the build log docs/handoff/phaseb.md):**
+- **Built:** B1 Universal Tracker yaml-less (utworld), B2 rules as data (rulebuilder), B3 the logic
+  export and B4b its Lua evaluator (logicexport, with 0.2.0 Skillsanity rooms tracked with a
+  warning), B4a the PopTracker pack (packgen), B5 the port's data-storage keys (dskeys), the map
+  render command (maprender), its Windows build, ASan and setup button (portcheck), the rooms and
+  lettered doorways (mapdoors), the setup render on a thread (setupthread), story awareness in
+  both trackers (storyaware). **In progress:** maptab (B6's map half: the map_names `area` audit,
+  the pack's room maps, door panel and click switching, Universal Tracker's map tab;
+  docs/handoff/maptab.md).
+- **Docs written** (releasedocs, docs/handoff/releasedocs.md): docs/ap/release_checklist.md
+  section 12, docs/handoff/windows_check.md "Recheck for 0.03.00", the three release notes
+  (docs/release_notes/0.03.00.md, 0.2.2.md, poptracker-1.0.0.md), README.md, the wiki's new
+  Trackers page (scratchpad/wiki, uncommitted). maptab's parts are marked TODO (maptab) there.
+- **Next: the release candidate** (B7b, after maptab): the version bumps (port 0.03.00, world
+  0.2.2; the pack is 1.0.0 already), the RC by section 12, the user's Windows check, then three
+  releases (`apworld-v0.2.2`, `poptracker-v1.0.0`, `v0.03.00` Latest), versions.json on main and
+  the wiki, only with the user's go-ahead.
+
 ---
 
 ## Party work, decided 2026-10-26 (built; ships in port 0.02.51 + world 0.2.1, the user 2026-10-27)
@@ -174,7 +192,39 @@ The decisions for the user (bring them with recommendations at the start of the 
    the hub best. Recommendation: open world and hub only at first.
 3. **Coupled by default** (leaving a place returns you where you came from), uncoupled as an option.
 4. **Mix the worlds?** Expel and Energy Nede entrances together or kept apart (groups).
-5. Tracker support: the pairings in slot data; whether a PopTracker pack is in scope.
+5. Tracker support: the pairings in slot data; whether a PopTracker pack is in scope. **Answered
+   by Phase B**: yes; the pairings in slot data plus a found-entrances key cover both trackers
+   (docs/plans/trackers.md section 6).
+
+What Phase B left ready for ER (read these before er-model / er-world start):
+- **Door ids.** docs/ap/tracker_maps.md "Door ids": a door is a docs/ap/doors.json record (id =
+  map * 65536 + offset / 4), a doorway the doors one trigger starts (id = its lowest door id). The
+  recommendation, to confirm at this phase's design: an entrance is a doorway, named from its id
+  ("Door 1180128"), and ER sends every door of a doorway to the same new destination; the vanilla
+  pairing is the layout's `to[].back`.
+- **Named entrances in the logic export.** docs/ap/seed_format.md "The tracker export" and "Room
+  for the entrance randomizer": entrances are `[name, from, to, rule]`, `to` -1 is an entrance not
+  connected yet; `TrackerLogic.connect` (tools/ap_tracker_logic.py) and the pack's
+  `so2_logic_connect` connect one when it is found, both tested; optional keys (a region -> map
+  ids hint, the pairings) need no new format. The export is written after `connect_entrances`, so
+  it is the randomized graph.
+- **The live door panel seam.** docs/ap/tracker_maps.md "For the pack (part 2)": no destination is
+  painted on any image; the pack shows each lettered doorway's destination from data (the vanilla
+  door table, or ER's pairings plus the found-entrances key, "A -> ?" until found). What maptab
+  built of it: docs/handoff/maptab.md.
+- **The found-entrances key.** `so2_entrances_{team}_{slot}` is reserved (docs/ap/data_storage.md
+  "Reserved"); the port's spot for it is marked at the end of `publish_tracker_keys`
+  (engine/src/game/ap/ap.cpp). Universal Tracker's deferred entrances already work the same way
+  for the story (apworld/so2/story.py: `found_entrances_datastorage_key`,
+  `reconnect_found_entrances`, honouring `enforce_deferred_entrances`), the model to follow.
+- **Rules that read regions.** A `CanReachRegion` rule is a new kind: add it to
+  `logic.RESOLVED_KINDS` / `logic.as_rule` and to the export's `region` body (both evaluators read
+  it already); `set_rule` on an entrance registers its indirect condition
+  (docs/handoff/rulebuilder.md "Open"; docs/ap/apworld.md "Rules as data").
+- **`ut.LOGIC_VERSION`** must be bumped when the same slot data would rebuild other logic
+  (docs/ap/apworld.md "Trackers", "When to bump"), and in Universal Tracker's regeneration
+  (`re_gen_passthrough`) `connect_entrances` must connect from the slot data's pairings instead of
+  randomizing (docs/plans/trackers.md section 6, Tunic's pattern).
 
 Work breakdown (agents):
 - **er-model:** the entrance table: every candidate transition with its source map / door id, its

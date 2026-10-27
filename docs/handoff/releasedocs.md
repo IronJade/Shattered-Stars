@@ -90,7 +90,10 @@ docs/ap/release_checklist.md section 11.
      said 0.02.50: now 0.03.00), Contributing.md and Installing-and-Managing-Mods.md (examples),
      Building-from-Source.md ("0.02.50 today" -> 0.03.00).
    - Every wiki-internal link and anchor checked by script: 0 bad. **Done.**
-6. docs/plans/next.md: Phase B status, Phase C pointer. (pending)
+6. docs/plans/next.md: Phase B's status (built, maptab in progress, docs written, the RC next);
+   Phase C unchanged, its decision 5 marked answered, and "What Phase B left ready for ER" (door
+   ids, named entrances in the export, the live door panel seam, the reserved found-entrances key
+   and the story's deferred events as the model, CanReachRegion, logic_version). **Done.**
 
 ## Placeholders left for maptab
 
