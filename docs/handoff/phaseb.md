@@ -23,9 +23,10 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | World | B1 UT yaml-less | utworld | docs/handoff/utworld.md | **done** 2026-10-27 (605368a, b35eadf, 12fe31d; world tests 783, test_ut 84, slow 320 rooms, general 379, batches 288/288 identical, real UT 20/20 points) |
 | Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
 | World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | started 2026-10-27 |
-| Port | map render command (D5) | maprender | docs/handoff/maprender.md | started 2026-10-27: research + layout data first |
+| Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
 | World | B3 logic export | (after B2) | | queued |
-| World | B4 PopTracker pack generator | (after B3; needs the map layout contract) | | queued |
+| World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | started 2026-10-27 (layout from maprender) |
+| World | B4b the pack's logic evaluator | (after B3) | | queued |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
@@ -79,3 +80,7 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
   ut.NEW_KEYS; bump ut.LOGIC_VERSION with any logic change. For B7: release_checklist rows for
   tools/ap_ut_check.py and SO2_SLOW_TESTS. Baseline trap: a `cp -as` farm's linked Generate.py imports
   the live world (use real copies of top-level scripts). rulebuilder started.
+- 2026-10-27: maprender done (`--render-tracker-maps [DIR]`; format docs/ap/tracker_maps.md, "For the
+  pack"). Later, not blocking: a setup button for the command (Windows players); shopkeeper dots if
+  wanted; better map labels in map_names.csv; the Windows build itself not run (MinGW syntax only).
+  packgen (B4a) started alongside rulebuilder.
