@@ -348,7 +348,7 @@ slow runs behind an env var such as `SO2_SLOW_TESTS`) apply to every test below.
 each with its own docs/handoff/<name>.md. Model choice: the world and design pieces (B1-B3) on the
 strongest model; the generator's bookkeeping parts and packaging can go to a cheaper one.
 
-### B1. UT support, yaml-less (world 0.2.1) — size S
+### B1. UT support, yaml-less (world 0.2.2) — size S
 
 What changes (apworld only):
 - `SO2World`: `ut_can_gen_without_yaml = True`; `@staticmethod interpret_slot_data(slot_data):
@@ -469,7 +469,7 @@ Tests:
   - an e2e step in tools/ap_e2e_so2.sh: a Python client reads the keys from the local server.
 - Size: about 120 lines plus tests.
 
-### B6. UT map tab and story awareness (world 0.2.2 or 0.2.3) — size S, after B4/B5
+### B6. UT map tab and story awareness (world 0.2.2) — size S, after B4/B5
 
 - `tracker_world = {"map_page_folder": "tracker", "map_page_maps": "maps/maps.json",
   "map_page_locations": [...], "map_page_setting_key": "so2_map_{team}_{player}", "map_page_index":
@@ -491,7 +491,7 @@ Tests:
   checklist rows (build the pack, sha256 / versions.json, the UT test, the pack checker), release
   notes.
 
-Order: **B1** (ship alone as world 0.2.1) -> **B5** (in parallel, port side) -> **B2** -> **B3** ->
+Order: **B1** -> **B5** (in parallel, port side) -> **B2** -> **B3** ->
 **B4** -> **B6** -> **B7**. B1 and B5 give useful results within days. B2-B4 are the larger piece.
 
 ## 6. Phase C (entrance randomizer) and the trackers
@@ -517,6 +517,8 @@ Order: **B1** (ship alone as world 0.2.1) -> **B5** (in parallel, port side) -> 
   trackers.
 
 ## 7. Decisions for the user (with recommendations)
+
+**Release targets (the user, 2026-10-27):** "Bench needs to be rolled into the 0.02.51 + 0.2.1 release. Next we move toward the 0.03.00 + 0.2.2 releases where we are adding tracker compatability." World 0.2.1 makes the party pool deterministic when the `bench` option is on (default): B1 still restores the pool from slot data for bench-off seeds and 0.2.0 rooms.
 
 **The user's answers (2026-10-26):** D1, D2, D3, D4, D6 and D7 as recommended. D5 open: the
 user asked whether screenshots taken at each map, stitched together by name, would work as the map
@@ -546,7 +548,7 @@ the pool from slot data for 0.2.0 rooms and bench-off seeds.
 | D6 | Port data-storage keys (`so2_map_*`, `so2_story_*`) | Yes, in port 0.03.00 (B5), only while connected with a seed. |
 | D7 | List the pack in PopTracker's community-packs.json | Yes, after the first stable release. The listing is public under the user's name. |
 | D8 | Story awareness in story mode (UT deferred events, pack colouring by chapter) | Yes, as B6's optional part, after B5. |
-| D9 | Version numbers | World 0.2.1 = B1; world 0.2.2 = B2 + B3 + B6, with pack 1.0.0; port 0.03.00 = B5. ER stays world 0.3.0 (Phase C). Japan discs move to a later port version. |
+| D9 | Version numbers | **Decided (2026-10-27): all tracker work ships as port 0.03.00 + world 0.2.2** (B1-B3, B6 in the world; B5 and the map-render command in the port), with pack 1.0.0. World 0.2.1 / port 0.02.51 are the bug fixes, the hell seed and the bench. ER stays world 0.3.0 (Phase C). Japan discs later. |
 | D10 | When the installed world can't reproduce a room's logic (`logic_version`) | Refuse in UT with a clear message (`TrackerException`), not a silent mismatch. |
 
 ## 8. Sources

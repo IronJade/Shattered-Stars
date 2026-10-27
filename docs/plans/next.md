@@ -73,12 +73,15 @@ release_checklist.md 2.4 / 2.5), and a short report of what each test class cove
 
 ## Phase B: tracker support (Universal Tracker, PopTracker)
 
+**Release target (the user, 2026-10-27): port 0.03.00 + world 0.2.2.** Port 0.02.51 + world 0.2.1
+before it carry the bug fixes, the hell seed and the bench.
+
 See `docs/plans/trackers.md`. Map images (decided 2026-10-26): rendered by the port from the
 player's own disc into PopTracker's user-override folder; nothing from the disc is published.
 
 ---
 
-## Party work, decided 2026-10-26 (not scheduled yet; build the two together)
+## Party work, decided 2026-10-26 (built; ships in port 0.02.51 + world 0.2.1, the user 2026-10-27)
 
 - **Hero to slot 1** (docs/handoff/heroslot.md, D1-D4 decided): open world and hub, a starting
   member who isn't the hero takes slot 0 and the lead; the hero goes to slot 1; the lead and slot 0
