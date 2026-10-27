@@ -576,3 +576,214 @@ gh release create v0.02.51 "$D/port/ShatteredStars-0.02.51-linux-x86_64.tar.gz" 
   --title "Shattered Stars 0.02.51" --notes-file docs/release_notes/0.02.51.md
 (cd scratchpad/wiki && git add -A && git commit -m "0.02.51 and so2.apworld 0.2.1: ..." && git push origin master)
 ```
+
+## 12. Release candidate 0.03.00 + so2.apworld 0.2.2 + PopTracker pack 1.0.0 as three releases (to run; written 2026-10-27, agent releasedocs)
+
+Tracker support (docs/plans/trackers.md Phase B; the build log docs/handoff/phaseb.md). The user
+(2026-10-27) asked for the pack in **its own release**, as the world already has ("It's own release
+works for me. We are already doing that with the apworld anyway."). Three GitHub releases on
+IronJade/Shattered-Stars, each one's notes linking the other two:
+
+| Release | Tag | Title | Assets | Notes | Latest |
+|---|---|---|---|---|---|
+| The world | `apworld-v0.2.2` | so2.apworld 0.2.2 | `so2.apworld`, `Star.Ocean.The.Second.Story.yaml`, `SHA256SUMS` | `docs/release_notes/0.2.2.md` | no |
+| The pack | `poptracker-v1.0.0` | PopTracker pack 1.0.0 | `so2_shattered_stars_1.0.0.zip`, `SHA256SUMS` | `docs/release_notes/poptracker-1.0.0.md` | no |
+| The port | `v0.03.00` | Shattered Stars 0.03.00 | the Linux and Windows bundles, `SHA256SUMS` | `docs/release_notes/0.03.00.md` | yes |
+
+The pack zip's name and tag are fixed by its `versions.json` entry: `download_url` =
+`https://github.com/IronJade/Shattered-Stars/releases/download/poptracker-v1.0.0/so2_shattered_stars_1.0.0.zip`
+(tools/build_poptracker.sh's default tag). The name has no spaces, so GitHub keeps it as it is. To
+use other tag names: `grep -rn 'v0\.03\.00\|apworld-v0\.2\.2\|poptracker-v1\.0\.0' README.md
+docs/release_notes scratchpad/wiki`, the commands below, and `build_poptracker.sh build --tag`.
+
+**Still to come before the RC.** Agent "maptab" (docs/handoff/maptab.md) is building the map
+tabs: the map_names.csv `area` audit, the pack's room maps, door sections, live door panel and
+click switching, and Universal Tracker's map tab. Its rows below are marked **TODO (maptab)**,
+and so are counts it may change (the world's and the pack's test counts, the layout, the pack's
+size). The release itself needs the user's go-ahead (phaseb.md: "release only with the user's
+go-ahead").
+
+### 12.1 Version numbers (B7b)
+
+| What | Now | For this release | Where |
+|---|---|---|---|
+| The port | 0.02.51 | **0.03.00** | `engine/CMakeLists.txt` `project(... VERSION ...)` and its comment on the .rc fields (0,3,0,0); README.md (the badge, the two package names under "Download"); engine/README.md (the example package name); section 1's table |
+| The world | 0.2.1 | **0.2.2** | `apworld/so2/archipelago.json` `world_version` and `world.py` `APWORLD_VERSION` (keep the two equal) |
+| The pack | 1.0.0 | 1.0.0 | `tools/ap_poptracker.py` `PACK_VERSION` (already 1.0.0); manifest min / target PopTracker 0.36.0 (`POPTRACKER_VERSION`) |
+| `ut.LOGIC_VERSION` | 1 | **1** (unchanged) | apworld/so2/ut.py: the logic is 0.2.1's (rulebuilder's 93,083,978 truth values, every batch identical; apworld.md "Trackers", "When to bump") |
+| The wiki | | already written for 0.03.00 / 0.2.2 / 1.0.0 | scratchpad/wiki, uncommitted (docs/handoff/releasedocs.md) |
+
+The world's bump changes each `.apso2` in one field only, `apworld_version` ("0.2.1" -> "0.2.2"),
+as 0.2.0 -> 0.2.1 did. The seed's own `version` (1-4) is unchanged: Shattered Stars 0.02.51 plays
+every 0.2.2 seed.
+
+### 12.2 Builds
+
+```sh
+JOBS=4 tools/build_linux.sh --container        # dist/ShatteredStars-0.03.00-linux-x86_64.tar.gz
+JOBS=4 MINGW_SSL_SYSROOT=scratchpad/setup/mingw-ssl/usr/x86_64-w64-mingw32/sys-root/mingw \
+  tools/build_windows.sh                       # dist/ShatteredStars-0.03.00-win64.zip
+tools/build_apworld.sh dist/apworld-0.2.2      # so2.apworld + "Star Ocean The Second Story.yaml"
+tools/build_poptracker.sh all                  # dist/poptracker/: so2_shattered_stars_1.0.0.zip, its
+                                               # .sha256, versions.json, ut_name_mapping.json; then
+                                               # the pack checker and the pack's tests
+```
+
+- **One layout for the port and the pack.** The port compiles `docs/ap/tracker_maps.json` in
+  (generated/tracker_layout_data.cpp) and the pack draws its placeholders from the same file, so
+  both must be built from the same commit. First `SS_DISC1=<disc 1 .cue> python3
+  tools/ap_tracker_maps.py --check` (the committed layout is the generator's output).
+- **The pack is generated from the tree's world.** `build_poptracker.sh` reads the world's tables
+  through `$repo/scratchpad/ap` (worlds/so2 linked to `$repo/apworld/so2`). A worktree has no
+  `scratchpad/`, so the RC script either links it in for the build (and points worlds/so2 at the
+  worktree's apworld/so2) or builds in the main tree at the RC's commit. The zip is reproducible
+  (sorted, fixed timestamps), so both ways must give the same sha256.
+- The world's package now also holds `ut.py`, `logic.py`, `tracker_export.py`, `story.py` and
+  their tests: 223,553 bytes at storyaware's build (world_version 0.2.1 then; 186,265 for 0.2.1).
+  **TODO (maptab):** the UT map tab's files and the package's size.
+- The pack at storyaware's build: 401 files, 287 items, about 3 MB zipped. **TODO (maptab):** the
+  room placeholders add about 2.5 MB zipped (mapdoors' measurement; budget about 20 MB).
+
+### 12.3 Verification: commands and expected results
+
+The expected numbers are the last ones measured, with the agent that measured them. maptab's
+work changes some; its log gives the new ones.
+
+**The world** (in scratchpad/ap/Archipelago, worlds/so2 linked to the RC's apworld/so2;
+`SKIP_REQUIREMENTS_UPDATE=1` on every line):
+
+| Check | Command | Expected |
+|---|---|---|
+| The world's tests | `../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **882 passed**, 3 skipped (67988 subtests; storyaware). TODO (maptab): its tests added |
+| Scoped general | `AP_TEST_WORLDS=so2 ../ap-venv/bin/python -m pytest -q -n 6 test/general worlds/so2` | **935 passed**, 3 skipped (73299 subtests; storyaware) |
+| AP's general tests | `../ap-venv/bin/python -m pytest -q -n 6 test/general` | **379 passed** (117757-117763 subtests: other worlds' random options; rulebuilder) |
+| The slow tests | `SO2_SLOW_TESTS=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **885 passed** (68692 subtests, about 35 s; storyaware): TestUTManySeeds 320 rooms (16 mixes x 20) matching UT's rebuild at every sphere, TestTrackerManySeeds 320 rooms (the reference evaluator = the world's logic at every sphere), TestStoryManySeeds 60 rooms (UT = the reference at 27 story positions) |
+| The batches | `tools/ap_batch.sh story_open OUT/story_open 1 96`, the same for `hub` and `solo_noexpel` (from the repo root) | **96/96 each**, `tools/ap_batch_check.py` 0 errors |
+| The same seeds as 0.2.1 | the three sets from the released world (`git archive apworld-v0.2.1 apworld/so2` in a `cp -as` farm of scratchpad/ap/Archipelago with **real copies** of the top-level scripts and host.yaml: the baseline trap, docs/handoff/utworld.md) against the RC's; a comparer adapted from scratchpad/storyaware/identity.py | 480 `.apso2` equal but `apworld_version`; 288 spoilers byte for byte (they name only Archipelago's version); every multidata equal once each Star Ocean slot's new slot data keys are taken out: `logic_version` 1, `exclude_locations`, `tracker` (format 1; with `story` in the story-mode slots). The checker's output the same. TODO (maptab): any key the map tab adds |
+| The real Universal Tracker | `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld --apworld dist/apworld-0.2.2/so2.apworld --ut-dir scratchpad/release/ap_ut --port 38441` (from the repo root) | **"UT MATCHES THE WORLD", 59 comparisons** (storyaware): four slots, fresh and after each of the first 4 spheres, through UT's CLI and TrackerCore; the logic_version 2 room refused; step 5, the story slot following a story key Set as the port sets it: 142, 204, 227, 319, 426, 450, 532, 532, 578 in logic at chapters 3, 9, 12, 20, 36, 41, 58, 60/3000, 60/4000, and 578 with `enforce_deferred_entrances: "off"`. `--no-story` skips step 5; `--spheres 1` gives 35. No dialog, no process left |
+| UT's `/explain` (optional) | `scratchpad/ap/ap-venv/bin/python scratchpad/rulebuilder/ut_explain.py --apworld dist/apworld-0.2.2/so2.apworld` | 64 locations and events of four slots, each printed as its rule, UT exit 0 (rulebuilder) |
+
+`scratchpad/ap_ut/tracker.apworld` is Universal Tracker 0.3.6's release asset (sha256 39e9bc0f...5cb750,
+the release's digest): `gh release download Tracker_v0.3.6 --repo FarisTheAncient/Archipelago
+--pattern tracker.apworld --dir scratchpad/ap_ut`. `tools/ap_ut_check.py` makes its own
+Archipelago copy under `--ut-dir` (an empty `Players` folder, UT's `player_files_path` set to it,
+`XDG_RUNTIME_DIR` at `<ut-dir>/run`), so no folder dialog can open.
+
+**The pack** (from the repo root):
+
+| Check | Command | Expected |
+|---|---|---|
+| Build and check | `tools/build_poptracker.sh all` | PopTracker/pack-checker v1.7.0 `--strict`: **"Validated 10 files"** for the zip and for the folder, no warning, exit 0; versions.json valid against the packlist's schema and matching the zip; the tests (next row) OK. TODO (maptab): file and item counts |
+| The pack's tests | `SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_test.py --pack dist/poptracker/so2_shattered_stars` | **24 OK** (storyaware): ids, progression, layout, JSON, the Lua in Lua 5.4 (lupa), the evaluator = the reference over 16 rooms x 246 item states (243,885 section evaluations), story awareness at 15 positions. TODO (maptab): rooms, doors, the panel, the click handler |
+| PopTracker itself, headless | `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py --zip dist/poptracker/so2_shattered_stars_1.0.0.zip --scratch scratchpad/release/smoke --port 38391` | **37/37** (storyaware): both variants load and connect, the slot data, items, checked sections, chapter 12, the tabs from `so2_map_*` {"map": 26}; the logic equal to the world's at three points (115, 99, 40 in logic); step 7 (the story room, on PORT + 1): Normal / Inspect fresh 583 / 0, chapter 3 37 / 546, 12 108 / 475, 36 291 / 292, 60 step 3000 393 / 190, 60 step 4000 583 / 0; no Lua error or warning. `--no-story` skips step 7 (24/24). PopTracker 0.36.0 is the AppImage in scratchpad/packgen/poptracker (minisign-verified) |
+| TODO (maptab): the door click in PopTracker | the smoke's door step | a door section's click resets it and activates the destination room's tab; auto tab to a room tab |
+
+The smoke runs PopTracker with a cleared environment (no display, no D-Bus, an empty
+`XDG_RUNTIME_DIR`). PopTracker also fetches the community pack list and the pack's `versions_url`
+(read-only GETs); until versions.json is on main it logs "Could not fetch", which is harmless.
+
+**The port** (a build of the RC's tree, engine/build-rc; `SS_DISC1` = the NA disc 1 `.cue`; every
+game process under tools/memcap.py, headless, a scratch `XDG_CONFIG_HOME` and `HOME`):
+
+| Check | Command | Expected |
+|---|---|---|
+| The tracker keys | `SS_TEST=ap_ds engine/build-rc/ss_game_tests` | **9/9** (dskeys) |
+| The map render | `SS_TEST=tracker_ SS_DISC1=... engine/build-rc/ss_game_tests` | **10/10** (setupthread: the layout, the disc command, rooms, progress, the job's stop). TODO (maptab): counts, if the layout changes |
+| All the suites | `SS_DISC1=... engine/build-rc/ss_game_tests`, `engine/build-rc/ss_tests` | **226 / 0** (setupthread), **103 / 0** |
+| The net client | `tools/ap_test_server.sh start 38281`; `SS_TEST=ap_net SS_AP_SERVER=ws://localhost:38281 engine/build-rc/ss_game_tests`; `tools/ap_test_server.sh stop` | **5/5** (the wss case skipped without `SS_AP_SERVER_WSS`) |
+| The render, end to end | `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-rc/shattered-stars --scratch scratchpad/release/maps` | all checks pass (setupthread): **861 images** (66 area + 2 world + 793 rooms), rendered twice with the same bytes, nothing else written, XDG untouched, the default folder under a scratch HOME's PopTracker; about 21 s and 135 MB a render |
+| The four releases' discs (optional) | `scratchpad/mapdoors/regions.sh` | NA, EU, FR and DE disc 1 render the same 861 images byte for byte (mapdoors) |
+| End to end | `SS_DISC1=... tools/ap_e2e_so2.sh engine/build-rc/shattered-stars`; `SS_DISC1=... tools/ap_e2e_hub.sh engine/build-rc/shattered-stars` | **49 PASS / 0 FAIL** (dskeys; step 9, the tracker keys: a watcher sees {"map":18}, {"map":26}, then world-map positions at most every 30 vblanks; Get after the runs gives both keys of Claude and Dias under the Connected packet's team / slot); hub **15 / 15** |
+| End to end, packaged | the RC's copies of the two scripts against dist/apworld-0.2.2/so2.apworld and the packaged Linux binary. **Derive them again from today's tools/ap_e2e_so2.sh**: scratchpad/release/rc251_e2e_so2.sh predates step 9 | so2 **49 / 49**, hub **15 / 15** |
+| Smoke | `SS_DISC1=... tools/smoke_field_events.sh <the packaged Linux binary>` | **373 PASS / 0 FAIL / 0 SKIP** (from the main tree, with its fixtures) |
+| Setup's button, headless | `scratchpad/setupthread/setup_runs.sh engine/build-rc/shattered-stars-setup scratchpad/release/setup A B C D` (the display variables unset, `XDG_RUNTIME_DIR` at scratch) | A: a mid-render screenshot (the bar "150 of 861 images", "Rendering room ..."); B: "Done: 861 tracker map images were written to ...", the PNGs = the CLI's bytes; C (no disc): refused, nothing written; D (closed mid-render): no `.part` file, config.ini unchanged; each rc 0 (setupthread). B compares with scratchpad/setupthread/base_manifest.txt: make a new manifest from the CLI render if the layout changed |
+| ASan | a GCC `-fsanitize=address -fno-omit-frame-pointer` build as scratchpad/setupthread/build_san.sh (the libasan copy; tools/memcap.py runs it in a systemd scope with MemoryMax=6G) | no AddressSanitizer report in: `SS_TEST=ap_ds` 9/9, `SS_TEST=tracker_` 10/10, test_ap_net 5/5, one full `--render-tracker-maps` (861 images, the same bytes), tools/ap_e2e_so2.sh with `ASAN_OPTIONS=detect_leaks=0` (49/49), setup runs A-D (portcheck, setupthread). Setup exits 1 under LeakSanitizer only for 248 bytes in 2 allocations under SDL_CreateWindow -> OFFSCREEN_GLES_LoadLibrary (Mesa), which predate this release |
+| TSan (optional) | setupthread's recipe (GCC `-fsanitize=thread`, libtsan from `dnf download`, its Log at 18:00) | `SS_TEST=tracker_` 10/10, setup A-D: no report (with `XDG_RUNTIME_DIR` at scratch: libdbus otherwise reports a lock-order inversion of its own) |
+| Windows bundle | `tools/build_windows.sh` | exit 0; the 9 entries of 0.02.51's zip; both `.exe`s' version resource 0.03.00, DreamGlyph Studios, no "POSIX WinThreads" |
+| Windows under Wine | a scratch prefix with the safe settings (portcheck.md "Conventions found"; scratchpad/setupthread/wine.sh adds a scratch `XDG_RUNTIME_DIR`) | `--version` "Shattered Stars 0.03.00"; the Arlia boot (26 trigger lines); `--render-tracker-maps DIR` 861 images byte-identical to the Linux render, and without DIR into `C:\users\<user>\Documents\PopTracker\user-override\so2_shattered_stars`; `ss_game_tests.exe` `SS_TEST=tracker_` 10/10; the full suites `ss_tests.exe` 103 / 0 and `ss_game_tests.exe` one more than Linux (the Windows-only `launcher_log_without_a_console`, as 207 / 208 at 0.02.51) |
+| TODO (maptab): the map tabs | the layout's `--check` after the area audit; the pack's room and door tests; UT's map tab loading headless | as maptab's log gives |
+
+**Already proven, not rerun** (unless the code under them changes): AP off, no seed and offline
+seeds byte-identical before and after the tracker keys and the render command (dskeys,
+maprender, mapdoors: 12 headless runs, 20 files, 0 differ, scratchpad/mapdoors/ab.sh); the
+0.2.0 rooms in UT (logicexport: 85 rooms, 51 equal, 29 conservative with the warning, 5 hell seeds
+refused; the user's own room loads with the warning).
+
+### 12.4 Sums and the upload sets
+
+Three folders under `scratchpad/release/rc-0.03.00-dist/`, each with its own `SHA256SUMS`:
+`port/` (the two bundles), `apworld/` (`so2.apworld`, the template copied to
+`Star.Ocean.The.Second.Story.yaml`), `poptracker/` (`so2_shattered_stars_1.0.0.zip`). Keep the
+RC's `versions.json` beside them (`rc-0.03.00-dist/versions.json`, not an asset). The pack's sum
+must equal `dist/poptracker/so2_shattered_stars_1.0.0.zip.sha256` and versions.json's `sha256`.
+Fill the sums into the three notes (0.03.00.md, 0.2.2.md, poptracker-1.0.0.md), and the RC's
+content id (section 9's one-liner) into this section. Before tagging:
+`grep -n 'TODO' docs/release_notes/0.03.00.md docs/release_notes/0.2.2.md docs/release_notes/poptracker-1.0.0.md`
+prints nothing.
+
+### 12.5 The Windows check
+
+docs/handoff/windows_check.md "Recheck for 0.03.00", on the user's machine with the drafts (12.6).
+setup.exe itself has never run under Wine (its render thread has, inside ss_game_tests.exe): its
+button is first seen on Windows there.
+
+### 12.6 Publishing (the coordinator's, after the user's checks and go-ahead; not run)
+
+All three tags lightweight on the pushed `main`, as before. The releases as drafts first (the
+Windows session downloads them with `gh release download TAG` and checks the sums); then
+published world, pack, port, so the port's ends up Latest. Then the pack's `versions.json`, then
+the wiki.
+
+```sh
+D=scratchpad/release/rc-0.03.00-dist
+git push origin main
+C=$(git rev-parse HEAD)
+git tag apworld-v0.2.2 "$C" && git tag poptracker-v1.0.0 "$C" && git tag v0.03.00 "$C"
+git push origin apworld-v0.2.2 poptracker-v1.0.0 v0.03.00
+gh release create apworld-v0.2.2 "$D/apworld/so2.apworld" "$D/apworld/Star.Ocean.The.Second.Story.yaml" \
+  "$D/apworld/SHA256SUMS" --verify-tag --draft --latest=false --title "so2.apworld 0.2.2" \
+  --notes-file docs/release_notes/0.2.2.md
+gh release create poptracker-v1.0.0 "$D/poptracker/so2_shattered_stars_1.0.0.zip" "$D/poptracker/SHA256SUMS" \
+  --verify-tag --draft --latest=false --title "PopTracker pack 1.0.0" \
+  --notes-file docs/release_notes/poptracker-1.0.0.md
+gh release create v0.03.00 "$D/port/ShatteredStars-0.03.00-linux-x86_64.tar.gz" \
+  "$D/port/ShatteredStars-0.03.00-win64.zip" "$D/port/SHA256SUMS" --verify-tag --draft \
+  --title "Shattered Stars 0.03.00" --notes-file docs/release_notes/0.03.00.md
+# after the Windows check and the user's go-ahead:
+gh release edit apworld-v0.2.2 --draft=false --latest=false
+gh release edit poptracker-v1.0.0 --draft=false --latest=false
+gh release edit v0.03.00 --draft=false --latest
+for t in apworld-v0.2.2 poptracker-v1.0.0 v0.03.00; do
+  (mkdir -p "scratchpad/release/pub/$t" && cd "scratchpad/release/pub/$t" &&
+   gh release download "$t" --repo IronJade/Shattered-Stars && sha256sum -c SHA256SUMS)
+done
+```
+
+**The pack's update file, after its release is public** (the manifest's `versions_url` reads it
+from main; committing it before the zip is downloadable would offer players a download that
+fails):
+
+```sh
+cp scratchpad/release/rc-0.03.00-dist/versions.json tools/poptracker/versions.json
+git add tools/poptracker/versions.json
+git commit -m "PopTracker pack 1.0.0: versions.json on main for PopTracker's update check (release poptracker-v1.0.0)"
+git push origin main
+curl -sL https://raw.githubusercontent.com/IronJade/Shattered-Stars/main/tools/poptracker/versions.json | head -20
+curl -sL https://github.com/IronJade/Shattered-Stars/releases/download/poptracker-v1.0.0/so2_shattered_stars_1.0.0.zip | sha256sum
+# = versions.json's "sha256" and poptracker/SHA256SUMS
+```
+
+From then on `tools/build_poptracker.sh build` puts each new version's entry first in front of the
+committed file's (docs/ap/poptracker.md "Building"). This commit comes after the tags, so the
+content id at the tags is the RC's.
+
+**The wiki** (scratchpad/wiki, its own repo: the new Trackers page and the pages that link it;
+docs/handoff/releasedocs.md lists them):
+
+```sh
+(cd scratchpad/wiki && git add -A && git commit -m "0.03.00, so2.apworld 0.2.2 and the PopTracker pack 1.0.0: trackers" && git push origin master)
+```
+
+**Not part of this release unless the user says so:** listing the pack in PopTracker's
+`community-packs.json` (D7: a PR to black-sliver/PopTracker's `packlist` branch, public under the
+user's name; docs/ap/poptracker.md "Distribution" has the fields).

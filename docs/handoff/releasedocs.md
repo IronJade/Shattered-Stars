@@ -46,7 +46,10 @@ docs/ap/release_checklist.md section 11.
 
 ## Pieces
 
-1. docs/ap/release_checklist.md: new section for this release. (pending)
+1. docs/ap/release_checklist.md: new section 12 (three releases: version table, builds, every
+   test with command and expected result, sums / upload sets, the Windows check, drafts ->
+   publish order world, pack, port; versions.json after the pack's release; the wiki push; D7
+   listing only on the user's word). **Done.**
 2. docs/handoff/windows_check.md: "Recheck for 0.03.00". (pending)
 3. Release notes 0.03.00.md, 0.2.2.md, poptracker-1.0.0.md. (pending)
 4. README.md: tracker features and the three downloads. (pending)
@@ -55,12 +58,32 @@ docs/ap/release_checklist.md section 11.
 
 ## Placeholders left for maptab
 
-(none yet)
+- docs/ap/release_checklist.md section 12: rows and notes marked **TODO (maptab)**: the UT map
+  tab's files and the package size (12.2), the pack's room placeholders / size (12.2), the world
+  tests' count, the identity check's possible new key, the pack checker's counts, the pack's
+  tests (rooms, doors, panel, click), the smoke's door-click step, `SS_TEST=tracker_` counts if
+  the layout changes, and one row "the map tabs" (layout --check after the area audit, UT's map
+  tab loading headless).
 
 ## Facts not confirmed / sources that disagree
 
-(none yet)
+- **0.2.2.md said the .apso2 files are "byte for byte" 0.2.1's.** True only before the version
+  bump: `apworld_version` is in the .apso2's options (world.py slot_options), so the bump to
+  0.2.2 changes that one field, as 0.2.0 -> 0.2.1 did ("Only the version number written into the
+  seed changes"). Spoilers name only Archipelago's version (checked on an RC spoiler), so they
+  stay byte for byte. Corrected in the checklist (12.1, 12.3) and to be corrected in 0.2.2.md.
+- **The pack's sha256 at storyaware's build:** docs/handoff/storyaware.md says versions.json ok
+  "sha256 1cc996fd...", docs/ap/poptracker.md "Pack checker" says "(sha256 aac3c4dc...)" for the
+  same 401-file build. Probably two builds (before / after the chapter-0 fix, bc3cc21); not
+  checked. Irrelevant for the release (the sums are taken at the RC), not quoted anywhere.
+- The RC's packaged e2e copies (scratchpad/release/rc251_e2e_so2.sh, ap_e2e_so2_packaged.sh)
+  have no step 9 (grep: 0 hits for so2_map / ap_ds_read): the RC must derive them again.
+- The Windows full-suite count under Wine for 0.03.00 isn't measured (setupthread ran only
+  `SS_TEST=tracker_` 10/10 under Wine); the checklist says "Linux + 1", from 0.02.51's 207 / 208.
+- The scratch identity scripts of the Phase B agents compared each step with the previous one;
+  the chain starts at the released 0.2.1 world (git diff 2c38965 6d2c518 -- apworld/so2 is empty).
+  The checklist asks the RC for one direct comparison with apworld-v0.2.1's world.
 
 ## Commits
 
-(none yet)
+- fd6add9 log started.
