@@ -89,7 +89,7 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
    and the scoped AP_TEST_WORLDS=so2 run.
 5. [x] (42a61fa and the commit after this file's) Docs: apworld.md (skillsanity, logic, 0.2.1 changelog final), the player guide, options.py
    Skillsanity docstrings, docs/release_notes/0.2.1.md (drop the seed 75 limitation; add this).
-6. [ ] Package dist/apworld-0.2.1/ from HEAD (release_checklist.md); load alone, solo, seed 75,
+6. [x] (2026-10-27; "Step 6" below) Package dist/apworld-0.2.1/ from HEAD (release_checklist.md); load alone, solo, seed 75,
    ChecksFinder; sha256.
 
 ## State (skilllogic2, 2026-10-27 ~08:40, after the session crash)
@@ -211,6 +211,35 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
   with the new bullet and identity line), release notes (counts; the TO CONFIRM line is now the
   encounter_rate 0 variant).
 
-### Next
-- Commit docs, then the checker; step 6 (package from HEAD; load alone, solo, seed 75,
-  ChecksFinder; sha256; release_checklist.md section 10 and the release notes' sums).
+### Step 6 (2026-10-27)
+- `tools/build_apworld.sh dist/apworld-0.2.1` from HEAD 9a44244 (apworld/ and tools/ clean; the
+  old files kept in scratchpad/skilllogic/pkg/old): so2.apworld 173130 bytes, 29 files (HEAD's 28
+  tracked files byte for byte + the merged archipelago.json: world_version 0.2.1,
+  compatible_version 7, version 7; no __pycache__); the template carries the new text.
+- **sha256: so2.apworld `bdca8abebf32b2d4d5db35786443634e883d3463f7d7f6f7f78906283ab396b4`;
+  "Star Ocean The Second Story.yaml" `8980fbe61ea55c6b057f53f380c40c98dc3c7bd1f1d9a641105eb844c9d6b71c`.**
+- Loaded alone (a copy of scratchpad/ap/Archipelago without worlds/so2, the .apworld in
+  custom_worlds; deleted after): zipimporter from custom_worlds/so2.apworld, 0.2.1,
+  failed_world_loads empty. Generate.py (pkg/out, pkg/p): template defaults solo 777; the
+  solo_noexpel set at seed 75 (byte-identical to batch/solo/75; 35 learn levels hold
+  progression); seed 75's options solo at 1-3; those + ChecksFinder 777: all exit 0, one .apso2,
+  no error / traceback / exception.
+- Docs: release_checklist.md section 10 redone (and 2.4's count), the release notes' sums,
+  tools/ap_batch.sh's header.
+
+## Open for the user
+- **encounter_rate 0 with seed 75's mix** still fails solo (91/91 before the crash cut the run):
+  with no battles nothing new holds progression and the killer-move levels' moves stay
+  progression though those levels are EXCLUDED. The release notes carry it as the TO CONFIRM
+  known limitation. Options: keep it documented, or a follow-up (e.g. with encounter_rate 0,
+  don't make an EXCLUDED killer level's move progression) - a logic change for another time.
+- The release itself (tag, GitHub release, wiki): the user's. Nothing pushed, tagged or published.
+- Keep scratchpad/skilllogic/batch (246 MB, the evidence for the identity) and ncpfix's v021 / id2
+  until 0.2.1 is released; then delete them.
+
+## How to verify
+- `cd scratchpad/ap/Archipelago && SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 4
+  worlds/so2/test` (537 passed); scratchpad/skilllogic/suites/run.sh (world, general, scoped,
+  unittest); fill/run.sh A|B (fill rates); batch/run.sh then `python3 batch/identity.py
+  ../../ncpfix/v021 .` from scratchpad/skilllogic/batch; port/run.sh with the command lines in
+  "Step 3"; dbg/mutate.py (the tests catch each part of the design taken out).

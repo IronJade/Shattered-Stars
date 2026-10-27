@@ -132,7 +132,8 @@ Since 2026-10-26 (docs/handoff/aptests.md) worlds/so2/test follows Archipelago's
 (docs/ap/apworld.md "Testing"); expected then: **430 passed, 3 xfailed** (the expel_progression
 bug's reproducer, until its fix); since 0.2.1 (docs/handoff/ncpfix.md) **449 passed**, the
 decorators gone and the mix `TestOpenWorldNoExpelProgressionNoBosses` added, each test under a
-second (`--durations=30`). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
+second (`--durations=30`); since skillsanity progression (still 0.2.1, docs/handoff/skilllogic.md)
+**537 passed**. Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
 **379 passed, 116984 subtests**. No apworld failures appeared; see section 4 for the three
 style-only fixes made after the upstream gap analysis, re-verified with the same counts.
 
@@ -451,23 +452,26 @@ gh release create v0.02.50 \
 pushed `main`. The wiki's pages for 0.02.50 are uncommitted in `scratchpad/wiki` (the "wiki"
 agent's log, docs/handoff/wiki.md), to push with the release.
 
-## 10. so2.apworld 0.2.1 (the world alone): verification run (2026-10-26, agent ncpfix)
+## 10. so2.apworld 0.2.1 (the world alone): verification run (2026-10-26, agent ncpfix; redone 2026-10-27, agent skilllogic2)
 
 A world-only release: the North City and Noel's House passes at the start unless the teleporter
-and expel_progression are both on (docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md). No
-port build: Shattered Stars 0.02.50 plays 0.2.1 seeds (`apworld_version` is reference only; no
-new seed field). Notes: docs/release_notes/0.2.1.md (draft).
+and expel_progression are both on, and skillsanity's guild checks and learn levels may hold
+progression (docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md, skilllogic.md). No port
+build: Shattered Stars 0.02.50 plays 0.2.1 seeds (`apworld_version` is reference only; no new
+seed field; the port gives a key and a character from a guild check and from learn points,
+skilllogic.md "Step 3"). Notes: docs/release_notes/0.2.1.md (draft). The run below is
+skilllogic2's, from HEAD 9a44244 (ncpfix's first run of this section: 166651 bytes, 449 / 379 /
+502 tests, solo_noexpel 95/96, sums 657098e9... / 21d81e67..., superseded).
 
 | Check | Result |
 |---|---|
-| `tools/build_apworld.sh dist/apworld-0.2.1` | `so2.apworld` (166651 bytes, 29 files, `test/` in, no `__pycache__`; its manifest `world_version` 0.2.1, `compatible_version` 7, `version` 7) and `Star Ocean The Second Story.yaml` (the new docstrings) |
-| Packaged world alone (a copy of the AP install in scratchpad/ncpfix/pkg, no `worlds/so2`, the `.apworld` in `custom_worlds`) | loads from `custom_worlds/so2.apworld` as 0.2.1, `failed_world_loads` empty, no manifest error; Generate.py seed 777 from the template: defaults solo, open world with `expel_progression: 'false'` solo (0.2.0's failure; starts with the Arlia, Fun City, North City and Noel's House passes), and that player with ChecksFinder: exit 0, one `.apso2` each, nothing matching error / traceback / exception |
-| `worlds/so2/test` (`-n 8`) | **449 passed**, 30513 subtests; `python -m unittest`: 449, OK |
-| `test/general` (`-n 8`) | **379 passed**, 117755 subtests |
-| `AP_TEST_WORLDS=so2 ... test/general worlds/so2` | **502 passed**, 35824 subtests |
-| `tools/ap_batch.sh story_open / hub`, seeds 1-96 | 96/96 each, `ap_batch_check.py` 0 errors on 192 + 192 files; byte-identical to the same run at 0.2.0's version string but for `apworld_version` (scratchpad/ncpfix/id2); against the aptests baseline 111 of 192 seeds byte-identical, the other 81 those with an open-world player without both the teleporter and expel_progression on, changed only by the added start keys and the fill around them (docs/ap/apworld.md "Testing") |
-| `tools/ap_batch.sh solo_noexpel`, seeds 1-96 | **95/96** (exit 1 for the set), the checker 0 errors on 95 files; seed 75 fails ("Not enough locations for progression items"): Rena's open world with expel_progression, boss_checks and enemy drops off, skillsanity's moves as items and killer-move checks for the hero, a mix 0.2.0 never generated either (docs/handoff/ncpfix.md; the user decides) |
-| SHA-256 | `657098e9a10b3edb3e56595f478e0447ded91927fa4531f787b56362d2a91e85  so2.apworld`, `21d81e672d8ab039a4c57862fb1b9cc3394401bbf50a16ab504708b50fe5d7d5  Star.Ocean.The.Second.Story.yaml` |
+| `tools/build_apworld.sh dist/apworld-0.2.1` | `so2.apworld` (173130 bytes, 29 files: HEAD's 28 tracked files of apworld/so2 byte for byte and the merged `archipelago.json`, `test/` in, no `__pycache__`; its manifest `world_version` 0.2.1, `compatible_version` 7, `version` 7) and `Star Ocean The Second Story.yaml` (the new Skillsanity text) |
+| Packaged world alone (a copy of the AP install in scratchpad/skilllogic/pkg, no `worlds/so2`, the `.apworld` in `custom_worlds`) | loads by zipimporter from `custom_worlds/so2.apworld` as 0.2.1, `failed_world_loads` empty, no manifest error; Generate.py, exit 0, one `.apso2` each, nothing matching error / traceback / exception: the template's defaults solo (seed 777); the solo_noexpel set at seed 75 (the reproducer: byte-identical to the dev batch's seed 75, 35 learn levels holding progression); seed 75's rolled options solo at seeds 1-3; those with ChecksFinder (777) |
+| `worlds/so2/test` (`-n 4`) | **537 passed**, 37687 subtests; `python -m unittest`: 537, OK |
+| `test/general` (`-n 4`) | **379 passed**, 117750 subtests |
+| `AP_TEST_WORLDS=so2 ... test/general worlds/so2` | **590 passed**, 42996 subtests |
+| `tools/ap_batch.sh story_open / hub / solo_noexpel`, seeds 1-96 | **96/96 each**, `ap_batch_check.py` 0 errors on 192 + 192 + 96 files (progression at guild checks / learn points 1046 / 1291, 1028 / 1625, 410 / 871); against ncpfix's 0.2.1 run (scratchpad/ncpfix/v021) every seed with no skillsanity player byte-identical (6 / 3 / 20), every changed one (90 / 93 / 76) with one (docs/ap/apworld.md "Testing") |
+| SHA-256 | `bdca8abebf32b2d4d5db35786443634e883d3463f7d7f6f7f78906283ab396b4  so2.apworld`, `8980fbe61ea55c6b057f53f380c40c98dc3c7bd1f1d9a641105eb844c9d6b71c  Star.Ocean.The.Second.Story.yaml` |
 
 **Publishing (the user's; not run).** Nothing tagged, pushed or uploaded. A world-only release
 would attach the two files (the YAML copied to the dotted name first), for example:
