@@ -1002,11 +1002,117 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
 
 The world never reads the discs. Each site's `word` / `expected` come from field.json.
 
+## Trackers (Universal Tracker; 0.2.2)
+
+docs/plans/trackers.md is the plan (B1 is this section; PopTracker and the map tab come later).
+[Universal Tracker](https://github.com/FarisTheAncient/Archipelago/releases) (UT: FarisTheAncient's
+`worlds/tracker`, 0.3.6 for Archipelago 0.6.2 and later) is an Archipelago client. It loads
+so2.apworld itself, builds the world again on the player's machine (generate_early ..
+generate_basic, a new random seed, `generation_is_fake`), and lists the locations our rules reach
+with what the server says was received and not yet checked. No export from us; what it needs is
+that the rebuilt world is **the same world**.
+
+**For players.** Put `tracker.apworld` (UT's release asset) and **the so2.apworld the room was
+generated with** in Archipelago's `custom_worlds`, open "Universal Tracker" from the Launcher,
+connect with the slot name. No YAML: the world is yaml-less. The port can be connected at the same
+time (trackers connect with tags `Tracker`, items_handling 0b111; the server refuses checks from a
+tracker). The player guide (apworld/so2/docs/setup_en.md "Tracking with Universal Tracker") says
+the same, and that checks made offline show once the port reconnects.
+
+**How (apworld/so2/ut.py).**
+- `SO2World.ut_can_gen_without_yaml = True` and a static `interpret_slot_data` that returns the
+  slot data: UT skips the YAML and regenerates once with `multiworld.re_gen_passthrough =
+  {game: slot_data}` from the default options.
+- `generate_early` first: `ut.passthrough` (None in a real generation: nothing below runs, and the
+  batches stay byte-identical), then `ut.restore`: the room's `logic_version`, then every option
+  through **one table**, `ut.SLOT_OPTIONS` (slot key -> option, a reader, what an absent key
+  means): `starting_character` reversed (None -> hero, a list -> any, a name -> that member),
+  `bench` absent -> off, `hub_start` / `fienal_requirement` required in hub mode only,
+  `exclude_locations` absent (0.2.0 / 0.2.1) -> none. `characters` and, in hub mode,
+  `hub_start_town` must be there.
+- The random choices that shape the world come from the slot data: `choose_open_party` /
+  `choose_party` return `characters` (without the bench the pool of 8 is a random draw; with it the
+  pool is every allowed member already, so this only matters for bench-off seeds and 0.2.0
+  rooms), `hub.choose_start` returns `hub_start_town` (no rule reads it, but the rebuilt world
+  names it). Everything else that is random places items only (UT never fills).
+- `generate_early` last: `ut.check_restored`. The rebuilt world's `slot_options()` (the .apso2's
+  `options`: options, party, derived values) must equal the room's, key for key, but
+  `apworld_version` and 0.2.2's two keys. The derived keys (`seed_format`, `goal_encounters`,
+  `party_rules`, `fienal_won`, `dungeon_keys`, `hell_seed`) prove the restore and that this world
+  computes from it what the room's world did.
+- `fill_slot_data` = `slot_options()` + `logic_version` (`ut.LOGIC_VERSION`, 1) +
+  `exclude_locations` (sorted names; UT runs exclusion_rules after set_rules). The .apso2 keeps
+  `slot_options()` only, so seeds are byte for byte 0.2.1's (seed_format.md "Slot data and
+  trackers").
+- **Refusals (D10).** When the room's `logic_version` is not in `ut.LOGIC_VERSIONS`, a key is
+  missing or holds a value this world doesn't know, or the check above fails, `ut.refuse` raises
+  UT's `TrackerException` (imported when needed; `ut.TrackerRefusal` without UT) with a message that
+  names the so2.apworld to install, and logs it. UT shows "your options are incompatible";
+  `/faris_asked` prints ours.
+- `custom_ut_sort(region, location)` = `ut.sort_key`: (story stage of the area, area, name). An
+  area's stage is its locations' most common entrance group's (data.KEY_GROUPS `stage`); an area
+  the story never enters comes after its world's stages, the Cave of Trials after both, then the
+  skill guilds, learn points, Item Creation's specialties and killer moves by member; a line that
+  is no location of ours (an entrance) last. UT's default `sorting_method: apworld` uses it.
+
+**`logic_version`: when to bump it.** Whenever the same slot data would rebuild other logic:
+another location set, region, entrance, event or rule for the same options and party (rules.py,
+regions.py, hub.py, skillsanity.py's rules, locations.choose / hub.choose, plan_party), or a new
+random choice that shapes them. Bump `LOGIC_VERSION`; keep the old number in `LOGIC_VERSIONS` only
+if this world can still rebuild such rooms exactly (it then has to branch on the room's version).
+A new option is not a bump by itself: rooms without its key restore with what it meant before
+(give SLOT_OPTIONS an `absent` value), as `bench` does.
+
+**Older rooms.** Rooms from 0.2.0 and 0.2.1 have no `logic_version`: version 1 when they restore
+cleanly. 0.2.1 is 0.2.2's logic. 0.2.0's differs in two places, measured by generating rooms with
+0.2.0's world (v0.02.50's apworld/so2 in a separate Archipelago copy) and rebuilding them with this
+one, 17 mixes x 5 seeds (scratchpad/utworld/oldroom.py): every mix without Skillsanity and without a
+hell seed matches in every sphere (story, open world with every party shape, the teleporter off,
+hub); a hell seed (`encounter_rate: 0` with killer moves, which 0.2.1 made a hell seed) would fail
+the check above (its rebuilt `hell_seed`); and with `skillsanity` on, 0.2.1's new guild-check and
+learn-level rules make UT list fewer locations in 13 of 25 seeds although the slot data restores
+cleanly. So `ut.restore` refuses a 0.2.0 room with `skillsanity` other than `none` or with
+`encounter_rate` 0 and `killer_move_checks` (`ut.OLD_LOGIC`: "Track it with so2.apworld 0.2.0 and
+your YAML in Universal Tracker's Players folder"); with that, every 0.2.0 room tested either
+matches in every sphere or is refused.
+
+**Tests.** test/test_ut.py (see "Testing"): `ut_rebuild` / `in_logic` mirror UT's TMain and
+updateTracker without UT installed, and each mix class runs UT's fuzzer-hook check (for every
+sphere of the real, filled generation, UT's in-logic locations are exactly that sphere's) with two
+UT seeds: story (default, a random story party, Rena's route), open world (every check option;
+without the bench; starting_character any with and without the bench; a named start with
+exclusions; the healer guarantee; the teleporter off; a hell seed; exclude_locations), hub (full
+with random_town; without the bench; fields on Claude's route). TestUTRoom: the hooks, the new
+keys (in the slot data, not in the .apso2), 0.2.0 / 0.2.1 rooms, every refusal, UT's own
+exception class (a stand-in module). TestUTCoverage: every option of SO2Options is in
+SLOT_OPTIONS or `ut.NO_EFFECT` (Archipelago's common options: fill, locality, hints, start
+inventory), the world's code reads none of NO_EFFECT, and every slot data key is an option, a
+restored choice, derived (compared) or new. TestUTSort: the order. `SO2_SLOW_TESTS=1` adds 20
+room seeds per mix (TestUTManySeeds).
+
+**The real UT, scripted** (the release workflow; `tools/ap_ut_check.py`): it makes its own
+Archipelago copy for UT (a symlink farm of scratchpad/ap/Archipelago with its own host.yaml,
+`tracker.apworld` and our world: the repo's folder, or a built so2.apworld with `--apworld`), so the
+shared install is never changed. It generates a room (three Star Ocean players: story with a random
+story party, open world without the bench and starting_character any, hub with a random town and
+an excluded location), hosts it on 127.0.0.1 (MultiServer, `--disable_save`), and at three points
+(fresh, after the room's first sphere is checked, after the second; checks sent by a client
+connected as the slot, as the port sends them) runs UT headless (`Launcher.py "Universal Tracker"
+-- --nogui --count --list --connect localhost:PORT --name SLOT`) for each slot. UT's count and list
+must be the world's own (the generated multiworld's reachable, unchecked locations, worked out the
+way updateTracker does), and its list in custom_ut_sort's order.
+
+    gh release download Tracker_v0.3.6 --repo FarisTheAncient/Archipelago --pattern tracker.apworld \
+        --dir scratchpad/ap_ut          # sha256 39e9bc0f...5cb750 (the release's digest)
+    SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python \
+        tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld [--apworld dist/so2.apworld]
+
 ## Files
 
 | File | Contents |
 |---|---|
-| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `create_hub_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` |
+| `world.py` | `SO2World` (`plan_party`, `choose_party`, `choose_open_party`, `create_items`, `create_hub_items`, `fill_hook`), `SO2Web`, `seed_data`, `seed_goal`, `goal_doors`, `seed_version`, `generate_output`, `fill_slot_data` / `slot_options`; Universal Tracker's hooks (`ut_can_gen_without_yaml`, `interpret_slot_data`, `custom_ut_sort`) |
+| `ut.py` | Universal Tracker ("Trackers"): `LOGIC_VERSION`, the slot data -> option table `SLOT_OPTIONS`, `NO_EFFECT`, `restore` / `check_restored`, `refuse` (UT's `TrackerException`), `sort_key` |
 | `hub.py` | hub mode: `choose` (the locations), `needed_keys`, `fienal_won`, `create_regions`, `set_rules`, `drop_rule`, the seed's `hub` / `bosses` / `doors` (`seed_hub`, `seed_bosses`, `seed_doors`); `OUT_OF_HUB` (the Portal of Sealing), `CONFIRMED_OPTIONAL` (waiting on hubchambers) |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `data.py` | generated tables (do not edit) |
@@ -1014,7 +1120,7 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 | `skills.py`, `skillsanity.py` | skillsanity's tables (the guild sets, the skills, the starting skills, the specialties, the learn tables with each member's first move, the other learn points; generated by tools/ap_make_skills.py from the disc; do not edit) and its locations, items, logic and shop prices |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
-| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`) |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 
@@ -1063,6 +1169,33 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 (the venv has no flask for test/webhost):
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
+
+Results (2026-10-27, 0.2.2: Universal Tracker; docs/handoff/utworld.md; "Trackers" above):
+- The world's tests: **783 passed** (65867 subtests; was 699): test_ut.py's 84 (16 mix classes with
+  WorldTestBase's defaults, TestUTRoom, TestUTCoverage, TestUTSort), 4.1 s at `-n 6`, slowest UT
+  test 0.43 s. `SO2_SLOW_TESTS=1`: TestUTManySeeds, 16 mixes x 20 room seeds, **320 rooms, every
+  sphere matching** (21 s). AP's general tests: 379 passed (117763 subtests).
+  `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 836 passed (71162).
+- Each part of the restore taken out in turn (the open party, the story party, the hub town,
+  starting_character's reverse map, exclude_locations, bench's absent value, expel_teleporter,
+  the round-trip check, the logic version, the 0.2.0 rule) fails some test
+  (scratchpad/utworld/mutate.py: 10 of 10 caught).
+- Identity: the three release sets, seeds 1-96, before (HEAD 6d2c518's apworld/so2 frozen in a
+  separate Archipelago copy) and after: **all 288 seeds identical**: 480 .apso2 and 288 spoilers
+  byte for byte, the checker's output the same, and each multidata equal but for every Star Ocean
+  slot's slot data gaining exactly `logic_version: 1` and `exclude_locations: []`
+  (scratchpad/utworld/identity.py; a symlinked Generate.py imports the shared install's world,
+  Python resolving a script's directory, so the frozen copy has real top-level scripts).
+- 0.2.0 rooms ("Older rooms" above): 17 mixes x 5 seeds generated with 0.2.0's world; 40 rooms
+  match in every sphere, 45 (Skillsanity or a hell seed) are refused; none tracks wrong. A
+  player's own 0.2.0 hub room (Skillsanity insanity) is refused with the 0.2.0 message; without
+  that rule its slot data restores cleanly.
+- The real UT (tools/ap_ut_check.py, Tracker_v0.3.6 on the scratch Archipelago 0.6.8, the packaged
+  so2.apworld): four Star Ocean slots (story, open world without the bench, hub, a player's own
+  rich hub YAML), fresh and after each of the room's first 4 spheres: **UT's in-logic count and list
+  are the world's own at all 20 points** (59 to 643 locations), the same through TrackerCore
+  in-process with its tab in our order, each slot rebuilt yaml-less with its own party, and a
+  `logic_version` 2 room refused through UT's TrackerException with our message.
 
 Results (2026-10-27, 0.2.1: the bench; docs/handoff/benchworld.md):
 - The world's tests: **699 passed** (50730 subtests; was 634; `python -m unittest`: 699, OK).
@@ -1457,6 +1590,11 @@ docs/handoff/skilllogic.md):
   (story mode, nothing progression to move).
 
 ## Changes
+
+**0.2.2** (2026-10-27, not released yet; docs/handoff/utworld.md; docs/release_notes/0.2.2.md is
+the draft). Tracker support, first piece (docs/plans/trackers.md B1): Universal Tracker, yaml-less
+("Trackers" above). No new option, item or location; the same seeds as 0.2.1 byte for byte (the
+.apso2 and the spoiler); the slot data gains `logic_version` (1) and `exclude_locations`.
 
 **0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md,
 hellseed.md and benchworld.md, the user's decisions). No new item or location; one new option,

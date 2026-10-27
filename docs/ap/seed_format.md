@@ -1652,6 +1652,64 @@ plays it the same, without the warning.
 }
 ```
 
+## Slot data and trackers (so2.apworld 0.2.2)
+
+The **slot data** (what the Archipelago server hands every client of the slot on connect) is the
+.apso2's `options` object less `deathlink` (which seed_data adds), plus two keys for trackers
+that the .apso2 does not carry, so the seed file stays exactly as 0.2.1 wrote it
+(`SO2World.slot_options()` is the common part, `fill_slot_data()` adds the two). The port never
+reads slot data (it takes its options from the .apso2), so new keys there are safe for it.
+
+| Key | Value | Meaning |
+|---|---|---|
+| `logic_version` | `1` | The world's logic version (`apworld/so2/ut.py` `LOGIC_VERSION`). It is bumped whenever the same slot data would make other logic: other locations, regions, rules or events. A room from 0.2.0 or 0.2.1 has no key: version 1. |
+| `exclude_locations` | sorted list of location names | The player's `exclude_locations` (Generate already expanded any group to its names). Universal Tracker shows them in its excluded group. |
+
+**What Universal Tracker restores** (yaml-less; `apworld/so2/ut.py`; docs/ap/apworld.md
+"Trackers"). UT builds the world again on the player's machine from the slot data alone, with a
+new random seed, and evaluates our rules against what the server says was received and checked.
+The world's `generate_early` reads every option back through one table (`ut.SLOT_OPTIONS`: slot
+key -> option, through the option's `from_any`):
+- the keys that use the option's own name and value (`goal`, `world_mode`, `shuffle_shops`,
+  `story_route`, `missable_locations`, the toggles, the ranges, `difficulty`, `death_link`,
+  `exclude_characters`, `exclude_locations`; `hub_start` and `fienal_requirement` in hub mode,
+  where they are written; elsewhere only hub mode reads them);
+- `starting_character`, which is transformed: `null` -> `hero`, a list (New Game's select) ->
+  `any`, a name -> that member;
+- `bench`, absent unless the bench applies: absent -> off (0.2.0 had no bench);
+- `expel_teleporter`, written `false` outside open world, and `character_items`, written `true`
+  in hub mode: neither is read there.
+
+The random choices that shape locations or rules come back too: **`characters`** is the party
+pool (`choose_open_party` / `choose_party` return it instead of drawing; without the bench the
+pool of 8 is a random draw), and in hub mode **`hub_start_town`** is the start town
+(`hub.choose_start`; it shapes no rule, but the rebuilt world names it). The options the slot
+data does not carry are Archipelago's common ones, which shape nothing UT builds (fill,
+locality, hints, start inventory: the server sends the starting items as received items; the
+list is `ut.NO_EFFECT`).
+
+Then the rebuilt world's own `slot_options()` must equal the room's key for key (but
+`apworld_version` and the two keys above): the derived keys (`seed_format`, `goal_encounters`,
+`party_rules`, `fienal_won`, `dungeon_keys`, `hell_seed`) prove that this world computes from the
+restored options what the room's world did. Otherwise, and when the room's `logic_version` is
+one this world does not reproduce or a key is missing or holds a value this world doesn't know,
+the world **refuses** (decision D10) with UT's `TrackerException` (`ut.TrackerRefusal` when UT
+is not installed). UT then shows "The world has informed UT that your options are
+incompatible", and its `/faris_asked` command prints our message, for example:
+
+    so2.apworld 0.2.2 can't track this room: its logic is version 2, newer than this world's 1.
+    This room was made with so2.apworld 0.3.0. It needs so2.apworld 0.3.0 or later: install that
+    so2.apworld beside tracker.apworld (the one the room was generated with).
+
+Rooms from 0.2.0 and 0.2.1 have no `logic_version` and are version 1 when they restore cleanly,
+except a 0.2.0 room with `skillsanity` on or with a hell seed's options (`encounter_rate` 0 with
+`killer_move_checks`): 0.2.1 changed those rules (`ut.OLD_LOGIC`), so it is refused with "Track it
+with so2.apworld 0.2.0 and your YAML in Universal Tracker's Players folder". A 0.1.x room names no
+`apworld_version` and lacks keys: refused.
+
+The rule for a tracker is the same as for the port: install **the so2.apworld the room was
+generated with**. UT also warns when the installed world's data package differs from the room's.
+
 ## Hub (`world_mode: hub`)
 
 Written by the agent "hubdata" (log `docs/handoff/hubdata.md`), agreed with the port agent

@@ -91,6 +91,24 @@ save over your ordinary saves. The Archipelago page shows the seed's card under 
 earlier Shattered Stars made for the same seed on your ordinary card are copied onto the seed's
 card the first time (your card itself isn't changed).
 
+## Tracking with Universal Tracker
+
+[Universal Tracker](https://github.com/FarisTheAncient/Archipelago/releases) (UT, version 0.3.6 or
+later) lists the locations you can reach now, by this world's own logic, from what the server says
+you have received and checked. It needs no YAML for this game (version 0.2.2 of this world and
+later):
+
+1. Put `tracker.apworld` (from UT's releases) and **the same `so2.apworld` the room was generated
+   with** into Archipelago's `custom_worlds` folder, then restart the Launcher.
+2. Open **Universal Tracker** from the Launcher and connect to the room with your slot name (and
+   the password), like a text client. The game can be connected at the same time.
+
+The tracker updates when the server hears of a check, so checks you make while the game is
+offline appear once Shattered Stars reconnects and sends them. If UT says "The world has informed
+UT that your options are incompatible", type `/faris_asked` in it: the message names the
+`so2.apworld` this room needs (a room made with a newer version of this world than the one
+installed, for example).
+
 ## Playing Offline
 
 Shattered Stars can also play a generated seed by itself, with no server and no multiworld
