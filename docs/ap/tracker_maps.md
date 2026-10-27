@@ -167,9 +167,11 @@ section per check at each distinct (image, x, y).
 Coverage (layout 1.1 of 2026-10-27): 472 place checks (308 chests, 101 gifts, 42 bosses, 21
 joins), all with a dot and a room dot. By `how`: chest 308, actor 65, region 48, spawn 50,
 map 1; none clamped. `area_only` is empty. 66 area images (242 map rectangles; the largest is
-Salva Drift, 2024x1720 at 1/1) and 2 world maps (35 group dots). 793 rooms in 66 groups
-(105.0 M pixels), 1775 doorways (1822 markers, 6 clamped) holding 2011 doors (1836 with a way
-back), and 378 transfers started by the maps' own code.
+Salva Drift, 2024x1720 at 1/1) and 2 world maps (35 group dots). 794 rooms in 66 groups
+(105.1 M pixels), 1775 doorways (1822 markers, 6 clamped) holding 2011 doors (1836 with a way
+back), and 380 transfers started by the maps' own code. (Before the `area` audit of
+2026-10-27, docs/handoff/maptab.md: 793 rooms and 378 transfers; Port Hilton's pier, map 171,
+is a room since.)
 
 ## Rooms (format 1.1)
 
@@ -246,18 +248,24 @@ none), `world` (1 Expel, 2 Energy Nede: the world map its entrance is on), `entr
 the world-map entrance leads to), `rooms` (its maps, by door distance from the entrances, then
 by number)}. Every room is in exactly one group, so a map has one room tab.
 
-Which maps: the groups are the area images (seeded with their maps) and the world-map entrance
-groups (`KEY_GROUPS`) with no area image, seeded with their entrance maps (an entrance into a
-place that has an area image joins that image: map 231 joins Eluria Colony; L'Aqua is the one
-such group today). From the seeds, breadth first and nearest group first: (1) over any door to a
-map of one of the group's places (map_names.csv `area` of its seeds); (2) then over two-way doors
+Which maps: the groups are the area images (seeded with their maps, and with the entrance maps
+of the world-map entrance group of the same name: Port Hilton's harbour 169 / 171 joins "Port
+Hilton" although that image shows the Lacour coliseum, where the released "Port Hilton" rows
+are; North City's plaza 260 / 261 joins "North City") and the world-map entrance groups
+(`KEY_GROUPS`) with no area image, seeded with their entrance maps (an entrance into a place
+that has an area image joins that image: map 231 joins Eluria Colony; L'Aqua is the one such
+group today). A group's places are the map_names.csv `area`s of its seeds, except a seed's area
+that is another group's name (Arlia Village's map 16 is a Shingo Forest map, Rena's Room's 38
+an Arlia Village one: neither takes the other's maps). From the seeds, breadth first, in layers:
+(1) over any door to a map of one of the group's places, a map two groups reach in the same
+layer going to the group named as its place, else the first by name; (2) then over two-way doors
 with trigger regions both ways to any map still without a group (buildings that have places of
 their own, such as Cross Castle's rooms); (3) then over a one-way door with a trigger region
 into a map whose own such doors lead back into the group (in through one door, out through
 another: Bowman's House). A map in two area images belongs to the one whose name is its place,
 else the first by name. World maps and maps without a background are never rooms. Not reached
-(so not drawn): 31 maps with a background: opening and story scenes (Planet Milocinia and
-Claude's arrival 4-8, Inn Hilton Island at night 168-182, the Outer Wall 617-619, the
+(so not drawn): 30 maps with a background: opening and story scenes (Planet Milocinia 4-8,
+Inn Hilton Island at night 168-182, the Outer Wall 617-619, the
 Transporter Portal of Sealing 313, the fanzine hall 122), Mountain Palace maps without doors
 (340-356) and unused slots (0, 28, 643, 697, 826).
 
@@ -322,13 +330,13 @@ changes the format 1 parts above.
 
 `shattered-stars --render-tracker-maps [DIR]` (tools/tracker_maps.h) reads disc 1 (as the
 game finds it: SS_DISC1, `--disc1`, config.ini or the `discs` folders) and writes every image
-above as a PNG under DIR: the area and world images, then the rooms (format 1.1: 861 images in
+above as a PNG under DIR: the area and world images, then the rooms (format 1.1: 862 images in
 all, about 135 MB, in about 21 s on the development machine). It writes nothing else: no config.ini, no log, no saves, no cards. It
 needs no window and no seed. Each PNG is written under a temporary name beside it
 (`<name>.png.part`) and renamed into place once complete, so a run cut short never leaves a
 partly written image under the name PopTracker reads. Besides a line per image, the console
-gets the count at the start ("rendering 861 image(s) into DIR") and every 100 images ("300 of
-861 done"). Exit code 0, or 1 when an image could not be rendered or written.
+gets the count at the start ("rendering 862 image(s) into DIR") and every 100 images ("300 of
+862 done"). Exit code 0, or 1 when an image could not be rendered or written.
 
 For other callers, `tools::render_tracker_maps` takes a progress function
 (`TrackerRenderOptions::progress`, tools/tracker_maps.h): it is called on the rendering thread
@@ -364,7 +372,7 @@ first." until a disc is picked, same tooltip as the bottom bar's Save / Save & P
 
 The render runs on a thread of its own (engine/src/setup/tracker_job.h, `TrackerRenderJob`),
 so the window goes on drawing (about 20 s with the rooms of format 1.1, on the development
-machine). While it runs the button is disabled and the page shows a progress bar ("150 of 861
+machine). While it runs the button is disabled and the page shows a progress bar ("150 of 862
 images") and the image in progress ("Rendering room 92 Armory...", "Rendering the area map of
 Arlia Village..."); the rest of setup can be used meanwhile. Afterwards it says how many images
 were written and where, with an **Open folder** button next to it, or the error (the disc
@@ -386,5 +394,5 @@ For tests, `wait-tracker-render` holds the script until the render is over and
 `--frames`, so `--do render-tracker-maps,wait-tracker-render --screenshot done.png` shows the
 outcome and `--do render-tracker-maps,wait-tracker-render:150 --screenshot mid.png` the
 progress (the program then exits, stopping the render). Setup prints "setup: tracker maps:
-rendering into DIR" when it starts and "setup: tracker maps: done (861 of 861 images; F frames
+rendering into DIR" when it starts and "setup: tracker maps: done (862 of 862 images; F frames
 drawn while it ran)" (or stopped, ...) when it ends.
