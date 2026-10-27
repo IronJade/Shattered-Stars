@@ -45,6 +45,10 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 - 2026-10-27: logicexport done (entrances named; `to` = -1 = unconnected, so2_logic_connect /
   TrackerLogic.connect; region kind read). For B6: so2_logic_view / so2_in_logic / so2_goal_in_logic.
   For B7: checklist rows for the extended smoke and TestTrackerManySeeds. storyaware started.
+- 2026-10-27: mapdoors done. For part 2 (with B6): its spec is docs/ap/tracker_maps.md "For the pack
+  (part 2)"; also audit map_names.csv's `area` column (it drives the pack's tabs; e.g. maps 52/53 are
+  Salva but filed under Arlia Village). The door id is a recommendation to confirm at Phase C's
+  design. setupthread started (the setup render froze the window ~20 s).
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
@@ -61,7 +65,8 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | World | Story awareness (D8): UT deferred story events + pack 'later in the story' | storyaware | docs/handoff/storyaware.md | started 2026-10-27 |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
 | Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | **done** 2026-10-27 (c43294f b25fa5b 94e30f4; ASan clean: ap_ds 9/9, tracker_ 6/6, net 5/5, render 68/68, e2e 49/0; MinGW 370/370; Wine render 68/68 byte-identical to Linux, default folder Documents\PopTracker\user-override\so2_shattered_stars; setup button tested headless) |
-| Port + data | Map doors, per-room images, names (part 1) | mapdoors | docs/handoff/mapdoors.md | started 2026-10-27 |
+| Port + data | Map doors, per-room images, names (part 1) | mapdoors | docs/handoff/mapdoors.md | **done** 2026-10-27 (ae78aa2 0163425 389d650 6430541 3e7a2d1 994c8ab; 33 rooms named with evidence, 199 of 793 rooms numbered; layout 1.1: 793 rooms, 1775 doorways lettered, vanilla `to` only as data; door id = map*65536+offset/4, doorway id = its lowest door id; render 861 images 135 MB 20.8 s; tracker_ 7/7, ss_game_tests 223/0, e2e 861/861, regions identical, A/B 0 differ, smoke 373/0; fixed: trigger regions are screen coords) |
+| Port | Setup render on a worker thread + progress; regenerate maps.csv / doors.csv | setupthread | docs/handoff/setupthread.md | started 2026-10-27 |
 | World | B6 UT map tab + pack doors / Area > Room tabs / live door panel (part 2) | (after mapdoors + storyaware) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
