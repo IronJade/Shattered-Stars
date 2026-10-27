@@ -378,7 +378,7 @@
    {"map": 166, "label": "storage room (barrels)", "x": 8, "y": 24, "w": 480, "h": 360, "bg_w": 480, "bg_h": 360, "label_y": 8},
    {"map": 163, "label": "parlor (checkerboard floor), front room", "x": 8, "y": 408, "w": 424, "h": 256, "bg_w": 424, "bg_h": 256, "label_y": 392}
   ]},
-  {"path": "images/maps/world_expel.png", "kind": "world", "world_map": 1, "name": "Expel", "width": 2048, "height": 1592, "units_per_pixel": 54, "dots": [
+  {"path": "images/maps/world_expel.png", "kind": "world", "world_map": 1, "name": "Expel", "width": 2048, "height": 1592, "x0": 0, "z0": 86016, "units_per_pixel": 54, "dots": [
    {"group": "Arlia Village", "key": "Arlia Pass", "x": 942, "y": 1278, "world": [50920, 16999], "via_map": 17, "areas": ["Arlia Village", "Rena's Room", "Shingo Forest"]},
    {"group": "Town of Salva", "key": "Salva Pass", "x": 805, "y": 1146, "world": [43501, 24101], "via_map": 43, "areas": ["Alen's Mansion", "Salva Drift", "Town of Salva"]},
    {"group": "Mars Village", "key": "Mars Pass", "x": 1194, "y": 771, "world": [64527, 44339], "via_map": 124, "areas": ["Elder's House", "Mars Village"]},
@@ -400,22 +400,22 @@
    {"group": "Eluria Colony", "key": "Eluria Pass", "x": 260, "y": 366, "world": [14082, 66227], "via_map": 232, "areas": ["Eluria Colony"]},
    {"group": "Cave of Trials Level 1", "key": "Cave of Trials Pass", "x": 166, "y": 1352, "world": [9006, 12973], "via_map": 704, "areas": ["Cave of Trials Level 1", "Cave of Trials Level 10", "Cave of Trials Level 11", "Cave of Trials Level 12", "Cave of Trials Level 13", "Cave of Trials Level 2", "Cave of Trials Level 3", "Cave of Trials Level 4", "Cave of Trials Level 5", "Cave of Trials Level 6", "Cave of Trials Level 7", "Cave of Trials Level 8", "Cave of Trials Level 9", "Cave of Trials Treasure Vault", "Cave of Trials Weird Beast Arena"]}
   ]},
-  {"path": "images/maps/world_energy_nede.png", "kind": "world", "world_map": 2, "name": "Energy Nede", "width": 2048, "height": 1592, "units_per_pixel": 54, "dots": [
-   {"group": "Giveaway", "key": "Giveaway Pass", "x": 875, "y": 798, "world": [47273, 42894], "via_map": 317, "areas": ["Giveaway"]},
-   {"group": "Town of Armlock", "key": "Armlock Pass", "x": 1483, "y": 1173, "world": [80126, 22656], "via_map": 306, "areas": ["Armlock", "Heraldry Weapons Laboratory", "Town of Armlock"]},
-   {"group": "Field of Intelligence", "key": "Intelligence Pass", "x": 1123, "y": 774, "world": [60672, 44171], "via_map": 549, "areas": ["Field of Intelligence"]},
-   {"group": "Mihne Cavern", "key": "Mihne Pass", "x": 1325, "y": 1156, "world": [71600, 23578], "via_map": 449, "areas": ["Mihne Cavern"]},
-   {"group": "L'Aqua", "key": "L'Aqua Pass", "x": 1411, "y": 659, "world": [76196, 50391], "via_map": 686, "areas": []},
-   {"group": "map 687", "key": "Fienal Pass", "x": 1440, "y": 614, "world": [77761, 52812], "via_map": 687, "areas": ["Fienal"]},
-   {"group": "Secret Charity/Fake Gallery", "key": "Gallery Pass", "x": 872, "y": 899, "world": [47098, 37434], "via_map": 463, "areas": ["Mars", "Secret Charity/Fake Gallery"]},
-   {"group": "Central City", "key": "Central City Pass", "x": 1007, "y": 1155, "world": [54406, 23611], "via_map": 235, "areas": ["Central City"]},
-   {"group": "North City", "key": "North City Pass", "x": 1055, "y": 1081, "world": [56986, 27607], "via_map": 260, "areas": ["North City", "Synard Plant"]},
-   {"group": "Noel's House", "key": "Noel's House Pass", "x": 1148, "y": 446, "world": [62000, 61923], "via_map": 277, "areas": ["Noel's House"]},
-   {"group": "Cave of Red Crystal", "key": "Red Crystal Pass", "x": 1074, "y": 520, "world": [58001, 57917], "via_map": 419, "areas": ["Cave of Red Crystal", "Cavern of the Red Crystal"]},
-   {"group": "Field of Courage", "key": "Courage Pass", "x": 1216, "y": 1260, "world": [65708, 17973], "via_map": 629, "areas": ["Field of Courage"]},
-   {"group": "Field of Power", "key": "Power Pass", "x": 880, "y": 953, "world": [47565, 34503], "via_map": 597, "areas": ["Field of Power"]},
-   {"group": "Fun City", "key": "Fun City Pass", "x": 1516, "y": 977, "world": [81876, 33247], "via_map": 279, "areas": ["Fanzine Spot Sale", "Fun City", "Fun City arena"]},
-   {"group": "Field of Love", "key": "Love Pass", "x": 1261, "y": 922, "world": [68135, 36207], "via_map": 588, "areas": ["Field of Love"]}
+  {"path": "images/maps/world_energy_nede.png", "kind": "world", "world_map": 2, "name": "Energy Nede", "width": 2000, "height": 2000, "x0": 42000, "z0": 65000, "units_per_pixel": 25, "dots": [
+   {"group": "Giveaway", "key": "Giveaway Pass", "x": 210, "y": 884, "world": [47273, 42894], "via_map": 317, "areas": ["Giveaway"]},
+   {"group": "Town of Armlock", "key": "Armlock Pass", "x": 1525, "y": 1693, "world": [80126, 22656], "via_map": 306, "areas": ["Armlock", "Heraldry Weapons Laboratory", "Town of Armlock"]},
+   {"group": "Field of Intelligence", "key": "Intelligence Pass", "x": 746, "y": 833, "world": [60672, 44171], "via_map": 549, "areas": ["Field of Intelligence"]},
+   {"group": "Mihne Cavern", "key": "Mihne Pass", "x": 1184, "y": 1656, "world": [71600, 23578], "via_map": 449, "areas": ["Mihne Cavern"]},
+   {"group": "L'Aqua", "key": "L'Aqua Pass", "x": 1367, "y": 584, "world": [76196, 50391], "via_map": 686, "areas": []},
+   {"group": "map 687", "key": "Fienal Pass", "x": 1430, "y": 487, "world": [77761, 52812], "via_map": 687, "areas": ["Fienal"]},
+   {"group": "Secret Charity/Fake Gallery", "key": "Gallery Pass", "x": 203, "y": 1102, "world": [47098, 37434], "via_map": 463, "areas": ["Mars", "Secret Charity/Fake Gallery"]},
+   {"group": "Central City", "key": "Central City Pass", "x": 496, "y": 1655, "world": [54406, 23611], "via_map": 235, "areas": ["Central City"]},
+   {"group": "North City", "key": "North City Pass", "x": 599, "y": 1495, "world": [56986, 27607], "via_map": 260, "areas": ["North City", "Synard Plant"]},
+   {"group": "Noel's House", "key": "Noel's House Pass", "x": 800, "y": 123, "world": [62000, 61923], "via_map": 277, "areas": ["Noel's House"]},
+   {"group": "Cave of Red Crystal", "key": "Red Crystal Pass", "x": 640, "y": 283, "world": [58001, 57917], "via_map": 419, "areas": ["Cave of Red Crystal", "Cavern of the Red Crystal"]},
+   {"group": "Field of Courage", "key": "Courage Pass", "x": 948, "y": 1881, "world": [65708, 17973], "via_map": 629, "areas": ["Field of Courage"]},
+   {"group": "Field of Power", "key": "Power Pass", "x": 222, "y": 1219, "world": [47565, 34503], "via_map": 597, "areas": ["Field of Power"]},
+   {"group": "Fun City", "key": "Fun City Pass", "x": 1595, "y": 1270, "world": [81876, 33247], "via_map": 279, "areas": ["Fanzine Spot Sale", "Fun City", "Fun City arena"]},
+   {"group": "Field of Love", "key": "Love Pass", "x": 1045, "y": 1151, "world": [68135, 36207], "via_map": 588, "areas": ["Field of Love"]}
   ]}
  ],
  "checks": {

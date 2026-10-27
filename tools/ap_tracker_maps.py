@@ -14,8 +14,10 @@ no text from the disc beyond the names already in the repo's tables):
   in rows at one scale per image (1, 3/4, 2/3 or 1/2: the largest that keeps both sides
   within 2048 px), each with a label strip above it;
 - one image per world map with an area dot (Expel, Energy Nede), drawn top-down: image x =
-  world x / 54, image y = (0x15000 - world z) / 54 (north up), dots at the arrival point of
-  the nearest door from the area's maps to that world map (docs/ap/doors.json);
+  (world x - x0) / u, image y = (z0 - world z) / u (Expel: the whole torus, x0 0, z0
+  0x15000, u 54; Energy Nede: its playable disc, x0 42000, z0 65000, u 25), one dot per
+  world-map entrance group at the arrival point of its doors back to that world map
+  (docs/ap/doors.json);
 - each place check's pixel: chests from their chest_create position (B 0x6c), gifts / joins
   / bosses from the actor (ext 0x70 / 0xf3) or the trigger region (ext 0x74 / 0x75 / 0xd8 /
   0xd9) that registers the routine giving them (docs/ap/field.json `via`), else the map's
@@ -57,8 +59,12 @@ LABEL_COLOUR = "#e8e8f0"
 DOT = {"size": 12, "colour": "#ff3030", "outline": "#ffffff"}
 # World maps: the torus is 9 x 7 blocks of 0x3000 units (docs/notes/field_overlay_c1e.md).
 WORLD_W, WORLD_H = 0x1B000, 0x15000
-WORLD_UNITS_PER_PIXEL = 54
 WORLD_NAMES = {1: "Expel", 2: "Energy Nede", 3: "world map 3"}
+# The part of each world drawn (world units: left x, top z, units per pixel, size): Expel's
+# whole torus; Energy Nede's playable disc (radius 0x5cf8 around (67000, 40000):
+# world_terrain_query) with a margin.
+WORLD_VIEWS = {1: (0, WORLD_H, 54, WORLD_W // 54, WORLD_H // 54),
+               2: (42000, 65000, 25, 2000, 2000)}
 WORLD_MAPS = (1, 2, 3)
 
 
@@ -536,14 +542,15 @@ def build(disc_path):
         if not seen:
             continue
         (x, z) = min(seen, key=lambda k: (-seen[k], first[k], k))
-        dots[world].append({"group": g["group"], "key": g["name"], "x": x // WORLD_UNITS_PER_PIXEL,
-                            "y": (WORLD_H - z) // WORLD_UNITS_PER_PIXEL, "world": [x, z], "via_map": first[(x, z)],
+        x0, z0, upp, _, _ = WORLD_VIEWS[world]
+        dots[world].append({"group": g["group"], "key": g["name"], "x": (x - x0) // upp,
+                            "y": (z0 - z) // upp, "world": [x, z], "via_map": first[(x, z)],
                             "areas": members.get(g["group"], [])})
     for world in sorted(dots):
+        x0, z0, upp, w, h = WORLD_VIEWS[world]
         images.append({"path": f"images/maps/world_{slug(WORLD_NAMES[world])}.png", "kind": "world",
-                       "world_map": world, "name": WORLD_NAMES[world],
-                       "width": WORLD_W // WORLD_UNITS_PER_PIXEL, "height": WORLD_H // WORLD_UNITS_PER_PIXEL,
-                       "units_per_pixel": WORLD_UNITS_PER_PIXEL, "dots": dots[world]})
+                       "world_map": world, "name": WORLD_NAMES[world], "width": w, "height": h,
+                       "x0": x0, "z0": z0, "units_per_pixel": upp, "dots": dots[world]})
 
     return {
         "format": FORMAT,
