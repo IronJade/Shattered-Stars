@@ -181,9 +181,19 @@ doesn't open is a banner.
 - **Received items.** They wait in a queue. In free play (field state 0, no script running,
   the player in control), the game gives one item at a time: an item goes in the inventory
   (`inventory_add`), Fol goes on the party's total. Each item shows the notice banner, placed
-  like the map-name notice, and the next waits until the banner has gone. With a full
-  inventory the item waits. The console's `ap_give ITEM [FROM]` takes an AP id or name from
-  the seed's `items`, or a game item number.
+  like the map-name notice, and the next waits until the banner has gone. An item the
+  inventory has no room for (20 of a kind at most) is set aside [queuebypass, 2026-10-27]: one
+  banner, "Inventory full: Blackberries waiting" (when that is too wide for the banner, "X waits
+  for room", then "No room for X", then "Inventory full: an item waits"; no banner when another
+  of its kind already waits), and the items behind it, the server's included, go on. A server
+  item set aside joins the queue with its sender (the received index moves past it). Set-aside
+  items are tried again at every free play (after a menu, a shop, a crafting attempt or a battle,
+  whatever made room), the oldest first, and arrive with their usual banner ("Received
+  Blackberries from Bob"); a failed retry shows and logs nothing. A count that fits in part gives
+  what fits and the rest waits the same way. Before this, the item at the front of the queue held
+  up everything behind it until there was room, and copies of a count past 20 were lost.
+  `ap_status` lists the items set aside (`inventory full, set aside: ...`). The console's
+  `ap_give ITEM [FROM]` takes an AP id or name from the seed's `items`, or a game item number.
 - **The start.** The first free play of a new game gives `start.items` and `start.fol` and
   sets `start.flags`.
 - **The console.** With `--debug`, `ap_status` prints the seed, the slot, checks done of
@@ -239,6 +249,12 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   `{"location": ID}`, a check's own item (the item comes from the seed's location), or
   `{"item": {...}, "from": "Bob", "found": true}`, any other item (the courier's overflow, the
   console's `ap_give`), the item object as in the seed's `items` (`from` and `found` only when set).
+  Items set aside for want of room [queuebypass, 2026-10-27] are entries like any other, in their
+  place in the queue: a server item set aside is an `{"item": ..., "from": ...}` entry (the
+  `received_index` is past it, so it is never given twice), and the rest of a check's count that
+  fitted in part is the item itself with the count left. Whether an entry was set aside is not
+  written: a load tries every entry again, and one still without room is set aside again with its
+  banner.
   Written only with something waiting; then the sidecar is **version 3**, so a port from before
   2026-10-27 refuses the save instead of dropping the items. Absent: nothing waits.
 - `pending_hash` (with `pending`): `"sha256:"` and the SHA-256 of the save's bytes (the same N
