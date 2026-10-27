@@ -196,3 +196,12 @@ docs/ap/seed_format.md, docs/ap/apworld.md, docs/ap/data_storage.md, docs/releas
 - 2026-10-27 18:07: TSan B (to the end): rc 0, **no report**, 861 PNGs = the baseline bytes,
   21615 frames drawn during the 277.6 s TSan render, no .part. TSan done: unit 10/10 and setup
   A/B/C/D all without a report once the session bus is out of reach.
+- 2026-10-27 18:07: committed 5eabbee (docs: tracker_maps.md, 0.03.00 notes, this log) and
+  1fe705a (code: tracker_maps.{h,cpp}, main.cpp, setup/tracker_job.{h,cpp}, setup_ui.{h,cpp},
+  setup_main.cpp, CMakeLists.txt, tests/test_tracker_job.cpp); earlier e4f89b1 (maps.csv /
+  doors.csv). Scratch cleaned: the MinGW tree, the Wine prefix, the ASan and TSan build dirs
+  (recipes above; scratchpad/setupthread/build_san.sh has the ASan line, the TSan configure is
+  in the Log entry of 18:00) and every rendered image deleted; kept engine/build-setupthread (the
+  plain build), scratchpad/setupthread's logs, scripts (run.py, setup_runs.sh, wine.sh),
+  base_manifest.txt, the libasan / libtsan copies and the screenshots (runs/A_mid.png,
+  runs/B_done.png, runs/C_nodisc.png; the ASan / TSan runs' beside them). **setupthread done.**
