@@ -51,7 +51,7 @@ in parallel and may commit at the same time).
 - AP off = the disc's game untouched; no debug hooks in AP runs.
 
 ## State
-- Done (not committed yet):
+- Done (committed: 3a91e09 docs, 802935b code + tests + tools):
   - `ap_net::Link::set(key, value)` (link.h, pure virtual; value = JSON text). Real client
     (client.cpp): a `sets` map (latest value per key) under queue_mutex, sent in flush() as
     `Set(key, default=value, want_reply=false, [replace value])` only while SLOT_CONNECTED, else
@@ -70,7 +70,7 @@ in parallel and may commit at the same time).
     world_map_position, rewritten_on_reconnect, no_game, every_mode) -- 9/9 PASS.
   - tools/ap_ds_read.py (new): tracker login, Get both keys (names from Connected), --watch N
     with SetNotify prints SetReply values; --done FILE ends the watch.
-- Baseline (HEAD 6d2c518) binaries for comparisons: scratchpad/dskeys/ss-base, tests-base.
+- Baseline was HEAD 6d2c518 (its binaries, scratchpad/dskeys/ss-base / tests-base, deleted after the A/B).
   World-map walk recipe: `--map 1 --map-pos 51200,0,18500 --input "200:up,500:left,700:none"`.
   Runner: scratchpad/dskeys/run.py BIN LOG TIMEOUT ARGS (memcap, offscreen, dummy audio, scratch xdg).
 - Verified so far:
@@ -98,7 +98,7 @@ in parallel and may commit at the same time).
     the existing queue_mutex, like checks / says).
 - Docs: docs/ap/data_storage.md (new), docs/release_notes/0.03.00.md (DRAFT: TODO markers for the
   map-render command, world 0.2.2, pack 1.0.0, sums).
-- Next: commits (docs first, then code + tests + tools); report to the coordinator.
+- Next: nothing for B5; reported to the coordinator.
 - Open / for later agents: B6 decides how UT uses the map key (map_page_setting_key and
   location_setting_key on the same key; the throttle keeps SetReplies to 2/s). Phase C adds
   so2_entrances_{team}_{slot} at the marked spot in publish_tracker_keys. The release notes need
@@ -109,3 +109,4 @@ in parallel and may commit at the same time).
 - 2026-10-27: Link::set, the publisher, 9 unit tests (pass), the reader script.
 - 2026-10-27: game tests 216/216, A/B 20/20 identical, smoke 373/0, e2e 49/0, ap_net 5/5,
   mutation check; docs written; committing.
+- 2026-10-27: committed 3a91e09 (docs) and 802935b (port, tests, e2e); B5 done.
