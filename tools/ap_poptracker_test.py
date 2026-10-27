@@ -431,6 +431,15 @@ function STUB.rule(rule)
     local f, arg = rule:match("^%$([%w_]+)|(.*)$")
     return _G[f](arg)
 end
+
+-- every section's access rule, as PopTracker runs them after an item change: AP id -> level
+function STUB.levels()
+    local out = {}
+    for _, s in pairs(STUB.sections) do
+        out[tonumber(s.access:match("|(%d+)$"))] = STUB.rule(s.access)
+    end
+    return out
+end
 """
 
 
@@ -568,6 +577,156 @@ class TestLua(unittest.TestCase):
             self.assertTrue(g.STUB.rule(s.visible))
             n += 1
         self.assertEqual(n, len(WORLD.location_name_to_id))
+
+
+class TestLuaLogic(unittest.TestCase):
+    """The pack's evaluator (scripts/logic.lua) against the reference (tools/ap_tracker_logic.py) on the
+    exports of rooms of every option mix of the world's UT tests (test_ut.MIXES), each generated and
+    filled: for the empty state, the items found before each sphere (the precollected ones first, as
+    the server sends them), every item, and random states, the items received through the pack's item
+    handler, every section's access rule (`^$so2_access|<id>`) is Normal exactly for the reference's
+    locations in logic and None for the rest of the room's; the reached regions, events and goal agree.
+    Rooms without the export are a checklist; an export of a newer format too, with its banner."""
+    STATES_RANDOM = 3
+
+    @classmethod
+    def setUpClass(cls):
+        import random
+        sys.path.insert(0, HERE)
+        import ap_tracker_logic
+        from worlds.so2.test.test_ut import MIXES, real_generation, room_slot_data
+        cls.rooms = []
+        for label, options in MIXES.items():
+            mw = real_generation(options, 21)
+            world = mw.worlds[1]
+            slot = room_slot_data(world)
+            ids = lambda items: [world.item_name_to_id[i.name] for i in items]
+            received = ids(i for i in mw.precollected_items[1] if i.code is not None)
+            states = [("empty", [])]
+            for k, sphere in enumerate(mw.get_sendable_spheres(), start=1):
+                found = [loc for loc in sphere if loc.address is not None]
+                if not found:
+                    break
+                states.append((f"sphere {k}", list(received)))
+                received += ids(loc.item for loc in found if loc.item.player == 1 and loc.item.code is not None)
+            states.append(("all", list(received)))
+            rng = random.Random(label)
+            states += [(f"random {k}", [i for i in received if rng.random() < 0.4]) for k in range(cls.STATES_RANDOM)]
+            cls.rooms.append((label, mw, slot, states))
+        cls.reference = ap_tracker_logic
+
+    def deliver(self, lua, slot, locations, items):
+        g = lua.globals()
+        TestLua.connect(self, lua, slot, locations, [])
+        for index, code in enumerate(items):
+            g.STUB.handlers.Item(index, code, "", 1)
+
+    def test_rules_read_mapped_items(self):
+        """Every item a room's rules name is one of the pack's items, so its change (received, clicked)
+        reaches the evaluator through the item watch and makes PopTracker run the rules again."""
+        mapping = lua_table("scripts/autotracking/item_mapping.lua", "ITEM_MAPPING")
+        for label, mw, slot, states in self.rooms:
+            refs = {r for body in slot["tracker"]["rules"] if isinstance(body, list) and body[0] in ("has", "all", "any")
+                    for r in (body[1:2] if body[0] == "has" else body[1:]) if not isinstance(r, str)}
+            with self.subTest(mix=label):
+                self.assertEqual(sorted(refs - set(mapping)), [])
+
+    def test_lua_is_the_reference(self):
+        lua = TestLua.runtime(self, "map")
+        g, T = lua.globals(), lua.globals().Tracker
+        total = 0
+        for label, mw, slot, states in self.rooms:
+            evaluator = self.reference.TrackerLogic(slot["tracker"])
+            room = sorted(evaluator.location_of)
+            for name, items in states:
+                with self.subTest(mix=label, state=name):
+                    self.deliver(lua, slot, room, items)
+                    self.assertEqual(T.FindObjectForCode(T, "so2_logic_offline").CurrentStage, 2)
+                    counts = {}
+                    for code in items:
+                        counts[code] = counts.get(code, 0) + 1
+                    view = evaluator.evaluate(counts)
+                    levels = dict(g.STUB.levels().items())
+                    self.assertEqual({a for a in room if levels[a] == 6}, view.locations)
+                    self.assertEqual({a for a in room if levels[a] == 0}, set(room) - view.locations)
+                    lv = g.so2_logic_view()
+                    regions = {slot["tracker"]["regions"][k] for k, v in lv.reached.items() if v}
+                    self.assertEqual(regions, view.regions)
+                    self.assertEqual(dict(lv.got.items()), view.events)
+                    self.assertEqual(g.so2_goal_in_logic(), view.goal)
+                    total += 1
+        self.assertGreater(total, 16 * 5)
+
+    def test_memo_follows_items(self):
+        """A received item, a click on a mapped item and its undo change what is in logic at once."""
+        lua = TestLua.runtime(self, "map")
+        g, T = lua.globals(), lua.globals().Tracker
+        label, mw, slot, states = next(r for r in self.rooms if r[0] == "open full")
+        evaluator = self.reference.TrackerLogic(slot["tracker"])
+        room = sorted(evaluator.location_of)
+        start = states[1][1]          # before sphere 1: the precollected items
+        self.deliver(lua, slot, room, start)
+        before = {a for a, v in g.STUB.levels().items() if v == 6} & set(room)
+        self.assertEqual(before, evaluator.evaluate({c: 1 for c in start}).locations)
+        key = WORLD.item_name_to_id["Salva Pass"]
+        self.assertNotIn(key, start)
+        g.STUB.handlers.Item(len(start), key, "Salva Pass", 1)
+        after = {a for a, v in g.STUB.levels().items() if v == 6} & set(room)
+        self.assertEqual(after, evaluator.evaluate({**{c: 1 for c in start}, key: 1}).locations)
+        self.assertGreater(len(after), len(before))
+        T.FindObjectForCode(T, "key_salva_pass").Active = False     # the player undoes it by a click
+        self.assertEqual({a for a, v in g.STUB.levels().items() if v == 6} & set(room), before)
+
+    def test_deferred_entrance(self):
+        """An entrance the export leaves unconnected (`to` -1, Phase C's deferred entrances) reaches
+        nothing until so2_logic_connect names its region; then it is the reference's again, rules re-run."""
+        lua = TestLua.runtime(self, "map")
+        g, T = lua.globals(), lua.globals().Tracker
+        label, mw, slot, states = next(r for r in self.rooms if r[0] == "open full")
+        export = json.loads(json.dumps(slot["tracker"]))
+        door = next(e for e in export["entrances"] if e[0] == "Disc Switch")
+        door[2] = -1
+        cut = dict(slot, tracker=export)
+        reference = self.reference.TrackerLogic(export)
+        room = sorted(reference.location_of)
+        items = states[-4][1]           # every item
+        counts = {}
+        for code in items:
+            counts[code] = counts.get(code, 0) + 1
+        self.deliver(lua, cut, room, items)
+
+        def in_logic():
+            return {a for a, v in g.STUB.levels().items() if v == 6} & set(room)
+        view = reference.evaluate(counts)
+        self.assertNotIn("Energy Nede", view.regions)
+        self.assertEqual(in_logic(), view.locations)
+        self.assertFalse(g.so2_logic_connect("No such door", "Energy Nede"))
+        rev = T.FindObjectForCode(T, "so2_rev").AcquiredCount
+        self.assertTrue(g.so2_logic_connect("Disc Switch", "Energy Nede"))
+        self.assertGreater(T.FindObjectForCode(T, "so2_rev").AcquiredCount, rev, "the rules are re-run")
+        reference.connect("Disc Switch", "Energy Nede")
+        whole = self.reference.TrackerLogic(slot["tracker"]).evaluate(counts)
+        self.assertEqual(reference.evaluate(counts).locations, whole.locations)
+        self.assertEqual(in_logic(), whole.locations)
+        self.assertGreater(len(whole.locations), len(view.locations))
+
+    def test_checklist_rooms(self):
+        """A room without the export (0.2.0 / 0.2.1) and one whose export is a newer format: every
+        location shows as reachable, with the banner saying so."""
+        lua = TestLua.runtime(self, "map")
+        g, T = lua.globals(), lua.globals().Tracker
+        label, mw, slot, states = self.rooms[0]
+        room = sorted(self.reference.TrackerLogic(slot["tracker"]).location_of)
+        for tracker, stage in ((None, 1), (dict(slot["tracker"], format=99), 3)):
+            with self.subTest(stage=stage):
+                old = {k: v for k, v in slot.items() if k != "tracker"}
+                if tracker is not None:
+                    old["tracker"] = tracker
+                self.deliver(lua, old, room, [])
+                self.assertEqual(T.FindObjectForCode(T, "so2_logic_offline").CurrentStage, stage)
+                levels = g.STUB.levels()
+                self.assertEqual({levels[a] for a in room}, {6})
+                self.assertIsNone(g.so2_logic_view())
 
 
 def to_lua(lua, value):

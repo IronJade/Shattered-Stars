@@ -18,13 +18,24 @@ dialog helper is reachable) and SDL's dummy video driver, under a scratch HOME.
 3. The port's part, played by a client of the slot: checks for the 3 lowest missing locations and
    the first craft, then the data-storage keys so2_map (map 26, Hearn's store in Arlia) and so2_story
    (chapter 12).
-4. PopTracker with --load-pack so2_shattered_stars, both variants in turn, --ap-host / --ap-slot,
+4. The logic (before step 3; docs/ap/poptracker.md "Logic"): PopTracker (map variant) connects to
+   the fresh room with a probe added through its user-override folder (scripts/init.lua = the pack's
+   own plus one LoadScript of a probe; the pack's logic, so2 and autotracking scripts load from the
+   zip unchanged). The probe prints, whenever they change, the room's unchecked sections PopTracker
+   itself shows as reachable (LocationSection.AccessibilityLevel: PopTracker's own evaluation of
+   each section's `^$so2_access|<id>`). At three points (fresh; after every location then in logic
+   is checked, by a client of the slot, with the items the server sends for them; the same again)
+   that set must be the world's own: the room rebuilt from its slot data in Universal Tracker's way
+   (apworld/so2/test/test_ut.py ut_rebuild / in_logic), the unchecked locations in logic. Then the
+   override is removed.
+5. PopTracker with --load-pack so2_shattered_stars, both variants in turn, --ap-host / --ap-slot,
    quit after --seconds with SIGINT (it saves its state on quit).
-5. Checks, from PopTracker's log and its saved state (saves/so2_shattered_stars/.../autosave.json):
+6. Checks, from PopTracker's log and its saved state (saves/so2_shattered_stars/.../autosave.json):
    the pack loaded with no Lua error and no warning; the tracker connected (the server's log has a
-   PopTracker tracker joining); exactly the 4 checked sections are cleared; every item the server
-   sent to the slot that the pack maps is on (or counted); the chapter is 12; the Room settings
-   match the slot's options; the map tabs show SO2_MAP_TABS[26]. Items Only: loads, connects, items.
+   PopTracker tracker joining); exactly the checked sections are cleared (step 4's and the port's
+   4); every item the server sent to the slot that the pack maps is on (or counted); the chapter is
+   12; the Room settings match the slot's options; the map tabs show SO2_MAP_TABS[26]. Items Only:
+   loads, connects, items.
 Prints one line per check; exit status 0 when all pass.
 """
 import argparse
@@ -152,6 +163,170 @@ async def play(port, n, crafts):
         return checks, received
 
 
+# The logic probe (step 4), loaded only from the smoke's user-override folder: a round over the
+# room's sections, 100 per frame (PopTracker limits a frame handler's run time), then one line when
+# the set changed: "so2probe <mode> <reachable> <unreachable> <ids,...>" (unchecked sections only:
+# a checked one reads Cleared).
+PROBE = r"""
+local order, pos, ids, none, last = nil, 1, {}, 0, nil
+ScriptHost:AddOnFrameHandler("so2 smoke probe", function(elapsed)
+    if not SO2.connected or SO2.exists == nil then
+        return
+    end
+    if order == nil then
+        order = {}
+        for id in pairs(LOCATION_MAPPING) do
+            if SO2.exists[id] then
+                table.insert(order, id)
+            end
+        end
+        table.sort(order)
+        pos, ids, none = 1, {}, 0
+    end
+    for _ = 1, 100 do
+        local id = order[pos]
+        if id == nil then
+            local line = SO2_LOGIC.mode .. " " .. #ids .. " " .. none .. " " .. table.concat(ids, ",")
+            if line ~= last then
+                last = line
+                print("so2probe " .. line)
+            end
+            order = nil
+            return
+        end
+        local level = Tracker:FindObjectForCode(LOCATION_MAPPING[id][1]).AccessibilityLevel
+        if level == AccessibilityLevel.Normal then
+            table.insert(ids, id)
+        elseif level == AccessibilityLevel.None then
+            none = none + 1
+        end
+        pos = pos + 1
+    end
+end)
+"""
+
+
+def probe_lines(log_path):
+    """The probe's lines so far: (mode, reachable ids, unreachable count)."""
+    out = []
+    with open(log_path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if line.startswith("so2probe "):
+                parts = line.split()
+                ids = {int(x) for x in parts[4].split(",")} if len(parts) > 4 and parts[4] else set()
+                out.append((parts[1], ids, int(parts[3])))
+    return out
+
+
+async def logic_points(port, log_path, ap_dir, points=3, timeout=60):
+    """Step 4's client and checks: at each point, wait until the probe's last line is the world's own
+    unchecked locations in logic; then check them all. Returns the locations checked."""
+    sys.path.insert(0, ap_dir)
+    from BaseClasses import ItemClassification
+    from worlds.AutoWorld import AutoWorldRegister
+    from worlds.so2.test.test_ut import in_logic, ut_rebuild
+    import websockets
+    names = AutoWorldRegister.world_types[GAME].item_id_to_name
+    done = []
+    async with websockets.connect(f"ws://127.0.0.1:{port}", max_size=None) as ws:
+        await ws.recv()
+        await ws.send(json.dumps([{"cmd": "Connect", "game": GAME, "name": "Tester", "password": "",
+                                   "uuid": str(uuid.uuid4()), "items_handling": 0b111, "tags": [],
+                                   "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
+                                   "slot_data": True}]))
+        connected, received = None, []
+        while connected is None:
+            for p in json.loads(await ws.recv()):
+                if p["cmd"] == "Connected":
+                    connected = p
+                elif p["cmd"] == "ReceivedItems":
+                    received += p["items"]
+        tracker = ut_rebuild(connected["slot_data"], 4243)     # the world's own logic, as UT rebuilds it
+        unchecked = set(connected["missing_locations"])
+        for k in range(points):
+            expected = in_logic(tracker, [(names[it["item"]], ItemClassification(it["flags"])) for it in received],
+                                unchecked)
+            end, seen = time.time() + timeout, None
+            while time.time() < end:
+                lines = probe_lines(log_path)
+                seen = lines[-1] if lines else None
+                if seen and seen[0] == "on" and seen[1] == expected and seen[2] == len(unchecked) - len(expected):
+                    break
+                await asyncio.sleep(0.5)
+            label = "fresh" if k == 0 else f"after {k} round{'s' if k > 1 else ''} of checks"
+            ok = seen is not None and seen[0] == "on" and seen[1] == expected
+            what = (f"logic, {label}: PopTracker's reachable sections are the world's own ({len(expected)} in "
+                    f"logic of {len(unchecked)} unchecked, {len(received)} items)")
+            if not check(ok and seen[2] == len(unchecked) - len(expected), what):
+                if seen:
+                    print(f"     PopTracker: mode {seen[0]}, {len(seen[1])} reachable, {seen[2]} not; "
+                          f"missing {sorted(expected - seen[1])[:8]}, extra {sorted(seen[1] - expected)[:8]}")
+                return done
+            if k + 1 == points:
+                break
+            checks = sorted(expected)
+            await ws.send(json.dumps([{"cmd": "LocationChecks", "locations": checks}]))
+            done += checks
+            unchecked -= set(checks)
+            end = time.time() + 3
+            while time.time() < end:
+                try:
+                    msg = await asyncio.wait_for(ws.recv(), timeout=end - time.time())
+                except asyncio.TimeoutError:
+                    break
+                for p in json.loads(msg):
+                    if p["cmd"] == "ReceivedItems":
+                        received += p["items"]
+    return done
+
+
+def env_for(root):
+    """PopTracker's environment: nothing of the user's (no display, no D-Bus, an empty PATH)."""
+    home = os.path.join(root, "home")
+    return {"HOME": home, "XDG_CONFIG_HOME": os.path.join(home, ".config"),
+            "XDG_DATA_HOME": os.path.join(home, ".local", "share"), "XDG_CACHE_HOME": os.path.join(home, ".cache"),
+            "XDG_RUNTIME_DIR": os.path.join(root, "run"), "PATH": os.path.join(root, "bin"), "LANG": "C.UTF-8",
+            "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",          # SDL2's names
+            "SDL_VIDEO_DRIVER": "dummy", "SDL_AUDIO_DRIVER": "dummy"}
+
+
+def stop(p):
+    p.send_signal(signal.SIGINT)        # SDL turns it into a quit: PopTracker saves its state
+    try:
+        p.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+        p.wait()
+
+
+def run_logic(apprun, root, pack_dir, port, ap_dir):
+    """Step 4: PopTracker with the probe, the three points; the override removed afterwards."""
+    override = os.path.join(root, "home", "PopTracker", "user-override", UID)
+    os.makedirs(os.path.join(override, "scripts"))
+    with open(os.path.join(pack_dir, "scripts", "init.lua"), encoding="utf-8") as f:
+        init = f.read()
+    with open(os.path.join(override, "scripts", "init.lua"), "w", encoding="utf-8") as f:
+        f.write(init + '\nScriptHost:LoadScript("scripts/so2_smoke_probe.lua")\n')
+    with open(os.path.join(override, "scripts", "so2_smoke_probe.lua"), "w", encoding="utf-8") as f:
+        f.write(PROBE)
+    log_path = os.path.join(root, "poptracker-logic.log")
+    with open(log_path, "w") as log:
+        p = subprocess.Popen([apprun, "--load-pack", UID, "--pack-variant", "map", "--ap-host", f"localhost:{port}",
+                              "--ap-slot", "Tester"], env=env_for(root), stdin=subprocess.DEVNULL, stdout=log,
+                             stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            done = asyncio.run(logic_points(port, log_path, ap_dir))
+        finally:
+            stop(p)
+    shutil.rmtree(os.path.join(root, "home", "PopTracker", "user-override"))
+    text = open(log_path, encoding="utf-8", errors="replace").read()
+    bad = [ln for ln in text.splitlines() if re.search(r"WARNING|[Ee]rror|attempt to|stack traceback", ln)
+           and "TLS handshake" not in ln and "Could not fetch" not in ln]
+    check("overriding from" in text and "so2_smoke_probe" in text and not bad,
+          "logic: the probe ran from the user override, no Lua error or warning" + (f": {bad[:3]}" if bad else ""))
+    return done
+
+
 def lua_table(path, name):
     text = open(path, encoding="utf-8").read()
     body = text[text.index(name + " = {"):]
@@ -161,25 +336,15 @@ def lua_table(path, name):
 
 def run_poptracker(apprun, root, variant, port, seconds):
     home = os.path.join(root, "home")
-    env = {"HOME": home, "XDG_CONFIG_HOME": os.path.join(home, ".config"),
-           "XDG_DATA_HOME": os.path.join(home, ".local", "share"), "XDG_CACHE_HOME": os.path.join(home, ".cache"),
-           "XDG_RUNTIME_DIR": os.path.join(root, "run"), "PATH": os.path.join(root, "bin"), "LANG": "C.UTF-8",
-           "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy",          # SDL2's names
-           "SDL_VIDEO_DRIVER": "dummy", "SDL_AUDIO_DRIVER": "dummy"}
     log_path = os.path.join(root, f"poptracker-{variant}.log")
     with open(log_path, "w") as log:
         p = subprocess.Popen([apprun, "--load-pack", UID, "--pack-variant", variant, "--ap-host",
-                              f"localhost:{port}", "--ap-slot", "Tester"], env=env, stdin=subprocess.DEVNULL,
+                              f"localhost:{port}", "--ap-slot", "Tester"], env=env_for(root), stdin=subprocess.DEVNULL,
                              stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         try:
             p.wait(timeout=seconds)
         except subprocess.TimeoutExpired:
-            p.send_signal(signal.SIGINT)        # SDL turns it into a quit: PopTracker saves its state
-            try:
-                p.wait(timeout=30)
-            except subprocess.TimeoutExpired:
-                os.killpg(p.pid, signal.SIGKILL)
-                p.wait()
+            stop(p)
     log = open(log_path, encoding="utf-8", errors="replace").read()
     state = os.path.join(home, ".config", "PopTracker", "saves", UID)
     found = [os.path.join(b, f) for b, _, fs in os.walk(state) for f in fs
@@ -238,6 +403,7 @@ def main():
         names = {it["codes"]: it["name"] for it in json.load(open(os.path.join(pack_dir, "items", "items.json")))
                  if "codes" in it}
         crafts = {i for i, (path,) in loc_map.items() if path.startswith("@Item Creation/")}
+        earlier = run_logic(apprun, root, pack_dir, a.port, os.path.abspath(a.ap_dir))
         checks, received = asyncio.run(play(a.port, 3, crafts))
         check(len(checks) == 4, f"the port's part: {len(checks)} checks, {len(received)} items sent, keys written")
         for variant in ("map", "items_only"):
@@ -262,7 +428,7 @@ def main():
             check(len(want) >= 3 and want <= on, f"{variant}: the received items are on ({sorted(want)})")
             if variant == "map":
                 cleared = {k for k, v in t["sections"].items() if isinstance(v, dict) and v.get("cleared")}
-                expected = {loc_map[i][0][1:] for i in checks}
+                expected = {loc_map[i][0][1:] for i in earlier + checks}
                 check(cleared == expected, f"map: the {len(expected)} checked sections are cleared, no other")
                 chapter = next((v.get("count") for k, v in t["json_items"].items()
                                 if t["json_item_ids"].get(k, "").endswith(":Story chapter (from the game)")), None)

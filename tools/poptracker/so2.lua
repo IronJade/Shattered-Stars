@@ -42,8 +42,9 @@ function so2_refresh()
 end
 
 -- The logic banner (the "Logic" item at the top of the item panel): "offline" (no room yet),
--- "checklist" (no logic for this room: every location it has shows as reachable) or "on".
-local LOGIC_STAGE = {offline = 0, checklist = 1, on = 2}
+-- "checklist" (no logic for this room: every location it has shows as reachable), "on" (the
+-- room's logic export, logic.lua) or "newer" (an export this pack can't read yet: a checklist).
+local LOGIC_STAGE = {offline = 0, checklist = 1, on = 2, newer = 3}
 function so2_set_logic_status(key)
     local obj = Tracker:FindObjectForCode("so2_logic_offline")
     if obj then

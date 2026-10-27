@@ -407,7 +407,8 @@ class Pack:
         stages = []
         for key, text, colour in (("offline", "Logic: not connected (checklist)", "logic_off"),
                                   ("checklist", "Logic unavailable for this room: checklist", "logic_list"),
-                                  ("on", "Logic: from the room", "logic_on")):
+                                  ("on", "Logic: from the room", "logic_on"),
+                                  ("newer", "Logic needs a newer pack: checklist", "logic_list")):
             img = f"images/status/logic_{key}.png"
             self.images[img] = badge(text, COLOURS[colour], size=(512, 48))
             stages.append({"img": img, "codes": f"so2_logic_{key}", "inherit_codes": False,
