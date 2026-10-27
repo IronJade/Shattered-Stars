@@ -532,7 +532,8 @@ nothing from the disc is published** ("This keeps us trouble free from solicitin
 pack ships original placeholder maps at fixed paths; a port command renders each area's maps
 (stitched by name, check dots placed by the field camera's projection) into the override folder.
 D8-D10 not asked yet. **2026-10-27:** D8 **yes** (the user: "Story awareness in story mode would be a
-fantastic addition, yes."); D10 taken as recommended (docs/handoff/phaseb.md).
+fantastic addition, yes."); D10 taken as recommended (docs/handoff/phaseb.md); 0.2.0 Skillsanity rooms
+(0.2.1 changed those rules) are accepted with a warning if the rebuilt logic is conservative (the user).
 
 **Party change that affects this plan (decided 2026-10-26, not built):** a 12-member party (a
 `bench` option: places 8-11 kept by the port; docs/handoff/bench.md). With the bench on, the

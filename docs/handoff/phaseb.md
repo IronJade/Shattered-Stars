@@ -12,6 +12,11 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   ships as port 0.03.00 + world 0.2.2 + pack 1.0.0.
 - D10 (not asked before): taken as recommended (UT refuses with TrackerException and a clear
   message when the installed world can't reproduce the room's `logic_version`); told to the user.
+- 0.2.0 Skillsanity rooms in UT (raised by utworld): **accept with a warning** (the user, 2026-10-27:
+  "accept with a warning"), on the condition given with the recommendation: the rebuilt logic must be
+  conservative (UT's in-logic set a subset of the room's own at every sphere, over utworld's oldroom.py
+  rooms); a seed that breaks it keeps the refusal. 0.2.0 hell seeds stay refused. Assigned to the B3
+  agent (it edits ut.py too).
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
@@ -24,7 +29,7 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
 | World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | started 2026-10-27 |
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
-| World | B3 logic export | (after B2) | | queued |
+| World | B3 logic export + 0.2.0 Skillsanity rooms accepted with a warning | (after B2) | | queued |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | started 2026-10-27 (layout from maprender) |
 | World | B4b the pack's logic evaluator | (after B3) | | queued |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
