@@ -308,20 +308,33 @@ class TestUTRoom(SO2TestBase):
                                  {k: v for k, v in self.room.items() if k != "apworld_version"})
 
     def test_older_skillsanity_rooms(self):
-        """0.2.1 changed Skillsanity's logic (its guild checks and learn levels) and made
-        encounter_rate 0 with killer-move checks a hell seed: a 0.2.0 room with either is refused
-        (oldroom.py measured 13 of 25 skillsanity rooms off), a 0.2.1 one is 0.2.2's logic."""
+        """0.2.1 changed Skillsanity's logic (its guild checks and learn levels, stricter than 0.2.0's)
+        and made encounter_rate 0 with killer-move checks a hell seed: a 0.2.0 room with Skillsanity
+        is tracked with a logged warning (the user, 2026-10-27: "accept with a warning"; every 0.2.0
+        room measured is conservative: UT lists a subset of the room's own at every sphere), a 0.2.0
+        hell seed is refused, a 0.2.1 room is 0.2.2's logic (no warning)."""
         for value in ("skills_only", "special_only", "insanity"):
             mw = setup_multiworld(SO2World, UT_STEPS, 9, {"skillsanity": value, "world_mode": "hub"})
             room = {k: v for k, v in room_slot_data(mw.worlds[1]).items() if k not in ut.NEW_KEYS}
             with self.subTest(skillsanity=value, apworld_version="0.2.1"):
-                self.assertEqual(ut_rebuild(dict(room, apworld_version="0.2.1"), 77).worlds[1].party,
-                                 mw.worlds[1].party)
+                with self.assertNoLogs(level="WARNING"):
+                    self.assertEqual(ut_rebuild(dict(room, apworld_version="0.2.1"), 77).worlds[1].party,
+                                     mw.worlds[1].party)
             with self.subTest(skillsanity=value, apworld_version="0.2.0"):
-                message = self.refused(dict(room, apworld_version="0.2.0"), "Skillsanity", "0.2.0", "YAML")
-                self.assertNotIn("or later", message)
+                with self.assertLogs(level="WARNING") as logged:
+                    t = ut_rebuild(dict(room, apworld_version="0.2.0"), 77).worlds[1]
+                self.assertEqual(t.party, mw.worlds[1].party)
+                self.assertEqual(ids(t.multiworld), ids(mw))
+                text = " ".join(logged.output)
+                for wanted in ("so2.apworld 0.2.0", "Skillsanity", "guild checks and learn levels", "later",
+                               "Regenerate", "0.2.2"):
+                    self.assertIn(wanted, text)
+        none = dict(room, skillsanity="none", apworld_version="0.2.0")
+        with self.subTest("0.2.0 without skillsanity"), self.assertNoLogs(level="WARNING"):
+            ut_rebuild(none, 77)
         hell = dict(room, skillsanity="none", encounter_rate=0, killer_move_checks=True, apworld_version="0.2.0")
         self.refused(hell, "hell seed", "YAML")
+        self.refused(dict(hell, skillsanity="insanity"), "hell seed", "YAML")
         no_version = {k: v for k, v in self.room.items() if k not in ("apworld_version", "logic_version")}
         self.assertIn("older than 0.2.0", self.refused(dict(no_version, party_rules="story")))
 

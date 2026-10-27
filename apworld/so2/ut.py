@@ -21,7 +21,8 @@ When this world can't reproduce a room (a logic version it doesn't know, slot da
 back, a rebuilt world that differs), it refuses with UT's TrackerException and a message that
 names the so2.apworld to install (decision D10), rather than track the wrong logic. Rooms from
 0.2.0 and 0.2.1 have no logic_version: version 1 when their slot data restores cleanly, but for a
-0.2.0 room with skillsanity or a hell seed's options (OLD_LOGIC: 0.2.1 changed those rules).
+0.2.0 room with a hell seed's options (OLD_LOGIC: 0.2.1 changed those rules); a 0.2.0 room with
+skillsanity is tracked with a warning (OLD_LOGIC_WARNINGS: 0.2.1's rules for it are stricter).
 
 Nothing here runs unless re_gen_passthrough has our game: a generation is unchanged.
 """
@@ -37,18 +38,28 @@ LOGIC_VERSIONS = (1,)       # the room logic versions this world reproduces (a r
 NEW_KEYS = ("logic_version", "exclude_locations", "tracker")  # 0.2.2's keys: not in the .apso2, absent from older rooms
 
 # Rooms made before logic_version whose logic differs from version 1 (docs/ap/apworld.md "Trackers",
-# "Older rooms": 0.2.0 rooms rebuilt here, 17 mixes x 5 seeds): apworld_version -> (does the room's
-# slot data use the changed logic, why) pairs, and what to install instead. 0.2.1 let Skillsanity's
-# guild checks and learn levels hold progression, with rules of their own, and made encounter_rate 0
-# with killer-move checks a hell seed (its levels from the Fun City arena; check_restored would
-# refuse it too, by its rebuilt `hell_seed`).
+# "Older rooms": 0.2.0 rooms rebuilt here, 17 mixes x 5 seeds, and the user's own room).
+# OLD_LOGIC refuses: apworld_version -> (does the room's slot data use the changed logic, why) pairs,
+# and what to install instead. 0.2.1 made encounter_rate 0 with killer-move checks a hell seed (its
+# levels from the Fun City arena; check_restored would refuse it too, by its rebuilt `hell_seed`).
 OLD_LOGIC = {
-    "0.2.0": ([(lambda data: data.get("skillsanity", "none") != "none",
-                "0.2.1 changed Skillsanity's logic (its guild checks and learn levels)"),
-               (lambda data: data.get("encounter_rate") == 0 and data.get("killer_move_checks") is True,
+    "0.2.0": ([(lambda data: data.get("encounter_rate") == 0 and data.get("killer_move_checks") is True,
                 "0.2.1 changed the logic of encounter_rate 0 with killer-move checks (the hell seed)")],
               "Track it with so2.apworld 0.2.0 and your YAML in Universal Tracker's Players folder (0.2.0 "
               "can't rebuild a room without it, and draws its own party pool where one is random)."),
+}
+# OLD_LOGIC_WARNINGS tracks with a logged warning: apworld_version -> (applies, warning) pairs. 0.2.1
+# let Skillsanity's guild checks and learn levels hold progression, with rules of their own that are
+# stricter than 0.2.0's: rebuilt here, every 0.2.0 Skillsanity room measured shows at every sphere a
+# subset of what the room's own logic counted on (29 of 45 rooms fewer somewhere, none more; the
+# user's own hub room too), so UT may list such a check late, never early (the user, 2026-10-27:
+# "accept with a warning", on that condition).
+OLD_LOGIC_WARNINGS = {
+    "0.2.0": [(lambda data: data.get("skillsanity", "none") != "none",
+               "This room was made with so2.apworld 0.2.0 with Skillsanity on: 0.2.1 changed the logic of "
+               "Skillsanity's guild checks and learn levels, so Universal Tracker may show some of them "
+               "later than they really became reachable (never earlier). Regenerate the room with "
+               "so2.apworld 0.2.2 or later for exact tracking.")],
 }
 
 REQUIRED = "required"       # SLOT_OPTIONS `absent`: a room without the key can't be restored
@@ -222,6 +233,10 @@ def restore(world, data):
         refuse(data, "its slot data has no party pool ('characters')")
     if hub_mode and data.get("hub_start_town") not in HUB_STARTS:
         refuse(data, f"its hub start town ({data.get('hub_start_town')!r}) is not one this world knows")
+    if "logic_version" not in data:
+        for applies, warning in OLD_LOGIC_WARNINGS.get(data.get("apworld_version"), ()):
+            if applies(data):
+                logging.warning(warning)
 
 
 def check_restored(world, data):
