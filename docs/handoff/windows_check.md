@@ -219,3 +219,61 @@ command-line cases from PowerShell.
 
 **Released:** v0.02.50 on 877b771, published 2026-10-26 06:23 UTC
 (https://github.com/IronJade/Shattered-Stars/releases/tag/v0.02.50); the wiki pushed (a72a063).
+
+## Recheck for 0.02.51 (2026-10-27)
+
+For the Windows machine, with the 0.02.51 release candidate: the port's
+`ShatteredStars-0.02.51-win64.zip` (scratchpad/release/rc-0.02.51-dist/port/, sum in its SHA256SUMS
+and docs/ap/release_checklist.md section 11) and the world's `so2.apworld` 0.2.1 with
+`Star.Ocean.The.Second.Story.yaml` (scratchpad/release/rc-0.02.51-dist/apworld/, the same files as
+dist/apworld-0.2.1). The two now ship as separate GitHub releases (`v0.02.51` and
+`apworld-v0.2.1`). Same rules as above: a scratch `%APPDATA%` (`set APPDATA=%USERPROFILE%\ss-test\appdata`),
+the `Test Ä 日本` folder, never the user's own saves. Replace the old `so2.apworld` in
+`C:\ProgramData\Archipelago\custom_worlds` with the 0.2.1 one (one copy only).
+
+What changed for a Windows player since 0.02.50: the version; setup's Archipelago page warns about a
+hell seed; the bench (Party Order / Tactics flip with L1 / R1, its save); the starting member in
+the party's first place; the saves' sidecars (items waiting, the bench, a held Dias). No change to
+the icon, the version resource's layout, Esc, or the path handling, so those get a glance only.
+
+Seeds (generate on the Windows machine, `Generate.py` or the Launcher, each from its own YAML):
+- **hell**: `world_mode: hub`, `hub_start: fun_city`, `story_route: claude`, `encounter_rate: 0`,
+  `killer_move_checks: true` (disc 2 needed: hub mode asks for it at New Game).
+- **ordinary**: the template as it is (story mode).
+- **bench**: `world_mode: open_world`, `character_items: true`, `story_route: claude`,
+  `starting_character: ashton`, and `start_inventory:` `{Rena: 1, Celine: 1, Bowman: 1, Dias: 1,
+  Precis: 1, Leon: 1, Opera: 1, Ernest: 1, Noel: 1, Chisato: 1}` (all 12 at once: 8 in the party,
+  4 on the bench). Its `.apso2` says `"version": 4` and `"bench": true`.
+
+1. **The version.** `shattered-stars.exe --version` / `setup.exe --version`: "Shattered Stars
+   0.02.51" / "Shattered Stars Setup 0.02.51"; setup's header "Setup · v0.02.51"; Explorer →
+   Properties → Details on both `.exe`s: version 0.02.51 (file version 0.2.51.0), "DreamGlyph
+   Studios", no "POSIX WinThreads".
+2. **Setup's Archipelago page, hell seed:** Browse to the hell seed's `AP_<seed>.zip`: under the
+   seed's line the warning "Hell Seed: no random battles. Killer-move levels and learn points are
+   trained in the Fun City arena, which is free on this seed. Expect a very long grind." Save &
+   Play: `%APPDATA%\ShatteredStars\shattered-stars.log` holds the same line with the seed's `[ap]`
+   lines. In the game (New Game, Fun City): at the arena desk, **Register.** says "An entry fee of
+   0 FOL" and your Fol stays as it was; a fight there pays its EXP and Fol. Optional: walk out to the world map: no random battle.
+3. **Setup's Archipelago page, ordinary seed:** Browse to the ordinary seed: the seed's line and no
+   warning; after a run the log has no "Hell Seed" line. Switch back and forth between the two
+   seeds: the warning comes and goes with the seed.
+4. **The bench seed, New Game:** after the opening, at the first free play everyone arrives:
+   Ashton in the party's first place (the one you control in battle, first in the camp menu's
+   member list), Claude second; six more fill the 8; four go to the bench (one banner each).
+5. **Party Order's flip:** camp menu → Party Order: L1 / R1 (keyboard: as bound) flips the
+   right-hand column between the reserve and the bench (Opera / Ernest / Noel / Chisato there).
+   Pick a reserve member, flip, pick a benched one: they swap (the first pick stays held across the
+   flip). Picking Claude and then a bench place is refused. **Tactics** flips the same way. A
+   benched member's Equipment / Skills / Status pages open.
+6. **Save and load with a bench:** save (world map or a save point) to the seed's card; quit
+   (Esc → Quit); start again and Continue: the load works, and Party Order shows the same 8 and the
+   same bench, in the same order. In `%APPDATA%\ShatteredStars\archipelago\<seed>_<slot>\` the
+   save's `memcard1.slotNN.ap.json` has `"version": 3` and a `"bench"` list. The log's
+   "[ap] loaded ..." line ends with ", bench: " and the four benched members.
+7. **A glance at the rest** (unchanged since the 0.02.50 RC2 pass, which passed): Esc opens "Quit
+   Shattered Stars?" (Keep playing / Quit); the gold-star icon on both `.exe`s, the title bars and
+   the taskbar; the bundle unpacked into "…\Shattered Stars Ä\" starts and saves; a
+   `--memcard1 "…\Test Ä 日本\card.mcd"` run doesn't crash.
+8. Optional, with a toolchain: `ss_tests.exe` / `ss_game_tests.exe` (the RC ran them under Wine:
+   section 11).
