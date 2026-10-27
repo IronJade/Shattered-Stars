@@ -2536,3 +2536,194 @@ TEST(ap_skillsanity_checks) {
   set_flag(sg, 705, false);
   ap::stop();
 }
+
+// ---- A full inventory never holds up the give queue [queuebypass agent] -----------------------
+// (docs/ap/seed_format.md "The save sidecar"; the user, 2026-10-27: "The ability to bypass a "full"
+// item slot and continue to recieve items is a mandatory fix.") An item whose kind is full (20 at
+// most) is set aside with one banner; the items behind it (the server's too) go on; it is given
+// once there is room, the set-aside ones in the order they came; a save and a load keep it owed
+// (the sidecar's `pending`), never given twice; a count that fits in part gives what fits.
+
+namespace {
+const char* kFullSeed = R"seed({
+  "format": "apso2", "version": 1, "seed": "full-1", "slot": {"name": "Claude", "id": 1},
+  "items": {"80001": {"name": "Blackberries", "kind": "item", "game_id": 756},
+            "80002": {"name": "100 Fol", "kind": "fol", "amount": 100},
+            "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3}},
+  "locations": [
+    {"id": 3001, "name": "reward 1", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 756, "name": "Blackberries"}},
+    {"id": 3002, "name": "reward 2", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 224, "count": 5, "name": "Lavender"}}
+  ]})seed";
+
+int held(const ScratchGame& sg, int item) {
+  const int i = field::inventory_find(sg.g.inventory, item);
+  return i < 0 ? 0 : sg.inv[static_cast<size_t>(i) * 2 + 1] >> 2 & 0x1F;
+}
+void use_one(ScratchGame& sg, int item) {
+  const int i = field::inventory_find(sg.g.inventory, item);
+  CHECK(i >= 0);
+  if (i >= 0) field::inventory_remove_at(sg.g.inventory, i, 1);
+}
+// Free play's next give: its banners as expected (else both printed).
+bool step_is(const std::string& want) {
+  const std::string got = ap::give_free_play_step();
+  if (got != want) std::fprintf(stderr, "  give step: \"%s\", expected \"%s\"\n", got.c_str(), want.c_str());
+  return got == want;
+}
+ap_net::Event server_items(std::vector<int64_t> ids) {
+  ap_net::Event e;
+  e.kind = ap_net::Event::kItems;
+  for (size_t i = 0; i < ids.size(); ++i) e.items.push_back({ids[i], 100 + static_cast<int64_t>(i), 2, 0, static_cast<int>(i)});
+  return e;
+}
+}  // namespace
+
+TEST(ap_full_inventory) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kFullSeed, &s, &error));
+  ap::start_with(s);
+  std::vector<u8> save(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 7 + 3);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+  const fs::path dir = scratch("full");
+  const std::string card = (dir / "memcard1.mcd").string();
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  auto connect = [&] {
+    ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+    ap_net::Event c;
+    c.kind = ap_net::Event::kConnected;
+    c.seed_name = "full-1";
+    events.push_back(c);
+    events.push_back(server_items({80002, 80001}));  // the server: 100 Fol, then Blackberries
+    ap::vblank();
+  };
+
+  // 20 Blackberries held. Received: a Blackberry and a key from Bob (the console's queue), then
+  // the server's 100 Fol and a Blackberry from Alice. The key and the Fol arrive; both Blackberries
+  // wait, one banner for them.
+  field::inventory_add(sg.g.inventory, 756, 20, 1);
+  CHECK(ap::receive_by_name_or_id("Blackberries", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("key:3", "Bob", &error));
+  connect();
+  CHECK(ap::connected() && ap::pending_count() == 4);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Received Hilton Pass from Bob"));
+  CHECK(ap::has_key(3));
+  CHECK(step_is("Received 100 Fol from Alice"));
+  CHECK(sg.fol() == 100 && ap::state().received_index == 1);
+  CHECK(step_is(""));  // (the server's Blackberry: set aside, no second banner)
+  CHECK(ap::state().received_index == 2 && ap::pending_count() == 2 && held(sg, 756) == 20);
+  CHECK(step_is(""));  // (nothing more: no retry banner)
+  CHECK(ap::status_text().find("inventory full, set aside: Blackberries, Blackberries") != std::string::npos);
+
+  // A save keeps both owed (the sidecar's `pending`, its usual guard); a new session loads them:
+  // set aside again at the first try (one banner), the server's list again gives nothing twice.
+  ap::on_saved(card, 0, save.data(), save.size());
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &back, &error) && back.pending.size() == 2 && back.received_index == 2);
+  CHECK(back.pending[0].item.game_id == 756 && back.pending[0].from == "Bob" && back.pending[0].location == -1);
+  CHECK(back.pending[1].item.game_id == 756 && back.pending[1].from == "Alice" && !back.pending[1].aside);
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 0);
+  connect();
+  CHECK(ap::pending_count() == 2 && ap::state().received_index == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is(""));
+  CHECK(step_is(""));
+  CHECK(sg.fol() == 100 && held(sg, 756) == 20);
+
+  // One Blackberry used: the first owed one arrives (its usual banner), the other waits on; another
+  // used: it arrives too. Nothing more.
+  use_one(sg, 756);
+  CHECK(step_is("Received Blackberries from Bob"));
+  CHECK(held(sg, 756) == 20 && ap::pending_count() == 1);
+  CHECK(step_is(""));
+  use_one(sg, 756);
+  CHECK(step_is("Received Blackberries from Alice"));
+  CHECK(held(sg, 756) == 20 && ap::pending_count() == 0 && sg.fol() == 100 && ap::state().received_index == 2);
+  CHECK(ap::status_text().find("set aside") == std::string::npos);
+  CHECK(step_is(""));
+
+  // A count that fits in part (a boss's 5 Lavender, 17 held): 3 go in, 2 wait (one banner each);
+  // the boss's Blackberry in front of it waits too. A save keeps the rest as the item itself.
+  ap::stop();
+  ap::start_with(s);
+  field::inventory_add(sg.g.inventory, 224, 17, 1);
+  ap::on_battle_exit(19, 0);
+  CHECK(ap::is_checked(3001) && ap::is_checked(3002) && ap::pending_count() == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Got 3 x Lavender / Inventory full: 2 x Lavender waiting"));
+  CHECK(held(sg, 224) == 20 && ap::pending_count() == 2);
+  ap::on_saved(card, 1, save.data(), save.size());
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 1), &back, &error) && back.pending.size() == 2);
+  CHECK(back.pending[0].location == 3001);
+  CHECK(back.pending[1].location == -1 && back.pending[1].item.game_id == 224 && back.pending[1].item.count == 2 &&
+        back.pending[1].found);
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Inventory full: 2 x Lavender waiting"));
+  use_one(sg, 224);
+  CHECK(step_is("Got Lavender"));  // (one fits; the other waits on, quietly)
+  CHECK(held(sg, 224) == 20 && ap::pending_count() == 2);
+  use_one(sg, 224);
+  use_one(sg, 756);
+  CHECK(step_is("Got Blackberries"));  // (the set-aside ones in order)
+  CHECK(step_is("Got Lavender"));
+  CHECK(held(sg, 224) == 20 && held(sg, 756) == 20 && ap::pending_count() == 0);
+
+  // Everything given: the sidecar as before (version 2, no `pending`).
+  ap::on_saved(card, 2, save.data(), save.size());
+  const std::string text = read_text(ap::sidecar_path(card, 2));
+  CHECK(text.find("\"version\": 2") != std::string::npos && text.find("\"pending") == std::string::npos);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+// A character item behind an item set aside: it is given and the member joins; a member waiting
+// to join (a Private Action) holds up no item either.
+TEST(ap_full_inventory_join) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1});
+  pg.at(18, 10, 0);
+  CHECK(ap::party_free_play_step().empty());  // (the start's items and Fol)
+  field::inventory_add(pg.sg.g.inventory, 21, 20, 1);
+  CHECK(ap::receive_by_name_or_id("Revival Card", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("Celine", "Alice", &error));
+  CHECK(step_is("Inventory full: Revival Card waiting"));
+  CHECK(step_is("Received Celine from Alice"));
+  CHECK(step_is("Celine joined the party"));
+  CHECK(pg.party() == "1,3" && ap::pending_count() == 1);
+  // Bowman received in a Private Action (script flag 2): his join waits, the Fol behind him comes.
+  CHECK(ap::receive_by_name_or_id("Bowman", "Alice", &error));
+  CHECK(ap::receive_by_name_or_id("5009000", "Bob", &error));
+  set_flag(pg.sg, 2, true);
+  CHECK(step_is("Received Bowman from Alice"));
+  const s32 fol = pg.sg.fol();
+  CHECK(step_is("Received 500 Fol from Bob"));
+  CHECK(pg.sg.fol() == fol + 500 && pg.party() == "1,3" && ap::state().characters_waiting.size() == 1);
+  set_flag(pg.sg, 2, false);
+  CHECK(step_is("Bowman joined the party"));
+  CHECK(pg.party() == "1,3,4" && ap::pending_count() == 1);
+  ap::stop();
+}

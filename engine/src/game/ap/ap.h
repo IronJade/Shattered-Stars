@@ -74,6 +74,9 @@ struct SaveState {
     std::string from;        // the sender ("": this player's own)
     bool found = false;      // "Got X" (an own item found) rather than "Received X"
     int64_t location = -1;   // the check whose own item it is (-1: none)
+    // [queuebypass agent] The running queue's only, never written: set aside, its kind full in
+    // the inventory; the items behind it go on, it is given once there is room.
+    bool aside = false;
   };
   std::vector<Give> pending;
   std::string pending_hash;
@@ -107,6 +110,15 @@ void receive(const ItemDef& item, const std::string& from);
 bool receive_by_name_or_id(const std::string& what, const std::string& from, std::string* error);
 size_t pending_count();                             // local and server items still to give
 void free_play_update();                            // the field's play state calls this
+// [queuebypass agent] An item the inventory has no room for (20 of a kind at most) never holds up
+// the queue: it is set aside with one banner ("Inventory full: Blackberries waiting"), the items
+// behind it (the server's too) go on, and it is given once there is room (checked at every free
+// play: after a menu, a shop, a battle; set-aside items in the order they came). A count that fits
+// in part gives what fits; the rest waits the same way. Free play's next give at once, as
+// free_play_update runs it once no banner shows (a received member's join, else the queue's first
+// item that can go in, else the server's next): the banners it queued, " / " between two ("": none).
+// Tests.
+std::string give_free_play_step();
 
 // Saves: the sidecar goes with the save; a load reads it (a new game starts fresh).
 void on_new_game();

@@ -533,6 +533,56 @@ check ap_shop_full "one sold (50 Fol) makes room" '\[debug\] map 26 \| state 0 .
 check ap_shop_full "and the Revival Card is given" '\[ap\] given Revival Card'
 check ap_shop_full "3 Lavenders held" '\[debug\] item 224: added 17$'
 check ap_shop_full "20 Revival Cards held" '\[debug\] item 21: added 0$'
+# A full inventory never holds up the give queue [queuebypass agent] (docs/ap/seed_format.md "The
+# save sidecar"): 20 Revival Cards held, then a Revival Card, a key and 100 Fol received from Bob
+# (the console's queue). The card is set aside with one banner, the key and the Fol behind it
+# come; on the second visit Hearn buys one card back, which makes room, and the owed card is given.
+# Saved with the card set aside, the sidecar keeps it owed; a new session loads it, sets it aside
+# again, and the same sale gives it there, once.
+cat >"$WORK/aside.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-aside", "slot": {"name": "Claude", "id": 1},
+ "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21},
+           "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3},
+           "5009100": {"name": "100 Fol", "kind": "fol", "amount": 100}},
+ "locations": []}
+SEED
+ASIDE_GIVES="60:item 21 20;100:ap_give 5000021 Bob;110:ap_give 5300003 Bob;120:ap_give 5009100 Bob"
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;$ASIDE_GIVES;900:ap_status;3450:where;3710:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 3800 --map 18 --input "$SHOP1,$SHOP2SELL" \
+  </dev/null >"$WORK/ap_aside_shop.log" 2>&1
+check ap_aside_shop "the card is set aside, one banner" '\[ap\] no room for Revival Card in the inventory: set aside, the queue goes on \(1 set aside\); banner "Inventory full: Revival Card waiting"'
+check ap_aside_shop "only the card waits before the sale" 'checks 0/0 \| received 0 \| waiting 1 \| offline'
+check ap_aside_shop "listed as set aside" '\[debug\]   inventory full, set aside: Revival Card$'
+check ap_aside_shop "one sold makes room: the card comes" '\[ap\] given Revival Card \(set aside until there was room\)'
+check ap_aside_shop "Fol 50000 + 100 - 1480 + 50" '\[debug\] map 26 \| state 0 .* Fol 48670 '
+check ap_aside_shop "20 Revival Cards held" '\[debug\] item 21: added 0$'
+if [ "$(grep -oE '^\[ap\] given (Hilton Pass|100 Fol|Revival Card)' "$WORK/ap_aside_shop.log" | tr '\n' ,)" = \
+     "[ap] given Hilton Pass,[ap] given 100 Fol,[ap] given Revival Card," ]; then
+  echo "PASS ap_aside_shop: the key and the Fol come before the card (the queue goes on)"
+else
+  echo "FAIL ap_aside_shop: the key and the Fol come before the card (the queue goes on)"; fail=1
+fi
+ASIDE_SAVE="1060:triangle,1066:none,1160:up,1166:none,1210:cross,1216:none,1310:cross,1316:none,1410:cross,1416:none,1510:cross,1516:none,1610:cross,1616:none"
+"${AP_RUN[@]}" SS_SAVE_ANYWHERE=1 SS_MEMCARD1="$WORK/aside.mcd" SS_DEBUG_INPUT="$ASIDE_GIVES;1750:ap_status" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 1800 --map 18 --input "$ASIDE_SAVE" \
+  </dev/null >"$WORK/ap_aside_save.log" 2>&1
+check ap_aside_save "saved with the card set aside" '\[ap\] saved .*aside\.slot01\.ap\.json'
+check ap_aside_save "the key and the Fol given before the save" '\[ap\] given 100 Fol$'
+if grep -q '"version": 3' "$WORK/aside.slot01.ap.json" && grep -q '"pending_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/aside.slot01.ap.json" \
+   && grep -q '"from": "Bob"' "$WORK/aside.slot01.ap.json" && grep -q '"game_id": 21' "$WORK/aside.slot01.ap.json"; then
+  echo "PASS ap_aside_save: the sidecar keeps the card owed (pending, version 3, pending_hash)"
+else
+  echo "FAIL ap_aside_save: the sidecar keeps the card owed (pending, version 3, pending_hash)"; fail=1
+fi
+"${AP_RUN[@]}" SS_LOAD_SAVE=0 SS_MEMCARD1="$WORK/aside.mcd" SS_DEBUG_INPUT="50:fol 50000;150:ap_status;3450:where;3710:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 3800 --input "$SHOP1,$SHOP2SELL" \
+  </dev/null >"$WORK/ap_aside_load.log" 2>&1
+check ap_aside_load "a new session loads it owed" '\[ap\] loaded .*aside\.slot01\.ap\.json: 0 checks, received index 0, 1 items waiting from the save'
+check ap_aside_load "set aside again, one banner" 'set aside, the queue goes on \(1 set aside\); banner "Inventory full: Revival Card waiting"'
+check ap_aside_load "the sale gives it" '\[ap\] given Revival Card \(set aside until there was room\)'
+check ap_aside_load "Fol 50000 - 1480 + 50" '\[debug\] map 26 \| state 0 .* Fol 48570 '
+check ap_aside_load "20 Revival Cards held" '\[debug\] item 21: added 0$'
+if [ "$(grep -c '^\[ap\] given ' "$WORK/ap_aside_load.log")" != 1 ]; then echo "FAIL ap_aside_load: more given than the owed card"; fail=1; fi
 # An order (shops 0x5a-0x5e: the APWorld makes none of them slots; a seed may): Hearn's B 0x6d 1
 # made the order shop 0x5a (map 26 word 0x21d), its Blueberry slot holds our own Blueberry. 20
 # Blueberries ordered: placing the order is the check (a Blueberry given at once); the courier

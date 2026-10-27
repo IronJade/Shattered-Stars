@@ -698,9 +698,10 @@ void spring_trap(Runtime& r, const ItemDef& it, std::string* note) {
   log("trap " + it.trap + ": " + *note);
 }
 
-// Gives an item of this game: false when it has to wait (a full inventory). 'note' (when
-// given) receives a trap's effect for its banner.
-bool give(const ItemDef& it, std::string* note = nullptr) {
+// Gives an item of this game: the copies that went in (an item's count, or fewer: 20 of a kind at
+// most; 0 when it has to wait), 1 for anything else. 'note' (when given) receives a trap's effect
+// for its banner. [queuebypass agent: was a bool, true when any copy went in]
+int give_some(const ItemDef& it, std::string* note = nullptr) {
   Runtime& r = rt();
   field::FieldGlobals& g = field::globals();
   if (it.kind == "fol") {
@@ -744,7 +745,39 @@ bool give(const ItemDef& it, std::string* note = nullptr) {
   if (it.kind != "item") return true;  // (nothing to give for another player's item)
   int added = 0;
   for (int i = 0; i < it.count; ++i) added += field::inventory_add(g.inventory, it.game_id, 1, 1) != 0;
-  return added > 0;
+  return added;
+}
+bool give(const ItemDef& it, std::string* note = nullptr) { return give_some(it, note) > 0; }
+
+// [queuebypass agent] The copies give_some gives of 'it' when everything fits.
+int whole_count(const ItemDef& it) { return it.kind == "item" ? it.count : 1; }
+
+// Copies of game item 'id' the inventory takes now (inventory_add's rule: 20 of a kind at most, a
+// new kind in an empty entry); read only.
+int inventory_room(int id) {
+  const u8* inv = field::globals().inventory;
+  if (inv == nullptr) return 0;
+  bool empty = false;
+  for (int i = 0; i < 0x400; ++i) {
+    const int e = inv[2 * i] | inv[2 * i + 1] << 8;
+    const int count = e >> 10 & 0x1F;
+    if (count == 0) {
+      empty = true;
+    } else if ((e & 0x3FF) == id) {
+      return std::max(0, 20 - count);
+    }
+  }
+  return empty ? 20 : 0;
+}
+
+// What of 'it' did not go in ('given' copies did): owed in the give queue, given in free play once
+// there is room. A location's item partly given is kept as the item itself (its count the rest).
+void owe_rest(Runtime& r, const ItemDef& it, int given, const std::string& from, bool found, int64_t location) {
+  const int whole = whole_count(it);
+  if (given >= whole) return;
+  Runtime::Pending p{it, from, found, given > 0 ? -1 : location};
+  if (p.item.kind == "item") p.item.count = whole - given;
+  r.pending.push_back(p);
 }
 
 // The received item's banner.
@@ -1288,7 +1321,8 @@ void give_start(Runtime& r) {
     log(std::string("starting character ") + character_name(r.seed.starting_character) +
         " is this game's hero: nobody joins, the hero leads");
   }
-  for (const ItemDef& it : r.seed.start_items) give(it);
+  // (What does not fit waits in the give queue [queuebypass agent].)
+  for (const ItemDef& it : r.seed.start_items) owe_rest(r, it, give_some(it), "", true, -1);
   if (r.seed.start_fol > 0) {
     ItemDef f;
     f.kind = "fol";
@@ -1300,6 +1334,86 @@ void give_start(Runtime& r) {
     if (flag >= 0 && flag < 0x170 * 8) g.script_flags[flag >> 3] = static_cast<u8>(g.script_flags[flag >> 3] | 1 << (flag & 7));
   if (!r.seed.start_items.empty() || r.seed.start_fol > 0) log("starting inventory given");
   skills_new_game();  // skillsanity: the heroes' moves [skillsanity2]
+}
+
+std::string full_text(const ItemDef& it);  // (below, with the banners' width)
+int banner_text_width(const std::string& ascii);
+
+// [queuebypass agent] Sets aside queue entry 'p', which the inventory has no room for: it stays
+// owed, in its place among the others set aside. One banner, and only for the first of its kind
+// waiting (more Blackberries while some wait: none).
+void set_aside(Runtime& r, Runtime::Pending& p) {
+  const bool first = !p.aside;
+  p.aside = true;
+  size_t aside = 0;
+  bool same = false;
+  for (const Runtime::Pending& q : r.pending) {
+    aside += q.aside;
+    if (&q != &p && q.aside && q.item.kind == p.item.kind && q.item.game_id == p.item.game_id) same = true;
+  }
+  const std::string banner = first && !same ? full_text(p.item) : std::string();
+  log("no room for " + describe(p.item) + " in the inventory: set aside, the queue goes on (" + std::to_string(aside) +
+      " set aside)" + (banner.empty() ? "" : "; banner \"" + banner + "\" " + std::to_string(banner_text_width(banner)) + " px"));
+  if (!banner.empty()) queue_notice(banner);
+}
+
+// [queuebypass agent] Free play's next item (one per banner): the give queue's first entry that
+// goes in, an entry set aside passed over while its kind is full (checked here, read only, at
+// every free play: a menu closed, an item used, sold or made, a battle over all come back to it);
+// else the server's next (received_index). An item with no room is set aside (set_aside) and the
+// queue goes on; a server item then joins the queue, set aside with its sender, and
+// received_index moves on (the sidecar's `pending` keeps it: never given twice). A count that
+// fits in part gives what fits, the rest waits the same way. True: something given or set aside.
+bool give_next(Runtime& r) {
+  for (auto at = r.pending.begin(); at != r.pending.end(); ++at) {
+    if (at->aside && (at->item.kind != "item" || inventory_room(at->item.game_id) == 0)) continue;
+    Runtime::Pending& p = *at;
+    std::string note;
+    const int given = give_some(p.item, &note);
+    const int whole = whole_count(p.item);
+    if (given >= whole) {
+      const Runtime::Pending done = p;
+      r.pending.erase(at);
+      log("given " + describe(done.item) + (done.aside ? " (set aside until there was room)" : ""));
+      queue_notice(received_text(done.item, done.from, done.found, note));
+      return true;
+    }
+    if (given > 0) {
+      ItemDef part = p.item;
+      part.count = given;
+      log("given " + describe(part) + " of " + describe(p.item));
+      queue_notice(received_text(part, p.from, p.found, note));
+      p.item.count = whole - given;  // (the rest: kept as the item itself)
+      p.location = -1;
+      set_aside(r, p);
+      return true;
+    }
+    if (p.aside) continue;  // (room said, none taken: waits on, quietly)
+    set_aside(r, p);
+    return true;
+  }
+  if (static_cast<size_t>(r.state.received_index) >= r.net_items.size()) return false;
+  const size_t i = static_cast<size_t>(r.state.received_index);
+  const ItemDef& it = r.net_items[i];
+  std::string note;
+  const int given = give_some(it, &note);
+  ++r.state.received_index;
+  const bool banner = it.kind == "item" || it.kind == "fol" || it.kind == "character" || it.kind == "trap" || it.kind == "key";
+  if (given >= whole_count(it)) {
+    log("given " + describe(it) + " (server item " + std::to_string(i) + ")");
+    if (banner) queue_notice(received_text(it, r.net_from[i], false, note));
+    return true;
+  }
+  ItemDef part = it;
+  part.count = given;
+  if (given > 0) {
+    log("given " + describe(part) + " of " + describe(it) + " (server item " + std::to_string(i) + ")");
+    queue_notice(received_text(part, r.net_from[i], false, note));
+  }
+  log("server item " + std::to_string(i) + " waits in the give queue");
+  owe_rest(r, it, given, r.net_from[i], false, -1);
+  set_aside(r, r.pending.back());
+  return true;
 }
 
 }  // namespace
@@ -1352,8 +1466,10 @@ void free_play_update() {
   // Placeholder messages that no window showed: a banner each instead.
   if (runtime::Runtime::get().vblanks() != r.override_vblank) flush_override_lines(r);
   // One thing per banner: an ambush (once its banner has gone), a received character
-  // joining, then items: local ones first (the console, boss rewards), then the server's in
-  // index order (received_index: the next one this save has not had).
+  // joining (one waiting for room or a Private Action's end holds nothing up), then items:
+  // local ones first (the console, boss rewards), then the server's in index order
+  // (received_index: the next one this save has not had); an item the inventory has no room
+  // for is set aside and the rest go on (give_next) [queuebypass agent].
   if (r.notice_text.empty() && r.notices.empty()) {
     if (r.state.ambushes > 0 && start_ambush()) {
       --r.state.ambushes;
@@ -1361,31 +1477,25 @@ void free_play_update() {
     }
     if (const std::string joined = join_waiting(r); !joined.empty()) {
       queue_notice(joined);
-    } else if (!r.pending.empty()) {
-      const Runtime::Pending p = r.pending.front();
-      std::string note;
-      if (give(p.item, &note)) {
-        r.pending.pop_front();
-        log("given " + describe(p.item));
-        queue_notice(received_text(p.item, p.from, p.found, note));
-      } else {
-        runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
-      }
-    } else if (static_cast<size_t>(r.state.received_index) < r.net_items.size()) {
-      const size_t i = static_cast<size_t>(r.state.received_index);
-      const ItemDef& it = r.net_items[i];
-      std::string note;
-      if (give(it, &note)) {
-        ++r.state.received_index;
-        log("given " + describe(it) + " (server item " + std::to_string(i) + ")");
-        if (it.kind == "item" || it.kind == "fol" || it.kind == "character" || it.kind == "trap" || it.kind == "key")
-          queue_notice(received_text(it, r.net_from[i], false, note));
-      } else {
-        runtime::Runtime::get().log_once("ap-inventory-full", "[ap] the inventory is full; received items wait");
-      }
+    } else {
+      give_next(r);
     }
   }
   notice_update(true);
+}
+
+std::string give_free_play_step() {
+  Runtime& r = rt();
+  if (!r.on) return "";
+  const size_t before = r.notices.size();
+  if (const std::string joined = join_waiting(r); !joined.empty()) {
+    queue_notice(joined);
+  } else {
+    give_next(r);
+  }
+  std::string out;
+  for (size_t i = before; i < r.notices.size(); ++i) out += (out.empty() ? "" : " / ") + r.notices[i];
+  return out;
 }
 
 void on_new_game() {
@@ -1631,9 +1741,10 @@ void placeholder_hit(int64_t value, size_t index) {
   if (p.own) {
     // Our own item: given whenever the game reaches the give (the game's own flags keep a
     // chest or a gift from repeating, as with its original item).
-    if (!give(p.item)) {
-      r.pending.push_back({p.item, "", true, l.id});  // (inventory full: given later)
-      log("the inventory is full; " + describe(p.item) + " waits");
+    // (Inventory full: given later; what fits of a count goes in now [queuebypass agent].)
+    if (const int given = give_some(p.item); given < whole_count(p.item)) {
+      owe_rest(r, p.item, given, "", true, l.id);
+      log("the inventory is full; " + describe(r.pending.back().item) + " waits");
     }
     text = "Got " + describe(p.item) + ".";
   } else {
@@ -2238,6 +2349,14 @@ int banner_text_width(const std::string& ascii) {
   return width;
 }
 
+// [queuebypass agent] The banner of an item set aside (set_aside): the first that fits the banner.
+std::string full_text(const ItemDef& it) {
+  const std::string what = describe(it);
+  for (const std::string& text : {"Inventory full: " + what + " waiting", what + " waits for room", "No room for " + what})
+    if (banner_text_width(text) <= kBannerTextMax) return text;
+  return "Inventory full: an item waits";
+}
+
 // The banner names each missing key ("Salva Pass needed", "Eluria Pass needed to sail"), one
 // at a time, with the door's purpose (or 'purpose', when given) when it fits the banner; a key's
 // notice already waiting is not queued again.
@@ -2673,11 +2792,14 @@ bool on_shop_buy(int shop, int index, int item, int count) {
   const Location& l = r.seed.locations[r.by_shop_slot.at(shop << 8 | index)];
   record_check(l.id, true);  // (another player's item: "Sent X to Y")
   if (l.item.own) {
-    if (give(l.item.item)) {
-      queue_notice("Got " + describe(l.item.item));
-    } else {
-      r.pending.push_back({l.item.item, "", true, l.id});  // (the inventory is full: given later)
-      log("the inventory is full; " + describe(l.item.item) + " waits");
+    // (The inventory full: given later; what fits of a count goes in now [queuebypass agent].)
+    const int given = give_some(l.item.item);
+    ItemDef part = l.item.item;
+    if (part.kind == "item") part.count = given;
+    if (given > 0) queue_notice("Got " + describe(part));
+    if (given < whole_count(l.item.item)) {
+      owe_rest(r, l.item.item, given, "", true, l.id);
+      log("the inventory is full; " + describe(r.pending.back().item) + " waits");
     }
   }
   log("shop " + std::to_string(shop) + " entry " + std::to_string(index) + " (item " + std::to_string(item) +
@@ -2795,6 +2917,10 @@ std::string status_text() {
     }
   }
   if (r.state.ambushes > 0) out += "\n  ambushes waiting " + std::to_string(r.state.ambushes);
+  std::string aside;  // [queuebypass agent] the queue's items waiting for room
+  for (const Runtime::Pending& p : r.pending)
+    if (p.aside) aside += (aside.empty() ? "" : ", ") + describe(p.item);
+  if (!aside.empty()) out += "\n  inventory full, set aside: " + aside;
   if (sd.open_world || !sd.doors.empty() || sd.shuffle_shops != 0) {
     std::snprintf(buf, sizeof buf, "\n  world %s | Expel teleporter %s | doors %zu (%zu ignored) | shops %s | keys",
                   sd.open_world ? "open" : sd.hub ? "hub" : "story", sd.expel_teleporter ? "on" : "off", sd.doors.size(),
