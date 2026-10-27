@@ -26,6 +26,7 @@
 """
 from BaseClasses import ItemClassification, LocationProgressType
 
+from . import hell
 from .data import GUILD_PLACES, HUB_MAPS, ITEM_BASE, LOCATIONS
 from .skills import EXTRA_MOVES, FLOAT, FLOAT_PRICE, GUILD_TOWNS, LEARN, SKILL_SETS, SKILLS, SPECIALTIES, \
     STARTING_SKILLS, SUPER_SPECIALTIES
@@ -286,7 +287,9 @@ def iseria_queen_need(world):
 
 
 # ---- Progression at guild checks and learn points (the user, 2026-10-27; docs/ap/apworld.md
-# "Skillsanity", "Logic"). Both need battles: with encounter_rate 0 neither holds progression.
+# "Skillsanity", "Logic"). Both need battles: with encounter_rate 0 neither holds progression,
+# except on a hell seed (hell.py), whose free Fun City arena pays the EXP and the Fol: there both
+# count from the arena (hell.arena_need, hell.arena_way).
 # The Fol a guild set costs: random battles pay it (Earth, fol_multiplier 1, the floor; the story's
 # chests and Fol gifts are shuffled, so they may hold anything). Mean Fol a battle (docs/ap/
 # battles.json's enemy Fol over field.json's encounter tables): Expel's world map ~460 (120-780),
@@ -333,19 +336,27 @@ def guild_rule(world, row):
     only through the places of that class (never through one that can't hold it), each with the
     set's Fol (fol_mode). Story mode: a place the late proof reached (outside Expel with
     expel_progression off); hub mode: one the hub proof reached in every game the player may play,
-    open from the start (towns). None with encounter_rate 0: the Fol comes from battles."""
+    open from the start (towns). None with encounter_rate 0: the Fol comes from battles; but on a
+    hell seed the free Fun City arena pays it (its fights pay their enemies' Fol: hell.py), so a
+    set counts from the arena, whatever its price: story mode from the disc switch, open world
+    through each of its places' ways combined with the arena's (hell.arena_way; an Expel place's
+    own early way closes before the arena opens), hub mode from the start."""
     from .items import EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN
-    from .rules import PROGRESSION_RANK, open_world_access, open_world_progression, place_row, proven_late
+    from .rules import PROGRESSION_RANK, in_expel, open_world_access, open_world_progression, place_row, \
+        proven_late
     o = world.options
     side = {0: None, 1: "claude", 2: "rena"}[o.story_route.value]
     games = ("claude", "rena") if side is None else (side,)
     dear = SKILL_SETS[row["set"]][1] >= DEAR_PRICE
     expel = bool(o.expel_progression)
     battles = o.encounter_rate.value > 0
+    arena = hell.is_hell_seed(o)        # [hellseed] the Fol from the free arena
     places = [GUILD_PLACES[m] for m in row["guild_maps"]]
     if getattr(world, "hub", False):
         ok = any(all(m in HUB_MAPS[g] for g in games for m in p["maps"]) and (expel or p["region"] != "Expel")
                  for p in places)
+        if arena:
+            return ("any" if ok else "none"), [(None, ())]
         return ("any" if ok and battles else "none"), [(EVENT_FIENAL_OPEN if dear else None, ())]
     by_class = {}
     for p in places:
@@ -353,13 +364,20 @@ def guild_rule(world, row):
         if world.open_world:
             teleporter = bool(o.expel_teleporter)
             cls = open_world_progression(pr, side, teleporter, expel)
-            ways = [fol_mode(m, dear) for m in open_world_access(pr, side, teleporter)]
+            if arena:
+                ways = [hell.arena_way(world, m) for m in open_world_access(pr, side, teleporter)
+                        if not (in_expel(pr) and hell.early_way(m))]
+            else:
+                ways = [fol_mode(m, dear) for m in open_world_access(pr, side, teleporter)]
         else:
             cls = "any" if proven_late(pr, side) and (expel or p["region"] != "Expel") else "none"
-            ways = [(EVENT_ENERGY_NEDE if dear or p["region"] != "Expel" else None, ())]
+            ways = [(EVENT_ENERGY_NEDE if arena or dear or p["region"] != "Expel" else None, ())]
         found = by_class.setdefault(cls, [])
         found += [w for w in ways if w not in found]
-    best = max(by_class, key=PROGRESSION_RANK.index) if battles else "none"
+    # (A hell seed's open world drops an Expel place's early way; every set has a guild on Energy
+    # Nede, so some way is always left.)
+    by_class = {cls: found for cls, found in by_class.items() if found}
+    best = max(by_class, key=PROGRESSION_RANK.index) if battles or arena else "none"
     if best == "none":
         ways = []
         for found in by_class.values():
@@ -383,14 +401,18 @@ def learn_rule(world, row, kind):
         return False, [], None
     who, early = row["character"], row["level"] <= EARLY_LEVEL
     party = world.party_info
-    if hub_mode:
+    if hell.is_hell_seed(o):
+        # [hellseed] every level from the free Fun City arena (its EXP); in open world it opens
+        # after Noel's house (STORY_JOINS: stage 15 < TELEPORTER_STAGE 16), so that need is in it.
+        need = hell.arena_need(world)
+    elif hub_mode:
         need = [] if early else [EVENT_FIENAL_OPEN]
     else:
         need = [EVENT_ENERGY_NEDE if early else EVENT_FINAL_SAVE_POINT]
         if world.open_world and early and who in STORY_JOINS and party.rules == "story" and who != party.start:
             need.append(stage_event(STORY_JOINS[who]))
     status = fighter_status(who, party)
-    prog = o.encounter_rate.value > 0 and status in ("sure", "item") and kind != LocationProgressType.EXCLUDED
+    prog = hell.trained(o) and status in ("sure", "item") and kind != LocationProgressType.EXCLUDED
     if prog and status == "item":
         need.append(who)        # the character item, then progression (learn_characters)
     return prog, need, None
@@ -399,7 +421,7 @@ def learn_rule(world, row, kind):
 def learn_characters(world):
     """generate_early: the members who join by their item and have a learn point that may hold
     progression: their items are progression (the learn point needs it)."""
-    if not modes(world.options)[1] or world.options.encounter_rate.value == 0:
+    if not modes(world.options)[1] or not hell.trained(world.options):
         return set()
     from .locations import fighter_status
     return {row["character"] for row, kind in world.chosen

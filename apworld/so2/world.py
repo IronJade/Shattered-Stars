@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hub, items, locations, regions, rules, skillsanity
+from . import hell, hub, items, locations, regions, rules, skillsanity
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -378,6 +378,10 @@ class SO2World(World):
             "party_rules": p.rules,
             "apworld_version": APWORLD_VERSION,
         }
+        if hell.is_hell_seed(o):
+            # [hellseed] only on a hell seed (absent: false), so every other seed reads as before:
+            # the port's setup and log warn the player; trackers may show it.
+            data["hell_seed"] = True
         if self.hub:
             # Hub mode (seed_format.md "Hub"; reference: the port reads the `hub` block and the
             # doors). Characters are always items (D7).
@@ -410,6 +414,8 @@ class SO2World(World):
                                  "name": item.name, "ap_id": item.code, "classification": cls}
             locs.append(entry)
         patches = placement_patches(locs)
+        if hell.is_hell_seed(self.options):
+            patches.append(hell.FEE_PATCH)     # [hellseed] the Fun City arena's fee waived (hell.py)
         for entry in locs:
             del entry["sites"]
         # The port gives a received item from this table, so it lists every item of this

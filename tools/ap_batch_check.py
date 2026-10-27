@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """ap_batch_check.py OUTDIR: the release workflow's checker (tools/ap_batch.sh; docs/ap/apworld.md
 "Testing"). Checks every .apso2 under OUTDIR/<seed>/ (shape, ids, patches, where progression
-went, the party, drops, crafts, killer moves, skillsanity, the goals and the version rule; hub
+went, the party, drops, crafts, killer moves, skillsanity, the goals, the version rule and the
+hell seed's patch line and `hell_seed` [hellseed]; hub
 seeds through check_hub_file: the hub block, the chambers, the dungeon doors, the Fienal gate,
 what the hub reaches) and prints a summary: "N seeds files, M with errors; ...", then the option
 kinds seen. Run with the AP venv from the Archipelago checkout that has worlds/so2 (it imports
@@ -30,10 +31,38 @@ ROW = {r["id"]: r for r in ALL_ROWS}
 from worlds.so2 import skillsanity as SK  # noqa: E402  [skillsanity2]
 
 
+# [hellseed] The hell seed (docs/ap/apworld.md "The hell seed"): encounter_rate 0 with killer-move
+# checks or skillsanity's learn points (special_only, insanity). The Fun City arena (free on it: map
+# 297's fee word patched to 0) trains: killer-move levels, learn points and guild checks may hold
+# progression as with battles. Worked out here from the options, not from the world's code.
+HELL_FEE_PATCH = "script 297 0x177f 0x120007d0 0x12000000"
+
+
+def hell_seed(o):
+    return o["encounter_rate"] == 0 and bool(o["killer_move_checks"] or
+                                             o.get("skillsanity", "none") in ("special_only", "insanity"))
+
+
+def trained(o):
+    """Battles to train in: random ones, or a hell seed's arena."""
+    return o["encounter_rate"] > 0 or hell_seed(o)
+
+
+def check_hell(s, errs):
+    """[hellseed] The fee's patch line and `hell_seed: true` on a hell seed, neither on any other."""
+    o = s["options"]
+    want = hell_seed(o)
+    if (HELL_FEE_PATCH in s["patches"]) != want:
+        errs.append(f"hell seed {want}: the arena fee's patch line {'missing' if want else 'present'}")
+    if o.get("hell_seed", False) is not want or (not want and "hell_seed" in o):
+        errs.append(f"hell seed {want}: options hell_seed {o.get('hell_seed')}")
+
+
 def sk_may_hold(row, s, it):
     """[skilllogic2] Whether a guild check or learn point may hold this progression item (the user,
     2026-10-27; docs/ap/apworld.md "Skillsanity"), worked out here from the options and data.py, not
-    from the world's code: nothing with encounter_rate 0 (no Fol, no levels); a learn point only at a
+    from the world's code: nothing with encounter_rate 0 (no Fol, no levels) unless a hell seed
+    (the free arena pays both: [hellseed]); a learn point only at a
     learn-table level of a member the logic counts on (sure: the heroes, the starting character, and
     Noel under the story's party rules; hub mode only a one-hero route's hero; or a member of the
     character-item pool); a guild check where one of its set's guilds could hold it as a chest on the
@@ -41,7 +70,7 @@ def sk_may_hold(row, s, it):
     story reaches before the El voyage that the voyage proof didn't, hub mode a guild whose map the
     hub proof reached in every game (outside Expel with expel_progression off)."""
     o = s["options"]
-    if o["encounter_rate"] == 0:
+    if not trained(o):
         return False
     side = None if o["story_route"] == "any" else o["story_route"]
     games = ("claude", "rena") if side is None else (side,)
@@ -347,7 +376,7 @@ def check_hub(s, errs, locs):
             mode = o["killer_move_progression"]
             heroes = ("Claude", "Rena") if side is None else (side.capitalize(),)
             sure = ({side.capitalize()} if side else set()) | {o["starting_character"]}
-            ok = o["encounter_rate"] > 0 and ((mode == "hero" and row["character"] in heroes)
+            ok = trained(o) and ((mode == "hero" and row["character"] in heroes)
                                               or (mode == "any" and (row["character"] in sure
                                                                      or row["character"] in o["characters"])))
         else:
@@ -470,6 +499,7 @@ def check(path):
     s = json.load(open(path))
     o = s["options"]
     check_skillsanity(s, errs)  # [skillsanity2]
+    check_hell(s, errs)         # [hellseed]
     if o["world_mode"] == "hub":
         return check_hub_file(s, errs)
     take_choices(o, errs, False)
@@ -552,7 +582,7 @@ def check(path):
                 ok = True   # check_skillsanity (sk_may_hold) [skilllogic2]
             elif row["type"] == "killer_move":
                 mode = o["killer_move_progression"]
-                ok = o["encounter_rate"] > 0 and (
+                ok = trained(o) and (
                     (mode == "hero" and row["character"] in (("Claude", "Rena") if side is None else (side.capitalize(),)))
                     or (mode == "any" and (row["character"] in members_sure or row["character"] in party)))
             else:

@@ -2,7 +2,7 @@
 guild checks, the learn points, the skill and move items, their logic and the shop prices."""
 from BaseClasses import CollectionState, ItemClassification, LocationProgressType
 
-from .. import skillsanity
+from .. import hell, skillsanity
 from ..items import EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, SO2Item
 from ..locations import ROW, fighter_status
 from ..skills import LEARN, SKILL_SETS
@@ -42,9 +42,10 @@ def may_hold(test, loc):
     "Skillsanity"): a guild check progression with battles (every set has a guild on Energy Nede
     that the late proof, or the hub proof, reached); a learn-table level of a member the logic
     counts on (sure, or joining by their item) with battles, unless EXCLUDED; the machines, the
-    cave's learn chests and Float never."""
+    cave's learn chests and Float never. "With battles": random battles, or on a hell seed the
+    free Fun City arena's (hell.trained) [hellseed]."""
     row = ROW[loc.name]
-    battles = test.world.options.encounter_rate.value > 0
+    battles = hell.trained(test.world.options)
     if row["type"] == "guild":
         return battles
     return (battles and row["how"] == "level" and loc.progress_type != LocationProgressType.EXCLUDED
@@ -55,10 +56,15 @@ def learn_need(test, row):
     """A learn-table level's needs by the design (skillsanity.learn_rule): the disc switch up to
     EARLY_LEVEL, else the Final Save Point (hub mode: nothing / Fienal open); open world under the
     story's party rules, Noel (not the start) early also Stage 15 (his house); a member who joins
-    by their item, the item when the level may hold progression."""
+    by their item, the item when the level may hold progression. A hell seed: every level from the
+    Fun City arena (story mode the disc switch, open world Stage 16 done and the Fun City Pass,
+    hub mode nothing) [hellseed]."""
     world = test.world
     early = row["level"] <= skillsanity.EARLY_LEVEL
-    if world.hub:
+    if hell.is_hell_seed(world.options):
+        need = {"story": [EVENT_ENERGY_NEDE], "open": ["Stage 16 done", "Fun City Pass"],
+                "hub": []}["hub" if world.hub else "open" if world.open_world else "story"]
+    elif world.hub:
         need = [] if early else [EVENT_FIENAL_OPEN]
     else:
         need = [EVENT_ENERGY_NEDE if early else EVENT_FINAL_SAVE_POINT]
@@ -132,7 +138,7 @@ class SkillsanityChecks:
                 for item in mine:
                     self.assertFalse(loc.can_fill(st, item, False), (loc.name, item.name))
         o = self.world.options
-        self.assertEqual(held > 0, any(skillsanity.modes(o)) and o.encounter_rate.value > 0)
+        self.assertEqual(held > 0, any(skillsanity.modes(o)) and hell.trained(o))
 
     def test_learn_level_needs(self):
         """Each learn-table level is reached with exactly learn_need's items and events (each one
@@ -448,9 +454,30 @@ class TestLearnHub(SO2TestBase, SkillsanityChecks):
 
 
 class TestSkillsanityNoEncounters(SO2TestBase, SkillsanityChecks):
-    """encounter_rate 0: no battles, so no Fol for a guild and no levels: neither holds
-    progression (may_hold)."""
+    """encounter_rate 0 with skillsanity's guild checks only (skills_only) and no killer-move checks:
+    not a hell seed (nothing needs levels or uses), no battles, so no Fol for a guild: no guild check
+    holds progression (may_hold), the arena's fee stays (check_seed)."""
+    options = {"skillsanity": "skills_only", "encounter_rate": 0, "cave_of_trials": True}
+
+    def test_not_hell(self):
+        self.assertFalse(hell.is_hell_seed(self.world.options))
+        self.assertFalse(hell.trained(self.world.options))
+
+
+class TestSkillsanityHellInsanity(SO2TestBase, SkillsanityChecks):
+    """encounter_rate 0 with skillsanity insanity (learn points): a hell seed (hell.py). Guild checks
+    and learn points count from the free Fun City arena (story mode: the disc switch) and may hold
+    progression (may_hold, learn_need)."""
     options = {"skillsanity": "insanity", "encounter_rate": 0, "cave_of_trials": True}
+
+    def test_hell(self):
+        self.assertTrue(hell.is_hell_seed(self.world.options))
+        empty = state_with(self, [])
+        switch = state_with(self, [EVENT_ENERGY_NEDE])
+        for name in guild_checks(self, CHEAP + DEAR):
+            with self.subTest(location=name):
+                self.assertFalse(self.can_reach_in(empty, name))
+                self.assertTrue(self.can_reach_in(switch, name))
 
 
 class TestSkillsanitySeed75(SO2TestBase, SkillsanityChecks):

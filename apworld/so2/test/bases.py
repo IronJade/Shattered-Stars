@@ -13,6 +13,7 @@ from BaseClasses import CollectionState, ItemClassification
 from test.bases import WorldTestBase
 
 from ..data import GOAL_ENCOUNTERS, ITEM_BASE
+from ..hell import FEE_PATCH, is_hell_seed
 from ..items import GAME, SO2Item
 from ..locations import ROW
 from ..patches import role_of_placeholder
@@ -157,7 +158,12 @@ def check_seed(test, seed):
             test.assertIn(str(test.world.item_name_to_id[item["name"]]), seed["items"])
         else:
             test.assertIn("ap_id", item)
-    test.assertEqual(len(seed["patches"]), sites)
+    # The placeholders' lines, and on a hell seed the arena fee's (hell.py) [hellseed].
+    hell_seed = is_hell_seed(test.world.options)
+    test.assertEqual(len(seed["patches"]), sites + hell_seed)
+    test.assertEqual(FEE_PATCH in seed["patches"], hell_seed)
+    test.assertEqual(seed["options"].get("hell_seed", False), hell_seed)
+    test.assertEqual("hell_seed" in seed["options"], hell_seed)     # (absent on every other seed)
     # Every item of this player's, wherever it was placed, is in the table the port gives from.
     for loc in test.multiworld.get_filled_locations():
         if loc.item.player == test.player and loc.item.code is not None:

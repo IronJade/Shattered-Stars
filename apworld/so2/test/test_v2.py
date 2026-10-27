@@ -317,6 +317,7 @@ class KillerChecks:
         self.check_killer_moves()
 
     def check_killer_moves(self):
+        from ..hell import arena_need, is_hell_seed, trained
         from ..items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT
         from ..locations import KILLER_ROWS, fighter_status
         from ..rules import KILLER_EARLY_LEVEL
@@ -330,16 +331,21 @@ class KillerChecks:
         for loc in locs:
             row = ROW[loc.name]
             status = fighter_status(row["character"], info)
+            # (encounter_rate 0 with killer_move_checks is a hell seed: the free arena trains.)
             self.assertEqual(loc.progress_type == LocationProgressType.EXCLUDED,
-                             status == "maybe" or o.encounter_rate.value == 0, loc.name)
+                             status == "maybe" or not trained(o), loc.name)
             mode = o.killer_move_progression.current_key
             ok = ((mode == "any" and status in ("sure", "item")) or
                   (mode == "hero" and row["character"] in info.story_members)) \
-                and o.encounter_rate.value > 0 and status != "maybe"
+                and trained(o) and status != "maybe"
             self.assertEqual(loc.can_fill(self.multiworld.state, other, False), ok, loc.name)
             held += ok
             state = CollectionState(self.multiworld)
-            stage = EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT
+            if is_hell_seed(o):     # [hellseed] every level from the arena (story mode: the disc switch)
+                self.assertEqual(arena_need(self.world), [EVENT_ENERGY_NEDE])
+                stage = EVENT_ENERGY_NEDE
+            else:
+                stage = EVENT_ENERGY_NEDE if row["learn_level"] <= KILLER_EARLY_LEVEL else EVENT_FINAL_SAVE_POINT
             self.assertFalse(loc.can_reach(state), loc.name)
             event = "Disc Switch (Eluria Tower)" if stage == EVENT_ENERGY_NEDE else "Final Save Point (Fienal 9F)"
             state.collect(self.world.get_location(event).item, True)
@@ -415,7 +421,18 @@ class TestKillerAnyItems(SO2TestBase, KillerChecks):
 
 
 class TestKillerNoEncounters(SO2TestBase, KillerChecks):
+    """encounter_rate 0 with killer_move_checks: a hell seed (hell.py, the user 2026-10-27). The
+    levels count from the free Fun City arena (story mode: the disc switch stands for it), so the
+    heroes' and Noel's may hold progression; the seed waives the arena's fee and says so."""
     options = {"killer_move_checks": True, "killer_move_progression": "any", "encounter_rate": 0}
 
-    def test_none(self):
-        self.assertEqual(self.check_killer_moves()[1], 0)
+    def test_hell(self):
+        from ..hell import FEE_PATCH, is_hell_seed
+        self.assertTrue(is_hell_seed(self.world.options))
+        locs, held = self.check_killer_moves()
+        self.assertEqual(held, len([loc for loc in locs if ROW[loc.name]["character"] in ("Claude", "Noel")]))
+        self.assertGreater(held, 0)
+        seed = self.world.seed_data()
+        self.assertIn(FEE_PATCH, seed["patches"])
+        self.assertIs(seed["options"]["hell_seed"], True)
+        self.assertIs(self.world.fill_slot_data()["hell_seed"], True)

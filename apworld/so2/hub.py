@@ -28,7 +28,7 @@ from .data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_LOCATIONS, HUB_MAPS, 
     HUB_STATE, LOCATIONS
 from .items import ALL_KEY_IDS, EVENT_FIENAL_OPEN, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_VICTORY, GAME, \
     HUB_KEY_NAME, HUB_KEYLESS, SO2Item
-from . import skillsanity
+from . import hell, skillsanity
 from .locations import ROW, SOFT_REASONS, SO2Location, choose_crafts, choose_killer_moves
 from .rules import FORCE_DROP_CHANCE, MIN_DROP_CHANCE, drop_chance, killer_rule
 
@@ -197,7 +197,7 @@ def choose(options, party):
     if options.craftsanity:
         out += choose_crafts(party)
     if options.killer_move_checks:
-        out += choose_killer_moves(party, options.encounter_rate.value)
+        out += choose_killer_moves(party, hell.trained(options))
     out += skillsanity.choose(options, party, hub_mode=True)    # [skillsanity2]
     return out
 
