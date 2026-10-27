@@ -365,6 +365,8 @@ check ap_guard_any "SS_AP_ANY_SAVE=1 (tests) loads it, logged" 'changed outside 
 # Archipelago phase 4 [world agent]: the open world. Map 17's door to Arlia (door 1116181,
 # routine 0x204c) needs key 1: walking in shows the banner and nothing transfers; once the key
 # comes (console), walking in again loads map 18. With a target, the same door leads to map 23.
+# [salvadrift agent] The shut door holds the hero on the step that entered its region (no walking
+# on through it: script_triggers.cpp ShutDoor); the key opens it at the next step in.
 # The Expel teleporter at chapter 40: the arena's old man (map 303, K25) sends the party to
 # Arlia in an open-world seed and only talks without one.
 cat >"$WORK/p4door.apso2" <<'SEED'
@@ -380,10 +382,10 @@ SEED
 printf '{"format": "apso2", "version": 1, "seed": "smoke-4s", "slot": {"name": "Claude", "id": 1}, "locations": []}\n' >"$WORK/p4story.apso2"
 sed 's/"smoke-4s"/"smoke-4t"/; s/"locations"/"options": {"world_mode": "open_world"}, "locations"/' "$WORK/p4story.apso2" >"$WORK/p4open.apso2"
 "${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=15 SS_DEBUG_INPUT="400:ap_give key:1 Bob" timeout 900 "$BIN" --headless --debug \
-  --ap-seed "$WORK/p4door.apso2" --frames 800 --map 17 --map-pos 110,0,-457 --input "100:right,200:none,600:left,700:none" \
+  --ap-seed "$WORK/p4door.apso2" --frames 800 --map 17 --map-pos 110,0,-457 --input "100:right,200:none,600:right,700:none" \
   </dev/null >"$WORK/ap_p4_door.log" 2>&1
 check ap_p4_door "the locked door does not transfer" '\[ap\] door 1116181 \(Arlia exit -> Arlia\): locked, needs Arlia Pass'
-check ap_p4_door "the leader walks on" '\[leader\] vblank 180 map 17 state 0 pos 1[6-9][0-9],0,-457 .* control 0 '
+check ap_p4_door "the leader stays at the door" '\[leader\] vblank 180 map 17 state 0 pos 13[0-9],0,-457 .* control 0 '
 check ap_p4_door "the key opens it" 'trigger 9 fires \(code word 2067\) at leader 5[01][0-9],0,11[0-9] at vblank 6[0-9][0-9]'
 check ap_p4_door "map 18 loads" 'field_load_map\(map=18 keep=1 flags=0\) at vblank 6[0-9][0-9]'
 if grep -q 'field_load_map(map=18 keep=1 flags=0) at vblank [1-5][0-9][0-9]$' "$WORK/ap_p4_door.log"; then echo "FAIL ap_p4_door: transferred while locked"; fail=1; fi
@@ -391,6 +393,22 @@ if grep -q 'field_load_map(map=18 keep=1 flags=0) at vblank [1-5][0-9][0-9]$' "$
   --map-pos 110,0,-457 --input "100:right,200:none" </dev/null >"$WORK/ap_p4_redirect.log" 2>&1
 check ap_p4_redirect "the door's target is the seed's" '\[ap\] door 1116181: map 18 \(230, 0, -133\) -> map 23 \(224, 0, 106\)'
 check ap_p4_redirect "map 23 loads" 'field_load_map\(map=23 keep=1'
+# [salvadrift agent] The hub's mansion door (Alen's room 53 with the bookcase moved, door 3480401,
+# routine 0x6c08: the ramp behind the bookcase down to Salva Drift 62). Without its key the hero
+# stays on the ramp at the region's edge (before the fix: on past the ramp's end into the dark, y
+# -98, out of sight); the key then opens it at the next step in, map 62 as before.
+cat >"$WORK/hubmansion.apso2" <<'SEED'
+{"format": "apso2", "version": 3, "seed": "smoke-hubmansion", "slot": {"name": "Hub", "id": 1}, "options": {"world_mode": "hub"},
+ "items": {"5300001": {"name": "Salva Drift Key", "kind": "key", "key": 1}}, "locations": [],
+ "doors": [{"id": 3480401, "key": 1, "routine": "0x6c08", "name": "Salva Drift (map 53 -> 62)"}],
+ "hub": {"lock": {"chapter": true, "step": true}}}
+SEED
+"${AP_RUN[@]}" SS_TRACE=1 SS_TRACE_LEADER=30 SS_DEBUG_INPUT="450:ap_give key:1 Bob" timeout 900 "$BIN" --headless --debug \
+  --ap-seed "$WORK/hubmansion.apso2" --frames 700 --map 53 --map-pos -30,0,-54 --input "100:up,600:none" \
+  </dev/null >"$WORK/ap_hub_mansion.log" 2>&1
+check ap_hub_mansion "refused without the key" '\[ap\] door 3480401 \(Salva Drift \(map 53 -> 62\)\): locked, needs Salva Drift Key'
+check ap_hub_mansion "the hero stays on the ramp" '\[leader\] vblank 420 map 53 state 0 pos -29,-(6[89]|70),-1(39|4[01]) '
+check ap_hub_mansion "the key opens it at the next step" 'field_load_map\(map=62 keep=1 flags=2\) at vblank 4[5-9][0-9]'
 for v in open story; do
   SS_DISC2="${SS_DISC2:-${SS_DISC1//Disc 1/Disc 2}}" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
     timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1

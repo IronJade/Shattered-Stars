@@ -244,6 +244,10 @@ void on_script_loaded(int map, const std::vector<u8>& script);
 // not received; a door with `keys` needs all of them: the El voyage's trigger). Nothing of it
 // runs; a banner names each missing key.
 bool door_blocked_at_trigger(int routine);
+// The same test without the banner or the log [salvadrift agent]: the field asks it every frame
+// the hero touches a region door_blocked_at_trigger refused (script_triggers.cpp ShutDoor: the
+// hero goes no further in); false once the door has opened.
+bool door_shut_at_trigger(int routine);
 // A map transfer (script ext 0x7d / 0xa4 / 0xda) at byte offset 'offset'; args = map,
 // transition, x, y, z, dir (as fetched). True: a locked door, the transfer is skipped. A seed
 // door with a target rewrites args (map, x, y, z, dir).

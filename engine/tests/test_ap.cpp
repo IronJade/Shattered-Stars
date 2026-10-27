@@ -1080,11 +1080,13 @@ TEST(ap_doors_and_keys) {
   ap::on_script_loaded(915, script_with_transfers({0x3C78}));
   CHECK(ap::door_blocked_at_trigger(0x3C6C));
   CHECK(!ap::door_blocked_at_trigger(0x3C18));  // (another routine)
+  // [salvadrift agent] The field's per-frame question (no banner): the same answer.
+  CHECK(ap::door_shut_at_trigger(0x3C6C) && !ap::door_shut_at_trigger(0x3C18));
   s32 args[7] = {43, 128, -1960, 0, 906, 315, 128};
   CHECK(ap::on_map_transfer(0x3C78, args));     // (reached another way: skipped too)
   // The key (a chest's placeholder): the door opens; its arguments stay the game's.
   CHECK(ap::on_give_item(1105) && ap::has_key(3) && ap::is_checked(9101));
-  CHECK(!ap::door_blocked_at_trigger(0x3C6C));
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::door_shut_at_trigger(0x3C6C));
   CHECK(!ap::on_map_transfer(0x3C78, args) && args[0] == 43 && args[2] == -1960);
   CHECK(ap::status_text().find("keys Salva Pass") != std::string::npos);
   // Map 17: a door with a target is sent there; a door on a word that is no transfer is ignored.
@@ -1105,12 +1107,13 @@ TEST(ap_doors_and_keys) {
   ap::start_with(s);
   CHECK(ap::seed_patch_lines().size() == s.patches.size());
   ap::on_script_loaded(909, script_with_transfers({0x3C78}));
-  CHECK(!ap::door_blocked_at_trigger(0x3C6C));
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::door_shut_at_trigger(0x3C6C));
   s32 d[7] = {43, 128, -1960, 0, 906, 315, 128};
   CHECK(!ap::on_map_transfer(0x3C78, d) && d[0] == 43);
   ap::stop();
   // No seed: nothing changes.
-  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) && !ap::on_shop_buy(1, 2, 224, 3));
+  CHECK(!ap::door_blocked_at_trigger(0x3C6C) && !ap::door_shut_at_trigger(0x3C6C) && !ap::on_map_transfer(0x3C78, d) &&
+        !ap::on_shop_buy(1, 2, 224, 3));
 }
 
 namespace {

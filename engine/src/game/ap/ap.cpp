@@ -2216,25 +2216,39 @@ void on_script_loaded(int map, const std::vector<u8>& script) {
   }
 }
 
-bool door_blocked_at_trigger(int routine_at) {
+namespace {
+
+// The seed door a trigger region's routine (byte offset 'routine_at' in the loaded script) keeps
+// shut, or nullptr: every seed door of that routine locked (a door of it open: the transfer
+// decides).
+const Door* door_shut_by(int routine_at) {
   Runtime& r = rt();
   // (Keys lock only in open world and the hub, v2 conditions in every mode: door_locked knows.)
-  if (!r.on || routine_at < 0) return false;
+  if (!r.on || routine_at < 0) return nullptr;
   const int routine = na_offset(r.loaded_map, routine_at);
-  if (routine < 0) return false;
+  if (routine < 0) return nullptr;
   const auto it = r.doors_by_script.find(r.script_map);
-  if (it == r.doors_by_script.end()) return false;
+  if (it == r.doors_by_script.end()) return nullptr;
   const Door* locked = nullptr;
   for (const size_t i : it->second) {
     const Door& d = r.seed.doors[i];
     if (d.routine != routine || r.bad_doors.count(d.id) != 0) continue;
-    if (!door_locked(d)) return false;  // (a door of this routine is open: the transfer decides)
+    if (!door_locked(d)) return nullptr;  // (a door of this routine is open: the transfer decides)
     locked = &d;
   }
+  return locked;
+}
+
+}  // namespace
+
+bool door_blocked_at_trigger(int routine_at) {
+  const Door* locked = door_shut_by(routine_at);
   if (locked == nullptr) return false;
   door_refused(*locked);
   return true;
 }
+
+bool door_shut_at_trigger(int routine_at) { return door_shut_by(routine_at) != nullptr; }
 
 bool on_map_transfer(int offset, s32* args) {
   Runtime& r = rt();

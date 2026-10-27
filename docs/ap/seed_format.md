@@ -567,7 +567,16 @@ built. No port change is needed.
   ext 0x76) is about to start a routine whose seed doors all need a missing key, the routine
   does not start: nothing of it runs (the world map's music fade included), the leader keeps
   the controls, the banner says "Salva Pass needed", and the region fires again only after the
-  leader has left it (the triggers' own last-trigger rule). A locked door reached another way
+  leader has left it (the triggers' own last-trigger rule). **On a field map the shut region
+  holds the leader** (2026-10-26, salvadrift; engine/src/game/field/script_triggers.cpp
+  `ShutDoor`): the leader gets no further in than the step that entered it (a step that ends
+  deeper along that step's line goes back; stepping back out or aside is free), the banner
+  comes once per approach (until the leader is 8 px from the region), and a door that opens
+  meanwhile (its key received) fires at the next step in. The original never lets anyone stand
+  in a door's region, and past some there is nothing to stand on: behind Alen's bookcase (map
+  53, door 3480401) the ramp ends in open space where a refused leader walked on into the dark,
+  past Salva's barricade (map 43) onto the cliff picture. World-map entrances lie on open land
+  and keep the old rule. A locked door reached another way
   (a talk handler, a scene) skips the transfer instruction itself. A door with `keys` is locked
   while any of them is missing, and the banner names each missing one in turn, with the door's
   `purpose` ("El Beach Pass needed to sail"); a key's banner already waiting is not queued
@@ -821,7 +830,8 @@ The top-level `goal` object:
 
   A door with `flags` / `won` is locked like a door with `keys` (the trigger does not start,
   the leader keeps the controls, the banner shows, the region fires again only after the
-  leader has left it) and must name its `routine`. **These conditions apply in story mode
+  leader has left it; on a field map the shut region holds the leader, see "Locked." above) and
+  must name its `routine`. **These conditions apply in story mode
   too** (area keys don't). A door may carry `keys` and conditions together; all must hold.
 - **The goal gate:** door **43978493** (map 671 -> 684, routine 0x3bec: the Final Save Point
   floor's way to the final corridor), so the banner shows where the player can turn back.
