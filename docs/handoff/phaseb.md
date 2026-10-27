@@ -20,9 +20,9 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 
 | Lane | Order | Agent | Log | State |
 |---|---|---|---|---|
-| World | B1 UT yaml-less | utworld | docs/handoff/utworld.md | started 2026-10-27 |
+| World | B1 UT yaml-less | utworld | docs/handoff/utworld.md | **done** 2026-10-27 (605368a, b35eadf, 12fe31d; world tests 783, test_ut 84, slow 320 rooms, general 379, batches 288/288 identical, real UT 20/20 points) |
 | Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
-| World | B2 Rule Builder | (after B1) | | queued |
+| World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | started 2026-10-27 |
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | started 2026-10-27: research + layout data first |
 | World | B3 logic export | (after B2) | | queued |
 | World | B4 PopTracker pack generator | (after B3; needs the map layout contract) | | queued |
@@ -72,3 +72,10 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
 - 2026-10-27: dskeys done (keys `so2_map_{team}_{slot}` {map[,x,z]} and `so2_story_{team}_{slot}`
   {chapter,step}; docs/ap/data_storage.md). Notes for later: ASan not run on the net change; a
   `--map` debug start begins at chapter 3 step 0. maprender started.
+- 2026-10-27: utworld done. Open for the user: 0.2.0 rooms with Skillsanity (or a 0.2.0 hell seed)
+  can't be reproduced (0.2.1 changed those rules) and are refused (ut.OLD_LOGIC); the user's own room
+  (~/.local/share/Archipelago/output, 0.2.0 hub + insanity) is one. Asked: keep refusing, or accept
+  with a warning (only if the rebuilt logic is always conservative). For B3: add `tracker` to
+  ut.NEW_KEYS; bump ut.LOGIC_VERSION with any logic change. For B7: release_checklist rows for
+  tools/ap_ut_check.py and SO2_SLOW_TESTS. Baseline trap: a `cp -as` farm's linked Generate.py imports
+  the live world (use real copies of top-level scripts). rulebuilder started.
