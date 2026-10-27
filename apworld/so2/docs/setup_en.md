@@ -114,7 +114,7 @@ room.
   `story_route` and `drops_as_checks` is now `enemy_dropsanity`. Archipelago ignores the old
   names and uses the defaults, so rename them in your YAML.
 - **"unsupported version 2 (this build reads 1)"** (or version 3) when choosing a seed. The seed
-  was made with version 0.2.0 of this world, which needs Shattered Stars 0.02.50 or newer:
+  was made with version 0.2.0 or later of this world, which needs Shattered Stars 0.02.50 or newer:
   update the port. Seeds from older versions of this world keep working on the newer port.
 - **Connection refused.** If the server turns down the connection — for example because the
   slot name or password doesn't match the room — the client reports the refusal rather than

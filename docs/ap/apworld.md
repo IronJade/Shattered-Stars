@@ -1185,6 +1185,33 @@ Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
   `options` (the new keys) and, in hub seeds, `hub.flags` without 700-711, except in the
   multiworlds where a slot has `cave_of_trials` (the renamed cave locations change the fill).
 
+Results (2026-10-26, 0.2.1: the North City and Noel's House passes at the start unless the
+teleporter and expel_progression are both on; docs/handoff/ncpfix.md):
+- The world's tests: 449 passed (30513 subtests; was 430 passed, 3 xfailed: the three
+  expectedFailures gone, the new mix `TestOpenWorldNoExpelProgressionNoBosses`); `python -m
+  unittest` agrees (449, OK). The slowest test 1.13 s (TestInsanityIseriaQueen::test_skill_items,
+  unchanged by this fix) at `-n 8` with the machine's load at ~25. AP's general tests: 379 passed
+  (117755 subtests). `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 502 passed (35824
+  subtests; was 483 passed, 3 xfailed).
+- Solo fills (open world, expel_progression off, the rest default; scratchpad/aptests/fillrate.py
+  and ncp_spots.py's copies in scratchpad/ncpfix): 0/100 FillError in each of 24 setups
+  (story_route any / claude / rena x teleporter on / off x boss_checks on / off x killer-move
+  progression off / on), 2400 fills; 0.2.0 failed 30/30 with the teleporter on and every one with
+  boss_checks off. The tightest key is now the Red Crystal Pass: 4 legal spots (3 with
+  boss_checks off; 13 / 12 with killer-move progression), then the Salva Pass's 7.
+- The release workflow, seeds 1-96: story_open and hub 96/96 each, `ap_batch_check.py` 0 errors
+  on 192 + 192 files; at 0.2.0's version string, 111 of the 192 seeds byte-identical to the
+  aptests baseline (every .apso2 and spoiler) and the 81 others exactly those with an open-world
+  SO2 player without both options on (96 such slots), each changed only by that player's added
+  start keys and the fill around them: options, locations and doors identical, that player's
+  keys / characters / skills / moves the base's minus the new start keys, only filler-kind items
+  otherwise moved, every other player's items the same. The new `solo_noexpel` set: 95/96, the
+  checker 0 errors on 95 files (0.2.0 + the North City Pass alone: 85/96, the 11 failures
+  open world with boss_checks off). Seed 75 fails another way, not the start keys': open world,
+  expel_progression, teleporter and boss_checks off, skillsanity special_only, killer moves for
+  the hero; 91 progression items (60 move items) and only 63 locations that may hold a move item
+  ("Not enough locations for progression items"; open to the user, docs/handoff/ncpfix.md).
+
 Results (2026-10-26, the tests to Archipelago's testing guide; docs/handoff/aptests.md; tests and
 tools only, no world change):
 - The world's tests: 430 passed, 3 xfailed (30148 subtests; was 380 passed, 29338): every old
@@ -1203,7 +1230,25 @@ tools only, no world change):
 
 ## Changes
 
-**0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
+**0.2.1** (2026-10-26, not released yet; docs/handoff/ncpfix.md, the user's decisions). Open world
+only; no new item, location, option or seed field, and the port's 0.02.50 plays its seeds.
+- *Fixed: open world with `expel_progression` or the teleporter off couldn't fill solo*
+  (docs/handoff/aptests.md "World bug"). The first Energy Nede stages need the North City and
+  Noel's House Passes, and before them Energy Nede has no location of this world that may hold
+  them but the Synard boss; with either option off Expel holds only our Expel-story keys. So in
+  a world with no other game's locations, 0.2.0 failed every fill with the teleporter on and
+  expel_progression off (the North City Pass had no legal spot), and every one with boss_checks
+  off and either option off (the Noel's House Pass's only spot was the Synard boss; the
+  release workflow's new solo set: 11 of 96 seeds). The user (2026-10-26): "North City Pass fix
+  is the way to go for Expel prog off games", then "Follow the North City Pass for Noels House
+  pass". Now both passes are starting keys unless the teleporter and expel_progression are both
+  on (items.NEDE_START_KEYS; 0.2.0 gave the North City Pass with the teleporter off only).
+  Multiworlds with another game generated before, its locations taking the passes.
+- Seeds where no open-world player has either option off are 0.2.0's but for
+  `apworld_version`: 111 of the 192 batch seeds (Testing, "Results ... 0.2.1"); in the others
+  that player starts with the passes and the fill places the multiworld otherwise.
+
+**0.2.0** (2026-10-25, released with the port's 0.02.50 on 2026-10-26; docs/handoff/apv2.md, the user's request and decisions;
 the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a
 version-1 seed, but it still needs port 0.02.50: 0.2.0 writes the renamed options only
 (`story_route`, `enemy_dropsanity`) and the 0.02.00 port reads only the old names

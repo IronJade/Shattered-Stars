@@ -80,10 +80,25 @@ teleporter off. Start condition: **not (expel_teleporter and expel_progression)*
    placed keys / characters / skills / moves = base minus the North City Pass, and only
    filler-kind items (game items, Fol, traps) otherwise differ (fewer keys replace filler, so the
    pool's filler sample and the fill's order differ: most placements move).
-6. [ ] Not started (version 0.2.1, release notes, package): after step 8.
-7. [ ] Not started (suites at 0.2.1, batches at 0.2.1).
-- The Phase A baselines scratchpad/aptests/base and after are **kept**: a wider fix needs the same
-  identity check again.
+6. [x] Version 0.2.1 (2026-10-26 ~23:30): world.py APWORLD_VERSION, archipelago.json
+   world_version; apworld.md "Changes" 0.2.1 (and 0.2.0 marked released) and Testing's
+   "Results ... 0.2.1"; docs/release_notes/0.2.1.md (draft: DRAFT banner, one TO CONFIRM line,
+   the seed-75 mix as a known limitation); release_checklist.md (section 1's version, 2.4's
+   counts, 2.5's solo_noexpel line, new section 10); seed_format.md's apworld_version example;
+   setup_en.md ("0.2.0 or later"); ap_batch.sh's header. Package: `tools/build_apworld.sh
+   dist/apworld-0.2.1` -> dist/apworld-0.2.1/so2.apworld (sha256 657098e9...2a91e85) and
+   "Star Ocean The Second Story.yaml" (21d81e67...fe5d7d5); loaded alone from custom_worlds of
+   an AP copy (scratchpad/ncpfix/pkg, the copy deleted after) and generated solo / reproducer /
+   with ChecksFinder (release_checklist.md section 10).
+7. [x] Suites at 0.2.1 (scratchpad/ncpfix/suites): world 449 passed (30513 subtests; unittest
+   449 OK), test/general 379 passed (117755), scoped 502 passed (35824). Batches at 0.2.1
+   (scratchpad/ncpfix/v021, v021/same.py): story_open and hub 96/96, checker 0 errors; every file
+   byte-identical to id2 but for the version string; compare.py --ignore-version vs the base: 111
+   identical, 81 changed, 0 unexpected (compare3.txt). solo_noexpel 95/96 (seed 75).
+- **Deleted 2026-10-26 ~23:35:** the Phase A baselines scratchpad/aptests/base and after (193 MB
+  each), and this agent's superseded scratchpad/ncpfix/id and solo (the first identity and solo
+  runs) and the package-test AP copy. Kept: scratchpad/ncpfix/id2 (0.2.0 string) and v021 (0.2.1),
+  ~245 MB each, the evidence for compare2/3.txt; delete them when 0.2.1 is released.
 
 ## Noel's House Pass: the user's decision (2026-10-26, verbatim, via the coordinator)
 "Follow the North City Pass for Noels House pass" (option a): open world gives the Noel's House
@@ -130,15 +145,24 @@ scoped run, both batches through the checker), then delete scratchpad/aptests/ba
      ones that had the North City Pass already); compare2.txt lists each with where the base had
      the passes.
 
-## Next
-- Re-count spots, fill rates (boss_checks on / off), solo_noexpel, identity, then steps 6-7:
-  APWORLD_VERSION / archipelago.json 0.2.1, docs/ap/apworld.md changelog,
-  docs/release_notes/0.2.1.md (draft), tools/build_apworld.sh dist/apworld-0.2.1, the suites,
-  the batches at 0.2.1 (identity modulo the version string: compare.py --ignore-version), then
-  delete scratchpad/aptests/base and after.
+## Open for the user
+- **solo_noexpel seed 75** (not caused or fixed by this work; 0.2.0 never generated it either):
+  open world in Rena's story with expel_progression, boss_checks and enemy_dropsanity off,
+  skillsanity special_only or insanity, killer_move_checks on with killer_move_progression
+  hero: 20/20 FillError ("Not enough locations for progression items"): 60 move items are
+  progression and only 63 locations may hold one, with the Nede keys needing them too
+  (s75/capacity.py). Any one option changed avoids it (20/20 generate each: story_route claude
+  or any, expel_progression on, boss_checks on, enemy_dropsanity first_drop,
+  killer_move_progression any, killer_move_checks off; s75/probe_summary.txt). Options: leave it
+  as a documented limitation (the release notes' TO CONFIRM line), or a follow-up (an option
+  check / warning, or more room for move items). The release workflow's solo set exits 1 until
+  then.
+- The release itself: tag name, the GitHub release (release_checklist.md section 10), the wiki.
 
 ## How to verify
 - `SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test` in
-  scratchpad/ap/Archipelago.
-- scratchpad/ncpfix/fill/run.sh (spots + fill rates), probe.sh (boss_checks / exclusion probes),
-  id/run.sh + compare.py (identity), `tools/ap_batch.sh solo_noexpel OUT 1 96`.
+  scratchpad/ap/Archipelago: 449 passed.
+- `tools/ap_batch.sh story_open|hub|solo_noexpel OUT 1 96` (96 / 96 / 95).
+- scratchpad/ncpfix: fill2/spots.sh and fill.sh (spots, 2400 fills), compare.py BASE NEW (needs a
+  0.2.0 baseline batch, now deleted: regenerate one from a 0.2.0 checkout with ap_batch.sh),
+  v021/same.py, s75/ (seed 75).

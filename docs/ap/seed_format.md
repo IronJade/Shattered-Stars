@@ -774,7 +774,7 @@ applied them to the locations and items it wrote).
 | `exclude_characters` | list of names | `[]` | reference |
 | `party_rules` | `"story"`, `"open"` | `"story"` | **read**: the party rules (below) |
 | `difficulty` | `earth`, `galaxy`, `universe`, `any` (or 0-3) | `earth` | **read**: New Game's Battle Rank (below) |
-| `apworld_version` | `"0.2.0"` | | reference |
+| `apworld_version` | `"0.2.1"` (0.2.0 and later) | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
 

@@ -13,7 +13,7 @@ different schedules and Archipelago can only read one of them as a real version:
 
 | What | Value | Set in |
 |---|---|---|
-| The APWorld (`world_version`) | `0.2.0` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) and `apworld/so2/world.py`'s `APWORLD_VERSION` (written into each seed's slot data as `apworld_version`; keep the two equal) |
+| The APWorld (`world_version`) | `0.2.1` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) and `apworld/so2/world.py`'s `APWORLD_VERSION` (written into each seed's slot data as `apworld_version`; keep the two equal) |
 | Archipelago core this world targets (`minimum_ap_version`) | `0.6.8` | `apworld/so2/archipelago.json`; the port's client announces the same version (`engine/CMakeLists.txt` reads it from there at configure time) |
 | The port's own release version | **`0.02.50`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.02.50)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
 
@@ -130,7 +130,8 @@ AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pyt
 ```
 Since 2026-10-26 (docs/handoff/aptests.md) worlds/so2/test follows Archipelago's testing guide
 (docs/ap/apworld.md "Testing"); expected then: **430 passed, 3 xfailed** (the expel_progression
-bug's reproducer, until its fix: then 433 passed and the decorators come off), each test under a
+bug's reproducer, until its fix); since 0.2.1 (docs/handoff/ncpfix.md) **449 passed**, the
+decorators gone and the mix `TestOpenWorldNoExpelProgressionNoBosses` added, each test under a
 second (`--durations=30`). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
 **379 passed, 116984 subtests**. No apworld failures appeared; see section 4 for the three
 style-only fixes made after the upstream gap analysis, re-verified with the same counts.
@@ -143,6 +144,7 @@ dev symlink) — re-run after any further apworld change:
 SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test   # in scratchpad/ap/Archipelago
 tools/ap_batch.sh story_open scratchpad/batch/full 1 96    # the release workflow: exit 0 = all generate, 0 checker errors
 tools/ap_batch.sh hub scratchpad/batch/hub 1 96
+tools/ap_batch.sh solo_noexpel scratchpad/batch/solo 1 96   # since 0.2.1: one SO2 player alone, expel_progression off
 SS_DISC1="<disc 1 .cue>" tools/ap_e2e_so2.sh
 ```
 (Since 2026-10-26 the batches are `tools/ap_batch.sh` + `tools/ap_batch_check.py` with the players
@@ -448,3 +450,33 @@ gh release create v0.02.50 \
 `--draft`: nothing goes live until the draft is published; `--target main` puts the tag on the
 pushed `main`. The wiki's pages for 0.02.50 are uncommitted in `scratchpad/wiki` (the "wiki"
 agent's log, docs/handoff/wiki.md), to push with the release.
+
+## 10. so2.apworld 0.2.1 (the world alone): verification run (2026-10-26, agent ncpfix)
+
+A world-only release: the North City and Noel's House passes at the start unless the teleporter
+and expel_progression are both on (docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md). No
+port build: Shattered Stars 0.02.50 plays 0.2.1 seeds (`apworld_version` is reference only; no
+new seed field). Notes: docs/release_notes/0.2.1.md (draft).
+
+| Check | Result |
+|---|---|
+| `tools/build_apworld.sh dist/apworld-0.2.1` | `so2.apworld` (166651 bytes, 29 files, `test/` in, no `__pycache__`; its manifest `world_version` 0.2.1, `compatible_version` 7, `version` 7) and `Star Ocean The Second Story.yaml` (the new docstrings) |
+| Packaged world alone (a copy of the AP install in scratchpad/ncpfix/pkg, no `worlds/so2`, the `.apworld` in `custom_worlds`) | loads from `custom_worlds/so2.apworld` as 0.2.1, `failed_world_loads` empty, no manifest error; Generate.py seed 777 from the template: defaults solo, open world with `expel_progression: 'false'` solo (0.2.0's failure; starts with the Arlia, Fun City, North City and Noel's House passes), and that player with ChecksFinder: exit 0, one `.apso2` each, nothing matching error / traceback / exception |
+| `worlds/so2/test` (`-n 8`) | **449 passed**, 30513 subtests; `python -m unittest`: 449, OK |
+| `test/general` (`-n 8`) | **379 passed**, 117755 subtests |
+| `AP_TEST_WORLDS=so2 ... test/general worlds/so2` | **502 passed**, 35824 subtests |
+| `tools/ap_batch.sh story_open / hub`, seeds 1-96 | 96/96 each, `ap_batch_check.py` 0 errors on 192 + 192 files; byte-identical to the same run at 0.2.0's version string but for `apworld_version` (scratchpad/ncpfix/id2); against the aptests baseline 111 of 192 seeds byte-identical, the other 81 those with an open-world player without both the teleporter and expel_progression on, changed only by the added start keys and the fill around them (docs/ap/apworld.md "Testing") |
+| `tools/ap_batch.sh solo_noexpel`, seeds 1-96 | **95/96** (exit 1 for the set), the checker 0 errors on 95 files; seed 75 fails ("Not enough locations for progression items"): Rena's open world with expel_progression, boss_checks and enemy drops off, skillsanity's moves as items and killer-move checks for the hero, a mix 0.2.0 never generated either (docs/handoff/ncpfix.md; the user decides) |
+| SHA-256 | `657098e9a10b3edb3e56595f478e0447ded91927fa4531f787b56362d2a91e85  so2.apworld`, `21d81e672d8ab039a4c57862fb1b9cc3394401bbf50a16ab504708b50fe5d7d5  Star.Ocean.The.Second.Story.yaml` |
+
+**Publishing (the user's; not run).** Nothing tagged, pushed or uploaded. A world-only release
+would attach the two files (the YAML copied to the dotted name first), for example:
+
+```sh
+D=dist/apworld-0.2.1
+cp "$D/Star Ocean The Second Story.yaml" "$D/Star.Ocean.The.Second.Story.yaml"
+gh release create <tag> "$D/so2.apworld" "$D/Star.Ocean.The.Second.Story.yaml" \
+  --draft --target main --title "so2.apworld 0.2.1" --notes-file docs/release_notes/0.2.1.md
+```
+
+The tag's name is the user's to choose (the port's releases are `v0.0X.YY`).
