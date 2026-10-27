@@ -1002,6 +1002,70 @@ goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.
 
 The world never reads the discs. Each site's `word` / `expected` come from field.json.
 
+## Rules as data (Rule Builder; 0.2.2)
+
+Every access rule (locations, events, entrances and the goal) is an Archipelago **Rule Builder**
+rule (`rule_builder/`, Archipelago 0.6.7 and later; its `docs/rule builder.md`), not a lambda:
+docs/plans/trackers.md B2, the user's decision D3. The rule sites work out what a place needs from
+the world's data and options, as before, and set it with `world.set_rule(spot, rule)` /
+`world.set_completion_rule(rule)` (an entrance: `Region.connect(target, name, rule)`, which calls
+set_rule). Resolving a rule for the world simplifies it into frozen dataclasses (`Rule.Resolved`),
+interned: the same rule twice is one object. Item rules (`add_item_rule`: what a location may
+hold) stay functions. The logic is unchanged ("Testing", 0.2.2: the same truth value for every rule
+on every state tried, the same seeds byte for byte), so `ut.LOGIC_VERSION` stays 1.
+
+`apworld/so2/logic.py` builds the rule data's three shapes:
+- `need(names)`: all of these items and events (`HasAll`; none: open, `True_`). A story stage's
+  previous stage and keys, the disc switch, the Final Save Point, the teleporter, the goal events,
+  a killer-move level, a learn level, the hub's Fienal gate and Indalecio;
+- `ways(modes)`: any of the (event or None, keys) ways, each its event and all its keys (`Or` of
+  `HasAll`; none: never). An open-world location's modes (rules.open_world_access), a drop's
+  (rules.drop_rule), a guild check's (skillsanity.guild_rule), open world's cave and Float learn
+  points;
+- `any_of(alternatives)`: any of these item tuples, all of one. A specialty's skill items per
+  member (skillsanity.specialty_needs: a craft, the Iseria Queen's song, the machines' learn
+  points), a hub drop's dungeons' accesses (hub.drop_rule);
+- `both(rule, extra)`, and `open_by_default`, which `set_rules` ends with: every location, event
+  and entrance that set no rule of its own gets `True_`, so each carries a Rule Builder rule.
+
+The sites: regions.py (the story's Disc Switch and Virtual Expel entrances; open world's
+`stage_rules`), rules.py (`goal_rules`, the completion, `killer_rule`, crafts, the open-world modes
+and drops), skillsanity.py (`needs_rule`, `set_location_rule`), hub.py (the dungeon and Fienal
+entrances, the gate / Indalecio / Iseria Queen events, the completion, crafts, drops). Resolved,
+they use only `True_`, `False_`, `Has`, `HasAll`, `HasAny`, `And` and `Or`
+(`logic.RESOLVED_KINDS`), with items and events by name. No rule reads a region, a location or an
+entrance (no `CanReach...`), so no indirect condition is needed; an entrance shuffle's rules that
+do would get theirs registered by the Rule Builder itself (`set_rule` on an entrance).
+
+What it gives:
+- Universal Tracker's `/explain <location>` prints the location's rule with what you have in
+  green and what is missing in red, and the rules of the entrances into its region ("Trackers"
+  below has a sample); `/get_logical_path` uses them too.
+- The tracker export (trackers.md B3) walks the resolved rules: `logic.as_rule(resolved).to_dict()`
+  serialises one (JSON), and `SO2World.rule_from_dict` of that, resolved for the same world, is the
+  same rule.
+
+**Adding a rule.** Work the need out from the data at the rule site, build it with `logic.need` /
+`ways` / `any_of` / `both` (or the Rule Builder's `Has`, `HasAll`, `HasAny`, `And`, `Or`; `&` and
+`|` combine rules), and set it with `world.set_rule` (`Region.connect` for an entrance,
+`world.set_completion_rule` for the goal). Never assign `access_rule` or write a lambda for one:
+test/test_logic.py fails on both. A rule refuses `bool()`: test an optional rule with
+`is not None`, never `if rule:` or `rule or ...`. A new rule kind (a custom Rule class, a
+`CanReachRegion`) goes into `logic.RESOLVED_KINDS` and `logic.as_rule`, and changes the tracker
+export's format (B3) and the PopTracker pack's evaluator. A rule that changes what is in logic
+bumps `ut.LOGIC_VERSION` ("Trackers", "When to bump").
+
+**The no-lambda test** (test/test_logic.py). Eleven worlds (story, open world and hub with their
+defaults, and the rich mixes: Skillsanity insanity with craftsanity, killer moves, drops and the
+Iseria Queen goal in each mode, forced drops, the teleporter off, hell seeds in story and open
+world): every location, event and entrance and the goal holds a `Rule.Resolved` made only of
+`RESOLVED_KINDS`, naming only this world's items and events, set through `set_rule` (the
+`NOT_RULE_BUILDER` list of exceptions is empty); the rule as set serialises through JSON
+(`to_dict`) and comes back (`rule_from_dict`, resolved) as the same rule, and so does the resolved
+rule through `as_rule`; each explains itself (`explain_json`, `explain_str`). Also: rules are
+interned, no rule reads a region, and a scan of the world's modules for `.access_rule =`,
+`completion_condition[...] =` and `lambda state`.
+
 ## Trackers (Universal Tracker; 0.2.2)
 
 docs/plans/trackers.md is the plan (B1 is this section; PopTracker and the map tab come later).
@@ -1115,12 +1179,13 @@ way updateTracker does), and its list in custom_ut_sort's order.
 | `ut.py` | Universal Tracker ("Trackers"): `LOGIC_VERSION`, the slot data -> option table `SLOT_OPTIONS`, `NO_EFFECT`, `restore` / `check_restored`, `refuse` (UT's `TrackerException`), `sort_key` |
 | `hub.py` | hub mode: `choose` (the locations), `needed_keys`, `fienal_won`, `create_regions`, `set_rules`, `drop_rule`, the seed's `hub` / `bosses` / `doors` (`seed_hub`, `seed_bosses`, `seed_doors`); `OUT_OF_HUB` (the Portal of Sealing), `CONFIRMED_OPTIONAL` (waiting on hubchambers) |
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
+| `logic.py` | rules as data ("Rules as data"): the Rule Builder builders `need`, `ways`, `any_of`, `both`; `open_by_default`; `RESOLVED_KINDS`, `as_rule` (for the tracker export) |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |
 | `skills.py`, `skillsanity.py` | skillsanity's tables (the guild sets, the skills, the starting skills, the specialties, the learn tables with each member's first move, the other learn points; generated by tools/ap_make_skills.py from the disc; do not edit) and its locations, items, logic and shop prices |
 | `patches.py`, `doors.py` | placeholder patches; the phase-4 door validator (world agent), used by the tests |
 | `archipelago.json`, `docs/` | manifest (`world_version`), setup and game pages |
-| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`) |
+| `test/` | WorldTestBase tests (`test_world.py`, `test_doors.py`; 0.2.0's in `test_v2.py`, hub mode's in `test_hub.py`, Universal Tracker's in `test_ut.py`, the rules as data in `test_logic.py`) |
 
 Regenerate the tables after `tools/ap_extract.py` or a new late proof:
 
@@ -1169,6 +1234,26 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 (the venv has no flask for test/webhost):
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
+
+Results (2026-10-27, 0.2.2: rules as data; docs/handoff/rulebuilder.md; "Rules as data" above):
+- The world's tests: **788 passed** (65886 subtests; was 783): test_logic.py's 5 (11 worlds, every
+  location, event, entrance and the goal; the round trips; the source scan), 12.7 s at `-n 6`.
+  `SO2_SLOW_TESTS=1`: 789 passed, TestUTManySeeds' **320 rooms matching in every sphere**.
+  `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 841 passed (71162 subtests, as before).
+  AP's general tests: 379 passed (117757-117760 subtests from run to run: other worlds' random
+  options).
+- Each way of breaking the test (a killer-move lambda, `open_by_default` taken out, a rule set
+  without `set_rule`) fails it.
+- The same truth values: each rule of the lambda world (HEAD 43b0d20's apworld/so2 frozen in a
+  separate Archipelago copy) and of the Rule Builder world on the same states. 21 mixes (test_ut's
+  16 and 5 more: plain open world and hub, a story hell seed, open world with the Iseria Queen and
+  expel_progression off, hub with goal 1 and the fields) x seeds 1-3, every location, event and
+  entrance and the goal, on the empty state, the full one, each item or event alone, all but each,
+  and 400 random states: the same spots and all **93,083,978 truth values the same**
+  (scratchpad/rulebuilder/truth.py).
+- Identity: the three release sets, seeds 1-96, before (the frozen lambda world) and after: **all
+  288 seeds identical**: 480 .apso2 and 288 spoilers byte for byte, every multidata equal in full
+  (slot data too: no key added), the checker's output the same (scratchpad/rulebuilder/identity.py).
 
 Results (2026-10-27, 0.2.2: Universal Tracker; docs/handoff/utworld.md; "Trackers" above):
 - The world's tests: **783 passed** (65867 subtests; was 699): test_ut.py's 84 (16 mix classes with
@@ -1595,6 +1680,10 @@ docs/handoff/skilllogic.md):
 the draft). Tracker support, first piece (docs/plans/trackers.md B1): Universal Tracker, yaml-less
 ("Trackers" above). No new option, item or location; the same seeds as 0.2.1 byte for byte (the
 .apso2 and the spoiler); the slot data gains `logic_version` (1) and `exclude_locations`.
+- *Rules as data* (trackers.md B2; docs/handoff/rulebuilder.md; "Rules as data" above): every
+  access rule is a Rule Builder rule (logic.py), so Universal Tracker's `/explain` works. The same
+  logic (every rule's truth table the same, `logic_version` still 1) and the same seeds and slot
+  data byte for byte.
 
 **0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md,
 hellseed.md and benchworld.md, the user's decisions). No new item or location; one new option,

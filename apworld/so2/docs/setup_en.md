@@ -103,6 +103,10 @@ later):
 2. Open **Universal Tracker** from the Launcher and connect to the room with your slot name (and
    the password), like a text client. The game can be connected at the same time.
 
+To see what a location needs, type `/explain` and its name in UT (for example
+`/explain Town of Salva: Heavy Ring chest`): it prints the location's rule, with what you have in
+green and what is missing in red.
+
 The tracker updates when the server hears of a check, so checks you make while the game is
 offline appear once Shattered Stars reconnects and sends them. If UT says "The world has informed
 UT that your options are incompatible", type `/faris_asked` in it: the message names the
