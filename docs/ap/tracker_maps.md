@@ -81,17 +81,27 @@ dots.
 
 ## World images (`"kind": "world"`)
 
-`images/maps/world_expel.png` (world map 1) and `images/maps/world_energy_nede.png` (2),
-each 2048x1592: the whole world torus (0x1b000 x 0x15000 units), seen from above.
+`images/maps/world_expel.png` (world map 1, 2048x1592: the whole world torus, 0x1b000 x
+0x15000 units) and `images/maps/world_energy_nede.png` (2, 2000x2000: the playable disc,
+radius 0x5cf8 around (67000, 40000), with a margin), seen from above, north up:
 
-- image x = world x / 54
-- image y = (0x15000 - world z) / 54 (integer division)
+- image x = (world x - `x0`) / `units_per_pixel`
+- image y = (`z0` - world z) / `units_per_pixel` (integer division)
+
+Expel: x0 0, z0 0x15000 (86016), 54 units per pixel. Energy Nede: x0 42000, z0 65000, 25.
+North is up and east is right: the guide's "Salva is directly north of Arlia" and "the east
+coast of the Cross continent" (Herlie) both hold in the render.
 
 | Key | Meaning |
 |---|---|
 | `world_map`, `name` | 1 Expel, 2 Energy Nede |
-| `units_per_pixel` | 54 |
+| `x0`, `z0`, `units_per_pixel` | the mapping above |
 | `dots` | one per world-map entrance group (`KEY_GROUPS`: the open world's area keys) |
+
+The port draws the terrain blocks flat, from above. Each polygon is textured and shaded with
+its own vertex colours (the default light), and drawn lowest first, with water (the
+semi-transparent polygons) last. It renders at 3x and box-filters down. Map 1 uses the
+version of block 0x30 seen from chapter 0xf on (entry 0x1013), which covers most of the game.
 
 Each dot: `group` (the KEY_GROUPS group), `key` (its key item's name), `x`, `y`, `world`
 [x, z] (the arrival point: where the party appears on the world map when it leaves the group's
