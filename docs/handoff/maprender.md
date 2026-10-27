@@ -57,7 +57,7 @@ docs/ap/apworld.md, docs/release_notes/0.2.2.md (agent "utworld" works there in 
 ## State
 - Done (committed): 4575b00 docs (tracker_maps.md, this log), 8cafcf7 generator + JSON, e3bcf6b /
   8cc77d3 world views (Energy Nede cropped to its playable disc).
-- Done (verified, being committed): the port command.
+- Done (committed 1687cc7; docs abad5e0): the port command.
   - util/deflate.{h,cpp}: zlib stream (LZ77 + dynamic Huffman) and compressed RGB PNGs.
   - tools/tracker_maps.{h,cpp}: field backgrounds composed in a private VRAM (all sprites whose
     window holds some scroll position; animations frame 0; colour step 0; parallax maps put
@@ -72,9 +72,10 @@ docs/ap/apworld.md, docs/release_notes/0.2.2.md (agent "utworld" works there in 
   (68 images, 41.5 MB, the same bytes twice, nothing else written, XDG untouched, default folder
   under a scratch HOME/PopTracker); A/B vs HEAD 8cc77d3's binary: 12 headless runs, 20 files,
   0 differ; NA, EU, FR and DE disc 1 render byte-identical images (all 68); full render 7 s,
-  ~250 MB RSS; MinGW -fsyntax-only clean for the new files. Smoke (smoke_field_events.sh):
-  running.
-- Next: finish smoke; commit docs (release notes, tracker_maps.md, this log) then code; report.
+  ~250 MB RSS; MinGW -fsyntax-only clean for the new files. Smoke (smoke_field_events.sh)
+  373 PASS / 0 FAIL. No disc: exit 1 with the no-disc message, nothing written.
+- **Assignment complete** (2026-10-27). Next (other agents): B4 draws its placeholders from
+  docs/ap/tracker_maps.json (see tracker_maps.md "For the pack").
 - How to verify:
   `SS_DISC1=... python3 tools/ap_tracker_maps.py --check`;
   `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-maprender/shattered-stars`;
