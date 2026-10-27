@@ -961,3 +961,14 @@ Steps: 1 version bump; 2 the two notes; 3 README + wiki (+ apworld/so2/docs down
   (windows_check.md "Recheck for 0.02.51"); then section 11's commands (push main, the two tags,
   the two gh releases, the wiki commit + push). Optional: docs/images/setup-archipelago.png still
   shows "Setup · v0.02.50" (tools/setup_screenshots.sh, as for 0.02.50).
+- 2026-10-27: **released, as two GitHub releases.** origin main pushed (5d43f47..2c38965). Both
+  releases first created as drafts from scratchpad/release/rc-0.02.51-dist/{port,apworld}; the
+  Windows session ("Windows Shattered-Stars") downloaded the drafts with gh, matched every file to
+  SHA256SUMS and ran windows_check.md "Recheck for 0.02.51": items 1-7 PASS, item 8 (building from
+  source) not run; its notes stay in its own checkout. Published: `apworld-v0.2.1` ("so2.apworld
+  0.2.1", not Latest) then `v0.02.51` ("Shattered Stars 0.02.51", Latest), both tags on 2c38965;
+  the public downloads verify against their SHA256SUMS. Wiki pushed: 6a1624f.
+  Cosmetic, for the next port release: the bench join banner reads "joined the party  bench"
+  (the game's font has no parentheses: ap.cpp ~1766 "(bench)"); Party Order's hero-to-bench
+  refusal has only the refusal sound (no text); docs/images/setup-archipelago.png still shows
+  v0.02.50.
