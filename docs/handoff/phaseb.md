@@ -35,7 +35,7 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
 | World | B3 logic export + B4b Lua evaluator + 0.2.0 Skillsanity rooms accepted with a warning | logicexport | docs/handoff/logicexport.md | started 2026-10-27 |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
-| Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | started 2026-10-27 |
+| Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | **done** 2026-10-27 (c43294f b25fa5b 94e30f4; ASan clean: ap_ds 9/9, tracker_ 6/6, net 5/5, render 68/68, e2e 49/0; MinGW 370/370; Wine render 68/68 byte-identical to Linux, default folder Documents\PopTracker\user-override\so2_shattered_stars; setup button tested headless) |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
@@ -111,3 +111,5 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
   repointed. Every agent brief that runs third-party GUIs-with-headless-modes now says: strip the
   display variables (also docs/HANDOFF.md "Conventions to keep"). Rerun after the fix: UT 40/40
   match, exit 0, no dialog (e23ea8f, d9ed4e7). logicexport (B3 + B4b + the 0.2.0 warning) started.
+- 2026-10-27: portcheck done; the port lane has nothing left before the release. B6 waits for
+  logicexport (both edit world.py and the pack generator).
