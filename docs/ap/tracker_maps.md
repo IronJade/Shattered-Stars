@@ -324,7 +324,19 @@ changes the format 1 parts above.
 game finds it: SS_DISC1, `--disc1`, config.ini or the `discs` folders) and writes every image
 above as a PNG under DIR: the area and world images, then the rooms (format 1.1: 861 images in
 all, about 135 MB, in about 21 s on the development machine). It writes nothing else: no config.ini, no log, no saves, no cards. It
-needs no window and no seed.
+needs no window and no seed. Each PNG is written under a temporary name beside it
+(`<name>.png.part`) and renamed into place once complete, so a run cut short never leaves a
+partly written image under the name PopTracker reads. Besides a line per image, the console
+gets the count at the start ("rendering 861 image(s) into DIR") and every 100 images ("300 of
+861 done"). Exit code 0, or 1 when an image could not be rendered or written.
+
+For other callers, `tools::render_tracker_maps` takes a progress function
+(`TrackerRenderOptions::progress`, tools/tracker_maps.h): it is called on the rendering thread
+before each image with the images done so far, the total, the image's path, its kind (area,
+world, room) and its name (the area, the world, or the room's label), and once after the last
+image (empty path); returning false stops the render before the next image, and the function
+then returns `tools::kTrackerRenderStopped` (2). The render keeps no global state: it may run on
+a thread of its own, given a disc handle nothing else uses meanwhile.
 
 Without DIR it uses PopTracker's override folder for the pack: the first existing
 `<home>/PopTracker/user-override/so2_shattered_stars` or
@@ -342,17 +354,37 @@ contains one of these (`rooms/18.` for one room, `rooms/` for all of them).
 ### The setup button
 
 The setup program's **Archipelago** page has a **Render tracker maps for PopTracker** button
-(engine/src/setup/setup_ui.cpp, `App::start_tracker_render` / `App::run_tracker_render`), so a
+(engine/src/setup/setup_ui.cpp, `App::start_tracker_render`), so a
 Windows player never needs a terminal for the command above. It runs the same code
 (`tools::render_tracker_maps`, linked straight into `shattered-stars-setup` alongside
 `tools::poptracker_override_dir`; not the whole `ss_game`, which that code doesn't need) against
 whichever Disc 1 is on screen (saved or not) and the default folder, same as
 `--render-tracker-maps` with no DIR. The button is disabled with "Choose a valid Disc 1 image
-first." until a disc is picked, same tooltip as the bottom bar's Save / Save & Play; while it
-runs the page says "Rendering tracker maps..." (with the rooms of format 1.1 that is about 20 s
-on the development machine, and the render runs on the setup window's own thread, so the
-window does not redraw meanwhile); afterwards it says how many images and where, with
-an **Open folder** button next to it, or the error if the disc couldn't be read. Nothing on the
-page is saved by this button, and no save or memory card is touched. Scriptable the same way as
-every other setup action: `--do render-tracker-maps` / `SS_SETUP_SCRIPT=...,render-tracker-maps`
-(the render itself runs on the frame after the action, so give at least one more frame).
+first." until a disc is picked, same tooltip as the bottom bar's Save / Save & Play.
+
+The render runs on a thread of its own (engine/src/setup/tracker_job.h, `TrackerRenderJob`),
+so the window goes on drawing (about 20 s with the rooms of format 1.1, on the development
+machine). While it runs the button is disabled and the page shows a progress bar ("150 of 861
+images") and the image in progress ("Rendering room 92 Armory...", "Rendering the area map of
+Arlia Village..."); the rest of setup can be used meanwhile. Afterwards it says how many images
+were written and where, with an **Open folder** button next to it, or the error (the disc
+couldn't be read, or some images failed). Closing setup during the render (the window's close
+button, Quit, Save & Play) stops it before its next image and waits for it: the images written
+by then stay, each one whole, and pressing the button again renders them all. Nothing on the
+page is saved by this button, and no save or memory card is touched.
+
+Thread safety: the worker opens its own disc image and archive (from a copy of the path; the
+window reads the same file only through handles of its own, for the disc check and the logo),
+parses its own copy of the layout and shares nothing with the window but its progress (under a
+mutex) and a stop flag; the folder is resolved on the window's thread before it starts (it
+reads the environment).
+
+Scriptable the same way as every other setup action: `--do render-tracker-maps` /
+`SS_SETUP_SCRIPT=...,render-tracker-maps` (this also scrolls the Trackers section into view).
+For tests, `wait-tracker-render` holds the script until the render is over and
+`wait-tracker-render:N` until N images are done; the frames meanwhile don't count towards
+`--frames`, so `--do render-tracker-maps,wait-tracker-render --screenshot done.png` shows the
+outcome and `--do render-tracker-maps,wait-tracker-render:150 --screenshot mid.png` the
+progress (the program then exits, stopping the render). Setup prints "setup: tracker maps:
+rendering into DIR" when it starts and "setup: tracker maps: done (861 of 861 images; F frames
+drawn while it ran)" (or stopped, ...) when it ends.
