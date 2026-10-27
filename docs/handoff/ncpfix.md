@@ -97,9 +97,38 @@ changelog, docs/release_notes/0.2.1.md draft, package in dist/, world tests, gen
 scoped run, both batches through the checker), then delete scratchpad/aptests/base and after.
 
 ## Step 8 (Noel's House Pass)
-8. [~] Docs: apworld.md "Starting keys" and Testing's note, the player guide (area keys, "Where
-   does Expel stand?", the two option rows), options.py docstrings. In progress: world.py,
-   items.py comment, test_keys_and_start, ap_batch_check.py.
+8. [x] Docs (e121f57): apworld.md "Starting keys" and Testing's note, the player guide (area keys,
+   "Where does Expel stand?", the two option rows), options.py docstrings. World (dffb173):
+   items.NEDE_START_KEYS = (North City Pass, Noel's House Pass), world.create_items gives them
+   unless `later`; test_keys_and_start; ap_batch_check.py; new reproducer class
+   TestOpenWorldNoExpelProgressionNoBosses (open world, expel_progression and boss_checks off,
+   claude): its three fills raise FillError with only the North City Pass at the start (checked by
+   patching items.NEDE_START_KEYS in-process), pass now. World tests **449 passed**.
+   - Spots (scratchpad/ncpfix/fill2/spots.sh -> spots_summary.txt; 24 setups: story_route x
+     teleporter x boss_checks x killer-move progression off / "checks on, any"): the tightest key
+     is the **Red Crystal Pass: 4 spots (boss_checks on), 3 (off)**, with killer-move progression
+     13 / 12; next Salva Pass 7, Central City Pass 13 / 11 (22 / 20). Killer-move progression
+     changes the count, so it is in the fill runs.
+   - Fill rates (fill2/fill.sh, fill_summary_{off,any}.txt): **0/100 FillError in each of the 24
+     setups** (2400 solo fills; open world, expel_progression off, the rest default).
+   - solo_noexpel seeds 1-96 (id2/solo): **95/96 generate**, the checker 0 errors on 95 files; the
+     11 boss_checks-off failures generate but seed 75, which fails differently: "Not enough
+     locations for progression items. There are 12 more progression items than there are
+     available locations." Its rolled options (s75/players/Claude.yaml; roll_all.py): open world,
+     teleporter off, expel_progression off, boss_checks off, enemy_dropsanity off, skillsanity
+     special_only (share 50, shops full), killer_move_checks on (hero), story_route rena,
+     starting_character noel. With those options: 30/30 FillError (s75/fill30.txt). Capacity
+     (s75/capacity.py): 91 progression items (31 keys, 60 move items) against 185 locations that
+     may hold a key but only 63 that may hold a move item (Expel holds only our Expel-story keys
+     with expel_progression off), so the non-Expel locations are short. Not the start keys (they
+     lower the demand); a pre-existing limit of skillsanity's move items with expel_progression
+     off. Probes: s75/probe.sh -> probe_summary.txt.
+   - Identity (id2, version still 0.2.0; compare.py, affected = open world without both the
+     teleporter and expel_progression on): both sets 96/96, checker 0 errors, seed lines
+     identical; **111 of 192 byte-identical, 81 changed, 0 unexpected** (story_open 68, hub 13; 96
+     affected slots: 57 + North City + Noel's House, 39 + Noel's House only, the teleporter-off
+     ones that had the North City Pass already); compare2.txt lists each with where the base had
+     the passes.
 
 ## Next
 - Re-count spots, fill rates (boss_checks on / off), solo_noexpel, identity, then steps 6-7:
