@@ -26,9 +26,10 @@
 -- Story awareness (story mode; the export's optional `story` key, docs/ap/seed_format.md "Story
 -- awareness"; the reference's evaluate(counts, story)): the story position is the Chapter item (the
 -- port's so2_story_* sets it, a click changes it) with the port's step while the chapters agree; it
--- has reached the points (`stages`: {name, chapter, step}) at or before it. A second sweep holds back
--- the story's events ({name, k}) and locations ({k, id, ...}) of points not reached yet. A location in
--- logic by the items but not for the story shows as Inspect ("later in the story"). No `story` key
+-- has reached the points (`stages`: {name, chapter, step}) at or before it, the first always. A
+-- second sweep holds back the story's events ({name, k}) and locations ({k, id, ...}) of points not
+-- reached yet. A location in logic by the items but not for the story shows as Inspect ("later in
+-- the story"). No `story` key
 -- (open world, hub, older rooms), Chapter 0 (no position yet) or "Story" off: the plain logic.
 
 SO2_LOGIC = {mode = "offline", export = nil}
@@ -242,10 +243,10 @@ function so2_story_stage()
     if chapter == nil then
         return nil
     end
-    local n = 0
-    for _, p in ipairs(L.story.stages) do
-        if chapter > p[2] or (chapter == p[2] and step >= p[3]) then
-            n = n + 1
+    local n = 1     -- at least the first point: a chapter before 3 is the story's start
+    for k, p in ipairs(L.story.stages) do
+        if k > 1 and (chapter > p[2] or (chapter == p[2] and step >= p[3])) then
+            n = k
         end
     end
     return n

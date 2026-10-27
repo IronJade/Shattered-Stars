@@ -10,7 +10,6 @@ reference's; without a story position (or with enforce_deferred_entrances "off")
 own sphere, as before; open world and hub have no story awareness at all."""
 import json
 import os
-import sys
 import unittest
 
 from BaseClasses import CollectionState
@@ -23,20 +22,16 @@ from ..data import STAGES
 from ..items import GAME
 from ..locations import ROW
 from ..world import SO2World
-from .test_ut import MIXES, UT_STEPS, real_generation, room_slot_data
+from .test_tracker import REFERENCE, needs_reference
+from .test_ut import MIXES, SLOW, UT_STEPS, real_generation, room_slot_data
 
-_TOOLS = os.path.join(os.path.dirname(__file__), *[os.pardir] * 4, "tools")
-if os.path.isdir(_TOOLS) and _TOOLS not in sys.path:
-    sys.path.insert(0, os.path.abspath(_TOOLS))
-try:
-    from ap_tracker_logic import TrackerLogic
-except ImportError:         # the packaged world has no tools/
-    TrackerLogic = None
+TrackerLogic = REFERENCE.TrackerLogic if REFERENCE is not None else None   # the repo's tools/ (packaged: skip)
 
 STORY_MIXES = ("story default", "story party", "story party rena")
-# Positions: before the story, each point, a step before the Final Save Point, the end.
+# Positions: before the first chapter stored (counts as the first point), each point, a step before the
+# Final Save Point, the end.
 POSITIONS = [{"chapter": c, "step": s} for c, s in sorted(
-    [(0, 0), (60, 3000), (60, 5000)] + [(c, s) for _, c, s in story.POINTS])]
+    [(2, 0), (60, 3000), (60, 5000)] + [(c, s) for _, c, s in story.POINTS])]
 
 
 def ut_rebuild(slot_data, seed, enforce="default"):
@@ -119,9 +114,10 @@ class TestStoryData(unittest.TestCase):
 
     def test_reached(self):
         self.assertIsNone(story.reached(None))
-        for bad in ("12", [12], {"step": 1}, {"chapter": "12"}, {"chapter": True}, 7):
+        for bad in ("12", [12], {"step": 1}, {"chapter": "12"}, {"chapter": True}, 7, {"chapter": 0},
+                    {"chapter": -1, "step": 5}):
             self.assertIsNone(story.reached(bad), bad)
-        self.assertEqual(story.reached({"chapter": 0, "step": 0}), 0)
+        self.assertEqual(story.reached({"chapter": 1, "step": 0}), 1)     # before the first: the start
         self.assertEqual(story.reached({"chapter": 3, "step": 0}), 1)
         self.assertEqual(story.reached({"chapter": 4, "step": 2000}), 1)     # Rena's game starts at 4
         self.assertEqual(story.reached({"chapter": 5}), 2)                    # no step: 0
@@ -244,13 +240,14 @@ class StoryChecks:
         self.assertEqual(plain[0], {l.address for l in self.real.get_reachable_locations(real_state, 1)
                                     if l.address is not None})
 
+    @needs_reference
     def test_story_follows_the_chapter(self):
         """At every story point, sphere by sphere (the first, a middle one, the last): UT's in-logic set
         equals the reference's from the export's `story` key; it only grows with the story; it is the
         plain set less what is later in the story; going back shuts the later points again."""
         world = self.ut.worlds[1]
         key = ut_keys(world)[0]
-        ref = TrackerLogic(self.room["tracker"]) if TrackerLogic else None
+        ref = TrackerLogic(self.room["tracker"])
         picks = sorted({0, len(self.stages) // 2, len(self.stages) - 1})
         for k in picks:
             received = self.stages[k]
@@ -264,11 +261,10 @@ class StoryChecks:
                 with self.subTest(sphere=k, story=value):
                     self.assertLessEqual(before, got)
                     self.assertLessEqual(got, plain)
-                    if ref is not None:
-                        view = ref.evaluate(counts, value)
-                        self.assertEqual(got, view.locations)
-                        self.assertEqual(view.later, plain - got)
-                        self.assertEqual(view.stage, story.reached(value))
+                    view = ref.evaluate(counts, value)
+                    self.assertEqual(got, view.locations)
+                    self.assertEqual(view.later, plain - got)
+                    self.assertEqual(view.stage, story.reached(value))
                 before = got
             self.assertEqual(before, plain, "at the end of the story everything the items allow")
             ut_set_reply(world, key, {"chapter": 3, "step": 0})
@@ -316,6 +312,30 @@ class TestStoryParty(StoryChecks, unittest.TestCase):
 
 class TestStoryPartyRena(StoryChecks, unittest.TestCase):
     mix = "story party rena"
+
+
+@needs_reference
+@unittest.skipUnless(SLOW, "SO2_SLOW_TESTS=1 (the release workflow)")
+class TestStoryManySeeds(unittest.TestCase):
+    """20 rooms per story mix (seeds 1-20): UT's in-logic set equals the reference's at every story
+    position, with the start's items and with every item."""
+    def test_many_seeds(self):
+        for mix in STORY_MIXES:
+            for seed in range(1, 21):
+                with self.subTest(mix=mix, seed=seed):
+                    real = real_generation(MIXES[mix], seed)
+                    room = room_slot_data(real.worlds[1])
+                    ut = ut_rebuild(room, seed + 1000)
+                    world = ut.worlds[1]
+                    key = ut_keys(world)[0]
+                    ref = TrackerLogic(room["tracker"])
+                    stages = sphere_items(real)
+                    for received in (stages[0], stages[-1]):
+                        counts = counts_of(real.worlds[1], received)
+                        for value in POSITIONS:
+                            ut_set_reply(world, key, value)
+                            self.assertEqual(ut_in_logic(ut, received), ref.evaluate(counts, value).locations,
+                                             f"{value}")
 
 
 class TestStoryNotElsewhere(unittest.TestCase):

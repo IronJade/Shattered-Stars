@@ -73,11 +73,11 @@ def applies(world):
 
 def position(value):
     """The data-storage value as (chapter, step), or None when it says nothing (never written: None;
-    or not the port's shape)."""
+    not the port's shape; chapter 0 or below, which no game in progress has)."""
     if not isinstance(value, dict):
         return None
     chapter, step = value.get("chapter"), value.get("step", 0)
-    if isinstance(chapter, bool) or not isinstance(chapter, (int, float)):
+    if isinstance(chapter, bool) or not isinstance(chapter, (int, float)) or chapter <= 0:
         return None
     if isinstance(step, bool) or not isinstance(step, (int, float)):
         step = 0
@@ -86,12 +86,12 @@ def position(value):
 
 def reached(value):
     """How many points (stages, then the Final Save Point) the reported story position has reached
-    (0 before chapter 3), or None without a position (no story awareness: everything as the logic
-    says)."""
+    (at least the first: a chapter before 3 is the story's start), or None without a position (no
+    story awareness: everything as the logic says)."""
     pos = position(value)
     if pos is None:
         return None
-    return sum(1 for _, chapter, step in POINTS if (chapter, step) <= pos)
+    return max(1, sum(1 for _, chapter, step in POINTS if (chapter, step) <= pos))
 
 
 def site_stage(row):

@@ -28,7 +28,8 @@ when its region is reached and its rule holds.
 
 Story awareness (story mode; the export's optional `story` key, docs/ap/seed_format.md "Story
 awareness"): with the port's story position (`so2_story_{team}_{slot}`, {"chapter": C, "step": S}),
-the position has reached the points (`stages`: [name, chapter, step], in order) at or before it; an
+the position has reached the points (`stages`: [name, chapter, step], in order) at or before it, and
+always the first (chapter 0 or below is no position); an
 event of `story.events` ([name, k]) is collected only once point k is reached, and a location of
 `story.locations` ([k, id, ...]) is in logic only once point k is reached (the others: from point 1).
 `later` is what the items alone would put in logic but the story hasn't reached. Without a position
@@ -55,11 +56,12 @@ class View:
 
 
 def story_position(value):
-    """The port's story value as (chapter, step), or None when it isn't one."""
+    """The port's story value as (chapter, step), or None when it isn't one (or its chapter is 0 or
+    below: no game in progress has one)."""
     if not isinstance(value, dict):
         return None
     chapter, step = value.get("chapter"), value.get("step", 0)
-    if isinstance(chapter, bool) or not isinstance(chapter, (int, float)):
+    if isinstance(chapter, bool) or not isinstance(chapter, (int, float)) or chapter <= 0:
         return None
     if isinstance(step, bool) or not isinstance(step, (int, float)):
         step = 0
@@ -96,7 +98,7 @@ class TrackerLogic:
         pos = story_position(value)
         if self.story is None or pos is None:
             return None
-        return sum(1 for _, chapter, step in self.story["stages"] if (chapter, step) <= pos)
+        return max(1, sum(1 for _, chapter, step in self.story["stages"] if (chapter, step) <= pos))
 
     def connect(self, name, region):
         """An entrance not connected in the export (`to` -1: an entrance randomizer's deferred one)

@@ -710,7 +710,7 @@ class TestLuaLogic(unittest.TestCase):
         self.assertEqual(in_logic(), whole.locations)
         self.assertGreater(len(whole.locations), len(view.locations))
 
-    STORY_POSITIONS = [(0, 0), (3, 0), (5, 0), (12, 0), (24, 500), (35, 9999), (36, 0), (41, 0), (48, 0),
+    STORY_POSITIONS = [(0, 0), (2, 0), (3, 0), (5, 0), (12, 0), (24, 500), (35, 9999), (36, 0), (41, 0), (48, 0),
                        (57, 0), (58, 0), (60, 3000), (60, 4000), (60, 5000)]
 
     def test_story_is_the_reference(self):
