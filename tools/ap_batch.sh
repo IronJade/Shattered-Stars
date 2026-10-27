@@ -8,7 +8,11 @@
 #
 # SET: story_open (tools/ap_batch_players/story_open: two SO2 players, story 1 : open world 2, every
 # option random, and a ChecksFinder player), hub (tools/ap_batch_players/hub: one SO2 player in hub
-# mode, one hub / story / open world 3 : 1 : 1, and ChecksFinder), or a directory of player YAMLs.
+# mode, one hub / story / open world 3 : 1 : 1, and ChecksFinder), solo_noexpel
+# (tools/ap_batch_players/solo_noexpel: one SO2 player alone, expel_progression off, open world /
+# story / hub 3 : 1 : 1, the rest random; no other game's locations to take what this world can't
+# place: so2.apworld 0.2.0's North City Pass failure hid behind ChecksFinder), or a directory of
+# player YAMLs.
 # For each seed FIRST..LAST, Generate.py (--spoiler 2) writes OUT/<seed>/ (gen.log, the zip,
 # unzipped: the .apso2 files and the spoiler); "seed N exit RC apso2 K" lines go to OUT.txt. Then
 # tools/ap_batch_check.py checks every .apso2 (OUT.check.txt). Exit status 0 only when every seed
@@ -26,12 +30,12 @@
 set -u
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 if [ $# -ne 4 ]; then
-  echo "usage: tools/ap_batch.sh SET OUT FIRST LAST  (SET: story_open, hub or a players directory)" >&2
+  echo "usage: tools/ap_batch.sh SET OUT FIRST LAST  (SET: story_open, hub, solo_noexpel or a players directory)" >&2
   exit 2
 fi
 SET=$1; OUT=$2; FIRST=$3; LAST=$4
 case "$SET" in
-  story_open|hub) PLAYERS=$REPO/tools/ap_batch_players/$SET ;;
+  story_open|hub|solo_noexpel) PLAYERS=$REPO/tools/ap_batch_players/$SET ;;
   *) PLAYERS=$(cd "$SET" && pwd) || exit 2 ;;
 esac
 AP_DIR=$(cd "${AP_DIR:-$REPO/scratchpad/ap/Archipelago}" && pwd) || exit 2
