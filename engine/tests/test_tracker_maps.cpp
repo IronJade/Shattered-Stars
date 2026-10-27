@@ -1,12 +1,15 @@
 // The tracker maps [maprender] (tools/tracker_maps.h, util/deflate.h; docs/ap/tracker_maps.md):
 // the deflate stream and the PNGs, the built-in layout, PopTracker's override folder, and
 // with the player's disc (SS_DISC1; skipped without it) the backgrounds and the command's
-// output: sizes as the layout says, the same bytes twice, nothing else written.
+// output: sizes as the layout says, the same bytes twice, nothing else written. [mapdoors]
+// Format 1.1's rooms: the door markers, their ids, letters and boxes, the groups, and two
+// rendered rooms.
 
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -223,6 +226,91 @@ TEST(tracker_layout_consistent) {
   CHECK(checks > 400);
 }
 
+// Format 1.1: the rooms, their door markers and groups (tracker_maps.md "Rooms").
+TEST(tracker_layout_rooms) {
+  const game::ap::Json j = layout();
+  CHECK(j["format_minor"].as_int() >= 1);
+  const auto& rooms = j["rooms"];
+  CHECK(rooms.size() > 700);
+  struct Box {
+    s64 x, y, w, h;
+  };
+  auto box_of = [](const game::ap::Json& b) { return Box{b[0].as_int(), b[1].as_int(), b[2].as_int(), b[3].as_int()}; };
+  auto apart = [](const Box& a, const Box& b) { return a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y; };
+  std::set<std::string> paths;
+  std::map<s64, std::set<s64>> doorways;  // map -> its doorway ids
+  std::map<s64, const game::ap::Json*> by_map;
+  for (size_t i = 0; i < rooms.size(); ++i) {
+    const auto& r = rooms[i];
+    const s64 map = r["map"].as_int();
+    by_map[map] = &r;
+    const std::string path = r["path"].as_string();
+    CHECK(path == "images/rooms/" + std::to_string(map) + ".png");
+    CHECK(paths.insert(path).second);
+    const s64 W = r["width"].as_int(), H = r["height"].as_int(), fs_ = r["font_scale"].as_int(), top = r["bg_y"].as_int();
+    CHECK(W >= 64 && H > top && W <= 4096 && H <= 4096);  // backgrounds are 240 to 1440 px wide
+    CHECK(fs_ >= 1 && fs_ <= 4 && top == 10 * fs_ && r["location_size"].as_int() == 12 * fs_);
+    const Box strip = box_of(r["label_box"]);
+    CHECK(strip.x == 0 && strip.y == 0 && strip.w == W && strip.h == top);
+    CHECK(r["label"].as_string().rfind(std::to_string(map) + " ", 0) == 0);
+    std::vector<Box> boxes;
+    std::map<s64, std::string> letter_of;
+    std::set<std::string> letters;
+    for (size_t k = 0; k < r["doors"].size(); ++k) {
+      const auto& d = r["doors"][k];
+      const Box b = box_of(d["box"]);
+      CHECK(b.x >= 0 && b.y >= top && b.x + b.w <= W && b.y + b.h <= H);  // on the background, under the strip
+      for (const Box& o : boxes) CHECK(apart(b, o));
+      boxes.push_back(b);
+      CHECK(d["x"].as_int() >= 0 && d["x"].as_int() < W && d["y"].as_int() >= top && d["y"].as_int() < H);
+      const s64 id = d["id"].as_int();
+      CHECK(id / 65536 == map);  // a doorway id is one of the map's door ids
+      const std::string letter = d["letter"].as_string();
+      if (letter_of.count(id)) CHECK(letter_of[id] == letter);  // one letter per doorway
+      else CHECK(letters.insert(letter).second);
+      letter_of[id] = letter;
+      doorways[map].insert(id);
+      CHECK(d["to"].size() > 0);
+      s64 lowest = d["to"][0]["door"].as_int();
+      for (size_t t = 0; t < d["to"].size(); ++t) lowest = std::min(lowest, d["to"][t]["door"].as_int());
+      CHECK_EQ(lowest, id);  // the doorway id is its lowest door id
+    }
+  }
+  // Every door's way back names a doorway of the target room.
+  int backs = 0;
+  for (size_t i = 0; i < rooms.size(); ++i)
+    for (size_t k = 0; k < rooms[i]["doors"].size(); ++k)
+      for (size_t t = 0; t < rooms[i]["doors"][k]["to"].size(); ++t) {
+        const auto& to = rooms[i]["doors"][k]["to"][t];
+        if (!to.has("back")) continue;
+        ++backs;
+        CHECK(doorways[to["map"].as_int()].count(to["back"].as_int()) == 1);
+      }
+  CHECK(backs > 1500);
+  // Each room in exactly one group, under its own area.
+  std::map<s64, int> grouped;
+  for (size_t g = 0; g < j["room_groups"].size(); ++g) {
+    const auto& group = j["room_groups"][g];
+    for (size_t k = 0; k < group["rooms"].size(); ++k) {
+      const s64 m = group["rooms"][k].as_int();
+      ++grouped[m];
+      CHECK(by_map.count(m) == 1 && (*by_map[m])["area"].as_string() == group["area"].as_string());
+    }
+  }
+  CHECK_EQ(grouped.size(), rooms.size());
+  for (const auto& [m, n] : grouped) CHECK_EQ(n, 1);
+  // Every check also on its map's room, on the background.
+  for (const auto& [name, c] : j["checks"].items()) {
+    const auto& room = c["room"];
+    CHECK(room["image"].as_string() == "images/rooms/" + std::to_string(c["map"].as_int()) + ".png");
+    const auto* r = by_map.count(c["map"].as_int()) ? by_map[c["map"].as_int()] : nullptr;
+    CHECK(r != nullptr);
+    if (r)
+      CHECK(room["x"].as_int() >= 0 && room["x"].as_int() < (*r)["width"].as_int() &&
+            room["y"].as_int() >= (*r)["bg_y"].as_int() && room["y"].as_int() < (*r)["height"].as_int());
+  }
+}
+
 TEST(tracker_override_dir) {
   const fs::path root = scratch("override");
   const fs::path home = root / "home", docs = root / "home" / "Documents";
@@ -264,7 +352,7 @@ TEST(tracker_disc_command) {
   if (!d.ok) return;
   const fs::path one = scratch("one"), two = scratch("two");
   tools::TrackerRenderOptions options;
-  options.only = {"renas_room", "fienal", "world_energy"};
+  options.only = {"renas_room", "fienal", "world_energy", "rooms/38.", "rooms/18."};
   CHECK_EQ(tools::render_tracker_maps(d.archive, one / "out", options), 0);
   CHECK_EQ(tools::render_tracker_maps(d.archive, two / "out", options), 0);
   const game::ap::Json j = layout();
@@ -286,6 +374,35 @@ TEST(tracker_disc_command) {
     CHECK_EQ(h, img["height"].as_int());
   }
   CHECK_EQ(static_cast<int>(expected.size()), 3);
+  // Two rooms (Rena's Room, the fountain square): sizes, the same bytes twice, a letter box
+  // inside its border in the door colour, the strip in the background colour.
+  int rooms = 0;
+  for (size_t i = 0; i < j["rooms"].size(); ++i) {
+    const auto& room = j["rooms"][i];
+    const std::string path = room["path"].as_string();
+    if (path != "images/rooms/38.png" && path != "images/rooms/18.png") continue;
+    ++rooms;
+    expected.insert(fs::path(path));
+    const std::vector<u8> a = read_file(one / "out" / path), b = read_file(two / "out" / path);
+    CHECK(!a.empty());
+    CHECK(a == b);
+    int w = 0, h = 0;
+    std::vector<u32> px;
+    CHECK(decode_png_rgb(a, &w, &h, &px));
+    CHECK_EQ(w, room["width"].as_int());
+    CHECK_EQ(h, room["height"].as_int());
+    if (w != room["width"].as_int() || h != room["height"].as_int()) continue;
+    const int scale = static_cast<int>(room["font_scale"].as_int());
+    auto at = [&](s64 x, s64 y) { return px[static_cast<size_t>(y) * w + static_cast<size_t>(x)] & 0xFFFFFFu; };
+    CHECK_EQ(at(w - 1, 0), 0x221C1Cu);  // style.background #1c1c22 (red in the low byte)
+    CHECK(room["doors"].size() > 0);
+    for (size_t k = 0; k < room["doors"].size(); ++k) {
+      const auto& box = room["doors"][k]["box"];
+      CHECK_EQ(at(box[0].as_int() + scale, box[1].as_int() + scale), 0x3CD2FFu);  // style.door.fill #ffd23c
+      CHECK_EQ(at(box[0].as_int(), box[1].as_int()), 0x1A1414u);                 // its outline #14141a
+    }
+  }
+  CHECK_EQ(rooms, 2);
   // Nothing but those PNGs (and their folders) under the target, nothing beside it.
   for (const fs::path& root : {one, two}) {
     std::set<fs::path> files;

@@ -476,6 +476,11 @@ u32 colour_of(const std::string& hex, u32 fallback) {
 // weights, so the result never depends on floating point).
 void blit_scaled(Canvas& dst, int x0, int y0, int w, int h, const Background& src) {
   const int sw = src.width, sh = src.height;
+  if (w == sw && h == sh) {  // 1:1 (a room image): the same pixels as the general case, faster
+    for (int y = 0; y < h; ++y)
+      for (int x = 0; x < w; ++x) dst.put(x0 + x, y0 + y, src.pixels[static_cast<size_t>(y) * sw + x]);
+    return;
+  }
   for (int dy = 0; dy < h; ++dy) {
     const s64 ya = static_cast<s64>(dy) * sh, yb = static_cast<s64>(dy + 1) * sh;  // in 1/h of a source row
     for (int dx = 0; dx < w; ++dx) {
@@ -501,10 +506,11 @@ void blit_scaled(Canvas& dst, int x0, int y0, int w, int h, const Background& sr
   }
 }
 
-// A label in the overlay's 5x7 font at twice its size (12 px per character), cut to 'width'.
-void draw_label(Canvas& c, int x, int y, int width, const std::string& text, u32 colour) {
-  constexpr int kScale = 2, kAdvance = 6 * kScale;
-  const int fit = std::max(0, (width + kScale) / kAdvance);
+// Text in the overlay's 5x7 font at 'scale' (6 * scale px per character), cut with ".." to fit
+// 'width'.
+void draw_text(Canvas& c, int x, int y, int width, const std::string& text, u32 colour, int scale) {
+  const int advance = 6 * scale;
+  const int fit = std::max(0, (width + scale) / advance);
   std::string s;
   for (unsigned char ch : text) s.push_back(ch >= 0x20 && ch < 0x7F ? static_cast<char>(ch) : '?');
   if (static_cast<int>(s.size()) > fit) s = fit >= 2 ? s.substr(0, fit - 2) + ".." : s.substr(0, fit);
@@ -512,8 +518,30 @@ void draw_label(Canvas& c, int x, int y, int width, const std::string& text, u32
     for (int col = 0; col < 5; ++col) {
       const u8 bits = runtime::overlay_font_column(static_cast<unsigned char>(s[i]), col);
       for (int row = 0; row < 7; ++row)
-        if (bits >> row & 1) c.fill_rect(x + static_cast<int>(i) * kAdvance + col * kScale, y + row * kScale, kScale, kScale, colour);
+        if (bits >> row & 1) c.fill_rect(x + static_cast<int>(i) * advance + col * scale, y + row * scale, scale, scale, colour);
     }
+}
+
+// An area image's map label: the font at twice its size (12 px per character), cut to 'width'.
+void draw_label(Canvas& c, int x, int y, int width, const std::string& text, u32 colour) {
+  draw_text(c, x, y, width, text, colour, 2);
+}
+
+// A text box of the rooms (tracker_maps.md "Rooms"): [x, y, w, h] filled, a 'scale' px
+// outline when 'outline' is set, the text at (x + 2 scale, y + (h - 7 scale) / 2), cut to
+// w - 4 scale.
+void draw_text_box(Canvas& c, const Json& box, const std::string& text, u32 fill, u32 ink, const u32* outline,
+                   int scale) {
+  const int x = static_cast<int>(box[0].as_int()), y = static_cast<int>(box[1].as_int());
+  const int w = static_cast<int>(box[2].as_int()), h = static_cast<int>(box[3].as_int());
+  if (w <= 0 || h <= 0) return;
+  if (outline) {
+    c.fill_rect(x, y, w, h, *outline);
+    c.fill_rect(x + scale, y + scale, w - 2 * scale, h - 2 * scale, fill);
+  } else {
+    c.fill_rect(x, y, w, h, fill);
+  }
+  draw_text(c, x + 2 * scale, y + (h - 7 * scale) / 2, w - 4 * scale, text, ink, scale);
 }
 
 void draw_dot(Canvas& c, int x, int y, int size, u32 fill, u32 outline) {
@@ -888,6 +916,18 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     dots.push_back({c["image"].as_string(), {static_cast<int>(c["x"].as_int()), static_cast<int>(c["y"].as_int())}});
 
   int written = 0, failed = 0;
+  auto write = [&](const std::string& rel, const fs::path& path, const Canvas& canvas) {
+    std::error_code ec;
+    fs::create_directories(path.parent_path(), ec);
+    if (ec || !util::write_png_rgb(path, canvas.pixels, canvas.width, canvas.height, &error)) {
+      std::fprintf(stderr, "tracker maps: %s: %s\n", rel.c_str(), ec ? ec.message().c_str() : error.c_str());
+      ++failed;
+      return;
+    }
+    ++written;
+    std::printf("tracker maps: %s (%dx%d)\n", rel.c_str(), canvas.width, canvas.height);
+    std::fflush(stdout);
+  };
   const Json& images = layout["images"];
   for (size_t i = 0; i < images.size(); ++i) {
     const Json& img = images[i];
@@ -939,16 +979,59 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
     if (options.dots)
       for (const auto& [image, at] : dots)
         if (image == rel) draw_dot(canvas, at.first, at.second, dot_size, dot_fill, dot_outline);
-    std::error_code ec;
-    fs::create_directories(path->parent_path(), ec);
-    if (ec || !util::write_png_rgb(*path, canvas.pixels, W, H, &error)) {
-      std::fprintf(stderr, "tracker maps: %s: %s\n", rel.c_str(), ec ? ec.message().c_str() : error.c_str());
+    write(rel, *path, canvas);
+  }
+
+  // Rooms (format 1.1): each field map on its own, the background 1:1 under a label strip
+  // (its number and name), with a letter box beside each doorway. Nothing that depends on a
+  // seed (a door's destination) is drawn: the tracker shows that.
+  const Json& door_style = style["door"];
+  const u32 door_fill = colour_of(door_style["fill"].as_string(), 0xFF3CD2FFu);
+  const u32 door_ink = colour_of(door_style["text"].as_string(), 0xFF1A1414u);
+  const u32 door_outline = colour_of(door_style["outline"].as_string(), 0xFF1A1414u);
+  std::vector<std::pair<std::string, std::pair<int, int>>> room_dots;
+  for (const auto& [name, c] : layout["checks"].items())
+    if (c.has("room"))
+      room_dots.push_back({c["room"]["image"].as_string(),
+                           {static_cast<int>(c["room"]["x"].as_int()), static_cast<int>(c["room"]["y"].as_int())}});
+  const Json& rooms = layout["rooms"];
+  for (size_t i = 0; i < rooms.size(); ++i) {
+    const Json& room = rooms[i];
+    const std::string rel = room["path"].as_string();
+    if (!wanted(rel, options)) continue;
+    const auto path = image_path(dir, rel);
+    const int W = static_cast<int>(room["width"].as_int()), H = static_cast<int>(room["height"].as_int());
+    const int bg_y = static_cast<int>(room["bg_y"].as_int());
+    const int scale = static_cast<int>(std::clamp<s64>(room["font_scale"].as_int(1), 1, 8));
+    if (!path || W <= 0 || H <= 0 || W > 4096 || H > 4096 || bg_y < 0 || bg_y >= H) {
+      std::fprintf(stderr, "tracker maps: bad room entry %s\n", rel.c_str());
       ++failed;
       continue;
     }
-    ++written;
-    std::printf("tracker maps: %s (%dx%d)\n", rel.c_str(), W, H);
-    std::fflush(stdout);
+    Canvas canvas{W, H, std::vector<u32>(static_cast<size_t>(W) * H, background)};
+    draw_text_box(canvas, room["label_box"], room["label"].as_string(), background, label_colour, nullptr, scale);
+    Background bg;
+    std::string why;
+    if (!render_field_background(archive, static_cast<int>(room["map"].as_int()), &bg, &why) || bg.width != W ||
+        bg.height != H - bg_y) {
+      std::fprintf(stderr, "tracker maps: %s: %s\n", rel.c_str(),
+                   why.empty() ? "the disc's background size differs from the layout's" : why.c_str());
+      ++failed;
+      continue;
+    }
+    blit_scaled(canvas, 0, bg_y, bg.width, bg.height, bg);
+    const Json& doors = room["doors"];
+    for (size_t k = 0; k < doors.size(); ++k)
+      draw_text_box(canvas, doors[k]["box"], doors[k]["letter"].as_string(), door_fill, door_ink, &door_outline, scale);
+    if (options.dots) {
+      const int size = static_cast<int>(room["location_size"].as_int(12));
+      for (size_t k = 0; k < doors.size(); ++k)
+        draw_dot(canvas, static_cast<int>(doors[k]["x"].as_int()), static_cast<int>(doors[k]["y"].as_int()), size / 2,
+                 door_fill, dot_outline);
+      for (const auto& [image, at] : room_dots)
+        if (image == rel) draw_dot(canvas, at.first, at.second, size / 2, dot_fill, dot_outline);
+    }
+    write(rel, *path, canvas);
   }
   std::printf("tracker maps: %d image(s) written to %s%s\n", written, util::path_utf8(dir).c_str(),
               failed ? ", with errors" : "");

@@ -8,10 +8,12 @@ scratch HOME, Documents and XDG_CONFIG_HOME:
 - without DIR: a scratch <HOME>/PopTracker folder exists, so the images must land in
   <HOME>/PopTracker/user-override/so2_shattered_stars (PopTracker's own default);
 - with DIR (a scratch folder).
-Checks: exit code 0 both times; every image of docs/ap/tracker_maps.json is written with the
-layout's size (PNG IHDR); both runs give the same bytes; nothing else appears anywhere under
-the scratch root (no config.ini, no log, no card, no stray file). Prints one line per check and
-exits 1 on a failure. The scratch folder is removed afterwards unless --keep.
+Checks: exit code 0 both times; every image of docs/ap/tracker_maps.json (the area and world
+images, and format 1.1's rooms) is written with the layout's size (PNG IHDR); both runs give
+the same bytes; nothing else appears anywhere under the scratch root (no config.ini, no log, no
+card, no stray file). Prints one line per check, each run's time and the set's size on disk,
+and exits 1 on a failure. The scratch folder is removed afterwards unless --keep; the two
+runs' logs go beside it.
 """
 
 import argparse
@@ -22,6 +24,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -59,6 +62,7 @@ def main():
         raise SystemExit("set SS_DISC1 to the NA disc 1 (.cue)")
     layout = json.load(open(os.path.join(REPO, "docs", "ap", "tracker_maps.json"), encoding="utf-8"))
     expected = {img["path"]: (img["width"], img["height"]) for img in layout["images"]}
+    expected.update({room["path"]: (room["width"], room["height"]) for room in layout.get("rooms", [])})
 
     root = os.path.abspath(a.scratch)
     shutil.rmtree(root, ignore_errors=True)
@@ -80,10 +84,13 @@ def main():
             failures.append(what)
 
     def run(args, log):
-        with open(os.path.join(REPO, "scratchpad", "maprender", log), "w") as f:
+        log = os.path.join(os.path.dirname(root), log)
+        t0 = time.time()
+        with open(log, "w") as f:
             rc, timed_out, at_cap = run_capped([a.binary, "--render-tracker-maps"] + args, a.binary, a.timeout,
                                                stdin=subprocess.DEVNULL, stdout=f, stderr=subprocess.STDOUT, env=env)
-        text = open(os.path.join(REPO, "scratchpad", "maprender", log), errors="replace").read()
+        print(f"     {' '.join(args) or '(default folder)'}: {time.time() - t0:.1f} s")
+        text = open(log, errors="replace").read()
         at_cap = at_cap or (not timed_out and hit_cap(rc, text, killed=timed_out))
         check(rc == 0 and not timed_out and not at_cap, f"{' '.join(args) or '(default folder)'}: exit 0 "
               f"(rc {rc}, timed out {timed_out}, memory cap {at_cap})")
@@ -110,8 +117,12 @@ def main():
     same = [r for r in expected
             if new.get(os.path.relpath(os.path.join(default, r), root)) == new.get(os.path.relpath(os.path.join(out2, r), root))]
     check(len(same) == len(expected), f"the same bytes in both runs ({len(same)}/{len(expected)})")
-    total = sum(os.path.getsize(os.path.join(out2, r)) for r in expected if os.path.exists(os.path.join(out2, r)))
-    print(f"{len(expected)} images, {total / 1e6:.1f} MB per run")
+    def size(prefix):
+        return sum(os.path.getsize(os.path.join(out2, r)) for r in expected
+                   if r.startswith(prefix) and os.path.exists(os.path.join(out2, r)))
+    rooms = sum(1 for r in expected if r.startswith("images/rooms/"))
+    print(f"{len(expected)} images ({len(expected) - rooms} area and world, {rooms} rooms), "
+          f"{size('') / 1e6:.1f} MB per run (rooms {size('images/rooms/') / 1e6:.1f} MB)")
     if not a.keep:
         shutil.rmtree(root, ignore_errors=True)
     if failures:
