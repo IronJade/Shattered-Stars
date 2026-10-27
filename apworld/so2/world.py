@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hell, hub, items, locations, regions, rules, skillsanity
+from . import hell, hub, items, locations, regions, rules, skillsanity, ut
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -68,8 +68,24 @@ class SO2World(World):
     item_name_groups = items.ITEM_NAME_GROUPS
     location_name_groups = locations.LOCATION_NAME_GROUPS
     origin_region_name = "Menu"
+    # Universal Tracker (ut.py; docs/ap/apworld.md "Trackers"): it rebuilds this world from the
+    # room's slot data alone (no YAML), which interpret_slot_data hands back as it is; generate_early
+    # restores the options and the party from it (`ut_slot_data`, None in a real generation).
+    ut_can_gen_without_yaml = True
+    ut_slot_data = None
+
+    @staticmethod
+    def interpret_slot_data(slot_data):
+        return slot_data
+
+    def custom_ut_sort(self, region, location):
+        """The tracker tab's order: (story stage of the area, area, name) (ut.sort_key)."""
+        return ut.sort_key(region, location)
 
     def generate_early(self):
+        self.ut_slot_data = ut.passthrough(self)
+        if self.ut_slot_data is not None:
+            ut.restore(self, self.ut_slot_data)     # the room's options, or UT's TrackerException
         o = self.options
         self.open_world = o.world_mode == o.world_mode.option_open_world
         self.hub = o.world_mode == o.world_mode.option_hub     # characters are items whatever character_items says
@@ -93,6 +109,8 @@ class SO2World(World):
             self.fienal_won = hub.fienal_won(self)      # the Fienal requirement (D6)
             self.hub_keys = hub.needed_keys(self)       # the dungeon keys this world has (D4)
             self.hub_start = hub.choose_start(self)     # the start point (D9)
+        if self.ut_slot_data is not None:
+            ut.check_restored(self, self.ut_slot_data)  # the same world as the room's, or TrackerException
 
     def bench_applies(self):
         """The bench option (options.Bench, on by default): the party's 12 places (the game's 8 and
@@ -180,7 +198,11 @@ class SO2World(World):
         neither the heroes, the starting member nor the pool has Rena or Noel, one of them (the
         ones not excluded) takes a random pool member's place; with both excluded, none.
         With the bench (party_size 12) every allowed member fits: no random choice, and both
-        healers are in unless excluded, so the guarantee has nothing to do."""
+        healers are in unless excluded, so the guarantee has nothing to do.
+        Universal Tracker's rebuild: the room's pool (slot data `characters`; in hub mode
+        plan_party's union with the heroes adds nothing it lacks)."""
+        if self.ut_slot_data is not None:
+            return list(self.ut_slot_data["characters"])
         rng = self.random
         excluded = set(self.options.exclude_characters.value)
         if excluded & set(heroes):
@@ -202,7 +224,10 @@ class SO2World(World):
         (Ashton rules Opera out, and Ernest comes only with Opera), Celine, Chisato, and Leon in
         Claude's game or Dias in Rena's (neither when the story_route is "any": the port turns
         away the wrong one). With Claude, Rena and Noel, at most 8: when there is one too many,
-        Ernest stays out (Opera can join alone) or one of the others does."""
+        Ernest stays out (Opera can join alone) or one of the others does.
+        Universal Tracker's rebuild: the room's pool (slot data `characters`)."""
+        if self.ut_slot_data is not None:
+            return list(self.ut_slot_data["characters"])
         if not self.options.character_items:
             return []
         rng = self.random
@@ -371,6 +396,17 @@ class SO2World(World):
         return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
 
     def fill_slot_data(self):
+        """The slot data (docs/ap/seed_format.md "Slot data and trackers"): slot_options, then for
+        trackers `logic_version` (ut.LOGIC_VERSION: Universal Tracker refuses a room whose logic
+        this world doesn't reproduce) and `exclude_locations` (UT shows them excluded). Those two
+        are not in the .apso2's `options` (seed_data), which stays as it was."""
+        return dict(self.slot_options(), logic_version=ut.LOGIC_VERSION,
+                    exclude_locations=sorted(self.options.exclude_locations.value))
+
+    def slot_options(self):
+        """The options, the party and the values derived from them: the .apso2's `options` and
+        the slot data's first part (before 0.2.2 all of it). Universal Tracker restores the options
+        and the party from these and checks the rest (ut.restore, ut.check_restored)."""
         o = self.options
         p = self.party_info
         data = {
@@ -475,7 +511,7 @@ class SO2World(World):
             "game": self.game,
             "slot": {"name": mw.get_player_name(player), "id": player},
             # The port reads options.deathlink (seed_format.md); the rest is kept for reference.
-            "options": dict(self.fill_slot_data(), deathlink=bool(self.options.death_link)),
+            "options": dict(self.slot_options(), deathlink=bool(self.options.death_link)),
             "items": own_items,
             "locations": locs,
             "patches": patches,

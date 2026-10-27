@@ -377,7 +377,10 @@ def set_rules(world):
 # ---- The seed (docs/ap/seed_format.md "Hub") -------------------------------------------------
 def choose_start(world):
     """hub_start: the start point's key in data.HUB_STARTS (random_town: any of them, sorted for
-    a stable pick: every town of both worlds that hub_state.json `starts` lists)."""
+    a stable pick: every town of both worlds that hub_state.json `starts` lists). Universal
+    Tracker's rebuild (ut.py): the room's (slot data `hub_start_town`)."""
+    if world.ut_slot_data is not None:
+        return world.ut_slot_data["hub_start_town"]
     value = world.options.hub_start.current_key
     if value == "random_town":
         return world.random.choice(sorted(HUB_STARTS))
