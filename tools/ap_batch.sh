@@ -24,7 +24,8 @@
 # Seeds run one at a time (one heavy process). About 3-5 s a seed.
 #
 # The 0.2.0 release ran both sets, seeds 1-96 (192 + 192 .apso2, 0 checker errors; docs/ap/apworld.md
-# "Results"); 0.2.1 the three (solo_noexpel 95 of 96: seed 75, docs/handoff/ncpfix.md). Moved here from scratchpad/apworld2/batch (run_batch.sh, check.py, players_sk,
+# "Results"); 0.2.1 the three (solo_noexpel 95 of 96: seed 75, docs/handoff/ncpfix.md; 96 of 96
+# each once guild checks and learn levels could hold progression, docs/handoff/skilllogic.md). Moved here from scratchpad/apworld2/batch (run_batch.sh, check.py, players_sk,
 # players_hub_sk) by aptests, 2026-10-26; the Generate.py call is the same, so a seed's files
 # are byte-identical to the old script's.
 set -u
