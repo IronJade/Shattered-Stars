@@ -19,6 +19,7 @@ from .data import DISC_SWITCH_STAGE, STAGES, STORY_GATES, TELEPORTER_STAGE
 from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_TELEPORTER, \
     EVENT_VICTORY, KEY_NAME, SO2Item, stage_event
 from .locations import SO2Location
+from .logic import Has, need
 
 REGIONS = ("Menu", "Expel", "Energy Nede", "Fienal", "Cave of Trials")
 EVENTS = (  # (region, location name, event item)
@@ -38,11 +39,9 @@ def create_regions(world):
     regions = {name: Region(name, player, mw) for name in REGIONS}
     mw.regions += regions.values()
     regions["Menu"].connect(regions["Expel"], "New Game")
-    regions["Expel"].connect(regions["Energy Nede"], "Disc Switch",
-                             lambda state: state.has(EVENT_ENERGY_NEDE, player))
+    regions["Expel"].connect(regions["Energy Nede"], "Disc Switch", Has(EVENT_ENERGY_NEDE))
     regions["Energy Nede"].connect(regions["Fienal"], "To Fienal")
-    regions["Fienal"].connect(regions["Cave of Trials"], "Virtual Expel",
-                              lambda state: state.has(EVENT_FINAL_SAVE_POINT, player))
+    regions["Fienal"].connect(regions["Cave of Trials"], "Virtual Expel", Has(EVENT_FINAL_SAVE_POINT))
     events = list(EVENTS)
     goal = world.options.goal.value
     events += ([LIMITER_OFF_EVENT] if goal >= 1 else []) + ([ISERIA_QUEEN_EVENT] if goal == 2 else [])
@@ -80,23 +79,18 @@ def stage_rules(world):
     Point). A stage that ends with a one-way story point (data.STORY_GATES: the El voyage at the
     end of the Lacour Front Line stage) also needs the gate's keys: the port does not let the
     story past it without them."""
-    player = world.player
     gated = {}
     for gate in STORY_GATES:
         gated.setdefault(gate["stage"], []).extend(KEY_NAME[g] for g in gate_groups(world, gate))
     for k, (name, _, keys) in enumerate(STAGES, start=1):
-        need = list(dict.fromkeys([KEY_NAME[g] for g in keys] + gated.get(k, [])))
-        prev = stage_event(k - 1) if k > 1 else None
-        world.get_location(f"Story: {name}").access_rule = \
-            lambda state, prev=prev, need=need: (
-                (prev is None or state.has(prev, player)) and state.has_all(need, player))
-    world.get_location("Disc Switch (Eluria Tower)").access_rule = \
-        lambda state: state.has(stage_event(DISC_SWITCH_STAGE), player)
-    world.get_location("Final Save Point (Fienal 9F)").access_rule = \
-        lambda state: state.has(stage_event(len(STAGES)), player)
+        prev = [stage_event(k - 1)] if k > 1 else []
+        world.set_rule(world.get_location(f"Story: {name}"),
+                       need(prev + [KEY_NAME[g] for g in keys] + gated.get(k, [])))
+    world.set_rule(world.get_location("Disc Switch (Eluria Tower)"), Has(stage_event(DISC_SWITCH_STAGE)))
+    world.set_rule(world.get_location("Final Save Point (Fienal 9F)"), Has(stage_event(len(STAGES))))
     if world.options.expel_teleporter:
         # The arena's old man, from chapter 36; but Fun City lies on another island of Energy
         # Nede's world map than Central City, reached by the Synard (stage 16, the Cave of Red
         # Crystal; data.TELEPORTER_STAGE).
-        world.get_location("Expel Teleporter (Fun City arena)").access_rule = \
-            lambda state: state.has_all((stage_event(TELEPORTER_STAGE), KEY_NAME["Fun City"]), player)
+        world.set_rule(world.get_location("Expel Teleporter (Fun City arena)"),
+                       need((stage_event(TELEPORTER_STAGE), KEY_NAME["Fun City"])))

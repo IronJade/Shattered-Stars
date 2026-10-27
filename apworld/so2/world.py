@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hell, hub, items, locations, regions, rules, skillsanity, ut
+from . import hell, hub, items, locations, logic, regions, rules, skillsanity, ut
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -347,7 +347,9 @@ class SO2World(World):
         return items.FILLER_NAME
 
     def set_rules(self):
+        """Rules as data (logic.py): every access rule is a Rule Builder rule; the rest are open."""
         (hub.set_rules if self.hub else rules.set_rules)(self)
+        logic.open_by_default(self)
 
     def goal_encounters(self):
         """The encounters the goal needs: any of them (indalecio, limiter off), or all of them

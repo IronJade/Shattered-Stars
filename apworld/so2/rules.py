@@ -34,7 +34,7 @@ from worlds.generic.Rules import add_item_rule
 from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
 from .items import ALL_KEY_IDS, EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, \
     EVENT_LIMITER_OFF, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, stage_event
-from . import hell, skillsanity
+from . import hell, logic, skillsanity
 from .locations import ROW
 from .regions import stage_rules
 
@@ -257,7 +257,6 @@ def killer_rule(world, loc, row):
     member's learn points need it, skillsanity.learn_characters): the location holds no
     progression, and under full accessibility every item, the member's too, is reached."""
     from .locations import fighter_status
-    player = world.player
     o = world.options
     status = fighter_status(row["character"], world.party_info)
     if hell.is_hell_seed(o):
@@ -271,7 +270,7 @@ def killer_rule(world, loc, row):
     if status == "item" and row["character"] in world.progression_characters:
         need.append(row["character"])
     need += skillsanity.move_need(world, row)  # skillsanity special: the move itself [skillsanity2]
-    loc.access_rule = lambda state, need=need: state.has_all(need, player)
+    world.set_rule(loc, logic.need(need))
     mode = o.killer_move_progression.current_key
     allowed = (mode == "any" and status in ("sure", "item")) or \
               (mode == "hero" and row["character"] in world.party_info.story_members)
@@ -285,26 +284,23 @@ def goal_rules(world):
     Pass), and with the Iseria Queen goal her defeat too (the Final Save Point, and in open world
     the Cave of Trials Pass and the Fun City Pass, the cave rows' route; the cave's region exists
     whether or not cave_of_trials adds its locations)."""
-    player = world.player
     goal = world.options.goal.value
     need = [EVENT_FINAL_SAVE_POINT] + ([EVENT_LIMITER_OFF] if goal >= 1 else []) + \
         ([EVENT_ISERIA_QUEEN] if goal == 2 else [])
-    world.get_location("Indalecio").access_rule = lambda state: state.has_all(need, player)
+    world.set_rule(world.get_location("Indalecio"), logic.need(need))
     if goal >= 1:
         keys = [EVENT_FINAL_SAVE_POINT] + (["Central City Pass"] if world.open_world else [])
-        world.get_location("Limiter Off (Filia, Central City)").access_rule = \
-            lambda state: state.has_all(keys, player)
+        world.set_rule(world.get_location("Limiter Off (Filia, Central City)"), logic.need(keys))
     if goal == 2:
         cave = [EVENT_FINAL_SAVE_POINT] + (["Cave of Trials Pass", "Fun City Pass"] if world.open_world else [])
-        song = skillsanity.iseria_queen_need(world) or (lambda state: True)    # skillsanity: Musical Talent
-        world.get_location("Iseria Queen (Cave of Trials)").access_rule = \
-            lambda state: state.has_all(cave, player) and song(state)
+        song = skillsanity.iseria_queen_need(world)     # skillsanity: Musical Talent (None: no need)
+        world.set_rule(world.get_location("Iseria Queen (Cave of Trials)"), logic.both(logic.need(cave), song))
 
 
 def set_rules(world):
     player = world.player
     goal_rules(world)
-    world.multiworld.completion_condition[player] = lambda state: state.has(EVENT_VICTORY, player)
+    world.set_completion_rule(logic.Has(EVENT_VICTORY))
     side = {0: None, 1: "claude", 2: "rena"}[world.options.story_route.value]
     teleporter = world.open_world and bool(world.options.expel_teleporter)
     if world.open_world:
@@ -329,8 +325,8 @@ def set_rules(world):
             # user, 2026-10-25: a craft check gives a random Archipelago item). Skillsanity: the
             # specialty's skills (a sure member's own, or the skill items).
             add_item_rule(loc, lambda item: not item.advancement)
-            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)):
-                loc.access_rule = rule
+            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)) is not None:
+                world.set_rule(loc, rule)
             continue
         if row["type"] == "drop":
             allowed, modes = drop_rule(row, side, world.open_world, teleporter, expel, drop_mode,
@@ -354,9 +350,7 @@ def set_rules(world):
             add_item_rule(loc, lambda item: not item.advancement
                           or (item.player == player and item.name in EXPEL_STORY_KEYS))
         if world.open_world:
-            modes = modes or open_world_access(row, side, teleporter)
-            loc.access_rule = lambda state, modes=modes: any(
-                (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in modes)
+            world.set_rule(loc, logic.ways(modes or open_world_access(row, side, teleporter)))
 
 
 __all__ = ["set_rules", "may_hold_progression", "proven_late", "proven_teleporter", "proven_at_gate", "early_stage",

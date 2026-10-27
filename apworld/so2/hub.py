@@ -28,7 +28,7 @@ from .data import HUB_BOSSES, HUB_DROPS, HUB_DUNGEONS, HUB_LOCATIONS, HUB_MAPS, 
     HUB_STATE, LOCATIONS
 from .items import ALL_KEY_IDS, EVENT_FIENAL_OPEN, EVENT_ISERIA_QUEEN, EVENT_LIMITER_OFF, EVENT_VICTORY, GAME, \
     HUB_KEY_NAME, HUB_KEYLESS, SO2Item
-from . import hell, skillsanity
+from . import hell, logic, skillsanity
 from .locations import ROW, SOFT_REASONS, SO2Location, choose_crafts, choose_killer_moves
 from .rules import FORCE_DROP_CHANCE, MIN_DROP_CHANCE, drop_chance, killer_rule
 
@@ -268,10 +268,9 @@ def create_regions(world):
     for town in TOWNS:
         regions["Menu"].connect(regions[town], f"New Game ({town})")
     for g in world.hub_keys:
-        key = HUB_KEY_NAME[g["dungeon"]]
         regions[WORLD_REGION[g["world"]]].connect(regions[g["dungeon"]], f"Into {g['dungeon']}",
-                                                  lambda state, key=key: state.has(key, player))
-    regions[TOWNS[1]].connect(regions[FIENAL], "Into Fienal", lambda state: state.has(EVENT_FIENAL_OPEN, player))
+                                                  logic.Has(HUB_KEY_NAME[g["dungeon"]]))
+    regions[TOWNS[1]].connect(regions[FIENAL], "Into Fienal", logic.Has(EVENT_FIENAL_OPEN))
     goal = world.options.goal.value
     events = [(TOWNS[1], EVENT_FIENAL_GATE, EVENT_FIENAL_OPEN), (FIENAL, EVENT_INDALECIO, EVENT_VICTORY)]
     events += ([LIMITER_OFF_EVENT] if goal >= 1 else []) + ([ISERIA_QUEEN_EVENT] if goal == 2 else [])
@@ -333,14 +332,14 @@ def set_rules(world):
     events, the drops' access, the killer moves' and what each location may hold."""
     player, o = world.player, world.options
     side = {0: None, 1: "claude", 2: "rena"}[o.story_route.value]
-    gate = list(dict.fromkeys(k for e in world.fienal_won for k in access_of(world, CHAMBERS[e]["dungeon"])))
-    world.get_location(EVENT_FIENAL_GATE).access_rule = lambda state: state.has_all(gate, player)
+    gate = [k for e in world.fienal_won for k in access_of(world, CHAMBERS[e]["dungeon"])]
+    world.set_rule(world.get_location(EVENT_FIENAL_GATE), logic.need(gate))
     goal = o.goal.value
     need = ([EVENT_LIMITER_OFF] if goal >= 1 else []) + ([EVENT_ISERIA_QUEEN] if goal == 2 else [])
-    world.get_location(EVENT_INDALECIO).access_rule = lambda state: state.has_all(need, player)
-    if goal == 2 and (song := skillsanity.iseria_queen_need(world)):    # skillsanity: Musical Talent
-        world.get_location(ISERIA_QUEEN_EVENT[1]).access_rule = song
-    world.multiworld.completion_condition[player] = lambda state: state.has(EVENT_VICTORY, player)
+    world.set_rule(world.get_location(EVENT_INDALECIO), logic.need(need))
+    if goal == 2 and (song := skillsanity.iseria_queen_need(world)) is not None:    # skillsanity: Musical Talent
+        world.set_rule(world.get_location(ISERIA_QUEEN_EVENT[1]), song)
+    world.set_completion_rule(logic.Has(EVENT_VICTORY))
     keys_in_drops = bool(o.area_keys_in_drops)
     for loc in world.multiworld.get_locations(player):
         if loc.address is None:
@@ -355,8 +354,8 @@ def set_rules(world):
             continue
         if kind == "craft":
             add_item_rule(loc, lambda item: not item.advancement)
-            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)):
-                loc.access_rule = rule
+            if skillsanity.modes(o)[0] and (rule := skillsanity.craft_rule(world, row)) is not None:
+                world.set_rule(loc, rule)
             continue
         if kind == "drop":
             allowed, modes = drop_rule(world, row, side)
@@ -367,7 +366,7 @@ def set_rules(world):
                 world.forced_drops.add(loc.name)
             if not keys_in_drops:
                 add_item_rule(loc, lambda item: not (item.game == GAME and item.code in ALL_KEY_IDS))
-            loc.access_rule = lambda state, modes=modes: any(state.has_all(m, player) for m in modes)
+            world.set_rule(loc, logic.any_of(modes))
         else:
             allowed = "any" if may_hold_progression(world, row, side) else "none"
         if allowed == "none":

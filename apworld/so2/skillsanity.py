@@ -26,7 +26,7 @@
 """
 from BaseClasses import ItemClassification, LocationProgressType
 
-from . import hell
+from . import hell, logic
 from .data import GUILD_PLACES, HUB_MAPS, ITEM_BASE, LOCATIONS
 from .skills import EXTRA_MOVES, FLOAT, FLOAT_PRICE, GUILD_TOWNS, LEARN, SKILL_SETS, SKILLS, SPECIALTIES, \
     STARTING_SKILLS, SUPER_SPECIALTIES
@@ -220,10 +220,10 @@ def specialty_needs(world, spec):
 
 
 def needs_rule(world, ways):
-    player = world.player
+    """specialty_needs' ways as a rule: any of them (None: none needed)."""
     if not ways:
         return None
-    return lambda state, ways=ways: any(state.has_all(w, player) for w in ways)
+    return logic.any_of(ways)
 
 
 def plan(world):
@@ -438,8 +438,7 @@ def set_location_rule(world, loc, row):
     side = {0: None, 1: "claude", 2: "rena"}[world.options.story_route.value]
     if row["type"] == "guild":
         allowed, ways = guild_rule(world, row)
-        loc.access_rule = lambda state, ways=ways: any(
-            (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in ways)
+        world.set_rule(loc, logic.ways(ways))
         if allowed == "none":
             add_item_rule(loc, lambda item: not item.advancement)
         elif allowed == "expel keys":
@@ -449,17 +448,12 @@ def set_location_rule(world, loc, row):
     if row["how"] in ("cave", "float"):
         add_item_rule(loc, lambda item: not item.advancement)
         if world.open_world:
-            ways = open_world_access(row, side, bool(world.options.expel_teleporter))
-            loc.access_rule = lambda state, ways=ways: any(
-                (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in ways)
+            world.set_rule(loc, logic.ways(open_world_access(row, side, bool(world.options.expel_teleporter))))
         return
     prog, need, extra = learn_rule(world, row, loc.progress_type)
     if not prog:
         add_item_rule(loc, lambda item: not item.advancement)
-    if extra is None:
-        loc.access_rule = lambda state, need=need: state.has_all(need, player)
-    else:
-        loc.access_rule = lambda state, need=need, extra=extra: state.has_all(need, player) and extra(state)
+    world.set_rule(loc, logic.both(logic.need(need), extra))
 
 
 def hub_guild_region(row):
