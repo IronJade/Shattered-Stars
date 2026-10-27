@@ -33,10 +33,9 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | Port | B5 data-storage keys | dskeys | docs/handoff/dskeys.md | **done** 2026-10-27 (3a91e09, 802935b, f3c3b5c; unit 9/9, ss_game_tests 216/0, e2e 49/0, no-seed/offline A/B byte-identical, smoke 373/0) |
 | World | B2 Rule Builder | rulebuilder | docs/handoff/rulebuilder.md | **done** 2026-10-27 (0cc0bda 1d879a2 64a2c7d; 288 batch seeds identical incl. multidata, 93M truth values equal, world tests 788, general 379, slow 789, UT 20/20, /explain readable; no slowdown) |
 | Port | map render command (D5) | maprender | docs/handoff/maprender.md | **done** 2026-10-27 (4575b00 8cafcf7 e3bcf6b 8cc77d3 abad5e0 1687cc7 a2dac88; layout docs/ap/tracker_maps.json: 472/472 place checks positioned, 66 area + 2 world images; ss_game_tests 222/0, e2e 9/9, A/B 0 differ, smoke 373/0, NA/EU/FR/DE identical) |
-| World | B3 logic export + 0.2.0 Skillsanity rooms accepted with a warning | (after B2) | | queued |
+| World | B3 logic export + B4b Lua evaluator + 0.2.0 Skillsanity rooms accepted with a warning | logicexport | docs/handoff/logicexport.md | started 2026-10-27 |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
 | Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | started 2026-10-27 |
-| World | B4b the pack's logic evaluator | (after B3) | | queued |
 | World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
@@ -110,4 +109,5 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
   in its copy, forces UT's player_files_path to it, and runs everything without DISPLAY /
   WAYLAND_DISPLAY / DBUS_SESSION_BUS_ADDRESS so no dialog can open; scratchpad/ap_ut's host.yaml
   repointed. Every agent brief that runs third-party GUIs-with-headless-modes now says: strip the
-  display variables.
+  display variables (also docs/HANDOFF.md "Conventions to keep"). Rerun after the fix: UT 40/40
+  match, exit 0, no dialog (e23ea8f, d9ed4e7). logicexport (B3 + B4b + the 0.2.0 warning) started.
