@@ -865,3 +865,48 @@ the coordinator; nothing was committed.
   with the five rc2 artifacts (the four of 0.02.00 + SHA256SUMS), title "Shattered Stars 0.02.50",
   notes docs/release_notes/0.02.50.md; published 06:23:51 UTC, latest; downloaded assets verify
   against SHA256SUMS. Wiki pushed: a72a063.
+
+## 0.02.51 (agent "release251", 2026-10-27)
+
+The user (2026-10-27): "Let's push the current release of both the port and the apworld. Is it
+possible to have separate releases for the Port itself, and the APWorld on the same GitHub repo?"
+Plan (the coordinator's; tag names still to be confirmed by the user): **two GitHub releases** on
+the same repo: the port, tag `v0.02.51`, "Shattered Stars 0.02.51", the Linux and Windows bundles +
+SHA256SUMS, marked Latest; the world, tag `apworld-v0.2.1`, "so2.apworld 0.2.1", so2.apworld + the
+dotted YAML + its own SHA256SUMS, not Latest. The notes link each other.
+
+Rules (given): no push, tag or release; never the `dgs` remote or refs/backup/*; builds -j4, at
+most 1 heavy job at a time, game processes under 4 GB; headless; scratch XDG_CONFIG_HOME; kill by
+exact PID; scratch in scratchpad/release/; commits on main, docs first, staged by path, ending with
+the Co-Authored-By line; the wiki edits left uncommitted in scratchpad/wiki; on a denied call:
+note it here and stop.
+
+Steps: 1 version bump; 2 the two notes; 3 README + wiki (+ apworld/so2/docs download links);
+4 commit; 5 RC (scratchpad/release/rc-0.02.51.sh) + sums + commit; 6 Windows recheck list; 7 report.
+
+### Status
+- Started. HEAD 3bce4a2 (main, 64 ahead of origin/main 5d43f47); wiki checkout clean at a72a063 =
+  origin/master. dist/apworld-0.2.1 holds benchworld's package (83af433f... / 93c41087..., section
+  10's sums).
+- **Version bump (0.02.51):** engine/CMakeLists.txt (`project(... VERSION 0.02.51)` and the two
+  comments naming it: SS_VERSION, the .rc's 0,2,51,0); README.md (badge, download names);
+  engine/README.md (the example package name); docs/ap/release_checklist.md section 1's table.
+  Everything else reads PROJECT_VERSION: SS_VERSION (--version, setup's header "Setup · v...",
+  the mods catalogue's min_port_version), the Windows version resource and manifest
+  (res/windows/*.in), the bundle names (tools/build_*.sh's sed). The Linux desktop entries carry no
+  version. The world stays 0.2.1 (archipelago.json, world.py).
+- **tools/build_linux.sh / build_windows.sh:** `JOBS` (default 8) for the compile's `-j` (this RC
+  builds with JOBS=4, the machine's low-load rule).
+- **Notes:** docs/release_notes/0.02.51.md finished (intro, discs, what's new, fixes, updating with
+  the seed table, packages, installing, Archipelago from the world's own release, known
+  limitations, legal; sums after the RC). Corrected from the draft: the bench applies to open
+  world with `character_items` (the draft said `party_rules: open`, a seed field, not an option);
+  0.02.50 refuses a version-3 sidecar with "The data could not be loaded" (its log: "unsupported
+  sidecar version"), it doesn't say "needs a newer version". docs/release_notes/0.2.1.md: draft
+  banner gone, links to the port release, SHA256SUMS in the file table, known limitations point at
+  0.02.51's notes; its sums = dist/apworld-0.2.1 (83af433f... / 93c41087..., section 10).
+- **Tag names in the docs** (to change if the user picks others: `grep -rn 'v0\.02\.51\|apworld-v0\.2\.1'`):
+  README.md, docs/release_notes/0.02.51.md, docs/release_notes/0.2.1.md, the wiki pages.
+- apworld/so2/docs/*.md have no download link (setup_en.md says "this project's GitHub release
+  page" generically): no rebuild; the world package stays benchworld's (apworld/so2 unchanged
+  since 64a7d20).

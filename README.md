@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue.svg"></a>
-  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.02.50" src="https://img.shields.io/badge/version-0.02.50-informational.svg"></a>
+  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.02.51" src="https://img.shields.io/badge/version-0.02.51-informational.svg"></a>
   <a href="#getting-started"><img alt="Platforms: Windows and Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey.svg"></a>
   <a href="#how-it-was-made"><img alt="C++20, SDL3, OpenGL" src="https://img.shields.io/badge/C%2B%2B20-SDL3%20%C2%B7%20OpenGL-orange.svg"></a>
   <a href="#archipelago"><img alt="Archipelago: built in" src="https://img.shields.io/badge/Archipelago-built%20in-purple.svg"></a>
@@ -123,11 +123,14 @@ Japanese discs (SLPM-86105 / SLPM-86106) are recognised but not supported yet.
 
 ### Download
 
-Download the [latest release](https://github.com/IronJade/Shattered-Stars/releases/latest). Each release has two self-contained packages, with no
-installer and nothing else to install:
+Download the [latest release](https://github.com/IronJade/Shattered-Stars/releases/latest) of the game. Each release has two self-contained packages,
+with no installer and nothing else to install:
 
-- `ShatteredStars-0.02.50-win64.zip`
-- `ShatteredStars-0.02.50-linux-x86_64.tar.gz`
+- `ShatteredStars-0.02.51-win64.zip`
+- `ShatteredStars-0.02.51-linux-x86_64.tar.gz`
+
+The Archipelago world has releases of its own, apart from the game's
+([so2.apworld 0.2.1](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.1); see [Archipelago](#archipelago)).
 
 ### First launch
 
@@ -382,6 +385,15 @@ members you receive. The hub mode starts after the Final Save Point with both wo
 dungeon opens with its key, each story boss waits in its chamber, and Fienal opens once the
 bosses are beaten.
 
+**A party of twelve.** In open world with character items and in hub mode, every member you
+haven't excluded can join: besides the game's eight places, a bench keeps four more, and the
+camp menu's Party Order swaps anyone but the hero between the party and the bench. A starting
+character other than the hero leads from the party's first place.
+
+**The hell seed.** No random battles, with killer-move levels or learn points as checks: all
+the training happens in Fun City's arena, which such a seed makes free. Setup warns you when
+you choose one.
+
 **The goal** is defeating Indalecio, the final boss, in Fienal: as he is, with his limiter off,
 or with his limiter off and the Iseria Queen beaten too.
 
@@ -406,9 +418,12 @@ To play a seed on your own, leave the address empty: your locations are still sh
 checked, and items from your own world are given to you. One seed works with the discs of any
 supported release.
 
-This is a custom world, not yet part of Archipelago itself. The `.apworld` and its YAML
-template are attached to each [release](https://github.com/IronJade/Shattered-Stars/releases/latest) (or build them with `tools/build_apworld.sh`). Every option, the fights you can't win, and troubleshooting are on
-the [Archipelago](https://github.com/IronJade/Shattered-Stars/wiki/Archipelago) page.
+This is a custom world, not yet part of Archipelago itself, so it has releases of its own,
+apart from the game's: download `so2.apworld` and its YAML template
+(`Star.Ocean.The.Second.Story.yaml`) from [so2.apworld 0.2.1](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.1), or build them with
+`tools/build_apworld.sh`. A seed made with the bench needs Shattered Stars 0.02.51. Every
+option, the fights you can't win, and troubleshooting are on the
+[Archipelago](https://github.com/IronJade/Shattered-Stars/wiki/Archipelago) page.
 
 ## Building from source
 

@@ -31,7 +31,7 @@ You need images of your own discs, from the North American, European, French or 
 release (both from the same one): each disc's `.cue` file with its `.bin`, or an `.iso` /
 `.img` image. Disc 2 is optional until the story asks for it.
 
-**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.02.50-win64.zip`)
+**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.02.51-win64.zip`)
 anywhere and run **`setup.exe`**. On the Discs page, choose Disc 1 (and Disc 2) with
 *Browse...*. The other pages are Display,
 Sound, Controls, Gameplay, Memory cards, Mods and Archipelago. Then press *Save & Play*. Or just run
@@ -360,6 +360,10 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   seed or Archipelago off: the original levels). Shop slots give what was bought and the
   slot's check, marked with the Archipelago logo until checked. `docs/ap/seed_format.md`
   "Skillsanity", "Difficulty", "The join level", "Shop slots".
+- **The hell seed** (so2.apworld 0.2.1; the seed's `hell_seed`: `encounter_rate` 0 with
+  killer-move checks or learn points): setup's Archipelago page shows a warning when such a seed
+  is chosen, and the game logs the same line when it loads it. Display only: the Fun City
+  arena's waived fee is one of the seed's ordinary patch lines (`docs/ap/seed_format.md`).
 - `--ap-seed FILE` loads a seed for a one-off run without saving it to config.ini; the
   server / slot / password, if config.ini already has them (from setup), still apply.
 - Debug console (`--debug`): `ap_status`, `ap_check ID`, `ap_give ITEM [FROM]` (ITEM: an AP
