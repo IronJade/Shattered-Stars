@@ -79,12 +79,14 @@ class SO2World(World):
         self.forced_drops = set()       # drop_progression force (rules.set_rules)
         # Characters the logic needs (a member's killer-move levels that may hold progression need
         # their item when the member joins by it: killer_move_progression any, or hero for a hero
-        # who is an item, hub mode under story_route any) are progression; any other is useful.
+        # who is an item, hub mode under story_route any; so do their learn points under skillsanity
+        # special: skillsanity.learn_characters) are progression; any other is useful.
         killers = {row["character"] for row, _ in self.chosen if row["type"] == "killer_move"}
         mode = o.killer_move_progression.current_key
         if mode == "hero":
             killers &= set(self.party_info.story_members)
         self.progression_characters = set(self.party) & killers if mode in ("any", "hero") else set()
+        self.progression_characters |= skillsanity.learn_characters(self)   # [skilllogic]
         if self.hub:
             self.fienal_won = hub.fienal_won(self)      # the Fienal requirement (D6)
             self.hub_keys = hub.needed_keys(self)       # the dungeon keys this world has (D4)

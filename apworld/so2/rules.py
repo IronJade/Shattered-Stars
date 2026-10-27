@@ -250,8 +250,10 @@ def killer_rule(world, loc, row):
     """A killer-move level's access (the stage for the learn level; with killer_move_progression
     any, a member who joins by a character item also needs the item, which is then progression:
     world.progression_characters) and what it may hold (killer_move_progression; never with
-    encounter_rate 0 or when EXCLUDED). Otherwise the item isn't required: the location holds
-    no progression, and under full accessibility every item, the member's too, is reached."""
+    encounter_rate 0 or when EXCLUDED). Otherwise the item isn't required unless it is progression
+    anyway (skillsanity special: the member's learn points need it, skillsanity.learn_characters):
+    the location holds no progression, and under full accessibility every item, the member's too,
+    is reached."""
     from .locations import fighter_status
     player = world.player
     o = world.options
