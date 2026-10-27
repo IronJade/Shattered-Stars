@@ -21,6 +21,16 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   on main (raw URL), as recommended; the pack zip in **its own release**, tag `poptracker-vX.Y.Z`
   (1.0.0 first), not Latest, notes linking the port and world releases ("It's own release works for
   me. We are already doing that with the apworld anyway."). build_poptracker.sh defaults to that tag.
+- Tracker map doors and names (the user, 2026-10-27, verbatim): "The strategy guide doesn't add room
+  names either for dungeons and the like. What it does is draws lines from one door to the other across
+  the page. I think if we could, we could simply have the map number that a door leads to on the image
+  to be able to follow the pathway. If it allows for clickable transitions between them, then this
+  would be our method. Click on the doorway with the mapTo label and that map then shows up. Anything
+  that we CAN name correctly, we should. Houses, Shops, etc." PopTracker supports it
+  (AddOnLocationSectionChangedHandler since 0.26.2 + UiHint ActivateTab; nested tabbed layouts).
+  Part 1 (names, doors + per-room images in the layout, the port's renderer): agent mapdoors.
+  Part 2 (pack: door sections, Area > Room tabs, the click handler, smoke): after logicexport,
+  together with B6.
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
@@ -36,7 +46,8 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | World | B3 logic export + B4b Lua evaluator + 0.2.0 Skillsanity rooms accepted with a warning | logicexport | docs/handoff/logicexport.md | started 2026-10-27 |
 | World | B4a PopTracker pack (all but the logic evaluator) | packgen | docs/handoff/packgen.md | **done** 2026-10-27 (65ed8ce 2ad5530 3c5db64 80d1b8d cbd1231; tests 18/18, pack checker strict OK, real PopTracker 0.36.0 headless smoke 20/20 both variants) |
 | Port | ASan, Windows build + Wine render, setup button | portcheck (sonnet) | docs/handoff/portcheck.md | **done** 2026-10-27 (c43294f b25fa5b 94e30f4; ASan clean: ap_ds 9/9, tracker_ 6/6, net 5/5, render 68/68, e2e 49/0; MinGW 370/370; Wine render 68/68 byte-identical to Linux, default folder Documents\PopTracker\user-override\so2_shattered_stars; setup button tested headless) |
-| World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
+| Port + data | Map doors, per-room images, names (part 1) | mapdoors | docs/handoff/mapdoors.md | started 2026-10-27 |
+| World | B6 UT map tab + story awareness (D8 yes) + pack doors/tabs (part 2) | (after logicexport + mapdoors) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
 A fresh agent per assignment (rule in ~/.claude/CLAUDE.md), started from the previous one's log.
