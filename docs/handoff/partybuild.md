@@ -281,8 +281,10 @@ agent "partybuild2" continues from here (2026-10-26).
     bin_p5 (s3p5): Scout's dialog opens at the same input. Captures for the user:
     p5b/use_sheet.png.
   - Frozen for the full smoke: bin_p5b/, smoke_p5b.sh, piece5b.patch (all of 5b with docs).
-    **Full smoke smoke10.log: 324 PASS / 0 FAIL, rc=0. Piece 5b committed** (the commit after
-    3599885 on party-bench; `git log` has its hash).
+    **Full smoke smoke10.log: 324 PASS / 0 FAIL, rc=0. Piece 5b committed: 61b13ee.**
+- **partybuild5 stopped here (2026-10-27) on the coordinator's order** (the give-queue fix on
+  main has the machine). Worktree clean (only the untracked `analysis` symlink); piece 6's
+  draft is in scratchpad/partybuild/piece6_wip.patch, not applied, never compiled.
 - **Stop ordered (2026-10-27):** a mandatory port fix (the give queue must not stall behind an
   item that doesn't fit the inventory) runs on main; the machine takes two agents. Do NOT
   start piece 6 until resumed. Next after resuming: piece 6 (`git apply
