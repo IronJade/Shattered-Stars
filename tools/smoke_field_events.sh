@@ -361,6 +361,41 @@ guard_load ap_guard_plain "$WORK/save_plain.mcd"
 check ap_guard_plain "a save without the seed's state is refused" "\\[ap\\] load refused, save 1 of .*save_plain\\.mcd: this save isn't from this Archipelago seed"
 guard_load ap_guard_any "$WORK/guard.mcd" SS_AP_ANY_SAVE=1
 check ap_guard_any "SS_AP_ANY_SAVE=1 (tests) loads it, logged" 'changed outside the game .*; loaded anyway \(SS_AP_ANY_SAVE=1\)'
+# Items still waiting across a save and a load [pendingsave agent] (docs/ap/seed_format.md "The save
+# sidecar", `pending`): four boss locations on encounter 19 (the console's battle, the stand-in's
+# victory) queue three own items and send Alice's; while her banner shows the camp menu saves with
+# the three waiting (no gives in menus). The sidecar keeps them (version 3, pending_hash); a load in a new session gives
+# them; the same sidecar with its list edited is refused like an edited save.
+cat >"$WORK/pend.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-pend", "slot": {"name": "Claude", "id": 1},
+ "locations": [
+  {"id": 7001, "name": "reward 1", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "item", "game_id": 21, "name": "Revival Card"}},
+  {"id": 7002, "name": "reward 2", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "item", "game_id": 22, "name": "Item 22"}},
+  {"id": 7003, "name": "reward 3", "check": {"type": "boss", "encounter": 19}, "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}},
+  {"id": 7004, "name": "reward 4", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "fol", "amount": 4321, "name": "4321 Fol"}}]}
+SEED
+PEND_SAVE="560:triangle,566:none,660:up,666:none,710:cross,716:none,810:cross,816:none,910:cross,916:none,1010:cross,1016:none,1110:cross,1116:none"
+SS_BATTLE_STUB=1 SS_SAVE_ANYWHERE=1 SS_DEBUG_INPUT="200:battle 19;1200:ap_status" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen \
+  SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pend.mcd" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/pend.apso2" \
+  --frames 1300 --map 18 --input "$PEND_SAVE" </dev/null >"$WORK/ap_pend_save.log" 2>&1
+check ap_pend_save "the boss's checks" '\[ap\] check 7004 \(reward 4\): 4321 Fol'
+check ap_pend_save "saved with three waiting" 'checks 4/4 \| received 0 \| waiting 3 \|'
+if grep -q '"version": 3' "$WORK/pend.slot01.ap.json" && grep -q '"pending_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/pend.slot01.ap.json" \
+   && [ "$(grep -c '"location": 700[124]' "$WORK/pend.slot01.ap.json")" = 3 ]; then
+  echo "PASS ap_pend_save: the sidecar keeps the three waiting (version 3, pending_hash)"
+else
+  echo "FAIL ap_pend_save: the sidecar keeps the three waiting (version 3, pending_hash)"; fail=1
+fi
+SS_LOAD_SAVE=0 SS_TRACE_LEADER=30 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pend.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/pend.apso2" --frames 700 </dev/null >"$WORK/ap_pend_load.log" 2>&1
+check ap_pend_load "a new session loads them" '\[ap\] loaded .*pend\.slot01\.ap\.json: 4 checks, received index 0, 3 items waiting from the save'
+check ap_pend_load "and gives them" '\[ap\] given 4321 Fol'
+check ap_pend_load "the Fol arrives" '\[leader\] vblank [0-9]+ map 18 state 0 .* fol 4321$'
+cp "$WORK/pend.mcd" "$WORK/pendx.mcd"
+sed 's/"location": 7002/"location": 7001/' "$WORK/pend.slot01.ap.json" >"$WORK/pendx.slot01.ap.json"
+SS_LOAD_SAVE=0 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pendx.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/pend.apso2" --frames 90 </dev/null >"$WORK/ap_pend_edit.log" 2>&1
+check ap_pend_edit "an edited waiting list is refused" '\[ap\] load refused, save 1 of .*pendx\.mcd: this save was changed outside the game \(its waiting items differ'
 
 # Archipelago phase 4 [world agent]: the open world. Map 17's door to Arlia (door 1116181,
 # routine 0x204c) needs key 1: walking in shows the banner and nothing transfers; once the key

@@ -256,6 +256,12 @@ constexpr int64_t door_id(int map, int offset) { return static_cast<int64_t>(map
 bool load_seed_text(const std::string& text, Seed* out, std::string* error);
 bool load_seed_file(const std::string& path, Seed* out, std::string* error);
 
+// An item object as a seed holds one (`items`, a location's `item`, `start.items`): read with the
+// seed's rules, and written back in the same form [pendingsave agent: the save sidecar's
+// `pending` keeps the items still to give that are no location's own].
+bool parse_item_json(const Json& j, ItemDef* out, std::string* error, const std::string& where);
+Json item_json(const ItemDef& item);
+
 // Placeholder ranges (Location::placeholder). Item routines take 0x400-0x270f. Fol routines
 // take 0xf00000-0xffffff, which fits the money routine's 24-bit push (the generator's range),
 // or 0x7f000000-0x7fffffff (a full word; version-1 seeds).

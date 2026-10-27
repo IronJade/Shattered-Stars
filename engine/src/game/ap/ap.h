@@ -64,6 +64,19 @@ struct SaveState {
   // (character * 256 + record index), each once, in the order they came.
   std::vector<int> skills;
   std::vector<int> moves;
+  // [pendingsave agent] The give queue as the save was made: items still to come in free play,
+  // in order (docs/ap/seed_format.md "The save sidecar", `pending`). A check's own item is kept as
+  // its location (the item is the seed's); anything else (the courier's overflow, the console)
+  // as the item itself. Written at a save, turned back into the queue by a load, never kept in the
+  // running state; `pending_hash` (the save's bytes and the list) guards it like save_hash.
+  struct Give {
+    ItemDef item;            // (a location's: filled from the seed when it is queued)
+    std::string from;        // the sender ("": this player's own)
+    bool found = false;      // "Got X" (an own item found) rather than "Received X"
+    int64_t location = -1;   // the check whose own item it is (-1: none)
+  };
+  std::vector<Give> pending;
+  std::string pending_hash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -113,6 +126,9 @@ bool take_start_position();
 bool start_position_pending();
 // 'file' (optional): the save as the card driver read it back after writing it ('length'
 // bytes available, a block); the sidecar then holds its hash (save_hash).
+// [pendingsave agent] The save's sidecar keeps the give queue (`pending`); the load gives it again,
+// and with it the own items of the checks the running game has that the save lacks (made since
+// it, or reported by the server), except chests and gifts, which the loaded game can open again.
 void on_saved(const std::string& card_image, int save_index, const u8* file = nullptr, size_t length = 0);
 void on_loaded(const std::string& card_image, int save_index);
 // The save guard (all world modes; the user, 2026-10-25: "block save editing for the archi
@@ -121,7 +137,9 @@ void on_loaded(const std::string& card_image, int save_index);
 // its sidecar names this seed and slot and holds the hash of the save as it is on the card
 // ('file', 'length' bytes read); otherwise false (the game's own "load failed") and a log line
 // says why. A guard against accidents and casual save editors, not against cheating (the port
-// is open source). Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
+// is open source). A sidecar with items waiting [pendingsave agent] also needs its pending_hash
+// to match the save and the list (an edited, stripped or moved list is refused the same way).
+// Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
 // seed run clears every SS_* hook) lets any save load as before, logged.
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length);
 

@@ -350,6 +350,179 @@ TEST(ap_save_guard) {
   fs::remove_all(dir, ec);
 }
 
+// Items still waiting across a save and a load [pendingsave agent] (docs/ap/seed_format.md "The
+// save sidecar", `pending`): a check's items queue up for free play; a save keeps the queue in the
+// sidecar (version 3, guarded by pending_hash), a load in a new session gives them again, and
+// nothing is given twice (a second load, a reconnect). A load of a save from before a check owes
+// its own item unless the check is a chest or a gift (the loaded game opens it again).
+namespace {
+const char* kPendingSeed = R"seed({
+  "format": "apso2", "version": 1, "seed": "waiting-1", "slot": {"name": "Claude", "id": 1},
+  "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21},
+            "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3}},
+  "locations": [
+    {"id": 2001, "name": "reward 1", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 21, "name": "Revival Card"}},
+    {"id": 2002, "name": "reward 2", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "key", "key": 3, "name": "Hilton Pass"}},
+    {"id": 2003, "name": "reward 3", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "fol", "amount": 300}},
+    {"id": 2004, "name": "reward 4", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 2, "player_name": "Alice", "name": "Hookshot", "ap_id": 77}},
+    {"id": 2005, "name": "a crate", "check": {"type": "chest", "map": 18, "flag": 2401},
+     "item": {"player": 1, "kind": "item", "game_id": 23}}
+  ]})seed";
+
+std::string read_text(const std::string& path) {
+  std::ifstream in(path, std::ios::binary);
+  return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+void write_text(const std::string& path, const std::string& text) {
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  out << text;
+}
+}  // namespace
+
+TEST(ap_pending_save) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kPendingSeed, &s, &error));
+  std::vector<u8> save(0x2000);  // a save as the card holds it (length 0x1000 at +0x21a)
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 5 + 1);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+  const fs::path dir = scratch("pending");
+  const std::string card = (dir / "memcard1.mcd").string();
+
+  // Nothing waiting: version 2 and no new key (the sidecar as before).
+  ap::start_with(s);
+  ap::on_saved(card, 0, save.data(), save.size());
+  const std::string empty_text = read_text(ap::sidecar_path(card, 0));
+  CHECK(empty_text.find("\"version\": 2") != std::string::npos && empty_text.find("\"pending") == std::string::npos);
+
+  // The boss's four checks: three own items queue up (the fourth is Alice's), a save keeps them.
+  ap::on_battle_exit(19, 0);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2004) && ap::pending_count() == 3);
+  ap::on_saved(card, 1, save.data(), save.size());
+  const std::string text = read_text(ap::sidecar_path(card, 1));
+  CHECK(text.find("\"version\": 3") != std::string::npos);
+  CHECK(text.find("\"pending_hash\": \"sha256:") != std::string::npos);
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 1), &back, &error));
+  CHECK(back.pending.size() == 3 && back.pending[0].location == 2001 && back.pending[2].location == 2003);
+  CHECK(ap::state().pending.empty() && ap::state().pending_hash.empty());  // (never in the running state)
+  CHECK(ap::load_allowed(card, 1, save.data(), save.size()));
+  ap::on_saved(card, 2, save.data(), save.size());  // (the same queue: the same file)
+  CHECK(read_text(ap::sidecar_path(card, 2)) == read_text(ap::sidecar_path(card, 1)));
+
+  // A new session loads it: the three wait again; a second load doesn't double them.
+  ap::stop();
+  ap::start_with(s);
+  CHECK(ap::pending_count() == 0);
+  ap::on_loaded(card, 1);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2004) && ap::pending_count() == 3);
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 3);
+  // The save from before the boss: its game lacks the three, the checks stay checked: still three
+  // (owed, not doubled); the crate opened since is not owed (that game opens it again).
+  ap::on_flag_set(2401);
+  CHECK(ap::is_checked(2005));
+  ap::on_loaded(card, 0);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2005) && ap::pending_count() == 3);
+  ap::on_loaded(card, 0);
+  CHECK(ap::pending_count() == 3);
+  ap::on_loaded(card, 1);  // (back to the later save: its own three, nothing else)
+  CHECK(ap::pending_count() == 3);
+
+  // Items that are no location's own (the console's, the courier's) keep their item and sender.
+  ap::stop();
+  ap::start_with(s);
+  CHECK(ap::receive_by_name_or_id("Revival Card", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("0x30", "", &error));
+  CHECK(ap::receive_by_name_or_id("trap:fol_loss:25", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("key:3", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("Celine", "Alice", &error));
+  ap::on_saved(card, 3, save.data(), save.size());
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 3), &back, &error) && back.pending.size() == 5);
+  CHECK(back.pending[0].location == -1 && back.pending[0].item.kind == "item" && back.pending[0].item.game_id == 21 &&
+        back.pending[0].item.ap_id == 5000021 && back.pending[0].from == "Bob" && !back.pending[0].found);
+  CHECK(back.pending[1].item.game_id == 0x30 && back.pending[1].from.empty());
+  CHECK(back.pending[2].item.kind == "trap" && back.pending[2].item.trap == "fol_loss" && back.pending[2].item.percent == 25);
+  CHECK(back.pending[3].item.kind == "key" && back.pending[3].item.key == 3 && back.pending[3].item.name == "Hilton Pass");
+  CHECK(back.pending[4].item.kind == "character" && back.pending[4].item.character == 3 && back.pending[4].from == "Alice");
+  CHECK(ap::load_allowed(card, 3, save.data(), save.size()));
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 3);
+  CHECK(ap::pending_count() == 5);
+  ap::SaveState again = back;
+  again.pending_hash.clear();
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(again), &again, &error) && again.pending.size() == 5);
+
+  // The guard: a list edited, extended, stripped of its hash, or the hash edited: refused like an
+  // edited save. Spacing and key order are not edits. Both keys stripped: only the items are lost
+  // (a sidecar with nothing waiting), as for the bench.
+  const std::string path1 = ap::sidecar_path(card, 1), path4 = ap::sidecar_path(card, 4);
+  auto variant = [&](const std::string& from, const std::string& to) {
+    std::string t = text;
+    const size_t at = t.find(from);
+    CHECK(at != std::string::npos);
+    if (at != std::string::npos) t.replace(at, from.size(), to);
+    write_text(path4, t);
+    return ap::load_allowed(card, 4, save.data(), save.size());
+  };
+  CHECK(variant("\"location\": 2002", "\"location\": 2005") == false);
+  CHECK(variant("\"pending\": [", "\"pending\": [{\"location\": 2002}, ") == false);
+  CHECK(variant("\"pending_hash\"", "\"pending_hash_x\"") == false);
+  CHECK(variant("\"pending_hash\": \"sha256:", "\"pending_hash\": \"sha256:0") == false);
+  CHECK(variant("\"pending\": [", "\"pending\":[ ") == true);
+  ap::Json j;
+  CHECK(ap::Json::parse(text, &j, &error));
+  ap::Json stripped = ap::Json::object();
+  for (const auto& [k, v] : j.items())
+    if (k != "pending") stripped.set(k, v);
+  write_text(path4, stripped.dump());
+  CHECK(!ap::load_allowed(card, 4, save.data(), save.size()));
+  ap::Json both = ap::Json::object();
+  for (const auto& [k, v] : j.items())
+    if (k != "pending" && k != "pending_hash") both.set(k, v);
+  write_text(path4, both.dump());
+  CHECK(ap::load_allowed(card, 4, save.data(), save.size()));
+  // Tied to its save: the same sidecar beside another save's bytes fails (save_hash first).
+  std::vector<u8> other = save;
+  other[0x300] ^= 1;
+  CHECK(!ap::load_allowed(card, 1, other.data(), other.size()));
+  CHECK(ap::load_allowed(card, 1, save.data(), save.size()));
+  CHECK(read_text(path1) == text);
+
+  // The server: checks of this slot made in a game this one lacks give their own items here once
+  // (boss 2001 and 2002; not the crate 2005, not Alice's 2004); a reconnect adds nothing.
+  ap::stop();
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "waiting-1";
+  c.checked = {2001, 2002, 2004, 2005};
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected() && ap::is_checked(2002) && ap::pending_count() == 2);
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::pending_count() == 2);
+  // A load of the later save (it has all four boss checks, three waiting): its three, no more.
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 3);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
 TEST(ap_server_link) {
   ap::stop();
   ap::Seed s;

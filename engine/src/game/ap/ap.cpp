@@ -72,12 +72,10 @@ struct Runtime {
   std::map<int64_t, size_t> by_placeholder;  // patch placeholder -> index
   SaveState state;
   std::set<int64_t> checked;
-  struct Pending {
-    ItemDef item;
-    std::string from;
-    bool found = false;                 // a boss reward ("Got X"), not a received item
-  };
-  std::deque<Pending> pending;          // local items to give (console, boss rewards)
+  // Local items to give (a check's own item, found: "Got X"; the console's, received), with the
+  // check they came from: the save's sidecar keeps them (SaveState::pending) [pendingsave agent].
+  using Pending = SaveState::Give;
+  std::deque<Pending> pending;
   std::vector<u8> notice_text;          // the notice's map-font text (kept while it shows)
   int notice_frames = 0;                // frames the current notice has shown
   std::deque<std::string> notices;      // notices waiting for the banner
@@ -767,10 +765,62 @@ std::string sidecar_path(const std::string& card_image, int save_index) {
   return ustr(p) + tail;
 }
 
+namespace {
+// [pendingsave agent] The give queue in the sidecar (`pending`): a check's own item as
+// {"location": id} (the seed has the item), anything else as {"item": {...}, "from", "found"}.
+Json pending_json(const std::vector<SaveState::Give>& pending) {
+  Json a = Json::array();
+  for (const SaveState::Give& g : pending) {
+    Json e = Json::object();
+    if (g.location >= 0) {
+      e.set("location", Json::number(g.location));
+    } else {
+      e.set("item", item_json(g.item));
+      if (!g.from.empty()) e.set("from", Json::string(g.from));
+      if (g.found) e.set("found", Json::boolean(true));
+    }
+    a.push(e);
+  }
+  return a;
+}
+
+// Its guard (`pending_hash`): "sha256:" of the save's bytes as util::save_digest takes them (its
+// first N, N = the u16 at +0x21a), then the list as this writer dumps it (an edited value changes
+// it; spacing and key order don't). Tied to the save: a list moved to another save fails too.
+std::string pending_digest(const u8* file, size_t length, const Json& pending) {
+  size_t n = file != nullptr && length >= 0x21C ? static_cast<size_t>(file[0x21A] | file[0x21B] << 8) : 0;
+  if (n > length) n = length;
+  if (n > 0x2000) n = 0x2000;
+  std::vector<u8> data;
+  if (n > 0) data.assign(file, file + n);
+  const std::string text = pending.dump();
+  data.insert(data.end(), text.begin(), text.end());
+  return "sha256:" + util::sha256_hex(data.data(), data.size());
+}
+
+// The sidecar's `pending` as the file holds it (null: none, or no file).
+Json sidecar_pending(const std::string& path) {
+  std::ifstream in(upath(path), std::ios::binary);
+  std::stringstream ss;
+  ss << in.rdbuf();
+  Json j;
+  std::string err;
+  if (!in || !Json::parse(ss.str(), &j, &err)) return Json();
+  return j["pending"];
+}
+
+// A check whose own item the game gives again once a save from before it is loaded: a chest or a
+// gift (their flags come back with the save; opened again, the placeholder gives again). Any other
+// check stays checked and never fires again, so its item is owed to a game that lacks it.
+bool gives_again(const Location& l) { return l.type == "chest" || l.type == "gift"; }
+}  // namespace
+
 Json sidecar_json(const SaveState& s) {
   Json j = Json::object();
   j.set("format", Json::string("apso2-save"));
-  j.set("version", Json::number(static_cast<int64_t>(2)));  // 2: save_hash [hubcore agent]
+  // 2: save_hash [hubcore agent]; 3: items waiting (only then: an older port refuses the sidecar
+  // instead of dropping them) [pendingsave agent].
+  j.set("version", Json::number(static_cast<int64_t>(s.pending.empty() ? 2 : 3)));
   j.set("seed", Json::string(s.seed));
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
@@ -815,13 +865,17 @@ Json sidecar_json(const SaveState& s) {
   if (s.chosen_start > 0) j.set("starting_character", Json::number(static_cast<int64_t>(s.chosen_start)));  // [charselect]
   if (!s.skills.empty()) j.set("skills", ints(s.skills));  // skillsanity [skillsanity2]
   if (!s.moves.empty()) j.set("moves", ints(s.moves));
+  if (!s.pending.empty()) {  // [pendingsave agent] (nothing waiting: no key)
+    j.set("pending", pending_json(s.pending));
+    if (!s.pending_hash.empty()) j.set("pending_hash", Json::string(s.pending_hash));
+  }
   return j;
 }
 
 bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (j["format"].as_string() != "apso2-save") return fail(error, "not an apso2 save sidecar");
   const int version = get_int_or(j["version"], 0);
-  if (version != 1 && version != 2) return fail(error, "unsupported sidecar version");
+  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: items waiting)
   SaveState r;
   r.seed = j["seed"].as_string();
   r.slot_name = j["slot_name"].as_string();
@@ -855,6 +909,28 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (r.chosen_start < 0 || r.chosen_start > kCharacterCount) r.chosen_start = 0;
   ints("skills", &r.skills);  // skillsanity [skillsanity2] (absent: none)
   ints("moves", &r.moves);
+  // The give queue [pendingsave agent] (absent: nothing waits; anything malformed refuses the
+  // sidecar). A location's item is the seed's: on_loaded fills it in.
+  const Json& pending = j["pending"];
+  if (!pending.is_null() && !pending.is_array()) return fail(error, "pending: a list expected");
+  for (size_t i = 0; i < pending.size(); ++i) {
+    const Json& e = pending[i];
+    const std::string where = "pending[" + std::to_string(i) + "]";
+    SaveState::Give g;
+    if (e.has("location")) {
+      int64_t id = -1;
+      if (!get_int(e["location"], &id) || id < 0) return fail(error, where + ": a location id expected");
+      g.location = id;
+      g.found = true;
+    } else if (!parse_item_json(e["item"], &g.item, error, where + ".item")) {
+      return false;
+    } else {
+      g.from = e["from"].as_string();
+      g.found = e["found"].as_bool(false);
+    }
+    r.pending.push_back(std::move(g));
+  }
+  r.pending_hash = j["pending_hash"].as_string();
   *s = std::move(r);
   return true;
 }
@@ -1004,7 +1080,7 @@ void deliver_check(int64_t id) {
   if (!r.on || is_checked(id)) return;
   const Location* l = find_location(id);
   if (l == nullptr || !record_check(id, true)) return;
-  if (l->item.own) r.pending.push_back({l->item.item, "", true});
+  if (l->item.own) r.pending.push_back({l->item.item, "", true, l->id});
 }
 
 SaveState& mutable_state() { return rt().state; }
@@ -1416,6 +1492,9 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   std::string err;
   SaveState s = r.state;
   s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
+  // [pendingsave agent] The items still to give go with the save, guarded with its bytes.
+  s.pending.assign(r.pending.begin(), r.pending.end());
+  s.pending_hash = s.pending.empty() ? std::string() : pending_digest(file, length, pending_json(s.pending));
   s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
   if (write_sidecar(path, s, &err)) {
     log("saved " + path);
@@ -1441,6 +1520,32 @@ void on_loaded(const std::string& card_image, int save_index) {
     r.state.start_given = true;  // (an ordinary save: no starting inventory on top of it)
     return;
   }
+  // [pendingsave agent] The give queue: the save's own as it was saved (a location's item from
+  // the seed), then the own items of the checks the running game has and the save lacks (made
+  // since it, or reported by the server: they stay checked and never fire again, and the loaded
+  // game lacks their items), except chests and gifts, which it can open again. The running queue
+  // belonged to the game left behind.
+  std::deque<Runtime::Pending> queue;
+  for (const SaveState::Give& g : s.pending) {
+    if (g.location < 0) {
+      queue.push_back(g);
+      continue;
+    }
+    const Location* l = find_location(g.location);
+    if (l == nullptr || !l->item.own) {
+      log("the save's waiting item of location " + std::to_string(g.location) + " is not this seed's own item: dropped");
+      continue;
+    }
+    queue.push_back({l->item.item, "", true, l->id});
+  }
+  const size_t saved_waiting = queue.size();
+  if (s.seed == r.seed.seed) {
+    const std::set<int64_t> saved(s.checked.begin(), s.checked.end());
+    for (const int64_t id : r.state.checked) {
+      const Location* l = saved.count(id) != 0 ? nullptr : find_location(id);
+      if (l != nullptr && l->item.own && !gives_again(*l)) queue.push_back({l->item.item, "", true, id});
+    }
+  }
   if (s.seed != r.seed.seed) {
     log("the save's sidecar is for seed " + s.seed + ", not " + r.seed.seed + "; using it anyway");
   } else {
@@ -1454,6 +1559,8 @@ void on_loaded(const std::string& card_image, int save_index) {
   }
   if (s.seed == r.seed.seed && r.state.goal_done) s.goal_done = true;
   s.save_hash.clear();  // (the card's, not the running state's)
+  s.pending.clear();     // (the queue below; never in the running state) [pendingsave agent]
+  s.pending_hash.clear();
   hub_resume_view(s.hub_view);  // [hubask agent] the asked chamber's view the save was made in
   s.hub_view = -1;
   r.state = s;
@@ -1462,10 +1569,12 @@ void on_loaded(const std::string& card_image, int save_index) {
   r.dying_from_link = false;
   r.ending = false;
   r.checked = std::set<int64_t>(s.checked.begin(), s.checked.end());
-  // Local items still waiting stay queued; the server's items past the save's received
-  // index are given again (this session keeps the server's whole list).
+  // The give queue as built above [pendingsave agent]; the server's items past the save's
+  // received index are given again (this session keeps the server's whole list).
+  r.pending = std::move(queue);
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
-      std::to_string(s.received_index));
+      std::to_string(s.received_index) + (r.pending.empty() ? std::string() : ", " + std::to_string(saved_waiting) +
+      " items waiting from the save, " + std::to_string(r.pending.size() - saved_waiting) + " of checks it lacks"));
 }
 
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length) {
@@ -1483,6 +1592,10 @@ bool load_allowed(const std::string& card_image, int save_index, const u8* file,
     why = "this save was changed outside the game (its Archipelago state holds no hash of it)";
   } else if (file == nullptr || util::save_digest(file, length) != s.save_hash) {
     why = "this save was changed outside the game (it differs from the one this seed saved)";
+  } else if ((!s.pending.empty() || !s.pending_hash.empty()) &&
+             pending_digest(file, length, sidecar_pending(path)) != s.pending_hash) {
+    // [pendingsave agent] The items waiting: edited, stripped, or moved here from another save.
+    why = "this save was changed outside the game (its waiting items differ from the ones this seed saved)";
   }
   if (why.empty()) return true;
   if (const char* any = std::getenv("SS_AP_ANY_SAVE"); any != nullptr && std::string(any) == "1") {
@@ -1519,7 +1632,7 @@ void placeholder_hit(int64_t value, size_t index) {
     // Our own item: given whenever the game reaches the give (the game's own flags keep a
     // chest or a gift from repeating, as with its original item).
     if (!give(p.item)) {
-      r.pending.push_back({p.item, "", true});  // (inventory full: given later)
+      r.pending.push_back({p.item, "", true, l.id});  // (inventory full: given later)
       log("the inventory is full; " + describe(p.item) + " waits");
     }
     text = "Got " + describe(p.item) + ".";
@@ -1621,9 +1734,14 @@ void vblank() {
         // The server's checks (another session of this slot) count here too; ours go out.
         int marked = 0;
         for (const int64_t id : ev.checked) {
-          if (find_location(id) != nullptr && r.checked.insert(id).second) {
+          const Location* l = find_location(id);
+          if (l != nullptr && r.checked.insert(id).second) {
             r.state.checked.push_back(id);
             ++marked;
+            // [pendingsave agent] Checked in a game this one lacks (an unsaved one, a later save):
+            // it never fires here again, so its own item comes here too (not a chest's or a
+            // gift's: opened here, they give it).
+            if (l->item.own && !gives_again(*l)) r.pending.push_back({l->item.item, "", true, id});
           }
         }
         if (!r.state.checked.empty()) r.link->check(r.state.checked);
@@ -1732,7 +1850,7 @@ void on_battle_exit(int encounter, int outcome) {
     for (const Location& l : r.seed.locations) {
       if (l.type != "boss" || l.encounter != encounter || is_checked(l.id)) continue;
       record_check(l.id, true);
-      if (l.item.own) r.pending.push_back({l.item.item, "", true});
+      if (l.item.own) r.pending.push_back({l.item.item, "", true, l.id});
     }
   }
   // The goal needs the victory. goal.all: each victory is kept (goal_won; also one a door's
@@ -1843,7 +1961,7 @@ bool on_party_add(int character, int at, int call_at) {
                             (script_flag(1) ? ", Claude's game" : ", Rena's game") + ")";
   if (l != nullptr && !is_checked(l->id)) {
     record_check(l->id, true);
-    if (l->item.own) r.pending.push_back({l->item.item, "", true});
+    if (l->item.own) r.pending.push_back({l->item.item, "", true, l->id});
   }
   if (!party_v2(r)) {
     // Phase 3 (party_rules "story", no starting character).
@@ -2026,7 +2144,7 @@ bool on_enemy_drop(int enemy_type, int item) {
   const Location& l = r.seed.locations[it->second];
   if (is_checked(l.id)) return true;  // (its first drop was the check: the game's drops from now on)
   record_check(l.id, true);
-  if (l.item.own) r.pending.push_back({l.item.item, "", true});
+  if (l.item.own) r.pending.push_back({l.item.item, "", true, l.id});
   if (std::find(r.state.first_drops.begin(), r.state.first_drops.end(), enemy_type) == r.state.first_drops.end())
     r.state.first_drops.push_back(enemy_type);
   log("first drop of enemy type " + std::to_string(enemy_type) + " (item " + std::to_string(item) + "): the check instead");
@@ -2558,7 +2676,7 @@ bool on_shop_buy(int shop, int index, int item, int count) {
     if (give(l.item.item)) {
       queue_notice("Got " + describe(l.item.item));
     } else {
-      r.pending.push_back({l.item.item, "", true});  // (the inventory is full: given later)
+      r.pending.push_back({l.item.item, "", true, l.id});  // (the inventory is full: given later)
       log("the inventory is full; " + describe(l.item.item) + " waits");
     }
   }
@@ -2613,7 +2731,7 @@ void on_craft(int item, bool success) {
   if (is_checked(l.id)) return;
   log("craft: item " + std::to_string(item) + " made (" + (success ? "success" : "failure") + ")");
   record_check(l.id, true);  // (another player's item: "Sent X to Y")
-  if (l.item.own) r.pending.push_back({l.item.item, "", true});  // ("Got X" in free play)
+  if (l.item.own) r.pending.push_back({l.item.item, "", true, l.id});  // ("Got X" in free play)
 }
 
 bool no_fail_crafting() { return rt().on && rt().seed.no_fail_crafting; }
@@ -2634,7 +2752,7 @@ int scan_killer_moves() {
     log(std::string("killer move: ") + character_name(l.character) + " move " + std::to_string(l.move) + " used " +
         std::to_string(count) + " times (level " + std::to_string(l.level) + " at " + std::to_string(l.uses) + ")");
     record_check(l.id, true);
-    if (l.item.own) r.pending.push_back({l.item.item, "", true});
+    if (l.item.own) r.pending.push_back({l.item.item, "", true, l.id});
     ++n;
   }
   return n;
