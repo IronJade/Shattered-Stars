@@ -242,13 +242,14 @@ class SO2World(World):
                 pool.append(self.create_item(name))
         if self.open_world:
             # The area keys: the starting ones are given, the rest take the place of as many filler
-            # items (the pool keeps one item per location). The North City Pass is one too unless
-            # the teleporter and expel_progression are both on: the first Energy Nede stage needs
-            # it, nothing on Energy Nede is reached before it, and with either option off Expel
-            # holds only our Expel-story keys, so it would have no spot in a solo world (0.2.1;
-            # docs/ap/apworld.md "Open world", the user 2026-10-26).
+            # items (the pool keeps one item per location). The North City and Noel's House
+            # passes are too unless the teleporter and expel_progression are both on: the first
+            # Energy Nede stages need them, nothing on Energy Nede but the Synard boss may hold
+            # them before, and with either option off Expel holds only our Expel-story keys, so
+            # in a solo world they would have no spot (the Noel's House Pass one, gone with
+            # boss_checks off; 0.2.1; docs/ap/apworld.md "Open world", the user 2026-10-26).
             later = self.options.expel_teleporter and self.options.expel_progression
-            start = list(items.START_KEYS) + ([] if later else ["North City Pass"])
+            start = list(items.START_KEYS) + ([] if later else list(items.NEDE_START_KEYS))
             for name in start:
                 self.multiworld.push_precollected(self.create_item(name))
             keys = [g["name"] for g in KEY_GROUPS if g["name"] not in start]

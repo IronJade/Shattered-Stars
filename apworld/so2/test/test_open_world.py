@@ -56,13 +56,14 @@ class OpenWorldChecks:
     teleporter = True
 
     def test_keys_and_start(self):
-        """The Arlia and Fun City passes at the start, and the North City Pass too unless the
-        teleporter and expel_progression are both on (0.2.1: with either off it has no spot in a
-        solo world, TestOpenWorldNoExpelProgression); every other key in the pool."""
+        """The Arlia and Fun City passes at the start, and the North City and Noel's House
+        passes too unless the teleporter and expel_progression are both on (0.2.1: with either
+        off they have no spot in a solo world, TestOpenWorldNoExpelProgression, or only the
+        Synard boss); every other key in the pool."""
         from ..data import KEY_GROUPS
         from ..items import KEY_OF, START_KEYS
         later = self.teleporter and bool(self.world.options.expel_progression)
-        start = set(START_KEYS) | (set() if later else {"North City Pass"})
+        start = set(START_KEYS) | (set() if later else {"North City Pass", "Noel's House Pass"})
         pre = {i.name for i in self.multiworld.precollected_items[self.player]}
         self.assertEqual(pre & {g["name"] for g in KEY_GROUPS}, start)
         keys = [i for i in own_pool(self) if i.code in KEY_OF]
@@ -418,7 +419,18 @@ class TestOpenWorldNoExpelProgression(SO2TestBase, OpenWorldChecks):
     fixed by letting our own Expel-story keys stay where a proof reached, test_progression_rules;
     and every solo seed with the teleporter on, found by this class 2026-10-26, the North City
     Pass having no legal spot: a Nede key the first Nede stage needs, kept out of Expel, with
-    nothing on Energy Nede reached before it. 0.2.1 gives it at the start: test_keys_and_start.
-    docs/handoff/aptests.md "World bug"). WorldTestBase's test_fill and this mix's fills
-    (test_voyage_gate_placements, test_seed_doors) are the reproducer."""
+    nothing on Energy Nede reached before it. 0.2.1 gives it at the start, and the Noel's House
+    Pass too: test_keys_and_start. docs/handoff/aptests.md "World bug"). WorldTestBase's
+    test_fill and this mix's fills (test_voyage_gate_placements, test_seed_doors) are the
+    reproducer."""
     options = {"world_mode": "open_world", "expel_progression": False, "story_route": "rena"}
+
+
+class TestOpenWorldNoExpelProgressionNoBosses(SO2TestBase, OpenWorldChecks):
+    """Open world with expel_progression and boss_checks off, a solo world: before 0.2.1 the
+    Noel's House Pass's only legal spot was the Synard boss, so with boss_checks off every solo
+    fill raised FillError (the release workflow's solo_noexpel set: 11 of 96 seeds,
+    docs/handoff/ncpfix.md). 0.2.1 gives it at the start (test_keys_and_start); the fills are the
+    reproducer."""
+    options = {"world_mode": "open_world", "expel_progression": False, "boss_checks": False,
+               "story_route": "claude"}
