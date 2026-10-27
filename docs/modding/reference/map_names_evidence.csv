@@ -1,0 +1,34 @@
+map,place,previous,basis,evidence
+24,Newlyweds' House,"villager's house, living room",text,"script text: on entering, the party member describes it as a newlywed couple's house; the residents speak as Husband and Wife; banner 'House'"
+25,"Newlyweds' House, bedroom","villager's house, bedroom",doors;thumbnail,doors: its only door leads to and from map 24 (Newlyweds' House); background: a bedroom
+33,Carpenter's House,villager's house near the square,text,"script text: on entering, the party member says the man of this house is a carpenter working away and his two children are home alone; the children speak here; banner 'House'"
+40,"Rena's Room, at night",entrance / threshold area,banner;doors,banner 'Rena's Room'; doors: only to and from map 32 (Rena's House at night)
+50,"Alen's Mansion, bedroom","interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: off Alen's Mansion (46) only; Alen speaks here once recovered; background: a bedroom with two beds
+51,"Alen's Mansion, dining room","interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: off Alen's Mansion (46) only; the mansion's Cook speaks here; background: a long dining table by the stove
+52,Alen's study (passage to Salva Drift),entrance / threshold area,doors;text,doors: to Alen's Mansion (46) and the mine tunnel entrance (62); script text: a servant in map 47 says the drift is reached from the study; Rena's hairpin is found here
+53,"Alen's study, guarded (passage to Salva Drift)",entrance / threshold area,doors;text;thumbnail,the same room as map 52 (same background) in a later state: doors to Alen's Mansion (46) and the mine tunnel entrance (62); a soldier here keeps people out of the drift
+55,"Inn The Hopping Penguin, guest rooms","interior room, about 1 door in from the entrance",doors;thumbnail,doors: only to and from map 54 (Inn The Hopping Penguin); background: guest rooms with beds; a traveller and a tourist speak here
+84,"Inn Kingdom Hotel, hallway","interior room, about 1 door in from the entrance",doors;thumbnail,doors: to map 83 (Inn Kingdom Hotel) and map 85; background: a corridor of guest-room doors
+85,"Inn Kingdom Hotel, guest room","interior room, about 1 door in from the entrance",doors;thumbnail,doors: to maps 83 (Inn Kingdom Hotel) and 84 (its hallway); background: a room with two beds
+91,"Cross Castle, hall to the Armory and Kitchen",entrance / threshold area,doors;thumbnail,"doors: to Cross Castle, First Floor (90), the Armory (92), Cross Castle Kitchen (98) and the Soldiers' Compartment (99)"
+96,"Cross Castle, corridor to the Throne Room",entrance / threshold area,doors;thumbnail,"doors: to Cross Castle, First Floor (90), the Throne Room (95) and the stairs (103); background: a long carpeted corridor"
+97,"Cross Castle, corridor to the Throne Room",entrance / threshold area,doors;thumbnail,"doors: to Cross Castle, First Floor (90), the Throne Room (95) and the stairs (104); background: the mirror image of map 96"
+100,The Prince's Chambers,entrance / threshold area,banner,banner 'The Prince's Chambers'; Prince Clother speaks here
+102,"Cross Castle, hall of the royal chambers",entrance / threshold area,doors;thumbnail,"doors: to The Prince's Chambers (100), The Princess' Chamber (101) and the stairs (103, 104)"
+103,"Cross Castle, stairs to the royal chambers",entrance / threshold area,doors;thumbnail,doors: between the corridor 96 and the hall 102; background: a staircase
+104,"Cross Castle, stairs to the royal chambers",entrance / threshold area,doors;thumbnail,doors: between the corridor 97 and the hall 102; background: a staircase (mirror of 103)
+131,Elder's House,entrance / threshold area,banner,banner 'Elder's House'; the Elder speaks here
+132,"Elder's House, study","interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: only to and from the Elder's House (131); the bookshelf texts read here are titled books (the Book of Exorcism and others); background: shelves
+212,alley between the main plaza and the castle path,"interior room, about 1 door in from the entrance",doors;thumbnail,doors: to the main plaza (211) and the statued path to the castle gate (213); background: an arched alley
+216,back street (to House Red Roof),"interior room, about 1 door in from the entrance",doors;thumbnail,"doors: to the main plaza (211), the stairway street (217) and House Red Roof (226); background: a street of houses"
+217,stairway street,"interior room, about 2 doors in from the entrance",doors;thumbnail,doors: between the back street (216) and the street by the forge (218); background: stone stairs
+218,street by Blacksmith Gamgee's Forge,"interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: to the stairway street (217) and Blacksmith Gamgee's Forge (228); script text: Suphia speaks here of her grandfather's store; background: a street
+222,"Inn The Lacour Hotel, hallway","interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: to Inn The Lacour Hotel (221) and its guest room (224); background: a corridor of guest-room doors; fighters resting for the tournament speak here
+223,"Inn The Lacour Hotel, hallway","interior room, about 1 door in from the entrance",doors;text;thumbnail,"doors: to Inn The Lacour Hotel (221), its guest room (224) and the alley (212); background: the mirror image of map 222"
+224,"Inn The Lacour Hotel, guest room","interior room, about 1 door in from the entrance",doors;text;thumbnail,"doors: to the hotel's hallways (222, 223); background: a room with two beds; the party waits here for the tournament"
+227,"House Red Roof, back room","interior room, about 1 door in from the entrance",doors;thumbnail,doors: only to and from House Red Roof (226)
+233,Arsenal (shop: items and ingredients),Weapons Shop (Arsenal),shop,"shop 53 sells berries, cures and cooking ingredients (docs/ap/field.json shops), not weapons; background: a storehouse of crates and barrels"
+268,Chisato's home (above Tool Shop Blue Flask),"Tool Shop Blue Flask, upstairs room",text,script text: Chisato says here that this is her home; Chisato's mother speaks here; the csv's earlier name placed it upstairs at Tool Shop Blue Flask (265)
+277,Noel's House,entrance / threshold area,banner;text,banner 'Noel's House'; Noel asks what the party is doing in his house
+385,XINE's home (mountaintop nest),entrance / threshold area,text;thumbnail,script text: XINE says this is his home; background: a nest on the peak
+448,"Lacour Front Line, lookout","interior room, about 1 door in from the entrance",doors;text;thumbnail,doors: only to and from the second tent (444); the party waits here for the monster swarm; background: a cliff-top lookout

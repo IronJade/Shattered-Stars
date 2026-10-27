@@ -23,8 +23,8 @@ map,disc,area,place,kind,notes,basis
 21,1,Arlia Village,"north: fountain square, at night",cutscene,opening-night story-state copy of map 18; not in late_maps,thumbnail;doors
 22,1,Arlia Village,"bridge path, at night",cutscene,opening-night-only connector; not in late_maps,thumbnail;doors
 23,1,Arlia Village,Belding Church (inside),interior,,banner;thumbnail
-24,1,Arlia Village,"villager's house, living room",interior,banner just reads 'House',banner;thumbnail;doors
-25,1,Arlia Village,"villager's house, bedroom",interior,back room of map 24's house,thumbnail;doors
+24,1,Arlia Village,Newlyweds' House,interior,banner just reads 'House'; renamed 2026-10-27 (map_names_evidence.csv),banner;thumbnail;doors;text
+25,1,Arlia Village,"Newlyweds' House, bedroom",interior,back room of map 24's house; renamed 2026-10-27 (map_names_evidence.csv),thumbnail;doors
 26,1,Arlia Village,Hearn's General Store (inside),interior,,banner;thumbnail
 27,1,Arlia Village,Rena's House (inside),interior,,banner;thumbnail;doors
 28,1,Arlia Village,(unused map slot),special,no doors or chests in the script; not a real place,contents
@@ -32,14 +32,14 @@ map,disc,area,place,kind,notes,basis
 30,1,Field of Power,Rena's opening dream (vision of the four Fields),cutscene,reached only from Rena's Room/House in the game's opening dream,doors;contents
 31,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
 32,1,Arlia Village,"Rena's House (inside), at night, variant",cutscene,"same room as maps 27/29, a second opening-night script state",thumbnail;doors
-33,1,Arlia Village,villager's house near the square,interior,banner just reads 'House',banner;doors
+33,1,Arlia Village,Carpenter's House,interior,banner just reads 'House'; renamed 2026-10-27 (map_names_evidence.csv),banner;doors;text
 34,1,Arlia Village,"Mayor Regis's House, 1F",interior,,banner;thumbnail;doors
 35,1,Arlia Village,"Mayor Regis's House, 1F, at night",cutscene,opening-night story-state copy of map 34; not in late_maps,thumbnail;doors
 36,1,Arlia Village,waterside path behind the Mayor's house,town,,thumbnail;doors
 37,1,Arlia Village,"Mayor's house, back porch, at night",cutscene,likely opening-night story-state copy of map 36; not in late_maps,thumbnail;doors
 38,1,Arlia Village,Rena's Room,interior,the game's opening location,banner;thumbnail;doors
 39,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
-40,1,Rena's Room,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+40,1,Rena's Room,"Rena's Room, at night",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;banner
 41,1,Arlia Village,villager's house (unidentified owner),interior,"also connects onward to map 644, a distant/late transfer",thumbnail;doors
 42,1,Arlia Village,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
 43,1,Town of Salva,"square, outer half (path to Salva Drift and Alen's Mansion)",town,,thumbnail;doors
@@ -49,12 +49,12 @@ map,disc,area,place,kind,notes,basis
 47,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
 48,1,Town of Salva,gate toward Alen's Mansion,town,,thumbnail;doors
 49,1,Alen's Mansion,grounds / path to the mansion,town,reached from Arlia Village map 17,doors
-50,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-51,1,Alen's Mansion,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-52,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
-53,1,Arlia Village,entrance / threshold area,town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+50,1,Alen's Mansion,"Alen's Mansion, bedroom",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
+51,1,Alen's Mansion,"Alen's Mansion, dining room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
+52,1,Arlia Village,Alen's study (passage to Salva Drift),town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text
+53,1,Arlia Village,"Alen's study, guarded (passage to Salva Drift)",town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 54,1,Town of Salva,Inn The Hopping Penguin,interior,,banner
-55,1,Town of Salva,"interior room, about 1 door in from the entrance",town,placeholder from the door graph only; not yet checked against a thumbnail,doors
+55,1,Town of Salva,"Inn The Hopping Penguin, guest rooms",town,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 56,1,Town of Salva,Jam Store Dolphin Kick,interior,,banner
 57,1,Town of Salva,House,interior,,banner
 58,1,Town of Salva,Tavern Rough & Tumble,interior,,banner
@@ -83,27 +83,27 @@ map,disc,area,place,kind,notes,basis
 81,1,Town of Cross,Bar Mikado (inside),interior,,banner;doors
 82,1,Town of Cross,Restaurant Forum (inside),interior,,banner;doors
 83,1,Town of Cross,Inn Kingdom Hotel (inside),interior,,banner;doors
-84,1,Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-85,1,Inn Kingdom Hotel,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+84,1,Inn Kingdom Hotel,"Inn Kingdom Hotel, hallway",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+85,1,Inn Kingdom Hotel,"Inn Kingdom Hotel, guest room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 86,1,Town of Cross,Cross Cathedral (inside),interior,,banner;thumbnail;doors
 87,1,Town of Cross,"main plaza (roundabout), story-state variant",town,"same plaza as map 74, different signage/lighting; not in late_maps so likely an earlier story state",thumbnail;doors
 88,1,Town of Cross,"shop plaza, story-state variant",town,story-state counterpart of map 75's plaza; not in late_maps,doors
 89,1,Town of Cross,"back street, story-state variant",town,story-state counterpart of map 76; not in late_maps,doors
 90,1,"Cross Castle, First Floor","Cross Castle, First Floor",interior,,banner
-91,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+91,1,"Cross Castle, First Floor","Cross Castle, hall to the Armory and Kitchen",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 92,1,Armory,Armory,interior,,banner
 93,1,Waiting Room,Waiting Room,interior,,banner
 94,1,The King's Private Chambers,The King's Private Chambers,interior,,banner
 95,1,Throne Room,Throne Room,interior,,banner
-96,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-97,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+96,1,"Cross Castle, First Floor","Cross Castle, corridor to the Throne Room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+97,1,"Cross Castle, First Floor","Cross Castle, corridor to the Throne Room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 98,1,Cross Castle Kitchen,Cross Castle Kitchen,interior,,banner
 99,1,Soldiers' Compartment,Soldiers' Compartment,interior,,banner
-100,1,The Prince's Chambers,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+100,1,The Prince's Chambers,The Prince's Chambers,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;banner
 101,1,The Princess' Chamber,The Princess' Chamber,interior,,banner
-102,1,The Prince's Chambers,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-103,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-104,1,"Cross Castle, First Floor",entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+102,1,The Prince's Chambers,"Cross Castle, hall of the royal chambers",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+103,1,"Cross Castle, First Floor","Cross Castle, stairs to the royal chambers",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+104,1,"Cross Castle, First Floor","Cross Castle, stairs to the royal chambers",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 105,1,Port of Clik,"market square (stairs, fountain statue)",town,"the hub most shops open off (121 Bakery, 118 Clothing Store, 119 Restaurant, 123 Skill Guild); visually identical to map 106, likely a story-state duplicate",doors;thumbnail
 106,1,Port of Clik,"market square (stairs, fountain statue)",town,"renders pixel-identical to map 105; both connect only to the docks (109), so probably the same square reached under two different story flags rather than a distinct place",doors;thumbnail
 107,1,Port of Clik,harbor plaza (canal),town,"own banner is just ""Port of Clik""; the hub most of the named buildings open off (113 International Trading, 115/114/116/117)",banner;thumbnail;doors
@@ -130,8 +130,8 @@ map,disc,area,place,kind,notes,basis
 128,1,Mars Village,Tool Shop Roof's,interior,,banner
 129,1,Mars Village,Bar O'Shane,interior,,banner
 130,1,Mars Village,"Inn Finn's, guest room",interior,cozy upstairs bedroom off Bar O'Shane/Inn Finn's (129),doors;thumbnail
-131,1,Elder's House,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-132,1,Elder's House,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+131,1,Elder's House,Elder's House,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;banner
+132,1,Elder's House,"Elder's House, study",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 133,1,Mars Village,"Celine's House, hallway (to Celine's Room)",interior,links Celine's House (135) to Celine's Room (139),doors;thumbnail
 134,1,Mars Village,village house interior (dim room),interior,"off the village green (124) directly; late_maps=False unlike most of the village, possibly a pre-story-flag variant",doors;thumbnail
 135,1,Mars Village,Celine's House,interior,,banner
@@ -211,28 +211,28 @@ map,disc,area,place,kind,notes,basis
 209,1,Town of Linga,gate / archway at the edge of the plaza,town,"lantern-hung archway with barrels, only connected to the plaza (183)",doors;thumbnail
 210,1,Town of Lacour,Weapons Shop Counterpunch,interior,,banner
 211,1,Town of Lacour,main plaza (round garden),town,,thumbnail;doors
-212,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+212,1,Town of Lacour,alley between the main plaza and the castle path,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 213,1,Town of Lacour,statued path to the castle gate,town,,thumbnail;doors
 214,1,Town of Lacour,side alley off the plaza,town,,thumbnail;doors
 215,1,Town of Lacour,Food Store Carnival,interior,,banner
-216,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-217,1,Town of Lacour,"interior room, about 2 doors in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-218,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+216,1,Town of Lacour,back street (to House Red Roof),interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+217,1,Town of Lacour,stairway street,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
+218,1,Town of Lacour,street by Blacksmith Gamgee's Forge,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 219,1,Town of Lacour,Skill Guild Lacour Skills,interior,,banner
 220,1,Town of Lacour,Weapons Shop Slayer,interior,,banner
 221,1,Town of Lacour,Inn The Lacour Hotel,interior,,banner
-222,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-223,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
-224,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+222,1,Town of Lacour,"Inn The Lacour Hotel, hallway",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
+223,1,Town of Lacour,"Inn The Lacour Hotel, hallway",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
+224,1,Town of Lacour,"Inn The Lacour Hotel, guest room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 225,1,Town of Lacour,Tavern La Coeur of Lacour,interior,,banner
 226,1,Town of Lacour,House Red Roof,interior,,banner
-227,1,Town of Lacour,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+227,1,Town of Lacour,"House Red Roof, back room",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;thumbnail
 228,1,Town of Lacour,Blacksmith Gamgee's Forge,interior,,banner
 229,1,El Beach,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
 230,1,El Beach,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
 231,1,Eluria Colony,shipwreck beach (opening cutscene),special,"no doors/chests/save point (6003 script instructions but no map_transfer_c calls found), so it was unidentified; the thumbnail is a beach with a wrecked boat and two characters, matching the guide's ""Shipwrecked!"" scene opening Eluria Colony: ""Claude washes up on the beach alone... Rena... is washed up on the shore with the rest of the party"" -- a scripted cutscene map, not reachable by normal doors, so kept kind=special",thumbnail;guide p72;contents
 232,1,Eluria Colony,outpost clearing (entrance),field,"own banner is just ""Eluria Colony""; matches the guide: ""a small outpost in the middle of the forested plot of land near the beach""",banner;thumbnail;guide p72
-233,1,Eluria Colony,Weapons Shop (Arsenal),interior,"weapon racks and barrels; matches the guide's numbered list item 1, ""Weapons Shop (Arsenal)""",doors;thumbnail;guide p72
+233,1,Eluria Colony,Arsenal (shop: items and ingredients),interior,"weapon racks and barrels; matches the guide's numbered list item 1, ""Weapons Shop (Arsenal)""; renamed 2026-10-27 (map_names_evidence.csv)",doors;thumbnail;guide p72;shop
 234,1,Eluria Colony,Leader's House,interior,,banner
 235,1,Central City,central plaza (garden roundabout),town,"the hub most of Central City's shops and streets open off; own banner is just ""Central City""",banner;thumbnail;doors
 236,1,Central City,plaza courtyard (garden corner),town,"a quieter corner of the same roundabout garden, dead end off the main plaza (235)",doors;thumbnail
@@ -267,7 +267,7 @@ map,disc,area,place,kind,notes,basis
 265,1,North City,Tool Shop Blue Flask,interior,,banner
 266,1,North City,Library Encyclopedia,interior,,banner
 267,1,Transporter,Transporter,special,"the game's point-to-point teleport mechanic, not a place with its own geography",banner
-268,1,North City,"Tool Shop Blue Flask, upstairs room",interior,a furnished study/bedroom off the shop (265),doors;thumbnail
+268,1,North City,Chisato's home (above Tool Shop Blue Flask),interior,a furnished study/bedroom off the shop (265); renamed 2026-10-27 (map_names_evidence.csv),doors;thumbnail;text
 269,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
 270,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
 271,1,Synard Plant,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
@@ -276,7 +276,7 @@ map,disc,area,place,kind,notes,basis
 274,1,North City,"Inn Landscape, guest room",interior,twin beds off the inn (273),doors;thumbnail
 275,1,North City,Smiley's Grocery,interior,,banner
 276,1,North City,Account Weapons,interior,,banner
-277,1,Noel's House,entrance / threshold area,interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+277,1,Noel's House,Noel's House,interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;banner;text
 278,1,Noel's House,Transporter,interior,,banner
 279,1,Fun City,entrance gate (ticket booths),town,"own banner is just ""Fun City""; the Nedian Funhouse amusement-park gate, guide p108 (""entrance fee is 75 FOL per person"")",banner;thumbnail;guide p108
 280,1,Fun City,Fun City Central Square,town,,banner
@@ -384,7 +384,7 @@ map,disc,area,place,kind,notes,basis
 382,1,Lasguss Mountain,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
 383,1,Lasguss Mountain,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
 384,1,Lasguss Mountain,"interior room, about 1 door in from the entrance",field,placeholder from the door graph only; not yet checked against a thumbnail,doors
-385,1,Lasguss Mountain,entrance / threshold area,field,placeholder from the door graph only; not yet checked against a thumbnail,doors
+385,1,Lasguss Mountain,XINE's home (mountaintop nest),field,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 386,1,Heraldry Weapons Laboratory,derelict workshop (broken machinery),dungeon,"dead end off 396, broken monitors and lab equipment -- matches the guide: here you ""learn the way to enhance your weapons"" and ""about Rena's mysterious past""",doors;thumbnail;guide p104
 387,1,Heraldry Weapons Laboratory,"derelict quarters (piano, chest)",dungeon,dead end off 389,doors;thumbnail
 388,1,Heraldry Weapons Laboratory,pipe trench,dungeon,dead end off 389,doors;thumbnail
@@ -447,7 +447,7 @@ map,disc,area,place,kind,notes,basis
 445,1,Lacour Front Line,General Store Lacour Store,interior,,banner
 446,1,Lacour Front Line,Lacour front line Arsenal,field,,banner
 447,1,Meeting Room,"Meeting Room, third tent",interior,,doors
-448,1,Meeting Room,"interior room, about 1 door in from the entrance",interior,placeholder from the door graph only; not yet checked against a thumbnail,doors
+448,1,Meeting Room,"Lacour Front Line, lookout",interior,renamed 2026-10-27 from the game data (map_names_evidence.csv),doors;text;thumbnail
 449,1,Mihne Cavern,entrance / threshold area,dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
 450,1,Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
 451,1,Mihne Cavern,"interior room, about 1 door in from the entrance",dungeon,placeholder from the door graph only; not yet checked against a thumbnail,doors
