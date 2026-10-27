@@ -990,7 +990,7 @@ tested with `assertAccessDependency` (every location checked unless noted):
 | test_party.py | the story's party rules (any / claude / rena), party v2 (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero | `PartyChecks.party_size()` / `healer_guaranteed()`: the hooks a bench option overrides |
 | test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks; a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
 | test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
-| test_skillsanity.py | none, skills_only with crafts, special_only in open world, insanity in hub with shops, insanity with the Iseria Queen | every skill / move item the logic needs -> the crafts, Machinery learn points, the Iseria Queen and killer levels whose every way needs it; each Musical Talent skill -> the Queen, both -> the goal |
+| test_skillsanity.py | none, skills_only with crafts, special_only in open world, insanity in hub with shops, insanity with the Iseria Queen; 0.2.1: guilds in open world (with and without expel_progression) and in story mode (both), learn levels in open world, with character items and in hub mode, encounter_rate 0, solo_noexpel seed 75's mix | every skill / move item the logic needs -> the crafts, Machinery learn points, the Iseria Queen and killer levels whose every way needs it; each Musical Talent skill -> the Queen, both -> the goal; 0.2.1 (listed): Knowledge 1 -> the Cross / Linga / Central City Pass (not Clik's), the Nede guilds -> the Central City / Armlock Pass, the dear sets -> the Hoffmann Pass (swept), the early / late learn levels -> the Eluria Tower / Mihne Pass (swept), each pool member -> their learn levels; every mix: what each guild check / learn point may hold (shop slots: nothing, our own skill / move items neither), each learn level's exact needs |
 | test_difficulty.py | earth, galaxy, universe (open world, hub), any | (no logic change: the same locations as on Earth) |
 | test_doors.py | `unittest.TestCase` | the door validator on a made-up table |
 
@@ -1266,10 +1266,41 @@ tools only, no world change):
   legal spot (Generate.py FillError on every solo seed; with two SO2 players and no other game
   too). The batches never saw it: each of their multiworlds has a ChecksFinder player.
 
+Results (2026-10-27, 0.2.1: skillsanity progression at guild checks and learn levels;
+docs/handoff/skilllogic.md):
+- The world's tests: **537 passed** (37687 subtests; was 449): `test_skillsanity.py`'s old "no
+  progression" test reversed into `test_what_skillsanity_locations_hold` and
+  `test_learn_level_needs` for every mix, and 9 new mixes (the table above). Each part of the
+  design taken out in turn (the Fol tier, Noel's stage, the learn characters, a guild's ways
+  through every place, the learn level's character item, the machines) fails some test
+  (scratchpad/skilllogic/dbg/mutate.py). Slowest test 0.86 s at `-n 4`; `python -m unittest`:
+  537, OK. AP's general tests: 379 passed (117750 subtests). `AP_TEST_WORLDS=so2 ... pytest
+  test/general worlds/so2`: 590 passed (42996 subtests).
+- Solo fills (scratchpad/skilllogic/fill: ncpfix's fillrate2.py and s75/capacity.py), 100 seeds
+  each: **0/100 FillError** for solo_noexpel seed 75's options (room for a move item 114, was 63)
+  and each of 14 neighbours: skillsanity insanity / skills_only, story_route claude / any, the
+  teleporter on, boss_checks on, killer_move_progression any, starting_character hero,
+  enemy_dropsanity first_drop, character_items, expel_progression on, story mode, hub mode,
+  insanity with character_items, the cave and craftsanity. With `encounter_rate: 0` added, that
+  mix still fails (91 of 91 run): no battles, so nothing new holds progression, and its
+  killer-move levels' moves stay progression (as in 0.2.1 before; for the user).
+- The release workflow, seeds 1-96 (scratchpad/skilllogic/batch): story_open, hub and
+  solo_noexpel **96/96 each** (solo_noexpel's seed 75 too), `ap_batch_check.py` 0 errors on 192 +
+  192 + 96 files; progression at guild checks / learn points 1046 / 1291, 1028 / 1625, 410 / 871.
+  The checker now judges them on its own (`sk_may_hold`; a gate key at a guild check only where a
+  guild passes the voyage proof, never at a learn point) and was checked against made-up
+  placements (encounter_rate 0, the machines, a member the logic can't count on: each refused).
+  Against the batches before (scratchpad/ncpfix/v021, 0.2.1's string too): every seed with no
+  skillsanity player byte-identical (story_open 6, hub 3, solo_noexpel 20), every changed seed
+  (90, 93, 76) with one (identity.py: 0 unexpected); 2 solo seeds with skillsanity unchanged
+  (story mode, nothing progression to move).
+
 ## Changes
 
-**0.2.1** (2026-10-26, not released yet; docs/handoff/ncpfix.md, the user's decisions). Open world
-only; no new item, location, option or seed field, and the port's 0.02.50 plays its seeds.
+**0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md and skilllogic.md, the user's
+decisions). No new item, location, option or seed field, and the port's 0.02.50 plays its seeds
+(skilllogic2's headless proofs: a key and a character given from a guild check and from learn
+points; docs/handoff/skilllogic.md "Step 3").
 - *Fixed: open world with `expel_progression` or the teleporter off couldn't fill solo*
   (docs/handoff/aptests.md "World bug"). The first Energy Nede stages need the North City and
   Noel's House Passes, and before them Energy Nede has no location of this world that may hold
@@ -1282,9 +1313,22 @@ only; no new item, location, option or seed field, and the port's 0.02.50 plays 
   pass". Now both passes are starting keys unless the teleporter and expel_progression are both
   on (items.NEDE_START_KEYS; 0.2.0 gave the North City Pass with the teleporter off only).
   Multiworlds with another game generated before, its locations taking the passes.
-- Seeds where no open-world player has either option off are 0.2.0's but for
-  `apworld_version`: 111 of the 192 batch seeds (Testing, "Results ... 0.2.1"); in the others
-  that player starts with the passes and the fill places the multiworld otherwise.
+- *Skillsanity: guild checks and learn levels may hold progression* (the user, 2026-10-27; they
+  never could in 0.2.0; "Skillsanity", "Progression at guild checks and learn levels"). A guild
+  check through any of its set's guilds that may hold progression, the 2700-4500 Fol sets from
+  stage 9 (story mode: the disc switch; hub: Fienal open); a learn-table level of a member the
+  logic counts on as a killer-move level (a member who joins by their item needs it, which is
+  then progression); none with encounter_rate 0; the machines, the cave's learn chests, Float
+  and every shop slot still none. This also fills the release workflow's solo_noexpel seed 75
+  (open world, Rena, expel_progression / boss_checks / drops off, special_only, killer moves for
+  the hero), which no 0.2.x before could: 60 move items progression and only 63 locations that
+  could hold one (now 114).
+- Seeds where no open-world player has either option off and no player has skillsanity on are
+  0.2.0's but for `apworld_version`: the passes' change alone kept 111 of the 192 batch seeds
+  (Testing, "Results ... 0.2.1"); in the others that player starts with the passes, or a
+  skillsanity player's guild checks and learn levels take progression, and the fill places the
+  multiworld otherwise (skilllogic: every changed seed has a skillsanity player; Testing,
+  "Results ... skillsanity progression").
 
 **0.2.0** (2026-10-25, released with the port's 0.02.50 on 2026-10-26; docs/handoff/apv2.md, the user's request and decisions;
 the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a

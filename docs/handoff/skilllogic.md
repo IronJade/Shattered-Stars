@@ -83,11 +83,11 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
    learn points may hold progression and item shops still can't.
 3. [x] Port proofs (headless, engine/build-skilllogic): a key and a character at a guild check, a
    key at a learn point, from a hand-edited .apso2. **No port change needed** (below, "Step 3").
-4. [ ] Batches story_open / hub / solo_noexpel 96/96, checker 0 errors (extend ap_batch_check.py if
+4. [x] (2026-10-27 ~11:00; "Step 4" below) Batches story_open / hub / solo_noexpel 96/96, checker 0 errors (extend ap_batch_check.py if
    it asserts these never hold progression). Identity: seeds without skillsanity byte-identical to
    scratchpad/ncpfix/v021; list the changed seeds (each must have skillsanity on). AP general suite
    and the scoped AP_TEST_WORLDS=so2 run.
-5. [ ] Docs: apworld.md (skillsanity, logic, 0.2.1 changelog final), the player guide, options.py
+5. [x] (42a61fa and the commit after this file's) Docs: apworld.md (skillsanity, logic, 0.2.1 changelog final), the player guide, options.py
    Skillsanity docstrings, docs/release_notes/0.2.1.md (drop the seed 75 limitation; add this).
 6. [ ] Package dist/apworld-0.2.1/ from HEAD (release_checklist.md); load alone, solo, seed 75,
    ChecksFinder; sha256.
@@ -191,6 +191,26 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
 - Not mine, uncommitted in main: engine/*, docs/ap/seed_format.md, engine/README.md,
   tools/smoke_field_events.sh (pendingsave). Never stage them.
 
+### Step 4 (2026-10-27 ~11:00)
+- Batches (scratchpad/skilllogic/batch/run.sh): story_open, hub, solo_noexpel **96/96 generate
+  each** (solo seed 75 too). The first checker pass crashed (`starting_character` a list under
+  "any": now read as None, as take_choices does) and then flagged 42 files with "teleporter off:
+  progression other than Expel keys in Expel": all guild checks (303) and learn points (384),
+  whose row region is nominal (classified, the chests held only our Expel keys); guild / learn
+  added to that check's exemptions (sk_may_hold judges them). Then **0 errors on 192 + 192 + 96**;
+  progression at guild checks / learn points 1046 / 1291, 1028 / 1625, 410 / 871. The final
+  checker on the 0.2.1 batches: unchanged (0 errors, 0 / 0). Made-up placements (encounter_rate
+  0 at guilds and learn levels, the machines, maybe members in a story-rules file): each refused.
+- **Identity** (batch/identity.py ../../ncpfix/v021 . -> identity.txt): story_open 6 identical /
+  90 changed, hub 3 / 93, solo 20 / 76, **0 unexpected** (every changed seed has an SO2 player
+  with skillsanity on; every seed without one byte-identical); solo 75 rc 1 -> 0; 2 solo seeds
+  with skillsanity unchanged (83, 95: story mode, no progression items to move).
+- Suites (scratchpad/skilllogic/suites, -n 4): world **537 passed** (37687 subtests; slowest 0.86
+  s), unittest 537 OK, test/general **379 passed** (117750), scoped **590 passed** (42996).
+- Docs: apworld.md (test table row, Results block "skillsanity progression", the 0.2.1 changelog
+  with the new bullet and identity line), release notes (counts; the TO CONFIRM line is now the
+  encounter_rate 0 variant).
+
 ### Next
-- Batches -> identity -> AP general suite and the scoped run (one heavy job at a time) -> the
-  changelog / results / release notes numbers -> commit the checker and docs -> step 6.
+- Commit docs, then the checker; step 6 (package from HEAD; load alone, solo, seed 75,
+  ChecksFinder; sha256; release_checklist.md section 10 and the release notes' sums).
