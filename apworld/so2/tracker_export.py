@@ -34,6 +34,8 @@ and are ignored by older readers. A new body kind, or a key whose meaning change
 """
 from rule_builder.rules import And, False_, Has, HasAll, HasAny, Or, True_
 
+from . import story
+
 FORMAT = 1
 
 
@@ -109,8 +111,12 @@ class _Export:
             groups.setdefault(key, []).append(loc.address)
         locations = [[region, rule, *addresses] for (region, rule), addresses in sorted(groups.items())]
         goal = self.rule(world.multiworld.completion_condition[world.player])
-        return {"format": FORMAT, "regions": [r.name for r in regions], "rules": self.rules,
-                "entrances": entrances, "events": events, "locations": locations, "goal": goal}
+        out = {"format": FORMAT, "regions": [r.name for r in regions], "rules": self.rules,
+               "entrances": entrances, "events": events, "locations": locations, "goal": goal}
+        found = story.export(world)     # story mode: story awareness (optional; format-1 readers ignore it)
+        if found is not None:
+            out["story"] = found
+        return out
 
 
 def export(world):

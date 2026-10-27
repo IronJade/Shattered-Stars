@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hell, hub, items, locations, logic, regions, rules, skillsanity, tracker_export, ut
+from . import hell, hub, items, locations, logic, regions, rules, skillsanity, story, tracker_export, ut
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -81,6 +81,13 @@ class SO2World(World):
     def custom_ut_sort(self, region, location):
         """The tracker tab's order: (story stage of the area, area, name) (ut.sort_key)."""
         return ut.sort_key(region, location)
+
+    # Story awareness in UT (story.py; docs/ap/apworld.md "Story awareness"): in UT's regeneration of a
+    # story-mode room (enforce_deferred_entrances not "off"), story.prepare sets this world's
+    # `found_entrances_datastorage_key` to the port's story key, so UT watches it and hands each value
+    # here; the story's deferred events then follow the reported chapter.
+    def reconnect_found_entrances(self, key, value):
+        story.reconnect(self, key, value)
 
     def generate_early(self):
         self.ut_slot_data = ut.passthrough(self)
@@ -350,6 +357,7 @@ class SO2World(World):
         """Rules as data (logic.py): every access rule is a Rule Builder rule; the rest are open."""
         (hub.set_rules if self.hub else rules.set_rules)(self)
         logic.open_by_default(self)
+        story.prepare(self)     # UT's regeneration of a story-mode room only: the story's deferred events
 
     def goal_encounters(self):
         """The encounters the goal needs: any of them (indalecio, limiter off), or all of them

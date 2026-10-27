@@ -28,6 +28,15 @@ workflow, docs/ap/release_checklist.md). Not a unit test: it runs UT's own clien
    (items_handling 0b001) sends LocationChecks. Then the same through TrackerCore.updateTracker
    in-process, whose tab lines (after UT's own sort_log_lines) must be in custom_ut_sort's order:
    the --list lines come before UT sorts them.
+5. Story awareness (docs/ap/apworld.md "Story awareness"; skipped with --no-story), on the fresh room
+   (between the fresh point and the first sphere's): for the story-mode slot, a client connected as
+   the slot Sets `so2_story_{team}_{slot}` as the port does (replace, want_reply false) at several
+   story positions, a step-only change among them; at each, UT headless
+   (which watches the key: found_entrances_datastorage_key, reconnect_found_entrances) must list
+   exactly what the reference evaluator (tools/ap_tracker_logic.py) gives for the room's tracker
+   export with that position, still unchecked, and so must TrackerCore in-process after
+   reconnect_found_entrances; then once with host.yaml's enforce_deferred_entrances "off", where UT
+   lists the world's own again. Then the key goes back to null (no position) for the spheres' points.
 Exit status 0 when every point matches. XDG_CACHE_HOME / XDG_DATA_HOME point under --ut-dir, so the
 clients' data package cache stays there.
 
@@ -79,6 +88,7 @@ def parse(argv):
     p.add_argument("--spheres", type=int, default=4, help="check the room's first N spheres, one point each")
     p.add_argument("--ut-dir", default=os.path.join(REPO, "scratchpad", "ap_ut"))
     p.add_argument("--ap-dir", default=os.path.join(REPO, "scratchpad", "ap", "Archipelago"))
+    p.add_argument("--no-story", action="store_true", help="skip the story-awareness points")
     p.add_argument("--run", action="store_true", help=argparse.SUPPRESS)    # phase 2, inside the UT copy
     return p.parse_args(argv)
 
@@ -191,6 +201,46 @@ def send_checks(port, slot, game, ids):
             if any(m.get("cmd") == "RoomUpdate" and "checked_locations" in m for m in msgs):
                 return
         raise RuntimeError(f"{slot}: no RoomUpdate after LocationChecks")
+
+
+def set_story(port, slot, game, value):
+    """Connect as the slot as the port does (items_handling 0b001) and Set its story key the port's
+    way (docs/ap/data_storage.md: one replace, the value also the default, want_reply false). Returns
+    the key."""
+    from websockets.sync.client import connect
+    with connect(f"ws://localhost:{port}", max_size=None, open_timeout=30) as ws:
+        json.loads(ws.recv(timeout=30))     # RoomInfo
+        ws.send(json.dumps([{"cmd": "Connect", "password": "", "game": game, "name": slot, "uuid": "ap-ut-story",
+                             "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"},
+                             "items_handling": 0b001, "tags": [], "slot_data": False}]))
+        deadline = time.time() + 30
+        connected = None
+        while time.time() < deadline and connected is None:
+            connected = next((m for m in json.loads(ws.recv(timeout=30)) if m.get("cmd") == "Connected"), None)
+        if connected is None:
+            raise RuntimeError(f"{slot}: not connected")
+        key = f"so2_story_{connected['team']}_{connected['slot']}"
+        ws.send(json.dumps([{"cmd": "Set", "key": key, "default": value, "want_reply": False,
+                             "operations": [{"operation": "replace", "value": value}]}]))
+        # read it back, so the write has landed before UT connects
+        ws.send(json.dumps([{"cmd": "Get", "keys": [key]}]))
+        while time.time() < deadline:
+            for m in json.loads(ws.recv(timeout=30)):
+                if m.get("cmd") == "Retrieved" and m.get("keys", {}).get(key) == value:
+                    return key
+        raise RuntimeError(f"{slot}: {key} not stored")
+
+
+def set_enforce(ap, value):
+    """host.yaml's universal_tracker.enforce_deferred_entrances in this UT copy."""
+    host = os.path.join(ap, "host.yaml")
+    with open(host, encoding="utf-8") as f:
+        text = f.read()
+    text, n = re.subn(r'(?m)^([ \t]+enforce_deferred_entrances:).*$', lambda m: m.group(1) + f' "{value}"', text)
+    if n != 1:
+        raise RuntimeError("host.yaml: no enforce_deferred_entrances line")
+    with open(host, "w", encoding="utf-8") as f:
+        f.write(text)
 
 
 def run_ut(ap, env, port, slot, log):
@@ -321,7 +371,12 @@ def run(a):
                 ok &= lib_ok
                 print(f"{'':15s} {'':8s} TrackerCore in logic {len(names_in)}: "
                       f"{'match, tab in custom_ut_sort order' if lib_ok else 'MISMATCH or order'}", flush=True)
+            if label == "fresh" and not a.no_story:
+                # the story points on the fresh room (the most the story holds back), then the key
+                # back to null, which UT reads as no position: the spheres' points as before
+                ok &= story_points(a, ap, env, mw, slots, rooms, cores, checked)
     finally:
+        set_enforce(ap, "default")
         os.killpg(server.pid, signal.SIGTERM)
         try:
             server.wait(timeout=20)
@@ -330,6 +385,76 @@ def run(a):
         server_log.close()
     print("UT MATCHES THE WORLD" if ok else "UT DIFFERS")
     return 0 if ok else 1
+
+
+STORY_POSITIONS = [(3, 0), (9, 0), (12, 0), (20, 0), (36, 0), (41, 0), (58, 0), (60, 3000), (60, 4000)]
+
+
+def story_points(a, ap, env, mw, slots, rooms, cores, checked):
+    """Step 5: the story-mode slot at STORY_POSITIONS, UT headless and TrackerCore in-process against the
+    reference evaluator on the room's export; then enforce_deferred_entrances "off"."""
+    sys.path.insert(0, os.path.join(REPO, "tools"))
+    from ap_tracker_logic import TrackerLogic
+    ok = True
+    story = [p for p in slots if "story" in rooms[p]["tracker"]]
+    if not story:
+        print("story           no story-mode slot: STORY POINTS SKIPPED")
+        return False
+    names = set(mw.worlds[story[0]].location_name_to_id)
+    for p in story:
+        slot, world = slots[p], mw.worlds[p]
+        reference = TrackerLogic(rooms[p]["tracker"])
+        counts = {}
+        for item in [i for i in mw.precollected_items[p] if i.code is not None] + \
+                [loc.item for loc in checked if loc.item.player == p and loc.item.code is not None]:
+            counts[item.code] = counts.get(item.code, 0) + 1
+        done = {loc.address for loc in checked if loc.player == p}
+        plain = own_in_logic(mw, p, checked)
+        seen = []
+        for chapter, step in STORY_POSITIONS:
+            value = {"chapter": chapter, "step": step}
+            key = set_story(a.port, slot, GAME, value)
+            view = reference.evaluate(counts, value)
+            want = {world.location_id_to_name[i] for i in view.locations - done}
+            label = f"story {chapter}/{step}"
+            rc, count, lines = run_ut(ap, env, a.port, slot, os.path.join(ut_dir_of(a), "room",
+                                                                          f"ut_{slot}_story_{chapter}_{step}.log"))
+            listed = {line for line in lines if line in names}
+            match = rc == 0 and count == len(want) and listed == want
+            ok &= match
+            seen.append(count)
+            print(f"{label:15s} {slot:8s} UT in logic {count} (listed {len(listed)}), the reference's {len(want)} "
+                  f"(later in the story {len(view.later - done)}, the items alone {len(plain)}): "
+                  f"{'match' if match else 'MISMATCH'}{'' if rc == 0 else f'; UT exit {rc}'}", flush=True)
+            if not match:
+                print(f"  only UT: {sorted(listed - want)[:10]}  only the reference: {sorted(want - listed)[:10]}")
+            core = cores[p]
+            core.multiworld.worlds[1].reconnect_found_entrances(key, value)
+            names_in, _ = ut_core_update(core, mw, p, checked)
+            lib_ok = names_in == want
+            ok &= lib_ok
+            print(f"{'':15s} {'':8s} TrackerCore after reconnect_found_entrances: {len(names_in)}: "
+                  f"{'match' if lib_ok else 'MISMATCH'}", flush=True)
+        grows = seen == sorted(seen) and seen[0] < seen[-1] <= len(plain)
+        ok &= grows
+        print(f"{'':15s} {slot:8s} in logic by position {seen}: {'follows the story' if grows else 'DOES NOT FOLLOW'}")
+        # enforce_deferred_entrances "off": UT ignores the key (back at chapter 3); the world's own again
+        set_story(a.port, slot, GAME, {"chapter": 3, "step": 0})
+        set_enforce(ap, "off")
+        rc, count, lines = run_ut(ap, env, a.port, slot, os.path.join(ut_dir_of(a), "room", f"ut_{slot}_story_off.log"))
+        listed = {line for line in lines if line in names}
+        match = rc == 0 and count == len(plain) and listed == plain
+        ok &= match
+        print(f"{'story off':15s} {slot:8s} UT in logic {count} at chapter 3 with enforce off, the world's own "
+              f"{len(plain)}: {'match' if match else 'MISMATCH'}", flush=True)
+        set_enforce(ap, "default")
+        key = set_story(a.port, slot, GAME, None)
+        core.multiworld.worlds[1].reconnect_found_entrances(key, None)
+    return ok
+
+
+def ut_dir_of(a):
+    return os.path.abspath(a.ut_dir)
 
 
 def main(argv):
@@ -342,6 +467,7 @@ def main(argv):
            "--ut-dir", os.path.abspath(a.ut_dir), "--seed", str(a.seed), "--port", str(a.port),
            "--spheres", str(a.spheres)]
     cmd += ["--players", os.path.abspath(a.players)] if a.players else []
+    cmd += ["--no-story"] if a.no_story else []
     return subprocess.run(cmd, cwd=ap, env=env, stdin=subprocess.DEVNULL, timeout=3600).returncode
 
 

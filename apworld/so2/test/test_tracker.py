@@ -195,7 +195,8 @@ class TestTrackerExport(unittest.TestCase):
             with self.subTest(label):
                 export = room_slot_data(world)["tracker"]
                 self.assertEqual(export["format"], tracker_export.FORMAT)
-                self.assertEqual(set(export), {"format", "regions", "rules", "entrances", "events", "locations", "goal"})
+                self.assertEqual(set(export), {"format", "regions", "rules", "entrances", "events", "locations", "goal"}
+                                 | ({"story"} if label == "story" else set()))  # story mode: test_story.py
                 regions = list(world.multiworld.get_regions(1))
                 self.assertEqual(export["regions"][0], world.origin_region_name)
                 self.assertEqual(sorted(export["regions"]), sorted(r.name for r in regions))
