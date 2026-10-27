@@ -123,6 +123,7 @@ struct Client::Impl {
   std::vector<int64_t> checks;
   bool goal = false;
   std::vector<std::string> deaths, says;
+  std::map<std::string, std::string> sets;  // data storage: key -> its latest value (JSON text)
 
   std::atomic<State> state{State::kDisconnected};
   std::atomic<bool> stop{false};
@@ -211,6 +212,7 @@ void Client::Impl::handlers() {
 void Client::Impl::flush() {
   std::vector<int64_t> c;
   std::vector<std::string> d, s;
+  std::map<std::string, std::string> v;
   bool g = false;
   {
     std::lock_guard<std::mutex> lock(queue_mutex);
@@ -219,6 +221,7 @@ void Client::Impl::flush() {
     goal = false;
     d.swap(deaths);
     if (client->get_state() == APClient::State::SLOT_CONNECTED) s.swap(says);
+    v.swap(sets);
   }
   const bool connected = client->get_state() == APClient::State::SLOT_CONNECTED;
   if (!c.empty()) client->LocationChecks(std::list<int64_t>(c.begin(), c.end()));  // queued until connected
@@ -238,6 +241,16 @@ void Client::Impl::flush() {
     client->Bounce(data, {}, {}, {"DeathLink"});
   }
   for (const std::string& text : s) client->Say(text);
+  // Data storage: out now, or dropped (not connected: game/ap writes again after the connect).
+  for (const auto& [key, text] : v) {
+    if (!connected) continue;
+    const json value = json::parse(text, nullptr, false);
+    if (value.is_discarded()) {
+      status("Data storage: " + key + " not set (not JSON)");
+      continue;
+    }
+    client->Set(key, value, false, {APClient::DataStorageOperation{"replace", value}});
+  }
 }
 
 void Client::Impl::run() {
@@ -261,7 +274,7 @@ void Client::Impl::run() {
     }
     std::unique_lock<std::mutex> lock(queue_mutex);
     wake.wait_for(lock, std::chrono::milliseconds(20), [this] {
-      return stop.load() || !checks.empty() || goal || !deaths.empty();
+      return stop.load() || !checks.empty() || goal || !deaths.empty() || !sets.empty();
     });
   }
   std::lock_guard<std::mutex> lock(client_mutex);
@@ -310,6 +323,14 @@ void Client::deathlink(const std::string& cause) {
 void Client::say(const std::string& text) {
   std::lock_guard<std::mutex> lock(impl_->queue_mutex);
   impl_->says.push_back(text);
+}
+
+void Client::set(const std::string& key, const std::string& value) {
+  {
+    std::lock_guard<std::mutex> lock(impl_->queue_mutex);
+    impl_->sets[key] = value;
+  }
+  impl_->wake.notify_all();
 }
 
 std::vector<Event> Client::poll() {

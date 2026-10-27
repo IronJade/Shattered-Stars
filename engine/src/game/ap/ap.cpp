@@ -20,6 +20,7 @@
 #include "game/boot/loader.h"
 #include "game/boot/system.h"
 #include "game/common/text_rules.h"
+#include "game/field/actors.h"
 #include "game/field/characters.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
@@ -84,6 +85,14 @@ struct Runtime {
   std::unique_ptr<ap_net::Link> link;
   bool net_ok = false;                  // slot connected, the room's seed is ours
   bool seed_mismatch = false;
+  // [dskeys agent] The tracker keys in the server's data storage (publish_tracker_keys;
+  // docs/ap/data_storage.md): the team and slot of the room's Connected, the values last written
+  // ("": none since the last connect, so written at the next chance) and the vblank of each
+  // key's last write (its throttle). In memory only: never in a save or the sidecar.
+  int ds_team = 0, ds_slot = 0;
+  std::string ds_map, ds_story;
+  int ds_map_id = -1;                   // the map of ds_map (its log line: map changes only)
+  u64 ds_map_at = 0, ds_story_at = 0;
   std::vector<ItemDef> net_items;       // the server's items for us, by index
   std::vector<std::string> net_from;
   // DeathLink.
@@ -2338,6 +2347,70 @@ void deathlink_receive(const std::string& source, const std::string& cause) {
   log("DeathLink received from " + r.deathlink_source + (cause.empty() ? "" : ": " + cause));
 }
 
+namespace {
+
+// ---- Trackers: the map and the story in the server's data storage [dskeys agent] ----
+// docs/ap/data_storage.md (docs/plans/trackers.md B5, decision D6). Two keys, for Universal
+// Tracker's map tab and player icon and for PopTracker:
+//   so2_map_{team}_{slot}    {"map": M}, on a world map {"map": M, "x": X, "z": Z}
+//   so2_story_{team}_{slot}  {"chapter": C, "step": S}
+// Written only from vblank() (so only with a seed and a link), only while connected to the
+// seed's own room (net_ok) with the slot connected now, never on the title or before a game is
+// loaded; each when its value changed, at most every kTrackerKeyVblanks, and both again after
+// every (re)connect. Hub, story and open world alike. Fire and forget: the game's state is only
+// read, nothing waits for the server, nothing goes in a save or the sidecar; without a server
+// (Archipelago off, no seed, a seed played offline) none of this runs.
+constexpr u64 kTrackerKeyVblanks = 30;  // each key at most twice a second (59.94 vblanks a second)
+
+// The world maps (field_load_map: field_flags +0x68 = map - 1 < 3): 1 Expel, 2 Energy Nede, 3
+// the unused third.
+bool tracker_world_map(int map) { return map >= 1 && map <= 3; }
+
+// One key: written when 'value' differs from the last written (none yet: at once), at most
+// every kTrackerKeyVblanks; true when written.
+bool tracker_write(Runtime& r, const char* name, const std::string& value, std::string* last, u64* at, u64 now) {
+  if (value == *last || (!last->empty() && now - *at < kTrackerKeyVblanks)) return false;
+  r.link->set(std::string(name) + std::to_string(r.ds_team) + "_" + std::to_string(r.ds_slot), value);
+  *last = value;
+  *at = now;
+  return true;
+}
+
+void publish_tracker_keys(Runtime& r) {
+  if (!r.net_ok || r.link->state() != ap_net::State::kSlotConnected) return;
+  const u8* gs = field::globals().game_state;
+  if (gs == nullptr || r.scene == Scene::kTitle) return;  // no game (yet)
+  const int map = rd16s(gs + 0x1A);
+  if (map <= 0) return;  // no map loaded yet (0 is no map of the game's)
+  const u64 now = runtime::Runtime::get().vblanks();
+  std::string where = "{\"map\":" + std::to_string(map);
+  if (tracker_world_map(map)) {
+    // The party's place on the world map, in map units (the leader's position >> 12, as
+    // docs/ap/doors.json's arrivals): the leader actor's (the vehicle's while flying) in the
+    // field, else game_state +8 / +0x10 (the arrival's, kept over a battle by the encounter).
+    s32 x = rd32s(gs + 8), z = rd32s(gs + 0x10);
+    if (field::field_program() != nullptr && field::actor_system() != nullptr)
+      if (const field::Actor* l = field::field_actor(gs[0x24]); l != nullptr) {
+        x = l->x >> 12;
+        z = l->z >> 12;
+      }
+    where += ",\"x\":" + std::to_string(x) + ",\"z\":" + std::to_string(z);
+  }
+  where += "}";
+  if (tracker_write(r, "so2_map_", where, &r.ds_map, &r.ds_map_at, now) && map != r.ds_map_id) {
+    r.ds_map_id = map;
+    log("tracker: so2_map_" + std::to_string(r.ds_team) + "_" + std::to_string(r.ds_slot) + " " + where);
+  }
+  const std::string story = "{\"chapter\":" + std::to_string(rd32s(gs)) + ",\"step\":" + std::to_string(rd32s(gs + 4)) + "}";
+  if (tracker_write(r, "so2_story_", story, &r.ds_story, &r.ds_story_at, now))
+    log("tracker: so2_story_" + std::to_string(r.ds_team) + "_" + std::to_string(r.ds_slot) + " " + story);
+  // Phase C (entrance randomizer; docs/plans/trackers.md section 6) adds the third key here:
+  // so2_entrances_{team}_{slot}, the redirected doors used so far (written the first time each
+  // is used), for UT's deferred entrances and the pack. Not built yet.
+}
+
+}  // namespace
+
 void vblank() {
   Runtime& r = rt();
   if (!r.on || !r.link) return;
@@ -2376,6 +2449,12 @@ void vblank() {
         }
         if (!r.state.checked.empty()) r.link->check(r.state.checked);
         if (r.state.goal_done) r.link->goal();
+        // [dskeys agent] The tracker keys: this connection's names, both written again.
+        r.ds_team = ev.team;
+        r.ds_slot = ev.slot;
+        r.ds_map.clear();
+        r.ds_story.clear();
+        r.ds_map_id = -1;
         log("connected (slot " + std::to_string(ev.slot) + "): sent " + std::to_string(r.state.checked.size()) +
             " checks, " + std::to_string(marked) + " checked elsewhere");
         queue_notice("Archipelago: connected");
@@ -2416,6 +2495,7 @@ void vblank() {
         break;
     }
   }
+  publish_tracker_keys(r);
 }
 
 // ---- Battles ----

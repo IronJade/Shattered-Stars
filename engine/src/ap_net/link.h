@@ -70,6 +70,12 @@ class Link {
   virtual void goal() = 0;                                        // StatusUpdate CLIENT_GOAL
   virtual void deathlink(const std::string& cause) = 0;           // Bounce, tags [DeathLink]
   virtual void say(const std::string& text) = 0;                  // a chat message
+  // [dskeys agent] Data storage (trackers; docs/ap/data_storage.md): Set 'key' to 'value', a
+  // JSON text (operation "replace", the value also as the default, no reply asked for). Fire
+  // and forget: it goes out only while the slot is connected; one made while it is not is
+  // dropped (game/ap writes its keys again after every kConnected). A key set again before it
+  // went out sends the later value only.
+  virtual void set(const std::string& key, const std::string& value) = 0;
   virtual std::vector<Event> poll() = 0;  // the events since the last call (game thread)
   virtual State state() const = 0;
   // Names from the server's data package ("" until known).

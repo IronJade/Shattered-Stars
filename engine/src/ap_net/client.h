@@ -17,6 +17,8 @@
 // - The data package (item, location and player names) is kept in memory for the run.
 // - Our own DeathLink bounces come back from the server; they are dropped here, so a
 //   kDeathLink event always means someone else died.
+// - set() writes a data-storage key (Set, "replace") while the slot is connected and drops it
+//   otherwise; the latest value of each key waits for the worker thread [dskeys agent].
 namespace ss::ap_net {
 
 class Client final : public Link {
@@ -32,6 +34,7 @@ class Client final : public Link {
   void goal() override;
   void deathlink(const std::string& cause) override;
   void say(const std::string& text) override;
+  void set(const std::string& key, const std::string& value) override;
   std::vector<Event> poll() override;
   State state() const override;
   std::string player_name(int slot) const override;

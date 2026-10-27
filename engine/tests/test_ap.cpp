@@ -85,6 +85,7 @@ struct FakeLink : ap_net::Link {
   void goal() override { ++*goals; }
   void deathlink(const std::string& cause) override { deaths->push_back(cause); }
   void say(const std::string&) override {}
+  void set(const std::string&, const std::string&) override {}  // (the tracker keys: test_ap_ds.cpp)
   std::vector<ap_net::Event> poll() override {
     std::vector<ap_net::Event> out;
     out.swap(*events);

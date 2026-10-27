@@ -42,6 +42,13 @@
 #   8. After the port has quit, a tracker client logs in to Claude's slot and reads the
 #      server's view: the crate, the drop and the shop slot among the checked locations, and
 #      the client status 30 (goal); another reads Dias's client status (30).
+#   9. The tracker keys in data storage [dskeys agent] (docs/ap/data_storage.md): a tracker
+#      login to Claude's slot (tools/ap_ds_read.py --watch: SetNotify) watches so2_map_T_S and
+#      so2_story_T_S from before session 1 to the end; session 2's walk shows map 18 then Hearn's
+#      store (26); a fourth session (Claude, a new game on world map 1 at a walkable spot) walks,
+#      and the map key carries x / z that change, at most every 30 vblanks. After the port has
+#      quit, the reader gets both keys of Claude and of Dias (Get) under the names the server's
+#      Connected gives (team, slot), the port's log naming the same keys.
 # The server runs with release / collect off, so the checked locations are exactly what was
 # sent. Output, logs and captures (frames 700: the window, 850: the first banner) in
 # scratchpad/ap_e2e_so2/ (AP_E2E_WORK to put them elsewhere). Every game run is under the
@@ -236,6 +243,10 @@ bob=$!
 # 600-766: open the crate and close its window; 730: 10000 Fol for the trap to take; from 850:
 # the received items' banners; 1600: the drop battle, 4400: the final boss (each won after 60
 # battle frames), each followed by the result screen's pages.
+# [dskeys agent] The tracker keys: watched from here to after session 4 (step 9).
+"$AP/ap-venv/bin/python" "$P/tools/ap_ds_read.py" "ws://localhost:$PORT" Claude --watch 900 --done "$W/ds_done" \
+  > "$W/ds_watch.log" 2>&1 < /dev/null &
+dswatch=$!
 presses=""
 for v in 600 760 1100 $(seq 2200 200 4000) $(seq 5000 200 7400); do presses="$presses,$v:cross,$((v + 6)):none"; done
 XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
@@ -262,6 +273,16 @@ XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PA
   SS_DEBUG_INPUT="300:battle 540;2100:ap_status;2200:battle 561;4000:ap_status" \
   run_game "$W/game3.log" 300 --headless --debug --no-memcard --ap-seed "$seed_v2" --frames 4100 --map 18 \
   --battle-end 60:0
+# Session 4 [dskeys agent]: Claude on world map 1 (a walkable spot west of Arlia), walking: the
+# map key with the party's x / z (step 9).
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" SS_TRACE_LEADER=60 \
+  run_game "$W/game4.log" 120 --headless --no-memcard --ap-seed "$seed_file" --frames 1500 --map 1 \
+  --map-pos 51200,0,18500 --input "600:up,900:left,1200:none"
+touch "$W/ds_done"
+wait $dswatch
+"$AP/ap-venv/bin/python" "$P/tools/ap_ds_read.py" "ws://localhost:$PORT" Claude > "$W/ds_claude.log" 2>&1 < /dev/null
+"$AP/ap-venv/bin/python" "$P/tools/ap_ds_read.py" "ws://localhost:$PORT" Dias > "$W/ds_dias.log" 2>&1 < /dev/null
 "$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" > "$W/tracker.log" 2>&1
 "$AP/ap-venv/bin/python" "$W/tracker.py" "ws://localhost:$PORT" Dias > "$W/tracker3.log" 2>&1
 kill -- "-$server" 2>/dev/null || kill "$server" 2>/dev/null
@@ -274,10 +295,10 @@ check_not() {  # FILE what pattern (must not appear)
   if grep -qE "$3" "$1"; then echo "FAIL $2"; fails=$((fails + 1)); else echo "PASS $2"; fi
 }
 check "$W/generate.log" "the multiworld generates (SO2 + ChecksFinder)" 'Creating final archive'
-if [ "$(grep -cE '^game[23]?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 3 ]; then
-  echo "PASS the three game runs ran under the memory cap"
+if [ "$(grep -cE '^game[234]?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 4 ]; then
+  echo "PASS the four game runs ran under the memory cap"
 else
-  echo "FAIL the three game runs ran under the memory cap"; fails=$((fails + 1))
+  echo "FAIL the four game runs ran under the memory cap"; fails=$((fails + 1))
 fi
 check_not "$W/memcap.txt" "... and none died at it" 'at_cap True'
 check "$seed_file" "the crate holds Bob's Map Width" '"name": "Map Width"'
@@ -318,5 +339,32 @@ check "$W/game3.log" "... 561 completes goal.all" '\[ap\] goal: every encounter 
 check "$W/game3.log" "... the port's status" 'slot Dias \| checks 0/[0-9]+ .*\| connected \| goal'
 check "$W/server.log" "the server: Dias completed the goal" 'Dias.*has completed their goal'
 check "$W/tracker3.log" "the server's client status for Dias is 30 (goal)" '^client_status 30$'
+# Step 9 [dskeys agent]: the tracker keys (docs/ap/data_storage.md).
+ds_team_slot() { sed -nE 's/^connected team ([0-9]+) slot ([0-9]+)$/\1_\2/p' "$1" | head -1; }
+claude_ts=$(ds_team_slot "$W/ds_claude.log")
+dias_ts=$(ds_team_slot "$W/ds_dias.log")
+check "$W/ds_claude.log" "tracker keys: the reader logs in to Claude's slot" '^connected team [0-9]+ slot [0-9]+$'
+check "$W/game.log" "... the port writes so2_map / so2_story under the server's team and slot" \
+  "\[ap\] tracker: so2_map_${claude_ts:-X} \{\"map\":18\}"
+check "$W/game.log" "... and the story key" "\[ap\] tracker: so2_story_${claude_ts:-X} \{\"chapter\":-?[0-9]+,\"step\":-?[0-9]+\}"
+check "$W/ds_watch.log" "... the watcher sees Arlia (map 18)" "^set so2_map_${claude_ts:-X} \{\"map\":18\}$"
+check "$W/ds_watch.log" "... then Hearn's store (map 26, session 2's walk)" "^set so2_map_${claude_ts:-X} \{\"map\":26\}$"
+check "$W/ds_watch.log" "... the story key" "^set so2_story_${claude_ts:-X} \{\"chapter\":-?[0-9]+,\"step\":-?[0-9]+\}$"
+check "$W/ds_watch.log" "... on world map 1 with x / z (session 4)" "^set so2_map_${claude_ts:-X} \{\"map\":1,\"x\":-?[0-9]+,\"z\":-?[0-9]+\}$"
+wm_values=$(grep -cE '^set so2_map_[0-9_]+ \{"map":1,' "$W/ds_watch.log")
+wm_distinct=$(grep -E '^set so2_map_[0-9_]+ \{"map":1,' "$W/ds_watch.log" | sort -u | wc -l)
+if [ "$wm_distinct" -ge 3 ] && [ "$wm_values" -le 51 ]; then  # session 4: 1500 frames, a key at most every 30
+  echo "PASS ... the party's x / z follow the walk ($wm_distinct places), throttled ($wm_values writes)"
+else
+  echo "FAIL ... the party's x / z follow the walk ($wm_distinct places), throttled ($wm_values writes)"; fails=$((fails + 1))
+fi
+check "$W/ds_claude.log" "... Get after the runs: Claude's map key holds world map 1" "^retrieved so2_map_${claude_ts:-X} \{\"map\":1,\"x\":-?[0-9]+,\"z\":-?[0-9]+\}$"
+check "$W/ds_claude.log" "... and the story key" "^retrieved so2_story_${claude_ts:-X} \{\"chapter\":-?[0-9]+,\"step\":-?[0-9]+\}$"
+check "$W/ds_dias.log" "... Dias's keys are his own slot's" "^retrieved so2_story_${dias_ts:-X} \{\"chapter\":-?[0-9]+,\"step\":-?[0-9]+\}$"
+if [ -n "$claude_ts" ] && [ "$claude_ts" != "$dias_ts" ]; then
+  echo "PASS ... two slots, two sets of keys ($claude_ts, $dias_ts)"
+else
+  echo "FAIL ... two slots, two sets of keys ($claude_ts, $dias_ts)"; fails=$((fails + 1))
+fi
 [ -f "$W/cap/frame00700.png" ] && echo "captures: $W/cap/frame00700.png (window), frame00850.png (banner)"
 exit $fails
