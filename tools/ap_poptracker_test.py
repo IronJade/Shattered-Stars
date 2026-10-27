@@ -710,6 +710,71 @@ class TestLuaLogic(unittest.TestCase):
         self.assertEqual(in_logic(), whole.locations)
         self.assertGreater(len(whole.locations), len(view.locations))
 
+    STORY_POSITIONS = [(0, 0), (3, 0), (5, 0), (12, 0), (24, 500), (35, 9999), (36, 0), (41, 0), (48, 0),
+                       (57, 0), (58, 0), (60, 3000), (60, 4000), (60, 5000)]
+
+    def test_story_is_the_reference(self):
+        """Story awareness: in every story room, for item states and story positions sent as the port
+        sends them (SetReply of so2_story_0_1), every section is Normal for the reference's locations in
+        logic for the story, Inspect for its `later` ones and None for the rest; a step-only change
+        (chapter 60 step 3000 -> 4000) re-runs the rules; Chapter clicked by hand counts as a position
+        (step 0); the "Story" setting off and chapter 0 give the plain logic; open world and hub rooms
+        never show Inspect."""
+        lua = TestLua.runtime(self, "map")
+        g, T = lua.globals(), lua.globals().Tracker
+        total = 0
+        for label, mw, slot, states in self.rooms:
+            evaluator = self.reference.TrackerLogic(slot["tracker"])
+            room = sorted(evaluator.location_of)
+            story = "story" in slot["tracker"]
+            self.assertEqual(story, label.startswith("story"), label)
+            for name, items in (states[:1] + states[1:2] + states[-4:-3]) if story else states[-4:-3]:
+                counts = {}
+                for code in items:
+                    counts[code] = counts.get(code, 0) + 1
+                plain = evaluator.evaluate(counts).locations
+                self.deliver(lua, slot, room, items)
+                for chapter, step in self.STORY_POSITIONS:
+                    value = {"chapter": chapter, "step": step}
+                    rev = T.FindObjectForCode(T, "so2_rev").AcquiredCount
+                    g.STUB.handlers.SetReply("so2_story_0_1", to_lua(lua, value), None)
+                    self.assertGreater(T.FindObjectForCode(T, "so2_rev").AcquiredCount, rev)
+                    view = evaluator.evaluate(counts, value if chapter > 0 else None)
+                    levels = dict(g.STUB.levels().items())
+                    with self.subTest(mix=label, state=name, story=value):
+                        self.assertEqual({a for a in room if levels[a] == 6}, view.locations)
+                        self.assertEqual({a for a in room if levels[a] == 3}, set(view.later))
+                        self.assertEqual({a for a in room if levels[a] == 0}, set(room) - plain)
+                        if not story:
+                            self.assertEqual(view.locations, plain)
+                    total += 1
+                if not story:
+                    continue
+                # the "Story" setting off: the plain logic; on again: the story's
+                aware = T.FindObjectForCode(T, "so2_story_aware")
+                self.assertTrue(aware.Active)
+                g.STUB.handlers.SetReply("so2_story_0_1", to_lua(lua, {"chapter": 12, "step": 0}), None)
+                aware.Active = False
+                levels = dict(g.STUB.levels().items())
+                self.assertEqual({a for a in room if levels[a] == 6}, plain)
+                aware.Active = True
+                levels = dict(g.STUB.levels().items())
+                self.assertEqual({a for a in room if levels[a] == 6},
+                                 evaluator.evaluate(counts, {"chapter": 12, "step": 0}).locations)
+                # Chapter by hand (no port): chapter 20, step 0; 0 is no position
+                T.FindObjectForCode(T, "so2_chapter").AcquiredCount = 20
+                levels = dict(g.STUB.levels().items())
+                self.assertEqual({a for a in room if levels[a] == 6},
+                                 evaluator.evaluate(counts, {"chapter": 20, "step": 0}).locations)
+                T.FindObjectForCode(T, "so2_chapter").AcquiredCount = 0
+                levels = dict(g.STUB.levels().items())
+                self.assertEqual({a for a in room if levels[a] == 6}, plain)
+                # a value that is no position changes nothing
+                g.STUB.handlers.SetReply("so2_story_0_1", to_lua(lua, {"step": 5}), None)
+                g.STUB.handlers.SetReply("so2_story_0_1", None, None)
+                self.assertEqual({a for a in room if dict(g.STUB.levels().items())[a] == 6}, plain)
+        self.assertGreater(total, 3 * 3 * len(self.STORY_POSITIONS))
+
     def test_checklist_rooms(self):
         """A room without the export (0.2.0 / 0.2.1) and one whose export is a newer format: every
         location shows as reachable, with the banner saying so."""

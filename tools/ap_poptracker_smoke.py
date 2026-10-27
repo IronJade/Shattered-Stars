@@ -36,6 +36,13 @@ dialog helper is reachable) and SDL's dummy video driver, under a scratch HOME.
    4); every item the server sent to the slot that the pack maps is on (or counted); the chapter is
    12; the Room settings match the slot's options; the map tabs show SO2_MAP_TABS[26]. Items Only:
    loads, connects, items.
+7. Story awareness (skipped with --no-story): a second room, one story-mode slot "Storyteller", on
+   PORT + 1; PopTracker (map variant, the probe) connects to it. Fresh (no story key yet) its Normal
+   sections are the world's own in logic and none is Inspect; then a client of the slot Sets
+   so2_story_{team}_{slot} as the port does at chapters 3, 12, 36, 60 step 3000 and 60 step 4000 (a
+   step-only change): each time PopTracker's Normal sections must be the reference evaluator's for
+   the room's export with that position and its Inspect ("later in the story") ones the reference's
+   `later`.
 Prints one line per check; exit status 0 when all pass.
 """
 import argparse
@@ -168,7 +175,7 @@ async def play(port, n, crafts):
 # the set changed: "so2probe <mode> <reachable> <unreachable> <ids,...>" (unchecked sections only:
 # a checked one reads Cleared).
 PROBE = r"""
-local order, pos, ids, none, last = nil, 1, {}, 0, nil
+local order, pos, ids, later, none, last = nil, 1, {}, {}, 0, nil
 ScriptHost:AddOnFrameHandler("so2 smoke probe", function(elapsed)
     if not SO2.connected or SO2.exists == nil then
         return
@@ -181,12 +188,13 @@ ScriptHost:AddOnFrameHandler("so2 smoke probe", function(elapsed)
             end
         end
         table.sort(order)
-        pos, ids, none = 1, {}, 0
+        pos, ids, later, none = 1, {}, {}, 0
     end
     for _ = 1, 100 do
         local id = order[pos]
         if id == nil then
-            local line = SO2_LOGIC.mode .. " " .. #ids .. " " .. none .. " " .. table.concat(ids, ",")
+            local line = SO2_LOGIC.mode .. " " .. #ids .. " " .. none .. " " .. (#ids > 0 and table.concat(ids, ",") or "-")
+                .. " " .. (#later > 0 and table.concat(later, ",") or "-")
             if line ~= last then
                 last = line
                 print("so2probe " .. line)
@@ -197,6 +205,8 @@ ScriptHost:AddOnFrameHandler("so2 smoke probe", function(elapsed)
         local level = Tracker:FindObjectForCode(LOCATION_MAPPING[id][1]).AccessibilityLevel
         if level == AccessibilityLevel.Normal then
             table.insert(ids, id)
+        elseif level == AccessibilityLevel.Inspect then
+            table.insert(later, id)
         elseif level == AccessibilityLevel.None then
             none = none + 1
         end
@@ -207,14 +217,15 @@ end)
 
 
 def probe_lines(log_path):
-    """The probe's lines so far: (mode, reachable ids, unreachable count)."""
+    """The probe's lines so far: (mode, reachable ids, unreachable count, later-in-the-story ids)."""
+    def ids(text):
+        return set() if text == "-" else {int(x) for x in text.split(",")}
     out = []
     with open(log_path, encoding="utf-8", errors="replace") as f:
         for line in f:
             if line.startswith("so2probe "):
                 parts = line.split()
-                ids = {int(x) for x in parts[4].split(",")} if len(parts) > 4 and parts[4] else set()
-                out.append((parts[1], ids, int(parts[3])))
+                out.append((parts[1], ids(parts[4]), int(parts[3]), ids(parts[5])))
     return out
 
 
@@ -254,7 +265,7 @@ async def logic_points(port, log_path, ap_dir, points=3, timeout=60):
                     break
                 await asyncio.sleep(0.5)
             label = "fresh" if k == 0 else f"after {k} round{'s' if k > 1 else ''} of checks"
-            ok = seen is not None and seen[0] == "on" and seen[1] == expected
+            ok = seen is not None and seen[0] == "on" and seen[1] == expected and not seen[3]
             what = (f"logic, {label}: PopTracker's reachable sections are the world's own ({len(expected)} in "
                     f"logic of {len(unchecked)} unchecked, {len(received)} items)")
             if not check(ok and seen[2] == len(unchecked) - len(expected), what):
@@ -299,8 +310,109 @@ def stop(p):
         p.wait()
 
 
-def run_logic(apprun, root, pack_dir, port, ap_dir):
-    """Step 4: PopTracker with the probe, the three points; the override removed afterwards."""
+STORY_YAML = """name: Storyteller
+game: "Star Ocean: The Second Story"
+"Star Ocean: The Second Story":
+  world_mode: story
+  killer_move_checks: true
+  cave_of_trials: true
+  boss_checks: true
+"""
+# Step 7's positions, as the port writes them (the last two: a step-only change at the Final Save Point).
+STORY_POSITIONS = [(3, 0), (12, 0), (36, 0), (60, 3000), (60, 4000)]
+
+
+async def story_points(port, log_path, ap_dir, timeout=60):
+    """Step 7's clients and checks: a tracker-like client reads the slot data and the items; a client
+    of the slot as the port (items_handling 0b001) Sets so2_story_{team}_{slot}. Fresh (no key yet):
+    PopTracker shows the world's own in logic and nothing later in the story; at each position its
+    Normal sections are the reference evaluator's (tools/ap_tracker_logic.py) for the room's export with
+    that position, its Inspect ones the reference's `later`. Returns the number of points that passed."""
+    sys.path.insert(0, ap_dir)
+    sys.path.insert(0, HERE)
+    from BaseClasses import ItemClassification
+    from worlds.AutoWorld import AutoWorldRegister
+    from worlds.so2.test.test_ut import in_logic, ut_rebuild
+    from ap_tracker_logic import TrackerLogic
+    import websockets
+    names = AutoWorldRegister.world_types[GAME].item_id_to_name
+    hello = lambda handling, data: json.dumps([{
+        "cmd": "Connect", "game": GAME, "name": "Storyteller", "password": "", "uuid": str(uuid.uuid4()),
+        "items_handling": handling, "tags": [], "slot_data": data,
+        "version": {"major": 0, "minor": 6, "build": 8, "class": "Version"}}])
+    passed = 0
+    async with websockets.connect(f"ws://127.0.0.1:{port}", max_size=None) as ws, \
+            websockets.connect(f"ws://127.0.0.1:{port}", max_size=None) as game:
+        await ws.recv()
+        await ws.send(hello(0b111, True))
+        connected, received = None, []
+        end, hard = time.time() + 2, time.time() + 30
+        while connected is None or time.time() < end:
+            if time.time() > hard:
+                raise RuntimeError("story: the tracker-like client got no Connected")
+            try:
+                msg = await asyncio.wait_for(ws.recv(), timeout=max(0.1, end - time.time()))
+            except asyncio.TimeoutError:
+                continue
+            for p in json.loads(msg):
+                if p["cmd"] == "Connected":
+                    connected = p
+                elif p["cmd"] == "ReceivedItems":
+                    received += p["items"]
+        await asyncio.wait_for(game.recv(), 30)
+        await game.send(hello(0b001, False))
+        while not any(p["cmd"] == "Connected" for p in json.loads(await asyncio.wait_for(game.recv(), 30))):
+            pass
+        key = f"so2_story_{connected['team']}_{connected['slot']}"
+        unchecked = set(connected["missing_locations"])
+        tracker = ut_rebuild(connected["slot_data"], 4244)
+        plain = in_logic(tracker, [(names[it["item"]], ItemClassification(it["flags"])) for it in received], unchecked)
+        reference = TrackerLogic(connected["slot_data"]["tracker"])
+        counts = {}
+        for it in received:
+            counts[it["item"]] = counts.get(it["item"], 0) + 1
+        check("story" in connected["slot_data"]["tracker"], "story: the room's tracker export has the `story` key")
+        check(reference.evaluate(counts).locations & unchecked == plain,
+              f"story: the reference's plain logic is the world's own ({len(plain)} in logic)")
+        points = [(None, None)] + [({"chapter": c, "step": st}, f"chapter {c} step {st}") for c, st in STORY_POSITIONS]
+        last_normal = None
+        for value, label in points:
+            if value is not None:
+                await game.send(json.dumps([{"cmd": "Set", "key": key, "default": value, "want_reply": False,
+                                             "operations": [{"operation": "replace", "value": value}]}]))
+                view = reference.evaluate(counts, value)
+                normal, later = view.locations & unchecked, set(view.later) & unchecked
+            else:
+                normal, later, label = plain, set(), "fresh, no story key yet"
+            end, seen = time.time() + timeout, None
+            while time.time() < end:
+                lines = probe_lines(log_path)
+                seen = lines[-1] if lines else None
+                if seen and seen[0] == "on" and seen[1] == normal and seen[3] == later:
+                    break
+                await asyncio.sleep(0.5)
+            ok = seen is not None and seen[0] == "on" and seen[1] == normal and seen[3] == later \
+                and seen[2] == len(unchecked) - len(normal) - len(later)
+            if check(ok, f"story, {label}: PopTracker's sections: {len(normal)} Normal, {len(later)} Inspect (later "
+                         f"in the story), the rest None, as the reference says"):
+                passed += 1
+            elif seen:
+                print(f"     PopTracker: mode {seen[0]}, {len(seen[1])} Normal, {len(seen[3])} Inspect, {seen[2]} None")
+            if value is not None and last_normal is not None and label.endswith("step 4000"):
+                check(normal != last_normal, "story: the step-only change (chapter 60 step 3000 -> 4000) changed them")
+            last_normal = normal
+    return passed
+
+
+def run_story(apprun, root, pack_dir, port, ap_dir):
+    """Step 7: a story-mode room on PORT; PopTracker with the probe connected to it."""
+    return with_probe(apprun, root, pack_dir, port, "Storyteller", "poptracker-story.log",
+                      lambda log_path: story_points(port, log_path, ap_dir))
+
+
+def with_probe(apprun, root, pack_dir, port, slot, log_name, drive):
+    """PopTracker (map variant) on PORT as SLOT with the probe in its user override, `drive(log)`
+    meanwhile; the override removed afterwards."""
     override = os.path.join(root, "home", "PopTracker", "user-override", UID)
     os.makedirs(os.path.join(override, "scripts"))
     with open(os.path.join(pack_dir, "scripts", "init.lua"), encoding="utf-8") as f:
@@ -309,13 +421,13 @@ def run_logic(apprun, root, pack_dir, port, ap_dir):
         f.write(init + '\nScriptHost:LoadScript("scripts/so2_smoke_probe.lua")\n')
     with open(os.path.join(override, "scripts", "so2_smoke_probe.lua"), "w", encoding="utf-8") as f:
         f.write(PROBE)
-    log_path = os.path.join(root, "poptracker-logic.log")
+    log_path = os.path.join(root, log_name)
     with open(log_path, "w") as log:
         p = subprocess.Popen([apprun, "--load-pack", UID, "--pack-variant", "map", "--ap-host", f"localhost:{port}",
-                              "--ap-slot", "Tester"], env=env_for(root), stdin=subprocess.DEVNULL, stdout=log,
+                              "--ap-slot", slot], env=env_for(root), stdin=subprocess.DEVNULL, stdout=log,
                              stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            done = asyncio.run(logic_points(port, log_path, ap_dir))
+            done = asyncio.run(drive(log_path))
         finally:
             stop(p)
     shutil.rmtree(os.path.join(root, "home", "PopTracker", "user-override"))
@@ -323,8 +435,14 @@ def run_logic(apprun, root, pack_dir, port, ap_dir):
     bad = [ln for ln in text.splitlines() if re.search(r"WARNING|[Ee]rror|attempt to|stack traceback", ln)
            and "TLS handshake" not in ln and "Could not fetch" not in ln]
     check("overriding from" in text and "so2_smoke_probe" in text and not bad,
-          "logic: the probe ran from the user override, no Lua error or warning" + (f": {bad[:3]}" if bad else ""))
+          f"{slot}: the probe ran from the user override, no Lua error or warning" + (f": {bad[:3]}" if bad else ""))
     return done
+
+
+def run_logic(apprun, root, pack_dir, port, ap_dir):
+    """Step 4: PopTracker with the probe, the three points."""
+    return with_probe(apprun, root, pack_dir, port, "Tester", "poptracker-logic.log",
+                      lambda log_path: logic_points(port, log_path, ap_dir))
 
 
 def lua_table(path, name):
@@ -352,6 +470,36 @@ def run_poptracker(apprun, root, variant, port, seconds):
     return log, json.load(open(found[0], encoding="utf-8")) if found else None
 
 
+def story_room(a, root, py, ap_env):
+    """Step 7's room: one story-mode slot "Storyteller", hosted on PORT + 1. (server, its log) or None."""
+    players, out = os.path.join(root, "players_story"), os.path.join(root, "out_story")
+    os.makedirs(players)
+    os.makedirs(out)
+    with open(os.path.join(players, "Storyteller.yaml"), "w") as f:
+        f.write(STORY_YAML)
+    gen = subprocess.run([py, "Generate.py", "--player_files_path", players, "--outputpath", out, "--seed", "4243"],
+                         cwd=a.ap_dir, env=ap_env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    rooms = [f for f in os.listdir(out) if f.endswith(".zip")]
+    if not check(gen.returncode == 0 and len(rooms) == 1, "story: room generated (story mode)"):
+        print(gen.stdout[-2000:])
+        return None
+    port = a.port + 1
+    if port_open(port):
+        raise SystemExit(f"port {port} is in use")
+    log = open(os.path.join(root, "server-story.log"), "w")
+    server = subprocess.Popen([py, "MultiServer.py", os.path.join(out, rooms[0]), "--host", "127.0.0.1",
+                               "--port", str(port), "--disable_save", "--loglevel", "info"], cwd=a.ap_dir,
+                              env=ap_env, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+                              start_new_session=True)
+    for _ in range(300):
+        if port_open(port):
+            break
+        time.sleep(0.1)
+    check(port_open(port), f"story: server on 127.0.0.1:{port} (PID {server.pid})")
+    return server, log
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--zip", default=os.path.join(REPO, "dist", "poptracker", f"{UID}_1.0.0.zip"))
@@ -361,6 +509,7 @@ def main():
     p.add_argument("--port", type=int, default=38391)
     p.add_argument("--seconds", type=float, default=40)
     p.add_argument("--keep", action="store_true", help="keep the scratch folder")
+    p.add_argument("--no-story", action="store_true", help="skip step 7 (the story-mode room)")
     a = p.parse_args()
     apprun = poptracker(os.path.abspath(a.poptracker))
     root = os.path.abspath(a.scratch)
@@ -441,6 +590,16 @@ def main():
                       f"map: map {MAP} switched the tabs to {tabs[MAP]}")
         joined = open(os.path.join(root, "server.log")).read()
         check(joined.count("['PopTracker', 'NoText', 'Tracker']") >= 2, "server: PopTracker joined as a tracker")
+        if not a.no_story:
+            story = story_room(a, root, py, ap_env)
+            if story is not None:
+                try:
+                    passed = run_story(apprun, root, pack_dir, a.port + 1, os.path.abspath(a.ap_dir))
+                    check(passed == len(STORY_POSITIONS) + 1, f"story: {passed} of {len(STORY_POSITIONS) + 1} points")
+                finally:
+                    os.killpg(story[0].pid, signal.SIGTERM)
+                    story[0].wait(timeout=30)
+                    story[1].close()
     finally:
         os.killpg(server.pid, signal.SIGTERM)
         server.wait(timeout=30)

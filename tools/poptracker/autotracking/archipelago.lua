@@ -227,7 +227,8 @@ local function on_map(value)
     end
 end
 
--- so2_story_{team}_{slot}: {"chapter": C, "step": S}. Shown on the Chapter item; B6 colours by it.
+-- so2_story_{team}_{slot}: {"chapter": C, "step": S}. Sets the Chapter item, which the story awareness
+-- reads (logic.lua so2_story_stage), then tells the logic (so2_story_changed: a step-only change too).
 local function on_story(value)
     if type(value) ~= "table" or type(value.chapter) ~= "number" then
         return

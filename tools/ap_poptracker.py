@@ -402,7 +402,7 @@ class Pack:
             short = name.split(": ", 1)[1]
             self.moves.setdefault(who, []).append(
                 self.item(name, "move_" + slug(name), "toggle", short, COLOURS["move"], code_id))
-        # status: the logic banner, the story chapter, auto tab switching, the refresh counter
+        # status: the logic banner, the story chapter, story awareness, auto tab switching, the refresh counter
         self.status_logic = "so2_logic"
         stages = []
         for key, text, colour in (("offline", "Logic: not connected (checklist)", "logic_off"),
@@ -417,6 +417,8 @@ class Pack:
                            "stages": stages, "initial_stage_idx": 0})
         self.item("Story chapter (from the game)", "so2_chapter", "consumable", "Chapter", COLOURS["status"],
                   min_quantity=0, max_quantity=99)
+        self.item("Story awareness: checks later in the story show blue (story mode)", "so2_story_aware", "toggle",
+                  "Story", COLOURS["opt"], initial_active_state=True)
         self.item("Switch map tabs with the game", "so2_auto_tab", "toggle", "Auto tab", COLOURS["opt"],
                   initial_active_state=True)
         self.item("Refresh (internal)", "so2_rev", "consumable", "rev", COLOURS["status"], min_quantity=0,
@@ -801,7 +803,7 @@ class Pack:
                      group("Area keys: Energy Nede", grid(self.keys[2], 5)),
                      group("Dungeon keys (hub)", grid(self.dungeon_keys, 5)))
         party = stack(group("Characters", grid(self.characters, 4)),
-                      group("Status", grid(["so2_chapter", "so2_auto_tab"], 4)),
+                      group("Status", grid(["so2_chapter", "so2_story_aware", "so2_auto_tab"], 4)),
                       group("Traps received", grid(self.traps, 5)))
         skills = group("Skills (skillsanity)", grid(self.skills, 5))
         moves = {"type": "tabbed", "tabs": [{"title": who, "content": group(f"{who}'s moves", grid(codes, 5))}
