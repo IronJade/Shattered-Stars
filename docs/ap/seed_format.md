@@ -232,6 +232,25 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   `options.starting_character` is `"any"` or a list), when that is not the hero. A load makes them
   the starting character again (they count as received, as below). Absent: none (no pick, or
   the hero picked); a value outside 1-12 reads as none.
+- `pending` (optional; agent "pendingsave", 2026-10-27): the items still waiting to be given in
+  free play when the save was made, in order. A check that brings items (a guild set under
+  skillsanity, a boss, a craft, a killer-move level, learn points at a join...) queues them, and
+  they come one per banner; a save in between used to lose the rest. Each entry is
+  `{"location": ID}`, a check's own item (the item comes from the seed's location), or
+  `{"item": {...}, "from": "Bob", "found": true}`, any other item (the courier's overflow, the
+  console's `ap_give`), the item object as in the seed's `items` (`from` and `found` only when set).
+  Written only with something waiting; then the sidecar is **version 3**, so a port from before
+  2026-10-27 refuses the save instead of dropping the items. Absent: nothing waits.
+- `pending_hash` (with `pending`): `"sha256:"` and the SHA-256 of the save's bytes (the same N
+  bytes as `save_hash`) followed by the text of `pending` as `ap::Json::dump` writes it (keys
+  sorted, one-space indent). The guard reads the list and writes it again before hashing, so
+  spacing and key order in the file don't matter; any changed value does (below).
+
+```json
+ "pending": [{"location": 1347569672}, {"location": 1347569673}],
+ "pending_hash": "sha256:f5ba...5028",
+ "version": 3
+```
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -243,7 +262,11 @@ the game's memory). With a seed on, a save loads only when its sidecar names thi
 and its `save_hash` is the hash of the save as the card holds it now. Refused: a save without a
 sidecar (an ordinary game's, or one copied without its `.ap.json`), another seed's or slot's, a
 sidecar without the hash (version 1, or the field stripped), and a save whose bytes changed on
-the card since it was saved. A refused load fails the way a damaged save does: the load screen
+the card since it was saved. A sidecar with items waiting also needs `pending_hash` to match the
+save and the list: an edited, extended or reordered `pending`, one without its hash or a hash
+without its list, or the list beside another save is refused (log `... this save was changed
+outside the game (its waiting items differ from the ones this seed saved)`). Both keys removed
+leave a sidecar with nothing waiting: it loads, and only the items are lost. A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -265,7 +288,18 @@ After an allowed load the game reads the sidecar (the load dialog, or `SS_LOAD_S
   checks, and no starting inventory on top of it; another seed's sidecar is used anyway.
 - When the sidecar's seed matches, checks made since the save stay checked, because the
   multiworld keeps them.
-- Items still waiting are given in the loaded game.
+- Items still waiting are given in the loaded game [pendingsave, 2026-10-27]: first the save's
+  `pending`, as it was saved; then the own items of the checks the running game has and the save
+  lacks (made since the save, or reported by the server), because those checks never fire again
+  and the loaded game lacks their items, except chests and gifts, which the loaded game can open
+  again (their flags come back with the save, and the placeholder gives the item again). The
+  queue the running game had is dropped with it: nothing is given twice, a second load of the
+  same save gives the same list, and a save loaded in a new session gives the same as one
+  loaded in the session that made it. Before this, the queue was kept only within a session, so
+  a save made between a check and its last banner lost the rest after a restart.
+- On connect, a check the server reports that the running game lacks (made in a game that was
+  not saved, or in a later save) queues its own item the same way (not a chest's or a gift's);
+  a reconnect adds nothing (only checks new to the game count).
 - A new game starts from an empty state.
 - A run without a seed neither reads nor writes sidecars.
 

@@ -257,7 +257,11 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
 - **Offline:** leave Server empty. The seed's patch lines join the world edits; chests
   record checks; received items are given in free play with a banner; each save's
   state is kept in a sidecar file next to the memory card (`memcard1.slot03.ap.json`),
-  so the card itself stays console-compatible. See `docs/ap/seed_format.md`.
+  so the card itself stays console-compatible. Items still waiting for their banner when
+  the game is saved (a guild set's skills, a boss's rewards) are kept in the sidecar too and
+  come after a load; loading a save from before a check (a boss, a guild set, a craft: not a
+  chest, which opens again) gives that check's item again, since the check can't fire twice.
+  See `docs/ap/seed_format.md`.
 - **Online:** fill in Server (`ws://host:port` or `wss://host:port`), Slot (hint:
   the seed's own slot name) and, if the room has one, Password. The game connects on
   the next windowed run, sends every check and the goal as they happen, and receives
