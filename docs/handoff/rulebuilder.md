@@ -77,10 +77,107 @@ Decision D3 (the user): migrate to the Rule Builder, proven unchanged by byte-id
 - ut.LOGIC_VERSION stays 1: the logic is unchanged (truth tables + identity), so rooms of 0.2.1 / 0.2.2
   before B2 rebuild exactly.
 
-## In progress
-- Commits (docs, then code). Then ab_time.sh (timing A/B/C), UT /explain (ut_explain.py), the package.
+- Commits: 0cc0bda (Docs), 1d879a2 (APWorld: logic.py, regions.py, rules.py, hub.py, skillsanity.py,
+  world.py, test/test_logic.py).
+- Generation time (ab_time.sh 1 24, interleaved per seed with the order rotating; ab_report.py; seed 1 of
+  story_open left out: the fresh farms compiled their .pyc): 71 seeds per farm.
+  Wall (Generate.py run, as ap_batch.sh): lambdas 178.1 s (median 2.30 s), Rule Builder 170.4 s (2.28 s),
+  CachedRuleBuilderWorld 176.1 s (2.24 s): ratios to the lambdas 0.957 / 0.989 total, 0.986 / 0.986 median.
+  Main's own "Total Time" (generation without Python start-up): 19.09 / 18.15 / 18.93 s, ratios 0.950 /
+  0.992 total, 1.022 / 1.042 median. So: no slowdown; caching measures no faster -> not used (plain World).
+  The three farms' outputs for these seeds: 189 files each, all identical to batch_base.
+- Package: tools/build_apworld.sh scratchpad/rulebuilder/dist -> so2.apworld 203400 bytes (logic.py and
+  test_logic.py in, no __pycache__), manifest version 7 / compatible 7, world_version 0.2.1 (not bumped);
+  dist/ untouched.
 
-## Next
-- UT /explain sample into apworld.md "Trackers" + here; timing numbers into apworld.md "Rules as data".
+- Real UT with the package (tools/ap_ut_check.py --ut-dir scratchpad/rulebuilder/ap_ut --port 38341;
+  scratchpad/rulebuilder/ut_check_packaged.txt): **UT MATCHES THE WORLD**, all 20 points (59-643 in logic),
+  TrackerCore tab in order, logic_version 2 refused. Gotcha: the first try opened a kdialog folder picker
+  (UT's `universal_tracker.player_files_path` "Players" missing in a fresh farm; utworld's farm points it
+  at the user's install). Killed my own processes by PID (kdialog, phase 2, server); `mkdir Players` in
+  the farm; rerun clean.
+- UT /explain (scratchpad/rulebuilder/ut_explain.py --apworld scratchpad/rulebuilder/dist/so2.apworld;
+  output ut_explain.txt): the real UT 0.3.6 `--nogui` with `/explain NAME` on stdin, four slots (story,
+  open world, hub, rich hub), 64 locations / events, UT exit 0 each. Sample:
+
+      [open world] /explain Alen's Mansion: Portrait B chest
+          (Missing some of (Found: Stage 1 done; Missing: Salva Pass) | Missing some of (Found: Fun City
+          Pass; Missing: Expel Teleporter, Salva Pass) | Missing some of (Found: Fun City Pass; Missing:
+          Salva Pass, Saved at the Final Save Point))
+          Parent region (Expel)
+          Menu (True): New Game : True
+      [open world] /explain Expel Teleporter (Fun City arena)
+          Missing some of (Found: Fun City Pass; Missing: Stage 16 done)
+      [open world] /explain Ashton: Cross Slash level 1
+          Missing some of (Missing: Arrived on Energy Nede, Ashton)
+      [story] /explain Bowman: Burst Fist level 1
+          Missing some of (Found: Saved at the Final Save Point; Missing: Bowman, Bowman: Burst Fist)
+      [story] /explain Alchemy: Crystal
+          (Missing some of (Missing: Skill: Fairyology, Skill: Mineralogy) | Missing some of (Missing:
+          Skill: Fairyology, Skill: Mineralogy, Skill: Scientific Ability))
+      [hub] /explain Ashton: Dragon Breath level 1
+          Missing some of (Missing: Ashton, Fienal opened)
+      [rich hub] /explain Indalecio
+          Missing some of (Found: Limiter Off; Missing: Iseria Queen defeated)
+          Parent region (Fienal)
+          Energy Nede (True): Into Fienal : Missing Fienal opened
+      [rich hub] /explain Iseria Queen (Cave of Trials)
+          Missing some of (Missing: Skill: Music Instrument, Skill: Musical Notation)
+          Parent region (Cave of Trials)
+          Expel (True): Into Cave of Trials : Missing Cave of Trials Key
+      [rich hub] /explain Atulatul first drop
+          Missing Field of Power Key
+
+- Scratch cleaned: ab/ outputs (times kept in ab_times.txt, report in ab_report.txt), the ap_new /
+  ap_cached farms, mut/, ut_src/ removed. Kept: ap_base (frozen lambda world), batch_base, batch_new,
+  truth_*.json, identity.txt, ut_check_packaged.txt, ut_explain.txt, dist/so2.apworld, ap_ut (UT farm).
+
+## Status: DONE (B2). Nothing in progress.
+
+## Rule sites converted (all; no lambda left on a location, entrance or event)
+- regions.py: Disc Switch / Virtual Expel entrances (Has); stage_rules: 23 stage events, the disc switch,
+  the Final Save Point, the teleporter (need).
+- rules.py: goal_rules (Indalecio, Limiter Off, Iseria Queen = both(need, song)); the completion
+  (set_completion_rule); killer_rule (need); crafts (skillsanity.craft_rule); open-world modes and drops
+  (ways).
+- skillsanity.py: needs_rule (any_of; None = no need), guild checks (ways), open world's cave / Float learn
+  points (ways), learn levels (both(need, extra)).
+- hub.py: dungeon entrances (Has key), Into Fienal (Has), the Fienal gate / Indalecio (need), the Iseria
+  Queen (song), the completion, crafts, drops (any_of).
+- world.py: set_rules ends with logic.open_by_default (True_ on every spot without a rule).
+- Left as functions, as the brief says: item rules (add_item_rule). Nothing else.
+
+## Open / for the next agents
+- B3 (logic export): every spot's access_rule is a Rule.Resolved of logic.RESOLVED_KINDS (True_, False_,
+  Has, HasAll, HasAny, And, Or), interned (equal rules are one object: intern by identity or ==), items
+  and events by name. `logic.as_rule(r).to_dict()` serialises a resolved rule; `SO2World.rule_from_dict`
+  + resolve(world) gives it back (test_logic.py checks both for 11 worlds). Events are names with no AP id
+  (event items placed on address-None locations): the export needs them as names or local ids, and the
+  evaluator's region sweep must collect them. `True_` sits on entrances and plain locations too.
+- Phase C: a rule that reads a region (CanReachRegion) is a new kind: add it to RESOLVED_KINDS / as_rule
+  and the export; set_rule on an entrance registers its indirect condition (explicit_indirect_conditions).
+- tools/ap_ut_check.py (not in my file list): a fresh --ut-dir farm has no `Players` folder, so UT asks for
+  `universal_tracker.player_files_path` with a desktop folder dialog (kdialog) and the run hangs. Fix for
+  B7 or whoever owns the tool: `os.makedirs(os.path.join(ap, "Players"), exist_ok=True)` in setup().
+  (utworld's scratchpad/ap_ut farm has the user's real Players folder in that setting: read only, but
+  better an empty one.)
+- ut.LOGIC_VERSION stays 1 (same logic). APWORLD_VERSION / world_version still 0.2.1 (the release bumps).
 
 ## How to verify
+- cd scratchpad/ap/Archipelago; SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 6
+  worlds/so2/test   (788 passed; test_logic.py alone: 5 passed, 13 subtests)
+- AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 6 test/general worlds/so2
+  (841 passed, 71162 subtests); SO2_SLOW_TESTS=1 ... worlds/so2/test (789 passed; ManySeeds 320 rooms)
+- Identity: SKIP_REQUIREMENTS_UPDATE=1 PYTHONPATH=. ../ap-venv/bin/python ../../rulebuilder/identity.py
+  ../../rulebuilder/batch_base ../../rulebuilder/batch_new   (ALL IDENTICAL). A new after batch:
+  scratchpad/rulebuilder/run_batches.sh $PWD scratchpad/rulebuilder/batch_x (from the repo root, AP_DIR the
+  live farm) then identity.py batch_base batch_x.
+- Truth tables: (cd scratchpad/rulebuilder/ap_base && PYTHONPATH=. python ../truth.py ../truth_base.json),
+  the same from scratchpad/ap/Archipelago into truth_new.json; the two files must be equal.
+- Real UT: SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python
+  tools/ap_ut_check.py --tracker scratchpad/utworld/ut_release/tracker.apworld --apworld
+  scratchpad/rulebuilder/dist/so2.apworld --ut-dir scratchpad/rulebuilder/ap_ut --port 38341;
+  /explain: scratchpad/ap/ap-venv/bin/python scratchpad/rulebuilder/ut_explain.py --apworld
+  scratchpad/rulebuilder/dist/so2.apworld (output scratchpad/rulebuilder/ut_explain.txt).
+- Timing: scratchpad/rulebuilder/ab_time.sh FIRST LAST needs the ap_new / ap_cached farms (removed; rebuild
+  as in "Done": cp -as + a real copy of the world + real top-level scripts).

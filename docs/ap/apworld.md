@@ -1044,6 +1044,9 @@ What it gives:
 - The tracker export (trackers.md B3) walks the resolved rules: `logic.as_rule(resolved).to_dict()`
   serialises one (JSON), and `SO2World.rule_from_dict` of that, resolved for the same world, is the
   same rule.
+- Generation is as fast as with the lambdas. The Rule Builder's result cache
+  (`CachedRuleBuilderWorld`) measured no faster for rules this flat (mostly one `HasAll`, or an `Or`
+  of a few), so the world is a plain `World` ("Testing", 0.2.2).
 
 **Adding a rule.** Work the need out from the data at the rule site, build it with `logic.need` /
 `ways` / `any_of` / `both` (or the Rule Builder's `Has`, `HasAll`, `HasAny`, `And`, `Or`; `&` and
@@ -1082,6 +1085,26 @@ connect with the slot name. No YAML: the world is yaml-less. The port can be con
 time (trackers connect with tags `Tracker`, items_handling 0b111; the server refuses checks from a
 tracker). The player guide (apworld/so2/docs/setup_en.md "Tracking with Universal Tracker") says
 the same, and that checks made offline show once the port reconnects.
+
+**`/explain <location>`** (0.2.2, "Rules as data") prints the location's rule against what the
+server says was received (UT's colours: green had, red missing), then its region and the rules of
+the entrances into it. The real UT 0.3.6 on a local room, fresh (scratchpad/rulebuilder/ut_explain.py;
+open world, then hub):
+
+    /explain Alen's Mansion: Portrait B chest
+      (Missing some of (Found: Stage 1 done; Missing: Salva Pass) | Missing some of (Found: Fun City
+      Pass; Missing: Expel Teleporter, Salva Pass) | Missing some of (Found: Fun City Pass; Missing:
+      Salva Pass, Saved at the Final Save Point))
+      Parent region (Expel)
+      Menu (True): New Game : True
+    /explain Central City: Chisato joins
+      Missing some of (Missing: Central City Pass, Stage 16 done)
+      Parent region (Energy Nede)
+      Expel (True): Disc Switch : Missing Arrived on Energy Nede
+    /explain Iseria Queen (Cave of Trials)
+      Missing some of (Missing: Skill: Music Instrument, Skill: Musical Notation)
+      Parent region (Cave of Trials)
+      Expel (True): Into Cave of Trials : Missing Cave of Trials Key
 
 **How (apworld/so2/ut.py).**
 - `SO2World.ut_can_gen_without_yaml = True` and a static `interpret_slot_data` that returns the
@@ -1254,6 +1277,18 @@ Results (2026-10-27, 0.2.2: rules as data; docs/handoff/rulebuilder.md; "Rules a
 - Identity: the three release sets, seeds 1-96, before (the frozen lambda world) and after: **all
   288 seeds identical**: 480 .apso2 and 288 spoilers byte for byte, every multidata equal in full
   (slot data too: no key added), the checker's output the same (scratchpad/rulebuilder/identity.py).
+- Generation time, the three sets' seeds 1-24 run alternately with the lambda world, the Rule Builder
+  world and a `CachedRuleBuilderWorld` variant (71 seeds each): **no slowdown**. A Generate.py run
+  2.30 / 2.28 / 2.24 s median (totals 178.1 / 170.4 / 176.1 s); Main's own time 19.09 / 18.15 /
+  18.93 s in total. Caching measured no faster, so the world stays a plain `World`. (The release
+  sets' full batches: 665.5 s before, 587.1 s after, on a busy machine.)
+- The real UT (tools/ap_ut_check.py, Tracker_v0.3.6, the packaged so2.apworld): **all 20 points
+  match**, as with 0.2.2's first piece (59 to 643 locations, the TrackerCore tab in our order, the
+  `logic_version` 2 room refused). UT's `/explain` through its console (`--nogui`, commands on
+  stdin; scratchpad/rulebuilder/ut_explain.py): 64 locations and events of the four slots, each
+  printed as its rule (sample in "Trackers"). (A fresh UT copy needs its `universal_tracker`
+  `player_files_path` folder to exist, or UT opens a folder dialog: ut_explain.py's copy has an
+  empty `Players`.)
 
 Results (2026-10-27, 0.2.2: Universal Tracker; docs/handoff/utworld.md; "Trackers" above):
 - The world's tests: **783 passed** (65867 subtests; was 699): test_ut.py's 84 (16 mix classes with
