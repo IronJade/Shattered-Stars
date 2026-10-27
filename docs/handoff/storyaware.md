@@ -108,6 +108,10 @@ the story distinctly), following the chapter live.
   then showed chapter 0 differing; fixed in all three: chapter <= 0 is no position, a position
   reaches at least point 1.
 
+- The coordinator's tightened no-desktop rule (5ad3c29: XDG_RUNTIME_DIR at scratch too) applied to
+  tools/ap_ut_check.py's environment (`<ut-dir>/run`, 0700); re-run with --spheres 1: UT MATCHES THE
+  WORLD, 35 comparisons, the story numbers the same (ut_check_xdg.txt). The smoke already had it.
+
 ### Open (for the coordinator / the user)
 - Not a user decision, but worth a look in a GUI: PopTracker's Inspect is blue by default; a player
   may recolour it in PopTracker's settings. If the user prefers red (None) for "later in the story",
@@ -149,3 +153,5 @@ the story distinctly), following the chapter live.
   the silently skipped reference comparison found and fixed (chapter 0 semantics); final round running.
 - 2026-10-27: final round on the final code: batch identical but the story key, smoke 37/37, pack
   checked, world 882 / slow 885 / general 935, the real UT with the package 59/59. Done.
+- 2026-10-27: tools/ap_ut_check.py: XDG_RUNTIME_DIR at scratch (the tightened rule); re-run 35/35.
+  Stale batches, the baseline farm, the UT farm and the smoke folders deleted.
