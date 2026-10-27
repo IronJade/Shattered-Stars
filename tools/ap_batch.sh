@@ -25,7 +25,10 @@
 #
 # The 0.2.0 release ran both sets, seeds 1-96 (192 + 192 .apso2, 0 checker errors; docs/ap/apworld.md
 # "Results"); 0.2.1 the three (solo_noexpel 95 of 96: seed 75, docs/handoff/ncpfix.md; 96 of 96
-# each once guild checks and learn levels could hold progression, docs/handoff/skilllogic.md). Moved here from scratchpad/apworld2/batch (run_batch.sh, check.py, players_sk,
+# each once guild checks and learn levels could hold progression, docs/handoff/skilllogic.md).
+# The sets leave `bench` (0.2.1, on by default) out, so open-world players with character_items
+# and hub players are bench players (version 4); benchworld (2026-10-27) ran them so, 96 of 96
+# each, and with `bench: "false"` appended for the identity check (docs/handoff/benchworld.md). Moved here from scratchpad/apworld2/batch (run_batch.sh, check.py, players_sk,
 # players_hub_sk) by aptests, 2026-10-26; the Generate.py call is the same, so a seed's files
 # are byte-identical to the old script's.
 set -u

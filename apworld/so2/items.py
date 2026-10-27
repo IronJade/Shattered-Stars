@@ -26,6 +26,10 @@ ALL_CHARACTER_ITEMS = CHARACTER_ITEMS + FIXED_MEMBERS
 CHARACTER_NAMES = tuple(sorted(PARTY_ID, key=PARTY_ID.get))     # by party id
 HEALERS = ("Rena", "Noel")      # the only members who learn healing spells (Rena alone revives)
 PARTY_SIZE = 8
+# With the bench (options.Bench; open world with character_items and hub mode): the 8 slots the game
+# knows and 4 bench places the port keeps (docs/ap/seed_format.md "The bench"): room for all 12.
+BENCH_SIZE = 4
+BENCH_PARTY_SIZE = PARTY_SIZE + BENCH_SIZE
 # Trap items and what the port does with them (docs/ap/seed_format.md, phase 3).
 TRAPS = {
     "Ambush Trap": {"trap": "ambush"},

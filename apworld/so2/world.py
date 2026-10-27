@@ -22,6 +22,7 @@ from .patches import placement_patches
 SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
 SEED_FORMAT_V3 = 3              # a hub seed (seed_format.md "Hub"): a wave-2 port refuses it
+SEED_FORMAT_V4 = 4              # a bench seed (seed_format.md "The bench"): a port that reads 1 to 3 refuses it
 APWORLD_VERSION = "0.2.1"
 
 # The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
@@ -37,7 +38,7 @@ GOAL_GATE_NAMES = {1: "Indalecio (Limiter Off)", 2: "Indalecio (Limiter Off, Ise
 
 class Party(NamedTuple):
     """Who can be in this world's party (docs/ap/seed_format.md, "Party v2")."""
-    rules: str                  # "story": phase 3's rules; "open": open world with character_items
+    rules: str                  # "story": phase 3's rules; "open": open world with character_items, hub mode
     story_members: tuple        # join through the story's own scenes (party rules "open")
     start: Optional[str]        # starting_character (open world): joins at the start and leads
     pool: list                  # the character items
@@ -72,6 +73,7 @@ class SO2World(World):
         o = self.options
         self.open_world = o.world_mode == o.world_mode.option_open_world
         self.hub = o.world_mode == o.world_mode.option_hub     # characters are items whatever character_items says
+        self.bench = self.bench_applies()
         self.party_info = self.plan_party()
         self.party = self.party_info.pool
         self.chosen = (hub.choose if self.hub else locations.choose)(o, self.party_info)
@@ -92,6 +94,27 @@ class SO2World(World):
             self.hub_keys = hub.needed_keys(self)       # the dungeon keys this world has (D4)
             self.hub_start = hub.choose_start(self)     # the start point (D9)
 
+    def bench_applies(self):
+        """The bench option (options.Bench, on by default): the party's 12 places (the game's 8 and
+        the port's bench of 4) under open world's party rules, that is open world with
+        character_items, and hub mode. Story mode and open world without character_items keep the
+        story's party rules and the game's 8 places: the option is ignored there."""
+        o = self.options
+        if not o.bench:
+            return False
+        if self.hub or (self.open_world and o.character_items):
+            return True
+        if self.open_world:
+            logging.warning(f"{self.player_name}: bench needs character_items in open world; ignored")
+        else:
+            logging.info(f"{self.player_name}: bench is for open world with character_items and hub mode; "
+                         f"ignored in story mode")
+        return False
+
+    def party_size(self):
+        """The places the party has: the game's 8, or 12 with the bench."""
+        return items.BENCH_PARTY_SIZE if self.bench else items.PARTY_SIZE
+
     def story_members(self):
         """The heroes: the story route's, or both under "any" (the player picks at New Game)."""
         return {"claude": ("Claude",), "rena": ("Rena",)}.get(self.options.story_route.current_key, ("Claude", "Rena"))
@@ -105,8 +128,9 @@ class SO2World(World):
         picks at New Game is in the party already: their item does nothing).
         starting_character "any" (open world and hub): the player picks at New Game's character
         select, so the logic counts on nobody extra (start None) and the choices are the members
-        who can be in the party: the heroes and the pool (8 at most), or under the story's party
-        rules everyone not excluded. The pick's own item, when it comes, finds them in the party."""
+        who can be in the party: the heroes and the pool (8 at most; with the bench every member
+        not excluded), or under the story's party rules everyone not excluded. The pick's own item,
+        when it comes, finds them in the party."""
         o = self.options
         heroes = self.story_members()
         start = self.choose_start(heroes)
@@ -154,16 +178,18 @@ class SO2World(World):
         none in exclude_characters, as many as fit the party's 8 places with the heroes and the
         starting member (a random choice when more are allowed). The healer guarantee: when
         neither the heroes, the starting member nor the pool has Rena or Noel, one of them (the
-        ones not excluded) takes a random pool member's place; with both excluded, none."""
+        ones not excluded) takes a random pool member's place; with both excluded, none.
+        With the bench (party_size 12) every allowed member fits: no random choice, and both
+        healers are in unless excluded, so the guarantee has nothing to do."""
         rng = self.random
         excluded = set(self.options.exclude_characters.value)
         if excluded & set(heroes):
             logging.warning(f"{self.player_name}: exclude_characters can't exclude the story route's hero "
                             f"({', '.join(sorted(excluded & set(heroes)))})")
         allowed = [n for n in items.CHARACTER_NAMES if n not in heroes and n != start and n not in excluded]
-        room = items.PARTY_SIZE - len(heroes) - (1 if start and start not in heroes else 0)
+        room = self.party_size() - len(heroes) - (1 if start and start not in heroes else 0)
         pool = list(allowed) if len(allowed) <= room else rng.sample(allowed, room)
-        if not ({start, *heroes, *pool} & set(items.HEALERS)):
+        if not self.bench and not ({start, *heroes, *pool} & set(items.HEALERS)):
             healers = [n for n in items.HEALERS if n in allowed]
             if healers:     # the pool is full (an allowed healer would be in it otherwise)
                 pool.remove(rng.choice(pool))
@@ -329,8 +355,12 @@ class SO2World(World):
 
     def seed_version(self):
         """1, or 2 when the seed uses a field an older port would ignore (docs/ap/seed_format.md,
-        "The version rule"); 3 for a hub seed ("Hub")."""
+        "The version rule"); 3 for a hub seed ("Hub"); 4 for a seed with the bench, open world or
+        hub ("The bench": a port that reads 1 to 3 refuses it instead of playing a pool of up to 12
+        members with 8 places)."""
         o = self.options
+        if self.bench:
+            return SEED_FORMAT_V4
         if self.hub:
             return SEED_FORMAT_V3
         v2 = (o.goal.value != 0 or self.party_info.rules == "open" or self.party_info.start is not None
@@ -378,6 +408,10 @@ class SO2World(World):
             "party_rules": p.rules,
             "apworld_version": APWORLD_VERSION,
         }
+        if self.bench:
+            # The bench (seed_format.md "The bench"): only where it applies (absent: off), so a seed
+            # without it reads as before; the port reads it, trackers may show it.
+            data["bench"] = True
         if hell.is_hell_seed(o):
             # [hellseed] only on a hell seed (absent: false), so every other seed reads as before:
             # the port's setup and log warn the player; trackers may show it.

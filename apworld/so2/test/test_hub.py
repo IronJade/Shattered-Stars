@@ -8,7 +8,8 @@ from BaseClasses import CollectionState, LocationProgressType
 
 from .. import hub
 from ..data import HUB_BOSSES, HUB_DROPS, HUB_SHOPS, HUB_STARTS, HUB_STATE, LOCATIONS
-from ..items import ALL_KEY_IDS, CHARACTER_OF, HUB_KEY_NAME, HUB_KEY_OF, KEY_OF, PARTY_SIZE
+from ..items import (ALL_KEY_IDS, BENCH_PARTY_SIZE, CHARACTER_NAMES, CHARACTER_OF, HUB_KEY_NAME, HUB_KEY_OF, KEY_OF,
+                     PARTY_SIZE)
 from ..locations import ROW
 from .bases import SO2TestBase, check_seed, doors_json, fill, own_locations, own_pool, progression_item
 
@@ -22,10 +23,15 @@ class HubChecks:
     def rows(self):
         return [ROW[loc.name] for loc in own_locations(self)]
 
+    def hub_version(self):
+        """3, or 4 with the bench (on by default: options.Bench)."""
+        return 4 if self.world.bench else 3
+
     def test_mode(self):
         self.assertTrue(self.world.hub)
         self.assertFalse(self.world.open_world)
-        self.assertEqual(self.world.seed_version(), 3)
+        self.assertEqual(self.world.bench, bool(self.world.options.bench))
+        self.assertEqual(self.world.seed_version(), self.hub_version())
 
     def test_only_what_the_hub_reaches(self):
         """No join site, no losable fight, nothing the hub can't reach in the player's game(s);
@@ -215,8 +221,9 @@ class HubChecks:
         self.assertGreater(held, len(self.world.hub_keys))
 
     def test_party(self):
-        """D7: characters are always items (no join location); the party is at most 8; under
-        story_route any both heroes are items (the one picked at New Game does nothing)."""
+        """D7: characters are always items (no join location); the party is at most 8, or with the
+        bench (12 places) every member not excluded; under story_route any both heroes are items
+        (the one picked at New Game does nothing)."""
         o = self.world.options
         p = self.world.party_info
         self.assertEqual(p.rules, "open")
@@ -228,10 +235,13 @@ class HubChecks:
         else:
             self.assertEqual({"Claude", "Rena"} - {p.start}, {"Claude", "Rena"} & set(pool))
         members = set(heroes) | set(pool) | ({p.start} if p.start else set())
-        self.assertLessEqual(len(members), PARTY_SIZE)
+        self.assertLessEqual(len(members), BENCH_PARTY_SIZE if self.world.bench else PARTY_SIZE)
         for name in o.exclude_characters.value:
             if name not in heroes and name != p.start:
                 self.assertNotIn(name, pool)
+        if self.world.bench:     # every member not excluded, no random draw
+            self.assertEqual(members, {n for n in CHARACTER_NAMES if n in heroes or n == p.start
+                                       or n not in o.exclude_characters.value})
         self.assertFalse([r for r in self.rows() if r["type"] == "join"])
 
     def test_seed(self):
@@ -239,10 +249,11 @@ class HubChecks:
         fill(self)
         seed = self.world.seed_data()
         check_seed(self, seed)
-        self.assertEqual(seed["version"], 3)
+        self.assertEqual(seed["version"], self.hub_version())
         o = seed["options"]
         self.assertEqual((o["world_mode"], o["seed_format"], o["party_rules"], o["character_items"]),
-                         ("hub", 3, "open", True))
+                         ("hub", self.hub_version(), "open", True))
+        self.assertEqual(o.get("bench"), True if self.world.bench else None)
         self.assertIs(o["expel_teleporter"], False)
         self.assertEqual(o["hub_start"], self.world.options.hub_start.current_key)
         self.assertEqual(o["fienal_requirement"], self.world.options.fienal_requirement.current_key)
@@ -387,11 +398,28 @@ class TestHubAnyLean(SO2TestBase, HubChecks):
         self.assertIsNone(p.start)
         self.assertEqual(set(p.choices), set(p.pool) | {"Claude", "Rena"})
         self.assertEqual(self.world.fill_slot_data()["starting_character"], list(p.choices))
+        self.assertTrue(self.world.bench)       # the default: every member (none excluded here)
+        self.assertEqual(p.choices, CHARACTER_NAMES)
 
 
 class TestHubFieldsOnlyNoChecks(SO2TestBase, HubChecks):
     options = {"world_mode": "hub", "story_route": "claude", "fienal_requirement": "fields", "boss_checks": False,
                "expel_progression": False, "missable_locations": "remove"}
+
+
+class TestHubNoBench(SO2TestBase, HubChecks):
+    """bench off: the hub's party keeps the game's 8 places (both heroes and a random 6 of the
+    other 10), the select offers those 8, and the seed is version 3 without `bench`."""
+    options = {"world_mode": "hub", "bench": False, "starting_character": "any"}
+
+    def test_eight(self):
+        w = self.world
+        p = w.party_info
+        self.assertEqual((w.bench, w.party_size(), w.seed_version()), (False, 8, 3))
+        self.assertEqual(len(set(p.pool) | {"Claude", "Rena"}), 8)
+        self.assertEqual(set(p.choices), set(p.pool) | {"Claude", "Rena"})
+        self.assertEqual(len(p.choices), 8)
+        self.assertNotIn("bench", w.fill_slot_data())
 
 
 class TestHubAsk(unittest.TestCase):
@@ -426,7 +454,8 @@ class TestStoryUnchanged(SO2TestBase):
         seed = self.world.seed_data()
         self.assertNotIn("hub", seed)
         self.assertNotIn("bosses", seed)
-        self.assertLessEqual(seed["version"], 2)
+        self.assertNotEqual(seed["version"], 3)     # 1 or 2, or 4 with the bench (on by default here)
+        self.assertEqual(seed["version"], 4 if self.world.bench else 2)
         for k in ("hub_start", "hub_start_town", "fienal_requirement", "fienal_won", "dungeon_keys"):
             self.assertNotIn(k, seed["options"])
         self.assertFalse([i for i in own_pool(self) if i.code in HUB_KEY_OF])

@@ -3,10 +3,12 @@ rules with character_items (CharacterChecks), open world's party v2 (PartyChecks
 choose_open_party, the starting member, exclude_characters, the healer guarantee), and what a
 character item opens. Hub mode's party: test_hub.py HubChecks.test_party.
 
-For the bench (docs/handoff/bench.md "The user's answers": a `bench` option, 12 places in open
-world and hub, no random sample, no healer guarantee): PartyChecks reads the party size and the
-healer rule from party_size() / healer_guaranteed(), so a bench mix overrides those two and adds
-its option to `options`."""
+The bench (options.Bench, on by default; docs/handoff/bench.md "The user's answers": 12 places in
+open world with character_items and in hub mode, no random sample, no healer guarantee, seed
+version 4): PartyChecks reads the party size and the healer rule from party_size() /
+healer_guaranteed(); BenchChecks overrides them and adds the bench's own checks. The 8-place mixes
+(TestPartyOpen..., TestPartyHealer..., TestPartyStartRena) pin `bench: False`; the bench mixes
+(TestBench...) leave it at its default or set it."""
 from BaseClasses import LocationProgressType
 
 from ..items import CHARACTER_NAMES, CHARACTER_OF, FIXED_MEMBERS, PARTY_SIZE
@@ -76,9 +78,9 @@ class TestCharactersRena(SO2TestBase, CharacterChecks):
 # ---- Party v2: open world with character_items; starting_character ----
 
 class PartyChecks:
-    """Open world's party: the heroes, the starting member and the pool make at most 8; nobody
-    excluded is in the pool; Rena or Noel is in the party unless both are excluded; the join
-    sites are those of every non-story member; the seed says so."""
+    """Open world's party: the heroes, the starting member and the pool make at most 8 (12 with
+    the bench); nobody excluded is in the pool; Rena or Noel is in the party unless both are
+    excluded; the join sites are those of every non-story member; the seed says so."""
 
     def party_size(self):
         """The places the logic fills (items.PARTY_SIZE; a bench option would raise it)."""
@@ -132,7 +134,9 @@ class PartyChecks:
         check_seed(self, seed)
         o = seed["options"]
         self.assertEqual((seed["version"], o["party_rules"], o["characters"], o["starting_character"]),
-                         (2, "open", list(info.pool), list(info.choices) if info.choices else info.start))
+                         (4 if self.world.bench else 2, "open", list(info.pool),
+                          list(info.choices) if info.choices else info.start))
+        self.assertEqual(o.get("bench"), True if self.world.bench else None)
         for v in seed["items"].values():
             if v["kind"] == "character":
                 self.assertIn(v["character"], info.pool)
@@ -140,7 +144,7 @@ class PartyChecks:
 
 
 class TestPartyOpenClaude(SO2TestBase, PartyChecks):
-    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude"}
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude", "bench": False}
 
     def test_open_members(self):
         info, joins = self.check_party_seed()
@@ -155,7 +159,7 @@ class TestPartyOpenClaude(SO2TestBase, PartyChecks):
 
 class TestPartyOpenAnyStart(SO2TestBase, PartyChecks):
     options = {"world_mode": "open_world", "character_items": True, "story_route": "any",
-               "starting_character": "any", "exclude_characters": ["Noel", "Claude"]}
+               "starting_character": "any", "exclude_characters": ["Noel", "Claude"], "bench": False}
 
     def test_any(self):
         """[charselect agent] "any": the player picks at New Game among the heroes and the pool
@@ -187,7 +191,7 @@ class TestPartyAnyStartWithoutItems(SO2TestBase):
 
 class TestPartyHealersExcluded(SO2TestBase, PartyChecks):
     options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
-               "exclude_characters": ["Rena", "Noel", "Celine", "Bowman"]}
+               "exclude_characters": ["Rena", "Noel", "Celine", "Bowman"], "bench": False}
 
     def test_no_healer(self):
         info, _ = self.check_party_seed()
@@ -197,7 +201,7 @@ class TestPartyHealersExcluded(SO2TestBase, PartyChecks):
 
 class TestPartyHealerGuarantee(SO2TestBase, PartyChecks):
     options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
-               "starting_character": "leon"}
+               "starting_character": "leon", "bench": False}
 
     def test_healer(self):
         from ..items import HEALERS
@@ -209,7 +213,7 @@ class TestPartyHealerGuarantee(SO2TestBase, PartyChecks):
 
 class TestPartyStartRena(SO2TestBase, PartyChecks):
     options = {"world_mode": "open_world", "character_items": True, "story_route": "rena",
-               "starting_character": "leon", "exclude_characters": ["Leon", "Bowman"]}
+               "starting_character": "leon", "exclude_characters": ["Leon", "Bowman"], "bench": False}
 
     def test_named_start_wins(self):
         info, joins = self.check_party_seed()
@@ -244,3 +248,160 @@ class TestHeroStart(SO2TestBase):
     def test_hero_is_nobody_extra(self):
         self.assertIsNone(self.world.party_info.start)
         self.assertEqual(self.world.seed_version(), 1)
+
+
+# ---- The bench (options.Bench, on by default): 12 places in open world and hub mode ----
+
+class BenchChecks(PartyChecks):
+    """With the bench the party has 12 places (the game's 8 and the port's bench of 4): the pool is
+    every allowed member, drawn without the RNG; no healer guarantee (both healers are in unless
+    excluded); every pool member joins by their item ("item" to fighter_status), the heroes and
+    the starting member are sure; the select offers every member not excluded; the seed is
+    version 4 with options.bench."""
+
+    def party_size(self):
+        from ..items import BENCH_PARTY_SIZE
+        return BENCH_PARTY_SIZE
+
+    def healer_guaranteed(self):
+        return False
+
+    def test_bench(self):
+        from ..items import BENCH_PARTY_SIZE
+        w = self.world
+        info = w.party_info
+        self.assertTrue(w.bench)
+        self.assertEqual((w.party_size(), BENCH_PARTY_SIZE), (12, 12))
+        heroes = w.story_members()
+        excluded = set(w.options.exclude_characters.value)
+        allowed = [n for n in CHARACTER_NAMES if n not in heroes and n != info.start and n not in excluded]
+        self.assertEqual(info.pool, allowed)
+        # No random draw: the pool comes out the same, and the world's RNG is left as it was.
+        state = w.random.getstate()
+        self.assertEqual(w.choose_open_party(heroes, info.start), allowed)
+        self.assertEqual(w.random.getstate(), state)
+        for who in CHARACTER_NAMES:
+            want = ("sure" if who in heroes or who == info.start else "item" if who in allowed else None)
+            self.assertEqual(fighter_status(who, info), want, who)
+        self.assertEqual(info.possible, frozenset(set(heroes) | set(allowed) | ({info.start} if info.start else set())))
+        if info.choices:
+            self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n in heroes or n not in excluded))
+        data = w.fill_slot_data()
+        self.assertEqual((data["seed_format"], data["bench"], data["characters"]), (4, True, allowed))
+        self.assertEqual(w.seed_version(), 4)
+
+
+class TestBenchDefaultOpenClaude(SO2TestBase, BenchChecks):
+    """The default: open world with character_items and nothing else set has the bench, so all 11
+    members but Claude are character items (the 8-place game drew 7 of them)."""
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude"}
+
+    def test_default_on(self):
+        self.assertEqual(self.world.options.bench.value, 1)
+        info, joins = self.check_party_seed()
+        self.assertEqual(len(info.pool), 11)
+        self.assertEqual(set(info.pool) | {"Claude"}, set(CHARACTER_NAMES))
+        # create_items puts the members in the join sites' place in the pool: there are enough.
+        self.assertGreaterEqual(len(joins), len(info.pool))
+
+
+class TestBenchAnyStart(SO2TestBase, BenchChecks):
+    """starting_character any with the bench: the select offers every member not excluded (Claude
+    can't be: a hero under story_route any)."""
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "any",
+               "starting_character": "any", "exclude_characters": ["Noel", "Claude"], "bench": True}
+
+    def test_select(self):
+        info, _ = self.check_party_seed()
+        self.assertIsNone(info.start)
+        self.assertEqual(info.choices, tuple(n for n in CHARACTER_NAMES if n != "Noel"))
+        self.assertEqual(len(info.pool), 9)
+        self.assertEqual(self.world.fill_slot_data()["starting_character"], list(info.choices))
+
+
+class TestBenchHealersExcluded(SO2TestBase, BenchChecks):
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
+               "exclude_characters": ["Rena", "Noel", "Celine", "Bowman"]}
+
+    def test_no_healer(self):
+        info, _ = self.check_party_seed()
+        self.assertEqual(info.pool, ["Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest", "Chisato"])
+
+
+class TestBenchNamedStart(SO2TestBase, BenchChecks):
+    """A named starting member (who wins over exclude_characters) is sure; the pool is everyone else
+    allowed."""
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "rena",
+               "starting_character": "leon", "exclude_characters": ["Leon", "Bowman"]}
+
+    def test_named_start(self):
+        info, joins = self.check_party_seed()
+        self.assertEqual(info.start, "Leon")
+        self.assertEqual(info.guaranteed, frozenset({"Rena", "Leon"}))
+        self.assertEqual(info.pool, [n for n in CHARACTER_NAMES if n not in ("Rena", "Leon", "Bowman")])
+        self.assertIn("Claude", {ROW[loc.name]["character"] for loc in joins})
+
+
+class TestBenchReceivedMembers(SO2TestBase, BenchChecks):
+    """What a received member's item opens with the bench: every pool member (the four the 8 places
+    left out too) has killer-move levels (with killer_move_progression any), learn levels
+    (skillsanity special_only) and crafts in the world; their levels need their item and nothing
+    else does (assertAccessDependency), and a craft only one of them can make holds filler only."""
+    options = {"world_mode": "open_world", "character_items": True, "story_route": "claude",
+               "killer_move_checks": True, "killer_move_progression": "any", "skillsanity": "special_only",
+               "craftsanity": True}
+
+    def test_received_members(self):
+        from ..locations import CRAFT_ROWS, KILLER_ROWS
+        w = self.world
+        info = w.party_info
+        self.assertEqual(len(info.pool), 11)
+        mine = {loc.name: loc for loc in own_locations(self)}
+        # Killer-move levels: every member's who has killer moves (no one is left out now).
+        self.assertEqual(sorted(n for n in mine if ROW[n]["type"] == "killer_move"),
+                         sorted(r["name"] for r in KILLER_ROWS))
+        # Crafts: every craft (all 12 can be in the party); a member-locked one is filler only unless
+        # Claude (the only sure member) can make it.
+        crafts = [n for n in mine if ROW[n]["type"] == "craft"]
+        self.assertEqual(sorted(crafts), sorted(r["name"] for r in CRAFT_ROWS))
+        for n in crafts:
+            makers = ROW[n]["makers"]
+            locked = makers is not None and "Claude" not in makers
+            self.assertEqual(mine[n].progress_type == LocationProgressType.EXCLUDED, locked, n)
+        self.assertEqual(w.progression_characters, set(info.pool))
+        for who in info.pool:
+            levels = [n for n in mine if ROW[n]["type"] == "killer_move" and ROW[n]["character"] == who] + \
+                     [n for n in mine if ROW[n]["type"] == "learn" and ROW[n].get("how") == "level"
+                      and ROW[n]["character"] == who]
+            with self.subTest(character=who):
+                self.assertTrue(levels)
+                self.assertTrue(w.create_item(who).advancement)
+                self.assertAccessDependency(levels, [[who]])
+
+
+class TestBenchIgnoredInStory(SO2TestBase):
+    """Story mode keeps the story's party rules and the game's 8 places: the bench option is
+    ignored (no `bench` in the seed, its version as without it)."""
+    options = {"character_items": True, "bench": True}
+
+    def test_story(self):
+        w = self.world
+        self.assertEqual((w.bench, w.party_size(), w.party_info.rules), (False, 8, "story"))
+        self.assertEqual(w.seed_version(), 1)
+        self.assertNotIn("bench", w.fill_slot_data())
+        self.assertLessEqual(len(w.party) + len(FIXED_MEMBERS), PARTY_SIZE)
+
+
+class TestBenchIgnoredWithoutItems(SO2TestBase):
+    """Open world without character_items keeps the story's party rules: no bench (a warning)."""
+    options = {"world_mode": "open_world", "starting_character": "any", "bench": True}
+
+    def test_open_without_items(self):
+        w = self.world
+        self.assertEqual((w.bench, w.party_size(), w.party_info.rules, w.party_info.pool), (False, 8, "story", []))
+        self.assertEqual(w.seed_version(), 2)       # the select (a list), not the bench
+        self.assertNotIn("bench", w.fill_slot_data())
+        fill(self)
+        seed = w.seed_data()
+        check_seed(self, seed)
+        self.assertNotIn("bench", seed["options"])

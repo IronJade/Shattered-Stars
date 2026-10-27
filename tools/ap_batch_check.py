@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """ap_batch_check.py OUTDIR: the release workflow's checker (tools/ap_batch.sh; docs/ap/apworld.md
 "Testing"). Checks every .apso2 under OUTDIR/<seed>/ (shape, ids, patches, where progression
-went, the party, drops, crafts, killer moves, skillsanity, the goals, the version rule and the
-hell seed's patch line and `hell_seed` [hellseed]; hub
+went, the party, drops, crafts, killer moves, skillsanity, the goals, the version rule, the
+hell seed's patch line and `hell_seed` [hellseed], and the bench (12 places, version 4, against
+the spoiler's "Bench:" line) [benchworld]; hub
 seeds through check_hub_file: the hub block, the chambers, the dungeon doors, the Fienal gate,
 what the hub reaches) and prints a summary: "N seeds files, M with errors; ...", then the option
 kinds seen. Run with the AP venv from the Archipelago checkout that has worlds/so2 (it imports
@@ -56,6 +57,51 @@ def check_hell(s, errs):
         errs.append(f"hell seed {want}: the arena fee's patch line {'missing' if want else 'present'}")
     if o.get("hell_seed", False) is not want or (not want and "hell_seed" in o):
         errs.append(f"hell seed {want}: options hell_seed {o.get('hell_seed')}")
+
+
+# [benchworld] The bench (docs/ap/apworld.md "The bench"; options.Bench, on by default): open world
+# with character_items (party_rules open) and hub mode get 12 places (the game's 8 and the port's
+# bench of 4): every member not excluded is in the party, no random pool, no healer swap, seed
+# version 4 and options.bench true. Elsewhere `bench` is absent. The option's value is read from the
+# spoiler (its "Bench:" line in the player's block), when the batch has one.
+def bench_on(o):
+    return o.get("bench", False) is True
+
+
+def party_size(o):
+    return 12 if bench_on(o) else 8
+
+
+def spoiler_bench(path, name):
+    """The player's "Bench:" value in the seed's spoiler (True / False), or None (no spoiler, or a
+    spoiler from before the option)."""
+    spoilers = glob.glob(os.path.join(os.path.dirname(path), "*_Spoiler.txt"))
+    if not spoilers:
+        return None
+    block = None
+    for line in open(spoilers[0], encoding="utf-8-sig"):
+        m = re.match(r"^Player \d+: (.*)$", line.rstrip("\n"))
+        if m:
+            block = m.group(1)
+        elif block == name and line.startswith("Bench:"):
+            return line.split(":", 1)[1].strip() == "Yes"
+        elif line.startswith("Locations:") or line.startswith("Playthrough:"):
+            break
+    return None
+
+
+def check_bench(path, s, errs):
+    """[benchworld] options.bench: only `true`, only where it applies, exactly when the player's
+    option is on there (the spoiler)."""
+    o = s["options"]
+    if "bench" in o and o["bench"] is not True:
+        errs.append(f"bench {o['bench']!r}: written only as true")
+    applies = o["world_mode"] == "hub" or (o["world_mode"] == "open_world" and o["party_rules"] == "open")
+    if bench_on(o) and not applies:
+        errs.append(f"bench in {o['world_mode']} with party_rules {o['party_rules']}")
+    option = spoiler_bench(path, s["slot"]["name"])
+    if option is not None and bench_on(o) != (option and applies):
+        errs.append(f"bench option {option} (applies {applies}) but options.bench {o.get('bench')}")
 
 
 def sk_may_hold(row, s, it):
@@ -262,7 +308,8 @@ def check_hub(s, errs, locs):
     o = s["options"]
     side = None if o["story_route"] == "any" else o["story_route"]
     games = ("claude", "rena") if side is None else (side,)
-    if s["version"] != 3 or o["seed_format"] != 3:
+    want = 4 if bench_on(o) else 3     # [benchworld] a hub seed with the bench is version 4
+    if s["version"] != want or o["seed_format"] != want:
         errs.append(f"hub version {s['version']}")
     if (o["party_rules"], o["character_items"], o["expel_teleporter"]) != ("open", True, False):
         errs.append("hub options party_rules / character_items / expel_teleporter")
@@ -393,14 +440,17 @@ def check_hub(s, errs, locs):
     elif heroes[0] in party or start == heroes[0]:
         errs.append(f"hub party {party}: the hero")
     members = set(heroes) | set(party) | ({start} if start else set())
-    if len(members) > 8:
-        errs.append(f"hub party {party}: more than 8")
+    size = party_size(o)    # [benchworld] 12 with the bench
+    if len(members) > size:
+        errs.append(f"hub party {party}: more than {size}")
     excl = set(o["exclude_characters"]) - set(heroes) - {start}
     if set(party) & excl:
         errs.append(f"hub party {party}: excluded members")
     allowed_n = [n for n in NAMES if n not in heroes and n != start and n not in excl]
-    if len(members) != min(8, len(set(heroes) | ({start} if start else set())) + len(allowed_n)):
+    if len(members) != min(size, len(set(heroes) | ({start} if start else set())) + len(allowed_n)):
         errs.append(f"hub party {party}: room left")
+    if bench_on(o) and members != set(heroes) | ({start} if start else set()) | set(allowed_n):
+        errs.append(f"hub party {party}: not every member allowed (bench)")
     if not members & {"Rena", "Noel"} and not {"Rena", "Noel"} <= excl:
         errs.append(f"hub party {party}: no healer")
     for c in party:
@@ -432,8 +482,10 @@ def take_choices(o, errs, hub):
     if not hub and o["world_mode"] != "open_world":
         errs.append("starting character list in story mode")
     if hub or o["party_rules"] == "open":
-        if set(sc) != set(heroes) | set(o["characters"]) or len(sc) > 8 or set(sc) & excl:
+        if set(sc) != set(heroes) | set(o["characters"]) or len(sc) > party_size(o) or set(sc) & excl:
             errs.append(f"starting_character list {sc}: not the heroes and the pool {o['characters']}")
+        if bench_on(o) and sc != [n for n in NAMES if n in heroes or n not in excl]:   # [benchworld]
+            errs.append(f"starting_character list {sc}: not every member but the excluded (bench)")
     elif sc != [n for n in NAMES if n in heroes or n not in excl]:
         errs.append(f"starting_character list {sc}: not every member but the excluded")
 
@@ -500,6 +552,7 @@ def check(path):
     o = s["options"]
     check_skillsanity(s, errs)  # [skillsanity2]
     check_hell(s, errs)         # [hellseed]
+    check_bench(path, s, errs)  # [benchworld]
     if o["world_mode"] == "hub":
         return check_hub_file(s, errs)
     take_choices(o, errs, False)
@@ -514,7 +567,8 @@ def check(path):
           or o["craftsanity"] or o["no_fail_crafting"] or o["killer_move_checks"]
           or o.get("difficulty", "earth") != "earth"
           or o.get("skillsanity", "none") != "none")  # [skillsanity2]  # [difficulty agent] an older port would play it on Earth
-    if (s["format"], s["version"]) != ("apso2", 2 if v2 else 1) or o["seed_format"] != s["version"]:
+    want = 4 if bench_on(o) else 2 if v2 else 1     # [benchworld] 4 with the bench
+    if (s["format"], s["version"]) != ("apso2", want) or o["seed_format"] != s["version"]:
         errs.append(f"format / version {s['version']}")
     locs = s["locations"]
     ids = [l["id"] for l in locs]
@@ -686,11 +740,14 @@ def check(path):
     if o["party_rules"] == "open":
         members = set(heroes) | ({start} if start else set()) | set(party)
         excl = set(o["exclude_characters"]) - set(heroes)
-        if len(members) > 8 or set(party) & set(heroes) or start in party or set(party) & excl:
+        size = party_size(o)    # [benchworld] 12 with the bench
+        if len(members) > size or set(party) & set(heroes) or start in party or set(party) & excl:
             errs.append(f"open party {party} start {start}")
         allowed_n = [n for n in NAMES if n not in heroes and n != start and n not in excl]
-        if len(members) < min(8, len(set(heroes) | ({start} if start else set())) + len(allowed_n)):
+        if len(members) < min(size, len(set(heroes) | ({start} if start else set())) + len(allowed_n)):
             errs.append(f"open party {party}: room left")
+        if bench_on(o) and party != allowed_n:     # every member allowed, in party order: no draw
+            errs.append(f"open party {party}: not every member allowed (bench)")
         if not members & {"Rena", "Noel"} and not {"Rena", "Noel"} <= excl:
             errs.append(f"open party {party}: no healer")
         for l in locs:
@@ -740,6 +797,7 @@ def main():
         kinds[("killer", o["killer_move_checks"], o["killer_move_progression"])] += 1
         kinds[("party_rules", o["party_rules"], "list" if "_choices" in o else o["starting_character"] is not None)] += 1
         kinds[("version", o["seed_format"])] += 1
+        kinds[("bench", bench_on(o))] += 1    # [benchworld]
         kinds[("progression in drops>0", o["_drops_prog"] > 0)] += 1
         kinds[("world", o["world_mode"], o["expel_teleporter"])] += 1
         if o["world_mode"] == "hub":

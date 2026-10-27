@@ -50,4 +50,4 @@ class TestDifficultyAny(SO2TestBase, DifficultyChecks):
 
 class TestDifficultyHub(SO2TestBase, DifficultyChecks):
     options = {"difficulty": "universe", "world_mode": "hub"}
-    key, version = "universe", 3
+    key, version = "universe", 4        # a hub seed with the bench (on by default)

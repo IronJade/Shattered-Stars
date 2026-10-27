@@ -180,7 +180,7 @@ class CraftChecks:
         fill(self)
         seed = self.world.seed_data()
         check_seed(self, seed)
-        self.assertEqual(seed["version"], 2)
+        self.assertEqual(seed["version"], 4 if self.world.bench else 2)
         self.assertIs(seed["options"]["craftsanity"], True)
         return crafts
 
@@ -358,7 +358,7 @@ class KillerChecks:
         fill(self)
         seed = self.world.seed_data()
         check_seed(self, seed)
-        self.assertEqual(seed["version"], 2)
+        self.assertEqual(seed["version"], 4 if self.world.bench else 2)
         for l in seed["locations"]:
             if l["check"]["type"] == "killer_move":
                 row = ROW[l["name"]]
@@ -418,6 +418,34 @@ class TestKillerAnyItems(SO2TestBase, KillerChecks):
         self.assertTrue(self.world.progression_characters)     # test_killer_move_items has some
         chars = {ROW[loc.name]["character"] for loc in locs}
         self.assertLessEqual(chars, {"Claude"} | set(self.world.party))
+
+
+class TestKillerAnyOpenBench(SO2TestBase, KillerChecks):
+    """Open world with character_items and the bench (the default): every member is in the pool or
+    the hero, so every killer-move level is in the world, and each pool member's need their item."""
+    options = {"killer_move_checks": True, "killer_move_progression": "any", "world_mode": "open_world",
+               "character_items": True, "story_route": "claude"}
+
+    def test_every_member(self):
+        from ..locations import KILLER_ROWS
+        self.assertTrue(self.world.bench)
+        locs, held = self.check_killer_moves()
+        self.assertEqual(len(locs), len(KILLER_ROWS))
+        self.assertEqual(held, len(locs))
+        self.assertEqual(self.world.progression_characters, {r["character"] for r in KILLER_ROWS} - {"Claude"})
+
+
+class TestKillerAnyOpenNoBench(SO2TestBase, KillerChecks):
+    """The same without the bench: the 8 places' random pool; a member the draw left out has no
+    killer-move levels."""
+    options = {"killer_move_checks": True, "killer_move_progression": "any", "world_mode": "open_world",
+               "character_items": True, "story_route": "claude", "bench": False}
+
+    def test_left_out(self):
+        self.assertFalse(self.world.bench)
+        locs, held = self.check_killer_moves()
+        self.assertEqual(len(self.world.party), 7)
+        self.assertLessEqual({ROW[loc.name]["character"] for loc in locs}, {"Claude"} | set(self.world.party))
 
 
 class TestKillerNoEncounters(SO2TestBase, KillerChecks):

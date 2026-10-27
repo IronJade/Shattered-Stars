@@ -55,7 +55,8 @@ class StartingCharacter(Choice):
     
     hero: nobody extra; the hero leads, as in the original.
     any: you pick at New Game, on a character select after the hero's, among the members this
-      world allows (the heroes and the character items' members; never one in exclude_characters).
+      world allows (the heroes and the character items' members, every member with bench; never
+      one in exclude_characters).
       Picking the hero means nobody extra. The logic counts on nobody: your pick's own item, when
       it comes, finds them in the party already. (random: the generator picks one of these values.)
     A named member (shown on that screen to confirm) who is excluded still starts (this option
@@ -80,11 +81,24 @@ class StartingCharacter(Choice):
 
 class ExcludeCharacters(OptionSet):
     """Open world with character_items, and hub mode: members who are never in the item pool, so they never
-    join (to make room for the ones you want). The story route's hero can't be excluded (under
+    join (without bench: to make room for the ones you want). The story route's hero can't be excluded (under
     story_route "any", neither Claude nor Rena). If you exclude both Rena and Noel, the only
     healers, the party may have no healer."""
     display_name = "Exclude Characters"
     valid_keys = CHARACTER_NAMES
+
+
+class Bench(DefaultOnToggle):
+    """Open world with character_items, and hub mode: the party has 12 places, the 8 the game
+    knows plus a bench of 4 kept by the port, so every member who isn't excluded can join, and
+    you choose who fights. The pool holds every member but the hero (and the starting
+    character) not in exclude_characters, with no random draw; a member who arrives with the 8
+    places full goes to the bench, and Party Order swaps anyone but the hero between the party
+    and the bench. starting_character "any" then offers every member not excluded.
+    Off: the party keeps the game's 8 places (a random choice of members when more are allowed).
+    Ignored in story mode and in open world without character_items, which keep the story's
+    party rules. A seed with the bench needs Shattered Stars 0.02.51 or later."""
+    display_name = "Bench"
 
 
 class MissableLocations(Choice):
@@ -140,10 +154,10 @@ class CharacterItems(Toggle):
     story allows: Bowman or Precis, Ashton or Opera (with Ernest), within the party's 8 places
     with Claude, Rena and Noel. With story_route "any", Leon and Dias stay out.
     Open world: no lockouts. Any member but the story route's hero can be an item (the other
-    hero and Noel too, Leon and Dias in either game, Bowman with Precis, Ashton with Opera), up
-    to 8 with the hero and the starting character, minus exclude_characters. The party always
-    gets Rena or Noel (the only healers) unless you exclude both. Members who are not items
-    never join.
+    hero and Noel too, Leon and Dias in either game, Bowman with Precis, Ashton with Opera):
+    with bench (the default) every member not in exclude_characters; without it, up to 8 with
+    the hero and the starting character, and the party always gets Rena or Noel (the only
+    healers) unless you exclude both. Members who are not items never join.
     Hub mode: always on (no join scene runs there), with open world's rules."""
     display_name = "Character Items"
 
@@ -409,6 +423,7 @@ class SO2Options(PerGameCommonOptions):
     story_route: StoryRoute
     starting_character: StartingCharacter
     exclude_characters: ExcludeCharacters
+    bench: Bench
     missable_locations: MissableLocations
     expel_progression: ExpelProgression
     cave_of_trials: CaveOfTrials
@@ -436,6 +451,6 @@ option_groups = [
     OptionGroup("Locations", [StoryRoute, MissableLocations, ExpelProgression, CaveOfTrials, BossChecks,
                               EnemyDropsanity, DropProgression, AreaKeysInDrops, Craftsanity, KillerMoveChecks,
                               KillerMoveProgression, Skillsanity, SkillsanityShopShare]),
-    OptionGroup("Characters and items", [StartingCharacter, CharacterItems, ExcludeCharacters, Traps]),
+    OptionGroup("Characters and items", [StartingCharacter, CharacterItems, ExcludeCharacters, Bench, Traps]),
     OptionGroup("Battles and crafting", [ExpMultiplier, FolMultiplier, EncounterRate, Difficulty, NoFailCrafting]),
 ]
