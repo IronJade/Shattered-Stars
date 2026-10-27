@@ -12,7 +12,9 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   ships as port 0.03.00 + world 0.2.2 + pack 1.0.0.
 - D10 (not asked before): taken as recommended (UT refuses with TrackerException and a clear
   message when the installed world can't reproduce the room's `logic_version`); told to the user.
-- D8 (story awareness, B6's optional part): asked 2026-10-27; answer pending. Needed only at B6.
+- D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
+  would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
+  pack colours areas later in the story from the same key.
 
 ## Lanes (at most two agents at once: memory pressure crashed a session before)
 
@@ -24,7 +26,7 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | Port | map render command (D5) | (after B5) | | queued: research + layout contract first |
 | World | B3 logic export | (after B2) | | queued |
 | World | B4 PopTracker pack generator | (after B3; needs the map layout contract) | | queued |
-| World | B6 UT map tab (+ D8 story events if yes) | (after B4 + B5) | | queued |
+| World | B6 UT map tab + story awareness (D8 yes) | (after B4 + B5) | | queued |
 | Both | B7 docs, release checklist, release | (last) | | queued; release only with the user's go-ahead |
 
 A fresh agent per assignment (rule in ~/.claude/CLAUDE.md), started from the previous one's log.
@@ -66,3 +68,4 @@ Discs: NA disc 1 = `/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Emu
 
 ## Log
 - 2026-10-27: coordinator log written; utworld (B1) and dskeys (B5) started.
+- 2026-10-27: D8 answered yes (story awareness in story mode, part of B6).

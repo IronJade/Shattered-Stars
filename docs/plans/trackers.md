@@ -475,7 +475,7 @@ Tests:
   "map_page_locations": [...], "map_page_setting_key": "so2_map_{team}_{player}", "map_page_index":
   <generated map->page table>, "item_page_items": ..., layouts...}`. The files come from the B4
   generator (original PNGs, a few hundred KB).
-- Optional, story mode only: deferred events. With `found_entrances_datastorage_key =
+- Story mode only (D8: yes, 2026-10-27): deferred events. With `found_entrances_datastorage_key =
   "so2_story_{team}_{player}"` and `reconnect_found_entrances`, the Disc Switch and Final Save Point
   events are collected when the port reports those chapters, and only when
   `enforce_deferred_connections != "off"`. UT then lists only what the story has reached. The pack can
@@ -531,7 +531,8 @@ the port renders each map from the player's own disc into PopTracker's
 nothing from the disc is published** ("This keeps us trouble free from soliciting any IP"). The
 pack ships original placeholder maps at fixed paths; a port command renders each area's maps
 (stitched by name, check dots placed by the field camera's projection) into the override folder.
-D8-D10 not asked yet.
+D8-D10 not asked yet. **2026-10-27:** D8 **yes** (the user: "Story awareness in story mode would be a
+fantastic addition, yes."); D10 taken as recommended (docs/handoff/phaseb.md).
 
 **Party change that affects this plan (decided 2026-10-26, not built):** a 12-member party (a
 `bench` option: places 8-11 kept by the port; docs/handoff/bench.md). With the bench on, the
