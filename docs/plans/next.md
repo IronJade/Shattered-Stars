@@ -1,4 +1,4 @@
-# Plan: after the 0.02.50 release (Archipelago tests, port 0.03.00 Japan, world 0.3.0 entrance rando)
+# Plan: after the 0.02.50 release (Archipelago tests, trackers, world 0.3.0 entrance rando)
 
 Written 2026-10-25 by the main session at the user's request ("draw up a plan of attack, and write
 it down in a file for future work"). Three phases, in this order. Each phase starts from this file;
@@ -15,6 +15,18 @@ its agents keep their own logs in `docs/handoff/<name>.md` as usual.
 > guiding principal.
 >
 > We will start that work after I release and launch the updated port, world, and wiki.
+
+## The user's change (2026-10-26): trackers instead of Japan in 0.03.00
+
+> Can we nil the idea of running the Japan discs for 0.03.00 and look at outputting correctly for
+> these two popular trackers? Let me know what they need and what our best plan of action would be
+> to get them functional with our game.
+
+The two trackers: https://github.com/FarisTheAncient/Archipelago.git (Universal Tracker) and
+https://github.com/black-sliver/PopTracker.git. **Phase B is now tracker support**; its research
+and plan are in `docs/plans/trackers.md` (agent "trackers", log docs/handoff/trackers.md). The
+Japan section below is **deferred** (not in 0.03.00, no date); it stays here as the reference for
+when the user brings it back.
 
 Order: **Phase A** once the 0.02.50 / so2.apworld 0.2.0 release prep is settled; **Phases B and C**
 only after the user has released and launched port 0.02.50, world 0.2.0 and the wiki.
@@ -50,7 +62,28 @@ release_checklist.md 2.4 / 2.5), and a short report of what each test class cove
 
 ---
 
-## Phase B: port 0.03.00, the Japanese discs
+## Phase B: tracker support (Universal Tracker, PopTracker)
+
+See `docs/plans/trackers.md`. Map images (decided 2026-10-26): rendered by the port from the
+player's own disc into PopTracker's user-override folder; nothing from the disc is published.
+
+---
+
+## Party work, decided 2026-10-26 (not scheduled yet; build the two together)
+
+- **Hero to slot 1** (docs/handoff/heroslot.md, D1-D4 decided): open world and hub, a starting
+  member who isn't the hero takes slot 0 and the lead; the hero goes to slot 1; the lead and slot 0
+  follow that member across scenes; the save card keeps the hero's name. ~3 days.
+- **12-member bench** (docs/handoff/bench.md, B1-B8 decided): places 8-11 kept by the port in the
+  save sidecar, swapped on Party Order (three columns scrolling two at a time), editable in the
+  other camp pages, a `bench` apworld option (every member not excluded becomes an item). Port
+  ~10-14 days, APWorld ~1-1.5, docs ~0.5-1.
+
+---
+
+## Deferred (2026-10-26, was Phase B): the Japanese discs
+
+Taken out of port 0.03.00 by the user; kept as reference.
 
 **Goal (the user):** "the ability to use Japan discs". Today the port recognises Japan and refuses it
 with a clear message (`game_refuses_the_japanese_release`).

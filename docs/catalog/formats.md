@@ -207,6 +207,31 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   Maps 0-3 / 826 (the world script) hold a join and a leave routine per member that no play
   reaches (a debug menu). Most maps also carry a library routine (229: 0x214c) that takes every
   active member out but four, runs a battle (0x1b94) and adds them back, all in one routine.
+  (The four it keeps are named by character id, not by party slot.)
+- **The map library's relation routine** (0x2104 on 419 maps such as 0, 0x4b88 on 330 such as
+  12, 0x2d00 on 156; one in every map's library; called on maps 208, 211, 437, 469, 523, 575,
+  603, 642, 685 (twice) at 0x4b88, 209 at 0x6588, 306 at 0x6874) [heroslot agent, 2026-10-26]: arguments (n, chance %). It reads
+  party slots 0..n-1 **by position** with A 0x26 get_slot_char (the only script op that does;
+  -1 for an empty or reserve slot), gives each a sex (0: Claude, Bowman, Dias, Ashton, Leon,
+  Ernest, Noel; 1: Rena, Celine, Precis, Opera, Chisato), and for every ordered pair (i, j) of
+  occupied slots below n (i == j included) with B 0x0a random(100) < chance: same sex B 0x12
+  (char i, char j, +1) on config +0xe8, else B 0x10 on config +0x58 (the tables the endings
+  read). All twelve calls pass chance 100; n is 4 (the front four: 211, 306, 523, 575, 603, 642,
+  685 x2) or 8 (the whole party: 208, 209, 437, 469). So at the n = 4 sites only the members in
+  party slots 0-3 gain relation points. Scan: scratchpad/heroslot/scan_slots.py / scan_rel.py.
+- **Script ops that move party slots by position** [heroslot agent, 2026-10-26; every field
+  script of disc 1 (disc 2's are the same)]: A 0x15 party_compact (55 sites on 26 maps: 17, 27, 61,
+  124, 125, 130, 135, 209, 211, 229, 230, 234, 305, 422, 434, 437, 439, 444, 447, 462, 468, 477
+  (before each tournament fight), 479, 548, 688, 704), A 0x16 / A 0x17
+  save / restore the order (305, 479, 688; restore also 304, 469, 704), B 0x29 / B 0x2a
+  isolate / restore (the hero to slot 0 for a Private Action and every member back to its saved
+  slot after: the map library's PA wrappers, one pair per map), ext 0xa8 special 1 / 2 on map 12
+  only (routine 0x6db8, Rena's game chapter 4 step 150: special 1 = Claude's name "????" and
+  Claude to slot 0 for battle 190; special 2 at 0x70b8 = his real name, Rena to slot 0 and
+  Claude to slot 1). ext 0xb0 (swap two characters) has no call site. Natively,
+  party_validate_before_battle (0x80052ff4) moves the first member of slots 4-7 to slot 0 when
+  slots 0-3 hold nobody active, and re-points config +0x41 to the first active front slot when
+  the leader's slot is not active (it writes config, so the leader stays changed afterwards).
 - **The map library's choice routine** (0x484c on maps 144 and 169): a question window and a
   choice. Pushed arguments, in order: x mode, y mode (0xf4241 / 0xf4242: placed by the
   routine), question width, question lines, question string, choice width, **option count**,
@@ -357,6 +382,35 @@ Member numbers are party ids (1 Claude, 2 Rena, 3 Celine, 4 Bowman, 5 Dias, 6 Pr
 ## Party slot (0x60 bytes, handoff 3) and character record (0xd0 bytes, handoff 4)
 
 Written by `party_slot_init` (title 0x80061f80). Slot: `+0` u16 character (1 Claude, 2 Rena, ...; negative: a member in reserve, out of the party with the data kept), `+2` u8 field status (1 down, 2 paralysis, 4 stone, 8 poison; `& 7` set = cannot act; item effects 0x41 / 0x42 / 0x62 cure poison / paralysis / stone), `+3` u8 (1 Claude, 9 Rena), `+0x10` u32, `+0x14/+0x18/+0x1c` u32 HP-like triple (Claude 130, Rena 100), `+0x20/+0x22/+0x24` u16 MP-like triple (20 / 40), `+0x28` u16 level 1, then u16 stats at `+0x2a..+0x54`. Record: `+0` u16, `+6` u16, `+0xc..+0x19` u16 equipment-like ids (Rena: 0x21b, 0x2a9), `+0x20` u32 talent bits (`roll_talents`), `+0x24` name (C string; overwritten with the entered name), skill bytes from `+0x3c`.
+
+- **What a party member is** [bench agent, 2026-10-26; from the port's readers, all confirmed
+  against PCSX-Redux by their own agents]: the slot and the record together, and nothing else.
+  The game moves a member by copying exactly these 0x130 bytes (Party Order's
+  `party_swap_members` 0x8007f0bc, `party_move_character_to_slot` 0x800531dc, PA isolate /
+  restore, A 0x15). Checked headless: a Party Order swap of slots 0 and 7 left every member's
+  0x130 bytes identical and changed nothing in the state block, config or inventory beyond a
+  control run that opened and closed the same page (scratchpad/bench/member_cmp.py).
+  - In the slot: `+0x10` EXP, `+0x14..+0x24` HP / MP (base, max, current), `+0x26` the battle's
+    level copy, `+0x28` level, `+0x2a..` the attributes. In the record: `+0xc..+0x18` the seven
+    equipment slots (`+0x16` / `+0x18` accessories), `+0x1a` SP, `+0x20` talents, `+0x24` the name
+    (a copy), `+0x38` / `+0x39` Tactics orders (and the orders before "stand by"), `+0x3a` bits
+    (0 "EW", 1 favourite food known, 2 Practice), `+0x3b` Link Combo partner (a character id),
+    `+0x3c + i` moves / spells known (sign = on / off), `+0x5c + skill` skill levels (sign =
+    battle skill on / off), `+0x8a + 2 * move` killer-move use counts, `+0xcc..+0xcf` the two
+    killer-move sets. Specialties and super specialties are worked out from these (super
+    specialties over the members active in all 8 slots).
+  - Kept by character id elsewhere (they stay put when a member moves): config +0x58 / +0xe8 the
+    relation tables, +0x42 / +0x43 the renamed heroes, +0x45 the hero; game_state +0x28 + (id - 1)
+    * 0x14 the names (the renaming page writes these and record +0x24); script flags such as
+    758-769 (in the party before a split) and 112 (Celine travels); the field sprite packs
+    (`party_member_mask`, the ids active in the 8 slots).
+  - Kept by place (they belong to the slot, not the member): config +0x41 the Formation leader /
+    controlled member (a slot; the Party Order destructor re-points it only when its slot
+    empties), config +0x40's start positions (`g_party_formations[formation][slot]`), the battle
+    voice banks of slots 0-3 (rebuilt when a front slot's member changes), game_state +0x280..
+    +0x287 (A 0x16's saved order, ids by slot; A 0x17 moves each id back by searching the 8
+    slots), field_flags +0x6b / +0x6c.. (state block +0x1eb..; the PA's saved members, slot << 4 | id) and field_flags
+    +0x38 + 4 * slot (`party_stash_slot_ids`, ids around a battle).
 
 ## STR movies (`movie_open`; disc 1 #4563-#4581 and #4586, disc 2 #4573-#4604)
 
