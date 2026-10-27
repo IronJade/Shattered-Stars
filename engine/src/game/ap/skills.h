@@ -49,6 +49,9 @@ void scale_down_stats(u8* slot, u8* rec, int target, const Growth& g);
 // The open world's / hub's join: called after the game's party_slot_init of a new member in
 // party slot 'slot' (field vm_svc_party_slot_init; special 0xd's re-init of Dias).
 void on_member_init(int slot);
+// The same for a new member built straight into a bench place (its slot and record; ap.cpp's
+// join to the bench) [partybuild agent]: the level of the median over all 8 slots (B6).
+void on_bench_member_init(u8* slot, u8* rec);
 
 // ---- Skillsanity -----------------------------------------------------------------------------
 
@@ -72,7 +75,7 @@ bool on_float_prize();
 void on_guild_flag(int flag);
 
 // A received skill or move item (ap.cpp give): kept in the sidecar; a move is known at once when
-// its member is in the party (any slot), else from their join.
+// its member is in the party (any slot) or on the bench [partybuild agent], else from their join.
 void receive_skill(int skill);
 void receive_move(int character, int index);
 

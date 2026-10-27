@@ -705,6 +705,44 @@ else
   echo "FAIL ap_hs_load: Ashton in slot 0 and leading, Claude in slot 1, the order the sidecar's"; fail=1
 fi
 
+# The bench [partybuild agent] (docs/handoff/bench.md; options.bench, seed version 4): with the 8
+# slots taken a received member joins a bench place (built as the game's join, at the 8's
+# median level); the save's sidecar keeps the bench (version 3, "bench" / "bench_hash") and a
+# load brings it back; an edited bench is refused like an edited save.
+sed 's/"smoke-v2c"/"smoke-bench"/; s/"version": 2/"version": 4/; s/"starting_character": "Ashton"/"starting_character": "Ashton", "bench": true/' \
+  "$WORK/v2claude.apso2" >"$WORK/bench.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY=1,2,3,5,7,8 SS_DEBUG_INPUT="600:ap_give Noel Bob;700:ap_give Ernest Bob" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/bench.apso2" --frames 1000 --map 7 </dev/null >"$WORK/ap_bench_join.log" 2>&1
+check ap_bench_join "Ashton's join fills the 8" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+, [A-Za-z]+$'
+check ap_bench_join "Noel to the bench" '\[ap\] Noel joins the bench \(place 8\): Ashton, Claude, .* \| bench: Noel$'
+check ap_bench_join "at the 8's median level" '\[ap\] join level: Noel joins at '
+check ap_bench_join "Ernest next to him" '\[ap\] Ernest joins the bench \(place 9\): .* \| bench: Noel, Ernest$'
+rm -f "$WORK/bcard.mcd" "$WORK"/bcard.slot*.ap.json
+# (received members join one banner at a time, about 350 frames each: the save comes 2700 frames later)
+BENCH_SAVE_INPUT=$(echo "$SAVE_INPUT" | awk -F, '{for (i = 1; i <= NF; i++) {split($i, a, ":"); printf "%s%d:%s", (i > 1 ? "," : ""), a[1] + 2700, a[2]}}')
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  SS_DEBUG_INPUT="100:ap_give Rena Bob;110:ap_give Celine Bob;120:ap_give Bowman Bob;130:ap_give Precis Bob;140:ap_give Leon Bob;150:ap_give Opera Bob;160:ap_give Noel Bob" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/bench.apso2" --frames 3800 --map 18 --input "$BENCH_SAVE_INPUT" \
+  </dev/null >"$WORK/ap_bench_save.log" 2>&1
+check ap_bench_save "Noel to the bench" '\[ap\] Noel joins the bench \(place 8\)'
+check ap_bench_save "the save" '\[ap\] saved .*bcard\.slot01\.ap\.json'
+if grep -q '"version": 3' "$WORK/bcard.slot01.ap.json" 2>/dev/null && grep -q '"place": 8' "$WORK/bcard.slot01.ap.json" \
+   && grep -q '"bench_hash": "sha256:' "$WORK/bcard.slot01.ap.json"; then
+  echo "PASS ap_bench_save: the sidecar keeps the bench (version 3, its hash)"
+else
+  echo "FAIL ap_bench_save: the sidecar keeps the bench (version 3, its hash)"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_load.log" 2>&1
+check ap_bench_load "the save loads with Noel on the bench" '\[ap\] loaded .*bcard\.slot01\.ap\.json: .*, bench: Noel$'
+cp "$WORK/bcard.slot01.ap.json" "$WORK/bcard.slot01.ap.json.ok"
+python3 -c 'import json,sys; p=sys.argv[1]; j=json.load(open(p)); b=j["bench"][0]["bytes"]; j["bench"][0]["bytes"]=b[:0x60*2+0x18]+("ff" if b[0x60*2+0x18:0x60*2+0x1a]!="ff" else "fe")+b[0x60*2+0x1a:]; json.dump(j,open(p,"w"))' \
+  "$WORK/bcard.slot01.ap.json"
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/bcard.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/bench.apso2" --frames 120 </dev/null >"$WORK/ap_bench_guard.log" 2>&1
+check ap_bench_guard "an edited bench is refused" '\[ap\] load refused, save 1 .*: this save was changed outside the game \(its bench differs from the one this seed saved\)'
+mv "$WORK/bcard.slot01.ap.json.ok" "$WORK/bcard.slot01.ap.json"
+
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
 SAVE=analysis/saves/dex_north_city.mcd

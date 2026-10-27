@@ -306,6 +306,10 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   slot 1), and the order the player leaves in the camp menu (who is in slot 0, who leads) comes
   back after a scene reorders the party, except inside a split or a Private Action
   (`docs/ap/seed_format.md` "The hero in slot 1"; debugging: `SS_HEROSLOT_ORDER=LEAD,FIRST`).
+  With `options.bench` (seed version 4; open world with the open party rules, and the hub;
+  work in progress on branch `party-bench`) four bench places the port keeps follow the 8
+  slots: a member received with the 8 taken joins the bench, kept whole (slot and record) in
+  the save's sidecar, guarded like the save (`docs/ap/seed_format.md` "The bench").
 - **The hub** (seed version 3, `world_mode: hub`): New Game starts after the Final
   Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
   town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens

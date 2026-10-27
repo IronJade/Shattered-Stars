@@ -1083,6 +1083,20 @@ maintain the benched members equipment and settings"). Work in progress on branc
   The game's blocks stay 8 places: no original code sees the bench, and the memory card's 8
   slots stay a valid party for the original game or an older port (without the benched members
   and what they wear). The bench is in the sidecar (`bench`, `bench_hash` above).
+- **Joins.** A received member (or the story's join of a member the port keeps) with all 8
+  slots taken goes to the first free bench place before anything else (before the reserve slot
+  of a member the port does not keep; with the bench full they wait as before). The member is
+  built as the game's join builds one (its starting data straight into the place, the join
+  level of the median over the 8 slots, skillsanity's pass, no Link Combo partner). Banner
+  `Noel joined the party (bench)`; log `[ap] Noel joins the bench (place 8): Ashton, Claude, ...
+  | bench: Noel`. Never the hero, never a temporary member. With room in the 8 a member joins
+  there as before.
+- **A benched member is in the party** for the port: a later join of theirs adds nobody, and
+  the story's own join of a benched member is skipped (B4: they stay benched; log `join Noel at
+  map 277 ...: on the bench: stays there`); the story's leaves find no slot. A received move
+  (skillsanity) is learned in the benched record, and the killer-move scan reads its use counts.
+  (Being worked on: a fight the story makes a benched member make alone, which lends them for
+  that window.)
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

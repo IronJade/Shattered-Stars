@@ -90,7 +90,7 @@ agent "partybuild2" continues from here (2026-10-26).
     103/0, ss_game_tests 194/0, smoke 300/0 (scratchpad/partybuild/smoke2.log).
 - **Merge of main (c445867) committed** (8be778b; no conflicts): ss_tests 103/0,
   ss_game_tests 194/0, smoke 303/0.
-- **Piece 2 (the bench store): done** (committed once its smoke passed). New files
+- **Piece 2 (the bench store): done, committed** (23b403f; smoke 303/0, smoke5.log). New files
   engine/src/game/ap/bench.{h,cpp} (struct Bench: places 8-11 of 0x130 bytes; bench_json /
   bench_from_json; bench_digest). ap.h SaveState `bench` + `bench_hash`; ap.cpp sidecar
   (version 3 only with someone benched; keys only then), on_saved (bench_hash), on_loaded
@@ -100,6 +100,25 @@ agent "partybuild2" continues from here (2026-10-26).
   Tests: ap_bench_store; version messages in ap_seed_errors and test_script_vm. Docs:
   seed_format.md (sidecar keys, the guard, the version rule, "The bench" section).
   ss_tests 103/0, ss_game_tests 195/0.
+- **Piece 3 (the join path to the bench): done, committed** (ss_tests 103/0, ss_game_tests
+  196/0, smoke 312/0: smoke6.log). Files: ap.cpp join_bench / bench_index,
+  join_waiting, on_party_add, scan_killer_moves, party_line, status_text, on_loaded's log;
+  skills.{h,cpp} member_init + on_bench_member_init, receive_move; test_ap.cpp ap_bench_join;
+  smoke ap_bench_join / ap_bench_save / ap_bench_load / ap_bench_guard; engine/README.md and
+  seed_format.md "The bench": Joins, a benched member). ap_bench_save fills the 8 with ap_give
+  (one banner each, ~350 frames), so its save input starts 2700 frames late.
+  - Join order with the 8 taken: a free bench place, then (as before) a reserve slot of a
+    member the port does not keep, then wait. Never the hero, never a temporary member (B3).
+    Built as the game's join: field::party_slot_init into the place, the join level over the 8
+    slots (B6), skillsanity's pass, the bond bytes cleared. Banner "Noel joined the party
+    (bench)"; log "Noel joins the bench (place 8): ... | bench: Noel".
+  - A benched member counts as in the party (a queued join of theirs is dropped); the story's
+    join of a benched member adds nobody (B4, logged "on the bench: stays there"); a story
+    leave finds no slot (no-op). A story join of a new kept member with every slot taken goes
+    to the bench.
+  - KNOWN GAP until piece 6: a split window that needs a benched member alone (Claude in
+    Shingo Forest in Rena's game, Dias / Claude at the tournament) does not lend them yet: the
+    story's join is refused like any other (the fight would start without them).
 - Leftovers: symlink `analysis` in the worktree root -> the main repo's analysis/ (the North
   City smoke case needs the user's save). UNTRACKED, not ignored: never commit it; remove it
   when the work is done (or a local exclude in the worktree's info/exclude).
@@ -109,6 +128,59 @@ agent "partybuild2" continues from here (2026-10-26).
   `git merge main` into party-bench (merge commit, no rebase), keep both sides, rebuild, all
   three suites, commit the merge. The main checkout's working tree has another agent's
   uncommitted apworld/so2/test/ files: still never touch it.
+
+- **partybuild2 rolled over here** (~350k context, 2026-10-26): pieces 1-3 and the merge are
+  committed; next is piece 4 (notes below). A fresh agent starts from this file.
+
+## Working notes (partybuild2)
+
+- **Never edit tools/smoke_field_events.sh while a smoke run is going**: bash reads the script as
+  it runs, and an edit broke a run mid-way (smoke4.log). Run a frozen copy instead
+  (`git show HEAD:tools/smoke_field_events.sh > scratchpad/partybuild/smoke_pN.sh`, then
+  `bash smoke_pN.sh engine/build-party/shattered-stars` from the worktree root).
+- Pipeline used: build a piece, run ss_tests + ss_game_tests, snapshot it
+  (`git add -N` new files; `git diff > scratchpad/partybuild/pieceN.patch`), start the smoke in
+  the background, write the next piece meanwhile (no builds while a smoke runs: same binary);
+  when the smoke passes, `git apply --cached pieceN.patch` stages exactly that piece; commit.
+- `scratchpad/partybuild/syncheck.py FILE...` (paths under engine/): -fsyntax-only with
+  build-party's flags, safe while a smoke runs.
+- Smoke runs: `TMPDIR=scratchpad/partybuild/tmp XDG_CONFIG_HOME=scratchpad/partybuild/config
+  SS_DISC1=<disc 1 cue> timeout 14400 tools/smoke_field_events.sh engine/build-party/shattered-stars`
+  (about 50 minutes, ~305 checks). Unit suites: the same XDG_CONFIG_HOME and SS_DISC1,
+  SDL_*_DRIVER offscreen / dummy, `ulimit -v 4194304`.
+
+## Next pieces: notes for the next agent
+
+- **Piece 4, Party Order (B1: three columns that scroll two at a time).** Today's page:
+  engine/src/game/field/menu_combat.cpp PartyOrderPage (8 TextBoxes 0x9c x 0x32 at
+  (col * 0x9c, row * 0x32), make_member_boxes; cursor->add_grid(&choice_, 1, 2, 4, 0, 0x20,
+  0x9c, 0x32, nullptr); box -> slot by table 0x800808e0; swap_members copies slot + record;
+  the destructor reloads front voices, clears bond bytes of slots 4-7, re-points config +0x41).
+  Reading of B1 (to confirm in the first capture): three columns of four (front 0-3, reserve
+  4-7, bench 8-11); two fit the screen (2 x 0x9c = 312 px); the view slides one column
+  (TextBox dx, as OptionsPage::scroll moves its screens with dy, menu_options.cpp ~239) when the
+  cursor goes into the column off screen. A variant page used only when ap::bench_enabled() (the
+  original class untouched otherwise); a 12-entry working copy (8 slots + the store) committed
+  on close before the destructor's steps (bond clear for 4-11). Refusals (sfx 7; bench.md
+  Design 2): the hero to the bench; a temporary member to the bench; a set-aside slot (negative
+  id) with a bench place; any bench move during a PA (flags 2 / 4 / 746), a window keeping
+  everyone away, a stash, the endings (0x2f1), a hub story view (ap.cpp order_locked has the
+  same tests: expose one predicate); a member a window keeps away into the 8; and, as today, a
+  swap leaving no front member able to fight. draw_party_status reads party_slots() + index *
+  0x60 (menu_widget.cpp ~717): a bench box needs its own status source (party_bind to a 12-slot
+  working block is the study's idea). Captures: --capture / SS_VRAM_PNG.
+- **Piece 5 (B2):** Equipment / Skills / Status / Specialty / Tactics for bench members: a
+  port-side path pointing party_select / party_selected_slot / party_selected_record
+  (game/common/party.h) at a store entry while the page works on it; never copy a store entry
+  into the 8 just to show it. The camp page's member list then lists 12.
+- **Piece 6:** lending (B4): window_needing(id) for a benched member -> lend into a free slot (or
+  borrow_slot) for the window, back to its bench place at the window's end (a sidecar list like
+  `temporary`, e.g. `lent`); inns (B8 no): party_restore_hp_all / _mp_all touch the 8 slots only
+  (confirm, nothing to do); endings (B5): benched members get none (nothing to do; confirm the
+  ending selection reads the 8 only).
+- **Piece 7:** docs (seed_format.md "The bench" grows per piece; engine/README.md; docs/catalog
+  for anything newly reversed; apworld's part waits for Phase A: PARTY_SIZE 12, options.bench
+  default on, version 4).
 
 ## Configure
 

@@ -20,6 +20,7 @@
 #include "game/boot/loader.h"
 #include "game/boot/system.h"
 #include "game/common/text_rules.h"
+#include "game/field/characters.h"
 #include "game/field/field.h"
 #include "game/field/load_queue.h"
 #include "game/field/message.h"
@@ -526,6 +527,17 @@ std::string party_line() {
     if (!out.empty()) out += ", ";
     out += v > 0 ? std::string(character_name(v)) : "(" + std::string(character_name(-v)) + ")";
   }
+  // [partybuild agent] The bench, when anyone is on it: "Claude, Rena | bench: Noel, Ernest".
+  if (const Bench& b = rt().state.bench; !b.empty()) {
+    out += out.empty() ? "nobody | bench: " : " | bench: ";
+    bool first = true;
+    for (int i = 0; i < kBenchPlaces; ++i) {
+      if (b.id(i) == 0) continue;
+      out += (first ? "" : ", ") + std::string(character_name(b.id(i)));
+      first = false;
+    }
+    return out;
+  }
   return out.empty() ? "nobody" : out;
 }
 
@@ -545,6 +557,32 @@ int free_reserve_slot(const Runtime& r) {
 void join_in_slot(int slot, int id) {
   field::vm_svc_party_slot_init(slot, id);
   invalidate_voice(slot);
+}
+
+// ---- The bench (game/ap/bench.h; docs/handoff/bench.md) [partybuild agent] ----
+
+// Member 'id''s bench index (0-3: places 8-11), -1 when not benched (or no bench seed).
+int bench_index(const Runtime& r, int id) { return bench_on(r) ? r.state.bench.find(id) : -1; }
+
+// A new member (in neither the 8 nor the bench) to the first free bench place, built as the
+// game's join builds a member (party_slot_init straight into the place: the same starting data
+// and rng draws), then the join level (the median over the 8 slots, B6) and skillsanity's pass
+// (skills.cpp), then the Link Combo bond cleared as A 0x3f does. Never the hero, never a
+// temporary member (B3). False: no bench seed, one of those, or the bench full.
+bool join_bench(Runtime& r, int id) {
+  if (!bench_on(r) || id < 1 || id > kCharacterCount || id == hero_id() || in_list(r.state.temporary, id) ||
+      r.state.bench.find(id) >= 0)
+    return false;
+  Bench& b = r.state.bench;
+  const int i = b.free_index();
+  if (i < 0) return false;
+  field::party_slot_init(b.slot(i), b.record(i), id);
+  on_bench_member_init(b.slot(i), b.record(i));
+  b.record(i)[0x3B] = 0;
+  b.record(i)[0xCE] = 0;
+  b.record(i)[0xCF] = 0;
+  log(std::string(character_name(id)) + " joins the bench (place " + std::to_string(kBenchFirst + i) + "): " + party_line());
+  return true;
 }
 
 // The member whose data a stash holds.
@@ -1294,6 +1332,11 @@ std::string join_waiting(Runtime& r) {
       lead(id);
       continue;
     }
+    if (bench_index(r, id) >= 0) {  // [partybuild agent] (the Party Order page brings them in)
+      done();
+      log(std::string(name) + " is on the bench already");
+      continue;
+    }
     if (script_flag(2) || script_flag(4)) return "";
     if (party_v2(r) && party_isolated()) return "";
     if (party_v2(r)) {
@@ -1307,6 +1350,11 @@ std::string join_waiting(Runtime& r) {
     }
     int into = -1;  // (v2, a full party: a reserve slot of a member the port does not keep)
     if (slot < 0 && !party_has_room()) {
+      // [partybuild agent] A bench seed: a free bench place first (nobody's data overwritten).
+      if (join_bench(r, id)) {
+        done();
+        return std::string(name) + " joined the party (bench)";
+      }
       into = party_v2(r) ? free_reserve_slot(r) : -1;
       if (into < 0) {
         runtime::Runtime::get().log_once("ap-party-full", "[ap] the party is full (8); received characters wait");
@@ -1611,8 +1659,11 @@ void on_loaded(const std::string& card_image, int save_index) {
   r.order_from_load = heroslot_on(r) && s.lead == 0 && s.first == 0;
   // Local items still waiting stay queued; the server's items past the save's received
   // index are given again (this session keeps the server's whole list).
+  std::string benched;  // [partybuild agent] the bench the save brings
+  for (int i = 0; i < kBenchPlaces; ++i)
+    if (const int id = s.bench.id(i); id != 0) benched += (benched.empty() ? ", bench: " : ", ") + std::string(character_name(id));
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
-      std::to_string(s.received_index));
+      std::to_string(s.received_index) + benched);
 }
 
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length) {
@@ -2022,6 +2073,12 @@ bool on_party_add(int character, int at, int call_at) {
   // character without character_items) everyone, except that a listed site adds a received
   // member only (phase 3).
   restore_stash_of(r, id);
+  // [partybuild agent] A benched member stays on the bench (B4: the player's choice wins): the
+  // story's join adds nobody and the scene goes on.
+  if (bench_index(r, id) >= 0) {
+    log(std::string("join ") + character_name(id) + " at " + where + ": on the bench: stays there");
+    return true;
+  }
   const bool allowed = r.seed.open_party ? permitted(r, id) : (l == nullptr || protected_member(r, id));
   if (!allowed) {
     const bool active = slot_of_character(id) >= 0 && rd16s(party_slot(slot_of_character(id))) > 0;
@@ -2052,6 +2109,11 @@ bool on_party_add(int character, int at, int call_at) {
   if (slot_of_character(id) >= 0 || party_has_room()) {
     log(std::string("join ") + character_name(id) + " at " + where + ": the game's join");
     return false;
+  }
+  // [partybuild agent] Every slot taken, a bench seed: a member the port keeps goes to the bench.
+  if (protected_member(r, id) && join_bench(r, id)) {
+    log(std::string("join ") + character_name(id) + " at " + where + ": every slot taken: to the bench");
+    return true;
   }
   // Every slot taken: a reserve slot of a member the port does not keep, never a kept one's.
   if (const int into = free_reserve_slot(r); into >= 0) {
@@ -2791,10 +2853,12 @@ int scan_killer_moves() {
   for (const Location& l : r.seed.locations) {
     if (l.type != "killer_move" || is_checked(l.id)) continue;
     const int slot = slot_of_character(l.character);
-    if (slot < 0) continue;  // (not in the party: the record is someone else's)
+    const int benched = slot < 0 ? bench_index(r, l.character) : -1;  // [partybuild agent] (their record kept there)
+    if (slot < 0 && benched < 0) continue;  // (not in the party: the record is someone else's)
     // The member's record (8 x 0xd0, by party slot): the move's use count, +1 each time the
     // move starts (battle pc_begin_action 0x80037098, store 0x800373b4), at most 999.
-    const int count = rd16s(g.records + slot * 0xD0 + 0x8A + 2 * l.move);
+    const u8* rec = slot >= 0 ? g.records + slot * 0xD0 : r.state.bench.record(benched);
+    const int count = rd16s(rec + 0x8A + 2 * l.move);
     if (count < l.uses) continue;
     log(std::string("killer move: ") + character_name(l.character) + " move " + std::to_string(l.move) + " used " +
         std::to_string(count) + " times (level " + std::to_string(l.level) + " at " + std::to_string(l.uses) + ")");
@@ -2839,6 +2903,8 @@ std::string status_text() {
       out += std::string(" ") + character_name(id);
       if (std::find(r.state.characters_waiting.begin(), r.state.characters_waiting.end(), id) != r.state.characters_waiting.end())
         out += " (waiting)";
+      else if (bench_index(r, id) >= 0)
+        out += " (bench)";  // [partybuild agent]
     }
   }
   if (r.state.ambushes > 0) out += "\n  ambushes waiting " + std::to_string(r.state.ambushes);

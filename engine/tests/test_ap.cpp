@@ -2485,6 +2485,78 @@ TEST(ap_heroslot) {
 
 // While the party is set aside for the hero alone (a Private Action's flags 2 / 4, or the map
 // library's isolate routine's flag 746), the party rules leave it alone.
+// [partybuild agent] The bench's joins (docs/handoff/bench.md "The AP join path"): with the 8 slots
+// taken a received member goes to a free bench place (one banner); a benched member counts as in
+// the party for later joins, and the story's join of a benched member adds nobody (B4); a
+// received move reaches a benched record and the killer-move scan reads it. Without the option
+// the ninth member waits as before.
+TEST(ap_bench_join) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  const std::string killer =
+      "  \"locations\": [\n"
+      "    {\"id\": 1360000001, \"name\": \"Ernest: move 1\", \"check\": {\"type\": \"killer_move\", \"character\": \"Ernest\", "
+      "\"move\": 1, \"level\": 1, \"uses\": 5}, \"item\": {\"player\": 1, \"kind\": \"fol\", \"amount\": 1}},\n";
+  const std::string text = replace(party_seed(open_options("claude", ", \"bench\": true")), "  \"locations\": [\n", killer);
+  // Without the bench: the ninth member waits (today's rule).
+  CHECK(ap::load_seed_text(replace(text, ", \"bench\": true", ""), &s, &error) && !s.bench);
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.at(7, 3, 0);
+  pg.members({1, 2, 3, 4, 6, 7, 8, 9});
+  pg.received({2, 3, 4, 6, 7, 8, 9, 10, 11});
+  ap::mutable_state().characters_waiting = {10};
+  CHECK(ap::party_free_play_step().empty() && ap::state().characters_waiting.size() == 1 && ap::state().bench.empty());
+  ap::stop();
+
+  CHECK(ap::load_seed_text(text, &s, &error) && s.bench);
+  ap::start_with(s);
+  pg.members({1, 2, 3, 4, 6, 7, 8, 9});
+  pg.received({2, 3, 4, 6, 7, 8, 9, 10, 11});
+  CHECK(ap::bench_enabled());
+  // Two received with the 8 slots taken: each to the bench, one banner each; the 8 untouched.
+  ap::mutable_state().characters_waiting = {10, 11};
+  CHECK(ap::party_free_play_step() == "Ernest joined the party (bench)");
+  CHECK(pg.party() == "1,2,3,4,6,7,8,9" && ap::state().bench.id(0) == 10 && ap::state().bench.count() == 1);
+  CHECK(ap::party_free_play_step() == "Noel joined the party (bench)");
+  CHECK(ap::state().bench.id(1) == 11 && ap::state().characters_waiting.empty());
+  CHECK(ap::status_text().find("Ernest (bench)") != std::string::npos);
+  // A benched member is in the party already: a second join of theirs adds nobody.
+  ap::mutable_state().characters_waiting = {10};
+  CHECK(ap::party_free_play_step().empty() && ap::state().characters_waiting.empty() && ap::state().bench.count() == 2);
+  // The story's join of a benched member (Noel's house, a listed site): its check, nobody added.
+  pg.at(277, 40, 0);
+  CHECK(!pg.join(11, 0x6fe0) && pg.party() == "1,2,3,4,6,7,8,9" && ap::state().bench.count() == 2);
+  CHECK(ap::is_checked(1354126336));
+  // A story leave of a benched member removes nobody (the game finds no slot).
+  pg.leave(11);
+  CHECK(pg.party() == "1,2,3,4,6,7,8,9" && ap::state().bench.find(11) == 1);
+  // A received move reaches the benched record; the killer-move scan reads the bench's counts.
+  ap::receive_move(10, 3);
+  CHECK(ap::state().bench.record(0)[0x3C + 3] != 0);
+  CHECK(ap::scan_killer_moves() == 0);
+  const s16 uses = 5;
+  std::memcpy(ap::mutable_state().bench.record(0) + 0x8A + 2 * 1, &uses, 2);
+  CHECK(ap::scan_killer_moves() == 1 && ap::is_checked(1360000001));
+  // A story join of a new member with every slot taken: a member the port keeps goes to the
+  // bench (Chisato received), one it does not keep is not added.
+  pg.at(7, 3, 0);
+  ap::mutable_state().characters.push_back(12);
+  CHECK(!pg.join(12, 0x1234) && ap::state().bench.id(2) == 12 && pg.party() == "1,2,3,4,6,7,8,9");
+  CHECK(!pg.join(5, 0x1234) && ap::state().bench.find(5) == -1 && pg.party() == "1,2,3,4,6,7,8,9");
+  // With room in the 8 a received member joins there as before (the 8 first).
+  pg.members({1, 2, 3, 4, 6, 7, 8});
+  ap::mutable_state().characters.push_back(9);
+  ap::mutable_state().characters_waiting = {9};
+  CHECK(ap::party_free_play_step() == "Opera joined the party" && pg.party() == "1,2,3,4,6,7,8,9" && ap::state().bench.count() == 3);
+  // The sidecar keeps the bench (and the log's party line names it).
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.bench == ap::state().bench);
+  ap::stop();
+}
+
 TEST(ap_v2_party_isolated) {
   ap::stop();
   PartyGame pg;
