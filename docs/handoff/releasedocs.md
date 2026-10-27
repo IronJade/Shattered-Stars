@@ -70,7 +70,26 @@ docs/ap/release_checklist.md section 11.
    world link -> 0.2.2; tools/ line and the build line name the pack's generator / build script.
    **Left for B7b's bump** (checklist 12.1): the badge and the two package names (still 0.02.51).
    **Done.**
-5. Wiki (scratchpad/wiki, uncommitted): Trackers page + links. (pending)
+5. Wiki (scratchpad/wiki, its own repo at 6a1624f; **uncommitted**, for the coordinator to commit
+   and push with the releases: checklist 12.6):
+   - **Trackers.md (new):** what you need (table), how trackers see your game, "Trackers update
+     when the game is online", Universal Tracker (setup, yaml-less, what it shows, /explain,
+     refusals), PopTracker (setup, updates, what it shows, colours, banner, auto tab), maps from
+     your own disc (why nothing is shipped, what you get, setup button, command line, where they
+     go incl. the search order and a portable PopTracker), story awareness (+ the 24 points table
+     and its approximations), older rooms (table), troubleshooting (12 rows), for developers.
+   - Linked from: _Sidebar.md (under Playing), Home.md (highlight, status row, pages list),
+     Archipelago.md (header, While you play, Known issues, Troubleshooting row, a new "What changed
+     in 0.2.2", For developers), FAQ.md (new "Does it work with trackers?"), Installing-and-Setup.md
+     (the setup page's new Trackers part, the Downloads' other releases), Playing.md (the
+     `--render-tracker-maps [DIR]` row), Building-from-Source.md (a "The PopTracker pack" section).
+   - **Versions written for the release** (the wiki is pushed only with it): Home.md (0.03.00, world
+     0.2.2, pack 1.0.0, the download lines), _Footer.md ("Version 0.03.00"; it still said 0.02.50),
+     Archipelago.md (0.2.2 / 0.03.00; the IMPORTANT box; links to apworld-v0.2.2; troubleshooting
+     "Install 0.03.00" / "0.2.2"), FAQ.md, Installing-and-Setup.md (Downloads and the unpack lines
+     said 0.02.50: now 0.03.00), Contributing.md and Installing-and-Managing-Mods.md (examples),
+     Building-from-Source.md ("0.02.50 today" -> 0.03.00).
+   - Every wiki-internal link and anchor checked by script: 0 bad. **Done.**
 6. docs/plans/next.md: Phase B status, Phase C pointer. (pending)
 
 ## Placeholders left for maptab
@@ -85,6 +104,8 @@ docs/ap/release_checklist.md section 11.
   0.2.2.md "What's new: Universal Tracker" last bullet (UT's map tab) and the counts paragraph;
   poptracker-1.0.0.md "What it shows" last bullet (rooms and doors), "the rooms" in "The real
   maps", and the counts paragraph. All marked **TODO (maptab)**; the DRAFT banners name them.
+- Wiki Trackers.md: the section "TODO (maptab): rooms and doors in the pack" (under "Maps from your
+  own disc"); Universal Tracker's map tab belongs there too.
 - docs/handoff/windows_check.md "Recheck for 0.03.00" item 11 (TODO (maptab)): the room maps,
   the door panel, click switching, auto tab to rooms, UT's map tab.
 
