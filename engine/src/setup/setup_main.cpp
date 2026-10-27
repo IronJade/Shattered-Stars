@@ -16,8 +16,9 @@
 //   --state NAME         quit-confirm | game-missing (show that dialog); capture-key /
 //                        capture-pad (Controls: waiting for a key / button for Cross)
 //   --do A,B,...         actions, one per frame: autodetect, save, play, quit, close,
-//                        set:KEY=VALUE (also SS_SETUP_SCRIPT="A,B,...", which reaches setup
-//                        when the game starts it)
+//                        set:KEY=VALUE, render-tracker-maps (Archipelago page; the PopTracker
+//                        map images from the disc, tools/tracker_maps.h) (also
+//                        SS_SETUP_SCRIPT="A,B,...", which reaches setup when the game starts it)
 //   --renderer gl|sdl    OpenGL 3.3 (default) or SDL's renderer (the fallback when OpenGL
 //                        can't start)
 //   --frames N           stop after N frames

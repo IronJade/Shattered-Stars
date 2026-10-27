@@ -547,9 +547,14 @@ if(SS_BUILD_SETUP)
   target_compile_definitions(ss_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
   target_link_libraries(ss_imgui PUBLIC SDL3::SDL3 ${CMAKE_DL_LIBS})
 
-  # game/ap/seed.cpp + json.cpp: the game's own seed reader, for the Archipelago page (self-contained).
+  # game/ap/seed.cpp + json.cpp: the game's own seed reader, for the Archipelago page
+  # (self-contained). tools/tracker_maps.cpp + the generated layout: the "Render tracker maps
+  # for PopTracker" button runs the same code as --render-tracker-maps (self-contained: it
+  # needs only disc::Archive and game::ap::Json, both already linked here) [portcheck], so
+  # setup need not link all of ss_game (the field/battle VM setup never uses).
   add_executable(shattered-stars-setup WIN32 src/setup/setup_main.cpp src/setup/setup_ui.cpp
-                 src/game/ap/seed.cpp src/game/ap/json.cpp)
+                 src/game/ap/seed.cpp src/game/ap/json.cpp src/tools/tracker_maps.cpp
+                 "${CMAKE_CURRENT_BINARY_DIR}/generated/tracker_layout_data.cpp")
   if(WIN32)
     set_target_properties(shattered-stars-setup PROPERTIES OUTPUT_NAME setup)
   endif()

@@ -13,6 +13,8 @@
 
 #include "imgui.h"
 #include "imgui_stdlib.h"
+#include "disc/archive.h"
+#include "disc/disc_image.h"
 #include "game/ap/seed.h"
 #include "launcher/ap_seed.h"
 #include "launcher/process.h"
@@ -20,6 +22,7 @@
 #include "platform/window.h"
 #include "psx/memory_card.h"
 #include "runtime/region.h"
+#include "tools/tracker_maps.h"
 
 namespace ss::setup {
 namespace {
@@ -410,6 +413,7 @@ void App::run_action(const std::string& action) {
   else if (action == "mods-down") mods_move(1);
   else if (action == "mods-remove") open_remove_popup_ = mods_selected_entry() >= 0;
   else if (action == "mods-show-info") mods_scroll_to_info_ = true;
+  else if (action == "render-tracker-maps") start_tracker_render();
   else std::fprintf(stderr, "setup: unknown action '%s'\n", action.c_str());
 }
 
@@ -421,6 +425,43 @@ void App::open_folder(const fs::path& folder) {
     error_message_ = "The folder could not be opened:\n\n" + launcher::path_utf8(folder) + "\n\n" + SDL_GetError();
     open_error_popup_ = true;
   }
+}
+
+// The Archipelago page's "Render tracker maps for PopTracker" button (tools/tracker_maps.h):
+// the same command as `--render-tracker-maps` with no DIR (PopTracker's own search order), so
+// a Windows player never needs a terminal. Reads Disc 1 only and writes only the pack's PNGs
+// under PopTracker's user-override folder; no config change (settings on screen are not
+// touched, saved or not), no save, no card.
+void App::start_tracker_render() {
+  if (tracker_render_busy_) return;  // already running; the button is disabled meanwhile
+  tracker_render_busy_ = true;
+  tracker_render_done_ = false;
+}
+
+void App::run_tracker_render() {
+  tracker_render_busy_ = false;
+  tracker_render_done_ = true;
+  tracker_render_ok_ = false;
+  tracker_render_dir_.clear();
+  tracker_render_error_.clear();
+  if (!disc1_ok()) {  // the usual message (bottom_bar / the unsaved-changes popup say the same)
+    tracker_render_error_ = "Choose a valid Disc 1 image first.";
+    return;
+  }
+  std::string error;
+  const auto disc = disc::DiscImage::open(launcher::utf8_path(settings_.disc1), &error);
+  disc::Archive archive;
+  if (!disc || !archive.open(*disc, &error)) {
+    tracker_render_error_ = error.empty() ? "Your Disc 1 image could not be read." : error;
+    return;
+  }
+  const fs::path dir = tools::poptracker_override_dir();
+  tools::TrackerRenderOptions options;  // the real render for a player: every image, no dots
+  const int rc = tools::render_tracker_maps(archive, dir, options);
+  tracker_render_dir_ = launcher::path_utf8(dir);
+  tracker_render_ok_ = rc == 0;
+  if (!tracker_render_ok_)
+    tracker_render_error_ = "Some map images could not be rendered (shattered-stars-setup's own console has details).";
 }
 
 struct DialogCall {
@@ -738,6 +779,10 @@ void field_label(const char* text, float width) {
 void App::frame() {
   ++frame_;
   apply_dialog_results();
+  // The tracker-render button (or the scripted action below) sets tracker_render_busy_ during
+  // THIS function on some earlier frame; running it here, before the page draws, means the
+  // frame that set it shows "Rendering..." and the work itself happens on the next one.
+  if (tracker_render_busy_ && !tracker_render_done_) run_tracker_render();
   if (frame_ == 1) {
     if (!disc1_ok() && settings_.disc1.empty() && options_.sets.empty()) auto_detect(true);
     if (options_.state == "quit-confirm") open_quit_popup_ = true;
@@ -2245,6 +2290,26 @@ void App::page_archipelago() {
     note(settings_.ap_server.empty()
              ? "Offline: your checks are kept in your save and sent when you play with a server."
              : "The game connects when it starts. Checks found while it can't reach the server are sent later.");
+
+  subheading(fonts_.bold, fonts_.size, "Trackers");
+  note("PopTracker can follow your run (map and checks) from your own disc's artwork: this renders it "
+       "once, into PopTracker's own folder, from this disc only. Nothing is shared or published.");
+  const char* render_label = "Render tracker maps for PopTracker";
+  ImGui::BeginDisabled(!disc1_ok() || tracker_render_busy_);
+  if (ImGui::Button(render_label)) start_tracker_render();
+  ImGui::EndDisabled();
+  if (!disc1_ok() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    ImGui::SetTooltip("%s", "Choose a valid Disc 1 image first.");
+  if (tracker_render_busy_) {
+    status_line(Level::kInfo, "Rendering tracker maps... this can take a few seconds.");
+  } else if (tracker_render_done_) {
+    if (tracker_render_ok_) {
+      status_line(Level::kOk, "Done: the tracker maps were written to " + tracker_render_dir_ + ".");
+      if (ImGui::Button("Open folder")) open_folder(launcher::utf8_path(tracker_render_dir_));
+    } else {
+      status_line(Level::kError, tracker_render_error_);
+    }
+  }
 }
 
 }  // namespace ss::setup

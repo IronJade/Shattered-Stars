@@ -37,7 +37,9 @@ struct Options {
   // SS_SETUP_SCRIPT / --do, one per frame: autodetect, save, play, quit, close (the window's
   // close button), set:KEY=VALUE (as if typed in); on the Mods page mods-install:ZIP,
   // mods-select:ID, mods-toggle:ID, mods-up, mods-down, mods-remove (asks; never confirmed),
-  // mods-show-info (scrolls to the selected mod's details).
+  // mods-show-info (scrolls to the selected mod's details); on the Archipelago page
+  // render-tracker-maps (the "Render tracker maps for PopTracker" button; the work runs on
+  // the frame after this one, see App::run_tracker_render).
   std::vector<std::string> actions;
 };
 
@@ -146,6 +148,14 @@ class App {
   void apply_dialog_results();
   void run_action(const std::string& action);
   void open_folder(const std::filesystem::path& folder);
+  // Archipelago page, "Trackers": --render-tracker-maps (tools/tracker_maps.h) from a button,
+  // so Windows players never need a terminal. start_tracker_render() marks the request (the
+  // button, or the scripted action "render-tracker-maps"); run_tracker_render() does the
+  // (blocking, ~a few seconds) work at the top of the next frame(), so the page can show
+  // "Rendering..." for the frame in between. Reads the disc only, writes only PNGs under
+  // PopTracker's own override folder; no config change, no saves.
+  void start_tracker_render();
+  void run_tracker_render();
 
   // The Mods page (mods/catalog.h): the folder's packages, rescanned when the folder
   // changes, after an install or removal, and when the window regains focus; the conflict
@@ -203,6 +213,12 @@ class App {
   std::map<std::string, CardInfo> card_cache_;
   std::map<std::string, SeedInfo> seed_cache_;
   bool show_password_ = false;
+
+  // The Archipelago page's "Render tracker maps for PopTracker" button (tools/tracker_maps.h).
+  bool tracker_render_busy_ = false;  // requested; the work runs at the top of the next frame
+  bool tracker_render_done_ = false;  // a result (ok/error/dir) is ready below
+  bool tracker_render_ok_ = false;
+  std::string tracker_render_dir_, tracker_render_error_;
 
   mods::Catalog mods_catalog_;
   bool mods_scanned_ = false;
