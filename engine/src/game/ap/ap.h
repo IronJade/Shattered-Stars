@@ -48,6 +48,7 @@ struct SaveState {
   struct Stash {
     int slot = 0;                       // the party slot a temporary member borrowed (a full party)
     std::vector<u8> bytes;              // its member's slot (0x60) and record (0xd0), put back later
+    int by = 0;                         // who borrowed it (party id; 0: a sidecar from before) [partybuild agent]
   };
   std::vector<Stash> stash;
   // Sidecar version 2 [hubcore agent]: the save's bytes on the card as util::save_digest gives
@@ -77,6 +78,12 @@ struct SaveState {
   // save_hash, is never kept in the running state. A load takes the sidecar's bench as it is.
   Bench bench;
   std::string bench_hash;
+  // [partybuild agent] B4: benched members lent to the 8 for a fight the story makes them make
+  // alone (a split window needing them: Claude in Shingo Forest in Rena's game, Dias / Claude at
+  // the tournament). Their bench place stays theirs (empty, never given to a join) until they go
+  // back to it. Sidecar key "lent" (only with a loan: then sidecar version 3), in "bench_hash".
+  using Loan = BenchLoan;
+  std::vector<Loan> lent;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);

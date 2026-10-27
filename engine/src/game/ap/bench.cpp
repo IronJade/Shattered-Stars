@@ -119,13 +119,18 @@ bool bench_from_json(const Json& a, Bench* b, std::string* error) {
   return true;
 }
 
-std::string bench_digest(const u8* file, size_t length, const Bench& b) {
+std::string bench_digest(const u8* file, size_t length, const Bench& b, const std::vector<BenchLoan>& lent) {
   // The save's bytes as util::save_digest takes them: its first N, N = the u16 at +0x21a.
   size_t n = file != nullptr && length >= 0x21C ? static_cast<size_t>(file[0x21A] | file[0x21B] << 8) : 0;
   if (n > length) n = length;
   if (n > 0x2000) n = 0x2000;
   std::vector<u8> data(file, file + n);
   for (const auto& place : b.places) data.insert(data.end(), place.begin(), place.end());
+  // The loans (B4) [partybuild agent]: none adds nothing (a bench's digest as before).
+  for (const BenchLoan& l : lent) {
+    data.push_back(static_cast<u8>(l.id));
+    data.push_back(static_cast<u8>(l.place));
+  }
   return "sha256:" + util::sha256_hex(data.data(), data.size());
 }
 

@@ -132,6 +132,9 @@ struct Runtime {
   // [partybuild agent] heroslot: a load whose sidecar remembers no order (a save from before
   // D2 / D3): the first free play takes the loaded order as the player's.
   bool order_from_load = false;
+  // [partybuild agent] Debugging: SS_BENCH's members, put on the bench at the first join or free
+  // play (debug_bench).
+  std::vector<int> debug_bench;
   // The hub's New Game [hubcore agent]: the start's position, for the field's first map load.
   bool start_position = false;
   bool banners_measured = false;         // the seed doors' banners measured (first free play)
@@ -564,6 +567,24 @@ void join_in_slot(int slot, int id) {
 // Member 'id''s bench index (0-3: places 8-11), -1 when not benched (or no bench seed).
 int bench_index(const Runtime& r, int id) { return bench_on(r) ? r.state.bench.find(id) : -1; }
 
+// Member 'id''s loan (SaveState::lent: a benched member lent to the 8 for a fight), -1 none.
+int loan_index(const Runtime& r, int id) {
+  for (size_t k = 0; k < r.state.lent.size(); ++k)
+    if (r.state.lent[k].id == id) return static_cast<int>(k);
+  return -1;
+}
+
+// The first bench place a join may take: empty, and not kept for a lent member; -1 none.
+int bench_free_index(const Runtime& r) {
+  for (int i = 0; i < kBenchPlaces; ++i) {
+    if (r.state.bench.id(i) != 0) continue;
+    bool kept = false;
+    for (const SaveState::Loan& l : r.state.lent) kept = kept || l.place == kBenchFirst + i;
+    if (!kept) return i;
+  }
+  return -1;
+}
+
 // A new member (in neither the 8 nor the bench) to the first free bench place, built as the
 // game's join builds a member (party_slot_init straight into the place: the same starting data
 // and rng draws), then the join level (the median over the 8 slots, B6) and skillsanity's pass
@@ -574,7 +595,7 @@ bool join_bench(Runtime& r, int id) {
       r.state.bench.find(id) >= 0)
     return false;
   Bench& b = r.state.bench;
-  const int i = b.free_index();
+  const int i = bench_free_index(r);  // (a place kept for a lent member is not free)
   if (i < 0) return false;
   field::party_slot_init(b.slot(i), b.record(i), id);
   on_bench_member_init(b.slot(i), b.record(i));
@@ -585,6 +606,17 @@ bool join_bench(Runtime& r, int id) {
   return true;
 }
 
+// Debugging (environment, never config.ini): SS_BENCH=ID,... (party ids, start_with) puts these
+// members on the bench at the first join or free play of a game, as a bench join builds them: a
+// --map scene test needs a member benched before the map's own scene runs (Claude for map 12,
+// Dias for the tournament's 477).
+void debug_bench(Runtime& r) {
+  if (r.debug_bench.empty() || field::globals().party == nullptr || field::globals().records == nullptr) return;
+  for (const int id : r.debug_bench)
+    if (slot_of_character(id) < 0) join_bench(r, id);
+  r.debug_bench.clear();
+}
+
 // The member whose data a stash holds.
 int stash_member(const SaveState::Stash& s) {
   if (s.bytes.size() < 2) return 0;
@@ -592,38 +624,187 @@ int stash_member(const SaveState::Stash& s) {
   return v < 0 ? -v : v;
 }
 
-// A temporary member with no slot left (a full party of members the port keeps) borrows the
-// first reserve slot; its member's slot and record are stashed (and saved in the sidecar) until
-// restore_stash puts them back.
-bool borrow_slot(Runtime& r, int id) {
+// The first reserve slot, its member's slot and record stashed (and saved in the sidecar) until
+// restore_stash puts them back, for member 'id' to borrow; -1: none.
+int stash_reserve_slot(Runtime& r, int id) {
   field::FieldGlobals& g = field::globals();
-  if (g.records == nullptr) return false;
+  if (g.records == nullptr) return -1;
   for (int i = 0; i < 8; ++i) {
     u8* p = party_slot(i);
     if (p == nullptr || rd16s(p) >= 0) continue;
     SaveState::Stash s;
     s.slot = i;
+    s.by = id;  // [partybuild agent] (restore_stash finds them again if a scene moves them)
     s.bytes.assign(p, p + 0x60);
     s.bytes.insert(s.bytes.end(), g.records + i * 0xD0, g.records + (i + 1) * 0xD0);
     log(std::string(character_name(id)) + " borrows slot " + std::to_string(i) + " of " + character_name(stash_member(s)) +
         " (in reserve; put back when the window ends)");
     r.state.stash.push_back(std::move(s));
-    join_in_slot(i, id);
-    return true;
+    return i;
   }
+  return -1;
+}
+
+// A temporary member with no slot left (a full party of members the port keeps) borrows the
+// first reserve slot (stash_reserve_slot).
+bool borrow_slot(Runtime& r, int id) {
+  const int i = stash_reserve_slot(r, id);
+  if (i < 0) return false;
+  join_in_slot(i, id);
+  return true;
+}
+
+// ---- Loans (B4) [partybuild agent] ----
+// A benched member a split window needs (a fight the story makes them make alone) is lent to the
+// 8 for it, as they are (their own 0x130 bytes, not a new join's), and goes back to their bench
+// place afterwards with what the fight gave them (EXP, HP, status). The place stays theirs
+// meanwhile (SaveState::lent; loan_index and bench_free_index above).
+
+// "level 12, EXP 3456" of a member's slot (the log's loan lines).
+std::string level_exp(const u8* slot) {
+  return "level " + std::to_string(rd16s(slot + 0x28)) + ", EXP " + std::to_string(rd32s(slot + 0x10));
+}
+
+// Slot 'slot' holds a member who borrowed a slot (a stash's "by"; a sidecar from before: a
+// temporary member while a stash is out): a loan never overwrites or stashes them, which would
+// take a borrower out of the 8 while their stash waits (shingofix's rule for the bench).
+bool holds_borrower(const Runtime& r, int slot) {
+  const u8* p = party_slot(slot);
+  if (p == nullptr || rd16s(p) == 0) return false;
+  const int id = rd16s(p) < 0 ? -rd16s(p) : rd16s(p);
+  for (const SaveState::Stash& s : r.state.stash)
+    if (s.by != 0 ? s.by == id : in_list(r.state.temporary, id)) return true;
   return false;
+}
+
+// Benched member 'id' into the 8 for window 'w': where the game's join would put a member
+// (party_add_member: the first slot not active, an empty one directly, a reserve one after its
+// member moves to the next empty slot), else a reserve slot of a member the port does not keep,
+// else the first reserve slot borrowed (its member stashed, as for a temporary member); never a
+// slot holding a member who borrowed one (holds_borrower). False: no slot at all (they stay
+// benched).
+bool lend_from_bench(Runtime& r, int id, const SplitWindow& w, const std::string& where) {
+  field::FieldGlobals& g = field::globals();
+  const int i = bench_index(r, id);
+  if (i < 0 || g.party == nullptr || g.records == nullptr) return false;
+  int slot = -1;
+  for (int k = 0; k < 8; ++k) {
+    const s16 v = rd16s(party_slot(k));
+    if (v > 0) continue;
+    if (v == 0) {
+      slot = k;
+      break;
+    }
+    for (int j = k + 1; j < 8 && slot < 0; ++j) {
+      if (rd16s(party_slot(j)) != 0) continue;
+      field::party_swap_slots(nullptr, k, j);
+      slot = k;
+    }
+    break;
+  }
+  if (slot < 0) {
+    const int into = free_reserve_slot(r);
+    if (into >= 0 && !holds_borrower(r, into)) slot = into;
+  }
+  if (slot < 0) {
+    int aside = 0;  // (the slot stash_reserve_slot takes: the first one set aside)
+    while (aside < 8 && rd16s(party_slot(aside)) >= 0) ++aside;
+    if (aside < 8 && !holds_borrower(r, aside)) slot = stash_reserve_slot(r, id);
+  }
+  if (slot < 0) {
+    log(std::string("join ") + character_name(id) + " at " + where + ": needed for " + w.what +
+        " but there is no slot (none free, none of a member it may take): stays on the bench");
+    return false;
+  }
+  Bench& b = r.state.bench;
+  std::memcpy(party_slot(slot), b.slot(i), 0x60);
+  std::memcpy(g.records + slot * 0xD0, b.record(i), 0xD0);
+  invalidate_voice(slot);
+  b.clear(i);
+  r.state.lent.push_back({id, kBenchFirst + i});
+  log(std::string("join ") + character_name(id) + " at " + where + ": lent from the bench (place " +
+      std::to_string(kBenchFirst + i) + ", " + level_exp(party_slot(slot)) + ") for " + w.what + ", slot " +
+      std::to_string(slot) + ": " + party_line());
+  return true;
+}
+
+// Loan 'k' ends: its member (in the 8, active or set aside) back to the place kept for them, as
+// they are now (the Link Combo bond cleared, as Party Order clears it behind the front four). The
+// slot is left as it is; returns it (-1: the member is not in the 8 any more).
+int bench_back(Runtime& r, size_t k, const char* why) {
+  field::FieldGlobals& g = field::globals();
+  const SaveState::Loan l = r.state.lent[k];
+  r.state.lent.erase(r.state.lent.begin() + static_cast<long>(k));
+  const int slot = slot_of_character(l.id);
+  if (slot < 0 || g.records == nullptr) {
+    // (Not seen: a scene that drops a member keeps their slot, set aside.) A member who may join
+    // rejoins as a received one does.
+    if (permitted(r, l.id) && !in_list(r.state.characters_waiting, l.id)) r.state.characters_waiting.push_back(l.id);
+    log(std::string(character_name(l.id)) + " (lent from the bench) is not in the party any more");
+    return -1;
+  }
+  Bench& b = r.state.bench;
+  int i = l.place - kBenchFirst;
+  if (i < 0 || i >= kBenchPlaces || b.id(i) != 0) i = bench_free_index(r);  // (the place is kept: never)
+  if (i < 0) {
+    log(std::string(character_name(l.id)) + " (lent from the bench) finds no bench place: stays in the party");
+    return -1;
+  }
+  b.put(i, party_slot(slot), g.records + slot * 0xD0);
+  const s16 id = static_cast<s16>(l.id);  // (set aside after the fight: benched as themselves)
+  std::memcpy(b.slot(i), &id, 2);
+  b.record(i)[0x3B] = 0;
+  b.record(i)[0xCE] = 0;
+  b.record(i)[0xCF] = 0;
+  log(std::string(character_name(l.id)) + " back on the bench (place " + std::to_string(kBenchFirst + i) + ", " +
+      level_exp(b.slot(i)) + "): " + why);
+  return slot;
 }
 
 // Puts stash 'k' back in its slot; the temporary member there (in reserve or active) is dropped
 // from the party: it was only lent the place.
-void restore_stash(Runtime& r, size_t k) {
+void restore_stash(Runtime& r, size_t k, const char* why = "the slot they borrowed goes back") {
   field::FieldGlobals& g = field::globals();
-  const SaveState::Stash s = r.state.stash[k];
+  SaveState::Stash s = r.state.stash[k];
   r.state.stash.erase(r.state.stash.begin() + static_cast<long>(k));
   u8* p = party_slot(s.slot);
   if (p == nullptr || g.records == nullptr || s.bytes.size() != 0x60 + 0xD0) return;
+  // [partybuild agent] A scene may have moved the member who borrowed the slot (map 12's specials
+  // 1 / 2 move Claude to slot 0, then 1, with a full party): they go back to it first, the member
+  // there to theirs, so the stash never lands on another member. Who borrowed it: the stash's
+  // "by" (a sidecar from before: a temporary member).
+  auto borrower = [&](const u8* q) {
+    const s16 w = rd16s(q);
+    const int id = w < 0 ? -w : w;
+    return id != 0 && (s.by != 0 ? id == s.by : in_list(r.state.temporary, id));
+  };
+  if (rd16s(p) != 0 && !borrower(p)) {
+    int from = -1;
+    for (int i = 0; i < 8 && from < 0; ++i)
+      if (i != s.slot && borrower(party_slot(i))) from = i;
+    const s16 w = rd16s(p);
+    const char* there = character_name(w < 0 ? -w : w);
+    if (from >= 0) {
+      field::party_swap_slots(nullptr, from, s.slot);
+      const s16 b = rd16s(p);
+      log(std::string(character_name(b < 0 ? -b : b)) + " back to the slot they borrowed (" + std::to_string(s.slot) +
+          ", from " + std::to_string(from) + "), " + there + " to " + std::to_string(from));
+    } else {
+      // (Not seen: the borrower is not in the 8.) Never over a member: an empty slot, if any.
+      for (int i = 0; i < 8; ++i)
+        if (rd16s(party_slot(i)) == 0) {
+          log(std::string(there) + " holds slot " + std::to_string(s.slot) + ": " + character_name(stash_member(s)) +
+              " goes to the empty slot " + std::to_string(i));
+          s.slot = i;
+          p = party_slot(i);
+          break;
+        }
+    }
+  }
   const s16 v = rd16s(p);
   const int lent = v < 0 ? -v : v;
+  // [partybuild agent] A member lent from the bench there goes back to it first (B4).
+  if (const int loan = lent != 0 ? loan_index(r, lent) : -1; loan >= 0) bench_back(r, static_cast<size_t>(loan), why);
   std::memcpy(p, s.bytes.data(), 0x60);
   std::memcpy(g.records + s.slot * 0xD0, s.bytes.data() + 0x60, 0xD0);
   invalidate_voice(s.slot);
@@ -653,9 +834,42 @@ bool party_isolated() { return script_flag(2) || script_flag(4) || script_flag(k
 // join_waiting, one banner each).
 void party_v2_update(Runtime& r) {
   if (!party_v2(r) || party_isolated()) return;
+  // [partybuild agent] Loans (B4): a member lent from the bench goes back to it once the window
+  // no longer needs them or the story has set them aside (their fight is over); their slot is
+  // empty again, or its stash goes back.
+  for (size_t k = 0; k < r.state.lent.size();) {
+    const int id = r.state.lent[k].id;
+    const int at = slot_of_character(id);
+    if (at >= 0 && rd16s(party_slot(at)) > 0 && window_needing(id) != nullptr) {
+      ++k;
+      continue;
+    }
+    const char* why = window_needing(id) != nullptr ? "their fight is over" : "the window that needed them is over";
+    // A slot they borrowed: its stash goes back (restore_stash sends them back to the bench first).
+    size_t s = 0;
+    while (s < r.state.stash.size() && r.state.stash[s].by != id) ++s;
+    if (at >= 0 && s < r.state.stash.size()) {
+      restore_stash(r, s, why);
+      if (loan_index(r, id) >= 0) ++k;  // (not seen: the stash did not reach them; the next free play again)
+    } else if (const int slot = bench_back(r, k, why); slot >= 0) {
+      const s16 none = 0;
+      std::memcpy(party_slot(slot), &none, 2);
+      invalidate_voice(slot);
+    }
+    log("after the loan: " + party_line());
+  }
   for (size_t k = 0; k < r.state.stash.size();) {
+    // [partybuild agent] Kept while the member who borrowed it (wherever a scene moved them; a
+    // sidecar from before: the slot's member) is in, active, and still needed.
     const u8* p = party_slot(r.state.stash[k].slot);
-    if (p != nullptr && rd16s(p) > 0 && in_list(r.state.temporary, rd16s(p)) && window_needing(rd16s(p)) != nullptr) {
+    int who = r.state.stash[k].by;
+    if (who == 0 && p != nullptr && rd16s(p) > 0) who = rd16s(p);
+    const int at = who != 0 ? slot_of_character(who) : -1;
+    if (who != 0 && loan_index(r, who) >= 0) {  // (a lent member's: kept while the loan is, above)
+      ++k;
+      continue;
+    }
+    if (at >= 0 && rd16s(party_slot(at)) > 0 && in_list(r.state.temporary, who) && window_needing(who) != nullptr) {
       ++k;
       continue;
     }
@@ -686,6 +900,7 @@ void party_v2_update(Runtime& r) {
   for (int id = 1; id <= kCharacterCount; ++id) {
     const int slot = slot_of_character(id);
     if (slot < 0 || rd16s(party_slot(slot)) > 0 || !protected_member(r, id) || in_list(r.state.characters_waiting, id)) continue;
+    if (loan_index(r, id) >= 0) continue;  // (lent from the bench: back to it, above) [partybuild agent]
     if (const SplitWindow* w = window_keeping(id)) {
       runtime::Runtime::get().log_once("ap-split-" + std::to_string(id),
                                        std::string("[ap] ") + character_name(id) + " is away for " + w->what);
@@ -710,7 +925,7 @@ bool heroslot_on(const Runtime& r) { return r.on && (r.seed.open_world || r.seed
 // borrowed slot, the endings, a hub story view. The order is the story's business then.
 bool order_locked(const Runtime& r) {
   if (party_isolated() || window_keeping(0) != nullptr || !r.state.temporary.empty() || !r.state.stash.empty() ||
-      in_ending(r) || hub_view_on())
+      !r.state.lent.empty() || in_ending(r) || hub_view_on())
     return true;
   for (const SplitWindow& w : kSplitWindows)
     if (w.temps != 0 && window_on(w)) return true;
@@ -905,9 +1120,9 @@ std::string sidecar_path(const std::string& card_image, int save_index) {
 Json sidecar_json(const SaveState& s) {
   Json j = Json::object();
   j.set("format", Json::string("apso2-save"));
-  // 2: save_hash [hubcore agent]; 3: a bench (only then: an older port refuses the sidecar
-  // instead of dropping the benched members) [partybuild agent].
-  j.set("version", Json::number(static_cast<int64_t>(s.bench.empty() ? 2 : 3)));
+  // 2: save_hash [hubcore agent]; 3: a bench, or a benched member lent (only then: an older port
+  // refuses the sidecar instead of dropping the benched members) [partybuild agent].
+  j.set("version", Json::number(static_cast<int64_t>(s.bench.empty() && s.lent.empty() ? 2 : 3)));
   j.set("seed", Json::string(s.seed));
   j.set("slot_name", Json::string(s.slot_name));
   j.set("received_index", Json::number(s.received_index));
@@ -943,6 +1158,7 @@ Json sidecar_json(const SaveState& s) {
       Json e = Json::object();
       e.set("slot", Json::number(static_cast<int64_t>(st.slot)));
       e.set("bytes", Json::string(hex));
+      if (st.by != 0) e.set("by", Json::number(static_cast<int64_t>(st.by)));  // [partybuild agent]
       a.push(e);
     }
     j.set("stash", a);
@@ -954,17 +1170,27 @@ Json sidecar_json(const SaveState& s) {
   if (!s.moves.empty()) j.set("moves", ints(s.moves));
   if (s.lead > 0) j.set("leader", Json::number(static_cast<int64_t>(s.lead)));  // heroslot [partybuild agent]
   if (s.first > 0) j.set("slot_0", Json::number(static_cast<int64_t>(s.first)));
-  if (!s.bench.empty()) {  // the bench [partybuild agent] (nobody benched: no key)
-    j.set("bench", bench_json(s.bench));
-    if (!s.bench_hash.empty()) j.set("bench_hash", Json::string(s.bench_hash));
+  // The bench [partybuild agent] (nobody benched: no key); its members lent for a fight (B4: no
+  // loan, no key); the hash of both (neither: no key).
+  if (!s.bench.empty()) j.set("bench", bench_json(s.bench));
+  if (!s.lent.empty()) {
+    Json a = Json::array();
+    for (const SaveState::Loan& l : s.lent) {
+      Json e = Json::object();
+      e.set("id", Json::number(static_cast<int64_t>(l.id)));
+      e.set("place", Json::number(static_cast<int64_t>(l.place)));
+      a.push(e);
+    }
+    j.set("lent", a);
   }
+  if ((!s.bench.empty() || !s.lent.empty()) && !s.bench_hash.empty()) j.set("bench_hash", Json::string(s.bench_hash));
   return j;
 }
 
 bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (j["format"].as_string() != "apso2-save") return fail(error, "not an apso2 save sidecar");
   const int version = get_int_or(j["version"], 0);
-  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: a bench)
+  if (version < 1 || version > 3) return fail(error, "unsupported sidecar version");  // (3: a bench or a loan)
   SaveState r;
   r.seed = j["seed"].as_string();
   r.slot_name = j["slot_name"].as_string();
@@ -990,6 +1216,8 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
     auto nib = [](char c) { return c >= 'a' ? c - 'a' + 10 : c >= 'A' ? c - 'A' + 10 : c - '0'; };
     for (size_t k = 0; k + 1 < hex.size(); k += 2) st.bytes.push_back(static_cast<u8>(nib(hex[k]) << 4 | nib(hex[k + 1])));
     if (st.slot < 0 || st.slot > 7 || st.bytes.size() != 0x60 + 0xD0) return fail(error, "stash: a slot 0-7 and 0x130 bytes expected");
+    st.by = static_cast<int>(e["by"].as_int(0));  // [partybuild agent] (absent, or not a member: unknown)
+    if (st.by < 0 || st.by > kCharacterCount) st.by = 0;
     r.stash.push_back(std::move(st));
   }
   r.save_hash = j["save_hash"].as_string();  // version 2 (absent: empty, and a seed refuses the load)
@@ -1007,6 +1235,21 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   std::string bench_error;
   if (!bench_from_json(j["bench"], &r.bench, &bench_error)) return fail(error, bench_error);
   r.bench_hash = j["bench_hash"].as_string();
+  // Loans (B4; absent: none): a member (1-12) neither benched nor lent twice, and an empty bench
+  // place for each, given once.
+  if (!j["lent"].is_null() && !j["lent"].is_array()) return fail(error, "lent: an array expected");
+  for (size_t i = 0; i < j["lent"].size(); ++i) {
+    const Json& e = j["lent"][i];
+    SaveState::Loan l;
+    l.id = static_cast<int>(e["id"].as_int(0));
+    l.place = static_cast<int>(e["place"].as_int(0));
+    bool twice = false;
+    for (const SaveState::Loan& o : r.lent) twice = twice || o.id == l.id || o.place == l.place;
+    if (l.id < 1 || l.id > kCharacterCount || l.place < kBenchFirst || l.place >= kBenchFirst + kBenchPlaces || twice ||
+        r.bench.find(l.id) >= 0 || r.bench.id(l.place - kBenchFirst) != 0)
+      return fail(error, "lent: a member 1-12 off the bench and an empty bench place 8-11 each expected");
+    r.lent.push_back(l);
+  }
   *s = std::move(r);
   return true;
 }
@@ -1103,6 +1346,17 @@ void start_with(Seed s) {
       r.state.start_given = true;
       log("heroslot: SS_HEROSLOT_ORDER " + std::to_string(lead) + "," + std::to_string(first) + " (the start counted as given)");
     }
+  }
+  // [partybuild agent] SS_BENCH=ID,... (party ids): these members on the bench (debug_bench).
+  if (const char* v = std::getenv("SS_BENCH"); v != nullptr && *v != 0 && r.seed.bench) {
+    for (const char* p = v; *p != 0;) {
+      char* end = nullptr;
+      const long id = std::strtol(p, &end, 10);
+      if (end == p) break;
+      if (id >= 1 && id <= kCharacterCount) r.debug_bench.push_back(static_cast<int>(id));
+      p = *end == ',' ? end + 1 : end;
+    }
+    log("bench: SS_BENCH " + std::string(v) + " (benched at the first join or free play)");
   }
   r.goal_flags_pending = true;   // (a start straight into the field, --map, has no New Game)
   r.killer_scan_pending = true;
@@ -1605,8 +1859,9 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   if (heroslot_on(r) && !order_locked(r)) remember_order(r, "a save");
   SaveState s = r.state;
   s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
-  // The bench's guard [partybuild agent]: the save's bytes and the bench's (with someone benched).
-  s.bench_hash = file != nullptr && !s.bench.empty() ? bench_digest(file, length, s.bench) : std::string();
+  // The bench's guard [partybuild agent]: the save's bytes, the bench's and its loans' (with
+  // someone benched or lent).
+  s.bench_hash = file != nullptr && (!s.bench.empty() || !s.lent.empty()) ? bench_digest(file, length, s.bench, s.lent) : std::string();
   s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
   if (write_sidecar(path, s, &err)) {
     log("saved " + path);
@@ -1662,6 +1917,8 @@ void on_loaded(const std::string& card_image, int save_index) {
   std::string benched;  // [partybuild agent] the bench the save brings
   for (int i = 0; i < kBenchPlaces; ++i)
     if (const int id = s.bench.id(i); id != 0) benched += (benched.empty() ? ", bench: " : ", ") + std::string(character_name(id));
+  for (size_t k = 0; k < s.lent.size(); ++k)  // (B4: lent for a fight)
+    benched += (k == 0 ? ", lent: " : ", ") + std::string(character_name(s.lent[k].id));
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
       std::to_string(s.received_index) + benched);
 }
@@ -1681,8 +1938,9 @@ bool load_allowed(const std::string& card_image, int save_index, const u8* file,
     why = "this save was changed outside the game (its Archipelago state holds no hash of it)";
   } else if (file == nullptr || util::save_digest(file, length) != s.save_hash) {
     why = "this save was changed outside the game (it differs from the one this seed saved)";
-  } else if ((!s.bench.empty() || !s.bench_hash.empty()) && bench_digest(file, length, s.bench) != s.bench_hash) {
-    // [partybuild agent] The bench: edited, stripped, or moved here from another save.
+  } else if ((!s.bench.empty() || !s.lent.empty() || !s.bench_hash.empty()) &&
+             bench_digest(file, length, s.bench, s.lent) != s.bench_hash) {
+    // [partybuild agent] The bench (or its loans): edited, stripped, or moved here from another save.
     why = "this save was changed outside the game (its bench differs from the one this seed saved)";
   }
   if (why.empty()) return true;
@@ -2027,6 +2285,7 @@ bool on_party_add(int character, int at, int call_at) {
   if (!r.on || (!r.seed.character_items && !party_v2(r))) return false;
   const int id = character + 1;
   if (id < 1 || id > kCharacterCount) return false;
+  debug_bench(r);  // [partybuild agent] (SS_BENCH: before a --map start's first scene join)
   const field::FieldGlobals& g = field::globals();
   const int map = g.game_state != nullptr ? rd16s(g.game_state + 0x1A) : -1;
   // The site: an inline party_add's own offset, else the call into the library's join routine.
@@ -2074,10 +2333,25 @@ bool on_party_add(int character, int at, int call_at) {
   // member only (phase 3).
   restore_stash_of(r, id);
   // [partybuild agent] A benched member stays on the bench (B4: the player's choice wins): the
-  // story's join adds nobody and the scene goes on.
+  // story's join adds nobody and the scene goes on; unless a split window needs them (a fight
+  // they make alone), which borrows them from the bench until it is over (lend_from_bench).
+  // Never during a Private Action (B 0x29 / 0x2a, flags 2 / 4 / 746): the PA reads and puts back
+  // slots 0-7 only (the user, 2026-10-27: the bench stays out until brought back in).
   if (bench_index(r, id) >= 0) {
-    log(std::string("join ") + character_name(id) + " at " + where + ": on the bench: stays there");
+    if (const SplitWindow* w = window_needing(id); w != nullptr && !party_isolated() && lend_from_bench(r, id, *w, where))
+      return true;
+    log(std::string("join ") + character_name(id) + " at " + where + ": on the bench: stays there" +
+        (window_needing(id) != nullptr && party_isolated() ? " (a Private Action: no loan)" : ""));
     return true;
+  }
+  // A member lent from the bench: inside the window that needs them the game's join (a fight of
+  // theirs again: the member set aside comes back in their slot); once no window needs them, they
+  // stay the bench's (back to it at the next free play): the story's join adds nobody.
+  if (loan_index(r, id) >= 0) {
+    const bool needed = window_needing(id) != nullptr;
+    log(std::string("join ") + character_name(id) + " at " + where + ": lent from the bench: " +
+        (needed ? "the game's join" : "back to it at the next free play"));
+    return !needed;
   }
   const bool allowed = r.seed.open_party ? permitted(r, id) : (l == nullptr || protected_member(r, id));
   if (!allowed) {
@@ -2207,6 +2481,7 @@ std::string party_free_play_step() {
   Runtime& r = rt();
   if (!r.on) return "";
   give_start(r);
+  debug_bench(r);  // [partybuild agent] (SS_BENCH)
   party_v2_update(r);
   keep_order(r);  // [partybuild agent]
   return join_waiting(r);
@@ -2970,6 +3245,8 @@ std::string status_text() {
     if (const SplitWindow* w = window_keeping(0)) out += std::string(" | split: ") + w->what;
     for (const int id : r.state.temporary) out += std::string(" | ") + character_name(id) + " for a while";
     if (!r.state.stash.empty()) out += " | borrowed slots " + std::to_string(r.state.stash.size());
+    for (const SaveState::Loan& l : r.state.lent)  // [partybuild agent]
+      out += std::string(" | ") + character_name(l.id) + " lent from the bench (place " + std::to_string(l.place) + ")";
   }
   return out;
 }

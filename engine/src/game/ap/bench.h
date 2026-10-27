@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include "core/types.h"
 #include "game/ap/json.h"
@@ -46,6 +47,14 @@ struct Bench {
   bool operator==(const Bench&) const = default;
 };
 
+// B4: a benched member lent to the 8 for a fight the story makes them make alone (a split
+// window needing them); the place stays theirs (empty, never given to a join) until they go back.
+struct BenchLoan {
+  int id = 0;     // party id
+  int place = 0;  // the bench place kept for them (8-11)
+  bool operator==(const BenchLoan&) const = default;
+};
+
 // The sidecar's "bench": the occupied places only, each `{"place": 8-11, "bytes": hex of the
 // 0x130 bytes}` (the stash's format).
 Json bench_json(const Bench& b);
@@ -55,7 +64,8 @@ Json bench_json(const Bench& b);
 bool bench_from_json(const Json& a, Bench* b, std::string* error);
 // The sidecar's "bench_hash": "sha256:" and the SHA-256 of the save's bytes as util::save_digest
 // takes them (its first N, N = the save's length) followed by the four places' 0x130 bytes (an
-// empty place: zeros). A bench edited, or moved to another save, no longer matches.
-std::string bench_digest(const u8* file, size_t length, const Bench& b);
+// empty place: zeros), then, with a loan out, each loan's id and place (one byte each). A bench
+// or loan edited, or moved to another save, no longer matches.
+std::string bench_digest(const u8* file, size_t length, const Bench& b, const std::vector<BenchLoan>& lent = {});
 
 }  // namespace ss::game::ap

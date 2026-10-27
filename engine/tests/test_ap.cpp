@@ -2219,7 +2219,7 @@ TEST(ap_v2_party_borrow) {
   ap::SaveState back;
   CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error));
   CHECK(back.stash.size() == 1 && back.stash[0].slot == 0 && back.stash[0].bytes == ap::state().stash[0].bytes &&
-        back.temporary == std::vector<int>{5});
+        back.temporary == std::vector<int>{5} && back.stash[0].by == 5);
   ap::Json bad;
   CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 1, \"stash\": [{\"slot\": 9, \"bytes\": \"00\"}]}", &bad, &error));
   CHECK(!ap::sidecar_from_json(bad, &back, &error));
@@ -2228,6 +2228,15 @@ TEST(ap_v2_party_borrow) {
   CHECK(pg.join(1, 0x63d0, 0x6b78));
   CHECK(pg.party() == "1,2,3,4,6,7,8,9" && pg.rec.data[0x10] == 0x5A);
   CHECK(ap::state().stash.empty() && ap::state().temporary.empty());
+  // [partybuild agent] A scene moving the borrower (as map 12's specials 1 / 2 do): the member
+  // moved into the borrowed slot is never overwritten; the borrower goes back to it first.
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704) && pg.party() == "5,2,3,4,6,7,8,9" && ap::state().stash.size() == 1);
+  field::party_swap_slots(nullptr, 0, 1);
+  CHECK(pg.party() == "2,5,3,4,6,7,8,9");
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  CHECK(pg.party() == "1,2,3,4,6,7,8,9" && pg.rec.data[0x10] == 0x5A && ap::state().stash.empty() && ap::state().temporary.empty());
   ap::stop();
 }
 
@@ -2558,6 +2567,316 @@ TEST(ap_bench_join) {
   // The sidecar keeps the bench (and the log's party line names it).
   ap::SaveState back;
   CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.bench == ap::state().bench);
+  ap::stop();
+}
+
+// [partybuild agent] Loans (B4, docs/handoff/bench.md 5): a benched member a split window needs for
+// a fight they make alone is lent to the 8 as they are (their own bytes; their bench place kept),
+// in the slot the game's join would give them (else a borrowed one), and goes back to the place
+// with what the fight gave them once they are set aside or the window is over. Party Order stays
+// locked meanwhile; the sidecar keeps the loan (version 3, in the bench's hash). Inns (B8) and the
+// endings' "in the party" test (B5) see the 8 slots only.
+TEST(ap_bench_loans) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  auto exp_of = [](const u8* slot) {
+    s32 v = 0;
+    std::memcpy(&v, slot + 0x10, 4);
+    return v;
+  };
+  CHECK(ap::load_seed_text(party_seed(open_options("rena", ", \"bench\": true")), &s, &error) && s.bench);
+  ap::start_with(s);
+  pg.claude_game(false);
+  pg.at(18, 4, 0);
+  // Rena's game, the 8 taken (Ashton, Rena, Celine, Bowman, Precis, Leon, Opera, Noel): Claude,
+  // received, joins the bench (place 8).
+  pg.members({7, 2, 3, 4, 6, 8, 9, 11});
+  pg.received({1, 3, 4, 6, 7, 8, 9, 10, 11});
+  ap::mutable_state().characters_waiting = {1};
+  CHECK(ap::party_free_play_step() == "Claude joined the party (bench)" && ap::state().bench.id(0) == 1);
+  const s32 exp0 = 1000;
+  std::memcpy(ap::mutable_state().bench.slot(0) + 0x10, &exp0, 4);
+  ap::mutable_state().bench.record(0)[0x10] = 0x5A;  // (a byte of his record to follow)
+  // Map 12 (chapter 4 step 150): the scene takes Rena out and adds Claude for his fight. He is lent:
+  // no empty slot, so he borrows Rena's (her bytes stashed), with his own bytes; not a temporary.
+  pg.at(12, 4, 150);
+  pg.leave(2);
+  CHECK(!pg.join(1, 0x63d0, 0x6e08));
+  CHECK(pg.party() == "7,1,3,4,6,8,9,11" && ap::state().bench.empty() && ap::state().stash.size() == 1);
+  CHECK(ap::state().lent == (std::vector<ap::SaveState::Loan>{{1, 8}}) && ap::state().temporary.empty());
+  CHECK(exp_of(pg.sg.party.data() + 0x60) == 1000 && pg.rec.data[0xD0 + 0x10] == 0x5A);
+  // Party Order is locked meanwhile; a member received now joins the next bench place, not his.
+  CHECK(ap::bench_locked());
+  ap::mutable_state().characters_waiting = {10};
+  CHECK(ap::party_free_play_step() == "Ernest joined the party (bench)");
+  CHECK(ap::state().bench.id(0) == 0 && ap::state().bench.id(1) == 10 && ap::state().lent.size() == 1);
+  // The sidecar keeps the loan (version 3); a loan that is not one is refused.
+  ap::Json j = ap::sidecar_json(ap::state());
+  ap::SaveState back;
+  CHECK(j["version"].as_int(0) == 3 && j["lent"].size() == 1);
+  CHECK(ap::sidecar_from_json(j, &back, &error) && back.lent == ap::state().lent && back.bench == ap::state().bench);
+  auto with_lent = [&](const std::string& lent) {
+    ap::Json t, c = ap::Json::object();
+    std::string perr;
+    if (!ap::Json::parse(lent, &t, &perr)) return true;
+    for (const auto& [k, v] : j.items()) c.set(k, k == "lent" ? t : v);
+    ap::SaveState out;
+    return ap::sidecar_from_json(c, &out, &error);
+  };
+  CHECK(with_lent("[{\"id\": 1, \"place\": 8}]") && with_lent("[]"));
+  CHECK(!with_lent("[{\"id\": 1, \"place\": 9}]"));   // (Ernest's place)
+  CHECK(!with_lent("[{\"id\": 10, \"place\": 8}]"));  // (Ernest is on the bench)
+  CHECK(!with_lent("[{\"id\": 1, \"place\": 12}]") && !with_lent("[{\"id\": 13, \"place\": 8}]"));
+  CHECK(!with_lent("[{\"id\": 1, \"place\": 8}, {\"id\": 1, \"place\": 10}]") && !with_lent("{}"));
+  // A save with the loan out: its hash covers the loan; stripped or moved, the load is refused.
+  {
+    std::vector<u8> save(0x2000);
+    for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 7 + 3);
+    save[0x21A] = 0x00;
+    save[0x21B] = 0x10;
+    const std::string card = (pg.dir / "loan.mcd").string();
+    ap::on_saved(card, 0, save.data(), save.size());
+    ap::SaveState sc;
+    CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &sc, &error) && sc.lent == ap::state().lent);
+    CHECK(sc.bench_hash == ap::bench_digest(save.data(), save.size(), sc.bench, sc.lent));
+    CHECK(sc.bench_hash != ap::bench_digest(save.data(), save.size(), sc.bench));
+    CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+    ap::SaveState edited = sc;
+    edited.lent.clear();
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), edited, &error) && !ap::load_allowed(card, 1, save.data(), save.size()));
+    edited.lent = {{1, 10}};
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 2), edited, &error) && !ap::load_allowed(card, 2, save.data(), save.size()));
+  }
+  // The scene moves him to slot 0 (special 1: Ashton to his slot, the borrowed one); the fight gives
+  // him EXP; the scene swaps them back (Claude out, Rena's join): Claude back to the slot he
+  // borrowed, then to his bench place with what the fight gave him; her slot from the stash.
+  field::party_swap_slots(nullptr, 0, 1);
+  CHECK(pg.party() == "1,7,3,4,6,8,9,11");
+  const s32 exp1 = 4321;
+  std::memcpy(pg.sg.party.data() + 0x10, &exp1, 4);
+  pg.leave(1);
+  CHECK(pg.join(2, 0x63d0, 0x70b4));
+  CHECK(pg.party() == "7,2,3,4,6,8,9,11" && ap::state().stash.empty() && ap::state().lent.empty());
+  CHECK(ap::state().bench.id(0) == 1 && ap::state().bench.id(1) == 10);
+  CHECK(exp_of(ap::state().bench.slot(0)) == 4321 && ap::state().bench.record(0)[0x10] == 0x5A);
+  pg.at(17, 5, 2000);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,2,3,4,6,8,9,11" && !ap::bench_locked());
+  // With room in the 8 (Ashton, Rena): the slot the game's join gives (Rena's: she moves to the
+  // next empty one); the scene leaves him set aside, and the first free play after it puts him
+  // back on the bench and empties his slot.
+  pg.members({7, 2});
+  pg.at(12, 4, 150);
+  pg.leave(2);
+  CHECK(!pg.join(1, 0x63d0, 0x6e08));
+  CHECK(pg.party() == "7,1,-2" && ap::state().stash.empty() && ap::state().lent.size() == 1 && ap::state().bench.id(0) == 0);
+  pg.leave(1);
+  CHECK(pg.join(2, 0x63d0, 0x70b4) && pg.party() == "7,-1,2" && ap::state().lent.size() == 1);
+  // The story's next join of his (map 9, chapter 4 step 2000), before a free play: no window needs
+  // him, so he stays the bench's.
+  pg.at(9, 4, 2000);
+  CHECK(!pg.join(1, 0x63d0, 0x6ba0) && pg.party() == "7,-1,2" && ap::state().lent.size() == 1);
+  pg.at(17, 5, 2000);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,2");
+  CHECK(ap::state().lent.empty() && ap::state().bench.id(0) == 1 && !ap::bench_locked());
+  ap::stop();
+
+  // Claude's game, the tournament (chapter 19 step 4400): Dias benched, the 8 taken.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"bench\": true")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.at(7, 3, 0);
+  pg.members({1, 7, 2, 3, 4, 6, 8, 9});
+  pg.received({2, 3, 4, 5, 6, 7, 8, 9});
+  ap::mutable_state().characters_waiting = {5};
+  CHECK(ap::party_free_play_step() == "Dias joined the party (bench)" && ap::state().bench.id(0) == 5);
+  // His fight: Claude set aside, Dias's join lends him (Claude's slot borrowed); a free play with
+  // Dias still in keeps the loan; Claude's join after the fight brings his slot back, Dias benched.
+  pg.at(477, 19, 4400);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "5,7,2,3,4,6,8,9" && ap::state().lent.size() == 1 && ap::state().stash.size() == 1);
+  CHECK(ap::party_free_play_step().empty() && ap::state().lent.size() == 1 && pg.party() == "5,7,2,3,4,6,8,9");
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  CHECK(pg.party() == "1,7,2,3,4,6,8,9" && ap::state().lent.empty() && ap::state().stash.empty() && ap::state().bench.id(0) == 5);
+  // With room (Claude, Ashton): set aside after his fight, Dias goes back at the next free play
+  // inside the window; a second fight of his lends him again.
+  pg.members({1, 7});
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704) && pg.party() == "5,7,-1" && ap::state().lent.size() == 1);
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78) && pg.party() == "-5,7,1");
+  pg.at(477, 19, 4500);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && ap::state().lent.empty() && ap::state().bench.id(0) == 5);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704) && pg.party() == "5,7,-1" && ap::state().lent.size() == 1);
+  pg.leave(5);
+  // A join of his again inside the window, before a free play: the game's join, still lent.
+  CHECK(pg.join(5, 0x63d0, 0x6704) && pg.party() == "5,7,-1" && ap::state().lent.size() == 1);
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  pg.at(1, 20, 0);  // (the window over)
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && ap::state().bench.id(0) == 5);
+  // B8: the game's heals (inns: party_restore_hp_all / _mp_all) reach the 8 slots only; B5: the
+  // endings' "in the party" test (ext 0xb1: party_find_slot) does not find a benched member.
+  ap::Bench& bench = ap::mutable_state().bench;
+  const s32 hp_max = 500, hp = 100;
+  const s16 mp_max = 50, mp = 10;
+  std::memcpy(bench.slot(0) + 0x18, &hp_max, 4);
+  std::memcpy(bench.slot(0) + 0x1C, &hp, 4);
+  std::memcpy(bench.slot(0) + 0x22, &mp_max, 2);
+  std::memcpy(bench.slot(0) + 0x24, &mp, 2);
+  u8* ashton = pg.sg.party.data() + 0x60;  // (slot 1)
+  std::memcpy(ashton + 0x18, &hp_max, 4);
+  std::memcpy(ashton + 0x1C, &hp, 4);
+  const ap::Bench before = bench;
+  field::party_restore_hp_all(nullptr);
+  field::party_restore_mp_all(nullptr);
+  s32 healed = 0;
+  std::memcpy(&healed, ashton + 0x1C, 4);
+  CHECK(healed == 500 && ap::state().bench == before);
+  CHECK(field::party_find_slot(nullptr, 5 - 1) == -1 && field::party_find_slot(nullptr, 7 - 1) == 1);
+  ap::stop();
+}
+
+// [partybuild agent] The bench and the story's own party moves (docs/handoff/shingofix.md, "For
+// the bench branch"; the user, 2026-10-27: Private Actions read the party and the reserves, slots
+// 0-7, never the bench). Rule 1: no benched member comes into slots 0-7 inside a Private Action
+// (B 0x29 / 0x2a: neither a Party Order move nor a loan) or a party-order save (A 0x16 / 0x17)
+// with free play inside (the arena, the tournament, Fun City's contest, the Cave of Trials: their
+// windows lock the bench); the tournament's loans are the story's own joins and leave every saved
+// member in the 8, so A 0x17 finds them all. Rule 3: no bench or loan move takes a member who
+// borrowed a slot out of the 8 while their stash waits. With heroslot (the starting member set
+// aside before the hero) the tournament's loan goes through the borrowed-slot path.
+TEST(ap_bench_loan_rules) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  auto id_at = [&](int i) {
+    s16 v;
+    std::memcpy(&v, pg.sg.party.data() + i * 0x60, 2);
+    return static_cast<int>(v);
+  };
+  auto save_order = [&] {  // (script A 0x16, script_table_a.cpp)
+    for (int i = 0; i < 8; ++i) pg.sg.state[0x280 + i] = static_cast<u8>(std::abs(id_at(i)));
+  };
+  auto reload_order = [&] {  // (script A 0x17: each saved id moved back by searching slots 0-7)
+    for (int i = 0; i < 8; ++i) {
+      const int saved = pg.sg.state[0x280 + i];
+      if (saved == 0 || std::abs(id_at(i)) == saved) continue;
+      for (int j = 0; j < 8; ++j)
+        if (std::abs(id_at(j)) == saved) field::party_swap_slots(nullptr, j, i);
+    }
+  };
+  auto compact = [&] {  // (script A 0x15)
+    for (int i = 0; i < 8; ++i) {
+      if (id_at(i) >= 1) continue;
+      int j = i + 1;
+      while (j < 8 && id_at(j) <= 0) ++j;
+      if (j == 8) return;
+      field::party_swap_slots(nullptr, i, j);
+    }
+  };
+  // Rule 1, Rena's game: Claude benched, map 12's scene inside a Private Action (not in the game,
+  // the rule's case): his join is not a loan; Party Order's bench moves are refused in a PA and in
+  // the windows around the party-order saves with free play inside.
+  CHECK(ap::load_seed_text(party_seed(open_options("rena", ", \"bench\": true")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(false);
+  pg.at(18, 4, 0);
+  pg.members({7, 2, 3, 4, 6, 8, 9, 11});
+  pg.received({1, 3, 4, 5, 6, 7, 8, 9, 11});
+  ap::mutable_state().characters_waiting = {1, 5};
+  CHECK(ap::party_free_play_step() == "Claude joined the party (bench)");
+  CHECK(ap::party_free_play_step() == "Dias joined the party (bench)" && ap::state().bench.id(1) == 5);
+  CHECK(!ap::bench_locked() && ap::bench_swap_refused(3, 1) == nullptr);
+  for (const int flag : {2, 4, 746}) {
+    set_flag(pg.sg, flag, true);
+    CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 1) != nullptr && ap::bench_swap_refused(3, 0) != nullptr);
+    pg.at(12, 4, 150);
+    pg.leave(2);
+    CHECK(!pg.join(1, 0x63d0, 0x6e08));
+    CHECK(pg.party() == "7,-2,3,4,6,8,9,11" && ap::state().lent.empty() && ap::state().bench.id(0) == 1);
+    CHECK(pg.join(2, 0x63d0, 0x70b4) && pg.party() == "7,2,3,4,6,8,9,11");
+    set_flag(pg.sg, flag, false);
+    pg.at(18, 4, 0);
+  }
+  for (const int flag : {586, 2318, 2326}) {  // (the arena 305 / 304, the Cave of Trials 704, the contest 688)
+    set_flag(pg.sg, flag, true);
+    CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 1) != nullptr);
+    set_flag(pg.sg, flag, false);
+  }
+  pg.at(468, 19, 1500);  // (the tournament: A 0x16 at 468, A 0x17 at 469)
+  CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 1) != nullptr);
+  // Rule 3, the tournament in Rena's game (Claude not received this time, Dias benched): Claude's
+  // fight borrows Rena's slot (a temporary member); set aside after it, he still holds it when
+  // Dias's join comes in the same scene. No loan may overwrite or stash Claude's slot, the only one
+  // it could take: Dias stays benched (his fight without him), Claude's stash intact; Party Order
+  // refuses bench moves meanwhile. The next free play puts Rena back.
+  pg.at(18, 4, 0);
+  pg.received({3, 4, 5, 6, 7, 8, 9, 11});
+  ap::mutable_state().bench = ap::Bench{};
+  ap::mutable_state().characters_waiting = {5};
+  CHECK(ap::party_free_play_step() == "Dias joined the party (bench)" && ap::state().bench.id(0) == 5);
+  pg.members({2, 3, 4, 6, 7, 8, 9, 11});
+  pg.at(477, 19, 4400);
+  pg.leave(2);
+  CHECK(!pg.join(1, 0x63d0, 0x6b78));
+  CHECK(pg.party() == "1,3,4,6,7,8,9,11" && ap::state().stash.size() == 1 && ap::state().stash[0].by == 1);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "-1,3,4,6,7,8,9,11" && ap::state().lent.empty() && ap::state().bench.id(0) == 5);
+  CHECK(ap::state().stash.size() == 1 && ap::state().stash[0].by == 1);
+  CHECK(ap::bench_locked() && ap::bench_swap_refused(3, 5) != nullptr);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(pg.party() == "-2,3,4,6,7,8,9,11" && ap::state().stash.empty() && ap::state().bench.id(0) == 5);
+  ap::stop();
+
+  // Claude's game with heroslot (Ashton starting, in slot 0, Claude in 1), every slot kept, Dias
+  // benched. 468 saves the order (A 0x16) and sets Ashton aside; at 477 Claude leaves and Dias's
+  // join lends him into Ashton's slot (Ashton's bytes stashed, by Dias); A 0x15 before and after the
+  // fight moves Dias off it; Claude's join; 469's A 0x17 finds every saved member it can in slots
+  // 0-7 (the bench is never searched); the next free play puts Dias back on the slot he borrowed,
+  // Ashton's bytes back there and Dias on the bench with what the fight gave him: nobody lost.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\", \"bench\": true")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({7, 1, 2, 3, 4, 6, 8, 9});
+  pg.received({2, 3, 4, 5, 6, 8, 9});
+  pg.at(1, 19, 0);
+  ap::mutable_state().characters_waiting = {5};
+  CHECK(ap::party_free_play_step() == "Dias joined the party (bench)" && ap::state().bench.id(0) == 5);
+  pg.at(468, 19, 1000);
+  save_order();
+  field::party_remove_member(nullptr, 6);  // (468 / 469 set Ashton aside)
+  pg.at(477, 19, 4400);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "5,-1,2,3,4,6,8,9" && ap::state().lent.size() == 1 && ap::state().stash.size() == 1 &&
+        ap::state().stash[0].by == 5 && ap::state().bench.id(0) == 0);
+  compact();
+  CHECK(pg.party() == "5,2,3,4,6,8,9,-1");
+  const s32 exp_fight = 77777;
+  std::memcpy(pg.sg.party.data() + 0x10, &exp_fight, 4);  // (Dias, slot 0: the fight's EXP)
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  compact();
+  CHECK(pg.party() == "2,3,4,6,8,9,1,-5" && ap::state().lent.size() == 1);
+  pg.at(469, 19, 6000);
+  reload_order();  // (Ashton is stashed: not found; Dias was never saved: left where he is)
+  CHECK(ap::state().bench.id(0) == 0 && ap::state().lent.size() == 1);
+  CHECK(ap::party_free_play_step().empty());
+  std::vector<int> ids;
+  for (int i = 0; i < 8; ++i) ids.push_back(std::abs(id_at(i)));
+  std::sort(ids.begin(), ids.end());
+  CHECK(ids == (std::vector<int>{1, 2, 3, 4, 6, 7, 8, 9}));
+  CHECK(ap::state().stash.empty() && ap::state().lent.empty() && ap::state().bench.id(0) == 5);
+  s32 exp_back = 0;
+  std::memcpy(&exp_back, ap::state().bench.slot(0) + 0x10, 4);
+  CHECK(exp_back == 77777);
   ap::stop();
 }
 

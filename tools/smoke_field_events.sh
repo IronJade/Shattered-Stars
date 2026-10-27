@@ -829,6 +829,50 @@ sys.exit(0 if ok else 1)' "$WORK/bcard_use_before.json" "$WORK/bcard_use.slot01.
 else
   echo "FAIL ap_bench_use: Noel's SP paid for Danger Sense, Rena's Heal off for battle, no MP spent"; fail=1
 fi
+# Loans (B4: a benched member is lent for a fight the story makes them make alone) [partybuild
+# agent]. SS_BENCH=ID puts a member on the bench before a --map start's scene. Map 12 (Rena's game,
+# chapter 4 step 150, all 8 slots taken, a real battle): benched Claude is lent into Rena's slot
+# (her bytes stashed), special 1 moves him to slot 0, he fights the monster alone and wins; Rena's
+# join puts him back in the slot he borrowed first (Ashton stays), then on the bench with the
+# fight's EXP; the 8 all there at the first free play (map 17).
+sed 's/"smoke-v2r"/"smoke-benchr"/; s/"version": 2/"version": 4/; s/"starting_character": "Ashton"/"starting_character": "Ashton", "bench": true/' \
+  "$WORK/hsrena.apso2" >"$WORK/benchrena.apso2"
+LOAN_IN=$(for f in $(seq 1480 16 8000); do printf '%d:cross,%d:none,' "$f" $((f + 6)); done)
+env SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_EVENT_SWEEP=1 SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 \
+  SS_SWEEP_PARTY=6,1,2,3,5,7,8,10 SS_SWEEP_CONFIG=45=1,41=0 SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_INSTANT_TEXT=1 \
+  SS_AUTO_ADVANCE=500 SS_SWEEP_PRESS=choices SS_SWEEP_PLAY_STOP=1 SS_HEROSLOT_ORDER=7,7 SS_BENCH=1 \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/benchrena.apso2" --frames 16000 --map 12 --input "${LOAN_IN%,}" \
+  </dev/null >"$WORK/ap_bench_m12.log" 2>&1
+check ap_bench_m12 "Claude on the bench, the 8 taken" '\[ap\] Claude joins the bench \(place 8\): Ashton, \(Rena\), Celine, Bowman, Precis, Leon, Opera, Noel \| bench: Claude$'
+check ap_bench_m12 "lent into Rena's slot as he is" '\[ap\] join Claude at map 12 .*: lent from the bench \(place 8, level 17, EXP 8677\) for Shingo Forest \(map 12\), slot 1: Ashton, Claude, Celine'
+check ap_bench_m12 "Rena's bytes stashed" '\[ap\] Claude borrows slot 1 of Rena '
+check ap_bench_m12 "the fight won" '\[battle\] exit: encounter 190 outcome 0 '
+check ap_bench_m12 "back to the slot he borrowed first" '\[ap\] Claude back to the slot they borrowed \(1, from 0\), Ashton to 0'
+check ap_bench_m12 "Rena back in it" '\[ap\] Rena back in slot 1 \(Claude leaves it\)'
+check ap_bench_m12 "the 8 all there, Claude benched" '\[ap\] heroslot: Ashton back in slot 0 \(from 1\), Rena to 1: Ashton, Rena, Celine, Bowman, Precis, Leon, Opera, Noel \| bench: Claude$'
+LOAN_EXP=$(sed -n 's/.*Claude back on the bench (place 8, level [0-9]*, EXP \([0-9]*\)).*/\1/p' "$WORK/ap_bench_m12.log" | head -1)
+if [ -n "$LOAN_EXP" ] && [ "$LOAN_EXP" -gt 8677 ]; then
+  echo "PASS ap_bench_m12: back on the bench with the fight's EXP (8677 -> $LOAN_EXP)"
+else
+  echo "FAIL ap_bench_m12: back on the bench with the fight's EXP (8677 -> ${LOAN_EXP:-none})"; fail=1
+fi
+# The tournament (477, Claude's game, chapter 19 step 4400, all 8 slots taken): benched Dias is
+# lent for his fight into Claude's slot (Claude's bytes stashed); Claude's join after it puts
+# Claude back and Dias on the bench; the order is left alone inside the window.
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,0,1,2,3,5,7,8 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
+  SS_HEROSLOT_ORDER=7,7 SS_BENCH=5 SS_DEBUG_INPUT="400:ap_status;950:ap_status" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/bench.apso2" --frames 1000 --map 477 </dev/null >"$WORK/ap_bench_t477.log" 2>&1
+check ap_bench_t477 "Dias lent into Claude's slot" '\[ap\] join Dias at map 477 .*: lent from the bench \(place 8, level 17, EXP 8677\) for the tournament .*, slot 1: Ashton, Dias, Rena'
+check ap_bench_t477 "the loan in the status" 'party Ashton, Dias, Rena, Celine, Bowman, Precis, Leon, Opera \| split: the tournament .* \| borrowed slots 1 \| Dias lent from the bench \(place 8\)$'
+check ap_bench_t477 "his fight" '\[ap\] a battle at vblank'
+check ap_bench_t477 "Claude's join: Dias back on the bench" '\[ap\] Dias back on the bench \(place 8, level [0-9]+, EXP [0-9]+\): the slot they borrowed goes back'
+check ap_bench_t477 "Claude back in his slot" '\[ap\] Claude back in slot 1 \(Dias leaves it\)'
+check ap_bench_t477 "the 8 and the bench after it" 'party Ashton, Claude, Rena, Celine, Bowman, Precis, Leon, Opera \| bench: Dias \| split: the tournament'
+if grep -qE '\[ap\] heroslot: .*(back in slot 0|leads again)' "$WORK/ap_bench_t477.log"; then
+  echo "FAIL ap_bench_t477: the order left alone inside the tournament's window"; fail=1
+else
+  echo "PASS ap_bench_t477: the order left alone inside the tournament's window"
+fi
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
