@@ -15,7 +15,8 @@
 #       tools/ap_poptracker_test.py on the folder.
 #   tools/build_poptracker.sh all [build options]      build, then check
 #
-# TAG (default apworld-v0.2.2) is the GitHub release the zip is attached to: the download URL is
+# TAG (default poptracker-vX.Y.Z, the pack's own release; the user, 2026-10-27) is the GitHub release
+# the zip is attached to: the download URL is
 # https://github.com/IronJade/Shattered-Stars/releases/download/TAG/so2_shattered_stars_X.Y.Z.zip.
 # Nothing here publishes anything: committing versions.json and attaching the zip are release steps
 # (docs/ap/poptracker.md "Distribution").
@@ -36,7 +37,7 @@ scratch=$repo/scratchpad/packgen
 export SKIP_REQUIREMENTS_UPDATE=1
 
 build() {
-  local tag=apworld-v0.2.2
+  local tag=poptracker-v$version
   local changelog=()
   while [ $# -gt 0 ]; do
     case "$1" in

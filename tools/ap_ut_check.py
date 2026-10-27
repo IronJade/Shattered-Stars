@@ -39,6 +39,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import shutil
 import signal
 import socket
@@ -112,6 +113,17 @@ def setup(a):
         shutil.copyfile(a.apworld, os.path.join(custom, "so2.apworld"))
     else:
         os.symlink(os.path.join(REPO, "apworld", "so2"), link)
+    # UT's own Players folder: an empty one in this copy. Without it UT asks for one with a desktop
+    # folder picker (kdialog / zenity), and a path picked there sticks in host.yaml.
+    players = os.path.join(ap, "Players")
+    os.makedirs(players, exist_ok=True)
+    host = os.path.join(ap, "host.yaml")
+    with open(host, encoding="utf-8") as f:
+        text = f.read()
+    text = re.sub(r'(?m)^(universal_tracker:\n(?:[ \t]+#.*\n)*[ \t]+player_files_path:).*$',
+                  lambda m: m.group(1) + ' "' + players + '"', text)
+    with open(host, "w", encoding="utf-8") as f:
+        f.write(text)
     return ap
 
 
@@ -119,6 +131,10 @@ def env_for(ut_dir, ap):
     env = dict(os.environ, SKIP_REQUIREMENTS_UPDATE="1", PYTHONPATH=ap,
                XDG_CACHE_HOME=os.path.join(ut_dir, "cache"), XDG_DATA_HOME=os.path.join(ut_dir, "data"))
     env.pop("PYTHONHOME", None)
+    # Headless: no display and no session bus, so nothing UT or AP does can open a dialog or window
+    # on the desktop (a missing folder makes them ask with one); it fails instead.
+    for name in ("DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS"):
+        env.pop(name, None)
     return env
 
 
