@@ -23,6 +23,8 @@
 # (without root: unpack libstdc++-static's RPM and set LIBSTDCXX_STATIC_DIR to the folder
 # holding its libstdc++.a). The system's SDL3 is copied next to the programs (RUNPATH
 # $ORIGIN); the glibc floor is this machine's (Fedora 44: 2.43).
+#
+# JOBS: parallel compile jobs (default 8; a lighter build: JOBS=4).
 set -eu
 cd "$(dirname "$0")/.."
 repo=$PWD
@@ -41,7 +43,7 @@ if [ "$mode" = container ]; then
     bash -c 'cmake -S engine -B /build -G Ninja -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
                -DOPENSSL_USE_STATIC_LIBS=TRUE -DZLIB_USE_STATIC_LIBS=ON > /dev/null &&
-             cmake --build /build -j8 --target shattered-stars shattered-stars-setup'
+             cmake --build /build -j'"${JOBS:-8}"' --target shattered-stars shattered-stars-setup'
 else
   build=engine/build-linux
   link="-static-libstdc++ -static-libgcc"
@@ -56,7 +58,7 @@ else
   fi
   cmake -S engine -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_EXE_LINKER_FLAGS="$link" -DCMAKE_BUILD_RPATH='$ORIGIN' > /dev/null
-  cmake --build "$build" -j8 --target shattered-stars shattered-stars-setup
+  cmake --build "$build" -j"${JOBS:-8}" --target shattered-stars shattered-stars-setup
 fi
 
 out=dist/ShatteredStars-$version-linux-x86_64

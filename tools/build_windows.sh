@@ -13,6 +13,7 @@
 # (engine/build-win, the development build, may lack OpenSSL: ws:// only).
 # The C / C++ runtimes are linked in, so the zip holds everything the game needs; the discs
 # and memory cards are the player's own.
+# JOBS: parallel compile jobs (default 8; a lighter build: JOBS=4).
 set -eu
 cd "$(dirname "$0")/.."
 version=$(sed -n 's/^project(.*VERSION \([0-9]\+\.[0-9]\+\.[0-9]\+\)).*/\1/p' engine/CMakeLists.txt)
@@ -38,7 +39,7 @@ cmake -S engine -B "$build" -G Ninja -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DCMAKE
   -DOPENSSL_USE_STATIC_LIBS=TRUE -DZLIB_USE_STATIC_LIBS=ON "${ssl[@]}" > "$build.configure.log" 2>&1 \
   || { cat "$build.configure.log" >&2; exit 1; }
 grep -q "OpenSSL not found" "$build.configure.log" && echo "warning: no OpenSSL: Archipelago will speak ws:// only" >&2
-cmake --build "$build" -j8 --target shattered-stars shattered-stars-setup
+cmake --build "$build" -j"${JOBS:-8}" --target shattered-stars shattered-stars-setup
 out=dist/ShatteredStars-$version-win64
 rm -rf "$out" "$out.zip"
 mkdir -p "$out/discs"
