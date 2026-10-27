@@ -22,7 +22,7 @@ from .patches import placement_patches
 SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
 SEED_FORMAT_V3 = 3              # a hub seed (seed_format.md "Hub"): a wave-2 port refuses it
-APWORLD_VERSION = "0.2.0"
+APWORLD_VERSION = "0.2.1"
 
 # The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
 # seed's goal object and the gate on the Final Save Point floor's way to Indalecio (door
