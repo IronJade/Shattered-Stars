@@ -167,5 +167,30 @@ docs/handoff/ncpfix.md "Open for the user": solo_noexpel seed 75 (open world, Re
 - The level-up path (on_learn_point, battle result) wasn't run (needs a battle with EXP); it calls
   the same deliver_check.
 
+### Step 4 / 5 in progress (2026-10-27 ~09:40)
+- tools/ap_batch_check.py (uncommitted; backup scratchpad/skilllogic/ap_batch_check.py.orig):
+  new `sk_may_hold(row, s, it)` (its own reading of the rule from the options and data.py:
+  encounter_rate 0 none; learn: learn-table levels of sure members (story party rules: Claude,
+  Rena, Noel, the start; open: the heroes + start; hub: a one-hero route's hero + start) or pool
+  members (`characters`); guild: any place as a chest on its map: story `allowed`, open world
+  `allowed_open` and not before the voyage unproven, hub HUB_MAPS in every game and Expel only
+  with expel_progression); check_skillsanity reports progression only where sk_may_hold refuses
+  and counts `_sk_prog`; the main and hub loops leave guild / learn to it; gate keys: at a guild
+  check only if a guild passes drop_gate_ok, never at a learn point; the summary prints
+  "progression at skillsanity locations: guild checks N, learn points M". On the 0.2.1 batches
+  (scratchpad/ncpfix/v021 sk_full / sk_hub): 0 errors each, the summary lines identical to their
+  check.txt, 0 and 0 at skillsanity locations.
+- Batches running: scratchpad/skilllogic/batch/run.sh (story_open -> sk_full, hub -> sk_hub,
+  solo_noexpel -> solo; rc.txt, all.done; ~19 s a seed with the other agent's load). Then
+  `identity.py ../../ncpfix/v021 .` from scratchpad/skilllogic/batch (written, not yet run).
+- Docs committed (42a61fa): apworld.md (Logic, Killer moves note, Skillsanity "Progression at
+  guild checks and learn levels"), the player guide, options.py Skillsanity docstring.
+  Uncommitted: docs/release_notes/0.2.1.md (new section, seed 75 line replaced by a TO CONFIRM
+  line on the encounter_rate 0 variant; the test counts and the identity line still to update);
+  apworld.md's 0.2.1 changelog and Testing results still to write (need the batch numbers).
+- Not mine, uncommitted in main: engine/*, docs/ap/seed_format.md, engine/README.md,
+  tools/smoke_field_events.sh (pendingsave). Never stage them.
+
 ### Next
-- Step 4 (batches, identity, suites), then 5-6.
+- Batches -> identity -> AP general suite and the scoped run (one heavy job at a time) -> the
+  changelog / results / release notes numbers -> commit the checker and docs -> step 6.
