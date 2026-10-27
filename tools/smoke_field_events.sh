@@ -663,6 +663,16 @@ check ap_v2_m12 "the listed site checks" '\[ap\] check 1353854976 '
 check ap_v2_m12 "Claude in for the fight only" '\[ap\] join Claude at map 12 .*: for a while \(Shingo Forest \(map 12\)\): Claude, \(Rena\)'
 check ap_v2_m12 "the fight" '\[ap\] a battle at vblank'
 check ap_v2_m12 "Rena back" '\[ap\] join Rena at map 12 .*: the game.s join'
+# The same scene with all 8 slots taken (Ashton in slot 0, Rena in 1) [shingofix agent]: Claude
+# borrows Rena's slot, special 1 moves him to slot 0 (Ashton into the borrowed slot); Rena's
+# join puts him back in it first, so Ashton stays and nobody is lost.
+"${CEL_RUN[@]}" SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,1,2,3,5,7,8,10 SS_SWEEP_CONFIG=45=1 SS_SWEEP_PLAY="999:T0" \
+  SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_DEBUG_INPUT="1750:ap_status" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2rena.apso2" --frames 1800 --map 12 </dev/null >"$WORK/ap_v2_m12_full.log" 2>&1
+check ap_v2_m12_full "Claude borrows Rena's slot" '\[ap\] Claude borrows slot 1 of Rena '
+check ap_v2_m12_full "he goes back to it first" '\[ap\] Claude back to the slot they borrowed \(1, from 0\), Ashton to 0'
+check ap_v2_m12_full "Rena back in it" '\[ap\] Rena back in slot 1 \(Claude leaves it\)'
+check ap_v2_m12_full "all 8 stay" 'party Rena, Ashton, Celine, Bowman, Precis, Leon, Opera, Noel$'
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 </dev/null >"$WORK/ap_v2_t477.log" 2>&1
 check ap_v2_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament'

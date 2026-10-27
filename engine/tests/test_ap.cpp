@@ -2219,7 +2219,7 @@ TEST(ap_v2_party_borrow) {
   ap::SaveState back;
   CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error));
   CHECK(back.stash.size() == 1 && back.stash[0].slot == 0 && back.stash[0].bytes == ap::state().stash[0].bytes &&
-        back.temporary == std::vector<int>{5});
+        back.temporary == std::vector<int>{5} && back.stash[0].by == 5);
   ap::Json bad;
   CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 1, \"stash\": [{\"slot\": 9, \"bytes\": \"00\"}]}", &bad, &error));
   CHECK(!ap::sidecar_from_json(bad, &back, &error));
@@ -2228,7 +2228,119 @@ TEST(ap_v2_party_borrow) {
   CHECK(pg.join(1, 0x63d0, 0x6b78));
   CHECK(pg.party() == "1,2,3,4,6,7,8,9" && pg.rec.data[0x10] == 0x5A);
   CHECK(ap::state().stash.empty() && ap::state().temporary.empty());
+  // [partybuild agent] A scene moving the borrower (as map 12's specials 1 / 2 do): the member
+  // moved into the borrowed slot is never overwritten; the borrower goes back to it first.
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704) && pg.party() == "5,2,3,4,6,7,8,9" && ap::state().stash.size() == 1);
+  field::party_swap_slots(nullptr, 0, 1);
+  CHECK(pg.party() == "2,5,3,4,6,7,8,9");
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  CHECK(pg.party() == "1,2,3,4,6,7,8,9" && pg.rec.data[0x10] == 0x5A && ap::state().stash.empty() && ap::state().temporary.empty());
   ap::stop();
+}
+
+// [shingofix agent] Map 12's scene with every slot kept (Rena's game, Ashton leading, Claude not
+// received): Claude borrows Rena's reserve slot (1); special 1 moves him to slot 0 (Ashton into the
+// borrowed slot); a free play meanwhile keeps the stash (he is in, active and needed, wherever he
+// stands); Rena's join puts him back in the slot he borrowed before her data, so Ashton stays;
+// special 2 then puts Rena in slot 0. A sidecar from before ("by" absent) finds the temporary
+// member the same way; "by" is written only when known, and out of range reads as unknown.
+TEST(ap_v2_party_borrow_moved) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  for (const bool old_sidecar : {false, true}) {
+    CHECK(ap::load_seed_text(party_seed(open_options("rena")), &s, &error));
+    ap::start_with(s);
+    pg.claude_game(false);
+    pg.members({7, 2, 3, 4, 6, 8, 9, 11});
+    pg.received({3, 4, 6, 7, 8, 9, 11});
+    pg.rec.data[1 * 0xD0 + 0x10] = 0x5B;  // (Rena's record: a byte to see it come back)
+    pg.at(12, 4, 150);
+    pg.leave(2);  // (the scene takes Rena out)
+    CHECK(!pg.join(1, 0x63d0, 0x6e08));
+    CHECK(pg.party() == "7,1,3,4,6,8,9,11" && ap::state().stash.size() == 1 && ap::state().stash[0].slot == 1 &&
+          ap::state().stash[0].by == 1 && ap::state().temporary == std::vector<int>{1});
+    {
+      const ap::Json j = ap::sidecar_json(ap::state());
+      CHECK(j["stash"][0]["by"].as_int(0) == 1);
+    }
+    if (old_sidecar) {
+      ap::SaveState st = ap::state();
+      st.stash[0].by = 0;
+      CHECK(ap::sidecar_json(st)["stash"][0]["by"].is_null());
+      const std::string card = (pg.dir / "memcard1.mcd").string();
+      CHECK(ap::write_sidecar(ap::sidecar_path(card, pg.loads), st, &error));
+      ap::on_loaded(card, pg.loads++);
+      CHECK(ap::state().stash.size() == 1 && ap::state().stash[0].by == 0 && ap::state().temporary == std::vector<int>{1});
+    }
+    field::party_swap_slots(nullptr, 0, 1);  // (special 1: Claude to slot 0)
+    CHECK(pg.party() == "1,7,3,4,6,8,9,11");
+    if (!old_sidecar) {
+      CHECK(ap::party_free_play_step().empty());
+      CHECK(pg.party() == "1,7,3,4,6,8,9,11" && ap::state().stash.size() == 1);
+    }
+    CHECK(pg.join(2, 0x63d0, 0x70ac));  // (Rena's join: her data back, then the game's join)
+    CHECK(pg.party() == "7,2,3,4,6,8,9,11" && pg.rec.data[1 * 0xD0 + 0x10] == 0x5B);
+    CHECK(ap::state().stash.empty() && ap::state().temporary.empty());
+    field::party_swap_slots(nullptr, 0, 1);  // (special 2: Rena to slot 0; Claude is gone)
+    CHECK(pg.party() == "2,7,3,4,6,8,9,11");
+    pg.at(9, 4, 2000);
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "2,7,3,4,6,8,9,11");
+    ap::stop();
+  }
+  // The tournament (477, Claude's game, step 4400) with every reserve slot kept: the starting
+  // member (Ashton) set aside in slot 0, before the hero. Dias borrows slot 0; the scene's A 0x15
+  // before the fight and after Claude's join moves him to slot 7 and Rena into slot 0; the free
+  // play after it puts Dias back first, so Ashton's data lands on him, not on Rena.
+  auto compact = [&] {  // (script A 0x15, script_table_a.cpp)
+    auto id = [&](int i) {
+      s16 v;
+      std::memcpy(&v, pg.sg.party.data() + i * 0x60, 2);
+      return v;
+    };
+    for (int i = 0; i < 8; ++i) {
+      if (id(i) >= 1) continue;
+      int j = i + 1;
+      while (j < 8 && id(j) <= 0) ++j;
+      if (j == 8) return;
+      field::party_swap_slots(nullptr, i, j);
+    }
+  };
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({7, 1, 2, 3, 4, 6, 8, 9});
+  pg.received({});
+  pg.at(1, 19, 0);
+  CHECK(ap::party_free_play_step().empty());  // (Ashton is in: the start given)
+  field::party_remove_member(nullptr, 6);     // (468 / 469 set him aside)
+  pg.at(477, 19, 4400);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "5,-1,2,3,4,6,8,9" && ap::state().stash.size() == 1 && ap::state().stash[0].by == 5);
+  compact();
+  CHECK(pg.party() == "5,2,3,4,6,8,9,-1");
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  compact();
+  CHECK(pg.party() == "2,3,4,6,8,9,1,-5" && ap::state().stash.size() == 1);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(pg.party() == "-7,3,4,6,8,9,1,2" && ap::state().stash.empty() && ap::state().temporary.empty());
+  ap::stop();
+  // "by": absent or out of range reads as 0 (unknown).
+  ap::Json j;
+  const std::string bytes(0x130 * 2, '0');
+  for (const char* by : {"", ", \"by\": 13", ", \"by\": -1", ", \"by\": 5"}) {
+    CHECK(ap::Json::parse(std::string("{\"format\": \"apso2-save\", \"version\": 2, \"stash\": [{\"slot\": 1, \"bytes\": \"") +
+                              bytes + "\"" + by + "}]}",
+                          &j, &error));
+    ap::SaveState back;
+    CHECK(ap::sidecar_from_json(j, &back, &error) && back.stash.size() == 1);
+    CHECK(back.stash[0].by == (std::string(by) == ", \"by\": 5" ? 5 : 0));
+  }
 }
 
 // The starting character: joins at the first free play, before the starting items, and leads;

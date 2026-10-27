@@ -544,36 +544,76 @@ int stash_member(const SaveState::Stash& s) {
   return v < 0 ? -v : v;
 }
 
-// A temporary member with no slot left (a full party of members the port keeps) borrows the
-// first reserve slot; its member's slot and record are stashed (and saved in the sidecar) until
-// restore_stash puts them back.
-bool borrow_slot(Runtime& r, int id) {
+// The first reserve slot, its member's slot and record stashed (and saved in the sidecar) until
+// restore_stash puts them back, for member 'id' to borrow; -1: none.
+int stash_reserve_slot(Runtime& r, int id) {
   field::FieldGlobals& g = field::globals();
-  if (g.records == nullptr) return false;
+  if (g.records == nullptr) return -1;
   for (int i = 0; i < 8; ++i) {
     u8* p = party_slot(i);
     if (p == nullptr || rd16s(p) >= 0) continue;
     SaveState::Stash s;
     s.slot = i;
+    s.by = id;  // [partybuild agent] (restore_stash finds them again if a scene moves them)
     s.bytes.assign(p, p + 0x60);
     s.bytes.insert(s.bytes.end(), g.records + i * 0xD0, g.records + (i + 1) * 0xD0);
     log(std::string(character_name(id)) + " borrows slot " + std::to_string(i) + " of " + character_name(stash_member(s)) +
         " (in reserve; put back when the window ends)");
     r.state.stash.push_back(std::move(s));
-    join_in_slot(i, id);
-    return true;
+    return i;
   }
-  return false;
+  return -1;
+}
+
+// A temporary member with no slot left (a full party of members the port keeps) borrows the
+// first reserve slot (stash_reserve_slot).
+bool borrow_slot(Runtime& r, int id) {
+  const int i = stash_reserve_slot(r, id);
+  if (i < 0) return false;
+  join_in_slot(i, id);
+  return true;
 }
 
 // Puts stash 'k' back in its slot; the temporary member there (in reserve or active) is dropped
 // from the party: it was only lent the place.
 void restore_stash(Runtime& r, size_t k) {
   field::FieldGlobals& g = field::globals();
-  const SaveState::Stash s = r.state.stash[k];
+  SaveState::Stash s = r.state.stash[k];
   r.state.stash.erase(r.state.stash.begin() + static_cast<long>(k));
   u8* p = party_slot(s.slot);
   if (p == nullptr || g.records == nullptr || s.bytes.size() != 0x60 + 0xD0) return;
+  // [partybuild agent] A scene may have moved the member who borrowed the slot (map 12's specials
+  // 1 / 2 move Claude to slot 0, then 1, with a full party): they go back to it first, the member
+  // there to theirs, so the stash never lands on another member. Who borrowed it: the stash's
+  // "by" (a sidecar from before: a temporary member).
+  auto borrower = [&](const u8* q) {
+    const s16 w = rd16s(q);
+    const int id = w < 0 ? -w : w;
+    return id != 0 && (s.by != 0 ? id == s.by : in_list(r.state.temporary, id));
+  };
+  if (rd16s(p) != 0 && !borrower(p)) {
+    int from = -1;
+    for (int i = 0; i < 8 && from < 0; ++i)
+      if (i != s.slot && borrower(party_slot(i))) from = i;
+    const s16 w = rd16s(p);
+    const char* there = character_name(w < 0 ? -w : w);
+    if (from >= 0) {
+      field::party_swap_slots(nullptr, from, s.slot);
+      const s16 b = rd16s(p);
+      log(std::string(character_name(b < 0 ? -b : b)) + " back to the slot they borrowed (" + std::to_string(s.slot) +
+          ", from " + std::to_string(from) + "), " + there + " to " + std::to_string(from));
+    } else {
+      // (Not seen: the borrower is not in the 8.) Never over a member: an empty slot, if any.
+      for (int i = 0; i < 8; ++i)
+        if (rd16s(party_slot(i)) == 0) {
+          log(std::string(there) + " holds slot " + std::to_string(s.slot) + ": " + character_name(stash_member(s)) +
+              " goes to the empty slot " + std::to_string(i));
+          s.slot = i;
+          p = party_slot(i);
+          break;
+        }
+    }
+  }
   const s16 v = rd16s(p);
   const int lent = v < 0 ? -v : v;
   std::memcpy(p, s.bytes.data(), 0x60);
@@ -606,8 +646,13 @@ bool party_isolated() { return script_flag(2) || script_flag(4) || script_flag(k
 void party_v2_update(Runtime& r) {
   if (!party_v2(r) || party_isolated()) return;
   for (size_t k = 0; k < r.state.stash.size();) {
+    // [partybuild agent] Kept while the member who borrowed it (wherever a scene moved them; a
+    // sidecar from before: the slot's member) is in, active, and still needed.
     const u8* p = party_slot(r.state.stash[k].slot);
-    if (p != nullptr && rd16s(p) > 0 && in_list(r.state.temporary, rd16s(p)) && window_needing(rd16s(p)) != nullptr) {
+    int who = r.state.stash[k].by;
+    if (who == 0 && p != nullptr && rd16s(p) > 0) who = rd16s(p);
+    const int at = who != 0 ? slot_of_character(who) : -1;
+    if (at >= 0 && rd16s(party_slot(at)) > 0 && in_list(r.state.temporary, who) && window_needing(who) != nullptr) {
       ++k;
       continue;
     }
@@ -889,6 +934,7 @@ Json sidecar_json(const SaveState& s) {
       Json e = Json::object();
       e.set("slot", Json::number(static_cast<int64_t>(st.slot)));
       e.set("bytes", Json::string(hex));
+      if (st.by != 0) e.set("by", Json::number(static_cast<int64_t>(st.by)));  // [partybuild agent]
       a.push(e);
     }
     j.set("stash", a);
@@ -934,6 +980,8 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
     auto nib = [](char c) { return c >= 'a' ? c - 'a' + 10 : c >= 'A' ? c - 'A' + 10 : c - '0'; };
     for (size_t k = 0; k + 1 < hex.size(); k += 2) st.bytes.push_back(static_cast<u8>(nib(hex[k]) << 4 | nib(hex[k + 1])));
     if (st.slot < 0 || st.slot > 7 || st.bytes.size() != 0x60 + 0xD0) return fail(error, "stash: a slot 0-7 and 0x130 bytes expected");
+    st.by = static_cast<int>(e["by"].as_int(0));  // [partybuild agent] (absent, or not a member: unknown)
+    if (st.by < 0 || st.by > kCharacterCount) st.by = 0;
     r.stash.push_back(std::move(st));
   }
   r.save_hash = j["save_hash"].as_string();  // version 2 (absent: empty, and a seed refuses the load)

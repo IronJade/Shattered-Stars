@@ -47,6 +47,7 @@ struct SaveState {
   struct Stash {
     int slot = 0;                       // the party slot a temporary member borrowed (a full party)
     std::vector<u8> bytes;              // its member's slot (0x60) and record (0xd0), put back later
+    int by = 0;                         // who borrowed it (party id; 0: a sidecar from before) [partybuild agent]
   };
   std::vector<Stash> stash;
   // Sidecar version 2 [hubcore agent]: the save's bytes on the card as util::save_digest gives

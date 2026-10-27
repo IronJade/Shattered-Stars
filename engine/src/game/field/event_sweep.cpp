@@ -551,6 +551,9 @@ void event_sweep_frame(Field* f) {
       }
     });
     for_each_item("SS_SWEEP_PARTY", [&](const char* v) { party_add_member(g_script_vm, std::atoi(v)); });
+    // SS_SWEEP_PARTY_ASIDE="c,...": then these set aside (to the reserve, as the script's
+    // party_remove_member does: a split's party from a --map start) [shingofix agent].
+    for_each_item("SS_SWEEP_PARTY_ASIDE", [&](const char* v) { party_remove_member(g_script_vm, std::atoi(v)); });
     for_each_item("SS_SWEEP_CONFIG", [&](const char* v) {
       char* end = nullptr;
       const long off = std::strtol(v, &end, 16);
