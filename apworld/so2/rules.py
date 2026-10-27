@@ -34,7 +34,7 @@ from worlds.generic.Rules import add_item_rule
 from .data import DISC_SWITCH_STAGE, KEY_GROUPS, STAGES, STORY_GATES
 from .items import ALL_KEY_IDS, EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, EVENT_ISERIA_QUEEN, \
     EVENT_LIMITER_OFF, EVENT_TELEPORTER, EVENT_VICTORY, EXPEL_STORY_KEYS, GAME, KEY_NAME, stage_event
-from . import skillsanity
+from . import hell, skillsanity
 from .locations import ROW
 from .regions import stage_rules
 
@@ -242,21 +242,27 @@ def drop_rule(row, side, open_world, teleporter, expel_progression, mode, encoun
 # A level needs its member in the party and the member's level to learn the move, plus the
 # move's uses (battles). Conservatively: a move learned by level KILLER_EARLY_LEVEL counts from
 # the disc switch (a party there is typically well past it), any other from the Final Save Point
-# (after which any level can be reached).
+# (after which any level can be reached). A hell seed (hell.py: encounter_rate 0) has no random
+# battles: every level counts from the Fun City arena, free on it, where the levels and the uses
+# are ground (hell.arena_need).
 KILLER_EARLY_LEVEL = 30
 
 
 def killer_rule(world, loc, row):
-    """A killer-move level's access (the stage for the learn level; with killer_move_progression
-    any, a member who joins by a character item also needs the item, which is then progression:
-    world.progression_characters) and what it may hold (killer_move_progression; never with
-    encounter_rate 0 or when EXCLUDED). Otherwise the item isn't required: the location holds
-    no progression, and under full accessibility every item, the member's too, is reached."""
+    """A killer-move level's access (the stage for the learn level, or a hell seed's arena; with
+    killer_move_progression any, a member who joins by a character item also needs the item,
+    which is then progression: world.progression_characters) and what it may hold
+    (killer_move_progression; never without battles to train in, hell.trained, or when EXCLUDED).
+    Otherwise the item isn't required unless it is progression anyway (skillsanity special: the
+    member's learn points need it, skillsanity.learn_characters): the location holds no
+    progression, and under full accessibility every item, the member's too, is reached."""
     from .locations import fighter_status
     player = world.player
     o = world.options
     status = fighter_status(row["character"], world.party_info)
-    if getattr(world, "hub", False):
+    if hell.is_hell_seed(o):
+        need = hell.arena_need(world)       # [hellseed] every level from the arena
+    elif getattr(world, "hub", False):
         # Hub mode: everything is open from the start; a move learned past level 30 counts once
         # Fienal's requirement is met (the party has beaten the Fields' bosses, or more).
         need = [] if row["learn_level"] <= KILLER_EARLY_LEVEL else [EVENT_FIENAL_OPEN]
@@ -269,7 +275,7 @@ def killer_rule(world, loc, row):
     mode = o.killer_move_progression.current_key
     allowed = (mode == "any" and status in ("sure", "item")) or \
               (mode == "hero" and row["character"] in world.party_info.story_members)
-    if not allowed or o.encounter_rate.value == 0 or loc.progress_type == LocationProgressType.EXCLUDED:
+    if not allowed or not hell.trained(o) or loc.progress_type == LocationProgressType.EXCLUDED:
         add_item_rule(loc, lambda item: not item.advancement)
 
 

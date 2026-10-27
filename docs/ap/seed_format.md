@@ -81,7 +81,8 @@ applied.
 
 A chest's contents are its handler's push. `tools/so2_mod.py chest DISC MAP FLAG (--item ID |
 --fol N)` prints the line. For example, `script 18 0x82c 0xffffff38 0xffffec78` makes Arlia's
-200-Fol crate (flag 0x962) pay 5000 Fol.
+200-Fol crate (flag 0x962) pay 5000 Fol. A hell seed also carries `script 297 0x177f 0x120007d0
+0x12000000`, the Fun City arena's fee waived ("The hell seed" below; so2.apworld 0.2.1).
 
 ### Placeholders (chests and gifts)
 
@@ -181,9 +182,19 @@ doesn't open is a banner.
 - **Received items.** They wait in a queue. In free play (field state 0, no script running,
   the player in control), the game gives one item at a time: an item goes in the inventory
   (`inventory_add`), Fol goes on the party's total. Each item shows the notice banner, placed
-  like the map-name notice, and the next waits until the banner has gone. With a full
-  inventory the item waits. The console's `ap_give ITEM [FROM]` takes an AP id or name from
-  the seed's `items`, or a game item number.
+  like the map-name notice, and the next waits until the banner has gone. An item the
+  inventory has no room for (20 of a kind at most) is set aside [queuebypass, 2026-10-27]: one
+  banner, "Inventory full: Blackberries waiting" (when that is too wide for the banner, "X waits
+  for room", then "No room for X", then "Inventory full: an item waits"; no banner when another
+  of its kind already waits), and the items behind it, the server's included, go on. A server
+  item set aside joins the queue with its sender (the received index moves past it). Set-aside
+  items are tried again at every free play (after a menu, a shop, a crafting attempt or a battle,
+  whatever made room), the oldest first, and arrive with their usual banner ("Received
+  Blackberries from Bob"); a failed retry shows and logs nothing. A count that fits in part gives
+  what fits and the rest waits the same way. Before this, the item at the front of the queue held
+  up everything behind it until there was room, and copies of a count past 20 were lost.
+  `ap_status` lists the items set aside (`inventory full, set aside: ...`). The console's
+  `ap_give ITEM [FROM]` takes an AP id or name from the seed's `items`, or a game item number.
 - **The start.** The first free play of a new game gives `start.items` and `start.fol` and
   sets `start.flags`.
 - **The console.** With `--debug`, `ap_status` prints the seed, the slot, checks done of
@@ -243,22 +254,82 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   `{"place": 8-11, "bytes": "<hex>"}` with the member's party slot (0x60 bytes) and record
   (0xd0 bytes), as the stash's entries; only the places that hold someone. `bench_hash` is
   `"sha256:"` and the SHA-256 of the save's bytes as `save_hash` takes them followed by the four
-  places' 0x130 bytes (zeros for an empty place). A sidecar with them is **version 3** (an older
-  port refuses it instead of dropping the benched members); with nobody benched neither key is
-  written and the sidecar is today's version 2. A load takes the bench as the sidecar holds it
-  (no merge: it is the save's state, not the multiworld's); a load without a sidecar, and New
-  Game, start with an empty bench. A place outside 8-11 or given twice, other than 0x130 bytes,
+  places' 0x130 bytes (zeros for an empty place). Written only with someone benched (the
+  sidecar is then version 3: "The sidecar's version" below); with nobody benched neither key is
+  written. A load takes the bench as the sidecar holds it (no merge: it is the save's state, not
+  the multiworld's); a load without a sidecar, and New Game, start with an empty bench. A place outside 8-11 or given twice, other than 0x130 bytes,
   or a member that is no party id 1-12 (or benched twice) makes the sidecar unreadable.
 - `lent` (a bench seed with a benched member lent for a fight; agent "partybuild6",
   2026-10-27): `[{"id": 1-12, "place": 8-11}]`, the members lent from the bench to the 8 for a
   fight the story makes them make alone ("Loans" under "The bench") and the place each keeps.
-  Their bytes are in the card's 8 slots meanwhile, their place empty. A sidecar with a loan is
-  **version 3** too, and `bench_hash` is then written even with nobody else benched; it covers
+  Their bytes are in the card's 8 slots meanwhile, their place empty. Written only with a loan
+  out (version 3, below); `bench_hash` is then written even with nobody else benched; it covers
   the loans (each loan's id and place, one byte each, after the four places; no loan adds
   nothing, so a bench's hash is unchanged). Absent: no loan. A loan of no member 1-12, of a
   benched member, to a place outside 8-11 or a taken one, or given twice makes the sidecar
   unreadable. A loan's borrowed slot is a `stash` entry like a temporary member's, its `by` the
-  lent member (main's shingofix, port 0.02.51, documents `by`).
+  lent member (`by` below).
+- `pending` (optional; agent "pendingsave", 2026-10-27): the items still waiting to be given in
+  free play when the save was made, in order. A check that brings items (a guild set under
+  skillsanity, a boss, a craft, a killer-move level, learn points at a join...) queues them, and
+  they come one per banner; a save in between used to lose the rest. Each entry is
+  `{"location": ID}`, a check's own item (the item comes from the seed's location), or
+  `{"item": {...}, "from": "Bob", "found": true}`, any other item (the courier's overflow, the
+  console's `ap_give`), the item object as in the seed's `items` (`from` and `found` only when set).
+  Items set aside for want of room [queuebypass, 2026-10-27] are entries like any other, in their
+  place in the queue: a server item set aside is an `{"item": ..., "from": ...}` entry (the
+  `received_index` is past it, so it is never given twice), and the rest of a check's count that
+  fitted in part is the item itself with the count left. Whether an entry was set aside is not
+  written: a load tries every entry again, and one still without room is set aside again with its
+  banner.
+  Written only with something waiting (then version 3, below: a port from before refuses the save
+  instead of dropping the items). Absent: nothing waits.
+- `pending_hash` (with `pending`): `"sha256:"` and the SHA-256 of the save's bytes (the same N
+  bytes as `save_hash`) followed by the text of `pending` as `ap::Json::dump` writes it (keys
+  sorted, one-space indent). The guard reads the list and writes it again before hashing, so
+  spacing and key order in the file don't matter; any changed value does (below).
+
+```json
+ "pending": [{"location": 1347569672}, {"location": 1347569673}],
+ "pending_hash": "sha256:f5ba...5028",
+ "version": 3
+```
+
+- `stash` entries' `by` (agents "partybuild6" / "shingofix", 2026-10-27; port 0.02.51): the
+  party id (1-12) of the member who borrowed the slot (a temporary member; "The party rules"
+  below). The stash goes back to that member's slot even after a scene moved them; absent (a
+  sidecar from before), the temporary member found in the 8 is taken. Written with every new
+  stash; no new version: a port from before ignores it and puts the stash back by its slot, as it did. A
+  value outside 1-12 reads as absent.
+- `tournament_dias` (agent "shingofix", 2026-10-27; port 0.02.51): the kept Dias's own data
+  while the Lacour tournament has rewritten him. Map 477's fights rewrite Dias after his first
+  fight (special 0xc: his fixed stats, level 35) and after later ones (0xd: his starting data
+  again, then the join level). A kept Dias (received, or the starting character; not the story's
+  stand-in) keeps his own (the user's decision: "Save his data before the tournament rewrites
+  him, and restore it after his last fight"): his slot (0x60 bytes) is saved before the first
+  rewrite, his record (0xd0) before the first 0xd (0xc leaves it alone, so until then it is his
+  own and any change the player makes to it counts), and both go back right after his last fight
+  there (step 10200 in Claude's game, 16500 in Rena's; chapter 19), wherever he stands then. The
+  key holds them as lowercase hex, Dias's id first: 0x60 bytes (slot only) or 0x130 (slot, then
+  record). Written only while held (then version 3, below: a port from before refuses the save
+  rather than leave him with the tournament's data). Absent: nothing held. Any
+  other length, a non-hex character or another member's id makes the sidecar unreadable.
+- `tournament_dias_hash` (with `tournament_dias`): `"sha256:"` and the SHA-256 of the save's bytes
+  (the same N bytes as `save_hash`) followed by the held bytes themselves.
+
+```json
+ "tournament_dias": "05000804...",
+ "tournament_dias_hash": "sha256:51d6...5e76",
+ "version": 3
+```
+
+**The sidecar's version** (one rule for every key above): **3** exactly when the save holds
+something an older port would drop: items waiting (`pending`), someone on the bench (`bench`), a
+member lent from it (`lent`), or the tournament's Dias held (`tournament_dias`); else **2**, the
+same bytes as before those keys existed. `leader`, `slot_0`, `starting_character`, `hub_view` and
+the stash's `by` need no new version (a port from before ignores them). A port from before
+0.02.51 reads 1 and 2 and refuses a 3 ("unsupported sidecar version"), so such a save does not
+load there rather than lose what the keys hold; this port reads 1 to 3.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -270,11 +341,18 @@ the game's memory). With a seed on, a save loads only when its sidecar names thi
 and its `save_hash` is the hash of the save as the card holds it now. Refused: a save without a
 sidecar (an ordinary game's, or one copied without its `.ap.json`), another seed's or slot's, a
 sidecar without the hash (version 1, or the field stripped), and a save whose bytes changed on
-the card since it was saved. A sidecar with a bench (or a loan) also needs `bench_hash` to match
-the save, the bench and the loans: an edited bench or loan, a bench or loan without its hash, a
-hash without its bench, or a bench moved here from another save is refused the same way (`...
-its bench differs from the one this seed saved`); stripping all of them only loses the benched
-members (a lent member stays in the 8). A refused load fails the way a damaged save does: the load screen
+the card since it was saved. A sidecar with items waiting also needs `pending_hash` to match the
+save and the list: an edited, extended or reordered `pending`, one without its hash or a hash
+without its list, or the list beside another save is refused (log `... this save was changed
+outside the game (its waiting items differ from the ones this seed saved)`). Both keys removed
+leave a sidecar with nothing waiting: it loads, and only the items are lost. A sidecar with a
+bench (or a loan) needs `bench_hash` to match the save, the bench and the loans the same way: an
+edited bench or loan, a bench or loan without its hash, a hash without its bench, or a bench moved
+here from another save is refused (`... its bench differs from the one this seed saved`);
+stripping all of them only loses the benched members (a lent member stays in the 8). A sidecar
+holding the tournament's Dias needs `tournament_dias_hash` to match the save and the held bytes
+the same way (`... its Dias held for the tournament differs from the one this seed saved`); both
+keys removed load, and Dias keeps the tournament's data. A refused load fails the way a damaged save does: the load screen
 shows the game's own "The data could not be loaded. Your data may be faulty." (`SS_LOAD_SAVE`:
 "no valid save at that position"), and the log says why (`[ap] load refused, save 1 of CARD:
 this save was changed outside the game (it differs from the one this seed saved)` / `... this
@@ -296,7 +374,18 @@ After an allowed load the game reads the sidecar (the load dialog, or `SS_LOAD_S
   checks, and no starting inventory on top of it; another seed's sidecar is used anyway.
 - When the sidecar's seed matches, checks made since the save stay checked, because the
   multiworld keeps them.
-- Items still waiting are given in the loaded game.
+- Items still waiting are given in the loaded game [pendingsave, 2026-10-27]: first the save's
+  `pending`, as it was saved; then the own items of the checks the running game has and the save
+  lacks (made since the save, or reported by the server), because those checks never fire again
+  and the loaded game lacks their items, except chests and gifts, which the loaded game can open
+  again (their flags come back with the save, and the placeholder gives the item again). The
+  queue the running game had is dropped with it: nothing is given twice, a second load of the
+  same save gives the same list, and a save loaded in a new session gives the same as one
+  loaded in the session that made it. Before this, the queue was kept only within a session, so
+  a save made between a check and its last banner lost the rest after a restart.
+- On connect, a check the server reports that the running game lacks (made in a game that was
+  not saved, or in a later save) queues its own item the same way (not a chest's or a gift's);
+  a reconnect adds nothing (only checks new to the game count).
 - A new game starts from an empty state.
 - A run without a seed neither reads nor writes sidecars.
 
@@ -810,10 +899,11 @@ applied them to the locations and items it wrote).
 | `exclude_characters` | list of names | `[]` | reference |
 | `party_rules` | `"story"`, `"open"` | `"story"` | **read**: the party rules (below) |
 | `difficulty` | `earth`, `galaxy`, `universe`, `any` (or 0-3) | `earth` | **read**: New Game's Battle Rank (below) |
-| `apworld_version` | `"0.2.0"` | | reference |
+| `apworld_version` | `"0.2.1"` (0.2.0 and later) | | reference |
 | `skillsanity` | `none`, `skills_only`, `special_only`, `insanity` (or 0-3) | `none` | **read** ("Skillsanity" below) |
 | `skillsanity_shop_share` | 0-100 | 10 | reference (the APWorld placed the items; the port reads each slot's `price`) |
 | `bench` | true / false (or 1 / 0) | off when absent (the APWorld's option: on by default, B7; not written by 0.2.x) | **read** with `party_rules: "open"` in open world, and in the hub: the 12-member bench, seed version 4 ("The bench" below) |
+| `hell_seed` | `true`, only on a hell seed (absent on every other seed) | absent (false) | **read**, display only: setup's warning and a log line ("The hell seed" below; so2.apworld 0.2.1) [hellseed] |
 
 `characters` (phase 3: the members the item pool holds) may now name Claude, Rena and Noel,
 and Leon / Dias in either game, under `party_rules: "open"`.
@@ -996,7 +1086,13 @@ conditions and its return).
     `temporary` and leave the party (their slot emptied) at the first free play after the window.
     With every slot kept, such a member borrows the first reserve slot; its member's slot and
     record go to the sidecar's `stash` and come back when anything joins that member, when the
-    borrower is out of the party, or after the window.
+    borrower is out of the party, or after the window. A scene may move the borrower meanwhile
+    (map 12's specials 1 / 2, the tournament's A 0x15 compaction before and after each fight):
+    the stash remembers who borrowed it (`by`), and they go back to the borrowed slot first, the
+    member there to theirs, so the stash never lands on another member (port 0.02.51).
+  - a kept Dias (received, or the starting character) fights the tournament as the story's Dias
+    (its specials 0xc / 0xd rewrite him) and leaves it with his own data: the sidecar's
+    `tournament_dias` above (port 0.02.51).
   Outside every window (free play, not in a Private Action) a member recruited for good who is in
   reserve rejoins ("Celine joined the party"). The windows: Rena at home (Claude's game, 5/0-1000),
   Claude away (Rena's game, 5/2000-2500), the other hero away (5/3000-6/2100, 7/1000-8/0), Mars
@@ -1493,6 +1589,31 @@ The user's design (docs/handoff/skillsanity.md). `options.skillsanity`: `none` (
 Archipelago mark and the price, at most one, no game item behind it (no held count, no item
 viewer); buying it is the check (the item given). Once checked the entry is the shop's own again.
 `engine/src/game/field/menu_shop.cpp`, `ap::shop_ap_item`.
+
+### The hell seed (`hell_seed`, the arena's fee; so2.apworld 0.2.1) [hellseed]
+
+A **hell seed** (the user, 2026-10-27: "usually called a "hell" seed, where the grind is
+intentionally made preposterously hard"; docs/ap/apworld.md "The hell seed") is one with
+`encounter_rate` 0 and `killer_move_checks` on or `skillsanity` `special_only` / `insanity` (learn
+points). With no random battles, its only battles to train in are the Fun City arena's, so the
+APWorld writes two things on it, and on no other seed:
+- **The fee's patch line** (an ordinary `patches` line, version 1): `script 297 0x177f 0x120007d0
+  0x12000000`. Map 297 (the Fighting Arena's desk), routine 0x5c20: `push 0x7d0` (2000 Fol, then
+  Bargaining's +/- 3 % a level) at 0x5dfc becomes `push 0`: "An entry fee of 0 FOL", the Fol test
+  never fails, nothing is taken. The word is the same on NA, Europe, France and Germany
+  (docs/handoff/hellseed.md "Fee proofs": 7000 Fol after registering without the line, 9000 with
+  it, on each). Every arena fight is an ordinary battle: killer-move uses count, the fighter gets
+  the EXP and the party the Fol.
+- **`options.hell_seed: true`** (slot data too). Display only: the port plays the seed exactly as
+  without it (the fee comes from the patch line). Setup's Archipelago page shows a warning under
+  the seed's line, and the game logs the same line when it loads the seed (`[ap] Hell Seed: no
+  random battles. Killer-move levels and learn points are trained in the Fun City arena, which is
+  free on this seed. Expect a very long grind.`; `game::ap::kHellSeedWarning`, seed.h). Absent:
+  no warning.
+
+No new version: the patch line is a version-1 feature and `hell_seed` changes nothing a port does,
+and a hell seed is version 2 or 3 anyway (killer-move checks, skillsanity, hub). An older port
+plays it the same, without the warning.
 
 ### Example (0.2.0, open world, version 2)
 

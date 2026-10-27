@@ -249,8 +249,9 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   on the player's card (sidecars naming the seed and slot) are copied to it once; the
   player's card is left as it is (`launcher/ap_seed.h`).
 - **Only the seed's own saves load:** with a seed, a save loads only when its sidecar names
-  this seed and slot and holds the hash of the save as it was saved (`save_hash`, and with a
-  bench `bench_hash` over the save and the bench); a save of
+  this seed and slot and holds the hash of the save as it was saved (`save_hash`; with items
+  waiting, a bench or the tournament's Dias held also `pending_hash`, `bench_hash`,
+  `tournament_dias_hash` over the save and what they hold); a save of
   another seed or an ordinary game, one without its sidecar, or one changed on the card since
   fails as a damaged save does ("The data could not be loaded"), and the log says why. A guard
   against accidents and casual save editors, not cheat-proofing (`docs/ap/seed_format.md` "The
@@ -258,7 +259,15 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
 - **Offline:** leave Server empty. The seed's patch lines join the world edits; chests
   record checks; received items are given in free play with a banner; each save's
   state is kept in a sidecar file next to the memory card (`memcard1.slot03.ap.json`),
-  so the card itself stays console-compatible. See `docs/ap/seed_format.md`.
+  so the card itself stays console-compatible. Items still waiting for their banner when
+  the game is saved (a guild set's skills, a boss's rewards) are kept in the sidecar too and
+  come after a load; loading a save from before a check (a boss, a guild set, a craft: not a
+  chest, which opens again) gives that check's item again, since the check can't fire twice.
+  An item the inventory has no room for (20 of a kind at most: Blackberries, say) is set aside
+  with one banner ("Inventory full: Blackberries waiting") and everything behind it keeps
+  coming; it arrives once there is room (use, sell or craft one), kept across saves like any
+  item still waiting.
+  See `docs/ap/seed_format.md`.
 - **Online:** fill in Server (`ws://host:port` or `wss://host:port`), Slot (hint:
   the seed's own slot name) and, if the room has one, Password. The game connects on
   the next windowed run, sends every check and the goal as they happen, and receives
@@ -310,8 +319,8 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   With `options.bench` (seed version 4; open world with the open party rules, and the hub)
   four bench places the port keeps follow the 8 slots: a member received with the 8 taken
   joins the bench, kept whole (slot and record) in the save's sidecar (`bench`, guarded by
-  `bench_hash`; the sidecar is version 3 only while someone is benched or lent, so an older
-  port refuses it rather than drop them; the card's 8 slots stay a valid console party); the
+  `bench_hash`; the sidecar is version 3 while someone is benched or lent, as with items
+  waiting or the tournament's Dias held, so an older port refuses it rather than drop them; the card's 8 slots stay a valid console party); the
   camp menu's Party Order flips its right column between the reserve and the bench with L1 /
   R1, and a pick survives the flip; the camp menu's member list, Equipment, Skills, Status, Specialty and Tactics (the same flip) work on
   benched members where they are. Benched members are managed, not used: their settings can be

@@ -599,6 +599,7 @@ bool load_seed_text(const std::string& text, Seed* out, std::string* error) {
     return false;
   }
   s.no_fail_crafting = s.options["no_fail_crafting"].as_bool(false);  // v2
+  s.hell_seed = s.options["hell_seed"].as_bool(false);  // [hellseed] display only (seed.h)
   if (const Json& ss = s.options["skillsanity"]; ss.is_string()) {  // [skillsanity2]
     static const char* const kModes[] = {"none", "skills_only", "special_only", "insanity"};
     s.skillsanity = -1;
@@ -734,6 +735,39 @@ bool load_seed_file(const std::string& path, Seed* out, std::string* error) {
   std::string err;
   if (!load_seed_text(ss.str(), out, &err)) return fail(error, path + ": " + err);
   return true;
+}
+
+// [pendingsave agent] The item object, both ways (the save sidecar's `pending`).
+bool parse_item_json(const Json& j, ItemDef* out, std::string* error, const std::string& where) {
+  return parse_item(j, out, error, where);
+}
+
+Json item_json(const ItemDef& it) {
+  Json j = Json::object();
+  auto num = [&](const char* key, int64_t v) { j.set(key, Json::number(v)); };
+  j.set("kind", Json::string(it.kind));
+  if (!it.name.empty()) j.set("name", Json::string(it.name));
+  if (it.ap_id != 0) num("ap_id", it.ap_id);
+  if (it.kind == "item") {
+    num("game_id", it.game_id);
+    num("count", it.count);
+  } else if (it.kind == "fol") {
+    num("amount", it.amount);
+  } else if (it.kind == "character") {
+    num("character", it.character);
+  } else if (it.kind == "trap") {
+    j.set("trap", Json::string(it.trap));
+    if (it.trap == "fol_loss") num("percent", it.percent);
+    if (it.trap == "status") j.set("status", Json::string(it.status));
+  } else if (it.kind == "key") {
+    num("key", it.key);
+  } else if (it.kind == "skill") {
+    num("skill", it.skill);
+  } else if (it.kind == "move") {
+    num("character", it.character);
+    num("index", it.move_index);
+  }
+  return j;
 }
 
 }  // namespace ss::game::ap

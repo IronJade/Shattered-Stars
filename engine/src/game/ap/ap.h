@@ -84,6 +84,29 @@ struct SaveState {
   // back to it. Sidecar key "lent" (only with a loan: then sidecar version 3), in "bench_hash".
   using Loan = BenchLoan;
   std::vector<Loan> lent;
+  // [pendingsave agent] The give queue as the save was made: items still to come in free play,
+  // in order (docs/ap/seed_format.md "The save sidecar", `pending`). A check's own item is kept as
+  // its location (the item is the seed's); anything else (the courier's overflow, the console)
+  // as the item itself. Written at a save, turned back into the queue by a load, never kept in the
+  // running state; `pending_hash` (the save's bytes and the list) guards it like save_hash.
+  struct Give {
+    ItemDef item;            // (a location's: filled from the seed when it is queued)
+    std::string from;        // the sender ("": this player's own)
+    bool found = false;      // "Got X" (an own item found) rather than "Received X"
+    int64_t location = -1;   // the check whose own item it is (-1: none)
+    // [queuebypass agent] The running queue's only, never written: set aside, its kind full in
+    // the inventory; the items behind it go on, it is given once there is room.
+    bool aside = false;
+  };
+  std::vector<Give> pending;
+  std::string pending_hash;
+  // [shingofix agent] The tournament's kept Dias (docs/ap/seed_format.md `tournament_dias`): his
+  // slot (0x60) as it was before the tournament's first rewrite of him (special 0xc / 0xd), and
+  // his record (0xd0) as it was before its first rewrite (0xd), when that has come; put back after
+  // his last fight there. Empty: none held. Written only when held; `tournament_dias_hash` (the
+  // save's bytes and these) guards it like pending_hash and is never kept in the running state.
+  std::vector<u8> tournament_dias;
+  std::string tournament_dias_hash;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -114,6 +137,15 @@ void receive(const ItemDef& item, const std::string& from);
 bool receive_by_name_or_id(const std::string& what, const std::string& from, std::string* error);
 size_t pending_count();                             // local and server items still to give
 void free_play_update();                            // the field's play state calls this
+// [queuebypass agent] An item the inventory has no room for (20 of a kind at most) never holds up
+// the queue: it is set aside with one banner ("Inventory full: Blackberries waiting"), the items
+// behind it (the server's too) go on, and it is given once there is room (checked at every free
+// play: after a menu, a shop, a battle; set-aside items in the order they came). A count that fits
+// in part gives what fits; the rest waits the same way. Free play's next give at once, as
+// free_play_update runs it once no banner shows (a received member's join, else the queue's first
+// item that can go in, else the server's next): the banners it queued, " / " between two ("": none).
+// Tests.
+std::string give_free_play_step();
 
 // Saves: the sidecar goes with the save; a load reads it (a new game starts fresh).
 void on_new_game();
@@ -133,6 +165,9 @@ bool take_start_position();
 bool start_position_pending();
 // 'file' (optional): the save as the card driver read it back after writing it ('length'
 // bytes available, a block); the sidecar then holds its hash (save_hash).
+// [pendingsave agent] The save's sidecar keeps the give queue (`pending`); the load gives it again,
+// and with it the own items of the checks the running game has that the save lacks (made since
+// it, or reported by the server), except chests and gifts, which the loaded game can open again.
 void on_saved(const std::string& card_image, int save_index, const u8* file = nullptr, size_t length = 0);
 void on_loaded(const std::string& card_image, int save_index);
 // The save guard (all world modes; the user, 2026-10-25: "block save editing for the archi
@@ -141,9 +176,11 @@ void on_loaded(const std::string& card_image, int save_index);
 // its sidecar names this seed and slot and holds the hash of the save as it is on the card
 // ('file', 'length' bytes read); otherwise false (the game's own "load failed") and a log line
 // says why. A guard against accidents and casual save editors, not against cheating (the port
-// is open source). A sidecar with a bench [partybuild agent] also needs its bench_hash to match
-// the save and the bench (an edited bench, or one moved to another save, is refused the same
-// way). Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
+// is open source). A sidecar with items waiting [pendingsave agent] also needs its pending_hash
+// to match the save and the list (an edited, stripped or moved list is refused the same way);
+// one with a bench or a lent member [partybuild agent] its bench_hash (the save and the bench:
+// an edited bench, or one moved to another save, is refused the same way).
+// Without a seed: always true. SS_AP_ANY_SAVE=1 (headless tests; a windowed
 // seed run clears every SS_* hook) lets any save load as before, logged.
 bool load_allowed(const std::string& card_image, int save_index, const u8* file, size_t length);
 
@@ -247,6 +284,14 @@ std::string party_free_play_step();
 // first) and after it closes (not after a load).
 void on_camp_menu_opening();
 void on_camp_menu_closed();
+// [shingofix agent] The tournament's specials 0xc / 0xd (field/special.cpp) rewrite Dias's slot
+// 'slot' (0xc his fixed stats; 0xd his starting data again, the record too: 'record'). Before: a
+// kept Dias (received, or the starting character) has the part about to be rewritten saved
+// first, once (SaveState::tournament_dias). After: once his last fight there is over (chapter 19
+// step 10200 in Claude's game, 16500 in Rena's), his own data go back. Nothing for the story's
+// Dias, or without a seed.
+void before_dias_rewrite(int slot, bool record);
+void after_dias_rewrite(int slot);
 // Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
 // the drop is not given, it was the enemy type's first-drop check). Both leave the game's
 // values alone without a seed or with the options off.

@@ -111,7 +111,9 @@ class ExpelProgression(Toggle):
     """Expel's locations may hold progression items. The disc switch leaves Expel behind, but
     after the Final Save Point in Fienal the old man in Fun City's arena reopens it (Virtual
     Expel), so they are never lost. Turn this off to keep progression out of Expel (hub mode
-    too, where Expel is open from the start)."""
+    too, where Expel is open from the start). In open world, off also gives you the North City
+    Pass and the Noel's House Pass at the start: Energy Nede's first passes would have nowhere
+    else to go."""
     display_name = "Expel Progression"
     default = 1
 
@@ -196,7 +198,9 @@ class KillerMoveChecks(Toggle):
     Chisato; 133 locations). Most moves have 1-3 levels at 100-300 uses; the moves that count in
     fine steps (Secret Medicine, Photon Prison, Pillory, Whirlwind Fist, Poison Pills, Cold Wind,
     Gravity Shell) have three, at 100, 200 and 300 uses. A member who may never join has none;
-    one who joins only by your choice in the story holds only filler."""
+    one who joins only by your choice in the story holds only filler.
+    With encounter_rate 0 this makes the seed a hell seed (see encounter_rate): no random
+    battles, so the uses are trained in the Fun City arena, which is free on that seed."""
     display_name = "Killer Move Checks"
 
 
@@ -208,7 +212,8 @@ class KillerMoveProgression(Choice):
     any: the moves of every member the logic can count on: the heroes, the starting character,
       and members who join by their character item (the logic then needs the item).
     A level counts from the disc switch (moves learned up to level 30) or the Final Save Point
-    (the rest), and never with encounter_rate 0 (the uses need battles)."""
+    (the rest). On a hell seed (encounter_rate 0) every level counts from the Fun City arena
+    instead, free there: see encounter_rate."""
     display_name = "Killer Move Progression"
     option_never = 0
     option_hero = 1
@@ -231,7 +236,14 @@ class Skillsanity(Choice):
       Action, the Cave of Trials' learn chests). A member who joins past a level gets its checks at
       the join. Killer-move levels (killer_move_checks) then need the move.
     insanity: both.
-    Guild checks and learn points never hold progression."""
+    Guild checks and learn levels may hold progression (encounter_rate above 0, or a hell seed: see
+    encounter_rate; special_only and insanity count as training for it). A guild check is
+    expected once one of its set's guilds is in reach (a set of 2700 Fol and up from the end of the
+    Hilton and Hoffmann Ruins stage; story mode from the disc switch; hub mode once Fienal opens);
+    a learn level, of a member the logic counts on, as killer moves are (up to level 30 from the
+    disc switch, the rest from the Final Save Point; hub mode from the start / once Fienal opens).
+    The machines, the Cave of Trials' learn chests and Float never hold progression, and neither
+    do shop slots. [skilllogic2, 0.2.1]"""
     display_name = "Skillsanity"
     option_none = 0
     option_skills_only = 1
@@ -284,7 +296,15 @@ class FolMultiplier(Range):
 
 
 class EncounterRate(Range):
-    """Random encounters, in percent of the original rate (0: none)."""
+    """Random encounters, in percent of the original rate (0: none).
+    0 together with killer_move_checks, or with skillsanity special_only or insanity (learn
+    levels), makes a hell seed: a game where the grind is meant to be preposterously hard. With no
+    random battles the Fun City arena is the only place to train, so on a hell seed the arena is
+    free (its 2000 Fol entry fee is waived), and killer-move levels, learn levels and skill guild
+    checks are expected from the arena (story mode from the disc switch, open world after the Cave
+    of Red Crystal, hub mode from the start) and may hold progression. The game's setup warns
+    when you choose such a seed. 0 without those options is an ordinary seed: the arena's fee
+    stays."""
     display_name = "Encounter Rate"
     range_start = 0
     range_end = 200
@@ -313,8 +333,9 @@ class WorldMode(Choice):
     """story: the areas open as the story opens them.
     open_world: each area's entrances on the world maps (35 areas, 66 entrances) stay shut
       until its pass arrives ("Salva Pass"). You start with the Arlia Pass and the Fun City
-      Pass; the story still runs in its order, so its areas need their passes on the way. The
-      passes are progression items shuffled into the multiworld.
+      Pass, and the North City and Noel's House passes too unless expel_teleporter and
+      expel_progression are both on; the story still runs in its order, so its areas need
+      their passes on the way. The passes are progression items shuffled into the multiworld.
     hub: New Game starts after the Final Save Point, with every chest and boss still waiting.
       Both worlds and every town are open from the start and nothing ever closes; each dungeon
       has one key ("Salva Drift Key"). Each story boss waits in its dungeon and plays its
@@ -359,7 +380,8 @@ class ExpelTeleporter(DefaultOnToggle):
     """Open world only (hub mode opens Expel from the start): from chapter 36 the old man in Fun City's arena takes the party back to
     Arlia (and Arlia's guide brings it back), so Expel stays reachable after the disc switch.
     Off: Expel reopens only after the Final Save Point, and Expel's locations then hold only
-    Expel's own passes or non-progression items."""
+    Expel's own passes or non-progression items; you also start with the North City Pass and
+    the Noel's House Pass."""
     display_name = "Expel Teleporter"
 
 

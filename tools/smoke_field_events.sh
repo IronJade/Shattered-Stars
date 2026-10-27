@@ -363,6 +363,41 @@ guard_load ap_guard_plain "$WORK/save_plain.mcd"
 check ap_guard_plain "a save without the seed's state is refused" "\\[ap\\] load refused, save 1 of .*save_plain\\.mcd: this save isn't from this Archipelago seed"
 guard_load ap_guard_any "$WORK/guard.mcd" SS_AP_ANY_SAVE=1
 check ap_guard_any "SS_AP_ANY_SAVE=1 (tests) loads it, logged" 'changed outside the game .*; loaded anyway \(SS_AP_ANY_SAVE=1\)'
+# Items still waiting across a save and a load [pendingsave agent] (docs/ap/seed_format.md "The save
+# sidecar", `pending`): four boss locations on encounter 19 (the console's battle, the stand-in's
+# victory) queue three own items and send Alice's; while her banner shows the camp menu saves with
+# the three waiting (no gives in menus). The sidecar keeps them (version 3, pending_hash); a load in a new session gives
+# them; the same sidecar with its list edited is refused like an edited save.
+cat >"$WORK/pend.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-pend", "slot": {"name": "Claude", "id": 1},
+ "locations": [
+  {"id": 7001, "name": "reward 1", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "item", "game_id": 21, "name": "Revival Card"}},
+  {"id": 7002, "name": "reward 2", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "item", "game_id": 22, "name": "Item 22"}},
+  {"id": 7003, "name": "reward 3", "check": {"type": "boss", "encounter": 19}, "item": {"player": 2, "player_name": "Alice", "name": "Hookshot"}},
+  {"id": 7004, "name": "reward 4", "check": {"type": "boss", "encounter": 19}, "item": {"player": 1, "kind": "fol", "amount": 4321, "name": "4321 Fol"}}]}
+SEED
+PEND_SAVE="560:triangle,566:none,660:up,666:none,710:cross,716:none,810:cross,816:none,910:cross,916:none,1010:cross,1016:none,1110:cross,1116:none"
+SS_BATTLE_STUB=1 SS_SAVE_ANYWHERE=1 SS_DEBUG_INPUT="200:battle 19;1200:ap_status" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen \
+  SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pend.mcd" timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/pend.apso2" \
+  --frames 1300 --map 18 --input "$PEND_SAVE" </dev/null >"$WORK/ap_pend_save.log" 2>&1
+check ap_pend_save "the boss's checks" '\[ap\] check 7004 \(reward 4\): 4321 Fol'
+check ap_pend_save "saved with three waiting" 'checks 4/4 \| received 0 \| waiting 3 \|'
+if grep -q '"version": 3' "$WORK/pend.slot01.ap.json" && grep -q '"pending_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/pend.slot01.ap.json" \
+   && [ "$(grep -c '"location": 700[124]' "$WORK/pend.slot01.ap.json")" = 3 ]; then
+  echo "PASS ap_pend_save: the sidecar keeps the three waiting (version 3, pending_hash)"
+else
+  echo "FAIL ap_pend_save: the sidecar keeps the three waiting (version 3, pending_hash)"; fail=1
+fi
+SS_LOAD_SAVE=0 SS_TRACE_LEADER=30 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pend.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/pend.apso2" --frames 700 </dev/null >"$WORK/ap_pend_load.log" 2>&1
+check ap_pend_load "a new session loads them" '\[ap\] loaded .*pend\.slot01\.ap\.json: 4 checks, received index 0, 3 items waiting from the save'
+check ap_pend_load "and gives them" '\[ap\] given 4321 Fol'
+check ap_pend_load "the Fol arrives" '\[leader\] vblank [0-9]+ map 18 state 0 .* fol 4321$'
+cp "$WORK/pend.mcd" "$WORK/pendx.mcd"
+sed 's/"location": 7002/"location": 7001/' "$WORK/pend.slot01.ap.json" >"$WORK/pendx.slot01.ap.json"
+SS_LOAD_SAVE=0 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/pendx.mcd" \
+  timeout 900 "$BIN" --headless --ap-seed "$WORK/pend.apso2" --frames 90 </dev/null >"$WORK/ap_pend_edit.log" 2>&1
+check ap_pend_edit "an edited waiting list is refused" '\[ap\] load refused, save 1 of .*pendx\.mcd: this save was changed outside the game \(its waiting items differ'
 
 # Archipelago phase 4 [world agent]: the open world. Map 17's door to Arlia (door 1116181,
 # routine 0x204c) needs key 1: walking in shows the banner and nothing transfers; once the key
@@ -500,6 +535,56 @@ check ap_shop_full "one sold (50 Fol) makes room" '\[debug\] map 26 \| state 0 .
 check ap_shop_full "and the Revival Card is given" '\[ap\] given Revival Card'
 check ap_shop_full "3 Lavenders held" '\[debug\] item 224: added 17$'
 check ap_shop_full "20 Revival Cards held" '\[debug\] item 21: added 0$'
+# A full inventory never holds up the give queue [queuebypass agent] (docs/ap/seed_format.md "The
+# save sidecar"): 20 Revival Cards held, then a Revival Card, a key and 100 Fol received from Bob
+# (the console's queue). The card is set aside with one banner, the key and the Fol behind it
+# come; on the second visit Hearn buys one card back, which makes room, and the owed card is given.
+# Saved with the card set aside, the sidecar keeps it owed; a new session loads it, sets it aside
+# again, and the same sale gives it there, once.
+cat >"$WORK/aside.apso2" <<'SEED'
+{"format": "apso2", "version": 1, "seed": "smoke-aside", "slot": {"name": "Claude", "id": 1},
+ "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21},
+           "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3},
+           "5009100": {"name": "100 Fol", "kind": "fol", "amount": 100}},
+ "locations": []}
+SEED
+ASIDE_GIVES="60:item 21 20;100:ap_give 5000021 Bob;110:ap_give 5300003 Bob;120:ap_give 5009100 Bob"
+"${AP_RUN[@]}" SS_DEBUG_INPUT="50:fol 50000;$ASIDE_GIVES;900:ap_status;3450:where;3710:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 3800 --map 18 --input "$SHOP1,$SHOP2SELL" \
+  </dev/null >"$WORK/ap_aside_shop.log" 2>&1
+check ap_aside_shop "the card is set aside, one banner" '\[ap\] no room for Revival Card in the inventory: set aside, the queue goes on \(1 set aside\); banner "Inventory full: Revival Card waiting"'
+check ap_aside_shop "only the card waits before the sale" 'checks 0/0 \| received 0 \| waiting 1 \| offline'
+check ap_aside_shop "listed as set aside" '\[debug\]   inventory full, set aside: Revival Card$'
+check ap_aside_shop "one sold makes room: the card comes" '\[ap\] given Revival Card \(set aside until there was room\)'
+check ap_aside_shop "Fol 50000 + 100 - 1480 + 50" '\[debug\] map 26 \| state 0 .* Fol 48670 '
+check ap_aside_shop "20 Revival Cards held" '\[debug\] item 21: added 0$'
+if [ "$(grep -oE '^\[ap\] given (Hilton Pass|100 Fol|Revival Card)' "$WORK/ap_aside_shop.log" | tr '\n' ,)" = \
+     "[ap] given Hilton Pass,[ap] given 100 Fol,[ap] given Revival Card," ]; then
+  echo "PASS ap_aside_shop: the key and the Fol come before the card (the queue goes on)"
+else
+  echo "FAIL ap_aside_shop: the key and the Fol come before the card (the queue goes on)"; fail=1
+fi
+ASIDE_SAVE="1060:triangle,1066:none,1160:up,1166:none,1210:cross,1216:none,1310:cross,1316:none,1410:cross,1416:none,1510:cross,1516:none,1610:cross,1616:none"
+"${AP_RUN[@]}" SS_SAVE_ANYWHERE=1 SS_MEMCARD1="$WORK/aside.mcd" SS_DEBUG_INPUT="$ASIDE_GIVES;1750:ap_status" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 1800 --map 18 --input "$ASIDE_SAVE" \
+  </dev/null >"$WORK/ap_aside_save.log" 2>&1
+check ap_aside_save "saved with the card set aside" '\[ap\] saved .*aside\.slot01\.ap\.json'
+check ap_aside_save "the key and the Fol given before the save" '\[ap\] given 100 Fol$'
+if grep -q '"version": 3' "$WORK/aside.slot01.ap.json" && grep -q '"pending_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/aside.slot01.ap.json" \
+   && grep -q '"from": "Bob"' "$WORK/aside.slot01.ap.json" && grep -q '"game_id": 21' "$WORK/aside.slot01.ap.json"; then
+  echo "PASS ap_aside_save: the sidecar keeps the card owed (pending, version 3, pending_hash)"
+else
+  echo "FAIL ap_aside_save: the sidecar keeps the card owed (pending, version 3, pending_hash)"; fail=1
+fi
+"${AP_RUN[@]}" SS_LOAD_SAVE=0 SS_MEMCARD1="$WORK/aside.mcd" SS_DEBUG_INPUT="50:fol 50000;150:ap_status;3450:where;3710:item 21 20" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/aside.apso2" --frames 3800 --input "$SHOP1,$SHOP2SELL" \
+  </dev/null >"$WORK/ap_aside_load.log" 2>&1
+check ap_aside_load "a new session loads it owed" '\[ap\] loaded .*aside\.slot01\.ap\.json: 0 checks, received index 0, 1 items waiting from the save'
+check ap_aside_load "set aside again, one banner" 'set aside, the queue goes on \(1 set aside\); banner "Inventory full: Revival Card waiting"'
+check ap_aside_load "the sale gives it" '\[ap\] given Revival Card \(set aside until there was room\)'
+check ap_aside_load "Fol 50000 - 1480 + 50" '\[debug\] map 26 \| state 0 .* Fol 48570 '
+check ap_aside_load "20 Revival Cards held" '\[debug\] item 21: added 0$'
+if [ "$(grep -c '^\[ap\] given ' "$WORK/ap_aside_load.log")" != 1 ]; then echo "FAIL ap_aside_load: more given than the owed card"; fail=1; fi
 # An order (shops 0x5a-0x5e: the APWorld makes none of them slots; a seed may): Hearn's B 0x6d 1
 # made the order shop 0x5a (map 26 word 0x21d), its Blueberry slot holds our own Blueberry. 20
 # Blueberries ordered: placing the order is the check (a Blueberry given at once); the courier
@@ -580,6 +665,62 @@ check ap_v2_m12 "the listed site checks" '\[ap\] check 1353854976 '
 check ap_v2_m12 "Claude in for the fight only" '\[ap\] join Claude at map 12 .*: for a while \(Shingo Forest \(map 12\)\): Claude, \(Rena\)'
 check ap_v2_m12 "the fight" '\[ap\] a battle at vblank'
 check ap_v2_m12 "Rena back" '\[ap\] join Rena at map 12 .*: the game.s join'
+# The same scene with all 8 slots taken (Ashton in slot 0, Rena in 1) [shingofix agent]: Claude
+# borrows Rena's slot, special 1 moves him to slot 0 (Ashton into the borrowed slot); Rena's
+# join puts him back in it first, so Ashton stays and nobody is lost.
+"${CEL_RUN[@]}" SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,1,2,3,5,7,8,10 SS_SWEEP_CONFIG=45=1 SS_SWEEP_PLAY="999:T0" \
+  SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_DEBUG_INPUT="1750:ap_status" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2rena.apso2" --frames 1800 --map 12 </dev/null >"$WORK/ap_v2_m12_full.log" 2>&1
+check ap_v2_m12_full "Claude borrows Rena's slot" '\[ap\] Claude borrows slot 1 of Rena '
+check ap_v2_m12_full "he goes back to it first" '\[ap\] Claude back to the slot they borrowed \(1, from 0\), Ashton to 0'
+check ap_v2_m12_full "Rena back in it" '\[ap\] Rena back in slot 1 \(Claude leaves it\)'
+check ap_v2_m12_full "all 8 stay" 'party Rena, Ashton, Celine, Bowman, Precis, Leon, Opera, Noel$'
+# The tournament's kept Dias [shingofix agent] (docs/ap/seed_format.md `tournament_dias`): Claude's
+# game, Dias the starting character (level 1, poisoned by a trap) fights his first fight (477, step
+# 4400); special 0xc makes him the story's Dias (level 35), his own slot held. 476's "Is your
+# preparation OK?" -> No opens the camp menu: a save there keeps the held Dias in the sidecar
+# (version 3, guarded). A new session loads it and fights his last fight (step 10200: special 0xd
+# rewrites him again, then his own data go back): he leaves the tournament byte for byte as he came.
+sed 's/"smoke-v2c"/"smoke-v2cd"/; s/"Ashton"/"Dias"/' "$WORK/v2claude.apso2" >"$WORK/v2cdias.apso2"
+TD_RUN=(env SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_BATTLE_STUB=1 SS_AUTO_ADVANCE=1 SS_INSTANT_TEXT=1 SS_MEMCARD1="$WORK/tdias.mcd")
+TD_SAVE="7600:down,7606:none,7700:cross,7706:none,7900:up,7906:none,8000:cross,8006:none,8100:cross,8106:none,8200:cross,8206:none,8300:cross,8306:none,8400:cross,8406:none"
+"${TD_RUN[@]}" SS_SAVE_ANYWHERE=1 SS_SCRIPT_GLOBALS="a0=19,a4=0" SS_STATE_DUMP="1400:$WORK/tdias_in.state" \
+  SS_DEBUG_INPUT="300:ap_give trap:status:poison Bob;1480:global 0xa4 4400;1500:warp 477" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2cdias.apso2" --frames 8600 --map 18 --input "$TD_SAVE" </dev/null >"$WORK/ap_tdias_save.log" 2>&1
+check ap_tdias_save "his first fight's 0xc: his slot held" '\[ap\] Dias \(kept\) before the tournament rewrites his stats: his slot saved \(level 1, EXP 0\)'
+check ap_tdias_save "a save in 476's camp menu" '\[ap\] saved .*tdias\.slot01\.ap\.json'
+if grep -q '"version": 3' "$WORK/tdias.slot01.ap.json" && grep -q '"tournament_dias": "05000804' "$WORK/tdias.slot01.ap.json" \
+   && grep -q '"tournament_dias_hash": "sha256:[0-9a-f]\{64\}"' "$WORK/tdias.slot01.ap.json"; then
+  echo "PASS ap_tdias_save: the sidecar holds him (version 3, poisoned, guarded)"
+else
+  echo "FAIL ap_tdias_save: the sidecar holds him (version 3, poisoned, guarded)"; fail=1
+fi
+"${TD_RUN[@]}" SS_LOAD_SAVE=0 SS_STATE_DUMP="5990:$WORK/tdias_out.state" SS_DEBUG_INPUT="60:global 0xa4 10200;160:ap_status;300:warp 477 force" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2cdias.apso2" --frames 6000 </dev/null >"$WORK/ap_tdias_load.log" 2>&1
+check ap_tdias_load "a new session loads it" '\[ap\] loaded .*tdias\.slot01\.ap\.json'
+check ap_tdias_load "with him held" 'tournament: Dias.s own data held \(level 1, EXP 0, slot\)'
+check ap_tdias_load "his last fight's 0xd: his record held too" '\[ap\] Dias \(kept\) before the tournament rewrites him: his record saved'
+check ap_tdias_load "then all of him back" '\[ap\] Dias back as he was before the tournament \(level 1, EXP 0; the tournament.s level 35, EXP 96982\): his last fight there is over'
+# His slot (id word aside: the scene sets him aside) and record, before and after, wherever he
+# stands (heroslot [benchmerge agent]: a starting Dias takes slot 0 at New Game, and the
+# tournament's scene leaves him in slot 1).
+td_bytes() {
+  local i v
+  for i in 0 1 2 3 4 5 6 7; do
+    v=$(od -An -t d2 -j $((0xCE0 + i * 0x60)) -N 2 "$1" 2>/dev/null | tr -d ' ')
+    if [ "$v" = 5 ] || [ "$v" = -5 ]; then
+      dd if="$1" bs=1 skip=$((0xCE2 + i * 0x60)) count=$((0x5E)) status=none
+      dd if="$1" bs=1 skip=$((0xFE0 + i * 0xD0)) count=$((0xD0)) status=none
+      return
+    fi
+  done
+}
+if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c)" = 302 ] \
+   && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
+  echo "PASS ap_tdias_load: Dias leaves the tournament byte for byte as he came"
+else
+  echo "FAIL ap_tdias_load: Dias leaves the tournament byte for byte as he came"; fail=1
+fi
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 </dev/null >"$WORK/ap_v2_t477.log" 2>&1
 check ap_v2_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament'

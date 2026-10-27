@@ -1,3 +1,17 @@
 {
-    "cmake.sourceDirectory": "/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Projects/Shattered-Stars/engine"
+    "cmake.sourceDirectory": "/run/media/ironjade/7b066518-e6be-41f3-909e-76e7f05db6e4/Projects/Shattered-Stars/engine",
+    "cmake.configureOnOpen": false,
+    "files.watcherExclude": {
+        "**/scratchpad/**": true,
+        "**/engine/build*/**": true,
+        "**/dist/**": true,
+        "**/extracted/**": true,
+        "**/__pycache__/**": true
+    },
+    "search.exclude": {
+        "**/scratchpad/**": true,
+        "**/engine/build*/**": true,
+        "**/dist/**": true,
+        "**/extracted/**": true
+    }
 }

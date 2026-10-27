@@ -240,6 +240,23 @@ From the scripts of every map (`tools/ap_extract.py`, docs/ap/field.md):
   party_validate_before_battle (0x80052ff4) moves the first member of slots 4-7 to slot 0 when
   slots 0-3 hold nobody active, and re-points config +0x41 to the first active front slot when
   the leader's slot is not active (it writes config, so the leader stays changed afterwards).
+  - [shingofix agent, 2026-10-27] **The tournament's fights (map 477, chapter 19)**, by G[0xa4]:
+    the fighter in, the hero out, then A 0x15 and `battle_c`: Claude's game 4400 / 6200 / 10200
+    (0x66f4..0x6810: leave routine 0x63e4(Claude, 0), join routine 0x63c0(Dias)); Rena's game
+    (0x7b08..0x7c54: 0x63e4(Rena, 0), 0x63c0(Dias / Claude)). After the fight (0x6b34.., 0x7e74..)
+    the reverse: 0x63e4(fighter, 0), 0x63c0(hero), A 0x15; Dias's first fight is followed by
+    special 0xc (his fixed stats: level 35, HP 2500) and his later ones by special 0xd (his
+    starting data again). [shingofix agent, second pass] Per game, by G[0xa4]: Claude's game,
+    Dias at 4400 (0xc at 0x6b40), 6200 (0xd 0x6d88), 10200 (0xd 0x6ea8; the final, 469 ends the
+    tournament at 10400); Rena's game, Dias at 6500 (0xc 0x7e74), 10200 (0xd 0x81a4), 11500 (no
+    special), 16500 (0xd 0x806c), Claude at 8500 / 12600 / 19500 (the final, against Dias). Specials
+    0xc / 0xd have no call site on any other map (all 827 scanned). Map 476 (the waiting room, steps
+    4600 / 5000 / 5600 / 6000) asks "Is your preparation OK?" (string 110, library choice 0x484c at
+    0x6fe0): Yes -> map_transfer_c(472, ...); otherwise A_3d(0) opens the camp menu and it asks
+    again; its main routine 0x7480 loops for ever (never free play there). Confirmed headless. Routine 0x63c0 = ext 0xae, A 0x3f (bond clear), 0x5698; 0x63e4 = with
+    "unequip" B 0x73 on slots 5 / 6, ext 0xaf, 0x5698. With members set aside before the fighter,
+    A 0x15 moves the fighter and the hero up over them (confirmed headless:
+    scratchpad/shingofix/runs/t1_base: `[(Ashton), Claude, Rena..]` -> `[Rena, .., Claude, (Dias)]`).
 - **The map library's choice routine** (0x484c on maps 144 and 169): a question window and a
   choice. Pushed arguments, in order: x mode, y mode (0xf4241 / 0xf4242: placed by the
   routine), question width, question lines, question string, choice width, **option count**,

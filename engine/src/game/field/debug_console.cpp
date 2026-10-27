@@ -48,6 +48,7 @@ const char* kHelp =
     "commands (numbers in decimal or 0x hex):\n"
     "  where                     map, field state, leader position, Fol, story globals\n"
     "  warp MAP [X Y Z [DIR]]    go to field map MAP (its default spot, or X Y Z facing DIR)\n"
+    "  warp MAP force            the same from inside a scene (debugging: the scene is dropped)\n"
     "  fol N                     set the party's Fol\n"
     "  item ID [COUNT]           add an item (new, as from a chest)\n"
     "  heal                      every member's HP and MP to full\n"
@@ -135,6 +136,7 @@ void debug_console_command(const std::string& text) {
   FieldGlobals& g = globals();
   std::vector<long long> n(w.size(), 0);
   for (size_t i = 1; i < w.size(); ++i) {
+    if (i == 2 && w[0] == "warp" && w[i] == "force") continue;  // (warp MAP force) [shingofix agent]
     if (!number(w[i], &n[i])) {
       say("not a number: " + w[i]);
       return;
@@ -148,17 +150,20 @@ void debug_console_command(const std::string& text) {
                   debug_console_status().c_str(), a ? a->screen_x : 0, a ? a->screen_y : 0,
                   rd16(g.field_flags + 0x10), rd32(g.field_flags + 0xA0), rd32(g.field_flags + 0xA4));
     say(line);
-  } else if (cmd == "warp" && (w.size() == 2 || w.size() >= 5)) {
+  } else if (cmd == "warp" && (w.size() == 2 || w.size() >= 5 || (w.size() == 3 && w[2] == "force"))) {
     const int map = static_cast<int>(n[1]);
     if (map < 0 || map > 826) {
       say("field maps are 0-826");
       return;
     }
-    if (f->state != 0 || (g_script_vm != nullptr && g_script_vm->depth != 0)) {
+    // "force" [shingofix agent]: also while a scene runs (a map whose main routine never returns,
+    // as the tournament's 476); not from a menu or a map change.
+    const bool force = w.size() == 3;
+    if (f->state != 0 || (!force && g_script_vm != nullptr && g_script_vm->depth != 0)) {
       say("busy (an event or a menu is running); try again in free play");
       return;
     }
-    if (w.size() == 2) {
+    if (w.size() <= 3) {
       // The map's own entry spot: field_update state 1 loads it like a scripted change.
       f->pending_map = map;
       fade_push(field_fade(), 3, 0x10, 0, 0);

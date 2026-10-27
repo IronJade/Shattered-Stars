@@ -215,7 +215,10 @@ Same-state rule: with nobody on the bench every path is today's (the 8 first; th
 ## Decisions for the user (recommendation first)
 
 **The user's answers (2026-10-26), all eight decided:**
-- B1 Party Order: **three columns that scroll two at a time** (not the recommended flip).
+- B1 Party Order: first answered "three columns that scroll two at a time", then **changed
+  (2026-10-26) to Option A of scratchpad/bench/shots/mock_party_order.png**: the front four on
+  the left, L1/R1 flips the right column between the reserve and the bench ("better than the 3
+  columns that cut off text"). A first pick survives the flip, so any two places can be swapped.
 - B2 Bench members in Equipment / Skills / Status / Specialty / Tactics: **yes** (+3-5 days).
 - B3 **Everyone but the hero**, the starting member included; temporary members never.
 - B4 A story join of a benched member: **they stay benched**, lent only for solo fights.

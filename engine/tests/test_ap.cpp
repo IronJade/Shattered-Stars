@@ -23,6 +23,7 @@
 #include "game/field/item_effect.h"
 #include "game/field/menu_specialty.h"
 #include "game/field/script_vm.h"
+#include "game/field/special.h"
 #include "test.h"
 #include "util/sha256.h"
 
@@ -518,6 +519,179 @@ TEST(ap_bench_store) {
   ap::mutable_state().bench = b;
   ap::on_saved(card, 7);
   CHECK(!ap::load_allowed(card, 7, save.data(), save.size()));
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+// Items still waiting across a save and a load [pendingsave agent] (docs/ap/seed_format.md "The
+// save sidecar", `pending`): a check's items queue up for free play; a save keeps the queue in the
+// sidecar (version 3, guarded by pending_hash), a load in a new session gives them again, and
+// nothing is given twice (a second load, a reconnect). A load of a save from before a check owes
+// its own item unless the check is a chest or a gift (the loaded game opens it again).
+namespace {
+const char* kPendingSeed = R"seed({
+  "format": "apso2", "version": 1, "seed": "waiting-1", "slot": {"name": "Claude", "id": 1},
+  "items": {"5000021": {"name": "Revival Card", "kind": "item", "game_id": 21},
+            "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3}},
+  "locations": [
+    {"id": 2001, "name": "reward 1", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 21, "name": "Revival Card"}},
+    {"id": 2002, "name": "reward 2", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "key", "key": 3, "name": "Hilton Pass"}},
+    {"id": 2003, "name": "reward 3", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "fol", "amount": 300}},
+    {"id": 2004, "name": "reward 4", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 2, "player_name": "Alice", "name": "Hookshot", "ap_id": 77}},
+    {"id": 2005, "name": "a crate", "check": {"type": "chest", "map": 18, "flag": 2401},
+     "item": {"player": 1, "kind": "item", "game_id": 23}}
+  ]})seed";
+
+std::string read_text(const std::string& path) {
+  std::ifstream in(path, std::ios::binary);
+  return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+void write_text(const std::string& path, const std::string& text) {
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  out << text;
+}
+}  // namespace
+
+TEST(ap_pending_save) {
+  ap::stop();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kPendingSeed, &s, &error));
+  std::vector<u8> save(0x2000);  // a save as the card holds it (length 0x1000 at +0x21a)
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 5 + 1);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+  const fs::path dir = scratch("pending");
+  const std::string card = (dir / "memcard1.mcd").string();
+
+  // Nothing waiting: version 2 and no new key (the sidecar as before).
+  ap::start_with(s);
+  ap::on_saved(card, 0, save.data(), save.size());
+  const std::string empty_text = read_text(ap::sidecar_path(card, 0));
+  CHECK(empty_text.find("\"version\": 2") != std::string::npos && empty_text.find("\"pending") == std::string::npos);
+
+  // The boss's four checks: three own items queue up (the fourth is Alice's), a save keeps them.
+  ap::on_battle_exit(19, 0);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2004) && ap::pending_count() == 3);
+  ap::on_saved(card, 1, save.data(), save.size());
+  const std::string text = read_text(ap::sidecar_path(card, 1));
+  CHECK(text.find("\"version\": 3") != std::string::npos);
+  CHECK(text.find("\"pending_hash\": \"sha256:") != std::string::npos);
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 1), &back, &error));
+  CHECK(back.pending.size() == 3 && back.pending[0].location == 2001 && back.pending[2].location == 2003);
+  CHECK(ap::state().pending.empty() && ap::state().pending_hash.empty());  // (never in the running state)
+  CHECK(ap::load_allowed(card, 1, save.data(), save.size()));
+  ap::on_saved(card, 2, save.data(), save.size());  // (the same queue: the same file)
+  CHECK(read_text(ap::sidecar_path(card, 2)) == read_text(ap::sidecar_path(card, 1)));
+
+  // A new session loads it: the three wait again; a second load doesn't double them.
+  ap::stop();
+  ap::start_with(s);
+  CHECK(ap::pending_count() == 0);
+  ap::on_loaded(card, 1);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2004) && ap::pending_count() == 3);
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 3);
+  // The save from before the boss: its game lacks the three, the checks stay checked: still three
+  // (owed, not doubled); the crate opened since is not owed (that game opens it again).
+  ap::on_flag_set(2401);
+  CHECK(ap::is_checked(2005));
+  ap::on_loaded(card, 0);
+  CHECK(ap::is_checked(2001) && ap::is_checked(2005) && ap::pending_count() == 3);
+  ap::on_loaded(card, 0);
+  CHECK(ap::pending_count() == 3);
+  ap::on_loaded(card, 1);  // (back to the later save: its own three, nothing else)
+  CHECK(ap::pending_count() == 3);
+
+  // Items that are no location's own (the console's, the courier's) keep their item and sender.
+  ap::stop();
+  ap::start_with(s);
+  CHECK(ap::receive_by_name_or_id("Revival Card", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("0x30", "", &error));
+  CHECK(ap::receive_by_name_or_id("trap:fol_loss:25", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("key:3", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("Celine", "Alice", &error));
+  ap::on_saved(card, 3, save.data(), save.size());
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 3), &back, &error) && back.pending.size() == 5);
+  CHECK(back.pending[0].location == -1 && back.pending[0].item.kind == "item" && back.pending[0].item.game_id == 21 &&
+        back.pending[0].item.ap_id == 5000021 && back.pending[0].from == "Bob" && !back.pending[0].found);
+  CHECK(back.pending[1].item.game_id == 0x30 && back.pending[1].from.empty());
+  CHECK(back.pending[2].item.kind == "trap" && back.pending[2].item.trap == "fol_loss" && back.pending[2].item.percent == 25);
+  CHECK(back.pending[3].item.kind == "key" && back.pending[3].item.key == 3 && back.pending[3].item.name == "Hilton Pass");
+  CHECK(back.pending[4].item.kind == "character" && back.pending[4].item.character == 3 && back.pending[4].from == "Alice");
+  CHECK(ap::load_allowed(card, 3, save.data(), save.size()));
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 3);
+  CHECK(ap::pending_count() == 5);
+  ap::SaveState again = back;
+  again.pending_hash.clear();
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(again), &again, &error) && again.pending.size() == 5);
+
+  // The guard: a list edited, extended, stripped of its hash, or the hash edited: refused like an
+  // edited save. Spacing and key order are not edits. Both keys stripped: only the items are lost
+  // (a sidecar with nothing waiting), as for the bench.
+  const std::string path1 = ap::sidecar_path(card, 1), path4 = ap::sidecar_path(card, 4);
+  auto variant = [&](const std::string& from, const std::string& to) {
+    std::string t = text;
+    const size_t at = t.find(from);
+    CHECK(at != std::string::npos);
+    if (at != std::string::npos) t.replace(at, from.size(), to);
+    write_text(path4, t);
+    return ap::load_allowed(card, 4, save.data(), save.size());
+  };
+  CHECK(variant("\"location\": 2002", "\"location\": 2005") == false);
+  CHECK(variant("\"pending\": [", "\"pending\": [{\"location\": 2002}, ") == false);
+  CHECK(variant("\"pending_hash\"", "\"pending_hash_x\"") == false);
+  CHECK(variant("\"pending_hash\": \"sha256:", "\"pending_hash\": \"sha256:0") == false);
+  CHECK(variant("\"pending\": [", "\"pending\":[ ") == true);
+  ap::Json j;
+  CHECK(ap::Json::parse(text, &j, &error));
+  ap::Json stripped = ap::Json::object();
+  for (const auto& [k, v] : j.items())
+    if (k != "pending") stripped.set(k, v);
+  write_text(path4, stripped.dump());
+  CHECK(!ap::load_allowed(card, 4, save.data(), save.size()));
+  ap::Json both = ap::Json::object();
+  for (const auto& [k, v] : j.items())
+    if (k != "pending" && k != "pending_hash") both.set(k, v);
+  write_text(path4, both.dump());
+  CHECK(ap::load_allowed(card, 4, save.data(), save.size()));
+  // Tied to its save: the same sidecar beside another save's bytes fails (save_hash first).
+  std::vector<u8> other = save;
+  other[0x300] ^= 1;
+  CHECK(!ap::load_allowed(card, 1, other.data(), other.size()));
+  CHECK(ap::load_allowed(card, 1, save.data(), save.size()));
+  CHECK(read_text(path1) == text);
+
+  // The server: checks of this slot made in a game this one lacks give their own items here once
+  // (boss 2001 and 2002; not the crate 2005, not Alice's 2004); a reconnect adds nothing.
+  ap::stop();
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "waiting-1";
+  c.checked = {2001, 2002, 2004, 2005};
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected() && ap::is_checked(2002) && ap::pending_count() == 2);
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::pending_count() == 2);
+  // A load of the later save (it has all four boss checks, three waiting): its three, no more.
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 3);
   ap::stop();
   std::error_code ec;
   fs::remove_all(dir, ec);
@@ -2240,6 +2414,263 @@ TEST(ap_v2_party_borrow) {
   ap::stop();
 }
 
+// [shingofix agent] Map 12's scene with every slot kept (Rena's game, Ashton leading, Claude not
+// received): Claude borrows Rena's reserve slot (1); special 1 moves him to slot 0 (Ashton into the
+// borrowed slot); a free play meanwhile keeps the stash (he is in, active and needed, wherever he
+// stands); Rena's join puts him back in the slot he borrowed before her data, so Ashton stays;
+// special 2 then puts Rena in slot 0. A sidecar from before ("by" absent) finds the temporary
+// member the same way; "by" is written only when known, and out of range reads as unknown.
+TEST(ap_v2_party_borrow_moved) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  for (const bool old_sidecar : {false, true}) {
+    CHECK(ap::load_seed_text(party_seed(open_options("rena")), &s, &error));
+    ap::start_with(s);
+    pg.claude_game(false);
+    pg.members({7, 2, 3, 4, 6, 8, 9, 11});
+    pg.received({3, 4, 6, 7, 8, 9, 11});
+    pg.rec.data[1 * 0xD0 + 0x10] = 0x5B;  // (Rena's record: a byte to see it come back)
+    pg.at(12, 4, 150);
+    pg.leave(2);  // (the scene takes Rena out)
+    CHECK(!pg.join(1, 0x63d0, 0x6e08));
+    CHECK(pg.party() == "7,1,3,4,6,8,9,11" && ap::state().stash.size() == 1 && ap::state().stash[0].slot == 1 &&
+          ap::state().stash[0].by == 1 && ap::state().temporary == std::vector<int>{1});
+    {
+      const ap::Json j = ap::sidecar_json(ap::state());
+      CHECK(j["stash"][0]["by"].as_int(0) == 1);
+    }
+    if (old_sidecar) {
+      ap::SaveState st = ap::state();
+      st.stash[0].by = 0;
+      CHECK(ap::sidecar_json(st)["stash"][0]["by"].is_null());
+      const std::string card = (pg.dir / "memcard1.mcd").string();
+      CHECK(ap::write_sidecar(ap::sidecar_path(card, pg.loads), st, &error));
+      ap::on_loaded(card, pg.loads++);
+      CHECK(ap::state().stash.size() == 1 && ap::state().stash[0].by == 0 && ap::state().temporary == std::vector<int>{1});
+    }
+    field::party_swap_slots(nullptr, 0, 1);  // (special 1: Claude to slot 0)
+    CHECK(pg.party() == "1,7,3,4,6,8,9,11");
+    if (!old_sidecar) {
+      CHECK(ap::party_free_play_step().empty());
+      CHECK(pg.party() == "1,7,3,4,6,8,9,11" && ap::state().stash.size() == 1);
+    }
+    CHECK(pg.join(2, 0x63d0, 0x70ac));  // (Rena's join: her data back, then the game's join)
+    CHECK(pg.party() == "7,2,3,4,6,8,9,11" && pg.rec.data[1 * 0xD0 + 0x10] == 0x5B);
+    CHECK(ap::state().stash.empty() && ap::state().temporary.empty());
+    field::party_swap_slots(nullptr, 0, 1);  // (special 2: Rena to slot 0; Claude is gone)
+    CHECK(pg.party() == "2,7,3,4,6,8,9,11");
+    pg.at(9, 4, 2000);
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "2,7,3,4,6,8,9,11");
+    ap::stop();
+  }
+  // The tournament (477, Claude's game, step 4400) with every reserve slot kept: the starting
+  // member (Ashton) set aside in slot 0, before the hero. Dias borrows slot 0; the scene's A 0x15
+  // before the fight and after Claude's join moves him to slot 7 and Rena into slot 0; the free
+  // play after it puts Dias back first, so Ashton's data lands on him, not on Rena.
+  auto compact = [&] {  // (script A 0x15, script_table_a.cpp)
+    auto id = [&](int i) {
+      s16 v;
+      std::memcpy(&v, pg.sg.party.data() + i * 0x60, 2);
+      return v;
+    };
+    for (int i = 0; i < 8; ++i) {
+      if (id(i) >= 1) continue;
+      int j = i + 1;
+      while (j < 8 && id(j) <= 0) ++j;
+      if (j == 8) return;
+      field::party_swap_slots(nullptr, i, j);
+    }
+  };
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({7, 1, 2, 3, 4, 6, 8, 9});
+  pg.received({});
+  pg.at(1, 19, 0);
+  CHECK(ap::party_free_play_step().empty());  // (Ashton is in: the start given)
+  field::party_remove_member(nullptr, 6);     // (468 / 469 set him aside)
+  pg.at(477, 19, 4400);
+  pg.leave(1);
+  CHECK(!pg.join(5, 0x63d0, 0x6704));
+  CHECK(pg.party() == "5,-1,2,3,4,6,8,9" && ap::state().stash.size() == 1 && ap::state().stash[0].by == 5);
+  compact();
+  CHECK(pg.party() == "5,2,3,4,6,8,9,-1");
+  pg.leave(5);
+  CHECK(pg.join(1, 0x63d0, 0x6b78));
+  compact();
+  CHECK(pg.party() == "2,3,4,6,8,9,1,-5" && ap::state().stash.size() == 1);
+  CHECK(ap::party_free_play_step().empty());
+  CHECK(pg.party() == "-7,3,4,6,8,9,1,2" && ap::state().stash.empty() && ap::state().temporary.empty());
+  ap::stop();
+  // "by": absent or out of range reads as 0 (unknown).
+  ap::Json j;
+  const std::string bytes(0x130 * 2, '0');
+  for (const char* by : {"", ", \"by\": 13", ", \"by\": -1", ", \"by\": 5"}) {
+    CHECK(ap::Json::parse(std::string("{\"format\": \"apso2-save\", \"version\": 2, \"stash\": [{\"slot\": 1, \"bytes\": \"") +
+                              bytes + "\"" + by + "}]}",
+                          &j, &error));
+    ap::SaveState back;
+    CHECK(ap::sidecar_from_json(j, &back, &error) && back.stash.size() == 1);
+    CHECK(back.stash[0].by == (std::string(by) == ", \"by\": 5" ? 5 : 0));
+  }
+}
+
+// [shingofix agent] The tournament's kept Dias (the user's option b): a received or starting Dias
+// keeps his own data through map 477's specials 0xc / 0xd: his slot saved before 0xc, his record
+// before the first 0xd (his own until then), both back after his last fight there (Claude's game
+// 10200, Rena's 16500), with a save and load in between (the sidecar's `tournament_dias`, version
+// 3, under the save guard). The story's Dias and a game without a seed: as before.
+TEST(ap_tournament_dias) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  auto slot_bytes = [&](int i) { return std::vector<u8>(pg.sg.party.begin() + i * 0x60, pg.sg.party.begin() + (i + 1) * 0x60); };
+  auto rec_bytes = [&](int i) { return std::vector<u8>(pg.rec.data.begin() + i * 0xD0, pg.rec.data.begin() + (i + 1) * 0xD0); };
+  auto put16 = [](u8* p, int v) { const s16 x = static_cast<s16>(v); std::memcpy(p, &x, 2); };
+  auto put32 = [](u8* p, s32 v) { std::memcpy(p, &v, 4); };
+  auto level = [&](int i) { s16 v; std::memcpy(&v, pg.sg.party.data() + i * 0x60 + 0x28, 2); return static_cast<int>(v); };
+  // Dias in slot 3: level 50, EXP 123456, HP 3000, a weapon (record +0xc) and a name.
+  auto dias = [&] {
+    pg.members({1, 2, 3, 5});
+    u8* p = pg.sg.party.data() + 3 * 0x60;
+    put16(p + 0x28, 50);
+    put32(p + 0x10, 123456);
+    put32(p + 0x14, 3000);
+    put32(p + 0x18, 3000);
+    put16(pg.rec.data.data() + 3 * 0xD0 + 0xC, 0x1234);
+    std::memcpy(pg.rec.data.data() + 3 * 0xD0 + 0x24, "Dias", 5);
+  };
+  const fs::path dir = pg.dir / "td";
+  fs::create_directories(dir);
+  const std::string card = (dir / "memcard1.mcd").string();
+  std::vector<u8> save(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 5 + 1);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+
+  // Claude's game, Dias received.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  dias();
+  pg.received({5});
+  const std::vector<u8> slot_in = slot_bytes(3);
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);  // (after his first fight: his fixed stats)
+  CHECK(level(3) == 35 && ap::state().tournament_dias == slot_in);
+  CHECK(ap::sidecar_json(ap::state())["version"].as_int(0) == 3);
+  // His record is still his own: the player's change to it counts.
+  put16(pg.rec.data.data() + 3 * 0xD0 + 0xC, 0x2222);
+  const std::vector<u8> rec_in = rec_bytes(3);
+  pg.at(477, 19, 6200);
+  field::field_special_command(nullptr, 0xD);  // (after his second: his starting data again)
+  CHECK(ap::state().tournament_dias.size() == 0x130);
+  CHECK(std::vector<u8>(ap::state().tournament_dias.begin() + 0x60, ap::state().tournament_dias.end()) == rec_in);
+  CHECK(rec_bytes(3) != rec_in);  // (0xd wrote his record: at least the name in game_state +0x78)
+  // A save between fights, and a load of it into a fresh game: the copy comes from the sidecar.
+  ap::on_saved(card, 0, save.data(), save.size());
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &back, &error));
+  CHECK(back.tournament_dias == ap::state().tournament_dias && !back.tournament_dias_hash.empty());
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  {
+    // Edited, stripped of its hash, or moved to another save: refused.
+    ap::SaveState other = back;
+    other.tournament_dias[0x28] ^= 1;
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, save.data(), save.size()));
+    other = back;
+    other.tournament_dias_hash.clear();
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, save.data(), save.size()));
+    std::vector<u8> moved = save;
+    moved[0x400] ^= 1;
+    other = back;
+    other.save_hash = util::save_digest(moved.data(), moved.size());
+    CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), other, &error));
+    CHECK(!ap::load_allowed(card, 1, moved.data(), moved.size()));
+  }
+  ap::stop();
+  ap::start_with(s);
+  pg.claude_game(true);
+  CHECK(ap::state().tournament_dias.empty());
+  ap::on_loaded(card, 0);
+  CHECK(ap::state().tournament_dias == back.tournament_dias && ap::state().tournament_dias_hash.empty());
+  // Free play between fights keeps it; the fight at 10200, his last: his own data back.
+  CHECK(ap::party_free_play_step().empty() && ap::state().tournament_dias.size() == 0x130);
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(slot_bytes(3) == slot_in && rec_bytes(3) == rec_in && ap::state().tournament_dias.empty());
+  CHECK(ap::sidecar_json(ap::state())["tournament_dias"].is_null() && ap::sidecar_json(ap::state())["version"].as_int(0) == 2);
+  ap::stop();
+
+  // Rena's game, Dias the starting character: 10200's 0xd is not his last (16500 is); set aside
+  // after it, he comes back as he was, in reserve.
+  CHECK(ap::load_seed_text(party_seed(open_options("rena", ", \"starting_character\": \"Dias\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(false);
+  dias();
+  pg.received({});
+  const std::vector<u8> slot_r = slot_bytes(3), rec_r = rec_bytes(3);
+  pg.at(477, 19, 6500);
+  field::field_special_command(nullptr, 0xC);
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(ap::state().tournament_dias.size() == 0x130 && level(3) != 50);
+  pg.at(477, 19, 16500);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(slot_bytes(3) == slot_r && rec_bytes(3) == rec_r && ap::state().tournament_dias.empty());
+  // Held past the tournament (not seen): the next free play puts him back, set aside as he is.
+  pg.at(477, 19, 6500);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(!ap::state().tournament_dias.empty());
+  field::party_remove_member(nullptr, 4);
+  pg.at(1, 20, 0);
+  ap::party_free_play_step();
+  std::vector<u8> aside = slot_r;
+  aside[0] = 0xFB;  // (-5: set aside)
+  aside[1] = 0xFF;
+  CHECK(slot_bytes(3) == aside && ap::state().tournament_dias.empty());
+  ap::stop();
+
+  // The story's Dias (not received, no starting Dias): rewritten as before, nothing held.
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  dias();
+  pg.received({});
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(level(3) == 35 && ap::state().tournament_dias.empty());
+  pg.at(477, 19, 10200);
+  field::field_special_command(nullptr, 0xD);
+  CHECK(ap::state().tournament_dias.empty() && level(3) != 50);
+  ap::stop();
+  // No seed: as before.
+  dias();
+  pg.at(477, 19, 4400);
+  field::field_special_command(nullptr, 0xC);
+  CHECK(level(3) == 35);
+
+  // The sidecar: absent reads as none; a wrong size, bad hex or another member is unreadable.
+  ap::Json j;
+  const std::string head = "{\"format\": \"apso2-save\", \"version\": 3, \"tournament_dias\": \"";
+  const std::string ok = "0500" + std::string(0x60 * 2 - 4, '0');  // (Dias's slot alone)
+  for (const auto& [text, good] : std::vector<std::pair<std::string, bool>>{
+           {ok, true}, {"fbff" + std::string(0x130 * 2 - 4, '0'), true}, {ok.substr(0, 0x5F * 2), false},
+           {"0700" + ok.substr(4), false}, {"zz" + ok.substr(2), false}, {ok + "00", false}}) {
+    CHECK(ap::Json::parse(head + text + "\"}", &j, &error));
+    ap::SaveState st;
+    CHECK(ap::sidecar_from_json(j, &st, &error) == good);
+  }
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 2}", &j, &error));
+  ap::SaveState none;
+  CHECK(ap::sidecar_from_json(j, &none, &error) && none.tournament_dias.empty());
+}
+
 // The starting character: joins at the first free play, before the starting items, and leads;
 // the picked game's hero means nobody; no lockouts, also without character_items.
 TEST(ap_v2_starting_character) {
@@ -3224,5 +3655,196 @@ TEST(ap_skillsanity_checks) {
   ap::on_flag_set(705);
   CHECK(!ap::is_checked(1373634816));
   set_flag(sg, 705, false);
+  ap::stop();
+}
+
+// ---- A full inventory never holds up the give queue [queuebypass agent] -----------------------
+// (docs/ap/seed_format.md "The save sidecar"; the user, 2026-10-27: "The ability to bypass a "full"
+// item slot and continue to recieve items is a mandatory fix.") An item whose kind is full (20 at
+// most) is set aside with one banner; the items behind it (the server's too) go on; it is given
+// once there is room, the set-aside ones in the order they came; a save and a load keep it owed
+// (the sidecar's `pending`), never given twice; a count that fits in part gives what fits.
+
+namespace {
+const char* kFullSeed = R"seed({
+  "format": "apso2", "version": 1, "seed": "full-1", "slot": {"name": "Claude", "id": 1},
+  "items": {"80001": {"name": "Blackberries", "kind": "item", "game_id": 756},
+            "80002": {"name": "100 Fol", "kind": "fol", "amount": 100},
+            "5300003": {"name": "Hilton Pass", "kind": "key", "key": 3}},
+  "locations": [
+    {"id": 3001, "name": "reward 1", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 756, "name": "Blackberries"}},
+    {"id": 3002, "name": "reward 2", "check": {"type": "boss", "encounter": 19},
+     "item": {"player": 1, "kind": "item", "game_id": 224, "count": 5, "name": "Lavender"}}
+  ]})seed";
+
+int held(const ScratchGame& sg, int item) {
+  const int i = field::inventory_find(sg.g.inventory, item);
+  return i < 0 ? 0 : sg.inv[static_cast<size_t>(i) * 2 + 1] >> 2 & 0x1F;
+}
+void use_one(ScratchGame& sg, int item) {
+  const int i = field::inventory_find(sg.g.inventory, item);
+  CHECK(i >= 0);
+  if (i >= 0) field::inventory_remove_at(sg.g.inventory, i, 1);
+}
+// Free play's next give: its banners as expected (else both printed).
+bool step_is(const std::string& want) {
+  const std::string got = ap::give_free_play_step();
+  if (got != want) std::fprintf(stderr, "  give step: \"%s\", expected \"%s\"\n", got.c_str(), want.c_str());
+  return got == want;
+}
+ap_net::Event server_items(std::vector<int64_t> ids) {
+  ap_net::Event e;
+  e.kind = ap_net::Event::kItems;
+  for (size_t i = 0; i < ids.size(); ++i) e.items.push_back({ids[i], 100 + static_cast<int64_t>(i), 2, 0, static_cast<int>(i)});
+  return e;
+}
+}  // namespace
+
+TEST(ap_full_inventory) {
+  ap::stop();
+  ScratchGame sg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kFullSeed, &s, &error));
+  ap::start_with(s);
+  std::vector<u8> save(0x2000);
+  for (size_t i = 0; i < save.size(); ++i) save[i] = static_cast<u8>(i * 7 + 3);
+  save[0x21A] = 0x00;
+  save[0x21B] = 0x10;
+  const fs::path dir = scratch("full");
+  const std::string card = (dir / "memcard1.mcd").string();
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  auto connect = [&] {
+    ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+    ap_net::Event c;
+    c.kind = ap_net::Event::kConnected;
+    c.seed_name = "full-1";
+    events.push_back(c);
+    events.push_back(server_items({80002, 80001}));  // the server: 100 Fol, then Blackberries
+    ap::vblank();
+  };
+
+  // 20 Blackberries held. Received: a Blackberry and a key from Bob (the console's queue), then
+  // the server's 100 Fol and a Blackberry from Alice. The key and the Fol arrive; both Blackberries
+  // wait, one banner for them.
+  field::inventory_add(sg.g.inventory, 756, 20, 1);
+  CHECK(ap::receive_by_name_or_id("Blackberries", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("key:3", "Bob", &error));
+  connect();
+  CHECK(ap::connected() && ap::pending_count() == 4);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Received Hilton Pass from Bob"));
+  CHECK(ap::has_key(3));
+  CHECK(step_is("Received 100 Fol from Alice"));
+  CHECK(sg.fol() == 100 && ap::state().received_index == 1);
+  CHECK(step_is(""));  // (the server's Blackberry: set aside, no second banner)
+  CHECK(ap::state().received_index == 2 && ap::pending_count() == 2 && held(sg, 756) == 20);
+  CHECK(step_is(""));  // (nothing more: no retry banner)
+  CHECK(ap::status_text().find("inventory full, set aside: Blackberries, Blackberries") != std::string::npos);
+
+  // A save keeps both owed (the sidecar's `pending`, its usual guard); a new session loads them:
+  // set aside again at the first try (one banner), the server's list again gives nothing twice.
+  ap::on_saved(card, 0, save.data(), save.size());
+  ap::SaveState back;
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 0), &back, &error) && back.pending.size() == 2 && back.received_index == 2);
+  CHECK(back.pending[0].item.game_id == 756 && back.pending[0].from == "Bob" && back.pending[0].location == -1);
+  CHECK(back.pending[1].item.game_id == 756 && back.pending[1].from == "Alice" && !back.pending[1].aside);
+  CHECK(ap::load_allowed(card, 0, save.data(), save.size()));
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 0);
+  connect();
+  CHECK(ap::pending_count() == 2 && ap::state().received_index == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is(""));
+  CHECK(step_is(""));
+  CHECK(sg.fol() == 100 && held(sg, 756) == 20);
+
+  // One Blackberry used: the first owed one arrives (its usual banner), the other waits on; another
+  // used: it arrives too. Nothing more.
+  use_one(sg, 756);
+  CHECK(step_is("Received Blackberries from Bob"));
+  CHECK(held(sg, 756) == 20 && ap::pending_count() == 1);
+  CHECK(step_is(""));
+  use_one(sg, 756);
+  CHECK(step_is("Received Blackberries from Alice"));
+  CHECK(held(sg, 756) == 20 && ap::pending_count() == 0 && sg.fol() == 100 && ap::state().received_index == 2);
+  CHECK(ap::status_text().find("set aside") == std::string::npos);
+  CHECK(step_is(""));
+
+  // A count that fits in part (a boss's 5 Lavender, 17 held): 3 go in, 2 wait (one banner each);
+  // the boss's Blackberry in front of it waits too. A save keeps the rest as the item itself.
+  ap::stop();
+  ap::start_with(s);
+  field::inventory_add(sg.g.inventory, 224, 17, 1);
+  ap::on_battle_exit(19, 0);
+  CHECK(ap::is_checked(3001) && ap::is_checked(3002) && ap::pending_count() == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Got 3 x Lavender / Inventory full: 2 x Lavender waiting"));
+  CHECK(held(sg, 224) == 20 && ap::pending_count() == 2);
+  ap::on_saved(card, 1, save.data(), save.size());
+  CHECK(ap::read_sidecar(ap::sidecar_path(card, 1), &back, &error) && back.pending.size() == 2);
+  CHECK(back.pending[0].location == 3001);
+  CHECK(back.pending[1].location == -1 && back.pending[1].item.game_id == 224 && back.pending[1].item.count == 2 &&
+        back.pending[1].found);
+  ap::stop();
+  ap::start_with(s);
+  ap::on_loaded(card, 1);
+  CHECK(ap::pending_count() == 2);
+  CHECK(step_is("Inventory full: Blackberries waiting"));
+  CHECK(step_is("Inventory full: 2 x Lavender waiting"));
+  use_one(sg, 224);
+  CHECK(step_is("Got Lavender"));  // (one fits; the other waits on, quietly)
+  CHECK(held(sg, 224) == 20 && ap::pending_count() == 2);
+  use_one(sg, 224);
+  use_one(sg, 756);
+  CHECK(step_is("Got Blackberries"));  // (the set-aside ones in order)
+  CHECK(step_is("Got Lavender"));
+  CHECK(held(sg, 224) == 20 && held(sg, 756) == 20 && ap::pending_count() == 0);
+
+  // Everything given: the sidecar as before (version 2, no `pending`).
+  ap::on_saved(card, 2, save.data(), save.size());
+  const std::string text = read_text(ap::sidecar_path(card, 2));
+  CHECK(text.find("\"version\": 2") != std::string::npos && text.find("\"pending") == std::string::npos);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
+// A character item behind an item set aside: it is given and the member joins; a member waiting
+// to join (a Private Action) holds up no item either.
+TEST(ap_full_inventory_join) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(party_seed(open_options("claude")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1});
+  pg.at(18, 10, 0);
+  CHECK(ap::party_free_play_step().empty());  // (the start's items and Fol)
+  field::inventory_add(pg.sg.g.inventory, 21, 20, 1);
+  CHECK(ap::receive_by_name_or_id("Revival Card", "Bob", &error));
+  CHECK(ap::receive_by_name_or_id("Celine", "Alice", &error));
+  CHECK(step_is("Inventory full: Revival Card waiting"));
+  CHECK(step_is("Received Celine from Alice"));
+  CHECK(step_is("Celine joined the party"));
+  CHECK(pg.party() == "1,3" && ap::pending_count() == 1);
+  // Bowman received in a Private Action (script flag 2): his join waits, the Fol behind him comes.
+  CHECK(ap::receive_by_name_or_id("Bowman", "Alice", &error));
+  CHECK(ap::receive_by_name_or_id("5009000", "Bob", &error));
+  set_flag(pg.sg, 2, true);
+  CHECK(step_is("Received Bowman from Alice"));
+  const s32 fol = pg.sg.fol();
+  CHECK(step_is("Received 500 Fol from Bob"));
+  CHECK(pg.sg.fol() == fol + 500 && pg.party() == "1,3" && ap::state().characters_waiting.size() == 1);
+  set_flag(pg.sg, 2, false);
+  CHECK(step_is("Bowman joined the party"));
+  CHECK(pg.party() == "1,3,4" && ap::pending_count() == 1);
   ap::stop();
 }

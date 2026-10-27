@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <utility>
+#include "game/ap/ap.h"
 #include "game/ap/skills.h"
 
 #include "game/common/program_image.h"
@@ -143,6 +144,7 @@ void field_special_command(ScriptCtx* ctx, int op) {
       // Dias (party_find_slot's 4 = character id 5) with fixed stats.
       const int slot = party_find_slot(ctx, 4);
       if (slot == -1) break;
+      ap::before_dias_rewrite(slot, false);  // Archipelago (port feature): a kept Dias saved first [shingofix]
       u8* s = g.party + slot * 0x60;
       put32(s, 0x14, 0x9C4);
       put32(s, 0x1C, 0x9C4);
@@ -161,6 +163,7 @@ void field_special_command(ScriptCtx* ctx, int op) {
       s[2] = 0;
       put16(s, 0x28, 0x23);
       put32(s, 0x10, 0x17AD6);
+      ap::after_dias_rewrite(slot);  // Archipelago (port feature): his own data back after his last fight
       break;
     }
     case 0xD: {
@@ -168,9 +171,11 @@ void field_special_command(ScriptCtx* ctx, int op) {
       // name in game_state +0x78.
       const int slot = party_find_slot(ctx, 4);
       if (slot == -1) break;
+      ap::before_dias_rewrite(slot, true);  // Archipelago (port feature): a kept Dias saved first [shingofix]
       character_init_data(g.party + slot * 0x60, g.records + slot * 0xD0, 5);
       std::strcpy(reinterpret_cast<char*>(g.records + slot * 0xD0 + 0x24), reinterpret_cast<const char*>(gs + 0x78));
       ap::on_member_init(slot);  // Archipelago (port feature): his data anew, as a join [skillsanity2]
+      ap::after_dias_rewrite(slot);  // Archipelago (port feature): his own data back after his last fight
       break;
     }
     case 0xE: g.sub_overlay_hook = 1; break;

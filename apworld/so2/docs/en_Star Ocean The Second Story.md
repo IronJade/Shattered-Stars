@@ -71,7 +71,9 @@ doesn't change the goal.
   - **Stone Trap** — turns one active party member to stone.
 - **Area keys**, if `world_mode` is `open_world`. Thirty-five keys, each named after an area
   ("Salva Pass", "Fienal Pass", and so on), unlock that area's entrances on the world map. These
-  are progression items and are placed in the multiworld like any other progression item.
+  are progression items and are placed in the multiworld like any other progression item. You
+  start with the Arlia Pass and the Fun City Pass, and with the North City Pass and the Noel's
+  House Pass too unless `expel_teleporter` and `expel_progression` are both on.
 - **Dungeon keys**, if `world_mode` is `hub`. One per dungeon ("Salva Drift Key", "Field of
   Power Key", and so on, up to 18), each unlocking every door into its dungeon. Progression
   items. See "Hub mode" below.
@@ -124,9 +126,10 @@ count in small steps get three checks, at 100, 200 and 300 uses). By default
 route's hero's moves hold them (Claude's; Rena has no killer moves), `any` every member the
 logic can count on (the hero, the starting character, and members who join through their
 character item, in which case that character becomes a progression item). Moves learned by
-level 30 are expected from the disc switch, the rest from the Final Save Point. A member who
-may never join your party has no killer-move checks; one who only joins by your choice in the
-story holds only filler there.
+level 30 are expected from the disc switch, the rest from the Final Save Point (on a hell seed,
+all of them from the Fun City arena: see "Hell seeds" below). A member who may never join your
+party has no killer-move checks; one who only joins by your choice in the story holds only
+filler there.
 
 **Skillsanity** turns skills, killer moves and spells into items:
 - `skills_only`: buying a set at a skill guild doesn't teach its skills any more; it's one check
@@ -142,11 +145,37 @@ story holds only filler there.
   for Holo-holograph), and the Cave of Trials' learn chests. A member who joins past a level gets
   that level's checks at once. A move you receive before its member joins is waiting for them.
   With killer-move checks, a move's levels need the move.
-- `insanity`: both. Guild checks and learn points never hold progression items.
+- `insanity`: both.
+- Guild checks and learn levels may hold progression items (keys, characters, other worlds'
+  progression), like any other check that's in reach, unless `encounter_rate` is 0 (no battles:
+  no Fol and no levels; but see "Hell seeds" below). A guild check is expected once one of its set's guilds is in reach: the
+  cheaper sets (up to 1600 Fol) right away, the 2700-4500 Fol sets once you've finished Hilton and
+  the Hoffmann Ruins (in story mode from the disc switch, in hub mode once Fienal opens). With
+  `expel_progression` off, only the guilds on Energy Nede count. A learn level counts as killer
+  moves do: up to level 30 from the disc switch, the rest from the Final Save Point (hub mode:
+  from the start, the rest once Fienal opens), and only for members the logic can count on; a
+  member who joins through their character item needs it first. Precis's and Opera's machines,
+  the Cave of Trials' learn chests and Float never hold progression, and shops never do.
 - With shop slots on, `skillsanity_shop_share` (default 10 %) puts some of your skill and move items
   in your shops, sold as themselves with the Archipelago mark: a move for its learn level x 100 Fol
   (an item-taught one 5000, a Cave of Trials prize 8000), a skill for its set's price divided by
   the set's size (Perseverance: 1600 / 4 = 400), Float 900. You buy one; that's the slot's check.
+
+**Hell seeds.** `encounter_rate: 0` (no random battles) together with `killer_move_checks`, or
+with `skillsanity` `special_only` or `insanity` (learn levels), makes a **hell seed**: a game
+where the grind is meant to be preposterously hard. With no random battles, the only fights you
+can train in are the **Fun City Fighting Arena**'s (the desk in Fun City: Duel, Bullying, Team
+and Survival; any member in your party may enter). On a hell seed:
+- the arena is **free** (registering normally costs 2,000 Fol); every fight still pays its EXP
+  and Fol, and killer-move uses count there as in any battle;
+- killer-move levels, learn levels and skill guild checks are expected from the arena and may
+  hold progression items: in story mode from the disc switch, in open world once you've finished
+  the Cave of Red Crystal (with the Fun City Pass, which you start with), in hub mode from the
+  start. A key you need may well sit behind a long stretch of arena fights;
+- the setup program warns you when you choose the seed ("Hell Seed: no random battles. ...",
+  Shattered Stars 0.02.51 and later), and the game logs the same line.
+`encounter_rate: 0` without those options is an ordinary seed: the arena's fee stays, and guild
+checks and drops hold no progression.
 
 **Some locations can be missed for good**, and the `missable_locations` option decides what
 happens to them:
@@ -221,8 +250,9 @@ Fienal's maze among them), 7 gifts (9 with the cave), the bosses above, and what
 options add (shops, drops, crafts, killer moves) as far as the hub reaches them.
 
 Progression items in hub mode go only into those chests and the boss fights (and, by
-`drop_progression`, enemy drops); never into shops, gifts or crafts. Killer-move levels learned
-past level 30 are expected once Fienal is open.
+`drop_progression`, enemy drops; with skillsanity, guild checks and learn levels); never into
+shops, gifts or crafts. Killer-move levels and learn levels past level 30, and the guild sets of
+2700 Fol and up, are expected once Fienal is open.
 
 ## What does another player's item look like?
 
@@ -294,9 +324,13 @@ reach that point in the story) can take you back to Expel at any time; in story 
 character reopens it — Virtual Expel — once you've saved at the game's last save point. Two
 design decisions follow from this:
 - shops never hold progression items, in any mode, as above;
-- with `expel_progression` off, no other player's progression items are placed in Expel — but
+- with `expel_progression` off, no other player's progression items are placed in Expel (and a
+  skillsanity guild check counts only through its set's guild on Energy Nede) — but
   this world's own area keys that the Expel story itself needs to reach the disc switch can
   still appear there, since the story picks them up on its own before Expel closes behind you.
+  In `open_world` you then start with the North City Pass and the Noel's House Pass, the first
+  passes Energy Nede's story needs: almost nothing there can be reached before them, and they
+  can't wait in Expel either.
 
 ## DeathLink
 
@@ -325,13 +359,13 @@ Running away from a fight never counts.
 | `world_mode` | `story` (default), `open_world`, `hub` | `open_world`: the 35 area keys lock the world map's entrances until you find them. `hub`: start after the Final Save Point with everything open, a key per dungeon and the bosses waiting — see "Hub mode" above. |
 | `hub_start` | `fun_city` (default), `arlia`, `random_town` | Hub mode only: where New Game puts you; `random_town` is any town of either world. |
 | `fienal_requirement` | `fields_and_berle` (default), `fields`, `all_bosses` | Hub mode only: the bosses that open Fienal (the four Fields' and Berle in Armlock; the Fields' only; every boss outside Fienal). |
-| `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items). |
+| `expel_teleporter` | on (default), off | Open world only: from partway through the story, Fun City's arena takes you back to Expel. Off: Expel reopens only at the late-game save point, and until then it can only hold this world's own area keys (besides non-progression items); you also start with the North City Pass and the Noel's House Pass. |
 | `shuffle_shops` | off (default), `specials`, `full` | Turns shop slots into locations: the first time you buy a slot's item you get what you buy, and the slot's check too. `specials` is the 98 slots selling something unique to that shop; `full` is every slot in every shop a script opens. Never progression. |
 | `story_route` | `any` (default), `claude`, `rena` | Pick `claude` or `rena` to start that story and leave the other one's locations out entirely: New Game then skips the hero select and the naming screen (the hero keeps the default name; the camp menu's Status page can rename them). With `any`, both exist, but a location that belongs to only one game holds filler. In hub mode it also picks the hero's own boss (Varmillion or Azamgil). |
 | `starting_character` | `hero` (default), `any`, `claude`, `rena`, `celine`, `bowman`, `dias`, `precis`, `ashton`, `leon`, `opera`, `ernest`, `noel`, `chisato` | Open world and hub mode (ignored in story mode): a member who joins at the start and leads the party, standing in for the hero on the field and in dialogue; the hero stays in the party. `hero`: nobody extra. `any`: you pick on a character select at New Game, among the members this world allows. See "In open world" above. |
 | `exclude_characters` | a list of names, e.g. `["Bowman", "Leon"]` (default: none) | Open world with `character_items`, and hub mode: these members are never items, so they never join. The story route's hero can't be excluded. |
 | `missable_locations` | `exclude` (default), `include`, `remove` | How locations that can be missed for good are treated — see above. |
-| `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world). |
+| `expel_progression` | on (default), off | Off: keep other players' progression items out of Expel (this world's own Expel-story keys are the exception in open world, where you also start with the North City Pass and the Noel's House Pass). |
 | `cave_of_trials` | off (default), on | Add the Cave of Trials, a very hard postgame dungeon, and its chests, gifts and bosses (in hub mode behind the Cave of Trials Key). |
 | `boss_checks` | on (default), off | Defeating a boss (story, side quest or Cave of Trials) is a location. Indalecio is always the goal, never a location. |
 | `character_items` | off (default), on | Party members join through items instead of their story scene — see "Who can join your party?" above (open world has no lockouts). Always on in hub mode. |
@@ -346,6 +380,6 @@ Running away from a fight never counts.
 | `skillsanity_shop_share` | 0-100 (default 10) | With `shuffle_shops` and skillsanity: the share of your skill and move items sold in your shops as themselves. |
 | `traps` | 0-100 (default 0) | The percentage of this world's filler items replaced by traps. |
 | `exp_multiplier`, `fol_multiplier` | 1-10 (default 1) | Multiplies the EXP or Fol a battle awards. |
-| `encounter_rate` | 0-200% (default 100%) | How often random encounters occur. 0 turns them off. |
+| `encounter_rate` | 0-200% (default 100%) | How often random encounters occur. 0 turns them off; with `killer_move_checks` or learn levels (Skillsanity `special_only` / `insanity`) that makes a hell seed, trained in a free Fun City arena — see "Hell seeds" above. |
 | `difficulty` | `earth` (default), `galaxy`, `universe`, `any` | The game's difficulty. New Game sets it and doesn't ask. `galaxy`: monsters have half again their HP and attack; `universe`: twice their HP and MP, two thirds more attack, more intelligence, accuracy and evasion. `any`: New Game asks, offering all three (normally that choice appears only once more than half of the Voice Collection has been heard). EXP, Fol, drops and encounters stay the same, so the logic is the same on every difficulty. |
 | `death_link` | off (default), on | Standard DeathLink — see "DeathLink" above for the story's scripted-loss fights, which are the exception. |

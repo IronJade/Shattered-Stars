@@ -499,6 +499,9 @@ int main(int argc, char** argv) try {
       launcher::fatal("Archipelago seed: " + ap_error);
       return 1;
     }
+    // [hellseed] A hell seed (seed.h hell_seed): the warning setup's Archipelago page shows.
+    if (const game::ap::Seed* loaded = game::ap::seed(); loaded != nullptr && loaded->hell_seed)
+      launcher::report("[ap] %s\n", game::ap::kHellSeedWarning);
 #ifdef SS_HAVE_AP_NET
     // The server (ap_net/client.h), from config.ini's ap_server / ap_slot / ap_password (set
     // in setup), on windowed runs: checks, the goal and DeathLink go out, items come in.

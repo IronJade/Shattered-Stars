@@ -188,8 +188,9 @@ games each location was proven in into its row (`late`).
   (the story fights them); join sites, shop slots, gift sites and crafts never may (the user,
   2026-10-25: an NPC gift check should never hold progression, this world's own keys or another
   world's alike, whatever the proof reaches); first drops follow `drop_progression` ("Enemy
-  drops" below: their places are judged by the same proofs) and killer-move levels
-  `killer_move_progression` ("Killer moves"); with `expel_progression` off, nothing in Expel may.
+  drops" below: their places are judged by the same proofs), killer-move levels
+  `killer_move_progression` ("Killer moves"), and skillsanity's guild checks and learn levels
+  their own rules (0.2.1: "Skillsanity"); with `expel_progression` off, nothing in Expel may.
 - **Conservative by design:** every entry starts from the map's arrival state, so doors behind
   switches, puzzles the save had not solved or a choice's other answers stay shut; such
   locations only lose the right to hold progression.
@@ -215,7 +216,8 @@ bosses:
   outright, the user, 2026-10-25): the table's gift row and this proof still matter for open
   world's reachability ("Open world" below), not for what a gift may hold.
 - So a seed puts progression in at most 258 chests, the 21 story bosses and 10 cave
-  bosses (fewer with the options): every multiworld in the batch below filled.
+  bosses (fewer with the options; options add drops, killer-move levels and, from 0.2.1,
+  skillsanity's guild checks and learn levels): every multiworld in the batch below filled.
 - Rerun the proof after a change to the port's field code, the event sweep or field.json
   ("Files", below).
 
@@ -223,7 +225,8 @@ bosses:
 (Ashton rules out Opera), so every member-gated location is excluded instead. The one
 exception (0.2.0) is `killer_move_progression: any`, where a killer-move level of a member who
 joins by their item needs the item, which is then progression; the pool never holds two
-members who rule each other out, so a received member always joins ("Killer moves").
+members who rule each other out, so a received member always joins ("Killer moves"). Skillsanity's
+learn levels (0.2.1) do the same for such a member ("Skillsanity").
 
 ## Open world (`world_mode: open_world`, phase 4)
 
@@ -237,8 +240,16 @@ named "<area> Pass" (`tools/ap_world_tables.py` KEY_NAMES; "Map 231 Pass" for th
 area the story visits at chapters 24-25, "Fienal Pass" for map 687, Fienal's entrance). The
 seed's `doors` lists all 66 with their key; `apworld/so2/doors.py` validates it in the tests.
 **Starting keys:** the Arlia Pass (the start) and the Fun City Pass (the teleporter's way back
-to Expel, and the only way to Virtual Expel), plus the North City Pass with the teleporter off
-(else nothing on Energy Nede is reachable after the switch).
+to Expel, and the only way to Virtual Expel), plus the North City Pass and the Noel's House
+Pass unless the teleporter and `expel_progression` are both on. The first Energy Nede stages
+need them (14 and 15) and before them Energy Nede holds no location of this world that may take
+them but the Synard boss (North City has only shop slots; the teleporter's old man needs the
+Synard, stage 16), so otherwise they must sit in Expel; with either option off Expel holds only
+our Expel-story keys (below). In a solo world the North City Pass then had no legal spot and the
+Noel's House Pass one, the Synard boss, which `boss_checks` off takes away (0.2.0 gave the North
+City Pass at the start with the teleporter off only: every solo fill with the teleporter on and
+expel_progression off failed, and every one with boss_checks off and either option off; 0.2.1,
+"Changes"; docs/handoff/ncpfix.md).
 
 **The story's stages** (data.STAGES, from every chapter / step store with its conditions and
 the area of its map; `scratchpad/enemy/ap5/steps.py`): 23 stages, 12 on Expel (chapters 3-35)
@@ -638,18 +649,21 @@ drops take progression first), **never** (0.1.x's rule). In every mode (rules.py
 - **The member** (`locations.fighter_status`): sure to be in the party (a hero, the story's
   fixed members, the starting character) or joining by their character item: an ordinary
   location; joining only by the player's choice in the story (character_items off): EXCLUDED;
-  never in the party: left out. With `encounter_rate: 0` every level is EXCLUDED (the uses need
-  battles).
+  never in the party: left out. With `encounter_rate: 0` the seed is a hell seed (0.2.1: "The
+  hell seed" below): the levels stay ordinary locations, trained in the free Fun City arena.
 - **Access** (rules.py `killer_rule`): the member, at the level that learns the move, and the
   battles. Conservatively, a move learned by level 30 counts from the disc switch (a party there
-  is well past it; 53 locations), any other from the Final Save Point (80).
+  is well past it; 53 locations), any other from the Final Save Point (80). On a hell seed every
+  level counts from the arena instead ("The hell seed").
 - **`killer_move_progression`:** never (default): no progression. hero: the story members'
   moves only (Claude's, in Claude's game and under story_route any; Rena has no killer moves).
   any: every member the logic counts on (sure or by item). Under any, a level of a member who
   joins by their item also needs the item, which becomes progression
   (`world.progression_characters`: Archipelago's CollectionState counts only progression
   items); under never and hero the item is not required (nothing there holds progression, and
-  full accessibility reaches every item anyway).
+  full accessibility reaches every item anyway), unless the item is progression anyway: under
+  skillsanity special the member's learn levels need it (0.2.1, `skillsanity.learn_characters`),
+  and then their killer-move levels need it too.
 - **The check:** `{type: killer_move, character, move, level, uses}`, `uses` = level x the
   move's divisor in the armed table; the port compares the raw use count.
 
@@ -664,9 +678,9 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
   of its guilds: docs/notes/menu.md "Skill guilds") is one location per skill in it, "Skill Guild:
   Sensibility 2 (1 of 4)" (45); each skill is an item, "Skill: Perseverance", that lets the party
   learn it with SP. With `cave_of_trials`, the Level 11 prize (Float) is a location and Float an
-  item. Members keep the skills they join with. A guild check's access: any of its set's guilds
-  (open world: their towns' keys, data.GUILD_PLACES; hub mode: the towns, open). Never
-  progression (the user).
+  item. Members keep the skills they join with. A guild check's access and what it may hold:
+  "Progression at guild checks and learn levels" below (0.2.1; 0.2.0: any of the set's guilds,
+  never progression).
 - **Special** (special_only / insanity). Every member keeps their learn table's first move (Claude's
   Air Slash, Rena's Heal, ...: known from the start or their join); every other killer move and
   spell is an item ("Claude: Shooting Stars"), and each learn point a location: a learn-table level
@@ -676,8 +690,42 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
   left out (the user). A member who can never join has none; one who joins only by the player's
   choice holds filler only (EXCLUDED). Access as killer moves': a learn level up to 30 from the disc
   switch, any other from the Final Save Point (hub mode: from the start / Fienal opened); the
-  machines after the Final Save Point (hub: any time) with Machinery; the cave's in the cave.
-  Learn points hold no progression (they need a member and levels, which no proof places).
+  machines after the Final Save Point (hub: any time) with Machinery; the cave's in the cave. What
+  a learn point may hold: below (0.2.1; 0.2.0: never progression).
+- **Progression at guild checks and learn levels** (0.2.1; the user, 2026-10-27: "let learn points
+  hold progression, and the skill guilds should also be able to hold progression, as long as they
+  are within reach routing wise ... You can beat the game without ever visiting an item shop";
+  docs/handoff/skilllogic.md; `skillsanity.guild_rule`, `learn_rule`, `learn_characters`). Item
+  shops stay progression-free. Neither holds progression with `encounter_rate` 0 (no Fol, no
+  levels), unless the seed is a hell seed (0.2.1: killer-move checks or learn points with
+  `encounter_rate` 0; "The hell seed" below), whose free Fun City arena pays both.
+  - *Learn levels* (learn-table levels only) of a member the logic counts on (fighter_status
+    "sure", or "item": then the level needs the member's character item, which becomes
+    progression, as with `killer_move_progression: any`); a "maybe" member's stay EXCLUDED. Access
+    as above; in open world under the story's party rules Noel's early levels also need stage 15
+    (his house; `STORY_JOINS`), unless he is the starting character. Story mode needs no item to
+    reach him, so the disc switch stands for it there.
+  - *Never progression:* Precis's and Opera's machines (465-469 come only from rare Machinery
+    results, 464 from a shuffled gift or a Private Action), the cave's three learn chests (the
+    late proof didn't reach them) and Float (no proof covers the prize).
+  - *Guild checks:* each of the set's guilds is a place, as a first drop's are (`rules.drop_rule`):
+    judged as a chest on the guild's map (story mode: the late proof, outside Expel with
+    expel_progression off; open world: `open_world_progression` / `open_world_access`, so never a
+    guild that closes at the El voyage, Port of Clik's; hub mode: the hub proof's maps in every game,
+    outside Expel with expel_progression off). The check holds the best class of its places and is
+    reached only through the places of that class. Every set has a late-proven guild on Energy Nede
+    (Central City, North City or Armlock), so with battles every guild check may hold progression.
+  - *The Fol* (the user: "Fol rule is fine as written"). Random battles pay a set (Earth, Fol x1,
+    the floor; docs/ap/battles.json's enemy Fol over field.json's encounter tables): Expel's world
+    map ~460 a battle, Mars ~400, the Sanctuary of Linga ~920, Hoffmann Ruins ~2100, Eluria Tower
+    ~3500; Energy Nede's world map ~520, its dungeons 2400-3600. A set up to 1600 Fol (the 1 and 2
+    sets) counts from any guild that sells it (its first guilds: Cross, stage 3, 300-400 Fol;
+    Herlie, stage 5, 1500-1600: about four world-map battles). A set from `DEAR_PRICE` 2700 (the 3
+    sets, 2700-4500 Fol) counts through an Expel guild only from the end of stage `FOL_STAGE` 9
+    (Hilton and Hoffmann Ruins: two Hoffmann battles pay the dearest); Energy Nede's guilds come
+    later anyway. Story mode (no stage events): a cheap set from the start through a proven Expel
+    guild, a dear one, and any set through an Energy Nede guild, from the disc switch. Hub mode:
+    the cheap sets from the start, the dear ones once Fienal opens.
 - **Logic.** With skills shuffled, Item Creation needs its specialty (a sure member who joins
   with its skills: Rena's Cooking, the heroes' and the starting character's; else the skill items:
   `SPECIALTIES` / `SUPER_SPECIALTIES`), so craftsanity's locations need them; the Iseria Queen goal
@@ -697,6 +745,56 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
   join level"): a member joins at the party's median level; under special, every learn point up to
   it is checked at the join. The logic is unchanged by it (learn points count by the level the party
   reaches).
+
+## The hell seed (`encounter_rate: 0` with killer moves or learn points; 0.2.1)
+
+The user (2026-10-27): "I believe that there is a fee to use the training arena in Fun City, but
+if we can, I think a better route would be to eliminate the fee to train there IF and ONLY IF those
+rules are set on the seed. Something like that is usually called a "hell" seed, where the grind is
+intentionally made preposterously hard." And: "For the Hell seeds, we should have the setup
+archipelago seed read throw a warning that the seed being loaded is a "Hell Seed" as well."
+(docs/handoff/hellseed.md; the code: `hell.py`.)
+
+- **What it is** (`hell.is_hell_seed`): `encounter_rate` 0 (no random battles) and something that
+  still needs training: `killer_move_checks` (a move's use count) or `skillsanity` `special_only`
+  / `insanity` (learn points: levels). Every other seed, `encounter_rate` 0 with only drops or
+  guild checks included, is as before.
+- **The arena** (verified headless in the port, docs/handoff/hellseed.md "Phase 1"): the Fun City
+  Fighting Arena's fights are ordinary battles (map 305's ext 0xb7, no battle rule, never reading
+  the encounter rate): a killer move's uses count, the fighter gains the enemy's EXP and the party
+  its Fol (a rank E Duel: 104 EXP, 102 Fol; Bullying up to ~12,000 Fol a registration). Any member
+  in the party may enter. Its fee, 2000 Fol a registration (map 297's script, Bargaining +/- 3 % a
+  level), is waived on a hell seed only: the seed's patch line `script 297 0x177f 0x120007d0
+  0x12000000` (`hell.FEE_PATCH`; seed_format.md "The hell seed"), so a registration never costs
+  Fol and every fight pays.
+- **When the arena is open** (`hell.arena_need`): story mode after the Synard, which the story
+  reaches with no item after the disc switch, so the disc switch stands for it (as for killer
+  moves already); open world from the end of stage 16 (`TELEPORTER_STAGE`, the Cave of Red
+  Crystal, the Synard) with the Fun City Pass (a start key; the Expel teleporter's rule, whose old
+  man is in the same building); hub mode from the start (Fun City is a hub town). Fun City is shut
+  in chapter 58 only, which the story passes with no new key. The gate's 75 Fol a person (before
+  the N.F.I.D.) is a pre-existing assumption of every Fun City rule.
+- **The rules on a hell seed** (`hell.trained`: the party has battles to train in): killer-move
+  levels (`rules.killer_rule`), learn levels (`skillsanity.learn_rule`) and guild checks
+  (`skillsanity.guild_rule`: the arena's fights pay the Fol) count from the arena, with their usual
+  member, move and character-item needs, and may hold progression as they would with battles
+  (EXCLUDED "maybe" members' still none). So a level past 30 no longer waits for the Final Save
+  Point, nor a dear guild set for stage 9 (story mode: everything from the disc switch; hub mode:
+  everything from the start, Fienal not needed). Guild checks in open world: each guild place's
+  way combined with the arena's (`hell.arena_way`: no sooner than stage 16, and the Fun City Pass);
+  an Expel guild's own early way is dropped (Expel closes at the El voyage, before the arena opens;
+  the teleporter's and the late proof's ways stay). Drops stay progression-free at `encounter_rate`
+  0 (the arena's enemies are not the field's).
+- **The seed:** the patch line and `hell_seed: true` (seed options and slot data) on a hell seed,
+  on no other seed (absent, not false, so every other seed reads as before). No new seed version:
+  the patch line is a version-1 feature, `hell_seed` is display only, and a hell seed is version 2
+  or 3 anyway. The port's 0.02.51 shows `hell_seed` as a warning on setup's Archipelago page and
+  logs it when the seed loads; 0.02.50 plays a hell seed the same, without the warning.
+- **Why** (0.2.1's last failure, docs/handoff/killer0.md): with `encounter_rate` 0 every
+  killer-move level was EXCLUDED and no learn level or guild check could hold progression, but
+  skillsanity still made each chosen killer level's move progression, so solo_noexpel seed 75's
+  mix with `encounter_rate: 0` failed every fill. On a hell seed those locations hold progression
+  again.
 
 ## Party v2 (open world with `character_items`; 0.2.0)
 
@@ -918,6 +1016,88 @@ ModuleUpdate waits at a prompt. Link the world in:
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general
     SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python Generate.py --player_files_path P --outputpath O --seed N
 
+Scoped to this world, as Archipelago's testing guide (docs/tests.md, "Running Tests for Specific
+Worlds") runs it: `AP_TEST_WORLDS` names world folders, and implies `-m world` (the general tests
+that iterate over every world, scoped to so2, plus worlds/so2/test and test/multiworld's
+two-player fill for so2). Name the test directories, or add `--continue-on-collection-errors`
+(the venv has no flask for test/webhost):
+
+    AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
+
+Results (2026-10-27, 0.2.1: the hell seed; docs/handoff/hellseed.md):
+- The world's tests: **634 passed** (44972 subtests; was 537): `test_hell.py` (the table above),
+  test_skillsanity.py's helpers hell-aware (`may_hold`, `learn_need`) and its encounter_rate 0 mix
+  split (skills_only: not a hell seed; insanity: a hell seed), test_v2.py's
+  `TestKillerNoEncounters` a hell-seed test, and `check_seed` (every mix) asserting the patch line
+  and `hell_seed` exactly on hell seeds. The reproducer: with the hell rule taken out,
+  `TestHellSeed75` and its Claude neighbour fail test_fill (FillError, 13 progression items more
+  than locations). Each part of the design taken out in turn (the killer / learn / guild arena
+  rules, stage 16 in the arena's need, arena_way's stage floor, the patch line, `hell_seed`, the
+  rule's learn points, `trained`) fails some test (scratchpad/hellseed/dbg/mutate.py); dropping
+  an Expel guild's own early way is equivalent today (with the teleporter that way equals the
+  teleporter's, without it Expel guilds are never a check's best class) and stays as a safeguard.
+  Slowest test 0.56 s at `-n 4`; `python -m unittest`: 634, OK. AP's general tests: 379 passed
+  (117745 subtests). `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 687 passed (50303).
+- Solo fills (scratchpad/hellseed/fill: killer0's fillrate3.py, with test_fill's sphere and
+  beatable check), 100 seeds each: seed 75's options with `encounter_rate: 0`, and with story_route
+  claude, and with killer_move_progression any: **0/100 FillError each**, every filled seed
+  accessible and beatable (133 killer-move locations and 60 progression move items a seed).
+- The release workflow, seeds 1-96 (scratchpad/hellseed/batch): story_open, hub, solo_noexpel
+  96/96 each, `ap_batch_check.py` 0 errors (its output identical to skilllogic's); no seed rolls
+  `encounter_rate` 0, and **all 288 seeds (768 .apso2 and spoiler files) are byte-identical** to
+  skilllogic's batches. The checker learned the hell seed (`hell_seed`, `trained`, `check_hell`:
+  the patch line and `hell_seed` exactly on hell seeds, worked out from the options; each made-up
+  error refused). An extra solo set with `encounter_rate: 0` (solo_noexpel's YAML with
+  expel_progression and killer_move_checks random; 55 hell seeds, 9 ordinary) generated 64/64
+  with 0 checker errors; progression at killer-move levels / learn levels / guild checks 166 /
+  488 / 306.
+
+**The tests follow the guide** (2026-10-26, docs/handoff/aptests.md; the guide re-read live, the
+same as the checkout's copy at 54803be): an empty `test/__init__.py`; the base in `test/bases.py`
+(`SO2TestBase(WorldTestBase)`, `game = GAME`, plus the shared helpers and
+`assertSweptAccessDependency`: the guide's dependency check through event chains); files
+`test_*.py`, classes `Test*` (one option mix each: WorldTestBase's three default tests run for
+every one) or `unittest.TestCase` where no multiworld is needed (TestDoorValidator, TestHubAsk);
+checks shared by several mixes in `...Checks` mixins, never collected alone; no
+runner-specific features (`python -m unittest` runs them too); each test under a second (the
+slowest about 0.8 s at `-n 4` on a loaded machine; `pytest --durations=30`). The logic is
+tested with `assertAccessDependency` (every location checked unless noted):
+
+| File | Mixes (classes) | What the access dependencies cover |
+|---|---|---|
+| test_world.py | story mode: default, story_route claude, missables remove / include, the cave, expel_progression off, late proof (any, rena), bosses off, drops and traps, shops full / specials | (story mode has no items of its own: the events, the late proof's rule, `can_fill`) |
+| test_open_world.py | open world default, Rena with full shops and the cave, no teleporter, expel_progression off (the North City Pass fill failure's reproducer, below) | every pool area key -> exactly the locations and story stages whose every way needs it; each El voyage pass -> the voyage stage, all of them -> the Final Save Point and the goal (through the events); the Hilton and Lacour passes -> the Herlie stage; a landing's key -> its area's early-only chests |
+| test_party.py | the story's party rules (any / claude / rena), party v2 (open members, any start, healers excluded, healer guarantee, a named start), the starting character without items / in story / the hero | `PartyChecks.party_size()` / `healer_guaranteed()`: the hooks a bench option overrides |
+| test_hub.py | hub default, Claude at Arlia (fields, cave, killer moves), Rena all bosses (Iseria Queen, forced drops, specials), any lean, fields without checks; a story / open-world seed without hub fields | every dungeon key -> its dungeon's locations, the drops met only there, the Fienal gate; each key of the Fienal requirement -> the gate, all of them -> the goal (fields_and_berle, fields, all_bosses) |
+| test_v2.py | drops (allow, force, never, no encounters, open world, no keys in drops), craftsanity (story, open party), no-fail only, the four goals, killer moves (story, hero, any with items, no encounters) | character items -> their killer-move levels (killer_move_progression any) |
+| test_skillsanity.py | none, skills_only with crafts, special_only in open world, insanity in hub with shops, insanity with the Iseria Queen; 0.2.1: guilds in open world (with and without expel_progression) and in story mode (both), learn levels in open world, with character items and in hub mode, encounter_rate 0 (skills_only: not a hell seed; insanity: a hell seed), solo_noexpel seed 75's mix | every skill / move item the logic needs -> the crafts, Machinery learn points, the Iseria Queen and killer levels whose every way needs it; each Musical Talent skill -> the Queen, both -> the goal; 0.2.1 (listed): Knowledge 1 -> the Cross / Linga / Central City Pass (not Clik's), the Nede guilds -> the Central City / Armlock Pass, the dear sets -> the Hoffmann Pass (swept), the early / late learn levels -> the Eluria Tower / Mihne Pass (swept), each pool member -> their learn levels; every mix: what each guild check / learn point may hold (shop slots: nothing, our own skill / move items neither), each learn level's exact needs |
+| test_hell.py | 0.2.1's hell seed: the rule's truth table and the fee line (`unittest.TestCase`); seed 75's mix with encounter_rate 0 (the reproducer: WorldTestBase's test_fill) and its Claude neighbour; open world with guilds (teleporter on / off); story mode and hub mode with killer moves and insanity; encounter_rate 1 (killer moves; insanity): ordinary; the patch line and `hell_seed` over 8 mixes | open world: every killer-move level, learn level and guild check -> the Red Crystal Pass (stage 16, swept), none needs the Mihne Pass (the Final Save Point); without the teleporter Knowledge 1 -> the Central City Pass (an Expel guild's early way dropped), with it not; story mode: each from the disc switch alone (every item, no event: none); hub mode: each from the start (every item, no event); what each may hold |
+| test_difficulty.py | earth, galaxy, universe (open world, hub), any | (no logic change: the same locations as on Earth) |
+| test_doors.py | `unittest.TestCase` | the door validator on a made-up table |
+
+A fixed world bug stays in the suite as its reproducer: `TestOpenWorldNoExpelProgression` (open
+world, expel_progression off, the teleporter on, a solo world) fills in WorldTestBase's
+test_fill, test_voyage_gate_placements and test_seed_doors. Before 0.2.1 the North City Pass had
+no legal spot there and every solo fill raised FillError (docs/handoff/aptests.md "World bug");
+the three were `@unittest.expectedFailure` until the fix (0.2.1: the North City and Noel's House
+passes at the start, test_keys_and_start; docs/handoff/ncpfix.md).
+
+**The release workflow** (many random seeds, outside the unit tests, as the guide asks):
+`tools/ap_batch.sh SET OUT FIRST LAST` generates seeds FIRST..LAST of a players set
+(`story_open`: two SO2 players, story 1 : open world 2, every option random, and ChecksFinder;
+`hub`: one SO2 player in hub mode, one hub / story / open world 3 : 1 : 1, and ChecksFinder;
+`solo_noexpel` (0.2.1): one SO2 player alone, `expel_progression` off, open world / story / hub
+3 : 1 : 1, the rest random, so no other game's locations take what this world can't place, as
+ChecksFinder's hid 0.2.0's North City Pass failure; tools/ap_batch_players/) with Generate.py
+into OUT/<seed>/, then `tools/ap_batch_check.py` checks every .apso2 (OUT.check.txt); exit 0
+only when every seed generated and no file has an error. A problem a batch finds gets a minimal
+reproducer in the tests (one option mix), as the phase-4 batch's expel_progression fill
+failures did (`TestOpenWorldNoExpelProgression`):
+
+    tools/ap_batch.sh story_open scratchpad/batch/full 1 96     # ~5 min
+    tools/ap_batch.sh hub scratchpad/batch/hub 1 96
+    tools/ap_batch.sh solo_noexpel scratchpad/batch/solo 1 96
+
 Results (2026-10-23, phase 4):
 - The world's tests: 95 passed (7986 subtests; 22 classes: phase 3's 17, plus TestOpenWorld,
   TestOpenWorldRenaShops, TestOpenWorldNoTeleporter (keys and starting keys, a stage needing its
@@ -1124,9 +1304,126 @@ Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
   `options` (the new keys) and, in hub seeds, `hub.flags` without 700-711, except in the
   multiworlds where a slot has `cave_of_trials` (the renamed cave locations change the fill).
 
+Results (2026-10-26, 0.2.1: the North City and Noel's House passes at the start unless the
+teleporter and expel_progression are both on; docs/handoff/ncpfix.md):
+- The world's tests: 449 passed (30513 subtests; was 430 passed, 3 xfailed: the three
+  expectedFailures gone, the new mix `TestOpenWorldNoExpelProgressionNoBosses`); `python -m
+  unittest` agrees (449, OK). The slowest test 1.13 s (TestInsanityIseriaQueen::test_skill_items,
+  unchanged by this fix) at `-n 8` with the machine's load at ~25. AP's general tests: 379 passed
+  (117755 subtests). `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 502 passed (35824
+  subtests; was 483 passed, 3 xfailed).
+- Solo fills (open world, expel_progression off, the rest default; scratchpad/aptests/fillrate.py
+  and ncp_spots.py's copies in scratchpad/ncpfix): 0/100 FillError in each of 24 setups
+  (story_route any / claude / rena x teleporter on / off x boss_checks on / off x killer-move
+  progression off / on), 2400 fills; 0.2.0 failed 30/30 with the teleporter on and every one with
+  boss_checks off. The tightest key is now the Red Crystal Pass: 4 legal spots (3 with
+  boss_checks off; 13 / 12 with killer-move progression), then the Salva Pass's 7.
+- The release workflow, seeds 1-96: story_open and hub 96/96 each, `ap_batch_check.py` 0 errors
+  on 192 + 192 files; at 0.2.0's version string, 111 of the 192 seeds byte-identical to the
+  aptests baseline (every .apso2 and spoiler) and the 81 others exactly those with an open-world
+  SO2 player without both options on (96 such slots), each changed only by that player's added
+  start keys and the fill around them: options, locations and doors identical, that player's
+  keys / characters / skills / moves the base's minus the new start keys, only filler-kind items
+  otherwise moved, every other player's items the same. The new `solo_noexpel` set: 95/96, the
+  checker 0 errors on 95 files (0.2.0 + the North City Pass alone: 85/96, the 11 failures
+  open world with boss_checks off). Seed 75 fails another way, not the start keys': open world,
+  expel_progression, teleporter and boss_checks off, skillsanity special_only, killer moves for
+  the hero; 91 progression items (60 move items) and only 63 locations that may hold a move item
+  ("Not enough locations for progression items"; open to the user, docs/handoff/ncpfix.md).
+
+Results (2026-10-26, the tests to Archipelago's testing guide; docs/handoff/aptests.md; tests and
+tools only, no world change):
+- The world's tests: 430 passed, 3 xfailed (30148 subtests; was 380 passed, 29338): every old
+  test kept (one class renamed), plus the access dependencies of the table above and the new
+  mix `TestOpenWorldNoExpelProgression`. Slowest test 0.81 s (before 0.55 s), at `-n 4` with the
+  machine's load at ~20 on 20 cores; `python -m unittest` agrees. AP's general tests: 379 passed,
+  before and after. `AP_TEST_WORLDS=so2 ... pytest test/general worlds/so2`: 433 passed before.
+- The release workflow (`tools/ap_batch.sh`, both sets, seeds 1-96): 96/96 exit 0 each,
+  `tools/ap_batch_check.py` 0 errors on 192 + 192 files (9924 / 8673 progression items); every
+  .apso2 and spoiler byte-identical to the same seeds through the old scratchpad/apworld2/batch
+  run_batch.sh / check.py, and the checker's output identical too.
+- A world bug, found by the new mix and left for the user (a 0.2.x): open world with
+  `expel_progression` off and the teleporter on can't generate solo, North City Pass having no
+  legal spot (Generate.py FillError on every solo seed; with two SO2 players and no other game
+  too). The batches never saw it: each of their multiworlds has a ChecksFinder player.
+
+Results (2026-10-27, 0.2.1: skillsanity progression at guild checks and learn levels;
+docs/handoff/skilllogic.md):
+- The world's tests: **537 passed** (37687 subtests; was 449): `test_skillsanity.py`'s old "no
+  progression" test reversed into `test_what_skillsanity_locations_hold` and
+  `test_learn_level_needs` for every mix, and 9 new mixes (the table above). Each part of the
+  design taken out in turn (the Fol tier, Noel's stage, the learn characters, a guild's ways
+  through every place, the learn level's character item, the machines) fails some test
+  (scratchpad/skilllogic/dbg/mutate.py). Slowest test 0.86 s at `-n 4`; `python -m unittest`:
+  537, OK. AP's general tests: 379 passed (117750 subtests). `AP_TEST_WORLDS=so2 ... pytest
+  test/general worlds/so2`: 590 passed (42996 subtests).
+- Solo fills (scratchpad/skilllogic/fill: ncpfix's fillrate2.py and s75/capacity.py), 100 seeds
+  each: **0/100 FillError** for solo_noexpel seed 75's options (room for a move item 114, was 63)
+  and each of 14 neighbours: skillsanity insanity / skills_only, story_route claude / any, the
+  teleporter on, boss_checks on, killer_move_progression any, starting_character hero,
+  enemy_dropsanity first_drop, character_items, expel_progression on, story mode, hub mode,
+  insanity with character_items, the cave and craftsanity. With `encounter_rate: 0` added, that
+  mix still fails (91 of 91 run): no battles, so nothing new holds progression, and its
+  killer-move levels' moves stay progression (as in 0.2.1 before; for the user).
+- The release workflow, seeds 1-96 (scratchpad/skilllogic/batch): story_open, hub and
+  solo_noexpel **96/96 each** (solo_noexpel's seed 75 too), `ap_batch_check.py` 0 errors on 192 +
+  192 + 96 files; progression at guild checks / learn points 1046 / 1291, 1028 / 1625, 410 / 871.
+  The checker now judges them on its own (`sk_may_hold`; a gate key at a guild check only where a
+  guild passes the voyage proof, never at a learn point) and was checked against made-up
+  placements (encounter_rate 0, the machines, a member the logic can't count on: each refused).
+  Against the batches before (scratchpad/ncpfix/v021, 0.2.1's string too): every seed with no
+  skillsanity player byte-identical (story_open 6, hub 3, solo_noexpel 20), every changed seed
+  (90, 93, 76) with one (identity.py: 0 unexpected); 2 solo seeds with skillsanity unchanged
+  (story mode, nothing progression to move).
+
 ## Changes
 
-**0.2.0** (2026-10-25, not released yet; docs/handoff/apv2.md, the user's request and decisions;
+**0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md and
+hellseed.md, the user's decisions). No new item, location or option; one new seed field,
+`hell_seed` (display only), and the port's 0.02.50 plays its seeds (skilllogic2's headless proofs:
+a key and a character given from a guild check and from learn points; docs/handoff/skilllogic.md
+"Step 3"; hellseed's: the arena's fee waived by the seed's patch line, docs/handoff/hellseed.md).
+Port 0.02.51 adds the hell seed's warning in setup and the log.
+- *Fixed: open world with `expel_progression` or the teleporter off couldn't fill solo*
+  (docs/handoff/aptests.md "World bug"). The first Energy Nede stages need the North City and
+  Noel's House Passes, and before them Energy Nede has no location of this world that may hold
+  them but the Synard boss; with either option off Expel holds only our Expel-story keys. So in
+  a world with no other game's locations, 0.2.0 failed every fill with the teleporter on and
+  expel_progression off (the North City Pass had no legal spot), and every one with boss_checks
+  off and either option off (the Noel's House Pass's only spot was the Synard boss; the
+  release workflow's new solo set: 11 of 96 seeds). The user (2026-10-26): "North City Pass fix
+  is the way to go for Expel prog off games", then "Follow the North City Pass for Noels House
+  pass". Now both passes are starting keys unless the teleporter and expel_progression are both
+  on (items.NEDE_START_KEYS; 0.2.0 gave the North City Pass with the teleporter off only).
+  Multiworlds with another game generated before, its locations taking the passes.
+- *Skillsanity: guild checks and learn levels may hold progression* (the user, 2026-10-27; they
+  never could in 0.2.0; "Skillsanity", "Progression at guild checks and learn levels"). A guild
+  check through any of its set's guilds that may hold progression, the 2700-4500 Fol sets from
+  stage 9 (story mode: the disc switch; hub: Fienal open); a learn-table level of a member the
+  logic counts on as a killer-move level (a member who joins by their item needs it, which is
+  then progression); none with encounter_rate 0; the machines, the cave's learn chests, Float
+  and every shop slot still none. This also fills the release workflow's solo_noexpel seed 75
+  (open world, Rena, expel_progression / boss_checks / drops off, special_only, killer moves for
+  the hero), which no 0.2.x before could: 60 move items progression and only 63 locations that
+  could hold one (now 114).
+- *The hell seed* (the user, 2026-10-27; "The hell seed"): `encounter_rate` 0 with
+  `killer_move_checks` or skillsanity's learn points (`special_only`, `insanity`). The Fun City
+  arena's 2000-Fol fee is waived by a seed patch line, `hell_seed: true` tells the port to warn the
+  player, and killer-move levels, learn levels and guild checks count from the arena (story mode
+  the disc switch, open world stage 16 with the Fun City Pass, hub mode the start) and may hold
+  progression as with battles. Before, with `encounter_rate` 0, killer-move levels were all
+  EXCLUDED and nothing new could hold progression, so seed 75's mix with `encounter_rate: 0`
+  failed every solo fill (0.2.1's known limitation until then); now 0 of 100 fail, and two
+  neighbours likewise. No seed of the release workflow rolls `encounter_rate` 0: all 288 are
+  byte-identical to the batches before (Testing, "Results ... the hell seed").
+- Seeds where no open-world player has either option off and no player has skillsanity on are
+  0.2.0's but for `apworld_version`: the passes' change alone kept 111 of the 192 batch seeds
+  (Testing, "Results ... 0.2.1"); in the others that player starts with the passes, or a
+  skillsanity player's guild checks and learn levels take progression, and the fill places the
+  multiworld otherwise (skilllogic: every changed seed has a skillsanity player; Testing,
+  "Results ... skillsanity progression").
+
+**0.2.0** (2026-10-25, released with the port's 0.02.50 on 2026-10-26; docs/handoff/apv2.md, the user's request and decisions;
 the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a
 version-1 seed, but it still needs port 0.02.50: 0.2.0 writes the renamed options only
 (`story_route`, `enemy_dropsanity`) and the 0.02.00 port reads only the old names

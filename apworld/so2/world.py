@@ -14,7 +14,7 @@ from typing import NamedTuple, Optional
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hub, items, locations, regions, rules, skillsanity
+from . import hell, hub, items, locations, regions, rules, skillsanity
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
@@ -22,7 +22,7 @@ from .patches import placement_patches
 SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
 SEED_FORMAT_V3 = 3              # a hub seed (seed_format.md "Hub"): a wave-2 port refuses it
-APWORLD_VERSION = "0.2.0"
+APWORLD_VERSION = "0.2.1"
 
 # The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
 # seed's goal object and the gate on the Final Save Point floor's way to Indalecio (door
@@ -79,12 +79,14 @@ class SO2World(World):
         self.forced_drops = set()       # drop_progression force (rules.set_rules)
         # Characters the logic needs (a member's killer-move levels that may hold progression need
         # their item when the member joins by it: killer_move_progression any, or hero for a hero
-        # who is an item, hub mode under story_route any) are progression; any other is useful.
+        # who is an item, hub mode under story_route any; so do their learn points under skillsanity
+        # special: skillsanity.learn_characters) are progression; any other is useful.
         killers = {row["character"] for row, _ in self.chosen if row["type"] == "killer_move"}
         mode = o.killer_move_progression.current_key
         if mode == "hero":
             killers &= set(self.party_info.story_members)
         self.progression_characters = set(self.party) & killers if mode in ("any", "hero") else set()
+        self.progression_characters |= skillsanity.learn_characters(self)   # [skilllogic]
         if self.hub:
             self.fienal_won = hub.fienal_won(self)      # the Fienal requirement (D6)
             self.hub_keys = hub.needed_keys(self)       # the dungeon keys this world has (D4)
@@ -242,8 +244,14 @@ class SO2World(World):
                 pool.append(self.create_item(name))
         if self.open_world:
             # The area keys: the starting ones are given, the rest take the place of as many filler
-            # items (the pool keeps one item per location).
-            start = list(items.START_KEYS) + ([] if self.options.expel_teleporter else ["North City Pass"])
+            # items (the pool keeps one item per location). The North City and Noel's House
+            # passes are too unless the teleporter and expel_progression are both on: the first
+            # Energy Nede stages need them, nothing on Energy Nede but the Synard boss may hold
+            # them before, and with either option off Expel holds only our Expel-story keys, so
+            # in a solo world they would have no spot (the Noel's House Pass one, gone with
+            # boss_checks off; 0.2.1; docs/ap/apworld.md "Open world", the user 2026-10-26).
+            later = self.options.expel_teleporter and self.options.expel_progression
+            start = list(items.START_KEYS) + ([] if later else list(items.NEDE_START_KEYS))
             for name in start:
                 self.multiworld.push_precollected(self.create_item(name))
             keys = [g["name"] for g in KEY_GROUPS if g["name"] not in start]
@@ -370,6 +378,10 @@ class SO2World(World):
             "party_rules": p.rules,
             "apworld_version": APWORLD_VERSION,
         }
+        if hell.is_hell_seed(o):
+            # [hellseed] only on a hell seed (absent: false), so every other seed reads as before:
+            # the port's setup and log warn the player; trackers may show it.
+            data["hell_seed"] = True
         if self.hub:
             # Hub mode (seed_format.md "Hub"; reference: the port reads the `hub` block and the
             # doors). Characters are always items (D7).
@@ -402,6 +414,8 @@ class SO2World(World):
                                  "name": item.name, "ap_id": item.code, "classification": cls}
             locs.append(entry)
         patches = placement_patches(locs)
+        if hell.is_hell_seed(self.options):
+            patches.append(hell.FEE_PATCH)     # [hellseed] the Fun City arena's fee waived (hell.py)
         for entry in locs:
             del entry["sites"]
         # The port gives a received item from this table, so it lists every item of this

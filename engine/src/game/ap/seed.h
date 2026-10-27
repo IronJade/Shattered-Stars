@@ -251,7 +251,17 @@ struct Seed {
   // game's 8 slots and four bench places the port keeps (game/ap/bench.h). Only with
   // party_rules "open" in open world, and in the hub; anywhere else it reads as off.
   bool bench = false;
+  // [hellseed] options.hell_seed (so2.apworld 0.2.1; absent: false): a "hell seed", encounter_rate 0
+  // with killer-move checks or learn points, trained only in the Fun City arena, whose fee the seed
+  // waives with an ordinary patch line. Display only: setup's Archipelago page and the game's log
+  // warn the player (kHellSeedWarning); nothing plays differently because of it.
+  bool hell_seed = false;
 };
+
+// [hellseed] What setup's Archipelago page shows and the game logs for a hell seed.
+inline constexpr const char* kHellSeedWarning =
+    "Hell Seed: no random battles. Killer-move levels and learn points are trained in the Fun City arena, "
+    "which is free on this seed. Expect a very long grind.";
 
 // The door id rule (tools/ap_doors.py).
 constexpr int64_t door_id(int map, int offset) { return static_cast<int64_t>(map) * 65536 + offset / 4; }
@@ -259,6 +269,12 @@ constexpr int64_t door_id(int map, int offset) { return static_cast<int64_t>(map
 // The seed file. load_seed_text is what load_seed_file reads; errors say what and where.
 bool load_seed_text(const std::string& text, Seed* out, std::string* error);
 bool load_seed_file(const std::string& path, Seed* out, std::string* error);
+
+// An item object as a seed holds one (`items`, a location's `item`, `start.items`): read with the
+// seed's rules, and written back in the same form [pendingsave agent: the save sidecar's
+// `pending` keeps the items still to give that are no location's own].
+bool parse_item_json(const Json& j, ItemDef* out, std::string* error, const std::string& where);
+Json item_json(const ItemDef& item);
 
 // Placeholder ranges (Location::placeholder). Item routines take 0x400-0x270f. Fol routines
 // take 0xf00000-0xffffff, which fits the money routine's 24-bit push (the generator's range),

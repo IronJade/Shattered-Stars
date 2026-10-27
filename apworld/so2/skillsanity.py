@@ -5,13 +5,15 @@
   (flag 700 + set, any of its guilds) is one check per skill of the set ("Skill Guild: Sensibility 2
   (1 of 4)"), and each skill is an item ("Skill: Perseverance") that lets the party learn it with SP
   as buying its set did. With the Cave of Trials, its Level 11 prize (Float) is a check and Float an
-  item. Guild checks never hold progression (the user).
+  item. A guild check may hold progression where its guilds are in reach and the set affordable
+  (guild_rule; the user, 2026-10-27, who had ruled it out on 2026-10-25).
 - special_only / insanity: every member keeps the first move of their learn table (known from the
   start or the join); every other killer move and spell is an item ("Claude: Shooting Stars"), and
   each learn point is a check instead: a learn-table level ("Claude Lv 7: Shooting Stars"; passed
   ones fire at the join), the items 464-469 (Precis's and Opera's machines), the arena's Private
-  Action (Holo-holograph) and, with the Cave of Trials, its three learn chests. Learn points hold no
-  progression (they need a member and levels; no proof places them).
+  Action (Holo-holograph) and, with the Cave of Trials, its three learn chests. A learn-table level
+  of a member the logic counts on may hold progression (learn_rule; the user, 2026-10-27); the
+  machines, the cave's learn chests and Float hold none.
 - Logic: Item Creation needs its specialty's skills (a member who starts with them, or the skill
   items: craftsanity's locations then need them), the Iseria Queen goal Musical Talent's, Precis's
   and Opera's machines Machinery's; a killer-move level needs its move. Those items are progression;
@@ -24,6 +26,7 @@
 """
 from BaseClasses import ItemClassification, LocationProgressType
 
+from . import hell
 from .data import GUILD_PLACES, HUB_MAPS, ITEM_BASE, LOCATIONS
 from .skills import EXTRA_MOVES, FLOAT, FLOAT_PRICE, GUILD_TOWNS, LEARN, SKILL_SETS, SKILLS, SPECIALTIES, \
     STARTING_SKILLS, SUPER_SPECIALTIES
@@ -283,47 +286,180 @@ def iseria_queen_need(world):
     return needs_rule(world, specialty_needs(world, "Musical Talent"))
 
 
-def set_location_rule(world, loc, row):
-    """A guild check's or learn point's access; neither holds progression."""
-    from worlds.generic.Rules import add_item_rule
-    from .items import EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT
-    from .rules import open_world_access, place_row
-    player = world.player
-    add_item_rule(loc, lambda item: not item.advancement)
-    hub_mode = getattr(world, "hub", False)
-    side = {0: None, 1: "claude", 2: "rena"}[world.options.story_route.value]
-    events, extra = [], None
-    if row["type"] == "guild":
+# ---- Progression at guild checks and learn points (the user, 2026-10-27; docs/ap/apworld.md
+# "Skillsanity", "Logic"). Both need battles: with encounter_rate 0 neither holds progression,
+# except on a hell seed (hell.py), whose free Fun City arena pays the EXP and the Fol: there both
+# count from the arena (hell.arena_need, hell.arena_way).
+# The Fol a guild set costs: random battles pay it (Earth, fol_multiplier 1, the floor; the story's
+# chests and Fol gifts are shuffled, so they may hold anything). Mean Fol a battle (docs/ap/
+# battles.json's enemy Fol over field.json's encounter tables): Expel's world map ~460 (120-780),
+# Mars ~400, the Sanctuary of Linga ~920, Hoffmann Ruins ~2100, Eluria Tower ~3500; Energy Nede's
+# world map ~520, its dungeons 2400-3600. A set up to 1600 Fol (the 1 and 2 sets) counts from a
+# guild that sells it: its first guilds open in stages 3 (Cross, 300-400 Fol) and 5 (Herlie,
+# 1500-1600), when a set costs about four world-map battles. A set from DEAR_PRICE (the 3 sets,
+# 2700-4500 Fol; 13500 all four) counts from the end of story stage FOL_STAGE (Hilton and Hoffmann
+# Ruins), whose battles pay the dearest in about two and all four in about seven; their first
+# guilds (Lacour, stage 6; Linga, 8) would count them when it takes ten world-map battles (five
+# at Linga's Sanctuary) for one. Story mode has no stage events: the disc switch stands for it.
+# Hub mode: the cheap sets from the start (the world maps), the dear ones once Fienal opens.
+DEAR_PRICE = 2700
+FOL_STAGE = 9
+# Learn levels: as killer moves (rules.py killer_rule), a level up to EARLY_LEVEL from the disc
+# switch, any other from the Final Save Point (hub: from the start / once Fienal opens). A member
+# who joins only through the story after the disc switch (open world under the story's party
+# rules, not the start: Noel, at Noel's house, stage 15) also needs that stage; story mode reaches
+# it with no item, so the disc switch stands for it there. A member who joins by a character item
+# needs the item (world.progression_characters). Only learn-table levels: the machines (items
+# 465-469 are Precis's / Opera's rare Machinery results, 464 a shuffled gift or a Private Action)
+# and the Cave of Trials' learn chests and Float (the late proof did not reach them: behind
+# puzzles, or a prize no proof sweeps) hold none.
+STORY_JOINS = {"Noel": 15}
+
+
+def fol_mode(mode, dear):
+    """A guild place's access mode with the set's Fol: a dear set's early mode no sooner than the
+    end of stage FOL_STAGE (the teleporter's and the late proof's come later anyway)."""
+    from .items import stage_event
+    ev, keys = mode
+    if not dear:
+        return mode
+    number = {stage_event(k): k for k in range(1, FOL_STAGE + 1)}
+    if ev is None or ev in number:
+        return stage_event(FOL_STAGE), keys
+    return mode
+
+
+def guild_rule(world, row):
+    """A guild check's (what it may hold: "any", "expel keys" or "none", its access ways [(event or
+    None, keys)], any of which reaches it). It is bought at any of its set's guilds (each guild a
+    place, as a first drop's: rules.drop_rule), and holds the best class of its places, reached
+    only through the places of that class (never through one that can't hold it), each with the
+    set's Fol (fol_mode). Story mode: a place the late proof reached (outside Expel with
+    expel_progression off); hub mode: one the hub proof reached in every game the player may play,
+    open from the start (towns). None with encounter_rate 0: the Fol comes from battles; but on a
+    hell seed the free Fun City arena pays it (its fights pay their enemies' Fol: hell.py), so a
+    set counts from the arena, whatever its price: story mode from the disc switch, open world
+    through each of its places' ways combined with the arena's (hell.arena_way; an Expel place's
+    own early way closes before the arena opens), hub mode from the start."""
+    from .items import EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN
+    from .rules import PROGRESSION_RANK, in_expel, open_world_access, open_world_progression, place_row, \
+        proven_late
+    o = world.options
+    side = {0: None, 1: "claude", 2: "rena"}[o.story_route.value]
+    games = ("claude", "rena") if side is None else (side,)
+    dear = SKILL_SETS[row["set"]][1] >= DEAR_PRICE
+    expel = bool(o.expel_progression)
+    battles = o.encounter_rate.value > 0
+    arena = hell.is_hell_seed(o)        # [hellseed] the Fol from the free arena
+    places = [GUILD_PLACES[m] for m in row["guild_maps"]]
+    if getattr(world, "hub", False):
+        ok = any(all(m in HUB_MAPS[g] for g in games for m in p["maps"]) and (expel or p["region"] != "Expel")
+                 for p in places)
+        if arena:
+            return ("any" if ok else "none"), [(None, ())]
+        return ("any" if ok and battles else "none"), [(EVENT_FIENAL_OPEN if dear else None, ())]
+    by_class = {}
+    for p in places:
+        pr = place_row(p)
         if world.open_world:
-            teleporter = bool(world.options.expel_teleporter)
-            ways = []
-            for m in row["guild_maps"]:
-                for mode in open_world_access(place_row(GUILD_PLACES[m]), side, teleporter):
-                    if mode not in ways:
-                        ways.append(mode)
-            loc.access_rule = lambda state, ways=ways: any(
-                (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in ways)
-        return
-    how = row["how"]
-    if how == "level":
-        if hub_mode:
-            events = [] if row["level"] <= EARLY_LEVEL else [EVENT_FIENAL_OPEN]
+            teleporter = bool(o.expel_teleporter)
+            cls = open_world_progression(pr, side, teleporter, expel)
+            if arena:
+                ways = [hell.arena_way(world, m) for m in open_world_access(pr, side, teleporter)
+                        if not (in_expel(pr) and hell.early_way(m))]
+            else:
+                ways = [fol_mode(m, dear) for m in open_world_access(pr, side, teleporter)]
         else:
-            events = [EVENT_ENERGY_NEDE if row["level"] <= EARLY_LEVEL else EVENT_FINAL_SAVE_POINT]
-    elif how == "item":
-        events = [] if hub_mode else [EVENT_FINAL_SAVE_POINT]
-        if modes(world.options)[0]:
-            extra = needs_rule(world, specialty_needs(world, "Machinery"))
-    elif how in ("cave", "float"):
+            cls = "any" if proven_late(pr, side) and (expel or p["region"] != "Expel") else "none"
+            ways = [(EVENT_ENERGY_NEDE if arena or dear or p["region"] != "Expel" else None, ())]
+        found = by_class.setdefault(cls, [])
+        found += [w for w in ways if w not in found]
+    # (A hell seed's open world drops an Expel place's early way; every set has a guild on Energy
+    # Nede, so some way is always left.)
+    by_class = {cls: found for cls, found in by_class.items() if found}
+    best = max(by_class, key=PROGRESSION_RANK.index) if battles or arena else "none"
+    if best == "none":
+        ways = []
+        for found in by_class.values():
+            ways += [w for w in found if w not in ways]
+        return "none", ways
+    return best, by_class[best]
+
+
+def learn_rule(world, row, kind):
+    """A learn point's (whether it may hold progression, the items / events it needs, an extra
+    rule or None). See STORY_JOINS above for the design."""
+    from .items import EVENT_ENERGY_NEDE, EVENT_FIENAL_OPEN, EVENT_FINAL_SAVE_POINT, stage_event
+    from .locations import fighter_status
+    o = world.options
+    hub_mode = getattr(world, "hub", False)
+    how = row["how"]
+    if how == "item":
+        extra = needs_rule(world, specialty_needs(world, "Machinery")) if modes(o)[0] else None
+        return False, ([] if hub_mode else [EVENT_FINAL_SAVE_POINT]), extra
+    if how != "level":
+        return False, [], None
+    who, early = row["character"], row["level"] <= EARLY_LEVEL
+    party = world.party_info
+    if hell.is_hell_seed(o):
+        # [hellseed] every level from the free Fun City arena (its EXP); in open world it opens
+        # after Noel's house (STORY_JOINS: stage 15 < TELEPORTER_STAGE 16), so that need is in it.
+        need = hell.arena_need(world)
+    elif hub_mode:
+        need = [] if early else [EVENT_FIENAL_OPEN]
+    else:
+        need = [EVENT_ENERGY_NEDE if early else EVENT_FINAL_SAVE_POINT]
+        if world.open_world and early and who in STORY_JOINS and party.rules == "story" and who != party.start:
+            need.append(stage_event(STORY_JOINS[who]))
+    status = fighter_status(who, party)
+    prog = hell.trained(o) and status in ("sure", "item") and kind != LocationProgressType.EXCLUDED
+    if prog and status == "item":
+        need.append(who)        # the character item, then progression (learn_characters)
+    return prog, need, None
+
+
+def learn_characters(world):
+    """generate_early: the members who join by their item and have a learn point that may hold
+    progression: their items are progression (the learn point needs it)."""
+    if not modes(world.options)[1] or not hell.trained(world.options):
+        return set()
+    from .locations import fighter_status
+    return {row["character"] for row, kind in world.chosen
+            if row["type"] == "learn" and row.get("how") == "level" and kind == LocationProgressType.DEFAULT
+            and fighter_status(row["character"], world.party_info) == "item"}
+
+
+def set_location_rule(world, loc, row):
+    """A guild check's or learn point's access and what it may hold (guild_rule, learn_rule)."""
+    from worlds.generic.Rules import add_item_rule
+    from .items import EXPEL_STORY_KEYS
+    from .rules import open_world_access
+    player = world.player
+    side = {0: None, 1: "claude", 2: "rena"}[world.options.story_route.value]
+    if row["type"] == "guild":
+        allowed, ways = guild_rule(world, row)
+        loc.access_rule = lambda state, ways=ways: any(
+            (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in ways)
+        if allowed == "none":
+            add_item_rule(loc, lambda item: not item.advancement)
+        elif allowed == "expel keys":
+            add_item_rule(loc, lambda item: not item.advancement
+                          or (item.player == player and item.name in EXPEL_STORY_KEYS))
+        return
+    if row["how"] in ("cave", "float"):
+        add_item_rule(loc, lambda item: not item.advancement)
         if world.open_world:
             ways = open_world_access(row, side, bool(world.options.expel_teleporter))
             loc.access_rule = lambda state, ways=ways: any(
                 (ev is None or state.has(ev, player)) and state.has_all(keys, player) for ev, keys in ways)
         return
+    prog, need, extra = learn_rule(world, row, loc.progress_type)
+    if not prog:
+        add_item_rule(loc, lambda item: not item.advancement)
     if extra is None:
-        loc.access_rule = lambda state, events=events: state.has_all(events, player)
+        loc.access_rule = lambda state, need=need: state.has_all(need, player)
     else:
-        loc.access_rule = lambda state, events=events, extra=extra: state.has_all(events, player) and extra(state)
+        loc.access_rule = lambda state, need=need, extra=extra: state.has_all(need, player) and extra(state)
 
 
 def hub_guild_region(row):
@@ -369,5 +505,6 @@ def seed_check(row):
 
 __all__ = ["ROWS", "GUILD_ROWS", "LEARN_ROWS", "FLOAT_ROW", "ITEM_NAME_TO_ID", "ITEM_GROUPS", "LOCATION_GROUPS",
            "choose", "pool_name", "plan", "classify", "craft_rule", "move_need", "iseria_queen_need",
-           "set_location_rule", "hub_guild_region", "place_in_shops", "price_of", "seed_item", "seed_check",
-           "is_skillsanity_item", "GUILD_TOWNS"]
+           "set_location_rule", "guild_rule", "learn_rule", "learn_characters", "hub_guild_region", "place_in_shops",
+           "price_of", "seed_item", "seed_check", "is_skillsanity_item", "GUILD_TOWNS", "DEAR_PRICE", "FOL_STAGE",
+           "STORY_JOINS"]

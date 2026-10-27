@@ -1,0 +1,32 @@
+name: Claude
+game: "Star Ocean: The Second Story"
+"Star Ocean: The Second Story":
+  skillsanity: {none: 1, skills_only: 1, special_only: 1, insanity: 2}
+  skillsanity_shop_share: {0: 1, 10: 2, 50: 1, 100: 1}
+  story_route: {any: 1, claude: 1, rena: 1}
+  missable_locations: {exclude: 2, include: 1, remove: 1}
+  expel_progression: "false"
+  cave_of_trials: {"true": 1, "false": 1}
+  boss_checks: {"true": 2, "false": 1}
+  character_items: {"true": 1, "false": 1}
+  enemy_dropsanity: {"off": 1, first_drop: 1}
+  traps: {0: 1, 10: 1, 50: 1, random: 1}
+  exp_multiplier: {1: 1, random: 1}
+  fol_multiplier: {1: 1, random: 1}
+  encounter_rate: {100: 1, random: 1}
+  death_link: {"true": 1, "false": 1}
+  accessibility: {full: 2, minimal: 1}
+  world_mode: {open_world: 3, story: 1, hub: 1}
+  hub_start: {fun_city: 1, arlia: 1, random_town: 2}
+  fienal_requirement: {fields_and_berle: 2, fields: 1, all_bosses: 1}
+  expel_teleporter: {"true": 3, "false": 1}
+  shuffle_shops: {"off": 1, specials: 1, full: 1}
+  goal: {indalecio: 2, final_boss: 1, indalecio_limiter_off: 1, indalecio_limiter_off_and_iseria_queen: 1}
+  drop_progression: {allow: 2, force: 1, never: 1}
+  area_keys_in_drops: {"true": 2, "false": 1}
+  craftsanity: {"true": 1, "false": 2}
+  no_fail_crafting: {"true": 1, "false": 1}
+  starting_character: {hero: 3, any: 2, claude: 1, rena: 1, leon: 1, dias: 1, noel: 1, chisato: 1, ernest: 1}
+  exclude_characters: ["Bowman", "Ernest"]
+  killer_move_checks: {"true": 1, "false": 1}
+  killer_move_progression: {never: 1, hero: 1, any: 1}

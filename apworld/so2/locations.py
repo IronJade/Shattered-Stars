@@ -9,7 +9,7 @@ from .crafts import CRAFTS
 from .data import HUB_BOSSES, HUB_LOCATIONS, ITEM_BASE, ITEMS, LOCATIONS
 from .items import GAME
 from .moves import MOVES, move_levels
-from . import skillsanity
+from . import hell, skillsanity
 
 CRAFT_TYPE = 11
 CRAFT_ROWS = [{"id": ITEM_BASE + (CRAFT_TYPE << 21) + c["item"], "name": f"{c['specialty']}: {ITEMS[c['item']]}",
@@ -105,7 +105,7 @@ def choose(options, party):
     if options.craftsanity:
         out += choose_crafts(party)
     if options.killer_move_checks:
-        out += choose_killer_moves(party, options.encounter_rate.value)
+        out += choose_killer_moves(party, hell.trained(options))
     out += skillsanity.choose(options, party)
     return out
 
@@ -121,16 +121,16 @@ def fighter_status(who, party):
     return "maybe" if who in party.possible else None
 
 
-def choose_killer_moves(party, encounter_rate):
+def choose_killer_moves(party, trained):
     """Killer-move levels of the members who can be in the party: filler only (EXCLUDED) for a
-    member the logic can't count on (fighter_status "maybe") and with encounter_rate 0 (the uses
-    need battles)."""
+    member the logic can't count on (fighter_status "maybe") and without battles to train in
+    (`trained`, hell.trained: encounter_rate above 0, or a hell seed's free Fun City arena)."""
     out = []
     for row in KILLER_ROWS:
         status = fighter_status(row["character"], party)
         if status is None:
             continue
-        kind = LocationProgressType.EXCLUDED if status == "maybe" or encounter_rate == 0 \
+        kind = LocationProgressType.EXCLUDED if status == "maybe" or not trained \
             else LocationProgressType.DEFAULT
         out.append((row, kind))
     return out

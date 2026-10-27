@@ -2,8 +2,7 @@
 carries it; the logic does not change (only the monsters' stats do, not EXP, Fol, drops or
 encounters)."""
 from .. import hub, locations
-from .bases import SO2TestBase
-from .test_world import check_seed, fill
+from .bases import SO2TestBase, check_seed, fill
 
 
 class DifficultyChecks:
