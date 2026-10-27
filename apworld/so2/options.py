@@ -112,7 +112,8 @@ class ExpelProgression(Toggle):
     after the Final Save Point in Fienal the old man in Fun City's arena reopens it (Virtual
     Expel), so they are never lost. Turn this off to keep progression out of Expel (hub mode
     too, where Expel is open from the start). In open world, off also gives you the North City
-    Pass at the start: Energy Nede's first pass would have nowhere else to go."""
+    Pass and the Noel's House Pass at the start: Energy Nede's first passes would have nowhere
+    else to go."""
     display_name = "Expel Progression"
     default = 1
 
@@ -314,9 +315,9 @@ class WorldMode(Choice):
     """story: the areas open as the story opens them.
     open_world: each area's entrances on the world maps (35 areas, 66 entrances) stay shut
       until its pass arrives ("Salva Pass"). You start with the Arlia Pass and the Fun City
-      Pass, and the North City Pass too unless expel_teleporter and expel_progression are both
-      on; the story still runs in its order, so its areas need their passes on the way. The
-      passes are progression items shuffled into the multiworld.
+      Pass, and the North City and Noel's House passes too unless expel_teleporter and
+      expel_progression are both on; the story still runs in its order, so its areas need
+      their passes on the way. The passes are progression items shuffled into the multiworld.
     hub: New Game starts after the Final Save Point, with every chest and boss still waiting.
       Both worlds and every town are open from the start and nothing ever closes; each dungeon
       has one key ("Salva Drift Key"). Each story boss waits in its dungeon and plays its
@@ -361,7 +362,8 @@ class ExpelTeleporter(DefaultOnToggle):
     """Open world only (hub mode opens Expel from the start): from chapter 36 the old man in Fun City's arena takes the party back to
     Arlia (and Arlia's guide brings it back), so Expel stays reachable after the disc switch.
     Off: Expel reopens only after the Final Save Point, and Expel's locations then hold only
-    Expel's own passes or non-progression items; you also start with the North City Pass."""
+    Expel's own passes or non-progression items; you also start with the North City Pass and
+    the Noel's House Pass."""
     display_name = "Expel Teleporter"
 
 

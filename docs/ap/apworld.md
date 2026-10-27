@@ -237,12 +237,16 @@ named "<area> Pass" (`tools/ap_world_tables.py` KEY_NAMES; "Map 231 Pass" for th
 area the story visits at chapters 24-25, "Fienal Pass" for map 687, Fienal's entrance). The
 seed's `doors` lists all 66 with their key; `apworld/so2/doors.py` validates it in the tests.
 **Starting keys:** the Arlia Pass (the start) and the Fun City Pass (the teleporter's way back
-to Expel, and the only way to Virtual Expel), plus the North City Pass unless the teleporter
-and `expel_progression` are both on. The first Energy Nede stage needs it and nothing on Energy
-Nede is reachable before it (the teleporter's old man needs the Synard, stage 16), so it must sit
-in Expel; with either option off Expel holds only our Expel-story keys (below), and it would
-have no legal spot in a solo world (0.2.0 gave it at the start with the teleporter off only; with
-the teleporter on and expel_progression off, every solo fill failed: 0.2.1, "Changes").
+to Expel, and the only way to Virtual Expel), plus the North City Pass and the Noel's House
+Pass unless the teleporter and `expel_progression` are both on. The first Energy Nede stages
+need them (14 and 15) and before them Energy Nede holds no location of this world that may take
+them but the Synard boss (North City has only shop slots; the teleporter's old man needs the
+Synard, stage 16), so otherwise they must sit in Expel; with either option off Expel holds only
+our Expel-story keys (below). In a solo world the North City Pass then had no legal spot and the
+Noel's House Pass one, the Synard boss, which `boss_checks` off takes away (0.2.0 gave the North
+City Pass at the start with the teleporter off only: every solo fill with the teleporter on and
+expel_progression off failed, and every one with boss_checks off and either option off; 0.2.1,
+"Changes"; docs/handoff/ncpfix.md).
 
 **The story's stages** (data.STAGES, from every chapter / step store with its conditions and
 the area of its map; `scratchpad/enemy/ap5/steps.py`): 23 stages, 12 on Expel (chapters 3-35)
@@ -956,8 +960,8 @@ A fixed world bug stays in the suite as its reproducer: `TestOpenWorldNoExpelPro
 world, expel_progression off, the teleporter on, a solo world) fills in WorldTestBase's
 test_fill, test_voyage_gate_placements and test_seed_doors. Before 0.2.1 the North City Pass had
 no legal spot there and every solo fill raised FillError (docs/handoff/aptests.md "World bug");
-the three were `@unittest.expectedFailure` until the fix (0.2.1: the pass at the start,
-test_keys_and_start; docs/handoff/ncpfix.md).
+the three were `@unittest.expectedFailure` until the fix (0.2.1: the North City and Noel's House
+passes at the start, test_keys_and_start; docs/handoff/ncpfix.md).
 
 **The release workflow** (many random seeds, outside the unit tests, as the guide asks):
 `tools/ap_batch.sh SET OUT FIRST LAST` generates seeds FIRST..LAST of a players set

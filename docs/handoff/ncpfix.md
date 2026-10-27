@@ -80,31 +80,36 @@ teleporter off. Start condition: **not (expel_teleporter and expel_progression)*
    placed keys / characters / skills / moves = base minus the North City Pass, and only
    filler-kind items (game items, Fol, traps) otherwise differ (fewer keys replace filler, so the
    pool's filler sample and the fill's order differ: most placements move).
-6. [ ] **Not started: stopped at step 3's condition** (version 0.2.1, release notes, package).
+6. [ ] Not started (version 0.2.1, release notes, package): after step 8.
 7. [ ] Not started (suites at 0.2.1, batches at 0.2.1).
 - The Phase A baselines scratchpad/aptests/base and after are **kept**: a wider fix needs the same
   identity check again.
 
-## Blocked: waiting on the user (2026-10-26 ~23:00)
-Noel's House Pass has one legal spot (the Synard boss) whenever the teleporter or
-expel_progression is off, and `boss_checks: false` (or excluding that boss) closes it: every
-such solo open-world seed fails (also 0.2.0's teleporter-off case). Fix options for the user
-(none implemented):
-- a. The Noel's House Pass at the start under the same condition as the North City Pass (the
-  next scarcest key is then the Red Crystal Pass: 4 spots, 3 with boss_checks off, Noel's
-  House's chests).
-- b. The same, but only when the Synard boss can't hold it (boss_checks off or excluded).
-- c. Release 0.2.1 as is and document boss_checks off + (teleporter or expel_progression off) as
-  unsupported solo (an OptionError or a warning).
+## Noel's House Pass: the user's decision (2026-10-26, verbatim, via the coordinator)
+"Follow the North City Pass for Noels House pass" (option a): open world gives the Noel's House
+Pass at the start under the same condition, unless the teleporter and expel_progression are
+both on. Coordinator's task (same rules): implement it as the North City Pass change (docs first,
+then the world change); Red Crystal Pass is then the tightest key: re-count spots, measure the
+solo fill rate >= 100 seeds per story_route x teleporter on / off x boss_checks on / off (and
+killer-move progression if it changes the spot count), expel_progression off; all must generate,
+else stop and report. Then finish 0.2.1 (solo_noexpel count, identity vs the base, version,
+changelog, docs/release_notes/0.2.1.md draft, package in dist/, world tests, general suite,
+scoped run, both batches through the checker), then delete scratchpad/aptests/base and after.
+
+## Step 8 (Noel's House Pass)
+8. [~] Docs: apworld.md "Starting keys" and Testing's note, the player guide (area keys, "Where
+   does Expel stand?", the two option rows), options.py docstrings. In progress: world.py,
+   items.py comment, test_keys_and_start, ap_batch_check.py.
 
 ## Next
-- The user's choice on Noel's House Pass; then steps 6-7: APWORLD_VERSION / archipelago.json
-  0.2.1, docs/ap/apworld.md changelog, docs/release_notes/0.2.1.md (draft), tools/build_apworld.sh
-  dist/apworld-0.2.1, the suites, the three batches at 0.2.1 (identity modulo the version string:
-  compare.py --ignore-version), then delete scratchpad/aptests/base and after.
+- Re-count spots, fill rates (boss_checks on / off), solo_noexpel, identity, then steps 6-7:
+  APWORLD_VERSION / archipelago.json 0.2.1, docs/ap/apworld.md changelog,
+  docs/release_notes/0.2.1.md (draft), tools/build_apworld.sh dist/apworld-0.2.1, the suites,
+  the batches at 0.2.1 (identity modulo the version string: compare.py --ignore-version), then
+  delete scratchpad/aptests/base and after.
 
 ## How to verify
 - `SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 worlds/so2/test` in
-  scratchpad/ap/Archipelago: 433 passed.
+  scratchpad/ap/Archipelago.
 - scratchpad/ncpfix/fill/run.sh (spots + fill rates), probe.sh (boss_checks / exclusion probes),
   id/run.sh + compare.py (identity), `tools/ap_batch.sh solo_noexpel OUT 1 96`.
