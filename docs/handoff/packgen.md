@@ -76,17 +76,27 @@ parallel). Do NOT touch engine/.
 - Pack checker v1.7.0 strict (published schema): zip and folder "Validated 10 files", exit 0; lax
   too; versions.json valid against the packlist schema. Tests 18/18.
 
+- Headless smoke in the real PopTracker 0.36.0: `tools/ap_poptracker_smoke.py`, 20/20 checks
+  (both variants: loads, connects as a tracker, slot data, items, the 4 checked sections, chapter
+  12 from so2_story, tabs Expel > Arlia Village > Arlia Village from so2_map {"map": 26}, no Lua
+  error or warning). PopTracker = the official v0.36.0 AppImage (minisign verified against
+  PopTracker's key 3B69F3B9A853297F), extracted in scratchpad/packgen/poptracker; no window
+  possible (env -i: no DISPLAY / WAYLAND_DISPLAY / D-Bus, empty XDG_RUNTIME_DIR and PATH; SDL2
+  dummy video: its SDL 2.0.20 has no offscreen driver and SDL2 reads SDL_VIDEODRIVER, not
+  SDL_VIDEO_DRIVER). The first runs found the world maps' unnamed ref sections ("duplicate
+  location section" warnings): fixed (refs named by their AP location names).
+
 ### In progress
-- PopTracker smoke load (headless): deps for a source build are missing (no SDL2 / SDL2_ttf /
-  SDL2_image headers or runtime ttf/image libs); trying the official v0.36.0 AppImage extracted in
-  scratchpad/packgen with DISPLAY / WAYLAND_DISPLAY unset and SDL offscreen.
+- (none)
 
 ### Next
-- Smoke test result into docs/ap/poptracker.md "Smoke test"; GUI check steps for the user if it
-  can't run headless.
+- Hand-off: B4b (the evaluator, tools/poptracker/logic.lua), B6 (UT map tab: ut_name_mapping.json,
+  map_tabs.lua), B7 (release checklist rows: `tools/build_poptracker.sh all`,
+  `tools/ap_poptracker_smoke.py`; attach the zip; commit versions.json where decided).
 
 ### How to verify
     tools/build_poptracker.sh all          # build + pack checker + versions.json + tests
+    SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py
     # or: SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_test.py -v
 
 ### Notes for the coordinator
@@ -94,8 +104,11 @@ parallel). Do NOT touch engine/.
   (raw URL .../main/tools/poptracker/versions.json, the generator's default `--versions-url`);
   alternative a `versions` branch. Not created; nothing committed under that name yet.
 - Release tag for the zip: default `apworld-v0.2.2` (`build --tag`).
-- Installed into scratchpad only: lupa 2.8 into scratchpad/ap/ap-venv (the tests' Lua 5.4);
-  scratchpad/packgen/venv (jsonschema, referencing, lupa, pillow) + pack-checker v1.7.0 clone.
+- Installed into scratchpad only: lupa 2.8 and cryptography 50 into scratchpad/ap/ap-venv (the
+  tests' Lua 5.4; the smoke's signature check); scratchpad/packgen/venv (jsonschema, referencing,
+  lupa, pillow, cryptography) + pack-checker v1.7.0 clone; PopTracker 0.36.0 AppImage (61 MB) in
+  scratchpad/packgen/poptracker. PopTracker fetched the community pack list and our (unpublished)
+  versions_url during the smoke: read-only GETs.
 - Logic seam for B4b: docs/ap/poptracker.md "The logic seam" (`^$so2_access|<id>` returns an
   AccessibilityLevel; four functions in tools/poptracker/logic.lua).
 - Data quirk seen: "King's Room" (Lacour) has its one chest in region Energy Nede; tabs go by the
@@ -106,3 +119,5 @@ parallel). Do NOT touch engine/.
   seed_format.md "Slot data and trackers", PopTracker docs / source, template pack, emerald.
 - 2026-10-27: generator, Lua, images, build script, tests, docs written; pack checker strict and
   tests green.
+- 2026-10-27: headless smoke in the real PopTracker 0.36.0 (AppImage, verified): 20/20; fixed the
+  world maps' ref sections (named); tools/ap_poptracker_smoke.py.

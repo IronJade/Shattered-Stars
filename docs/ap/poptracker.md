@@ -238,7 +238,8 @@ and misleading extensions, the minimum PopTracker version, and dead `ref` / `par
 Result for 1.0.0: "Validated 10 files", no warnings, exit 0 (also lax). versions.json also passes
 the packlist's `versions.schema.json`.
 
-**PopTracker itself.** See "Smoke test" below.
+**PopTracker itself**: tools/ap_poptracker_smoke.py ("Smoke test" below) loads the pack in the real
+PopTracker 0.36.0, headless, against a local room.
 
 ## Distribution (proposal; the user decides what is published and where)
 
@@ -266,6 +267,45 @@ the packlist's `versions.schema.json`.
   chosen; `SO2_WORLD_MAPS` holds the world maps' x/z -> pixel mapping for a player icon.
 - The pack's maps.json / locations JSON follow PopTracker's format, which UT's map tab reads.
 
-## Smoke test
+## Smoke test (the real PopTracker, headless)
 
-(see docs/handoff/packgen.md for the state of the headless PopTracker run)
+    SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python \
+        tools/ap_poptracker_smoke.py [--zip dist/poptracker/so2_shattered_stars_1.0.0.zip] [--keep]
+
+It runs PopTracker 0.36.0 itself against a local room, with **no window**: PopTracker starts with
+a cleared environment (no `DISPLAY`, no `WAYLAND_DISPLAY`, no D-Bus, an empty `XDG_RUNTIME_DIR` and
+an empty `PATH`, so neither a display server nor a dialog helper can be reached), SDL's dummy video
+and audio drivers, and a scratch HOME (scratchpad/packgen/smoke). PopTracker is the official Linux
+AppImage of the v0.36.0 release, downloaded once into scratchpad/packgen/poptracker/, its minisign
+signature checked against PopTracker's release key (`key/3B69F3B9A853297F.pub` in its repo), and
+extracted; this machine has no SDL2 / SDL2_ttf / SDL2_image development files for a source build.
+The AppImage's SDL 2.0.20 has no offscreen driver, so it is the dummy one (`SDL_VIDEODRIVER`, SDL2's
+spelling). Needs `websockets` (in the AP venv) and `cryptography` (installed into the AP venv).
+
+Steps: generate an open-world room (character items, crafts, killer moves, drops, shop specials,
+skills) with the scratch Archipelago, host it on 127.0.0.1:38391 (MultiServer, `--disable_save`,
+stopped at the end); play the port's part as a client of the slot (checks for the three lowest
+missing locations and a craft, then `so2_map_0_1` = `{"map": 26}` and `so2_story_0_1` =
+`{"chapter": 12, "step": 100}`); start PopTracker with `--load-pack so2_shattered_stars
+--pack-variant map|items_only --ap-host localhost:38391 --ap-slot Tester`, and quit it with SIGINT
+after 40 seconds (it saves its state on quit). Then it checks the log and the saved state
+(`saves/so2_shattered_stars/1.0.0/<variant>/autosave.json`).
+
+Result (2026-10-27, pack 1.0.0): **20/20 checks pass** (both variants). What it showed: the pack loads ("so2_shattered_stars 1.0.0 (map) loaded"), PopTracker connects to the room
+as a tracker (the server: "Tester (Team #1) tracking Star Ocean: The Second Story has joined.
+Client(0.5.1), ['PopTracker', 'NoText', 'Tracker']"), applies the slot data (the Room settings,
+the banner), shows the received items (the starting Arlia Pass and Fun City Pass, and the Salva
+Pass one of the checks gave), clears exactly the four checked sections, sets the chapter to 12 from `so2_story_*`, and
+switches the map tabs to Expel > Arlia Village > Arlia Village from `so2_map_*` (the saved UI
+state's active tabs). PopTracker also fetched the community pack list and the pack's
+`versions_url` (not published yet: "Could not fetch", harmless). An earlier run found
+PopTracker's "duplicate location section" warning for the world maps' unnamed `ref` sections; they
+now carry their AP location names, and the smoke test fails on any warning.
+
+**A GUI check** (for a person, optional): install the zip in PopTracker's `packs` folder, load
+"Star Ocean: The Second Story (Shattered Stars)" > Map Tracker, connect to a room with the AP
+button, and look at: the banner ("Logic unavailable for this room: checklist"), the Room tab, a
+world map's squares, an area map's squares and their popups (one entry per check), the boards'
+cells, and (with port 0.03.00 connected to the same room) the tabs following the party. With
+`shattered-stars --render-tracker-maps` run first, the area maps show the real backgrounds and the
+squares sit on the chests.
