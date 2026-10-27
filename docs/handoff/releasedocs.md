@@ -54,7 +54,16 @@ docs/ap/release_checklist.md section 11.
    the first real setup.exe run, the CLI, PopTracker install / connect / autotrack / story / rendered
    maps / offline / old room, Universal Tracker incl. /explain and story awareness, a TODO item for
    maptab, a glance at the rest). **Done.**
-3. Release notes 0.03.00.md, 0.2.2.md, poptracker-1.0.0.md. (pending)
+3. Release notes: 0.03.00.md finished (intro + links to the two other releases; the keys; the
+   render command + setup button; rooms and lettered doorways; updating table incl. 0.2.2 seeds on
+   0.02.51; packages; Archipelago; a new "Trackers" section; known limitations = 0.02.51's +
+   online-only, the setup button's fixed folder / portable PopTracker, still pictures, the bench
+   banner); 0.2.2.md finished (UT yaml-less, /explain, logic_version, the logic export, story
+   awareness + its unit, "Older rooms" (0.2.0 Skillsanity warning, hell seeds refused, PopTracker
+   checklist), seeds = 0.2.1's but the version number, installing, files, checks, limitations,
+   developers); poptracker-1.0.0.md new (needs, what it shows, install, updates, maps from your
+   disc + portable PopTracker, limitations, files, how it was checked, licence). Sums TODO.
+   **Done.**
 4. README.md: tracker features and the three downloads. (pending)
 5. Wiki (scratchpad/wiki, uncommitted): Trackers page + links. (pending)
 6. docs/plans/next.md: Phase B status, Phase C pointer. (pending)
@@ -67,6 +76,10 @@ docs/ap/release_checklist.md section 11.
   tests (rooms, doors, panel, click), the smoke's door-click step, `SS_TEST=tracker_` counts if
   the layout changes, and one row "the map tabs" (layout --check after the area audit, UT's map
   tab loading headless).
+- Release notes: 0.03.00.md "What's new" bullet (the pack's room maps and doors, UT's map tab);
+  0.2.2.md "What's new: Universal Tracker" last bullet (UT's map tab) and the counts paragraph;
+  poptracker-1.0.0.md "What it shows" last bullet (rooms and doors), "the rooms" in "The real
+  maps", and the counts paragraph. All marked **TODO (maptab)**; the DRAFT banners name them.
 - docs/handoff/windows_check.md "Recheck for 0.03.00" item 11 (TODO (maptab)): the room maps,
   the door panel, click switching, auto tab to rooms, UT's map tab.
 
@@ -88,6 +101,17 @@ docs/ap/release_checklist.md section 11.
 - The scratch identity scripts of the Phase B agents compared each step with the previous one;
   the chain starts at the released 0.2.1 world (git diff 2c38965 6d2c518 -- apworld/so2 is empty).
   The checklist asks the RC for one direct comparison with apworld-v0.2.1's world.
+- **The 0.03.00 draft said the render takes "about half a minute"**; tracker_maps.md says about
+  21 s, setupthread measured 20.5-20.9 s. Written as "about 20 seconds on the development machine".
+- **"Install the same so2.apworld the room was generated with"** (setup_en.md, the old 0.2.2 draft)
+  vs "rooms made with 0.2.0 / 0.2.1 track with 0.2.2 installed" (apworld.md "Older rooms"): the
+  older worlds have no yaml-less support, so for them 0.2.2 is the one to install. Written as "the
+  room's so2.apworld (0.2.2 for a room made with 0.2.0, 0.2.1 or 0.2.2)". setup_en.md is not mine.
+- **UT's story awareness on 0.2.0 / 0.2.1 story rooms**: by the design it should work (story.prepare
+  runs in any UT regeneration of a story-mode room with 0.2.2 installed), but no test covers an old
+  room; the docs claim only the pack's need for a 0.2.2 room.
+- storyaware's "a player may recolour Inspect in PopTracker's settings": not checked (PopTracker
+  has a colors.json); not claimed.
 
 ## Commits
 
