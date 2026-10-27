@@ -62,7 +62,7 @@ Docs: seed_format.md, poptracker.md, apworld.md, release_notes/0.2.2.md, this lo
 
 ## State
 
-### Done (verified; being committed)
+### Done (committed: a16af67 docs, 6bb6d0a B3, 250a83d B4b, fd803cf UT; results docs after)
 - B3 export: apworld/so2/tracker_export.py (format 1: regions (origin first), rules interned
   bottom-up, entrances [name, from, to (-1: not connected), rule], events [item name, region, rule],
   locations grouped [region, rule, ids...], goal; items by AP id, events by name; "region" body
@@ -95,13 +95,27 @@ Docs: seed_format.md, poptracker.md, apworld.md, release_notes/0.2.2.md, this lo
 - Docs: seed_format.md "The tracker export" (+ ER room, sizes), poptracker.md (Status, players,
   Logic, Testing, Smoke), apworld.md ("The logic export", Files, "Older rooms"), 0.2.2.md, setup_en.md.
 
-### In progress
-- Commits: docs, B3 code, B4b code, UT code.
+- Final proofs on the committed code (fd803cf, md5s unchanged during the batch):
+  - batch_final vs batch_base: ALL IDENTICAL BUT THE TRACKER KEY (480 .apso2 + 288 spoilers byte for
+    byte, 288 multidata equal less `tracker`, checker outputs the same; exports 4.6-31.8 KB in these
+    sets): scratchpad/logicexport/identity_final.txt.
+  - AP_TEST_WORLDS=so2 test/general worlds/so2: 916 passed (71197 subtests).
+  - SO2_SLOW_TESTS=1 world suite: 865 passed (66555 subtests; ManySeeds 320 + 320 rooms), 55 s.
+  - tools/build_apworld.sh scratchpad/logicexport/dist: so2.apworld 212,635 bytes, world_version
+    0.2.1, manifest version 7 / compatible 7, tracker_export.py + test_tracker.py in, no __pycache__.
+  - tools/ap_ut_check.py (Tracker_v0.3.6, the package, --ut-dir scratchpad/logicexport/ap_ut, port
+    38397, display variables unset): UT MATCHES THE WORLD, 20 points x (CLI, TrackerCore) = 40
+    matches, logic_version 2 refused; no dialog, no leftover process.
+- apworld.md results + Changes written.
 
-### Next
-- Final proofs on the final code: batch (scratchpad/logicexport/batch_final vs batch_base), AP general
-  (AP_TEST_WORLDS=so2 test/general worlds/so2), SO2_SLOW_TESTS=1 world suite, tools/ap_ut_check.py,
-  tools/build_apworld.sh into scratchpad/logicexport/dist; then apworld.md results + Changes, commit.
+### In progress
+- (none)
+
+### Next / open
+- B6 (UT map tab, story awareness) can call so2_logic_view / so2_in_logic; Phase C fills deferred
+  entrances with so2_logic_connect / TrackerLogic.connect and may add optional keys (region -> maps).
+- B7: release checklist rows (tools/ap_poptracker_smoke.py now also proves the logic in PopTracker;
+  SO2_SLOW_TESTS covers TestTrackerManySeeds).
 
 ### How to verify
 - cd scratchpad/ap/Archipelago; SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test
@@ -136,3 +150,5 @@ tracker key; the final batch reruns on the final code.
 - 2026-10-27: B3 + B4b written and tested (above); batch running.
 - 2026-10-27: batch identical but the tracker key; coordinator's ER addition done (entrance names,
   to -1, connect); step 4 measured conservative and done; pack rebuilt, smoke 24/24 again.
+- 2026-10-27: committed (a16af67, 6bb6d0a, 250a83d, fd803cf); final batch identical, general 916,
+  slow 865, package built, real UT 40/40. Done.

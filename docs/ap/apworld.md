@@ -1325,6 +1325,30 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
 
+Results (2026-10-27, 0.2.2: the logic export and 0.2.0 Skillsanity rooms; docs/handoff/logicexport.md;
+"The logic export" and "Older rooms" above):
+- The world's tests: **863 passed** (65878 subtests; was 788), 14.8 s at `-n 6`: test_tracker.py's
+  16 mix classes (the reference evaluator is the world's own logic at every sphere and on 10 more
+  item states each; the slowest 0.5 s) and its export, evaluator and size tests.
+  `SO2_SLOW_TESTS=1`: **865 passed** (66555 subtests): TestTrackerManySeeds' **320 rooms** (16 mixes
+  x 20 seeds) and TestUTManySeeds' 320, 55 s. `AP_TEST_WORLDS=so2 ... pytest test/general
+  worlds/so2`: **916 passed** (71197 subtests).
+- Identity: the three release sets, seeds 1-96, before (rulebuilder's after batch, the same world
+  code as HEAD before this change, md5s checked) and after: **all 288 seeds identical but the new
+  key**: 480 .apso2 and 288 spoilers byte for byte, the checker's output the same, every multidata
+  equal once each Star Ocean slot's `tracker` (a format-1 export; 4.6 to 31.8 KB in these sets) is
+  taken out (scratchpad/logicexport/identity.py).
+- The PopTracker pack's evaluator against this reference (tools/ap_poptracker_test.py): 16 rooms x
+  246 item states, 243,885 section evaluations equal; in the real PopTracker 0.36.0
+  (tools/ap_poptracker_smoke.py) its reachable sections were the world's own at three points
+  (115, 99, 40 in logic).
+- 0.2.0 rooms ("Older rooms"): 85 rooms, 51 equal, 29 subsets (Skillsanity), 5 refused (hell
+  seeds), none listing more than the room's logic; the user's own room loads with the warning, its
+  1,627 locations the room's.
+- The real UT (tools/ap_ut_check.py, Tracker_v0.3.6, the packaged so2.apworld, 212,635 bytes, world
+  version 0.2.1 unchanged): **all 20 points match** (CLI and TrackerCore, 40 comparisons), the
+  logic_version 2 room refused.
+
 Results (2026-10-27, 0.2.2: rules as data; docs/handoff/rulebuilder.md; "Rules as data" above):
 - The world's tests: **788 passed** (65886 subtests; was 783): test_logic.py's 5 (11 worlds, every
   location, event, entrance and the goal; the round trips; the source scan), 12.7 s at `-n 6`.
@@ -1781,11 +1805,17 @@ docs/handoff/skilllogic.md):
 **0.2.2** (2026-10-27, not released yet; docs/handoff/utworld.md; docs/release_notes/0.2.2.md is
 the draft). Tracker support, first piece (docs/plans/trackers.md B1): Universal Tracker, yaml-less
 ("Trackers" above). No new option, item or location; the same seeds as 0.2.1 byte for byte (the
-.apso2 and the spoiler); the slot data gains `logic_version` (1) and `exclude_locations`.
+.apso2 and the spoiler); the slot data gains `logic_version` (1), `exclude_locations` and `tracker`.
 - *Rules as data* (trackers.md B2; docs/handoff/rulebuilder.md; "Rules as data" above): every
   access rule is a Rule Builder rule (logic.py), so Universal Tracker's `/explain` works. The same
   logic (every rule's truth table the same, `logic_version` still 1) and the same seeds and slot
   data byte for byte.
+- *The logic export* (trackers.md B3; docs/handoff/logicexport.md; "The logic export" above): the
+  slot data gains `tracker`, the world's resolved logic as data (format 1, 4 to 35 KB), which the
+  PopTracker pack evaluates (pack 1.0.0); `tools/ap_tracker_logic.py` is its reference evaluator.
+  The same seeds byte for byte; `logic_version` still 1.
+- *0.2.0 Skillsanity rooms* in Universal Tracker: tracked with a logged warning instead of refused
+  (the user's decision; measured conservative: "Older rooms"); 0.2.0 hell seeds still refused.
 
 **0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md,
 hellseed.md and benchworld.md, the user's decisions). No new item or location; one new option,
