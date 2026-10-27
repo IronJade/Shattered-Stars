@@ -66,7 +66,7 @@ parallel). Do NOT touch engine/.
 
 ## State
 
-### Done
+### Done (commits 65ed8ce, 2ad5530, 3c5db64, 80d1b8d)
 - Generator `tools/ap_poptracker.py`, Lua `tools/poptracker/{init,so2,logic}.lua` +
   `autotracking/archipelago.lua`, build script `tools/build_poptracker.sh` (build / check / all),
   tests `tools/ap_poptracker_test.py` (18 tests), docs `docs/ap/poptracker.md`.
@@ -121,3 +121,6 @@ parallel). Do NOT touch engine/.
   tests green.
 - 2026-10-27: headless smoke in the real PopTracker 0.36.0 (AppImage, verified): 20/20; fixed the
   world maps' ref sections (named); tools/ap_poptracker_smoke.py.
+- 2026-10-27: rebuilt against rulebuilder's committed B2 world (1d879a2): checker + tests green,
+  zip sha256 7c04ad95... unchanged by B2. Scratch kept for later agents: scratchpad/packgen/
+  {poptracker (AppImage, extracted), venv, pack-checker, test_pack}. Done; handed back.
