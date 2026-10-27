@@ -128,6 +128,9 @@ struct Runtime {
   // v2 party [party agent]: the starting character becomes the Formation leader when they join.
   bool lead_start = false;
   int chosen_start_pending = 0;  // [charselect agent] New Game's pick, until on_new_game
+  // [partybuild agent] heroslot: a load whose sidecar remembers no order (a save from before
+  // D2 / D3): the first free play takes the loaded order as the player's.
+  bool order_from_load = false;
   // The hub's New Game [hubcore agent]: the start's position, for the field's first map load.
   bool start_position = false;
   bool banners_measured = false;         // the seed doors' banners measured (first free play)
@@ -194,6 +197,7 @@ void fresh_state(Runtime& r) {
   r.dying_from_link = false;
   r.ending = false;
   r.lead_start = false;  // (v2 party)
+  r.order_from_load = false;  // [partybuild agent]
 }
 
 // ASCII -> the field's map-font glyph codes (one byte below 0x80, else two).
@@ -650,6 +654,95 @@ void party_v2_update(Runtime& r) {
   }
 }
 
+// ---- heroslot (docs/handoff/heroslot.md D1-D3) [partybuild agent] ----
+
+bool in_ending(const Runtime& r);  // (below)
+
+// On in open world and hub with a starting member who is not the picked game's hero: then the
+// starting member takes slot 0 at their join (D1) and the port keeps the order the player left
+// (D2 / D3). Every other game plays as before.
+bool heroslot_on(const Runtime& r) { return r.on && (r.seed.open_world || r.seed.hub) && start_member(r) != 0; }
+
+// The party is set aside or split now: a Private Action (or the isolate routine), a split
+// window keeping everyone away or letting a member in for a fight, temporary members or a
+// borrowed slot, the endings, a hub story view. The order is the story's business then.
+bool order_locked(const Runtime& r) {
+  if (party_isolated() || window_keeping(0) != nullptr || !r.state.temporary.empty() || !r.state.stash.empty() ||
+      in_ending(r) || hub_view_on())
+    return true;
+  for (const SplitWindow& w : kSplitWindows)
+    if (w.temps != 0 && window_on(w)) return true;
+  return false;
+}
+
+// A front member (slots 0-3) who can fight: active, status & 7 clear (the Party Order page's
+// rule for a swap it keeps).
+bool front_can_fight() {
+  for (int i = 0; i < 4; ++i) {
+    const u8* p = party_slot(i);
+    if (p != nullptr && rd16s(p) > 0 && (p[2] & 7) == 0) return true;
+  }
+  return false;
+}
+
+// Member 'id' (in the party) to party slot 'slot', the member there to theirs: the game's
+// party_move_character_to_slot 0x800531dc (the Party Order page's and the scripts' swap; slots
+// and records, the front's voices rebuilt).
+void move_to_slot(int id, int slot) {
+  const int from = slot_of_character(id);
+  if (from >= 0 && from != slot) field::party_swap_slots(nullptr, from, slot);
+}
+
+// The order the player leaves: config +0x41's member (an active front slot) and slot 0's.
+void remember_order(Runtime& r, const char* why) {
+  const field::FieldGlobals& g = field::globals();
+  if (g.party == nullptr || g.config == nullptr) return;
+  const int leader_slot = g.config[0x41];
+  const u8* lp = leader_slot < 4 ? party_slot(leader_slot) : nullptr;
+  const int lead = lp != nullptr && rd16s(lp) > 0 ? rd16s(lp) : 0;
+  const int first = rd16s(party_slot(0)) > 0 ? rd16s(party_slot(0)) : 0;
+  if (lead == r.state.lead && first == r.state.first) return;
+  r.state.lead = lead;
+  r.state.first = first;
+  log(std::string("heroslot: the order kept (") + why + "): " + (first != 0 ? character_name(first) : "nobody") +
+      " in slot 0, " + (lead != 0 ? character_name(lead) : "nobody") + " leads");
+}
+
+// D3 then D2, at free play (and as the camp menu opens): the slot-0 member a scene moved goes
+// back to slot 0 (the member there takes their slot, the menu's swap), unless the front would be
+// left without a fighter; the leader active in the front four leads again.
+void keep_order(Runtime& r) {
+  if (!heroslot_on(r) || order_locked(r)) return;
+  field::FieldGlobals& g = field::globals();
+  if (g.party == nullptr || g.records == nullptr || g.config == nullptr) return;
+  if (r.order_from_load) {
+    r.order_from_load = false;
+    remember_order(r, "the loaded game's");
+  }
+  if (const int id = r.state.first; id != 0) {
+    const int slot = slot_of_character(id);
+    if (slot > 0 && rd16s(party_slot(slot)) > 0) {
+      const int was = rd16s(party_slot(0));
+      move_to_slot(id, 0);
+      if (!front_can_fight()) {
+        move_to_slot(id, slot);
+      } else {
+        log(std::string("heroslot: ") + character_name(id) + " back in slot 0 (from " + std::to_string(slot) + ")" +
+            (was > 0 ? std::string(", ") + character_name(was) + " to " + std::to_string(slot) : std::string()) + ": " +
+            party_line());
+      }
+    }
+  }
+  if (const int id = r.state.lead; id != 0) {
+    const int slot = field::party_find_slot(nullptr, id - 1);
+    if (slot >= 0 && slot < 4 && g.config[0x41] != slot) {
+      log(std::string("heroslot: ") + character_name(id) + " leads again (Formation leader, slot " + std::to_string(slot) +
+          "; was " + std::to_string(g.config[0x41]) + ")");
+      g.config[0x41] = static_cast<u8>(slot);
+    }
+  }
+}
+
 // A received Celine travels with the party: script flag 112, which map 131 stores from
 // party_has(Celine) as chapter 15 begins and Mars (462 / 125 / 126) reads (keeps_flag). So does
 // a starting Celine.
@@ -815,6 +908,8 @@ Json sidecar_json(const SaveState& s) {
   if (s.chosen_start > 0) j.set("starting_character", Json::number(static_cast<int64_t>(s.chosen_start)));  // [charselect]
   if (!s.skills.empty()) j.set("skills", ints(s.skills));  // skillsanity [skillsanity2]
   if (!s.moves.empty()) j.set("moves", ints(s.moves));
+  if (s.lead > 0) j.set("leader", Json::number(static_cast<int64_t>(s.lead)));  // heroslot [partybuild agent]
+  if (s.first > 0) j.set("slot_0", Json::number(static_cast<int64_t>(s.first)));
   return j;
 }
 
@@ -855,6 +950,11 @@ bool sidecar_from_json(const Json& j, SaveState* s, std::string* error) {
   if (r.chosen_start < 0 || r.chosen_start > kCharacterCount) r.chosen_start = 0;
   ints("skills", &r.skills);  // skillsanity [skillsanity2] (absent: none)
   ints("moves", &r.moves);
+  // heroslot [partybuild agent] (absent, or outside 1-12: none).
+  r.lead = static_cast<int>(j["leader"].as_int(0));
+  r.first = static_cast<int>(j["slot_0"].as_int(0));
+  if (r.lead < 0 || r.lead > kCharacterCount) r.lead = 0;
+  if (r.first < 0 || r.first > kCharacterCount) r.first = 0;
   *s = std::move(r);
   return true;
 }
@@ -940,6 +1040,18 @@ void start_with(Seed s) {
   r.on = true;
   index_seed(r);
   fresh_state(r);
+  // [partybuild agent] Debugging (environment, never config.ini): SS_HEROSLOT_ORDER=LEAD,FIRST
+  // (party ids) gives a --map start the order a game in progress would remember (heroslot D2 /
+  // D3), its start (the starting member's join, the starting items) counted as given.
+  if (const char* v = std::getenv("SS_HEROSLOT_ORDER"); v != nullptr && *v != 0) {
+    int lead = 0, first = 0;
+    if (std::sscanf(v, "%d,%d", &lead, &first) == 2 && lead >= 0 && lead <= kCharacterCount && first >= 0 && first <= kCharacterCount) {
+      r.state.lead = lead;
+      r.state.first = first;
+      r.state.start_given = true;
+      log("heroslot: SS_HEROSLOT_ORDER " + std::to_string(lead) + "," + std::to_string(first) + " (the start counted as given)");
+    }
+  }
   r.goal_flags_pending = true;   // (a start straight into the field, --map, has no New Game)
   r.killer_scan_pending = true;
   r.notices.clear();
@@ -1133,11 +1245,22 @@ std::string join_waiting(Runtime& r) {
   auto lead = [&](int id) {
     if (!r.lead_start || id != start_member(r)) return;
     r.lead_start = false;
-    const int slot = field::party_find_slot(nullptr, id - 1);
+    int slot = field::party_find_slot(nullptr, id - 1);
+    // [partybuild agent] heroslot D1 (open world and hub): the starting member to slot 0, the
+    // hero to slot 1 (the Party Order page's own swap, as the player could make it).
+    if (heroslot_on(r) && slot > 0) {
+      const int hero = hero_id();
+      move_to_slot(id, 0);
+      if (slot_of_character(hero) > 1) move_to_slot(hero, 1);
+      slot = field::party_find_slot(nullptr, id - 1);
+      log(std::string("heroslot: ") + character_name(id) + " takes slot 0, " + character_name(hero) + " slot " +
+          std::to_string(slot_of_character(hero)) + ": " + party_line());
+    }
     if (slot >= 0 && slot < 4 && field::globals().config != nullptr) {
       field::globals().config[0x41] = static_cast<u8>(slot);
       log(std::string(character_name(id)) + " leads (Formation leader, slot " + std::to_string(slot) + ")");
     }
+    if (heroslot_on(r)) remember_order(r, "the starting member's join");
   };
   for (size_t k = 0; k < r.state.characters_waiting.size(); ++k) {
     const int id = r.state.characters_waiting[k];
@@ -1269,6 +1392,7 @@ void free_play_update() {
   give_start(r);
   keep_story_flags(r);  // (a save from before the item: its flag 112 as the item says)
   party_v2_update(r);   // v2: split windows, temporary members, members back after a split
+  keep_order(r);        // heroslot D2 / D3: the order the player left [partybuild agent]
   if (r.killer_scan_pending) {  // v2: after a battle or a load, the killer moves' use counts
     r.killer_scan_pending = false;
     scan_killer_moves();
@@ -1414,6 +1538,9 @@ void on_saved(const std::string& card_image, int save_index, const u8* file, siz
   if (!r.on || card_image.empty()) return;
   const std::string path = sidecar_path(card_image, save_index);
   std::string err;
+  // heroslot D2 / D3 [partybuild agent]: the order as the player saves it (a Party Order change
+  // in the same menu included).
+  if (heroslot_on(r) && !order_locked(r)) remember_order(r, "a save");
   SaveState s = r.state;
   s.save_hash = file != nullptr ? util::save_digest(file, length) : std::string();  // [hubcore agent]
   s.hub_view = hub_asked_view();  // [hubask agent] an asked chamber's view on now
@@ -1462,6 +1589,9 @@ void on_loaded(const std::string& card_image, int save_index) {
   r.dying_from_link = false;
   r.ending = false;
   r.checked = std::set<int64_t>(s.checked.begin(), s.checked.end());
+  // heroslot [partybuild agent]: a sidecar from before D2 / D3 remembers no order; the loaded
+  // party's is the player's (taken at the first free play: the party is not in place yet).
+  r.order_from_load = heroslot_on(r) && s.lead == 0 && s.first == 0;
   // Local items still waiting stay queued; the server's items past the save's received
   // index are given again (this session keeps the server's whole list).
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
@@ -1996,7 +2126,20 @@ std::string party_free_play_step() {
   if (!r.on) return "";
   give_start(r);
   party_v2_update(r);
+  keep_order(r);  // [partybuild agent]
   return join_waiting(r);
+}
+
+// [partybuild agent] heroslot D2 / D3: the camp menu.
+void on_camp_menu_opening() {
+  Runtime& r = rt();
+  keep_order(r);  // (a scene's reorder put right before the player sees the order)
+}
+
+void on_camp_menu_closed() {
+  Runtime& r = rt();
+  if (!heroslot_on(r) || order_locked(r)) return;
+  remember_order(r, "the camp menu's close");
 }
 
 bool party_has_character(int id) { return slot_of_character(id) >= 0; }

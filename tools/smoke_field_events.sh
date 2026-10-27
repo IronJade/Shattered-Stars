@@ -250,7 +250,9 @@ check ap_cs_any "an excluded member is refused" '\[ap\] character select: this s
 check ap_cs_any "Celine picked" '\[ap\] character select: Celine Jules$'
 check ap_cs_any "she starts the game" '\[ap\] starting character Celine: picked at New Game'
 check ap_cs_any "joins at the first free play" '\[ap\] starting character Celine: joins at the first free play and leads'
-check ap_cs_any "and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+# heroslot D1 [partybuild agent]: the starting member takes slot 0, the hero slot 1.
+check ap_cs_any "she takes slot 0, Claude slot 1" '\[ap\] heroslot: Celine takes slot 0, Claude slot 1: Celine, Claude'
+check ap_cs_any "and leads" '\[ap\] Celine leads \(Formation leader, slot 0\)'
 check ap_cs_any "Claude's game (map 7)" '\[leader\] vblank 4200 map 7 state 0 '
 check ap_cs_named "a named member: the select to confirm" '\[ap\] character select opens: Ashton Anchors to confirm'
 check ap_cs_named "Cross confirms" '\[ap\] character select: Ashton Anchors$'
@@ -567,7 +569,8 @@ check ap_v2_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.
 "${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_DEBUG_INPUT="600:ap_give Dias Bob" \
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 1000 --map 7 </dev/null >"$WORK/ap_v2_start.log" 2>&1
 check ap_v2_start "the starting character joins first" '\[ap\] Ashton joins the party \(slot 1\): Claude, Ashton'
-check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+check ap_v2_start "heroslot D1: Ashton to slot 0, Claude to slot 1" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude'
+check ap_v2_start "and leads" '\[ap\] Ashton leads \(Formation leader, slot 0\)'
 check ap_v2_start "no lockout: Dias in Claude's game" '\[ap\] Dias joins the party \(slot 2\)'
 # The join level (open world, hub) [skillsanity2]: the party's median (the hero's level 1 here).
 check ap_v2_start "the join level: the start at the hero's" '\[ap\] join level: Ashton joins at level 1 \(the party.s median; their own 17\): down, HP 1000 -> 288'
@@ -624,6 +627,65 @@ sed 's/, "starting_character": "Ashton"//; s/"items": {/"items": {"5100002": {"n
   timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2linga.apso2" --frames 1800 --map 193 </dev/null >"$WORK/ap_v2_linga.log" 2>&1
 check ap_v2_linga "the split keeps Rena out" '\[ap\] Rena waits: Linga \(193 -> 195\) keeps the party apart'
 check ap_v2_linga "back once it is over" '\[ap\] Rena joins the party \(slot [0-7]\)'
+
+# heroslot [partybuild agent] (docs/handoff/heroslot.md D1-D3; open world and hub, a starting
+# member who is not the hero): the order the player left comes back after a scene reorders it,
+# never inside a split. SS_HEROSLOT_ORDER=LEAD,FIRST gives a --map start the order a game in
+# progress remembers (Ashton in slot 0 and leading). Map 12 (Rena's game, chapter 4 step 150):
+# the scene ends [Rena, (Claude), Ashton]; at the first free play (map 17) Claude leaves and
+# Ashton is back in slot 0. Linga (Opera starting) with a battle inside the split: the battle
+# points config +0x41 at Claude; after the split Opera leads again. The tournament (477): nothing
+# changes inside its window. A save keeps the order in the sidecar ("leader", "slot_0").
+sed 's/"story_route": "rena"/"story_route": "rena", "starting_character": "Ashton"/' "$WORK/v2rena.apso2" >"$WORK/hsrena.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_FLAGS="!1" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,1 SS_SWEEP_CONFIG=45=1,41=0 SS_SWEEP_PLAY="999:T0" \
+  SS_SCRIPT_GLOBALS="a0=4,a4=150" SS_INSTANT_TEXT=1 SS_AUTO_ADVANCE=500 SS_SWEEP_PRESS=choices SS_SWEEP_PLAY_STOP=1 \
+  SS_HEROSLOT_ORDER=7,7 timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/hsrena.apso2" --frames 14000 \
+  --map 12 </dev/null >"$WORK/ap_hs_m12.log" 2>&1
+check ap_hs_m12 "Claude in for the fight only" '\[ap\] join Claude at map 12 .*: for a while \(Shingo Forest \(map 12\)\): Ashton, Claude, \(Rena\)'
+check ap_hs_m12 "Claude leaves at the first free play" '\[ap\] Claude leaves the party: the window that needed them is over \(Rena, Ashton\)'
+check ap_hs_m12 "Ashton back in slot 0" '\[ap\] heroslot: Ashton back in slot 0 \(from 2\), Rena to 2: Ashton, Rena'
+check ap_hs_m12 "on map 17 (chapter 5 step 2000)" 'play: story chapter 5 step 2000'
+sed 's/"items": {/"items": {"5100009": {"name": "Opera", "kind": "character", "character": 9}, /; s/"story_route": "claude"/"story_route": "claude", "starting_character": "Opera"/' \
+  "$WORK/v2linga.apso2" >"$WORK/hslinga.apso2"
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=8,0,1,2 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=22,a4=3000" \
+  SS_HEROSLOT_ORDER=9,9 SS_DEBUG_INPUT="5:ap_give Rena Bob;6:ap_give Celine Bob;7:ap_give Opera Bob;900:battle 1;1500:global 0xa4 5100" \
+  timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/hslinga.apso2" --frames 3000 --map 193 </dev/null >"$WORK/ap_hs_linga.log" 2>&1
+check ap_hs_linga "the split keeps Opera out" '\[ap\] Opera waits: Linga \(193 -> 195\) keeps the party apart'
+check ap_hs_linga "a battle inside it" '\[ap\] a battle at vblank'
+check ap_hs_linga "Opera back after it" '\[ap\] Opera joins the party \(slot 0\)'
+check ap_hs_linga "and she leads again" '\[ap\] heroslot: Opera leads again \(Formation leader, slot 0; was 1\)'
+"${CEL_RUN[@]}" SS_SWEEP_PLAY="999:T0" SS_SWEEP_PARTY_DROP=0 SS_SWEEP_PARTY=6,0 SS_SWEEP_CONFIG=41=0 SS_SCRIPT_GLOBALS="a0=19,a4=4400" \
+  SS_HEROSLOT_ORDER=7,7 timeout 900 "$BIN" --headless --no-memcard --debug --ap-seed "$WORK/v2claude.apso2" --frames 900 --map 477 \
+  </dev/null >"$WORK/ap_hs_t477.log" 2>&1
+check ap_hs_t477 "Dias in for his fight" '\[ap\] join Dias at map 477 .*: for a while \(the tournament.*\): Ashton, Dias, \(Claude\)'
+check ap_hs_t477 "Claude back after it" '\[ap\] join Claude at map 477 .*Claude.s game\): the game.s join'
+if grep -qE '\[ap\] heroslot: .*(back in slot 0|leads again)' "$WORK/ap_hs_t477.log"; then
+  echo "FAIL ap_hs_t477: the order changed inside the tournament's window"; fail=1
+else
+  echo "PASS ap_hs_t477: the order left alone inside the tournament's window"
+fi
+rm -f "$WORK/hscard.mcd" "$WORK"/hscard.slot*.ap.json
+SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/hscard.mcd" \
+  timeout 900 "$BIN" --headless --debug --ap-seed "$WORK/v2claude.apso2" --frames 1100 --map 18 --input "$SAVE_INPUT" \
+  </dev/null >"$WORK/ap_hs_save.log" 2>&1
+check ap_hs_save "Ashton takes slot 0 at his join" '\[ap\] heroslot: Ashton takes slot 0, Claude slot 1: Ashton, Claude'
+check ap_hs_save "the save" '\[ap\] saved .*hscard\.slot01\.ap\.json'
+if grep -q '"leader": 7' "$WORK/hscard.slot01.ap.json" 2>/dev/null && grep -q '"slot_0": 7' "$WORK/hscard.slot01.ap.json"; then
+  echo "PASS ap_hs_save: the sidecar keeps the order"
+else
+  echo "FAIL ap_hs_save: the sidecar keeps the order"; fail=1
+fi
+SS_MODS_DIR="$WORK/no-mods" SS_LOAD_SAVE=0 SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_TRACE_LEADER=30 \
+  SS_MEMCARD1="$WORK/hscard.mcd" SS_STATE_DUMP="100:$WORK/hs_load.state" timeout 900 "$BIN" --headless \
+  --ap-seed "$WORK/v2claude.apso2" --frames 120 </dev/null >"$WORK/ap_hs_load.log" 2>&1
+check ap_hs_load "the save loads" '\[ap\] loaded .*hscard\.slot01\.ap\.json'
+hs_word() { od -An -t d2 -j "$1" -N 2 "$WORK/hs_load.state" 2>/dev/null | tr -d ' '; }
+if [ "$(hs_word $((0xA40 + 0x2A0)))" = 7 ] && [ "$(hs_word $((0xA40 + 0x2A0 + 0x60)))" = 1 ] && [ "$(od -An -t u1 -j $((0xA40 + 0x41)) -N 1 "$WORK/hs_load.state" | tr -d ' ')" = 0 ] \
+   && ! grep -q 'heroslot: the order kept (the loaded game' "$WORK/ap_hs_load.log"; then
+  echo "PASS ap_hs_load: Ashton in slot 0 and leading, Claude in slot 1, the order the sidecar's"
+else
+  echo "FAIL ap_hs_load: Ashton in slot 0 and leading, Claude in slot 1, the order the sidecar's"; fail=1
+fi
 
 # World map 2 -> North City (map 260), from the user's own save if it is present: Continue
 # with a throwaway copy, start in the town's entrance region, the transfer runs.
@@ -875,7 +937,7 @@ PY
   check ap_hub_ng_cs "the character select in a hub game" '\[ap\] character select opens: 10 of 12 to pick'
   check ap_hub_ng_cs "Celine picked" '\[ap\] starting character Celine: picked at New Game'
   check ap_hub_ng_cs "hub New Game at Fun City" "\\[ap\\] hub New Game: Claude's game, [0-9]+ flags, .*; Fun City \\(map 279 at 470, 0, 68, facing 180\\)"
-  check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 1\)'
+  check ap_hub_ng_cs "she joins at the first free play and leads" '\[ap\] Celine leads \(Formation leader, slot 0\)'
   check ap_hub_ng_cs "and walks Fun City in the hero's place (the leader stand-in)" '\[standin\] vblank [0-9]+ map 279 shows 2 \(stand-in'
   # The leader stand-in in hub mode [hubleader agent] (field/leader.h; open world and hub): a named
   # starting character (Ashton: the select to confirm) walks Fun City in Claude's place and the
@@ -887,7 +949,7 @@ PY
   HUB_INPUT="$NEWGAME_A,2170:cross,2176:none,$NEWGAME_B3" hub_ng ap_hub_leader_ng hubashton claude 3400 SS_TRACE=1 \
     SS_LEADER_TRACE=1 SS_SWEEP_PLAY="279:T4"
   check ap_hub_leader_ng "Ashton confirmed at New Game" '\[ap\] character select: Ashton Anchors$'
-  check ap_hub_leader_ng "he joins and leads" '\[ap\] Ashton leads \(Formation leader, slot 1\)'
+  check ap_hub_leader_ng "he joins and leads" '\[ap\] Ashton leads \(Formation leader, slot 0\)'
   check ap_hub_leader_ng "Ashton walks Fun City in Claude's place" '\[standin\] vblank [0-9]+ map 279 shows 6 \(stand-in'
   check ap_hub_leader_ng "out to the world map" 'field_load_map\(map=2 '
   env SS_DISC2="$D2" SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_HUB_STATE=1 SS_TRACE=1 \

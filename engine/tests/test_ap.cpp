@@ -2070,17 +2070,18 @@ TEST(ap_v2_starting_character) {
   ap::on_new_game();
   CHECK(ap::starting_member() == 7);
   CHECK(ap::party_free_play_step() == "Ashton joined the party");
-  CHECK(pg.party() == "1,7" && pg.sg.config[0x41] == 1 && ap::state().start_given);
+  // [partybuild agent] heroslot D1: the starting member in slot 0, the hero in slot 1.
+  CHECK(pg.party() == "7,1" && pg.sg.config[0x41] == 0 && ap::state().start_given);
   CHECK(ap::party_free_play_step().empty());  // (once)
   // Counts as received: a listed or story join of hers while present is a no-op, a split's
   // leave brings her back afterwards.
   pg.at(71, 10, 0);
-  CHECK(pg.join(7, 0x63d0, 0x7348) && pg.party() == "1,7");
+  CHECK(pg.join(7, 0x63d0, 0x7348) && pg.party() == "7,1");
   pg.at(193, 22, 3000);
   pg.leave(7);
-  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,-7");
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "-7,1");
   pg.at(193, 22, 5100);
-  CHECK(ap::party_free_play_step() == "Ashton joined the party" && pg.party() == "1,7");
+  CHECK(ap::party_free_play_step() == "Ashton joined the party" && pg.party() == "7,1");
   ap::stop();
   // story_route "any", starting Rena: she joins Claude's game; Rena's game: nobody (the hero).
   CHECK(ap::load_seed_text(party_seed(open_options("any", ", \"starting_character\": \"Rena\"")), &s, &error));
@@ -2092,7 +2093,7 @@ TEST(ap_v2_starting_character) {
   pg.members({1});
   pg.claude_game(true);
   ap::on_new_game();
-  CHECK(ap::starting_member() == 2 && ap::party_free_play_step() == "Rena joined the party" && pg.party() == "1,2");
+  CHECK(ap::starting_member() == 2 && ap::party_free_play_step() == "Rena joined the party" && pg.party() == "2,1");
   ap::stop();
   // Without character_items (party_rules "story"): Leon starts Rena's game (no lockout); the
   // story's recruits join as in the original.
@@ -2103,9 +2104,9 @@ TEST(ap_v2_starting_character) {
   pg.members({2});
   pg.claude_game(false);
   ap::on_new_game();
-  CHECK(ap::party_free_play_step() == "Leon joined the party" && pg.party() == "2,8");
+  CHECK(ap::party_free_play_step() == "Leon joined the party" && pg.party() == "8,2");
   pg.at(124, 15, 1000);
-  CHECK(pg.join(3, 0x63d0, 0x7058) && pg.party() == "2,8,3");
+  CHECK(pg.join(3, 0x63d0, 0x7058) && pg.party() == "8,2,3");
   ap::stop();
 }
 
@@ -2142,7 +2143,7 @@ TEST(ap_v2_starting_character_choice) {
   ap::on_new_game();
   CHECK(ap::state().chosen_start == 3 && ap::starting_member() == 3);
   CHECK(ap::party_free_play_step() == "Celine joined the party");
-  CHECK(pg.party() == "1,3" && pg.sg.config[0x41] == 1 && ap::state().start_given);
+  CHECK(pg.party() == "3,1" && pg.sg.config[0x41] == 0 && ap::state().start_given);
   // The sidecar keeps the pick (key "starting_character"); absent or out of range: none.
   ap::SaveState back;
   CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.chosen_start == 3);
@@ -2174,6 +2175,140 @@ TEST(ap_v2_starting_character_choice) {
   ap::on_new_game();
   CHECK(ap::state().chosen_start == 0 && ap::starting_member() == 8);
   ap::stop();
+}
+
+// [partybuild agent] heroslot (docs/handoff/heroslot.md D1-D3): the starting member to slot 0 and
+// the hero to slot 1 at the join; the order the player left (the camp menu's close, a save) comes
+// back after a scene reorders it, never while the party is set aside or split.
+TEST(ap_heroslot) {
+  ap::stop();
+  PartyGame pg;
+  ap::Seed s;
+  std::string error;
+  auto swap01 = [] { field::party_swap_slots(nullptr, 0, 1); };
+  CHECK(ap::load_seed_text(party_seed(open_options("claude", ", \"starting_character\": \"Ashton\"")), &s, &error));
+  ap::start_with(s);
+  pg.claude_game(true);
+  pg.members({1});
+  pg.at(7, 3, 0);
+  ap::on_new_game();
+  CHECK(ap::party_free_play_step() == "Ashton joined the party");
+  CHECK(pg.party() == "7,1" && pg.sg.config[0x41] == 0 && ap::state().lead == 7 && ap::state().first == 7);
+  // D3 / D2: a scene puts the hero back in slot 0 (and the leader's slot with him): the next free
+  // play undoes it.
+  pg.at(9, 4, 2000);
+  swap01();
+  CHECK(pg.party() == "1,7");
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && pg.sg.config[0x41] == 0);
+  pg.sg.config[0x41] = 1;  // (party_validate_before_battle's re-point, say)
+  CHECK(ap::party_free_play_step().empty() && pg.sg.config[0x41] == 0);
+  // Not while the party is set aside (a Private Action) or split (Linga): only after.
+  for (const int flag : {2, 4, 746}) {
+    set_flag(pg.sg, flag, true);
+    swap01();
+    pg.sg.config[0x41] = 1;
+    ap::on_camp_menu_closed();  // (nothing remembered then either)
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7" && pg.sg.config[0x41] == 1);
+    set_flag(pg.sg, flag, false);
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && pg.sg.config[0x41] == 0);
+  }
+  pg.at(193, 22, 3000);
+  swap01();
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7");
+  pg.at(193, 22, 5100);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1");
+  // A Private Action's own isolate and restore (B 0x29 / 0x2a) with [Ashton, Claude, Celine]: the
+  // hero alone in slot 0 during it, everyone back in their slot after it, nothing for the port.
+  {
+    std::vector<u8> ff(0xA0, 0);
+    u8* ff0 = field::globals().field_flags;
+    field::globals().field_flags = ff.data();
+    pg.members({7, 1, 3});
+    pg.sg.config[0x41] = 0;
+    field::party_isolate_hero(nullptr);
+    CHECK(pg.party() == "1,-7,-3");
+    set_flag(pg.sg, 746, true);
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "1,-7,-3");
+    field::party_restore_saved(nullptr);
+    set_flag(pg.sg, 746, false);
+    CHECK(pg.party() == "7,1,3");
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1,3" && pg.sg.config[0x41] == 0);
+    field::globals().field_flags = ff0;
+    pg.members({7, 1});
+  }
+  // The player's own order (the camp menu's close): the hero in slot 0 and leading; kept from
+  // then on.
+  swap01();
+  pg.sg.config[0x41] = 0;
+  ap::on_camp_menu_closed();
+  CHECK(ap::state().lead == 1 && ap::state().first == 1);
+  swap01();
+  pg.sg.config[0x41] = 0;
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7" && pg.sg.config[0x41] == 0);
+  // Ashton in slot 0, Claude leading from slot 1 (the menu's Formation > Leader): both kept.
+  swap01();
+  pg.sg.config[0x41] = 1;
+  ap::on_camp_menu_opening();  // (the opening puts the order right first: Claude back in slot 0)
+  CHECK(pg.party() == "1,7" && pg.sg.config[0x41] == 0);
+  swap01();
+  pg.sg.config[0x41] = 1;
+  ap::on_camp_menu_closed();
+  CHECK(ap::state().lead == 1 && ap::state().first == 7);
+  swap01();  // [1, 7]: Claude in slot 0, config +0x41 still 1 (Ashton)
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && pg.sg.config[0x41] == 1);
+  // No swap that leaves the front without a fighter: Ashton down in slot 4, Claude alone in front.
+  pg.sg.member(0, 1, 100);
+  pg.sg.member(1, 0, 0);
+  pg.sg.member(4, 7, 0, 1);
+  pg.sg.config[0x41] = 0;
+  ap::on_camp_menu_closed();
+  CHECK(ap::state().first == 1);
+  ap::mutable_state().first = 7;
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7");
+  // The sidecar keeps the order ("leader", "slot_0"); absent or out of range: none.
+  pg.members({7, 1});
+  pg.sg.config[0x41] = 1;
+  ap::on_camp_menu_closed();
+  ap::SaveState back;
+  CHECK(ap::sidecar_from_json(ap::sidecar_json(ap::state()), &back, &error) && back.lead == 1 && back.first == 7);
+  CHECK(ap::sidecar_json(ap::state())["leader"].as_int(0) == 1 && ap::sidecar_json(ap::state())["slot_0"].as_int(0) == 7);
+  ap::Json j;
+  CHECK(ap::Json::parse("{\"format\": \"apso2-save\", \"version\": 2, \"leader\": 13, \"slot_0\": -1}", &j, &error));
+  CHECK(ap::sidecar_from_json(j, &back, &error) && back.lead == 0 && back.first == 0);
+  // A save from before (no order in its sidecar): the loaded party's order is the player's.
+  pg.members({1, 7});
+  pg.sg.config[0x41] = 1;
+  ap::mutable_state().lead = ap::mutable_state().first = 0;
+  pg.received({});
+  CHECK(ap::state().lead == 0 && ap::state().first == 0);
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7");
+  CHECK(ap::state().lead == 7 && ap::state().first == 1);
+  swap01();
+  CHECK(ap::party_free_play_step().empty() && pg.party() == "1,7" && pg.sg.config[0x41] == 1);
+  ap::stop();
+  // Story mode, a seed without a starting member, the hero as the starting member: no swap, no
+  // memory (today's order).
+  CHECK(ap::load_seed_text(party_seed("{\"world_mode\": \"story\", \"story_route\": \"claude\", \"starting_character\": \"Ashton\"}"), &s,
+                           &error));
+  ap::start_with(s);
+  pg.members({1});
+  ap::on_new_game();
+  CHECK(ap::party_free_play_step() == "Ashton joined the party" && pg.party() == "1,7" && pg.sg.config[0x41] == 1);
+  ap::on_camp_menu_closed();
+  CHECK(ap::state().lead == 0 && ap::state().first == 0);
+  ap::stop();
+  for (const char* start : {"", ", \"starting_character\": \"Claude\""}) {
+    CHECK(ap::load_seed_text(party_seed(open_options("claude", start)), &s, &error));
+    ap::start_with(s);
+    pg.members({1, 7});
+    pg.sg.config[0x41] = 1;
+    ap::on_new_game();
+    ap::mutable_state().start_given = true;
+    ap::on_camp_menu_closed();
+    swap01();
+    CHECK(ap::party_free_play_step().empty() && pg.party() == "7,1" && pg.sg.config[0x41] == 1 && ap::state().first == 0);
+    ap::stop();
+  }
 }
 
 // While the party is set aside for the hero alone (a Private Action's flags 2 / 4, or the map

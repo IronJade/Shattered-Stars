@@ -301,7 +301,11 @@ copies the chosen seed out to `archipelago/` next to config.ini at start-up,
   to El, Mars...) still split the party, and a member they set aside rejoins once it is over;
   a fight the story gives one member alone (Claude in Shingo Forest in Rena's game, the
   tournament's fights) borrows that member for the fight only. A starting character joins at
-  the first free play and leads (`docs/ap/seed_format.md` "The party rules").
+  the first free play and leads (`docs/ap/seed_format.md` "The party rules"). In the open
+  world and the hub a starting character who is not the hero takes party slot 0 (the hero
+  slot 1), and the order the player leaves in the camp menu (who is in slot 0, who leads) comes
+  back after a scene reorders the party, except inside a split or a Private Action
+  (`docs/ap/seed_format.md` "The hero in slot 1"; debugging: `SS_HEROSLOT_ORDER=LEAD,FIRST`).
 - **The hub** (seed version 3, `world_mode: hub`): New Game starts after the Final
   Save Point (chapter 60, disc 2, both worlds open, every location undone) in the seed's start
   town (Fun City, Arlia, or any of 16 towns), with the Synard parked by it; each dungeon opens

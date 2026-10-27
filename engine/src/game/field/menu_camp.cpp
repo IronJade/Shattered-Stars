@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "disc/slz.h"
+#include "game/ap/ap.h"
 #include "game/boot/pad.h"
 #include "game/boot/rng.h"
 #include "game/boot/sound.h"
@@ -999,6 +1000,9 @@ void field_menu_check(Field* f) {
     return;
   // boot 0x800134d8 (mem_set_alloc_fail_hook) installs 0x8004b760, which evicts a preload
   // and retries when the heap runs out: not needed on the host.
+  // Archipelago (port feature), heroslot D2 / D3: a scene's reorder put right before the menu
+  // shows the order [partybuild agent].
+  if (g_menu_request == 0) ap::on_camp_menu_opening();
   if (g_menu_request == 0) {
     sound_play_sfx(g.sound, 2, 0, 0x7F40);
     if ((g.script_flags[2] & 0x10) != 0 && g_script_vm != nullptr) {
@@ -1163,6 +1167,9 @@ void field_menu_update(Field* f) {
   actor_sys_mark_all_dirty(actors);
   wr16(g.field_flags + 0x10, static_cast<u16>(f->saved_control));
   f->state = 0;
+  // Archipelago (port feature), heroslot D2 / D3: the camp menu's order is the player's
+  // [partybuild agent].
+  if (g_menu_request == 0 || g_menu_request == 1) ap::on_camp_menu_closed();
   if (g_script_vm != nullptr) vm_call_sync(g_script_vm, static_cast<u16>(g_script_vm->menu_close_entry));
   g_menu_request = 0;
   if (result != 5 && result != 6) fade_push(field_fade(), 1, 0xF, 0, 0);

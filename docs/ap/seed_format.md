@@ -232,6 +232,12 @@ its saves and sidecars never mix with ordinary ones; a card named for the run (`
   `options.starting_character` is `"any"` or a list), when that is not the hero. A load makes them
   the starting character again (they count as received, as below). Absent: none (no pick, or
   the hero picked); a value outside 1-12 reads as none.
+- `leader` / `slot_0` (open world and hub with a starting character who is not the hero,
+  optional; agent "partybuild", 2026-10-26): the party ids (1-12) of the member the player left
+  leading (config +0x41's) and in party slot 0, as of the save (or the last camp-menu close).
+  "The hero in slot 1" (under Party v2) puts that order back after a scene reorders it.
+  Absent (a save from before, or no starting character): the loaded party's order is taken at
+  the first free play; a value outside 1-12 reads as none.
 
 The game writes the sidecar once the card write is verified (the save dialog's
 `save_finish` returns 1). It writes through `.tmp` and a rename, so a crash never leaves half
@@ -852,7 +858,7 @@ Per goal:
 **`party_rules: "open"`** (`world_mode: open_world` with `character_items`):
 - **The story members** join through the story as usual: the hero (the story route picked at
   New Game), and under `story_route: "any"` both Claude and Rena. The hero is always in the
-  party (slot 0, Private Actions).
+  party (Private Actions need them; slot 1 behind a starting character, "The hero in slot 1").
 - **Every other member** joins only through their item (received, or found at one of this
   player's locations) or as the starting character. Their item is `{"kind": "character",
   "character": N}` as in phase 3; N may now be 1 Claude, 2 Rena or 11 Noel (the other hero
@@ -875,9 +881,10 @@ Per goal:
 
 **`starting_character`** (open world and hub; `null` in story mode): when it names a member,
 - that member joins at the first free play of a new game (before `start.items` are given, so
-  the banner order is "X joined the party" first) and becomes the leader (the Formation leader,
-  config +0x41): the field sprite follows the leader, and dialogue and speaker labels use the
-  leader's name where the hero's would be (the user, 2026-10-25: "Yes, swap names");
+  the banner order is "X joined the party" first), takes party slot 0 with the hero in slot 1
+  ("The hero in slot 1" below) and becomes the leader (the Formation leader, config +0x41):
+  the field sprite follows the leader, and dialogue and speaker labels use the leader's name
+  where the hero's would be (the user, 2026-10-25: "Yes, swap names");
 - they count as received: never refused, never overwritten, rejoining after a parting
   (`kPartings`) like a received member, and a story join of them while present is a no-op;
 - when it names the hero of the game the player picked (possible under `story_route: "any"`),
@@ -982,6 +989,53 @@ conditions and its return).
   (Celine at 124, Leon at 230), the starting character at New Game (Claude's game map 7: Ashton;
   Rena's game map 18: Leon), Dias joining Claude's game; smoke `ap_v2_m12`, `ap_v2_t477`,
   `ap_v2_start`, `ap_v2_linga` (docs/handoff/party.md).
+
+#### The hero in slot 1 (what the port does; agent "partybuild", `engine/src/game/ap/ap.cpp`)
+
+The user's decisions D1-D4 (docs/handoff/heroslot.md, 2026-10-26). In a seed with `world_mode:
+open_world` or `hub` whose starting character (named, or picked at the character select) is
+not the picked game's hero; every other seed (story mode, no starting character, the hero as
+the starting character, Archipelago off) keeps the party order exactly as before.
+
+- **D1, the join** (New Game's first free play): the starting member joins through the game's
+  join (slot 1), then takes slot 0 and the hero slot 1 (the game's own swap of slots and records,
+  as the camp menu's Party Order page makes it), and leads (config +0x41 = 0). Log `heroslot:
+  Ashton takes slot 0, Claude slot 1: Ashton, Claude`, then `Ashton leads (Formation leader,
+  slot 0)`. The hero keeps fighting, levelling and gaining relation points (the front four).
+  Nothing changes before that free play: the opening scenes are written for the hero alone.
+- **The order the player leaves** ("the lead" and "the slot-0 member"): at the join, the
+  starting member for both; afterwards whoever is in config +0x41's slot and in slot 0 when the
+  camp menu closes or a save is made (the sidecar's `leader` / `slot_0`). A player who moves the
+  hero back to slot 0, or makes someone else the leader, keeps that order.
+- **D3 then D2, at every free play** (and as the camp menu opens): when a scene moved the
+  slot-0 member (active, in slots 1-7) they go back to slot 0, the member there taking their
+  slot (unless the front four would be left with nobody able to fight); when the leader is
+  active in the front four and config +0x41 points elsewhere (a scene's reorder, or a battle
+  inside a split re-pointing it, party_validate_before_battle), it points at the leader again.
+  Logs `heroslot: Ashton back in slot 0 (from 2), Rena to 2: Ashton, Rena`, `heroslot: Opera leads
+  again (Formation leader, slot 0; was 1)`.
+- **Not while the party is set aside or split**: a Private Action (script flags 2 / 4, or 746 the
+  isolate routine's), a split window keeping everyone away or letting a member in for a fight
+  (map 12's Shingo Forest, the tournament, Linga, Mars, the Front Line, the ship, the arenas
+  ...), temporary members or a borrowed slot still in the party, the endings (flag 0x2f1), a
+  hub story view. Then the story's order stands, and a camp-menu close does not change what is
+  remembered; the order comes back at the first free play after.
+- **D4**: the save card's title keeps the hero's name and level (save_build reads config +0x45,
+  the hero, by id).
+- The leader stand-in is unchanged: the walking actor is the hero's whatever the order; config
+  +0x41 = 0 now names the starting member, so the stand-in shows them, and the game's own
+  fallbacks (the Party Order page's close, party_validate_before_battle: the first active slot)
+  land on them too.
+- Checked: unit test `ap_heroslot`; headless (docs/handoff/partybuild.md): Claude's opening with
+  Ashton (`--map 7` to map 12's first free play) against the build before: the dumps differ only
+  by the two members' places and config +0x41, rng and vblank identical; no starting character
+  and a story seed: dumps identical; map 12 in Rena's game (Ashton back in slot 0 at map 17),
+  Linga with a battle inside the split (Opera leads again), the tournament at 19 / 4400 (dumps
+  identical inside its window), a debug battle with [Ashton, Claude] (Ashton controlled, both
+  gain the EXP); smoke `ap_hs_m12`, `ap_hs_linga`, `ap_hs_t477`, `ap_hs_save`, `ap_hs_load`.
+- Debugging (environment, never config.ini): `SS_HEROSLOT_ORDER=LEAD,FIRST` (party ids) gives a
+  `--map` start the order a game in progress remembers, its start (the starting member's join,
+  the starting items) counted as given.
 
 #### The leader stand-in (what the port does; agent "leader", `engine/src/game/field/leader.h`)
 

@@ -64,6 +64,12 @@ struct SaveState {
   // (character * 256 + record index), each once, in the order they came.
   std::vector<int> skills;
   std::vector<int> moves;
+  // [partybuild agent] heroslot D2 / D3 (open world and hub, a starting member who is not the
+  // hero; docs/handoff/heroslot.md): the member the player left leading (config +0x41's) and in
+  // slot 0 at the last camp-menu close or save (at New Game: the starting member, the hero in
+  // slot 1). Party ids, 0 none. Sidecar keys "leader" / "slot_0" (written only when set).
+  int lead = 0;
+  int first = 0;
 };
 std::string sidecar_path(const std::string& card_image, int save_index);  // memcard1.slot01.ap.json
 bool write_sidecar(const std::string& path, const SaveState& s, std::string* error);
@@ -214,6 +220,17 @@ std::string split_window_needing(int id);
 // Free play's party step at once (the start's join, the split windows, temporary members, the
 // join queue): the banner it would show ("" none). Tests.
 std::string party_free_play_step();
+// [partybuild agent] heroslot (docs/handoff/heroslot.md D1-D3; open world and hub, a starting
+// member who is not the hero, else nothing). D1: the starting member's join at New Game puts
+// them in slot 0 and the hero in slot 1, and they lead (config +0x41 = 0). D2 / D3: the port
+// remembers the leader and the slot-0 member the player left (the camp menu's close, a save);
+// at free play a scene's reorder is undone (that member back in slot 0, the leader's slot in
+// config +0x41 again), except while the party is set aside or split (a Private Action, a split
+// window, temporary members, the endings, a hub story view), when nothing is remembered either.
+// field/menu_camp.cpp calls these as the camp menu opens (the button: the order is put right
+// first) and after it closes (not after a load).
+void on_camp_menu_opening();
+void on_camp_menu_closed();
 // Result screen #1981: award_exp_money's totals (exp / fol multipliers) and roll_drops (false:
 // the drop is not given, it was the enemy type's first-drop check). Both leave the game's
 // values alone without a seed or with the options off.
