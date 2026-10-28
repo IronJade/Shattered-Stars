@@ -11,11 +11,19 @@ set -u
 BIN=${1:-port/build/shattered-stars}
 # Every game run under a memory cap (docs/CONVENTIONS.md machine budget; tools/memcap.py):
 # SS_MEM_CAP_GB (default 4) GB of address space each. An ASan build can't take one.
-if [ "${SS_MEM_CAP_GB:-4}" != 0 ] && ! grep -q __asan_init "$BIN" 2>/dev/null; then
+if [ "$(uname -s)" != Darwin ] && [ "${SS_MEM_CAP_GB:-4}" != 0 ] && ! grep -q __asan_init "$BIN" 2>/dev/null; then
   ulimit -v $(( ${SS_MEM_CAP_GB:-4} * 1024 * 1024 ))
 fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
+# macOS has neither RLIMIT_AS (ulimit -v fails) nor GNU timeout: tools/memcap.py stands in as
+# `timeout` there, ending a run at its time limit or once its footprint passes the cap.
+if [ "$(uname -s)" = Darwin ]; then
+  mkdir -p "$WORK/bin"
+  printf '#!/bin/sh\nexec python3 "%s" "$@"\n' "$(cd "$(dirname "$0")/../.." && pwd)/tools/memcap.py" >"$WORK/bin/timeout"
+  chmod +x "$WORK/bin/timeout"
+  export PATH="$WORK/bin:$PATH"
+fi
 fail=0
 
 run() {  # run NAME FRAMES MAP INPUT (no world edits unless SS_MODS_DIR is given)
@@ -327,7 +335,7 @@ SAVE_INPUT="300:triangle,306:none,400:up,406:none,450:cross,456:none,550:cross,5
 for v in ap plain; do
   [ $v = ap ] && AP_ARGS=(--ap-seed "$WORK/tiny.apso2") || AP_ARGS=()
   SS_DEBUG_INPUT="200:ap_check 1347569665" SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen \
-    SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/save_$v.mcd" timeout 900 "$BIN" --headless --debug "${AP_ARGS[@]}" \
+    SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/save_$v.mcd" timeout 900 "$BIN" --headless --debug ${AP_ARGS[@]+"${AP_ARGS[@]}"} \
     --frames 1100 --map 18 --input "$SAVE_INPUT" </dev/null >"$WORK/ap_save_$v.log" 2>&1
 done
 check ap_save_ap "a save writes the sidecar" '\[ap\] saved .*save_ap\.slot01\.ap\.json'
@@ -715,7 +723,7 @@ td_bytes() {
     fi
   done
 }
-if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c)" = 302 ] \
+if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c | tr -d ' ')" = 302 ] \
    && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
   echo "PASS ap_tdias_load: Dias leaves the tournament byte for byte as he came"
 else
@@ -1166,7 +1174,7 @@ check ap_hub_arcmene "the view ends at the transfer out: chapter 41 dropped, fla
 check ap_hub_arcmene "the chapter stays 60" 'play: story chapter 60 step 4000'
 for v in hubstory none; do
   [ $v = none ] && seedarg=() || seedarg=(--ap-seed "$WORK/$v.apso2")
-  "${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard "${seedarg[@]}" --frames 600 --map 418 \
+  "${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard ${seedarg[@]+"${seedarg[@]}"} --frames 600 --map 418 \
     </dev/null >"$WORK/ap_hub_arcmene_$v.log" 2>&1
   check ap_hub_arcmene_$v "no view: the chamber is empty at chapter 60" 'play: control on map 417 after 1 of 1 steps'
   if grep -qE 'story view on|a battle at' "$WORK/ap_hub_arcmene_$v.log"; then echo "FAIL ap_hub_arcmene_$v: a view or a fight"; fail=1; else echo "PASS ap_hub_arcmene_$v: no view, no fight"; fi

@@ -37,7 +37,7 @@
 // player's window shows (scaled, letterboxed to 4:3) -- not the raw PS1 display buffer
 // --capture / SS_VRAM_PNG dump. A headless run opens no window otherwise; this opens a
 // second, hidden one just to render into and read back (SDL_VIDEO_DRIVER=offscreen keeps
-// it from appearing).
+// it from appearing; macOS has no offscreen OpenGL, so there it shows).
 //
 // Audio: --audio / --no-audio (remembered; on by default with a window, off when
 // headless unless --audio is given), --audio-wav FILE or SS_AUDIO_WAV=FILE (record
@@ -703,6 +703,7 @@ int main(int argc, char** argv) try {
       std::fprintf(stderr, "SS_SHOT: could not open an offscreen window (%s); no screenshots will be written\n",
                    error.c_str());
     } else {
+      shot_window.keep_frames(true);
       rt.shot_window = &shot_window;
     }
   }
