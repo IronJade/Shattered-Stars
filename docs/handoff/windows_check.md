@@ -433,8 +433,8 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
     map lists where each leads, for example "A -> 412 Salva Drift" (a story-only door shows a
     trailing `*`); each door's marker on the map is a **yellow** diamond (the one colour no check
     uses: checks are green, red, blue, grey or mixed; utzip, 2026-10-27), and the colour reads well
-    beside the checks' squares; click a line, or a door's own marker/diamond on the map, and the
-    room it leads to opens its own tab. With the game connected, the tabs follow the room your party is in
+    beside the checks' squares; click a line, or hover a door's diamond and click the "Door X" box in its popup (not the
+    diamond itself: that pins the popup), and the room it leads to opens its own tab. With the game connected, the tabs follow the room your party is in
     (**Auto tab**, item 5) down to the room level, not just the area. Universal Tracker's map tab
     (item 10) follows the same room pages and shows a player marker on the two world maps, but has
     **no doors**: a door is not an AP location, entrance or event, so it carries no door panel and
@@ -477,7 +477,10 @@ Full notes on the Windows machine: C:\Users\hitsu\ss-0.03.00\windows_check_0.03.
   AttributeError 'VisualTracker' object has no attribute 'location_icons' (TrackerClient.py 1885 ->
   1916 -> 1520): the Retrieved for location_setting_key arrives ~70 ms after joining, before any map
   is laid out; independent of the dialog and of stored keys. Sub-checks blocked. Fix: agent utcrash.
-- 11 room maps / doors PASS for the panel and auto tab; **the diamond click to be rechecked**: a click
-  on the map's diamond opened PopTracker's popup and clicking in it didn't switch tabs (the design:
-  click the "Door X" section in the popup; precise retest asked).
+- 11 room maps / doors PASS. The first try clicked the diamond itself, which pins the popup (the box
+  then doesn't toggle); retest with hover + the "Door X" box: the tab switched within 0.5 s both
+  disconnected with Auto tab off (17 F -> 24) and connected with Auto tab on (18 B -> 26, stayed on
+  26 while the game stayed on 18); the door stays uncleared; PopTracker log: "LocationSection
+  Doors/17 F/Door F changed, for watch "so2 doors"", no Lua error. Docs reworded (9533426). Auto tab
+  / Story: right-click off, left-click on (PopTracker's toggle); docs reworded too.
 - Not for 0.03.00: "?GUARD (894)"-style item names in spoilers and check lines (since 0.2.0).
