@@ -121,7 +121,8 @@ it. **No** asks whether to skip that version.
   room: checklist" (an older room: every check shows as reachable); "not connected"; or, for a
   room of a later world than the pack knows, "logic needs a newer pack" (update the pack).
 - **Auto tab** (on by default): with the game connected, the map tabs follow the map the party is
-  on. Walking about a world map doesn't switch tabs.
+  on. Walking about a world map doesn't switch tabs. Right-click turns it off, left-click on again
+  (the same for the **Story** item).
 - **Hints**: hinted locations in your world are highlighted.
 - **Rooms and doors**: each area's tab opens into room tabs too, with a lettered marker on every
   doorway and a live Doors panel beside the map. [Below](#rooms-and-doors-in-the-pack).
@@ -153,8 +154,9 @@ game's own map number, in the order the story reaches them. A room's doorways ca
 lettered marker each, A, B, C... (1,775 in all; PopTracker draws it as a yellow diamond, the one
 colour no check uses), and a **Doors** panel beside the map says where
 each one leads, for example "A -> 412 Salva Drift" (a trailing `*` marks a door that only exists
-at some points of the story). Click a panel line, or a doorway's own marker on the map, and the
-room it leads to opens its own tab. With the game connected, the tabs follow the room your party
+at some points of the story). Click a panel line, or hover a doorway's marker on the map and click
+the **Door** box in the popup that appears, and the room it leads to opens its own tab. (Clicking
+the marker itself pins the popup instead; hover, then click the box.) With the game connected, the tabs follow the room your party
 is in, not just the area (the same **Auto tab** switch as above, down to the room level).
 
 ### Universal Tracker's map tab

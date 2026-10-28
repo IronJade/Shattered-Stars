@@ -55,14 +55,16 @@ and [the Archipelago world's](https://github.com/IronJade/Shattered-Stars/releas
   isn't connected. The **Story** item (on by default) turns story awareness off. Open world and
   hub mode are as the logic says.
 - **The map follows you** (with Shattered Stars 0.03.00 connected): the tabs switch to the map the
-  party is on. The **Auto tab** item (on by default) turns it off.
+  party is on. The **Auto tab** item (on by default) turns it off. Both items: right-click turns them
+  off, left-click on again.
 - **Hints**: hinted locations in your world are highlighted.
 - **Rooms and doors.** Each area's tab opens into **Overview** plus a tab per room (794 of
   them), titled by the game's own map number, in story order. A room's doorways carry a small
   lettered marker each (1,775 in all; on the map a yellow diamond, the one colour no check
   uses), and a **Doors** panel beside the map says where each one
   leads, for example "A -> 412 Salva Drift" (a trailing `*` for a story-only door). Click a
-  panel line, or a doorway's own marker, and the room it leads to opens. With the game connected,
+  panel line, or hover a doorway's marker and click the **Door** box in its popup, and the room it
+  leads to opens (clicking the marker itself only pins the popup). With the game connected,
   the tabs follow you room by room, not just area by area (**Auto tab**, above).
 
 The pack only listens: it sends no checks and no hints. Two variants: **Map Tracker** (maps,

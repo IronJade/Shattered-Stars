@@ -46,7 +46,8 @@ What it shows:
   **door marker** (a yellow diamond) per doorway, lettered A, B, C... on the image. Beside the map, the
   **door panel** lists where each doorway leads, live: "A → 18 north: fountain square" ("*" marks a
   destination that only happens in some story states; "(+53* 46)" the doorway's other destinations).
-  **Clicking a door** (hover its diamond, click "Door A" in the popup) or **its panel line** opens the
+  **Clicking a door** (hover its diamond, then click "Door A" in the popup; clicking the diamond
+  itself pins the popup and the box then doesn't toggle: the Windows check, 2026-10-28) or **its panel line** opens the
   destination room's tab; right-clicking a panel line steps through a doorway's other destinations.
   With Auto tab on, the tabs follow the party room by room. Doors are not checks: never counted,
   never cleared. "Rooms and doors" below.
@@ -72,7 +73,9 @@ What it shows:
   earlier save is loaded. Before the port has reported (or with an older port), and in open world
   and hub mode, everything is as the logic alone says. The **Chapter** item shows the chapter;
   clicking it sets one by hand (left +1, right -1; 0 = none), for play without the port connected.
-  The **Story** item (on by default) turns story awareness off.
+  The **Story** item (on by default) turns story awareness off. **Story** and **Auto tab** are
+  PopTracker toggles: right-click turns one off, left-click on (a left-click on an active one does
+  nothing).
 - **Status**: the logic banner at the top ("not connected", "logic unavailable for this room:
   checklist", "logic: from the room", or "logic needs a newer pack: checklist" for a room of a
   later world whose export this pack can't read), the story chapter the port reports, **Story**
