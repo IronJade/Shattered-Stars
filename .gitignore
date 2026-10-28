@@ -16,3 +16,6 @@ port/build*.configure.log
 
 # Reference books the user supplies (copyrighted; kept locally only)
 *.pdf
+
+# Discord posts (drafts for the user to paste; not published from the repo)
+docs/release/notes/Discord/
