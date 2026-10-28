@@ -1289,3 +1289,11 @@ Run as systemd unit ss-rc030 (12:01-13:10), summary in scratchpad/release/rc-0.0
   "moved" (SRC diff 07f9684..HEAD is empty); setup_runs.sh's base_manifest.txt was stale.
 - Windows recheck on the same commit: all PASS (docs/handoff/windows_check.md).
 - The user (2026-10-28): "As soon as it finishes green, please push and publish."
+
+### RELEASED 2026-10-28 (~13:30 Central)
+Three releases on IronJade/Shattered-Stars, tags on 9c0cac4 (the RC's code, 07f9684, plus docs):
+so2.apworld 0.2.2 (`apworld-v0.2.2`), PopTracker pack 1.0.0 (`poptracker-v1.0.0`), Shattered Stars
+0.03.00 (`v0.03.00`, Latest); published world -> pack -> port; every public download verified
+against its SHA256SUMS (scratchpad/release/pub). versions.json on main (3c0df6d; the raw URL serves
+1.0.0 with sha256 8154d618..., equal to the public zip). Wiki pushed (83198fd, 37 pages, the new
+Trackers page live). The `macos` branch stays local until merged after this release.
