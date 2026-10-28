@@ -411,7 +411,8 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
     - with the game connected and checking, the list shrinks as checks are made;
     - **story awareness** (the story seed, the game connected): UT lists only what the story has
       reached (a fresh story game: the first stage's places, Shingo Forest and Arlia); entering the next stage adds
-      that stage's checks live; with `enforce_deferred_entrances: "off"` under `universal_tracker`
+      that stage's checks live; with `enforce_deferred_entrances: "off"` under `universal_tracker` (edit host.yaml with UT and the
+      Launcher closed: they write their settings back on exit)
       in `C:\ProgramData\Archipelago\host.yaml` (restart UT) it lists everything the logic allows;
     - the game, PopTracker and UT all connected to the slot at once: each works.
     - Optional, the old seed: UT tracks a 0.2.1 room with 0.2.2 installed.

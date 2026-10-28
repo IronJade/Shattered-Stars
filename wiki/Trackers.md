@@ -240,7 +240,10 @@ it, live, and back again if you load an earlier save:
 - **Universal Tracker** lists only what the story has reached: a town's checks join the list when
   the story takes you there, Energy Nede's after the disc switch, the Cave of Trials and the
   chapter-60 scenes on Expel after the Final Save Point. To turn it off, set
-  `enforce_deferred_entrances: "off"` under `universal_tracker` in Archipelago's `host.yaml`.
+  `enforce_deferred_entrances: "off"` under `universal_tracker` in Archipelago's `host.yaml`. Edit
+  `host.yaml` with Universal Tracker and the Archipelago Launcher closed: they write their
+  settings back to it when they close, which undoes an edit made while they run (the same for
+  `ut_pack_path`).
 - **PopTracker** shows the checks later in the story in **blue**, and those the story has reached
   green. The **Chapter** item shows the chapter the game reports; with the game not connected,
   clicking it sets a chapter by hand (left +1, right -1; 0 = none). The **Story** item (on by
