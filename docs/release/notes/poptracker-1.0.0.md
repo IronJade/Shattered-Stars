@@ -1,9 +1,5 @@
 # PopTracker pack 1.0.0 (Star Ocean: The Second Story, Shattered Stars)
 
-> **DRAFT** (2026-10-27): not released. Written by releasedocs from docs/trackers/poptracker.md and the
-> Phase B logs (packgen, logicexport, storyaware, maptab; docs/handoff/phaseb.md) and finished by
-> rc030. Left for release time (docs/release/release_checklist.md section 12): the SHA-256 sum.
-
 The first release of the [PopTracker](https://github.com/black-sliver/PopTracker) pack for
 *Star Ocean: The Second Story* played on Shattered Stars with Archipelago. It connects to your
 room as a tracker and shows, on maps and boards, what your slot has received and which of the
@@ -165,5 +161,5 @@ tri-Ace or Sony Interactive Entertainment.
 ## SHA-256 sum
 
 ```
-TODO  so2_shattered_stars_1.0.0.zip
+8154d61889773ca556673e6347e30c78d503d24547bb09cb57527a5db091f716  so2_shattered_stars_1.0.0.zip
 ```
