@@ -454,13 +454,18 @@ SEED
 check ap_hub_mansion "refused without the key" '\[ap\] door 3480401 \(Salva Drift \(map 53 -> 62\)\): locked, needs Salva Drift Key'
 check ap_hub_mansion "the hero stays on the ramp" '\[leader\] vblank 420 map 53 state 0 pos -29,-(6[89]|70),-1(39|4[01]) '
 check ap_hub_mansion "the key opens it at the next step" 'field_load_map\(map=62 keep=1 flags=2\) at vblank 4[5-9][0-9]'
-for v in open story; do
-  SS_DISC2="${SS_DISC2:-${SS_DISC1//Disc 1/Disc 2}}" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
-    timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
-done
-check ap_p4_tele_open "the teleporter's edits apply (3, with the harbour's 12)" '\[mods\] 15 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
-check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
-check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+TELE_D2="${SS_DISC2:-${SS_DISC1:+${SS_DISC1//Disc 1/Disc 2}}}"
+if [ -n "$TELE_D2" ] && [ -f "$TELE_D2" ]; then  # map 303 is on disc 2
+  for v in open story; do
+    SS_DISC2="$TELE_D2" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
+      timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
+  done
+  check ap_p4_tele_open "the teleporter's edits apply (3, with the harbour's 12)" '\[mods\] 15 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
+  check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
+  check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+else
+  echo "SKIP ap_p4_tele: no disc 2 image next to disc 1 (or SS_DISC2)"
+fi
 
 # Archipelago phase 4 [ships agent]: Port Hilton's harbour (docs/apworld/seed_format.md "The harbour").
 # Chapter 23, in front of the Hilton sailor (map 169, actor 17): in an open-world seed he no longer
