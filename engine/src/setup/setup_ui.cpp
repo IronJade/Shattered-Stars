@@ -424,7 +424,8 @@ void App::run_action(const std::string& action) {
     start_tracker_render();
     tracker_scroll_ = true;  // scripts can't scroll: the Trackers section in view, as for a click
   }
-  else if (action.rfind("wait-tracker-render", 0) == 0) {}  // over: frame() held it until then
+  else if (action.rfind("wait-tracker-render", 0) == 0)  // over: frame() held it until then
+    tracker_scroll_ = true;  // the section in view again, with what has grown under it (the outcome)
   else std::fprintf(stderr, "setup: unknown action '%s'\n", action.c_str());
 }
 
@@ -441,7 +442,8 @@ void App::open_folder(const fs::path& folder) {
 // The Archipelago page's "Render tracker maps for PopTracker" button (tools/tracker_maps.h):
 // the same command as `--render-tracker-maps` with no DIR (PopTracker's own search order), so
 // a Windows player never needs a terminal. Reads Disc 1 only and writes only the pack's PNGs
-// under PopTracker's user-override folder; no config change (settings on screen are not
+// under PopTracker's user-override folder and, beside that folder, their zip for Universal
+// Tracker (so2_shattered_stars_ut.zip); no config change (settings on screen are not
 // touched, saved or not), no save, no card. The render runs on a thread of its own
 // (setup/tracker_job.h: its own disc handle, a copy of the path), so the window goes on
 // drawing and shows its progress.
@@ -455,7 +457,10 @@ void App::start_tracker_render() {
   // The folder is resolved here, on the window's thread (it reads the environment).
   const fs::path dir = tools::poptracker_override_dir();
   tracker_render_dir_ = launcher::path_utf8(dir);
-  if (tracker_job_.start(settings_.disc1, dir)) {  // every image, no dots: the real render
+  tools::TrackerRenderOptions options;  // every image, no dots: the real render
+  options.ut_zip = tools::tracker_ut_zip_path(dir);
+  tracker_ut_zip_ = launcher::path_utf8(options.ut_zip);
+  if (tracker_job_.start(settings_.disc1, dir, options)) {
     tracker_render_frame_ = frame_;
     std::printf("setup: tracker maps: rendering into %s\n", tracker_render_dir_.c_str());
     std::fflush(stdout);
@@ -473,7 +478,18 @@ void App::tracker_render_finished() {
                                                        : "failed";
   std::printf("setup: tracker maps: %s (%d of %d images; %d frames drawn while it ran)\n", what, st.done, st.total,
               frame_ - tracker_render_frame_);
+  if (st.zip_written)
+    std::printf("setup: tracker maps: the Universal Tracker zip: %s (%d files)\n", tracker_ut_zip_.c_str(), st.zip_total);
+  else if (st.kind == "zip")
+    std::printf("setup: tracker maps: the Universal Tracker zip not written (%d of %d files)\n", st.zip_done, st.zip_total);
   std::fflush(stdout);
+}
+
+// After a render: where its Universal Tracker zip is, and what to do with it.
+void App::tracker_ut_zip_line() {
+  status_line(Level::kOk, "For Universal Tracker: " + tracker_ut_zip_);
+  note("Choose this file when Universal Tracker asks for the pack.");
+  if (ImGui::Button("Copy path")) ImGui::SetClipboardText(tracker_ut_zip_.c_str());
 }
 
 struct DialogCall {
@@ -2315,7 +2331,8 @@ void App::page_archipelago() {
     tracker_scroll_ = false;
   }
   note("PopTracker can follow your run (map and checks) from your own disc's artwork: this renders it "
-       "once, into PopTracker's own folder, from this disc only. Nothing is shared or published.");
+       "once, into PopTracker's own folder, from this disc only, with a copy in a zip for Universal "
+       "Tracker. Nothing is shared or published.");
   const char* render_label = "Render tracker maps for PopTracker";
   const TrackerRenderJob::Status& st = tracker_status_;
   ImGui::BeginDisabled(!disc1_ok() || st.running);
@@ -2326,6 +2343,14 @@ void App::page_archipelago() {
   using Outcome = TrackerRenderJob::Outcome;
   if (!tracker_render_error_.empty()) {
     status_line(Level::kError, tracker_render_error_);
+  } else if (st.running && st.kind == "zip") {  // the images are written; now their zip for UT
+    const std::string count = std::to_string(st.zip_done) + " of " + std::to_string(st.zip_total) + " files";
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, IM_COL32(80, 135, 225, 255));
+    ImGui::ProgressBar(st.zip_total > 0 ? static_cast<float>(st.zip_done) / static_cast<float>(st.zip_total) : 0.0f,
+                       ImVec2(std::min(em() * 22, ImGui::GetContentRegionAvail().x), 0), count.c_str());
+    ImGui::PopStyleColor();
+    status_line(Level::kInfo, "Writing the zip for Universal Tracker...");
+    note("Setup can be used meanwhile. Closing it stops the render; the images written by then are kept.");
   } else if (st.running) {
     const std::string count = st.total > 0 ? std::to_string(st.done) + " of " + std::to_string(st.total) + " images"
                                            : std::string("Starting...");
@@ -2343,9 +2368,16 @@ void App::page_archipelago() {
     status_line(Level::kOk, "Done: " + std::to_string(st.total) + " tracker map images were written to " +
                                 tracker_render_dir_ + ".");
     if (ImGui::Button("Open folder")) open_folder(launcher::utf8_path(tracker_render_dir_));
+    tracker_ut_zip_line();
   } else if (st.outcome == Outcome::kErrors) {
     status_line(Level::kError,
-                "Some map images could not be rendered (shattered-stars-setup's own console has details).");
+                st.failed > 0 ? "Some map images could not be rendered (shattered-stars-setup's own console has details)."
+                              : "The images were written, but the zip for Universal Tracker failed "
+                                "(shattered-stars-setup's own console has details).");
+    if (st.zip_written) tracker_ut_zip_line();
+  } else if (st.outcome == Outcome::kStopped && st.kind == "zip") {
+    status_line(Level::kWarning, "Stopped while writing the zip for Universal Tracker: the images are all "
+                                 "written, the zip is not. Render again for the zip.");
   } else if (st.outcome == Outcome::kStopped) {
     status_line(Level::kWarning, "Stopped after " + std::to_string(st.done) + " of " + std::to_string(st.total) +
                                      " images. Render again for the rest.");

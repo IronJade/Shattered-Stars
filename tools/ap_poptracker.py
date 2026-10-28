@@ -23,7 +23,10 @@ Inputs, all from this repo:
 Every image is drawn here from plain shapes and text (Pillow; the font is Pillow's bundled Aileron
 Regular, CC0). Nothing comes from the discs.
 
-Also writes, beside the pack folder, ut_name_mapping.json: "<location>/<section>" -> AP location id
+Also writes, beside the pack folder, boards.json (the boards' cells and labels and UT's player
+marker's size, for the port's Universal Tracker zip: docs/ap/tracker_maps.md "The Universal Tracker
+zip"; `--boards-out tools/poptracker/boards.json` updates the committed copy the port compiles in),
+ut_name_mapping.json: "<location>/<section>" -> AP location id
 for every section whose name is not the AP location name (what Universal Tracker's
 `poptracker_name_mapping` would need to read this pack directly), and ut_tracker/: Universal
 Tracker's map-tab JSON (docs/ap/apworld.md "Universal Tracker's map tab"), which `--ut-out
@@ -385,6 +388,9 @@ def overlap(a, b):
 
 
 CELL_W, CELL_H, CELL_GAP, BOARD_MARGIN, BOARD_TOP = 330, 46, 8, 16, 76
+BOARD_CELL, BOARD_OUTLINE, BOARD_TEXT, BOARD_HINT_COLOUR = "#283040", "#5a6274", "#e8e8f0", "#8c94a8"
+BOARD_HINT = "click a square for its checks"
+BOARD_LABEL_X = 50      # a cell's label starts here; its square is at (24, CELL_H / 2)
 
 
 def board_geometry(n):
@@ -409,16 +415,16 @@ def draw_board(title, cells, colour):
     cols, width, height = board_geometry(len(cells))
     img = Image.new("RGB", (width, height), BG)
     d = ImageDraw.Draw(img)
-    d.text((BOARD_MARGIN, 14), title, font=font(30), fill="#e8e8f0")
-    d.text((BOARD_MARGIN, 50), "click a square for its checks", font=font(15), fill="#8c94a8")
+    d.text((BOARD_MARGIN, 14), title, font=font(30), fill=BOARD_TEXT)
+    d.text((BOARD_MARGIN, 50), BOARD_HINT, font=font(15), fill=BOARD_HINT_COLOUR)
     for k, cell in enumerate(cells):
         x, y = cell_box(k, cols)
-        d.rounded_rectangle((x, y, x + CELL_W - 1, y + CELL_H - 1), radius=8, fill=colour, outline="#5a6274")
+        d.rounded_rectangle((x, y, x + CELL_W - 1, y + CELL_H - 1), radius=8, fill=colour, outline=BOARD_OUTLINE)
         f, fs, lines = fit(d, cell["label"], CELL_W - 60, CELL_H - 6, start=17, low=9)
         line_h = fs * 1.15
         ty = y + CELL_H / 2 - line_h * len(lines) / 2
         for ln in lines:
-            d.text((x + 50, ty), ln, font=f, fill="#e8e8f0")
+            d.text((x + BOARD_LABEL_X, ty), ln, font=f, fill=BOARD_TEXT)
             ty += line_h
     return img
 
@@ -708,8 +714,10 @@ class Pack:
                 children.append({"name": clean(cell["name"]), "sections": secs,
                                  "map_locations": [{"map": map_name, "x": x + 24, "y": y + CELL_H // 2}]})
             img_path = f"images/boards/{map_name}.png"
-            self.images[img_path] = draw_board(title, cells, "#283040")
-            self.boards.append({"title": title, "map": map_name, "img": img_path, "size": (width, height)})
+            self.images[img_path] = draw_board(title, cells, BOARD_CELL)
+            self.boards.append({"title": title, "map": map_name, "img": img_path, "size": (width, height),
+                                "cells": [[*cell_box(k, cols), CELL_W, CELL_H, cell["label"]]
+                                          for k, cell in enumerate(cells)]})
             out.append({"name": title, "children": children})
         return out
 
@@ -1305,6 +1313,35 @@ def write_folder(pack, out):
             f.write(data)
 
 
+def boards_json(pack):
+    """tools/poptracker/boards.json: what the port needs to draw this pack's boards and UT's player
+    marker into its Universal Tracker zip (docs/ap/tracker_maps.md "The Universal Tracker zip"):
+    each board's image path and size, its title and hint, and each cell's box and label (the
+    squares sit at the cell's (24, h / 2), so the port's picture lines up with the pack's
+    locations), and the marker's path and size. Only text and numbers; the port draws its own."""
+    data = {
+        "source": "tools/ap_poptracker.py (--boards-out tools/poptracker/boards.json)",
+        "pack_uid": PACK_UID,
+        "style": {"background": BG, "cell": BOARD_CELL, "outline": BOARD_OUTLINE, "text": BOARD_TEXT,
+                  "hint": BOARD_HINT_COLOUR, "label_x": BOARD_LABEL_X, "margin": BOARD_MARGIN},
+        "player_icon": {"path": PLAYER_IMG, "width": 64, "height": 64},
+        "boards": [{"path": b["img"], "title": b["title"], "hint": BOARD_HINT, "width": b["size"][0],
+                    "height": b["size"][1], "cells": b["cells"]} for b in pack.boards],
+    }
+    head = {k: v for k, v in data.items() if k != "boards"}
+    lines = ["{"] + [f" {json.dumps(k)}: {json.dumps(v)}," for k, v in head.items()] + [' "boards": [']
+    for k, b in enumerate(data["boards"]):
+        top = {key: v for key, v in b.items() if key != "cells"}
+        lines.append("  {" + ", ".join(f"{json.dumps(key)}: {json.dumps(v)}" for key, v in top.items()) + ', "cells": [')
+        cells = [f"   {json.dumps(c)}" for c in b["cells"]]
+        lines.append(",\n".join(cells))
+        lines.append("  ]}" + ("," if k + 1 < len(data["boards"]) else ""))
+    lines.append(" ]")
+    lines.append("}")
+    text = "\n".join(lines)
+    return (text + "\n").encode("ascii")
+
+
 def write_zip(pack, path):
     """The pack's files at the zip's root, sorted, with a fixed date: reproducible bytes."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
@@ -1327,6 +1364,8 @@ def main():
     p.add_argument("--no-images", action="store_true", help="empty image files (quick JSON/Lua checks)")
     p.add_argument("--ut-out", help="also write Universal Tracker's map-tab JSON here (apworld/so2/tracker)")
     p.add_argument("--ut-check", help="compare that folder (apworld/so2/tracker) with this build's; exit 1 if it differs")
+    p.add_argument("--boards-out", help="also write the boards' layout for the port's UT zip here "
+                   "(tools/poptracker/boards.json)")
     a = p.parse_args()
     w = load_world(a.ap_dir)
     layout = json.load(open(a.layout, encoding="utf-8"))
@@ -1341,6 +1380,11 @@ def main():
               encoding="utf-8") as f:
         json.dump(dict(sorted(pack.ut_names.items())), f, indent=1, ensure_ascii=False)
         f.write("\n")
+    boards = boards_json(pack)
+    for target in [os.path.join(os.path.dirname(os.path.abspath(a.out)), "boards.json")] + (
+            [a.boards_out] if a.boards_out else []):
+        with open(target, "wb") as f:
+            f.write(boards)
     ut_dir = os.path.join(os.path.dirname(os.path.abspath(a.out)), "ut_tracker")
     for target in [ut_dir] + ([a.ut_out] if a.ut_out else []):
         if os.path.isdir(target):

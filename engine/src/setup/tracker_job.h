@@ -10,7 +10,8 @@
 
 // The setup program's "Render tracker maps for PopTracker" button (port feature;
 // docs/ap/tracker_maps.md "The setup button"): tools::render_tracker_maps on a thread of its
-// own, so the window keeps drawing, and shows the progress, during the ~20 s render.
+// own, so the window keeps drawing, and shows the progress, during the ~20 s render (and the
+// Universal Tracker zip after it, when options.ut_zip is set).
 //
 // Thread safety: the worker opens a disc::DiscImage and disc::Archive of its own (from a copy
 // of the path; the window's thread reads the same file through its own handles, for the disc
@@ -34,7 +35,11 @@ class TrackerRenderJob {
   struct Status {
     bool running = false;     // started and not finished
     int done = 0, total = 0;  // images finished / in this render (total 0 until it starts)
-    std::string kind, name;   // the image in progress (tools::TrackerRenderProgress)
+    int failed = 0;           // images that could not be rendered or written
+    std::string kind, name;   // the image in progress (tools::TrackerRenderProgress), or kind
+                              // "zip" and the file while the Universal Tracker zip is written
+    int zip_done = 0, zip_total = 0;  // the zip's files written / in it (options.ut_zip)
+    bool zip_written = false;         // the zip is complete and in place
     Outcome outcome = Outcome::kNone;  // set when it finishes, until the next start()
     std::string detail;
   };

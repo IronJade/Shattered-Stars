@@ -16,6 +16,8 @@
 //   shattered-stars --render-tracker-maps [DIR]          the PopTracker pack's map images from your
 //                                                        disc (tools/tracker_maps.h; DIR: PopTracker's
 //                                                        user-override folder); writes only those PNGs
+//     [--ut-zip FILE | --no-ut-zip]                      and a zip of them for Universal Tracker
+//                                                        (default: so2_shattered_stars_ut.zip beside DIR)
 //
 // Display: --no-dither / --dither (remembered); --reference-dither draws like
 // PCSX-Redux's software renderer for comparisons (gouraud-only dithering, blending before
@@ -169,7 +171,7 @@ int usage(const char* argv0) {
   launcher::report("Shattered Stars %s\n", SS_VERSION);
   launcher::report(
                "usage: %s [--help] [--version] [--disc1 IMAGE] [--disc2 IMAGE] [--no-dither|--dither|--reference-dither] [--viewer] [--dump DIR] [--entry N]\n"
-               "       [--render-tracker-maps [DIR]]\n"
+               "       [--render-tracker-maps [DIR] [--ut-zip FILE|--no-ut-zip]]\n"
                "       [--memcard1 FILE] [--memcard2 FILE] [--no-memcard] [--headless] [--frames N] [--map N] [--map-pos X,Y,Z[,F[,C]]] [--capture DIR --capture-frames A,B,...] [--input F:buttons,...]\n"
                "       [--audio|--no-audio] [--audio-wav FILE] [--mods DIR] [--debug] [--ap-seed FILE [--ap-seed-entry NAME]]\n",
                argv0);
@@ -213,7 +215,8 @@ int main(int argc, char** argv) try {
   };
   std::filesystem::path dump_dir, capture_dir;
   std::filesystem::path tracker_maps_dir;  // --render-tracker-maps [DIR]
-  bool tracker_maps = false;
+  std::filesystem::path tracker_ut_zip;    // --ut-zip FILE (default: beside DIR)
+  bool tracker_maps = false, tracker_no_ut_zip = false;
   std::string capture_frames, input_script;
   std::string battle_spec, battle_end;  // --battle ENC[:STAGE], --battle-end FRAMES[:OUTCOME]
   std::string ap_seed;                  // --ap-seed FILE (Archipelago, game/ap)
@@ -243,6 +246,12 @@ int main(int argc, char** argv) try {
     } else if (arg == "--render-tracker-maps") {  // tools/tracker_maps.h; DIR optional
       tracker_maps = true;
       if (has_value && std::strncmp(argv[i + 1], "--", 2) != 0) tracker_maps_dir = util::utf8_path(next());
+    } else if (arg == "--ut-zip" && has_value) {  // the Universal Tracker zip's path (tools/tracker_maps.h)
+      tracker_ut_zip = util::utf8_path(next());
+      tracker_no_ut_zip = false;
+    } else if (arg == "--no-ut-zip") {
+      tracker_no_ut_zip = true;
+      tracker_ut_zip.clear();
     } else if (arg == "--entry" && has_value) {
       entry = std::atoi(next());
     } else if (arg == "--no-dither") {
@@ -419,6 +428,9 @@ int main(int argc, char** argv) try {
   if (tracker_maps) {  // reads disc 1 only and writes only PNGs under the folder (no config, no saves)
     if (tracker_maps_dir.empty()) tracker_maps_dir = tools::poptracker_override_dir();
     tools::TrackerRenderOptions options;
+    // The Universal Tracker zip of the same images: beside DIR unless --ut-zip / --no-ut-zip.
+    if (!tracker_no_ut_zip)
+      options.ut_zip = tracker_ut_zip.empty() ? tools::tracker_ut_zip_path(tracker_maps_dir) : tracker_ut_zip;
     options.dots = util::env("SS_TRACKER_DOTS").value_or("") == "1";
     if (const auto only = util::env("SS_TRACKER_ONLY")) {
       std::stringstream list(*only);
@@ -428,6 +440,11 @@ int main(int argc, char** argv) try {
     // Progress in the console besides each image's own line: the count at the start and
     // every 100 images (the setup's button shows the same in its window).
     options.progress = [&](const tools::TrackerRenderProgress& p) {
+      if (p.kind == "zip") {  // the zip's files: one line before the first
+        if (p.done == 0)
+          std::printf("tracker maps: writing the Universal Tracker zip %s (%d files)\n", p.path.c_str(), p.total);
+        return true;
+      }
       if (p.done == 0 && !p.path.empty())
         std::printf("tracker maps: rendering %d image(s) into %s\n", p.total, util::path_utf8(tracker_maps_dir).c_str());
       else if (p.done % 100 == 0 && !p.path.empty())

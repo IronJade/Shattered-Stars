@@ -163,6 +163,7 @@ class App {
   // window stops it after the image in progress (~App).
   void start_tracker_render();
   void tracker_render_finished();  // the frame that sees it finish: a line on stdout for scripts
+  void tracker_ut_zip_line();      // the Universal Tracker zip's path and what to do with it
 
   // The Mods page (mods/catalog.h): the folder's packages, rescanned when the folder
   // changes, after an install or removal, and when the window regains focus; the conflict
@@ -225,6 +226,7 @@ class App {
   TrackerRenderJob tracker_job_;
   TrackerRenderJob::Status tracker_status_;  // this frame's copy
   std::string tracker_render_dir_;           // where it writes (resolved at the start)
+  std::string tracker_ut_zip_;               // its Universal Tracker zip (beside that folder)
   std::string tracker_render_error_;         // refused before starting (no valid Disc 1)
   int tracker_render_frame_ = 0;             // the frame it started on
   bool script_waiting_ = false;              // a wait-tracker-render action holds the script

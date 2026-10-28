@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <functional>
 #include <optional>
 #include <span>
@@ -24,6 +25,7 @@
 #include "runtime/debug_overlay.h"
 #include "util/deflate.h"
 #include "util/utf8.h"
+#include "util/zip_writer.h"
 
 namespace ss::tools {
 namespace {
@@ -868,7 +870,224 @@ std::optional<fs::path> image_path(const fs::path& dir, const std::string& rel) 
   return dir / util::utf8_path(rel);
 }
 
+// ---- The Universal Tracker zip's own pictures (tracker_maps.md "The Universal Tracker zip") ----
+
+// A filled rectangle with corners rounded to radius 'r' (a pixel is in when its centre is).
+void fill_round_rect(Canvas& c, int x, int y, int w, int h, int r, u32 colour) {
+  r = std::max(0, std::min({r, w / 2, h / 2}));
+  for (int j = 0; j < h; ++j)
+    for (int i = 0; i < w; ++i) {
+      const int cx = i < r ? r - 1 - i : i >= w - r ? i - (w - r) : -1;
+      const int cy = j < r ? r - 1 - j : j >= h - r ? j - (h - r) : -1;
+      if (cx >= 0 && cy >= 0 && (2 * cx + 1) * (2 * cx + 1) + (2 * cy + 1) * (2 * cy + 1) > 4 * r * r) continue;
+      c.put(x + i, y + j, colour);
+    }
+}
+
+// 'text' in lines of at most 'chars' characters, broken at spaces (a longer word gets a line
+// of its own, cut by draw_text).
+std::vector<std::string> wrap_words(const std::string& text, size_t chars) {
+  std::vector<std::string> lines;
+  std::string line, word;
+  auto flush_word = [&] {
+    if (word.empty()) return;
+    if (!line.empty() && line.size() + 1 + word.size() > chars) {
+      lines.push_back(line);
+      line.clear();
+    }
+    line += (line.empty() ? "" : " ") + word;
+    word.clear();
+  };
+  for (char ch : text) {
+    if (ch == ' ') flush_word();
+    else word.push_back(ch);
+  }
+  flush_word();
+  if (!line.empty()) lines.push_back(line);
+  return lines;
+}
+
+// A board (boards.json): the title and hint at the top, each cell a rounded box with its label
+// right of the square PopTracker and UT draw at the cell's (24, h / 2). The overlay's font: 2x
+// in up to two lines, else 1x.
+Canvas draw_board(const Json& board, const Json& style) {
+  const int W = static_cast<int>(board["width"].as_int()), H = static_cast<int>(board["height"].as_int());
+  const u32 background = colour_of(style["background"].as_string(), 0xFF221C1Cu);
+  const u32 cell = colour_of(style["cell"].as_string(), 0xFF403028u);
+  const u32 outline = colour_of(style["outline"].as_string(), 0xFF74625Au);
+  const u32 ink = colour_of(style["text"].as_string(), 0xFFF0E8E8u);
+  const u32 hint = colour_of(style["hint"].as_string(), 0xFFA8948Cu);
+  const int label_x = static_cast<int>(style["label_x"].as_int(50));
+  const int margin = static_cast<int>(style["margin"].as_int(16));
+  Canvas c{W, H, std::vector<u32>(static_cast<size_t>(W) * H, background)};
+  draw_text(c, margin, 14, W - 2 * margin, board["title"].as_string(), ink, 4);
+  draw_text(c, margin, 50, W - 2 * margin, board["hint"].as_string(), hint, 2);
+  const Json& cells = board["cells"];
+  for (size_t k = 0; k < cells.size(); ++k) {
+    const Json& b = cells[k];
+    const int x = static_cast<int>(b[0].as_int()), y = static_cast<int>(b[1].as_int());
+    const int w = static_cast<int>(b[2].as_int()), h = static_cast<int>(b[3].as_int());
+    fill_round_rect(c, x, y, w, h, 8, outline);
+    fill_round_rect(c, x + 1, y + 1, w - 2, h - 2, 7, cell);
+    const int room = w - label_x - 10;
+    int scale = 2;
+    std::vector<std::string> lines = wrap_words(b[4].as_string(), static_cast<size_t>(std::max(1, room / 12)));
+    if (lines.size() > 2) {
+      scale = 1;
+      lines = wrap_words(b[4].as_string(), static_cast<size_t>(std::max(1, room / 6)));
+    }
+    const int line_h = 9 * scale;
+    const int n = static_cast<int>(lines.size());
+    int ty = y + (h - (n * line_h - 2 * scale)) / 2;
+    for (const std::string& line : lines) {
+      draw_text(c, x + label_x, ty, room, line, ink, scale);
+      ty += line_h;
+    }
+  }
+  return c;
+}
+
+// UT's player marker on the world maps (boards.json player_icon): a white ring, a red disc and
+// a white centre on a clear background.
+Canvas draw_player_marker(int w, int h) {
+  Canvas c{w, h, std::vector<u32>(static_cast<size_t>(w) * h, 0x00000000u)};
+  const int size = std::min(w, h);
+  const s64 rings[3][2] = {{size * 26 / 64, 0xFFFFFFFF}, {size * 20 / 64, 0xFF2A30E0}, {size * 8 / 64, 0xFFFFFFFF}};
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x) {
+      const s64 dx = 2 * x + 1 - w, dy = 2 * y + 1 - h, d = dx * dx + dy * dy;
+      for (const auto& ring : rings)
+        if (d <= 4 * ring[0] * ring[0]) c.put(x, y, static_cast<u32>(ring[1]));
+    }
+  return c;
+}
+
+// The zip (options.ut_zip): the layout's images found under 'dir', and the extras, sorted.
+// Returns 0, 1 (it could not be written: nothing under its name changed) or
+// kTrackerRenderStopped (options.progress said stop: no zip). 'failed' (the images that
+// failed) is passed on to options.progress.
+int write_ut_zip(const Json& layout, const fs::path& dir, const TrackerRenderOptions& options, int failed) {
+  const fs::path& zip = options.ut_zip;
+  const std::string zip_name = util::path_utf8(zip);
+  struct Entry {
+    std::string name;
+    fs::path file;          // a render under 'dir', or
+    std::vector<u8> bytes;  // an extra, drawn here
+  };
+  std::vector<Entry> entries;
+  int missing = 0;
+  std::error_code ec;
+  for (const char* list : {"images", "rooms"}) {
+    const Json& items = layout[list];
+    for (size_t i = 0; i < items.size(); ++i) {
+      const std::string rel = items[i]["path"].as_string();
+      const auto path = image_path(dir, rel);
+      if (path && fs::is_regular_file(*path, ec)) entries.push_back({rel, *path, {}});
+      else ++missing;
+    }
+  }
+  std::vector<std::pair<std::string, std::vector<u8>>> extras;
+  std::string error;
+  if (!render_tracker_ut_extras(&extras, &error)) {
+    std::fprintf(stderr, "tracker maps: the Universal Tracker zip: %s\n", error.c_str());
+    return 1;
+  }
+  for (auto& [name, bytes] : extras) {
+    if (std::any_of(entries.begin(), entries.end(), [&](const Entry& e) { return e.name == name; })) {
+      std::fprintf(stderr, "tracker maps: the Universal Tracker zip: %s is a render and a board\n", name.c_str());
+      return 1;
+    }
+    entries.push_back({name, {}, std::move(bytes)});
+  }
+  std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) { return a.name < b.name; });
+  const int n = static_cast<int>(entries.size());
+  if (zip.has_parent_path()) fs::create_directories(zip.parent_path(), ec);
+  util::ZipWriter writer;
+  if (!writer.open(zip, &error)) {
+    std::fprintf(stderr, "tracker maps: the Universal Tracker zip: %s\n", error.c_str());
+    return 1;
+  }
+  u64 bytes_total = 0;
+  for (int k = 0; k < n; ++k) {
+    Entry& e = entries[static_cast<size_t>(k)];
+    if (options.progress && !options.progress(TrackerRenderProgress{k, n, zip_name, "zip", e.name, failed})) {
+      writer.abandon();
+      std::printf("tracker maps: stopped while writing the Universal Tracker zip (no zip written)\n");
+      return kTrackerRenderStopped;
+    }
+    if (!e.file.empty()) {
+      std::ifstream f(e.file, std::ios::binary);
+      e.bytes.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+      if (!f.good() && !f.eof()) {
+        writer.abandon();
+        std::fprintf(stderr, "tracker maps: the Universal Tracker zip: could not read %s\n", e.name.c_str());
+        return 1;
+      }
+    }
+    if (!writer.add(e.name, e.bytes, &error)) {
+      std::fprintf(stderr, "tracker maps: the Universal Tracker zip: %s\n", error.c_str());
+      return 1;
+    }
+    bytes_total += e.bytes.size();
+    e.bytes = {};
+  }
+  if (!writer.finish(&error)) {
+    std::fprintf(stderr, "tracker maps: the Universal Tracker zip: %s\n", error.c_str());
+    return 1;
+  }
+  if (options.progress) options.progress(TrackerRenderProgress{n, n, zip_name, "zip", {}, failed});  // in place
+  std::printf("tracker maps: the Universal Tracker zip: %s (%d files, %.1f MB%s)\n", zip_name.c_str(), n,
+              static_cast<double>(bytes_total) / 1e6,
+              missing ? (", " + std::to_string(missing) + " of the layout's images not rendered yet").c_str() : "");
+  std::fflush(stdout);
+  return 0;
+}
+
 }  // namespace
+
+fs::path tracker_ut_zip_path(const fs::path& dir) {
+  std::error_code ec;
+  fs::path p = fs::absolute(dir, ec);
+  if (ec) p = dir;
+  p = p.lexically_normal();
+  if (p.filename().empty() && p.has_parent_path() && p.parent_path() != p) p = p.parent_path();  // "a/b/"
+  const fs::path parent = p.parent_path();
+  return (parent.empty() || parent == p ? p : parent) / kTrackerUtZipName;
+}
+
+bool render_tracker_ut_extras(std::vector<std::pair<std::string, std::vector<u8>>>* out, std::string* error) {
+  out->clear();
+  Json boards;
+  std::string why;
+  if (!Json::parse(std::string(tracker_boards_json()), &boards, &why) || !boards["boards"].is_array()) {
+    if (error) *error = "the built-in boards are not readable (" + why + ")";
+    return false;
+  }
+  const Json& style = boards["style"];
+  const Json& list = boards["boards"];
+  for (size_t i = 0; i < list.size(); ++i) {
+    const Json& b = list[i];
+    const std::string rel = b["path"].as_string();
+    const s64 w = b["width"].as_int(), h = b["height"].as_int();
+    if (!image_path(fs::path("."), rel) || w <= 0 || h <= 0 || w > 4096 || h > 4096) {
+      if (error) *error = "bad board entry " + rel;
+      return false;
+    }
+    const Canvas c = draw_board(b, style);
+    out->push_back({rel, util::encode_png_rgb(c.pixels, c.width, c.height)});
+  }
+  const Json& icon = boards["player_icon"];
+  const std::string rel = icon["path"].as_string();
+  const s64 w = icon["width"].as_int(64), h = icon["height"].as_int(64);
+  if (!image_path(fs::path("."), rel) || w <= 0 || h <= 0 || w > 1024 || h > 1024) {
+    if (error) *error = "bad player icon entry " + rel;
+    return false;
+  }
+  const Canvas c = draw_player_marker(static_cast<int>(w), static_cast<int>(h));
+  out->push_back({rel, util::encode_png_rgba(c.pixels, c.width, c.height)});
+  std::sort(out->begin(), out->end());
+  return true;
+}
 
 fs::path poptracker_override_dir(const fs::path& home, const fs::path& documents) {
   std::error_code ec;
@@ -954,7 +1173,7 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
   for (size_t i = 0; i < rooms.size(); ++i) total += wanted(rooms[i]["path"].as_string(), options);
   bool stopped = false;
   auto next = [&](const std::string& rel, const char* kind, const std::string& name) {
-    if (options.progress && !options.progress(TrackerRenderProgress{started, total, rel, kind, name})) {
+    if (options.progress && !options.progress(TrackerRenderProgress{started, total, rel, kind, name, failed})) {
       stopped = true;
       return false;
     }
@@ -1072,10 +1291,18 @@ int render_tracker_maps(disc::Archive& archive, const fs::path& dir, const Track
                 util::path_utf8(dir).c_str());
     return kTrackerRenderStopped;
   }
-  if (options.progress) options.progress(TrackerRenderProgress{started, total, {}, {}, {}});
+  // The Universal Tracker zip, from the images now in 'dir' (written, so read back: the zip
+  // holds exactly the files PopTracker reads).
+  bool zip_failed = false;
+  if (!options.ut_zip.empty()) {
+    const int rc = write_ut_zip(layout, dir, options, failed);
+    if (rc == kTrackerRenderStopped) return rc;
+    zip_failed = rc != 0;
+  }
+  if (options.progress) options.progress(TrackerRenderProgress{started, total, {}, {}, {}, failed});
   std::printf("tracker maps: %d image(s) written to %s%s\n", written, util::path_utf8(dir).c_str(),
-              failed ? ", with errors" : "");
-  return failed ? 1 : 0;
+              failed ? ", with errors" : zip_failed ? "; the Universal Tracker zip failed" : "");
+  return failed || zip_failed ? 1 : 0;
 }
 
 }  // namespace ss::tools

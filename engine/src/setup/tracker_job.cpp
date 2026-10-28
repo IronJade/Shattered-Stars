@@ -60,8 +60,16 @@ void TrackerRenderJob::run(std::string disc1, std::filesystem::path dir, tools::
     } else {
       options.progress = [this](const tools::TrackerRenderProgress& p) {
         std::lock_guard lock(mutex_);
-        status_.done = p.done;
-        status_.total = p.total;
+        if (p.kind == "zip") {  // the Universal Tracker zip's files: the images are all finished
+          status_.done = status_.total;
+          status_.zip_done = p.done;
+          status_.zip_total = p.total;
+          status_.zip_written = p.total > 0 && p.done == p.total;  // the call once it is in place
+        } else {
+          status_.done = p.done;
+          status_.total = p.total;
+        }
+        status_.failed = p.failed;
         status_.kind = p.kind;
         status_.name = p.name;
         return !stop_.load();

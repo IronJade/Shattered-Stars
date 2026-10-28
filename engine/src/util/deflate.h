@@ -16,9 +16,15 @@ namespace ss::util {
 
 std::vector<u8> zlib_compress(std::span<const u8> data);
 
+// CRC-32 (ISO-HDLC: the PNG chunks' and the .zip entries' checksum) of 'len' bytes, continuing
+// from 'crc' (crc32(b, crc32(a)) is the CRC of a then b; 0 to start).
+u32 crc32(const u8* data, size_t len, u32 crc = 0);
+
 // An 8-bit RGB PNG (pixels RGBA8888 with red in the low byte; alpha is dropped), each row
 // filtered with the PNG filter of the smallest sum of absolute differences, then deflated.
 std::vector<u8> encode_png_rgb(std::span<const u32> pixels, int width, int height);
+// The same with alpha: an 8-bit RGBA PNG (alpha in the high byte).
+std::vector<u8> encode_png_rgba(std::span<const u32> pixels, int width, int height);
 bool write_png_rgb(const std::filesystem::path& path, std::span<const u32> pixels, int width, int height,
                    std::string* error);
 

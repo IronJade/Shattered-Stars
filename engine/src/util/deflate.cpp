@@ -257,7 +257,9 @@ u32 adler32(std::span<const u8> data) {
   return b << 16 | a;
 }
 
-u32 crc32(const u8* data, size_t len, u32 crc = 0) {
+}  // namespace
+
+u32 crc32(const u8* data, size_t len, u32 crc) {
   static const auto table = [] {
     std::array<u32, 256> t{};
     for (u32 i = 0; i < 256; ++i) {
@@ -271,6 +273,8 @@ u32 crc32(const u8* data, size_t len, u32 crc = 0) {
   for (size_t i = 0; i < len; ++i) crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
   return ~crc;
 }
+
+namespace {
 
 void put_be32(std::vector<u8>& out, u32 v) {
   out.push_back(static_cast<u8>(v >> 24));
@@ -357,24 +361,29 @@ std::vector<u8> zlib_compress(std::span<const u8> data) {
   return out;
 }
 
-std::vector<u8> encode_png_rgb(std::span<const u32> pixels, int width, int height) {
-  const size_t stride = static_cast<size_t>(width) * 3;
+namespace {
+
+// An 8-bit PNG of 'channels' 3 (RGB) or 4 (RGBA) per pixel (see encode_png_rgb).
+std::vector<u8> encode_png(std::span<const u32> pixels, int width, int height, int channels) {
+  const size_t bpp = static_cast<size_t>(channels);
+  const size_t stride = static_cast<size_t>(width) * bpp;
   std::vector<u8> raw;
   raw.reserve((stride + 1) * height);
   std::vector<u8> prior(stride, 0), row(stride), best(stride), trial(stride);
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       const u32 p = pixels[static_cast<size_t>(y) * width + x];
-      row[x * 3] = static_cast<u8>(p);
-      row[x * 3 + 1] = static_cast<u8>(p >> 8);
-      row[x * 3 + 2] = static_cast<u8>(p >> 16);
+      row[x * bpp] = static_cast<u8>(p);
+      row[x * bpp + 1] = static_cast<u8>(p >> 8);
+      row[x * bpp + 2] = static_cast<u8>(p >> 16);
+      if (bpp == 4) row[x * bpp + 3] = static_cast<u8>(p >> 24);
     }
     u64 best_sum = ~0ull;
     int best_filter = 0;
     for (int f = 0; f < 5; ++f) {
       u64 sum = 0;
       for (size_t i = 0; i < stride; ++i) {
-        const int a = i >= 3 ? row[i - 3] : 0, b = prior[i], c = i >= 3 ? prior[i - 3] : 0;
+        const int a = i >= bpp ? row[i - bpp] : 0, b = prior[i], c = i >= bpp ? prior[i - bpp] : 0;
         int v = row[i];
         switch (f) {
           case 1: v -= a; break;
@@ -401,11 +410,22 @@ std::vector<u8> encode_png_rgb(std::span<const u32> pixels, int width, int heigh
   std::vector<u8> ihdr;
   put_be32(ihdr, static_cast<u32>(width));
   put_be32(ihdr, static_cast<u32>(height));
-  ihdr.insert(ihdr.end(), {8, 2, 0, 0, 0});  // 8-bit RGB, deflate, adaptive filters, no interlace
+  // 8-bit RGB (colour type 2) or RGBA (6), deflate, adaptive filters, no interlace
+  ihdr.insert(ihdr.end(), {8, static_cast<u8>(channels == 4 ? 6 : 2), 0, 0, 0});
   png_chunk(png, "IHDR", ihdr);
   png_chunk(png, "IDAT", zlib_compress(raw));
   png_chunk(png, "IEND", {});
   return png;
+}
+
+}  // namespace
+
+std::vector<u8> encode_png_rgb(std::span<const u32> pixels, int width, int height) {
+  return encode_png(pixels, width, height, 3);
+}
+
+std::vector<u8> encode_png_rgba(std::span<const u32> pixels, int width, int height) {
+  return encode_png(pixels, width, height, 4);
 }
 
 bool write_png_rgb(const std::filesystem::path& path, std::span<const u32> pixels, int width, int height,
