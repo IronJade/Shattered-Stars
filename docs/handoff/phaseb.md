@@ -71,6 +71,14 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   zip copy (a port option later); released AP area names that mislead (e.g. "Port Hilton" checks in
   the Lacour coliseum) stay; ER names door_pairs / so2_doors_* provisional. Small bug for rc030:
   test_tracker_job leaves an empty tracker_job_test/ in the cwd. rc030 started.
+- maptab's open points (the user, 2026-10-27): 1. UT's one-time file dialog for the pack zip: "Keep
+  it". 3. Released AP area names that mislead (e.g. "Port Hilton" checks in the Lacour coliseum):
+  "Leave them as they are there because they trigger chapter or story mode movements". 2. The
+  player's render in UT: the user asked the cost of doing it now (answer: a port-written zip of the
+  rendered pictures, below). 4. "Can door diamonds just be a color not used for checks? Is white
+  used?" (answer: PopTracker colours by state from a fixed palette, packs can't pick colours, no
+  white; checks use green / red / blue / grey and orange / teal / purple when mixed; yellow
+  (SequenceBreak) is used by no check). rc030 held before its builds until the user answers 2 and 4.
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
