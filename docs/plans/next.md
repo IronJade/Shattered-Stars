@@ -88,6 +88,9 @@ Work breakdown (agents, after the decision):
 
 ## macOS build (started 2026-10-28, in parallel)
 
+**The macOS build ships with port 0.04.00, the entrance-randomizer release** (the user, 2026-10-28).
+The public roadmap: wiki/Roadmap.md (order and status, no dates: the user).
+
 **Decided for a macOS release (the user, 2026-10-28, after the Mac's candidacy report on daa3a00):**
 `.app` bundles ("Shattered Stars.app", "Shattered Stars Setup.app") in a zip; Apple Silicon only
 (arm64, macOS 11+); ad-hoc signed with instructions (Open Anyway / xattr), Developer ID maybe later;

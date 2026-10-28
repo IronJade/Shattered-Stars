@@ -8,6 +8,7 @@
 - [Archipelago](Archipelago)
 - [Trackers](Trackers)
 - [FAQ](FAQ)
+- [Roadmap](Roadmap)
 
 **Making and modding**
 - [Modding](Modding)

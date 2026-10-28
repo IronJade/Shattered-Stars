@@ -809,7 +809,7 @@ S (under a day), M, L, XL; risk low / medium / high.
   section 12's commands with ER added: the batches, the identity batch, UT, the pack's smoke test, the
   e2e), the user's Windows check (an ER seed played, the found key, UT and the pack on Windows), the
   Mac's tracker-side check.
-- **The macOS build:** a question, not a plan: the Mac work is on the `macos` branch; whether port
+- **The macOS build:** ships with port 0.04.00 (the user, 2026-10-28; merged to main as e210ebd). Before: the Mac work is on the `macos` branch; whether port
   0.04.00 can ship a macOS build alongside depends on that branch's state at release (question 14).
 
 ---
@@ -868,7 +868,7 @@ S (under a day), M, L, XL; risk low / medium / high.
     diff to review, and Generic ER worlds get extra scrutiny.
 13. **Seed format 5 only for ER seeds**, so non-ER 0.3.0 seeds still play on port 0.03.00.
     *Recommendation:* yes.
-14. **A macOS build with port 0.04.00?** Depends on the `macos` branch; just noting it.
+14. **A macOS build with port 0.04.00?** **Decided (the user, 2026-10-28): yes, macOS ships with 0.04.00.** Depends on the `macos` branch; just noting it.
 15. **The found key's name and shape**: `so2_entrances_{team}_{slot}` (as reserved), an object doorway
     -> doorway written with `update`, kept in the sidecar; the pack's provisional `so2_doors_*` and
     slot data `door_pairs` are replaced. *Recommendation:* yes.
