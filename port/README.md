@@ -94,8 +94,9 @@ byte), and its test suites pass under Wine (`port/build-win/ss_tests.exe`,
 ### macOS
 
 In progress (Apple Silicon; docs/handoff/macos.md): the programs and both test suites build
-with Xcode's clang, and the tests pass. Not yet released or packaged. Without Homebrew, CMake and
-Ninja come from pip; SDL is built from source as above:
+with Xcode's clang, the tests and the headless smoke test pass, and the game starts from the
+player's discs to its title menu in a window (OpenGL 4.1). Not yet released or packaged.
+Without Homebrew, CMake and Ninja come from pip; SDL is built from source as above:
 
 ```sh
 pip3 install --user cmake ninja && export PATH="$HOME/Library/Python/3.9/bin:$PATH"
@@ -105,7 +106,8 @@ cmake --build port/build-macos
 
 Without OpenSSL (e.g. `brew install openssl@3`) the Archipelago client speaks `ws://` only. SDL's
 offscreen video driver can't open a window on macOS, so headless checks there use
-`SDL_VIDEO_DRIVER=dummy`.
+`SDL_VIDEO_DRIVER=dummy`. macOS has no address-space limit, so `tools/memcap.py` caps a run by
+its memory footprint there, and the smoke test uses it in place of `timeout`.
 
 ### Linux package
 
