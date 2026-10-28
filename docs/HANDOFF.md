@@ -26,7 +26,7 @@ Build: `cmake -S port -B port/build -G Ninja && cmake --build port/build` (port/
 
 ## Live handoffs (docs/handoff/)
 release.md (the 0.03.00 RC), phaseb.md (the tracker build), windows_check.md, utzip.md,
-restructure.md.
+restructure.md, macos.md (the macOS build, on the Mac's local `macos` branch).
 
 ## Removed files
 The finished handoff logs (cited as `docs/handoff/<name>.md` in code comments and data, as "the
