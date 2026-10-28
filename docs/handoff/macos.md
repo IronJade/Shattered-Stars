@@ -50,7 +50,7 @@ port/tools/setup_screenshots.sh port/build-macos/shattered-stars-setup $S/shots
     --render-tracker-maps $S/maps/so2 --ut-zip $S/maps/ut.zip
 ```
 SS_DISC2 matters: the smoke test finds disc 2 only beside disc 1 otherwise, and without it
-ap_p4_tele_open / ap_p4_tele_story FAIL (they need it) instead of skipping, and ap_hub_ng skips.
+ap_p4_tele (map 303, on disc 2) and ap_hub_ng skip.
 
 ## Status
 **Base:** linux/main = 27c5fca (the coordinator's bundle of 2026-10-28).
@@ -76,11 +76,25 @@ written by those runs.
   (the same file at frame 1100 with Start pressed at 200, 400, ..., 1000); in a real window
   (1200 vblanks in 20.3 s: real-time pacing) and through SS_SHOT (the game's OpenGL presenter on
   Cocoa's GL 4.1), both after the SS_SHOT fix below.
-- `--render-tracker-maps`: 862 images in 16 s, manifest (sha256 of the sorted per-file sha256
-  list, paths `./images/...`) 1cc770b531385539aae5d323fef94116b02aa6f9bab09113851fe4f903b9c0c7; the
-  Universal Tracker zip 868 files, 134.8 MB, sha256 134a764faf57b26239b358648b6eda3d1317b59f6073a9e39e461680a159bed2.
-  For the coordinator to compare with Linux (the software renderer should match byte for byte).
+- `--render-tracker-maps`: 862 images and the Universal Tracker zip (868 files, 134.8 MB) in 16 s.
 - port/tools/smoke_field_events.sh with SS_DISC1 and SS_DISC2: see "M3 smoke" below.
+
+**The same output as Linux** (2026-10-28, the coordinator's x86-64 build against this Mac's arm64
+one): headless, scratch XDG_CONFIG_HOME, SDL_VIDEO_DRIVER=dummy, SDL_AUDIO_DRIVER=dummy, a scratch
+SS_MEMCARD1, SS_DISC1 (NA disc 1) and no other SS_*, `--headless --frames 12000 --capture DIR
+--capture-frames F`: all 16 frames equal on both, pixel hashes (the first 16 hex digits of
+sha256(IHDR + the decompressed IDAT), the coordinator's pixhash.py):
+  00060 0dfe28bd35e17def, 00120 0dfe28bd35e17def, 00300 7f63b067fa4af019, 00600 4908a21a31e3b8db,
+  00900 64b21b5627d73fc5, 01200 ab0ae8cafaabda0a, 01800 291be3268ecb3301, 02400 eea8240a0a6989b6,
+  03600 9698b3d70d47d3ba, 04800 6c2c967cb49bab13, 06000 3cf7e37492bb15e8, 07200 3d37bb6591eaf227,
+  08400 155c29aa7087eba4, 09600 89c74dcfca83b5c0, 10800 9d9eefb1264909b6, 11999 (640x480, the title)
+  de09d2b4e605df41.
+The tracker maps (`--render-tracker-maps DIR --ut-zip FILE`) are byte-identical once
+`-ffp-contract=off` is on (10 below): pixels 2753b12843f8cf5d..., files (sha256 of
+`find . -type f | LC_ALL=C sort | xargs shasum -a 256`) caf89d6de3e6f132..., ut.zip
+35e72e8d7b827506.... Before the flag only the maps differed (pixels 03f276f8...); deflate.cpp is
+deterministic (the same pixels give the same bytes). The coordinator's first, different frame
+hashes came from a run with other settings (the offscreen driver, no scratch card).
 
 ## What changed for macOS, and why
 1. **`util::absolute_utf8("")`** (port/src/util/utf8.cpp; a real bug, shared code): libstdc++'s
@@ -138,13 +152,42 @@ written by those runs.
    present now makes its own context current: with SS_SHOT's window open in a windowed run, the
    context made last stayed current for both windows. On macOS SS_SHOT's window shows while it
    works (no offscreen OpenGL there); keeping it hidden would need a WindowOptions flag.
+10. **`-ffp-contract=off`** (port/CMakeLists.txt, every GCC / Clang build): Apple clang on arm64
+   fuses a*b+c into one rounding (-ffp-contract=on by default), and the tracker maps' rasterizer
+   (tools/tracker_maps.cpp) computes its barycentric weights in float, so edge pixels moved. With
+   the flag the maps equal Linux's byte for byte; x86-64 builds have no FMA unless asked for, so
+   Linux and Windows output stays as it was (the coordinator to confirm the map manifest
+   caf89d6d... there). Linux on arm64 would have differed the same way.
+11. **ap_p4_tele skips without disc 2** (port/tools/smoke_field_events.sh; the coordinator's
+   call): map 303 is on disc 2, and without one beside disc 1 (or SS_DISC2) the test used to
+   FAIL; it now prints "SKIP ap_p4_tele", as ap_hub_ng does.
+
+## Tracker tools on the Mac (for the 0.03.00 tracker checks)
+Planned, in the project's own places (apworld/tools/ap_test_server.sh's setup, trackers/tools):
+- `scratchpad/ap/`: tools-venv (pip's uv), uv's Python 3.13 (the script's version; the coordinator
+  named 3.12), Archipelago 0.6.8 (`git clone --depth 1 --branch 0.6.8`), ap-venv with its
+  requirements and ModuleUpdate.py. **Blocked** (2026-10-28): this session's permission check
+  refused it ("Code from External"); waiting on the user. Note for later: ap_test_server.sh's
+  serve() uses `setsid`, which macOS lacks.
+- PopTracker 0.36.0 for macOS: the release's `poptracker_0-36-0_macos_universal.zip` (14,868,967
+  bytes, sha256 c0a694b901084fd0f963a323ad72782f4394028deb11cb8e6732bb059f0bdf8f, with a .minisig),
+  for scratchpad/packgen/poptracker/. trackers/tools/ap_poptracker_smoke.py expects the Linux
+  AppImage there, so it needs a macOS branch. Not downloaded yet (it only runs with the same
+  permission).
+- Universal Tracker 0.3.6: `tracker.apworld` from FarisTheAncient/Archipelago's Tracker_v0.3.6
+  (192,318 bytes, sha256 39e9bc0f733aa7cd96fd57052b1c04233804862ac8543c6f4675af5f2f5cb750), for
+  scratchpad/ap_ut/tracker.apworld (trackers/tools/ap_ut_check.py's default). Not downloaded yet.
+- The tracker scripts' `prlimit --as=...` lines: on macOS, `tools/memcap.py DURATION CMD...` instead.
 
 ## M3 smoke
 port/tools/smoke_field_events.sh port/build-macos/shattered-stars with SS_DISC1 and SS_DISC2 (the
 command above): exit 0, 360 PASS, 0 FAIL, 1 SKIP (north_city: analysis/saves/dex_north_city.mcd,
 a save only the Linux machine has), 3 min 21 s. Before the fixes in 8: the first run stopped at
 the plain save case (bash 3.2), the second had ap_tdias_load FAIL (BSD wc) and, without
-SS_DISC2, ap_p4_tele_open / ap_p4_tele_story FAIL and ap_hub_ng SKIP.
+SS_DISC2, ap_p4_tele_open / ap_p4_tele_story FAIL and ap_hub_ng SKIP. Again with 10 and 11
+(2026-10-28): ss_tests 103 / 0 failed, ss_game_tests 230 / 0 failed; the smoke test with SS_DISC2
+360 PASS, 1 SKIP (north_city), exit 0; without it 277 PASS, 3 SKIP (ap_p4_tele, north_city,
+ap_hub_ng), exit 0.
 
 ## Next
 - Later, not now: an .app bundle and port/tools/build_macos.sh; signing and notarization are the
