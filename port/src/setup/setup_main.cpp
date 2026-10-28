@@ -86,6 +86,11 @@ std::string find_font(bool bold) {
   for (const char* f : bold ? std::vector<const char*>{"segoeuib.ttf", "tahomabd.ttf", "arialbd.ttf"}
                             : std::vector<const char*>{"segoeui.ttf", "tahoma.ttf", "arial.ttf"})
     candidates.push_back(windir + "\\Fonts\\" + f);
+#elif defined(__APPLE__)
+  // Windows' fallbacks, which macOS ships as plain .ttf files.
+  for (const char* f : bold ? std::vector<const char*>{"Tahoma Bold.ttf", "Arial Bold.ttf"}
+                            : std::vector<const char*>{"Tahoma.ttf", "Arial.ttf"})
+    candidates.push_back(std::string("/System/Library/Fonts/Supplemental/") + f);
 #else
   const char* regular[] = {
       "/usr/share/fonts/google-noto/NotoSans-Regular.ttf",

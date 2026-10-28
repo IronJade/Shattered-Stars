@@ -31,7 +31,8 @@ namespace ss::launcher {
 
 // Where the settings, the memory cards and mods/ live:
 //   $XDG_CONFIG_HOME/shattered-stars, else %APPDATA%\ShatteredStars (Windows), else
-//   ~/.config/shattered-stars; the current folder as a last resort.
+//   ~/Library/Application Support/ShatteredStars (macOS) or ~/.config/shattered-stars; the
+//   current folder as a last resort.
 std::filesystem::path config_dir();
 std::filesystem::path config_path();  // config_dir() / "config.ini"
 

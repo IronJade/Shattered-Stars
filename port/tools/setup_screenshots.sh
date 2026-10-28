@@ -15,6 +15,10 @@ out=${2:-scratchpad/setup/shots}
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 export SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy
+# macOS: SDL makes every window there an OpenGL one, and its offscreen driver's OpenGL is EGL,
+# which macOS lacks, so no window opens. The dummy driver draws with SDL's software renderer
+# (setup's fallback; its OpenGL path needs a real window there).
+[ "$(uname -s)" = Darwin ] && export SDL_VIDEO_DRIVER=dummy
 cfg="$out/settings"
 rm -rf "$cfg" "$out/files"
 mkdir -p "$cfg" "$out/files/mods"
