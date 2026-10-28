@@ -94,7 +94,17 @@ Work breakdown (agents, after the decision):
 wss:// required before release (OpenSSL 3.5 LTS built from source, static, by build_macos.sh; waits
 on the user's approval at the Mac, as does the Archipelago setup for the e2e); the game follows the
 OS's full-screen state (SDL enter/leave events; shared, also fixes a Linux WM's fullscreen key).
-Merged so far: M1 (34fc6e9), M2/M3 (daa3a00). Log: docs/handoff/macos.md.
+Merged so far: M1 (34fc6e9), M2/M3 (daa3a00), the macOS RC + the .app bundles + the full-screen fix
+(e210ebd). Log: docs/handoff/macos.md.
+Linux/Windows checks of the merges (coordinator, 2026-10-28): daa3a00 through the RC phases
+(scratchpad/release/macos-merge-dist): smoke 373/0, suites 103/0 and 231/0, e2e so2 56/0 and hub
+15/0 (dev and packaged), Windows suites under Wine 103/0 and 232/0; the render, the UT zip, the
+title frame and SS_SHOT byte-identical to the published 0.03.00. e210ebd: ss_game_tests 232/0 with
+window_follows_the_desktops_full_screen passing on Linux, Windows suites 103/0 and 233/0 (it passes
+under Wine too); THIRD-PARTY-LICENSES.txt for Linux and Windows identical to 0.03.00's.
+Still before a macOS release: wss:// (OpenSSL from source: the user's approval at the Mac), the
+Archipelago e2e and tracker checks on macOS (in progress), the user's own checks (audio, a gamepad,
+setup's Browse).
 
 The user (2026-10-28): their Linux, Windows and Mac machines are all development devices for build,
 run and test; "Also start a macOS build now" (alongside 0.03.00, not holding it up). The work runs
