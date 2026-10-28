@@ -35,6 +35,10 @@ std::string path_utf8(const fs::path& p) { return util::path_utf8(p); }
 fs::path config_dir() {
   if (fs::path xdg = env_path("XDG_CONFIG_HOME"); !xdg.empty()) return xdg / "shattered-stars";
   if (fs::path appdata = env_path("APPDATA"); !appdata.empty()) return appdata / "ShatteredStars";
+#ifdef __APPLE__
+  // macOS: where SDL_GetPrefPath and Archipelago keep theirs (launcher/ap_seed.cpp).
+  if (fs::path home = env_path("HOME"); !home.empty()) return home / "Library" / "Application Support" / "ShatteredStars";
+#endif
   if (fs::path home = env_path("HOME"); !home.empty()) return home / ".config" / "shattered-stars";
   return fs::path(".");
 }

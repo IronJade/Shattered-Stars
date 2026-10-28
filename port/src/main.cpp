@@ -4,8 +4,9 @@
 //   shattered-stars --version / --help                   print the version (or usage) and exit
 //   shattered-stars-setup (setup.exe on Windows)         the settings window for players
 //
-// Settings live in config.ini (launcher/config.h: XDG_CONFIG_HOME, %APPDATA%\ShatteredStars
-// or ~/.config/shattered-stars), written by the setup program and by the remembered
+// Settings live in config.ini (launcher/config.h: XDG_CONFIG_HOME, %APPDATA%\ShatteredStars,
+// ~/Library/Application Support/ShatteredStars on macOS or ~/.config/shattered-stars), written
+// by the setup program and by the remembered
 // options below. Disc 1 must be disc 1 of a release the port plays (North American or
 // European; runtime/region.h; disc 2 the same release); when it isn't, the game
 // looks in the `discs` folders (next to the game, next to config.ini), and then, on a

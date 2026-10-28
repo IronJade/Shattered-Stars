@@ -175,6 +175,9 @@ std::string path_utf8(const std::filesystem::path& p) {
 }
 
 std::string absolute_utf8(std::string_view s) {
+  // libstdc++ fails on an empty path; libc++ (macOS) makes it the working directory, which
+  // would turn `--disc1 ""` into a disc path. Empty stays empty everywhere.
+  if (s.empty()) return {};
   std::error_code ec;
   const std::filesystem::path p = std::filesystem::absolute(utf8_path(s), ec);
   return ec ? std::string(s) : path_utf8(p);

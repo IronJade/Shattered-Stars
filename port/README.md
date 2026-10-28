@@ -48,14 +48,14 @@ their icon, for your user only (`~/.local/share/applications` and `~/.local/shar
 GNOME and KDE Plasma on Wayland show a program's name and icon in the taskbar only once its
 desktop entry is installed. Run it again after moving the folder; `--uninstall` removes it.
 
-| | Windows | Linux |
-|---|---|---|
-| The game | `shattered-stars.exe` | `shattered-stars` |
-| Setup | `setup.exe` | `shattered-stars-setup` |
-| Settings | `%APPDATA%\ShatteredStars\config.ini` | `~/.config/shattered-stars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) |
-| Memory card 1 | `memcard1.mcd` beside `config.ini` | the same |
-| Mods | `mods\` beside `config.ini` | `mods/` beside `config.ini` |
-| Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` |
+| | Windows | Linux | macOS (built from source; in progress) |
+|---|---|---|---|
+| The game | `shattered-stars.exe` | `shattered-stars` | `shattered-stars` |
+| Setup | `setup.exe` | `shattered-stars-setup` | `shattered-stars-setup` |
+| Settings | `%APPDATA%\ShatteredStars\config.ini` | `~/.config/shattered-stars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) | `~/Library/Application Support/ShatteredStars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) |
+| Memory card 1 | `memcard1.mcd` beside `config.ini` | the same | the same |
+| Mods | `mods\` beside `config.ini` | `mods/` beside `config.ini` | the same |
+| Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` | the same |
 
 While playing, F11 or Alt+Enter switches between the window and full screen, and Esc
 pauses the game and asks before quitting (Keep playing / Quit; `src/runtime/quit_prompt.h`).
@@ -90,6 +90,22 @@ The C / C++ runtimes are linked in, so the zip holds everything the game needs (
 *First run*). The Windows build renders the same frames as the Linux one (checked byte for
 byte), and its test suites pass under Wine (`port/build-win/ss_tests.exe`,
 `ss_game_tests.exe`).
+
+### macOS
+
+In progress (Apple Silicon; docs/handoff/macos.md): the programs and both test suites build
+with Xcode's clang, and the tests pass. Not yet released or packaged. Without Homebrew, CMake and
+Ninja come from pip; SDL is built from source as above:
+
+```sh
+pip3 install --user cmake ninja && export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+cmake -S port -B port/build-macos -G Ninja
+cmake --build port/build-macos
+```
+
+Without OpenSSL (e.g. `brew install openssl@3`) the Archipelago client speaks `ws://` only. SDL's
+offscreen video driver can't open a window on macOS, so headless checks there use
+`SDL_VIDEO_DRIVER=dummy`.
 
 ### Linux package
 
