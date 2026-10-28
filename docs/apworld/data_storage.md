@@ -116,7 +116,11 @@ key, with `location_icon_coords` turning `x` / `z` into the page's pixels (the w
 own scale). On every `SetReply` of its `map_page_setting_key` UT checks the page (no reload when
 it is the same) and updates the tracker, and on one of its `location_setting_key` it moves the
 icon (UT 0.3.6, worlds/tracker/TrackerClient.py); the throttle keeps that to twice a second at
-most.
+most. At connect UT 0.3.6 lays out its first page before it asks for the key (a `Get` with its
+`SetNotify`), and the `Retrieved` that answers only moves the icon: so `map_page_index` opens
+Expel's world map for no value (UT needs a page laid out by then, or it drops the connection:
+docs/apworld/apworld.md "Universal Tracker's map tab"), and the tab follows the game from the
+port's next write.
 
 ## Reserved: `so2_entrances_{team}_{slot}` (Phase C)
 

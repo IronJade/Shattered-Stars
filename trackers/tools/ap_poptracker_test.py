@@ -485,8 +485,11 @@ class TestUT(unittest.TestCase):
         page_of = {m["name"]: k for k, m in enumerate(self.ut("maps/maps.json"))}
         self.assertEqual(tw["map_page_index"]({"map": 62}), page_of["room_62"])
         self.assertEqual(tw["map_page_index"]({"map": 1, "x": 51200, "z": 18500}), page_of["world_expel"])
-        for nothing in ("", None, {}, {"map": "62"}, {"map": True}, {"map": 99999}, [62]):
-            self.assertEqual(tw["map_page_index"](nothing), -1, nothing)
+        # no value: Expel's world map, never -1 (UT 0.3.6 needs a page laid out at connect: ut_map.py)
+        for nothing in ("", None, {}, {"map": "62"}, {"map": True}, [62]):
+            self.assertEqual(tw["map_page_index"](nothing), page_of["world_expel"], nothing)
+        for no_page in ({"map": 7}, {"map": 99999}):     # a map with no page: keep the page
+            self.assertEqual(tw["map_page_index"](no_page), -1, no_page)
         world = next(i for i in LAYOUT["images"] if i.get("world_map") == 2)
         x, z = 67000, 40000
         self.assertEqual(tw["location_icon_coords"](page_of["world_energy_nede"], {"map": 2, "x": x, "z": z}),

@@ -139,8 +139,11 @@ def setup(a):
 
 
 def env_for(ut_dir, ap):
+    # XDG_CONFIG_HOME too: kvui puts Kivy's home (KIVY_HOME, its config.ini) in platformdirs' config
+    # dir, the user's ~/.config/Archipelago otherwise.
     env = dict(os.environ, SKIP_REQUIREMENTS_UPDATE="1", PYTHONPATH=ap,
-               XDG_CACHE_HOME=os.path.join(ut_dir, "cache"), XDG_DATA_HOME=os.path.join(ut_dir, "data"))
+               XDG_CACHE_HOME=os.path.join(ut_dir, "cache"), XDG_DATA_HOME=os.path.join(ut_dir, "data"),
+               XDG_CONFIG_HOME=os.path.join(ut_dir, "config"))
     env.pop("PYTHONHOME", None)
     # Headless: no display and no session bus, so nothing UT or AP does can open a dialog or window
     # on the desktop (a missing folder makes them ask with one); it fails instead. XDG_RUNTIME_DIR
