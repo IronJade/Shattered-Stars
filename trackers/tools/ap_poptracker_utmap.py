@@ -22,7 +22,8 @@ Universal Tracker zip"). UT reads a picture as `ap:zip:<zip>/<path>` and splits 
    the pack: the JSON from the APWorld (hybrid), the images from the zip.
 3. Checks: the map pages and UT's map menu (every room under its area); so2_map_{team}_{slot} values
    as the port writes them open the room's page (map_page_index), the world map's with the player
-   marker at the x / z (location_icon_coords), and keep the page for a map without one; every page's
+   marker at the x / z (location_icon_coords), and keep the page for a map without one; no value
+   (load_pack's load_map, before UT has read the key) opens Expel's world map; every page's
    image is in the zip and every square's locations are the room's own AP locations (UT's own
    matching of section names: no name mapping); the rooms' squares are the layout's room dots; every
    page's picture and the marker load through UT's own image loader (worlds/tracker/TrackerKivy.py's
@@ -136,10 +137,14 @@ def inside(a):
     if not check(ctx.tracker_world is not None and ctx.maps, f"UT loaded the map tab (hybrid: JSON from the "
                  f"APWorld, images from {os.path.basename(a.zip)}): {len(ctx.maps)} maps, {len(ctx.locs)} location trees"):
         return 1
-    check(ctx.root_pack_path is None or ctx.root_pack_path.startswith("ap:zip:"), "no page opened yet (no key)")
     layout = json.load(open(os.path.join(REPO, "docs", "trackers", "tracker_maps.json"), encoding="utf-8"))
     rooms = {r["map"]: r for r in layout["rooms"]}
     page_of = {m["name"]: k for k, m in enumerate(ctx.maps)}
+    # load_pack's load_map runs before UT has read the key: no value must lay a page out, or UT 0.3.6
+    # drops the connection when the key's Retrieved moves the marker (ut_map.map_page_index; the real
+    # connect sequence, with UT's own map tab widget: trackers/tools/ap_ut_connect.py)
+    check(ctx.map_id == page_of.get("world_expel") and (ctx.root_pack_path or "").startswith("ap:zip:"),
+          f"load_pack lays out Expel's world map before the key is read ({ctx.map_id}, {ctx.root_pack_path})")
     check(all(f"room_{m}" in page_of for m in rooms) and len(ctx.maps) == len(rooms) + len(layout["images"]) + 5,
           f"the pages: {len(rooms)} rooms, {len(layout['images'])} area and world maps, 5 boards")
     named = sum(1 for m in rooms if ctx.map_to_name.get(f"room_{m}", "").endswith("/" + rooms[m]["label"]))
@@ -230,7 +235,7 @@ def inside(a):
     open_key({"map": 7})
     check(ctx.map_id == before, "a map with no page (the opening, map 7) keeps the page")
     open_key(None)
-    check(ctx.map_id == before, "no value keeps the page")
+    check(ctx.map_id == page_of["world_expel"], "no value opens Expel's world map (the page UT lays out at connect)")
     print(f"{'FAILED' if failures else 'passed'}: {len(failures)} failure(s)")
     return 1 if failures else 0
 

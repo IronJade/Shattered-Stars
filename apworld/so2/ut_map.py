@@ -12,6 +12,8 @@ map tab shows at the same paths, so the APWorld carries no pictures.
 UT follows the port's map: `map_page_setting_key` is the port's so2_map_{team}_{player}
 (docs/apworld/data_storage.md), whose map goes through map_page_index to the room's page (or the world
 map's); on a world map the same key's x / z place the player marker (location_icon_coords).
+With no value UT opens Expel's world map (map_page_index): at connect UT lays out its first page
+before it has read the key, and UT 0.3.6 needs one laid out by then (see map_page_index).
 Nothing here runs during generation.
 """
 import functools
@@ -46,11 +48,25 @@ def pages():
     return json.loads(data.decode("utf-8"))
 
 
+def default_page():
+    """The page for no value: Expel's world map (where the marker shows if the game is there)."""
+    return pages()["world"]["1"]["page"]
+
+
 def map_page_index(data):
     """so2_map_{team}_{player} -> the page UT opens: the room's, a world map's or an area's
-    overview; -1 (keep the page) for no value or a map with no page."""
+    overview; Expel's world map for no value (no map number: UT hasn't read the key yet, or the
+    port has never written it); -1 (keep the page) for a map with no page.
+
+    No value must open a page, never -1. UT 0.3.6 (worlds/tracker/TrackerClient.py) lays a page out
+    only in load_map, and a connection's first load_map (load_pack's, from on_package's Connected)
+    runs before UT has asked for the key: enable_maps Gets it afterwards. The Retrieved that answers
+    moves the marker (update_location_icon_coords) without loading a page, and the map tab's
+    VisualTracker has no location_icons until a page is laid out (load_coords): with -1 here UT
+    dropped the connection at every first connect with an AttributeError
+    (trackers/tools/ap_ut_connect.py replays it). The page follows the game from its next write."""
     if not isinstance(data, dict) or isinstance(data.get("map"), bool) or not isinstance(data.get("map"), int):
-        return -1
+        return default_page()
     return pages()["pages"].get(str(data["map"]), -1)
 
 
