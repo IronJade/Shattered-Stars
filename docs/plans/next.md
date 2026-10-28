@@ -88,6 +88,14 @@ Work breakdown (agents, after the decision):
 
 ## macOS build (started 2026-10-28, in parallel)
 
+**Decided for a macOS release (the user, 2026-10-28, after the Mac's candidacy report on daa3a00):**
+`.app` bundles ("Shattered Stars.app", "Shattered Stars Setup.app") in a zip; Apple Silicon only
+(arm64, macOS 11+); ad-hoc signed with instructions (Open Anyway / xattr), Developer ID maybe later;
+wss:// required before release (OpenSSL 3.5 LTS built from source, static, by build_macos.sh; waits
+on the user's approval at the Mac, as does the Archipelago setup for the e2e); the game follows the
+OS's full-screen state (SDL enter/leave events; shared, also fixes a Linux WM's fullscreen key).
+Merged so far: M1 (34fc6e9), M2/M3 (daa3a00). Log: docs/handoff/macos.md.
+
 The user (2026-10-28): their Linux, Windows and Mac machines are all development devices for build,
 run and test; "Also start a macOS build now" (alongside 0.03.00, not holding it up). The work runs
 on the Mac itself (Remote Control session "Shattered-Stars Mac"), from a git bundle of main, on a
