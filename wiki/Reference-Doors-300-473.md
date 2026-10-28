@@ -598,9 +598,9 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 383 | Lasguss Mountain: interior room, about 1 door in from the entrance | 0 | 203 | 883 | -1036 | 1 |
-| 1 | 385 | Lasguss Mountain: entrance / threshold area | 0 | -898 | 0 | -11 | 180 |
+| 1 | 385 | Lasguss Mountain: XINE's home (mountaintop nest) | 0 | -898 | 0 | -11 | 180 |
 
-### 385 Lasguss Mountain: entrance / threshold area
+### 385 Lasguss Mountain: XINE's home (mountaintop nest)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -1011,7 +1011,7 @@
 | 0 | 438 | Lacour Front Line: forward position | 0 | -14444 | 0 | -2444 | 10 |
 | 1 | 446 | Lacour Front Line: Lacour front line Arsenal | 0 | -45 | 0 | 469 | 270 |
 | 2 | 445 | Lacour Front Line: General Store Lacour Store | 0 | 209 | 0 | -344 | 90 |
-| 3 | 11 | Lacour Front Line: world-map entrance | 2 | 660 | 0 | 512 | 0 |
+| 3 | 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | 2 | 660 | 0 | 512 | 0 |
 
 ### 440 Lacour Front Line: path to the command tents
 
@@ -1047,7 +1047,7 @@
 | 2 | 440 | Lacour Front Line: path to the command tents | 0 | -2021 | 750 | 5 | 0 |
 | 3 | 447 | Meeting Room: Meeting Room, third tent | 0 | -108 | 0 | 1 | 222 |
 | 4 | 443 | Commander's Office: Commander's Office | 0 | -296 | 0 | 623 | 0 |
-| 5 | 448 | Meeting Room: interior room, about 1 door in from the entrance | 0 | -108 | 0 | 1 | 222 |
+| 5 | 448 | Meeting Room: Lacour Front Line, lookout | 0 | -108 | 0 | 1 | 222 |
 | 6 | 440 | Lacour Front Line: path to the command tents | 2 | -2021 | 750 | 5 | 0 |
 | 7 | 422 | Lacour Castle Throne Room: Throne Room, main chamber | 130 | -215 | 0 | 0 | 180 |
 
@@ -1070,12 +1070,12 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 444 | Meeting Room: Meeting Room, second tent | 0 | -1244 | 0 | -60 | 0 |
 | 1 | 439 | Lacour Front Line: camp (hub) | 130 | -151 | 0 | 61 | 269 |
-| 2 | 11 | Lacour Front Line: world-map entrance | 2 | 660 | 0 | 512 | 0 |
-| 3 | 11 | Lacour Front Line: world-map entrance | 2 | 660 | 0 | 512 | 0 |
+| 2 | 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | 2 | 660 | 0 | 512 | 0 |
+| 3 | 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | 2 | 660 | 0 | 512 | 0 |
 | 4 | 439 | Lacour Front Line: camp (hub) | 130 | -151 | 0 | 61 | 269 |
 | 5 | 439 | Lacour Front Line: camp (hub) | 130 | -151 | 0 | 61 | 269 |
 
-### 448 Meeting Room: interior room, about 1 door in from the entrance
+### 448 Meeting Room: Lacour Front Line, lookout
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|

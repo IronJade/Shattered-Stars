@@ -2,7 +2,7 @@
 
 [All maps](Reference-Maps) · 633 maps · [`maps.csv`](https://github.com/IronJade/Shattered-Stars/blob/main/docs/modding/reference/maps.csv)
 
-Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](#planet-milocinia) · [Shingo Forest](#shingo-forest) · [Lacour Front Line](#lacour-front-line) · [Rena's Room](#renas-room) · [Town of Salva](#town-of-salva) · [Alen's Mansion](#alens-mansion) · [Salva Drift](#salva-drift) · [Town of Cross](#town-of-cross) · [Inn Kingdom Hotel](#inn-kingdom-hotel) · [Cross Castle, First Floor](#cross-castle-first-floor) · [Armory](#armory) · [Waiting Room](#waiting-room) · [The King's Private Chambers](#the-kings-private-chambers) · [Throne Room](#throne-room) · [Cross Castle Kitchen](#cross-castle-kitchen) · [Soldiers' Compartment](#soldiers-compartment) · [The Prince's Chambers](#the-princes-chambers) · [The Princess' Chamber](#the-princess-chamber) · [Port of Clik](#port-of-clik) · [Fanzine Convention Hall Oates Hall](#fanzine-convention-hall-oates-hall) · [Mars Village](#mars-village) · [Elder's House](#elders-house) · [Town of Herlie](#town-of-herlie) · [Zand's Mansion](#zands-mansion) · [Port Hilton](#port-hilton) · [Inn Hilton Island](#inn-hilton-island) · [Skill Guild Skill Power](#skill-guild-skill-power) · [Tavern Stone](#tavern-stone) · [Town of Linga](#town-of-linga) · [Bowman's House](#bowmans-house) · [Bowman's House, Bedroom](#bowmans-house-bedroom) · [Town of Lacour](#town-of-lacour) · [El Beach](#el-beach) · [Eluria Colony](#eluria-colony) · [Mountain Palace](#mountain-palace) · [Lasguss Mountain](#lasguss-mountain) · [Sanctuary of Linga](#sanctuary-of-linga) · [Lacour Castle Registration](#lacour-castle-registration) · [Lacour Castle Throne Room](#lacour-castle-throne-room) · [King's Room](#kings-room) · [Lacour Castle](#lacour-castle) · [Laboratory](#laboratory) · [Rosalia's Room](#rosalias-room) · [Lacour Castle Conference Room](#lacour-castle-conference-room) · [Lacour Castle Great Dining Hall](#lacour-castle-great-dining-hall) · [Lacour Castle Arsenal](#lacour-castle-arsenal) · [Lacour Castle Main Library](#lacour-castle-main-library) · [Meeting Room](#meeting-room) · [Lacour Front Line Field Hospital](#lacour-front-line-field-hospital) · [Commander's Office](#commanders-office) · [Hoffmann Ruins](#hoffmann-ruins) · [Cross Cave](#cross-cave) · [Ship to El](#ship-to-el) · [Eluria Tower](#eluria-tower) · [Cave of Trials](#cave-of-trials)
+Areas: [Expel](#expel) · [Planet Milocinia](#planet-milocinia) · [Shingo Forest](#shingo-forest) · [Arlia Village](#arlia-village) · [Rena's Room](#renas-room) · [Town of Salva](#town-of-salva) · [Alen's Mansion](#alens-mansion) · [Salva Drift](#salva-drift) · [Town of Cross](#town-of-cross) · [Inn Kingdom Hotel](#inn-kingdom-hotel) · [Cross Castle, First Floor](#cross-castle-first-floor) · [Armory](#armory) · [Waiting Room](#waiting-room) · [The King's Private Chambers](#the-kings-private-chambers) · [Throne Room](#throne-room) · [Cross Castle Kitchen](#cross-castle-kitchen) · [Soldiers' Compartment](#soldiers-compartment) · [The Prince's Chambers](#the-princes-chambers) · [The Princess' Chamber](#the-princess-chamber) · [Port of Clik](#port-of-clik) · [Fanzine Convention Hall Oates Hall](#fanzine-convention-hall-oates-hall) · [Mars Village](#mars-village) · [Elder's House](#elders-house) · [Town of Herlie](#town-of-herlie) · [Zand's Mansion](#zands-mansion) · [Port Hilton](#port-hilton) · [Inn Hilton Island](#inn-hilton-island) · [Skill Guild Skill Power](#skill-guild-skill-power) · [Tavern Stone](#tavern-stone) · [Town of Linga](#town-of-linga) · [Bowman's House](#bowmans-house) · [Bowman's House, Bedroom](#bowmans-house-bedroom) · [Town of Lacour](#town-of-lacour) · [El Beach](#el-beach) · [Eluria Colony](#eluria-colony) · [Mountain Palace](#mountain-palace) · [Lasguss Mountain](#lasguss-mountain) · [Sanctuary of Linga](#sanctuary-of-linga) · [Lacour Castle Registration](#lacour-castle-registration) · [Lacour Castle Throne Room](#lacour-castle-throne-room) · [King's Room](#kings-room) · [Lacour Castle](#lacour-castle) · [Laboratory](#laboratory) · [Rosalia's Room](#rosalias-room) · [Lacour Castle Conference Room](#lacour-castle-conference-room) · [Lacour Castle Great Dining Hall](#lacour-castle-great-dining-hall) · [Lacour Castle Arsenal](#lacour-castle-arsenal) · [Lacour Castle Main Library](#lacour-castle-main-library) · [Lacour Front Line](#lacour-front-line) · [Meeting Room](#meeting-room) · [Lacour Front Line Field Hospital](#lacour-front-line-field-hospital) · [Commander's Office](#commanders-office) · [Hoffmann Ruins](#hoffmann-ruins) · [Cross Cave](#cross-cave) · [Ship to El](#ship-to-el) · [Eluria Tower](#eluria-tower) · [Cave of Trials](#cave-of-trials)
 
 ## Expel
 
@@ -82,16 +82,33 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 979 | Expel: overworld terrain chunk (not a separate destination) | world | 44 | 0 |  |  |
 | 980 | Expel: overworld terrain chunk (not a separate destination) | world | 44 | 0 |  |  |
 
+## Planet Milocinia
+
+| Map | Name | Kind | Doors | Chests | Shops | Save |
+|---|---|---|---|---|---|---|
+| 4 | Planet Milocinia: cavern passage (the opening) | dungeon | 1 | 0 |  | yes |
+| 5 | Planet Milocinia: cavern with machine wreckage (the opening) | dungeon | 1 | 0 |  |  |
+| 6 | Planet Milocinia: cavern of the transporter device (the opening) | dungeon | 1 | 0 |  |  |
+| 7 | Planet Milocinia: Planet Milocinia | interior | 1 | 0 |  |  |
+| 8 | Planet Milocinia: cavern below the landing site (the opening) | dungeon | 1 | 0 |  |  |
+
+## Shingo Forest
+
+| Map | Name | Kind | Doors | Chests | Shops | Save |
+|---|---|---|---|---|---|---|
+| 9 | Shingo Forest: entrance / threshold area | field | 2 | 0 |  | yes |
+| 10 | Shingo Forest: entrance / threshold area | field | 4 | 0 |  |  |
+| 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | field | 3 | 0 |  |  |
+| 12 | Shingo Forest: entrance / threshold area | field | 3 | 0 |  |  |
+| 13 | Shingo Forest: Shingo Forest in sepia (a flashback; map 12 tinted) | field | 0 | 0 |  |  |
+| 14 | Shingo Forest: entrance / threshold area | field | 5 | 0 |  |  |
+| 15 | Shingo Forest: Shingo Forest in sepia (a flashback; map 14 tinted) | field | 1 | 0 |  |  |
+| 16 | Shingo Forest: clearing with a wrecked machine | field | 1 | 0 |  |  |
+
 ## Arlia Village
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 4 | Arlia Village: interior room, about 1 door in from the entrance | town | 1 | 0 |  | yes |
-| 5 | Arlia Village: interior room, about 2 doors in from the entrance | town | 1 | 0 |  |  |
-| 6 | Arlia Village: interior room, about 3 doors in from the entrance | town | 1 | 0 |  |  |
-| 8 | Arlia Village: entrance / threshold area | town | 1 | 0 |  |  |
-| 15 | Arlia Village: interior room, about 2 doors in from the entrance | town | 1 | 0 |  |  |
-| 16 | Arlia Village: entrance / threshold area | town | 1 | 0 |  |  |
 | 17 | Arlia Village: south: bridge and forest path | town | 8 | 0 |  |  |
 | 18 | Arlia Village: north: fountain square | town | 7 | 3 |  |  |
 | 19 | Arlia Village: side yard off the south square (planet-gate ornament) | town | 1 | 0 |  |  |
@@ -99,15 +116,15 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 21 | Arlia Village: north: fountain square, at night | cutscene | 7 | 3 |  |  |
 | 22 | Arlia Village: bridge path, at night | cutscene | 2 | 0 |  |  |
 | 23 | Arlia Village: Belding Church (inside) | interior | 1 | 0 |  |  |
-| 24 | Arlia Village: villager's house, living room | interior | 2 | 0 |  |  |
-| 25 | Arlia Village: villager's house, bedroom | interior | 1 | 2 |  |  |
+| 24 | Arlia Village: Newlyweds' House | interior | 2 | 0 |  |  |
+| 25 | Arlia Village: Newlyweds' House, bedroom | interior | 1 | 2 |  |  |
 | 26 | Arlia Village: Hearn's General Store (inside) | interior | 1 | 0 | 1 |  |
 | 27 | Arlia Village: Rena's House (inside) | interior | 7 | 0 |  |  |
 | 28 | Arlia Village: (unused map slot) | special | 0 | 0 |  |  |
 | 29 | Arlia Village: Rena's House (inside), at night | cutscene | 4 | 0 |  |  |
 | 31 | Arlia Village: interior room, about 1 door in from the entrance | town | 2 | 0 |  |  |
 | 32 | Arlia Village: Rena's House (inside), at night, variant | cutscene | 3 | 0 |  |  |
-| 33 | Arlia Village: villager's house near the square | interior | 1 | 1 |  |  |
+| 33 | Arlia Village: Carpenter's House | interior | 1 | 1 |  |  |
 | 34 | Arlia Village: Mayor Regis's House, 1F | interior | 2 | 0 |  |  |
 | 35 | Arlia Village: Mayor Regis's House, 1F, at night | cutscene | 4 | 0 |  |  |
 | 36 | Arlia Village: waterside path behind the Mayor's house | town | 3 | 0 |  |  |
@@ -116,44 +133,15 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 39 | Arlia Village: entrance / threshold area | town | 1 | 0 |  |  |
 | 41 | Arlia Village: villager's house (unidentified owner) | interior | 3 | 0 |  |  |
 | 42 | Arlia Village: interior room, about 1 door in from the entrance | town | 3 | 0 |  |  |
-| 52 | Arlia Village: entrance / threshold area | town | 3 | 0 |  |  |
-| 53 | Arlia Village: entrance / threshold area | town | 3 | 0 |  |  |
 | 644 | Arlia Village: interior room, about 1 door in from the entrance | town | 1 | 0 |  |  |
 | 645 | Arlia Village: interior room, about 1 door in from the entrance | town | 1 | 0 |  |  |
 | 646 | Arlia Village: interior room, about 2 doors in from the entrance | town | 1 | 0 |  |  |
-
-## Planet Milocinia
-
-| Map | Name | Kind | Doors | Chests | Shops | Save |
-|---|---|---|---|---|---|---|
-| 7 | Planet Milocinia: Planet Milocinia | interior | 1 | 0 |  |  |
-
-## Shingo Forest
-
-| Map | Name | Kind | Doors | Chests | Shops | Save |
-|---|---|---|---|---|---|---|
-| 9 | Shingo Forest: entrance / threshold area | field | 2 | 0 |  | yes |
-| 10 | Shingo Forest: entrance / threshold area | field | 4 | 0 |  |  |
-| 12 | Shingo Forest: entrance / threshold area | field | 3 | 0 |  |  |
-| 14 | Shingo Forest: entrance / threshold area | field | 5 | 0 |  |  |
-
-## Lacour Front Line
-
-| Map | Name | Kind | Doors | Chests | Shops | Save |
-|---|---|---|---|---|---|---|
-| 11 | Lacour Front Line: world-map entrance | field | 3 | 0 |  |  |
-| 13 | Lacour Front Line: unidentified part (not connected to the rest of the cluster by any two-way door found) | field | 0 | 0 |  |  |
-| 438 | Lacour Front Line: forward position | field | 1 | 0 |  | yes |
-| 439 | Lacour Front Line: camp (hub) | field | 4 | 0 |  |  |
-| 440 | Lacour Front Line: path to the command tents | field | 2 | 0 |  |  |
-| 445 | Lacour Front Line: General Store Lacour Store | interior | 2 | 0 | 50 |  |
-| 446 | Lacour Front Line: Lacour front line Arsenal | field | 1 | 0 | 52 |  |
 
 ## Rena's Room
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 40 | Rena's Room: entrance / threshold area | interior | 1 | 1 |  |  |
+| 40 | Rena's Room: Rena's Room, at night | interior | 1 | 1 |  |  |
 
 ## Town of Salva
 
@@ -164,7 +152,7 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 45 | Town of Salva: side alley between the square's two halves | town | 2 | 0 |  |  |
 | 48 | Town of Salva: gate toward Alen's Mansion | town | 3 | 0 |  |  |
 | 54 | Town of Salva: Inn The Hopping Penguin | interior | 2 | 0 |  |  |
-| 55 | Town of Salva: interior room, about 1 door in from the entrance | town | 1 | 0 |  |  |
+| 55 | Town of Salva: Inn The Hopping Penguin, guest rooms | town | 1 | 0 |  |  |
 | 56 | Town of Salva: Jam Store Dolphin Kick | interior | 1 | 0 | 3 |  |
 | 57 | Town of Salva: House | interior | 1 | 0 |  |  |
 | 58 | Town of Salva: Tavern Rough & Tumble | interior | 1 | 0 |  |  |
@@ -179,8 +167,10 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 46 | Alen's Mansion: Alen's Mansion (inside) | interior | 9 | 0 |  |  |
 | 47 | Alen's Mansion: interior room, about 1 door in from the entrance | interior | 1 | 0 |  |  |
 | 49 | Alen's Mansion: grounds / path to the mansion | town | 1 | 0 |  |  |
-| 50 | Alen's Mansion: interior room, about 1 door in from the entrance | interior | 1 | 1 |  |  |
-| 51 | Alen's Mansion: interior room, about 1 door in from the entrance | interior | 1 | 0 |  |  |
+| 50 | Alen's Mansion: Alen's Mansion, bedroom | interior | 1 | 1 |  |  |
+| 51 | Alen's Mansion: Alen's Mansion, dining room | interior | 1 | 0 |  |  |
+| 52 | Alen's Mansion: Alen's study (passage to Salva Drift) | interior | 3 | 0 |  |  |
+| 53 | Alen's Mansion: Alen's study, guarded (passage to Salva Drift) | interior | 3 | 0 |  |  |
 
 ## Salva Drift
 
@@ -222,19 +212,19 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 84 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | interior | 3 | 0 |  |  |
-| 85 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | interior | 2 | 0 |  |  |
+| 84 | Inn Kingdom Hotel: Inn Kingdom Hotel, hallway | interior | 3 | 0 |  |  |
+| 85 | Inn Kingdom Hotel: Inn Kingdom Hotel, guest room | interior | 2 | 0 |  |  |
 
 ## Cross Castle, First Floor
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | interior | 6 | 0 |  |  |
-| 91 | Cross Castle, First Floor: entrance / threshold area | interior | 5 | 0 |  |  |
-| 96 | Cross Castle, First Floor: entrance / threshold area | interior | 3 | 0 |  |  |
-| 97 | Cross Castle, First Floor: entrance / threshold area | interior | 3 | 0 |  |  |
-| 103 | Cross Castle, First Floor: entrance / threshold area | interior | 2 | 0 |  |  |
-| 104 | Cross Castle, First Floor: entrance / threshold area | interior | 2 | 0 |  |  |
+| 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | interior | 5 | 0 |  |  |
+| 96 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | interior | 3 | 0 |  |  |
+| 97 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | interior | 3 | 0 |  |  |
+| 103 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | interior | 2 | 0 |  |  |
+| 104 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | interior | 2 | 0 |  |  |
 
 ## Armory
 
@@ -276,8 +266,8 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 100 | The Prince's Chambers: entrance / threshold area | interior | 2 | 1 |  |  |
-| 102 | The Prince's Chambers: entrance / threshold area | interior | 4 | 0 |  |  |
+| 100 | The Prince's Chambers: The Prince's Chambers | interior | 2 | 1 |  |  |
+| 102 | The Prince's Chambers: Cross Castle, hall of the royal chambers | interior | 4 | 0 |  |  |
 
 ## The Princess' Chamber
 
@@ -349,8 +339,8 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 131 | Elder's House: entrance / threshold area | interior | 5 | 0 |  |  |
-| 132 | Elder's House: interior room, about 1 door in from the entrance | interior | 1 | 3 |  |  |
+| 131 | Elder's House: Elder's House | interior | 5 | 0 |  |  |
+| 132 | Elder's House: Elder's House, study | interior | 1 | 3 |  |  |
 
 ## Town of Herlie
 
@@ -471,22 +461,22 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 |---|---|---|---|---|---|---|
 | 210 | Town of Lacour: Weapons Shop Counterpunch | interior | 3 | 0 | 37 38 39 |  |
 | 211 | Town of Lacour: main plaza (round garden) | town | 7 | 0 |  |  |
-| 212 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 3 | 0 |  |  |
+| 212 | Town of Lacour: alley between the main plaza and the castle path | interior | 3 | 0 |  |  |
 | 213 | Town of Lacour: statued path to the castle gate | town | 4 | 0 |  |  |
 | 214 | Town of Lacour: side alley off the plaza | town | 4 | 0 |  |  |
 | 215 | Town of Lacour: Food Store Carnival | interior | 2 | 0 | 41 42 43 44 88 |  |
-| 216 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 3 | 0 |  |  |
-| 217 | Town of Lacour: interior room, about 2 doors in from the entrance | interior | 2 | 0 |  |  |
-| 218 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 2 | 0 |  |  |
+| 216 | Town of Lacour: back street (to House Red Roof) | interior | 3 | 0 |  |  |
+| 217 | Town of Lacour: stairway street | interior | 2 | 0 |  |  |
+| 218 | Town of Lacour: street by Blacksmith Gamgee's Forge | interior | 2 | 0 |  |  |
 | 219 | Town of Lacour: Skill Guild Lacour Skills | interior | 1 | 0 |  |  |
 | 220 | Town of Lacour: Weapons Shop Slayer | interior | 1 | 0 | 40 |  |
 | 221 | Town of Lacour: Inn The Lacour Hotel | interior | 5 | 0 |  |  |
-| 222 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 4 | 0 |  |  |
-| 223 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 5 | 0 |  |  |
-| 224 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 9 | 0 |  |  |
+| 222 | Town of Lacour: Inn The Lacour Hotel, hallway | interior | 4 | 0 |  |  |
+| 223 | Town of Lacour: Inn The Lacour Hotel, hallway | interior | 5 | 0 |  |  |
+| 224 | Town of Lacour: Inn The Lacour Hotel, guest room | interior | 9 | 0 |  |  |
 | 225 | Town of Lacour: Tavern La Coeur of Lacour | interior | 3 | 0 |  |  |
 | 226 | Town of Lacour: House Red Roof | interior | 2 | 0 |  |  |
-| 227 | Town of Lacour: interior room, about 1 door in from the entrance | interior | 1 | 0 |  |  |
+| 227 | Town of Lacour: House Red Roof, back room | interior | 1 | 0 |  |  |
 | 228 | Town of Lacour: Blacksmith Gamgee's Forge | interior | 1 | 0 |  |  |
 
 ## El Beach
@@ -502,7 +492,7 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 |---|---|---|---|---|---|---|
 | 231 | Eluria Colony: shipwreck beach (opening cutscene) | special | 0 | 0 |  |  |
 | 232 | Eluria Colony: outpost clearing (entrance) | field | 3 | 0 |  |  |
-| 233 | Eluria Colony: Weapons Shop (Arsenal) | interior | 1 | 0 | 53 |  |
+| 233 | Eluria Colony: Arsenal (shop: items and ingredients) | interior | 1 | 0 | 53 |  |
 | 234 | Eluria Colony: Leader's House | interior | 1 | 0 |  |  |
 
 ## Mountain Palace
@@ -559,7 +549,7 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 382 | Lasguss Mountain: entrance / threshold area | field | 2 | 0 |  |  |
 | 383 | Lasguss Mountain: interior room, about 1 door in from the entrance | field | 2 | 0 |  |  |
 | 384 | Lasguss Mountain: interior room, about 1 door in from the entrance | field | 2 | 0 |  |  |
-| 385 | Lasguss Mountain: entrance / threshold area | field | 1 | 0 |  | yes |
+| 385 | Lasguss Mountain: XINE's home (mountaintop nest) | field | 1 | 0 |  | yes |
 
 ## Sanctuary of Linga
 
@@ -655,6 +645,16 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 |---|---|---|---|---|---|---|
 | 435 | Lacour Castle Main Library: Lacour Castle Main Library | interior | 1 | 0 |  |  |
 
+## Lacour Front Line
+
+| Map | Name | Kind | Doors | Chests | Shops | Save |
+|---|---|---|---|---|---|---|
+| 438 | Lacour Front Line: forward position | field | 1 | 0 |  | yes |
+| 439 | Lacour Front Line: camp (hub) | field | 4 | 0 |  |  |
+| 440 | Lacour Front Line: path to the command tents | field | 2 | 0 |  |  |
+| 445 | Lacour Front Line: General Store Lacour Store | interior | 2 | 0 | 50 |  |
+| 446 | Lacour Front Line: Lacour front line Arsenal | field | 1 | 0 | 52 |  |
+
 ## Meeting Room
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
@@ -662,7 +662,7 @@ Areas: [Expel](#expel) · [Arlia Village](#arlia-village) · [Planet Milocinia](
 | 441 | Meeting Room: Meeting Room (Lacour Front Line command tent) | interior | 1 | 0 |  |  |
 | 444 | Meeting Room: Meeting Room, second tent | interior | 8 | 0 |  |  |
 | 447 | Meeting Room: Meeting Room, third tent | interior | 6 | 0 |  |  |
-| 448 | Meeting Room: interior room, about 1 door in from the entrance | interior | 1 | 0 |  |  |
+| 448 | Meeting Room: Lacour Front Line, lookout | interior | 1 | 0 |  |  |
 
 ## Lacour Front Line Field Hospital
 

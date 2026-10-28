@@ -524,7 +524,7 @@
 | 12 | 236 | Central City: plaza courtyard (garden corner) | 128 | 484 | 0 | 216 | 180 |
 | 13 | 260 | North City: town plaza (round garden, shops around) | 128 | 9081 | 0 | -850 | 181 |
 | 14 | 261 | North City: plaza, garden edge (notice board) | 128 | 7880 | 0 | -994 | 182 |
-| 15 | 277 | Noel's House: entrance / threshold area | 128 | -1 | 0 | -32 | 271 |
+| 15 | 277 | Noel's House: Noel's House | 128 | -1 | 0 | -32 | 271 |
 | 16 | 419 | Cave of Red Crystal: entrance / threshold area | 128 | 49 | 0 | 6205 | 266 |
 | 17 | 629 | Field of Courage: entrance cavern (warning sign) | 128 | -134 | 0 | 2236 | 272 |
 | 18 | 597 | Field of Power: entrance passage (narrow cavern) | 128 | -817 | 0 | 1282 | 1 |

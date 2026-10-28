@@ -12,7 +12,7 @@ python3 tools/so2_mod.py door DISC.cue MAP INDEX --to NEW_MAP [--x X --y Y --z Z
 
 | Page | Doors | Areas |
 |---|---|---|
-| [Maps 1-153](Reference-Doors-1-153) | 448 | Expel, Arlia Village, Planet Milocinia, Shingo Forest, Lacour Front Line, Field of Power and 21 more |
+| [Maps 1-153](Reference-Doors-1-153) | 448 | Expel, Planet Milocinia, Shingo Forest, Arlia Village, Field of Power, Rena's Room and 20 more |
 | [Maps 154-299](Reference-Doors-154-299) | 448 | Town of Herlie, Zand's Mansion, Port Hilton, Inn Hilton Island, Skill Guild Skill Power, Tavern Stone and 18 more |
 | [Maps 300-473](Reference-Doors-300-473) | 432 | Fun City Fighting Arena, Fun City, Town of Armlock, Transporter Portal of Sealing, Giveaway, Mountain Palace and 21 more |
 | [Maps 474-614](Reference-Doors-474-614) | 450 | Lacour Castle, Hoffmann Ruins, Cross Cave, Ship to El, Field of Intelligence, Eluria Tower and 4 more |

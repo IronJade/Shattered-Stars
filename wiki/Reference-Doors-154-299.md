@@ -485,13 +485,13 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 210 | Town of Lacour: Weapons Shop Counterpunch | 0 | 518 | 0 | 29 | 275 |
 | 1 | 221 | Town of Lacour: Inn The Lacour Hotel | 0 | 312 | 0 | -5 | 180 |
-| 2 | 212 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 13 | 0 | -932 | 271 |
+| 2 | 212 | Town of Lacour: alley between the main plaza and the castle path | 0 | 13 | 0 | -932 | 271 |
 | 3 | 225 | Town of Lacour: Tavern La Coeur of Lacour | 0 | 5 | 0 | 58 | 273 |
-| 4 | 216 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -32 | 0 | -608 | 89 |
+| 4 | 216 | Town of Lacour: back street (to House Red Roof) | 0 | -32 | 0 | -608 | 89 |
 | 5 | 214 | Town of Lacour: side alley off the plaza | 0 | 633 | 0 | 4 | 31 |
 | 6 | 225 | Town of Lacour: Tavern La Coeur of Lacour | 2 | 24 | 0 | -105 | 231 |
 
-### 212 Town of Lacour: interior room, about 1 door in from the entrance
+### 212 Town of Lacour: alley between the main plaza and the castle path
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -503,10 +503,10 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 212 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -97 | 0 | -1834 | 98 |
+| 0 | 212 | Town of Lacour: alley between the main plaza and the castle path | 0 | -97 | 0 | -1834 | 98 |
 | 1 | 421 | Lacour Castle Registration: Registration, entrance hall (from the castle grounds) | 0 | 8 | 0 | 616 | 273 |
 | 2 | 421 | Lacour Castle Registration: Registration, entrance hall (from the castle grounds) | 128 | 8 | 0 | 616 | 273 |
-| 3 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 1 | 10 | 0 | -244 | 93 |
+| 3 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 1 | 10 | 0 | -244 | 93 |
 
 ### 214 Town of Lacour: side alley off the plaza
 
@@ -524,26 +524,26 @@
 | 0 | 210 | Town of Lacour: Weapons Shop Counterpunch | 0 | 591 | 0 | -706 | 95 |
 | 1 | 219 | Town of Lacour: Skill Guild Lacour Skills | 0 | 174 | 0 | 294 | 272 |
 
-### 216 Town of Lacour: interior room, about 1 door in from the entrance
+### 216 Town of Lacour: back street (to House Red Roof)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 211 | Town of Lacour: main plaza (round garden) | 0 | -231 | 0 | 464 | 270 |
 | 1 | 226 | Town of Lacour: House Red Roof | 0 | 230 | 0 | -113 | 180 |
-| 2 | 217 | Town of Lacour: interior room, about 2 doors in from the entrance | 0 | -548 | 0 | -25 | 179 |
+| 2 | 217 | Town of Lacour: stairway street | 0 | -548 | 0 | -25 | 179 |
 
-### 217 Town of Lacour: interior room, about 2 doors in from the entrance
-
-| Index | Leads to | Name | Mode | x | y | z | dir |
-|---|---|---|---|---|---|---|---|
-| 0 | 216 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -377 | 0 | 60 | 359 |
-| 1 | 218 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 82 | 0 | -896 | 246 |
-
-### 218 Town of Lacour: interior room, about 1 door in from the entrance
+### 217 Town of Lacour: stairway street
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 217 | Town of Lacour: interior room, about 2 doors in from the entrance | 0 | -1120 | 130 | -6 | 359 |
+| 0 | 216 | Town of Lacour: back street (to House Red Roof) | 0 | -377 | 0 | 60 | 359 |
+| 1 | 218 | Town of Lacour: street by Blacksmith Gamgee's Forge | 0 | 82 | 0 | -896 | 246 |
+
+### 218 Town of Lacour: street by Blacksmith Gamgee's Forge
+
+| Index | Leads to | Name | Mode | x | y | z | dir |
+|---|---|---|---|---|---|---|---|
+| 0 | 217 | Town of Lacour: stairway street | 0 | -1120 | 130 | -6 | 359 |
 | 1 | 228 | Town of Lacour: Blacksmith Gamgee's Forge | 0 | 63 | 0 | 0 | 180 |
 
 ### 219 Town of Lacour: Skill Guild Lacour Skills
@@ -563,43 +563,43 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 211 | Town of Lacour: main plaza (round garden) | 0 | -295 | 0 | -425 | 34 |
-| 1 | 222 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -89 | 0 | 154 | 270 |
-| 2 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -85 | 0 | -567 | 90 |
-| 3 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 2 | 10 | 0 | -244 | 93 |
-| 4 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 2 | -20 | 0 | 107 | 183 |
+| 1 | 222 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -89 | 0 | 154 | 270 |
+| 2 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -85 | 0 | -567 | 90 |
+| 3 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 2 | 10 | 0 | -244 | 93 |
+| 4 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 2 | -20 | 0 | 107 | 183 |
 
-### 222 Town of Lacour: interior room, about 1 door in from the entrance
+### 222 Town of Lacour: Inn The Lacour Hotel, hallway
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 221 | Town of Lacour: Inn The Lacour Hotel | 0 | 43 | 0 | -208 | 90 |
-| 1 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
-| 2 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
-| 3 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
+| 1 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
+| 2 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
+| 3 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
 
-### 223 Town of Lacour: interior room, about 1 door in from the entrance
+### 223 Town of Lacour: Inn The Lacour Hotel, hallway
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 221 | Town of Lacour: Inn The Lacour Hotel | 0 | 43 | 0 | 208 | 270 |
-| 1 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
-| 2 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
-| 3 | 212 | Town of Lacour: interior room, about 1 door in from the entrance | 2 | -200 | 0 | -933 | 1 |
-| 4 | 224 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 10 | 0 | -244 | 93 |
+| 1 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
+| 2 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
+| 3 | 212 | Town of Lacour: alley between the main plaza and the castle path | 2 | -200 | 0 | -933 | 1 |
+| 4 | 224 | Town of Lacour: Inn The Lacour Hotel, guest room | 0 | 10 | 0 | -244 | 93 |
 
-### 224 Town of Lacour: interior room, about 1 door in from the entrance
+### 224 Town of Lacour: Inn The Lacour Hotel, guest room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -10 | 0 | 61 | 180 |
-| 1 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -10 | 0 | -215 | 180 |
-| 2 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -10 | 0 | -485 | 180 |
-| 3 | 222 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -12 | 0 | 70 | 180 |
-| 4 | 222 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -10 | 0 | -204 | 180 |
-| 5 | 222 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -7 | 0 | -479 | 180 |
-| 6 | 212 | Town of Lacour: interior room, about 1 door in from the entrance | 2 | -200 | 0 | -933 | 1 |
-| 7 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -10 | 0 | 61 | 180 |
-| 8 | 223 | Town of Lacour: interior room, about 1 door in from the entrance | 2 | -10 | 0 | 61 | 180 |
+| 0 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -10 | 0 | 61 | 180 |
+| 1 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -10 | 0 | -215 | 180 |
+| 2 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -10 | 0 | -485 | 180 |
+| 3 | 222 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -12 | 0 | 70 | 180 |
+| 4 | 222 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -10 | 0 | -204 | 180 |
+| 5 | 222 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -7 | 0 | -479 | 180 |
+| 6 | 212 | Town of Lacour: alley between the main plaza and the castle path | 2 | -200 | 0 | -933 | 1 |
+| 7 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 0 | -10 | 0 | 61 | 180 |
+| 8 | 223 | Town of Lacour: Inn The Lacour Hotel, hallway | 2 | -10 | 0 | 61 | 180 |
 
 ### 225 Town of Lacour: Tavern La Coeur of Lacour
 
@@ -613,10 +613,10 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 216 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | -202 | 0 | -351 | 359 |
-| 1 | 227 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 229 | 0 | -174 | 180 |
+| 0 | 216 | Town of Lacour: back street (to House Red Roof) | 0 | -202 | 0 | -351 | 359 |
+| 1 | 227 | Town of Lacour: House Red Roof, back room | 0 | 229 | 0 | -174 | 180 |
 
-### 227 Town of Lacour: interior room, about 1 door in from the entrance
+### 227 Town of Lacour: House Red Roof, back room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -626,7 +626,7 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 218 | Town of Lacour: interior room, about 1 door in from the entrance | 0 | 90 | 0 | -1459 | 91 |
+| 0 | 218 | Town of Lacour: street by Blacksmith Gamgee's Forge | 0 | 90 | 0 | -1459 | 91 |
 
 ### 229 El Beach: entrance / threshold area
 
@@ -651,9 +651,9 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 625 | disc-swap trigger | 0 | -1500 | 0 | 2000 | 0 |
 | 1 | 234 | Eluria Colony: Leader's House | 0 | -302 | 0 | 591 | 272 |
-| 2 | 233 | Eluria Colony: Weapons Shop (Arsenal) | 0 | 297 | 0 | -2 | 180 |
+| 2 | 233 | Eluria Colony: Arsenal (shop: items and ingredients) | 0 | 297 | 0 | -2 | 180 |
 
-### 233 Eluria Colony: Weapons Shop (Arsenal)
+### 233 Eluria Colony: Arsenal (shop: items and ingredients)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -902,7 +902,7 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 260 | North City: town plaza (round garden, shops around) | 0 | -2480 | 1206 | 3012 | 349 |
-| 1 | 268 | North City: Tool Shop Blue Flask, upstairs room | 0 | -103 | 165 | -232 | 358 |
+| 1 | 268 | North City: Chisato's home (above Tool Shop Blue Flask) | 0 | -103 | 165 | -232 | 358 |
 
 ### 266 North City: Library Encyclopedia
 
@@ -917,7 +917,7 @@
 | 0 | 278 | Noel's House: Transporter | 0 | -322 | -101 | 152 | 92 |
 | 1 | 272 | Director's Office: Director's Office | 0 | -370 | 0 | -1113 | 0 |
 
-### 268 North City: Tool Shop Blue Flask, upstairs room
+### 268 North City: Chisato's home (above Tool Shop Blue Flask)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -983,7 +983,7 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 260 | North City: town plaza (round garden, shops around) | 0 | 7905 | 0 | -2189 | 90 |
 
-### 277 Noel's House: entrance / threshold area
+### 277 Noel's House: Noel's House
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -994,7 +994,7 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 267 | Transporter: Transporter | 0 | 152 | -101 | 597 | 315 |
-| 1 | 277 | Noel's House: entrance / threshold area | 0 | 165 | 0 | -772 | 91 |
+| 1 | 277 | Noel's House: Noel's House | 0 | 165 | 0 | -772 | 91 |
 
 ### 279 Fun City: entrance gate (ticket booths)
 

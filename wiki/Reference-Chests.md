@@ -19,12 +19,12 @@ python3 tools/so2_mod.py chest DISC.cue MAP FLAG --fol N
 | 21 | Arlia Village: north: fountain square, at night | 0x961 | 2401 | Leather Armor | 0x2a5 | items | 18 |
 | 21 | Arlia Village: north: fountain square, at night | 0x962 | 2402 | 200 Fol |  | items or Fol | 18 |
 | 21 | Arlia Village: north: fountain square, at night | 0x963 | 2403 | Resurrection Bottle | 0x115 | items | 18 |
-| 25 | Arlia Village: villager's house, bedroom | 0x964 | 2404 | Blueberry | 0x2f5 | items |  |
-| 25 | Arlia Village: villager's house, bedroom | 0x965 | 2405 | Rose Hips | 0xdd | items |  |
-| 33 | Arlia Village: villager's house near the square | 0x966 | 2406 | Strawberry Jam | 0x2f6 | items |  |
+| 25 | Arlia Village: Newlyweds' House, bedroom | 0x964 | 2404 | Blueberry | 0x2f5 | items |  |
+| 25 | Arlia Village: Newlyweds' House, bedroom | 0x965 | 2405 | Rose Hips | 0xdd | items |  |
+| 33 | Arlia Village: Carpenter's House | 0x966 | 2406 | Strawberry Jam | 0x2f6 | items |  |
 | 38 | Arlia Village: Rena's Room | 0x960 | 2400 | Blackberry | 0x2f4 | items | 40 |
-| 40 | Rena's Room: entrance / threshold area | 0x960 | 2400 | Blackberry | 0x2f4 | items | 38 |
-| 50 | Alen's Mansion: interior room, about 1 door in from the entrance | 0x967 | 2407 | Portrait B | 0x7 | items |  |
+| 40 | Rena's Room: Rena's Room, at night | 0x960 | 2400 | Blackberry | 0x2f4 | items | 38 |
+| 50 | Alen's Mansion: Alen's Mansion, bedroom | 0x967 | 2407 | Portrait B | 0x7 | items |  |
 | 59 | Town of Salva: Jewelry Store Fairy Tear | 0x968 | 2408 | Heavy Ring | 0x5e | items |  |
 | 64 | Salva Drift: mine tunnel, deeper | 0x969 | 2409 | Silver | 0x1a5 | items |  |
 | 64 | Salva Drift: mine tunnel, deeper | 0x9c7 | 2503 | Blueberry | 0x2f5 | items |  |
@@ -45,23 +45,23 @@ python3 tools/so2_mod.py chest DISC.cue MAP FLAG --fol N
 | 72 | Salva Drift: interior room, about 2 doors in from the entrance | 0x96d | 2413 | Brigandine | 0x2ac | items |  |
 | 92 | Armory: Armory | 0x9fa | 2554 | Wooden Shield | 0x2c5 | items |  |
 | 92 | Armory: Armory | 0x9fb | 2555 | Leather Helm | 0x28f | items |  |
-| 100 | The Prince's Chambers: entrance / threshold area | 0x9fc | 2556 | 500 Fol |  | items or Fol |  |
+| 100 | The Prince's Chambers: The Prince's Chambers | 0x9fc | 2556 | 500 Fol |  | items or Fol |  |
 | 117 | Port of Clik: The House on the Hill | 0x9f6 | 2550 | Lyre | 0x32 | items |  |
 | 119 | Port of Clik: Restaurant The Big Potato | 0x9f7 | 2551 | Seafood | 0x117 | items |  |
 | 119 | Port of Clik: Restaurant The Big Potato | 0x9f8 | 2552 | Grain | 0x119 | items |  |
 | 119 | Port of Clik: Restaurant The Big Potato | 0x9f9 | 2553 | Vegetables | 0x11b | items |  |
-| 132 | Elder's House: interior room, about 1 door in from the entrance | 0x973 | 2419 | Silence Card | 0x1b | items |  |
-| 132 | Elder's House: interior room, about 1 door in from the entrance | 0x974 | 2420 | Sour Syrup | 0xfb | items |  |
-| 132 | Elder's House: interior room, about 1 door in from the entrance | 0x975 | 2421 | Purple Mist | 0x49 | items |  |
+| 132 | Elder's House: Elder's House, study | 0x973 | 2419 | Silence Card | 0x1b | items |  |
+| 132 | Elder's House: Elder's House, study | 0x974 | 2420 | Sour Syrup | 0xfb | items |  |
+| 132 | Elder's House: Elder's House, study | 0x975 | 2421 | Purple Mist | 0x49 | items |  |
 | 139 | Mars Village: Celine's Room | 0x976 | 2422 | Silk Robe | 0x2ab | items |  |
 | 157 | Town of Herlie: Eleanor's House, upstairs | 0x97c | 2428 | Ring of Sadness | 0x68 | items |  |
 | 163 | Zand's Mansion: parlor (checkerboard floor), front room | 0x97d | 2429 | Ringed Mail | 0x2aa | items |  |
 | 163 | Zand's Mansion: parlor (checkerboard floor), front room | 0x97e | 2430 | Sinclair Sabre | 0x1eb | items |  |
 | 166 | Zand's Mansion: storage room (barrels) | 0x97f | 2431 | Leather Boots | 0x2df | items |  |
 | 166 | Zand's Mansion: storage room (barrels) | 0x980 | 2432 | 1200 Fol |  | items or Fol |  |
-| 277 | Noel's House: entrance / threshold area | 0xa36 | 2614 | Nature's Life Force | 0xaf | items |  |
-| 277 | Noel's House: entrance / threshold area | 0xa37 | 2615 | Pet Food | 0x1a2 | items |  |
-| 277 | Noel's House: entrance / threshold area | 0xa38 | 2616 | 50000 Fol |  | items or Fol |  |
+| 277 | Noel's House: Noel's House | 0xa36 | 2614 | Nature's Life Force | 0xaf | items |  |
+| 277 | Noel's House: Noel's House | 0xa37 | 2615 | Pet Food | 0x1a2 | items |  |
+| 277 | Noel's House: Noel's House | 0xa38 | 2616 | 50000 Fol |  | items or Fol |  |
 | 332 | Giveaway: Nede History Research Lab | 0x9a4 | 2468 | Fairy Glass | 0xee | items |  |
 | 351 | Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup) | 0x981 | 2433 | Cure Stone | 0x302 | items |  |
 | 351 | Mountain Palace: Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup) | 0x982 | 2434 | Sweet Syrup | 0xfc | items |  |

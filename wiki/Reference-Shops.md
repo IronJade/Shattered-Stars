@@ -600,7 +600,7 @@ map 446 Lacour Front Line: Lacour front line Arsenal
 
 ### Shop 53
 
-map 233 Eluria Colony: Weapons Shop (Arsenal)
+map 233 Eluria Colony: Arsenal (shop: items and ingredients)
 
 | Index | Item | Name |
 |---|---|---|

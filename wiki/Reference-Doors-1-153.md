@@ -11,7 +11,7 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 71 | Salva Drift: dark cave bridge, dead end off the tunnel | 0 | -1157 | 0 | 966 | 270 |
-| 1 | 385 | Lasguss Mountain: entrance / threshold area | 0 | -1009 | 0 | 8 | 0 |
+| 1 | 385 | Lasguss Mountain: XINE's home (mountaintop nest) | 0 | -1009 | 0 | 8 | 0 |
 | 2 | 808 | Cave of Trials: Cave of Trials Level 11 | 0 | -1248 | 0 | 117 | 180 |
 | 3 | 794 | Cave of Trials: Cave of Trials Level 10 | 0 | 336 | 0 | -162 | 257 |
 | 4 | 313 | Transporter Portal of Sealing: Transporter Portal of Sealing | 0 | 650 | -195 | 667 | 180 |
@@ -46,19 +46,19 @@
 | 33 | 581 | L'Aqua: overgrown garden path (former aquarium grounds) | 0 | 0 | 0 | 0 | 0 |
 | 34 | 581 | L'Aqua: overgrown garden path (former aquarium grounds) | 0 | 0 | 0 | 0 | 0 |
 
-### 4 Arlia Village: interior room, about 1 door in from the entrance
+### 4 Planet Milocinia: cavern passage (the opening)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 5 | Arlia Village: interior room, about 2 doors in from the entrance | 1 | 427 | 0 | -160 | 0 |
+| 0 | 5 | Planet Milocinia: cavern with machine wreckage (the opening) | 1 | 427 | 0 | -160 | 0 |
 
-### 5 Arlia Village: interior room, about 2 doors in from the entrance
+### 5 Planet Milocinia: cavern with machine wreckage (the opening)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 6 | Arlia Village: interior room, about 3 doors in from the entrance | 2 | 785 | 0 | -131 | 180 |
+| 0 | 6 | Planet Milocinia: cavern of the transporter device (the opening) | 2 | 785 | 0 | -131 | 180 |
 
-### 6 Arlia Village: interior room, about 3 doors in from the entrance
+### 6 Planet Milocinia: cavern of the transporter device (the opening)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -68,13 +68,13 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 8 | Arlia Village: entrance / threshold area | 2 | -259 | 0 | 892 | 88 |
+| 0 | 8 | Planet Milocinia: cavern below the landing site (the opening) | 2 | -259 | 0 | 892 | 88 |
 
-### 8 Arlia Village: entrance / threshold area
+### 8 Planet Milocinia: cavern below the landing site (the opening)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 4 | Arlia Village: interior room, about 1 door in from the entrance | 2 | 3264 | 0 | 31 | 180 |
+| 0 | 4 | Planet Milocinia: cavern passage (the opening) | 2 | 3264 | 0 | 31 | 180 |
 
 ### 9 Shingo Forest: entrance / threshold area
 
@@ -90,9 +90,9 @@
 | 0 | 9 | Shingo Forest: entrance / threshold area | 0 | 240 | 0 | 5825 | 266 |
 | 1 | 9 | Shingo Forest: entrance / threshold area | 2 | 265 | 0 | 5948 | 266 |
 | 2 | 9 | Shingo Forest: entrance / threshold area | 2 | 265 | 0 | 5948 | 266 |
-| 3 | 11 | Lacour Front Line: world-map entrance | 1 | 660 | 0 | 512 | 0 |
+| 3 | 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | 1 | 660 | 0 | 512 | 0 |
 
-### 11 Lacour Front Line: world-map entrance
+### 11 Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -115,16 +115,16 @@
 | 0 | 12 | Shingo Forest: entrance / threshold area | 1 | -401 | 0 | -861 | 157 |
 | 1 | 12 | Shingo Forest: entrance / threshold area | 0 | -472 | 0 | -749 | 128 |
 | 2 | 12 | Shingo Forest: entrance / threshold area | 0 | -472 | 0 | -749 | 128 |
-| 3 | 16 | Arlia Village: entrance / threshold area | 2 | -541 | 0 | 202 | 255 |
+| 3 | 16 | Shingo Forest: clearing with a wrecked machine | 2 | -541 | 0 | 202 | 255 |
 | 4 | 556 | Field of Intelligence: Boss-area transporter chamber, C | 2 | -155 | 0 | 223 | 270 |
 
-### 15 Arlia Village: interior room, about 2 doors in from the entrance
+### 15 Shingo Forest: Shingo Forest in sepia (a flashback; map 14 tinted)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 42 | Arlia Village: interior room, about 1 door in from the entrance | 2 | 0 | 0 | 0 | 37 |
 
-### 16 Arlia Village: entrance / threshold area
+### 16 Shingo Forest: clearing with a wrecked machine
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -141,7 +141,7 @@
 | 4 | 9 | Shingo Forest: entrance / threshold area | 128 | -61 | 0 | 2721 | 85 |
 | 5 | 18 | Arlia Village: north: fountain square | 0 | 230 | 0 | -133 | 0 |
 | 6 | 23 | Arlia Village: Belding Church (inside) | 0 | 224 | 0 | 106 | 198 |
-| 7 | 24 | Arlia Village: villager's house, living room | 0 | 547 | 0 | -336 | 180 |
+| 7 | 24 | Arlia Village: Newlyweds' House | 0 | 547 | 0 | -336 | 180 |
 
 ### 18 Arlia Village: north: fountain square
 
@@ -149,7 +149,7 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 17 | Arlia Village: south: bridge and forest path | 0 | 110 | 0 | -457 | 180 |
 | 1 | 26 | Arlia Village: Hearn's General Store (inside) | 0 | 553 | 0 | -420 | 180 |
-| 2 | 33 | Arlia Village: villager's house near the square | 0 | -276 | 0 | 241 | 272 |
+| 2 | 33 | Arlia Village: Carpenter's House | 0 | -276 | 0 | 241 | 272 |
 | 3 | 34 | Arlia Village: Mayor Regis's House, 1F | 0 | 221 | 0 | 371 | 181 |
 | 4 | 36 | Arlia Village: waterside path behind the Mayor's house | 0 | 570 | 0 | 216 | 180 |
 | 5 | 27 | Arlia Village: Rena's House (inside) | 0 | 368 | -20 | 255 | 181 |
@@ -194,18 +194,18 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 17 | Arlia Village: south: bridge and forest path | 0 | -380 | 0 | -46 | 41 |
 
-### 24 Arlia Village: villager's house, living room
+### 24 Arlia Village: Newlyweds' House
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 17 | Arlia Village: south: bridge and forest path | 0 | -237 | 0 | -317 | 90 |
-| 1 | 25 | Arlia Village: villager's house, bedroom | 0 | 510 | 0 | -382 | 180 |
+| 1 | 25 | Arlia Village: Newlyweds' House, bedroom | 0 | 510 | 0 | -382 | 180 |
 
-### 25 Arlia Village: villager's house, bedroom
+### 25 Arlia Village: Newlyweds' House, bedroom
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 24 | Arlia Village: villager's house, living room | 0 | -466 | 157 | -516 | 2 |
+| 0 | 24 | Arlia Village: Newlyweds' House | 0 | -466 | 157 | -516 | 2 |
 
 ### 26 Arlia Village: Hearn's General Store (inside)
 
@@ -257,9 +257,9 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 22 | Arlia Village: bridge path, at night | 1 | 125 | 0 | 134 | 90 |
 | 1 | 29 | Arlia Village: Rena's House (inside), at night | 0 | -278 | 134 | -60 | 104 |
-| 2 | 40 | Rena's Room: entrance / threshold area | 0 | 43 | 0 | -113 | 228 |
+| 2 | 40 | Rena's Room: Rena's Room, at night | 0 | 43 | 0 | -113 | 228 |
 
-### 33 Arlia Village: villager's house near the square
+### 33 Arlia Village: Carpenter's House
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -310,7 +310,7 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 31 | Arlia Village: interior room, about 1 door in from the entrance | 3 | 84 | 0 | 45 | 149 |
 
-### 40 Rena's Room: entrance / threshold area
+### 40 Rena's Room: Rena's Room, at night
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -329,7 +329,7 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 21 | Arlia Village: north: fountain square, at night | 2 | 917 | 0 | 200 | 180 |
-| 1 | 11 | Lacour Front Line: world-map entrance | 2 | -135 | 0 | -104 | 0 |
+| 1 | 11 | Shingo Forest: Shingo Forest in sepia (a flashback; map 10 tinted) | 2 | -135 | 0 | -104 | 0 |
 | 2 | 37 | Arlia Village: Mayor's house, back porch, at night | 2 | 55 | 0 | 247 | 270 |
 
 ### 43 Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion)
@@ -375,12 +375,12 @@
 | 0 | 48 | Town of Salva: gate toward Alen's Mansion | 0 | -999 | 0 | -734 | 25 |
 | 1 | 48 | Town of Salva: gate toward Alen's Mansion | 0 | -999 | 0 | -734 | 25 |
 | 2 | 43 | Town of Salva: square, outer half (path to Salva Drift and Alen's Mansion) | 0 | -823 | 24 | -647 | 39 |
-| 3 | 51 | Alen's Mansion: interior room, about 1 door in from the entrance | 0 | -175 | 0 | 23 | 0 |
+| 3 | 51 | Alen's Mansion: Alen's Mansion, dining room | 0 | -175 | 0 | 23 | 0 |
 | 4 | 49 | Alen's Mansion: grounds / path to the mansion | 0 | 41 | 0 | 186 | 272 |
-| 5 | 50 | Alen's Mansion: interior room, about 1 door in from the entrance | 0 | -78 | 0 | 146 | 271 |
+| 5 | 50 | Alen's Mansion: Alen's Mansion, bedroom | 0 | -78 | 0 | 146 | 271 |
 | 6 | 47 | Alen's Mansion: interior room, about 1 door in from the entrance | 0 | -35 | 0 | 104 | 270 |
-| 7 | 53 | Arlia Village: entrance / threshold area | 0 | 12 | 0 | 103 | 271 |
-| 8 | 52 | Arlia Village: entrance / threshold area | 0 | 12 | 0 | 103 | 271 |
+| 7 | 53 | Alen's Mansion: Alen's study, guarded (passage to Salva Drift) | 0 | 12 | 0 | 103 | 271 |
+| 8 | 52 | Alen's Mansion: Alen's study (passage to Salva Drift) | 0 | 12 | 0 | 103 | 271 |
 
 ### 47 Alen's Mansion: interior room, about 1 door in from the entrance
 
@@ -402,27 +402,27 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 46 | Alen's Mansion: Alen's Mansion (inside) | 0 | -139 | 120 | 84 | 3 |
 
-### 50 Alen's Mansion: interior room, about 1 door in from the entrance
+### 50 Alen's Mansion: Alen's Mansion, bedroom
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 46 | Alen's Mansion: Alen's Mansion (inside) | 0 | -140 | 120 | -83 | 3 |
 
-### 51 Alen's Mansion: interior room, about 1 door in from the entrance
+### 51 Alen's Mansion: Alen's Mansion, dining room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 46 | Alen's Mansion: Alen's Mansion (inside) | 0 | -153 | 0 | 31 | 27 |
 
-### 52 Arlia Village: entrance / threshold area
+### 52 Alen's Mansion: Alen's study (passage to Salva Drift)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 53 | Arlia Village: entrance / threshold area | 2 | 37 | 0 | 25 | 250 |
+| 0 | 53 | Alen's Mansion: Alen's study, guarded (passage to Salva Drift) | 2 | 37 | 0 | 25 | 250 |
 | 1 | 46 | Alen's Mansion: Alen's Mansion (inside) | 0 | 131 | 0 | 41 | 183 |
 | 2 | 62 | Salva Drift: mine tunnel entrance | 128 | 2339 | -462 | 23 | 179 |
 
-### 53 Arlia Village: entrance / threshold area
+### 53 Alen's Mansion: Alen's study, guarded (passage to Salva Drift)
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -435,9 +435,9 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 44 | Town of Salva: square, shop half (Inn, Jam Store, Jewelry Store) | 0 | 824 | 0 | -657 | 358 |
-| 1 | 55 | Town of Salva: interior room, about 1 door in from the entrance | 0 | -104 | 0 | -77 | 357 |
+| 1 | 55 | Town of Salva: Inn The Hopping Penguin, guest rooms | 0 | -104 | 0 | -77 | 357 |
 
-### 55 Town of Salva: interior room, about 1 door in from the entrance
+### 55 Town of Salva: Inn The Hopping Penguin, guest rooms
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -480,14 +480,14 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 53 | Arlia Village: entrance / threshold area | 2 | -30 | 0 | -54 | 91 |
+| 0 | 53 | Alen's Mansion: Alen's study, guarded (passage to Salva Drift) | 2 | -30 | 0 | -54 | 91 |
 | 1 | 68 | Salva Drift: interior room, about 3 doors in from the entrance | 0 | -5820 | 0 | -1254 | 44 |
 
 ### 62 Salva Drift: mine tunnel entrance
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 53 | Arlia Village: entrance / threshold area | 128 | -30 | 0 | -54 | 91 |
+| 0 | 53 | Alen's Mansion: Alen's study, guarded (passage to Salva Drift) | 128 | -30 | 0 | -54 | 91 |
 | 1 | 65 | Salva Drift: interior room, about 1 door in from the entrance | 0 | -369 | 0 | -2215 | 179 |
 
 ### 63 Town of Salva: Salva Drift
@@ -655,24 +655,24 @@
 |---|---|---|---|---|---|---|---|
 | 0 | 87 | Town of Cross: main plaza (roundabout), story-state variant | 0 | -241 | 0 | 336 | 335 |
 | 1 | 74 | Town of Cross: main plaza (roundabout) | 0 | -241 | 0 | 336 | 335 |
-| 2 | 84 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 0 | -123 | 0 | 175 | 269 |
-| 3 | 85 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 2 | 46 | 0 | 75 | 359 |
-| 4 | 85 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 2 | 46 | 0 | 75 | 359 |
-| 5 | 84 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 2 | -123 | 0 | 175 | 269 |
+| 2 | 84 | Inn Kingdom Hotel: Inn Kingdom Hotel, hallway | 0 | -123 | 0 | 175 | 269 |
+| 3 | 85 | Inn Kingdom Hotel: Inn Kingdom Hotel, guest room | 2 | 46 | 0 | 75 | 359 |
+| 4 | 85 | Inn Kingdom Hotel: Inn Kingdom Hotel, guest room | 2 | 46 | 0 | 75 | 359 |
+| 5 | 84 | Inn Kingdom Hotel: Inn Kingdom Hotel, hallway | 2 | -123 | 0 | 175 | 269 |
 
-### 84 Inn Kingdom Hotel: interior room, about 1 door in from the entrance
+### 84 Inn Kingdom Hotel: Inn Kingdom Hotel, hallway
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 83 | Town of Cross: Inn Kingdom Hotel (inside) | 0 | 43 | 0 | -200 | 89 |
-| 1 | 85 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 0 | 288 | 0 | 26 | 195 |
-| 2 | 85 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 2 | 288 | 0 | 26 | 195 |
+| 1 | 85 | Inn Kingdom Hotel: Inn Kingdom Hotel, guest room | 0 | 288 | 0 | 26 | 195 |
+| 2 | 85 | Inn Kingdom Hotel: Inn Kingdom Hotel, guest room | 2 | 288 | 0 | 26 | 195 |
 
-### 85 Inn Kingdom Hotel: interior room, about 1 door in from the entrance
+### 85 Inn Kingdom Hotel: Inn Kingdom Hotel, guest room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 84 | Inn Kingdom Hotel: interior room, about 1 door in from the entrance | 0 | -176 | 0 | -490 | 359 |
+| 0 | 84 | Inn Kingdom Hotel: Inn Kingdom Hotel, hallway | 0 | -176 | 0 | -490 | 359 |
 | 1 | 83 | Town of Cross: Inn Kingdom Hotel (inside) | 2 | 43 | 0 | -200 | 89 |
 
 ### 86 Town of Cross: Cross Cathedral (inside)
@@ -680,7 +680,7 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 74 | Town of Cross: main plaza (roundabout) | 0 | -232 | 0 | -255 | 61 |
-| 1 | 100 | The Prince's Chambers: entrance / threshold area | 2 | 5 | 0 | 326 | 273 |
+| 1 | 100 | The Prince's Chambers: The Prince's Chambers | 2 | 5 | 0 | 326 | 273 |
 
 ### 87 Town of Cross: main plaza (roundabout), story-state variant
 
@@ -708,13 +708,13 @@
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 78 | Town of Cross: castle gate bridge | 128 | -372 | 0 | -11 | 0 |
-| 1 | 91 | Cross Castle, First Floor: entrance / threshold area | 0 | 353 | 100 | -54 | 3 |
-| 2 | 97 | Cross Castle, First Floor: entrance / threshold area | 0 | 242 | -30 | 189 | 264 |
+| 1 | 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | 0 | 353 | 100 | -54 | 3 |
+| 2 | 97 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | 242 | -30 | 189 | 264 |
 | 3 | 95 | Throne Room: Throne Room | 0 | 124 | 0 | 2 | 180 |
-| 4 | 96 | Cross Castle, First Floor: entrance / threshold area | 0 | 253 | -21 | -186 | 83 |
-| 5 | 91 | Cross Castle, First Floor: entrance / threshold area | 0 | -353 | 100 | -53 | 183 |
+| 4 | 96 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | 253 | -21 | -186 | 83 |
+| 5 | 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | 0 | -353 | 100 | -53 | 183 |
 
-### 91 Cross Castle, First Floor: entrance / threshold area
+### 91 Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
@@ -728,7 +728,7 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 91 | Cross Castle, First Floor: entrance / threshold area | 0 | -3 | 0 | -195 | 93 |
+| 0 | 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | 0 | -3 | 0 | -195 | 93 |
 
 ### 93 Waiting Room: Waiting Room
 
@@ -746,10 +746,10 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 97 | Cross Castle, First Floor: entrance / threshold area | 0 | -453 | 0 | 128 | 270 |
+| 0 | 97 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | -453 | 0 | 128 | 270 |
 | 1 | 93 | Waiting Room: Waiting Room | 0 | 315 | 0 | 0 | 180 |
 | 2 | 94 | The King's Private Chambers: The King's Private Chambers | 0 | -78 | 0 | -207 | 93 |
-| 3 | 96 | Cross Castle, First Floor: entrance / threshold area | 0 | -441 | 0 | -119 | 90 |
+| 3 | 96 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | -441 | 0 | -119 | 90 |
 | 4 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 0 | -500 | 129 | 2 | 0 |
 | 5 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 2 | -500 | 129 | 2 | 0 |
 | 6 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 3 | -500 | 129 | 2 | 0 |
@@ -758,19 +758,19 @@
 | 9 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 3 | -500 | 129 | 2 | 0 |
 | 10 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 2 | -500 | 129 | 2 | 0 |
 
-### 96 Cross Castle, First Floor: entrance / threshold area
+### 96 Cross Castle, First Floor: Cross Castle, corridor to the Throne Room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 95 | Throne Room: Throne Room | 0 | 69 | 0 | 412 | 270 |
-| 1 | 103 | Cross Castle, First Floor: entrance / threshold area | 0 | -6 | 0 | -54 | 90 |
+| 1 | 103 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | 0 | -6 | 0 | -54 | 90 |
 | 2 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 0 | -158 | 131 | 420 | 270 |
 
-### 97 Cross Castle, First Floor: entrance / threshold area
+### 97 Cross Castle, First Floor: Cross Castle, corridor to the Throne Room
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 104 | Cross Castle, First Floor: entrance / threshold area | 0 | -5 | 0 | 146 | 270 |
+| 0 | 104 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | 0 | -5 | 0 | 146 | 270 |
 | 1 | 95 | Throne Room: Throne Room | 0 | 43 | 0 | -422 | 90 |
 | 2 | 90 | Cross Castle, First Floor: Cross Castle, First Floor | 0 | -163 | 132 | -432 | 90 |
 
@@ -778,49 +778,49 @@
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 91 | Cross Castle, First Floor: entrance / threshold area | 0 | -247 | 0 | 188 | 273 |
+| 0 | 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | 0 | -247 | 0 | 188 | 273 |
 
 ### 99 Soldiers' Compartment: Soldiers' Compartment
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 91 | Cross Castle, First Floor: entrance / threshold area | 0 | 247 | 0 | 189 | 273 |
+| 0 | 91 | Cross Castle, First Floor: Cross Castle, hall to the Armory and Kitchen | 0 | 247 | 0 | 189 | 273 |
 
-### 100 The Prince's Chambers: entrance / threshold area
+### 100 The Prince's Chambers: The Prince's Chambers
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 102 | The Prince's Chambers: entrance / threshold area | 0 | -260 | 0 | -83 | 90 |
+| 0 | 102 | The Prince's Chambers: Cross Castle, hall of the royal chambers | 0 | -260 | 0 | -83 | 90 |
 | 1 | 78 | Town of Cross: castle gate bridge | 2 | 107 | 0 | -17 | 180 |
 
 ### 101 The Princess' Chamber: The Princess' Chamber
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 102 | The Prince's Chambers: entrance / threshold area | 0 | 258 | 0 | -78 | 90 |
+| 0 | 102 | The Prince's Chambers: Cross Castle, hall of the royal chambers | 0 | 258 | 0 | -78 | 90 |
 
-### 102 The Prince's Chambers: entrance / threshold area
+### 102 The Prince's Chambers: Cross Castle, hall of the royal chambers
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 104 | Cross Castle, First Floor: entrance / threshold area | 0 | -75 | 180 | 156 | 270 |
+| 0 | 104 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | 0 | -75 | 180 | 156 | 270 |
 | 1 | 101 | The Princess' Chamber: The Princess' Chamber | 0 | 100 | 0 | 334 | 273 |
-| 2 | 100 | The Prince's Chambers: entrance / threshold area | 0 | 5 | 0 | 326 | 273 |
-| 3 | 103 | Cross Castle, First Floor: entrance / threshold area | 0 | -72 | 180 | -81 | 90 |
+| 2 | 100 | The Prince's Chambers: The Prince's Chambers | 0 | 5 | 0 | 326 | 273 |
+| 3 | 103 | Cross Castle, First Floor: Cross Castle, stairs to the royal chambers | 0 | -72 | 180 | -81 | 90 |
 
-### 103 Cross Castle, First Floor: entrance / threshold area
-
-| Index | Leads to | Name | Mode | x | y | z | dir |
-|---|---|---|---|---|---|---|---|
-| 0 | 102 | The Prince's Chambers: entrance / threshold area | 0 | -345 | 0 | 3 | 0 |
-| 1 | 96 | Cross Castle, First Floor: entrance / threshold area | 0 | -439 | 0 | 123 | 270 |
-
-### 104 Cross Castle, First Floor: entrance / threshold area
+### 103 Cross Castle, First Floor: Cross Castle, stairs to the royal chambers
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 102 | The Prince's Chambers: entrance / threshold area | 0 | 336 | 0 | -2 | 180 |
-| 1 | 97 | Cross Castle, First Floor: entrance / threshold area | 0 | -453 | 0 | -123 | 90 |
+| 0 | 102 | The Prince's Chambers: Cross Castle, hall of the royal chambers | 0 | -345 | 0 | 3 | 0 |
+| 1 | 96 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | -439 | 0 | 123 | 270 |
+
+### 104 Cross Castle, First Floor: Cross Castle, stairs to the royal chambers
+
+| Index | Leads to | Name | Mode | x | y | z | dir |
+|---|---|---|---|---|---|---|---|
+| 0 | 102 | The Prince's Chambers: Cross Castle, hall of the royal chambers | 0 | 336 | 0 | -2 | 180 |
+| 1 | 97 | Cross Castle, First Floor: Cross Castle, corridor to the Throne Room | 0 | -453 | 0 | -123 | 90 |
 
 ### 105 Port of Clik: market square (stairs, fountain statue)
 
@@ -971,7 +971,7 @@
 | 6 | 126 | Mars Village: village street (shops) | 0 | -2856 | 0 | -420 | 314 |
 | 7 | 465 | Mars Village: Heraldry Forest | 128 | -2 | 0 | 1105 | 270 |
 | 8 | 465 | Mars Village: Heraldry Forest | 130 | -2 | 0 | 1105 | 270 |
-| 9 | 131 | Elder's House: entrance / threshold area | 0 | 530 | -9 | 1180 | 259 |
+| 9 | 131 | Elder's House: Elder's House | 0 | 530 | -9 | 1180 | 259 |
 | 10 | 128 | Mars Village: Tool Shop Roof's | 0 | 151 | 0 | 243 | 271 |
 
 ### 125 Mars Village: bridge over the millpond
@@ -1024,21 +1024,21 @@
 | 2 | 129 | Mars Village: Bar O'Shane | 0 | 270 | 126 | -110 | 0 |
 | 3 | 126 | Mars Village: village street (shops) | 2 | 348 | 0 | -1104 | 44 |
 
-### 131 Elder's House: entrance / threshold area
+### 131 Elder's House: Elder's House
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
 | 0 | 124 | Mars Village: village green (entrance) | 2 | 1010 | 0 | 2469 | 0 |
 | 1 | 126 | Mars Village: village street (shops) | 2 | -1217 | 0 | -3112 | 44 |
 | 2 | 124 | Mars Village: village green (entrance) | 0 | 992 | 0 | 2545 | 336 |
-| 3 | 132 | Elder's House: interior room, about 1 door in from the entrance | 0 | 301 | -1 | -122 | 270 |
+| 3 | 132 | Elder's House: Elder's House, study | 0 | 301 | -1 | -122 | 270 |
 | 4 | 124 | Mars Village: village green (entrance) | 2 | 1261 | 0 | 2250 | 157 |
 
-### 132 Elder's House: interior room, about 1 door in from the entrance
+### 132 Elder's House: Elder's House, study
 
 | Index | Leads to | Name | Mode | x | y | z | dir |
 |---|---|---|---|---|---|---|---|
-| 0 | 131 | Elder's House: entrance / threshold area | 0 | 133 | -9 | 83 | 79 |
+| 0 | 131 | Elder's House: Elder's House | 0 | 133 | -9 | 83 | 79 |
 
 ### 133 Mars Village: Celine's House, hallway (to Celine's Room)
 

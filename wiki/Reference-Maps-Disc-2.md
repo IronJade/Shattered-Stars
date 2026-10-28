@@ -151,7 +151,7 @@ Areas: [Energy Nede](#energy-nede) · [Field of Power](#field-of-power) · [Cent
 | 264 | North City: Synard Reception Area | interior | 6 | 0 |  |  |
 | 265 | North City: Tool Shop Blue Flask | interior | 2 | 0 | 61 |  |
 | 266 | North City: Library Encyclopedia | interior | 1 | 0 |  |  |
-| 268 | North City: Tool Shop Blue Flask, upstairs room | interior | 1 | 0 |  |  |
+| 268 | North City: Chisato's home (above Tool Shop Blue Flask) | interior | 1 | 0 |  |  |
 | 273 | North City: Inn Landscape | interior | 2 | 0 |  |  |
 | 274 | North City: Inn Landscape, guest room | interior | 1 | 0 |  |  |
 | 275 | North City: Smiley's Grocery | interior | 1 | 0 | 62 |  |
@@ -188,7 +188,7 @@ Areas: [Energy Nede](#energy-nede) · [Field of Power](#field-of-power) · [Cent
 
 | Map | Name | Kind | Doors | Chests | Shops | Save |
 |---|---|---|---|---|---|---|
-| 277 | Noel's House: entrance / threshold area | interior | 1 | 3 |  |  |
+| 277 | Noel's House: Noel's House | interior | 1 | 3 |  |  |
 | 278 | Noel's House: Transporter | interior | 2 | 0 |  |  |
 
 ## Fun City
