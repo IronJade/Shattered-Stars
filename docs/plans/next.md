@@ -127,6 +127,20 @@ What SO2 already has to build on:
   Cyril's east side 674), story-gated doors (story mode), multi-map scenes, one-way scene transfers,
   the two worlds (Expel / Energy Nede), the world map's vehicles (Synard, ships, the teleporter).
 
+**Decided (the user, 2026-10-28):**
+- **Scope: all three levels are YAML option values** (the user: "These three options ... should all
+  be options for the yaml in the apworld options"): `entrance_randomizer`: `off` (default) /
+  `world_map` (the 66 areas' world-map entrances among themselves; inside an area nothing moves) /
+  `dungeons` (also the doors inside dungeons; towns stay intact) / `all_doorways` (every doorway,
+  ~1,800, town interiors included). Built and proven in that order, all in so2.apworld 0.3.0.
+- **Modes:** open world and hub only; story mode refuses ER (an option error at generation).
+- **Coupled by default** (leaving a place returns you where you came in); `uncoupled` as an option.
+- **The two worlds separate by default** (Expel's entrances among Expel's, Energy Nede's among
+  Energy Nede's); a mixing option may come later.
+- Also for 0.3.0 (the coordinator's recommendation, to confirm): the indirect-conditions audit
+  first (Generic ER needs it); the ~230 items still named by the game's unappraised names
+  ("?GUARD (894)") get their appraised names, since location names change anyway in a minor version.
+
 The decisions for the user (bring them with recommendations at the start of the phase):
 1. **Scope (the option's values):** e.g. `entrance_randomizer`: off / world_map (each world-map
    entrance of a town or dungeon leads to another's arrival; the most robust) / dungeons (also the
