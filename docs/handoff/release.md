@@ -1199,3 +1199,24 @@ doesn't need its own apworld build.
 
 Next: `linux`, `extra`, `wine`, `world`, `batch`, `identity`, `ut`, `pack`, `suites`, `e2e`,
 `asan`, `tsan`, `winsuites`, `sums`, `verify`, `cleanup`, running in the background.
+
+### 0.03.00, coordinator takeover (2026-10-28)
+- rc030b was handed back twice while its background script ran (a subagent can't wait hours); it
+  was told to stop. The coordinator owns the rest of the run: background job writing
+  `scratchpad/release/rc030-coord/coord_run.log` (waits for PID 2844214 `rc-0.03.00.sh linux extra
+  wine`, compares the zips, then runs `world batch identity ut pack suites e2e asan tsan winsuites
+  sums verify cleanup`; progress in `scratchpad/release/rc-0.03.00-dist/summary.txt`).
+- **`ut_map_repo_port` / `ut_map_pkg_port` rc=1 were an RC-script bug, not a product bug.**
+  `--render-tracker-maps DIR` writes the UT zip into DIR's **parent** (as documented), so the
+  capture's zip is `rc-0.03.00-dist/so2_shattered_stars_ut.zip`, not `linux-render/...` where the
+  script looked; UT got no zip and loaded 0 maps. Rerun by the coordinator against the real zip
+  (copied to `scratchpad/release/rc030-coord/linux_ut.zip`, 134,897,214 bytes, sha256 35e72e8d..., =
+  utzip2's): **repo world 16/16 ok, packaged so2.apworld 16/16 ok** (logs `rc030-coord/utmap_*.log`).
+- Same assumption in `ph_wine`: the Windows render's zip also lands in `rc-0.03.00-dist/` and
+  overwrites the Linux one, and the script's diff only compares the image folders. The coordinator's
+  job compares the Windows zip with the saved Linux copy byte for byte (result in coord_run.log).
+- Script fix to make **after** the run (bash reads a running script as it goes: don't edit it now):
+  render_capture / win_render pass `--ut-zip` into their own folders (or the UT-map steps read
+  `$DIST/so2_shattered_stars_ut.zip` before ph_wine runs), and ph_wine compares the two zips.
+- Next once coord_run.log ends: a fresh agent reads summary.txt + coord_run.log, records every row
+  in checklist 12.3 / this log, writes the sums into the three notes (task 7), fixes the script.
