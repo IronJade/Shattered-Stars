@@ -1269,3 +1269,23 @@ The rerun: start from a clean tree, set the old results aside, run everything:
 - Next: merge utcrash2, add `ut_connect` to rc-0.03.00.sh, rerun the full RC (systemd unit
   ss-rc030, fresh DIST), then the Windows recheck (1, 2-3, 5 glance, 8, 10, 11 glance, 13 with the
   cross-built ss_tests.exe / ss_game_tests.exe).
+
+### 0.03.00 RC result (07f9684, 2026-10-28): GREEN
+Run as systemd unit ss-rc030 (12:01-13:10), summary in scratchpad/release/rc-0.03.00-dist/summary.txt.
+- Build: the five artifacts (sums in the three notes, bd2b745). Linux smoke 373/0/0. Render e2e all
+  checks; UT map 4x ok; UT connect (new, utcrash) 115 ok / 0 FAIL. Wine: boot, version resource, the
+  Windows render and UT zip byte-identical to Linux (35e72e8d...). World tests 882/3 skipped,
+  scoped 935, general 379, slow 885. Batches 96/96 x3, 0 failed. UT check: matches the world. Pack
+  checks. e2e so2 56/0 and hub 15/0, dev and packaged. ASan: ap_ds 9/0, tracker 14/0, ap_net 5/0,
+  render 862, e2e 56/0, setup A-D rc 0 with no reports. TSan (GCC): tracker 14/0 with 0 races,
+  setup A-D rc 0 with 0 races (B: the full render on setup's thread, 286 s). Windows suites under
+  Wine: ss_tests 103/0, ss_game_tests 232/0. Setup's render = the CLI render byte for byte under
+  plain, ASan and TSan.
+- Check-script bugs found and fixed (scratchpad, not the release): identity_0_2_1.py left
+  slot_data.apworld_version in (rerun: 288/288 identical to 0.2.1); setup_runs.sh exited 1 on
+  success (`[ -e ] && echo` last); ph_tsan used clang, which can't compile mods/catalog.cpp against
+  GCC 16's libstdc++ (now GCC; libtsan installed by the user) and set XDG_RUNTIME_DIR to a path too
+  long for the user bus socket; ph_verify's tree id includes HEAD, so docs-only commits read as
+  "moved" (SRC diff 07f9684..HEAD is empty); setup_runs.sh's base_manifest.txt was stale.
+- Windows recheck on the same commit: all PASS (docs/handoff/windows_check.md).
+- The user (2026-10-28): "As soon as it finishes green, please push and publish."
