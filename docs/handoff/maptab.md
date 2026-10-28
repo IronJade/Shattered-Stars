@@ -162,8 +162,33 @@ source changes: none expected; if the renderer must change, describe it here and
   ut_pack_path: ""` (AP saves world settings groups); a stale "so2.world_options" block from the
   first try was removed by hand.
 
+- Final: the real PopTracker smoke on the final zip (1,201 files) 44/44 again (peak 558 MB).
+  Scratch cleaned (batches, farms, UT copies, smoke folders, disc thumbnails deleted); kept: the
+  scripts and logs in scratchpad/maptab/, engine/build-maptab.
+
 ### In progress
-- (none: final smoke rerun and cleanup)
+- (none) **Assignment complete.**
+
+### Open, for the user / the coordinator (recommendations)
+- GUI check by a person (not possible headless): the room tabs' bar (map numbers; at most two rows
+  at ~1000 px), the door panel beside the map (260 x 22 lines, DejaVu 12 px), the blue door
+  diamonds next to story awareness's blue squares. Recommendation: keep; if blue reads badly for
+  doors, `so2_door_access` is the one line to change.
+- UT asks for the pack zip with a file dialog on the first connect (UT's standard for packs;
+  cancel = no map tab). Alternative: default `null` (no prompt; set host.yaml by hand). Recommend
+  keeping the prompt.
+- UT can't read PopTracker's user-override: a player's render shows in UT only from a copy of the
+  zip with the rendered images added. A port option that writes that copy (`--render-tracker-maps`
+  / the setup button) would make it one click: an engine change, recommended for later (0.03.x),
+  not needed for the release.
+- Released AP area names that name other places (tools/ap_world_tables.py RELEASED_AREAS: "Port
+  Hilton" rows in the Lacour coliseum, "North City" chests on the Field of Love platforms) stay
+  (renaming would change location names); the tabs follow the AP names, the room groups now also
+  put each town's own rooms under its name.
+- Phase C: the ER seam names (`door_pairs`, `so2_doors_{team}_{slot}`) and the door id contract are
+  provisional, to confirm when ER is designed.
+- PopTracker's memory with the rooms: 555 MB peak (225 MB before); fine on desktop PCs, worth a line
+  in the player docs if anyone runs it on a small machine.
 
 ### For the release notes (agent "releasedocs" owns them)
 Tracker maps, room by room (PopTracker pack 1.0.0, so2.apworld 0.2.2): besides each area's overview
@@ -223,3 +248,4 @@ flashback in Shingo Forest are where they belong.
 - 2026-10-27: area audit done and verified (above); committing.
 - 2026-10-27: pack part 2 done and verified (above); committing.
 - 2026-10-27: UT map tab done and verified (batches identical, tests, real UT); committing.
+- 2026-10-27: final smoke 44/44; scratch cleaned; done.
