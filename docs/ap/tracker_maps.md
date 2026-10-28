@@ -290,9 +290,10 @@ changes the format 1 parts above.
 the pack's side (and docs/ap/apworld.md "Universal Tracker's map tab" UT's). Where it differs from
 this sketch: a room's tab is titled by its map number (the label strip and the door panel carry the
 name; named titles made the busiest tab bars six to eight rows); the overview tab is titled as the
-area (so activating the area's tab shows it); the door markers are diamonds coloured Inspect (blue,
-destination known) or SequenceBreak (yellow, unknown: Phase C); a click is acted on in the next
-frame. Measured: 794 placeholders 4.1 MB (32-colour PNGs), the pack zip 5.6 MB; PopTracker's peak
+area (so activating the area's tab shows it); the door markers are diamonds coloured SequenceBreak
+(yellow, the one colour no check uses; until 2026-10-27 a known door was Inspect blue; the colour of
+a door not found yet under the entrance randomizer is Phase C's decision, yellow for now); a click
+is acted on in the next frame. Measured: 794 placeholders 4.1 MB (32-colour PNGs), the pack zip 5.6 MB; PopTracker's peak
 memory 555 MB (225 MB before the rooms).
 
 - **Room images.** A placeholder per room, exactly `width` x `height`: `style.background`, a flat

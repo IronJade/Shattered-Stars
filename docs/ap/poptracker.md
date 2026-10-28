@@ -41,7 +41,7 @@ What it shows:
 - **Rooms and doors.** Each area's tab has its overview (the area map, titled as the area) and then
   a tab per room (every field map the area's doors reach: 794 rooms), titled by the map's number, in
   door order from the entrance. A room shows its checks (the same squares as the overview) and a
-  **door marker** (a blue diamond) per doorway, lettered A, B, C... on the image. Beside the map, the
+  **door marker** (a yellow diamond) per doorway, lettered A, B, C... on the image. Beside the map, the
   **door panel** lists where each doorway leads, live: "A → 18 north: fountain square" ("*" marks a
   destination that only happens in some story states; "(+53* 46)" the doorway's other destinations).
   **Clicking a door** (hover its diamond, click "Door A" in the popup) or **its panel line** opens the
@@ -270,13 +270,20 @@ sets at run time.
   diamond at each of its markers (two trigger regions of one routine are one doorway), one section
   "Door <letter>" with a door icon. It is no Archipelago location: not in `LOCATION_MAPPING`, no AP
   id, not in UT's names, always visible. Its access rule `^$so2_door_access|<doorway id>` is its
-  colour: **Inspect (blue)** when the destination is known, **SequenceBreak (yellow)** while it isn't
-  (a randomized door not found yet). Why: a door is never a check, so it must not look like one
-  (green = a check to get, red = a check that needs items); blue is PopTracker's "look here,
-  nothing to collect", the diamond keeps doors apart from story awareness's blue squares, and yellow
-  makes an unexplored door stand out. The logic export doesn't place maps in regions yet, so a
-  door can't be coloured by its destination's reachability; when Phase C adds a region -> map hint,
-  `so2_door_access` is the one place to do it.
+  colour: **SequenceBreak (yellow)**, for every door (the user, 2026-10-27: "Yellow works for me").
+  Why: a door is never a check, so it must not look like one, and PopTracker colours a location
+  only by its state, from a fixed palette a pack can't change (there is no white): checks use
+  Normal (green: a check to get), None (red: needs items), Inspect (blue: later in the story, story
+  awareness), cleared (grey) and, at a square holding several checks, the mixed orange / teal /
+  purple. SequenceBreak is the one state no check uses (`so2_access` returns only Normal, None and
+  Inspect; `TestDoorsLua.test_door_colour_is_no_checks` keeps it that way), and a door location has
+  one section, so it never mixes. Until 2026-10-27 a known door was Inspect (blue), next to story
+  awareness's blue squares. **A door whose destination isn't known yet** (the entrance randomizer: a
+  paired doorway not found, its panel line "A → ?") **is yellow too for now; its own colour is a
+  Phase C decision**, to make with the entrance randomizer's design (`so2_door_destinations(id) ==
+  nil` in `so2_door_access` is the one place to change). The logic export doesn't place maps in
+  regions yet, so a door can't be coloured by its destination's reachability either; when Phase C
+  adds a region -> map hint, `so2_door_access` is the one place to do that too.
 - **The door panel.** A Lua item per doorway (`ScriptHost:CreateLuaItem`, code
   `door_<map>_<letter>`, a dark bar `images/doors/line.png`), in letter order beside the room's map
   (a group "Doors (* story)" docked right, items 260 x 22). Its badge text (`BadgeText`, left
@@ -300,8 +307,9 @@ sets at run time.
   `rooms[].doors[].to`). With a room that randomizes doors, the Clear handler's `so2_doors_load(slot
   data)` reads **`door_pairs`** ({"<doorway id>": <doorway id at the other end>}; the doorway ids are
   tracker_maps.md's "Door ids" contract) and the pack subscribes to **`so2_doors_{team}_{slot}`** (a
-  list, or a set, of the doorway ids found); a paired doorway reads "A → ?" and is yellow until it is
-  in that list, then shows (and opens) the room of its pair. Doorways the room doesn't pair stay
+  list, or a set, of the doorway ids found); a paired doorway reads "A → ?" until it is
+  in that list, then shows (and opens) the room of its pair (yellow either way for now: the colour of
+  an unknown door is Phase C's to decide, "Door markers" above). Doorways the room doesn't pair stay
   vanilla. Both names are provisional, for Phase C to confirm (and UT's
   `found_entrances_datastorage_key` can be the same key); the logic side is already there
   (`so2_logic_connect`, "Logic"). Tested with a hand-made pairing (`TestDoorsLua`).
@@ -360,7 +368,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (41 tests, about 21 seconds; run by `check`):
+`tools/ap_poptracker_test.py` (42 tests, about 21 seconds; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -390,8 +398,9 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
   is no door; a panel line's left click (the first unconditional destination) and right clicks (the
   next ones); a door to a world map opens its tab, the undrawn map nothing; Auto tab from
   `so2_map_0_1` goes to room tabs; the entrance randomizer's seam: a room with `door_pairs` subscribes
-  `so2_doors_0_1`, paired doors read "A → ?" and are SequenceBreak until found, then show and open
-  their pair's room; a vanilla room again: no key, vanilla lines.
+  `so2_doors_0_1`, paired doors read "A → ?" until found, then show and open their pair's room, and
+  are SequenceBreak (yellow) either way; a vanilla room again: no key, vanilla lines; every door is
+  SequenceBreak and no script but doors.lua names it (no check can be yellow).
 - **UT's map tab** (`TestUT`): apworld/so2/tracker/ is this build's JSON (under 1 MB), its sections
   are AP location names covering exactly the pack's locations, its maps are the pack's, every room
   has its page and is named by its label in UT's menu, and the world's `tracker_world` functions
@@ -533,8 +542,8 @@ reference evaluator's for the room's export with that position, its Inspect ones
 Tracker) with a door probe in its user override (`scripts/so2_smoke_doors.lua`) connects to the first
 room; 60 frames after the Clear handler the probe clears door A of map 26 (Hearn's General Store:
 `AvailableChestCount = 0`, what a click on "Door A" in the popup does) and 30 frames later prints the
-section's count. Checks: the section had 1 of 1, the pack set it back to 1 of 1, no Lua error or
-warning, and in the state PopTracker saves on quit the active tabs are the destination room's path
+section's count and its `AccessibilityLevel`. Checks: the door is SequenceBreak (yellow), the
+section had 1 of 1, the pack set it back to 1 of 1, no Lua error or warning, and in the state PopTracker saves on quit the active tabs are the destination room's path
 (`SO2_MAP_TABS[18]`: Expel > Arlia Village > Arlia Village > 18) and the door section is not saved
 as cleared. Step 5's map check now wants map 26's own room tab (Expel > Arlia Village > Arlia
 Village > 26) from `so2_map_*`. It also prints the panel line and PopTracker's peak memory.
@@ -544,6 +553,10 @@ Result with rooms and doors (2026-10-27, maptab: pack 1.0.0 with layout 1.1's ro
 map 26 -> 18 (panel line "A → 18 north: fountain square"); the click reset the door and opened
 Expel > Arlia Village > Arlia Village > 18; map 26 from `so2_map_*` opened its room tab; peak memory
 555 MB (225 MB without the rooms). No Lua error or warning.
+
+Result with yellow doors (2026-10-27, utzip: `so2_door_access` SequenceBreak for every door): **45/45
+checks pass** (the 44 above and step 8's colour check: PopTracker reports door A of map 26 at
+AccessibilityLevel 5, SequenceBreak); peak memory 558 MB.
 
 Result with story awareness (2026-10-27, pack 1.0.0 as built by storyaware, so2.apworld 0.2.2's
 export with `story`): **37/37 checks pass** (the 24 below and 13 for step 7). The

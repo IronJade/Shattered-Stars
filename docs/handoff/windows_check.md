@@ -410,8 +410,10 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
     a tab per room, titled by its map number, in story order; on a rendered room (after item 2 or
     3) a small lettered box sits beside each doorway (A, B, C...). A **Doors** panel beside the
     map lists where each leads, for example "A -> 412 Salva Drift" (a story-only door shows a
-    trailing `*`); click a line, or a door's own marker/diamond on the map, and the room it leads
-    to opens its own tab. With the game connected, the tabs follow the room your party is in
+    trailing `*`); each door's marker on the map is a **yellow** diamond (the one colour no check
+    uses: checks are green, red, blue, grey or mixed; utzip, 2026-10-27), and the colour reads well
+    beside the checks' squares; click a line, or a door's own marker/diamond on the map, and the
+    room it leads to opens its own tab. With the game connected, the tabs follow the room your party is in
     (**Auto tab**, item 5) down to the room level, not just the area. Universal Tracker's map tab
     (item 10) follows the same room pages and shows a player marker on the two world maps, but has
     **no doors**: a door is not an AP location, entrance or event, so it carries no door panel and

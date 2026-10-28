@@ -59,7 +59,8 @@ and [the Archipelago world's](https://github.com/IronJade/Shattered-Stars/releas
 - **Hints**: hinted locations in your world are highlighted.
 - **Rooms and doors.** Each area's tab opens into **Overview** plus a tab per room (794 of
   them), titled by the game's own map number, in story order. A room's doorways carry a small
-  lettered marker each (1,775 in all), and a **Doors** panel beside the map says where each one
+  lettered marker each (1,775 in all; on the map a yellow diamond, the one colour no check
+  uses), and a **Doors** panel beside the map says where each one
   leads, for example "A -> 412 Salva Drift" (a trailing `*` for a story-only door). Click a
   panel line, or a doorway's own marker, and the room it leads to opens. With the game connected,
   the tabs follow you room by room, not just area by area (**Auto tab**, above).
@@ -135,11 +136,12 @@ items and areas can't drift from the world's: all 1,991 locations of the world h
 and 264 of its items (every key, character, trap, skill and move) their place in the item panel.
 It has 794 room maps and 1,775 door locations (never counted as checks), 1,201 files in all,
 about 5.6 MB zipped. It was checked with PopTracker's pack checker in strict mode (no warning),
-its own tests (41: the ids, the layout, the Lua run in Lua 5.4, the logic equal to the world's
+its own tests (42: the ids, the layout, the Lua run in Lua 5.4, the logic equal to the world's
 over 16 rooms and 246 item states, story awareness at 15 positions, the room placeholders, the
-Lua door panel and its click handler), and the real PopTracker 0.36.0 against local rooms (44
-checks: both variants, autotracking, the logic at three points of a game, the story room at six
-positions, and a door click that opens its destination room's tab).
+Lua door panel and its click handler, doors never in a check's colour), and the real PopTracker
+0.36.0 against local rooms (45 checks: both variants, autotracking, the logic at three points of a
+game, the story room at six positions, and a door click that opens its destination room's tab,
+the door shown yellow).
 
 ## Licence
 

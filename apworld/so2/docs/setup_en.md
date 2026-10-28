@@ -145,7 +145,7 @@ with 0.2.2 or later for exact tracking. A 0.2.0 room with `encounter_rate: 0` an
 The Shattered Stars PopTracker pack (PopTracker 0.36.0 or later; put `so2_shattered_stars_1.0.0.zip`
 in PopTracker's `packs` folder, load "Map Tracker", connect with the AP button) shows the same logic
 on maps. Each area's tab has its overview and a tab per room, numbered by the game's map number; in
-a room each doorway has a lettered diamond, and the **Doors** panel beside the map says where each
+a room each doorway has a lettered diamond (yellow: no check is ever yellow), and the **Doors** panel beside the map says where each
 one leads ("A → 18 north: fountain square"; `*` = only at some points of the story). Click a door's
 panel line, or hover its diamond and click "Door A", to open the room behind it; with the game
 connected the tabs follow the party room by room. The maps are placeholders: run
