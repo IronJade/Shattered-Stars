@@ -21,8 +21,8 @@ the new layout afterwards. Start commit: 0fefa1b.
 ## Status
 - [x] Step 1 prune docs: 0bcf561
 - [x] Step 2 wiki: ae1e895 (docs: wiki/ import), 64dc480 (tools: wiki_publish.sh, mod_reference_wiki default), ca5a8b7 (Reference-* regenerated)
-- [x] Step 3 moves (one commit; see the log)
-- [ ] Step 4 verify + HANDOFF.md
+- [x] Step 3 moves: f4081eb (one commit: the moves, the rewrites, verified)
+- [x] Step 4 verify (results below) + new docs/HANDOFF.md (the commit after f4081eb)
 
 ## Moves (2026-10-28; `git mv`, history kept)
 - engine -> port
@@ -157,3 +157,8 @@ the new layout afterwards. Start commit: 0fefa1b.
      it creates (port/build-rc030b-asan/-tsan, port/build-win-release, the dist outputs) and
      scratchpad/rulebuilder/ut_explain.py (gone; the step now skips with a note). adapt_e2e simulated
      on both e2e scripts: its checks pass. The hub e2e's chamber heredoc runs (arcmene: ENC=522).
+- Done. Next (the coordinator): rerun the RC on the new layout, from a clean tree:
+  `mv scratchpad/release/rc-0.03.00-dist scratchpad/release/rc-0.03.00-dist.pre-restructure`, then
+  `bash scratchpad/release/rc-0.03.00.sh all` in the background (summary.txt in the dist folder).
+  The wiki's uncommitted 0.03.00 edits now live in wiki/ (scratchpad/wiki untouched); publish with
+  tools/wiki_publish.sh at release time.
