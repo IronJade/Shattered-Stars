@@ -7,6 +7,11 @@ update_location_icon_coords) run in-process against this world's tracker_world, 
       tools/ap_poptracker_utmap.py --tracker scratchpad/ap_ut/tracker.apworld \\
       [--zip dist/poptracker/so2_shattered_stars_1.0.0.zip] [--apworld so2.apworld] [--ut-dir DIR]
 
+--zip is either picture zip UT's dialog names: the PopTracker pack's, or the port's own
+so2_shattered_stars_ut.zip (`shattered-stars --render-tracker-maps`, docs/ap/tracker_maps.md "The
+Universal Tracker zip"). UT reads a picture as `ap:zip:<zip>/<path>` and splits that at the first
+"zip/", so no folder on the zip's path may end in "zip" (scratchpad/utzip/... can't hold it).
+
 1. A UT copy of the scratch Archipelago (tools/ap_ut_check.py's setup: a symlink farm with real
    copies of host.yaml and the top-level scripts, tracker.apworld in custom_worlds, the repo's
    apworld/so2 linked as worlds/so2 or --apworld in custom_worlds), with host.yaml's
@@ -19,7 +24,9 @@ update_location_icon_coords) run in-process against this world's tracker_world, 
    as the port writes them open the room's page (map_page_index), the world map's with the player
    marker at the x / z (location_icon_coords), and keep the page for a map without one; every page's
    image is in the zip and every square's locations are the room's own AP locations (UT's own
-   matching of section names: no name mapping); the rooms' squares are the layout's room dots.
+   matching of section names: no name mapping); the rooms' squares are the layout's room dots; every
+   page's picture and the marker load through UT's own image loader (worlds/tracker/TrackerKivy.py's
+   `ap:zip:` load, decoded by Kivy as UT's map tab does) at the layout's / the boards' sizes.
 Exit status 0 when every check passes.
 """
 import argparse
@@ -170,6 +177,39 @@ def inside(a):
             if not ids or not set(ids) <= ctx.server_locations:
                 bad.append((mp["name"], xy))
     check(not bad, f"all {len(ctx.maps)} pages load, images in the zip, squares the slot's locations" + (f": {bad[:3]}" if bad else ""))
+    # every page's picture, and the marker, through UT's own image loader (TrackerKivy.load: the
+    # ap:zip: path split and zipfile read; Kivy's decoder from kvui, as the map tab's AsyncImage)
+    import contextlib
+    import io
+    import worlds.tracker.TrackerKivy as ut_kivy
+    from kvui import ImageLoaderPkgutil
+
+    class Loader:
+        _bytes_to_data = staticmethod(ImageLoaderPkgutil._bytes_to_data)
+    sizes = {i["path"]: (i["width"], i["height"]) for i in layout["images"] + layout["rooms"]}
+    boards = json.load(open(os.path.join(REPO, "tools", "poptracker", "boards.json"), encoding="utf-8"))
+    sizes.update({b["path"]: (b["width"], b["height"]) for b in boards["boards"]})
+    icon = pages_icon = boards["player_icon"]
+    sizes[icon["path"]] = (icon["width"], icon["height"])
+
+    def ut_load(source):
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):     # TrackerKivy.load prints each name
+                data = ut_kivy.load(Loader(), source)
+            return data[0].width, data[0].height
+        except Exception as e:      # noqa: BLE001 (what UT's map tab would fail on)
+            return repr(e)[:80]
+    unloaded = []
+    for k, mp in enumerate(ctx.maps):
+        ctx.load_map(k)
+        got = ut_load(ctx.ui.source)
+        if got != sizes.get(mp["img"]):
+            unloaded.append((mp["img"], got))
+    got = ut_load(f"{ctx.root_pack_path}/{pages_icon['path']}")
+    if got != sizes[icon["path"]]:
+        unloaded.append((icon["path"], got))
+    check(not unloaded, f"UT's own image loader opens all {len(ctx.maps)} pages' pictures and the marker from the "
+          f"zip at their sizes" + (f": {unloaded[:3]}" if unloaded else ""))
     check(not any(captured.get("entrances") or ()) and not any(captured.get("events") or ()),
           "no door squares in UT (doors are no AP locations, entrances or events)")
     # a world map: its page, and the player marker at x / z

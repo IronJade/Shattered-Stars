@@ -9,6 +9,11 @@
 #       dist/poptracker/versions.json                   tools/poptracker/versions.json (when there
 #                                                       is one) with this version's entry first
 #       dist/poptracker/ut_name_mapping.json            for Universal Tracker's map tab (B6)
+#       dist/poptracker/boards.json                     the boards' cells, which the port draws into its
+#                                                       Universal Tracker zip (the pack's tests check that
+#                                                       tools/poptracker/boards.json, compiled into the
+#                                                       port, is this copy: tools/ap_poptracker.py
+#                                                       --boards-out tools/poptracker/boards.json)
 #   tools/build_poptracker.sh check
 #       PopTracker's pack checker (PopTracker/pack-checker v1.7.0, the one pack-checker-action runs,
 #       strict schema) on the zip and the folder, versions.json against the zip, then

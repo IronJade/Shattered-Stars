@@ -444,6 +444,36 @@ class TestUT(unittest.TestCase):
         for r in LAYOUT["rooms"]:
             self.assertEqual(titles[f"room_{r['map']}"][-1], r["label"])
 
+    def test_boards_for_the_port(self):
+        """tools/poptracker/boards.json, from which the port draws the boards into its Universal
+        Tracker zip (docs/ap/tracker_maps.md "The Universal Tracker zip"), is this build's, and its
+        boards are the pack's: the same image paths and sizes, and every board square of the pack
+        and of UT's map tab at a cell's (24, h / 2); the marker is the one UT's pages name."""
+        committed = os.path.join(REPO, "tools", "poptracker", "boards.json")
+        self.assertEqual(read(os.path.join(os.path.dirname(PACK), "boards.json")), read(committed),
+                         "tools/poptracker/boards.json is out of date: tools/ap_poptracker.py --boards-out "
+                         "tools/poptracker/boards.json (then rebuild the port)")
+        data = json.loads(read(committed))
+        maps = {m["img"]: m["name"] for m in pack_json("maps/maps.json")}
+        self.assertEqual({b["path"] for b in data["boards"]}, {i for i in maps if i.startswith("images/boards/")})
+
+        def squares(nodes):
+            out = {}
+            for _, node in walk_locations(nodes):
+                for ml in node.get("map_locations", []):
+                    out.setdefault(ml["map"], set()).add((ml["x"], ml["y"]))
+            return out
+        pack_squares, ut_squares = squares(pack_json("locations/boards.json")), squares(self.ut("locations/locations.json"))
+        for b in data["boards"]:
+            self.assertEqual(png_size(os.path.join(PACK, b["path"])), (b["width"], b["height"]), b["path"])
+            cells = {(x + 24, y + h // 2) for x, y, w, h, _ in b["cells"]}
+            self.assertTrue(all(0 <= x and x + w <= b["width"] and y + h <= b["height"] for x, y, w, h, _ in b["cells"]))
+            self.assertEqual(pack_squares[maps[b["path"]]], cells, b["path"])
+            self.assertEqual(ut_squares[maps[b["path"]]], cells, b["path"])
+        icon = data["player_icon"]
+        self.assertEqual(icon["path"], self.ut("map_pages.json")["player_icon"])
+        self.assertEqual(png_size(os.path.join(PACK, icon["path"])), (icon["width"], icon["height"]))
+
     def test_world_functions(self):
         import importlib
         ut_map = importlib.import_module(WORLD.__module__.rsplit(".", 1)[0] + ".ut_map")

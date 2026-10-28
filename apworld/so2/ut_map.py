@@ -2,10 +2,12 @@
 
 Hybrid, in UT's words: the map tab's JSON is in this APWorld (tracker/: maps, locations named by their
 AP location names, the map menu, and map_pages.json), generated with the PopTracker pack by
-tools/ap_poptracker.py (`--ut-out apworld/so2/tracker`); the images come from the pack's zip, which
-the player points UT at once (host.yaml `so2_options: ut_pack_path`; UT asks with a file dialog the
-first time it is empty). So the APWorld carries no pictures, and the pack's maps (placeholders, or a
-player's own render copied into the zip) are UT's too.
+tools/ap_poptracker.py (`--ut-out apworld/so2/tracker`); the images come from a zip the player points
+UT at once (host.yaml `so2_options: ut_pack_path`; UT asks with a file dialog the first time it is
+empty): either the port's so2_shattered_stars_ut.zip (the player's own maps, rendered from their disc
+by `--render-tracker-maps` or setup's button, docs/ap/tracker_maps.md "The Universal Tracker zip") or
+the PopTracker pack's so2_shattered_stars_<version>.zip (its placeholders). Both hold every picture the
+map tab shows at the same paths, so the APWorld carries no pictures.
 
 UT follows the port's map: `map_page_setting_key` is the port's so2_map_{team}_{player}
 (docs/ap/data_storage.md), whose map goes through map_page_index to the room's page (or the world
@@ -23,12 +25,15 @@ TRACKER_FOLDER = "tracker"      # in this package: maps/, locations/, layouts/, 
 
 class SO2Settings(settings.Group):
     class UTPackPath(settings.FilePath):
-        """The Shattered Stars PopTracker pack (so2_shattered_stars_<version>.zip), for Universal
-        Tracker's map tab: UT shows its maps' pictures from it. Empty: UT asks for it once; null: no
+        """The pictures for Universal Tracker's map tab, one of two zips: so2_shattered_stars_ut.zip,
+        your own maps (Shattered Stars writes it beside the maps it renders for PopTracker:
+        --render-tracker-maps or setup's "Render tracker maps for PopTracker"), or the PopTracker pack
+        so2_shattered_stars_<version>.zip (placeholder maps). Empty: UT asks for it once; null: no
         map tab."""
-        description = "Shattered Stars PopTracker pack (so2_shattered_stars_*.zip)"
+        description = "Shattered Stars maps for Universal Tracker (so2_shattered_stars_ut.zip or so2_shattered_stars_*.zip)"
         required = False
-        ut_dialog_name = "Select the Shattered Stars PopTracker pack (so2_shattered_stars_*.zip)"
+        ut_dialog_name = ("Select the Shattered Stars maps: so2_shattered_stars_ut.zip (your own, rendered by "
+                          "Shattered Stars) or the PopTracker pack so2_shattered_stars_*.zip")
 
     ut_pack_path: UTPackPath | str = UTPackPath()
 
