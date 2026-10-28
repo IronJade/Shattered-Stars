@@ -83,6 +83,10 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
   for UT (~2-3 h + ~1 h RC rerun); known doors yellow, unknown ER doors decided at Phase C.
   Small leftover: test_tracker_maps.cpp has the same cwd temp-folder pattern rc030 fixed in
   test_tracker_job.cpp.
+  **The user's answers: "2. Include it now. 4. Yellow works for me."** Agent utzip builds both (the
+  port writes a UT zip of its renders; known doors SequenceBreak yellow, unknown ER doors yellow for
+  now, their colour a Phase C decision) plus the test_tracker_maps.cpp temp-folder fix; log
+  docs/handoff/utzip.md. Then a fresh RC agent resumes at task 4 (rc030 ended at 291k).
 - D8 (story awareness in story mode): **yes** (the user, 2026-10-27: "Story awareness in story mode
   would be a fantastic addition, yes."). B6 builds it: UT deferred events from `so2_story_*`, and the
   pack colours areas later in the story from the same key.
@@ -104,7 +108,9 @@ rules every agent gets. Resume from here plus each agent's own docs/handoff/<nam
 | World | B6 UT map tab + pack doors / Area > Room tabs / live door panel (part 2) + map_names area audit | maptab | docs/handoff/maptab.md | **done** 2026-10-27 (85e8325 fa8b0df 0062337 d6ab3d0 c544a40 814ea5e bccaa3e 980b0b2; 10 area fixes; 794 room maps, 1,775 door diamonds, live Doors panel, click/panel switching, ER seam door_pairs + so2_doors_*; pack zip 5.56 MB; UT map tab hybrid (JSON in so2.apworld, 281 KB; pictures from the pack zip, ut_pack_path); batches 288 identical; world 882, general 935, slow 885, UT 59, pack tests 41/41, checker OK, smoke 44/44, UT map loader 15/15) |
 | Docs | B7a checklist, Windows recheck list, the three release notes, README, wiki Trackers page | releasedocs | docs/handoff/releasedocs.md | **done** 2026-10-27 (fd6add9..5a95651; checklist section 12; windows_check 'Recheck for 0.03.00' 13 items; notes 0.03.00 / 0.2.2 / poptracker-1.0.0 (DRAFT, sums TODO); README; wiki 11 files uncommitted in scratchpad/wiki, links checked; 21 'TODO (maptab)' placeholders) |
 | Both | B7b version bumps, placeholders, RC builds + full tests | rc030 (sonnet) | docs/handoff/release.md "0.03.00" | **held before builds** (tasks 1-3 done: 249ad9d b82b176 2452b35 d4d8dc6; 21 placeholders filled, test_tracker_job temp dir, port 0.03.00 / world 0.2.2 bumped); resume at task 4 after the UT zip / door colour decision |
-| Both | The user's Windows check, then the three releases | (after rc030) | | only with the user's go-ahead |
+| Both | UT zip of the port's renders + yellow doors (the user: include now) | utzip | docs/handoff/utzip.md | started 2026-10-27 |
+| Both | RC resume at task 4 (builds, tests, sums) | (after utzip; fresh agent from release.md "0.03.00") | | queued |
+| Both | The user's Windows check, then the three releases | (after the RC) | | only with the user's go-ahead |
 
 A fresh agent per assignment (rule in ~/.claude/CLAUDE.md), started from the previous one's log.
 
