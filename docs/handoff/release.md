@@ -972,3 +972,154 @@ Steps: 1 version bump; 2 the two notes; 3 README + wiki (+ apworld/so2/docs down
   (the game's font has no parentheses: ap.cpp ~1766 "(bench)"); Party Order's hero-to-bench
   refusal has only the refusal sound (no text); docs/images/setup-archipelago.png still shows
   v0.02.50.
+
+## 0.03.00 (agent "rc030", 2026-10-27)
+
+B7b: three releases (port `v0.03.00`, so2.apworld 0.2.2 `apworld-v0.2.2`, PopTracker pack 1.0.0
+`poptracker-v1.0.0`), per docs/ap/release_checklist.md section 12 and docs/handoff/phaseb.md.
+Scope: fill the 21 `TODO (maptab)` placeholders from docs/handoff/maptab.md, the small
+tracker_job_test fix, the version bumps (12.1), the RC builds (12.2), tests (12.3), sums (12.4),
+and get the three notes ready. **Never push, tag, create a release/draft, or touch the wiki's
+git state.** Rules: headless only, scratch under scratchpad/release/ and scratchpad/rc030/,
+builds -j8, at most 3 game processes, commits on main docs-first staged by path (never
+`git add -A`), message ends with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
+
+### Status: held before builds (coordinator), 2026-10-27
+
+The coordinator asked (mid-task) to finish tasks 1-3 and commit, then **stop before task 4
+(builds)**: the user is deciding two small changes that would touch the port and the pack (a
+Universal Tracker zip of the port's own renders; the door diamonds' colour), and building the RC
+now would have to be redone once those land. Tasks 1-3 below are done and committed. **Not
+started: task 4 (builds), task 5 (tests), task 6 (sums + this section's RC write-up), task 7
+(sums into the release notes).** Waiting for the coordinator to lift the hold (new assignment or
+a message to continue).
+
+### Done
+
+**Task 1: the 21 `TODO (maptab)` placeholders**, from docs/handoff/maptab.md's log and its "For
+the release notes" / "Facts for releasedocs" sections, plus its "Open, for the user /
+coordinator" notes (UT's map tab has no doors; it does show a player marker on the two world
+maps). Filled in:
+- `docs/ap/release_checklist.md` section 12: the intro paragraph (maptab is done now, not
+  "still to come"); the world package's size/files (281,228 bytes at maptab's build, +`ut_map.py`
+  and `apworld/so2/tracker/`); the pack's size (1,201 files, 5,559,587 bytes, was ~3 MB);
+  `worlds/so2/test`'s count (882/3 skipped, unchanged by maptab); the identity check's new
+  host.yaml key (`so2_options: ut_pack_path`, no new slot-data key); the pack checker's count
+  ("Validated 11 files", was 10); the pack's own tests (41 OK, was 24: +`TestRooms`,
+  `TestDoorsLua`, `TestUT`); the door-click row (44/44, `tools/ap_poptracker_smoke.py`); the map
+  render test's row (still 10/10, layout now 794 rooms); and the "map tabs" row
+  (`--check` up to date at 794 rooms / 862 images, UT's own map loader 15/15).
+  **Also fixed, not a TODO marker but stale from the same area audit**: every "861 images" /
+  "793 rooms" left over from before maptab's area audit (which added one room, Port Hilton's
+  pier, bringing 861 -> 862 images), in this file's "the render, end to end" / "the four
+  releases' discs" / "setup's button" / ASan / Windows-under-Wine rows.
+- `docs/handoff/windows_check.md` item 11 (the room maps, the door panel, click switching: what a
+  Windows tester does and sees in PopTracker and in UT); same 861->862 / 793->794 fix in items 2-3.
+- `docs/release_notes/0.03.00.md`: the DRAFT banner (maptab's part no longer pending), the "What's
+  new" bullet (rooms/doors paragraph folded into the maps bullet, from maptab's release-notes
+  paragraph), the removed stand-alone TODO bullet, 861->862.
+- `docs/release_notes/0.2.2.md`: the DRAFT banner, the UT map tab bullet (hybrid, the file
+  dialog, the world-map marker, no doors), the counts paragraph (44 PopTracker checks, UT map
+  loader 15/15).
+- `docs/release_notes/poptracker-1.0.0.md`: the DRAFT banner, the "What it shows" rooms/doors
+  bullet, the "real maps" paragraph (now names rooms too, 861->862), the closing counts
+  paragraph (794 room maps, 1,775 doors, 1,201 files, ~5.6 MB; 41 pack tests; 44 PopTracker
+  checks).
+- `scratchpad/wiki/Trackers.md` (uncommitted, its own repo): replaced the TODO note under "Maps
+  from your own disc" with two new subsections, "Rooms and doors in the pack" and "Universal
+  Tracker's map tab"; added one cross-referencing bullet to each of PopTracker's and Universal
+  Tracker's existing "What it shows" lists; fixed the same 861->862 / 793->794 counts.
+- Checked every link and anchor: wrote `scratchpad/rc030/check_wiki_links.py` (a throwaway
+  checker: every `[...](...)` in `scratchpad/wiki/*.md`, resolved against that page's own
+  headings' GitHub-style slugs) — **0 bad links across 37 wiki pages**. The one same-file anchor
+  link added to `docs/release_notes/0.03.00.md` (`#playing-with-archipelago`, `#trackers`)
+  checked by hand against that file's own `##` headings.
+- Committed: `249ad9d` ("Docs: fill 4 of the 21 TODO (maptab) placeholders ..." — 10 of the 21,
+  across windows_check.md and the three release notes; the commit message undercounts them as
+  "4" meaning 4 files, worth noting here since the message itself reads ambiguously).
+
+**Task 2: `engine/tests/test_tracker_job.cpp`'s stray folder.** `scratch()` built each case's
+temp folder under `fs::current_path() / "tracker_job_test" / <name>`; every `TEST()` already
+calls `fs::remove_all(dir)` on its own leaf at the end, but that never removed the shared
+`tracker_job_test` parent that `create_directories` made along the way, so an empty
+`tracker_job_test/` was left in whatever directory `ss_game_tests` ran from. Fixed by making
+each case's folder a single-level directory directly under `fs::temp_directory_path()`
+(`ss_tracker_job_test_<name>`, not nested under a shared parent this file creates), so the
+existing `fs::remove_all(dir)` calls now remove the whole thing, with nothing left behind
+anywhere (not even under the system temp dir).
+- **Verified**: configured `engine/build-rc030` (Ninja, RelWithDebInfo), built `ss_game_tests`
+  (338/338 objects, exit 0). Ran `SS_TEST=tracker_` from a scratch cwd
+  (`scratchpad/rc030/testcwd`, scratch `XDG_CONFIG_HOME`/`XDG_RUNTIME_DIR`, offscreen/dummy
+  drivers, `ulimit -v 4194304` i.e. the 4 GB cap by hand since `tools/memcap.py` has no CLI entry
+  point of its own — it's a library other tools import): **10 tests, 0 failed** (3 from
+  `test_tracker_job.cpp`, 7 from `test_tracker_maps.cpp`, both under the `tracker_` substring
+  filter). After the run, `scratchpad/rc030/testcwd/` held only the *other* file's
+  `tracker_maps_test/` (test_tracker_maps.cpp has the identical bug, out of this task's scope,
+  not touched) — no `tracker_job_test/` anywhere, and nothing under `/tmp/ss_tracker_job_test_*`
+  either. Scratch test dirs removed after (`scratchpad/rc030/testcwd` etc.); `engine/build-rc030`
+  kept (871 MB) for now, not yet removed, since task 4 (the real RC build) is on hold and a
+  pointer build may still be useful.
+- Committed: `b82b176` ("Fix: test_tracker_job's scratch() no longer leaves tracker_job_test/ behind").
+
+**Task 3: version bumps (checklist 12.1).**
+- `engine/CMakeLists.txt`: `project(... VERSION 0.03.00)`, and its two comments naming the old
+  value (the `SS_VERSION` comment, the `.rc` fields comment: `0.03.00` -> `0,3,0,0`).
+- `README.md`: the version badge, the two package names under "Download"
+  (`ShatteredStars-0.03.00-{win64.zip,linux-x86_64.tar.gz}`). The world/pack release links were
+  already at 0.2.2 / 1.0.0 (releasedocs); the one "needs Shattered Stars 0.02.51 or later"
+  compatibility line (the bench) is correctly a minimum, not this release's version — left as is.
+- `engine/README.md`: the one example package name (`ShatteredStars-0.03.00-win64.zip`); its
+  "so2.apworld 0.2.1" mention is a dated historical note (when the hell seed shipped), left as is.
+- `docs/ap/release_checklist.md` section 1's table: the world row 0.2.1 -> 0.2.2, the port row
+  0.02.51 -> 0.03.00, plus two new rows (the pack 1.0.0, `ut.LOGIC_VERSION` 1 unchanged) so the
+  table lists every version this release touches, as 12.1 does. This file's section-12
+  placeholder fill (task 1, above) hadn't been committed separately yet when this edit was made
+  (both edits were made before any commit touched this file), so **both land in this same
+  commit** — its message says so.
+- `apworld/so2/archipelago.json`: `world_version` 0.2.1 -> 0.2.2 (checked: still valid JSON).
+- `apworld/so2/world.py`: `APWORLD_VERSION` 0.2.1 -> 0.2.2, the same string (checked: `ast.parse`
+  still succeeds; the two are equal, per 12.1's rule).
+- **Not changed, already correct**: `tools/ap_poptracker.py`'s `PACK_VERSION` is already "1.0.0";
+  `apworld/so2/ut.py`'s `LOGIC_VERSION` is already `1` (12.1: stays 1, this release's logic
+  changes are all conservative extensions already covered by it per logicexport's work).
+  Grepped the allowed files for other `0.02.51` references: every remaining one is a correct
+  historical reference (past RCs in checklist sections 9-11, "Updating from 0.02.51" in the
+  0.03.00 notes, "plays on Shattered Stars 0.02.51 and later" compatibility lines in the 0.2.2
+  notes) — none needed changing.
+- Not yet rebuilt against the new version (holding before task 4, per the coordinator).
+- Committed: `2452b35` ("Version bumps: port 0.03.00, world 0.2.2; checklist section 12's
+  remaining TODO (maptab) placeholders ..." — this commit carries both this task's version
+  bumps and the release_checklist.md edit, which also still held task 1's remaining 10
+  placeholders uncommitted at that point; see the note above).
+
+### Next (once the hold lifts)
+- Task 4: builds (12.2) into `scratchpad/release/rc-0.03.00-dist/{port,apworld,poptracker}`.
+- Task 5: tests (12.3), every row, including re-deriving the packaged e2e copies from today's
+  `tools/ap_e2e_so2.sh` (step 9) and measuring the full Wine suite count.
+- Task 6: sums (12.4), write results into checklist section 12 and this section.
+- Task 7: release notes' sum/package TODOs replaced with the RC's real values.
+- If the user's two pending changes (the UT zip of the port's renders; the door diamonds'
+  colour) land before the hold lifts, re-read docs/handoff/phaseb.md and whichever agent's log
+  covers them before resuming — the "944 of 964 maps switch a tab" / image-count / test-count
+  facts filled in task 1 above may need a second pass if either change touches the layout, the
+  pack, or the UT map tab.
+
+### How to verify (so far)
+- `grep -rn 'TODO (maptab)' docs/ap/release_checklist.md docs/handoff/windows_check.md docs/release_notes scratchpad/wiki` prints only one explanatory (already-past-tense) mention, no blank placeholder.
+- `python3 scratchpad/rc030/check_wiki_links.py` -> "OK: 37 wiki pages, 0 bad internal links".
+- `grep -n ss_tracker_job_test engine/tests/test_tracker_job.cpp` shows the new temp-dir based `scratch()`.
+- `grep -n 'VERSION 0.03.00\|SS_VERSION="0.03.00"\|0,3,0,0' engine/CMakeLists.txt` (the last one is in a comment, not literal code).
+- `python3 -c "import json; print(json.load(open('apworld/so2/archipelago.json'))['world_version'])"` -> `0.2.2`.
+- `grep -n APWORLD_VERSION apworld/so2/world.py` -> `"0.2.2"`.
+
+### Rules given (this pass)
+Headless only; nothing on the user's desktop (DISPLAY/WAYLAND_DISPLAY/DBUS_SESSION_BUS_ADDRESS
+unset, scratch XDG_RUNTIME_DIR, or xvfb-run); every game process under tools/memcap.py (4 GB),
+at most 3 at once; builds -j8; scratch XDG_CONFIG_HOME/HOME; scratch WINEPREFIX
+(WINEDEBUG=-all, `wineserver -k` after); never a config-saving flag, never the user's own
+config/saves/PopTracker folder/~/.local/share/Archipelago (read-only); kill only by exact PID;
+Python from scratchpad/ap/Archipelago with ../ap-venv/bin/python, SKIP_REQUIREMENTS_UPDATE=1;
+generation under `prlimit --as=$((8<<30))`; commit on main after each finished piece, docs
+first, staged by path; never commit build output/images/zips; never push, tag, create a
+release/draft, or commit/push the wiki; on a denied tool call, stop and name the exact command;
+cap command output; long jobs backgrounded with deadlines; roll over at ~400k context.
