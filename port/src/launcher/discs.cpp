@@ -11,6 +11,7 @@
 #include "disc/archive.h"
 #include "disc/disc_image.h"
 #include "launcher/config.h"
+#include "launcher/process.h"
 #include "runtime/boot_exe.h"
 
 namespace ss::launcher {
@@ -243,7 +244,7 @@ FoundDiscs find_discs(const std::vector<fs::path>& folders) {
 
 std::vector<fs::path> disc_folders(const fs::path& config_dir) {
   std::vector<fs::path> out;
-  if (const char* base = SDL_GetBasePath()) out.push_back(utf8_path(base) / "discs");
+  if (const char* base = SDL_GetBasePath(); base && !in_app_bundle()) out.push_back(utf8_path(base) / "discs");
   fs::path second = config_dir / "discs";
   if (out.empty() || out.front().lexically_normal() != second.lexically_normal()) out.push_back(second);
   return out;

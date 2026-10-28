@@ -48,21 +48,21 @@ their icon, for your user only (`~/.local/share/applications` and `~/.local/shar
 GNOME and KDE Plasma on Wayland show a program's name and icon in the taskbar only once its
 desktop entry is installed. Run it again after moving the folder; `--uninstall` removes it.
 
-| | Windows | Linux | macOS (built from source; in progress) |
+| | Windows | Linux | macOS (a release candidate) |
 |---|---|---|---|
-| The game | `shattered-stars.exe` | `shattered-stars` | `shattered-stars` |
-| Setup | `setup.exe` | `shattered-stars-setup` | `shattered-stars-setup` |
+| The game | `shattered-stars.exe` | `shattered-stars` | `Shattered Stars.app` |
+| Setup | `setup.exe` | `shattered-stars-setup` | `Shattered Stars Setup.app` |
 | Settings | `%APPDATA%\ShatteredStars\config.ini` | `~/.config/shattered-stars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) | `~/Library/Application Support/ShatteredStars/config.ini` (or `$XDG_CONFIG_HOME/shattered-stars/`) |
 | Memory card 1 | `memcard1.mcd` beside `config.ini` | the same | the same |
 | Mods | `mods\` beside `config.ini` | `mods/` beside `config.ini` | the same |
-| Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` | the same |
+| Disc folders | `discs\` next to the game, or beside `config.ini` | `discs/` next to the game, or beside `config.ini` | `discs/` beside `config.ini` |
 
-While playing, F11 or Alt+Enter switches between the window and full screen, and Esc
-pauses the game and asks before quitting (Keep playing / Quit; `src/runtime/quit_prompt.h`).
-The window's close button and Alt+F4 quit at once. Esc and F11 are the port's own keys:
-they never press a game button, whatever `config.ini` binds to them. `config.ini` is plain
-`key=value` text: setup writes it, and keys it doesn't know are kept. The keys are listed in
-`src/launcher/config.h`.
+While playing, F11 or Alt+Enter (on a Mac: Option+Return, or the green button) switches between
+the window and full screen, and Esc pauses the game and asks before quitting (Keep playing / Quit;
+`src/runtime/quit_prompt.h`). The window's close button and Alt+F4 quit at once. Esc and F11
+are the port's own keys: they never press a game button, whatever `config.ini` binds to them.
+`config.ini` is plain `key=value` text: setup writes it, and keys it doesn't know are kept. The
+keys are listed in `src/launcher/config.h`.
 
 ## Build
 
@@ -93,19 +93,26 @@ byte), and its test suites pass under Wine (`port/build-win/ss_tests.exe`,
 
 ### macOS
 
-In progress (Apple Silicon; docs/handoff/macos.md): the programs and both test suites build
-with Xcode's clang, the tests and the headless smoke test pass, and the game starts from the
-player's discs to its title menu in a window (OpenGL 4.1). Not yet released or packaged.
-Without Homebrew, CMake and Ninja come from pip; SDL is built from source as above:
+A release candidate, not yet released (Apple Silicon; docs/handoff/macos.md): the programs and
+both test suites build with Xcode's clang, the tests and the headless smoke test pass, the
+frames and tracker maps equal Linux's, and the game starts from the player's discs to its
+title menu in a window (OpenGL 4.1). Without Homebrew, CMake and Ninja come from pip; SDL is
+built from source as above:
 
 ```sh
 pip3 install --user cmake ninja && export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-cmake -S port -B port/build-macos -G Ninja
+port/tools/build_macos.sh   # -> dist/ShatteredStars-<version>-macos-arm64.zip: Shattered Stars.app,
+                            #    Shattered Stars Setup.app, README, LICENSE
+cmake -S port -B port/build-macos -G Ninja   # or a development build
 cmake --build port/build-macos
 ```
 
-Without OpenSSL (e.g. `brew install openssl@3`) the Archipelago client speaks `ws://` only. SDL's
-offscreen video driver can't open a window on macOS, so headless checks there use
+The package runs on macOS 11 or newer (`MACOS_MIN`) on Apple Silicon. Each app holds both
+programs; the disc images go in `~/Library/Application Support/ShatteredStars/discs` (nothing is
+put inside an app). The apps are signed ad hoc, so macOS blocks them once downloaded until the
+player allows them (its README.txt says how). Without a static OpenSSL 3 (`OPENSSL_ROOT_DIR`, or
+`brew install openssl@3` for a development build) the Archipelago client speaks `ws://` only.
+SDL's offscreen video driver can't open a window on macOS, so headless checks there use
 `SDL_VIDEO_DRIVER=dummy`. macOS has no address-space limit, so `tools/memcap.py` caps a run by
 its memory footprint there, and the smoke test uses it in place of `timeout`.
 

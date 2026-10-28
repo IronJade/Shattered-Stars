@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <string_view>
 #include <system_error>
 
 #include "launcher/config.h"
@@ -39,9 +40,20 @@ SDL_Process* create(const std::filesystem::path& program, const std::vector<std:
 std::filesystem::path sibling_program(const char* name) {
   const char* base = SDL_GetBasePath();
   if (!base) return {};
-  const std::filesystem::path p = utf8_path(base) / name;
+  // In an .app SDL's base path is Contents/Resources; the programs are in Contents/MacOS.
+  const std::filesystem::path p = in_app_bundle() ? (utf8_path(base) / ".." / "MacOS" / name).lexically_normal()
+                                                  : utf8_path(base) / name;
   std::error_code ec;
   return std::filesystem::is_regular_file(p, ec) ? p : std::filesystem::path();
+}
+
+bool in_app_bundle() {
+#ifdef __APPLE__
+  const char* base = SDL_GetBasePath();  // ".../Name.app/Contents/Resources/" in a bundle
+  return base && std::string_view(base).ends_with(".app/Contents/Resources/");
+#else
+  return false;
+#endif
 }
 
 int run_and_wait(const std::filesystem::path& program, const std::vector<std::string>& args, std::string* error) {

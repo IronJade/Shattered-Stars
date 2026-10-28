@@ -266,6 +266,16 @@ bool Window::next_event(bool& open, KeyEvent& out) {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         open = false;
         break;
+      case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+      case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+        // Also the desktop's own switch (macOS's green button or Ctrl+Cmd+F, a window manager's
+        // key): F11 / Alt+Enter and the pointer follow the window as it is.
+        if (e.window.windowID == SDL_GetWindowID(window_)) {
+          fullscreen_ = e.type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN;
+          if (fullscreen_) SDL_HideCursor();
+          else SDL_ShowCursor();
+        }
+        break;
       case SDL_EVENT_KEY_DOWN:
       case SDL_EVENT_KEY_UP: {
         const bool down = e.type == SDL_EVENT_KEY_DOWN;

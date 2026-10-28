@@ -931,3 +931,47 @@ TEST(window_honours_the_controls) {
   }
   SDL_ResetHint(SDL_HINT_VIDEO_DRIVER);
 }
+
+// Full screen switched behind the game's back (macOS's green button, a window manager's key):
+// F11 then goes back to the window, not to full screen again. Offscreen, as above.
+TEST(window_follows_the_desktops_full_screen) {
+  using namespace ss::platform;
+  SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "offscreen", SDL_HINT_OVERRIDE);
+  {
+    Window window;
+    std::string error;
+    if (!window.create("full-screen test", 320, 240, &error)) {
+      std::printf("  (skipped: no offscreen OpenGL window here: %s)\n", error.c_str());
+    } else {
+      SDL_Window* raw = nullptr;
+      int count = 0;
+      if (SDL_Window** all = SDL_GetWindows(&count)) {
+        for (int i = 0; i < count; ++i)
+          if (std::string(SDL_GetWindowTitle(all[i])) == "full-screen test") raw = all[i];
+        SDL_free(all);
+      }
+      CHECK(raw != nullptr);
+      auto f11 = [&] {
+        for (bool down : {true, false}) {
+          SDL_Event e{};
+          e.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
+          e.key.key = SDLK_F11;
+          e.key.down = down;
+          SDL_PushEvent(&e);
+        }
+        window.pump([](const KeyEvent&) {});
+        SDL_SyncWindow(raw);
+      };
+      if (raw) {
+        SDL_SetWindowFullscreen(raw, true);  // not through the window's own switch
+        SDL_SyncWindow(raw);
+        window.pump([](const KeyEvent&) {});
+        f11();
+        CHECK((SDL_GetWindowFlags(raw) & SDL_WINDOW_FULLSCREEN) == 0);
+        f11();
+        CHECK((SDL_GetWindowFlags(raw) & SDL_WINDOW_FULLSCREEN) != 0);
+      }
+    }
+  }
+  SDL_ResetHint(SDL_HINT_VIDEO_DRIVER);
+}

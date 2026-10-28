@@ -9,9 +9,10 @@
 // by the setup program and by the remembered
 // options below. Disc 1 must be disc 1 of a release the port plays (North American or
 // European; runtime/region.h; disc 2 the same release); when it isn't, the game
-// looks in the `discs` folders (next to the game, next to config.ini), and then, on a
-// windowed run, opens setup and carries on once a disc 1 is chosen. Headless runs and
-// SS_DISC1 / SS_DISC2 runs never open setup and never write config.ini.
+// looks in the `discs` folders (next to the game unless in a macOS .app, next to
+// config.ini), and then, on a windowed run, opens setup and carries on once a disc 1 is
+// chosen. Headless runs and SS_DISC1 / SS_DISC2 runs never open setup and never write
+// config.ini.
 //   shattered-stars --viewer [--entry N]                 texture viewer
 //   shattered-stars --dump DIR --entry N                 write an entry's textures as PNGs
 //   shattered-stars --render-tracker-maps [DIR]          the PopTracker pack's map images from your
@@ -162,9 +163,13 @@ void print_no_disc(const std::string& disc1) {
     text = "disc 1 image expected, " + disc1 +
            (info.kind == launcher::DiscKind::kDisc2 ? " is disc 2" : ": " + launcher::describe(info, 1)) + "\n";
   }
-  text += std::string("No disc image yet: run ") + launcher::kSetupProgram +
-          ", put your disc images in a \"discs\" folder next to the game, or\n"
-          "run once with --disc1 \"/path/to/Disc 1.cue\" (both are remembered).\n";
+  if (launcher::in_app_bundle())  // macOS: no discs folder inside the .app
+    text += "No disc image yet: open Shattered Stars Setup, or put your disc images in\n" +
+            launcher::path_utf8(launcher::config_dir() / "discs") + "\n";
+  else
+    text += std::string("No disc image yet: run ") + launcher::kSetupProgram +
+            ", put your disc images in a \"discs\" folder next to the game, or\n"
+            "run once with --disc1 \"/path/to/Disc 1.cue\" (both are remembered).\n";
   launcher::fatal(text);
 }
 
