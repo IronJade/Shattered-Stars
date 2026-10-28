@@ -1123,3 +1123,79 @@ generation under `prlimit --as=$((8<<30))`; commit on main after each finished p
 first, staged by path; never commit build output/images/zips; never push, tag, create a
 release/draft, or commit/push the wiki; on a denied tool call, stop and name the exact command;
 cap command output; long jobs backgrounded with deadlines; roll over at ~400k context.
+
+## 0.03.00, continued (agent "rc030b", 2026-10-28)
+
+Resumes at task 4 (builds), per phaseb.md's lane table. Read this file's "0.03.00" section above
+(rc030's log, the rules), docs/ap/release_checklist.md section 12, docs/handoff/utzip.md
+(its "Counts changed in the release docs" -- being rechecked against this RC's own runs),
+docs/handoff/phaseb.md, release.md "0.02.51" (the prior RC's shape).
+
+**Decision taken (not a change to policy, recorded for anyone resuming):** this RC does **not**
+use a disposable worktree, unlike 0.02.50/0.02.51's RC scripts. `git status` is clean at HEAD
+(1e535ec, tree 364be25c1f97a457a1a0dc7533bdf026a55d6044) with no other agent running, and this
+agent's own allowed files are docs/scratchpad/dist only (never engine/apworld/tools/mods/LICENSE),
+so the main tree already *is* "one clean commit" for the whole run; a worktree would only have
+reintroduced section 12.2's "build_poptracker.sh needs scratchpad/ap" trap (that script hardcodes
+`$repo/scratchpad/ap`, which doesn't exist inside a fresh worktree) for no isolation benefit here.
+`ph_verify` (last phase) re-checks `git status --short -- engine apworld tools mods LICENSE` is
+still empty and HEAD/tree unchanged before the sums are trusted.
+
+**The RC script**: `scratchpad/release/rc-0.03.00.sh PHASE...` (snapshot build linux wine world
+batch identity ut pack suites e2e extra asan tsan winsuites sums verify cleanup, or `all`).
+Adapted from `scratchpad/release/rc-0.02.51.sh`; new pieces: `identity` (a `cp -as` farm of
+scratchpad/ap/Archipelago with worlds/so2 repointed at a `git archive apworld-v0.2.1 apworld/so2`
+extraction and every top-level script realized as a real copy, not a symlink -- the "baseline
+trap" utworld.md found -- comparing against this RC's own `batch` output with
+`scratchpad/release/identity_0_2_1.py`, adapted from `scratchpad/storyaware/identity.py` to strip
+four fields instead of one: `.apso2`'s `options.apworld_version`, and the multidata slot_data's
+`logic_version` / `exclude_locations` / `tracker`, none of which 0.2.1 ever wrote); `ut` (real
+Universal Tracker check, `tools/ap_ut_check.py`); `extra` (the render end-to-end script, UT's own
+map loader against both zips x both worlds, setup headless A-D plus utzip's M/Z zip-interrupt
+scenarios); `asan` / `tsan` (own build dirs `engine/build-rc030b-asan` / `-tsan`, reusing
+`engine/build/_deps` for FetchContent sources and `scratchpad/vmfix/asan`'s libasan copy, the
+same recipe as `scratchpad/setupthread/build_san.sh`); `winsuites` also renders under Wine and
+byte-compares against a Linux capture from `extra`. `BUILD_RC=engine/build-utzip`, reused as-is
+(confirmed `ninja: no work to do` against this exact commit before the run started) rather than
+rebuilt, saving a full engine rebuild.
+
+### Status: build phase running (started 07:33)
+
+`bash scratchpad/release/rc-0.03.00.sh snapshot` ran first in the foreground (confirms the commit
+and tree hash above, 0 dirty lines). `bash scratchpad/release/rc-0.03.00.sh build` is running in
+the background (nohup, `scratchpad/release/rc030b-build.out`): layout check OK, the Linux
+container build in progress. Next once it lands: linux, wine, world, batch, identity, ut, pack,
+suites, e2e, extra, asan, tsan, winsuites, sums, verify, cleanup, in that order (the "all" list).
+Watching via a Monitor on `scratchpad/release/rc-0.03.00-dist/summary.txt`.
+
+Nothing committed yet this pass (no finished piece to commit). Will update this section again
+within 30 minutes or at the next finished phase, whichever comes first.
+
+### Status 07:37: build phase done
+
+All five build steps rc=0, fast (about 4 minutes total): layout check, `tools/build_linux.sh
+--container`, `tools/build_windows.sh`, `tools/build_apworld.sh`, `tools/build_poptracker.sh
+all`. Artifacts (in `scratchpad/release/rc-0.03.00-dist/`):
+- `port/ShatteredStars-0.03.00-linux-x86_64.tar.gz`: 9,906,177 bytes
+- `port/ShatteredStars-0.03.00-win64.zip`: 8,315,495 bytes
+- `apworld/so2.apworld`: 281,557 bytes (matches utzip2's measured size exactly)
+- `apworld/Star.Ocean.The.Second.Story.yaml`: 24,325 bytes
+- `poptracker/so2_shattered_stars_1.0.0.zip`: 5,559,656 bytes (matches utzip's measured size
+  exactly), 1,201 files, pack checker + `tools/ap_poptracker_test.py` both ran clean inside
+  `build_poptracker.sh all` (re-verified with a dedicated run in the `pack` phase)
+- apworld manifest has no `__pycache__`, `archipelago.json`'s `version`/`compatible_version`
+  present (packaging-added), `world_version` 0.2.2.
+
+A bug found and fixed in the RC script before running further phases: `ph_wine`'s Windows-vs-
+Linux render byte-compare reads `$DIST/linux-render`, which only `ph_extra` writes -- but
+`ph_extra` came after `ph_wine` in the original phase order. Fixed by reordering (`extra` now
+runs right after `linux`, before `wine`); the script's header and `all` list both corrected.
+Noted here since anyone re-running a single `wine` phase in isolation should run `extra` first.
+
+Also confirmed useful for the optional "UT story awareness on a 0.2.1 room" check (task 5): the
+existing `dist/apworld-0.2.1/so2.apworld` (186,265 bytes, `world_version` 0.2.1, built earlier by
+ncpfix) is still present and usable directly with `tools/ap_ut_check.py --apworld`, so that check
+doesn't need its own apworld build.
+
+Next: `linux`, `extra`, `wine`, `world`, `batch`, `identity`, `ut`, `pack`, `suites`, `e2e`,
+`asan`, `tsan`, `winsuites`, `sums`, `verify`, `cleanup`, running in the background.
