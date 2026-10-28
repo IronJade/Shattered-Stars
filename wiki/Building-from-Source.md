@@ -2,10 +2,10 @@
 
 This page covers compiling Shattered Stars yourself, running its tests, making the release
 packages and building the Archipelago `.apworld`. The commands are for Linux; the Windows
-release is cross-compiled from Linux. A macOS build (Apple Silicon, Xcode's clang) is in
-progress: the same `cmake` commands work there, with CMake and Ninja from Homebrew or
-`pip3 install --user cmake ninja`; headless runs there use `SDL_VIDEO_DRIVER=dummy`, since SDL's
-offscreen driver can't open a window on macOS.
+release is cross-compiled from Linux. A macOS build (Apple Silicon, Xcode's clang) is a
+release candidate: the same `cmake` commands work there, with CMake and Ninja from Homebrew or
+`pip3 install --user cmake ninja`, and `port/tools/build_macos.sh` makes its zip; headless runs
+there use `SDL_VIDEO_DRIVER=dummy`, since SDL's offscreen driver can't open a window on macOS.
 
 ## Getting the source
 
