@@ -1,0 +1,12 @@
+{
+    "versions": [
+        {
+            "package_version": "1.0.0",
+            "download_url": "https://github.com/IronJade/Shattered-Stars/releases/download/poptracker-v1.0.0/so2_shattered_stars_1.0.0.zip",
+            "sha256": "8154d61889773ca556673e6347e30c78d503d24547bb09cb57527a5db091f716",
+            "changelog": [
+                "Pack 1.0.0 for so2.apworld (Star Ocean: The Second Story on Shattered Stars)."
+            ]
+        }
+    ]
+}
