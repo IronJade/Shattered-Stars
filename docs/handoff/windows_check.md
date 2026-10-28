@@ -445,7 +445,9 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
     Stars?"; the gold-star icon on both `.exe`s, the title bars and the taskbar; the bundle
     unpacked into "…\Shattered Stars Ä\" starts and saves; a seed's New Game, a check, a save and
     a load; the bench seed's Party Order flip.
-13. Optional, with a toolchain: `ss_tests.exe` / `ss_game_tests.exe` (the RC runs them under Wine).
+13. The test suites natively, no toolchain needed: the RC's cross-built `ss_tests.exe` /
+    `ss_game_tests.exe` (+ SDL3.dll from port/build-win-release), run as `.\ss_tests.exe` /
+    `.\ss_game_tests.exe` in cmd with SS_DISC1 set (the RC also runs them under Wine).
 
 ### 2026-10-28: the 0.03.00 RC (d9ae923) on Windows 11: 10 PASS, 2 FAIL, 1 NOT RUN
 
@@ -505,7 +507,14 @@ Fresh seeds: story AP_33970985156012591707, open AP_77728259311549143709; old (0
   and the Launcher were closed: they write it back on exit; the first try's FAIL withdrawn); the
   stand-ins; game + PopTracker + UT at once; the 0.2.1 room. The known issue reproduced (Auto Tab
   off before the first connect drops; on again + /connect works).
-- 13 NOT RUN yet: the Windows session's permission check blocked running the downloaded test
-  executables; waiting on the user's approval there.
+- **13 PASS** (the user approved running the downloaded executables): the RC's cross-built
+  ss_tests.exe "103 tests, 0 failed" (3 skipped: other regions' discs) and ss_game_tests.exe "232
+  tests, 0 failed" (32 skipped: no offscreen OpenGL on Windows for the 3 window tests, the game /
+  setup not beside the tests, no SS_AP_SERVER, other regions' discs, developer fixtures), natively
+  on Windows 11 with SS_DISC1; **field_text_layout_map7 passes** (it crashed under Wine in the
+  0.02.50 RC). Run them as `.\ss_tests.exe` in cmd (a bare name failed on that machine's
+  NoDefaultCurrentDirectoryInExePath).
+
+**The 0.03.00 Windows recheck is complete: 1, 2-3, 5, 8a, 8b, 10, 11 and 13 all PASS.**
 - Note (not a bug): with Archipelago off, setup's longer notice pushes "Render tracker maps for
   PopTracker" below the fold at 125 % display scaling (scroll to see it).
