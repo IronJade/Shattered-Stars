@@ -112,3 +112,11 @@ copies of the top-level scripts).
 - 2026-10-27: B done and verified (pack tests 42/42, smoke 45/45); committing docs then code.
 - 2026-10-27: log created; read phaseb.md, maptab.md, setupthread.md, mapdoors.md,
   tracker_maps.md, release.md "0.03.00".
+- 2026-10-28 (coordinator): **utzip stopped mid-task** (the account's weekly API limit, HTTP 429)
+  while adding `--ut-zip FILE` / `--no-ut-zip` to main.cpp. Nothing of A is committed. Left
+  uncommitted in the tree: engine/src/util/zip_writer.{h,cpp} (new), engine/src/util/deflate.{h,cpp},
+  engine/src/tools/tracker_maps.{h,cpp} (+~230 lines), engine/src/main.cpp (flags, unfinished),
+  engine/CMakeLists.txt, tools/ap_poptracker.py (writes boards.json: the boards' cells and labels and
+  UT's player marker, for the port to draw them into the UT zip), tools/poptracker/boards.json (new;
+  the committed copy the port compiles in). The design was never written here: read the diff. A
+  fresh agent (utzip2) continues A, then C.
