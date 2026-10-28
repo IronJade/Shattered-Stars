@@ -596,7 +596,7 @@ The pack zip's name and tag are fixed by its `versions.json` entry: `download_ur
 `https://github.com/IronJade/Shattered-Stars/releases/download/poptracker-v1.0.0/so2_shattered_stars_1.0.0.zip`
 (tools/build_poptracker.sh's default tag). The name has no spaces, so GitHub keeps it as it is. To
 use other tag names: `grep -rn 'v0\.03\.00\|apworld-v0\.2\.2\|poptracker-v1\.0\.0' README.md
-docs/release_notes scratchpad/wiki`, the commands below, and `build_poptracker.sh build --tag`.
+docs/release_notes wiki`, the commands below, and `build_poptracker.sh build --tag`.
 
 **maptab's work is in** (the maptab handoff log, done 2026-10-27): the map_names.csv `area`
 audit, the pack's room maps, door sections, live door panel and click switching, and Universal
@@ -612,7 +612,7 @@ marked **TODO (maptab)**. The release itself still needs the user's go-ahead (ph
 | The world | 0.2.1 | **0.2.2** | `apworld/so2/archipelago.json` `world_version` and `world.py` `APWORLD_VERSION` (keep the two equal) |
 | The pack | 1.0.0 | 1.0.0 | `tools/ap_poptracker.py` `PACK_VERSION` (already 1.0.0); manifest min / target PopTracker 0.36.0 (`POPTRACKER_VERSION`) |
 | `ut.LOGIC_VERSION` | 1 | **1** (unchanged) | apworld/so2/ut.py: the logic is 0.2.1's (rulebuilder's 93,083,978 truth values, every batch identical; apworld.md "Trackers", "When to bump") |
-| The wiki | | already written for 0.03.00 / 0.2.2 / 1.0.0 | scratchpad/wiki, uncommitted (the releasedocs handoff log) |
+| The wiki | | already written for 0.03.00 / 0.2.2 / 1.0.0 | `wiki/` (imported from scratchpad/wiki's uncommitted edits, 2026-10-28) |
 
 The world's bump changes each `.apso2` in one field only, `apworld_version` ("0.2.1" -> "0.2.2"),
 as 0.2.0 -> 0.2.1 did. The seed's own `version` (1-4) is unchanged: Shattered Stars 0.02.51 plays
@@ -791,11 +791,14 @@ From then on `tools/build_poptracker.sh build` puts each new version's entry fir
 committed file's (docs/ap/poptracker.md "Building"). This commit comes after the tags, so the
 content id at the tags is the RC's.
 
-**The wiki** (scratchpad/wiki, its own repo: the new Trackers page and the pages that link it;
-the releasedocs handoff log lists them):
+**The wiki** (its pages are `wiki/` in this repo since 2026-10-28, committed with the code;
+`tools/wiki_publish.sh` syncs them into a checkout of the wiki repo, `scratchpad/wiki` by default,
+shows the diff and commits + pushes only with `--push`). With `main` pushed:
 
 ```sh
-(cd scratchpad/wiki && git add -A && git commit -m "0.03.00, so2.apworld 0.2.2 and the PopTracker pack 1.0.0: trackers" && git push origin master)
+tools/wiki_publish.sh --dry-run    # the pages that will change
+tools/wiki_publish.sh              # sync into scratchpad/wiki and show the diff (nothing committed)
+tools/wiki_publish.sh --push -m "0.03.00, so2.apworld 0.2.2 and the PopTracker pack 1.0.0: trackers"
 ```
 
 **Not part of this release unless the user says so:** listing the pack in PopTracker's

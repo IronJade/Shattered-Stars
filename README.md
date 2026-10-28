@@ -501,13 +501,16 @@ res/           The application icon (an original design drawn by tools/make_icon
                resource and manifest templates, the Linux .desktop files
 tools/         Disc, script and mod tools, comparison scripts, sweeps, packaging, the reference suite,
                the PopTracker pack's generator (tools/ap_poptracker.py, its Lua in tools/poptracker/)
+wiki/          The wiki's pages, published to the GitHub wiki by tools/wiki_publish.sh
 ```
 
 ## Contributing
 
 Bug reports and fixes are welcome. Please read
 [Contributing](https://github.com/IronJade/Shattered-Stars/wiki/Contributing) first; bugs go to
-the [issue tracker](https://github.com/IronJade/Shattered-Stars/issues).
+the [issue tracker](https://github.com/IronJade/Shattered-Stars/issues). The wiki's pages live in
+[`wiki/`](wiki) and change by pull request like the code; `tools/wiki_publish.sh` copies them to
+the GitHub wiki at release time.
 
 A fix to gameplay code follows the play-state rule. Measure the faithful version against the
 original in PCSX-Redux first, and keep the fix only if hit timing, hits, damage and pacing stay
