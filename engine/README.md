@@ -31,7 +31,7 @@ You need images of your own discs, from the North American, European, French or 
 release (both from the same one): each disc's `.cue` file with its `.bin`, or an `.iso` /
 `.img` image. Disc 2 is optional until the story asks for it.
 
-**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.02.51-win64.zip`)
+**Windows:** unzip `ShatteredStars-<version>-win64.zip` (e.g. `ShatteredStars-0.03.00-win64.zip`)
 anywhere and run **`setup.exe`**. On the Discs page, choose Disc 1 (and Disc 2) with
 *Browse...*. The other pages are Display,
 Sound, Controls, Gameplay, Memory cards, Mods and Archipelago. Then press *Save & Play*. Or just run

@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue.svg"></a>
-  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.02.51" src="https://img.shields.io/badge/version-0.02.51-informational.svg"></a>
+  <a href="https://github.com/IronJade/Shattered-Stars/wiki"><img alt="Version 0.03.00" src="https://img.shields.io/badge/version-0.03.00-informational.svg"></a>
   <a href="#getting-started"><img alt="Platforms: Windows and Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey.svg"></a>
   <a href="#how-it-was-made"><img alt="C++20, SDL3, OpenGL" src="https://img.shields.io/badge/C%2B%2B20-SDL3%20%C2%B7%20OpenGL-orange.svg"></a>
   <a href="#archipelago"><img alt="Archipelago: built in" src="https://img.shields.io/badge/Archipelago-built%20in-purple.svg"></a>
@@ -130,8 +130,8 @@ Japanese discs (SLPM-86105 / SLPM-86106) are recognised but not supported yet.
 Download the [latest release](https://github.com/IronJade/Shattered-Stars/releases/latest) of the game. Each release has two self-contained packages,
 with no installer and nothing else to install:
 
-- `ShatteredStars-0.02.51-win64.zip`
-- `ShatteredStars-0.02.51-linux-x86_64.tar.gz`
+- `ShatteredStars-0.03.00-win64.zip`
+- `ShatteredStars-0.03.00-linux-x86_64.tar.gz`
 
 The Archipelago world and the PopTracker pack have releases of their own, apart from the game's:
 [so2.apworld 0.2.2](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.2) (see

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.24)
 # here in PROJECT_VERSION (checked: "0.01.00", not normalized to "0.1.0"), so this one line is
 # the single source: it reaches the code as SS_VERSION (below) and the release scripts read
 # it back out of this file (tools/build_linux.sh, tools/build_windows.sh).
-project(ShatteredStars LANGUAGES C CXX VERSION 0.02.51)
+project(ShatteredStars LANGUAGES C CXX VERSION 0.03.00)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -106,7 +106,7 @@ if(WIN32)
   target_link_libraries(ss_core PUBLIC shell32)  # util/utf8.cpp: CommandLineToArgvW
 endif()
 target_compile_options(ss_core PRIVATE ${SS_WARNINGS})
-# SS_VERSION: "0.02.51" (PROJECT_VERSION above), a plain string literal everywhere that
+# SS_VERSION: "0.03.00" (PROJECT_VERSION above), a plain string literal everywhere that
 # links ss_core (the game, setup, both test binaries): --help / --version, setup's header.
 target_compile_definitions(ss_core PUBLIC SS_VERSION="${PROJECT_VERSION}")
 
@@ -447,7 +447,7 @@ target_sources(ss_platform PRIVATE src/platform/app_icon.cpp
 # (the FileDescription is what Task Manager and the taskbar's menus call it) and application
 # manifest (res/windows/app.manifest.in), configured from res/windows/*.in into
 # <build>/res/<target>/. The version: PROJECT_VERSION as text, and its numbers for the fixed
-# fields ("0.02.51" -> 0,2,51,0; leading zeros dropped so the .rc reads no octal).
+# fields ("0.03.00" -> 0,3,0,0; leading zeros dropped so the .rc reads no octal).
 if(WIN32)
   enable_language(RC)
   string(REPLACE "." ";" ss_version_parts "${PROJECT_VERSION}")

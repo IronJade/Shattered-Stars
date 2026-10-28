@@ -13,9 +13,11 @@ different schedules and Archipelago can only read one of them as a real version:
 
 | What | Value | Set in |
 |---|---|---|
-| The APWorld (`world_version`) | `0.2.1` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) and `apworld/so2/world.py`'s `APWORLD_VERSION` (written into each seed's slot data as `apworld_version`; keep the two equal) |
+| The APWorld (`world_version`) | `0.2.2` | `apworld/so2/archipelago.json` (hand-edited; bump before each release) and `apworld/so2/world.py`'s `APWORLD_VERSION` (written into each seed's slot data as `apworld_version`; keep the two equal) |
 | Archipelago core this world targets (`minimum_ap_version`) | `0.6.8` | `apworld/so2/archipelago.json`; the port's client announces the same version (`engine/CMakeLists.txt` reads it from there at configure time) |
-| The port's own release version | **`0.02.51`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.02.51)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
+| The port's own release version | **`0.03.00`** | `engine/CMakeLists.txt`'s `project(... VERSION 0.03.00)`; reaches the code as the `SS_VERSION` compile definition on `ss_core` (so every target that links it — the game, setup, `ss_tests`, `ss_game_tests` — sees the same string) |
+| The PopTracker pack version | `1.0.0` | `tools/ap_poptracker.py`'s `PACK_VERSION` |
+| UT's `ut.LOGIC_VERSION` | `1` (unchanged for 0.2.2) | `apworld/so2/ut.py`; bump it whenever a logic change could make an older room's rebuild wrong (docs/ap/apworld.md "Trackers") |
 
 The port version is written `0.01.00`: two-digit minor and patch fields, chosen so either
 can go past 9 later without reordering (`0.01.00` -> `0.10.00` -> `0.99.00`, never `0.10.0`
@@ -596,12 +598,11 @@ The pack zip's name and tag are fixed by its `versions.json` entry: `download_ur
 use other tag names: `grep -rn 'v0\.03\.00\|apworld-v0\.2\.2\|poptracker-v1\.0\.0' README.md
 docs/release_notes scratchpad/wiki`, the commands below, and `build_poptracker.sh build --tag`.
 
-**Still to come before the RC.** Agent "maptab" (docs/handoff/maptab.md) is building the map
-tabs: the map_names.csv `area` audit, the pack's room maps, door sections, live door panel and
-click switching, and Universal Tracker's map tab. Its rows below are marked **TODO (maptab)**,
-and so are counts it may change (the world's and the pack's test counts, the layout, the pack's
-size). The release itself needs the user's go-ahead (phaseb.md: "release only with the user's
-go-ahead").
+**maptab's work is in** (docs/handoff/maptab.md, done 2026-10-27): the map_names.csv `area`
+audit, the pack's room maps, door sections, live door panel and click switching, and Universal
+Tracker's map tab. The rows below, filled in by this RC (agent "rc030") from maptab's log, were
+marked **TODO (maptab)**. The release itself still needs the user's go-ahead (phaseb.md:
+"release only with the user's go-ahead").
 
 ### 12.1 Version numbers (B7b)
 
@@ -638,11 +639,16 @@ tools/build_poptracker.sh all                  # dist/poptracker/: so2_shattered
   `scratchpad/`, so the RC script either links it in for the build (and points worlds/so2 at the
   worktree's apworld/so2) or builds in the main tree at the RC's commit. The zip is reproducible
   (sorted, fixed timestamps), so both ways must give the same sha256.
-- The world's package now also holds `ut.py`, `logic.py`, `tracker_export.py`, `story.py` and
-  their tests: 223,553 bytes at storyaware's build (world_version 0.2.1 then; 186,265 for 0.2.1).
-  **TODO (maptab):** the UT map tab's files and the package's size.
-- The pack at storyaware's build: 401 files, 287 items, about 3 MB zipped. **TODO (maptab):** the
-  room placeholders add about 2.5 MB zipped (mapdoors' measurement; budget about 20 MB).
+- The world's package now also holds `ut.py`, `logic.py`, `tracker_export.py`, `story.py`,
+  `ut_map.py` and `apworld/so2/tracker/` (`maps/maps.json`, `locations/locations.json`,
+  `layouts/maps.json`, `map_pages.json`, the UT map tab's own data) and their tests:
+  **281,228 bytes at maptab's build** (world_version still 0.2.1 at that point, not yet bumped;
+  the map tab added about 56 KB over storyaware's 223,553; 186,265 for 0.2.1 at ncpfix's). The
+  RC's own build (12.4) has the exact size at 0.2.2.
+- The pack at storyaware's build: 401 files, 287 items, about 3 MB zipped. **maptab's room
+  placeholders and doors** (794 room maps, 1,775 door locations) brought it to **1,201 files,
+  5,559,587 bytes zipped (about 5.56 MB)** — +2.56 MB over storyaware's, close to mapdoors'
+  ~2.5 MB estimate and well under the ~20 MB budget.
 
 ### 12.3 Verification: commands and expected results
 
@@ -654,12 +660,15 @@ work changes some; its log gives the new ones.
 
 | Check | Command | Expected |
 |---|---|---|
-| The world's tests | `../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **882 passed**, 3 skipped (67988 subtests; storyaware). TODO (maptab): its tests added |
+| The world's tests | `../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **882 passed**, 3 skipped (67988 subtests; storyaware); unchanged by maptab's area audit and UT map tab (its own rerun also got 882 passed, 3 skipped) |
 | Scoped general | `AP_TEST_WORLDS=so2 ../ap-venv/bin/python -m pytest -q -n 6 test/general worlds/so2` | **935 passed**, 3 skipped (73299 subtests; storyaware) |
 | AP's general tests | `../ap-venv/bin/python -m pytest -q -n 6 test/general` | **379 passed** (117757-117763 subtests: other worlds' random options; rulebuilder) |
 | The slow tests | `SO2_SLOW_TESTS=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **885 passed** (68692 subtests, about 35 s; storyaware): TestUTManySeeds 320 rooms (16 mixes x 20) matching UT's rebuild at every sphere, TestTrackerManySeeds 320 rooms (the reference evaluator = the world's logic at every sphere), TestStoryManySeeds 60 rooms (UT = the reference at 27 story positions) |
 | The batches | `tools/ap_batch.sh story_open OUT/story_open 1 96`, the same for `hub` and `solo_noexpel` (from the repo root) | **96/96 each**, `tools/ap_batch_check.py` 0 errors |
-| The same seeds as 0.2.1 | the three sets from the released world (`git archive apworld-v0.2.1 apworld/so2` in a `cp -as` farm of scratchpad/ap/Archipelago with **real copies** of the top-level scripts and host.yaml: the baseline trap, docs/handoff/utworld.md) against the RC's; a comparer adapted from scratchpad/storyaware/identity.py | 480 `.apso2` equal but `apworld_version`; 288 spoilers byte for byte (they name only Archipelago's version); every multidata equal once each Star Ocean slot's new slot data keys are taken out: `logic_version` 1, `exclude_locations`, `tracker` (format 1; with `story` in the story-mode slots). The checker's output the same. TODO (maptab): any key the map tab adds |
+| The same seeds as 0.2.1 | the three sets from the released world (`git archive apworld-v0.2.1 apworld/so2` in a `cp -as` farm of scratchpad/ap/Archipelago with **real copies** of the top-level scripts and host.yaml: the baseline trap, docs/handoff/utworld.md) against the RC's; a comparer adapted from scratchpad/storyaware/identity.py | 480 `.apso2` equal but `apworld_version`; 288 spoilers byte for byte (they name only Archipelago's version); every multidata equal once each Star Ocean slot's new slot data keys are taken out: `logic_version` 1, `exclude_locations`, `tracker` (format 1; with `story` in the story-mode slots). The checker's output the same. The UT
+map tab adds **no new slot-data key** (maptab: batches identical including multidata); it reads
+the new host.yaml group `so2_options: ut_pack_path` instead (set by UT's one-time file-dialog
+prompt, not part of the seed) |
 | The real Universal Tracker | `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld --apworld dist/apworld-0.2.2/so2.apworld --ut-dir scratchpad/release/ap_ut --port 38441` (from the repo root) | **"UT MATCHES THE WORLD", 59 comparisons** (storyaware): four slots, fresh and after each of the first 4 spheres, through UT's CLI and TrackerCore; the logic_version 2 room refused; step 5, the story slot following a story key Set as the port sets it: 142, 204, 227, 319, 426, 450, 532, 532, 578 in logic at chapters 3, 9, 12, 20, 36, 41, 58, 60/3000, 60/4000, and 578 with `enforce_deferred_entrances: "off"`. `--no-story` skips step 5; `--spheres 1` gives 35. No dialog, no process left |
 | UT's `/explain` (optional) | `scratchpad/ap/ap-venv/bin/python scratchpad/rulebuilder/ut_explain.py --apworld dist/apworld-0.2.2/so2.apworld` | 64 locations and events of four slots, each printed as its rule, UT exit 0 (rulebuilder) |
 
@@ -673,10 +682,10 @@ Archipelago copy under `--ut-dir` (an empty `Players` folder, UT's `player_files
 
 | Check | Command | Expected |
 |---|---|---|
-| Build and check | `tools/build_poptracker.sh all` | PopTracker/pack-checker v1.7.0 `--strict`: **"Validated 10 files"** for the zip and for the folder, no warning, exit 0; versions.json valid against the packlist's schema and matching the zip; the tests (next row) OK. TODO (maptab): file and item counts |
-| The pack's tests | `SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_test.py --pack dist/poptracker/so2_shattered_stars` | **24 OK** (storyaware): ids, progression, layout, JSON, the Lua in Lua 5.4 (lupa), the evaluator = the reference over 16 rooms x 246 item states (243,885 section evaluations), story awareness at 15 positions. TODO (maptab): rooms, doors, the panel, the click handler |
-| PopTracker itself, headless | `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py --zip dist/poptracker/so2_shattered_stars_1.0.0.zip --scratch scratchpad/release/smoke --port 38391` | **37/37** (storyaware): both variants load and connect, the slot data, items, checked sections, chapter 12, the tabs from `so2_map_*` {"map": 26}; the logic equal to the world's at three points (115, 99, 40 in logic); step 7 (the story room, on PORT + 1): Normal / Inspect fresh 583 / 0, chapter 3 37 / 546, 12 108 / 475, 36 291 / 292, 60 step 3000 393 / 190, 60 step 4000 583 / 0; no Lua error or warning. `--no-story` skips step 7 (24/24). PopTracker 0.36.0 is the AppImage in scratchpad/packgen/poptracker (minisign-verified) |
-| TODO (maptab): the door click in PopTracker | the smoke's door step | a door section's click resets it and activates the destination room's tab; auto tab to a room tab |
+| Build and check | `tools/build_poptracker.sh all` | PopTracker/pack-checker v1.7.0 `--strict`: **"Validated 11 files"** for the zip and for the folder (was 10; maptab's `doors.lua`), no warning, exit 0; versions.json valid against the packlist's schema and matching the zip; **1,201 files, zip 5,559,587 bytes**; the tests (next row) OK |
+| The pack's tests | `SKIP_REQUIREMENTS_UPDATE=1 scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_test.py --pack dist/poptracker/so2_shattered_stars` | **41 OK** (maptab, was 24 at storyaware): the same ids / progression / layout / JSON / Lua-in-Lua-5.4 / evaluator (16 rooms x 246 item states, 243,885 section evaluations) / story-awareness (15 positions) checks, plus `TestRooms` (5: the room placeholders, the layout) and `TestDoorsLua` (5: the Lua door panel, `BadgeText`, the click handler's reset + `ActivateTab`), and `TestUT` (4: the UT map tab's new files) |
+| PopTracker itself, headless | `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py --zip dist/poptracker/so2_shattered_stars_1.0.0.zip --scratch scratchpad/release/smoke --port 38391` | **37/37** (storyaware): both variants load and connect, the slot data, items, checked sections, chapter 12, the tabs from `so2_map_*` {"map": 26}; the logic equal to the world's at three points (115, 99, 40 in logic); step 7 (the story room, on PORT + 1): Normal / Inspect fresh 583 / 0, chapter 3 37 / 546, 12 108 / 475, 36 291 / 292, 60 step 3000 393 / 190, 60 step 4000 583 / 0; no Lua error or warning. `--no-story` skips step 7 (24/24). PopTracker 0.36.0 is the AppImage in scratchpad/packgen/poptracker (minisign-verified). maptab's final smoke (1,201 files, the door step included): **44/44** |
+| The door click in PopTracker (maptab) | the smoke's door step | clicking door A of map 26 (as a popup click does) resets its section and opens the destination room's tab path (`Expel > Arlia Village > Arlia Village > 18`), without marking it cleared; map 26 from `so2_map_*` opens its own room tab too. Counted in the **44/44** above |
 
 The smoke runs PopTracker with a cleared environment (no display, no D-Bus, an empty
 `XDG_RUNTIME_DIR`). PopTracker also fetches the community pack list and the pack's `versions_url`
@@ -688,20 +697,20 @@ game process under tools/memcap.py, headless, a scratch `XDG_CONFIG_HOME` and `H
 | Check | Command | Expected |
 |---|---|---|
 | The tracker keys | `SS_TEST=ap_ds engine/build-rc/ss_game_tests` | **9/9** (dskeys) |
-| The map render | `SS_TEST=tracker_ SS_DISC1=... engine/build-rc/ss_game_tests` | **10/10** (setupthread: the layout, the disc command, rooms, progress, the job's stop). TODO (maptab): counts, if the layout changes |
+| The map render | `SS_TEST=tracker_ SS_DISC1=... engine/build-rc/ss_game_tests` | **10/10** (setupthread: the layout, the disc command, rooms, progress, the job's stop); unchanged by maptab's area audit (794 rooms now, was 793 — maptab's own rerun still got 10/10; no count in `engine/tests/test_tracker_maps.cpp` needed to change) |
 | All the suites | `SS_DISC1=... engine/build-rc/ss_game_tests`, `engine/build-rc/ss_tests` | **226 / 0** (setupthread), **103 / 0** |
 | The net client | `tools/ap_test_server.sh start 38281`; `SS_TEST=ap_net SS_AP_SERVER=ws://localhost:38281 engine/build-rc/ss_game_tests`; `tools/ap_test_server.sh stop` | **5/5** (the wss case skipped without `SS_AP_SERVER_WSS`) |
-| The render, end to end | `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-rc/shattered-stars --scratch scratchpad/release/maps` | all checks pass (setupthread): **861 images** (66 area + 2 world + 793 rooms), rendered twice with the same bytes, nothing else written, XDG untouched, the default folder under a scratch HOME's PopTracker; about 21 s and 135 MB a render |
-| The four releases' discs (optional) | `scratchpad/mapdoors/regions.sh` | NA, EU, FR and DE disc 1 render the same 861 images byte for byte (mapdoors) |
+| The render, end to end | `SS_DISC1=... python3 tools/ap_tracker_maps_test.py engine/build-rc/shattered-stars --scratch scratchpad/release/maps` | all checks pass (setupthread; maptab's area audit brought it from 861 to **862 images**, 66 area + 2 world + 794 rooms), rendered twice with the same bytes, nothing else written, XDG untouched, the default folder under a scratch HOME's PopTracker; about 21 s and 135 MB a render |
+| The four releases' discs (optional) | `scratchpad/mapdoors/regions.sh` | NA, EU, FR and DE disc 1 render the same 862 images byte for byte (mapdoors; was 861 before maptab's area audit) |
 | End to end | `SS_DISC1=... tools/ap_e2e_so2.sh engine/build-rc/shattered-stars`; `SS_DISC1=... tools/ap_e2e_hub.sh engine/build-rc/shattered-stars` | **49 PASS / 0 FAIL** (dskeys; step 9, the tracker keys: a watcher sees {"map":18}, {"map":26}, then world-map positions at most every 30 vblanks; Get after the runs gives both keys of Claude and Dias under the Connected packet's team / slot); hub **15 / 15** |
 | End to end, packaged | the RC's copies of the two scripts against dist/apworld-0.2.2/so2.apworld and the packaged Linux binary. **Derive them again from today's tools/ap_e2e_so2.sh**: scratchpad/release/rc251_e2e_so2.sh predates step 9 | so2 **49 / 49**, hub **15 / 15** |
 | Smoke | `SS_DISC1=... tools/smoke_field_events.sh <the packaged Linux binary>` | **373 PASS / 0 FAIL / 0 SKIP** (from the main tree, with its fixtures) |
-| Setup's button, headless | `scratchpad/setupthread/setup_runs.sh engine/build-rc/shattered-stars-setup scratchpad/release/setup A B C D` (the display variables unset, `XDG_RUNTIME_DIR` at scratch) | A: a mid-render screenshot (the bar "150 of 861 images", "Rendering room ..."); B: "Done: 861 tracker map images were written to ...", the PNGs = the CLI's bytes; C (no disc): refused, nothing written; D (closed mid-render): no `.part` file, config.ini unchanged; each rc 0 (setupthread). B compares with scratchpad/setupthread/base_manifest.txt: make a new manifest from the CLI render if the layout changed |
-| ASan | a GCC `-fsanitize=address -fno-omit-frame-pointer` build as scratchpad/setupthread/build_san.sh (the libasan copy; tools/memcap.py runs it in a systemd scope with MemoryMax=6G) | no AddressSanitizer report in: `SS_TEST=ap_ds` 9/9, `SS_TEST=tracker_` 10/10, test_ap_net 5/5, one full `--render-tracker-maps` (861 images, the same bytes), tools/ap_e2e_so2.sh with `ASAN_OPTIONS=detect_leaks=0` (49/49), setup runs A-D (portcheck, setupthread). Setup exits 1 under LeakSanitizer only for 248 bytes in 2 allocations under SDL_CreateWindow -> OFFSCREEN_GLES_LoadLibrary (Mesa), which predate this release |
+| Setup's button, headless | `scratchpad/setupthread/setup_runs.sh engine/build-rc/shattered-stars-setup scratchpad/release/setup A B C D` (the display variables unset, `XDG_RUNTIME_DIR` at scratch) | A: a mid-render screenshot (the bar "150 of 862 images", "Rendering room ..."); B: "Done: 862 tracker map images were written to ...", the PNGs = the CLI's bytes; C (no disc): refused, nothing written; D (closed mid-render): no `.part` file, config.ini unchanged; each rc 0 (setupthread; counts updated for maptab's area audit, was 861). B compares with scratchpad/setupthread/base_manifest.txt: make a new manifest from the CLI render (the layout changed) |
+| ASan | a GCC `-fsanitize=address -fno-omit-frame-pointer` build as scratchpad/setupthread/build_san.sh (the libasan copy; tools/memcap.py runs it in a systemd scope with MemoryMax=6G) | no AddressSanitizer report in: `SS_TEST=ap_ds` 9/9, `SS_TEST=tracker_` 10/10, test_ap_net 5/5, one full `--render-tracker-maps` (862 images, the same bytes), tools/ap_e2e_so2.sh with `ASAN_OPTIONS=detect_leaks=0` (49/49), setup runs A-D (portcheck, setupthread). Setup exits 1 under LeakSanitizer only for 248 bytes in 2 allocations under SDL_CreateWindow -> OFFSCREEN_GLES_LoadLibrary (Mesa), which predate this release |
 | TSan (optional) | setupthread's recipe (GCC `-fsanitize=thread`, libtsan from `dnf download`, its Log at 18:00) | `SS_TEST=tracker_` 10/10, setup A-D: no report (with `XDG_RUNTIME_DIR` at scratch: libdbus otherwise reports a lock-order inversion of its own) |
 | Windows bundle | `tools/build_windows.sh` | exit 0; the 9 entries of 0.02.51's zip; both `.exe`s' version resource 0.03.00, DreamGlyph Studios, no "POSIX WinThreads" |
-| Windows under Wine | a scratch prefix with the safe settings (portcheck.md "Conventions found"; scratchpad/setupthread/wine.sh adds a scratch `XDG_RUNTIME_DIR`) | `--version` "Shattered Stars 0.03.00"; the Arlia boot (26 trigger lines); `--render-tracker-maps DIR` 861 images byte-identical to the Linux render, and without DIR into `C:\users\<user>\Documents\PopTracker\user-override\so2_shattered_stars`; `ss_game_tests.exe` `SS_TEST=tracker_` 10/10; the full suites `ss_tests.exe` 103 / 0 and `ss_game_tests.exe` one more than Linux (the Windows-only `launcher_log_without_a_console`, as 207 / 208 at 0.02.51) |
-| TODO (maptab): the map tabs | the layout's `--check` after the area audit; the pack's room and door tests; UT's map tab loading headless | as maptab's log gives |
+| Windows under Wine | a scratch prefix with the safe settings (portcheck.md "Conventions found"; scratchpad/setupthread/wine.sh adds a scratch `XDG_RUNTIME_DIR`) | `--version` "Shattered Stars 0.03.00"; the Arlia boot (26 trigger lines); `--render-tracker-maps DIR` 862 images byte-identical to the Linux render, and without DIR into `C:\users\<user>\Documents\PopTracker\user-override\so2_shattered_stars`; `ss_game_tests.exe` `SS_TEST=tracker_` 10/10; the full suites `ss_tests.exe` 103 / 0 and `ss_game_tests.exe` one more than Linux (the Windows-only `launcher_log_without_a_console`, as 207 / 208 at 0.02.51) |
+| The map tabs (maptab) | the layout's `--check` after the area audit; the pack's room and door tests; UT's map tab loading headless | `tools/ap_tracker_maps.py --check`: up to date (794 rooms, 862 images); the pack's `TestRooms` / `TestDoorsLua` / `TestUT` above; `tools/ap_poptracker_utmap.py`: **15/15** (UT's own map loader headless, both against the repo world and the packaged `so2.apworld`) |
 
 **Already proven, not rerun** (unless the code under them changes): AP off, no seed and offline
 seeds byte-identical before and after the tracker keys and the render command (dskeys,
