@@ -140,14 +140,75 @@ source changes: none expected; if the renderer must change, describe it here and
 - Docs: docs/ap/poptracker.md ("For players", structure table, "Rooms and doors", Images, Testing,
   Smoke step 8 + result), docs/ap/tracker_maps.md (part 2 status).
 
-### In progress
-- 3. UT's map tab (hybrid).
+- **3. UT's map tab** (hybrid): apworld/so2/ut_map.py (new: `SO2Settings` with `ut_pack_path`
+  (FilePath, required False, UT's `ut_dialog_name`), `map_page_index`, `location_icon_coords`,
+  `tracker_world`), apworld/so2/world.py (`settings: ClassVar[SO2Settings]`, `settings_key =
+  "so2_options"` (the default would be "so2.world_options": the class lives in world.py),
+  `tracker_world`), apworld/so2/tracker/ (generated: maps/maps.json = the pack's maps,
+  locations/locations.json with AP names, layouts/maps.json = UT's map menu, map_pages.json; 612 KB
+  raw, 56 KB in the .apworld), tools/ap_poptracker.py (`build_ut`, `--ut-out`, `--ut-check`, writes
+  dist/poptracker/ut_tracker), TestUT, tools/ap_poptracker_utmap.py (new: UT's own
+  load_pack / load_map / update_location_icon_coords headless in a UT copy; TrackerGameContext needs
+  a running loop, and its no_connection=True path is broken in UT 0.3.6 (no `checksums`)).
+- Verified: batches ALL IDENTICAL (288/288 seeds, 480 .apso2, 288 spoilers, 288 multidata, checker
+  output the same; baseline = frozen c544a40 world, scratchpad/maptab/identity.py); world tests 882
+  passed (3 skipped); test/general + world 935; SO2_SLOW_TESTS 885; tools/ap_ut_check.py UT MATCHES
+  THE WORLD (59 matches); UT map loader 15/15 (repo world) and 15/15 (packaged so2.apworld);
+  so2.apworld 281,228 bytes (scratchpad/maptab/dist; no world_version bump); pack tests 41/41.
+- Docs: apworld.md "Universal Tracker's map tab" (+ results, Files rows), poptracker.md
+  "Universal Tracker's map tab (B6)" + TestUT, setup_en.md (UT map tab paragraph, a PopTracker
+  section).
+- Note: the scratch AP's host.yaml (scratchpad/ap/Archipelago/host.yaml) now has `so2_options:
+  ut_pack_path: ""` (AP saves world settings groups); a stale "so2.world_options" block from the
+  first try was removed by hand.
 
-### Next
-- 3 UT map tab; batches; 4 remaining tests; 5 docs (apworld.md, setup guide, release-notes
-  paragraph).
+### In progress
+- (none: final smoke rerun and cleanup)
+
+### For the release notes (agent "releasedocs" owns them)
+Tracker maps, room by room (PopTracker pack 1.0.0, so2.apworld 0.2.2): besides each area's overview
+the PopTracker pack now has a tab per room, 794 of them, numbered by the game's map number, with the
+area's checks on them and a lettered marker on every doorway. A **Doors** panel beside each room says
+where each door leads ("A → 18 north: fountain square"; * = only at some points of the story): click
+a line, or a door's marker, and that room opens; with the game connected the tabs follow you room by
+room. No destination is drawn into the pictures: the panel is live, ready for randomized doors.
+Universal Tracker gets a **map tab** too: so2.apworld carries the map data and UT takes the pictures
+from the PopTracker pack's zip, which it asks for once; it follows the game as well, with a marker on
+the world maps. A few maps moved to the right place: Alen's study is Alen's Mansion, Port Hilton's
+and North City's own rooms are under their towns, the opening on Planet Milocinia and Rena's
+flashback in Shingo Forest are where they belong.
+
+### Facts for releasedocs' "TODO (maptab)" placeholders
+- UT map tab: **hybrid** (UT's term): JSON in so2.apworld (`apworld/so2/ut_map.py`,
+  `apworld/so2/tracker/`: maps/maps.json, locations/locations.json, layouts/maps.json,
+  map_pages.json), pictures from the PopTracker pack zip. so2.apworld 281,228 bytes (the map tab
+  56 KB of it). Player setup: on first connect UT asks for `so2_shattered_stars_1.0.0.zip` (file
+  dialog); kept in host.yaml as `so2_options: ut_pack_path`; cancel = no map tab (`null`),
+  `/reload_pack` asks again. Follows `so2_map_{team}_{slot}`: room pages, world maps with a player
+  marker. No doors in UT (they are no AP locations / entrances / events). UT can't read
+  PopTracker's user-override: a player's render goes into a copy of the zip.
+- New host.yaml setting: `so2_options: ut_pack_path`. **No new slot-data key** (batches identical
+  including multidata). ER seam names (pack side only, provisional for Phase C): slot data
+  `door_pairs`, data storage `so2_doors_{team}_{slot}`.
+- Pack: 1,201 files, zip 5,559,587 bytes (sha256 f76fe8a4...; was 3.0 MB), 794 room maps,
+  1,775 door locations, 940 of 964 maps switch a tab; PopTracker peak memory 555 MB (225 MB
+  before the rooms). Checker strict "Validated 11 files" (zip and folder).
+- Tests: tools/ap_poptracker_test.py 41/41 (TestRooms 5, TestDoorsLua 5, TestUT 4 new);
+  tools/ap_poptracker_smoke.py 44/44 (step 8: door click: door A of map 26 cleared from Lua as a
+  popup click does -> the pack resets it and opens room 18's tab path; map 26 from so2_map_* opens
+  its room tab); tools/ap_poptracker_utmap.py 15/15 (UT's map loader headless, also with the
+  packaged so2.apworld); layout: SS_TEST=tracker_ 10/10, tools/ap_tracker_maps_test.py 862 images.
+- Release checklist rows to add: `tools/ap_poptracker.py --ut-check apworld/so2/tracker` (or the
+  TestUT test) before packaging the world; `tools/ap_poptracker_utmap.py --apworld <built
+  so2.apworld>` with the release pack zip.
+- Layout: 794 rooms (was 793; Port Hilton's pier 171), 862 images in a full render.
 
 ### How to verify
+- UT map tab: `env -u DISPLAY -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS
+  XDG_RUNTIME_DIR=$PWD/scratchpad/maptab/xdg/run SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30))
+  scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_utmap.py [--apworld BUILT]`;
+  batches: `bash scratchpad/maptab/run_batches.sh AP_DIR OUT`, then from scratchpad/ap/Archipelago
+  `PYTHONPATH=. ../ap-venv/bin/python ../../maptab/identity.py OLD NEW`.
 - Pack: `tools/build_poptracker.sh all`; smoke: `env -u DISPLAY -u WAYLAND_DISPLAY -u
   DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR=$PWD/scratchpad/maptab/xdg/run SKIP_REQUIREMENTS_UPDATE=1
   prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py --scratch
@@ -161,3 +222,4 @@ source changes: none expected; if the renderer must change, describe it here and
 - 2026-10-27: log created; reading.
 - 2026-10-27: area audit done and verified (above); committing.
 - 2026-10-27: pack part 2 done and verified (above); committing.
+- 2026-10-27: UT map tab done and verified (batches identical, tests, real UT); committing.

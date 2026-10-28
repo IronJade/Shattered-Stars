@@ -107,7 +107,8 @@ What it shows:
 | `images/boards/*.png`, `images/items/*.png`, `images/status/*.png` | boards, item badges, the banner | generator |
 | `images/icon.png`, `LICENSE` | the Shattered Stars icon (res/icon, original), the repo's MIT licence | copied |
 
-Beside the pack folder the generator writes `ut_name_mapping.json` (below, "For B6").
+Beside the pack folder the generator writes `ut_name_mapping.json` and `ut_tracker/` (below,
+"Universal Tracker's map tab").
 
 ## The generator (`tools/ap_poptracker.py`)
 
@@ -359,7 +360,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (37 tests, about 20 seconds; run by `check`):
+`tools/ap_poptracker_test.py` (41 tests, about 21 seconds; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -391,6 +392,11 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
   `so2_map_0_1` goes to room tabs; the entrance randomizer's seam: a room with `door_pairs` subscribes
   `so2_doors_0_1`, paired doors read "A → ?" and are SequenceBreak until found, then show and open
   their pair's room; a vanilla room again: no key, vanilla lines.
+- **UT's map tab** (`TestUT`): apworld/so2/tracker/ is this build's JSON (under 1 MB), its sections
+  are AP location names covering exactly the pack's locations, its maps are the pack's, every room
+  has its page and is named by its label in UT's menu, and the world's `tracker_world` functions
+  (`map_page_index`, `location_icon_coords`), keys and `settings_key` behave. UT's own loader runs
+  in tools/ap_poptracker_utmap.py (docs/ap/apworld.md).
 - **Lua**: the pack's own scripts run in Lua 5.4 (lupa, the Lua version PopTracker bundles) against
   a stub of PopTracker's API (items with codes and states, sections, `FindObjectForCode`,
   `ProviderCountForCode`, `UiHint`, the Archipelago handlers, `SetNotify` / `Get`): both variants
@@ -454,14 +460,26 @@ PopTracker 0.36.0, headless, against a local room.
   as in the manifest, https `versions_url`, `homepage` (the repo or its wiki page), `icon_url` (a
   PNG: `res/icon/shattered-stars-128.png` on main). The listing is public under the user's name.
 
-## For B6 (Universal Tracker's map tab)
+## Universal Tracker's map tab (B6)
 
-- `dist/poptracker/ut_name_mapping.json`: `"<location>/<section>"` -> AP location id for every
-  section whose name is not its AP location name (all of them today: sections drop the area
-  prefix): UT's `poptracker_name_mapping`. Keys are unique by construction (dot names are unique).
-- `scripts/map_tabs.lua`'s table is the `map_page_index` UT needs (map -> page), once the pages are
-  chosen; `SO2_WORLD_MAPS` holds the world maps' x/z -> pixel mapping for a player icon.
-- The pack's maps.json / locations JSON follow PopTracker's format, which UT's map tab reads.
+UT's map tab is **hybrid** (docs/ap/apworld.md "Universal Tracker's map tab"): its JSON is in
+so2.apworld (`apworld/so2/tracker/`), its pictures come from this pack's zip. So the zip is also UT's
+picture source: every image a UT page names is at the pack's root paths (`images/maps/`,
+`images/rooms/`, `images/boards/`, and `images/status/you.png`, the player marker UT draws on the
+world maps), and those paths are tracker_maps.md's, stable across pack versions.
+
+- The generator builds UT's JSON from the same data (`Pack.build_ut`): the pack's maps (same
+  `maps.json`, so the page indexes are the pack's), the places, world maps and boards with every
+  section named by its AP location name (no rules, no refs, no doors), UT's map menu (the pack's tabs
+  with each room titled by its label), and `map_pages.json` (field map -> page for
+  `map_page_index`; the world maps' x / z -> pixel mapping for the player marker). It writes them to
+  `dist/poptracker/ut_tracker/` with every build, and with `--ut-out apworld/so2/tracker` into the
+  APWorld (commit them with the generator's changes); `--ut-check DIR` fails when DIR is out of date,
+  and so does `TestUT`.
+- `dist/poptracker/ut_name_mapping.json` (`"<location>/<section>"` -> AP location id for every
+  section whose name is not its AP location name) is still written: what UT's
+  `poptracker_name_mapping` would need to read this pack's own locations (external mode). The world
+  doesn't use it (its own JSON names the sections by AP name).
 
 ## Smoke test (the real PopTracker, headless)
 

@@ -1382,6 +1382,76 @@ before it (HEAD 812f9f6 in a farm with real top-level scripts, scratchpad/storya
 `tracker.story` is taken out of the 93 story-mode slots (59, 13 and 21 in the three sets; 4.2 to
 12.8 KB each), present in exactly those, and the checker's output the same (0 errors).
 
+### Universal Tracker's map tab (trackers.md B6, 0.2.2)
+
+UT can show a map tab: PopTracker-format maps with a square per location, coloured by UT's own logic
+(docs in UT's `docs/map-integration.md`). so2.apworld's (`ut_map.py`, the world's `tracker_world` and
+`settings: SO2Settings`) is **hybrid**, in UT's terms: the JSON is in the APWorld (`tracker/`: 66 area
+maps, 2 world maps, 5 boards and 794 rooms in `maps/maps.json`; the squares in
+`locations/locations.json` with every section named by its AP location name, so UT matches them
+directly and needs no `poptracker_name_mapping`; UT's map menu in `layouts/maps.json`; and
+`map_page_index`'s table `map_pages.json`), about 610 KB of JSON, 56 KB zipped: the .apworld grows
+from about 220 KB to about 280 KB. The **pictures** come from the PopTracker pack's zip
+(`so2_shattered_stars_<version>.zip`, docs/ap/poptracker.md), which the player points UT at once.
+Why: the pictures are 4-6 MB (the rooms' placeholders alone 4.1 MB), past the APWorld's budget; the
+pack is the one place the pictures live (placeholders, nothing from the disc); and the JSON in the
+APWorld always matches the installed world's location names, whatever pack version the player has
+(the image paths are tracker_maps.md's, stable).
+
+- **Setup (players).** Install so2.apworld 0.2.2+ and UT as for tracking ("Trackers" above), and
+  download the pack zip (the `poptracker-v1.0.0` release, or the copy in PopTracker's `packs`
+  folder). The first time UT connects to a Star Ocean slot it asks for it with a file dialog
+  ("Select the Shattered Stars PopTracker pack (so2_shattered_stars_*.zip)"); the choice is kept in
+  Archipelago's `host.yaml` as `so2_options: ut_pack_path`. Cancel: no map tab (`ut_pack_path:
+  null`), and UT doesn't ask again until `/reload_pack`. The path can also be set in host.yaml by
+  hand. The tab then follows the game: UT watches the port's `so2_map_{team}_{slot}`
+  (`map_page_setting_key`): a field map opens its room's page, a world map its world map with a
+  **player marker** at the party's x / z (`location_setting_key`, `location_icon_coords`, the marker
+  `images/status/you.png` from the pack), a map with no page keeps the page. The menu lists the maps
+  as the pack's tabs: Expel / Energy Nede > area group > area > its overview and its rooms, by
+  "<map> <name>"; the boards (Shops, Item Creation, ...) too. `/load_map`, `/list_maps` and
+  `/reload_pack` are UT's commands.
+- **The player's own maps.** UT reads pictures only from the zip it is pointed at (`ap:zip:`), not
+  from PopTracker's user-override folder. To see the maps rendered from your disc in UT, copy the
+  pack zip and put the rendered `images/` folder into the copy (the same paths: any zip tool's "add
+  and replace"), then point `ut_pack_path` at the copy. The copy is for your own use (it holds your
+  disc's pictures). (A port option to write such a copy would save the step: for the user to decide.)
+- **Doors.** UT draws squares only for AP locations, entrances and events of the world it rebuilt,
+  and has no text or click actions on a map. The doors are neither (the world's regions are Menu,
+  Expel, Energy Nede, Fienal and the Cave of Trials), so UT's map tab has no door markers, no door
+  panel and no click-to-follow: the rooms are pages of the menu, and the port's key moves between
+  them. With the entrance randomizer (Phase C), once each doorway is an entrance named by its door
+  id (tracker_maps.md "Door ids"), UT can show them by name (`poptracker_entrance_mapping`, or door
+  sections named as the entrances): UT colours a disconnected entrance red / green and a connected
+  one grey, and reconnects deferred ones from `found_entrances_datastorage_key`.
+- **Generation.** `tracker_world`, `settings` and `ut_map` are read only by UT (and AP's settings
+  file): the real generation is unchanged. Regenerate `tracker/` with the pack
+  (`tools/ap_poptracker.py --ut-out apworld/so2/tracker`); tools/ap_poptracker_test.py fails when it
+  is out of date.
+- **Tests.** tools/ap_poptracker_test.py `TestUT` (the committed JSON is this build's, under 1 MB,
+  every section an AP location name and every location of the pack there, the pages and the menu,
+  `map_page_index` / `location_icon_coords` / the keys / `settings_key`). tools/ap_poptracker_utmap.py
+  runs **UT's own map loader** headless (`TrackerGameContext.load_pack` / `load_map` /
+  `update_location_icon_coords` with a stand-in for the Kivy UI, in a UT copy whose host.yaml points
+  `ut_pack_path` at the pack zip, no display and no D-Bus) on a generated open-world room rebuilt
+  yaml-less by UT.
+- **Results (2026-10-27, maptab).** `TestUT` 4/4 (pack tests 41/41). UT's loader (UT 0.3.6's
+  TrackerClient, the repo's world and again the packaged so2.apworld from custom_worlds): 15/15
+  each: the slot rebuilt yaml-less; the map key `so2_map_0_1`; 867 pages (794 rooms, 68 area and
+  world maps, 5 boards), the JSON from the APWorld and the pictures from the pack zip; all 794 rooms
+  named in UT's menu; `{"map": M}` opens room M for the 176 rooms with the slot's checks, with
+  exactly the layout's room squares (UT's own name matching); every page's picture in the zip and
+  every square's locations the slot's; no door squares; `{"map": 1, "x": 51200, "z": 18500}` opens
+  the Expel world map with the marker at (948, 1250); a room hides the marker; a map with no page
+  (the opening's map 7) and no value keep the page. The package: so2.apworld 281,228 bytes, the map
+  tab 56 KB of it (ut_map.py and tracker/: 612 KB of JSON). **The real generation is unchanged**:
+  the three release sets (tools/ap_batch.sh, seeds 1-96 each) from the committed world against a
+  frozen copy of the world before it (HEAD c544a40, a farm with real top-level scripts;
+  scratchpad/maptab/identity.py): ALL IDENTICAL, 288 of 288 seeds, 480 .apso2, 288 spoilers and 288
+  multidata equal (no new slot-data key), the checker's output the same; world tests 882 passed,
+  `AP_TEST_WORLDS=so2` test/general + world 935, SO2_SLOW_TESTS 885; tools/ap_ut_check.py UT MATCHES
+  THE WORLD (59 matches, the story points, logic_version 2 refused).
+
 ## Files
 
 | File | Contents |
@@ -1392,6 +1462,7 @@ before it (HEAD 812f9f6 in a farm with real top-level scripts, scratchpad/storya
 | `items.py`, `locations.py`, `regions.py`, `rules.py`, `options.py` | as named |
 | `logic.py` | rules as data ("Rules as data"): the Rule Builder builders `need`, `ways`, `any_of`, `both`; `open_by_default`; `RESOLVED_KINDS`, `as_rule` |
 | `tracker_export.py` | the slot data's `tracker` key ("The logic export"): `export(world)`, `FORMAT` |
+| `ut_map.py`, `tracker/` | UT's map tab ("Universal Tracker's map tab"): `tracker_world`, `SO2Settings` (`ut_pack_path`), `map_page_index`, `location_icon_coords`; the generated JSON (do not edit: `tools/ap_poptracker.py --ut-out apworld/so2/tracker`) |
 | `story.py` | story awareness ("Story awareness"): the points (`POINTS`, `FINAL_SAVE_POINT`), `reached`, `location_stage`, `overlay`, the export's `story` key (`export`), Universal Tracker's deferred story events (`prepare`, `reconnect`) |
 | `data.py` | generated tables (do not edit) |
 | `crafts.py`, `moves.py` | craftsanity's 553 results with their specialties and makers; the 69 killer moves with their learn levels and divisors (generated by tools/ap_make_crafts.py and tools/ap_make_moves.py from docs/ap/data/; do not edit) |

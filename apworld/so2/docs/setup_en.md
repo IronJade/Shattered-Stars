@@ -104,6 +104,15 @@ later):
 2. Open **Universal Tracker** from the Launcher and connect to the room with your slot name (and
    the password), like a text client. The game can be connected at the same time.
 
+**The map tab.** UT also shows this world's maps, with a square per location in UT's colours. The
+pictures come from the Shattered Stars PopTracker pack (`so2_shattered_stars_1.0.0.zip`, from the
+pack's release or PopTracker's `packs` folder): the first time UT connects it asks for that zip
+(the choice is kept in Archipelago's `host.yaml` as `ut_pack_path` under `so2_options`; cancel and it
+leaves the map tab out). While the game is connected the tab follows the party: the room you are in,
+or the world map with a marker where you stand. The maps are placeholders unless you render your own
+(below): to see your render in UT, add the rendered `images` folder into a copy of the pack zip and
+point `ut_pack_path` at the copy. UT's map tab has no door markers (PopTracker's has).
+
 To see what a location needs, type `/explain` and its name in UT (for example
 `/explain Town of Salva: Heavy Ring chest`): it prints the location's rule, with what you have in
 green and what is missing in red.
@@ -130,6 +139,18 @@ warns in its log that 0.2.1 changed the logic of Skillsanity's guild checks and 
 of them may show up later than they really became reachable (never earlier). Regenerate the room
 with 0.2.2 or later for exact tracking. A 0.2.0 room with `encounter_rate: 0` and killer-move checks
 (what 0.2.1 made a hell seed) can't be tracked with 0.2.2: use 0.2.0 and your YAML.
+
+## Tracking with PopTracker
+
+The Shattered Stars PopTracker pack (PopTracker 0.36.0 or later; put `so2_shattered_stars_1.0.0.zip`
+in PopTracker's `packs` folder, load "Map Tracker", connect with the AP button) shows the same logic
+on maps. Each area's tab has its overview and a tab per room, numbered by the game's map number; in
+a room each doorway has a lettered diamond, and the **Doors** panel beside the map says where each
+one leads ("A → 18 north: fountain square"; `*` = only at some points of the story). Click a door's
+panel line, or hover its diamond and click "Door A", to open the room behind it; with the game
+connected the tabs follow the party room by room. The maps are placeholders: run
+`shattered-stars --render-tracker-maps` once (or the setup program's "Render tracker maps for
+PopTracker" button) and PopTracker shows the maps drawn from your own disc.
 
 ## Playing Offline
 
