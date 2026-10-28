@@ -168,6 +168,9 @@ function so2_on_clear(slot_data)
         SO2.exists = exists
         SO2.connected = true
         so2_logic_load(slot_data)
+        if so2_doors_load then
+            so2_doors_load(slot_data)    -- the door panel: vanilla, or the room's pairings (Phase C)
+        end
     end)
     Tracker.BulkUpdate = false
     if not ok then
@@ -175,6 +178,9 @@ function so2_on_clear(slot_data)
     end
     so2_refresh()
     SO2_AP.keys = {hints = ds_key("_read_hints"), map = ds_key("so2_map"), story = ds_key("so2_story")}
+    if SO2_DOORS and SO2_DOORS.pairs then
+        SO2_AP.keys.doors = ds_key(SO2_DOORS.found_key)   -- randomized doors found (Phase C)
+    end
     local keys = {}
     for _, k in pairs(SO2_AP.keys) do
         table.insert(keys, k)
@@ -208,7 +214,8 @@ function so2_on_location(id, name)
 end
 
 -- so2_map_{team}_{slot}: {"map": M[, "x": X, "z": Z]} (docs/ap/data_storage.md). A new map switches
--- the map tabs when "Auto tab" is on; position-only updates change nothing.
+-- the map tabs when "Auto tab" is on (a room: its own tab, inside its area); position-only updates
+-- change nothing.
 local function on_map(value)
     if type(value) ~= "table" or type(value.map) ~= "number" then
         return
@@ -278,6 +285,8 @@ function so2_on_data(key, value, old_value)
         on_map(value)
     elseif key == SO2_AP.keys.story then
         on_story(value)
+    elseif SO2_AP.keys.doors and key == SO2_AP.keys.doors then
+        so2_doors_found(value)
     end
 end
 

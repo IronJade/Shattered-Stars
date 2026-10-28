@@ -100,7 +100,7 @@ def walk_locations(nodes, parent=""):
 
 def all_locations():
     out = {}
-    for f in ("places", "boards", "world"):
+    for f in ("places", "boards", "world", "doors"):
         for lid, node in walk_locations(pack_json(f"locations/{f}.json")):
             out[lid] = node
     return out
@@ -126,8 +126,14 @@ def layout_nodes(node):
             yield from layout_nodes(v)
 
 
+def door_codes():
+    """The door panel's Lua item codes (scripts/doors_data.lua; doors.lua creates the items)."""
+    path = os.path.join(PACK, "scripts", "doors_data.lua")
+    return set(re.findall(r'code = "(door_[^"]+)"', read(path))) if os.path.exists(path) else set()
+
+
 def item_codes():
-    codes = set()
+    codes = door_codes()
     for it in pack_json("items/items.json"):
         if "codes" in it:
             codes.update(c.strip() for c in it["codes"].split(","))
@@ -157,7 +163,7 @@ class TestIds(unittest.TestCase):
             node, sec = secs[path[1:]]
             self.assertEqual(sec["access_rules"], [f"^$so2_access|{lid}"])
             self.assertEqual(sec["visibility_rules"], [f"$so2_exists|{lid}"])
-        named = {k for k in secs if not k.startswith(("Expel World Map/", "Energy Nede World Map/"))}
+        named = {k for k in secs if not k.startswith(("Expel World Map/", "Energy Nede World Map/", "Doors/"))}
         self.assertEqual(named, {p[0][1:] for p in mapping.values()}, "no section without a location")
 
     def test_ut_name_mapping(self):
@@ -222,9 +228,13 @@ class TestLayout(unittest.TestCase):
         for name, check in LAYOUT["checks"].items():
             lid = WORLD.location_name_to_id[name]
             node, _ = secs[loc_map[lid][0][1:]]
-            (ml,) = node["map_locations"]
+            ml, *on_rooms = node["map_locations"]
             self.assertEqual(maps[ml["map"]]["img"], check["image"], name)
             self.assertEqual((ml["x"], ml["y"]), (check["x"], check["y"]), name)
+            room = check["room"]       # the same check on its room (format 1.1)
+            self.assertIn({"map": f"room_{check['map']}", "x": room["x"], "y": room["y"]}, on_rooms, name)
+            self.assertEqual(room["image"], f"images/rooms/{check['map']}.png")
+            self.assertTrue(all(r["map"].startswith("room_") for r in on_rooms), name)
             by_dot.setdefault((check["image"], check["x"], check["y"]), set()).add(id(node))
         self.assertEqual([k for k, v in by_dot.items() if len(v) != 1], [], "a dot is one location")
         self.assertEqual(len(LAYOUT["checks"]), 472)
@@ -253,6 +263,125 @@ class TestLayout(unittest.TestCase):
             for ml in node.get("map_locations", []):
                 w, h = png_size(os.path.join(PACK, maps[ml["map"]]["img"]))
                 self.assertTrue(0 <= ml["x"] < w and 0 <= ml["y"] < h, lid)
+
+
+# Door destinations that are neither a room nor a world map: no tab to open (the panel names them).
+UNDRAWN_DESTINATIONS = {182: "Inn Hilton Island at night: a story scene, not drawn (tracker_maps.md Room groups)"}
+PACK_BUDGET = 20 << 20      # the pack zip's budget (docs/handoff/mapdoors.md)
+
+
+def doorways():
+    """doorway id -> (room map, letter, [(x, y)], to) from the layout."""
+    out = {}
+    for r in LAYOUT["rooms"]:
+        for e in r["doors"]:
+            d = out.setdefault(e["id"], (r["map"], e["letter"], [], e["to"]))
+            d[2].append((e["x"], e["y"]))
+    return out
+
+
+class TestRooms(unittest.TestCase):
+    """Format 1.1 in the pack: room maps, door locations, Area > Room tabs (tracker_maps.md "For the
+    pack (part 2)")."""
+
+    def test_room_maps_and_placeholders(self):
+        from PIL import Image
+        maps = {m["name"]: m for m in pack_json("maps/maps.json")}
+        style = LAYOUT["style"]
+
+        def rgb(h):
+            return tuple(int(h[k:k + 2], 16) for k in (1, 3, 5))
+
+        def near(a, b):
+            return all(abs(x - y) <= 2 for x, y in zip(a, b))
+        for r in LAYOUT["rooms"]:
+            m = maps[f"room_{r['map']}"]
+            self.assertEqual(m["img"], r["path"])
+            self.assertEqual(m["location_size"], r["location_size"])
+            path = os.path.join(PACK, r["path"])
+            self.assertEqual(png_size(path), (r["width"], r["height"]), r["path"])
+            img = Image.open(path).convert("RGB")
+            fs = r["font_scale"]
+            for e in r["doors"]:        # the letter boxes where the port draws them
+                bx, by, bw, bh = e["box"]
+                inner = [img.getpixel((x, y)) for x in range(bx + fs, bx + bw - fs) for y in range(by + fs, by + bh - fs)]
+                common = max(set(inner), key=inner.count)
+                self.assertTrue(near(common, rgb(style["door"]["fill"])), (r["map"], e["letter"], common))
+                self.assertTrue(near(img.getpixel((bx, by)), rgb(style["door"]["outline"])), (r["map"], e["letter"]))
+        self.assertEqual(len([n for n in maps if n.startswith("room_")]), len(LAYOUT["rooms"]))
+
+    def test_door_locations(self):
+        ways = doorways()
+        doors = {lid: node for lid, node in walk_locations(pack_json("locations/doors.json")) if "sections" in node}
+        self.assertEqual(len(doors), len(ways))
+        ap_names = set(WORLD.location_name_to_id)
+        mapped = {v[0][1:] for v in lua_table("scripts/autotracking/location_mapping.lua", "LOCATION_MAPPING").values()}
+        for wid, (m, letter, marks, _) in ways.items():
+            node = doors[f"Doors/{m} {letter}"]
+            (sec,) = node["sections"]
+            self.assertEqual(sec["name"], f"Door {letter}")
+            self.assertEqual(sec["access_rules"], [f"^$so2_door_access|{wid}"])
+            self.assertNotIn("visibility_rules", sec)
+            self.assertEqual(sec.get("item_count", 1), 1)
+            self.assertNotIn(sec["name"], ap_names)
+            self.assertNotIn(f"Doors/{m} {letter}/Door {letter}", mapped, "a door is no AP location")
+            self.assertEqual([(ml["x"], ml["y"]) for ml in node["map_locations"]], marks)
+            self.assertTrue(all(ml["map"] == f"room_{m}" and ml["shape"] == "diamond" for ml in node["map_locations"]))
+        text = read(os.path.join(PACK, "scripts", "doors_data.lua"))
+        keys = dict((k, int(v)) for k, v in re.findall(r'^\s*\["(Doors/[^"]+)"\] = (\d+),$', text, re.M))
+        self.assertEqual(keys, {f"Doors/{m} {l}/Door {l}": wid for wid, (m, l, _, _) in ways.items()})
+
+    def test_door_destinations_have_tabs(self):
+        tabs = lua_table("scripts/map_tabs.lua", "SO2_MAP_TABS")
+        rooms = {r["map"] for r in LAYOUT["rooms"]}
+        undrawn = set()
+        for wid, (m, letter, _, to) in doorways().items():
+            for t in to:
+                if t["map"] in rooms:
+                    self.assertEqual(tabs[t["map"]][-1], str(t["map"]), "a room destination opens its own tab")
+                elif t["map"] in (1, 2):
+                    self.assertEqual(tabs[t["map"]][-1], ("Expel" if t["map"] == 1 else "Energy Nede") + " World Map")
+                else:
+                    undrawn.add(t["map"])
+        self.assertEqual(undrawn, set(UNDRAWN_DESTINATIONS), "every other destination is explained")
+
+    def test_area_room_tabs(self):
+        tree = pack_json("layouts/tracker.json")["tracker_default"]
+        tabs = lua_table("scripts/map_tabs.lua", "SO2_MAP_TABS")
+        ways = doorways()
+        by_room = {}
+        for wid, (m, letter, _, _) in sorted(ways.items(), key=lambda kv: (kv[1][0], len(kv[1][1]), kv[1][1])):
+            by_room.setdefault(m, []).append(f"door_{m}_{letter.lower()}")
+
+        def find(node, path):
+            for title in path:
+                node = next(n for n in layout_nodes(node) if n.get("type") == "tabbed")
+                node = next(t["content"] for t in node["tabs"] if t["title"] == title)
+            return node
+        for g in LAYOUT["room_groups"]:
+            first = g["rooms"][0]
+            area_path = tabs[first][:-1]
+            inner = next(n for n in layout_nodes(find(tree, area_path)) if n.get("type") == "tabbed")
+            titles = [t["title"] for t in inner["tabs"]]
+            expect = ([g["area"]] if g["image"] else []) + [str(m) for m in g["rooms"]]
+            self.assertEqual(titles, expect, g["area"])
+            if g["image"]:
+                (overview,) = [n for n in layout_nodes(inner["tabs"][0]["content"]) if n.get("type") == "map"]
+                self.assertEqual(overview["maps"], [os.path.splitext(os.path.basename(g["image"]))[0]])
+            for m, t in zip(g["rooms"], inner["tabs"][-len(g["rooms"]):]):
+                self.assertEqual(tabs[m], area_path + [str(m)], f"map {m} switches to its room")
+                maps_ = [n["maps"] for n in layout_nodes(t["content"]) if n.get("type") == "map"]
+                self.assertEqual(maps_, [[f"room_{m}"]])
+                grids = [n["rows"] for n in layout_nodes(t["content"]) if n.get("type") == "itemgrid"]
+                self.assertEqual(grids, [[[c] for c in by_room[m]]] if m in by_room else [], f"map {m}'s panel")
+        # every tab title on a room's path is unique where it matters: a room's title is its number
+        numbers = [t for p in tabs.values() for t in p if t.isdigit()]
+        self.assertTrue(numbers)
+
+    def test_pack_size(self):
+        total = sum(os.path.getsize(f) for f in glob.glob(os.path.join(PACK, "**", "*"), recursive=True)
+                    if os.path.isfile(f))
+        self.assertLess(total, PACK_BUDGET, "the pack's files (the zip is smaller)")
 
 
 class TestJson(unittest.TestCase):
@@ -284,11 +413,11 @@ class TestJson(unittest.TestCase):
             layouts.update(data)
             for node in layout_nodes(data):
                 if node.get("type") == "item":
-                    self.assertIn(node["item"], codes)
+                    self.assertTrue(node["item"] in codes, node["item"])
                 if node.get("type") == "itemgrid":
                     for row in node["rows"]:
                         for c in row:
-                            self.assertIn(c, codes)
+                            self.assertTrue(c in codes, c)
                 if node.get("type") == "map":
                     for name in node["maps"]:
                         self.assertIn(name, maps)
@@ -347,7 +476,7 @@ AccessibilityLevel = {None = 0, Partial = 1, Inspect = 3, SequenceBreak = 5, Nor
 Highlight = {Avoid = -1, None = 0, NoPriority = 1, Unspecified = 2, Priority = 3}
 PopVersion = "0.36.0"
 STUB = {items = {}, by_code = {}, sections = {}, watches = {}, hints = {}, handlers = {}, notify = {}, get = {},
-        log = {}}
+        log = {}, lua_items = {}, section_handlers = {}, frame_handlers = {}}
 
 local function changed(obj)
     for _, cb in pairs(STUB.watches) do
@@ -387,13 +516,25 @@ function Tracker:AddItems(path)
 end
 function Tracker:AddMaps(path) py.json(path) return true end
 function Tracker:AddLayouts(path) py.json(path) return true end
+-- a section: PopTracker calls every section-changed handler when its count or highlight changes
+local function make_section(full_id, spec)
+    local state = {ChestCount = spec.item_count or 1, AvailableChestCount = spec.item_count or 1, Highlight = 0}
+    local sec = {FullID = full_id, access = spec.access_rules and spec.access_rules[1],
+                 visible = spec.visibility_rules and spec.visibility_rules[1]}
+    return setmetatable(sec, {__index = state, __newindex = function(t, k, v)
+        local old = state[k]
+        state[k] = v
+        if old ~= v and not Tracker.BulkUpdate then
+            for _, cb in pairs(STUB.section_handlers) do cb(t) end
+        end
+    end})
+end
 local function add_locations(nodes, parent)
     for _, node in ipairs(nodes) do
         local id = parent and (parent .. "/" .. node.name) or node.name
         for _, sec in ipairs(node.sections or {}) do
             if sec.name and not sec.ref then
-                STUB.sections[id .. "/" .. sec.name] = {ChestCount = 1, AvailableChestCount = 1, Highlight = 0,
-                    access = sec.access_rules[1], visible = sec.visibility_rules[1]}
+                STUB.sections[id .. "/" .. sec.name] = make_section(id .. "/" .. sec.name, sec)
             end
         end
         add_locations(node.children or {}, id)
@@ -402,7 +543,12 @@ end
 function Tracker:AddLocations(path) add_locations(py.json(path), nil) return true end
 function Tracker:FindObjectForCode(code)
     if code:sub(1, 1) == "@" then return STUB.sections[code:sub(2)] end
-    return STUB.by_code[code]
+    if STUB.by_code[code] then return STUB.by_code[code] end
+    for _, item in ipairs(STUB.lua_items) do
+        for _, c in ipairs(item.PotentialCodes or {}) do
+            if c == code then return item end
+        end
+    end
 end
 function Tracker:ProviderCountForCode(code)
     local obj = STUB.by_code[code]
@@ -416,6 +562,19 @@ function Tracker:UiHint(name, value) table.insert(STUB.hints, {name, value}) end
 ScriptHost = {}
 function ScriptHost:LoadScript(path) local f = assert(load(py.read(path), "@" .. path)) f() return true end
 function ScriptHost:AddWatchForCode(name, code, cb) STUB.watches[name] = cb return name end
+function ScriptHost:AddOnLocationSectionChangedHandler(name, cb) STUB.section_handlers[name] = cb return name end
+function ScriptHost:AddOnFrameHandler(name, cb) STUB.frame_handlers[name] = cb return name end
+function ScriptHost:CreateLuaItem()
+    local item = {Type = "custom", BadgeText = "", _align = nil, _font = nil}
+    function item:SetOverlayAlign(a) self._align = a end
+    function item:SetOverlayFontSize(n) self._font = n end
+    table.insert(STUB.lua_items, item)
+    return item
+end
+ImageReference = {}
+function ImageReference:FromPackRelativePath(path) return path end
+-- one frame: every frame handler once
+function STUB.frame() for _, cb in pairs(STUB.frame_handlers) do cb(0.016) end end
 
 Archipelago = {PlayerNumber = -1, TeamNumber = -1, CheckedLocations = {}, MissingLocations = {}}
 for _, kind in ipairs({"Clear", "Item", "Location", "Retrieved", "SetReply", "Scout", "Bounced"}) do
@@ -436,7 +595,9 @@ end
 function STUB.levels()
     local out = {}
     for _, s in pairs(STUB.sections) do
-        out[tonumber(s.access:match("|(%d+)$"))] = STUB.rule(s.access)
+        if s.access:find("so2_access|", 1, true) then
+            out[tonumber(s.access:match("|(%d+)$"))] = STUB.rule(s.access)
+        end
     end
     return out
 end
@@ -571,12 +732,165 @@ class TestLua(unittest.TestCase):
     def test_every_section_rule_runs(self):
         lua = self.runtime("map")
         g = lua.globals()
-        n = 0
+        n = doors = 0
         for _, s in g.STUB.sections.items():
+            if s.FullID.startswith("Doors/"):
+                self.assertEqual(g.STUB.rule(s.access), 3, "a door with a known destination: Inspect")
+                self.assertIsNone(s.visible, "doors are always visible")
+                doors += 1
+                continue
             self.assertEqual(g.STUB.rule(s.access), 6)
             self.assertTrue(g.STUB.rule(s.visible))
             n += 1
         self.assertEqual(n, len(WORLD.location_name_to_id))
+        self.assertEqual(doors, len({e["id"] for r in LAYOUT["rooms"] for e in r["doors"]}))
+
+
+class TestDoorsLua(TestLua):
+    """The live door panel, door clicks, auto tab to rooms and the entrance randomizer's seam, in Lua
+    5.4 against the stub (docs/ap/poptracker.md "Rooms and doors")."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ways = doorways()
+        cls.tabs = lua_table("scripts/map_tabs.lua", "SO2_MAP_TABS")
+        rooms = {r["map"]: r for r in LAYOUT["rooms"]}
+        cls.rooms = rooms
+
+    def hints(self, g):
+        return [tuple(h.values()) for h in g.STUB.hints.values()]
+
+    def clear_hints(self, lua):
+        lua.globals().STUB.hints = lua.table_from([])
+
+    def door(self, want):
+        """The first doorway (by id) whose destinations satisfy want(to)."""
+        return next(wid for wid, w in sorted(self.ways.items()) if want(w[3]))
+
+    def item(self, g, wid):
+        m, letter = self.ways[wid][:2]
+        return g.Tracker.FindObjectForCode(g.Tracker, f"door_{m}_{letter.lower()}")
+
+    def test_panel_lines(self):
+        lua = self.runtime("map")
+        g = lua.globals()
+        arrow = "\u2192"
+        n = 0
+        for wid, (m, letter, _, to) in self.ways.items():
+            item = self.item(g, wid)
+            self.assertIsNotNone(item, (m, letter))
+            text = item.BadgeText
+            self.assertTrue(text.startswith(f"{letter} {arrow} "), text)
+            first = next((t for t in to if not t.get("conditional")), to[0])
+            self.assertIn(str(first["map"]) if first["map"] > 3 else "world map", text)
+            self.assertLessEqual(len(text), 48, text)
+            self.assertEqual(item._align, "left")
+            n += 1
+        self.assertEqual(n, len(self.ways))
+        # a room's own door: the destination's number and name
+        wid = self.door(lambda to: len(to) == 1 and to[0]["map"] in self.rooms and not to[0].get("conditional")
+                        and len(self.rooms[to[0]["map"]]["name"]) < 20)
+        t = self.ways[wid][3][0]
+        self.assertEqual(self.item(g, wid).BadgeText,
+                         f"{self.ways[wid][1]} {arrow} {t['map']} {self.rooms[t['map']]['name']}")
+        # story variants: the first unconditional destination named, the others by number, * = story
+        wid = self.door(lambda to: len({x["map"] for x in to}) > 1 and any(x.get("conditional") for x in to)
+                        and any(not x.get("conditional") for x in to))
+        text = self.item(g, wid).BadgeText
+        self.assertIn("(+", text)
+        self.assertIn("*", text)
+
+    def test_click_on_a_door_section(self):
+        lua = self.runtime("map")
+        g, T = lua.globals(), lua.globals().Tracker
+        wid = self.door(lambda to: len(to) == 1 and to[0]["map"] in self.rooms)
+        m, letter, _, to = self.ways[wid]
+        sec = T.FindObjectForCode(T, f"@Doors/{m} {letter}/Door {letter}")
+        self.clear_hints(lua)
+        sec.AvailableChestCount = 0                 # PopTracker: a click on "Door A" in the popup
+        self.assertEqual(self.hints(g), [], "nothing happens inside PopTracker's click")
+        g.STUB.frame()
+        self.assertEqual(sec.AvailableChestCount, 1, "a door never counts as checked")
+        self.assertEqual(self.hints(g), [("ActivateTab", t) for t in self.tabs[to[0]["map"]]])
+        self.assertEqual(self.tabs[to[0]["map"]][-1], str(to[0]["map"]))
+        g.STUB.frame()                              # once only
+        self.assertEqual(len(self.hints(g)), len(self.tabs[to[0]["map"]]))
+        # a check's section changing (the server, a click) is no door: nothing happens
+        self.clear_hints(lua)
+        loc_map = lua_table("scripts/autotracking/location_mapping.lua", "LOCATION_MAPPING")
+        T.FindObjectForCode(T, next(iter(loc_map.values()))[0]).AvailableChestCount = 0
+        g.STUB.frame()
+        self.assertEqual(self.hints(g), [])
+
+    def test_click_on_a_panel_line(self):
+        lua = self.runtime("map")
+        g = lua.globals()
+        wid = self.door(lambda to: len(to) == 1 and to[0]["map"] in self.rooms)
+        self.clear_hints(lua)
+        item = self.item(g, wid)
+        item.OnLeftClickFunc(item)
+        self.assertEqual(self.hints(g), [("ActivateTab", t) for t in self.tabs[self.ways[wid][3][0]["map"]]])
+        # several destinations: left = the first unconditional, right = the next ones in turn
+        wid = self.door(lambda to: len({x["map"] for x in to}) > 1 and all(x["map"] in self.rooms for x in to)
+                        and any(not x.get("conditional") for x in to))
+        to = self.ways[wid][3]
+        order = [x for x in to if not x.get("conditional")] + [x for x in to if x.get("conditional")]
+        item = self.item(g, wid)
+        for click, want in ((item.OnLeftClickFunc, order[0]), (item.OnRightClickFunc, order[1]),
+                            (item.OnLeftClickFunc, order[0])):
+            self.clear_hints(lua)
+            click(item)
+            self.assertEqual(self.hints(g), [("ActivateTab", t) for t in self.tabs[want["map"]]])
+        # a world map: its tab; an undrawn story map: no tab, nothing happens
+        wid = self.door(lambda to: to[0]["map"] == 1)
+        self.clear_hints(lua)
+        self.assertTrue(g.so2_door_go(wid))
+        self.assertEqual(self.hints(g), [("ActivateTab", "Expel"), ("ActivateTab", "Expel World Map")])
+        wid = self.door(lambda to: any(x["map"] in UNDRAWN_DESTINATIONS for x in to))
+        self.clear_hints(lua)
+        picked = g.so2_door_pick(g.so2_door_destinations(wid), 1)
+        if picked.map in UNDRAWN_DESTINATIONS:
+            self.assertFalse(g.so2_door_go(wid))
+            self.assertEqual(self.hints(g), [])
+
+    def test_auto_tab_to_rooms(self):
+        lua = self.runtime("map")
+        g = lua.globals()
+        self.connect(lua, {"world_mode": "story"}, [], [])
+        for m in (62, 18, 412 if 412 in self.rooms else 26):
+            self.clear_hints(lua)
+            g.STUB.handlers.SetReply("so2_map_0_1", to_lua(lua, {"map": m}), None)
+            self.assertEqual(self.hints(g), [("ActivateTab", t) for t in self.tabs[m]])
+            self.assertEqual(self.tabs[m][-1], str(m), "a room's own tab")
+
+    def test_entrance_randomizer_seam(self):
+        """Phase C's seam: slot data door_pairs (doorway id -> the doorway at the other end) and the
+        found doors in so2_doors_{team}_{slot}: '?' and yellow until found, then the pair's room."""
+        lua = self.runtime("map")
+        g, T = lua.globals(), lua.globals().Tracker
+        ids = sorted(self.ways)
+        a = next(i for i in ids if self.ways[i][0] == 18)
+        b = next(i for i in ids if self.ways[i][0] == 62)
+        other = next(i for i in ids if i not in (a, b))
+        self.connect(lua, {"world_mode": "open_world", "door_pairs": {str(a): b, str(b): a}}, [], [])
+        self.assertIn("so2_doors_0_1", list(g.STUB.get.values()))
+        letter = self.ways[a][1]
+        self.assertEqual(self.item(g, a).BadgeText, f"{letter} \u2192 ?")
+        sec = T.FindObjectForCode(T, f"@Doors/18 {letter}/Door {letter}")
+        self.assertEqual(g.STUB.rule(sec.access), 5, "not found yet: SequenceBreak (yellow)")
+        self.assertFalse(g.so2_door_go(a), "unknown: no tab to open")
+        self.assertNotIn("?", self.item(g, other).BadgeText, "a door the room doesn't randomize: vanilla")
+        g.STUB.handlers.SetReply("so2_doors_0_1", to_lua(lua, [a]), None)
+        self.assertTrue(self.item(g, a).BadgeText.startswith(f"{letter} \u2192 62 "))
+        self.assertEqual(g.STUB.rule(sec.access), 3)
+        self.assertEqual(self.item(g, b).BadgeText, f"{self.ways[b][1]} \u2192 ?", "found one way only")
+        self.clear_hints(lua)
+        self.assertTrue(g.so2_door_go(a))
+        self.assertEqual(self.hints(g), [("ActivateTab", t) for t in self.tabs[62]])
+        # a vanilla room again: no pairs, no found key
+        self.connect(lua, {"world_mode": "open_world"}, [], [])
+        self.assertNotIn("so2_doors_0_1", list(g.STUB.get.values()))
+        self.assertNotIn("?", self.item(g, a).BadgeText)
 
 
 class TestLuaLogic(unittest.TestCase):

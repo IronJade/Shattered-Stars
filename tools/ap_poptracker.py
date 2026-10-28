@@ -94,6 +94,14 @@ COLOURS = {
 BG = "#1c1c22"
 BADGE = (160, 60)       # badge image size: drawn at twice the layout's item size (80 x 30)
 ITEM_SIZE = "80,30"
+# The live door panel (docs/ap/poptracker.md "Rooms and doors"): one Lua item per doorway, a bar
+# with its line ("A -> 412 Salva Drift") as the badge text.
+DOOR_LINE = (260, 22)                   # the panel item's size in the layout
+DOOR_LINE_IMG = "images/doors/line.png"
+DOOR_ICON_IMG = "images/doors/door.png"  # a door section's icon in the map popup
+DOOR_PANEL_HEADER = "Doors (* story)"
+PLAYER_IMG = "images/status/you.png"    # Universal Tracker's player marker on the world maps
+WORLD_MAP_NAMES = {1: "Expel", 2: "Energy Nede", 3: "world map 3"}
 
 
 # ---------------------------------------------------------------------------------------- inputs
@@ -239,6 +247,83 @@ def draw_area(image, style):
     return img
 
 
+def draw_room(room, style):
+    """A room placeholder (tracker_maps.md "Rooms"): exactly the layout's size, the label strip,
+    a flat box where the port draws the background, and each door's letter box where the port
+    draws it (the same boxes, so a player's render lines up). Original: shapes and text only."""
+    from PIL import Image, ImageDraw
+    w, h, top, fs = room["width"], room["height"], room["bg_y"], room["font_scale"]
+    img = Image.new("RGB", (w, h), style["background"])
+    d = ImageDraw.Draw(img)
+    d.rectangle((0, top, w - 1, h - 1), fill=map_colour(room["map"]), outline="#5a6274")
+    f, fs_, lines = fit(d, f"map {room['map']}", w - 16, (h - top) / 4, start=min(40, max(10, (h - top) // 6)))
+    centred_text(d, (0, top, w, top + (h - top) * 0.5), lines, f, fs_, fill="#8c94a8")
+    if w >= 240 and h - top >= 160:
+        hint = "placeholder: draw it from your own disc with shattered-stars --render-tracker-maps"
+        f, fs_, lines = fit(d, hint, w - 24, (h - top) / 5, start=10 + 2 * fs, low=8, max_lines=3)
+        centred_text(d, (0, top + (h - top) * 0.55, w, top + (h - top) * 0.85), lines, f, fs_, fill="#6c7488")
+    lx, ly, lw, lh = room["label_box"]
+    label_f = font(max(8, 9 * fs))
+    d.text((lx + 2 * fs, ly + max(0, (lh - 9 * fs) // 2)), cut(d, room["label"], label_f, lw - 4 * fs),
+           font=label_f, fill=style["label_colour"])
+    door = style["door"]
+    letter_f = font(max(8, 9 * fs))
+    for e in room["doors"]:
+        bx, by, bw, bh = e["box"]
+        d.rectangle((bx, by, bx + bw - 1, by + bh - 1), fill=door["fill"], outline=door["outline"], width=fs)
+        tw = text_w(d, e["letter"], letter_f)
+        d.text((bx + (bw - tw) / 2, by + (bh - 9 * fs) / 2 - fs / 2), e["letter"], font=letter_f, fill=door["text"])
+    keep = [style["background"], style["label_colour"], door["fill"], door["text"], door["outline"],
+            map_colour(room["map"])]
+    return to_palette(img, keep)
+
+
+def to_palette(img, keep, colours=32):
+    """A 32-colour palette image (a room placeholder is shapes and text: a third of the bytes):
+    the layout's style colours exactly, and the rest (the text's edges) chosen from the image."""
+    from PIL import Image
+    fixed = [tuple(int(h[k:k + 2], 16) for k in (1, 3, 5)) for h in dict.fromkeys(keep)]
+    rest = img.quantize(colors=colours - len(fixed), method=Image.Quantize.MEDIANCUT).convert("RGB")
+    extra = [c for _, c in sorted(rest.getcolors(colours) or [], reverse=True)
+             if all(sum((a - b) ** 2 for a, b in zip(c, f)) > 24 ** 2 for f in fixed)]
+    pal = [v for c in (fixed + extra)[:colours] for v in c]
+    pal_img = Image.new("P", (1, 1))
+    pal_img.putpalette(pal + pal[:3] * (256 - len(pal) // 3))
+    return img.quantize(palette=pal_img, dither=Image.Dither.NONE)
+
+
+def draw_door_line():
+    """The door panel's bar: Lua sets its text (the badge) at run time."""
+    from PIL import Image, ImageDraw
+    w, h = DOOR_LINE[0] * 2, DOOR_LINE[1] * 2
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle((1, 1, w - 2, h - 2), radius=8, fill="#24303f", outline="#5a6274", width=2)
+    return img
+
+
+def draw_door_icon():
+    """A door, for the door sections in the map popup."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((14, 6, 50, 60), radius=6, fill="#8a6a3c", outline="#e8e8f0", width=3)
+    d.rectangle((20, 12, 44, 30), outline="#5c4526", width=2)
+    d.rectangle((20, 36, 44, 54), outline="#5c4526", width=2)
+    d.ellipse((40, 33, 46, 39), fill="#e8e8f0")
+    return img
+
+
+def draw_player_marker():
+    """The party's place on a world map (Universal Tracker's location icon)."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((6, 6, 58, 58), fill="#ffffff")
+    d.ellipse((12, 12, 52, 52), fill="#e0302a")
+    d.ellipse((24, 24, 40, 40), fill="#ffffff")
+    return img
+
+
 def draw_world(image):
     """A world schematic: the arrival points of the area groups (doors.json arrivals) as labelled
     marks on a plain sea, north up. Original: positions are numbers, the rest is geometry."""
@@ -351,6 +436,14 @@ class Pack:
         self.tabs = {}              # area name -> tab path (list of titles)
         self.badges = {}            # image path -> (text, colour)
         self.world_tab = {}         # world map 1 / 2 -> its tab path
+        # format 1.1: rooms (one map each), their groups, the doorways (tracker_maps.md "Rooms")
+        self.rooms = {r["map"]: r for r in layout.get("rooms", [])}
+        self.room_groups = {g["area"]: g for g in layout.get("room_groups", [])}
+        self.room_group_of = {m: g["area"] for g in layout.get("room_groups", []) for m in g["rooms"]}
+        self.room_tabs = {}         # room map -> its tab path
+        self.doorways = {}          # doorway id -> {map, letter, code, marks, to}
+        self.room_doorways = {}     # room map -> doorway ids in letter order
+        self.door_sections = {}     # section full id -> doorway id
 
     # ---- files
     def put_json(self, path, obj):
@@ -515,10 +608,47 @@ class Pack:
                 secs = [self.section(path, loc_name, r, s) for r, s in zip(rs, shorts)]
                 self.area_sections.setdefault(area, []).extend(
                     (clean(r["name"]), f"{path}/{s['name']}") for r, s in zip(rs, secs))
-                children.append({"name": loc_name, "sections": secs,
-                                 "map_locations": [{"map": self.map_of_image[img["path"]], "x": x, "y": y}]})
+                spots = [{"map": self.map_of_image[img["path"]], "x": x, "y": y}]
+                for r in rs:        # the same dot on its room (format 1.1)
+                    room = checks[r["name"]].get("room")
+                    if room:
+                        spot = {"map": room_map(room["image"]), "x": room["x"], "y": room["y"]}
+                        if spot not in spots:
+                            spots.append(spot)
+                children.append({"name": loc_name, "sections": secs, "map_locations": spots})
             tree[region].append({"name": clean(area), "children": children})
         return [{"name": reg, "children": tree[reg]} for reg in REGIONS if tree[reg]]
+
+    def build_doors(self):
+        """One location per doorway on its room (a square per marker: two trigger regions of one
+        routine are one doorway), one section "Door <letter>" that is no Archipelago location:
+        clicking it opens the destination's tab (scripts/doors.lua), and the section is set back
+        at once, so a door never counts as checked. Its access rule is the door's colour."""
+        children = []
+        for m in sorted(self.rooms):
+            room = self.rooms[m]
+            ids = []
+            for e in room["doors"]:
+                d = self.doorways.get(e["id"])
+                if d is None:
+                    d = self.doorways[e["id"]] = {"map": m, "letter": e["letter"], "marks": [],
+                                                  "code": f"door_{m}_{e['letter'].lower()}", "to": e["to"]}
+                    ids.append(e["id"])
+                if (d["map"], d["letter"]) != (m, e["letter"]):
+                    raise SystemExit(f"doorway {e['id']} is in two rooms")
+                d["marks"].append((e["x"], e["y"]))
+            self.room_doorways[m] = ids
+            for wid in ids:
+                d = self.doorways[wid]
+                name, sec = f"{m} {d['letter']}", f"Door {d['letter']}"
+                self.door_sections[f"Doors/{name}/{sec}"] = wid
+                children.append({
+                    "name": name,
+                    "sections": [{"name": sec, "item_count": 1, "access_rules": [f"^$so2_door_access|{wid}"],
+                                  "chest_unopened_img": DOOR_ICON_IMG, "chest_opened_img": DOOR_ICON_IMG}],
+                    "map_locations": [{"map": f"room_{m}", "x": x, "y": y, "shape": "diamond"}
+                                      for x, y in d["marks"]]})
+        return [{"name": "Doors", "children": children}]
 
     @staticmethod
     def short_place(row, area):
@@ -670,12 +800,20 @@ class Pack:
                          "location_border_thickness": 2 if img["kind"] == "area" else 4, "img": img["path"]})
         for b in self.boards:
             maps.append({"name": b["map"], "location_size": 26, "location_border_thickness": 2, "img": b["img"]})
+        for m in sorted(self.rooms):
+            r = self.rooms[m]
+            maps.append({"name": f"room_{m}", "location_size": r["location_size"],
+                         "location_border_thickness": r["font_scale"], "img": r["path"]})
         return maps
 
     def build_tabs(self):
         """The map variant's tabs: Expel and Energy Nede (their world map, then a tab per area
         group, then a tab per area inside a group of several), Fienal, the Cave of Trials (a tab
-        per level), then the boards. Also each area's tab path, for scripts/map_tabs.lua."""
+        per level), then the boards. An area with rooms (format 1.1) is itself tabbed: its
+        overview (the area image, titled as the area) and a tab per room, titled by its map
+        number, in room_groups order; a room group with no area image (L'Aqua) is a tab of rooms
+        only under its world map. Also each area's and each room's tab path, for
+        scripts/map_tabs.lua and the door clicks."""
         D = self.w.data
         stage_of = {g["group"]: (g["stage"] or 99) for g in D.KEY_GROUPS}
         worlds = {i["world_map"]: i for i in self.layout["images"] if i["kind"] == "world"}
@@ -692,14 +830,18 @@ class Pack:
                 areas = [a for a in dot["areas"] if a in self.area_sections
                          and self.region_of_area[a] not in ("Fienal", "Cave of Trials")]
                 if not areas:
+                    g = self.room_groups.get(dot["group"])
+                    if g and not g["image"] and g["world"] == wm:     # rooms only (L'Aqua)
+                        tabs.append({"title": dot["group"], "content": self.area_content(dot["group"])})
+                        self.tabs[dot["group"]] = [region, dot["group"]]
                     continue
                 title = self.group_title(dot["group"], areas)
                 areas.sort(key=lambda a: (a != title, natural(a)))
                 if len(areas) == 1:
-                    tabs.append({"title": title, "content": self.area_map(areas[0])})
+                    tabs.append({"title": title, "content": self.area_content(areas[0])})
                     self.tabs[areas[0]] = [region, title]
                 else:
-                    inner = [{"title": a, "content": self.area_map(a)} for a in areas]
+                    inner = [{"title": a, "content": self.area_content(a)} for a in areas]
                     tabs.append({"title": title, "content": {"type": "tabbed", "tabs": inner}})
                     for a in areas:
                         self.tabs[a] = [region, title, a]
@@ -707,23 +849,50 @@ class Pack:
         for region in ("Fienal", "Cave of Trials"):
             areas = sorted((a for a, r in self.region_of_area.items() if r == region), key=natural)
             if len(areas) == 1:
-                top.append({"title": region, "content": self.area_map(areas[0])})
+                top.append({"title": region, "content": self.area_content(areas[0])})
                 self.tabs[areas[0]] = [region]
             elif areas:
                 inner = []
                 for a in areas:
                     t = a[len(region) + 1:] if a.startswith(region + " ") else a
-                    inner.append({"title": t, "content": self.area_map(a)})
+                    inner.append({"title": t, "content": self.area_content(a)})
                     self.tabs[a] = [region, t]
                 top.append({"title": region, "content": {"type": "tabbed", "tabs": inner}})
         for b in self.boards:
             top.append({"title": b["title"], "content": {"type": "map", "maps": [b["map"]]}})
             self.tabs["board:" + b["title"]] = [b["title"]]
+        for group, g in self.room_groups.items():
+            if group not in self.tabs:
+                raise SystemExit(f"room group {group!r} has no tab")
+            for m in g["rooms"]:
+                self.room_tabs[m] = self.tabs[group] + [str(m)]
         return top
 
     def area_map(self, area):
         img = next(i for i in self.layout["images"] if i.get("area") == area)
         return {"type": "map", "maps": [self.map_of_image[img["path"]]]}
+
+    def area_content(self, area):
+        """An area's tab content: its overview map, or with rooms a tabbed of the overview (titled
+        as the area, so activating the area's tab also shows its overview) and its rooms."""
+        g = self.room_groups.get(area)
+        tabs = [{"title": area, "content": self.area_map(area)}] if g is None or g["image"] else []
+        if g is None:
+            return tabs[0]["content"]
+        tabs += [{"title": str(m), "content": self.room_content(m)} for m in g["rooms"]]
+        return {"type": "tabbed", "tabs": tabs}
+
+    def room_content(self, m):
+        """A room's tab: the room's map, and beside it the live door panel (a Lua item per
+        doorway, in letter order, whose badge text scripts/doors.lua keeps current)."""
+        content = {"type": "map", "maps": [f"room_{m}"]}
+        ids = self.room_doorways.get(m) or []
+        if not ids:
+            return content
+        grid = {"type": "itemgrid", "item_margin": "1,2", "item_size": f"{DOOR_LINE[0]},{DOOR_LINE[1]}",
+                "h_alignment": "left", "v_alignment": "top", "rows": [[self.doorways[i]["code"]] for i in ids]}
+        return {"type": "dock", "content": [
+            {"type": "group", "header": DOOR_PANEL_HEADER, "dock": "right", "content": grid}, content]}
 
     def build_map_tabs(self):
         """Field map -> the tab path to activate (scripts/map_tabs.lua)."""
@@ -731,9 +900,14 @@ class Pack:
         tab = {1: self.world_tab[1], 2: self.world_tab[2]}
         area_images = [i for i in self.layout["images"] if i["kind"] == "area"]
         names = {int(r["map"]): r for r in self.map_names}
-        how = {"world": 2, "image": 0, "name": 0, "rows": 0, "group": 0, "region": 0}
+        how = {"world": 2, "room": 0, "image": 0, "name": 0, "rows": 0, "group": 0, "region": 0}
+        for m, path in self.room_tabs.items():     # a room: its own tab (format 1.1)
+            tab[m] = path
+            how["room"] += 1
         for img in area_images:      # maps drawn in an area image (a map in two: its own area's first)
             for m in img["maps"]:
+                if m["map"] in self.room_tabs:
+                    continue
                 own = names.get(m["map"], {}).get("area") == img["area"]
                 if m["map"] not in tab or own:
                     if m["map"] not in tab:
@@ -889,6 +1063,59 @@ class Pack:
             f"z0 = {i['z0']}, units_per_pixel = {i['units_per_pixel']}}}" for i in worlds) + "}")
         self.put_text("scripts/pack_data.lua", "\n".join(lines) + "\n")
 
+    def map_title(self, m):
+        """A destination's name for the door panel: a room's name, a world map's, else
+        map_names.csv's place (an undrawn map)."""
+        if m in self.rooms:
+            return self.rooms[m]["name"]
+        if m in WORLD_MAP_NAMES:
+            return f"{WORLD_MAP_NAMES[m]} (world map)"
+        r = next((r for r in self.map_names if int(r["map"]) == m), None)
+        return (r["place"] or r["area"]) if r else ""
+
+    def build_door_lua(self):
+        """scripts/doors_data.lua: the rooms (name, tab path), the vanilla door table (doorway id
+        -> its room, letter, panel item code and destinations), the door sections, and names for
+        the destinations that are no room. scripts/doors.lua reads it."""
+        lines = ["-- Generated by tools/ap_poptracker.py: do not edit.",
+                 "-- Rooms (docs/ap/tracker_maps.md \"Rooms\"): map -> {name, tab path}.",
+                 "SO2_ROOMS = {"]
+        for m in sorted(self.rooms):
+            tabs = ", ".join(lua_str(t) for t in self.room_tabs[m])
+            lines.append(f"  [{m}] = {{name = {lua_str(self.rooms[m]['name'])}, tabs = {{{tabs}}}}},")
+        lines.append("}")
+        lines.append("-- Destinations that are no room: world maps and undrawn story maps.")
+        others = sorted({t["map"] for d in self.doorways.values() for t in d["to"] if t["map"] not in self.rooms})
+        lines.append("SO2_MAP_NAMES = {" + ", ".join(f"[{m}] = {lua_str(self.map_title(m))}" for m in others) + "}")
+        lines.append("-- The vanilla door table: doorway id -> {map, letter, code (its panel item), to = {{map,")
+        lines.append("-- back (the doorway at the other end), cond (only in some story states)}, ...}}.")
+        lines.append("SO2_DOORWAYS = {")
+        for wid in sorted(self.doorways):
+            d = self.doorways[wid]
+            to = []
+            for t in d["to"]:
+                f = [f"map = {t['map']}"]
+                if "back" in t:
+                    f.append(f"back = {t['back']}")
+                if t.get("conditional"):
+                    f.append("cond = true")
+                to.append("{" + ", ".join(f) + "}")
+            lines.append(f"  [{wid}] = {{map = {d['map']}, letter = {lua_str(d['letter'])}, "
+                         f"code = {lua_str(d['code'])}, to = {{{', '.join(to)}}}}},")
+        lines.append("}")
+        lines.append("-- Room map -> its doorway ids in letter order (the panel's lines).")
+        lines.append("SO2_ROOM_DOORS = {")
+        for m in sorted(self.room_doorways):
+            if self.room_doorways[m]:
+                lines.append(f"  [{m}] = {{{', '.join(str(i) for i in self.room_doorways[m])}}},")
+        lines.append("}")
+        lines.append("-- A door section's full id -> its doorway id (the click handler).")
+        lines.append("SO2_DOOR_SECTIONS = {")
+        for sec, wid in sorted(self.door_sections.items()):
+            lines.append(f"  [{lua_str(sec)}] = {wid},")
+        lines.append("}")
+        self.put_text("scripts/doors_data.lua", "\n".join(lines) + "\n")
+
     def build_manifest(self, versions_url):
         flags = ["ap"]
         manifest = {
@@ -925,6 +1152,11 @@ class Pack:
         for img in self.layout["images"]:
             if with_images:
                 self.images[img["path"]] = draw_area(img, style) if img["kind"] == "area" else draw_world(img)
+        for m, room in sorted(self.rooms.items()):
+            self.images[room["path"]] = draw_room(room, style) if with_images else None
+        self.images[DOOR_LINE_IMG] = draw_door_line() if with_images else None
+        self.images[DOOR_ICON_IMG] = draw_door_icon() if with_images else None
+        self.images[PLAYER_IMG] = draw_player_marker() if with_images else None
         if with_images:
             for path, (text, colour) in self.badges.items():
                 self.images[path] = badge(text, colour)
@@ -944,14 +1176,21 @@ class Pack:
         self.put_json("locations/places.json", places)
         self.put_json("locations/world.json", world)
         self.put_json("locations/boards.json", boards)
+        self.put_json("locations/doors.json", self.build_doors())
         self.put_json("maps/maps.json", self.build_maps())
         tabs = self.build_tabs()
         self.build_map_tabs()
         self.build_layouts(tabs)
         self.build_lua()
+        self.build_door_lua()
         self.build_manifest(versions_url)
         self.copy_lua()
         self.draw_images(with_images)
+
+
+def room_map(path):
+    """images/rooms/<m>.png -> the PopTracker map name room_<m>."""
+    return "room_" + os.path.splitext(os.path.basename(path))[0]
 
 
 def unique(name, taken):

@@ -43,6 +43,13 @@ dialog helper is reachable) and SDL's dummy video driver, under a scratch HOME.
    step-only change): each time PopTracker's Normal sections must be the reference evaluator's for
    the room's export with that position and its Inspect ("later in the story") ones the reference's
    `later`.
+8. Rooms and doors (docs/ap/poptracker.md "Rooms and doors"): PopTracker (map variant) with a door
+   probe in its user override connects to the first room; once connected the probe clears door A
+   of map 26 (AvailableChestCount 0: what a click on "Door A" in the map popup does) and reports the
+   section a few frames later. The pack's handler must set it back (a door is never checked) and open
+   the destination room's tab path (the saved state's active tabs, SO2_MAP_TABS of door A's first
+   destination). Also printed: the door panel's line for that door, and PopTracker's peak memory
+   with the rooms' maps (VmHWM of its processes).
 Prints one line per check; exit status 0 when all pass.
 """
 import argparse
@@ -439,6 +446,105 @@ def with_probe(apprun, root, pack_dir, port, slot, log_name, drive):
     return done
 
 
+# Step 8's probe: once connected, a door section "clicked" (cleared) from Lua, then its count again.
+DOOR_PROBE = r"""
+local frames, clicked = 0, false
+ScriptHost:AddOnFrameHandler("so2 smoke doors", function(elapsed)
+    if not SO2.connected then
+        return
+    end
+    frames = frames + 1
+    local sec = Tracker:FindObjectForCode("@" .. "%(section)s")
+    if frames == 60 and sec then
+        local item = SO2_DOORS.items[%(door)d]
+        print("so2door line " .. (item and item.BadgeText or "?"))
+        print("so2door click " .. sec.FullID .. " " .. sec.AvailableChestCount)
+        sec.AvailableChestCount = 0
+        clicked = true
+    elseif clicked and frames == 90 then
+        print("so2door after " .. sec.AvailableChestCount .. " " .. sec.ChestCount)
+    end
+end)
+"""
+
+
+def peak_memory(pgid):
+    """VmHWM (kB) summed over the processes of a process group."""
+    total = 0
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        try:
+            stat = open(f"/proc/{pid}/stat").read()
+            if int(stat.rsplit(")", 1)[1].split()[3]) != pgid:
+                continue
+            for line in open(f"/proc/{pid}/status"):
+                if line.startswith("VmHWM:"):
+                    total += int(line.split()[1])
+        except (OSError, ValueError, IndexError):
+            continue
+    return total
+
+
+def run_doors(apprun, root, pack_dir, port, tabs):
+    """Step 8: a door click in the real PopTracker."""
+    doors = open(os.path.join(pack_dir, "scripts", "doors_data.lua"), encoding="utf-8").read()
+    m = re.search(r'^\s*\["(Doors/26 A/Door A)"\] = (\d+),$', doors, re.M)
+    if not check(m is not None, "doors: door A of map 26 is in the door table"):
+        return
+    section, door = m.group(1), int(m.group(2))
+    way = re.search(r"^\s*\[%d\] = \{map = 26, letter = \"A\", code = \"[^\"]+\", to = \{(.*)\}\},$" % door, doors, re.M)
+    dests = [(int(t.group(1)), "cond = true" in t.group(0)) for t in re.finditer(r"\{map = (\d+)[^}]*\}", way.group(1))]
+    dest = next((d for d, cond in dests if not cond), dests[0][0])
+    override = os.path.join(root, "home", "PopTracker", "user-override", UID)
+    os.makedirs(os.path.join(override, "scripts"))
+    with open(os.path.join(pack_dir, "scripts", "init.lua"), encoding="utf-8") as f:
+        init = f.read()
+    with open(os.path.join(override, "scripts", "init.lua"), "w", encoding="utf-8") as f:
+        f.write(init + '\nScriptHost:LoadScript("scripts/so2_smoke_doors.lua")\n')
+    with open(os.path.join(override, "scripts", "so2_smoke_doors.lua"), "w", encoding="utf-8") as f:
+        f.write(DOOR_PROBE % {"section": section, "door": door})
+    log_path = os.path.join(root, "poptracker-doors.log")
+    peak = 0
+    with open(log_path, "w") as log:
+        p = subprocess.Popen([apprun, "--load-pack", UID, "--pack-variant", "map", "--ap-host", f"localhost:{port}",
+                              "--ap-slot", "Tester"], env=env_for(root), stdin=subprocess.DEVNULL, stdout=log,
+                             stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            deadline = time.time() + 90
+            while time.time() < deadline and p.poll() is None:
+                peak = max(peak, peak_memory(p.pid))
+                if "so2door after" in open(log_path, encoding="utf-8", errors="replace").read():
+                    time.sleep(1)
+                    break
+                time.sleep(0.5)
+        finally:
+            stop(p)
+    shutil.rmtree(os.path.join(root, "home", "PopTracker", "user-override"))
+    text = open(log_path, encoding="utf-8", errors="replace").read()
+    line = re.search(r"so2door line (.*)", text)
+    print(f"info  doors: door A of map 26 -> {dests}; panel line {line.group(1) if line else '?'!r}; "
+          f"PopTracker peak memory {peak // 1024} MB")
+    after = re.search(r"so2door after (\d+) (\d+)", text)
+    check("so2door click " + section + " 1" in text, f"doors: {section} clicked (it had 1 of 1)")
+    check(after is not None and after.group(1) == after.group(2) == "1",
+          "doors: the pack set the door back at once (a door is never checked)")
+    bad = [ln for ln in text.splitlines() if re.search(r"WARNING|[Ee]rror|attempt to|stack traceback", ln)
+           and "TLS handshake" not in ln and "Could not fetch" not in ln]
+    check(not bad, "doors: no Lua error or warning" + (f": {bad[:3]}" if bad else ""))
+    state_dir = os.path.join(root, "home", ".config", "PopTracker", "saves", UID)
+    found = [os.path.join(b, f) for b, _, fs in os.walk(state_dir) for f in fs
+             if f == "autosave.json" and os.path.basename(b) == "map"]
+    if not check(bool(found), "doors: state saved"):
+        return
+    state = json.load(open(found[0], encoding="utf-8"))
+    hints = [h[1] for h in state.get("ui_hints", []) if h[0] == "ActivateTab"]
+    check(all(t in hints for t in tabs[dest]) and tabs[dest][-1] == str(dest),
+          f"doors: the click opened room {dest}'s tab {tabs[dest]}")
+    sec = state["tracker"]["sections"].get(section)
+    check(not (isinstance(sec, dict) and sec.get("cleared")), "doors: the door section is not saved as checked")
+
+
 def run_logic(apprun, root, pack_dir, port, ap_dir):
     """Step 4: PopTracker with the probe, the three points."""
     return with_probe(apprun, root, pack_dir, port, "Tester", "poptracker-logic.log",
@@ -586,10 +692,11 @@ def main():
                       "map: the Room settings follow the slot data")
                 hints = [h[1] for h in state.get("ui_hints", []) if h[0] == "ActivateTab"]
                 # the default tabs are each tab bar's first: Expel's is its world map
-                check(all(title in hints for title in tabs[MAP]) and "Expel World Map" not in hints,
-                      f"map: map {MAP} switched the tabs to {tabs[MAP]}")
+                check(all(title in hints for title in tabs[MAP]) and "Expel World Map" not in hints
+                      and tabs[MAP][-1] == str(MAP), f"map: map {MAP} switched the tabs to its room, {tabs[MAP]}")
         joined = open(os.path.join(root, "server.log")).read()
         check(joined.count("['PopTracker', 'NoText', 'Tracker']") >= 2, "server: PopTracker joined as a tracker")
+        run_doors(apprun, root, pack_dir, a.port, tabs)
         if not a.no_story:
             story = story_room(a, root, py, ap_env)
             if story is not None:
