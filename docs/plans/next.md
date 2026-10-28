@@ -86,6 +86,18 @@ Work breakdown (agents, after the decision):
 
 ---
 
+## macOS build (started 2026-10-28, in parallel)
+
+The user (2026-10-28): their Linux, Windows and Mac machines are all development devices for build,
+run and test; "Also start a macOS build now" (alongside 0.03.00, not holding it up). The work runs
+on the Mac itself (Remote Control session "Shattered-Stars Mac"), from a git bundle of main, on a
+`macos` branch whose commits come back here as patches. Starting points: OpenGL 3.3 core (macOS
+needs SDL's forward-compatible flag), platform code in about ten files (paths, utf8, launcher),
+FetchContent deps (SDL3, apclientpp, asio, websocketpp, imgui), OpenSSL from Homebrew. First
+milestone: configure, build, ss_tests, the game to the title with the user's disc, setup's window.
+Packaging (.app, signing) after that. For 0.03.00 the Mac only checks the tracker side
+(so2.apworld 0.2.2, Universal Tracker, the PopTracker pack), since no Mac build ships yet.
+
 ## Phase C: so2.apworld 0.3.0, entrance randomization (docs/entrance randomization.md)
 
 **Goal (the user):** "add Entrance Randomizer to the options using [Generic ER] as a guiding principle".
