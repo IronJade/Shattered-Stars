@@ -306,8 +306,8 @@ levels, so UT may show some of them **later** than they really became reachable,
 
 The keys the game writes, the map layout, the pack and the world's tracker support are documented
 in the repository:
-[data storage](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/data_storage.md),
-[tracker maps](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/tracker_maps.md),
-[the PopTracker pack](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/poptracker.md),
+[data storage](https://github.com/IronJade/Shattered-Stars/blob/main/docs/apworld/data_storage.md),
+[tracker maps](https://github.com/IronJade/Shattered-Stars/blob/main/docs/trackers/tracker_maps.md),
+[the PopTracker pack](https://github.com/IronJade/Shattered-Stars/blob/main/docs/trackers/poptracker.md),
 and the world's "Trackers" section in
-[docs/ap/apworld.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/apworld.md).
+[docs/apworld/apworld.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/apworld/apworld.md).

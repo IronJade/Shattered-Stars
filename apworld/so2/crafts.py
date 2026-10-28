@@ -1,9 +1,9 @@
-"""Craftsanity's table (docs/ap/apworld.md, "Craftsanity"): every item Item Creation can make,
+"""Craftsanity's table (docs/apworld/apworld.md, "Craftsanity"): every item Item Creation can make,
 with the specialties that make it (the first names the location) and, when only some members
 can make it, who (`makers`, party names; None: anyone). Written by
-tools/ap_make_crafts.py from the craft research (docs/ap/data/craft_results.csv and
+apworld/tools/ap_make_crafts.py from the craft research (docs/apworld/data/craft_results.csv and
 craft_decode.txt: the specialties' tables read off the disc at the addresses
-engine/src/game/field/menu_creation.cpp uses). Member locks: Customize (each member's
+port/src/game/field/menu_creation.cpp uses). Member locks: Customize (each member's
 own weapon list, Claude to Ashton), Machinery's rare tables (Precis, Opera), Authoring's rare
 books (Leon), Art's portraits (the portrayed member must be in the active party), Publishing's
 books (overlay 0xbc2: one common and one rare book about each member, who must be in the

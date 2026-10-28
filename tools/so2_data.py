@@ -3,11 +3,11 @@
 what they hold (chests, map transfers, save points), item records and names, shop stock, enemy
 stats, and (for a local reference only) item descriptions.
 
-Used by tools/so2_mod.py (patch writing), tools/mod_reference.py (the modder's reference) and
+Used by tools/so2_mod.py (patch writing), port/tools/mod_reference.py (the modder's reference) and
 the Archipelago extractors (through so2_mod, which re-exports everything here). Python 3, no
 third-party modules.
 
-Formats: docs/catalog/formats.md; the engine's readers are named next to each function.
+Formats: docs/port/catalog/formats.md; the engine's readers are named next to each function.
 """
 
 import hashlib
@@ -23,10 +23,10 @@ SYNC = b"\x00" + b"\xff" * 10 + b"\x00"
 FIELD_MAP_LIMIT = 1200     # map ids scanned for a script (the highest on the discs is 1114)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# The releases (engine/src/runtime/region.cpp kProfiles): SYSTEM.CNF boot file -> region key.
+# The releases (port/src/runtime/region.cpp kProfiles): SYSTEM.CNF boot file -> region key.
 # Every table here, the patches and the repository's facts use North American numbers
 # (addresses, script words); another release's disc is read through the engine's address
-# maps (engine/data/regions/<key>.inc, tools/region_map.py). Japan has none yet.
+# maps (port/data/regions/<key>.inc, port/tools/region_map.py). Japan has none yet.
 RELEASES = {
     "SCUS_944.21": "na", "SCUS_944.22": "na",
     "SCES_021.59": "eu", "SCES_121.59": "eu",
@@ -48,7 +48,7 @@ class Disc:
         self.path = path
         self.f = open(path, "rb")
         # Raw 2352-byte sectors (.bin / .img: the user data after the header, and after the
-        # subheader in mode 2) or a 2048-byte-sector .iso, as engine/src/disc/disc_image.cpp.
+        # subheader in mode 2) or a 2048-byte-sector .iso, as port/src/disc/disc_image.cpp.
         size = os.path.getsize(path)
         head = self.f.read(16)
         if size % 2352 == 0 and head[:12] == SYNC:
@@ -63,7 +63,7 @@ class Disc:
         self.region = RELEASES.get(self.serial.upper())
         if self.region not in ("na", None) and not os.path.exists(region_inc_path(self.region)):
             raise SystemExit(f"{path}: the {self.serial} release has no address map yet "
-                             "(engine/data/regions/); use the North American or European discs")
+                             "(port/data/regions/); use the North American or European discs")
 
     def close(self):
         self.f.close()
@@ -157,14 +157,14 @@ def boot_serial(disc):
 
 
 def region_inc_path(key):
-    return os.path.join(ROOT, "engine", "data", "regions", f"{key}.inc")
+    return os.path.join(ROOT, "port", "data", "regions", f"{key}.inc")
 
 
 _REGION_TABLES = {}
 
 
 def region_tables(key):
-    """A release's address maps, from the engine's generated engine/data/regions/<key>.inc:
+    """A release's address maps, from the engine's generated port/data/regions/<key>.inc:
     {"images": {image key: [(na_off, size, delta)]}, "scripts": {map: [(na_off, size, delta)]}}."""
     if key in _REGION_TABLES:
         return _REGION_TABLES[key]

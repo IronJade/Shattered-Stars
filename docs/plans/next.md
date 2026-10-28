@@ -30,9 +30,9 @@ back).
 ## Done (trimmed 2026-10-28)
 
 - **Phase A, the world's tests to Archipelago's testing guide:** done 2026-10-26 (world 0.2.1); the
-  tests and the release batches are described in docs/ap/apworld.md "Testing (scratch install)".
+  tests and the release batches are described in docs/apworld/apworld.md "Testing (scratch install)".
 - **Phase B, tracker support:** built for port 0.03.00 + world 0.2.2 + PopTracker pack 1.0.0
-  (docs/ap/poptracker.md, tracker_maps.md, data_storage.md; build log docs/handoff/phaseb.md); the
+  (docs/trackers/poptracker.md, tracker_maps.md, data_storage.md; build log docs/handoff/phaseb.md); the
   release candidate and the user's Windows check are what remain (docs/handoff/release.md).
 - **Party work (hero to slot 1, the 12-member bench):** released in port 0.02.51 + world 0.2.1
   (2026-10-27).
@@ -50,7 +50,7 @@ Taken out of port 0.03.00 by the user; kept as reference.
 **Goal (the user):** "the ability to use Japan discs". Today the port recognises Japan and refuses it
 with a clear message (`game_refuses_the_japanese_release`).
 
-Known (docs/notes/regions.md, regions_text.md; the user's discs: memory "region-discs",
+Known (docs/port/notes/regions.md, regions_text.md; the user's discs: memory "region-discs",
 `Emulation/Roms/Star Ocean 2/`):
 - Japan (`SLPM_861.05` / `.06`, product code `BISLPM-86105`) is **a different build**: the original
   release NA was localised from. Same archive entry numbers, but only 657 entries byte-identical; ~510
@@ -106,8 +106,8 @@ What Generic ER requires of a world (the guide):
 - Coupled (A -> B implies B -> A for two-ways) or uncoupled.
 
 What SO2 already has to build on:
-- The region graph: the late proof and the hub proof (docs/ap/late_proof.json, hub_proof.json) list
-  maps, edges and the doors between them; docs/ap/doors.json (door ids = map * 65536 + offset / 4,
+- The region graph: the late proof and the hub proof (docs/apworld/late_proof.json, hub_proof.json) list
+  maps, edges and the doors between them; docs/apworld/doors.json (door ids = map * 65536 + offset / 4,
   routines for trigger regions); field.json's map names and arrivals.
 - The port redirects transfers already: the seed's `doors` rows with `to` {map, x, y, z, dir}
   (`to.while_unbeaten`, the views' `cut_to`), checked ahead of the original door table.
@@ -129,32 +129,32 @@ The decisions for the user (bring them with recommendations at the start of the 
    (the tracker plan's section 6, summarised under "What Phase B left ready" below).
 
 What Phase B left ready for ER (read these before er-model / er-world start):
-- **Door ids.** docs/ap/tracker_maps.md "Door ids": a door is a docs/ap/doors.json record (id =
+- **Door ids.** docs/trackers/tracker_maps.md "Door ids": a door is a docs/apworld/doors.json record (id =
   map * 65536 + offset / 4), a doorway the doors one trigger starts (id = its lowest door id). The
   recommendation, to confirm at this phase's design: an entrance is a doorway, named from its id
   ("Door 1180128"), and ER sends every door of a doorway to the same new destination; the vanilla
   pairing is the layout's `to[].back`.
-- **Named entrances in the logic export.** docs/ap/seed_format.md "The tracker export" and "Room
+- **Named entrances in the logic export.** docs/apworld/seed_format.md "The tracker export" and "Room
   for the entrance randomizer": entrances are `[name, from, to, rule]`, `to` -1 is an entrance not
-  connected yet; `TrackerLogic.connect` (tools/ap_tracker_logic.py) and the pack's
+  connected yet; `TrackerLogic.connect` (trackers/tools/ap_tracker_logic.py) and the pack's
   `so2_logic_connect` connect one when it is found, both tested; optional keys (a region -> map
   ids hint, the pairings) need no new format. The export is written after `connect_entrances`, so
   it is the randomized graph.
-- **The live door panel seam.** docs/ap/tracker_maps.md "For the pack (part 2)": no destination is
+- **The live door panel seam.** docs/trackers/tracker_maps.md "For the pack (part 2)": no destination is
   painted on any image; the pack shows each lettered doorway's destination from data (the vanilla
   door table, or ER's pairings plus the found-entrances key, "A -> ?" until found). What maptab
-  built of it: docs/ap/tracker_maps.md and docs/ap/poptracker.md.
-- **The found-entrances key.** `so2_entrances_{team}_{slot}` is reserved (docs/ap/data_storage.md
+  built of it: docs/trackers/tracker_maps.md and docs/trackers/poptracker.md.
+- **The found-entrances key.** `so2_entrances_{team}_{slot}` is reserved (docs/apworld/data_storage.md
   "Reserved"); the port's spot for it is marked at the end of `publish_tracker_keys`
-  (engine/src/game/ap/ap.cpp). Universal Tracker's deferred entrances already work the same way
+  (port/src/game/ap/ap.cpp). Universal Tracker's deferred entrances already work the same way
   for the story (apworld/so2/story.py: `found_entrances_datastorage_key`,
   `reconnect_found_entrances`, honouring `enforce_deferred_entrances`), the model to follow.
 - **Rules that read regions.** A `CanReachRegion` rule is a new kind: add it to
   `logic.RESOLVED_KINDS` / `logic.as_rule` and to the export's `region` body (both evaluators read
   it already); `set_rule` on an entrance registers its indirect condition
-  (docs/ap/apworld.md "Rules as data").
+  (docs/apworld/apworld.md "Rules as data").
 - **`ut.LOGIC_VERSION`** must be bumped when the same slot data would rebuild other logic
-  (docs/ap/apworld.md "Trackers", "When to bump"), and in Universal Tracker's regeneration
+  (docs/apworld/apworld.md "Trackers", "When to bump"), and in Universal Tracker's regeneration
   (`re_gen_passthrough`) `connect_entrances` must connect from the slot data's pairings instead of
   randomizing (Tunic's pattern).
 - **From the tracker plan (section 6), for ER:** the pairings from `randomize_entrances(...).pairings`

@@ -1,4 +1,4 @@
-"""Open world (`world_mode: open_world`; docs/ap/apworld.md "Open world", "The El voyage"): the
+"""Open world (`world_mode: open_world`; docs/apworld/apworld.md "Open world", "The El voyage"): the
 area keys and the starting ones, the story's stages, the ship landings, where progression may go,
 the El voyage gate, the teleporter, the seed's doors; what each key opens (assertAccessDependency).
 WorldTestBase's default tests run for every class too."""
@@ -11,7 +11,7 @@ from .bases import SO2TestBase, assert_no_gift_progression, check_seed, doors_js
 def key_ways(test, loc):
     """Open world: the ways the logic reaches a location, as the area keys each way needs (any one
     way will do; the events each also needs aside, which assertAccessDependency collects). The
-    design (docs/ap/apworld.md "Open world"): a story stage needs the keys of the areas it walks
+    design (docs/apworld/apworld.md "Open world"): a story stage needs the keys of the areas it walks
     into (data.STAGES) and, ending with the El voyage, the voyage's passes (data.STORY_GATES); the
     teleporter's old man the Fun City Pass; Filia's scene the Central City Pass, the Iseria Queen
     the Cave of Trials and Fun City passes; a chest, gift, boss or shop slot its area's key from
@@ -266,7 +266,7 @@ class OpenWorldChecks:
         """The teleporter's party (chapter 38, landing in Arlia) walks the Cross continent and
         sails the Herlie ferry to the Lacour continent; the El continent and Hoffmann Ruins'
         island are reached only by the story's ships (chapters 23-28) or by Virtual Expel's
-        Synard (tools/ap_walkmap.py, tools/ap_late_proof.py TELEPORTER_ISLANDS). So no
+        Synard (apworld/tools/ap_walkmap.py, apworld/tools/ap_late_proof.py TELEPORTER_ISLANDS). So no
         location there counts as reached through the teleporter, and none may hold a key the
         story needs after the disc switch."""
         from ..items import EVENT_TELEPORTER
@@ -334,7 +334,7 @@ class OpenWorldChecks:
         (key_ways), and nothing else; with it they are reached. Open world gives every area key
         whatever the options (the seed's 66 doors carry them: test_seed_doors), so a key whose area
         holds nothing in this mix opens no location ("idle"): only an area the story never enters
-        can be one (docs/ap/apworld.md "Open world": Lasguss Mountain, the Mountain Palace, the Cave
+        can be one (docs/apworld/apworld.md "Open world": Lasguss Mountain, the Mountain Palace, the Cave
         of Trials, Giveaway, map 463's Gallery), and the Cave of Trials Pass never with the cave's
         locations or the Iseria Queen goal. Every other key opens something outright."""
         from ..data import KEY_GROUPS

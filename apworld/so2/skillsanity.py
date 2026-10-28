@@ -1,4 +1,4 @@
-"""Skillsanity (the option `skillsanity`; docs/ap/apworld.md "Skillsanity", docs/ap/seed_format.md
+"""Skillsanity (the option `skillsanity`; docs/apworld/apworld.md "Skillsanity", docs/apworld/seed_format.md
 "Skillsanity"; the user's design and decisions: docs/handoff/skillsanity.md).
 
 - skills_only / insanity: the skill guilds' sets are no longer bought as skills: a set's purchase
@@ -286,12 +286,12 @@ def iseria_queen_need(world):
     return needs_rule(world, specialty_needs(world, "Musical Talent"))
 
 
-# ---- Progression at guild checks and learn points (the user, 2026-10-27; docs/ap/apworld.md
+# ---- Progression at guild checks and learn points (the user, 2026-10-27; docs/apworld/apworld.md
 # "Skillsanity", "Logic"). Both need battles: with encounter_rate 0 neither holds progression,
 # except on a hell seed (hell.py), whose free Fun City arena pays the EXP and the Fol: there both
 # count from the arena (hell.arena_need, hell.arena_way).
 # The Fol a guild set costs: random battles pay it (Earth, fol_multiplier 1, the floor; the story's
-# chests and Fol gifts are shuffled, so they may hold anything). Mean Fol a battle (docs/ap/
+# chests and Fol gifts are shuffled, so they may hold anything). Mean Fol a battle (docs/apworld/
 # battles.json's enemy Fol over field.json's encounter tables): Expel's world map ~460 (120-780),
 # Mars ~400, the Sanctuary of Linga ~920, Hoffmann Ruins ~2100, Eluria Tower ~3500; Energy Nede's
 # world map ~520, its dungeons 2400-3600. A set up to 1600 Fol (the 1 and 2 sets) counts from a

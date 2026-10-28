@@ -51,7 +51,7 @@ The port is built in layers, from the hardware up to the game:
 | Controller | Keyboard and gamepads, presented as a DualShock in analog mode | The game's own controller code is ported, including the analog stick and rumble set-up |
 | Platform | SDL3 for the window, input and audio; OpenGL 3.3 for presenting the picture | The Windows build renders the same frames as the Linux build, byte for byte |
 
-On top of these sits the game code itself, in `engine/src/game/`.
+On top of these sits the game code itself, in `port/src/game/`.
 
 ## Reading the game
 
@@ -88,7 +88,7 @@ The tools:
 ## The catalog
 
 Everything identified is recorded in
-[docs/catalog](https://github.com/IronJade/Shattered-Stars/tree/main/docs/catalog), so it never
+[docs/port/catalog](https://github.com/IronJade/Shattered-Stars/tree/main/docs/port/catalog), so it never
 has to be worked out twice:
 
 | File | Contents |
@@ -120,7 +120,7 @@ And by port status:
 No row is left without a status. A gap scanner (`tools/catalog_gaps.py`) searches every
 program's code for call targets and function entries the catalog lacks; it reports none
 missing. Prose companions, explaining how each program fits together, are in
-[docs/notes](https://github.com/IronJade/Shattered-Stars/tree/main/docs/notes).
+[docs/port/notes](https://github.com/IronJade/Shattered-Stars/tree/main/docs/port/notes).
 
 ## Writing the C++
 
@@ -145,13 +145,13 @@ The standard for "done" is that the port behaves like the original, measured, no
 the same input) and in the port, and compared:
 
 - **Screens:** logos and the title screen are pixel-identical; frames are compared in the
-  console's 15-bit colour space (`tools/compare_frames.py`).
+  console's 15-bit colour space (`port/tools/compare_frames.py`).
 - **Random numbers:** the game's random-number generator is the most sensitive test there is.
   Battles are compared draw by draw, and many references are *RNG-equal to the exit*: every
   random draw from the start of the battle to its end matches the original.
 - **Units and effects:** positions, animations, damage numbers and projectiles frame by frame.
 - **Save data and memory:** save blocks, the battle's handoff data and menu state, byte for byte.
-- **Sound:** driver calls and the mixed output (`tools/compare_audio.py`).
+- **Sound:** driver calls and the mixed output (`port/tools/compare_audio.py`).
 
 **Sweeps of the whole game.**
 
@@ -176,29 +176,29 @@ all, then the quick reference set below:
 | Smoke test | Whole-game headless runs: doors, chests, shops, talking, mods, Archipelago seeds |
 
 **The reference regression suite.** Every PCSX-Redux recording made while porting is
-inventoried in `tools/refs/refs.csv`: 339 references covering killer moves, stages, enemy
-families, spells, menus and the world map. `tools/ref_regress.py` replays the 223 that have an
+inventoried in `port/tools/refs/refs.csv`: 339 references covering killer moves, stages, enemy
+families, spells, menus and the world map. `port/tools/ref_regress.py` replays the 223 that have an
 automated recipe through the port (never through PCSX-Redux) and judges each against its
 documented expectation. A quick set of 28 references, which takes well under a minute, runs
 alongside the three suites. At the last full run, 219 of the 223
 automated references passed; the rest were open leads under investigation. How each reference
 is judged, and the gaps still to close, are in
-[tools/refs/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/tools/refs/README.md).
+[port/tools/refs/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/port/tools/refs/README.md).
 
 ## Other releases: region profiles
 
 The port was written against the North American release. The European (English), French and
 German releases play on the same build: the game recognises a disc by its serial and picks
 that release's **profile**, which holds its address maps, how its code modules are found, its
-text system and its save product code. The code is in `engine/src/runtime/region.cpp`; the
+text system and its save product code. The code is in `port/src/runtime/region.cpp`; the
 design is in
-[docs/notes/regions.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/notes/regions.md).
+[docs/port/notes/regions.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/notes/regions.md).
 
 - **Address maps.** The ported code reads the original's tables from the program images at
   their North American addresses. The other releases load their programs elsewhere and moved
-  many tables, so `tools/region_map.py` aligns each of the 149 images the port reads with the
+  many tables, so `port/tools/region_map.py` aligns each of the 149 images the port reads with the
   North American one and writes only pairs of offsets (no game data) to
-  `engine/data/regions/`. Every read goes through one translating function, and each image is
+  `port/data/regions/`. Every read goes through one translating function, and each image is
   checked against the one its map was made from. Enemy and spell modules are found by a hash
   of their normalised instructions, since the same code relinked elsewhere hashes alike. A
   coverage check confirms that every address the port reads in the suites and sweeps (6,690 of
@@ -234,7 +234,7 @@ The port aims to play **better** than the original without changing **how** it p
    slows down.
 2. **No old bugs, unless they are gameplay.** A real bug is corrected, with the original line
    kept as a comment marked `ORIGINAL BUG (original_bugs.md <id>)` and the case listed in
-   [original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/notes/original_bugs.md).
+   [original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/notes/original_bugs.md).
 3. **A fix never changes the play state.** Hit timing, hits, damage, difficulty and pacing stay
    the original's. The faithful version is verified against PCSX-Redux first; the fix goes in
    only if the measurements stay the same. Otherwise it is held for a decision. Visual fixes
@@ -266,4 +266,4 @@ The game is finishable from start to end, but work continues:
   [Bugs in the port](Bugs-Fixed-and-Quirks-Kept#bugs-in-the-port) for the latest fixes.
 
 Port progress per function is the `port` column of the catalog's
-[functions.csv](https://github.com/IronJade/Shattered-Stars/blob/main/docs/catalog/functions.csv).
+[functions.csv](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/catalog/functions.csv).

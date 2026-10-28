@@ -1,10 +1,10 @@
-"""Story awareness (story.py; docs/ap/apworld.md "Story awareness"; docs/plans/trackers.md B6, D8).
+"""Story awareness (story.py; docs/apworld/apworld.md "Story awareness"; docs/plans/trackers.md B6, D8).
 
 UT's side is mirrored as test_ut.py mirrors it (TMain, updateTracker), plus its deferred-entrance
 client steps (worlds/tracker/TrackerClient.py: after Connected it reads the world's
 `found_entrances_datastorage_key`, formats {player} / {team}, Gets and SetNotifies them, and on each
 Retrieved / SetReply calls `reconnect_found_entrances(key, value)` and updates the tracker). The
-PopTracker side is the export's `story` key evaluated by the reference (tools/ap_tracker_logic.py).
+PopTracker side is the export's `story` key evaluated by the reference (trackers/tools/ap_tracker_logic.py).
 For every story mix, sphere by sphere and at every story point, UT's in-logic set equals the
 reference's; without a story position (or with enforce_deferred_entrances "off") it is the room's
 own sphere, as before; open world and hub have no story awareness at all."""

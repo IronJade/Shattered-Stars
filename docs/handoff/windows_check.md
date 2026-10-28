@@ -11,7 +11,7 @@ after the user has pushed the 0.02.50 release prep to GitHub. Coordinator: the L
   never copied into the repo folder): Star Ocean: The Second Story, North American Disc 1 and Disc 2,
   each a `.cue` with its `.bin`. Optional for region checks: Europe / France / Germany, two discs each.
 - **The Windows release bundle** from the Linux RC run (the zip the release agent lists in
-  docs/ap/release_checklist.md section 9 / docs/handoff/release.md), copied by the user. Test the
+  docs/release/release_checklist.md section 9 / docs/handoff/release.md), copied by the user. Test the
   bundle first: it is what players get. Building from source on Windows is a second, optional check
   (wiki "Building-from-Source").
 - Optional for Archipelago: Archipelago 0.6.8 or newer for Windows (installs to
@@ -83,7 +83,7 @@ Windows agent's summary: scratchpad/agents.txt "windows").
 
 **Passed:** every player-facing check of sections 1-3 (install and setup, memory cards and save
 slots, Archipelago in setup and in the game). The 0.02.50 fix for saves under a non-ASCII folder
-(engine/src/psx/memory_card.cpp, the RC's "Status 21:58") is confirmed on real Windows.
+(port/src/psx/memory_card.cpp, the RC's "Status 21:58") is confirmed on real Windows.
 **Not run:** section 4 (the native test suites): no toolchain on that machine.
 (The per-check pass list, if the coordinator has one beyond this summary, belongs here; release.md's
 coordinator section had none when this was written.)
@@ -108,7 +108,7 @@ coordinator section had none when this was written.)
 
 **The fixes, in short:**
 1. Both programs take their arguments from `GetCommandLineW` and the SS_* variables from
-   `GetEnvironmentVariableW`, converted to UTF-8 once (engine/src/util/utf8.{h,cpp}); paths from
+   `GetEnvironmentVariableW`, converted to UTF-8 once (port/src/util/utf8.{h,cpp}); paths from
    UTF-8 never throw (a string that isn't UTF-8, e.g. a config.ini Notepad saved as "ANSI", is read in
    the ANSI code page), and a filesystem error that still escapes is reported and exits cleanly
    (exit 1) instead of `std::terminate`. Console lines are written through `WriteConsoleW`, so "Ä"
@@ -117,7 +117,7 @@ coordinator section had none when this was written.)
 2. Auto-detect says "Found Disc 2 next to your Disc 1." (or "Found Disc 2. Your Disc 1 stays as it
    is." when it came from a discs folder).
 3. The print is gone (a comment marks where the original has it).
-4. Every [ap], [port] and [mods] line goes through one reporter (engine/src/util/log.h) to the
+4. Every [ap], [port] and [mods] line goes through one reporter (port/src/util/log.h) to the
    console as before and to the log; the log stays under 4 MB (it keeps the run's first MB, a "left
    out" line and the newest 2 MB). The game's own lines average ~55 bytes: a whole seed's checks and
    items are ~80 KB; the bulk is the server's broadcast lines ("server says: X sent Y to Z", ~100
@@ -224,7 +224,7 @@ command-line cases from PowerShell.
 
 For the Windows machine, with the 0.02.51 release candidate: the port's
 `ShatteredStars-0.02.51-win64.zip` (scratchpad/release/rc-0.02.51-dist/port/, sum in its SHA256SUMS
-and docs/ap/release_checklist.md section 11) and the world's `so2.apworld` 0.2.1 with
+and docs/release/release_checklist.md section 11) and the world's `so2.apworld` 0.2.1 with
 `Star.Ocean.The.Second.Story.yaml` (scratchpad/release/rc-0.02.51-dist/apworld/, the same files as
 dist/apworld-0.2.1). The two now ship as separate GitHub releases (`v0.02.51` and
 `apworld-v0.2.1`). Same rules as above: a scratch `%APPDATA%` (`set APPDATA=%USERPROFILE%\ss-test\appdata`),
@@ -280,7 +280,7 @@ Seeds (generate on the Windows machine, `Generate.py` or the Launcher, each from
 
 ## Recheck for 0.03.00 (written 2026-10-27, agent releasedocs; to run with the 0.03.00 drafts)
 
-For the Windows machine, with the three drafts of docs/ap/release_checklist.md section 12
+For the Windows machine, with the three drafts of docs/release/release_checklist.md section 12
 (`gh release download TAG --repo IronJade/Shattered-Stars`, then `sha256sum -c SHA256SUMS` or
 `Get-FileHash` against each release's SHA256SUMS):
 
@@ -386,7 +386,7 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
    blue again. The **Story** item off: nearly everything green (the plain logic); on: back. With the
    game not connected, clicking Chapter (left +1, right -1) sets a chapter by hand.
    **For the user:** does blue read well for "later in the story"? (Red is a one-line change in
-   tools/poptracker/logic.lua's `so2_access`; docs/handoff/storyaware.md "Open".)
+   trackers/poptracker/logic.lua's `so2_access`; docs/handoff/storyaware.md "Open".)
 7. **PopTracker: the rendered maps.** After item 2 or 3, reload the pack (or restart PopTracker):
    the area maps show the real rooms from the disc instead of the plain stand-ins, each room's name
    in the strip above it; the squares sit on the chests and on the people who hand things out (look

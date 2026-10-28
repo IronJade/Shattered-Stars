@@ -23,11 +23,11 @@ for every in-game shot; the setup-program shots are the setup window's own size,
 - `ap-item-received.png` — Archipelago in game: a real item (Blueberries) received from
   another player (Bob) over a local multiworld server, with the in-game banner.
 - `setup-discs.png` — the setup program's Discs page, both discs verified (recaptured for 0.02.50: the four releases' text, the Gameplay page, the version; `discs-ok.png`).
-- `setup-archipelago.png` — the setup program's Archipelago page, a seed file loaded (its Saves part and the sidebar's on / off switch; recaptured for 0.02.50 with `tools/setup_screenshots.sh`, `archipelago-seed.png`).
+- `setup-archipelago.png` — the setup program's Archipelago page, a seed file loaded (its Saves part and the sidebar's on / off switch; recaptured for 0.02.50 with `port/tools/setup_screenshots.sh`, `archipelago-seed.png`).
 - `setup-mods.png` — the setup program's Mods page: the installed mods in load order, two
-  marked with a conflict and one that can't load (rendered by `tools/setup_screenshots.sh`,
+  marked with a conflict and one that can't load (rendered by `port/tools/setup_screenshots.sh`,
   shot `mods-manager`, with test packages).
 - `setup-mods-conflict.png` — the Mods page's info panel for a mod in a conflict, each
-  conflict explained in a sentence (`tools/setup_screenshots.sh`, shot `mods-conflict`).
+  conflict explained in a sentence (`port/tools/setup_screenshots.sh`, shot `mods-conflict`).
 - `setup-mods-replace.png` — installing a .zip of a mod that is installed already: setup asks
-  before replacing it (`tools/setup_screenshots.sh`, shot `mods-replace`).
+  before replacing it (`port/tools/setup_screenshots.sh`, shot `mods-replace`).

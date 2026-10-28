@@ -81,8 +81,8 @@ In short, on the Mods page:
 
 The [mods folder](https://github.com/IronJade/Shattered-Stars/tree/main/mods) of the
 repository holds the curated list. Only the mods marked verified in its `index.json` are on
-it. Every submission goes through an automatic check (`tools/mod_check.py --strict`, no discs
-needed), and then the maintainer runs it in the real game with `tools/mod_verify.py`: every
+it. Every submission goes through an automatic check (`port/tools/mod_check.py --strict`, no discs
+needed), and then the maintainer runs it in the real game with `port/tools/mod_verify.py`: every
 patch line must apply, and every map and battle the mod touches must load and run as it does
 without the mod. Only the maintainer marks a mod verified. Today the list holds two small
 sample mods.
@@ -106,7 +106,7 @@ Enemy fields: `hp`, `mp`, `exp`, `fol`, `speed`, `drop1`, `drop2`, `atk`, `def`,
 Either can also be a byte offset into the record, written `OFFSET[:SIZE]`.
 
 The technical reference for the format is
-[engine/src/game/field/mods.h](https://github.com/IronJade/Shattered-Stars/blob/main/engine/src/game/field/mods.h).
+[port/src/game/field/mods.h](https://github.com/IronJade/Shattered-Stars/blob/main/port/src/game/field/mods.h).
 
 ### The tools
 
@@ -126,13 +126,13 @@ tools/so2_mod.py enemies DISC.cue [TYPE]             # enemy stats
 tools/so2_mod.py enemy   DISC.cue TYPE FIELD VALUE   # e.g. enemy 4 hp 9999
                                                      # add -o FILE to append the lines to a file
 
-tools/mod_check.py --strict PACKAGE                  # the static check (no discs)
-tools/mod_index.py build                             # regenerate mods/index.json
-tools/mod_verify.py PACKAGE                          # the maintainer's check with the game (needs SS_DISC1)
+port/tools/mod_check.py --strict PACKAGE                  # the static check (no discs)
+port/tools/mod_index.py build                             # regenerate mods/index.json
+port/tools/mod_verify.py PACKAGE                          # the maintainer's check with the game (needs SS_DISC1)
 ```
 
 The full design, including the conflict rules and every check, is in
-[docs/notes/mods.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/notes/mods.md).
+[docs/port/notes/mods.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/notes/mods.md).
 
 ## Archipelago and mods
 

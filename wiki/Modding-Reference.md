@@ -1,6 +1,6 @@
 # Modding Reference
 
-What the numbers in a mod stand for: every item, map, door, chest, shop and enemy type with its ID, its name and its figures. The tables are read from the disc by `tools/mod_reference.py` and hold IDs, names, types, prices and stats only, never the game's text or pictures; for those, build the [local reference](#the-local-reference) from your own disc.
+What the numbers in a mod stand for: every item, map, door, chest, shop and enemy type with its ID, its name and its figures. The tables are read from the disc by `port/tools/mod_reference.py` and hold IDs, names, types, prices and stats only, never the game's text or pictures; for those, build the [local reference](#the-local-reference) from your own disc.
 
 ## The tables
 
@@ -50,18 +50,18 @@ The listings print names next to the numbers, too: `so2_mod.py list DISC.cue 18`
 
 ```
 python3 tools/so2_mod.py reference DISC.cue --out my-reference
-python3 tools/so2_mod.py reference DISC.cue --out my-reference --game engine/build/shattered-stars
-python3 tools/so2_mod.py reference DISC.cue --out my-reference --game engine/build/shattered-stars --thumbs 17-40
+python3 tools/so2_mod.py reference DISC.cue --out my-reference --game port/build/shattered-stars
+python3 tools/so2_mod.py reference DISC.cue --out my-reference --game port/build/shattered-stars --thumbs 17-40
 ```
 
 Open `my-reference/index.html` in a browser. The page is made from your own disc and holds the game's text and pictures: keep it to yourself; don't upload or share it. Rendering every map takes a while; `--thumbs` picks maps and `--jobs` (1-6) how many run at once; pictures already made are kept for the next run.
 
 ## Keeping the tables current
 
-`python3 tools/mod_reference.py DISC1.cue` rewrites the CSV files (only those that changed); `--check` compares them with the Archipelago tables (313 chests, 1023 items, 64 shops, 187 enemy types, 2441 doors). `python3 tools/mod_reference_wiki.py` turns them into these pages.
+`python3 port/tools/mod_reference.py DISC1.cue` rewrites the CSV files (only those that changed); `--check` compares them with the Archipelago tables (313 chests, 1023 items, 64 shops, 187 enemy types, 2441 doors). `python3 port/tools/mod_reference_wiki.py` turns them into these pages.
 
-See also: [Making a Mod](Making-a-Mod) · [Modding](Modding) · [the patch grammar](https://github.com/IronJade/Shattered-Stars/blob/main/engine/src/game/field/mods.h)
+See also: [Making a Mod](Making-a-Mod) · [Modding](Modding) · [the patch grammar](https://github.com/IronJade/Shattered-Stars/blob/main/port/src/game/field/mods.h)
 
 ---
 
-Made by `tools/mod_reference_wiki.py` from the tables in [`docs/modding/reference`](https://github.com/IronJade/Shattered-Stars/blob/main/docs/modding/reference) (`tools/mod_reference.py`). IDs, names and figures only; the game's own text and pictures are in the [local reference](Modding-Reference#the-local-reference) you build from your disc.
+Made by `port/tools/mod_reference_wiki.py` from the tables in [`docs/modding/reference`](https://github.com/IronJade/Shattered-Stars/blob/main/docs/modding/reference) (`port/tools/mod_reference.py`). IDs, names and figures only; the game's own text and pictures are in the [local reference](Modding-Reference#the-local-reference) you build from your disc.

@@ -1,7 +1,7 @@
-"""The tracker export (docs/plans/trackers.md B3; docs/ap/seed_format.md "The tracker export"):
+"""The tracker export (docs/plans/trackers.md B3; docs/apworld/seed_format.md "The tracker export"):
 this world's resolved logic as plain data in the slot data's `tracker` key, so a tracker that
-can't run the world (the PopTracker pack's Lua, tools/poptracker/logic.lua) evaluates exactly
-the world's own rules (decision D2). The reference evaluator is tools/ap_tracker_logic.py.
+can't run the world (the PopTracker pack's Lua, trackers/poptracker/logic.lua) evaluates exactly
+the world's own rules (decision D2). The reference evaluator is trackers/tools/ap_tracker_logic.py.
 
 It walks the world as it stands when fill_slot_data runs (after connect_entrances: a later entrance
 randomizer's graph is the one exported): the regions, every entrance, every event (a location with
@@ -26,7 +26,7 @@ the count received) or an event's name (a string: how many of its events are rea
 CanReachRegion, Phase C): no rule of this world makes one yet; the evaluators handle it.
 
 Room for the entrance randomizer (Phase C) without a new format: entrances are named (a door's
-entrances will be named by their door ids, docs/ap/tracker_maps.md) and may be many; an entrance
+entrances will be named by their door ids, docs/trackers/tracker_maps.md) and may be many; an entrance
 whose target is unknown until it is found (deferred: filled later from the slot data's pairings or a
 data-storage key, through the evaluators' `connect`) is written with `to` -1, and the sweep skips it
 until then; optional keys a reader doesn't know (a region -> map ids hint, the pairings) may be added

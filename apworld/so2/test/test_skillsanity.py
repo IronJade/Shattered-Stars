@@ -1,4 +1,4 @@
-"""Skillsanity (docs/ap/apworld.md "Skillsanity"; docs/handoff/skillsanity.md) [skillsanity2]: the
+"""Skillsanity (docs/apworld/apworld.md "Skillsanity"; docs/handoff/skillsanity.md) [skillsanity2]: the
 guild checks, the learn points, the skill and move items, their logic and the shop prices."""
 from BaseClasses import CollectionState, ItemClassification, LocationProgressType
 
@@ -38,7 +38,7 @@ def skill_ways(test, loc):
 
 
 def may_hold(test, loc):
-    """What the design lets a skillsanity location hold (the user, 2026-10-27; docs/ap/apworld.md
+    """What the design lets a skillsanity location hold (the user, 2026-10-27; docs/apworld/apworld.md
     "Skillsanity"): a guild check progression with battles (every set has a guild on Energy Nede
     that the late proof, or the hub proof, reached); a learn-table level of a member the logic
     counts on (sure, or joining by their item) with battles, unless EXCLUDED; the machines, the

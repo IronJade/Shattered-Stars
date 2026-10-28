@@ -6,7 +6,7 @@ one is a one-screen state file).
 
 - Enhance, don't degrade: the port runs at full speed (no modelling of the original's
   slowdown), and the original's bugs are commented out and corrected, each listed in
-  `docs/notes/original_bugs.md`. Save data stays byte-compatible.
+  `docs/port/notes/original_bugs.md`. Save data stays byte-compatible.
   A fix never changes the play state: hit timing, hits, damage, difficulty and pacing stay
   the original's, measured against PCSX-Redux before the fix goes in.
 - Agents keep their `docs/handoff/<area>.md` complete enough to resume from, because each
@@ -16,7 +16,7 @@ one is a one-screen state file).
   exception, the user's decision (2026-10-23): a handful of documentation screenshots of the
   port running, in `docs/images/` only, used by the README and wiki. Nothing else from the
   discs (no extracted textures, sprites, audio, logos or data files). The application icon
-  (`res/icon/`) is an original design drawn from vector shapes by `tools/make_icon.py`;
+  (`port/res/icon/`) is an original design drawn from vector shapes by `port/tools/make_icon.py`;
   change it there, never with game art, a logo or a trademark.
 - Headless only (`--headless`, `SDL_VIDEO_DRIVER=offscreen`, `SS_VRAM_PNG`); never pop
   windows; never play audio audibly in tests (`SDL_AUDIO_DRIVER=disk` / `dummy`).
@@ -38,19 +38,19 @@ one is a one-screen state file).
   The actual cause that day was one runaway headless run (Europe disc, map 0: 28 GB in
   3.5 minutes), so every headless game run has a memory cap of about 4 GB (RLIMIT_AS, or a
   cgroup MemoryMax for ASan builds); a run that hits it counts as a failure, never a retry.
-  `tools/memcap.py` implements it (`SS_MEM_CAP_GB`, default 4) and `tools/event_sweep.py`,
-  `tools/battle_sweep.py`, `tools/ref_regress.py` and `tools/smoke_field_events.sh` apply it
+  `tools/memcap.py` implements it (`SS_MEM_CAP_GB`, default 4) and `port/tools/event_sweep.py`,
+  `port/tools/battle_sweep.py`, `port/tools/ref_regress.py` and `port/tools/smoke_field_events.sh` apply it
   (the sweeps report "memory cap" and don't rerun that map); one-off runs:
-  `prlimit --as=$((4<<30)) engine/build-X/shattered-stars ...`. The cause was a credits loop
+  `prlimit --as=$((4<<30)) port/build-X/shattered-stars ...`. The cause was a credits loop
   over an unreadable European card script with SS_REGION_READ_LOG on; fixed (the card
   script is read as the release's own run, and the region read / miss logs are bounded).
 - `/tmp` is RAM-backed (tmpfs): keep large scratch (captures, dumps, extra builds) on disk under
   the git-ignored `scratchpad/<name>/` in the repo, and delete finished scratch promptly.
-- Catalogue every reversed function in `docs/catalog` (LF line endings; write CSVs with
+- Catalogue every reversed function in `docs/port/catalog` (LF line endings; write CSVs with
   `lineterminator="\n"`, and never open a file for writing in the same expression that
-  reads it); prose goes in `docs/notes/`. Keep each module's rows in address order inside
+  reads it); prose goes in `docs/port/notes/`. Keep each module's rows in address order inside
   its existing block; don't reorder the file (it hides real changes in the diff).
-- Parallel agents: separate build dirs (`engine/build-<name>`) and Ghidra project dirs; the
+- Parallel agents: separate build dirs (`port/build-<name>`) and Ghidra project dirs; the
   REA server is shared, so re-open your binary before each batch of REA calls and check
   the result's subject.
 - Commit after each completed piece, docs first; stage only finished work (build blobs from

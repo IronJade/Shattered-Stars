@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge proposed catalog rows into docs/catalog/functions.csv.
+"""Merge proposed catalog rows into docs/port/catalog/functions.csv.
 
 merge_catalog.py PROPOSAL.csv [PROPOSAL.csv ...] [--matches title_field_matches.csv]
 
@@ -16,7 +16,7 @@ import argparse
 import csv
 import io
 
-CATALOG = "docs/catalog/functions.csv"
+CATALOG = "docs/port/catalog/functions.csv"
 RANK = {"guess": 0, "likely": 1, "confirmed": 2}
 
 

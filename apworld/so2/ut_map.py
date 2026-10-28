@@ -1,16 +1,16 @@
-"""Universal Tracker's map tab (docs/ap/apworld.md "Universal Tracker's map tab").
+"""Universal Tracker's map tab (docs/apworld/apworld.md "Universal Tracker's map tab").
 
 Hybrid, in UT's words: the map tab's JSON is in this APWorld (tracker/: maps, locations named by their
 AP location names, the map menu, and map_pages.json), generated with the PopTracker pack by
-tools/ap_poptracker.py (`--ut-out apworld/so2/tracker`); the images come from a zip the player points
+trackers/tools/ap_poptracker.py (`--ut-out apworld/so2/tracker`); the images come from a zip the player points
 UT at once (host.yaml `so2_options: ut_pack_path`; UT asks with a file dialog the first time it is
 empty): either the port's so2_shattered_stars_ut.zip (the player's own maps, rendered from their disc
-by `--render-tracker-maps` or setup's button, docs/ap/tracker_maps.md "The Universal Tracker zip") or
+by `--render-tracker-maps` or setup's button, docs/trackers/tracker_maps.md "The Universal Tracker zip") or
 the PopTracker pack's so2_shattered_stars_<version>.zip (its placeholders). Both hold every picture the
 map tab shows at the same paths, so the APWorld carries no pictures.
 
 UT follows the port's map: `map_page_setting_key` is the port's so2_map_{team}_{player}
-(docs/ap/data_storage.md), whose map goes through map_page_index to the room's page (or the world
+(docs/apworld/data_storage.md), whose map goes through map_page_index to the room's page (or the world
 map's); on a world map the same key's x / z place the player marker (location_icon_coords).
 Nothing here runs during generation.
 """

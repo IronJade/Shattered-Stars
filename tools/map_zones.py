@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """List a field map's floor zones: the world-space triangles the party walks on (the map scene's
-cell grid, cell 0 list 14; docs/catalog/formats.md "Map data", docs/notes/field_part3.md 3.1.2,
-engine/src/game/field/collision.cpp walk_snap_to_floor). Each zone: index, used, tag, its
+cell grid, cell 0 list 14; docs/port/catalog/formats.md "Map data", docs/port/notes/field_part3.md 3.1.2,
+port/src/game/field/collision.cpp walk_snap_to_floor). Each zone: index, used, tag, its
 y / x / z bounds and its three vertices (x, y, z; y grows downwards). By default only zones that
 are not flat at y 0 (stairs, ramps, ledges); --all lists every one.
 

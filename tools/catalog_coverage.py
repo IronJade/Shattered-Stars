@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Write docs/catalog/COVERAGE.md: how complete the function catalog is.
+"""Write docs/port/catalog/COVERAGE.md: how complete the function catalog is.
 
 catalog_coverage.py [--check]
 
-Per module of docs/catalog/functions.csv: the rows by confidence (confirmed / likely /
+Per module of docs/port/catalog/functions.csv: the rows by confidence (confirmed / likely /
 guess) and by port status:
-  ported       the port column names a file (engine/..., tools/...) that exists;
+  ported       the port column names a file (port/..., tools/...) that exists;
   not needed   "(not needed: reason)";
   PsyQ         "(PsyQ: ...)" (a library routine the port replaces with its runtime);
   empty        no port column yet;
@@ -23,8 +23,8 @@ import csv
 import os
 import re
 
-CATALOG = "docs/catalog/functions.csv"
-OUT = "docs/catalog/COVERAGE.md"
+CATALOG = "docs/port/catalog/functions.csv"
+OUT = "docs/port/catalog/COVERAGE.md"
 CONF = ("confirmed", "likely", "guess")
 
 

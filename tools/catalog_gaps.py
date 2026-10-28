@@ -42,7 +42,7 @@ Explained hits are dropped from the count and listed apart: an address where a
 "coresident" module has a row (battle: #1984 / #1981 and the enemy-slot modules replace
 #2129's own bytes in 0x800715d0-0x8008c1f4 at run time, so a call there means their
 function, and #2129's bytes there are mid-function), or a hand-verified entry in
-docs/catalog/gaps_explained.csv (program,address,reason).
+docs/port/catalog/gaps_explained.csv (program,address,reason).
 Every one of the sources on its own is enough to call an address a candidate --
 there is no more "no prologue -> skip" filtering. The `[fn]` / `[leaf]` / `[?]` byte tag
 (a clean `addiu sp,sp,-N` prologue / a bare `jr ra` / neither) is still shown beside each
@@ -53,7 +53,7 @@ address) before adding a row -- raw code and data both decompress into the same 
 blocks, so a jal/j/table-shaped word can come from data by chance, especially for `table`
 and for a `[?]`-tagged address with only one source.
 
-Appends a "## Missing rows" section to docs/catalog/COVERAGE.md (replacing any earlier
+Appends a "## Missing rows" section to docs/port/catalog/COVERAGE.md (replacing any earlier
 one), after the sections tools/catalog_coverage.py writes; run that script first. Rerun
 this script whenever functions.csv gains rows, to see what is still missing.
 
@@ -72,13 +72,13 @@ import pickle
 import struct
 import sys
 
-CATALOG = "docs/catalog/functions.csv"
-OUT = "docs/catalog/COVERAGE.md"
+CATALOG = "docs/port/catalog/functions.csv"
+OUT = "docs/port/catalog/COVERAGE.md"
 PICKLE = "scratchpad/fx_worker/archive/disc1.pickle"
 BOOT_EXE = "extracted/disc1/SCUS_944.21"
 PROCS_DIR = "scratchpad/catalog"
 CODE_PICKLE = "scratchpad/fx_worker/cat2/code.pickle"  # the code-bearing entries of disc1.pickle
-EXPLAINED = "docs/catalog/gaps_explained.csv"  # hand-verified non-functions (program,address,reason)
+EXPLAINED = "docs/port/catalog/gaps_explained.csv"  # hand-verified non-functions (program,address,reason)
 
 RAM_LO, RAM_HI = 0x80000000, 0x80200000  # 2 MB main RAM (KSEG0): every valid target lives here
 

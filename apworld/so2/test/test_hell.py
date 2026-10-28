@@ -1,4 +1,4 @@
-"""The hell seed (hell.py; the user, 2026-10-27; docs/ap/apworld.md "The hell seed"; docs/handoff/
+"""The hell seed (hell.py; the user, 2026-10-27; docs/apworld/apworld.md "The hell seed"; docs/handoff/
 hellseed.md): encounter_rate 0 with killer-move checks or skillsanity's learn points. The Fun City
 arena is then the only place to train: the seed waives its fee (the patch line) and says so
 (`hell_seed`), and killer-move levels, learn points and guild checks count from the arena (story

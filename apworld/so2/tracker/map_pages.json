@@ -1,5 +1,5 @@
 {
- "source": "tools/ap_poptracker.py",
+ "source": "trackers/tools/ap_poptracker.py",
  "pack": "so2_shattered_stars 1.0.0",
  "player_icon": "images/status/you.png",
  "pages": {

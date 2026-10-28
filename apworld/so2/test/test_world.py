@@ -1,4 +1,4 @@
-"""The SO2 world's own tests (docs/ap/apworld.md): story mode's locations, pool, goal and seed;
+"""The SO2 world's own tests (docs/apworld/apworld.md): story mode's locations, pool, goal and seed;
 the missables, the cave, Expel without progression, the late proof's rule, the drops and traps,
 the shop slots. WorldTestBase's default tests run for each option set too: every location
 reachable with all items, something reachable from the start, and a fill that meets the
@@ -134,7 +134,7 @@ class TestExpelWithoutProgression(SO2TestBase):
 
 
 class LateProofChecks:
-    """Progression goes only where the late proof (docs/ap/late_proof.json, rows' `late`)
+    """Progression goes only where the late proof (docs/apworld/late_proof.json, rows' `late`)
     reached the location in the story_route's game (both under "any"); story bosses are exempt,
     drops and join sites never hold it."""
 

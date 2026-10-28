@@ -1,4 +1,4 @@
-"""Rules as data (logic.py; docs/ap/apworld.md "Rules"; docs/plans/trackers.md B2).
+"""Rules as data (logic.py; docs/apworld/apworld.md "Rules"; docs/plans/trackers.md B2).
 
 Every location (events too), entrance and the goal of a world carries an Archipelago Rule Builder
 rule (rule_builder.rules.Rule.Resolved), made only of logic.RESOLVED_KINDS (no lambdas, no region

@@ -1,4 +1,4 @@
-"""Universal Tracker support (docs/plans/trackers.md B1; docs/ap/apworld.md "Trackers"; 0.2.2).
+"""Universal Tracker support (docs/plans/trackers.md B1; docs/apworld/apworld.md "Trackers"; 0.2.2).
 
 Universal Tracker (UT: FarisTheAncient/Archipelago's worlds/tracker, an Archipelago client) builds
 this world again on the player's machine and evaluates our own rules against what the server says
@@ -37,7 +37,7 @@ LOGIC_VERSION = 1           # this world's logic; bump when the same slot data w
 LOGIC_VERSIONS = (1,)       # the room logic versions this world reproduces (a room without the key: 1)
 NEW_KEYS = ("logic_version", "exclude_locations", "tracker")  # 0.2.2's keys: not in the .apso2, absent from older rooms
 
-# Rooms made before logic_version whose logic differs from version 1 (docs/ap/apworld.md "Trackers",
+# Rooms made before logic_version whose logic differs from version 1 (docs/apworld/apworld.md "Trackers",
 # "Older rooms": 0.2.0 rooms rebuilt here, 17 mixes x 5 seeds, and the user's own room).
 # OLD_LOGIC refuses: apworld_version -> (does the room's slot data use the changed logic, why) pairs,
 # and what to install instead. 0.2.1 made encounter_rate 0 with killer-move checks a hell seed (its

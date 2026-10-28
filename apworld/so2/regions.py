@@ -1,4 +1,4 @@
-"""Regions follow the story (docs/ap/field.md, "Story order", "Virtual Expel"):
+"""Regions follow the story (docs/apworld/field.md, "Story order", "Virtual Expel"):
 
     Menu -> Expel -> Energy Nede -> Fienal -> Cave of Trials (option)
 
@@ -47,7 +47,7 @@ def create_regions(world):
     events += ([LIMITER_OFF_EVENT] if goal >= 1 else []) + ([ISERIA_QUEEN_EVENT] if goal == 2 else [])
     if world.open_world:
         # Open world: the story's stages as events, each needing the previous one and the keys of
-        # the areas the story walks into in it (data.STAGES; docs/ap/apworld.md, "Open world").
+        # the areas the story walks into in it (data.STAGES; docs/apworld/apworld.md, "Open world").
         for k, (name, _, _) in enumerate(STAGES, start=1):
             events.append(("Expel" if k <= DISC_SWITCH_STAGE else "Energy Nede", f"Story: {name}", stage_event(k)))
         if world.options.expel_teleporter:

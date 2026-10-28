@@ -1,10 +1,10 @@
 """Rules. Story mode's only requirements are the story's own order (the region entrances in
 regions.py); here: the goal, and where progression may not go. Open world adds the area keys
-(docs/ap/apworld.md, "Open world").
+(docs/apworld/apworld.md, "Open world").
 
 Archipelago assumes a location stays reachable once it is in logic. Star Ocean 2's maps close
 as the story goes on (Expel at the disc switch, towns that change), so a location may hold
-progression only when the late proof (tools/ap_late_proof.py, docs/ap/late_proof.json; the
+progression only when the late proof (apworld/tools/ap_late_proof.py, docs/apworld/late_proof.json; the
 rows' `late`) checked it in a sweep of the game after the Final Save Point, the point the
 story always reaches, with every location left undone. Story bosses are exempt: the story
 fights them. First drops are dice rolls, join sites need their member's story, shop slots a
@@ -22,7 +22,7 @@ reaches once the Synard flies, data.TELEPORTER_STAGE; the rows' `tele`) says whe
 so Expel holds progression only there, except the Expel story's own keys, which the player
 must pick up before the switch anyway.
 
-Open world's one-way story points (data.STORY_GATES; docs/ap/apworld.md, "The El voyage"): the
+Open world's one-way story points (data.STORY_GATES; docs/apworld/apworld.md, "The El voyage"): the
 stage that ends with one needs the gate's keys (regions.py stage_rules), the port keeps it shut
 until the player holds them, and a location the story reaches before it (its early mode) holds
 progression only where the gate's proof reached it at the gate: the rest can close before the
@@ -166,8 +166,8 @@ def open_world_progression(row, side, teleporter, expel_progression=True):
     return "expel keys" if proven_late(row, side) else "none"
 
 
-# ---- Enemy drops (enemy_dropsanity, drop_progression; docs/ap/apworld.md, "Drops") ----------
-# roll_drops (engine/src/game/battle/result.cpp, 0x800869fc) rolls a downed enemy's two drop
+# ---- Enemy drops (enemy_dropsanity, drop_progression; docs/apworld/apworld.md, "Drops") ----------
+# roll_drops (port/src/game/battle/result.cpp, 0x800869fc) rolls a downed enemy's two drop
 # slots in turn, each at odds + (average Luck of the standing members >> 4) - 7 out of 256, and
 # stops at the first success. Luck only adds, so the chance at Luck 0 is the floor. A drop holds
 # progression only from MIN_DROP_CHANCE (1 in 64 kills at Luck 0): that keeps out the 11 types
@@ -205,7 +205,7 @@ def drop_rule(row, side, open_world, teleporter, expel_progression, mode, encoun
     """A first drop's (what it may hold, its open-world access modes or None for the default).
     It may hold progression only when its enemy can always be met again from wherever the logic
     counts it reached, which its places say (the maps where random encounters meet the type with
-    no story condition, tools/ap_world_tables.py drop_places):
+    no story condition, apworld/tools/ap_world_tables.py drop_places):
     - story mode: a place the late proof reached (or a world map it walked), as for chests: the
       story always reaches the Final Save Point, so the enemy is there to fight in the end;
       with expel_progression off, a place outside Expel;

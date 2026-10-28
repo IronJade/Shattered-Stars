@@ -25,7 +25,7 @@ the original stores leftover memory, so cards work in both directions.
 
 **Nothing is hidden.** In the source code, the original's line is kept as a comment marked
 `ORIGINAL BUG (original_bugs.md <id>)`, with the corrected code below it. Every case is listed
-in the project's [original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/notes/original_bugs.md),
+in the project's [original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/notes/original_bugs.md),
 which has the technical details. The ids on this page (B1, E5, S20, ...) are the same, so you
 can look any of them up there.
 

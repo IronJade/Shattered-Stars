@@ -1,5 +1,5 @@
 """Rules as data: every access rule of this world is an Archipelago Rule Builder rule
-(rule_builder/, Archipelago's docs/rule builder.md; docs/ap/apworld.md "Rules"; docs/plans/trackers.md
+(rule_builder/, Archipelago's docs/rule builder.md; docs/apworld/apworld.md "Rules"; docs/plans/trackers.md
 B2). The rule sites (regions.py, rules.py, hub.py, skillsanity.py) work out what a place needs from
 the world's data and options, then set it with `world.set_rule`, which resolves it for this world
 into frozen dataclasses (rule_builder.rules.Rule.Resolved): no lambdas on locations, entrances or

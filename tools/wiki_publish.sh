@@ -17,7 +17,7 @@
 #   --wiki-dir DIR   the checkout (default: scratchpad/wiki; clone one with
 #                    git clone https://github.com/IronJade/Shattered-Stars.wiki.git scratchpad/wiki)
 #
-# Publishing is a release step (docs/ap/release_checklist.md): run --push only with the
+# Publishing is a release step (docs/release/release_checklist.md): run --push only with the
 # maintainer's go-ahead.
 set -euo pipefail
 

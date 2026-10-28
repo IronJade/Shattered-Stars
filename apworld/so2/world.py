@@ -4,7 +4,7 @@ Story mode: the chests and the gifts that give items or Fol are shuffled; the st
 items (script flags) stay in place, so the story always goes on. The goal is the final boss.
 Open world locks the world maps' entrances behind area keys; hub mode (hub.py) starts after the
 Final Save Point with both worlds open, a key per dungeon and the story bosses in their chambers.
-The output is one .apso2 seed per player (docs/ap/seed_format.md), which the port loads.
+The output is one .apso2 seed per player (docs/apworld/seed_format.md), which the port loads.
 """
 import json
 import logging
@@ -20,13 +20,13 @@ from .options import SO2Options, option_groups
 from .patches import placement_patches
 from .ut_map import SO2Settings
 
-SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
+SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/apworld/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
 SEED_FORMAT_V3 = 3              # a hub seed (seed_format.md "Hub"): a wave-2 port refuses it
 SEED_FORMAT_V4 = 4              # a bench seed (seed_format.md "The bench"): a port that reads 1 to 3 refuses it
 APWORLD_VERSION = "0.2.2"
 
-# The goals (docs/ap/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
+# The goals (docs/apworld/seed_format.md, "v2 fields": Goals; scratchpad/openworld/goals.md): the
 # seed's goal object and the gate on the Final Save Point floor's way to Indalecio (door
 # 43978493, map 671 -> 684), which the port keeps shut until the goal's conditions hold.
 LIMITER_FLAGS = [445, 446]      # the Clik meeting with Filia (Claude's game, Rena's), preset by the port
@@ -38,7 +38,7 @@ GOAL_GATE_NAMES = {1: "Indalecio (Limiter Off)", 2: "Indalecio (Limiter Off, Ise
 
 
 class Party(NamedTuple):
-    """Who can be in this world's party (docs/ap/seed_format.md, "Party v2")."""
+    """Who can be in this world's party (docs/apworld/seed_format.md, "Party v2")."""
     rules: str                  # "story": phase 3's rules; "open": open world with character_items, hub mode
     story_members: tuple        # join through the story's own scenes (party rules "open")
     start: Optional[str]        # starting_character (open world): joins at the start and leads
@@ -69,12 +69,12 @@ class SO2World(World):
     item_name_groups = items.ITEM_NAME_GROUPS
     location_name_groups = locations.LOCATION_NAME_GROUPS
     origin_region_name = "Menu"
-    # Universal Tracker (ut.py; docs/ap/apworld.md "Trackers"): it rebuilds this world from the
+    # Universal Tracker (ut.py; docs/apworld/apworld.md "Trackers"): it rebuilds this world from the
     # room's slot data alone (no YAML), which interpret_slot_data hands back as it is; generate_early
     # restores the options and the party from it (`ut_slot_data`, None in a real generation).
     ut_can_gen_without_yaml = True
     ut_slot_data = None
-    # UT's map tab (ut_map.py; docs/ap/apworld.md "Universal Tracker's map tab"): the JSON in
+    # UT's map tab (ut_map.py; docs/apworld/apworld.md "Universal Tracker's map tab"): the JSON in
     # tracker/, the pictures from the PopTracker pack's zip (host.yaml so2_options: ut_pack_path).
     settings: ClassVar[SO2Settings]
     settings_key = "so2_options"
@@ -88,7 +88,7 @@ class SO2World(World):
         """The tracker tab's order: (story stage of the area, area, name) (ut.sort_key)."""
         return ut.sort_key(region, location)
 
-    # Story awareness in UT (story.py; docs/ap/apworld.md "Story awareness"): in UT's regeneration of a
+    # Story awareness in UT (story.py; docs/apworld/apworld.md "Story awareness"): in UT's regeneration of a
     # story-mode room (enforce_deferred_entrances not "off"), story.prepare sets this world's
     # `found_entrances_datastorage_key` to the port's story key, so UT watches it and hands each value
     # here; the story's deferred events then follow the reported chapter.
@@ -313,7 +313,7 @@ class SO2World(World):
             # Energy Nede stages need them, nothing on Energy Nede but the Synard boss may hold
             # them before, and with either option off Expel holds only our Expel-story keys, so
             # in a solo world they would have no spot (the Noel's House Pass one, gone with
-            # boss_checks off; 0.2.1; docs/ap/apworld.md "Open world", the user 2026-10-26).
+            # boss_checks off; 0.2.1; docs/apworld/apworld.md "Open world", the user 2026-10-26).
             later = self.options.expel_teleporter and self.options.expel_progression
             start = list(items.START_KEYS) + ([] if later else list(items.NEDE_START_KEYS))
             for name in start:
@@ -371,7 +371,7 @@ class SO2World(World):
         return {0: list(GOAL_ENCOUNTERS), 1: [540], 2: [ISERIA_QUEEN, 540]}[self.options.goal.value]
 
     def seed_goal(self):
-        """The seed's goal object (docs/ap/seed_format.md, "v2 fields": Goals)."""
+        """The seed's goal object (docs/apworld/seed_format.md, "v2 fields": Goals)."""
         goal = self.options.goal.value
         if goal == 0:
             return {"encounters": list(GOAL_ENCOUNTERS)}
@@ -395,7 +395,7 @@ class SO2World(World):
         return [door]
 
     def seed_version(self):
-        """1, or 2 when the seed uses a field an older port would ignore (docs/ap/seed_format.md,
+        """1, or 2 when the seed uses a field an older port would ignore (docs/apworld/seed_format.md,
         "The version rule"); 3 for a hub seed ("Hub"); 4 for a seed with the bench, open world or
         hub ("The bench": a port that reads 1 to 3 refuses it instead of playing a pool of up to 12
         members with 8 places)."""
@@ -412,7 +412,7 @@ class SO2World(World):
         return SEED_FORMAT_V2 if v2 else SEED_FORMAT_VERSION
 
     def fill_slot_data(self):
-        """The slot data (docs/ap/seed_format.md "Slot data and trackers"): slot_options, then for
+        """The slot data (docs/apworld/seed_format.md "Slot data and trackers"): slot_options, then for
         trackers `logic_version` (ut.LOGIC_VERSION: Universal Tracker refuses a room whose logic
         this world doesn't reproduce), `exclude_locations` (UT shows them excluded) and `tracker`,
         this world's resolved logic for trackers that don't run the world (tracker_export: the
@@ -480,7 +480,7 @@ class SO2World(World):
         return data
 
     def seed_data(self):
-        """The .apso2 seed (docs/ap/seed_format.md) as a dict."""
+        """The .apso2 seed (docs/apworld/seed_format.md) as a dict."""
         mw, player = self.multiworld, self.player
         own_items, locs = {}, []
         for loc in sorted(mw.get_locations(player), key=lambda l: l.address or 0):
@@ -542,8 +542,8 @@ class SO2World(World):
         }
 
     def seed_doors(self):
-        """Open world: every world-map entrance with its area's key (docs/ap/seed_format.md,
-        "Phase 4"; ids from docs/ap/doors.json), then each one-way story point's door with the
+        """Open world: every world-map entrance with its area's key (docs/apworld/seed_format.md,
+        "Phase 4"; ids from docs/apworld/doors.json), then each one-way story point's door with the
         keys it needs (data.STORY_GATES: the El voyage's trigger in the Lacour Front Line's
         meeting room) and the exits kept shut until a chapter. Story mode: none. Hub mode: the
         dungeons' doors and Fienal's gate (hub.seed_doors)."""

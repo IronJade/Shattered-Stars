@@ -4,12 +4,12 @@ own tables (no disc needed), and name lookup for tools/so2_mod.py's arguments.
 
 Sources (facts only: IDs and names):
   items    apworld/so2/data.py ITEMS (the game's names; a name two items share carries the
-           item number, as "Fanzine (190)") and docs/ap/field.json item_names (as shown)
+           item number, as "Fanzine (190)") and docs/apworld/field.json item_names (as shown)
   maps     docs/modding/reference/map_names.csv (our descriptive names: "area: place") when
-           present, else the area banners in docs/ap/field.json (map_names, map_areas),
+           present, else the area banners in docs/apworld/field.json (map_names, map_areas),
            else "Map N"
-  shops    docs/ap/field.json shops / shop_sites (the maps that open each shop)
-  enemies  docs/ap/battles.json enemy_types (the name in each type's stats record)
+  shops    docs/apworld/field.json shops / shop_sites (the maps that open each shop)
+  enemies  docs/apworld/battles.json enemy_types (the name in each type's stats record)
 
 Lookups are case-insensitive and ignore punctuation and plurals ("blueberries" finds
 Blueberry). A number (decimal or 0x hex) is taken as is. A name that fits several entries
@@ -27,8 +27,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAP_NAMES_CSV = os.path.join(ROOT, "docs", "modding", "reference", "map_names.csv")
-FIELD_JSON = os.path.join(ROOT, "docs", "ap", "field.json")
-BATTLES_JSON = os.path.join(ROOT, "docs", "ap", "battles.json")
+FIELD_JSON = os.path.join(ROOT, "docs", "apworld", "field.json")
+BATTLES_JSON = os.path.join(ROOT, "docs", "apworld", "battles.json")
 APWORLD = os.path.join(ROOT, "apworld", "so2")
 
 WORLDS = {1: "Expel", 2: "Energy Nede", 3: "World map 3"}

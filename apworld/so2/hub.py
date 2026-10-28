@@ -1,5 +1,5 @@
-"""Hub mode (`world_mode: hub`; docs/ap/apworld.md "Hub mode"; the user's decisions D1-D10 in
-docs/handoff/hub.md; the seed: docs/ap/seed_format.md "Hub").
+"""Hub mode (`world_mode: hub`; docs/apworld/apworld.md "Hub mode"; the user's decisions D1-D10 in
+docs/handoff/hub.md; the seed: docs/apworld/seed_format.md "Hub").
 
 New Game starts after the Final Save Point (chapter 60, flag 730, disc 2) with every location
 undone and the chapter held at 60 (D1): both worlds and every town are open from the start and
@@ -10,11 +10,11 @@ as soon as its dungeon's key has arrived (D3: every boss independent; the chambe
 none). Fienal has no key: it opens when the bosses of `fienal_requirement` are beaten (D6), and
 the goal lies behind it. Characters are always items (D7).
 
-The locations are what the hub reaches: the hub proof's (docs/ap/hub_proof.json: the late proof's
-search run from the hub's New Game with the chapter lock on, tools/ap_late_proof.py --state hub):
+The locations are what the hub reaches: the hub proof's (docs/apworld/hub_proof.json: the late proof's
+search run from the hub's New Game with the chapter lock on, apworld/tools/ap_late_proof.py --state hub):
 its proven chests, gifts and Cave of Trials / optional bosses (data.HUB_REACHED), the shops open at
 the hub state and the enemy types met there on the maps it reached (data.HUB_SHOPS, HUB_DROPS,
-HUB_MAPS; tools/ap_world_tables.py `hub_tables`), plus the 22 chambers (docs/ap/hub_bosses.json,
+HUB_MAPS; apworld/tools/ap_world_tables.py `hub_tables`), plus the 22 chambers (docs/apworld/hub_bosses.json,
 proven headless by the agent "hubchambers" and from the hub's New Game by the hub proof's
 `--bosses`). Progression goes only to proven chests, the chambers and proven cave bosses; drops per
 drop_progression / area_keys_in_drops; never to shops, gifts or crafts.
@@ -373,7 +373,7 @@ def set_rules(world):
             add_item_rule(loc, lambda item: not item.advancement)
 
 
-# ---- The seed (docs/ap/seed_format.md "Hub") -------------------------------------------------
+# ---- The seed (docs/apworld/seed_format.md "Hub") -------------------------------------------------
 def choose_start(world):
     """hub_start: the start point's key in data.HUB_STARTS (random_town: any of them, sorted for
     a stable pick: every town of both worlds that hub_state.json `starts` lists). Universal

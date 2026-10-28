@@ -1,5 +1,5 @@
-"""Hub mode (`world_mode: hub`; apworld/so2/hub.py, docs/ap/apworld.md "Hub mode",
-docs/ap/seed_format.md "Hub"): the locations the hub reaches, the dungeon keys, the chambers, the
+"""Hub mode (`world_mode: hub`; apworld/so2/hub.py, docs/apworld/apworld.md "Hub mode",
+docs/apworld/seed_format.md "Hub"): the locations the hub reaches, the dungeon keys, the chambers, the
 Fienal requirement, where progression may go, the party, the version-3 seed. WorldTestBase's own
 tests run for every class too (every location reachable with all items, the fill)."""
 import unittest

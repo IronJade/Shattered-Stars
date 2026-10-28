@@ -19,7 +19,7 @@ interrupt registers are labelled, so cross-references to them resolve.
 
 Examples:
   psxexe2elf.py SCUS_944.21 -o SCUS_944.21.elf
-  psxexe2elf.py SCUS_944.21 --symbols docs/catalog/functions.csv:boot -o SCUS_944.21.elf
+  psxexe2elf.py SCUS_944.21 --symbols docs/port/catalog/functions.csv:boot -o SCUS_944.21.elf
   psxexe2elf.py SCUS_944.21 --add battle.ovl@0x800a0000 -o with_battle.elf
   psxexe2elf.py --raw ramdump.bin --base 0x80000000 --entry 0x80010008 -o ram.elf
 """

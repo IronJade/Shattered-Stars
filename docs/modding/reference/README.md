@@ -1,6 +1,6 @@
 # Modder's reference tables
 
-What the numbers in a world-edit patch stand for. Made by `tools/mod_reference.py` from the
+What the numbers in a world-edit patch stand for. Made by `port/tools/mod_reference.py` from the
 disc and the repository's own tables: IDs, names, types, prices, stats and our own map names
 only, never the game's text or pictures. Every table is sorted the same way each time it is
 made.
@@ -20,7 +20,7 @@ names a map, else from the area banners the game shows on entering, else "Map N"
 ## How the IDs plug in
 
 Each table's IDs are what `tools/so2_mod.py` takes and what a patch line holds (the grammar
-is in `engine/src/game/field/mods.h`). `so2_mod.py` also takes a name wherever it takes an
+is in `port/src/game/field/mods.h`). `so2_mod.py` also takes a name wherever it takes an
 item, map, shop or enemy type: `--to "Cross: Skill Guild"`, `--item "Blueberry"`. A name that
 fits more than one entry lists them and stops; `so2_mod.py find DISC.cue TEXT` searches every
 name.
@@ -66,5 +66,5 @@ above, searchable, plus the item descriptions read from your disc; with `--game 
 built game) it adds a thumbnail of every map, rendered without a window. That page is made
 from your own disc, on your machine, and is not for sharing.
 
-Regenerate these tables with `python3 tools/mod_reference.py DISC1.cue` (`--check` compares
-them with the Archipelago tables in `docs/ap`).
+Regenerate these tables with `python3 port/tools/mod_reference.py DISC1.cue` (`--check` compares
+them with the Archipelago tables in `docs/apworld`).

@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_by": "tools/mod_index.py",
+  "generated_by": "port/tools/mod_index.py",
   "about": "The curated mod list: only entries with \"verified\": true are on it (mods/README.md).",
   "mods": [
     {

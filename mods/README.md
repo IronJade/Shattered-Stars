@@ -7,11 +7,11 @@ file and whether the mod is verified. **Only the mods with `"verified": true` in
 
 To use one, download its folder as a .zip (or zip it yourself) and choose **Install from
 .zip...** on setup's Mods page, or copy the folder into your mods folder and enable it
-there. The full design is in [docs/notes/mods.md](../docs/notes/mods.md).
+there. The full design is in [docs/port/notes/mods.md](../docs/port/notes/mods.md).
 
 ## What "verified" means
 
-The maintainer ran `tools/mod_verify.py` on exactly the files recorded in `index.json`,
+The maintainer ran `port/tools/mod_verify.py` on exactly the files recorded in `index.json`,
 with the North American discs and the port version recorded there, and it reported:
 
 - every patch line applying in the game (none skipped);
@@ -36,13 +36,13 @@ your-mod-id/
 
 Nothing else: no images, no programs, no subfolders (the project's rule allows no game
 assets outside `docs/images/`). The patch lines are the four commands `script`, `item`,
-`shop` and `enemy` (see `engine/src/game/field/mods.h`); write them with
+`shop` and `enemy` (see `port/src/game/field/mods.h`); write them with
 `tools/so2_mod.py` from your own disc, which fills in the value each line expects to
 find. Limits: 32 patch files, 256 KiB each, 1 MiB per package.
 
 To find the numbers, use the modder's reference: `docs/modding/reference/` (CSV tables of
 every item, map, door, chest, shop and enemy type with its ID and name, made by
-`tools/mod_reference.py`) and the wiki's
+`port/tools/mod_reference.py`) and the wiki's
 [Modding Reference](https://github.com/IronJade/Shattered-Stars/wiki/Modding-Reference).
 `so2_mod.py` also takes names (`--to "Cross: Skill Guild"`, `--item "Blueberry"`) and
 searches them (`so2_mod.py find DISC.cue TEXT`); `so2_mod.py reference DISC.cue --out DIR`
@@ -74,7 +74,7 @@ for you only (it holds the game's text: don't commit or share it).
    a `mod.json` (and a README.md if you like). Try the mod in the game.
 2. Run the static check and fix every error:
 
-       python3 tools/mod_check.py --strict mods/<your-mod-id>
+       python3 port/tools/mod_check.py --strict mods/<your-mod-id>
 
    It also flags risky edits (an unknown script word, a door sent elsewhere, a key item
    chest changed, a boss with 0 HP, a free item, ...). The pull-request check runs in strict
@@ -86,7 +86,7 @@ for you only (it holds the game's text: don't commit or share it).
 
 3. Regenerate the index and commit it with your folder (your entry is unverified):
 
-       python3 tools/mod_index.py build
+       python3 port/tools/mod_index.py build
 
 4. Open a pull request using the mod submission template: add
    `?template=mod_submission.md` to the pull request's address, and tick its checklist.
@@ -102,8 +102,8 @@ that adds a verification to `index.json`).
    README.
 2. Check the pull request out and run, with the discs and a build:
 
-       SS_DISC1=<disc 1 .cue> python3 tools/mod_verify.py mods/<id> --bin engine/build/shattered-stars
+       SS_DISC1=<disc 1 .cue> python3 port/tools/mod_verify.py mods/<id> --bin port/build/shattered-stars
 
    It writes `report.md` (the path is printed); paste it into the pull request.
-3. If it passes: `python3 tools/mod_index.py verify <id> --by IronJade`, commit
+3. If it passes: `python3 port/tools/mod_index.py verify <id> --by IronJade`, commit
    `mods/index.json` to the pull request, and merge.

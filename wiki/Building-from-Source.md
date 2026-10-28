@@ -44,11 +44,11 @@ For example, `-DSS_BUILD_SETUP=OFF` leaves the setup program out.
 ## Configure and build
 
 ```sh
-cmake -S engine -B engine/build -G Ninja
-cmake --build engine/build
+cmake -S port -B port/build -G Ninja
+cmake --build port/build
 ```
 
-This produces, in `engine/build/`:
+This produces, in `port/build/`:
 
 | Program | What it is |
 |---|---|
@@ -57,24 +57,24 @@ This produces, in `engine/build/`:
 | `ss_tests` | Unit and disc tests of the hardware layers |
 | `ss_game_tests` | Tests of the game code |
 
-Run the game with `engine/build/shattered-stars`, or set it up first with
-`engine/build/shattered-stars-setup`. Disc paths given on the command line are remembered:
+Run the game with `port/build/shattered-stars`, or set it up first with
+`port/build/shattered-stars-setup`. Disc paths given on the command line are remembered:
 
 ```sh
-engine/build/shattered-stars --disc1 ".../Star Ocean - The Second Story (Disc 1).cue" \
+port/build/shattered-stars --disc1 ".../Star Ocean - The Second Story (Disc 1).cue" \
                              --disc2 ".../Star Ocean - The Second Story (Disc 2).cue"
 ```
 
-The project version (0.03.00 today) is set once, in `engine/CMakeLists.txt`'s `project(...)`
+The project version (0.03.00 today) is set once, in `port/CMakeLists.txt`'s `project(...)`
 line. The programs print it with `--version`.
 
 ## Tests
 
 | Test | Command | Needs |
 |---|---|---|
-| `ss_tests` | `SS_DISC1=".../Disc 1.cue" engine/build/ss_tests` | `SS_DISC1` for the disc tests. Without it, only the unit tests run |
-| `ss_game_tests` | `SS_DISC1=".../Disc 1.cue" engine/build/ss_game_tests` | `SS_DISC1` for the disc tests |
-| Smoke test | `SS_DISC1=".../Disc 1.cue" tools/smoke_field_events.sh engine/build/shattered-stars` | `SS_DISC1`; Disc 2 is found next to it. Python 3 |
+| `ss_tests` | `SS_DISC1=".../Disc 1.cue" port/build/ss_tests` | `SS_DISC1` for the disc tests. Without it, only the unit tests run |
+| `ss_game_tests` | `SS_DISC1=".../Disc 1.cue" port/build/ss_game_tests` | `SS_DISC1` for the disc tests |
+| Smoke test | `SS_DISC1=".../Disc 1.cue" port/tools/smoke_field_events.sh port/build/shattered-stars` | `SS_DISC1`; Disc 2 is found next to it. Python 3 |
 
 - **`ss_tests`** covers the disc reader, the archive and decompression, the GPU, GTE, MDEC,
   sound and memory cards. Its disc tests compare against reference values taken from the
@@ -96,20 +96,20 @@ None of them write to your own settings.
   only with `SS_AP_SEED_CARD=1`, and `SS_AP_ANY_SAVE=1` lets it load an ordinary save.
 - **AddressSanitizer:** configure a separate build directory with `-fsanitize=address` to catch
   memory errors.
-- **Reference regression suite:** `tools/ref_regress.py` replays recorded comparisons with the
+- **Reference regression suite:** `port/tools/ref_regress.py` replays recorded comparisons with the
   original game. It needs recordings made with PCSX-Redux, which are not part of the repository;
-  see [tools/refs/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/tools/refs/README.md).
+  see [port/tools/refs/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/port/tools/refs/README.md).
 
 ## Release packages
 
 ### Linux
 
 ```sh
-tools/build_linux.sh --container
+port/tools/build_linux.sh --container
 # -> dist/ShatteredStars-<version>-linux-x86_64.tar.gz
 ```
 
-This builds inside a Debian 12 container with podman (`tools/linux-build/Containerfile`,
+This builds inside a Debian 12 container with podman (`port/tools/linux-build/Containerfile`,
 pinned by digest), so the result runs on any distribution with glibc 2.36 or newer. SDL 3 and
 Dear ImGui are built from source there and linked in, along with the C++ runtime, so players
 need only glibc and OpenGL 3.3. The repository is mounted read-only.
@@ -124,7 +124,7 @@ The Windows release is cross-compiled from Linux with MinGW-w64. On Fedora:
 
 ```sh
 sudo dnf install mingw64-gcc-c++ mingw64-SDL3 mingw64-openssl-static mingw64-zlib-static
-tools/build_windows.sh
+port/tools/build_windows.sh
 # -> dist/ShatteredStars-<version>-win64.zip
 ```
 
@@ -136,12 +136,12 @@ packages' RPMs yourself and set `MINGW_SSL_SYSROOT` to the unpacked
 The Windows build renders the same frames as the Linux build, byte for byte, and its test
 suites pass under Wine.
 
-Both scripts read the version from `engine/CMakeLists.txt`, and both packages include
+Both scripts read the version from `port/CMakeLists.txt`, and both packages include
 `LICENSE`, the third-party licences, the README and an empty `discs` folder.
 
 ### Checking the setup program's layout
 
-`tools/setup_screenshots.sh [PROGRAM] [OUT_DIR]` renders every page and state of the setup
+`port/tools/setup_screenshots.sh [PROGRAM] [OUT_DIR]` renders every page and state of the setup
 program offscreen as PNG files, with scratch settings, without opening a window.
 
 ## The .apworld
@@ -149,7 +149,7 @@ program offscreen as PNG files, with scratch settings, without opening a window.
 The Archipelago world's source is in `apworld/so2`. To package it:
 
 ```sh
-AP_INSTALL=path/to/Archipelago AP_VENV=path/to/venv tools/build_apworld.sh [OUT_DIR]
+AP_INSTALL=path/to/Archipelago AP_VENV=path/to/venv apworld/tools/build_apworld.sh [OUT_DIR]
 # -> dist/so2.apworld and dist/"Star Ocean The Second Story.yaml"
 ```
 
@@ -172,12 +172,12 @@ python -m pytest worlds/so2/test
 ## The PopTracker pack
 
 The [PopTracker pack](Trackers#poptracker) is generated from the world's own tables and the map
-layout (`docs/ap/tracker_maps.json`). It needs the scratch Archipelago that
-`tools/ap_test_server.sh` sets up (`scratchpad/ap`, the world linked in, Pillow and lupa in its
+layout (`docs/trackers/tracker_maps.json`). It needs the scratch Archipelago that
+`apworld/tools/ap_test_server.sh` sets up (`scratchpad/ap`, the world linked in, Pillow and lupa in its
 venv):
 
 ```sh
-tools/build_poptracker.sh all
+trackers/tools/build_poptracker.sh all
 # -> dist/poptracker/so2_shattered_stars_<version>.zip, its .sha256 and versions.json,
 #    then PopTracker's pack checker and the pack's tests
 ```
@@ -185,7 +185,7 @@ tools/build_poptracker.sh all
 Its images are drawn by the generator, original stand-ins at the layout's sizes; the real maps
 come from each player's own disc (`shattered-stars --render-tracker-maps`). The details, the
 tests and a headless run in the real PopTracker are in
-[docs/ap/poptracker.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/poptracker.md).
+[docs/trackers/poptracker.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/trackers/poptracker.md).
 
 ## Where to go next
 

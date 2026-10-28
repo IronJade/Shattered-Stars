@@ -3,7 +3,7 @@
 
 Reads the map scripts straight from your disc image (.cue or .bin) and prints
 `script MAP WORD EXPECTED VALUE` lines for the engine's mods directory (mods/ next to
-config.ini, or --mods DIR); see engine/src/game/field/mods.h. Nothing on the disc is
+config.ini, or --mods DIR); see port/src/game/field/mods.h. Nothing on the disc is
 changed: the engine patches each script in memory as the map loads, and only while
 the original word is still there.
 
@@ -39,7 +39,7 @@ entries lists them (use one of their numbers), and a misspelt one gets suggestio
       build a local reference page (DIR/index.html): every table, searchable, with the item
       descriptions from your disc and, with --game (the built game), a picture of each map.
       Made from your disc for you only: don't share it. The facts-only tables are in
-      docs/modding/reference/ (tools/mod_reference.py).
+      docs/modding/reference/ (port/tools/mod_reference.py).
 
 Item fields: price, atk, def, amount (effect amount), effect (kind), type, sell (sell %).
 Enemy fields: hp, mp, exp, fol, speed, drop1, drop2, atk, def, int, level, eva, acc,

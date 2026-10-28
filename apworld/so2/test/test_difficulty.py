@@ -1,4 +1,4 @@
-"""The difficulty option (docs/ap/seed_format.md, "v2 fields"): New Game's Battle Rank. The seed
+"""The difficulty option (docs/apworld/seed_format.md, "v2 fields"): New Game's Battle Rank. The seed
 carries it; the logic does not change (only the monsters' stats do, not EXP, Fol, drops or
 encounters)."""
 from .. import hub, locations

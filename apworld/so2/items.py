@@ -20,17 +20,17 @@ PARTY_ID = {"Claude": 1, "Rena": 2, "Celine": 3, "Bowman": 4, "Dias": 5, "Precis
 CHARACTER_ITEMS = ("Celine", "Bowman", "Dias", "Precis", "Ashton", "Leon", "Opera", "Ernest", "Chisato")
 # The members that never join by an item under the story's party rules: the story_routes and
 # Noel (the story adds him). Open world's party rules make them items too, except the story
-# route's hero (docs/ap/seed_format.md, "Party v2").
+# route's hero (docs/apworld/seed_format.md, "Party v2").
 FIXED_MEMBERS = ("Claude", "Rena", "Noel")
 ALL_CHARACTER_ITEMS = CHARACTER_ITEMS + FIXED_MEMBERS
 CHARACTER_NAMES = tuple(sorted(PARTY_ID, key=PARTY_ID.get))     # by party id
 HEALERS = ("Rena", "Noel")      # the only members who learn healing spells (Rena alone revives)
 PARTY_SIZE = 8
 # With the bench (options.Bench; open world with character_items and hub mode): the 8 slots the game
-# knows and 4 bench places the port keeps (docs/ap/seed_format.md "The bench"): room for all 12.
+# knows and 4 bench places the port keeps (docs/apworld/seed_format.md "The bench"): room for all 12.
 BENCH_SIZE = 4
 BENCH_PARTY_SIZE = PARTY_SIZE + BENCH_SIZE
-# Trap items and what the port does with them (docs/ap/seed_format.md, phase 3).
+# Trap items and what the port does with them (docs/apworld/seed_format.md, phase 3).
 TRAPS = {
     "Ambush Trap": {"trap": "ambush"},
     "Fol Loss Trap": {"trap": "fol_loss", "percent": 10},
@@ -86,7 +86,7 @@ ITEM_NAME_GROUPS = {
 # Items a script tests, so they stay at their own locations (locked there, never in the pool):
 # the Cave of Trials' doors on maps 751 and 764 take the Red Lotus Gem (317; gifts on maps 711
 # and 754) and test the Cracked Gem (289; the chest on map 771). Shuffled, a door could need
-# a gem placed behind it (docs/ap/apworld.md, "Logic").
+# a gem placed behind it (docs/apworld/apworld.md, "Logic").
 PUZZLE_ITEMS = (289, 317)
 
 # Events (no id): story milestones the regions hang on, and the goal.
@@ -140,7 +140,7 @@ def item_name(item, fol):
 
 
 def seed_item(name, code):
-    """An own item as the seed describes it (docs/ap/seed_format.md, "An item")."""
+    """An own item as the seed describes it (docs/apworld/seed_format.md, "An item")."""
     if code in FOL_AMOUNT:
         return {"name": name, "kind": "fol", "amount": FOL_AMOUNT[code]}
     if code in CHARACTER_OF:

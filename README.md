@@ -208,13 +208,13 @@ addresses, so each function only has to be understood once. Project tools read t
 its SLZ compression, and disassemble the field event scripts.
 
 **2. Catalog everything.** Every function goes into
-[`docs/catalog/functions.csv`](docs/catalog/functions.csv) with its module, address, name,
+[`docs/port/catalog/functions.csv`](docs/port/catalog/functions.csv) with its module, address, name,
 signature, summary, confidence, evidence and its place in the port. The catalog holds
 **5,536 functions across 172 code modules, every one confirmed**. Of those, 4,547 are ported
 to C++, 901 aren't needed (dead code, stale copies, or hardware a PC doesn't have) and 88 are
 Sony library routines replaced by the port's runtime. A gap scanner searches every program for
 call targets the catalog lacks, and finds none. Globals, event-script opcodes and data formats
-are catalogued beside it, and [`docs/notes`](docs/notes) explains how each program fits together.
+are catalogued beside it, and [`docs/port/notes`](docs/port/notes) explains how each program fits together.
 
 **3. Rewrite it by hand.** The hardware layer came first, each part checked on its own:
 
@@ -254,7 +254,7 @@ ending ids play, and a late-game save was played through the final battle and th
 both the port and the original, with the same results.
 
 Every PCSX-Redux recording made along the way is kept in a
-[reference regression suite](tools/refs/README.md): 339 recordings, 223 of them replayed
+[reference regression suite](port/tools/refs/README.md): 339 recordings, 223 of them replayed
 automatically through the port. At the last full run, 219 of those passed, and the rest are
 open leads. A quick set of 28 runs at every project checkpoint, beside the three test suites
 (`ss_tests`, `ss_game_tests` and a whole-game smoke test).
@@ -282,7 +282,7 @@ Rewriting the game by hand meant reading every one of its bugs. The rule for the
 - **Saves stay byte-compatible,** leftover bytes included, so cards work in both directions.
 - **Nothing is hidden.** In the source, the original line is kept as a comment marked
   `ORIGINAL BUG (original_bugs.md <id>)`, with the corrected code below it, and every case is
-  listed in [`docs/notes/original_bugs.md`](docs/notes/original_bugs.md).
+  listed in [`docs/port/notes/original_bugs.md`](docs/port/notes/original_bugs.md).
 
 Slowdown is not modelled either: the original drops frames under heavy load, and the port
 always runs at full speed.
@@ -353,10 +353,10 @@ edits always apply first and are never overridden by a mod.
 
 **The curated list.** The [`mods/`](mods) folder of this repository holds the curated mod list;
 today it has two small sample packages. Creators submit a mod as a pull request. An automatic
-check runs on every submission (`tools/mod_check.py --strict`, no discs needed): it checks the
+check runs on every submission (`port/tools/mod_check.py --strict`, no discs needed): it checks the
 package's files and every patch line against the disc's tables, and fails unless each risky
 edit (a door sent elsewhere, a free item, a boss with 0 HP, ...) is declared with a reason.
-Then the maintainer runs the mod in the real game with `tools/mod_verify.py`: every patch line
+Then the maintainer runs the mod in the real game with `port/tools/mod_verify.py`: every patch line
 must apply, and every map and battle the mod touches must load and run as it does without the
 mod. Only then is it marked verified, and any later change to its files clears that.
 
@@ -428,7 +428,7 @@ supported release.
 This is a custom world, not yet part of Archipelago itself, so it has releases of its own,
 apart from the game's: download `so2.apworld` and its YAML template
 (`Star.Ocean.The.Second.Story.yaml`) from [so2.apworld 0.2.2](https://github.com/IronJade/Shattered-Stars/releases/tag/apworld-v0.2.2), or build them with
-`tools/build_apworld.sh`. A seed made with the bench needs Shattered Stars 0.02.51 or later. Every
+`apworld/tools/build_apworld.sh`. A seed made with the bench needs Shattered Stars 0.02.51 or later. Every
 option, the fights you can't win, and troubleshooting are on the
 [Archipelago](https://github.com/IronJade/Shattered-Stars/wiki/Archipelago) page.
 
@@ -466,42 +466,56 @@ optional, for `wss://` Archipelago servers and compression.
 ```sh
 git clone https://github.com/IronJade/Shattered-Stars.git
 cd Shattered-Stars
-cmake -S engine -B engine/build -G Ninja
-cmake --build engine/build
+cmake -S port -B port/build -G Ninja
+cmake --build port/build
 
-engine/build/shattered-stars-setup     # choose your disc images
-engine/build/shattered-stars           # play
+port/build/shattered-stars-setup     # choose your disc images
+port/build/shattered-stars           # play
 
 # Tests (the disc tests need your Disc 1 image)
-SS_DISC1=".../Disc 1.cue" engine/build/ss_tests
-SS_DISC1=".../Disc 1.cue" engine/build/ss_game_tests
-SS_DISC1=".../Disc 1.cue" tools/smoke_field_events.sh engine/build/shattered-stars
+SS_DISC1=".../Disc 1.cue" port/build/ss_tests
+SS_DISC1=".../Disc 1.cue" port/build/ss_game_tests
+SS_DISC1=".../Disc 1.cue" port/tools/smoke_field_events.sh port/build/shattered-stars
 ```
 
-Release packages are built with `tools/build_linux.sh --container` (in a pinned Debian 12
-container, for glibc 2.36 and newer) and `tools/build_windows.sh` (cross-compiled with
-MinGW-w64), the world with `tools/build_apworld.sh` and the PopTracker pack with
-`tools/build_poptracker.sh all`. Details, build options and the `.apworld` build are on
+Release packages are built with `port/tools/build_linux.sh --container` (in a pinned Debian 12
+container, for glibc 2.36 and newer) and `port/tools/build_windows.sh` (cross-compiled with
+MinGW-w64), the world with `apworld/tools/build_apworld.sh` and the PopTracker pack with
+`trackers/tools/build_poptracker.sh all`. Details, build options and the `.apworld` build are on
 [Building from Source](https://github.com/IronJade/Shattered-Stars/wiki/Building-from-Source).
 
 ## Project layout
 
+The repository has five sections: the port, the Archipelago world, tracker support, the docs and
+the wiki. Each section keeps its own tools; `tools/` holds the ones they share.
+
 ```text
-apworld/so2/   The Archipelago world (Python): locations, items, logic, options and tests
-docs/
-  catalog/     The reverse-engineering catalog: every function, global, script opcode and format
-  notes/       How each program works, the original's bugs, accuracy and audit notes
-  ap/          The Archipelago seed format and the world's logic
-  images/      The screenshots used here and on the wiki
-engine/
+port/          The port
   src/         The C++20 source: hardware replacements, ported game code, setup, Archipelago client
   tests/       Unit, disc and game tests
-mods/          The curated mod list
-res/           The application icon (an original design drawn by tools/make_icon.py), the Windows
+  data/        Generated region tables (port/tools/region_map.py)
+  res/         The application icon (an original design drawn by port/tools/make_icon.py), the Windows
                resource and manifest templates, the Linux .desktop files
-tools/         Disc, script and mod tools, comparison scripts, sweeps, packaging, the reference suite,
-               the PopTracker pack's generator (tools/ap_poptracker.py, its Lua in tools/poptracker/)
+  tools/       Builds and packages, the smoke test, sweeps and comparisons, the reference suite
+               (refs/), the mod tools (mod_check.py, mod_index.py, mod_verify.py, ...)
+apworld/
+  so2/         The Archipelago world (Python): locations, items, logic, options and tests
+  tools/       The world's data extractors, the generation batches, the end-to-end tests, the .apworld build
+trackers/
+  poptracker/  The PopTracker pack's Lua and boards (the pack's update file, versions.json, lands here)
+  tools/       The pack's generator (ap_poptracker.py) and tests, the tracker maps, the Universal Tracker check
+mods/          The curated mod list
+docs/
+  port/        The reverse-engineering catalog (catalog/) and how each program works (notes/)
+  apworld/     The Archipelago seed format, the world's logic and its data tables
+  trackers/    The PopTracker pack and the tracker maps
+  release/     The release checklist and the release notes (notes/)
+  modding/     The modder's reference tables
+  images/      The screenshots used here and on the wiki
+  plans/       What comes next
 wiki/          The wiki's pages, published to the GitHub wiki by tools/wiki_publish.sh
+tools/         Shared by the sections: the disc, archive and script readers (so2_*.py, so2_mod.py),
+               the memory cap (memcap.py), the reverse-engineering scripts, wiki_publish.sh
 ```
 
 ## Contributing
@@ -515,7 +529,7 @@ the GitHub wiki at release time.
 A fix to gameplay code follows the play-state rule. Measure the faithful version against the
 original in PCSX-Redux first, and keep the fix only if hit timing, hits, damage and pacing stay
 the same. Keep the original line visible as an `ORIGINAL BUG` comment, add its row to
-[`docs/notes/original_bugs.md`](docs/notes/original_bugs.md), and run the three test suites
+[`docs/port/notes/original_bugs.md`](docs/port/notes/original_bugs.md), and run the three test suites
 headless before opening a pull request. No game code or data may ever be committed.
 
 ## Legal

@@ -3,10 +3,10 @@
 
 A shuffled chest or gift gets a *placeholder*: a value no game item or Fol amount has, which
 a patch line puts where the location's original item (or Fol) is pushed. When the game reaches
-that give, the port (engine/src/game/ap/ap.cpp: on_give_item / on_give_money) gives the
+that give, the port (port/src/game/ap/ap.cpp: on_give_item / on_give_money) gives the
 location's own item or sends another player's, records the check and shows "Got X." /
-"Sent X to Y." in the window the script opens. docs/ap/seed_format.md describes the seed;
-docs/ap/field.md the sites.
+"Sent X to Y." in the window the script opens. docs/apworld/seed_format.md describes the seed;
+docs/apworld/field.md the sites.
 
 This module is the generator side. It is pure Python (3.8+, stdlib only), reads no disc and
 imports nothing from tools/, so the APWorld can ship it (apworld/so2/). The API:
@@ -176,7 +176,7 @@ def site_of(map_id, s):
 
 
 def field_index(field):
-    """{location id: [sites]} from field.json (docs/ap/field.md). A chest's location covers
+    """{location id: [sites]} from field.json (docs/apworld/field.md). A chest's location covers
     every map version of its opened flag (its "sites"); a gift, Fol gift or prize site with
     its own location_id is a location by itself, else the record's location_id covers its
     item / Fol sites. Key-item flag sites (no word) are left out."""
@@ -224,7 +224,7 @@ def main(argv=None):
         "the seed's own patches. Sites without 'expected' read it from --disc."))
     ap.add_argument("seed", help="the seed JSON (.apso2) to fill")
     ap.add_argument("-o", "--out", help="write the filled seed here (default: print the patch lines)")
-    ap.add_argument("--field", help="docs/ap/field.json, for locations given by id only")
+    ap.add_argument("--field", help="docs/apworld/field.json, for locations given by id only")
     ap.add_argument("--disc", help="disc 1 (.cue / .bin), for sites without 'expected'")
     ap.add_argument("--start", type=lambda s: int(s, 0), default=0, help="first placeholder index")
     a = ap.parse_args(argv)

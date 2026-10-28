@@ -1,5 +1,5 @@
-"""The tracker export (tracker_export.py; docs/ap/seed_format.md "The tracker export"; docs/plans/trackers.md
-B3) and its reference evaluator (tools/ap_tracker_logic.py, the algorithm of the PopTracker pack's Lua).
+"""The tracker export (tracker_export.py; docs/apworld/seed_format.md "The tracker export"; docs/plans/trackers.md
+B3) and its reference evaluator (trackers/tools/ap_tracker_logic.py, the algorithm of the PopTracker pack's Lua).
 
 The slot data's `tracker` key is this world's resolved logic as data. For every option mix of test_ut.MIXES
 (one class each: the room, generated with a fixed seed and filled), the reference evaluator, reading the
@@ -28,7 +28,7 @@ from ..world import SO2World
 from .bases import ROOT, SO2TestBase, fill
 from .test_ut import MIXES, SLOW, SLOW_SEEDS, UT_STEPS, real_generation, room_slot_data
 
-TOOL = os.path.join(ROOT, "tools", "ap_tracker_logic.py")
+TOOL = os.path.join(ROOT, "trackers", "tools", "ap_tracker_logic.py")
 SIZE_LIMIT = 64 * 1024      # bytes of JSON (compact, as the server sends slot data)
 RICH = {"character_items": True, "craftsanity": True, "killer_move_checks": True, "killer_move_progression": "any",
         "skillsanity": "insanity", "shuffle_shops": "full", "enemy_dropsanity": "first_drop", "goal": 2,
@@ -39,7 +39,7 @@ RANDOM_STATES = 8
 
 
 def reference():
-    """tools/ap_tracker_logic.py as a module, or None outside this repo."""
+    """trackers/tools/ap_tracker_logic.py as a module, or None outside this repo."""
     if not os.path.exists(TOOL):
         return None
     spec = importlib.util.spec_from_file_location("ap_tracker_logic", TOOL)
@@ -49,7 +49,7 @@ def reference():
 
 
 REFERENCE = reference()
-needs_reference = unittest.skipIf(REFERENCE is None, "tools/ap_tracker_logic.py is not beside this world")
+needs_reference = unittest.skipIf(REFERENCE is None, "trackers/tools/ap_tracker_logic.py is not beside this world")
 
 
 def compact_size(value):

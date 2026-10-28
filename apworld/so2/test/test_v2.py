@@ -1,4 +1,4 @@
-"""so2.apworld 0.2.0's features (docs/ap/apworld.md, "Changes"; docs/ap/seed_format.md, "v2
+"""so2.apworld 0.2.0's features (docs/apworld/apworld.md, "Changes"; docs/apworld/seed_format.md, "v2
 fields"): drop progression and area keys in drops, craftsanity, the goals, killer moves. Party v2:
 test_party.py."""
 from BaseClasses import CollectionState, LocationProgressType

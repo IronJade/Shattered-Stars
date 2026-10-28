@@ -86,8 +86,8 @@ def progression_item(test, player=None):
 
 
 def doors_json():
-    """docs/ap/doors.json, or None outside this repo (a packaged .apworld): the door checks skip."""
-    path = os.path.join(ROOT, "docs", "ap", "doors.json")
+    """docs/apworld/doors.json, or None outside this repo (a packaged .apworld): the door checks skip."""
+    path = os.path.join(ROOT, "docs", "apworld", "doors.json")
     if not os.path.exists(path):
         return None
     with open(path) as f:
@@ -110,7 +110,7 @@ def assert_no_gift_progression(test):
 
 
 def check_seed(test, seed):
-    """The seed's shape: ids, checks, placeholders and patch lines (docs/ap/seed_format.md)."""
+    """The seed's shape: ids, checks, placeholders and patch lines (docs/apworld/seed_format.md)."""
     test.assertEqual((seed["format"], seed["version"]), ("apso2", test.world.seed_version()))
     test.assertEqual(seed["goal"], test.world.seed_goal())
     if test.world.options.goal.value == 0:

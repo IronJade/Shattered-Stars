@@ -1,4 +1,4 @@
-"""Player options (docs/ap/apworld.md)."""
+"""Player options (docs/apworld/apworld.md)."""
 from dataclasses import dataclass
 
 from Options import Choice, DeathLink, DefaultOnToggle, OptionGroup, OptionSet, PerGameCommonOptions, Range, Toggle

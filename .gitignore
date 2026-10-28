@@ -1,9 +1,8 @@
 # Game discs and everything derived from them: large and copyrighted.
-Source BIN files/
 extracted/
 analysis/
 __pycache__/
-engine/build*/
+port/build*/
 
 # Memory card / save files (user data)
 *.gme
@@ -11,9 +10,9 @@ engine/build*/
 *.mcr
 /scratchpad/
 
-# Release packages (tools/build_windows.sh)
+# Release packages (port/tools/build_linux.sh, build_windows.sh; trackers/tools/build_poptracker.sh)
 dist/
-engine/build*.configure.log
+port/build*.configure.log
 
 # Reference books the user supplies (copyrighted; kept locally only)
 *.pdf

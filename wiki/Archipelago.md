@@ -921,7 +921,7 @@ open-world Star Ocean slot generated with 0.1.0, generate it again.
 ## For developers
 
 The seed format, the client's design and the world's logic are documented in the repository:
-[docs/ap/seed_format.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/seed_format.md),
-[docs/ap/apworld.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/ap/apworld.md)
+[docs/apworld/seed_format.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/apworld/seed_format.md),
+[docs/apworld/apworld.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/apworld/apworld.md)
 (its trackers: [Trackers](Trackers#for-developers)) and the world's source in
 [apworld/so2](https://github.com/IronJade/Shattered-Stars/tree/main/apworld/so2).

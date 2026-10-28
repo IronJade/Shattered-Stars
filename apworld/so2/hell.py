@@ -1,4 +1,4 @@
-"""The hell seed (the user, 2026-10-27; docs/ap/apworld.md "The hell seed"; docs/handoff/hellseed.md).
+"""The hell seed (the user, 2026-10-27; docs/apworld/apworld.md "The hell seed"; docs/handoff/hellseed.md).
 
 A seed is a hell seed when encounter_rate is 0 (no random battles) and something still needs
 training: killer_move_checks (a move's use count) or skillsanity's learn points (special_only,

@@ -1,4 +1,4 @@
-// Name functions from docs/catalog/functions.csv (columns module,address,name,...),
+// Name functions from docs/port/catalog/functions.csv (columns module,address,name,...),
 // keeping only rows for the given modules, or from "0xADDRESS NAME" lines.
 // Creates a function where analysis missed one.
 // Headless: analyzeHeadless <proj> <name> -process <prog> -noanalysis

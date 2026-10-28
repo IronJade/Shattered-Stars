@@ -1,5 +1,5 @@
-"""Skillsanity (docs/ap/apworld.md "Skillsanity"; docs/ap/seed_format.md "Skillsanity"). Written by
-tools/ap_make_skills.py from disc 1 and the port's member data; do not edit.
+"""Skillsanity (docs/apworld/apworld.md "Skillsanity"; docs/apworld/seed_format.md "Skillsanity"). Written by
+apworld/tools/ap_make_skills.py from disc 1 and the port's member data; do not edit.
 
 - SKILLS: the 46 skills by id (the port's record +0x5c + id holds a member's level).
 - SKILL_SETS: the 12 guild sets, (name, price, skill ids, guild maps); flag 700 + set.

@@ -25,27 +25,27 @@ docs/handoff/release.md "0.03.00").
   - so2.apworld: UT's dialog text (ut_map.py `ut_dialog_name` / description) names both choices;
     the docs. No change to generation.
   - Tests: unit (zip structure, CRCs, Python's zipfile reads it, same bytes twice, nothing outside
-    the targets, cancel leaves no final zip), tools/ap_tracker_maps_test.py (the zip's entries =
+    the targets, cancel leaves no final zip), trackers/tools/ap_tracker_maps_test.py (the zip's entries =
     the rendered PNGs byte for byte), UT's own map loader against the port's zip
-    (tools/ap_poptracker_utmap.py, 15/15 as with the pack zip), setup headless with a screenshot of
+    (trackers/tools/ap_poptracker_utmap.py, 15/15 as with the pack zip), setup headless with a screenshot of
     the path. Sizes and times (render with and without the zip).
-- **B. Door diamonds yellow.** tools/poptracker/doors.lua: known doors SequenceBreak (yellow);
-  unknown (ER) doors yellow too for now (the Doors panel shows "?"); docs/ap/poptracker.md says the
-  unknown doors' colour is a Phase C decision. Pack tests + smoke (tools/ap_poptracker_test.py,
-  tools/ap_poptracker_smoke.py); rebuild/validate (tools/build_poptracker.sh all).
-- **C. engine/tests/test_tracker_maps.cpp's scratch folders**: fix as b82b176 did for
+- **B. Door diamonds yellow.** trackers/poptracker/doors.lua: known doors SequenceBreak (yellow);
+  unknown (ER) doors yellow too for now (the Doors panel shows "?"); docs/trackers/poptracker.md says the
+  unknown doors' colour is a Phase C decision. Pack tests + smoke (trackers/tools/ap_poptracker_test.py,
+  trackers/tools/ap_poptracker_smoke.py); rebuild/validate (trackers/tools/build_poptracker.sh all).
+- **C. port/tests/test_tracker_maps.cpp's scratch folders**: fix as b82b176 did for
   test_tracker_job.cpp (no folder left in the cwd).
-- Docs: docs/ap/tracker_maps.md, docs/ap/poptracker.md, docs/ap/apworld.md (UT map tab),
-  apworld/so2/docs/setup_en.md (UT section), docs/release_notes/0.03.00.md, 0.2.2.md,
+- Docs: docs/trackers/tracker_maps.md, docs/trackers/poptracker.md, docs/apworld/apworld.md (UT map tab),
+  apworld/so2/docs/setup_en.md (UT section), docs/release/notes/0.03.00.md, 0.2.2.md,
   poptracker-1.0.0.md (keep the DRAFT banners), docs/handoff/windows_check.md "Recheck for 0.03.00"
-  (UT with the port's zip; door colour), docs/ap/release_checklist.md section 12 (rows/counts that
+  (UT with the port's zip; door colour), docs/release/release_checklist.md section 12 (rows/counts that
   change), scratchpad/wiki/Trackers.md (uncommitted; links checked). This log, with a list of every
   count changed so the RC agent can recheck them.
 
-Files I may touch: engine/src/tools/tracker_maps.*, engine/src/util/** (the zip writer),
-engine/src/setup/** (the path line), engine/src/main.cpp (the CLI flag), engine/tests/**,
-engine/CMakeLists.txt, apworld/so2/ut_map.py and apworld/so2/docs/, tools/poptracker/**,
-tools/ap_poptracker*.py, tools/build_poptracker.sh, tools/ap_tracker_maps*.py, the docs listed
+Files I may touch: port/src/tools/tracker_maps.*, port/src/util/** (the zip writer),
+port/src/setup/** (the path line), port/src/main.cpp (the CLI flag), port/tests/**,
+port/CMakeLists.txt, apworld/so2/ut_map.py and apworld/so2/docs/, trackers/poptracker/**,
+tools/ap_poptracker*.py, trackers/tools/build_poptracker.sh, tools/ap_tracker_maps*.py, the docs listed
 above, docs/handoff/utzip.md. Nothing else; no generation change (if anything a seed could depend
 on is touched: the batch comparison, 288 seeds identical against a frozen baseline with real
 copies of the top-level scripts).
@@ -58,7 +58,7 @@ copies of the top-level scripts).
   host.yaml).
 - Every game process memory-capped (tools/memcap.py as the other tools use it, or
   `prlimit --as=$((4<<30))`; cgroup MemoryMax for ASan); at most 2 game processes at once; own
-  build dir engine/build-utzip, builds -j8 (the only agent).
+  build dir port/build-utzip, builds -j8 (the only agent).
 - Scratch XDG_CONFIG_HOME and HOME; never a config-saving flag, never
   ~/.config/shattered-stars/config.ini, the user's saves, a real PopTracker folder or
   ~/.local/share/Archipelago (read-only); kill only by exact PID.
@@ -98,7 +98,7 @@ As found in the working tree (`git diff` + the new files), before utzip2 changed
   also images of an earlier run when SS_TRACKER_ONLY limits this one; missing ones are counted in
   the summary line), plus `render_tracker_ut_extras`: the 5 boards and the player marker, drawn by
   the port (a name both a render and an extra is an error). Sorted by name.
-- **The boards**: tools/poptracker/boards.json, written by tools/ap_poptracker.py (always beside the
+- **The boards**: trackers/poptracker/boards.json, written by trackers/tools/ap_poptracker.py (always beside the
   pack folder; `--boards-out` updates the committed copy) with each board's path, size, title,
   hint, and each cell's box [x, y, w, h, label], plus the style colours, label_x and margin, and
   the marker's path and size. CMake compiles it into generated/tracker_layout_data.cpp next to the
@@ -140,21 +140,21 @@ Changes by utzip2 (each with its reason):
 - UT's image loader splits `ap:zip:<zip>/<path>` at the first "zip/" (TrackerKivy.load): a zip under
   a folder ending in "zip" can't be read by UT. Documented; the UT test's zip lives in
   scratchpad/utzip2/ (scratchpad/utzip/ itself ends in "zip").
-- tools/ap_poptracker_utmap.py loads every page's picture and the marker through UT's own image
+- trackers/tools/ap_poptracker_utmap.py loads every page's picture and the marker through UT's own image
   loader (TrackerKivy.load, decoded by Kivy, headless) at the layout's sizes: one check more
   (15 -> 16) for either zip.
 
 ## State
 ### Done
-- **B. Door diamonds yellow** (verified): tools/poptracker/doors.lua `so2_door_access` returns
+- **B. Door diamonds yellow** (verified): trackers/poptracker/doors.lua `so2_door_access` returns
   SequenceBreak for every door (known or not; the unknown doors' own colour is written down as a
-  Phase C decision in docs/ap/poptracker.md "Door markers"). Tests: tools/ap_poptracker_test.py
+  Phase C decision in docs/trackers/poptracker.md "Door markers"). Tests: trackers/tools/ap_poptracker_test.py
   expects 5 (SequenceBreak) for every door section, also in the ER seam test (found or not), and a
   new `TestDoorsLua.test_door_colour_is_no_checks` (only doors.lua names SequenceBreak among the
-  pack's scripts; so2_door_access is 5); tools/ap_poptracker_smoke.py step 8 prints the door
+  pack's scripts; so2_door_access is 5); trackers/tools/ap_poptracker_smoke.py step 8 prints the door
   section's `AccessibilityLevel` and checks it is SequenceBreak. Checked in PopTracker's source
   that a `^$` rule returning 5 gives SEQUENCE_BREAK (core/tracker.cpp) and yellow (StateColors[3]).
-  Results: `tools/build_poptracker.sh all`: 1,201 files, zip 5,559,656 bytes (sha256 db2a9931...),
+  Results: `trackers/tools/build_poptracker.sh all`: 1,201 files, zip 5,559,656 bytes (sha256 db2a9931...),
   pack checker strict "Validated 11 files" (zip + folder), versions.json ok, **pack tests 42/42 OK**;
   real PopTracker 0.36.0 smoke **45/45** (the new check: "PopTracker says 5"), peak 558 MB.
   Docs: poptracker.md (door markers, ER seam, Testing, smoke result), tracker_maps.md (part 2
@@ -163,21 +163,21 @@ Changes by utzip2 (each with its reason):
 
 - **C. test_tracker_maps.cpp's scratch folders** (utzip2, verified): `scratch()` makes
   `<temp dir>/ss_tracker_maps_test_<name>` (one level, removed whole by each test), as b82b176 did
-  for test_tracker_job.cpp. engine/build-utzip, `SS_TEST=tracker_` from a scratch cwd with a
+  for test_tracker_job.cpp. port/build-utzip, `SS_TEST=tracker_` from a scratch cwd with a
   scratch TMPDIR (scratchpad/utzip/run_tests.sh C tracker_): 10 tests, 0 failed; nothing left in
   the cwd or the TMPDIR.
 
-- **A. The UT zip** (utzip2, 2026-10-28, verified on engine/build-utzip): committed 01cf761 (docs)
+- **A. The UT zip** (utzip2, 2026-10-28, verified on port/build-utzip): committed 01cf761 (docs)
   and 7d37a06 (port), 188d4f1 (docs) and dfba0fc (world + tools). Results:
   - `SS_TEST=tracker_` **14/14** (4 new: tracker_zip_writer, tracker_ut_zip_path, tracker_ut_extras,
     tracker_disc_ut_zip), nothing left in the cwd / TMPDIR; full ss_game_tests **230/0** (226 + 4),
     ss_tests **103/0**.
-  - tools/ap_tracker_maps_test.py: **34 checks, all pass** (scratchpad/utzip/e2e.sh): default folder
+  - trackers/tools/ap_tracker_maps_test.py: **34 checks, all pass** (scratchpad/utzip/e2e.sh): default folder
     and DIR full renders, `--no-ut-zip`, `--ut-zip FILE`; zipfile testzip, stored, 1980-01-01, sorted,
     868 entries = 862 images + 5 boards + marker, byte for byte the PNGs, both zips the same bytes.
   - The images = the baseline bytes (scratchpad/utzip/base_manifest.txt, HEAD before A) with and
     without the zip (the RGB encoder's refactor changed nothing).
-  - Pack: tools/build_poptracker.sh all: 1,201 files, zip 5,559,656 bytes (sha256 db2a9931..., the
+  - Pack: trackers/tools/build_poptracker.sh all: 1,201 files, zip 5,559,656 bytes (sha256 db2a9931..., the
     same as utzip's B build), "Validated 11 files" x2, versions.json ok, **pack tests 43/43** (+
     TestUT.test_boards_for_the_port); dist/poptracker/boards.json = the committed copy.
   - UT's own map loader (scratchpad/utzip/utmap.sh; the port's zip copied to scratchpad/utzip2/):
@@ -190,10 +190,10 @@ Changes by utzip2 (each with its reason):
     "Writing the zip for Universal Tracker..." and the exit then stopped it at 27 of 868: no zip, no
     .part; Z (exit at the 862nd image, with the unsaved-changes popup open) stopped at the zip's first
     file: no zip, no .part.
-  - MinGW compile check (scratchpad/utzip/build_win.sh, engine/build-utzip-win, Release, no
+  - MinGW compile check (scratchpad/utzip/build_win.sh, port/build-utzip-win, Release, no
     OpenSSL): shattered-stars, shattered-stars-setup and ss_game_tests build, exit 0, no warning in
     the changed files (old ones elsewhere). Not run under Wine (the RC's Wine row: expect 14/14).
-  - The field-event smoke (tools/smoke_field_events.sh on engine/build-utzip's binary, scratch
+  - The field-event smoke (port/tools/smoke_field_events.sh on port/build-utzip's binary, scratch
     HOME / XDG / TMPDIR): **373 PASS / 0 FAIL / 0 SKIP**.
   - Sizes and times (scratchpad/utzip/timing.sh, zip_timing.sh; the machine shared with someone's
     `rg` at ~1000% CPU the whole time, load ~14): full renders, best of three, interleaved: with the
@@ -222,15 +222,15 @@ Changes by utzip2 (each with its reason):
   default place `<PopTracker>/user-override/so2_shattered_stars_ut.zip` (beside the rendered
   folder); setup's extra **Copy path** button (for pasting into UT's file dialog); the port's boards
   use the 5x7 overlay font (same sizes and cells as the pack's, not its font).
-- Side effect of tools/build_apworld.sh (its fixed path): scratchpad/release/build_apworld/templates
+- Side effect of apworld/tools/build_apworld.sh (its fixed path): scratchpad/release/build_apworld/templates
   was rewritten (the YAML templates; the RC rewrites it anyway).
 
 ### How to verify
 - `scratchpad/utzip/run_tests.sh NAME tracker_` (unit, scratch cwd / TMPDIR), `scratchpad/utzip/e2e.sh`
-  (tools/ap_tracker_maps_test.py), `scratchpad/utzip/setup_runs.sh OUT B M Z` (setup headless,
+  (trackers/tools/ap_tracker_maps_test.py), `scratchpad/utzip/setup_runs.sh OUT B M Z` (setup headless,
   screenshots in OUT; B compares the zip with a CLI zip at scratchpad/utzip/t_zip/, render one
   first), `scratchpad/utzip/utmap.sh NAME ZIP [--apworld X]` (UT's loader; the zip must not be
-  under scratchpad/utzip/), `tools/build_poptracker.sh all` (pack tests 43),
+  under scratchpad/utzip/), `trackers/tools/build_poptracker.sh all` (pack tests 43),
   `scratchpad/utzip/timing.sh` / `zip_timing.sh` (times). Screenshots kept in
   scratchpad/utzip/screens/ (B_done.png, M_zip.png, Z_never.png); logs in scratchpad/utzip/logs/.
 
@@ -259,10 +259,10 @@ Changes by utzip2 (each with its reason):
   tracker_maps.md, release.md "0.03.00".
 - 2026-10-28 (coordinator): **utzip stopped mid-task** (the account's weekly API limit, HTTP 429)
   while adding `--ut-zip FILE` / `--no-ut-zip` to main.cpp. Nothing of A is committed. Left
-  uncommitted in the tree: engine/src/util/zip_writer.{h,cpp} (new), engine/src/util/deflate.{h,cpp},
-  engine/src/tools/tracker_maps.{h,cpp} (+~230 lines), engine/src/main.cpp (flags, unfinished),
-  engine/CMakeLists.txt, tools/ap_poptracker.py (writes boards.json: the boards' cells and labels and
-  UT's player marker, for the port to draw them into the UT zip), tools/poptracker/boards.json (new;
+  uncommitted in the tree: port/src/util/zip_writer.{h,cpp} (new), port/src/util/deflate.{h,cpp},
+  port/src/tools/tracker_maps.{h,cpp} (+~230 lines), port/src/main.cpp (flags, unfinished),
+  port/CMakeLists.txt, trackers/tools/ap_poptracker.py (writes boards.json: the boards' cells and labels and
+  UT's player marker, for the port to draw them into the UT zip), trackers/poptracker/boards.json (new;
   the committed copy the port compiles in). The design was never written here: read the diff. A
   fresh agent (utzip2) continues A, then C.
 - 2026-10-28 (utzip2): read the log, phaseb.md, maptab.md, setupthread.md, release.md "0.03.00",
@@ -274,5 +274,5 @@ Changes by utzip2 (each with its reason):
   page uncommitted).
 - 2026-10-28 (utzip2): world / docs side committed (188d4f1, dfba0fc); the wiki's Trackers.md
   updated (uncommitted, links checked: 37 pages, 0 bad). Scratch cleaned (renders, zips, UT copies,
-  the base binaries, engine/build-utzip-win); kept the scripts, logs, screenshots, manifests and
-  engine/build-utzip. **utzip2 done.**
+  the base binaries, port/build-utzip-win); kept the scripts, logs, screenshots, manifests and
+  port/build-utzip. **utzip2 done.**

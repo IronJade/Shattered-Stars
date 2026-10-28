@@ -1,4 +1,4 @@
-"""Universal Tracker (ut.py; docs/ap/apworld.md "Trackers"; docs/plans/trackers.md B1).
+"""Universal Tracker (ut.py; docs/apworld/apworld.md "Trackers"; docs/plans/trackers.md B1).
 
 UT rebuilds this world from the room's slot data alone (yaml-less) with a new random seed, and lists
 what our rules say is reachable and not yet checked. ut_rebuild and in_logic mirror UT's TMain and

@@ -27,7 +27,7 @@ map,place,previous,basis,evidence
 223,"Inn The Lacour Hotel, hallway","interior room, about 1 door in from the entrance",doors;text;thumbnail,"doors: to Inn The Lacour Hotel (221), its guest room (224) and the alley (212); background: the mirror image of map 222"
 224,"Inn The Lacour Hotel, guest room","interior room, about 1 door in from the entrance",doors;text;thumbnail,"doors: to the hotel's hallways (222, 223); background: a room with two beds; the party waits here for the tournament"
 227,"House Red Roof, back room","interior room, about 1 door in from the entrance",doors;thumbnail,doors: only to and from House Red Roof (226)
-233,Arsenal (shop: items and ingredients),Weapons Shop (Arsenal),shop,"shop 53 sells berries, cures and cooking ingredients (docs/ap/field.json shops), not weapons; background: a storehouse of crates and barrels"
+233,Arsenal (shop: items and ingredients),Weapons Shop (Arsenal),shop,"shop 53 sells berries, cures and cooking ingredients (docs/apworld/field.json shops), not weapons; background: a storehouse of crates and barrels"
 268,Chisato's home (above Tool Shop Blue Flask),"Tool Shop Blue Flask, upstairs room",text,script text: Chisato says here that this is her home; Chisato's mother speaks here; the csv's earlier name placed it upstairs at Tool Shop Blue Flask (265)
 277,Noel's House,entrance / threshold area,banner;text,banner 'Noel's House'; Noel asks what the party is doing in his house
 385,XINE's home (mountaintop nest),entrance / threshold area,text;thumbnail,script text: XINE says this is his home; background: a nest on the peak

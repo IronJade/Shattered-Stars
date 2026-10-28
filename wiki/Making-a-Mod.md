@@ -336,7 +336,7 @@ saying the line was skipped. That can happen when:
 So a line can never corrupt data it wasn't written for. This is also why you should let
 `so2_mod.py` write your lines: it reads EXPECTED from your own disc, so it is always right.
 The technical reference for the format is
-[engine/src/game/field/mods.h](https://github.com/IronJade/Shattered-Stars/blob/main/engine/src/game/field/mods.h).
+[port/src/game/field/mods.h](https://github.com/IronJade/Shattered-Stars/blob/main/port/src/game/field/mods.h).
 
 ## Step 4: Package it
 
@@ -436,13 +436,13 @@ Try your changes on a copy of your memory card, especially doors and enemy chang
 
 ## Step 6: Check it with mod_check
 
-`tools/mod_check.py` checks a package without the game or the discs: its files, its
+`port/tools/mod_check.py` checks a package without the game or the discs: its files, its
 `mod.json`, every patch line, and the numbers against the repository's tables of the disc. It
 also flags **risky edits** for review. Run it in strict mode, as the project's pull-request
 check does:
 
 ```sh
-python3 tools/mod_check.py --strict my-first-mod
+python3 port/tools/mod_check.py --strict my-first-mod
 ```
 
 It prints one summary line per package, then one line per finding:

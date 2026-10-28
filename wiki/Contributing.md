@@ -45,7 +45,7 @@ hits, damage, difficulty and battle pacing must stay exactly as in the original.
 3. **Keep the original visible.** Comment out the original line with
    `// ORIGINAL BUG (original_bugs.md <id>): ...`, write the corrected code below it, and add a
    row with the next id in its area to
-   [docs/notes/original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/notes/original_bugs.md):
+   [docs/port/notes/original_bugs.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/port/notes/original_bugs.md):
    the original address, the port file, the bug in one line, and its status.
 4. **Visual fixes that need randomness** must not draw from the game's random-number generator;
    the spell effects have a separate, looks-only random source for this.
@@ -58,10 +58,10 @@ Before opening a pull request, build and run the three suites
 ([Building from Source](Building-from-Source#tests)):
 
 ```sh
-cmake --build engine/build
-SS_DISC1=".../Disc 1.cue" engine/build/ss_tests
-SS_DISC1=".../Disc 1.cue" engine/build/ss_game_tests
-SS_DISC1=".../Disc 1.cue" tools/smoke_field_events.sh engine/build/shattered-stars
+cmake --build port/build
+SS_DISC1=".../Disc 1.cue" port/build/ss_tests
+SS_DISC1=".../Disc 1.cue" port/build/ss_game_tests
+SS_DISC1=".../Disc 1.cue" port/tools/smoke_field_events.sh port/build/shattered-stars
 ```
 
 Tests must run headless: never open a window or play audible sound in a test (use
@@ -70,15 +70,15 @@ your real settings (a headless run never writes `config.ini`).
 
 The game has debug options for reaching a scene quickly, such as starting on a given map
 (`--map N`) or in a given battle (`--battle ENC`). They are listed under "Debugging switches" in
-[engine/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/engine/README.md#debugging-switches).
+[port/README.md](https://github.com/IronJade/Shattered-Stars/blob/main/port/README.md#debugging-switches).
 A windowed game playing an Archipelago seed ignores them (and the `SS_*` debugging variables);
 headless runs keep them all, so the tests can use them with a seed.
 
 ## Coding conventions
 
 - **C++20**, in the namespaces under `ss::` (for example `ss::game::battle`). Ported game code
-  lives in `engine/src/game/`, the hardware replacements in `engine/src/psx/` and
-  `engine/src/runtime/`, and the window and input in `engine/src/platform/`.
+  lives in `port/src/game/`, the hardware replacements in `port/src/psx/` and
+  `port/src/runtime/`, and the window and input in `port/src/platform/`.
 - **Names follow the catalog**, in `subsystem_verb_object` snake case (for example
   `loader_select_entry`). Sony library functions keep their SDK names.
 - **Cite the original.** Comments give the original function's address and the structure
@@ -87,20 +87,25 @@ headless runs keep them all, so the tests can use them with a seed.
   logos or data files. The game reads everything from the player's discs at run time. The only
   exception is a handful of documentation screenshots of the port running, in `docs/images/`.
 - **Document as you go.** Every function you identify gets a row in the catalog; explanations
-  of how things fit together go in `docs/notes/`.
+  of how things fit together go in `docs/port/notes/`.
 
 ## Where things live
 
 | Path | What it holds |
 |---|---|
-| [docs/catalog](https://github.com/IronJade/Shattered-Stars/tree/main/docs/catalog) | The reverse-engineering catalog: every function (`functions.csv`), global (`globals.csv`), event-script opcode (`script_opcodes.csv`) and data format (`formats.md`). Keep each module's rows in address order within its block, with LF line endings |
-| [docs/notes](https://github.com/IronJade/Shattered-Stars/tree/main/docs/notes) | Prose notes on each program, the original's bugs, GPU accuracy, the endings and more |
+| [port](https://github.com/IronJade/Shattered-Stars/tree/main/port) | The port: the C++ source (`src/`), tests (`tests/`), generated region data (`data/`), the icon and platform resources (`res/`) and its tools (`tools/`: builds and packaging, the smoke test, sweeps, comparisons, the mod tools) |
+| [port/tools/refs](https://github.com/IronJade/Shattered-Stars/tree/main/port/tools/refs) | The reference regression suite's inventory |
+| [apworld](https://github.com/IronJade/Shattered-Stars/tree/main/apworld) | The Archipelago world (`so2/`, Python) and its tools (`tools/`: the data extractors, the batches, the end-to-end tests, the `.apworld` build) |
+| [trackers](https://github.com/IronJade/Shattered-Stars/tree/main/trackers) | Tracker support: the PopTracker pack's source (`poptracker/`) and its generator and tests (`tools/`) |
+| [mods](https://github.com/IronJade/Shattered-Stars/tree/main/mods) | The curated mod list |
+| [wiki](https://github.com/IronJade/Shattered-Stars/tree/main/wiki) | This wiki's pages; changes go through pull requests like the code |
+| [tools](https://github.com/IronJade/Shattered-Stars/tree/main/tools) | Tools the sections share: the disc, archive and script readers (`so2_*.py`, `so2_mod.py`), the memory cap, the reverse-engineering scripts |
+| [docs/port/catalog](https://github.com/IronJade/Shattered-Stars/tree/main/docs/port/catalog) | The reverse-engineering catalog: every function (`functions.csv`), global (`globals.csv`), event-script opcode (`script_opcodes.csv`) and data format (`formats.md`). Keep each module's rows in address order within its block, with LF line endings |
+| [docs/port/notes](https://github.com/IronJade/Shattered-Stars/tree/main/docs/port/notes) | Prose notes on each program, the original's bugs, GPU accuracy, the endings and more |
+| [docs/apworld](https://github.com/IronJade/Shattered-Stars/tree/main/docs/apworld) | The Archipelago design: the seed format, the world's logic and data |
+| [docs/trackers](https://github.com/IronJade/Shattered-Stars/tree/main/docs/trackers) | The PopTracker pack and the tracker maps |
+| [docs/release](https://github.com/IronJade/Shattered-Stars/tree/main/docs/release) | The release checklist and the release notes |
 | [docs/CONVENTIONS.md](https://github.com/IronJade/Shattered-Stars/blob/main/docs/CONVENTIONS.md) | The project's standing rules (enhance, don't degrade; no game data in git; headless tests; memory caps) |
-| [docs/ap](https://github.com/IronJade/Shattered-Stars/tree/main/docs/ap) | The Archipelago design: the seed format, the world's logic, the release checklist |
-| [apworld/so2](https://github.com/IronJade/Shattered-Stars/tree/main/apworld/so2) | The Archipelago world (Python) |
-| [tools](https://github.com/IronJade/Shattered-Stars/tree/main/tools) | Disc, script and mod tools, comparison scripts, sweeps and packaging |
-| [tools/refs](https://github.com/IronJade/Shattered-Stars/tree/main/tools/refs) | The reference regression suite's inventory |
-| [engine](https://github.com/IronJade/Shattered-Stars/tree/main/engine) | The C++ source and tests |
 
 ## Licence
 

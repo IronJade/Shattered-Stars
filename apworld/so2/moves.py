@@ -1,7 +1,7 @@
-"""Killer-move checks (killer_move_checks; docs/ap/apworld.md, "Killer moves"; docs/ap/seed_format.md,
+"""Killer-move checks (killer_move_checks; docs/apworld/apworld.md, "Killer moves"; docs/apworld/seed_format.md,
 "v2 fields"): one location per proficiency level of each killer move a learn table teaches (69
 moves of Claude, Bowman, Dias, Precis, Ashton, Opera, Ernest and Chisato; the table below was
-written by tools/ap_make_moves.py from docs/ap/data/move_levels.csv, the killer_prof agent's
+written by apworld/tools/ap_make_moves.py from docs/apworld/data/move_levels.csv, the killer_prof agent's
 reading of the disc: the learn tables in #1981, the move data in #2129).
 
 A move's level is min(uses / div, cap), the use count kept at record + 0x8a + 2 * move (+1 each

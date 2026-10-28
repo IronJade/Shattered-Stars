@@ -1,5 +1,5 @@
-"""Story awareness for trackers in story mode (docs/plans/trackers.md B6, decision D8; docs/ap/apworld.md
-"Trackers", "Story awareness"; docs/ap/data_storage.md).
+"""Story awareness for trackers in story mode (docs/plans/trackers.md B6, decision D8; docs/apworld/apworld.md
+"Trackers", "Story awareness"; docs/apworld/data_storage.md).
 
 Story mode's stages have no item requirements, so nearly every check is in logic from the start. The
 port publishes how far the story has got (`so2_story_{team}_{slot}` = {"chapter": C, "step": S}, the
@@ -8,7 +8,7 @@ source of truth is here, for both trackers:
 
 - **The points** (POINTS): stage k of data.STAGES is reached when the port reports its first chapter
   (each chapter value is stored in exactly one place, so a stage starts where the story stores its
-  first chapter: docs/ap/field.md "Story order"; tools/ap_world_tables.py STAGES); a 24th point,
+  first chapter: docs/apworld/field.md "Story order"; apworld/tools/ap_world_tables.py STAGES); a 24th point,
   the Final Save Point, at chapter 60 step 4000 (FINAL_SAVE_POINT, below). `reached(value)` is the
   number of points at or before the reported position.
 - **A location's stage** (location_stage): the first stage in which the story can take the party
@@ -29,8 +29,8 @@ So a location is reachable *for the story* when its own stage and every story ev
 are reached. Universal Tracker gets this as deferred events (prepare, reconnect: UT's documented
 mechanism, `found_entrances_datastorage_key` + `reconnect_found_entrances`, only in UT's own
 regeneration and only while host.yaml's enforce_deferred_entrances is not "off"); the PopTracker pack
-gets it as the tracker export's optional `story` key (export; docs/ap/seed_format.md "Story
-awareness"), which tools/ap_tracker_logic.py and tools/poptracker/logic.lua apply the same way.
+gets it as the tracker export's optional `story` key (export; docs/apworld/seed_format.md "Story
+awareness"), which trackers/tools/ap_tracker_logic.py and trackers/poptracker/logic.lua apply the same way.
 Open world and hub mode have no story awareness (their stages and dungeons are keyed). A real
 generation is unchanged: only the export's `story` key is new.
 """
@@ -44,14 +44,14 @@ from .items import EVENT_ENERGY_NEDE, EVENT_FINAL_SAVE_POINT, SO2Item
 from .locations import ROW, SO2Location, fighter_status
 from . import logic, rules
 
-# The port's data-storage key (docs/ap/data_storage.md); Universal Tracker fills in {team} / {player}.
+# The port's data-storage key (docs/apworld/data_storage.md); Universal Tracker fills in {team} / {player}.
 STORY_KEY = "so2_story_{team}_{player}"
 EXPORT_KEY = "so2_story_{team}_{slot}"      # the same key as the export documents it
 
 # The Final Save Point (Fienal 9F, map 671): chapter 60's step 4000 is stored when Cyril falls (map 674,
 # Floor 7, under chapter 60 step 3000), the room before the final ascent to the save point; step 5000
 # comes at Indalecio (map 685). The late proof's state, a save made at the Final Save Point, is
-# chapter 60 step 4000 (docs/ap/apworld.md "The late proof"). Saving there sets flag 730, which opens
+# chapter 60 step 4000 (docs/apworld/apworld.md "The late proof"). Saving there sets flag 730, which opens
 # Virtual Expel; the key carries no flags, so the point is the step before the save.
 FINAL_SAVE_POINT = (60, 4000)
 FINAL_SAVE_POINT_NAME = "the Final Save Point"
@@ -179,7 +179,7 @@ def overlay(world):
 
 
 def export(world):
-    """The tracker export's optional `story` key (docs/ap/seed_format.md "Story awareness"), or None
+    """The tracker export's optional `story` key (docs/apworld/seed_format.md "Story awareness"), or None
     outside story mode: the key, the points, the events that need a stage, and the locations that need
     one past the first, grouped by stage."""
     found = overlay(world)

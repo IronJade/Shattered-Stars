@@ -1,5 +1,5 @@
-"""The door table's validator (docs/ap/seed_format.md, "Phase 4"): a seed's `doors` against
-the game's doors (docs/ap/doors.json, written by tools/ap_doors.py from the discs).
+"""The door table's validator (docs/apworld/seed_format.md, "Phase 4"): a seed's `doors` against
+the game's doors (docs/apworld/doors.json, written by apworld/tools/ap_doors.py from the discs).
 
 Standard library only, no disc access, so the .apworld ships it. The entrance shuffle itself is
 the APWorld's; this only checks a table:
@@ -15,7 +15,7 @@ the APWorld's; this only checks a table:
 - every target map can get back to a world map (1 Expel, 2 Energy Nede, 3) over the doors,
   with the seed's targets applied (conditions are ignored: this is the map graph).
 
-CLI (tests): python3 apworld/so2/doors.py SEED.apso2 [--doors docs/ap/doors.json]
+CLI (tests): python3 apworld/so2/doors.py SEED.apso2 [--doors docs/apworld/doors.json]
 Written by the world agent.
 """
 import collections
@@ -141,9 +141,9 @@ def main():
     import os
     import sys
     here = os.path.dirname(os.path.abspath(__file__))
-    p = argparse.ArgumentParser(description="Check a seed's door table against docs/ap/doors.json.")
+    p = argparse.ArgumentParser(description="Check a seed's door table against docs/apworld/doors.json.")
     p.add_argument("seed")
-    p.add_argument("--doors", default=os.path.join(here, "..", "..", "docs", "ap", "doors.json"))
+    p.add_argument("--doors", default=os.path.join(here, "..", "..", "docs", "apworld", "doors.json"))
     a = p.parse_args()
     seed = json.load(open(a.seed))
     problems = validate_doors(seed.get("doors", []), json.load(open(a.doors)))

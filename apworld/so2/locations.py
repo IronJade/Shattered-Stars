@@ -1,8 +1,8 @@
-"""Locations (data.py, from docs/ap/field.json): the chests (one per opened flag) and the gift
+"""Locations (data.py, from docs/apworld/field.json): the chests (one per opened flag) and the gift
 sites; with the options, the boss fights, the join sites of the shuffled characters, the first
-drop of each enemy type and the shop slots. The ids are tools/ap_extract.py's (docs/ap/field.md,
+drop of each enemy type and the shop slots. The ids are apworld/tools/ap_extract.py's (docs/apworld/field.md,
 "Location ids"). Craftsanity's locations come from crafts.py: one per item Item Creation can
-make, id ITEM_BASE + (11 << 21) + item (docs/ap/seed_format.md, "v2 fields")."""
+make, id ITEM_BASE + (11 << 21) + item (docs/apworld/seed_format.md, "v2 fields")."""
 from BaseClasses import Location, LocationProgressType
 
 from .crafts import CRAFTS
@@ -50,7 +50,7 @@ for _row in KILLER_ROWS:    # by member
     LOCATION_NAME_GROUPS.setdefault("Killer Moves", set()).add(_row["name"])
     LOCATION_NAME_GROUPS.setdefault(f"Killer Moves: {_row['character']}", set()).add(_row["name"])
 
-# Missable reasons a diligent player avoids by being in time (tools/ap_world_tables.py
+# Missable reasons a diligent player avoids by being in time (apworld/tools/ap_world_tables.py
 # SOFT_REASONS): missable_locations "include" makes them ordinary. The others (a choice, a
 # member, a Private Action, a side quest, a losable fight, a join site, the other story_route)
 # can rule each other out, so they never hold progression or useful items.
@@ -154,7 +154,7 @@ def choose_crafts(party):
 
 
 def seed_check(row):
-    """A location's check fields in the seed (docs/ap/seed_format.md, "A location", "Phase 3")."""
+    """A location's check fields in the seed (docs/apworld/seed_format.md, "A location", "Phase 3")."""
     t = row["type"]
     if t == "chest":
         return {"type": "chest", "map": row["map"], "flag": row["flag"]}

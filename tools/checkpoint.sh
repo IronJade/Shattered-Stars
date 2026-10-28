@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hourly checkpoint: commits what the agents have on disk. If engine/build builds, the
+# Hourly checkpoint: commits what the agents have on disk. If port/build builds, the
 # suites run (ss_tests; ss_game_tests and the smoke script when SS_DISC1 is set) and
 # everything changed is committed with the results; if it does not build (an agent
 # mid-edit), only docs/ is (logs, catalog, notes: always safe to commit).
@@ -13,21 +13,21 @@ if [ -z "$(git status --porcelain)" ]; then
   exit 0
 fi
 stamp=$(date +%H:%M)
-areas=$(git status --porcelain | awk '{print $2}' | sed -E 's|^engine/src/game/([^/]+)/.*|\1|; s|^docs/handoff/([^.]+)\.md|\1 log|; s|^docs/.*|docs|; s|^engine/.*|engine|; s|^tools/.*|tools|' | sort -u | paste -sd, -)
-if cmake --build engine/build -j8 > /dev/null 2>&1; then
-  t1=$(engine/build/ss_tests 2>/dev/null | tail -1)
+areas=$(git status --porcelain | awk '{print $2}' | sed -E 's|^port/src/game/([^/]+)/.*|\1|; s|^docs/handoff/([^.]+)\.md|\1 log|; s|^docs/.*|docs|; s|^port/.*|port|; s|^apworld/.*|apworld|; s|^trackers/.*|trackers|; s|^tools/.*|tools|' | sort -u | paste -sd, -)
+if cmake --build port/build -j8 > /dev/null 2>&1; then
+  t1=$(port/build/ss_tests 2>/dev/null | tail -1)
   if [ -n "${SS_DISC1:-}" ]; then
-    t2=$(stdbuf -oL engine/build/ss_game_tests 2>/dev/null | tail -1)
+    t2=$(stdbuf -oL port/build/ss_game_tests 2>/dev/null | tail -1)
     smoke_log=$(mktemp -p scratchpad smoke.XXXX 2>/dev/null || echo scratchpad/smoke.log)
-    tools/smoke_field_events.sh > "$smoke_log" 2>&1
+    port/tools/smoke_field_events.sh > "$smoke_log" 2>&1
     t3="$(grep -c '^PASS' "$smoke_log") PASS, $(grep -c '^FAIL' "$smoke_log") FAIL"
     rm -f "$smoke_log"
   else
     t2="(not run: SS_DISC1 unset)"; t3="(not run)"
   fi
-  # Reference regression suite (tools/refs/refs.csv), quick set: a failure here is reported
+  # Reference regression suite (port/tools/refs/refs.csv), quick set: a failure here is reported
   # like the other suites, never blocks the commit.
-  t4=$(timeout 600 python3 tools/ref_regress.py --quick --jobs 5 2>&1 | tail -1)
+  t4=$(timeout 600 python3 port/tools/ref_regress.py --quick --jobs 5 2>&1 | tail -1)
   git add -A
   what="everything (builds). ss_tests: $t1; ss_game_tests: $t2; smoke: $t3; $t4"
 else

@@ -1,4 +1,4 @@
-"""The party (docs/ap/seed_format.md "Party v2"; docs/ap/apworld.md "Characters"): the story's party
+"""The party (docs/apworld/seed_format.md "Party v2"; docs/apworld/apworld.md "Characters"): the story's party
 rules with character_items (CharacterChecks), open world's party v2 (PartyChecks:
 choose_open_party, the starting member, exclude_characters, the healer guarantee), and what a
 character item opens. Hub mode's party: test_hub.py HubChecks.test_party.
