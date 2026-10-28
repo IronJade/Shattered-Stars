@@ -122,8 +122,27 @@ As found in the working tree (`git diff` + the new files), before utzip2 changed
 - **Not done when utzip stopped**: setup (path line, the zip phase in the progress), every test,
   ut_map.py's dialog text, the docs, a pack test that the committed boards.json is the build's.
 
+Checked by utzip2 and kept: the place (PopTracker's source as above); drawing the boards and the
+marker in the port (the only way to have every page's picture without shipping the pack's pixels
+in the port or committing images; the port's boards have the pack's sizes and cell boxes, checked
+by pixel against the pack's and by test); reading the images back from DIR.
+
 Changes by utzip2 (each with its reason):
-- (filled in as made; see the Log)
+- `TrackerRenderProgress::failed` (images failed so far, in every call) and one more kind "zip"
+  call once the zip is in place (done == total, no name): so setup can tell "some images failed"
+  from "the zip failed", and show the zip's path only when it was written.
+- Setup: `App::start_tracker_render` asks for the zip at `tracker_ut_zip_path(dir)`; the job's
+  Status gets `failed`, `zip_done` / `zip_total`, `zip_written`; the page shows the zip step ("K of N
+  files", "Writing the zip for Universal Tracker..."), then "For Universal Tracker: PATH", the hint
+  "Choose this file when Universal Tracker asks for the pack." and a **Copy path** button (for UT's
+  file dialog); a stop in the zip and a failed zip get their own lines; stdout adds "setup: tracker
+  maps: the Universal Tracker zip: PATH (868 files)". The note above the button mentions the zip.
+- UT's image loader splits `ap:zip:<zip>/<path>` at the first "zip/" (TrackerKivy.load): a zip under
+  a folder ending in "zip" can't be read by UT. Documented; the UT test's zip lives in
+  scratchpad/utzip2/ (scratchpad/utzip/ itself ends in "zip").
+- tools/ap_poptracker_utmap.py loads every page's picture and the marker through UT's own image
+  loader (TrackerKivy.load, decoded by Kivy, headless) at the layout's sizes: one check more
+  (15 -> 16) for either zip.
 
 ## State
 ### Done
@@ -149,7 +168,42 @@ Changes by utzip2 (each with its reason):
   the cwd or the TMPDIR.
 
 ### In progress
-- A (the UT zip): design above; utzip2 finishing it (setup, tests, docs, ut_map.py).
+- A (the UT zip), verified (utzip2, 2026-10-28, engine/build-utzip); committing:
+  - `SS_TEST=tracker_` **14/14** (4 new: tracker_zip_writer, tracker_ut_zip_path, tracker_ut_extras,
+    tracker_disc_ut_zip), nothing left in the cwd / TMPDIR; full ss_game_tests **230/0** (226 + 4),
+    ss_tests **103/0**.
+  - tools/ap_tracker_maps_test.py: **34 checks, all pass** (scratchpad/utzip/e2e.sh): default folder
+    and DIR full renders, `--no-ut-zip`, `--ut-zip FILE`; zipfile testzip, stored, 1980-01-01, sorted,
+    868 entries = 862 images + 5 boards + marker, byte for byte the PNGs, both zips the same bytes.
+  - The images = the baseline bytes (scratchpad/utzip/base_manifest.txt, HEAD before A) with and
+    without the zip (the RGB encoder's refactor changed nothing).
+  - Pack: tools/build_poptracker.sh all: 1,201 files, zip 5,559,656 bytes (sha256 db2a9931..., the
+    same as utzip's B build), "Validated 11 files" x2, versions.json ok, **pack tests 43/43** (+
+    TestUT.test_boards_for_the_port); dist/poptracker/boards.json = the committed copy.
+  - UT's own map loader (scratchpad/utzip/utmap.sh; the port's zip copied to scratchpad/utzip2/):
+    **16/16** with the port's zip and 16/16 with the pack's zip, each against the repo world and the
+    packaged so2.apworld (281,557 bytes, scratchpad/utzip/apworld); negative control (the zip under
+    scratchpad/utzip/): the new image check fails (IsADirectoryError), 15 others pass.
+  - Setup headless (scratchpad/utzip/setup_runs.sh, setupthread's run.py): B **B_done.png** shows
+    Done + "For Universal Tracker: <path>" + the hint + Copy path; 862 PNGs, the zip = the CLI's
+    bytes, no .part, nothing else under HOME, XDG empty; M **M_zip.png** shows "7 of 868 files" /
+    "Writing the zip for Universal Tracker..." and the exit then stopped it at 27 of 868: no zip, no
+    .part; Z (exit at the 862nd image, with the unsaved-changes popup open) stopped at the zip's first
+    file: no zip, no .part.
+  - MinGW compile check (scratchpad/utzip/build_win.sh, engine/build-utzip-win, Release, no
+    OpenSSL): shattered-stars, shattered-stars-setup and ss_game_tests build, exit 0, no warning in
+    the changed files (old ones elsewhere). Not run under Wine (the RC's Wine row: expect 14/14).
+  - The field-event smoke (tools/smoke_field_events.sh on engine/build-utzip's binary, scratch
+    HOME / XDG / TMPDIR): **373 PASS / 0 FAIL / 0 SKIP**.
+  - Sizes and times (scratchpad/utzip/timing.sh, zip_timing.sh; the machine shared with someone's
+    `rg` at ~1000% CPU the whole time, load ~14): full renders, best of three, interleaved: with the
+    zip 22.6 s, `--no-ut-zip` 22.0 s, the port before A 22.0 s (20.7 s on utzip's quieter baseline
+    run); the zip step alone (SS_TRACKER_ONLY matching nothing over a full folder) 0.58 / 0.66 /
+    1.32 s with the zip, 0.02 s without. The zip 868 files, 134,897,214 bytes, sha256 35e72e8d...
+    (the same in every run, CLI and setup); the images 134.7 MB (862 PNGs = the baseline bytes).
+  - No batch comparison: nothing a seed reads changed (the world's only change is ut_map.py's
+    settings text, read by UT and AP's settings file; tracker/ JSON unchanged, TestUT's
+    committed-is-this-build passes).
 
 ### Next
 - A's port side, then A's world/docs side.
@@ -159,6 +213,16 @@ Changes by utzip2 (each with its reason):
   (42"; poptracker.md "Testing").
 - PopTracker smoke 44 -> **45** (checklist 12.3 PopTracker row and the door-click row;
   poptracker-1.0.0.md "45 checks"; 0.2.2.md "its 45 checks"; poptracker.md smoke result).
+- (utzip2) Pack tests 42 -> **43** (checklist 12.3 "The pack's tests", TestUT 4 -> 5;
+  poptracker-1.0.0.md "its own tests (43"; poptracker.md "Testing" 43).
+- (utzip2) UT map loader 15/15 -> **16/16** (checklist 12.3 "The map tabs"; 0.2.2.md "16/16";
+  apworld.md results).
+- (utzip2) `SS_TEST=tracker_` 10/10 -> **14/14** (checklist 12.3 "The map render", the ASan, TSan
+  and Wine rows: expected 14/14 there, not yet run under those).
+- (utzip2) ss_game_tests 226/0 -> **230/0** (checklist 12.3 "All the suites"; ss_tests 103/0 unchanged).
+- (utzip2) the e2e row: **34 checks** with the zip (checklist 12.3 "The render, end to end"); the
+  zip 868 files, 134,897,214 bytes.
+- (utzip2) so2.apworld **281,557** bytes at utzip2's build (checklist 12.2; ut_map.py's text).
 - Pack zip 5,559,587 -> **5,559,656** bytes (checklist 12.3 "Build and check"; 12.2's prose still
   says maptab's 5,559,587 with "at maptab's build"; the RC's own build gives the final number;
   "about 5.6 MB" in the notes unchanged). 1,201 files unchanged.

@@ -341,7 +341,9 @@ memory 555 MB (225 MB before the rooms).
 `shattered-stars --render-tracker-maps [DIR]` (tools/tracker_maps.h) reads disc 1 (as the
 game finds it: SS_DISC1, `--disc1`, config.ini or the `discs` folders) and writes every image
 above as a PNG under DIR: the area and world images, then the rooms (format 1.1: 862 images in
-all, about 135 MB, in about 21 s on the development machine). It writes nothing else: no config.ini, no log, no saves, no cards. It
+all, about 135 MB, in about 21 s on the development machine), and then, beside DIR, their zip for
+Universal Tracker (`so2_shattered_stars_ut.zip`: "The Universal Tracker zip" below; `--ut-zip FILE`
+puts it elsewhere, `--no-ut-zip` leaves it out). It writes nothing else: no config.ini, no log, no saves, no cards. It
 needs no window and no seed. Each PNG is written under a temporary name beside it
 (`<name>.png.part`) and renamed into place once complete, so a run cut short never leaves a
 partly written image under the name PopTracker reads. Besides a line per image, the console
@@ -353,7 +355,11 @@ For other callers, `tools::render_tracker_maps` takes a progress function
 before each image with the images done so far, the total, the image's path, its kind (area,
 world, room) and its name (the area, the world, or the room's label), and once after the last
 image (empty path); returning false stops the render before the next image, and the function
-then returns `tools::kTrackerRenderStopped` (2). The render keeps no global state: it may run on
+then returns `tools::kTrackerRenderStopped` (2). With a zip to write (`TrackerRenderOptions::ut_zip`)
+it is also called with kind `zip` before each of the zip's files (done / total count the zip's files,
+the path is the zip's, the name the file's) and once when the zip is in place (done == total, no
+name), before that last call; returning false during the zip stops it with no zip written. Every
+call also says how many images have failed so far (`failed`). The render keeps no global state: it may run on
 a thread of its own, given a disc handle nothing else uses meanwhile.
 
 Without DIR it uses PopTracker's override folder for the pack: the first existing
@@ -384,11 +390,15 @@ The render runs on a thread of its own (engine/src/setup/tracker_job.h, `Tracker
 so the window goes on drawing (about 20 s with the rooms of format 1.1, on the development
 machine). While it runs the button is disabled and the page shows a progress bar ("150 of 862
 images") and the image in progress ("Rendering room 92 Armory...", "Rendering the area map of
-Arlia Village..."); the rest of setup can be used meanwhile. Afterwards it says how many images
-were written and where, with an **Open folder** button next to it, or the error (the disc
-couldn't be read, or some images failed). Closing setup during the render (the window's close
+Arlia Village..."); the rest of setup can be used meanwhile. Then it writes the Universal Tracker
+zip beside the folder (the bar counts its 868 files: "Writing the zip for Universal Tracker...").
+Afterwards it says how many images were written and where, with an **Open folder** button next
+to it, and below that the zip's path ("For Universal Tracker: ...so2_shattered_stars_ut.zip") with
+the hint "Choose this file when Universal Tracker asks for the pack." and a **Copy path** button;
+or the error (the disc couldn't be read, some images failed, or the zip failed). Closing setup during the render (the window's close
 button, Quit, Save & Play) stops it before its next image and waits for it: the images written
-by then stay, each one whole, and pressing the button again renders them all. Nothing on the
+by then stay, each one whole, and pressing the button again renders them all. Closed while the zip
+is written: no zip (an earlier one stays as it was), and the page says so. Nothing on the
 page is saved by this button, and no save or memory card is touched.
 
 Thread safety: the worker opens its own disc image and archive (from a copy of the path; the
@@ -405,4 +415,101 @@ For tests, `wait-tracker-render` holds the script until the render is over and
 outcome and `--do render-tracker-maps,wait-tracker-render:150 --screenshot mid.png` the
 progress (the program then exits, stopping the render). Setup prints "setup: tracker maps:
 rendering into DIR" when it starts and "setup: tracker maps: done (862 of 862 images; F frames
-drawn while it ran)" (or stopped, ...) when it ends.
+drawn while it ran)" (or stopped, ...) when it ends, then "setup: tracker maps: the Universal
+Tracker zip: PATH (868 files)" (or "... not written (K of N files)" when it stopped in the zip).
+
+## The Universal Tracker zip
+
+Universal Tracker's map tab (docs/ap/apworld.md "Universal Tracker's map tab") takes its JSON from
+so2.apworld and only the pictures from a zip the player points it at once (host.yaml
+`so2_options: ut_pack_path`; UT asks with a file dialog the first time). It reads each picture as
+`ap:zip:<zip>/<path>` (UT 0.3.6, worlds/tracker/TrackerKivy.py) and can't read PopTracker's
+user-override folder. So the render also writes **`so2_shattered_stars_ut.zip`**: every picture UT's
+map tab shows, at the pack's paths, with the player's own maps where the pack has placeholders. In
+UT's dialog the player picks this file, or the PopTracker pack's zip for the placeholders
+(apworld/so2/ut_map.py names both). Port feature, 0.03.00 (the user, 2026-10-27: "Include it now").
+
+**Where.** Beside the image folder, in its parent. With no DIR (PopTracker's override folder, as
+above) that is `<PopTracker>/user-override/so2_shattered_stars_ut.zip`, next to the rendered
+`so2_shattered_stars` folder:
+
+| OS | Default zip |
+|---|---|
+| Windows | `C:\Users\<you>\Documents\PopTracker\user-override\so2_shattered_stars_ut.zip` (`C:\Users\<you>\PopTracker\...` when PopTracker's user folder is there) |
+| Linux, macOS | `~/PopTracker/user-override/so2_shattered_stars_ut.zip` when `~/PopTracker` exists, else `~/Documents/PopTracker/user-override/so2_shattered_stars_ut.zip` (`$XDG_DOCUMENTS_DIR` on Linux) |
+
+`--render-tracker-maps DIR` puts it at `<DIR's parent>/so2_shattered_stars_ut.zip`; `--ut-zip FILE`
+at FILE (its folder is made); `--no-ut-zip` writes none (of the two, the last one given counts).
+The setup button always uses the default. Why there: next to the maps, so it's easy to find (setup
+and the console print its path); in no folder PopTracker lists packs from (only the `packs` folders,
+src/poptracker.cpp); and not an override: PopTracker takes only a **folder** named as the pack's uid
+under `user-override` as the pack's override (src/core/pack.cpp), so a file beside it is ignored.
+One rule comes from UT: it splits `ap:zip:<zip>/<path>` at the first `zip/`, so no folder on the
+zip's path may end in "zip" (`~/myzip/`, `C:\stuff.zip\`; on Windows too, as UT's file dialog gives
+the path with `/`). The default paths never do, unless the home folder's own name does.
+
+**What's in it** (868 files, 134.9 MB): the 862 images of the layout, read back from the image
+folder after the render, so the entries are byte for byte the files PopTracker shows (an image
+missing from the folder is missing from the zip, and the console says how many; with
+`SS_TRACKER_ONLY` the folder's other images, from an earlier run, go in as they are); and what
+else UT's pages show that is no disc render, drawn by the port as original art:
+- the 5 boards (`images/boards/board_shops.png`, `board_crafts.png`, `board_killer_moves.png`,
+  `board_skills.png`, `board_drops.png`) from `tools/poptracker/boards.json`, which
+  tools/ap_poptracker.py writes and CMake compiles in with the layout
+  (`generated/tracker_layout_data.cpp`, `tools::tracker_boards_json()`): each board's path, size,
+  title and hint, each cell's box and label, the colours. The port's board has the pack's size and
+  every cell at the pack's box, where UT puts the location's square (the cell's (24, h / 2)); the
+  text is the overlay's 5x7 font (title 4x, hint and labels 2x, a long label on two lines or at 1x),
+  not the pack's font. Only numbers and text come from the generator, none of its pixels;
+- UT's player marker (`images/status/you.png`, 64x64 RGBA: the pack's design, a white disc, a red
+  #e0302a disc and a white centre, drawn in the port).
+
+Nothing else from the disc, nothing from the pack. Like the rendered images, the zip holds the
+player's disc's pictures: for their own use, never shared or published.
+
+**Format** (engine/src/util/zip_writer.h, `util::ZipWriter`). A plain .zip: entries stored (PNGs
+don't compress further), sorted by path, every one dated 1980-01-01 00:00, no extra fields, no
+comment, external attributes 0, CRC-32 by util/deflate's `crc32`; no zip64 (at most 65,535 files
+and 4 GiB). The same images give the same bytes. It is written as `so2_shattered_stars_ut.zip.part`
+and renamed once complete (an existing zip is replaced only then), so a stopped or failed run
+never leaves a partial zip and an earlier run's zip stays as it was.
+
+**When.** After the images, also when some of them failed (the exit code is then 1 anyway). The
+console says `tracker maps: writing the Universal Tracker zip PATH (868 files)`, then `tracker
+maps: the Universal Tracker zip: PATH (868 files, 134.8 MB)`. A zip that can't be written is an
+error on the console and exit code 1; the images stay.
+
+**Keeping the boards in step.** The pack generator writes `dist/poptracker/boards.json` with every
+build; `tools/ap_poptracker.py --boards-out tools/poptracker/boards.json` updates the committed
+copy the port compiles in (then rebuild the port). The pack's tests fail when the committed copy is
+not the build's (`TestUT.test_boards_for_the_port`, which also checks every board square of the pack
+and of UT's JSON sits on a cell).
+
+**Tests.**
+- Unit (engine/tests/test_tracker_maps.cpp, `SS_TEST=tracker_`): `tracker_zip_writer` (the archive
+  field by field, CRCs against mods::crc32, read back by mods::ZipReader, the same bytes twice, a
+  replaced file, refused names, abandon / an unfinished writer leave nothing), `tracker_ut_zip_path`,
+  `tracker_ut_extras` (board sizes and cells, the marker's pixels), and with the disc
+  `tracker_disc_ut_zip` (a render's zip: the rendered files byte for byte plus the extras, sorted,
+  the same bytes twice, nothing outside DIR and the zip, the progress calls in order, a stop before
+  or during the zip writes none and leaves an earlier one, no zip asked: none).
+- End to end (tools/ap_tracker_maps_test.py): the default place and DIR's parent, `--ut-zip FILE`,
+  `--no-ut-zip`; Python's zipfile reads it (testzip), stored, dated, sorted, exactly the layout's
+  images and the extras, the map entries the rendered PNGs byte for byte, both full runs' zips the
+  same bytes, nothing stray.
+- UT's own loader on the port's zip (tools/ap_poptracker_utmap.py `--zip`): the same checks as with
+  the pack's zip, and every page's picture and the marker through UT's own image loader (its
+  `ap:zip:` load, decoded by Kivy) at the layout's sizes.
+
+**Results (2026-10-28, agent utzip2; docs/handoff/utzip.md).** `SS_TEST=tracker_` 14/14 (all
+ss_game_tests 230/0, ss_tests 103/0); the end-to-end test's 34 checks; the 862 images byte for byte
+the render's before the zip existed, with and without it; the zip 868 files, 134,897,214 bytes
+(sha256 35e72e8d...), the same from the command line and from setup; UT's own loader 16/16 with
+the port's zip and with the pack's, against the repo world and the packaged so2.apworld; setup
+headless: Done with the zip's path and Copy path, the zip step on screen ("7 of 868 files"), an
+exit during the zip leaving no zip and no `.part`; the field-event smoke 373/0 (normal play
+unchanged). Times on the development machine (shared with another job that kept about ten cores
+busy, best of three full renders): 22.6 s with the zip, 22.0 s with `--no-ut-zip`, 22.0 s for the
+port before the zip (20.7 s on a quiet machine); the zip step alone 0.6 to 1.3 s (reading back the
+135 MB and writing them out, drawing the boards).
+
