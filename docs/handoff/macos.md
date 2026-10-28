@@ -60,7 +60,12 @@ merged); M1-M3 were made on 27c5fca.
 
 **0.03.00 release candidate on macOS** (2026-10-28, merged main daa3a00, a clean build): see
 "The 0.03.00 release candidate" below; everything passes. What a macOS release still needs:
-"A macOS release" below.
+"A macOS release" below (the user's decisions there, 2026-10-28).
+
+**The apps and the full-screen fix done** (2026-10-28, on daa3a00 + the two RC commits): "Shattered
+Stars.app" and "Shattered Stars Setup.app" from build_macos.sh (14 below), the game following the
+desktop's own full-screen switch (15 below); "The apps" below. **Archipelago 0.6.8 set up**
+(2026-10-28, the user's go-ahead in this session): "Tracker tools" below.
 
 **M1 done** (2026-10-28; commits a60440d, b571ee0, sent as patches): the four programs build with
 Apple clang (RelWithDebInfo, Ninja), no errors, two clang-only warnings that aren't
@@ -133,7 +138,39 @@ Auto-detect: "Found Disc 1 and Disc 2". Given a quarantine flag (as a browser do
 `spctl --assess` says "rejected" and `syspolicy_check distribution` "Adhoc Signed App ... not
 suitable for distribution" (c below).
 
+## The apps (2026-10-28)
+port/tools/build_macos.sh: dist/ShatteredStars-0.03.00-macos-arm64.zip, 11 MB: "Shattered
+Stars.app" (io.github.IronJade.ShatteredStars, the game) and "Shattered Stars Setup.app"
+(io.github.IronJade.ShatteredStars.Setup), each with both programs in Contents/MacOS, the icon
+(shattered-stars.icns, `iconutil` from port/res/icon's 16-256 px PNGs), LICENSE and
+THIRD-PARTY-LICENSES.txt in Contents/Resources, Info.plist from port/res/macos/Info.plist.in
+(LSMinimumSystemVersion 11.0, NSHighResolutionCapable, the privacy prompts' texts), signed ad hoc
+(the second program, then the app); beside them README.md, a README.txt (where the discs go, how
+to open an unsigned app, Option+Return), LICENSE, THIRD-PARTY-LICENSES.txt. Unpacked with ditto
+and run with a scratch HOME and no XDG_CONFIG_HOME (the settings folder macOS's own, under scratch):
+- `codesign --verify --deep --strict`: both apps OK; Info.plist values as above.
+- The game app, no disc, windowed: "No usable Disc 1 image yet: opening shattered-stars-setup"
+  (the setup in its own Contents/MacOS), setup quit (SS_SETUP_SCRIPT), the game's message: "No
+  disc image yet: open Shattered Stars Setup, or put your disc images in <HOME>/Library/
+  Application Support/ShatteredStars/discs", exit 1.
+- The setup app (dummy video, screenshot mode), the disc images linked into that discs folder:
+  Auto-detect "Found Disc 1 and Disc 2"; Save & Play "would start .../Shattered Stars
+  Setup.app/Contents/MacOS/shattered-stars"; config.ini written there. Its real window: 1840x1320
+  (Retina from the Info.plist), the Discs page's tip "put your disc images in the discs folder
+  (Open discs folder)".
+- The game app headless, no disc setting: the discs found in the settings folder, frame 11999
+  de09d2b4e605df41. Windowed to the title: frame 1100 de09d2b4e605df41, SS_SHOT 2060x1546 (Retina).
+- Known, cosmetic: the game started by Setup.app's Save & Play runs from that bundle, so the menu
+  bar and Dock name it "Shattered Stars Setup".
+- The dev build with 14 and 15 (outside an .app): ss_tests 103 / 0, ss_game_tests 232 / 0, smoke
+  360 PASS / 0 FAIL / 1 SKIP, the maps caf89d6d... and ut.zip 35e72e8d..., the 16 frames: unchanged.
+
 ## A macOS release (2026-10-28): what's left, with a recommendation each
+**The user's decisions (2026-10-28, through the coordinator):** b: .app bundles, two apps in a zip
+(no .dmg), Apple Silicon only (arm64, macOS 11+), the discs in ~/Library/Application
+Support/ShatteredStars/discs; c: ad hoc, with the README's instructions (a Developer ID maybe
+later); e: the full-screen fix, yes; a, d: wanted (the OpenSSL build waits on the user's answer at
+the Mac; Archipelago is set up). Done: b, c (The apps), e (15 below).
 **a. wss:// (hosted Archipelago rooms).** asio's TLS (and with it websocketpp's and wswrap's) is
 OpenSSL's API only, so another backend would mean another transport; OpenSSL 3 it is, as on Linux
 and Windows. Recommended: build_macos.sh builds OpenSSL **3.5.9** (the 3.5 LTS, supported to April
@@ -175,6 +212,7 @@ Silicon (builds with no availability errors; only macOS 27 tested here). arm64 o
 at macOS 26, this Mac can't run x86_64 (no Rosetta), and a universal build needs OpenSSL twice
 (`ARCHS="arm64;x86_64"` is there for it).
 **Question for the user:** zip, .app bundles, or both? Intel Macs too (untestable here)?
+(Decided: the bundles, arm64.)
 
 **c. Gatekeeper.** Unsigned isn't an option on Apple Silicon (arm64 code runs only signed; the
 linker signs ad hoc). Ad hoc (build_macos.sh today): the first open says "Not Opened"; since macOS
@@ -188,10 +226,10 @@ runtime --timestamp`, `xcrun notarytool submit --wait`, `xcrun stapler staple` (
 takes the ticket; a bare program in a zip is checked online at first launch). The player then
 double-clicks and confirms once. The hardened runtime should need no entitlements (no JIT, no
 plug-ins), to check once signed. **Question for the user:** a Developer ID (their account), or ad
-hoc with the README's instructions?
+hoc with the README's instructions? (Decided: ad hoc.)
 
-**d. Archipelago e2e on the Mac** (apworld/tools/ap_e2e_so2.sh, ap_e2e_hub.sh): **blocked** on the
-Archipelago 0.6.8 setup (the permission check; the user). Ready for it: PopTracker 0.36.0 and UT
+**d. Archipelago e2e on the Mac** (apworld/tools/ap_e2e_so2.sh, ap_e2e_hub.sh): Archipelago 0.6.8
+is set up now (2026-10-28); the runs come after the apps. Ready for it: PopTracker 0.36.0 and UT
 0.3.6 downloaded and verified ("Tracker tools" below). To adapt when it runs: those two and
 ap_test_server.sh start the server with `setsid` (none on macOS: a Python `os.setsid()` exec shim)
 and use GNU `timeout` (memcap.py, as the smoke test); ap_poptracker_smoke.py expects the AppImage.
@@ -202,7 +240,7 @@ and use GNU `timeout` (memcap.py, as the smoke test); ap_poptracker_smoke.py exp
   screen behind the game's back: the pointer stays, and the next Option+Return does nothing (the
   game thinks it's windowed). Recommended: platform/window.cpp follows
   SDL_EVENT_WINDOW_ENTER_FULLSCREEN / LEAVE_FULLSCREEN (small, shared: a Linux window manager's own
-  full-screen key does the same). Cmd+Q quits at once, as the close button does.
+  full-screen key does the same). Done (15 below). Cmd+Q quits at once, as the close button does.
 - Retina: both programs draw at the display's pixels (above); a bundle needs
   NSHighResolutionCapable.
 - Audio: CoreAudio works (silently checked above); the user to listen once.
@@ -292,6 +330,22 @@ and use GNU `timeout` (memcap.py, as the smoke test); ap_poptracker_smoke.py exp
 13. **third_party_licenses.sh**: OPENSSL_LICENSE_FILE (an OpenSSL built from source has no system
    licence file), and no OpenSSL section in a ws://-only build (WSWRAP_NO_SSL in build.ninja); the
    Linux and Windows releases link OpenSSL, so theirs are unchanged.
+14. **The .app bundles** (build_macos.sh, port/res/macos/Info.plist.in; launcher, setup and main.cpp
+   behind `launcher::in_app_bundle()`, false off macOS): in an .app SDL_GetBasePath is
+   Contents/Resources, so sibling_program looks in Contents/MacOS; disc_folders leaves out the
+   folder "next to the game" (inside the bundle: changing a bundle breaks its signature, and a
+   quarantined app runs from a random read-only copy), keeping the one beside config.ini, which
+   setup's Open discs folder makes and opens; setup's tip and the game's no-disc message say so.
+   Outside an .app (the dev build, Linux, Windows) nothing changes. The ARCHS option is gone
+   (arm64 only, the user's decision).
+15. **The desktop's own full-screen switch** (platform/window.cpp; shared, small): macOS's green
+   button and Ctrl+Cmd+F (SDL's Window menu), or a window manager's key, put the window in or out
+   of full screen without F11 / Alt+Enter; the game's flag then stayed as it was, so the pointer
+   stayed and the next F11 did nothing. The window now follows SDL_EVENT_WINDOW_ENTER_FULLSCREEN /
+   LEAVE_FULLSCREEN (its own window's only). ss_game_tests window_follows_the_desktops_full_screen
+   (offscreen, as the other window tests: it runs on Linux, skips on macOS): full screen set behind
+   the Window's back, F11 must leave it, F11 again enter it. Run on this Mac once with the Cocoa
+   driver (a local edit, not committed): PASS with the fix, FAIL without it (both checks).
 
 ## Tracker tools on the Mac (for the 0.03.00 tracker checks)
 Planned, in the project's own places (apworld/tools/ap_test_server.sh's setup, trackers/tools):
@@ -310,8 +364,19 @@ Planned, in the project's own places (apworld/tools/ap_test_server.sh's setup, t
   scratchpad/ap_ut/tracker.apworld (trackers/tools/ap_ut_check.py's default; downloaded
   2026-10-28, the hash matches).
 - The user's standing instruction (relayed by the coordinator, 2026-10-28): install what build,
-  test and run need. This session's permission check still refuses the Archipelago setup and the
-  OpenSSL build, so both wait on the user approving them at the Mac.
+  test and run need. The OpenSSL build still waits on the user's answer at the Mac.
+- **Archipelago 0.6.8 set up** (2026-10-28, after the user raised it in this session: Archipelago
+  runs from source on macOS, archipelago.gg/tutorial/Archipelago/mac_en): ap_test_server.sh's
+  setup() by hand, no server started: uv 0.13.6 (tools-venv, pip), CPython 3.13.18 aarch64
+  (`uv python install 3.13`; the guide asks for 3.11.9 or newer, not 3.14), the 0.6.8 clone
+  (54803be), ap-venv with requirements.txt, ModuleUpdate.py --yes; Generate.py made the ChecksFinder
+  Alice / Bob world (seed 12345) in 6 s. The guide's `setup.py bdist_mac` (an Archipelago.app) isn't
+  needed for the project's scripts. pip's cache went to ~/Library/Caches/pip (76 MB, made by this
+  session's pip runs since 10:43; a cache, safe to delete); PIP_CACHE_DIR at scratch next time.
+- For the tracker checks: the published files (GitHub releases apworld-v0.2.2: so2.apworld,
+  Star.Ocean.The.Second.Story.yaml, SHA256SUMS; poptracker-v1.0.0: so2_shattered_stars_1.0.0.zip,
+  SHA256SUMS), checked with `shasum -a 256 -c SHA256SUMS`; the e2e scripts use apworld/so2 through
+  Archipelago's worlds/so2 link (the same code as 0.2.2).
 - The tracker scripts' `prlimit --as=...` lines: on macOS, `tools/memcap.py DURATION CMD...` instead.
 
 ## M3 smoke
@@ -324,10 +389,34 @@ SS_DISC2, ap_p4_tele_open / ap_p4_tele_story FAIL and ap_hub_ng SKIP. Again with
 360 PASS, 1 SKIP (north_city), exit 0; without it 277 PASS, 3 SKIP (ap_p4_tele, north_city,
 ap_hub_ng), exit 0.
 
+## macOS release checklist (what a macOS RC runs on the Mac)
+Modelled on docs/release/release_checklist.md section 12.3; record the numbers in the RC's
+section of this file. A build of the RC's tree; every game run under tools/memcap.py with a
+scratch HOME (and XDG_CONFIG_HOME, except where the apps' own settings folder is the point),
+SDL_AUDIO_DRIVER=dummy, the NA discs (SS_DISC1, SS_DISC2).
+
+| Check | Command | Expected (0.03.00 RC, 2026-10-28) |
+|---|---|---|
+| Clean build | `rm -rf port/build-macos; cmake -S port -B port/build-macos -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo; cmake --build port/build-macos -j8` | exit 0; only the two known clang warnings (menu_skills.cpp:173, spell_windows.cpp:24) |
+| The suites | `ss_tests`; `ss_game_tests` with SS_DISC1 and SS_DISC2, SDL_VIDEO_DRIVER=dummy | 103 / 0; 232 / 0 (30 skipped: other regions, Redux, the AP server, the 4 offscreen window tests) |
+| Smoke | `SS_DISC2=... port/tools/smoke_field_events.sh port/build-macos/shattered-stars` | exit 0, 360 PASS, 0 FAIL, 1 SKIP (north_city: a save only Linux has) |
+| Tracker maps | `shattered-stars --render-tracker-maps DIR --ut-zip FILE` | 862 images; files manifest caf89d6d..., ut.zip 35e72e8d... (Linux's, byte for byte) |
+| 16 frames | `--headless --frames 12000 --capture DIR --capture-frames 60,...,11999`, SS_DISC1 and a scratch SS_MEMCARD1 only | the 16 pixel hashes of "The same output as Linux"; 11999 de09d2b4e605df41 |
+| Setup's window | `shattered-stars-setup --page discs --set disc1=... --set disc2=... --frames 30 --screenshot F` (Cocoa) | 1840x1320, both discs OK, no config.ini |
+| The game windowed | `--frames 1200 --input 200:start,...` with SS_SHOT=1100:F (Cocoa) | frame 1100 de09d2b4e605df41; SS_SHOT 2060x1546, the title |
+| CoreAudio | a windowed run, config.ini `volume=0`, SS_AUDIO_STATS=1 | 0 restarts, 0 drops |
+| The release | `port/tools/build_macos.sh` | the zip with the two apps; minos 11.0; only /usr/lib and /System libraries; `codesign --verify --deep --strict` OK |
+| The apps | "The apps" above, from the unpacked zip with a scratch HOME | as listed there |
+| Gatekeeper (expected rejection) | a quarantine flag on an unpacked copy; `spctl --assess --type execute -vv`, `syspolicy_check distribution` | "rejected"; "Adhoc Signed App" (the README.txt's steps apply) |
+| The net client | `apworld/tools/ap_test_server.sh start 38281`; `SS_TEST=ap_net SS_AP_SERVER=ws://localhost:38281 ss_game_tests`; `... stop` | to run (Archipelago now set up; the server needs a setsid shim on macOS) |
+| wss:// | as above with `start-wss` and SS_AP_SERVER_WSS | to run once build_macos.sh has OpenSSL (waiting on the user) |
+| End to end | `apworld/tools/ap_e2e_so2.sh`, `ap_e2e_hub.sh` | to run (setsid and timeout shims, macOS-guarded); Linux: 49 / 49, 15 / 15 |
+| Trackers | PopTracker 0.36.0 (macOS app) and UT 0.3.6 with the published so2.apworld 0.2.2 and pack 1.0.0 | to run |
+
 ## Next
-- The user's answers to "A macOS release" a-c; then OpenSSL in build_macos.sh (a), the bundles
-  (b) and signing (c) as decided; the Archipelago e2e and tracker checks once the setup is
-  allowed (d).
+- The e2e and the net client (setsid / timeout shims), then the tracker checks with the published
+  files; OpenSSL in build_macos.sh (a) and the CA line in client.cpp once the user allows the
+  build.
 - Possible: the three window tests on macOS (a hidden Cocoa window with SDL_MAC_BACKGROUND_APP
   instead of the offscreen driver); SS_SHOT's window hidden on macOS; tools/memcap.py's Watch in
   the other sweeps (event_sweep.py, battle_sweep.py, ref_regress.py) once they run on the Mac.
