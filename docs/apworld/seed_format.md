@@ -416,6 +416,14 @@ The smoke test's seed (`port/tools/smoke_field_events.sh`, case `ap_seed`):
   (`Runtime::net_poll`).
   - **Connecting:** on kConnected with a matching seed it sends every recorded check, and the
     goal if the save has it. A different seed keeps the game offline.
+  - **Loading while connected** [loadsend agent, 2026-10-28]: a game connects at the title,
+    before Continue, so a load connected to the seed's own room sends the loaded state's checks
+    (the save's merged with the session's) and the goal the same way; the log line
+    `loaded ...: N checks, received index R, sent N checks`. Before 0.03.00, a check made offline
+    and saved reached the server only at a later reconnect. A sidecar of another seed or slot
+    (loaded only with `SS_AP_ANY_SAVE=1`) sends nothing (`another seed's or slot's: not sent`):
+    location ids are the game's, the same in every seed. Not connected yet, or another room:
+    nothing at the load; the connect sends them.
   - **Received items:** kept in the server's index order. They are given in free play from the
     save's `received_index` on, and duplicates after a reconnect are dropped. The server sends
     only other worlds' items (`items_handling` 0b001).

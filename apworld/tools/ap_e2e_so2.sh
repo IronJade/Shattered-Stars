@@ -39,9 +39,16 @@
 #      540`) is only one of goal.all's two wins (no goal yet); the Iseria Queen (`battle 561`)
 #      completes it and the goal goes out. Auto-advance (SS_AUTO_ADVANCE) moves the result
 #      screens on.
+#   7b. A check made offline and saved reaches the server when that save is continued while
+#      connected [loadsend agent] (the Windows recheck of 0.03.00, item 8: a game connects at the
+#      title, before Continue, and the connect sent only the session's checks). Session 5, offline
+#      (no server, a scratch card): the console checks Arlia's Resurrection Bottle chest, the camp
+#      menu saves in file 1 (SS_SAVE_ANYWHERE). Session 6, connected, from the title: Continue,
+#      slot 1, file 1, Yes; the load sends the save's checks. Both run before session 4, whose
+#      map key must be the last one written (step 9).
 #   8. After the port has quit, a tracker client logs in to Claude's slot and reads the
-#      server's view: the crate, the drop and the shop slot among the checked locations, and
-#      the client status 30 (goal); another reads Dias's client status (30).
+#      server's view: the crate, the drop, the shop slot and session 5's chest among the checked
+#      locations, and the client status 30 (goal); another reads Dias's client status (30).
 #   9. The tracker keys in data storage [dskeys agent] (docs/apworld/data_storage.md): a tracker
 #      login to Claude's slot (apworld/tools/ap_ds_read.py --watch: SetNotify) watches so2_map_T_S and
 #      so2_story_T_S from before session 1 to the end; session 2's walk shows map 18 then Hearn's
@@ -68,6 +75,7 @@ CRATE=1347569665   # Arlia Village: 200 Fol chest (docs/apworld/field.json)
 TILE1=81000        # ChecksFinder's Tile 1 (Tile n: 81000 + n - 1)
 DROP=1362231386    # Kitty first drop: 0x50320000 + (8 << 21) + enemy type 90
 SHOP=1366425858    # Hearn's shop slot 2: 0x50320000 + (10 << 21) + (shop 1 << 8) + 2
+OFFLINE=1347569666 # Arlia Village: Resurrection Bottle chest (map 18, flag 0x963): session 5's offline check
 export SKIP_REQUIREMENTS_UPDATE=1
 if [ ! -x "$AP/ap-venv/bin/python" ]; then
   echo "no Archipelago install: run apworld/tools/ap_test_server.sh start (then stop) once" >&2
@@ -273,6 +281,19 @@ XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PA
   SS_DEBUG_INPUT="300:battle 540;2100:ap_status;2200:battle 561;4000:ap_status" \
   run_game "$W/game3.log" 300 --headless --debug --no-memcard --ap-seed "$seed_v2" --frames 4100 --map 18 \
   --battle-end 60:0
+# Sessions 5 and 6 [loadsend agent] (step 7b): offline, Claude's chest checked and saved in file 1
+# (smoke_field_events.sh's ap_save input: camp menu, Data > Save > slot 1 > #1 > Yes)...
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_MODS_DIR="$W/nomods" \
+  SS_MEMCARD1="$W/offline.mcd" SS_SAVE_ANYWHERE=1 SS_DEBUG_INPUT="200:ap_check $OFFLINE" \
+  run_game "$W/game5.log" 300 --headless --debug --ap-seed "$seed_file" --frames 1100 --map 18 \
+  --input "300:triangle,306:none,400:up,406:none,450:cross,456:none,550:cross,556:none,650:cross,656:none,750:cross,756:none,850:cross,856:none"
+# ... then connected from the title: triangle skips the opening movie (and does nothing on the title
+# menu), then Continue (the cursor's place with a save on the card), slot 1, file 1, Yes, each
+# 300 frames apart; the field runs on for 10 s.
+XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
+  SS_AP_SERVER="ws://localhost:$PORT" SS_AP_SLOT=Claude SS_MODS_DIR="$W/nomods" SS_MEMCARD1="$W/offline.mcd" \
+  run_game "$W/game6.log" 300 --headless --ap-seed "$seed_file" --frames 3100 \
+  --input "600:triangle,606:none,700:triangle,706:none,800:triangle,806:none,900:triangle,906:none,1000:triangle,1006:none,1100:triangle,1106:none,1200:triangle,1206:none,1300:triangle,1306:none,1400:triangle,1406:none,1600:cross,1606:none,1900:cross,1906:none,2200:cross,2206:none,2500:cross,2506:none"
 # Session 4 [dskeys agent]: Claude on world map 1 (a walkable spot west of Arlia), walking: the
 # map key with the party's x / z (step 9).
 XDG_CONFIG_HOME="$W/xdg" SDL_VIDEO_DRIVER=offscreen SDL_AUDIO_DRIVER=dummy SS_PACE=1 \
@@ -295,10 +316,10 @@ check_not() {  # FILE what pattern (must not appear)
   if grep -qE "$3" "$1"; then echo "FAIL $2"; fails=$((fails + 1)); else echo "PASS $2"; fi
 }
 check "$W/generate.log" "the multiworld generates (SO2 + ChecksFinder)" 'Creating final archive'
-if [ "$(grep -cE '^game[234]?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 4 ]; then
-  echo "PASS the four game runs ran under the memory cap"
+if [ "$(grep -cE '^game[2-6]?\.log rc .* cap_mb [1-9]' "$W/memcap.txt")" = 6 ]; then
+  echo "PASS the six game runs ran under the memory cap"
 else
-  echo "FAIL the four game runs ran under the memory cap"; fails=$((fails + 1))
+  echo "FAIL the six game runs ran under the memory cap"; fails=$((fails + 1))
 fi
 check_not "$W/memcap.txt" "... and none died at it" 'at_cap True'
 check "$seed_file" "the crate holds Bob's Map Width" '"name": "Map Width"'
@@ -339,6 +360,21 @@ check "$W/game3.log" "... 561 completes goal.all" '\[ap\] goal: every encounter 
 check "$W/game3.log" "... the port's status" 'slot Dias \| checks 0/[0-9]+ .*\| connected \| goal'
 check "$W/server.log" "the server: Dias completed the goal" 'Dias.*has completed their goal'
 check "$W/tracker3.log" "the server's client status for Dias is 30 (goal)" '^client_status 30$'
+# Step 7b [loadsend agent]: an offline check saved, then continued while connected.
+check "$W/game5.log" "session 5: offline, the chest's check" "\[ap\] check $OFFLINE "
+check_not "$W/game5.log" "... with no server" '\[ap\] connecting to the server'
+check "$W/game5.log" "... saved in file 1 with the sidecar" '\[ap\] saved .*offline\.slot01\.ap\.json'
+connected6=$(grep -nm1 '\[ap\] connected (slot' "$W/game6.log" | cut -d: -f1)
+loaded6=$(grep -nm1 '\[ap\] loaded .*offline\.slot01\.ap\.json' "$W/game6.log" | cut -d: -f1)
+if [ -n "$connected6" ] && [ -n "$loaded6" ] && [ "$connected6" -lt "$loaded6" ]; then
+  echo "PASS session 6: connected at the title, then Continue loads file 1"
+else
+  echo "FAIL session 6: connected at the title, then Continue loads file 1 (lines ${connected6:-none}, ${loaded6:-none})"
+  fails=$((fails + 1))
+fi
+check "$W/game6.log" "... the load sends the save's checks" '\[ap\] loaded .*offline\.slot01\.ap\.json: [0-9]+ checks, received index 0, sent [0-9]+ checks'
+check "$W/server.log" "... the server logs the chest" 'Claude (sent|found) .*\(Arlia Village: Resurrection Bottle chest\)'
+check "$W/tracker.log" "... and has it among the checked locations" "checked_locations \[.*\b$OFFLINE\b"
 # Step 9 [dskeys agent]: the tracker keys (docs/apworld/data_storage.md).
 ds_team_slot() { sed -nE 's/^connected team ([0-9]+) slot ([0-9]+)$/\1_\2/p' "$1" | head -1; }
 claude_ts=$(ds_team_slot "$W/ds_claude.log")

@@ -2201,8 +2201,25 @@ void on_loaded(const std::string& card_image, int save_index) {
     if (const int id = s.bench.id(i); id != 0) benched += (benched.empty() ? ", bench: " : ", ") + std::string(character_name(id));
   for (size_t k = 0; k < s.lent.size(); ++k)  // (B4: lent for a fight)
     benched += (k == 0 ? ", lent: " : ", ") + std::string(character_name(s.lent[k].id));
+  // [loadsend agent] Connected to the seed's own room: the loaded state's checks and goal go out
+  // now, as the connect sends them. A game connects at the title, before Continue, so that connect
+  // sent only the session's; a check made offline and saved reached the server only at a later
+  // reconnect (the Windows recheck of 0.03.00, item 8). The server ignores the checks it has. A
+  // sidecar of another seed or slot (loaded only with SS_AP_ANY_SAVE=1) sends nothing: location
+  // ids are the game's, the same in every seed, so its checks would mark locations this slot never
+  // checked. Not connected (yet), or another room: nothing here; the connect sends them.
+  std::string sent;
+  if (r.link && r.net_ok) {
+    if (s.seed != r.seed.seed || s.slot_name != r.seed.slot_name) {
+      sent = ", another seed's or slot's: not sent";
+    } else {
+      if (!r.state.checked.empty()) r.link->check(r.state.checked);
+      if (r.state.goal_done) r.link->goal();
+      sent = ", sent " + std::to_string(r.state.checked.size()) + " checks" + (r.state.goal_done ? " and the goal" : "");
+    }
+  }
   log("loaded " + path + ": " + std::to_string(s.checked.size()) + " checks, received index " +
-      std::to_string(s.received_index) + (r.pending.empty() ? std::string() : ", " + std::to_string(saved_waiting) +
+      std::to_string(s.received_index) + sent + (r.pending.empty() ? std::string() : ", " + std::to_string(saved_waiting) +
       " items waiting from the save, " + std::to_string(r.pending.size() - saved_waiting) + " of checks it lacks") +
       benched);
 }
