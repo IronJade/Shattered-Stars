@@ -301,7 +301,8 @@ Same rules as above: a scratch `%APPDATA%` (`set APPDATA=%USERPROFILE%\ss-test\a
 override folder for this pack, which is what the feature is for: `PopTracker\user-override\
 so2_shattered_stars` under `%USERPROFILE%` if PopTracker keeps its folder there (it makes
 `%USERPROFILE%\PopTracker\packs` when it installs a pack), else under `Documents`. It writes only
-PNGs, and only in that folder. Before starting, note whether `%USERPROFILE%\PopTracker` and
+PNGs, only in that folder, and beside it the zip for Universal Tracker
+(`PopTracker\user-override\so2_shattered_stars_ut.zip`, about 135 MB; utzip2, 2026-10-28). Before starting, note whether `%USERPROFILE%\PopTracker` and
 `Documents\PopTracker` exist, and whether an `so2_shattered_stars` folder is already in either; say
 in the results which folder the render used. If Documents is redirected (OneDrive), say so too.
 
@@ -338,8 +339,13 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
      machine; note the time here.
    - At the end: "Done: 862 tracker map images were written to <folder>." with **Open folder**,
      which opens Explorer there. The folder holds `images\maps\` (68 PNGs: 66 areas, 2 world maps)
-     and `images\rooms\` (794 PNGs), about 135 MB, no `.part` file, nothing else. config.ini
-     unchanged by the button (its time and contents), no memory card touched.
+     and `images\rooms\` (794 PNGs), about 135 MB, no `.part` file, nothing else. Below it: "For
+     Universal Tracker: <...>\PopTracker\user-override\so2_shattered_stars_ut.zip", the hint
+     "Choose this file when Universal Tracker asks for the pack." and **Copy path** (paste the path
+     somewhere: it is the zip's). Just before Done the bar counted the zip's 868 files ("Writing the
+     zip for Universal Tracker..."); it may be too quick to see. The zip is there, about 135 MB, no
+     `.part` beside it. config.ini unchanged by the button (its time and contents), no memory card
+     touched.
    - Close setup (the window's X) halfway through a second render: setup closes within a moment
      (no hang); the folder holds whole PNGs only (no `.part`); pressing the button again renders
      all 862.
@@ -348,7 +354,11 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
      image(s) into <folder>" first and "300 of 862 done" every 100; exit code 0; the same folder as
      the button's; no window opens; no `shattered-stars.log` line, no config.ini change.
    - `shattered-stars.exe --render-tracker-maps "%USERPROFILE%\ss-test\Test Ä 日本\maps"`: 862 PNGs
-     there, the console shows the path as written, exit 0.
+     there, the console shows the path as written, exit 0; the zip in the folder above,
+     `...\Test Ä 日本\so2_shattered_stars_ut.zip` ("the Universal Tracker zip: <path> (868 files,
+     134.8 MB)").
+   - `--ut-zip "%USERPROFILE%\ss-test\Test Ä 日本\ut\mine.zip"` puts the zip there (the folder is
+     made); `--no-ut-zip` writes none.
    - Without a disc anywhere (a scratch `%APPDATA%` with no config.ini, no `discs` folder): exit 1
      with the no-disc message, nothing written.
 4. **PopTracker: install and load.** Start PopTracker 0.36.0 and drag `so2_shattered_stars_1.0.0.zip`
@@ -405,6 +415,17 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
       in `C:\ProgramData\Archipelago\host.yaml` (restart UT) it lists everything the logic allows;
     - the game, PopTracker and UT all connected to the slot at once: each works.
     - Optional, the old seed: UT tracks a 0.2.1 room with 0.2.2 installed.
+    - **The map tab with your own maps** (utzip2, 2026-10-28): on UT's first connect to a Star Ocean
+      slot a file dialog asks "Select the Shattered Stars maps: so2_shattered_stars_ut.zip (your own,
+      rendered by Shattered Stars) or the PopTracker pack so2_shattered_stars_*.zip"; choose
+      `so2_shattered_stars_ut.zip` from item 2 (paste setup's **Copy path** into the dialog's file
+      name box). The map tab shows the real maps: walk into a town with the game connected and UT
+      opens that room's page with the disc's background, its squares on the chests; on the world map
+      the red-and-white marker sits where the party stands; the boards (Shops, Item Creation, ...)
+      show the game's own simple boards (pixel font) with the squares on the cells. Then set
+      `ut_pack_path` under `so2_options` in `C:\ProgramData\Archipelago\host.yaml` to the pack's
+      `so2_shattered_stars_1.0.0.zip` (or empty it, and UT asks again), restart UT: the stand-ins.
+      No error in UT's log either way.
 11. **The room maps, the door panel and click switching** (maptab, docs/handoff/maptab.md).
     In PopTracker, after loading the pack (item 4): each area's tab has an **Overview** and then
     a tab per room, titled by its map number, in story order; on a rendered room (after item 2 or

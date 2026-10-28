@@ -30,7 +30,9 @@ banner. See "Logic".
    "The port's command"). It draws every map from **your own disc** into PopTracker's override
    folder for this pack (`<home or Documents>/PopTracker/user-override/so2_shattered_stars/`), at
    the same paths and sizes as the pack's placeholders, so the check squares land on the real
-   chests, NPCs and doors. Nothing from the disc ships with the pack (decision D5).
+   chests, NPCs and doors. Nothing from the disc ships with the pack (decision D5). The same run
+   writes `so2_shattered_stars_ut.zip` beside that folder for Universal Tracker's map tab
+   (tracker_maps.md "The Universal Tracker zip").
 
 What it shows:
 - **Maps.** Expel and Energy Nede (their world map, then a tab per area group, then a tab per area
@@ -368,7 +370,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (42 tests, about 21 seconds; run by `check`):
+`tools/ap_poptracker_test.py` (43 tests, about 21 seconds; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -404,8 +406,12 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 - **UT's map tab** (`TestUT`): apworld/so2/tracker/ is this build's JSON (under 1 MB), its sections
   are AP location names covering exactly the pack's locations, its maps are the pack's, every room
   has its page and is named by its label in UT's menu, and the world's `tracker_world` functions
-  (`map_page_index`, `location_icon_coords`), keys and `settings_key` behave. UT's own loader runs
-  in tools/ap_poptracker_utmap.py (docs/ap/apworld.md).
+  (`map_page_index`, `location_icon_coords`), keys and `settings_key` behave; and
+  `test_boards_for_the_port`: tools/poptracker/boards.json (what the port draws its Universal
+  Tracker zip's boards from) is this build's (`dist/poptracker/boards.json`), its boards are the
+  pack's images at their sizes, every board square of the pack and of UT's JSON sits at a cell's
+  (24, h / 2), the marker is UT's. UT's own loader runs in tools/ap_poptracker_utmap.py
+  (docs/ap/apworld.md).
 - **Lua**: the pack's own scripts run in Lua 5.4 (lupa, the Lua version PopTracker bundles) against
   a stub of PopTracker's API (items with codes and states, sections, `FindObjectForCode`,
   `ProviderCountForCode`, `UiHint`, the Archipelago handlers, `SetNotify` / `Get`): both variants
@@ -472,10 +478,15 @@ PopTracker 0.36.0, headless, against a local room.
 ## Universal Tracker's map tab (B6)
 
 UT's map tab is **hybrid** (docs/ap/apworld.md "Universal Tracker's map tab"): its JSON is in
-so2.apworld (`apworld/so2/tracker/`), its pictures come from this pack's zip. So the zip is also UT's
-picture source: every image a UT page names is at the pack's root paths (`images/maps/`,
-`images/rooms/`, `images/boards/`, and `images/status/you.png`, the player marker UT draws on the
-world maps), and those paths are tracker_maps.md's, stable across pack versions.
+so2.apworld (`apworld/so2/tracker/`), its pictures come from this pack's zip or the port's own
+`so2_shattered_stars_ut.zip` (the player's render: tracker_maps.md "The Universal Tracker zip"). So
+the zip is also UT's picture source: every image a UT page names is at the pack's root paths
+(`images/maps/`, `images/rooms/`, `images/boards/`, and `images/status/you.png`, the player marker UT
+draws on the world maps), and those paths are tracker_maps.md's, stable across pack versions. The
+port's zip has the same paths; it draws the boards itself from `tools/poptracker/boards.json`, which
+the generator writes (`dist/poptracker/boards.json` with every build; `--boards-out
+tools/poptracker/boards.json` updates the committed copy the port compiles in: commit it with the
+generator's changes, then rebuild the port).
 
 - The generator builds UT's JSON from the same data (`Pack.build_ut`): the pack's maps (same
   `maps.json`, so the page indexes are the pack's), the places, world maps and boards with every

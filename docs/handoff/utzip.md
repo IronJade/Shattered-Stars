@@ -168,7 +168,8 @@ Changes by utzip2 (each with its reason):
   the cwd or the TMPDIR.
 
 ### In progress
-- A (the UT zip), verified (utzip2, 2026-10-28, engine/build-utzip); committing:
+- A (the UT zip), verified (utzip2, 2026-10-28, engine/build-utzip); port side committed (01cf761
+  docs, 7d37a06 code); world/docs side committing:
   - `SS_TEST=tracker_` **14/14** (4 new: tracker_zip_writer, tracker_ut_zip_path, tracker_ut_extras,
     tracker_disc_ut_zip), nothing left in the cwd / TMPDIR; full ss_game_tests **230/0** (226 + 4),
     ss_tests **103/0**.
@@ -242,3 +243,7 @@ Changes by utzip2 (each with its reason):
 - 2026-10-28 (utzip2): read the log, phaseb.md, maptab.md, setupthread.md, release.md "0.03.00",
   tracker_maps.md, the diff; wrote "## Design" above from it. The tree builds as left (no warning).
   C done and verified (State); committing C.
+- 2026-10-28 (utzip2): C committed (8e3cb38 docs, f473269). A finished and verified (State); port
+  side committed (01cf761, 7d37a06); the world / docs side next (ut_map.py, the pack and UT tests,
+  apworld.md, poptracker.md, setup_en.md, the three notes, windows_check, checklist 12, the wiki
+  page uncommitted).

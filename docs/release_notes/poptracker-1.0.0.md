@@ -91,7 +91,8 @@ project**, so nothing of the game's art is published. The game draws the real ma
 your own disc 1, into the folder PopTracker reads for this pack:
 
 - **In the setup program**: the **Archipelago** page, **Trackers**, **Render tracker maps for
-  PopTracker**. It shows its progress and says where the images went, with **Open folder**.
+  PopTracker**. It shows its progress and says where the images went, with **Open folder**, and
+  where their zip for Universal Tracker went (below).
 - **From a terminal**: `shattered-stars --render-tracker-maps` (`shattered-stars.exe` on Windows);
   with a folder after it, into that folder instead.
 
@@ -105,6 +106,13 @@ pack, in case its maps changed. These pictures are for your own use: don't share
 
 A portable PopTracker (`portable.txt` beside it) reads overrides only from its own folder: give the
 game that folder, `--render-tracker-maps "<PopTracker's folder>/user-override/so2_shattered_stars"`.
+
+**Universal Tracker** can't read that folder: its map tab takes the pictures from a zip. So the same
+render also writes `so2_shattered_stars_ut.zip` (about 135 MB) right beside it, in
+`PopTracker/user-override` (PopTracker leaves that file alone): choose it when Universal Tracker asks
+for the pack, and its map tab shows your maps too (with the boards and the world-map marker, which
+the game draws itself). Or choose this pack's zip for the stand-ins. The zip holds your disc's
+pictures: for your own use as well.
 
 ## Known limitations
 
@@ -136,9 +144,10 @@ items and areas can't drift from the world's: all 1,991 locations of the world h
 and 264 of its items (every key, character, trap, skill and move) their place in the item panel.
 It has 794 room maps and 1,775 door locations (never counted as checks), 1,201 files in all,
 about 5.6 MB zipped. It was checked with PopTracker's pack checker in strict mode (no warning),
-its own tests (42: the ids, the layout, the Lua run in Lua 5.4, the logic equal to the world's
+its own tests (43: the ids, the layout, the Lua run in Lua 5.4, the logic equal to the world's
 over 16 rooms and 246 item states, story awareness at 15 positions, the room placeholders, the
-Lua door panel and its click handler, doors never in a check's colour), and the real PopTracker
+Lua door panel and its click handler, doors never in a check's colour, the boards the game draws
+for Universal Tracker matching the pack's), and the real PopTracker
 0.36.0 against local rooms (45 checks: both variants, autotracking, the logic at three points of a
 game, the story room at six positions, and a door click that opens its destination room's tab,
 the door shown yellow).

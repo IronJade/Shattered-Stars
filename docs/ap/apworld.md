@@ -1391,20 +1391,25 @@ maps, 2 world maps, 5 boards and 794 rooms in `maps/maps.json`; the squares in
 `locations/locations.json` with every section named by its AP location name, so UT matches them
 directly and needs no `poptracker_name_mapping`; UT's map menu in `layouts/maps.json`; and
 `map_page_index`'s table `map_pages.json`), about 610 KB of JSON, 56 KB zipped: the .apworld grows
-from about 220 KB to about 280 KB. The **pictures** come from the PopTracker pack's zip
-(`so2_shattered_stars_<version>.zip`, docs/ap/poptracker.md), which the player points UT at once.
+from about 220 KB to about 280 KB. The **pictures** come from a zip the player points UT at once:
+the PopTracker pack's (`so2_shattered_stars_<version>.zip`, docs/ap/poptracker.md: placeholders) or
+the port's own `so2_shattered_stars_ut.zip` (the player's render: docs/ap/tracker_maps.md "The
+Universal Tracker zip"), which hold the same picture paths.
 Why: the pictures are 4-6 MB (the rooms' placeholders alone 4.1 MB), past the APWorld's budget; the
 pack is the one place the pictures live (placeholders, nothing from the disc); and the JSON in the
 APWorld always matches the installed world's location names, whatever pack version the player has
 (the image paths are tracker_maps.md's, stable).
 
 - **Setup (players).** Install so2.apworld 0.2.2+ and UT as for tracking ("Trackers" above), and
-  download the pack zip (the `poptracker-v1.0.0` release, or the copy in PopTracker's `packs`
-  folder). The first time UT connects to a Star Ocean slot it asks for it with a file dialog
-  ("Select the Shattered Stars PopTracker pack (so2_shattered_stars_*.zip)"); the choice is kept in
-  Archipelago's `host.yaml` as `so2_options: ut_pack_path`. Cancel: no map tab (`ut_pack_path:
-  null`), and UT doesn't ask again until `/reload_pack`. The path can also be set in host.yaml by
-  hand. The tab then follows the game: UT watches the port's `so2_map_{team}_{slot}`
+  have one of the two zips: the port's `so2_shattered_stars_ut.zip` (written by
+  `--render-tracker-maps` or setup's button beside the rendered maps; setup shows its path) or the
+  pack zip (the `poptracker-v1.0.0` release, or the copy in PopTracker's `packs` folder). The first
+  time UT connects to a Star Ocean slot it asks for it with a file dialog ("Select the Shattered
+  Stars maps: so2_shattered_stars_ut.zip (your own, rendered by Shattered Stars) or the PopTracker
+  pack so2_shattered_stars_*.zip"; host.yaml's comment and `description` name both too); the choice
+  is kept in Archipelago's `host.yaml` as `so2_options: ut_pack_path`. Cancel: no map tab
+  (`ut_pack_path: null`), and UT doesn't ask again until `/reload_pack`. The path can also be set in
+  host.yaml by hand (empty: UT asks again on the next connect). The tab then follows the game: UT watches the port's `so2_map_{team}_{slot}`
   (`map_page_setting_key`): a field map opens its room's page, a world map its world map with a
   **player marker** at the party's x / z (`location_setting_key`, `location_icon_coords`, the marker
   `images/status/you.png` from the pack), a map with no page keeps the page. The menu lists the maps
@@ -1412,10 +1417,15 @@ APWorld always matches the installed world's location names, whatever pack versi
   "<map> <name>"; the boards (Shops, Item Creation, ...) too. `/load_map`, `/list_maps` and
   `/reload_pack` are UT's commands.
 - **The player's own maps.** UT reads pictures only from the zip it is pointed at (`ap:zip:`), not
-  from PopTracker's user-override folder. To see the maps rendered from your disc in UT, copy the
-  pack zip and put the rendered `images/` folder into the copy (the same paths: any zip tool's "add
-  and replace"), then point `ut_pack_path` at the copy. The copy is for your own use (it holds your
-  disc's pictures). (A port option to write such a copy would save the step: for the user to decide.)
+  from PopTracker's user-override folder. So the port's render also writes
+  `so2_shattered_stars_ut.zip` (port 0.03.00; docs/ap/tracker_maps.md "The Universal Tracker zip"):
+  the rendered images at the pack's paths, and the boards and the player marker drawn by the port
+  (the boards at the pack's sizes and cells, from tools/poptracker/boards.json): every picture of
+  the 867 pages and the marker. By default it lies beside the rendered folder,
+  `<PopTracker>/user-override/so2_shattered_stars_ut.zip` (no pack folder, no override). The zip is
+  for the player's own use (it holds their disc's pictures). UT splits `ap:zip:<zip>/<path>` at the
+  first `zip/`: no folder on the zip's path may end in "zip" (on Windows too: the file dialog's
+  path has `/`).
 - **Doors.** UT draws squares only for AP locations, entrances and events of the world it rebuilt,
   and has no text or click actions on a map. The doors are neither (the world's regions are Menu,
   Expel, Energy Nede, Fienal and the Cave of Trials), so UT's map tab has no door markers, no door
@@ -1433,8 +1443,10 @@ APWorld always matches the installed world's location names, whatever pack versi
   `map_page_index` / `location_icon_coords` / the keys / `settings_key`). tools/ap_poptracker_utmap.py
   runs **UT's own map loader** headless (`TrackerGameContext.load_pack` / `load_map` /
   `update_location_icon_coords` with a stand-in for the Kivy UI, in a UT copy whose host.yaml points
-  `ut_pack_path` at the pack zip, no display and no D-Bus) on a generated open-world room rebuilt
-  yaml-less by UT.
+  `ut_pack_path` at the zip, no display and no D-Bus) on a generated open-world room rebuilt
+  yaml-less by UT, and loads every page's picture and the marker through UT's own image loader
+  (TrackerKivy's `ap:zip:` load, decoded by Kivy). `--zip` takes either zip: the pack's or the
+  port's.
 - **Results (2026-10-27, maptab).** `TestUT` 4/4 (pack tests 41/41). UT's loader (UT 0.3.6's
   TrackerClient, the repo's world and again the packaged so2.apworld from custom_worlds): 15/15
   each: the slot rebuilt yaml-less; the map key `so2_map_0_1`; 867 pages (794 rooms, 68 area and
@@ -1451,6 +1463,14 @@ APWorld always matches the installed world's location names, whatever pack versi
   multidata equal (no new slot-data key), the checker's output the same; world tests 882 passed,
   `AP_TEST_WORLDS=so2` test/general + world 935, SO2_SLOW_TESTS 885; tools/ap_ut_check.py UT MATCHES
   THE WORLD (59 matches, the story points, logic_version 2 refused).
+- **Results (2026-10-28, utzip2: the port's zip).** `TestUT` 5/5 (+ `test_boards_for_the_port`; pack
+  tests 43/43). UT's loader with the new image check (every page's picture and the marker through
+  TrackerKivy's `ap:zip:` load, decoded by Kivy, at the layout's / the boards' sizes): **16/16** with
+  the port's `so2_shattered_stars_ut.zip` (868 files, 134,897,214 bytes) and 16/16 with the pack's
+  zip, each against the repo world and the packaged so2.apworld (281,557 bytes; only `ut_map.py`'s
+  text changed in the world, nothing a seed reads). A negative control, the same zip under
+  scratchpad/utzip/ (a folder ending in "zip"): the image check fails (IsADirectoryError: UT splits
+  at the first `zip/`), the other 15 pass.
 
 ## Files
 
