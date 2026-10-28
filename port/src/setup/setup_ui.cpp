@@ -1274,7 +1274,8 @@ void App::page_discs() {
   const auto folders = launcher::disc_folders(launcher::config_dir());
   ImGui::BeginDisabled(options_.screenshot);
   if (ImGui::Button("Open discs folder") && !folders.empty()) {
-    // Next to the game if that folder can be made (not in a read-only install).
+    // Next to the game if that folder can be made (not in a read-only install; never in a
+    // macOS .app, whose discs folder is the one beside config.ini).
     fs::path target = folders.back();
     std::error_code ec;
     for (const fs::path& f : folders) {
@@ -1293,7 +1294,9 @@ void App::page_discs() {
     ImGui::SetTooltip("%s", where.c_str());
   }
   if (!notice_.empty()) status_line(notice_level_, notice_);
-  note("Tip: put your disc images in a folder named \"discs\" next to the game and it finds them by itself.");
+  note(launcher::in_app_bundle()
+           ? "Tip: put your disc images in the discs folder (Open discs folder) and the game finds them by itself."
+           : "Tip: put your disc images in a folder named \"discs\" next to the game and it finds them by itself.");
 }
 
 void App::page_display() {

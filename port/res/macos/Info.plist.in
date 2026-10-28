@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The two macOS apps' Info.plist (port/tools/build_macos.sh fills in the @...@ values):
+     Shattered Stars.app (the game) and Shattered Stars Setup.app (setup). -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleDisplayName</key>
+  <string>@NAME@</string>
+  <key>CFBundleExecutable</key>
+  <string>@EXECUTABLE@</string>
+  <key>CFBundleIconFile</key>
+  <string>shattered-stars</string>
+  <key>CFBundleIdentifier</key>
+  <string>@IDENTIFIER@</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>@NAME@</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>@VERSION@</string>
+  <key>CFBundleVersion</key>
+  <string>@VERSION@</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.role-playing-games</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>@MACOS_MIN@</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>Shattered Stars reads your disc images from where you keep them.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>Shattered Stars reads your disc images from where you keep them, and writes PopTracker's map images to its folder in Documents.</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>Shattered Stars reads your disc images, mods and Archipelago seeds from where you keep them.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>Shattered Stars reads your disc images from where you keep them.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>Shattered Stars reads your disc images from where you keep them.</string>
+</dict>
+</plist>

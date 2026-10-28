@@ -63,7 +63,8 @@ struct FoundDiscs {
 // the same release (without a disc 1: the first disc 2).
 FoundDiscs find_discs(const std::vector<std::filesystem::path>& folders);
 
-// The `discs` folders to search: next to the executable, then next to config.ini.
+// The `discs` folders to search: next to the executable (not in a macOS .app), then next to
+// config.ini.
 std::vector<std::filesystem::path> disc_folders(const std::filesystem::path& config_dir);
 
 // Disc 2 (of disc 1's release) near a known disc 1: in disc 1's folder, or in a sibling

@@ -6,7 +6,7 @@
 
 // Starting the game from setup and setup from the game (port feature). Both programs sit
 // in the same folder: shattered-stars(.exe) and setup.exe on Windows /
-// shattered-stars-setup elsewhere.
+// shattered-stars-setup elsewhere (in a macOS .app: its Contents/MacOS, both apps holding both).
 namespace ss::launcher {
 
 #ifdef _WIN32
@@ -23,6 +23,11 @@ inline constexpr int kSetupQuit = 1;  // the player closed setup: the game exits
 
 // 'name' next to this executable; empty when it isn't there.
 std::filesystem::path sibling_program(const char* name);
+
+// macOS: this program runs from an .app bundle (Shattered Stars.app, Shattered Stars
+// Setup.app; port/tools/build_macos.sh), whose contents must stay as signed: no discs
+// folder inside it. False everywhere else.
+bool in_app_bundle();
 
 // Runs a program and waits for it; its exit code, or -1 if it could not be started.
 int run_and_wait(const std::filesystem::path& program, const std::vector<std::string>& args,
