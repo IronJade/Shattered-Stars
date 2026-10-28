@@ -76,6 +76,55 @@ copies of the top-level scripts).
 - Keep this log current after each finished step and at least every 30 minutes. Roll over at
   ~400k context: update the log and stop.
 
+## Design (A; reconstructed by utzip2 from utzip's uncommitted tree, 2026-10-28)
+
+As found in the working tree (`git diff` + the new files), before utzip2 changed anything:
+- **What UT loads from the zip** (UT 0.3.6, worlds/tracker/TrackerClient.py `load_pack` /
+  `set_root_pack_path` / `load_map` / `update_location_icon_widgets`): with `map_page_folder` set
+  (hybrid) the JSON comes from so2.apworld and only pictures from the zip, as
+  `ap:zip:<zip>/<path>`: each map's `img` (apworld/so2/tracker/maps/maps.json: 867 = 68 area and
+  world maps + 794 rooms + 5 boards) and the location icon `map_pages.json` `player_icon`
+  (images/status/you.png). No items (no `item_page_items`). So the zip needs 868 files.
+- **Where** (`tools::tracker_ut_zip_path(dir)`, `kTrackerUtZipName`): `so2_shattered_stars_ut.zip`
+  in DIR's parent. With the default DIR (PopTracker's override folder for the pack) that is
+  `<PopTracker>/user-override/so2_shattered_stars_ut.zip`, next to the rendered folder. Checked in
+  PopTracker's source (scratchpad/trackers/poptracker: src/poptracker.cpp 370-420 and
+  src/core/pack.cpp): packs are listed only from the `packs` search paths, and an override is only
+  `<override path>/<uid>` when it is a directory, so a zip there is neither a pack nor an override.
+- **CLI** (main.cpp): `--ut-zip FILE` / `--no-ut-zip` (the last one given wins); default as above.
+  The CLI's progress lambda prints one line before the zip's first file.
+- **What goes in** (`write_ut_zip`, after the images): every layout image (`images` then `rooms`)
+  found as a file under DIR, read back from disk (so the zip holds exactly what PopTracker reads,
+  also images of an earlier run when SS_TRACKER_ONLY limits this one; missing ones are counted in
+  the summary line), plus `render_tracker_ut_extras`: the 5 boards and the player marker, drawn by
+  the port (a name both a render and an extra is an error). Sorted by name.
+- **The boards**: tools/poptracker/boards.json, written by tools/ap_poptracker.py (always beside the
+  pack folder; `--boards-out` updates the committed copy) with each board's path, size, title,
+  hint, and each cell's box [x, y, w, h, label], plus the style colours, label_x and margin, and
+  the marker's path and size. CMake compiles it into generated/tracker_layout_data.cpp next to the
+  layout (`tracker_boards_json()`). The port draws each board at the pack's size with the cells at
+  the pack's boxes (the location squares sit at the cell's (24, h/2), from the same numbers), in
+  the overlay's 5x7 font (title 4x, hint 2x, labels 2x in up to two lines, else 1x). Only text and
+  numbers come from the pack generator; nothing from the disc, nothing of the pack's pixels.
+- **The marker**: images/status/you.png, 64x64 RGBA: the pack's design (a white disc r26, a red
+  #e0302a disc r20, a white centre r8 on clear), drawn in the port (`encode_png_rgba`, new; the
+  RGB encoder is the same code with 3 channels).
+- **util/zip_writer.{h,cpp}** (new, `ss::util::ZipWriter`): stored entries only, every entry dated
+  1980-01-01 00:00, version 2.0 (made by MS-DOS), no extra fields, no comment, no data descriptors,
+  external attributes 0, the UTF-8 flag for non-ASCII names, safe names only (relative, no `..`,
+  `\`, `:`), no zip64 (65535 entries / 4 GiB refused). Written as `<zip>.part`, renamed by
+  finish() (remove + rename again where rename won't replace); abandon() / the destructor remove
+  the .part. `util::crc32` is now exported from util/deflate (it was file-local).
+- **Progress / stop**: kind "zip" calls before each of the zip's files (done / total count the
+  zip's files, path = the zip, name = the entry); a stop there abandons (no zip, no .part; an
+  earlier run's zip stays as it was) and render_tracker_maps returns kTrackerRenderStopped. A zip
+  that can't be written makes the exit code 1 (the images stay).
+- **Not done when utzip stopped**: setup (path line, the zip phase in the progress), every test,
+  ut_map.py's dialog text, the docs, a pack test that the committed boards.json is the build's.
+
+Changes by utzip2 (each with its reason):
+- (filled in as made; see the Log)
+
 ## State
 ### Done
 - **B. Door diamonds yellow** (verified): tools/poptracker/doors.lua `so2_door_access` returns
@@ -93,11 +142,17 @@ copies of the top-level scripts).
   status), setup_en.md, the 0.2.2 / pack 1.0.0 notes, windows_check item 11, checklist 12.3 rows,
   the wiki's Trackers.md.
 
+- **C. test_tracker_maps.cpp's scratch folders** (utzip2, verified): `scratch()` makes
+  `<temp dir>/ss_tracker_maps_test_<name>` (one level, removed whole by each test), as b82b176 did
+  for test_tracker_job.cpp. engine/build-utzip, `SS_TEST=tracker_` from a scratch cwd with a
+  scratch TMPDIR (scratchpad/utzip/run_tests.sh C tracker_): 10 tests, 0 failed; nothing left in
+  the cwd or the TMPDIR.
+
 ### In progress
-- A (the UT zip). Design below.
+- A (the UT zip): design above; utzip2 finishing it (setup, tests, docs, ut_map.py).
 
 ### Next
-- A, then C.
+- A's port side, then A's world/docs side.
 
 ### Counts changed in the release docs (for the RC agent to recheck)
 - Pack tests 41 -> **42** (checklist 12.3 "The pack's tests"; poptracker-1.0.0.md "its own tests
@@ -120,3 +175,6 @@ copies of the top-level scripts).
   UT's player marker, for the port to draw them into the UT zip), tools/poptracker/boards.json (new;
   the committed copy the port compiles in). The design was never written here: read the diff. A
   fresh agent (utzip2) continues A, then C.
+- 2026-10-28 (utzip2): read the log, phaseb.md, maptab.md, setupthread.md, release.md "0.03.00",
+  tracker_maps.md, the diff; wrote "## Design" above from it. The tree builds as left (no warning).
+  C done and verified (State); committing C.
