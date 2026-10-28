@@ -286,11 +286,20 @@ Transporter Portal of Sealing 313, the fanzine hall 122), Mountain Palace maps w
 What the pack generator (`tools/ap_poptracker.py`) needs to do with format 1.1. Nothing here
 changes the format 1 parts above.
 
+**Status (2026-10-27, agent maptab): built** as below; docs/ap/poptracker.md "Rooms and doors" is
+the pack's side (and docs/ap/apworld.md "Universal Tracker's map tab" UT's). Where it differs from
+this sketch: a room's tab is titled by its map number (the label strip and the door panel carry the
+name; named titles made the busiest tab bars six to eight rows); the overview tab is titled as the
+area (so activating the area's tab shows it); the door markers are diamonds coloured Inspect (blue,
+destination known) or SequenceBreak (yellow, unknown: Phase C); a click is acted on in the next
+frame. Measured: 794 placeholders 4.1 MB (32-colour PNGs), the pack zip 5.6 MB; PopTracker's peak
+memory 555 MB (225 MB before the rooms).
+
 - **Room images.** A placeholder per room, exactly `width` x `height`: `style.background`, a flat
   box for the background area (0, `bg_y`, `width`, `height - bg_y`), the `label` in the
   `label_box` strip, and each door's letter in its `box` (`style.door`). The same boxes the
   port draws, so a player's render lines up. Root paths `images/rooms/<map>.png`, not in a
-  variant folder (as the area images). Measured: 793 placeholders are about 2.8 MB (2.5 MB
+  variant folder (as the area images). Measured by mapdoors: 793 placeholders are about 2.8 MB (2.5 MB
   zipped) drawn with PIL's default font; the pack zip was 3.1 MB.
 - **Maps.** One PopTracker map per room (`room_<map>`, `img` = `path`, `location_size` = the
   room's `location_size`).

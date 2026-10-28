@@ -38,6 +38,16 @@ What it shows:
   on an area map: checks at the same spot (one NPC's several gifts, the Cave's reused chest rooms)
   share a square, one entry per check. The world maps have a square per area group (an area key's
   entrance) that sums up the place checks behind it.
+- **Rooms and doors.** Each area's tab has its overview (the area map, titled as the area) and then
+  a tab per room (every field map the area's doors reach: 794 rooms), titled by the map's number, in
+  door order from the entrance. A room shows its checks (the same squares as the overview) and a
+  **door marker** (a blue diamond) per doorway, lettered A, B, C... on the image. Beside the map, the
+  **door panel** lists where each doorway leads, live: "A → 18 north: fountain square" ("*" marks a
+  destination that only happens in some story states; "(+53* 46)" the doorway's other destinations).
+  **Clicking a door** (hover its diamond, click "Door A" in the popup) or **its panel line** opens the
+  destination room's tab; right-clicking a panel line steps through a doorway's other destinations.
+  With Auto tab on, the tabs follow the party room by room. Doors are not checks: never counted,
+  never cleared. "Rooms and doors" below.
 - **Boards** for the checks that are no place: Shops (a cell per shop), Item Creation (per
   specialty, in cells of up to 25), Killer Moves (per member), Guilds and Learning (skill guilds,
   learn points per member) and Enemy Drops (per area).
@@ -79,17 +89,21 @@ What it shows:
 | `items/items.json` | 287 items: 35 area keys, 18 dungeon keys, 12 characters, 5 traps (consumables), 46 skills, 148 moves (264 mapped to AP ids); the logic banner (`so2_logic_*`, progressive), the chapter (`so2_chapter`), story awareness (`so2_story_aware`), auto tab (`so2_auto_tab`), the refresh counter (`so2_rev`, in no layout); 18 settings (`opt_<key>` toggles, `opt_<key>_<value>` progressive stages) | generator |
 | `locations/places.json` | region (Expel, Energy Nede, Fienal, Cave of Trials) -> area -> a location per dot (472 place checks, 408 dots) | generator |
 | `locations/world.json` | "Expel World Map" / "Energy Nede World Map" -> a location per area group, whose sections are `ref`s to the place checks of the group's areas | generator |
+| `locations/doors.json` | "Doors" -> a location per doorway ("<map> <letter>", a diamond per marker on `room_<map>`), one section "Door <letter>" (no AP location; access `^$so2_door_access|<doorway id>`): 1,775 | generator |
 | `locations/boards.json` | Shops (52 cells, 550 checks), Item Creation (26, 553), Killer Moves (8, 133), Guilds and Learning (25, 194), Enemy Drops (19, 89) | generator |
-| `maps/maps.json` | 66 area maps + 2 world maps (one per layout image, named after the image file) + 5 boards | generator |
+| `maps/maps.json` | 66 area maps + 2 world maps (one per layout image, named after the image file) + 5 boards + 794 rooms (`room_<map>`, the room's `location_size`) | generator |
 | `layouts/items.json` | the banner, the item tabs (Keys, Party, Skills, Moves per member, Room), `tracker_broadcast` (keys and characters) | generator |
 | `layouts/tracker.json` | `tracker_default` of the map variant: the item column left, the map tabs right | generator |
 | `items_only/layouts/tracker.json` | the Items Only variant's `tracker_default` (no maps) | generator |
 | `scripts/init.lua`, `so2.lua`, `logic.lua`, `autotracking/archipelago.lua` | the hand-written Lua (below) | tools/poptracker/ |
 | `scripts/pack_data.lua` | `SO2_PACK`, `SO2_SETTINGS` (slot key, code, values, default), `SO2_CHARACTERS`, `SO2_DUNGEON_KEYS`, `SO2_WORLD_MAPS` (world x/z -> pixels) | generator |
-| `scripts/map_tabs.lua` | `SO2_MAP_TABS[field map] = {tab, tab, ...}`: 870 of map_names.csv's 964 maps | generator |
+| `scripts/map_tabs.lua` | `SO2_MAP_TABS[field map] = {tab, tab, ...}`: 940 of map_names.csv's 964 maps (a room: its own tab) | generator |
+| `scripts/doors_data.lua` | `SO2_ROOMS` (map -> name, tab path), `SO2_MAP_NAMES` (destinations that are no room), `SO2_DOORWAYS` (the vanilla door table: doorway id -> room, letter, panel item code, destinations {map, back, cond}), `SO2_ROOM_DOORS`, `SO2_DOOR_SECTIONS` (section full id -> doorway id) | generator |
 | `scripts/autotracking/item_mapping.lua` | `ITEM_MAPPING[AP item id] = {{code, type}}` | generator |
 | `scripts/autotracking/location_mapping.lua` | `LOCATION_MAPPING[AP location id] = {"@path/section"}`: every one of the data package's 1,991 locations | generator |
 | `images/maps/*.png` | placeholders at the layout's paths and sizes (66 areas, 2 worlds) | generator |
+| `images/rooms/*.png` | room placeholders at the layout's paths and sizes (794): the label strip and the door letter boxes where the port draws them | generator |
+| `images/doors/*.png`, `images/status/you.png` | the door panel's bar, the door sections' icon; the player marker (Universal Tracker's world maps) | generator |
 | `images/boards/*.png`, `images/items/*.png`, `images/status/*.png` | boards, item badges, the banner | generator |
 | `images/icon.png`, `LICENSE` | the Shattered Stars icon (res/icon, original), the repo's MIT licence | copied |
 
@@ -119,7 +133,7 @@ Naming:
   in `LOCATION_MAPPING`.
 - **Section rules**: access `["^$so2_access|<AP location id>"]`, visibility
   `["$so2_exists|<AP location id>"]`. Nothing else in the pack has rules.
-- **Map tabs** (`map_tabs.lua`): a map drawn in an area image switches to that area's tab (a map in
+- **Map tabs** (`map_tabs.lua`): a room switches to its own tab (area path + its number); a map drawn in an area image switches to that area's tab (a map in
   two images: the one map_names.csv names); then map_names.csv's area, the area of a location row on
   that map, the area group whose entrance maps hold it, and the world-map tab for the 'Expel' /
   'Energy Nede' maps (the Cave of Trials tab for its own). World maps 1 and 2 switch to their world
@@ -133,8 +147,10 @@ when map_names.csv changes; the tests fail when the pack and the world disagree.
 
 All hand-written files are in `tools/poptracker/`, short and generic; the generator copies them.
 
-- `init.lua`: loads pack_data, map_tabs, so2, logic; adds items, maps and locations (the map
-  variant only), layouts; then the autotracker. `SO2_ITEMS_ONLY` is the Items Only variant.
+- `init.lua`: loads pack_data, map_tabs, so2, logic; in the map variant doors_data and doors, then
+  the maps and locations; the layouts; then the autotracker. `SO2_ITEMS_ONLY` is the Items Only
+  variant.
+- `doors.lua`: rooms and doors (next section).
 - `so2.lua`: shared state `SO2` (`connected`, `exists` = the room's location ids, `received` = AP
   item id -> count from the server, `slot_data`, `story`), `so2_exists(id)` (the visibility rule),
   `so2_item_count(ap_item_id)` (the pack's item when mapped, so clicks count too; else what the
@@ -230,6 +246,67 @@ awareness"; docs/ap/apworld.md "Story awareness" for where the points come from)
 - A step-only change (chapter 60 step 3000 -> 4000, the Final Save Point) changes no item, so
   `so2_story_changed` re-runs the rules itself (`so2_refresh()`).
 
+## Rooms and doors
+
+docs/ap/tracker_maps.md "For the pack (part 2)" is the spec; the user's direction (2026-10-27): door
+labels must be live, so that with the entrance randomizer (Phase C) the tracker draws each door's
+real destination. So **no destination is drawn into any image**: a room's image carries only its own
+number and name (the label strip) and a letter per doorway; the destinations are text the pack's Lua
+sets at run time.
+
+- **Rooms.** One PopTracker map per room of the layout (`room_<map>`, 794), the layout's image at its
+  root path (`images/rooms/<map>.png`; the port renders the real background into the same file name
+  and size). Each check also has a square on its room (`checks[].room`), so a room shows the same
+  checks as its area's overview.
+- **Tabs.** Area > Room: an area with rooms is itself tabbed: first its overview, titled as the area
+  (so `ActivateTab(<area>)` also shows the overview), then a tab per room in `room_groups[].rooms`
+  order (door distance from the entrance), **titled by the map number** ("18"): the label strip on
+  the image and the door panel name the room, and number titles keep the busiest areas' tab bars at
+  two rows (Hoffmann Ruins has 46 rooms; named titles took six to eight). A room group with no area
+  image (L'Aqua) is a tab of rooms only under Energy Nede. Every room is in exactly one group, so a
+  map has one tab path (`SO2_MAP_TABS`, `SO2_ROOMS[map].tabs`): door clicks and Auto tab both use it.
+- **Door markers.** A location per doorway (`locations/doors.json`, "Doors/<map> <letter>"), a
+  diamond at each of its markers (two trigger regions of one routine are one doorway), one section
+  "Door <letter>" with a door icon. It is no Archipelago location: not in `LOCATION_MAPPING`, no AP
+  id, not in UT's names, always visible. Its access rule `^$so2_door_access|<doorway id>` is its
+  colour: **Inspect (blue)** when the destination is known, **SequenceBreak (yellow)** while it isn't
+  (a randomized door not found yet). Why: a door is never a check, so it must not look like one
+  (green = a check to get, red = a check that needs items); blue is PopTracker's "look here,
+  nothing to collect", the diamond keeps doors apart from story awareness's blue squares, and yellow
+  makes an unexplored door stand out. The logic export doesn't place maps in regions yet, so a
+  door can't be coloured by its destination's reachability; when Phase C adds a region -> map hint,
+  `so2_door_access` is the one place to do it.
+- **The door panel.** A Lua item per doorway (`ScriptHost:CreateLuaItem`, code
+  `door_<map>_<letter>`, a dark bar `images/doors/line.png`), in letter order beside the room's map
+  (a group "Doors (* story)" docked right, items 260 x 22). Its badge text (`BadgeText`, left
+  aligned, 12 px) is the line: `so2_door_text(id)` = "<letter> → <map> <name>" for the first
+  unconditional destination (else the first), "*" when that one only happens in some story states,
+  then up to three other destinations by number ("(+53* 46 +2)"); cut with ".." to about 40
+  characters. Destinations that are no room: "Expel (world map)", or map_names.csv's place for the
+  one undrawn story map (182, Inn Hilton Island at night).
+- **Clicks.** `ScriptHost:AddOnLocationSectionChangedHandler("so2 doors", ...)`: a door section with
+  fewer available than its one chest was clicked; the handler notes it, and in the next frame
+  (`AddOnFrameHandler`, outside PopTracker's own click handling) sets `AvailableChestCount` back to
+  `ChestCount` (a door never counts as checked, and nothing is saved as cleared) and sends
+  `Tracker:UiHint("ActivateTab", title)` for each title of the destination's tab path, outermost
+  first (`so2_door_go`). Several destinations: the first unconditional one, else the first; a
+  destination with no tab (the undrawn map) changes nothing. A panel line's `OnLeftClickFunc` does
+  the same; `OnRightClickFunc` steps through the doorway's other destinations.
+- **Auto tab.** `so2_map_{team}_{slot}`'s map switches to the room's own tab when it is a room (940
+  of map_names.csv's 964 maps switch a tab now: the rooms, then as before).
+- **The entrance randomizer's seam (Phase C, not built).** `so2_door_destinations(id)` is the one
+  source of a door's destination. Vanilla: `SO2_DOORWAYS[id].to` (from the layout's
+  `rooms[].doors[].to`). With a room that randomizes doors, the Clear handler's `so2_doors_load(slot
+  data)` reads **`door_pairs`** ({"<doorway id>": <doorway id at the other end>}; the doorway ids are
+  tracker_maps.md's "Door ids" contract) and the pack subscribes to **`so2_doors_{team}_{slot}`** (a
+  list, or a set, of the doorway ids found); a paired doorway reads "A → ?" and is yellow until it is
+  in that list, then shows (and opens) the room of its pair. Doorways the room doesn't pair stay
+  vanilla. Both names are provisional, for Phase C to confirm (and UT's
+  `found_entrances_datastorage_key` can be the same key); the logic side is already there
+  (`so2_logic_connect`, "Logic"). Tested with a hand-made pairing (`TestDoorsLua`).
+- **Memory.** PopTracker decodes every map image it loads: with the 794 rooms its peak memory went
+  from 225 MB to 555 MB (the placeholders; a player's render has the same sizes, so the same memory).
+
 ## Images (all original)
 
 Everything in `images/` is drawn by the generator with Pillow from plain shapes and text. The
@@ -247,6 +324,13 @@ Nothing comes from the discs.
   (tracker_maps.json `dots`, from doors.json's arrivals). No terrain.
 - **Boards** (`images/boards/*.png`): a title and a grid of labelled cells (330x46); the cell's
   square sits at its left end.
+- **Rooms** (`images/rooms/<map>.png`, 794): exactly the layout's `width` x `height`; the label strip
+  (the room's `label` in `style.label_colour` on `style.background`), a flat tone where the port draws
+  the background with "map N" and a hint to render the real map, and each doorway's letter in its
+  `box` (`style.door` fill, outline and text): the boxes the port draws, so a player's render lines up.
+  32-colour palette PNGs with the style colours exact: 4.1 MB for all 794.
+- **Doors**: the door panel's bar (`images/doors/line.png`) and the door sections' icon
+  (`images/doors/door.png`); the player marker for UT's world maps (`images/status/you.png`).
 - **Badges** (`images/items/*.png`, 160x60, shown at 80x30): a rounded tile in the category's
   colour (Expel keys blue, Energy Nede keys purple, dungeon keys bronze, characters green, skills
   gold, moves red, traps grey, settings teal) with the short name; the banner (512x48).
@@ -254,7 +338,7 @@ Nothing comes from the discs.
 **User overrides.** PopTracker replaces any pack file with the same path under the first existing
 `user-override/so2_shattered_stars/` folder: the working directory's, `<home>/PopTracker/`,
 `<Documents>/PopTracker/`, then the program's folder (src/poptracker.cpp). The port's
-`--render-tracker-maps` writes `images/maps/*.png` there. The pack keeps every image at its root
+`--render-tracker-maps` writes `images/maps/*.png` and `images/rooms/*.png` there. The pack keeps every image at its root
 paths, never in a variant folder (PopTracker would then look for `<override>/<variant>/<file>` and
 the player's render would be hidden). Players can override any other image the same way.
 
@@ -275,7 +359,7 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 
 ## Testing
 
-`tools/ap_poptracker_test.py` (24 tests, about 13 seconds with the build; run by `check`):
+`tools/ap_poptracker_test.py` (37 tests, about 20 seconds; run by `check`):
 - **ids**: every mapped AP item and location id is in the registered world's data package; every
   one of its 1,991 locations has exactly one section, whose rules are the seam's with its own id;
   the UT name mapping's keys are unique and cover every section not named as its AP location.
@@ -289,6 +373,24 @@ pack checker, checks versions.json against the zip, and runs the tests. The vers
 - **JSON**: every file parses; the manifest; every item code and map named in a layout exists; every
   ref resolves (472, one per place check); every `map_tabs.lua` path is a real tab path of the map
   layout; every map with a place check switches a tab.
+- **Rooms** (`TestRooms`): every layout room is a map `room_<map>` with its image at the layout's size
+  and the door letter boxes' fill and outline where the layout puts them (the port's boxes); one door
+  location per doorway with one "Door <letter>" section, its access rule, a diamond per marker at
+  the layout's x/y, never an AP location and not in `LOCATION_MAPPING`; `SO2_DOOR_SECTIONS` is exactly
+  those sections; every door's destination is a room (whose tab is its own, titled by its number), a
+  world map (its tab) or explained (`UNDRAWN_DESTINATIONS`: map 182); every area's tabs are its
+  overview (titled as the area) and then its rooms in `room_groups` order, each room tab's map and
+  door panel (the doorways' item codes in letter order), and `SO2_MAP_TABS[room]` is that path; the
+  pack's files are under 20 MB. Each check also has its square on its room (`TestLayout`).
+- **Doors in Lua** (`TestDoorsLua`, against the stub with `CreateLuaItem`, section-changed and frame
+  handlers): every doorway's panel line ("A → 18 north: fountain square", story variants "(+..)",
+  "*"); a door section cleared (a click) does nothing inside the change, then in the next frame is set
+  back to 1 and `ActivateTab` goes along the destination room's path, once; a check's section change
+  is no door; a panel line's left click (the first unconditional destination) and right clicks (the
+  next ones); a door to a world map opens its tab, the undrawn map nothing; Auto tab from
+  `so2_map_0_1` goes to room tabs; the entrance randomizer's seam: a room with `door_pairs` subscribes
+  `so2_doors_0_1`, paired doors read "A → ?" and are SequenceBreak until found, then show and open
+  their pair's room; a vanilla room again: no key, vanilla lines.
 - **Lua**: the pack's own scripts run in Lua 5.4 (lupa, the Lua version PopTracker bundles) against
   a stub of PopTracker's API (items with codes and states, sections, `FindObjectForCode`,
   `ProviderCountForCode`, `UiHint`, the Archipelago handlers, `SetNotify` / `Get`): both variants
@@ -408,6 +510,22 @@ none Inspect. Then a client of the slot, as the port (items_handling 0b001), Set
 step 3000 and 60 step 4000 (a step-only change): each time PopTracker's Normal sections must be the
 reference evaluator's for the room's export with that position, its Inspect ones the reference's
 `later`, and the rest None.
+
+**Rooms and doors, in PopTracker itself** (step 8, after the variants' runs). PopTracker (Map
+Tracker) with a door probe in its user override (`scripts/so2_smoke_doors.lua`) connects to the first
+room; 60 frames after the Clear handler the probe clears door A of map 26 (Hearn's General Store:
+`AvailableChestCount = 0`, what a click on "Door A" in the popup does) and 30 frames later prints the
+section's count. Checks: the section had 1 of 1, the pack set it back to 1 of 1, no Lua error or
+warning, and in the state PopTracker saves on quit the active tabs are the destination room's path
+(`SO2_MAP_TABS[18]`: Expel > Arlia Village > Arlia Village > 18) and the door section is not saved
+as cleared. Step 5's map check now wants map 26's own room tab (Expel > Arlia Village > Arlia
+Village > 26) from `so2_map_*`. It also prints the panel line and PopTracker's peak memory.
+
+Result with rooms and doors (2026-10-27, maptab: pack 1.0.0 with layout 1.1's rooms, so2.apworld
+0.2.2): **44/44 checks pass** (the 37 below with step 5's room tab, and 7 for step 8). Door A of
+map 26 -> 18 (panel line "A → 18 north: fountain square"); the click reset the door and opened
+Expel > Arlia Village > Arlia Village > 18; map 26 from `so2_map_*` opened its room tab; peak memory
+555 MB (225 MB without the rooms). No Lua error or warning.
 
 Result with story awareness (2026-10-27, pack 1.0.0 as built by storyaware, so2.apworld 0.2.2's
 export with `story`): **37/37 checks pass** (the 24 below and 13 for step 7). The

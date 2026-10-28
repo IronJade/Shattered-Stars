@@ -116,13 +116,42 @@ source changes: none expected; if the renderer must change, describe it here and
   tabs follow the AP area names (so each check is under its own name); the room groups now
   also put each town's own rooms under its name.
 
+- Coordinator's extra: apworld/so2/docs/setup_en.md UT step 1 reworded (so2.apworld 0.2.2 or
+  later, or the room's own if newer; 0.2.0-0.2.2 rooms track with 0.2.2): committed 0062337.
+- **2. The pack, part 2** (tools/ap_poptracker.py, tools/poptracker/doors.lua (new), init.lua,
+  autotracking/archipelago.lua, tools/ap_poptracker_test.py, tools/ap_poptracker_smoke.py):
+  794 room maps (`room_<map>`) with placeholders at the layout's sizes and the port's boxes
+  (32-colour PNGs, style colours exact, 4.1 MB); each check also on its room; tabs Area >
+  (overview titled as the area, then rooms titled by map number in room_groups order; L'Aqua
+  rooms only); 1,775 door locations ("Doors/<map> <letter>", a diamond per marker, one section
+  "Door <letter>", `^$so2_door_access|<id>`: Inspect blue / SequenceBreak yellow when unknown);
+  the live door panel (a LuaItem per doorway, code door_<map>_<letter>, BadgeText
+  "A → 18 north: fountain square", "*" story, "(+53* 46 +2)"); clicks (section changed ->
+  next frame: reset to 1, ActivateTab along SO2_MAP_TABS[dest]; panel left click = first
+  unconditional, right click = the next ones); Auto tab to room tabs (940/964 maps); ER seam
+  (slot data `door_pairs`, data storage `so2_doors_{team}_{slot}`, "?" until found;
+  provisional names). scripts/doors_data.lua generated (SO2_ROOMS, SO2_MAP_NAMES,
+  SO2_DOORWAYS, SO2_ROOM_DOORS, SO2_DOOR_SECTIONS). Player marker images/status/you.png (for UT).
+- Verified: tools/build_poptracker.sh all: 1,201 files, zip 5,559,587 bytes, checker strict
+  "Validated 11 files" (zip + folder), versions.json ok, tests 37/37 (TestRooms 5, TestDoorsLua 5
+  new); real PopTracker 0.36.0 smoke 44/44 (step 8: door A of 26 -> 18 clicked, reset, tabs
+  Expel > Arlia Village > Arlia Village > 18, not saved as cleared; map 26 from so2_map_* -> its
+  room tab); PopTracker peak memory 555 MB with rooms vs 225 MB without (decoded images).
+- Docs: docs/ap/poptracker.md ("For players", structure table, "Rooms and doors", Images, Testing,
+  Smoke step 8 + result), docs/ap/tracker_maps.md (part 2 status).
+
 ### In progress
-- 2. The pack, part 2.
+- 3. UT's map tab (hybrid).
 
 ### Next
-- 2 pack rooms/doors/panel/click; 3 UT map tab; 4 tests; 5 docs.
+- 3 UT map tab; batches; 4 remaining tests; 5 docs (apworld.md, setup guide, release-notes
+  paragraph).
 
 ### How to verify
+- Pack: `tools/build_poptracker.sh all`; smoke: `env -u DISPLAY -u WAYLAND_DISPLAY -u
+  DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR=$PWD/scratchpad/maptab/xdg/run SKIP_REQUIREMENTS_UPDATE=1
+  prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python tools/ap_poptracker_smoke.py --scratch
+  scratchpad/maptab/smoke --port 38395`; memory: `python3 scratchpad/maptab/mem.py ZIP DIR`.
 - Area audit: `SS_DISC1=<cue> python3 tools/ap_tracker_maps.py --check`;
   `SS_TEST=tracker_ SS_DISC1=<cue> engine/build-maptab/ss_game_tests` (from a scratch cwd);
   `SS_DISC1=<cue> python3 tools/ap_tracker_maps_test.py engine/build-maptab/shattered-stars --scratch scratchpad/maptab/e2e`;
@@ -131,3 +160,4 @@ source changes: none expected; if the renderer must change, describe it here and
 ## Log
 - 2026-10-27: log created; reading.
 - 2026-10-27: area audit done and verified (above); committing.
+- 2026-10-27: pack part 2 done and verified (above); committing.
