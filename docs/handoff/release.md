@@ -1249,3 +1249,23 @@ The rerun: start from a clean tree, set the old results aside, run everything:
 `mv scratchpad/release/rc-0.03.00-dist scratchpad/release/rc-0.03.00-dist.pre-restructure` then
 `bash scratchpad/release/rc-0.03.00.sh all` (in the background; progress in
 `scratchpad/release/rc-0.03.00-dist/summary.txt`).
+
+### 0.03.00, after the Windows check (coordinator, 2026-10-28 ~11:50)
+- The RC on d9ae923 was stopped at 10:15 (after `suites`; every row up to there clean) when the
+  Windows check found two real failures. The user: fix both in 0.03.00, then rerun the full RC.
+- **Item 8 (offline checks on a connected load):** fixed by agent loadsend, merged 8b51bb1
+  (on_loaded sends the merged checks + goal when connected to the seed's own room; never for
+  another seed's or slot's sidecar). Unit test ap_load_sends_checks; ap_e2e_so2.sh sessions 5-6
+  (53/3 before, 56/0 after). Log docs/handoff/loadsend.md.
+- **Item 10 (UT 0.3.6 drops on connect with a maps zip):** root cause and fix by agent utcrash
+  (map_page_index gives Expel's world map for no value, so a page is laid out before UT's
+  Retrieved for location_setting_key); finished by agent utcrash2 (new test
+  trackers/tools/ap_ut_connect.py; a new RC step `ut_connect`). Not merged yet.
+- macOS (in parallel, the user): M1 merged 34fc6e9 (shared: absolute_utf8("") under libc++);
+  M2/M3 on the local branch `macos` (2816fc1), held out of main until 0.03.00 ships (they touch
+  Window::present and tools/memcap.py). Not part of this release.
+- The editor (VSCodium) crashed three times today (extension host SIGTRAP); long jobs now run as
+  systemd user units, and the coordinator runs in a terminal.
+- Next: merge utcrash2, add `ut_connect` to rc-0.03.00.sh, rerun the full RC (systemd unit
+  ss-rc030, fresh DIST), then the Windows recheck (1, 2-3, 5 glance, 8, 10, 11 glance, 13 with the
+  cross-built ss_tests.exe / ss_game_tests.exe).
