@@ -485,3 +485,27 @@ Full notes on the Windows machine: C:\Users\hitsu\ss-0.03.00\windows_check_0.03.
   Doors/17 F/Door F changed, for watch "so2 doors"", no Lua error. Docs reworded (9533426). Auto tab
   / Story: right-click off, left-click on (PopTracker's toggle); docs reworded too.
 - Not for 0.03.00: "?GUARD (894)"-style item names in spoilers and check lines (since 0.2.0).
+
+### 2026-10-28: recheck of the 0.03.00 RC (07f9684, both fixes) on Windows 11: all run items PASS
+
+Files served over the LAN (scratchpad/release/wincheck-0.03.00b), all 9 matching SHA256SUMS: the
+win64 zip d724bc36..., so2.apworld 0.2.2 0212e0fd... (the only so2 world in custom_worlds), the
+YAML, the pack 8154d618... (unchanged), the cross-built ss_tests.exe / ss_game_tests.exe + SDL3.dll.
+Fresh seeds: story AP_33970985156012591707, open AP_77728259311549143709; old (0.2.1) slot "Old".
+
+- 1 PASS (0.03.00 both, 0.3.0.0, DreamGlyph Studios). 2 PASS (862 images + UT zip 868 files,
+  134,897,214 bytes, 24.6 s; no hang, no .part; config.ini unchanged). 3 PASS ("cli Ä 日本"; no
+  disc: exit 1). 5 PASS. 11 PASS (hover + the Door box: 17 F -> 27 Rena's House).
+- **8a PASS** (the fix): offline crate, save, Continue connected: "loaded ...: 1 checks, received
+  index 0, sent 1 checks"; the server logged the 200 Fol chest; PopTracker cleared it. 8b PASS.
+- **10 PASS, all of it** (the fix): UT connects with the maps zip (host.yaml and the dialog) and
+  stays connected; the map tab opens on Expel's world map, follows into room 18 with the real
+  background, the world-map marker; story order; /explain; live shrink 37 -> 36; story awareness
+  36 (ch. 3) / 73 (ch. 5); `enforce_deferred_entrances: "off"` 358 (with host.yaml edited while UT
+  and the Launcher were closed: they write it back on exit; the first try's FAIL withdrawn); the
+  stand-ins; game + PopTracker + UT at once; the 0.2.1 room. The known issue reproduced (Auto Tab
+  off before the first connect drops; on again + /connect works).
+- 13 NOT RUN yet: the Windows session's permission check blocked running the downloaded test
+  executables; waiting on the user's approval there.
+- Note (not a bug): with Archipelago off, setup's longer notice pushes "Render tracker maps for
+  PopTracker" below the fold at 125 % display scaling (scroll to see it).

@@ -221,6 +221,8 @@ says so), enhance never degrade, Archipelago off = the original game, no debuggi
 data in git.
 
 ## Small follow-ups from the 0.02.50 Windows check (any time)
+- From the 0.03.00 Windows recheck: with Archipelago off, setup's notice pushes the "Render tracker
+  maps for PopTracker" button below the fold at 125 % display scaling.
 - From the 0.02.51 Windows check: the bench join banner shows "joined the party  bench" (no
   parentheses in the game's font; ap.cpp ~1766 "(bench)"); Party Order's refusal to bench the
   hero has no on-screen text; docs/images/setup-archipelago.png still shows v0.02.50.
