@@ -167,9 +167,8 @@ Changes by utzip2 (each with its reason):
   scratch TMPDIR (scratchpad/utzip/run_tests.sh C tracker_): 10 tests, 0 failed; nothing left in
   the cwd or the TMPDIR.
 
-### In progress
-- A (the UT zip), verified (utzip2, 2026-10-28, engine/build-utzip); port side committed (01cf761
-  docs, 7d37a06 code); world/docs side committing:
+- **A. The UT zip** (utzip2, 2026-10-28, verified on engine/build-utzip): committed 01cf761 (docs)
+  and 7d37a06 (port), 188d4f1 (docs) and dfba0fc (world + tools). Results:
   - `SS_TEST=tracker_` **14/14** (4 new: tracker_zip_writer, tracker_ut_zip_path, tracker_ut_extras,
     tracker_disc_ut_zip), nothing left in the cwd / TMPDIR; full ss_game_tests **230/0** (226 + 4),
     ss_tests **103/0**.
@@ -206,8 +205,34 @@ Changes by utzip2 (each with its reason):
     settings text, read by UT and AP's settings file; tracker/ JSON unchanged, TestUT's
     committed-is-this-build passes).
 
-### Next
-- A's port side, then A's world/docs side.
+
+### In progress
+- (none) **Assignment complete** (A, B, C).
+
+### Open (for the RC agent / the coordinator)
+- Not run by utzip2, rows in checklist 12.3 expect them: ASan and TSan `SS_TEST=tracker_` (14/14
+  now), the Wine run of `ss_game_tests.exe` `SS_TEST=tracker_` (14/14) and of the CLI's zip
+  (byte-identical to Linux's expected). The MinGW build itself compiles (scratchpad/utzip/build_win.sh).
+- The RC's builds give the final so2.apworld size (281,557 at utzip2's) and re-run the rows whose
+  counts changed (list below).
+- Known, documented, not fixable on our side: UT splits `ap:zip:<zip>/<path>` at the first "zip/",
+  so a zip under a folder whose name ends in "zip" shows no pictures in UT (any OS: its file dialog
+  gives `/` paths). The default place never hits it.
+- Small design choices made (no user decision needed; say so if the coordinator disagrees): the
+  default place `<PopTracker>/user-override/so2_shattered_stars_ut.zip` (beside the rendered
+  folder); setup's extra **Copy path** button (for pasting into UT's file dialog); the port's boards
+  use the 5x7 overlay font (same sizes and cells as the pack's, not its font).
+- Side effect of tools/build_apworld.sh (its fixed path): scratchpad/release/build_apworld/templates
+  was rewritten (the YAML templates; the RC rewrites it anyway).
+
+### How to verify
+- `scratchpad/utzip/run_tests.sh NAME tracker_` (unit, scratch cwd / TMPDIR), `scratchpad/utzip/e2e.sh`
+  (tools/ap_tracker_maps_test.py), `scratchpad/utzip/setup_runs.sh OUT B M Z` (setup headless,
+  screenshots in OUT; B compares the zip with a CLI zip at scratchpad/utzip/t_zip/, render one
+  first), `scratchpad/utzip/utmap.sh NAME ZIP [--apworld X]` (UT's loader; the zip must not be
+  under scratchpad/utzip/), `tools/build_poptracker.sh all` (pack tests 43),
+  `scratchpad/utzip/timing.sh` / `zip_timing.sh` (times). Screenshots kept in
+  scratchpad/utzip/screens/ (B_done.png, M_zip.png, Z_never.png); logs in scratchpad/utzip/logs/.
 
 ### Counts changed in the release docs (for the RC agent to recheck)
 - Pack tests 41 -> **42** (checklist 12.3 "The pack's tests"; poptracker-1.0.0.md "its own tests
@@ -247,3 +272,7 @@ Changes by utzip2 (each with its reason):
   side committed (01cf761, 7d37a06); the world / docs side next (ut_map.py, the pack and UT tests,
   apworld.md, poptracker.md, setup_en.md, the three notes, windows_check, checklist 12, the wiki
   page uncommitted).
+- 2026-10-28 (utzip2): world / docs side committed (188d4f1, dfba0fc); the wiki's Trackers.md
+  updated (uncommitted, links checked: 37 pages, 0 bad). Scratch cleaned (renders, zips, UT copies,
+  the base binaries, engine/build-utzip-win); kept the scripts, logs, screenshots, manifests and
+  engine/build-utzip. **utzip2 done.**
