@@ -1,0 +1,8458 @@
+{
+ "so2_ut_maps": {
+  "type": "tabbed",
+  "tabs": [
+   {
+    "title": "Expel",
+    "content": {
+     "type": "tabbed",
+     "tabs": [
+      {
+       "title": "Expel World Map",
+       "content": {
+        "type": "map",
+        "maps": [
+         "world_expel"
+        ]
+       }
+      },
+      {
+       "title": "Arlia Village",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Arlia Village",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "arlia_village"
+              ]
+             }
+            },
+            {
+             "title": "17 south: bridge and forest path",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_17"
+              ]
+             }
+            },
+            {
+             "title": "19 side yard off the south square (planet-gate ornament)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_19"
+              ]
+             }
+            },
+            {
+             "title": "18 north: fountain square",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_18"
+              ]
+             }
+            },
+            {
+             "title": "21 north: fountain square, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_21"
+              ]
+             }
+            },
+            {
+             "title": "22 bridge path, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_22"
+              ]
+             }
+            },
+            {
+             "title": "23 Belding Church (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_23"
+              ]
+             }
+            },
+            {
+             "title": "24 Newlyweds' House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_24"
+              ]
+             }
+            },
+            {
+             "title": "20 south: bridge and forest path, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_20"
+              ]
+             }
+            },
+            {
+             "title": "25 Newlyweds' House, bedroom",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_25"
+              ]
+             }
+            },
+            {
+             "title": "26 Hearn's General Store (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_26"
+              ]
+             }
+            },
+            {
+             "title": "27 Rena's House (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_27"
+              ]
+             }
+            },
+            {
+             "title": "29 Rena's House (inside), at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_29"
+              ]
+             }
+            },
+            {
+             "title": "32 Rena's House (inside), at night, variant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_32"
+              ]
+             }
+            },
+            {
+             "title": "33 Carpenter's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_33"
+              ]
+             }
+            },
+            {
+             "title": "34 Mayor Regis's House, 1F",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_34"
+              ]
+             }
+            },
+            {
+             "title": "35 Mayor Regis's House, 1F, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_35"
+              ]
+             }
+            },
+            {
+             "title": "36 waterside path behind the Mayor's house",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_36"
+              ]
+             }
+            },
+            {
+             "title": "37 Mayor's house, back porch, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_37"
+              ]
+             }
+            },
+            {
+             "title": "39 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_39"
+              ]
+             }
+            },
+            {
+             "title": "41 villager's house (unidentified owner)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_41"
+              ]
+             }
+            },
+            {
+             "title": "42 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_42"
+              ]
+             }
+            },
+            {
+             "title": "31 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_31"
+              ]
+             }
+            },
+            {
+             "title": "40 Rena's Room, at night",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_40"
+              ]
+             }
+            },
+            {
+             "title": "644 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_644"
+              ]
+             }
+            },
+            {
+             "title": "645 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_645"
+              ]
+             }
+            },
+            {
+             "title": "646 Arlia Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_646"
+              ]
+             }
+            },
+            {
+             "title": "16 clearing with a wrecked machine",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_16"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Rena's Room",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Rena's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "renas_room"
+              ]
+             }
+            },
+            {
+             "title": "38 Rena's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_38"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Shingo Forest",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Shingo Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "shingo_forest"
+              ]
+             }
+            },
+            {
+             "title": "9 Shingo Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_9"
+              ]
+             }
+            },
+            {
+             "title": "10 Shingo Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_10"
+              ]
+             }
+            },
+            {
+             "title": "11 Shingo Forest in sepia (a flashback; map 10 tinted)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_11"
+              ]
+             }
+            },
+            {
+             "title": "12 Shingo Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_12"
+              ]
+             }
+            },
+            {
+             "title": "13 Shingo Forest in sepia (a flashback; map 12 tinted)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_13"
+              ]
+             }
+            },
+            {
+             "title": "14 Shingo Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_14"
+              ]
+             }
+            },
+            {
+             "title": "15 Shingo Forest in sepia (a flashback; map 14 tinted)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_15"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Salva",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Town of Salva",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Town of Salva",
+             "content": {
+              "type": "map",
+              "maps": [
+               "town_of_salva"
+              ]
+             }
+            },
+            {
+             "title": "43 square, outer half (path to Salva Drift and Alen's Mansion)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_43"
+              ]
+             }
+            },
+            {
+             "title": "44 square, shop half (Inn, Jam Store, Jewelry Store)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_44"
+              ]
+             }
+            },
+            {
+             "title": "45 side alley between the square's two halves",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_45"
+              ]
+             }
+            },
+            {
+             "title": "60 rocky dockside edge of the square",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_60"
+              ]
+             }
+            },
+            {
+             "title": "48 gate toward Alen's Mansion",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_48"
+              ]
+             }
+            },
+            {
+             "title": "54 Inn The Hopping Penguin",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_54"
+              ]
+             }
+            },
+            {
+             "title": "56 Jam Store Dolphin Kick",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_56"
+              ]
+             }
+            },
+            {
+             "title": "57 House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_57"
+              ]
+             }
+            },
+            {
+             "title": "58 Tavern Rough & Tumble",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_58"
+              ]
+             }
+            },
+            {
+             "title": "59 Jewelry Store Fairy Tear",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_59"
+              ]
+             }
+            },
+            {
+             "title": "63 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_63"
+              ]
+             }
+            },
+            {
+             "title": "55 Inn The Hopping Penguin, guest rooms",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_55"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Alen's Mansion",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Alen's Mansion",
+             "content": {
+              "type": "map",
+              "maps": [
+               "alens_mansion"
+              ]
+             }
+            },
+            {
+             "title": "50 Alen's Mansion, bedroom",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_50"
+              ]
+             }
+            },
+            {
+             "title": "46 Alen's Mansion (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_46"
+              ]
+             }
+            },
+            {
+             "title": "47 Alen's Mansion",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_47"
+              ]
+             }
+            },
+            {
+             "title": "49 grounds / path to the mansion",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_49"
+              ]
+             }
+            },
+            {
+             "title": "51 Alen's Mansion, dining room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_51"
+              ]
+             }
+            },
+            {
+             "title": "52 Alen's study (passage to Salva Drift)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_52"
+              ]
+             }
+            },
+            {
+             "title": "53 Alen's study, guarded (passage to Salva Drift)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_53"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Salva Drift",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "salva_drift"
+              ]
+             }
+            },
+            {
+             "title": "64 mine tunnel, deeper",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_64"
+              ]
+             }
+            },
+            {
+             "title": "65 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_65"
+              ]
+             }
+            },
+            {
+             "title": "62 mine tunnel entrance",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_62"
+              ]
+             }
+            },
+            {
+             "title": "66 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_66"
+              ]
+             }
+            },
+            {
+             "title": "68 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_68"
+              ]
+             }
+            },
+            {
+             "title": "61 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_61"
+              ]
+             }
+            },
+            {
+             "title": "67 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_67"
+              ]
+             }
+            },
+            {
+             "title": "72 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_72"
+              ]
+             }
+            },
+            {
+             "title": "70 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_70"
+              ]
+             }
+            },
+            {
+             "title": "69 Salva Drift",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_69"
+              ]
+             }
+            },
+            {
+             "title": "71 dark cave bridge, dead end off the tunnel",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_71"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Cross",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Town of Cross",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Town of Cross",
+             "content": {
+              "type": "map",
+              "maps": [
+               "town_of_cross"
+              ]
+             }
+            },
+            {
+             "title": "73 town entrance, by the clock-tower square",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_73"
+              ]
+             }
+            },
+            {
+             "title": "74 main plaza (roundabout)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_74"
+              ]
+             }
+            },
+            {
+             "title": "87 main plaza (roundabout), story-state variant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_87"
+              ]
+             }
+            },
+            {
+             "title": "75 shop plaza (umbrella stalls, by Budabing Budaboom tool shop)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_75"
+              ]
+             }
+            },
+            {
+             "title": "76 back street near the plaza",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_76"
+              ]
+             }
+            },
+            {
+             "title": "77 street toward the castle bridge",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_77"
+              ]
+             }
+            },
+            {
+             "title": "78 castle gate bridge",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_78"
+              ]
+             }
+            },
+            {
+             "title": "83 Inn Kingdom Hotel (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_83"
+              ]
+             }
+            },
+            {
+             "title": "86 Cross Cathedral (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_86"
+              ]
+             }
+            },
+            {
+             "title": "88 shop plaza, story-state variant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_88"
+              ]
+             }
+            },
+            {
+             "title": "89 back street, story-state variant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_89"
+              ]
+             }
+            },
+            {
+             "title": "79 Weapons Shop Royal Hunt (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_79"
+              ]
+             }
+            },
+            {
+             "title": "80 Skill Guild (Skillie)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_80"
+              ]
+             }
+            },
+            {
+             "title": "81 Bar Mikado (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_81"
+              ]
+             }
+            },
+            {
+             "title": "82 Restaurant Forum (inside)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_82"
+              ]
+             }
+            },
+            {
+             "title": "84 Inn Kingdom Hotel, hallway",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_84"
+              ]
+             }
+            },
+            {
+             "title": "85 Inn Kingdom Hotel, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_85"
+              ]
+             }
+            },
+            {
+             "title": "90 Cross Castle, First Floor",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_90"
+              ]
+             }
+            },
+            {
+             "title": "95 Throne Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_95"
+              ]
+             }
+            },
+            {
+             "title": "93 Waiting Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_93"
+              ]
+             }
+            },
+            {
+             "title": "94 The King's Private Chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_94"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Armory",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Armory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "armory"
+              ]
+             }
+            },
+            {
+             "title": "92 Armory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_92"
+              ]
+             }
+            },
+            {
+             "title": "91 Cross Castle, hall to the Armory and Kitchen",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_91"
+              ]
+             }
+            },
+            {
+             "title": "98 Cross Castle Kitchen",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_98"
+              ]
+             }
+            },
+            {
+             "title": "99 Soldiers' Compartment",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_99"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "The Prince's Chambers",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "The Prince's Chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "the_princes_chambers"
+              ]
+             }
+            },
+            {
+             "title": "100 The Prince's Chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_100"
+              ]
+             }
+            },
+            {
+             "title": "102 Cross Castle, hall of the royal chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_102"
+              ]
+             }
+            },
+            {
+             "title": "101 The Princess' Chamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_101"
+              ]
+             }
+            },
+            {
+             "title": "103 Cross Castle, stairs to the royal chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_103"
+              ]
+             }
+            },
+            {
+             "title": "104 Cross Castle, stairs to the royal chambers",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_104"
+              ]
+             }
+            },
+            {
+             "title": "96 Cross Castle, corridor to the Throne Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_96"
+              ]
+             }
+            },
+            {
+             "title": "97 Cross Castle, corridor to the Throne Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_97"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Cross Cave",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cross Cave",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cross_cave"
+           ]
+          }
+         },
+         {
+          "title": "524 entrance, cave mouth",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_524"
+           ]
+          }
+         },
+         {
+          "title": "525 passage (two chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_525"
+           ]
+          }
+         },
+         {
+          "title": "526 passage (single chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_526"
+           ]
+          }
+         },
+         {
+          "title": "527 passage (scattered item, chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_527"
+           ]
+          }
+         },
+         {
+          "title": "528 pool alcove (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_528"
+           ]
+          }
+         },
+         {
+          "title": "529 treasure nook (four chests, skeleton)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_529"
+           ]
+          }
+         },
+         {
+          "title": "530 chest hollow (two chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_530"
+           ]
+          }
+         },
+         {
+          "title": "531 passage (distant chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_531"
+           ]
+          }
+         },
+         {
+          "title": "532 chest alcove (two chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_532"
+           ]
+          }
+         },
+         {
+          "title": "533 open ledge (bright clearing)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_533"
+           ]
+          }
+         },
+         {
+          "title": "534 narrow winding passage",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_534"
+           ]
+          }
+         },
+         {
+          "title": "535 chest hollow (two chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_535"
+           ]
+          }
+         },
+         {
+          "title": "536 passage (green hollow)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_536"
+           ]
+          }
+         },
+         {
+          "title": "541 Ancient Writings marker (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_541"
+           ]
+          }
+         },
+         {
+          "title": "537 blue grotto (pool)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_537"
+           ]
+          }
+         },
+         {
+          "title": "538 Ancient Writings marker (chest nearby)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_538"
+           ]
+          }
+         },
+         {
+          "title": "542 passage (cave hollow)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_542"
+           ]
+          }
+         },
+         {
+          "title": "544 mushroom-ring clearing",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_544"
+           ]
+          }
+         },
+         {
+          "title": "539 overgrown passage (vines)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_539"
+           ]
+          }
+         },
+         {
+          "title": "540 Ancient Writings marker (fork)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_540"
+           ]
+          }
+         },
+         {
+          "title": "543 chest chamber (ghost enemy)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_543"
+           ]
+          }
+         },
+         {
+          "title": "545 root chamber (monster encounter)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_545"
+           ]
+          }
+         },
+         {
+          "title": "546 root pillar (light ahead)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_546"
+           ]
+          }
+         },
+         {
+          "title": "547 innermost chamber (star-shaped dais, 5 chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_547"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Mars Village",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Mars Village",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Mars Village",
+             "content": {
+              "type": "map",
+              "maps": [
+               "mars_village"
+              ]
+             }
+            },
+            {
+             "title": "124 village green (entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_124"
+              ]
+             }
+            },
+            {
+             "title": "125 bridge over the millpond",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_125"
+              ]
+             }
+            },
+            {
+             "title": "126 village street (shops)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_126"
+              ]
+             }
+            },
+            {
+             "title": "127 stepping-stone path",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_127"
+              ]
+             }
+            },
+            {
+             "title": "128 Tool Shop Roof's",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_128"
+              ]
+             }
+            },
+            {
+             "title": "129 Bar O'Shane",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_129"
+              ]
+             }
+            },
+            {
+             "title": "130 Inn Finn's, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_130"
+              ]
+             }
+            },
+            {
+             "title": "134 village house interior (dim room)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_134"
+              ]
+             }
+            },
+            {
+             "title": "135 Celine's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_135"
+              ]
+             }
+            },
+            {
+             "title": "136 village house interior (fireplace living room)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_136"
+              ]
+             }
+            },
+            {
+             "title": "138 village house, bedroom",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_138"
+              ]
+             }
+            },
+            {
+             "title": "140 Grocery Store Golden Spoon",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_140"
+              ]
+             }
+            },
+            {
+             "title": "141 porch (potted plants)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_141"
+              ]
+             }
+            },
+            {
+             "title": "465 Heraldry Forest",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_465"
+              ]
+             }
+            },
+            {
+             "title": "133 Celine's House, hallway (to Celine's Room)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_133"
+              ]
+             }
+            },
+            {
+             "title": "137 Celine's House, bedroom",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_137"
+              ]
+             }
+            },
+            {
+             "title": "456 Heraldry Forest, path (just past the entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_456"
+              ]
+             }
+            },
+            {
+             "title": "462 Heraldry Forest, clearing behind Celine's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_462"
+              ]
+             }
+            },
+            {
+             "title": "139 Celine's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_139"
+              ]
+             }
+            },
+            {
+             "title": "457 Heraldry Forest, twisting trail",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_457"
+              ]
+             }
+            },
+            {
+             "title": "464 Heraldry Forest, junction (back toward the village)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_464"
+              ]
+             }
+            },
+            {
+             "title": "458 Heraldry Forest, fork (item marker)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_458"
+              ]
+             }
+            },
+            {
+             "title": "460 Heraldry Forest, fallen-log crossing",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_460"
+              ]
+             }
+            },
+            {
+             "title": "461 Heraldry Forest, path (monster den)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_461"
+              ]
+             }
+            },
+            {
+             "title": "459 Heraldry Forest, mossy hollow",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_459"
+              ]
+             }
+            },
+            {
+             "title": "466 Heraldry Forest, narrow trail",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_466"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Elder's House",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Elder's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "elders_house"
+              ]
+             }
+            },
+            {
+             "title": "131 Elder's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_131"
+              ]
+             }
+            },
+            {
+             "title": "132 Elder's House, study",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_132"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Port of Clik",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Port of Clik",
+          "content": {
+           "type": "map",
+           "maps": [
+            "port_of_clik"
+           ]
+          }
+         },
+         {
+          "title": "107 harbor plaza (canal)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_107"
+           ]
+          }
+         },
+         {
+          "title": "108 hillside path (secluded, stairs up)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_108"
+           ]
+          }
+         },
+         {
+          "title": "112 garden gate",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_112"
+           ]
+          }
+         },
+         {
+          "title": "105 market square (stairs, fountain statue)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_105"
+           ]
+          }
+         },
+         {
+          "title": "111 alley (barrels, ladder)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_111"
+           ]
+          }
+         },
+         {
+          "title": "113 International Trading",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_113"
+           ]
+          }
+         },
+         {
+          "title": "114 Antique Shop Milly's Shop",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_114"
+           ]
+          }
+         },
+         {
+          "title": "115 Henry's Happy Barrel",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_115"
+           ]
+          }
+         },
+         {
+          "title": "116 Inn Waterfront",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_116"
+           ]
+          }
+         },
+         {
+          "title": "117 The House on the Hill",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_117"
+           ]
+          }
+         },
+         {
+          "title": "109 docks (boats moored)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_109"
+           ]
+          }
+         },
+         {
+          "title": "118 Clothing Store Golgo",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_118"
+           ]
+          }
+         },
+         {
+          "title": "119 Restaurant The Big Potato",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_119"
+           ]
+          }
+         },
+         {
+          "title": "121 Bakery The Clik Bakery",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_121"
+           ]
+          }
+         },
+         {
+          "title": "123 Skill Guild Clik Skills",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_123"
+           ]
+          }
+         },
+         {
+          "title": "106 market square (stairs, fountain statue)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_106"
+           ]
+          }
+         },
+         {
+          "title": "110 pier, far end (life rings)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_110"
+           ]
+          }
+         },
+         {
+          "title": "120 Restaurant The Big Potato, dining room (piano lounge)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_120"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Herlie",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Town of Herlie",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Town of Herlie",
+             "content": {
+              "type": "map",
+              "maps": [
+               "town_of_herlie"
+              ]
+             }
+            },
+            {
+             "title": "144 market street (shop stalls, signposted)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_144"
+              ]
+             }
+            },
+            {
+             "title": "145 back alley (signpost; side route toward Zand's Mansion)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_145"
+              ]
+             }
+            },
+            {
+             "title": "142 town plaza / shop row (Weapons Premia, Antique Dealer, Tavern, Skill Guild, Eleanor's House, Delicatessen, Inn all open off it)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_142"
+              ]
+             }
+            },
+            {
+             "title": "146 Warehouse (south Port of Herlie)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_146"
+              ]
+             }
+            },
+            {
+             "title": "156 Eleanor's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_156"
+              ]
+             }
+            },
+            {
+             "title": "157 Eleanor's House, upstairs",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_157"
+              ]
+             }
+            },
+            {
+             "title": "147 Skill Guild Giono Vallon",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_147"
+              ]
+             }
+            },
+            {
+             "title": "148 Tavern Wild Man",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_148"
+              ]
+             }
+            },
+            {
+             "title": "149 Antique Dealer The Grasping Hand",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_149"
+              ]
+             }
+            },
+            {
+             "title": "150 Weapons Shop Premia",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_150"
+              ]
+             }
+            },
+            {
+             "title": "151 Delicatessen Red Dragon Manor",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_151"
+              ]
+             }
+            },
+            {
+             "title": "152 Inn Ocean View",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_152"
+              ]
+             }
+            },
+            {
+             "title": "153 Inn Ocean View, upstairs hallway (west wing)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_153"
+              ]
+             }
+            },
+            {
+             "title": "154 Inn Ocean View, upstairs hallway (east wing)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_154"
+              ]
+             }
+            },
+            {
+             "title": "155 Inn Ocean View, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_155"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Zand's Mansion",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Zand's Mansion",
+             "content": {
+              "type": "map",
+              "maps": [
+               "zands_mansion"
+              ]
+             }
+            },
+            {
+             "title": "166 storage room (barrels)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_166"
+              ]
+             }
+            },
+            {
+             "title": "162 back stairwell, second flight",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_162"
+              ]
+             }
+            },
+            {
+             "title": "165 gallery hall, second passage",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_165"
+              ]
+             }
+            },
+            {
+             "title": "159 grand foyer (double staircase)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_159"
+              ]
+             }
+            },
+            {
+             "title": "163 parlor (checkerboard floor), front room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_163"
+              ]
+             }
+            },
+            {
+             "title": "143 front gate / grounds (hilltop, north end of Port of Herlie)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_143"
+              ]
+             }
+            },
+            {
+             "title": "160 parlor (checkerboard floor)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_160"
+              ]
+             }
+            },
+            {
+             "title": "164 gallery hall (horse statue)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_164"
+              ]
+             }
+            },
+            {
+             "title": "158 dining room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_158"
+              ]
+             }
+            },
+            {
+             "title": "161 back stairwell",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_161"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Port Hilton",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Port Hilton",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Port Hilton",
+             "content": {
+              "type": "map",
+              "maps": [
+               "port_hilton"
+              ]
+             }
+            },
+            {
+             "title": "169 harbor entrance (city gate, cargo crane)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_169"
+              ]
+             }
+            },
+            {
+             "title": "171 pier (boat docks)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_171"
+              ]
+             }
+            },
+            {
+             "title": "167 Food Store Munchies",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_167"
+              ]
+             }
+            },
+            {
+             "title": "173 Skill Guild Skill Power",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_173"
+              ]
+             }
+            },
+            {
+             "title": "175 Inn Hilton Island",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_175"
+              ]
+             }
+            },
+            {
+             "title": "177 Inn Hilton Island, guest hallway (A)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_177"
+              ]
+             }
+            },
+            {
+             "title": "179 Inn Hilton Island, guest hallway (B)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_179"
+              ]
+             }
+            },
+            {
+             "title": "181 Inn Hilton Island, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_181"
+              ]
+             }
+            },
+            {
+             "title": "426 grand staircase (up from the Conference Room wing, toward the coliseum)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_426"
+              ]
+             }
+            },
+            {
+             "title": "427 corridor (Conference Room, Great Dining Hall, Arsenal and Main Library wing)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_427"
+              ]
+             }
+            },
+            {
+             "title": "428 Laboratory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_428"
+              ]
+             }
+            },
+            {
+             "title": "431 Lacour Castle Conference Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_431"
+              ]
+             }
+            },
+            {
+             "title": "432 Lacour Castle Great Dining Hall",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_432"
+              ]
+             }
+            },
+            {
+             "title": "433 Lacour Castle Arsenal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_433"
+              ]
+             }
+            },
+            {
+             "title": "434 courtyard walkway (castle to coliseum wing)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_434"
+              ]
+             }
+            },
+            {
+             "title": "435 Lacour Castle Main Library",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_435"
+              ]
+             }
+            },
+            {
+             "title": "436 Laboratory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_436"
+              ]
+             }
+            },
+            {
+             "title": "437 Laboratory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_437"
+              ]
+             }
+            },
+            {
+             "title": "467 coliseum, arena floor (gallery-side entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_467"
+              ]
+             }
+            },
+            {
+             "title": "468 coliseum registration desk",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_468"
+              ]
+             }
+            },
+            {
+             "title": "469 coliseum equipment storage",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_469"
+              ]
+             }
+            },
+            {
+             "title": "470 coliseum gallery corridor (tournament signage)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_470"
+              ]
+             }
+            },
+            {
+             "title": "471 coliseum gallery corridor (crest tapestry)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_471"
+              ]
+             }
+            },
+            {
+             "title": "472 coliseum stairwell",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_472"
+              ]
+             }
+            },
+            {
+             "title": "473 coliseum stairwell (lower flight)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_473"
+              ]
+             }
+            },
+            {
+             "title": "474 coliseum, spectator balcony",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_474"
+              ]
+             }
+            },
+            {
+             "title": "475 coliseum waiting room (crest dais)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_475"
+              ]
+             }
+            },
+            {
+             "title": "476 coliseum, red carpet corridor",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_476"
+              ]
+             }
+            },
+            {
+             "title": "477 coliseum, arena floor (equipment-side entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_477"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Ship to El",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Ship to El",
+             "content": {
+              "type": "map",
+              "maps": [
+               "ship_to_el"
+              ]
+             }
+            },
+            {
+             "title": "548 Ship to El",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_548"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Tavern Stone",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Tavern Stone",
+             "content": {
+              "type": "map",
+              "maps": [
+               "tavern_stone"
+              ]
+             }
+            },
+            {
+             "title": "174 Tavern Stone",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_174"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Lacour",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Town of Lacour",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Town of Lacour",
+             "content": {
+              "type": "map",
+              "maps": [
+               "town_of_lacour"
+              ]
+             }
+            },
+            {
+             "title": "211 main plaza (round garden)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_211"
+              ]
+             }
+            },
+            {
+             "title": "214 side alley off the plaza",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_214"
+              ]
+             }
+            },
+            {
+             "title": "210 Weapons Shop Counterpunch",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_210"
+              ]
+             }
+            },
+            {
+             "title": "212 alley between the main plaza and the castle path",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_212"
+              ]
+             }
+            },
+            {
+             "title": "216 back street (to House Red Roof)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_216"
+              ]
+             }
+            },
+            {
+             "title": "221 Inn The Lacour Hotel",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_221"
+              ]
+             }
+            },
+            {
+             "title": "225 Tavern La Coeur of Lacour",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_225"
+              ]
+             }
+            },
+            {
+             "title": "213 statued path to the castle gate",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_213"
+              ]
+             }
+            },
+            {
+             "title": "215 Food Store Carnival",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_215"
+              ]
+             }
+            },
+            {
+             "title": "217 stairway street",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_217"
+              ]
+             }
+            },
+            {
+             "title": "220 Weapons Shop Slayer",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_220"
+              ]
+             }
+            },
+            {
+             "title": "222 Inn The Lacour Hotel, hallway",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_222"
+              ]
+             }
+            },
+            {
+             "title": "223 Inn The Lacour Hotel, hallway",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_223"
+              ]
+             }
+            },
+            {
+             "title": "224 Inn The Lacour Hotel, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_224"
+              ]
+             }
+            },
+            {
+             "title": "226 House Red Roof",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_226"
+              ]
+             }
+            },
+            {
+             "title": "218 street by Blacksmith Gamgee's Forge",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_218"
+              ]
+             }
+            },
+            {
+             "title": "219 Skill Guild Lacour Skills",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_219"
+              ]
+             }
+            },
+            {
+             "title": "227 House Red Roof, back room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_227"
+              ]
+             }
+            },
+            {
+             "title": "228 Blacksmith Gamgee's Forge",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_228"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "King's Room",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "King's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "kings_room"
+              ]
+             }
+            },
+            {
+             "title": "429 King's Room, antechamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_429"
+              ]
+             }
+            },
+            {
+             "title": "425 King's Room, main chamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_425"
+              ]
+             }
+            },
+            {
+             "title": "423 Throne Room, side chamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_423"
+              ]
+             }
+            },
+            {
+             "title": "424 Throne Room, other side chamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_424"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Lacour Castle Registration",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Lacour Castle Registration",
+             "content": {
+              "type": "map",
+              "maps": [
+               "lacour_castle_registration"
+              ]
+             }
+            },
+            {
+             "title": "420 Registration desk",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_420"
+              ]
+             }
+            },
+            {
+             "title": "421 Registration, entrance hall (from the castle grounds)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_421"
+              ]
+             }
+            },
+            {
+             "title": "422 Throne Room, main chamber",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_422"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Rosalia's Room",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Rosalia's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "rosalias_room"
+              ]
+             }
+            },
+            {
+             "title": "430 Rosalia's Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_430"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Sanctuary of Linga",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Sanctuary of Linga",
+          "content": {
+           "type": "map",
+           "maps": [
+            "sanctuary_of_linga"
+           ]
+          }
+         },
+         {
+          "title": "402 cave entrance (ledge fork)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_402"
+           ]
+          }
+         },
+         {
+          "title": "403 carved stairway ledge (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_403"
+           ]
+          }
+         },
+         {
+          "title": "405 crossover bridge (ledges winding over the chasm)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_405"
+           ]
+          }
+         },
+         {
+          "title": "406 herb alcove (dead end, off the entrance fork)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_406"
+           ]
+          }
+         },
+         {
+          "title": "404 winding crossover ledge (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_404"
+           ]
+          }
+         },
+         {
+          "title": "407 herb alcove (dead end, off the inner fork)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_407"
+           ]
+          }
+         },
+         {
+          "title": "408 stairway up (bone-strewn ledge)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_408"
+           ]
+          }
+         },
+         {
+          "title": "409 deep fork (final choice of paths)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_409"
+           ]
+          }
+         },
+         {
+          "title": "410 skeletal beast lair (dead end)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_410"
+           ]
+          }
+         },
+         {
+          "title": "411 herb alcove (deepest dead end)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_411"
+           ]
+          }
+         },
+         {
+          "title": "412 grassy chamber (two chests, skull) -- near the heart of the Sanctuary",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_412"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Linga",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Town of Linga",
+          "content": {
+           "type": "map",
+           "maps": [
+            "town_of_linga"
+           ]
+          }
+         },
+         {
+          "title": "183 town plaza (University district; most shops open off it)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_183"
+           ]
+          }
+         },
+         {
+          "title": "209 gate / archway at the edge of the plaza",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_209"
+           ]
+          }
+         },
+         {
+          "title": "184 canal bridge (path to the Academy and Bowman's house)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_184"
+           ]
+          }
+         },
+         {
+          "title": "185 Keith Klasner's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_185"
+           ]
+          }
+         },
+         {
+          "title": "187 University Co-op Academy Co-op",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_187"
+           ]
+          }
+         },
+         {
+          "title": "188 Inn Pension Chie",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_188"
+           ]
+          }
+         },
+         {
+          "title": "190 Skill Guild Le Skill",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_190"
+           ]
+          }
+         },
+         {
+          "title": "196 Precis's Living Room",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_196"
+           ]
+          }
+         },
+         {
+          "title": "197 Precis' House The Lab",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_197"
+           ]
+          }
+         },
+         {
+          "title": "206 Pharmacy Tsuyoshi Takemoto",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_206"
+           ]
+          }
+         },
+         {
+          "title": "207 path to Keith Klaser's House (yard)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_207"
+           ]
+          }
+         },
+         {
+          "title": "208 lakeside street (shop signs)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_208"
+           ]
+          }
+         },
+         {
+          "title": "186 Keith Klaser's House, study",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_186"
+           ]
+          }
+         },
+         {
+          "title": "189 Academy Library",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_189"
+           ]
+          }
+         },
+         {
+          "title": "191 Pharmacy Jean Medicine Home",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_191"
+           ]
+          }
+         },
+         {
+          "title": "192 Bowman's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_192"
+           ]
+          }
+         },
+         {
+          "title": "195 Bowman's House, Bedroom",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_195"
+           ]
+          }
+         },
+         {
+          "title": "198 Precis' House Engine Room",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_198"
+           ]
+          }
+         },
+         {
+          "title": "199 Lacour Academy Reception",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_199"
+           ]
+          }
+         },
+         {
+          "title": "193 Bowman's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_193"
+           ]
+          }
+         },
+         {
+          "title": "194 Bowman's House, Bedroom",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_194"
+           ]
+          }
+         },
+         {
+          "title": "200 Lacour Academy, ground floor hallway (reception to Hall 1 / cafe)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_200"
+           ]
+          }
+         },
+         {
+          "title": "201 Lacour Academy, hallway (reception to Hall 2 / lab, stairs up)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_201"
+           ]
+          }
+         },
+         {
+          "title": "202 Lacour Academy Student Cafe",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_202"
+           ]
+          }
+         },
+         {
+          "title": "203 Lacour Academy Hall 1",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_203"
+           ]
+          }
+         },
+         {
+          "title": "204 Lacour Academy Hall 2",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_204"
+           ]
+          }
+         },
+         {
+          "title": "205 Lacour Academy Laboratory",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_205"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Hoffmann Ruins",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "hoffmann_ruins"
+           ]
+          }
+         },
+         {
+          "title": "478 entrance (exterior ruins facade)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_478"
+           ]
+          }
+         },
+         {
+          "title": "479 entrance & approach: boss room (Ghost (possessing Ernest))",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_479"
+           ]
+          }
+         },
+         {
+          "title": "480 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_480"
+           ]
+          }
+         },
+         {
+          "title": "481 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_481"
+           ]
+          }
+         },
+         {
+          "title": "482 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_482"
+           ]
+          }
+         },
+         {
+          "title": "483 the elevator down into the mines",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_483"
+           ]
+          }
+         },
+         {
+          "title": "484 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_484"
+           ]
+          }
+         },
+         {
+          "title": "485 upper tunnels: chest room (Cure Stone)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_485"
+           ]
+          }
+         },
+         {
+          "title": "486 upper tunnels: chest room (Recoil Bracelet)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_486"
+           ]
+          }
+         },
+         {
+          "title": "488 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_488"
+           ]
+          }
+         },
+         {
+          "title": "487 upper tunnels: chest room (Angel Hair, Light Box)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_487"
+           ]
+          }
+         },
+         {
+          "title": "489 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_489"
+           ]
+          }
+         },
+         {
+          "title": "490 upper tunnels: chest room (Green Beryl, Holy Mist)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_490"
+           ]
+          }
+         },
+         {
+          "title": "492 mine-cart tunnels: chest room (Aquaberry)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_492"
+           ]
+          }
+         },
+         {
+          "title": "493 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_493"
+           ]
+          }
+         },
+         {
+          "title": "491 mine-cart tunnels: chest room (Cure Paralysis)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_491"
+           ]
+          }
+         },
+         {
+          "title": "494 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_494"
+           ]
+          }
+         },
+         {
+          "title": "495 mine-cart tunnels: chest room (Dictionary, Cure Paralysis)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_495"
+           ]
+          }
+         },
+         {
+          "title": "496 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_496"
+           ]
+          }
+         },
+         {
+          "title": "498 mine-cart tunnels: chest room (Hexagram Card)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_498"
+           ]
+          }
+         },
+         {
+          "title": "497 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_497"
+           ]
+          }
+         },
+         {
+          "title": "499 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_499"
+           ]
+          }
+         },
+         {
+          "title": "500 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_500"
+           ]
+          }
+         },
+         {
+          "title": "511 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_511"
+           ]
+          }
+         },
+         {
+          "title": "501 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_501"
+           ]
+          }
+         },
+         {
+          "title": "502 mine-cart tunnels: chest room (1-up Pudding, Zephyr Earring, Gold, Orichalcum)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_502"
+           ]
+          }
+         },
+         {
+          "title": "503 mine-cart tunnels: chest room (Hyperball)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_503"
+           ]
+          }
+         },
+         {
+          "title": "504 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_504"
+           ]
+          }
+         },
+         {
+          "title": "512 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_512"
+           ]
+          }
+         },
+         {
+          "title": "517 lower passages: chest room (Paralysis Check)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_517"
+           ]
+          }
+         },
+         {
+          "title": "518 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_518"
+           ]
+          }
+         },
+         {
+          "title": "505 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_505"
+           ]
+          }
+         },
+         {
+          "title": "506 mine-cart tunnels: chest room (Spring Water, Diamond)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_506"
+           ]
+          }
+         },
+         {
+          "title": "513 lower passages: chest room (Green Beryl, Blackberry)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_513"
+           ]
+          }
+         },
+         {
+          "title": "516 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_516"
+           ]
+          }
+         },
+         {
+          "title": "519 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_519"
+           ]
+          }
+         },
+         {
+          "title": "520 lower passages: chest room (Sour Syrup, ?HERB)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_520"
+           ]
+          }
+         },
+         {
+          "title": "521 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_521"
+           ]
+          }
+         },
+         {
+          "title": "507 mine-cart tunnels: chest room (Hot Syrup, Peep Half, Fruit Syrup)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_507"
+           ]
+          }
+         },
+         {
+          "title": "508 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_508"
+           ]
+          }
+         },
+         {
+          "title": "514 lower passages: chest room (Sturm Ring)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_514"
+           ]
+          }
+         },
+         {
+          "title": "515 lower passages: chest room ('Spring')",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_515"
+           ]
+          }
+         },
+         {
+          "title": "522 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_522"
+           ]
+          }
+         },
+         {
+          "title": "509 Hoffmann Ruins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_509"
+           ]
+          }
+         },
+         {
+          "title": "510 mine-cart tunnels: chest room (Material Kit, Peep-peep Bomb)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_510"
+           ]
+          }
+         },
+         {
+          "title": "523 the Energy Stone chamber: boss room (Harfainx)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_523"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Lacour Front Line",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Lacour Front Line",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Lacour Front Line",
+             "content": {
+              "type": "map",
+              "maps": [
+               "lacour_front_line"
+              ]
+             }
+            },
+            {
+             "title": "438 forward position",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_438"
+              ]
+             }
+            },
+            {
+             "title": "439 camp (hub)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_439"
+              ]
+             }
+            },
+            {
+             "title": "445 General Store Lacour Store",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_445"
+              ]
+             }
+            },
+            {
+             "title": "446 Lacour front line Arsenal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_446"
+              ]
+             }
+            },
+            {
+             "title": "440 path to the command tents",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_440"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Lacour meeting room",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Lacour meeting room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "lacour_meeting_room"
+              ]
+             }
+            },
+            {
+             "title": "447 Meeting Room, third tent",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_447"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Meeting Room",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Meeting Room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "meeting_room"
+              ]
+             }
+            },
+            {
+             "title": "448 Lacour Front Line, lookout",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_448"
+              ]
+             }
+            },
+            {
+             "title": "444 Meeting Room, second tent",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_444"
+              ]
+             }
+            },
+            {
+             "title": "441 Meeting Room (Lacour Front Line command tent)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_441"
+              ]
+             }
+            },
+            {
+             "title": "442 Lacour Front Line Field Hospital",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_442"
+              ]
+             }
+            },
+            {
+             "title": "443 Commander's Office",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_443"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "El Beach",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "El Beach",
+          "content": {
+           "type": "map",
+           "maps": [
+            "el_beach"
+           ]
+          }
+         },
+         {
+          "title": "229 El Beach",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_229"
+           ]
+          }
+         },
+         {
+          "title": "230 El Beach",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_230"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Eluria Colony",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Eluria Colony",
+          "content": {
+           "type": "map",
+           "maps": [
+            "eluria_colony"
+           ]
+          }
+         },
+         {
+          "title": "232 outpost clearing (entrance)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_232"
+           ]
+          }
+         },
+         {
+          "title": "233 Arsenal (shop: items and ingredients)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_233"
+           ]
+          }
+         },
+         {
+          "title": "234 Leader's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_234"
+           ]
+          }
+         },
+         {
+          "title": "231 shipwreck beach (opening cutscene)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_231"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Eluria Tower",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Eluria Tower",
+          "content": {
+           "type": "map",
+           "maps": [
+            "eluria_tower"
+           ]
+          }
+         },
+         {
+          "title": "557 entrance walkway (locked gate)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_557"
+           ]
+          }
+         },
+         {
+          "title": "558 entrance hall (red light, statue)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_558"
+           ]
+          }
+         },
+         {
+          "title": "559 picture gallery (eerie frescoes)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_559"
+           ]
+          }
+         },
+         {
+          "title": "560 overgrown chamber (light shaft)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_560"
+           ]
+          }
+         },
+         {
+          "title": "561 vine chamber (floating chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_561"
+           ]
+          }
+         },
+         {
+          "title": "562 statue garden, crystal pool (1 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_562"
+           ]
+          }
+         },
+         {
+          "title": "563 statue garden, crystal pool (2 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_563"
+           ]
+          }
+         },
+         {
+          "title": "564 statue garden, crystal pool (3 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_564"
+           ]
+          }
+         },
+         {
+          "title": "565 statue garden, crystal pool (4 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_565"
+           ]
+          }
+         },
+         {
+          "title": "566 statue garden, crystal pool (5 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_566"
+           ]
+          }
+         },
+         {
+          "title": "567 statue garden, crystal pool (6 of 6)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_567"
+           ]
+          }
+         },
+         {
+          "title": "568 inscribed chamber (floor emblems)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_568"
+           ]
+          }
+         },
+         {
+          "title": "626 transporter terminal (to Field of Power), A",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_626"
+           ]
+          }
+         },
+         {
+          "title": "627 transporter terminal (to Field of Power), B",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_627"
+           ]
+          }
+         },
+         {
+          "title": "569 corridor (enemy encounter)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_569"
+           ]
+          }
+         },
+         {
+          "title": "570 triple archway hall",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_570"
+           ]
+          }
+         },
+         {
+          "title": "571 chamber (chests, spirit enemy)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_571"
+           ]
+          }
+         },
+         {
+          "title": "572 crystal chamber (chests)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_572"
+           ]
+          }
+         },
+         {
+          "title": "573 statue hall (archways)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_573"
+           ]
+          }
+         },
+         {
+          "title": "574 ascending shaft (root pillars)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_574"
+           ]
+          }
+         },
+         {
+          "title": "575 summit chamber (glowing dome)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_575"
+           ]
+          }
+         },
+         {
+          "title": "576 tower summit (Berle confrontation)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_576"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Lasguss Mountain",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Lasguss Mountain",
+          "content": {
+           "type": "map",
+           "maps": [
+            "lasguss_mountain"
+           ]
+          }
+         },
+         {
+          "title": "381 Lasguss Mountain",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_381"
+           ]
+          }
+         },
+         {
+          "title": "382 Lasguss Mountain",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_382"
+           ]
+          }
+         },
+         {
+          "title": "383 Lasguss Mountain",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_383"
+           ]
+          }
+         },
+         {
+          "title": "384 Lasguss Mountain",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_384"
+           ]
+          }
+         },
+         {
+          "title": "385 XINE's home (mountaintop nest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_385"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Mountain Palace",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "mountain_palace"
+           ]
+          }
+         },
+         {
+          "title": "355 entrance (guard post)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_355"
+           ]
+          }
+         },
+         {
+          "title": "379 the fork (corridor splits toward both quest paths)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_379"
+           ]
+          }
+         },
+         {
+          "title": "342 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_342"
+           ]
+          }
+         },
+         {
+          "title": "343 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_343"
+           ]
+          }
+         },
+         {
+          "title": "344 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_344"
+           ]
+          }
+         },
+         {
+          "title": "347 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_347"
+           ]
+          }
+         },
+         {
+          "title": "350 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_350"
+           ]
+          }
+         },
+         {
+          "title": "357 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_357"
+           ]
+          }
+         },
+         {
+          "title": "358 Ashton's path (west archway, toward Nightmare): chest room (Fairy's Statue, Emerald Ring)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_358"
+           ]
+          }
+         },
+         {
+          "title": "362 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_362"
+           ]
+          }
+         },
+         {
+          "title": "365 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_365"
+           ]
+          }
+         },
+         {
+          "title": "367 Ashton's path (west archway, toward Nightmare): chest room (Sour Syrup, Walloon Sword)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_367"
+           ]
+          }
+         },
+         {
+          "title": "376 Ernest's path (east passageway, toward the Flarelizards): chest room (Resurrection Bottle, ?JEWELRY)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_376"
+           ]
+          }
+         },
+         {
+          "title": "377 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_377"
+           ]
+          }
+         },
+         {
+          "title": "378 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_378"
+           ]
+          }
+         },
+         {
+          "title": "380 Ashton's path (west archway, toward Nightmare): boss room (Nightmare)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_380"
+           ]
+          }
+         },
+         {
+          "title": "341 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_341"
+           ]
+          }
+         },
+         {
+          "title": "351 Ernest's path (east passageway, toward the Flarelizards): chest room (Cure Stone, Sweet Syrup)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_351"
+           ]
+          }
+         },
+         {
+          "title": "363 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_363"
+           ]
+          }
+         },
+         {
+          "title": "364 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_364"
+           ]
+          }
+         },
+         {
+          "title": "366 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_366"
+           ]
+          }
+         },
+         {
+          "title": "368 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_368"
+           ]
+          }
+         },
+         {
+          "title": "372 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_372"
+           ]
+          }
+         },
+         {
+          "title": "373 Ernest's path (east passageway, toward the Flarelizards): chest room (Damascus, Fairy's Cologne, Wolfsbane)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_373"
+           ]
+          }
+         },
+         {
+          "title": "374 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_374"
+           ]
+          }
+         },
+         {
+          "title": "348 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_348"
+           ]
+          }
+         },
+         {
+          "title": "359 Ernest's path (east passageway, toward the Flarelizards): boss room (Flarelizards x2)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_359"
+           ]
+          }
+         },
+         {
+          "title": "361 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_361"
+           ]
+          }
+         },
+         {
+          "title": "369 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_369"
+           ]
+          }
+         },
+         {
+          "title": "370 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_370"
+           ]
+          }
+         },
+         {
+          "title": "371 Ernest's path (east passageway, toward the Flarelizards): chest room (Crest Rod, Amber Robe, ?MINERAL)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_371"
+           ]
+          }
+         },
+         {
+          "title": "375 Ernest's path (east passageway, toward the Flarelizards): chest room (?HERB)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_375"
+           ]
+          }
+         },
+         {
+          "title": "360 Mountain Palace",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_360"
+           ]
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "title": "Energy Nede",
+    "content": {
+     "type": "tabbed",
+     "tabs": [
+      {
+       "title": "Energy Nede World Map",
+       "content": {
+        "type": "map",
+        "maps": [
+         "world_energy_nede"
+        ]
+       }
+      },
+      {
+       "title": "North City",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "North City",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "North City",
+             "content": {
+              "type": "map",
+              "maps": [
+               "north_city"
+              ]
+             }
+            },
+            {
+             "title": "260 town plaza (round garden, shops around)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_260"
+              ]
+             }
+            },
+            {
+             "title": "261 plaza, garden edge (notice board)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_261"
+              ]
+             }
+            },
+            {
+             "title": "262 park path (toward the Four Fields transporter)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_262"
+              ]
+             }
+            },
+            {
+             "title": "264 Synard Reception Area",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_264"
+              ]
+             }
+            },
+            {
+             "title": "265 Tool Shop Blue Flask",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_265"
+              ]
+             }
+            },
+            {
+             "title": "266 Library Encyclopedia",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_266"
+              ]
+             }
+            },
+            {
+             "title": "273 Inn Landscape",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_273"
+              ]
+             }
+            },
+            {
+             "title": "275 Smiley's Grocery",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_275"
+              ]
+             }
+            },
+            {
+             "title": "276 Account Weapons",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_276"
+              ]
+             }
+            },
+            {
+             "title": "268 Chisato's home (above Tool Shop Blue Flask)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_268"
+              ]
+             }
+            },
+            {
+             "title": "270 Synard Plant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_270"
+              ]
+             }
+            },
+            {
+             "title": "272 Director's Office",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_272"
+              ]
+             }
+            },
+            {
+             "title": "274 Inn Landscape, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_274"
+              ]
+             }
+            },
+            {
+             "title": "593 floating star platforms (rotating-bridge switch, 1 of 2)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_593"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Synard Plant",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Synard Plant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "synard_plant"
+              ]
+             }
+            },
+            {
+             "title": "269 Synard Plant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_269"
+              ]
+             }
+            },
+            {
+             "title": "263 Synard Office",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_263"
+              ]
+             }
+            },
+            {
+             "title": "271 Synard Plant",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_271"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Noel's House",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Noel's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "noels_house"
+           ]
+          }
+         },
+         {
+          "title": "277 Noel's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_277"
+           ]
+          }
+         },
+         {
+          "title": "278 Transporter",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_278"
+           ]
+          }
+         },
+         {
+          "title": "267 Transporter",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_267"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Cave of Red Crystal",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Red Crystal",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "cave_of_red_crystal"
+              ]
+             }
+            },
+            {
+             "title": "419 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_419"
+              ]
+             }
+            },
+            {
+             "title": "413 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_413"
+              ]
+             }
+            },
+            {
+             "title": "414 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_414"
+              ]
+             }
+            },
+            {
+             "title": "416 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_416"
+              ]
+             }
+            },
+            {
+             "title": "415 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_415"
+              ]
+             }
+            },
+            {
+             "title": "418 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_418"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Cavern of the Red Crystal",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Cavern of the Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "cavern_of_the_red_crystal"
+              ]
+             }
+            },
+            {
+             "title": "417 Cave of Red Crystal",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_417"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Central City",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Central City",
+          "content": {
+           "type": "map",
+           "maps": [
+            "central_city"
+           ]
+          }
+         },
+         {
+          "title": "235 central plaza (garden roundabout)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_235"
+           ]
+          }
+         },
+         {
+          "title": "236 plaza courtyard (garden corner)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_236"
+           ]
+          }
+         },
+         {
+          "title": "237 garden courtyard (steps to Tavern & Inn Brandywine)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_237"
+           ]
+          }
+         },
+         {
+          "title": "238 City Hall plaza (statues)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_238"
+           ]
+          }
+         },
+         {
+          "title": "249 Tool Shop Reverse Edge",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_249"
+           ]
+          }
+         },
+         {
+          "title": "257 Restaurant Weight Lawyer",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_257"
+           ]
+          }
+         },
+         {
+          "title": "258 Skill Guild",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_258"
+           ]
+          }
+         },
+         {
+          "title": "259 Weapons Shop Hyper-on-Hyper",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_259"
+           ]
+          }
+         },
+         {
+          "title": "239 City Hall",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_239"
+           ]
+          }
+         },
+         {
+          "title": "242 Nede Chronicle",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_242"
+           ]
+          }
+         },
+         {
+          "title": "250 Tavern & Inn Brandywine",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_250"
+           ]
+          }
+         },
+         {
+          "title": "240 City Hall Receptionist",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_240"
+           ]
+          }
+         },
+         {
+          "title": "241 Nede Chronicle, newsroom floor (receptionist side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_241"
+           ]
+          }
+         },
+         {
+          "title": "244 Nede Chronicle, editor's office",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_244"
+           ]
+          }
+         },
+         {
+          "title": "251 Tavern & Inn Brandywine, bar room (ground floor)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_251"
+           ]
+          }
+         },
+         {
+          "title": "252 Inn Brandywine , 2nd Floor",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_252"
+           ]
+          }
+         },
+         {
+          "title": "243 Nede Chronicle, newsroom floor (publishing side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_243"
+           ]
+          }
+         },
+         {
+          "title": "253 Inn Brandywine, stairwell (1st to 2nd floor)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_253"
+           ]
+          }
+         },
+         {
+          "title": "254 Inn Brandywine , 3rd Floor",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_254"
+           ]
+          }
+         },
+         {
+          "title": "245 Nede Publishing Company",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_245"
+           ]
+          }
+         },
+         {
+          "title": "246 City Hall, foyer (stairs to the Mayor's Office)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_246"
+           ]
+          }
+         },
+         {
+          "title": "255 Inn Brandywine , 4th Floor",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_255"
+           ]
+          }
+         },
+         {
+          "title": "247 Mayor's Office",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_247"
+           ]
+          }
+         },
+         {
+          "title": "256 Inn Brandywine , 5th Floor",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_256"
+           ]
+          }
+         },
+         {
+          "title": "248 Transporter",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_248"
+           ]
+          }
+         },
+         {
+          "title": "695 Ten Wise Men flashback, 7 of 7: starfield epilogue",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_695"
+           ]
+          }
+         },
+         {
+          "title": "690 Ten Wise Men flashback, 1 of 7: ancient Nede dinner hall",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_690"
+           ]
+          }
+         },
+         {
+          "title": "696 Ten Wise Men flashback, 6 of 7: the final struggle",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_696"
+           ]
+          }
+         },
+         {
+          "title": "691 Ten Wise Men flashback, 2 of 7: their rise",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_691"
+           ]
+          }
+         },
+         {
+          "title": "694 Ten Wise Men flashback, 5 of 7: resistance begins",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_694"
+           ]
+          }
+         },
+         {
+          "title": "692 Ten Wise Men flashback, 3 of 7: the attack on Nede",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_692"
+           ]
+          }
+         },
+         {
+          "title": "693 Ten Wise Men flashback, 4 of 7: the massacre",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_693"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Field of Courage",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Field of Courage",
+          "content": {
+           "type": "map",
+           "maps": [
+            "field_of_courage"
+           ]
+          }
+         },
+         {
+          "title": "629 entrance cavern (warning sign)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_629"
+           ]
+          }
+         },
+         {
+          "title": "630 crystal-pillar cavern (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_630"
+           ]
+          }
+         },
+         {
+          "title": "631 cavern passage",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_631"
+           ]
+          }
+         },
+         {
+          "title": "632 cavern passage (junction)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_632"
+           ]
+          }
+         },
+         {
+          "title": "633 cavern passage",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_633"
+           ]
+          }
+         },
+         {
+          "title": "635 cavern passage",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_635"
+           ]
+          }
+         },
+         {
+          "title": "636 crystal-pillar cavern (chest, pool)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_636"
+           ]
+          }
+         },
+         {
+          "title": "637 cavern passage (toward the Warrior Statue)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_637"
+           ]
+          }
+         },
+         {
+          "title": "639 looped tunnel (chest)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_639"
+           ]
+          }
+         },
+         {
+          "title": "640 cavern passage (toward the teleporter)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_640"
+           ]
+          }
+         },
+         {
+          "title": "634 central cave junction (multi-way)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_634"
+           ]
+          }
+         },
+         {
+          "title": "638 Warrior Statue altar (northwest corner)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_638"
+           ]
+          }
+         },
+         {
+          "title": "641 teleporter (to the Temple of Courage)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_641"
+           ]
+          }
+         },
+         {
+          "title": "642 transporter threshold (to the Temple of Courage)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_642"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Field of Intelligence",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Field of Intelligence",
+          "content": {
+           "type": "map",
+           "maps": [
+            "field_of_intelligence"
+           ]
+          }
+         },
+         {
+          "title": "549 Mirror Room (west)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_549"
+           ]
+          }
+         },
+         {
+          "title": "551 main floor, transporter-block maze",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_551"
+           ]
+          }
+         },
+         {
+          "title": "552 main floor, spinning-switch chamber (1 of 2)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_552"
+           ]
+          }
+         },
+         {
+          "title": "553 main floor, spinning-switch chamber (2 of 2)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_553"
+           ]
+          }
+         },
+         {
+          "title": "550 Mirror Room (east)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_550"
+           ]
+          }
+         },
+         {
+          "title": "554 Boss-area transporter chamber, A",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_554"
+           ]
+          }
+         },
+         {
+          "title": "556 Boss-area transporter chamber, C",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_556"
+           ]
+          }
+         },
+         {
+          "title": "555 Boss-area transporter chamber, B",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_555"
+           ]
+          }
+         },
+         {
+          "title": "628 tech office (purpose unclear)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_628"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Field of Love",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Field of Love",
+          "content": {
+           "type": "map",
+           "maps": [
+            "field_of_love"
+           ]
+          }
+         },
+         {
+          "title": "588 arrival platform (flying mount landing)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_588"
+           ]
+          }
+         },
+         {
+          "title": "589 star-platform walkway (entrance)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_589"
+           ]
+          }
+         },
+         {
+          "title": "590 star platforms over the sea (bridges)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_590"
+           ]
+          }
+         },
+         {
+          "title": "591 star platform (approach to switch 1)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_591"
+           ]
+          }
+         },
+         {
+          "title": "592 star platform (approach to switch 2)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_592"
+           ]
+          }
+         },
+         {
+          "title": "594 floating star platforms (rotating-bridge switch, 2 of 2)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_594"
+           ]
+          }
+         },
+         {
+          "title": "595 Temple of Love, entrance (glowing gate)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_595"
+           ]
+          }
+         },
+         {
+          "title": "596 transporter platform (to the Four Fields)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_596"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Field of Power",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Field of Power",
+          "content": {
+           "type": "map",
+           "maps": [
+            "field_of_power"
+           ]
+          }
+         },
+         {
+          "title": "597 entrance passage (narrow cavern)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_597"
+           ]
+          }
+         },
+         {
+          "title": "607 Yeti cavern, switch guard (A)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_607"
+           ]
+          }
+         },
+         {
+          "title": "608 Yeti cavern, switch guard (A, far side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_608"
+           ]
+          }
+         },
+         {
+          "title": "613 Yeti cavern, switch guard (B)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_613"
+           ]
+          }
+         },
+         {
+          "title": "614 Yeti cavern, switch guard (B, far side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_614"
+           ]
+          }
+         },
+         {
+          "title": "615 Yeti cavern, switch guard (C)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_615"
+           ]
+          }
+         },
+         {
+          "title": "616 Yeti cavern, switch guard (C, far side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_616"
+           ]
+          }
+         },
+         {
+          "title": "598 junction passage (ladder up)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_598"
+           ]
+          }
+         },
+         {
+          "title": "599 junction passage (ladder, second)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_599"
+           ]
+          }
+         },
+         {
+          "title": "605 promontory overlook",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_605"
+           ]
+          }
+         },
+         {
+          "title": "606 mountainside (NPC encounter)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_606"
+           ]
+          }
+         },
+         {
+          "title": "609 cavern passage (item cache)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_609"
+           ]
+          }
+         },
+         {
+          "title": "610 cavern passage (item cache, far side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_610"
+           ]
+          }
+         },
+         {
+          "title": "611 cavern passage (quiet)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_611"
+           ]
+          }
+         },
+         {
+          "title": "612 cavern passage (quiet, far side)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_612"
+           ]
+          }
+         },
+         {
+          "title": "600 rocky passage (toward the bridge)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_600"
+           ]
+          }
+         },
+         {
+          "title": "601 ladder climb",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_601"
+           ]
+          }
+         },
+         {
+          "title": "602 long wooden bridge (lower span)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_602"
+           ]
+          }
+         },
+         {
+          "title": "603 long wooden bridge (upper span)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_603"
+           ]
+          }
+         },
+         {
+          "title": "604 Temple of Power, entrance",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_604"
+           ]
+          }
+         },
+         {
+          "title": "30 Rena's opening dream (vision of the four Fields)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_30"
+           ]
+          }
+         },
+         {
+          "title": "622 transporter hub (to the Temple of Power / map 625)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_622"
+           ]
+          }
+         },
+         {
+          "title": "620 transit corridor (directional floor markers)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_620"
+           ]
+          }
+         },
+         {
+          "title": "621 transit corridor (console panels)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_621"
+           ]
+          }
+         },
+         {
+          "title": "625 disc-swap trigger",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_625"
+           ]
+          }
+         },
+         {
+          "title": "623 transporter hub (to Eluria Tower)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_623"
+           ]
+          }
+         },
+         {
+          "title": "624 transit corridor (starfield view)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_624"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Town of Armlock",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Armlock",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Armlock",
+             "content": {
+              "type": "map",
+              "maps": [
+               "armlock"
+              ]
+             }
+            },
+            {
+             "title": "306 town plaza (terracotta rooftops)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_306"
+              ]
+             }
+            },
+            {
+             "title": "307 side street (toward the restaurant)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_307"
+              ]
+             }
+            },
+            {
+             "title": "308 stairway alley (toward the Transporter Portal of Sealing)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_308"
+              ]
+             }
+            },
+            {
+             "title": "309 Restaurant Yamato-Ya",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_309"
+              ]
+             }
+            },
+            {
+             "title": "310 Weapons and Tool Shop Milword's",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_310"
+              ]
+             }
+            },
+            {
+             "title": "311 Tavern Home Brew 54",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_311"
+              ]
+             }
+            },
+            {
+             "title": "314 Mansion Mirage's House",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_314"
+              ]
+             }
+            },
+            {
+             "title": "316 Skill Guild Skill World",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_316"
+              ]
+             }
+            },
+            {
+             "title": "312 Inn Elation",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_312"
+              ]
+             }
+            },
+            {
+             "title": "315 Mirage's House, workshop",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_315"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Heraldry Weapons Laboratory",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Heraldry Weapons Laboratory",
+             "content": {
+              "type": "map",
+              "maps": [
+               "heraldry_weapons_laboratory"
+              ]
+             }
+            },
+            {
+             "title": "387 derelict quarters (piano, chest)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_387"
+              ]
+             }
+            },
+            {
+             "title": "389 ruined hallway (overgrown)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_389"
+              ]
+             }
+            },
+            {
+             "title": "388 pipe trench",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_388"
+              ]
+             }
+            },
+            {
+             "title": "392 overgrown garden path",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_392"
+              ]
+             }
+            },
+            {
+             "title": "390 ruined interior (broken beams)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_390"
+              ]
+             }
+            },
+            {
+             "title": "397 overgrown approach (fenced gate)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_397"
+              ]
+             }
+            },
+            {
+             "title": "393 collapsed corridor (scaffolding)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_393"
+              ]
+             }
+            },
+            {
+             "title": "400 stone archway (forest gate)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_400"
+              ]
+             }
+            },
+            {
+             "title": "391 pipe trench, second passage",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_391"
+              ]
+             }
+            },
+            {
+             "title": "395 ruined corridor (directional sign)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_395"
+              ]
+             }
+            },
+            {
+             "title": "401 forest entrance (hollow tree)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_401"
+              ]
+             }
+            },
+            {
+             "title": "394 derelict storage room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_394"
+              ]
+             }
+            },
+            {
+             "title": "396 collapsed structure (exposed pipes)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_396"
+              ]
+             }
+            },
+            {
+             "title": "398 machine hall",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_398"
+              ]
+             }
+            },
+            {
+             "title": "386 derelict workshop (broken machinery)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_386"
+              ]
+             }
+            },
+            {
+             "title": "399 equipment storage",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_399"
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "L'Aqua",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "579 L'Aqua",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_579"
+           ]
+          }
+         },
+         {
+          "title": "686 ritual chamber (fire, wall symbols)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_686"
+           ]
+          }
+         },
+         {
+          "title": "577 building plaza (reception entrance)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_577"
+           ]
+          }
+         },
+         {
+          "title": "578 seaside terrace (overlook)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_578"
+           ]
+          }
+         },
+         {
+          "title": "580 stairway (vending kiosks)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_580"
+           ]
+          }
+         },
+         {
+          "title": "587 aquarium tanks (drained pools)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_587"
+           ]
+          }
+         },
+         {
+          "title": "581 overgrown garden path (former aquarium grounds)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_581"
+           ]
+          }
+         },
+         {
+          "title": "582 L'Aqua Tours Reception",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_582"
+           ]
+          }
+         },
+         {
+          "title": "585 tank room (old aquarium stairwell)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_585"
+           ]
+          }
+         },
+         {
+          "title": "583 Defense Force General's Office",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_583"
+           ]
+          }
+         },
+         {
+          "title": "584 Dispensary",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_584"
+           ]
+          }
+         },
+         {
+          "title": "586 L'Aqua Transporter",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_586"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Mihne Cavern",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "mihne_cavern"
+           ]
+          }
+         },
+         {
+          "title": "449 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_449"
+           ]
+          }
+         },
+         {
+          "title": "450 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_450"
+           ]
+          }
+         },
+         {
+          "title": "451 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_451"
+           ]
+          }
+         },
+         {
+          "title": "452 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_452"
+           ]
+          }
+         },
+         {
+          "title": "453 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_453"
+           ]
+          }
+         },
+         {
+          "title": "454 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_454"
+           ]
+          }
+         },
+         {
+          "title": "455 Mihne Cavern",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_455"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Fun City",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Fun City",
+          "content": {
+           "type": "tabbed",
+           "tabs": [
+            {
+             "title": "Fun City",
+             "content": {
+              "type": "map",
+              "maps": [
+               "fun_city"
+              ]
+             }
+            },
+            {
+             "title": "279 entrance gate (ticket booths)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_279"
+              ]
+             }
+            },
+            {
+             "title": "280 Fun City Central Square",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_280"
+              ]
+             }
+            },
+            {
+             "title": "305 Fighting Arena, forecourt ring",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_305"
+              ]
+             }
+            },
+            {
+             "title": "281 Fun City Fighting Arena Square",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_281"
+              ]
+             }
+            },
+            {
+             "title": "282 amusement plaza (carnival games)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_282"
+              ]
+             }
+            },
+            {
+             "title": "283 Inn Fun City Hotel",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_283"
+              ]
+             }
+            },
+            {
+             "title": "287 Information Center",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_287"
+              ]
+             }
+            },
+            {
+             "title": "288 Tavern Playgirl",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_288"
+              ]
+             }
+            },
+            {
+             "title": "289 arcade shop row (booths)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_289"
+              ]
+             }
+            },
+            {
+             "title": "294 BUNNY RACE WINDOW",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_294"
+              ]
+             }
+            },
+            {
+             "title": "296 arena floor (south entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_296"
+              ]
+             }
+            },
+            {
+             "title": "297 Fun City Fighting Arena",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_297"
+              ]
+             }
+            },
+            {
+             "title": "298 equipment room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_298"
+              ]
+             }
+            },
+            {
+             "title": "301 stairwell (wooden planks, dim)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_301"
+              ]
+             }
+            },
+            {
+             "title": "302 stairwell (wooden planks, dim, 2nd flight)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_302"
+              ]
+             }
+            },
+            {
+             "title": "304 gallery corridor (crest rug, antechamber)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_304"
+              ]
+             }
+            },
+            {
+             "title": "284 Inn Fun City Hotel, lobby (grand staircase)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_284"
+              ]
+             }
+            },
+            {
+             "title": "285 Inn Fun City Hotel, guest room",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_285"
+              ]
+             }
+            },
+            {
+             "title": "290 Gift Shop Gift Box",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_290"
+              ]
+             }
+            },
+            {
+             "title": "291 Restaurant Light Step",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_291"
+              ]
+             }
+            },
+            {
+             "title": "292 Fanzine Spot Sale",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_292"
+              ]
+             }
+            },
+            {
+             "title": "293 lounge (dim, round tables)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_293"
+              ]
+             }
+            },
+            {
+             "title": "295 BUNNY RACETRACK",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_295"
+              ]
+             }
+            },
+            {
+             "title": "299 gallery corridor (crest tapestry, A)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_299"
+              ]
+             }
+            },
+            {
+             "title": "300 gallery corridor (crest tapestry, B)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_300"
+              ]
+             }
+            },
+            {
+             "title": "688 Cooking Master, contest hall",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_688"
+              ]
+             }
+            },
+            {
+             "title": "689 Cooking Master, registration hall",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_689"
+              ]
+             }
+            },
+            {
+             "title": "286 Inn Fun City Hotel, guest room (upper floor)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_286"
+              ]
+             }
+            },
+            {
+             "title": "303 arena floor (north entrance)",
+             "content": {
+              "type": "map",
+              "maps": [
+               "room_303"
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "title": "Fun City arena",
+          "content": {
+           "type": "map",
+           "maps": [
+            "fun_city_arena"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Giveaway",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Giveaway",
+          "content": {
+           "type": "map",
+           "maps": [
+            "giveaway"
+           ]
+          }
+         },
+         {
+          "title": "317 town square (snowy, gothic rooftops)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_317"
+           ]
+          }
+         },
+         {
+          "title": "318 snowy courtyard (snowman)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_318"
+           ]
+          }
+         },
+         {
+          "title": "323 Rokumondo's Secondhand Shop",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_323"
+           ]
+          }
+         },
+         {
+          "title": "329 Inn Mandarin",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_329"
+           ]
+          }
+         },
+         {
+          "title": "331 Dining Hall Fresh Meat",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_331"
+           ]
+          }
+         },
+         {
+          "title": "336 snowy path (town to University)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_336"
+           ]
+          }
+         },
+         {
+          "title": "337 Noel's House",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_337"
+           ]
+          }
+         },
+         {
+          "title": "339 Tavern Tackle",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_339"
+           ]
+          }
+         },
+         {
+          "title": "330 Inn Mandarin, common room (fireplace)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_330"
+           ]
+          }
+         },
+         {
+          "title": "334 Giveaway University",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_334"
+           ]
+          }
+         },
+         {
+          "title": "338 Noel's House, workshop",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_338"
+           ]
+          }
+         },
+         {
+          "title": "319 foyer (west wing, statue alcoves)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_319"
+           ]
+          }
+         },
+         {
+          "title": "320 foyer (east wing, stairs)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_320"
+           ]
+          }
+         },
+         {
+          "title": "335 main foyer (grand staircase)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_335"
+           ]
+          }
+         },
+         {
+          "title": "321 foyer (research wing)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_321"
+           ]
+          }
+         },
+         {
+          "title": "322 foyer (library wing)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_322"
+           ]
+          }
+         },
+         {
+          "title": "327 Classroom 2",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_327"
+           ]
+          }
+         },
+         {
+          "title": "333 Dean's Office",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_333"
+           ]
+          }
+         },
+         {
+          "title": "325 Library",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_325"
+           ]
+          }
+         },
+         {
+          "title": "326 Classroom 1",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_326"
+           ]
+          }
+         },
+         {
+          "title": "328 Classroom 3",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_328"
+           ]
+          }
+         },
+         {
+          "title": "332 Nede History Research Lab",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_332"
+           ]
+          }
+         },
+         {
+          "title": "324 Library, stacks",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_324"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Mars",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Mars",
+          "content": {
+           "type": "map",
+           "maps": [
+            "mars"
+           ]
+          }
+         },
+         {
+          "title": "463 Secret Charity/Fake Gallery",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_463"
+           ]
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "title": "Fienal",
+    "content": {
+     "type": "tabbed",
+     "tabs": [
+      {
+       "title": "Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "fienal"
+        ]
+       }
+      },
+      {
+       "title": "687 map 687",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_687"
+        ]
+       }
+      },
+      {
+       "title": "657 the lobby: boss room (Ruprecht, Nicolus & Jibril; also where Marsilio ambushes the first trip)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_657"
+        ]
+       }
+      },
+      {
+       "title": "655 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_655"
+        ]
+       }
+      },
+      {
+       "title": "648 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_648"
+        ]
+       }
+      },
+      {
+       "title": "654 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_654"
+        ]
+       }
+      },
+      {
+       "title": "656 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_656"
+        ]
+       }
+      },
+      {
+       "title": "658 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_658"
+        ]
+       }
+      },
+      {
+       "title": "647 bonus treasure vault (many chests, near the lobby)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_647"
+        ]
+       }
+      },
+      {
+       "title": "653 transporter hub",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_653"
+        ]
+       }
+      },
+      {
+       "title": "660 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_660"
+        ]
+       }
+      },
+      {
+       "title": "649 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_649"
+        ]
+       }
+      },
+      {
+       "title": "650 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_650"
+        ]
+       }
+      },
+      {
+       "title": "652 transporter hub",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_652"
+        ]
+       }
+      },
+      {
+       "title": "659 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_659"
+        ]
+       }
+      },
+      {
+       "title": "661 mid floors, toward Vesper & Decus (Floor 5): chest room (Lotus Eater, Beta Box)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_661"
+        ]
+       }
+      },
+      {
+       "title": "662 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_662"
+        ]
+       }
+      },
+      {
+       "title": "663 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_663"
+        ]
+       }
+      },
+      {
+       "title": "664 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_664"
+        ]
+       }
+      },
+      {
+       "title": "665 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_665"
+        ]
+       }
+      },
+      {
+       "title": "667 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_667"
+        ]
+       }
+      },
+      {
+       "title": "669 Floor 5: boss room (Vesper & Decus)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_669"
+        ]
+       }
+      },
+      {
+       "title": "673 mid floors, toward Vesper & Decus (Floor 5): chest room (Spring Water, Pleiad Sword, Fresh Syrup)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_673"
+        ]
+       }
+      },
+      {
+       "title": "675 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_675"
+        ]
+       }
+      },
+      {
+       "title": "679 upper floors, toward Cyril (Floor 7): chest room (Clap Rod)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_679"
+        ]
+       }
+      },
+      {
+       "title": "680 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_680"
+        ]
+       }
+      },
+      {
+       "title": "681 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_681"
+        ]
+       }
+      },
+      {
+       "title": "682 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_682"
+        ]
+       }
+      },
+      {
+       "title": "651 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_651"
+        ]
+       }
+      },
+      {
+       "title": "666 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_666"
+        ]
+       }
+      },
+      {
+       "title": "668 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_668"
+        ]
+       }
+      },
+      {
+       "title": "670 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_670"
+        ]
+       }
+      },
+      {
+       "title": "672 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_672"
+        ]
+       }
+      },
+      {
+       "title": "674 Floor 7: boss room (Cyril)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_674"
+        ]
+       }
+      },
+      {
+       "title": "677 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_677"
+        ]
+       }
+      },
+      {
+       "title": "683 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_683"
+        ]
+       }
+      },
+      {
+       "title": "671 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_671"
+        ]
+       }
+      },
+      {
+       "title": "676 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_676"
+        ]
+       }
+      },
+      {
+       "title": "678 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_678"
+        ]
+       }
+      },
+      {
+       "title": "684 Fienal",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_684"
+        ]
+       }
+      },
+      {
+       "title": "685 Floor 8: Indalecio's chamber -- final boss (Indalecio Celesta)",
+       "content": {
+        "type": "map",
+        "maps": [
+         "room_685"
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "title": "Cave of Trials",
+    "content": {
+     "type": "tabbed",
+     "tabs": [
+      {
+       "title": "Level 1",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 1",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_1"
+           ]
+          }
+         },
+         {
+          "title": "704 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_704"
+           ]
+          }
+         },
+         {
+          "title": "703 Level 1 (Heraldic Ruins): chest room (Fruit Nectar)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_703"
+           ]
+          }
+         },
+         {
+          "title": "700 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_700"
+           ]
+          }
+         },
+         {
+          "title": "706 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_706"
+           ]
+          }
+         },
+         {
+          "title": "701 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_701"
+           ]
+          }
+         },
+         {
+          "title": "708 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_708"
+           ]
+          }
+         },
+         {
+          "title": "699 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_699"
+           ]
+          }
+         },
+         {
+          "title": "702 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_702"
+           ]
+          }
+         },
+         {
+          "title": "709 Level 1 (Heraldic Ruins): chest room (Tri-emplem)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_709"
+           ]
+          }
+         },
+         {
+          "title": "705 Level 1 (Heraldic Ruins): boss room (Darkfeather)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_705"
+           ]
+          }
+         },
+         {
+          "title": "707 Level 1 (Heraldic Ruins): chest room (Juicy Beef, Wonder Drug)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_707"
+           ]
+          }
+         },
+         {
+          "title": "712 Level 1 (Heraldic Ruins): chest room (Dream Crown)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_712"
+           ]
+          }
+         },
+         {
+          "title": "713 Level 1 (Heraldic Ruins): chest room (Wonder Drug, Fresh Syrup, Ganze Sea Urchin)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_713"
+           ]
+          }
+         },
+         {
+          "title": "755 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_755"
+           ]
+          }
+         },
+         {
+          "title": "758 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_758"
+           ]
+          }
+         },
+         {
+          "title": "759 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_759"
+           ]
+          }
+         },
+         {
+          "title": "760 Cave of Trials Level 6",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_760"
+           ]
+          }
+         },
+         {
+          "title": "788 Cave of Trials Level 9",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_788"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 2",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 2",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_2"
+           ]
+          }
+         },
+         {
+          "title": "719 Level 2 (Love Alley): chest room (Purity Leaf)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_719"
+           ]
+          }
+         },
+         {
+          "title": "715 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_715"
+           ]
+          }
+         },
+         {
+          "title": "716 Cave of Trials Level 2",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_716"
+           ]
+          }
+         },
+         {
+          "title": "714 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_714"
+           ]
+          }
+         },
+         {
+          "title": "720 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_720"
+           ]
+          }
+         },
+         {
+          "title": "717 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_717"
+           ]
+          }
+         },
+         {
+          "title": "721 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_721"
+           ]
+          }
+         },
+         {
+          "title": "722 Level 2 (Love Alley): chest room (Fruit Nectar, Slayer's Ring)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_722"
+           ]
+          }
+         },
+         {
+          "title": "725 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_725"
+           ]
+          }
+         },
+         {
+          "title": "783 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_783"
+           ]
+          }
+         },
+         {
+          "title": "718 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_718"
+           ]
+          }
+         },
+         {
+          "title": "723 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_723"
+           ]
+          }
+         },
+         {
+          "title": "724 Level 2 (Love Alley): chest room (Fruit Nectar)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_724"
+           ]
+          }
+         },
+         {
+          "title": "728 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_728"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 3",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 3",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_3"
+           ]
+          }
+         },
+         {
+          "title": "727 Cave of Trials Level 3",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_727"
+           ]
+          }
+         },
+         {
+          "title": "726 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_726"
+           ]
+          }
+         },
+         {
+          "title": "731 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_731"
+           ]
+          }
+         },
+         {
+          "title": "730 Level 3 (Single Path Cave): chest room (Sylvan Mail)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_730"
+           ]
+          }
+         },
+         {
+          "title": "734 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_734"
+           ]
+          }
+         },
+         {
+          "title": "736 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_736"
+           ]
+          }
+         },
+         {
+          "title": "729 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_729"
+           ]
+          }
+         },
+         {
+          "title": "733 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_733"
+           ]
+          }
+         },
+         {
+          "title": "735 Level 3 (Single Path Cave): chest room (Wonder Drug, Dream Crown, Juicy Beef)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_735"
+           ]
+          }
+         },
+         {
+          "title": "732 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_732"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 4",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 4",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_4"
+           ]
+          }
+         },
+         {
+          "title": "740 Cave of Trials Level 4",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_740"
+           ]
+          }
+         },
+         {
+          "title": "738 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_738"
+           ]
+          }
+         },
+         {
+          "title": "739 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_739"
+           ]
+          }
+         },
+         {
+          "title": "741 Level 4 (Dancing God's Altar): chest room (Resurrection Mist, Purity Leaf)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_741"
+           ]
+          }
+         },
+         {
+          "title": "737 Cave of Trials Level 4",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_737"
+           ]
+          }
+         },
+         {
+          "title": "742 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_742"
+           ]
+          }
+         },
+         {
+          "title": "743 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_743"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 5",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 5",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_5"
+           ]
+          }
+         },
+         {
+          "title": "744 Cave of Trials Level 5",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_744"
+           ]
+          }
+         },
+         {
+          "title": "745 Level 5 (Lady's Revenge): chest room (Juicy Beef)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_745"
+           ]
+          }
+         },
+         {
+          "title": "754 Level 5 (Lady's Revenge): boss room (Weird Beast)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_754"
+           ]
+          }
+         },
+         {
+          "title": "746 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_746"
+           ]
+          }
+         },
+         {
+          "title": "748 Level 5 (Lady's Revenge): chest room (Seraphic Garb)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_748"
+           ]
+          }
+         },
+         {
+          "title": "747 Level 5 (Lady's Revenge): chest room (Fairy Ring, Fruit Nectar)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_747"
+           ]
+          }
+         },
+         {
+          "title": "749 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_749"
+           ]
+          }
+         },
+         {
+          "title": "752 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_752"
+           ]
+          }
+         },
+         {
+          "title": "750 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_750"
+           ]
+          }
+         },
+         {
+          "title": "751 Cave of Trials Level 5",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_751"
+           ]
+          }
+         },
+         {
+          "title": "753 Level 5 (Lady's Revenge): Puffy's ambush (Weird Beast ambushes her, per the thumbnail's dialogue box)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_753"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 6",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 6",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_6"
+           ]
+          }
+         },
+         {
+          "title": "756 Cave of Trials Level 6",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_756"
+           ]
+          }
+         },
+         {
+          "title": "757 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_757"
+           ]
+          }
+         },
+         {
+          "title": "766 Cave of Trials Level 7",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_766"
+           ]
+          }
+         },
+         {
+          "title": "762 Level 6 (Burglar's Nest): chest room (Weird Slayer)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_762"
+           ]
+          }
+         },
+         {
+          "title": "765 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_765"
+           ]
+          }
+         },
+         {
+          "title": "761 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_761"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 7",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 7",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_7"
+           ]
+          }
+         },
+         {
+          "title": "763 Cave of Trials Level 7",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_763"
+           ]
+          }
+         },
+         {
+          "title": "764 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_764"
+           ]
+          }
+         },
+         {
+          "title": "767 Level 7 (Goddess's Altar): chest room (Tri-emplem)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_767"
+           ]
+          }
+         },
+         {
+          "title": "768 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_768"
+           ]
+          }
+         },
+         {
+          "title": "769 Level 7 (Goddess's Altar): chest room (Fresh Syrup)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_769"
+           ]
+          }
+         },
+         {
+          "title": "771 Level 7 (Goddess's Altar): chest room (Cracked Gem)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_771"
+           ]
+          }
+         },
+         {
+          "title": "770 Level 7 (Goddess's Altar): chest room (Ganze Sea Urchin, Resurrection Mist)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_770"
+           ]
+          }
+         },
+         {
+          "title": "772 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_772"
+           ]
+          }
+         },
+         {
+          "title": "773 Level 7 (Goddess's Altar): chest room (Slime Jelly, Soda-Pop, Million Staff)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_773"
+           ]
+          }
+         },
+         {
+          "title": "774 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_774"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 8",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 8",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_8"
+           ]
+          }
+         },
+         {
+          "title": "775 Cave of Trials Level 8",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_775"
+           ]
+          }
+         },
+         {
+          "title": "776 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_776"
+           ]
+          }
+         },
+         {
+          "title": "778 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_778"
+           ]
+          }
+         },
+         {
+          "title": "781 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_781"
+           ]
+          }
+         },
+         {
+          "title": "777 Cave of Trials Level 8",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_777"
+           ]
+          }
+         },
+         {
+          "title": "779 Level 8 (Food God): chest room (Funny Slayer)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_779"
+           ]
+          }
+         },
+         {
+          "title": "780 Level 8 (Food God): chest room (Amoeba Soup, Seraphic Garb)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_780"
+           ]
+          }
+         },
+         {
+          "title": "782 Level 8 (Food God): chest room (Resurrection Mist)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_782"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 9",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 9",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_9"
+           ]
+          }
+         },
+         {
+          "title": "786 Cave of Trials Level 9",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_786"
+           ]
+          }
+         },
+         {
+          "title": "787 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_787"
+           ]
+          }
+         },
+         {
+          "title": "784 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_784"
+           ]
+          }
+         },
+         {
+          "title": "790 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_790"
+           ]
+          }
+         },
+         {
+          "title": "785 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_785"
+           ]
+          }
+         },
+         {
+          "title": "789 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_789"
+           ]
+          }
+         },
+         {
+          "title": "791 Cave of Trials Level 9",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_791"
+           ]
+          }
+         },
+         {
+          "title": "698 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_698"
+           ]
+          }
+         },
+         {
+          "title": "792 Level 9 (Sealed Coffin): chest room (Bunny Shoes)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_792"
+           ]
+          }
+         },
+         {
+          "title": "793 Level 9 (Sealed Coffin): chest room (Funny Slayer)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_793"
+           ]
+          }
+         },
+         {
+          "title": "795 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_795"
+           ]
+          }
+         },
+         {
+          "title": "801 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_801"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 10",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 10",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_10"
+           ]
+          }
+         },
+         {
+          "title": "798 Cave of Trials Level 10",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_798"
+           ]
+          }
+         },
+         {
+          "title": "799 Level 10 (Decision Point): chest room (Million Staff, Portrait J)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_799"
+           ]
+          }
+         },
+         {
+          "title": "804 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_804"
+           ]
+          }
+         },
+         {
+          "title": "808 Cave of Trials Level 11",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_808"
+           ]
+          }
+         },
+         {
+          "title": "803 Level 10 (Decision Point): chest room (Valkyrie Boots)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_803"
+           ]
+          }
+         },
+         {
+          "title": "806 Level 10 (Decision Point): chest room (Purity Leaf)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_806"
+           ]
+          }
+         },
+         {
+          "title": "796 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_796"
+           ]
+          }
+         },
+         {
+          "title": "800 Level 10 (Decision Point): chest room (Valiant Boots)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_800"
+           ]
+          }
+         },
+         {
+          "title": "802 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_802"
+           ]
+          }
+         },
+         {
+          "title": "797 Level 10 (Decision Point): chest room (Fresh Syrup)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_797"
+           ]
+          }
+         },
+         {
+          "title": "805 Level 10 (Decision Point): chest room (Sage's Stone, Valkyrie Boots, Rainbow Diamond)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_805"
+           ]
+          }
+         },
+         {
+          "title": "794 Cave of Trials Level 10",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_794"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 11",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 11",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_11"
+           ]
+          }
+         },
+         {
+          "title": "807 Cave of Trials Level 11",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_807"
+           ]
+          }
+         },
+         {
+          "title": "811 Cave of Trials Level 12",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_811"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 12",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 12",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_12"
+           ]
+          }
+         },
+         {
+          "title": "809 Level 12 (Hall of Warriors): boss room (Phoenix)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_809"
+           ]
+          }
+         },
+         {
+          "title": "810 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_810"
+           ]
+          }
+         },
+         {
+          "title": "814 Cave of Trials Level 12",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_814"
+           ]
+          }
+         },
+         {
+          "title": "812 Level 12 (Hall of Warriors): chest room (Valkyrie Guard, Battle Suit)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_812"
+           ]
+          }
+         },
+         {
+          "title": "813 Level 12 (Hall of Warriors): chest room (Battle Suit, Bunny Shoes)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_813"
+           ]
+          }
+         },
+         {
+          "title": "820 Cave of Trials Level 13",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_820"
+           ]
+          }
+         },
+         {
+          "title": "816 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_816"
+           ]
+          }
+         },
+         {
+          "title": "817 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_817"
+           ]
+          }
+         },
+         {
+          "title": "818 Level 12 (Hall of Warriors): chest room (Valiant Mail)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_818"
+           ]
+          }
+         },
+         {
+          "title": "824 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_824"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Level 13",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Level 13",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_level_13"
+           ]
+          }
+         },
+         {
+          "title": "815 Level 13 (Holy Nest of Angels): boss room (Indalecio Celesta) -- final boss",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_815"
+           ]
+          }
+         },
+         {
+          "title": "819 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_819"
+           ]
+          }
+         },
+         {
+          "title": "825 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_825"
+           ]
+          }
+         },
+         {
+          "title": "821 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_821"
+           ]
+          }
+         },
+         {
+          "title": "822 Level 13 (Holy Nest of Angels): chest room (Valiant Guard)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_822"
+           ]
+          }
+         },
+         {
+          "title": "823 Cave of Trials",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_823"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Treasure Vault",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Treasure Vault",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_treasure_vault"
+           ]
+          }
+         },
+         {
+          "title": "710 bonus treasure vault (many chests, reachable from several levels)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_710"
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "title": "Weird Beast Arena",
+       "content": {
+        "type": "tabbed",
+        "tabs": [
+         {
+          "title": "Cave of Trials Weird Beast Arena",
+          "content": {
+           "type": "map",
+           "maps": [
+            "cave_of_trials_weird_beast_arena"
+           ]
+          }
+         },
+         {
+          "title": "711 Weird Beast arena (Puffy's trial; cross-linked, not on Level 1's own path)",
+          "content": {
+           "type": "map",
+           "maps": [
+            "room_711"
+           ]
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "title": "Shops",
+    "content": {
+     "type": "map",
+     "maps": [
+      "board_shops"
+     ]
+    }
+   },
+   {
+    "title": "Item Creation",
+    "content": {
+     "type": "map",
+     "maps": [
+      "board_crafts"
+     ]
+    }
+   },
+   {
+    "title": "Killer Moves",
+    "content": {
+     "type": "map",
+     "maps": [
+      "board_killer_moves"
+     ]
+    }
+   },
+   {
+    "title": "Guilds and Learning",
+    "content": {
+     "type": "map",
+     "maps": [
+      "board_skills"
+     ]
+    }
+   },
+   {
+    "title": "Enemy Drops",
+    "content": {
+     "type": "map",
+     "maps": [
+      "board_drops"
+     ]
+    }
+   }
+  ]
+ }
+}

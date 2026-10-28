@@ -1,0 +1,5204 @@
+[
+ {
+  "name": "alens_mansion",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/alens_mansion.png"
+ },
+ {
+  "name": "arlia_village",
+  "location_size": 23,
+  "location_border_thickness": 2,
+  "img": "images/maps/arlia_village.png"
+ },
+ {
+  "name": "armlock",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/armlock.png"
+ },
+ {
+  "name": "armory",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/armory.png"
+ },
+ {
+  "name": "cave_of_red_crystal",
+  "location_size": 28,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_red_crystal.png"
+ },
+ {
+  "name": "cave_of_trials_level_1",
+  "location_size": 20,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_1.png"
+ },
+ {
+  "name": "cave_of_trials_level_10",
+  "location_size": 23,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_10.png"
+ },
+ {
+  "name": "cave_of_trials_level_11",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_11.png"
+ },
+ {
+  "name": "cave_of_trials_level_12",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_12.png"
+ },
+ {
+  "name": "cave_of_trials_level_13",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_13.png"
+ },
+ {
+  "name": "cave_of_trials_level_2",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_2.png"
+ },
+ {
+  "name": "cave_of_trials_level_3",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_3.png"
+ },
+ {
+  "name": "cave_of_trials_level_4",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_4.png"
+ },
+ {
+  "name": "cave_of_trials_level_5",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_5.png"
+ },
+ {
+  "name": "cave_of_trials_level_6",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_6.png"
+ },
+ {
+  "name": "cave_of_trials_level_7",
+  "location_size": 23,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_7.png"
+ },
+ {
+  "name": "cave_of_trials_level_8",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_8.png"
+ },
+ {
+  "name": "cave_of_trials_level_9",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_level_9.png"
+ },
+ {
+  "name": "cave_of_trials_treasure_vault",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_treasure_vault.png"
+ },
+ {
+  "name": "cave_of_trials_weird_beast_arena",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cave_of_trials_weird_beast_arena.png"
+ },
+ {
+  "name": "cavern_of_the_red_crystal",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/cavern_of_the_red_crystal.png"
+ },
+ {
+  "name": "central_city",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/central_city.png"
+ },
+ {
+  "name": "cross_cave",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/maps/cross_cave.png"
+ },
+ {
+  "name": "el_beach",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/el_beach.png"
+ },
+ {
+  "name": "elders_house",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/elders_house.png"
+ },
+ {
+  "name": "eluria_colony",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/eluria_colony.png"
+ },
+ {
+  "name": "eluria_tower",
+  "location_size": 27,
+  "location_border_thickness": 2,
+  "img": "images/maps/eluria_tower.png"
+ },
+ {
+  "name": "field_of_courage",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/field_of_courage.png"
+ },
+ {
+  "name": "field_of_intelligence",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/field_of_intelligence.png"
+ },
+ {
+  "name": "field_of_love",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/field_of_love.png"
+ },
+ {
+  "name": "field_of_power",
+  "location_size": 35,
+  "location_border_thickness": 2,
+  "img": "images/maps/field_of_power.png"
+ },
+ {
+  "name": "fienal",
+  "location_size": 23,
+  "location_border_thickness": 2,
+  "img": "images/maps/fienal.png"
+ },
+ {
+  "name": "fun_city",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/fun_city.png"
+ },
+ {
+  "name": "fun_city_arena",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/fun_city_arena.png"
+ },
+ {
+  "name": "giveaway",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/giveaway.png"
+ },
+ {
+  "name": "heraldry_weapons_laboratory",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/heraldry_weapons_laboratory.png"
+ },
+ {
+  "name": "hoffmann_ruins",
+  "location_size": 35,
+  "location_border_thickness": 2,
+  "img": "images/maps/hoffmann_ruins.png"
+ },
+ {
+  "name": "kings_room",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/kings_room.png"
+ },
+ {
+  "name": "lacour_castle_registration",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/lacour_castle_registration.png"
+ },
+ {
+  "name": "lacour_front_line",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/lacour_front_line.png"
+ },
+ {
+  "name": "lacour_meeting_room",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/lacour_meeting_room.png"
+ },
+ {
+  "name": "lasguss_mountain",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/lasguss_mountain.png"
+ },
+ {
+  "name": "mars",
+  "location_size": 17,
+  "location_border_thickness": 2,
+  "img": "images/maps/mars.png"
+ },
+ {
+  "name": "mars_village",
+  "location_size": 28,
+  "location_border_thickness": 2,
+  "img": "images/maps/mars_village.png"
+ },
+ {
+  "name": "meeting_room",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/meeting_room.png"
+ },
+ {
+  "name": "mihne_cavern",
+  "location_size": 18,
+  "location_border_thickness": 2,
+  "img": "images/maps/mihne_cavern.png"
+ },
+ {
+  "name": "mountain_palace",
+  "location_size": 21,
+  "location_border_thickness": 2,
+  "img": "images/maps/mountain_palace.png"
+ },
+ {
+  "name": "noels_house",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/noels_house.png"
+ },
+ {
+  "name": "north_city",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/north_city.png"
+ },
+ {
+  "name": "port_hilton",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/port_hilton.png"
+ },
+ {
+  "name": "port_of_clik",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/port_of_clik.png"
+ },
+ {
+  "name": "renas_room",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/renas_room.png"
+ },
+ {
+  "name": "rosalias_room",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/rosalias_room.png"
+ },
+ {
+  "name": "salva_drift",
+  "location_size": 36,
+  "location_border_thickness": 2,
+  "img": "images/maps/salva_drift.png"
+ },
+ {
+  "name": "sanctuary_of_linga",
+  "location_size": 30,
+  "location_border_thickness": 2,
+  "img": "images/maps/sanctuary_of_linga.png"
+ },
+ {
+  "name": "shingo_forest",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/shingo_forest.png"
+ },
+ {
+  "name": "ship_to_el",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/ship_to_el.png"
+ },
+ {
+  "name": "synard_plant",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/synard_plant.png"
+ },
+ {
+  "name": "tavern_stone",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/tavern_stone.png"
+ },
+ {
+  "name": "the_princes_chambers",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/the_princes_chambers.png"
+ },
+ {
+  "name": "town_of_cross",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/town_of_cross.png"
+ },
+ {
+  "name": "town_of_herlie",
+  "location_size": 20,
+  "location_border_thickness": 2,
+  "img": "images/maps/town_of_herlie.png"
+ },
+ {
+  "name": "town_of_lacour",
+  "location_size": 19,
+  "location_border_thickness": 2,
+  "img": "images/maps/town_of_lacour.png"
+ },
+ {
+  "name": "town_of_linga",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/town_of_linga.png"
+ },
+ {
+  "name": "town_of_salva",
+  "location_size": 19,
+  "location_border_thickness": 2,
+  "img": "images/maps/town_of_salva.png"
+ },
+ {
+  "name": "zands_mansion",
+  "location_size": 16,
+  "location_border_thickness": 2,
+  "img": "images/maps/zands_mansion.png"
+ },
+ {
+  "name": "world_expel",
+  "location_size": 44,
+  "location_border_thickness": 4,
+  "img": "images/maps/world_expel.png"
+ },
+ {
+  "name": "world_energy_nede",
+  "location_size": 44,
+  "location_border_thickness": 4,
+  "img": "images/maps/world_energy_nede.png"
+ },
+ {
+  "name": "board_shops",
+  "location_size": 26,
+  "location_border_thickness": 2,
+  "img": "images/boards/board_shops.png"
+ },
+ {
+  "name": "board_crafts",
+  "location_size": 26,
+  "location_border_thickness": 2,
+  "img": "images/boards/board_crafts.png"
+ },
+ {
+  "name": "board_killer_moves",
+  "location_size": 26,
+  "location_border_thickness": 2,
+  "img": "images/boards/board_killer_moves.png"
+ },
+ {
+  "name": "board_skills",
+  "location_size": 26,
+  "location_border_thickness": 2,
+  "img": "images/boards/board_skills.png"
+ },
+ {
+  "name": "board_drops",
+  "location_size": 26,
+  "location_border_thickness": 2,
+  "img": "images/boards/board_drops.png"
+ },
+ {
+  "name": "room_9",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/9.png"
+ },
+ {
+  "name": "room_10",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/10.png"
+ },
+ {
+  "name": "room_11",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/11.png"
+ },
+ {
+  "name": "room_12",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/12.png"
+ },
+ {
+  "name": "room_13",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/13.png"
+ },
+ {
+  "name": "room_14",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/14.png"
+ },
+ {
+  "name": "room_15",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/15.png"
+ },
+ {
+  "name": "room_16",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/16.png"
+ },
+ {
+  "name": "room_17",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/17.png"
+ },
+ {
+  "name": "room_18",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/18.png"
+ },
+ {
+  "name": "room_19",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/19.png"
+ },
+ {
+  "name": "room_20",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/20.png"
+ },
+ {
+  "name": "room_21",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/21.png"
+ },
+ {
+  "name": "room_22",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/22.png"
+ },
+ {
+  "name": "room_23",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/23.png"
+ },
+ {
+  "name": "room_24",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/24.png"
+ },
+ {
+  "name": "room_25",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/25.png"
+ },
+ {
+  "name": "room_26",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/26.png"
+ },
+ {
+  "name": "room_27",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/27.png"
+ },
+ {
+  "name": "room_29",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/29.png"
+ },
+ {
+  "name": "room_30",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/30.png"
+ },
+ {
+  "name": "room_31",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/31.png"
+ },
+ {
+  "name": "room_32",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/32.png"
+ },
+ {
+  "name": "room_33",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/33.png"
+ },
+ {
+  "name": "room_34",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/34.png"
+ },
+ {
+  "name": "room_35",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/35.png"
+ },
+ {
+  "name": "room_36",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/36.png"
+ },
+ {
+  "name": "room_37",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/37.png"
+ },
+ {
+  "name": "room_38",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/38.png"
+ },
+ {
+  "name": "room_39",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/39.png"
+ },
+ {
+  "name": "room_40",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/40.png"
+ },
+ {
+  "name": "room_41",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/41.png"
+ },
+ {
+  "name": "room_42",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/42.png"
+ },
+ {
+  "name": "room_43",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/43.png"
+ },
+ {
+  "name": "room_44",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/44.png"
+ },
+ {
+  "name": "room_45",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/45.png"
+ },
+ {
+  "name": "room_46",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/46.png"
+ },
+ {
+  "name": "room_47",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/47.png"
+ },
+ {
+  "name": "room_48",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/48.png"
+ },
+ {
+  "name": "room_49",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/49.png"
+ },
+ {
+  "name": "room_50",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/50.png"
+ },
+ {
+  "name": "room_51",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/51.png"
+ },
+ {
+  "name": "room_52",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/52.png"
+ },
+ {
+  "name": "room_53",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/53.png"
+ },
+ {
+  "name": "room_54",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/54.png"
+ },
+ {
+  "name": "room_55",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/55.png"
+ },
+ {
+  "name": "room_56",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/56.png"
+ },
+ {
+  "name": "room_57",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/57.png"
+ },
+ {
+  "name": "room_58",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/58.png"
+ },
+ {
+  "name": "room_59",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/59.png"
+ },
+ {
+  "name": "room_60",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/60.png"
+ },
+ {
+  "name": "room_61",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/61.png"
+ },
+ {
+  "name": "room_62",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/62.png"
+ },
+ {
+  "name": "room_63",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/63.png"
+ },
+ {
+  "name": "room_64",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/64.png"
+ },
+ {
+  "name": "room_65",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/65.png"
+ },
+ {
+  "name": "room_66",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/66.png"
+ },
+ {
+  "name": "room_67",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/67.png"
+ },
+ {
+  "name": "room_68",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/68.png"
+ },
+ {
+  "name": "room_69",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/69.png"
+ },
+ {
+  "name": "room_70",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/70.png"
+ },
+ {
+  "name": "room_71",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/71.png"
+ },
+ {
+  "name": "room_72",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/72.png"
+ },
+ {
+  "name": "room_73",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/73.png"
+ },
+ {
+  "name": "room_74",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/74.png"
+ },
+ {
+  "name": "room_75",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/75.png"
+ },
+ {
+  "name": "room_76",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/76.png"
+ },
+ {
+  "name": "room_77",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/77.png"
+ },
+ {
+  "name": "room_78",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/78.png"
+ },
+ {
+  "name": "room_79",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/79.png"
+ },
+ {
+  "name": "room_80",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/80.png"
+ },
+ {
+  "name": "room_81",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/81.png"
+ },
+ {
+  "name": "room_82",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/82.png"
+ },
+ {
+  "name": "room_83",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/83.png"
+ },
+ {
+  "name": "room_84",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/84.png"
+ },
+ {
+  "name": "room_85",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/85.png"
+ },
+ {
+  "name": "room_86",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/86.png"
+ },
+ {
+  "name": "room_87",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/87.png"
+ },
+ {
+  "name": "room_88",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/88.png"
+ },
+ {
+  "name": "room_89",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/89.png"
+ },
+ {
+  "name": "room_90",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/90.png"
+ },
+ {
+  "name": "room_91",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/91.png"
+ },
+ {
+  "name": "room_92",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/92.png"
+ },
+ {
+  "name": "room_93",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/93.png"
+ },
+ {
+  "name": "room_94",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/94.png"
+ },
+ {
+  "name": "room_95",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/95.png"
+ },
+ {
+  "name": "room_96",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/96.png"
+ },
+ {
+  "name": "room_97",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/97.png"
+ },
+ {
+  "name": "room_98",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/98.png"
+ },
+ {
+  "name": "room_99",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/99.png"
+ },
+ {
+  "name": "room_100",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/100.png"
+ },
+ {
+  "name": "room_101",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/101.png"
+ },
+ {
+  "name": "room_102",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/102.png"
+ },
+ {
+  "name": "room_103",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/103.png"
+ },
+ {
+  "name": "room_104",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/104.png"
+ },
+ {
+  "name": "room_105",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/105.png"
+ },
+ {
+  "name": "room_106",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/106.png"
+ },
+ {
+  "name": "room_107",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/107.png"
+ },
+ {
+  "name": "room_108",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/108.png"
+ },
+ {
+  "name": "room_109",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/109.png"
+ },
+ {
+  "name": "room_110",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/110.png"
+ },
+ {
+  "name": "room_111",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/111.png"
+ },
+ {
+  "name": "room_112",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/112.png"
+ },
+ {
+  "name": "room_113",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/113.png"
+ },
+ {
+  "name": "room_114",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/114.png"
+ },
+ {
+  "name": "room_115",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/115.png"
+ },
+ {
+  "name": "room_116",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/116.png"
+ },
+ {
+  "name": "room_117",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/117.png"
+ },
+ {
+  "name": "room_118",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/118.png"
+ },
+ {
+  "name": "room_119",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/119.png"
+ },
+ {
+  "name": "room_120",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/120.png"
+ },
+ {
+  "name": "room_121",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/121.png"
+ },
+ {
+  "name": "room_123",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/123.png"
+ },
+ {
+  "name": "room_124",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/124.png"
+ },
+ {
+  "name": "room_125",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/125.png"
+ },
+ {
+  "name": "room_126",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/126.png"
+ },
+ {
+  "name": "room_127",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/127.png"
+ },
+ {
+  "name": "room_128",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/128.png"
+ },
+ {
+  "name": "room_129",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/129.png"
+ },
+ {
+  "name": "room_130",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/130.png"
+ },
+ {
+  "name": "room_131",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/131.png"
+ },
+ {
+  "name": "room_132",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/132.png"
+ },
+ {
+  "name": "room_133",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/133.png"
+ },
+ {
+  "name": "room_134",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/134.png"
+ },
+ {
+  "name": "room_135",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/135.png"
+ },
+ {
+  "name": "room_136",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/136.png"
+ },
+ {
+  "name": "room_137",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/137.png"
+ },
+ {
+  "name": "room_138",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/138.png"
+ },
+ {
+  "name": "room_139",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/139.png"
+ },
+ {
+  "name": "room_140",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/140.png"
+ },
+ {
+  "name": "room_141",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/141.png"
+ },
+ {
+  "name": "room_142",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/142.png"
+ },
+ {
+  "name": "room_143",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/143.png"
+ },
+ {
+  "name": "room_144",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/144.png"
+ },
+ {
+  "name": "room_145",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/145.png"
+ },
+ {
+  "name": "room_146",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/146.png"
+ },
+ {
+  "name": "room_147",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/147.png"
+ },
+ {
+  "name": "room_148",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/148.png"
+ },
+ {
+  "name": "room_149",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/149.png"
+ },
+ {
+  "name": "room_150",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/150.png"
+ },
+ {
+  "name": "room_151",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/151.png"
+ },
+ {
+  "name": "room_152",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/152.png"
+ },
+ {
+  "name": "room_153",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/153.png"
+ },
+ {
+  "name": "room_154",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/154.png"
+ },
+ {
+  "name": "room_155",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/155.png"
+ },
+ {
+  "name": "room_156",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/156.png"
+ },
+ {
+  "name": "room_157",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/157.png"
+ },
+ {
+  "name": "room_158",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/158.png"
+ },
+ {
+  "name": "room_159",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/159.png"
+ },
+ {
+  "name": "room_160",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/160.png"
+ },
+ {
+  "name": "room_161",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/161.png"
+ },
+ {
+  "name": "room_162",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/162.png"
+ },
+ {
+  "name": "room_163",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/163.png"
+ },
+ {
+  "name": "room_164",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/164.png"
+ },
+ {
+  "name": "room_165",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/165.png"
+ },
+ {
+  "name": "room_166",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/166.png"
+ },
+ {
+  "name": "room_167",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/167.png"
+ },
+ {
+  "name": "room_169",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/169.png"
+ },
+ {
+  "name": "room_171",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/171.png"
+ },
+ {
+  "name": "room_173",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/173.png"
+ },
+ {
+  "name": "room_174",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/174.png"
+ },
+ {
+  "name": "room_175",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/175.png"
+ },
+ {
+  "name": "room_177",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/177.png"
+ },
+ {
+  "name": "room_179",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/179.png"
+ },
+ {
+  "name": "room_181",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/181.png"
+ },
+ {
+  "name": "room_183",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/183.png"
+ },
+ {
+  "name": "room_184",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/184.png"
+ },
+ {
+  "name": "room_185",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/185.png"
+ },
+ {
+  "name": "room_186",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/186.png"
+ },
+ {
+  "name": "room_187",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/187.png"
+ },
+ {
+  "name": "room_188",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/188.png"
+ },
+ {
+  "name": "room_189",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/189.png"
+ },
+ {
+  "name": "room_190",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/190.png"
+ },
+ {
+  "name": "room_191",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/191.png"
+ },
+ {
+  "name": "room_192",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/192.png"
+ },
+ {
+  "name": "room_193",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/193.png"
+ },
+ {
+  "name": "room_194",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/194.png"
+ },
+ {
+  "name": "room_195",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/195.png"
+ },
+ {
+  "name": "room_196",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/196.png"
+ },
+ {
+  "name": "room_197",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/197.png"
+ },
+ {
+  "name": "room_198",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/198.png"
+ },
+ {
+  "name": "room_199",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/199.png"
+ },
+ {
+  "name": "room_200",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/200.png"
+ },
+ {
+  "name": "room_201",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/201.png"
+ },
+ {
+  "name": "room_202",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/202.png"
+ },
+ {
+  "name": "room_203",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/203.png"
+ },
+ {
+  "name": "room_204",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/204.png"
+ },
+ {
+  "name": "room_205",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/205.png"
+ },
+ {
+  "name": "room_206",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/206.png"
+ },
+ {
+  "name": "room_207",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/207.png"
+ },
+ {
+  "name": "room_208",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/208.png"
+ },
+ {
+  "name": "room_209",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/209.png"
+ },
+ {
+  "name": "room_210",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/210.png"
+ },
+ {
+  "name": "room_211",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/211.png"
+ },
+ {
+  "name": "room_212",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/212.png"
+ },
+ {
+  "name": "room_213",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/213.png"
+ },
+ {
+  "name": "room_214",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/214.png"
+ },
+ {
+  "name": "room_215",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/215.png"
+ },
+ {
+  "name": "room_216",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/216.png"
+ },
+ {
+  "name": "room_217",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/217.png"
+ },
+ {
+  "name": "room_218",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/218.png"
+ },
+ {
+  "name": "room_219",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/219.png"
+ },
+ {
+  "name": "room_220",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/220.png"
+ },
+ {
+  "name": "room_221",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/221.png"
+ },
+ {
+  "name": "room_222",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/222.png"
+ },
+ {
+  "name": "room_223",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/223.png"
+ },
+ {
+  "name": "room_224",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/224.png"
+ },
+ {
+  "name": "room_225",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/225.png"
+ },
+ {
+  "name": "room_226",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/226.png"
+ },
+ {
+  "name": "room_227",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/227.png"
+ },
+ {
+  "name": "room_228",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/228.png"
+ },
+ {
+  "name": "room_229",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/229.png"
+ },
+ {
+  "name": "room_230",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/230.png"
+ },
+ {
+  "name": "room_231",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/231.png"
+ },
+ {
+  "name": "room_232",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/232.png"
+ },
+ {
+  "name": "room_233",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/233.png"
+ },
+ {
+  "name": "room_234",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/234.png"
+ },
+ {
+  "name": "room_235",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/235.png"
+ },
+ {
+  "name": "room_236",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/236.png"
+ },
+ {
+  "name": "room_237",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/237.png"
+ },
+ {
+  "name": "room_238",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/238.png"
+ },
+ {
+  "name": "room_239",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/239.png"
+ },
+ {
+  "name": "room_240",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/240.png"
+ },
+ {
+  "name": "room_241",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/241.png"
+ },
+ {
+  "name": "room_242",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/242.png"
+ },
+ {
+  "name": "room_243",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/243.png"
+ },
+ {
+  "name": "room_244",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/244.png"
+ },
+ {
+  "name": "room_245",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/245.png"
+ },
+ {
+  "name": "room_246",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/246.png"
+ },
+ {
+  "name": "room_247",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/247.png"
+ },
+ {
+  "name": "room_248",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/248.png"
+ },
+ {
+  "name": "room_249",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/249.png"
+ },
+ {
+  "name": "room_250",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/250.png"
+ },
+ {
+  "name": "room_251",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/251.png"
+ },
+ {
+  "name": "room_252",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/252.png"
+ },
+ {
+  "name": "room_253",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/253.png"
+ },
+ {
+  "name": "room_254",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/254.png"
+ },
+ {
+  "name": "room_255",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/255.png"
+ },
+ {
+  "name": "room_256",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/256.png"
+ },
+ {
+  "name": "room_257",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/257.png"
+ },
+ {
+  "name": "room_258",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/258.png"
+ },
+ {
+  "name": "room_259",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/259.png"
+ },
+ {
+  "name": "room_260",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/260.png"
+ },
+ {
+  "name": "room_261",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/261.png"
+ },
+ {
+  "name": "room_262",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/262.png"
+ },
+ {
+  "name": "room_263",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/263.png"
+ },
+ {
+  "name": "room_264",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/264.png"
+ },
+ {
+  "name": "room_265",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/265.png"
+ },
+ {
+  "name": "room_266",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/266.png"
+ },
+ {
+  "name": "room_267",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/267.png"
+ },
+ {
+  "name": "room_268",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/268.png"
+ },
+ {
+  "name": "room_269",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/269.png"
+ },
+ {
+  "name": "room_270",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/270.png"
+ },
+ {
+  "name": "room_271",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/271.png"
+ },
+ {
+  "name": "room_272",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/272.png"
+ },
+ {
+  "name": "room_273",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/273.png"
+ },
+ {
+  "name": "room_274",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/274.png"
+ },
+ {
+  "name": "room_275",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/275.png"
+ },
+ {
+  "name": "room_276",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/276.png"
+ },
+ {
+  "name": "room_277",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/277.png"
+ },
+ {
+  "name": "room_278",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/278.png"
+ },
+ {
+  "name": "room_279",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/279.png"
+ },
+ {
+  "name": "room_280",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/280.png"
+ },
+ {
+  "name": "room_281",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/281.png"
+ },
+ {
+  "name": "room_282",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/282.png"
+ },
+ {
+  "name": "room_283",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/283.png"
+ },
+ {
+  "name": "room_284",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/284.png"
+ },
+ {
+  "name": "room_285",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/285.png"
+ },
+ {
+  "name": "room_286",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/286.png"
+ },
+ {
+  "name": "room_287",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/287.png"
+ },
+ {
+  "name": "room_288",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/288.png"
+ },
+ {
+  "name": "room_289",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/289.png"
+ },
+ {
+  "name": "room_290",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/290.png"
+ },
+ {
+  "name": "room_291",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/291.png"
+ },
+ {
+  "name": "room_292",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/292.png"
+ },
+ {
+  "name": "room_293",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/293.png"
+ },
+ {
+  "name": "room_294",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/294.png"
+ },
+ {
+  "name": "room_295",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/295.png"
+ },
+ {
+  "name": "room_296",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/296.png"
+ },
+ {
+  "name": "room_297",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/297.png"
+ },
+ {
+  "name": "room_298",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/298.png"
+ },
+ {
+  "name": "room_299",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/299.png"
+ },
+ {
+  "name": "room_300",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/300.png"
+ },
+ {
+  "name": "room_301",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/301.png"
+ },
+ {
+  "name": "room_302",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/302.png"
+ },
+ {
+  "name": "room_303",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/303.png"
+ },
+ {
+  "name": "room_304",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/304.png"
+ },
+ {
+  "name": "room_305",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/305.png"
+ },
+ {
+  "name": "room_306",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/306.png"
+ },
+ {
+  "name": "room_307",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/307.png"
+ },
+ {
+  "name": "room_308",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/308.png"
+ },
+ {
+  "name": "room_309",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/309.png"
+ },
+ {
+  "name": "room_310",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/310.png"
+ },
+ {
+  "name": "room_311",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/311.png"
+ },
+ {
+  "name": "room_312",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/312.png"
+ },
+ {
+  "name": "room_314",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/314.png"
+ },
+ {
+  "name": "room_315",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/315.png"
+ },
+ {
+  "name": "room_316",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/316.png"
+ },
+ {
+  "name": "room_317",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/317.png"
+ },
+ {
+  "name": "room_318",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/318.png"
+ },
+ {
+  "name": "room_319",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/319.png"
+ },
+ {
+  "name": "room_320",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/320.png"
+ },
+ {
+  "name": "room_321",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/321.png"
+ },
+ {
+  "name": "room_322",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/322.png"
+ },
+ {
+  "name": "room_323",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/323.png"
+ },
+ {
+  "name": "room_324",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/324.png"
+ },
+ {
+  "name": "room_325",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/325.png"
+ },
+ {
+  "name": "room_326",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/326.png"
+ },
+ {
+  "name": "room_327",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/327.png"
+ },
+ {
+  "name": "room_328",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/328.png"
+ },
+ {
+  "name": "room_329",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/329.png"
+ },
+ {
+  "name": "room_330",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/330.png"
+ },
+ {
+  "name": "room_331",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/331.png"
+ },
+ {
+  "name": "room_332",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/332.png"
+ },
+ {
+  "name": "room_333",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/333.png"
+ },
+ {
+  "name": "room_334",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/334.png"
+ },
+ {
+  "name": "room_335",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/335.png"
+ },
+ {
+  "name": "room_336",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/336.png"
+ },
+ {
+  "name": "room_337",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/337.png"
+ },
+ {
+  "name": "room_338",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/338.png"
+ },
+ {
+  "name": "room_339",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/339.png"
+ },
+ {
+  "name": "room_341",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/341.png"
+ },
+ {
+  "name": "room_342",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/342.png"
+ },
+ {
+  "name": "room_343",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/343.png"
+ },
+ {
+  "name": "room_344",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/344.png"
+ },
+ {
+  "name": "room_347",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/347.png"
+ },
+ {
+  "name": "room_348",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/348.png"
+ },
+ {
+  "name": "room_350",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/350.png"
+ },
+ {
+  "name": "room_351",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/351.png"
+ },
+ {
+  "name": "room_355",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/355.png"
+ },
+ {
+  "name": "room_357",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/357.png"
+ },
+ {
+  "name": "room_358",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/358.png"
+ },
+ {
+  "name": "room_359",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/359.png"
+ },
+ {
+  "name": "room_360",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/360.png"
+ },
+ {
+  "name": "room_361",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/361.png"
+ },
+ {
+  "name": "room_362",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/362.png"
+ },
+ {
+  "name": "room_363",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/363.png"
+ },
+ {
+  "name": "room_364",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/364.png"
+ },
+ {
+  "name": "room_365",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/365.png"
+ },
+ {
+  "name": "room_366",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/366.png"
+ },
+ {
+  "name": "room_367",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/367.png"
+ },
+ {
+  "name": "room_368",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/368.png"
+ },
+ {
+  "name": "room_369",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/369.png"
+ },
+ {
+  "name": "room_370",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/370.png"
+ },
+ {
+  "name": "room_371",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/371.png"
+ },
+ {
+  "name": "room_372",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/372.png"
+ },
+ {
+  "name": "room_373",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/373.png"
+ },
+ {
+  "name": "room_374",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/374.png"
+ },
+ {
+  "name": "room_375",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/375.png"
+ },
+ {
+  "name": "room_376",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/376.png"
+ },
+ {
+  "name": "room_377",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/377.png"
+ },
+ {
+  "name": "room_378",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/378.png"
+ },
+ {
+  "name": "room_379",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/379.png"
+ },
+ {
+  "name": "room_380",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/380.png"
+ },
+ {
+  "name": "room_381",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/381.png"
+ },
+ {
+  "name": "room_382",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/382.png"
+ },
+ {
+  "name": "room_383",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/383.png"
+ },
+ {
+  "name": "room_384",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/384.png"
+ },
+ {
+  "name": "room_385",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/385.png"
+ },
+ {
+  "name": "room_386",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/386.png"
+ },
+ {
+  "name": "room_387",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/387.png"
+ },
+ {
+  "name": "room_388",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/388.png"
+ },
+ {
+  "name": "room_389",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/389.png"
+ },
+ {
+  "name": "room_390",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/390.png"
+ },
+ {
+  "name": "room_391",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/391.png"
+ },
+ {
+  "name": "room_392",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/392.png"
+ },
+ {
+  "name": "room_393",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/393.png"
+ },
+ {
+  "name": "room_394",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/394.png"
+ },
+ {
+  "name": "room_395",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/395.png"
+ },
+ {
+  "name": "room_396",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/396.png"
+ },
+ {
+  "name": "room_397",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/397.png"
+ },
+ {
+  "name": "room_398",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/398.png"
+ },
+ {
+  "name": "room_399",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/399.png"
+ },
+ {
+  "name": "room_400",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/400.png"
+ },
+ {
+  "name": "room_401",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/401.png"
+ },
+ {
+  "name": "room_402",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/402.png"
+ },
+ {
+  "name": "room_403",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/403.png"
+ },
+ {
+  "name": "room_404",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/404.png"
+ },
+ {
+  "name": "room_405",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/405.png"
+ },
+ {
+  "name": "room_406",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/406.png"
+ },
+ {
+  "name": "room_407",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/407.png"
+ },
+ {
+  "name": "room_408",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/408.png"
+ },
+ {
+  "name": "room_409",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/409.png"
+ },
+ {
+  "name": "room_410",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/410.png"
+ },
+ {
+  "name": "room_411",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/411.png"
+ },
+ {
+  "name": "room_412",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/412.png"
+ },
+ {
+  "name": "room_413",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/413.png"
+ },
+ {
+  "name": "room_414",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/414.png"
+ },
+ {
+  "name": "room_415",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/415.png"
+ },
+ {
+  "name": "room_416",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/416.png"
+ },
+ {
+  "name": "room_417",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/417.png"
+ },
+ {
+  "name": "room_418",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/418.png"
+ },
+ {
+  "name": "room_419",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/419.png"
+ },
+ {
+  "name": "room_420",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/420.png"
+ },
+ {
+  "name": "room_421",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/421.png"
+ },
+ {
+  "name": "room_422",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/422.png"
+ },
+ {
+  "name": "room_423",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/423.png"
+ },
+ {
+  "name": "room_424",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/424.png"
+ },
+ {
+  "name": "room_425",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/425.png"
+ },
+ {
+  "name": "room_426",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/426.png"
+ },
+ {
+  "name": "room_427",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/427.png"
+ },
+ {
+  "name": "room_428",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/428.png"
+ },
+ {
+  "name": "room_429",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/429.png"
+ },
+ {
+  "name": "room_430",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/430.png"
+ },
+ {
+  "name": "room_431",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/431.png"
+ },
+ {
+  "name": "room_432",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/432.png"
+ },
+ {
+  "name": "room_433",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/433.png"
+ },
+ {
+  "name": "room_434",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/434.png"
+ },
+ {
+  "name": "room_435",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/435.png"
+ },
+ {
+  "name": "room_436",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/436.png"
+ },
+ {
+  "name": "room_437",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/437.png"
+ },
+ {
+  "name": "room_438",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/438.png"
+ },
+ {
+  "name": "room_439",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/439.png"
+ },
+ {
+  "name": "room_440",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/440.png"
+ },
+ {
+  "name": "room_441",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/441.png"
+ },
+ {
+  "name": "room_442",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/442.png"
+ },
+ {
+  "name": "room_443",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/443.png"
+ },
+ {
+  "name": "room_444",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/444.png"
+ },
+ {
+  "name": "room_445",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/445.png"
+ },
+ {
+  "name": "room_446",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/446.png"
+ },
+ {
+  "name": "room_447",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/447.png"
+ },
+ {
+  "name": "room_448",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/448.png"
+ },
+ {
+  "name": "room_449",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/449.png"
+ },
+ {
+  "name": "room_450",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/450.png"
+ },
+ {
+  "name": "room_451",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/451.png"
+ },
+ {
+  "name": "room_452",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/452.png"
+ },
+ {
+  "name": "room_453",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/453.png"
+ },
+ {
+  "name": "room_454",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/454.png"
+ },
+ {
+  "name": "room_455",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/455.png"
+ },
+ {
+  "name": "room_456",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/456.png"
+ },
+ {
+  "name": "room_457",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/457.png"
+ },
+ {
+  "name": "room_458",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/458.png"
+ },
+ {
+  "name": "room_459",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/459.png"
+ },
+ {
+  "name": "room_460",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/460.png"
+ },
+ {
+  "name": "room_461",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/461.png"
+ },
+ {
+  "name": "room_462",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/462.png"
+ },
+ {
+  "name": "room_463",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/463.png"
+ },
+ {
+  "name": "room_464",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/464.png"
+ },
+ {
+  "name": "room_465",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/465.png"
+ },
+ {
+  "name": "room_466",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/466.png"
+ },
+ {
+  "name": "room_467",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/467.png"
+ },
+ {
+  "name": "room_468",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/468.png"
+ },
+ {
+  "name": "room_469",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/469.png"
+ },
+ {
+  "name": "room_470",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/470.png"
+ },
+ {
+  "name": "room_471",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/471.png"
+ },
+ {
+  "name": "room_472",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/472.png"
+ },
+ {
+  "name": "room_473",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/473.png"
+ },
+ {
+  "name": "room_474",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/474.png"
+ },
+ {
+  "name": "room_475",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/475.png"
+ },
+ {
+  "name": "room_476",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/476.png"
+ },
+ {
+  "name": "room_477",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/477.png"
+ },
+ {
+  "name": "room_478",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/478.png"
+ },
+ {
+  "name": "room_479",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/479.png"
+ },
+ {
+  "name": "room_480",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/480.png"
+ },
+ {
+  "name": "room_481",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/481.png"
+ },
+ {
+  "name": "room_482",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/482.png"
+ },
+ {
+  "name": "room_483",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/483.png"
+ },
+ {
+  "name": "room_484",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/484.png"
+ },
+ {
+  "name": "room_485",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/485.png"
+ },
+ {
+  "name": "room_486",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/486.png"
+ },
+ {
+  "name": "room_487",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/487.png"
+ },
+ {
+  "name": "room_488",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/488.png"
+ },
+ {
+  "name": "room_489",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/489.png"
+ },
+ {
+  "name": "room_490",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/490.png"
+ },
+ {
+  "name": "room_491",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/491.png"
+ },
+ {
+  "name": "room_492",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/492.png"
+ },
+ {
+  "name": "room_493",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/493.png"
+ },
+ {
+  "name": "room_494",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/494.png"
+ },
+ {
+  "name": "room_495",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/495.png"
+ },
+ {
+  "name": "room_496",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/496.png"
+ },
+ {
+  "name": "room_497",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/497.png"
+ },
+ {
+  "name": "room_498",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/498.png"
+ },
+ {
+  "name": "room_499",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/499.png"
+ },
+ {
+  "name": "room_500",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/500.png"
+ },
+ {
+  "name": "room_501",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/501.png"
+ },
+ {
+  "name": "room_502",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/502.png"
+ },
+ {
+  "name": "room_503",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/503.png"
+ },
+ {
+  "name": "room_504",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/504.png"
+ },
+ {
+  "name": "room_505",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/505.png"
+ },
+ {
+  "name": "room_506",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/506.png"
+ },
+ {
+  "name": "room_507",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/507.png"
+ },
+ {
+  "name": "room_508",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/508.png"
+ },
+ {
+  "name": "room_509",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/509.png"
+ },
+ {
+  "name": "room_510",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/510.png"
+ },
+ {
+  "name": "room_511",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/511.png"
+ },
+ {
+  "name": "room_512",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/512.png"
+ },
+ {
+  "name": "room_513",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/513.png"
+ },
+ {
+  "name": "room_514",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/514.png"
+ },
+ {
+  "name": "room_515",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/515.png"
+ },
+ {
+  "name": "room_516",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/516.png"
+ },
+ {
+  "name": "room_517",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/517.png"
+ },
+ {
+  "name": "room_518",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/518.png"
+ },
+ {
+  "name": "room_519",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/519.png"
+ },
+ {
+  "name": "room_520",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/520.png"
+ },
+ {
+  "name": "room_521",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/521.png"
+ },
+ {
+  "name": "room_522",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/522.png"
+ },
+ {
+  "name": "room_523",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/523.png"
+ },
+ {
+  "name": "room_524",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/524.png"
+ },
+ {
+  "name": "room_525",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/525.png"
+ },
+ {
+  "name": "room_526",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/526.png"
+ },
+ {
+  "name": "room_527",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/527.png"
+ },
+ {
+  "name": "room_528",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/528.png"
+ },
+ {
+  "name": "room_529",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/529.png"
+ },
+ {
+  "name": "room_530",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/530.png"
+ },
+ {
+  "name": "room_531",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/531.png"
+ },
+ {
+  "name": "room_532",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/532.png"
+ },
+ {
+  "name": "room_533",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/533.png"
+ },
+ {
+  "name": "room_534",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/534.png"
+ },
+ {
+  "name": "room_535",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/535.png"
+ },
+ {
+  "name": "room_536",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/536.png"
+ },
+ {
+  "name": "room_537",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/537.png"
+ },
+ {
+  "name": "room_538",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/538.png"
+ },
+ {
+  "name": "room_539",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/539.png"
+ },
+ {
+  "name": "room_540",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/540.png"
+ },
+ {
+  "name": "room_541",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/541.png"
+ },
+ {
+  "name": "room_542",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/542.png"
+ },
+ {
+  "name": "room_543",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/543.png"
+ },
+ {
+  "name": "room_544",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/544.png"
+ },
+ {
+  "name": "room_545",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/545.png"
+ },
+ {
+  "name": "room_546",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/546.png"
+ },
+ {
+  "name": "room_547",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/547.png"
+ },
+ {
+  "name": "room_548",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/548.png"
+ },
+ {
+  "name": "room_549",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/549.png"
+ },
+ {
+  "name": "room_550",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/550.png"
+ },
+ {
+  "name": "room_551",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/551.png"
+ },
+ {
+  "name": "room_552",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/552.png"
+ },
+ {
+  "name": "room_553",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/553.png"
+ },
+ {
+  "name": "room_554",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/554.png"
+ },
+ {
+  "name": "room_555",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/555.png"
+ },
+ {
+  "name": "room_556",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/556.png"
+ },
+ {
+  "name": "room_557",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/557.png"
+ },
+ {
+  "name": "room_558",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/558.png"
+ },
+ {
+  "name": "room_559",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/559.png"
+ },
+ {
+  "name": "room_560",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/560.png"
+ },
+ {
+  "name": "room_561",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/561.png"
+ },
+ {
+  "name": "room_562",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/562.png"
+ },
+ {
+  "name": "room_563",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/563.png"
+ },
+ {
+  "name": "room_564",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/564.png"
+ },
+ {
+  "name": "room_565",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/565.png"
+ },
+ {
+  "name": "room_566",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/566.png"
+ },
+ {
+  "name": "room_567",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/567.png"
+ },
+ {
+  "name": "room_568",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/568.png"
+ },
+ {
+  "name": "room_569",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/569.png"
+ },
+ {
+  "name": "room_570",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/570.png"
+ },
+ {
+  "name": "room_571",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/571.png"
+ },
+ {
+  "name": "room_572",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/572.png"
+ },
+ {
+  "name": "room_573",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/573.png"
+ },
+ {
+  "name": "room_574",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/574.png"
+ },
+ {
+  "name": "room_575",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/575.png"
+ },
+ {
+  "name": "room_576",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/576.png"
+ },
+ {
+  "name": "room_577",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/577.png"
+ },
+ {
+  "name": "room_578",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/578.png"
+ },
+ {
+  "name": "room_579",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/579.png"
+ },
+ {
+  "name": "room_580",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/580.png"
+ },
+ {
+  "name": "room_581",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/581.png"
+ },
+ {
+  "name": "room_582",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/582.png"
+ },
+ {
+  "name": "room_583",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/583.png"
+ },
+ {
+  "name": "room_584",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/584.png"
+ },
+ {
+  "name": "room_585",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/585.png"
+ },
+ {
+  "name": "room_586",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/586.png"
+ },
+ {
+  "name": "room_587",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/587.png"
+ },
+ {
+  "name": "room_588",
+  "location_size": 48,
+  "location_border_thickness": 4,
+  "img": "images/rooms/588.png"
+ },
+ {
+  "name": "room_589",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/589.png"
+ },
+ {
+  "name": "room_590",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/590.png"
+ },
+ {
+  "name": "room_591",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/591.png"
+ },
+ {
+  "name": "room_592",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/592.png"
+ },
+ {
+  "name": "room_593",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/593.png"
+ },
+ {
+  "name": "room_594",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/594.png"
+ },
+ {
+  "name": "room_595",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/595.png"
+ },
+ {
+  "name": "room_596",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/596.png"
+ },
+ {
+  "name": "room_597",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/597.png"
+ },
+ {
+  "name": "room_598",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/598.png"
+ },
+ {
+  "name": "room_599",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/599.png"
+ },
+ {
+  "name": "room_600",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/600.png"
+ },
+ {
+  "name": "room_601",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/601.png"
+ },
+ {
+  "name": "room_602",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/602.png"
+ },
+ {
+  "name": "room_603",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/603.png"
+ },
+ {
+  "name": "room_604",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/604.png"
+ },
+ {
+  "name": "room_605",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/605.png"
+ },
+ {
+  "name": "room_606",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/606.png"
+ },
+ {
+  "name": "room_607",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/607.png"
+ },
+ {
+  "name": "room_608",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/608.png"
+ },
+ {
+  "name": "room_609",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/609.png"
+ },
+ {
+  "name": "room_610",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/610.png"
+ },
+ {
+  "name": "room_611",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/611.png"
+ },
+ {
+  "name": "room_612",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/612.png"
+ },
+ {
+  "name": "room_613",
+  "location_size": 48,
+  "location_border_thickness": 4,
+  "img": "images/rooms/613.png"
+ },
+ {
+  "name": "room_614",
+  "location_size": 48,
+  "location_border_thickness": 4,
+  "img": "images/rooms/614.png"
+ },
+ {
+  "name": "room_615",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/615.png"
+ },
+ {
+  "name": "room_616",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/616.png"
+ },
+ {
+  "name": "room_620",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/620.png"
+ },
+ {
+  "name": "room_621",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/621.png"
+ },
+ {
+  "name": "room_622",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/622.png"
+ },
+ {
+  "name": "room_623",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/623.png"
+ },
+ {
+  "name": "room_624",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/624.png"
+ },
+ {
+  "name": "room_625",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/625.png"
+ },
+ {
+  "name": "room_626",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/626.png"
+ },
+ {
+  "name": "room_627",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/627.png"
+ },
+ {
+  "name": "room_628",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/628.png"
+ },
+ {
+  "name": "room_629",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/629.png"
+ },
+ {
+  "name": "room_630",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/630.png"
+ },
+ {
+  "name": "room_631",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/631.png"
+ },
+ {
+  "name": "room_632",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/632.png"
+ },
+ {
+  "name": "room_633",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/633.png"
+ },
+ {
+  "name": "room_634",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/634.png"
+ },
+ {
+  "name": "room_635",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/635.png"
+ },
+ {
+  "name": "room_636",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/636.png"
+ },
+ {
+  "name": "room_637",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/637.png"
+ },
+ {
+  "name": "room_638",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/638.png"
+ },
+ {
+  "name": "room_639",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/639.png"
+ },
+ {
+  "name": "room_640",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/640.png"
+ },
+ {
+  "name": "room_641",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/641.png"
+ },
+ {
+  "name": "room_642",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/642.png"
+ },
+ {
+  "name": "room_644",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/644.png"
+ },
+ {
+  "name": "room_645",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/645.png"
+ },
+ {
+  "name": "room_646",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/646.png"
+ },
+ {
+  "name": "room_647",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/647.png"
+ },
+ {
+  "name": "room_648",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/648.png"
+ },
+ {
+  "name": "room_649",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/649.png"
+ },
+ {
+  "name": "room_650",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/650.png"
+ },
+ {
+  "name": "room_651",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/651.png"
+ },
+ {
+  "name": "room_652",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/652.png"
+ },
+ {
+  "name": "room_653",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/653.png"
+ },
+ {
+  "name": "room_654",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/654.png"
+ },
+ {
+  "name": "room_655",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/655.png"
+ },
+ {
+  "name": "room_656",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/656.png"
+ },
+ {
+  "name": "room_657",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/657.png"
+ },
+ {
+  "name": "room_658",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/658.png"
+ },
+ {
+  "name": "room_659",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/659.png"
+ },
+ {
+  "name": "room_660",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/660.png"
+ },
+ {
+  "name": "room_661",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/661.png"
+ },
+ {
+  "name": "room_662",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/662.png"
+ },
+ {
+  "name": "room_663",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/663.png"
+ },
+ {
+  "name": "room_664",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/664.png"
+ },
+ {
+  "name": "room_665",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/665.png"
+ },
+ {
+  "name": "room_666",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/666.png"
+ },
+ {
+  "name": "room_667",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/667.png"
+ },
+ {
+  "name": "room_668",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/668.png"
+ },
+ {
+  "name": "room_669",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/669.png"
+ },
+ {
+  "name": "room_670",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/670.png"
+ },
+ {
+  "name": "room_671",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/671.png"
+ },
+ {
+  "name": "room_672",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/672.png"
+ },
+ {
+  "name": "room_673",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/673.png"
+ },
+ {
+  "name": "room_674",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/674.png"
+ },
+ {
+  "name": "room_675",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/675.png"
+ },
+ {
+  "name": "room_676",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/676.png"
+ },
+ {
+  "name": "room_677",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/677.png"
+ },
+ {
+  "name": "room_678",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/678.png"
+ },
+ {
+  "name": "room_679",
+  "location_size": 36,
+  "location_border_thickness": 3,
+  "img": "images/rooms/679.png"
+ },
+ {
+  "name": "room_680",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/680.png"
+ },
+ {
+  "name": "room_681",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/681.png"
+ },
+ {
+  "name": "room_682",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/682.png"
+ },
+ {
+  "name": "room_683",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/683.png"
+ },
+ {
+  "name": "room_684",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/684.png"
+ },
+ {
+  "name": "room_685",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/685.png"
+ },
+ {
+  "name": "room_686",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/686.png"
+ },
+ {
+  "name": "room_687",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/687.png"
+ },
+ {
+  "name": "room_688",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/688.png"
+ },
+ {
+  "name": "room_689",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/689.png"
+ },
+ {
+  "name": "room_690",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/690.png"
+ },
+ {
+  "name": "room_691",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/691.png"
+ },
+ {
+  "name": "room_692",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/692.png"
+ },
+ {
+  "name": "room_693",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/693.png"
+ },
+ {
+  "name": "room_694",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/694.png"
+ },
+ {
+  "name": "room_695",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/695.png"
+ },
+ {
+  "name": "room_696",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/696.png"
+ },
+ {
+  "name": "room_698",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/698.png"
+ },
+ {
+  "name": "room_699",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/699.png"
+ },
+ {
+  "name": "room_700",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/700.png"
+ },
+ {
+  "name": "room_701",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/701.png"
+ },
+ {
+  "name": "room_702",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/702.png"
+ },
+ {
+  "name": "room_703",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/703.png"
+ },
+ {
+  "name": "room_704",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/704.png"
+ },
+ {
+  "name": "room_705",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/705.png"
+ },
+ {
+  "name": "room_706",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/706.png"
+ },
+ {
+  "name": "room_707",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/707.png"
+ },
+ {
+  "name": "room_708",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/708.png"
+ },
+ {
+  "name": "room_709",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/709.png"
+ },
+ {
+  "name": "room_710",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/710.png"
+ },
+ {
+  "name": "room_711",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/711.png"
+ },
+ {
+  "name": "room_712",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/712.png"
+ },
+ {
+  "name": "room_713",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/713.png"
+ },
+ {
+  "name": "room_714",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/714.png"
+ },
+ {
+  "name": "room_715",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/715.png"
+ },
+ {
+  "name": "room_716",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/716.png"
+ },
+ {
+  "name": "room_717",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/717.png"
+ },
+ {
+  "name": "room_718",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/718.png"
+ },
+ {
+  "name": "room_719",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/719.png"
+ },
+ {
+  "name": "room_720",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/720.png"
+ },
+ {
+  "name": "room_721",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/721.png"
+ },
+ {
+  "name": "room_722",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/722.png"
+ },
+ {
+  "name": "room_723",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/723.png"
+ },
+ {
+  "name": "room_724",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/724.png"
+ },
+ {
+  "name": "room_725",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/725.png"
+ },
+ {
+  "name": "room_726",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/726.png"
+ },
+ {
+  "name": "room_727",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/727.png"
+ },
+ {
+  "name": "room_728",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/728.png"
+ },
+ {
+  "name": "room_729",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/729.png"
+ },
+ {
+  "name": "room_730",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/730.png"
+ },
+ {
+  "name": "room_731",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/731.png"
+ },
+ {
+  "name": "room_732",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/732.png"
+ },
+ {
+  "name": "room_733",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/733.png"
+ },
+ {
+  "name": "room_734",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/734.png"
+ },
+ {
+  "name": "room_735",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/735.png"
+ },
+ {
+  "name": "room_736",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/736.png"
+ },
+ {
+  "name": "room_737",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/737.png"
+ },
+ {
+  "name": "room_738",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/738.png"
+ },
+ {
+  "name": "room_739",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/739.png"
+ },
+ {
+  "name": "room_740",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/740.png"
+ },
+ {
+  "name": "room_741",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/741.png"
+ },
+ {
+  "name": "room_742",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/742.png"
+ },
+ {
+  "name": "room_743",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/743.png"
+ },
+ {
+  "name": "room_744",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/744.png"
+ },
+ {
+  "name": "room_745",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/745.png"
+ },
+ {
+  "name": "room_746",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/746.png"
+ },
+ {
+  "name": "room_747",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/747.png"
+ },
+ {
+  "name": "room_748",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/748.png"
+ },
+ {
+  "name": "room_749",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/749.png"
+ },
+ {
+  "name": "room_750",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/750.png"
+ },
+ {
+  "name": "room_751",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/751.png"
+ },
+ {
+  "name": "room_752",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/752.png"
+ },
+ {
+  "name": "room_753",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/753.png"
+ },
+ {
+  "name": "room_754",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/754.png"
+ },
+ {
+  "name": "room_755",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/755.png"
+ },
+ {
+  "name": "room_756",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/756.png"
+ },
+ {
+  "name": "room_757",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/757.png"
+ },
+ {
+  "name": "room_758",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/758.png"
+ },
+ {
+  "name": "room_759",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/759.png"
+ },
+ {
+  "name": "room_760",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/760.png"
+ },
+ {
+  "name": "room_761",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/761.png"
+ },
+ {
+  "name": "room_762",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/762.png"
+ },
+ {
+  "name": "room_763",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/763.png"
+ },
+ {
+  "name": "room_764",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/764.png"
+ },
+ {
+  "name": "room_765",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/765.png"
+ },
+ {
+  "name": "room_766",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/766.png"
+ },
+ {
+  "name": "room_767",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/767.png"
+ },
+ {
+  "name": "room_768",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/768.png"
+ },
+ {
+  "name": "room_769",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/769.png"
+ },
+ {
+  "name": "room_770",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/770.png"
+ },
+ {
+  "name": "room_771",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/771.png"
+ },
+ {
+  "name": "room_772",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/772.png"
+ },
+ {
+  "name": "room_773",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/773.png"
+ },
+ {
+  "name": "room_774",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/774.png"
+ },
+ {
+  "name": "room_775",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/775.png"
+ },
+ {
+  "name": "room_776",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/776.png"
+ },
+ {
+  "name": "room_777",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/777.png"
+ },
+ {
+  "name": "room_778",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/778.png"
+ },
+ {
+  "name": "room_779",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/779.png"
+ },
+ {
+  "name": "room_780",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/780.png"
+ },
+ {
+  "name": "room_781",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/781.png"
+ },
+ {
+  "name": "room_782",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/782.png"
+ },
+ {
+  "name": "room_783",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/783.png"
+ },
+ {
+  "name": "room_784",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/784.png"
+ },
+ {
+  "name": "room_785",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/785.png"
+ },
+ {
+  "name": "room_786",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/786.png"
+ },
+ {
+  "name": "room_787",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/787.png"
+ },
+ {
+  "name": "room_788",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/788.png"
+ },
+ {
+  "name": "room_789",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/789.png"
+ },
+ {
+  "name": "room_790",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/790.png"
+ },
+ {
+  "name": "room_791",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/791.png"
+ },
+ {
+  "name": "room_792",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/792.png"
+ },
+ {
+  "name": "room_793",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/793.png"
+ },
+ {
+  "name": "room_794",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/794.png"
+ },
+ {
+  "name": "room_795",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/795.png"
+ },
+ {
+  "name": "room_796",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/796.png"
+ },
+ {
+  "name": "room_797",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/797.png"
+ },
+ {
+  "name": "room_798",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/798.png"
+ },
+ {
+  "name": "room_799",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/799.png"
+ },
+ {
+  "name": "room_800",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/800.png"
+ },
+ {
+  "name": "room_801",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/801.png"
+ },
+ {
+  "name": "room_802",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/802.png"
+ },
+ {
+  "name": "room_803",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/803.png"
+ },
+ {
+  "name": "room_804",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/804.png"
+ },
+ {
+  "name": "room_805",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/805.png"
+ },
+ {
+  "name": "room_806",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/806.png"
+ },
+ {
+  "name": "room_807",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/807.png"
+ },
+ {
+  "name": "room_808",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/808.png"
+ },
+ {
+  "name": "room_809",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/809.png"
+ },
+ {
+  "name": "room_810",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/810.png"
+ },
+ {
+  "name": "room_811",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/811.png"
+ },
+ {
+  "name": "room_812",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/812.png"
+ },
+ {
+  "name": "room_813",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/813.png"
+ },
+ {
+  "name": "room_814",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/814.png"
+ },
+ {
+  "name": "room_815",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/815.png"
+ },
+ {
+  "name": "room_816",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/816.png"
+ },
+ {
+  "name": "room_817",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/817.png"
+ },
+ {
+  "name": "room_818",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/818.png"
+ },
+ {
+  "name": "room_819",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/819.png"
+ },
+ {
+  "name": "room_820",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/820.png"
+ },
+ {
+  "name": "room_821",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/821.png"
+ },
+ {
+  "name": "room_822",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/822.png"
+ },
+ {
+  "name": "room_823",
+  "location_size": 24,
+  "location_border_thickness": 2,
+  "img": "images/rooms/823.png"
+ },
+ {
+  "name": "room_824",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/824.png"
+ },
+ {
+  "name": "room_825",
+  "location_size": 12,
+  "location_border_thickness": 1,
+  "img": "images/rooms/825.png"
+ }
+]

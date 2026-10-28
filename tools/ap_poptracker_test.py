@@ -384,6 +384,91 @@ class TestRooms(unittest.TestCase):
         self.assertLess(total, PACK_BUDGET, "the pack's files (the zip is smaller)")
 
 
+class TestUT(unittest.TestCase):
+    """Universal Tracker's map tab (docs/ap/apworld.md "Universal Tracker's map tab"): the APWorld's
+    tracker/ JSON is this build's, names its sections by AP location names, and its pages and map
+    keys agree with the pack."""
+    UT = os.path.join(REPO, "apworld", "so2", "tracker")
+
+    def ut(self, path):
+        return json.loads(read(os.path.join(self.UT, *path.split("/"))))
+
+    def test_committed_is_this_build(self):
+        built = os.path.join(os.path.dirname(PACK), "ut_tracker")
+        files = sorted(os.path.relpath(os.path.join(b, f), built) for b, _, fs in os.walk(built) for f in fs)
+        mine = sorted(os.path.relpath(os.path.join(b, f), self.UT) for b, _, fs in os.walk(self.UT) for f in fs
+                      if "__pycache__" not in b)
+        self.assertEqual(files, mine)
+        for f in files:
+            self.assertEqual(read(os.path.join(built, f)), read(os.path.join(self.UT, f)),
+                             f"apworld/so2/tracker/{f} is out of date: tools/ap_poptracker.py --ut-out apworld/so2/tracker")
+        size = sum(os.path.getsize(os.path.join(self.UT, f)) for f in files)
+        self.assertLess(size, 1 << 20, "the map tab's JSON in the APWorld")
+
+    def test_sections_are_ap_names(self):
+        ids = WORLD.location_name_to_id
+        names = []
+        for lid, node in walk_locations(self.ut("locations/locations.json")):
+            for sec in node.get("sections", []):
+                self.assertEqual(set(sec), {"name"}, lid)       # no rules, no refs: UT has the logic
+                names.append(sec["name"])
+        self.assertTrue(set(names) <= set(ids), set(names) - set(ids))
+        self.assertTrue(set(LAYOUT["checks"]) <= set(names), "every place check has a square")
+        mapped = lua_table("scripts/autotracking/location_mapping.lua", "LOCATION_MAPPING")
+        self.assertEqual({ids[n] for n in names}, set(mapped), "the same locations as the pack")
+
+    def test_pages(self):
+        maps = self.ut("maps/maps.json")
+        self.assertEqual(maps, pack_json("maps/maps.json"), "the pack's maps: the images come from its zip")
+        page_of = {m["name"]: k for k, m in enumerate(maps)}
+        pages = self.ut("map_pages.json")
+        tabs = lua_table("scripts/map_tabs.lua", "SO2_MAP_TABS")
+        for r in LAYOUT["rooms"]:
+            self.assertEqual(pages["pages"][str(r["map"])], page_of[f"room_{r['map']}"])
+        for w, name in ((1, "world_expel"), (2, "world_energy_nede")):
+            self.assertEqual(pages["pages"][str(w)], page_of[name])
+            self.assertEqual(pages["world"][str(w)]["page"], page_of[name])
+        self.assertTrue(set(pages["pages"]) <= {str(m) for m in tabs}, "a page only for a map with a tab")
+        self.assertTrue(png_size(os.path.join(PACK, pages["player_icon"])))
+        # UT's map menu: every room's page is in it, named "<map> <name>"
+        titles = {}
+
+        def walk_tabs(node, path):
+            if node.get("type") == "tabbed":
+                for t in node["tabs"]:
+                    walk_tabs(t["content"], path + [t["title"]])
+            elif node.get("type") == "map":
+                for m in node["maps"]:
+                    titles[m] = path
+        walk_tabs(self.ut("layouts/maps.json")["so2_ut_maps"], [])
+        for r in LAYOUT["rooms"]:
+            self.assertEqual(titles[f"room_{r['map']}"][-1], r["label"])
+
+    def test_world_functions(self):
+        import importlib
+        ut_map = importlib.import_module(WORLD.__module__.rsplit(".", 1)[0] + ".ut_map")
+        tw = WORLD.tracker_world
+        self.assertEqual(tw["map_page_setting_key"], "so2_map_{team}_{player}")
+        self.assertEqual(tw["location_setting_key"], "so2_map_{team}_{player}")
+        self.assertEqual(tw["external_pack_key"], "ut_pack_path")
+        self.assertEqual(WORLD.settings_key, "so2_options")
+        page_of = {m["name"]: k for k, m in enumerate(self.ut("maps/maps.json"))}
+        self.assertEqual(tw["map_page_index"]({"map": 62}), page_of["room_62"])
+        self.assertEqual(tw["map_page_index"]({"map": 1, "x": 51200, "z": 18500}), page_of["world_expel"])
+        for nothing in ("", None, {}, {"map": "62"}, {"map": True}, {"map": 99999}, [62]):
+            self.assertEqual(tw["map_page_index"](nothing), -1, nothing)
+        world = next(i for i in LAYOUT["images"] if i.get("world_map") == 2)
+        x, z = 67000, 40000
+        self.assertEqual(tw["location_icon_coords"](page_of["world_energy_nede"], {"map": 2, "x": x, "z": z}),
+                         ((x - world["x0"]) // world["units_per_pixel"], (world["z0"] - z) // world["units_per_pixel"],
+                          "images/status/you.png"))
+        self.assertIsNone(tw["location_icon_coords"](page_of["world_expel"], {"map": 2, "x": x, "z": z}),
+                          "only on that world map's page")
+        self.assertIsNone(tw["location_icon_coords"](page_of["room_62"], {"map": 62}))
+        self.assertIsNone(tw["location_icon_coords"](page_of["world_energy_nede"], {"map": 2, "x": -10 ** 6, "z": z}))
+        self.assertIs(ut_map.tracker_world, tw)
+
+
 class TestJson(unittest.TestCase):
     def test_parses(self):
         files = glob.glob(os.path.join(PACK, "**", "*.json"), recursive=True)

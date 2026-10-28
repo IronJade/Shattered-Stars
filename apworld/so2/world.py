@@ -9,15 +9,16 @@ The output is one .apso2 seed per player (docs/ap/seed_format.md), which the por
 import json
 import logging
 import os
-from typing import NamedTuple, Optional
+from typing import ClassVar, NamedTuple, Optional
 
 from BaseClasses import ItemClassification, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from . import hell, hub, items, locations, logic, regions, rules, skillsanity, story, tracker_export, ut
+from . import hell, hub, items, locations, logic, regions, rules, skillsanity, story, tracker_export, ut, ut_map
 from .data import EXIT_GATES, GOAL_ENCOUNTERS, KEY_GROUPS, STORY_GATES
 from .options import SO2Options, option_groups
 from .patches import placement_patches
+from .ut_map import SO2Settings
 
 SEED_FORMAT_VERSION = 1         # a seed that uses none of the v2 fields (docs/ap/seed_format.md)
 SEED_FORMAT_V2 = 2              # one that does: the 0.02.00 port refuses it rather than ignore them
@@ -73,6 +74,11 @@ class SO2World(World):
     # restores the options and the party from it (`ut_slot_data`, None in a real generation).
     ut_can_gen_without_yaml = True
     ut_slot_data = None
+    # UT's map tab (ut_map.py; docs/ap/apworld.md "Universal Tracker's map tab"): the JSON in
+    # tracker/, the pictures from the PopTracker pack's zip (host.yaml so2_options: ut_pack_path).
+    settings: ClassVar[SO2Settings]
+    settings_key = "so2_options"
+    tracker_world: ClassVar[dict] = ut_map.tracker_world
 
     @staticmethod
     def interpret_slot_data(slot_data):
