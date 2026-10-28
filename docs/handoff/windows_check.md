@@ -331,23 +331,23 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
    inside `ss_game_tests.exe` (docs/handoff/setupthread.md).
    - With no Disc 1 chosen (a fresh scratch `%APPDATA%`): the button is disabled, its tooltip
      "Choose a valid Disc 1 image first.", and nothing is written.
-   - With Disc 1 chosen: press it. A progress bar ("150 of 861 images") and the image in progress
+   - With Disc 1 chosen: press it. A progress bar ("150 of 862 images") and the image in progress
      ("Rendering room 92 Armory...", "Rendering the area map of Arlia Village...") move while it
      runs; the button stays disabled; the rest of setup keeps working meanwhile (switch pages,
      scroll, the window redraws, no "Not responding"). It takes about 20 s on the development
      machine; note the time here.
-   - At the end: "Done: 861 tracker map images were written to <folder>." with **Open folder**,
+   - At the end: "Done: 862 tracker map images were written to <folder>." with **Open folder**,
      which opens Explorer there. The folder holds `images\maps\` (68 PNGs: 66 areas, 2 world maps)
-     and `images\rooms\` (793 PNGs), about 135 MB, no `.part` file, nothing else. config.ini
+     and `images\rooms\` (794 PNGs), about 135 MB, no `.part` file, nothing else. config.ini
      unchanged by the button (its time and contents), no memory card touched.
    - Close setup (the window's X) halfway through a second render: setup closes within a moment
      (no hang); the folder holds whole PNGs only (no `.part`); pressing the button again renders
-     all 861.
+     all 862.
 3. **The command line** (PowerShell or cmd):
-   - `shattered-stars.exe --render-tracker-maps`: the console lists the images, "rendering 861
-     image(s) into <folder>" first and "300 of 861 done" every 100; exit code 0; the same folder as
+   - `shattered-stars.exe --render-tracker-maps`: the console lists the images, "rendering 862
+     image(s) into <folder>" first and "300 of 862 done" every 100; exit code 0; the same folder as
      the button's; no window opens; no `shattered-stars.log` line, no config.ini change.
-   - `shattered-stars.exe --render-tracker-maps "%USERPROFILE%\ss-test\Test Ä 日本\maps"`: 861 PNGs
+   - `shattered-stars.exe --render-tracker-maps "%USERPROFILE%\ss-test\Test Ä 日本\maps"`: 862 PNGs
      there, the console shows the path as written, exit 0.
    - Without a disc anywhere (a scratch `%APPDATA%` with no config.ini, no `discs` folder): exit 1
      with the no-disc message, nothing written.
@@ -405,12 +405,18 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
       in `C:\ProgramData\Archipelago\host.yaml` (restart UT) it lists everything the logic allows;
     - the game, PopTracker and UT all connected to the slot at once: each works.
     - Optional, the old seed: UT tracks a 0.2.1 room with 0.2.2 installed.
-11. **TODO (maptab): the room maps, the door panel and click switching.** Agent "maptab" is
-    building them (docs/handoff/maptab.md). To fill from its log: in PopTracker, an area tab's
-    Overview and room tabs, the lettered doors on the rendered rooms, the door panel's
-    "A -> 412 ..." lines, clicking a door (or its panel line) opens the destination room's tab,
-    auto tab to the room the party is in; in Universal Tracker, its map tab (following the game,
-    the player icon on the world maps if built).
+11. **The room maps, the door panel and click switching** (maptab, docs/handoff/maptab.md).
+    In PopTracker, after loading the pack (item 4): each area's tab has an **Overview** and then
+    a tab per room, titled by its map number, in story order; on a rendered room (after item 2 or
+    3) a small lettered box sits beside each doorway (A, B, C...). A **Doors** panel beside the
+    map lists where each leads, for example "A -> 412 Salva Drift" (a story-only door shows a
+    trailing `*`); click a line, or a door's own marker/diamond on the map, and the room it leads
+    to opens its own tab. With the game connected, the tabs follow the room your party is in
+    (**Auto tab**, item 5) down to the room level, not just the area. Universal Tracker's map tab
+    (item 10) follows the same room pages and shows a player marker on the two world maps, but has
+    **no doors**: a door is not an AP location, entrance or event, so it carries no door panel and
+    no clickable markers — doors are PopTracker-only. 1,775 door locations in all, across 794 room
+    maps.
 12. **A glance at the rest** (unchanged since 0.02.51, which passed): Esc opens "Quit Shattered
     Stars?"; the gold-star icon on both `.exe`s, the title bars and the taskbar; the bundle
     unpacked into "…\Shattered Stars Ä\" starts and saves; a seed's New Game, a check, a save and

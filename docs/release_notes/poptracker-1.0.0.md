@@ -1,9 +1,8 @@
 # PopTracker pack 1.0.0 (Star Ocean: The Second Story, Shattered Stars)
 
 > **DRAFT** (2026-10-27): not released. Written by releasedocs from docs/ap/poptracker.md and the
-> Phase B logs (packgen, logicexport, storyaware; docs/handoff/phaseb.md). Left for release time
-> (docs/ap/release_checklist.md section 12): the room maps and doors (**TODO (maptab)**), the
-> pack's size and counts once maptab's work is in, and the SHA-256 sum.
+> Phase B logs (packgen, logicexport, storyaware, maptab; docs/handoff/phaseb.md) and finished by
+> rc030. Left for release time (docs/ap/release_checklist.md section 12): the SHA-256 sum.
 
 The first release of the [PopTracker](https://github.com/black-sliver/PopTracker) pack for
 *Star Ocean: The Second Story* played on Shattered Stars with Archipelago. It connects to your
@@ -58,9 +57,12 @@ and [the Archipelago world's](https://github.com/IronJade/Shattered-Stars/releas
 - **The map follows you** (with Shattered Stars 0.03.00 connected): the tabs switch to the map the
   party is on. The **Auto tab** item (on by default) turns it off.
 - **Hints**: hinted locations in your world are highlighted.
-- **TODO (maptab): rooms and doors.** One paragraph from docs/handoff/maptab.md: each area's tab
-  opens its rooms; the lettered doorways; the door panel ("A -> 412 ..."); clicking a doorway
-  opens its room; the tabs follow the room you're in.
+- **Rooms and doors.** Each area's tab opens into **Overview** plus a tab per room (794 of
+  them), titled by the game's own map number, in story order. A room's doorways carry a small
+  lettered marker each (1,775 in all), and a **Doors** panel beside the map says where each one
+  leads, for example "A -> 412 Salva Drift" (a trailing `*` for a story-only door). Click a
+  panel line, or a doorway's own marker, and the room it leads to opens. With the game connected,
+  the tabs follow you room by room, not just area by area (**Auto tab**, above).
 
 The pack only listens: it sends no checks and no hints. Two variants: **Map Tracker** (maps,
 boards and items) and **Items Only**.
@@ -92,13 +94,13 @@ your own disc 1, into the folder PopTracker reads for this pack:
 - **From a terminal**: `shattered-stars --render-tracker-maps` (`shattered-stars.exe` on Windows);
   with a folder after it, into that folder instead.
 
-It writes 861 PNG images (about 135 MB, about 20 seconds on the development machine) into
+It writes 862 PNG images (about 135 MB, about 20 seconds on the development machine) into
 `PopTracker/user-override/so2_shattered_stars`: in your user folder if PopTracker keeps its folder
 there (it does once it has installed a pack), else in your Documents folder. PopTracker uses files
-there in place of the pack's own, so the areas and the two world maps (**TODO (maptab):** and the
-rooms) show the real backgrounds, and the squares sit on the chests and the people who hand things out. Load the pack
-again to see them. Render again after updating the pack, in case its maps changed. These pictures
-are for your own use: don't share them.
+there in place of the pack's own, so the two world maps, the area overviews and every room's own
+tab show the real backgrounds, each room's name above it, and the squares sit on the chests and
+the people who hand things out. Load the pack again to see them. Render again after updating the
+pack, in case its maps changed. These pictures are for your own use: don't share them.
 
 A portable PopTracker (`portable.txt` beside it) reads overrides only from its own folder: give the
 game that folder, `--render-tracker-maps "<PopTracker's folder>/user-override/so2_shattered_stars"`.
@@ -130,12 +132,14 @@ game that folder, `--render-tracker-maps "<PopTracker's folder>/user-override/so
 The pack is generated in this repository from the Archipelago world's own tables
 (`tools/ap_poptracker.py`, `tools/build_poptracker.sh`; docs/ap/poptracker.md), so its locations,
 items and areas can't drift from the world's: all 1,991 locations of the world have their entry,
-and 264 of its items (every key, character, trap, skill and move) their place in the item panel. It was checked with PopTracker's pack checker in strict
-mode (no warning), its own tests (24: the ids, the layout, the Lua run in Lua 5.4, the logic equal
-to the world's over 16 rooms and 246 item states, story awareness at 15 positions), and the real
-PopTracker 0.36.0 against local rooms (37 checks: both variants, autotracking, the logic at three
-points of a game, the story room at six positions). **TODO (maptab):** the counts with the rooms
-and doors.
+and 264 of its items (every key, character, trap, skill and move) their place in the item panel.
+It has 794 room maps and 1,775 door locations (never counted as checks), 1,201 files in all,
+about 5.6 MB zipped. It was checked with PopTracker's pack checker in strict mode (no warning),
+its own tests (41: the ids, the layout, the Lua run in Lua 5.4, the logic equal to the world's
+over 16 rooms and 246 item states, story awareness at 15 positions, the room placeholders, the
+Lua door panel and its click handler), and the real PopTracker 0.36.0 against local rooms (44
+checks: both variants, autotracking, the logic at three points of a game, the story room at six
+positions, and a door click that opens its destination room's tab).
 
 ## Licence
 
