@@ -349,7 +349,7 @@ in `scratchpad/catalog/gaps/<program>.json`.
 
 ## Unported, reached in play
 
-Resolved 2026-10-23 (effects agent, `docs/handoff/effects.md` phase 7): the 123 empty port
+Resolved 2026-10-23 (effects agent, the effects handoff log phase 7): the 123 empty port
 columns the gap-scan fill left are all settled; none was a real unported function.
 
 - title `init_celine` .. `init_chisato` (0x80062330-0x80062e34, were `character_join_init_03`
@@ -393,7 +393,7 @@ the "and others" (boot's PRNT_OBJ_*/SYS_OBJ_*/SPU-family internals, title's and 
 shared-PsyQ-runtime duplicates, field's map/voice-queue/OT-ring helper families). Title's
 3 vtable-only rows (0x8003a208/_210/_248) from the previous pass are unaffected.
 
-Resolved 2026-10-23 (effects agent, `docs/handoff/effects.md` phase 8): the scan now reports
+Resolved 2026-10-23 (effects agent, the effects handoff log phase 8): the scan now reports
 0 missing across all 32 programs; the "107 left" of the catalog agent's pass are settled:
 - battle's 51 "boss subsystem" were not functions of #2129: 49 are entry points of #1984.0 /
   #1984.1 functions (camera_end_scheduled_now ... voice_thank_healer, clash_resolve,

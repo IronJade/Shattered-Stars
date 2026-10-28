@@ -1,7 +1,7 @@
 # French and German text: how the original does it, and the port's design
 
 The text system of the French and German releases (0.02.00; `docs/notes/regions.md` is the
-survey and the user's decisions, `docs/handoff/regions_text.md` the continuation log).
+survey and the user's decisions, the regions_text handoff log the continuation log).
 Everything here was measured from the user's discs; no game text, font or table is quoted,
 only addresses, counts, glyph numbers and how the code uses them. Scratch tools and extracts:
 `scratchpad/regions_text/` (git-ignored).

@@ -9,7 +9,7 @@
 # opens a window or plays audio.
 set -u
 BIN=${1:-engine/build/shattered-stars}
-# Every game run under a memory cap (docs/HANDOFF.md machine budget; tools/memcap.py):
+# Every game run under a memory cap (docs/CONVENTIONS.md machine budget; tools/memcap.py):
 # SS_MEM_CAP_GB (default 4) GB of address space each. An ASan build can't take one.
 if [ "${SS_MEM_CAP_GB:-4}" != 0 ] && ! grep -q __asan_init "$BIN" 2>/dev/null; then
   ulimit -v $(( ${SS_MEM_CAP_GB:-4} * 1024 * 1024 ))

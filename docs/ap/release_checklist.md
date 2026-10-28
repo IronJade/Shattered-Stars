@@ -130,12 +130,12 @@ SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pytest -q -n 8 test/ge
 # tests that iterate over worlds, scoped to so2, plus worlds/so2/test (test/webhost needs flask)
 AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../../ap/ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
 ```
-Since 2026-10-26 (docs/handoff/aptests.md) worlds/so2/test follows Archipelago's testing guide
+Since 2026-10-26 (the aptests handoff log) worlds/so2/test follows Archipelago's testing guide
 (docs/ap/apworld.md "Testing"); expected then: **430 passed, 3 xfailed** (the expel_progression
-bug's reproducer, until its fix); since 0.2.1 (docs/handoff/ncpfix.md) **449 passed**, the
+bug's reproducer, until its fix); since 0.2.1 (the ncpfix handoff log) **449 passed**, the
 decorators gone and the mix `TestOpenWorldNoExpelProgressionNoBosses` added, each test under a
-second (`--durations=30`); since skillsanity progression (still 0.2.1, docs/handoff/skilllogic.md)
-**537 passed**; since the hell seed (still 0.2.1, docs/handoff/hellseed.md) **634 passed**; since the bench (still 0.2.1, docs/handoff/benchworld.md) **699 passed** (scoped 752). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
+second (`--durations=30`); since skillsanity progression (still 0.2.1, the skilllogic handoff log)
+**537 passed**; since the hell seed (still 0.2.1, the hellseed handoff log) **634 passed**; since the bench (still 0.2.1, the benchworld handoff log) **699 passed** (scoped 752). Expected (got this pass): `worlds/so2/test` — **95 passed, 7986 subtests**; `test/general` —
 **379 passed, 116984 subtests**. No apworld failures appeared; see section 4 for the three
 style-only fixes made after the upstream gap analysis, re-verified with the same counts.
 
@@ -167,7 +167,7 @@ MINGW_SSL_SYSROOT=scratchpad/setup/mingw-ssl/usr/x86_64-w64-mingw32/sys-root/min
 objdump -T dist/ShatteredStars-0.01.00-linux-x86_64/shattered-stars | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
 SS_DISC1="<disc 1 .cue>" tools/smoke_field_events.sh dist/ShatteredStars-0.01.00-linux-x86_64/shattered-stars
 ```
-Desktop identity (from 0.02.50; `docs/handoff/appicon.md`): both `.exe`s carry one icon group
+Desktop identity (from 0.02.50; the appicon handoff log): both `.exe`s carry one icon group
 (16, 24, 32, 48, 64, 128, 256 px), a version resource (ProductName `Shattered Stars`,
 FileDescription `Shattered Stars` / `Shattered Stars Setup`, FileVersion = the port version,
 and no `POSIX WinThreads` one) and a manifest (`asInvoker`): check with REA's
@@ -192,7 +192,7 @@ package: **86 PASS / 0 FAIL** (matches the dev build's `engine/build-release2` r
 `dist/ShatteredStars-linux-x86_64.tar.gz` / `dist/ShatteredStars-win64.zip` (and their
 unpacked folders) were deleted once the versioned ones existed. The Windows package's own
 suites under Wine (`ss_tests.exe` / `ss_game_tests.exe` / smoke via
-`scratchpad/setup/wine/game-release.sh`, `docs/handoff/setup.md`'s Verification commands
+`scratchpad/setup/wine/game-release.sh`, the setup handoff log's Verification commands
 section) were **not** re-run this pass (no engine behavior changed beyond the version
 strings, same reasoning as the prior round) — still owed before actually publishing.
 
@@ -216,7 +216,7 @@ all, once/if the world is merged upstream (section 5). Until then, a GitHub rele
 listing all four files side by side (not zipped together) is the plan — see section 4.
 
 No game data or disc assets are in any of these; the port and setup program read the
-player's own disc images at run time (`docs/HANDOFF.md`). None of this was committed to git
+player's own disc images at run time (`docs/CONVENTIONS.md`). None of this was committed to git
 and none of it was pushed or published.
 
 ## 4. What publishing would involve (the user's call, not done)
@@ -251,7 +251,7 @@ api.md"`, `"docs/world maintainer.md"`, `docs/style.md`, `"docs/apworld specific
 | Licensing compatibility (Archipelago is MIT) | **MET (decided 2026-10-23)** | Shattered Stars is MIT-licensed: `LICENSE` at the repo root ("Copyright (c) 2026 IronJade"), bundled with both port releases (section 2.6) and mentioned in `engine/README.md`. `apworld/so2/LICENSE` carries the same text — checked that Archipelago's "Build APWorlds" component packs it without complaint (it zips every file under the world folder not matched by `.apignore`; a plain `LICENSE` file matches no exclusion pattern in `data/GLOBAL.apignore`, and the built `dist/so2.apworld` does contain `so2/LICENSE`). Merging upstream now explicitly carries this license forward instead of implicitly inheriting Archipelago's MIT on merge. |
 | PR mechanics (title format, what/how-tested sections, screenshots if graphical) | **N/A until PR time** | `.github/pull_request_template.md` wants a scoped title (e.g. "MyGame: implement new game") and what-you-tested notes; `docs/contributing.md` requires the style guide, tests for critical changes, no regressions, Python ≥3.11 support, and reviewers who state what they tested. No squash-commit, branch-naming, changelog-entry, label, or mandatory-Discord-discussion requirement was found. |
 | `test/general/` suite passes with this world installed | **MET** | 379 passed / 116984 subtests (section 2.4) |
-| DeathLink boss-check wording | **MET** | Verified from the real scenes (`docs/handoff/deathlink.md`): boss checks record on a win, on time-up (the survival fights 516 / 520) and on the scripted defeat of the lose-allowed fights (204 / 517 / 530), never on an escape; the player docs say so. |
+| DeathLink boss-check wording | **MET** | Verified from the real scenes (the deathlink handoff log): boss checks record on a win, on time-up (the survival fights 516 / 520) and on the scripted defeat of the lose-allowed fights (204 / 517 / 530), never on an escape; the player docs say so. |
 
 **Bottom line:** every row is met or waits for PR time.
 
@@ -327,8 +327,8 @@ results in `scratchpad/rc-0.02.00-dist/`). Nothing was tagged, released or pushe
 | SHA-256 | in `docs/release_notes/0.02.00.md` and `scratchpad/rc-0.02.00-dist/SHA256SUMS`. |
 
 The game's own verification for 0.02.00 (sweeps, Redux checks, Archipelago proofs and
-end-to-end runs) is in docs/handoff/regions.md ("0.02.00 readiness"), docs/handoff/soulmaster.md
-and docs/handoff/elgate.md.
+end-to-end runs) is in the regions handoff log ("0.02.00 readiness"), the soulmaster handoff log
+and the elgate handoff log.
 
 ## 9. Release candidate 0.02.50: verification run (2026-10-25, superseded by RC2 2026-10-26)
 
@@ -452,7 +452,7 @@ gh release create v0.02.50 \
 
 `--draft`: nothing goes live until the draft is published; `--target main` puts the tag on the
 pushed `main`. The wiki's pages for 0.02.50 are uncommitted in `scratchpad/wiki` (the "wiki"
-agent's log, docs/handoff/wiki.md), to push with the release.
+agent's log, the wiki handoff log), to push with the release.
 
 ## 10. so2.apworld 0.2.1: verification run (2026-10-26, agent ncpfix; redone 2026-10-27, agents skilllogic2, hellseed2 and benchworld)
 
@@ -461,9 +461,9 @@ are both on, skillsanity's guild checks and learn levels may hold progression, t
 (`encounter_rate` 0 with killer-move checks or learn points: the arena's fee waived by a patch
 line, `hell_seed`, the arena rules), and the bench (the `bench` option, on by default: 12 places
 in open world with character_items and hub mode, `options.bench`, seed version 4)
-(docs/ap/apworld.md "Changes"; docs/handoff/ncpfix.md, skilllogic.md, hellseed.md,
-benchworld.md). Shattered Stars 0.02.50 plays 0.2.1 seeds without the bench (the port gives a key
-and a character from a guild check and from learn points, skilllogic.md "Step 3"; the fee line is
+(docs/ap/apworld.md "Changes"; the ncpfix, skilllogic, hellseed and
+benchworld handoff logs). Shattered Stars 0.02.50 plays 0.2.1 seeds without the bench (the port gives a key
+and a character from a guild check and from learn points, the skilllogic handoff log, "Step 3"; the fee line is
 an ordinary version-1 patch); a bench seed is version 4 and needs 0.02.51, which ships with it
 (the bench, party-bench merged at 319f5ba) and adds the hell seed's warning (setup's Archipelago
 page, the log). Notes: docs/release_notes/0.2.1.md (draft). The run below is benchworld's, from
@@ -581,7 +581,7 @@ gh release create v0.02.51 "$D/port/ShatteredStars-0.02.51-linux-x86_64.tar.gz" 
 
 ## 12. Release candidate 0.03.00 + so2.apworld 0.2.2 + PopTracker pack 1.0.0 as three releases (to run; written 2026-10-27, agent releasedocs)
 
-Tracker support (docs/plans/trackers.md Phase B; the build log docs/handoff/phaseb.md). The user
+Tracker support (the tracker plan, Phase B; the build log docs/handoff/phaseb.md). The user
 (2026-10-27) asked for the pack in **its own release**, as the world already has ("It's own release
 works for me. We are already doing that with the apworld anyway."). Three GitHub releases on
 IronJade/Shattered-Stars, each one's notes linking the other two:
@@ -598,7 +598,7 @@ The pack zip's name and tag are fixed by its `versions.json` entry: `download_ur
 use other tag names: `grep -rn 'v0\.03\.00\|apworld-v0\.2\.2\|poptracker-v1\.0\.0' README.md
 docs/release_notes scratchpad/wiki`, the commands below, and `build_poptracker.sh build --tag`.
 
-**maptab's work is in** (docs/handoff/maptab.md, done 2026-10-27): the map_names.csv `area`
+**maptab's work is in** (the maptab handoff log, done 2026-10-27): the map_names.csv `area`
 audit, the pack's room maps, door sections, live door panel and click switching, and Universal
 Tracker's map tab. The rows below, filled in by this RC (agent "rc030") from maptab's log, were
 marked **TODO (maptab)**. The release itself still needs the user's go-ahead (phaseb.md:
@@ -612,7 +612,7 @@ marked **TODO (maptab)**. The release itself still needs the user's go-ahead (ph
 | The world | 0.2.1 | **0.2.2** | `apworld/so2/archipelago.json` `world_version` and `world.py` `APWORLD_VERSION` (keep the two equal) |
 | The pack | 1.0.0 | 1.0.0 | `tools/ap_poptracker.py` `PACK_VERSION` (already 1.0.0); manifest min / target PopTracker 0.36.0 (`POPTRACKER_VERSION`) |
 | `ut.LOGIC_VERSION` | 1 | **1** (unchanged) | apworld/so2/ut.py: the logic is 0.2.1's (rulebuilder's 93,083,978 truth values, every batch identical; apworld.md "Trackers", "When to bump") |
-| The wiki | | already written for 0.03.00 / 0.2.2 / 1.0.0 | scratchpad/wiki, uncommitted (docs/handoff/releasedocs.md) |
+| The wiki | | already written for 0.03.00 / 0.2.2 / 1.0.0 | scratchpad/wiki, uncommitted (the releasedocs handoff log) |
 
 The world's bump changes each `.apso2` in one field only, `apworld_version` ("0.2.1" -> "0.2.2"),
 as 0.2.0 -> 0.2.1 did. The seed's own `version` (1-4) is unchanged: Shattered Stars 0.02.51 plays
@@ -670,7 +670,7 @@ work changes some; its log gives the new ones.
 | AP's general tests | `../ap-venv/bin/python -m pytest -q -n 6 test/general` | **379 passed** (117757-117763 subtests: other worlds' random options; rulebuilder) |
 | The slow tests | `SO2_SLOW_TESTS=1 ../ap-venv/bin/python -m pytest -q -n 6 worlds/so2/test` | **885 passed** (68692 subtests, about 35 s; storyaware): TestUTManySeeds 320 rooms (16 mixes x 20) matching UT's rebuild at every sphere, TestTrackerManySeeds 320 rooms (the reference evaluator = the world's logic at every sphere), TestStoryManySeeds 60 rooms (UT = the reference at 27 story positions) |
 | The batches | `tools/ap_batch.sh story_open OUT/story_open 1 96`, the same for `hub` and `solo_noexpel` (from the repo root) | **96/96 each**, `tools/ap_batch_check.py` 0 errors |
-| The same seeds as 0.2.1 | the three sets from the released world (`git archive apworld-v0.2.1 apworld/so2` in a `cp -as` farm of scratchpad/ap/Archipelago with **real copies** of the top-level scripts and host.yaml: the baseline trap, docs/handoff/utworld.md) against the RC's; a comparer adapted from scratchpad/storyaware/identity.py | 480 `.apso2` equal but `apworld_version`; 288 spoilers byte for byte (they name only Archipelago's version); every multidata equal once each Star Ocean slot's new slot data keys are taken out: `logic_version` 1, `exclude_locations`, `tracker` (format 1; with `story` in the story-mode slots). The checker's output the same. The UT
+| The same seeds as 0.2.1 | the three sets from the released world (`git archive apworld-v0.2.1 apworld/so2` in a `cp -as` farm of scratchpad/ap/Archipelago with **real copies** of the top-level scripts and host.yaml: the baseline trap, the utworld handoff log) against the RC's; a comparer adapted from scratchpad/storyaware/identity.py | 480 `.apso2` equal but `apworld_version`; 288 spoilers byte for byte (they name only Archipelago's version); every multidata equal once each Star Ocean slot's new slot data keys are taken out: `logic_version` 1, `exclude_locations`, `tracker` (format 1; with `story` in the story-mode slots). The checker's output the same. The UT
 map tab adds **no new slot-data key** (maptab: batches identical including multidata); it reads
 the new host.yaml group `so2_options: ut_pack_path` instead (set by UT's one-time file-dialog
 prompt, not part of the seed) |
@@ -714,7 +714,7 @@ game process under tools/memcap.py, headless, a scratch `XDG_CONFIG_HOME` and `H
 | ASan | a GCC `-fsanitize=address -fno-omit-frame-pointer` build as scratchpad/setupthread/build_san.sh (the libasan copy; tools/memcap.py runs it in a systemd scope with MemoryMax=6G) | no AddressSanitizer report in: `SS_TEST=ap_ds` 9/9, `SS_TEST=tracker_` 14/14 (10 before utzip2), test_ap_net 5/5, one full `--render-tracker-maps` (862 images, the same bytes, and the Universal Tracker zip), tools/ap_e2e_so2.sh with `ASAN_OPTIONS=detect_leaks=0` (49/49), setup runs A-D (portcheck, setupthread). Setup exits 1 under LeakSanitizer only for 248 bytes in 2 allocations under SDL_CreateWindow -> OFFSCREEN_GLES_LoadLibrary (Mesa), which predate this release |
 | TSan (optional) | setupthread's recipe (GCC `-fsanitize=thread`, libtsan from `dnf download`, its Log at 18:00) | `SS_TEST=tracker_` 14/14 (10 before utzip2), setup A-D: no report (with `XDG_RUNTIME_DIR` at scratch: libdbus otherwise reports a lock-order inversion of its own) |
 | Windows bundle | `tools/build_windows.sh` | exit 0; the 9 entries of 0.02.51's zip; both `.exe`s' version resource 0.03.00, DreamGlyph Studios, no "POSIX WinThreads" |
-| Windows under Wine | a scratch prefix with the safe settings (portcheck.md "Conventions found"; scratchpad/setupthread/wine.sh adds a scratch `XDG_RUNTIME_DIR`) | `--version` "Shattered Stars 0.03.00"; the Arlia boot (26 trigger lines); `--render-tracker-maps DIR` 862 images byte-identical to the Linux render, and its `so2_shattered_stars_ut.zip` in DIR's parent byte-identical to the Linux zip (utzip2), and without DIR into `C:\users\<user>\Documents\PopTracker\user-override\so2_shattered_stars` (the zip beside it); `ss_game_tests.exe` `SS_TEST=tracker_` 14/14 (10 before utzip2); the full suites `ss_tests.exe` 103 / 0 and `ss_game_tests.exe` one more than Linux (the Windows-only `launcher_log_without_a_console`, as 207 / 208 at 0.02.51) |
+| Windows under Wine | a scratch prefix with the safe settings (the portcheck handoff log, "Conventions found"; scratchpad/setupthread/wine.sh adds a scratch `XDG_RUNTIME_DIR`) | `--version` "Shattered Stars 0.03.00"; the Arlia boot (26 trigger lines); `--render-tracker-maps DIR` 862 images byte-identical to the Linux render, and its `so2_shattered_stars_ut.zip` in DIR's parent byte-identical to the Linux zip (utzip2), and without DIR into `C:\users\<user>\Documents\PopTracker\user-override\so2_shattered_stars` (the zip beside it); `ss_game_tests.exe` `SS_TEST=tracker_` 14/14 (10 before utzip2); the full suites `ss_tests.exe` 103 / 0 and `ss_game_tests.exe` one more than Linux (the Windows-only `launcher_log_without_a_console`, as 207 / 208 at 0.02.51) |
 | The map tabs (maptab) | the layout's `--check` after the area audit; the pack's room and door tests; UT's map tab loading headless | `tools/ap_tracker_maps.py --check`: up to date (794 rooms, 862 images); the pack's `TestRooms` / `TestDoorsLua` / `TestUT` above; `tools/ap_poptracker_utmap.py`: **16/16** (UT's own map loader headless, both against the repo world and the packaged `so2.apworld`; 15/15 before utzip2's check that every page's picture and the marker load through UT's own image loader), each with the pack zip and with the port's `so2_shattered_stars_ut.zip` (`--zip`, from the e2e or the setup run; not under a folder whose name ends in "zip": UT splits its picture paths at the first `zip/`) |
 
 **Already proven, not rerun** (unless the code under them changes): AP off, no seed and offline
@@ -792,7 +792,7 @@ committed file's (docs/ap/poptracker.md "Building"). This commit comes after the
 content id at the tags is the RC's.
 
 **The wiki** (scratchpad/wiki, its own repo: the new Trackers page and the pages that link it;
-docs/handoff/releasedocs.md lists them):
+the releasedocs handoff log lists them):
 
 ```sh
 (cd scratchpad/wiki && git add -A && git commit -m "0.03.00, so2.apworld 0.2.2 and the PopTracker pack 1.0.0: trackers" && git push origin master)

@@ -41,7 +41,7 @@ class Runtime {
   std::filesystem::path capture_dir;
   std::set<u64> capture_frames;
 
-  // Debug (SS_SHOT, default off; docs/HANDOFF.md): a second, separate window -- never
+  // Debug (SS_SHOT, default off; engine/README.md "Debugging switches"): a second, separate window -- never
   // paced, never polled for player input, so it doesn't change a headless run's speed or
   // behaviour -- used only to render the exact frame a player's window would show (scaled,
   // letterboxed to 4:3) and read it back with glReadPixels, at each listed vblank. Unlike

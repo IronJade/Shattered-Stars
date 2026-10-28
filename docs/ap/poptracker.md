@@ -4,7 +4,7 @@ A [PopTracker](https://github.com/black-sliver/PopTracker) pack for so2.apworld:
 Second Story played on Shattered Stars with Archipelago. It connects to the room as a tracker,
 shows what the slot has received and which of the room's locations are checked, on maps and
 boards, and switches map tabs as the port moves between maps. The plan is
-docs/plans/trackers.md (B4, decisions D2, D4, D5, D7); the map layout it shares with the port is
+the tracker plan (B4, the user's decisions D2, D4, D5, D7); the map layout it shares with the port is
 docs/ap/tracker_maps.md.
 
 The pack is **generated** in this repo from the APWorld's own tables, so its ids, names and areas

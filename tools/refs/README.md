@@ -48,19 +48,19 @@ and judges the result against the `expected` column.
 
 - **menu** (14 of 15 ids): `combref2` is now automated (`h_menu` in `ref_regress.py`,
   `scratchpad/menu/combref2/port_input.txt` - a port `--input` string already translated and
-  confirmed against port run `comb_p2`, docs/handoff/menu.md "Combat, pages 8-10"); PASS
+  confirmed against port run `comb_p2`, the menu handoff log "Combat, pages 8-10"); PASS
   (config/inventory/party/game_state exact, records' one known random check byte at +0x4ea
   tolerated, matching the "check bytes are random by design" note). The other 14 each have a
   documented Redux/port pairing and a `plan.txt`, but only `combref2`'s plan was also saved
   translated into the port's own `FRAME:button,...` form (confirmed rule from
-  `docs/handoff/menu.md`: "Port frame = Redux frame + 153" for `itemsref1/2`/`equipref1`, plus
+  the menu handoff log: "Port frame = Redux frame + 153" for `itemsref1/2`/`equipref1`, plus
   whatever page-opening button presses get from the camp root to that specific page, which
   combref2's saved `port_input.txt` shows includes one extra `140:triangle,144:none` before
   the +153-shifted plan - not reverified independently for the other ids this pass).
   `cmpdump.sh` is the compare tool once a port run exists; `h_menu`'s `MENU_RUNS` table is
   where to add the next one.
 - **world_map** (28 ids, `scratchpad/world/ref/{cour1,explore1,menu1-3,mov1-3,...}`): recorded
-  2026-10-22 by an earlier world-agent session; still no `docs/handoff/world.md` revision
+  2026-10-22 by an earlier world-agent session; still no the world handoff log revision
   documents how they verify (reconfirmed this pass - no mention of any of these ids). Needs an
   owner to characterize before they can be automated.
 - **fx_legacy** (23 ids, `scratchpad/fx_worker/ref129`, `ref548`, `refcred3/4`, ...): phase
@@ -75,7 +75,7 @@ and judges the result against the `expected` column.
   `enc65`, `equip_71_85`, `equip_9f_86`, `fighter_ai`, `forced_1_3`, `moves_9_5`, `op_m8_trail`,
   `pg_cash`, `phasegun_*`, `rena_ai*`, `victory_2_3*`): bespoke scenarios, each with its own
   `pcrun.sh` env vars (`PC_IN`, `PC_EXTRA_POKE`, `PC_TICKS`, `PC_D`) documented in prose in
-  `docs/handoff/battle.md` but not re-derived into a literal command with full confidence.
+  the battle handoff log but not re-derived into a literal command with full confidence.
   `victory_2_3`'s row already carries the effects agent's `CMP_D=7` finding in its
   `compare_cmd` column, for whoever promotes it next.
 - **fx_battle** (14 of 95 ids): `as_b6`, `asv_b4d`, `chis_m4_box`, `op_b1_dense`,
@@ -112,7 +112,7 @@ otherwise score as a hard REGRESS even though nothing ported is wrong. This is n
   Set on `h539_3`, `t539_3`, `t540_3`, `v538_3` (all `CMP_R=1`) and `m537_3`/`m538_3`/`m539_3`
   (`m537_3` needs `CMP_R=2`). `h531_3` (Bark) has no intro voice and does **not** use this -
   the plain default search already lands on its documented split.
-- `SS_ENEMY_HP=DELAY:INDEX:VALUE` (docs/handoff/enemy.md section 4): replicates a mid-fight
+- `SS_ENEMY_HP=DELAY:INDEX:VALUE` (the enemy handoff log section 4): replicates a mid-fight
   enemy HP poke the Redux reference was recorded with. Set on `h531_3` (`60:0:130000`) and
   `h539_3` (`0:0:300000`).
 - `FRAMES=N`: a longer run than a handler's own default. Set on `t539_3` (3050), `t540_3`
@@ -121,7 +121,7 @@ otherwise score as a hard REGRESS even though nothing ported is wrong. This is n
   default FRAMES=1400 cut the port run short, freezing its RNG count well before the end).
 - `CMP_OFF=-1` (`cmpstage.sh`'s own mash-offset override): `stage8_light`/`stage8_shots`'
   documented b940 split only shows up with the cross-press mash one frame earlier than
-  `cmpstage.sh`'s generic 45i formula gives (docs/handoff/battle.md: "inputs at 45i-1").
+  `cmpstage.sh`'s generic 45i formula gives (the battle handoff log: "inputs at 45i-1").
 - Tag-driven, not resync-column: `h_enemy` sets `TOUGH=1` for tags `t` and `v` (both "tough
   Claude" recordings per `verify_all.sh`'s own comment - `v538_3` was missing this before this
   pass), and does *not* set `NO_MASH=1` for tags `e`/`f` (recorded with Cross mash, not idle -
@@ -131,7 +131,8 @@ otherwise score as a hard REGRESS even though nothing ported is wrong. This is n
   `cmpstage_caster7.sh` (recorded in the 2-1-2 tick group, not cmpstage_caster.sh's 2-2-2).
 
 Promoting any `manual`/`needs_owner` row to automated just means: confirm the exact run
-parameters (grep the id in its area's `docs/handoff/*.md`, or ask that area's agent), add a
+parameters (grep the id in its area's handoff log: the battle, enemy, menu, world and effects
+logs were removed in the 2026-10-28 cleanup; docs/HANDOFF.md says how to read them), add a
 row-specific entry to the small per-area tables in `tools/ref_regress.py` (`FB_CHAR`,
 `MENU_RUNS`, `SWEEP_IDS`/`BOSS_IDS`, ...) or the `resync` column, and flip `expected` in
 `refs.csv` away from `manual`.

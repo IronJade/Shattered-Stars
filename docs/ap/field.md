@@ -1,6 +1,6 @@
 # Archipelago: the field side
 
-Phase 1 of [the Archipelago plan](../archipelago_plan.md) for the field. This page covers:
+Phase 1 of the Archipelago work (the world itself: [apworld.md](apworld.md)) for the field. This page covers:
 - the location tables read from the discs: chests, scripted gifts, prize tables, Fol,
   recruitments, shops and Private Actions;
 - the story order, the point of no return and the regions;
@@ -515,8 +515,8 @@ From the scripts, cross-checked with Prima's official guide (page numbers are Pr
     three staircase rooms below the final boss on map 685.
   - maps 698-825: the Cave of Trials (it has banners).
 - Areas the search got wrong by crossing into another cluster over a story transfer, or by
-  taking a building's own banner for its area (`AREA_FIXES`, 2026-10-23, docs/handoff/
-  apareas.md). Each is settled from the door table and agrees with
+  taking a building's own banner for its area (`AREA_FIXES`, 2026-10-23, the
+  apareas handoff log). Each is settled from the door table and agrees with
   docs/modding/reference/map_names.csv; they take precedence over the search and the banners:
   - 27, 29, 32, 38 (Rena's house and room) -> Arlia Village; 81 (Bar Mikado) and 83 (an Inn
     Kingdom Hotel room) -> Town of Cross: their doors only reach those towns;

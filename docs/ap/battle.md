@@ -1,6 +1,6 @@
 # Archipelago: the battle side
 
-Phase 1 of [the Archipelago plan](../archipelago_plan.md) for battles. It covers the table of
+Phase 1 of the Archipelago work (the world itself: [apworld.md](apworld.md)) for battles. It covers the table of
 scripted battles, bosses, the final boss and enemy drops (read from the discs), and the hooks
 the port offers for checks, the goal and DeathLink. The field side is in [field.md](field.md),
 written by `tools/ap_extract.py`, which imports this tool.

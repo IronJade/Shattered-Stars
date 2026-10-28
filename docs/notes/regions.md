@@ -1,6 +1,6 @@
 # Other regions: how far the European, French, German and Japanese discs are from NA
 
-Survey of 2026-10-23 (regions agent, `docs/handoff/regions.md`). Everything here was measured
+Survey of 2026-10-23 (regions agent, the regions handoff log). Everything here was measured
 from the user's eight non-NA disc images against the North American pair; the scripts and their
 outputs are under `scratchpad/regions/` (git-ignored). No game data is quoted, only addresses,
 sizes and counts.
@@ -388,7 +388,7 @@ address translation exists.
 
 How the port plays the other releases, following the decisions above. Code:
 `engine/src/runtime/region.{h,cpp}`; generated data: `engine/data/regions/*.inc`
-(`tools/region_map.py`); continuation log: `docs/handoff/regions.md`.
+(`tools/region_map.py`); continuation log: the regions handoff log.
 
 ### Profiles
 

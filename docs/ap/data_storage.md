@@ -1,6 +1,6 @@
 # Data storage: the port's tracker keys
 
-Port 0.03.00 (docs/plans/trackers.md B5, decision D6). While an Archipelago game is connected to
+Port 0.03.00 (the tracker plan's B5, the user's decision D6). While an Archipelago game is connected to
 its room, Shattered Stars writes where the party is and how far the story has got into the
 server's data storage, so trackers can follow along: Universal Tracker's map tab (switching to the
 right map and drawing a player icon) and the PopTracker pack. Items and checks need none of this;
@@ -79,7 +79,7 @@ The port's log (shattered-stars.log) has a line for each story write and for eac
   keys are read from the game's memory, the values last written live only in memory, and no random
   number or timing of the game is touched. Headless runs without a seed, with Archipelago off and
   with an offline seed gave byte-identical logs, frame captures, memory cards and sidecars before
-  and after this feature (docs/handoff/dskeys.md).
+  and after this feature (the dskeys handoff log).
 - The port reads no data-storage key and takes nothing from them; what a tracker writes there
   changes nothing in the game.
 
@@ -120,7 +120,7 @@ most.
 
 ## Reserved: `so2_entrances_{team}_{slot}` (Phase C)
 
-The entrance randomizer (Phase C, world 0.3.0; docs/plans/trackers.md section 6) will add a
+The entrance randomizer (Phase C, world 0.3.0; docs/plans/next.md) will add a
 third key: the redirected doors the player has used so far, written the first time each one is
 used, for UT's deferred entrances (`found_entrances_datastorage_key`,
 `reconnect_found_entrances`) and the pack's entrance display. Its shape is Phase C's to define.

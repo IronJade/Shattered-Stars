@@ -1,6 +1,6 @@
 # The SO2 APWorld (`apworld/so2`)
 
-Phases 2 to 4 of [the Archipelago plan](../archipelago_plan.md): the Archipelago world for Star
+Phases 2 to 4 of the Archipelago work: the Archipelago world for Star
 Ocean: The Second Story. The game name is "Star Ocean: The Second Story"; it has a colon, so
 quote it in YAMLs. The world targets Archipelago 0.6.8's World API and writes one `.apso2`
 seed per player ([seed_format.md](seed_format.md)), which the port loads.
@@ -249,7 +249,7 @@ our Expel-story keys (below). In a solo world the North City Pass then had no le
 Noel's House Pass one, the Synard boss, which `boss_checks` off takes away (0.2.0 gave the North
 City Pass at the start with the teleporter off only: every solo fill with the teleporter on and
 expel_progression off failed, and every one with boss_checks off and either option off; 0.2.1,
-"Changes"; docs/handoff/ncpfix.md).
+"Changes"; the ncpfix handoff log).
 
 **The story's stages** (data.STAGES, from every chapter / step store with its conditions and
 the area of its map; `scratchpad/enemy/ap5/steps.py`): 23 stages, 12 on Expel (chapters 3-35)
@@ -317,7 +317,7 @@ and bosses; gift sites are always "none", above):
   429, a chapter-60 scene) has no early mode: it counts from the Final Save Point;
 - Energy Nede, Fienal and the cave: the late proof, as in story mode; story bosses as before.
 
-**The El voyage and the other one-way points** (0.1.1; docs/handoff/elgate.md). The story
+**The El voyage and the other one-way points** (0.1.1; the elgate handoff log). The story
 sails to El from the Lacour Front Line without free play on the way: at chapter 27 step 7000
 (stored in meeting room 448) the meeting room 444 holds a walk-in trigger (routine 0x7c28)
 whose scene stores chapter 28 and sends the party to Lacour Castle (422), whose scene sends it
@@ -364,7 +364,7 @@ from tools/ap_world_tables.py):
   gate. No key item is given around the Front Line (Shin 516 is a story boss at 447; Leon joins
   at El Beach, 230), and every join site is EXCLUDED anyway.
 - **The Lacour continent's soft-lock and Port Hilton's harbour** (port, 2026-10-25;
-  seed_format.md "The harbour"; docs/handoff/ships.md). Entering Lacour at chapter 22 step 9999
+  seed_format.md "The harbour"; the ships handoff log). Entering Lacour at chapter 22 step 9999
   stores chapter 23, and Port Hilton's sailor, the continent's only way off, refused the passage
   to Cross at chapters 23 and 24; the stage-9 keys (Map 231 and Hoffmann Passes) the fill may
   put on the Cross continent were then out of reach until chapter 25, which needs them: a
@@ -381,7 +381,7 @@ from tools/ap_world_tables.py):
   chapter 27). The Hoffmann ship's soldier stays at Port Hilton until chapter 59, and voyages
   check their landing's key at the NPC, before the fare. The logic does not yet use the ship's
   longer window (Hoffmann's island stays in `TELEPORTER_ISLANDS`): a proposal for the apworld is
-  in docs/handoff/ships.md.
+  in the ships handoff log.
 
 The teleporter proof's state has the save's chapter-60 flags, which Energy Nede's maps test,
 so it is used for Expel's maps only. **Known limits** (accepted, conservative elsewhere): a map
@@ -390,12 +390,12 @@ of it, is not modelled (Lacour's fifth entrance in chapters 25-59 and Mars's sec
 15 have open siblings; the arena's route is shut in chapter 57, where only the Fun City Pass,
 a starting key, is needed). The late proof fires the world maps' entrance triggers without
 walking there too, which Virtual Expel's Synard (flight anywhere, Prima p. 130) justifies after
-the Final Save Point. Central City at chapters 36-37 (docs/handoff/apareas.md, "Leads"):
+the Final Save Point. Central City at chapters 36-37 (the apareas handoff log, "Leads"):
 settled by its exit gate (above).
 
 ## Hub mode (`world_mode: hub`; 0.2.0)
 
-The user's decisions D1-D10 (docs/handoff/hub.md), the seed's blocks (seed_format.md "Hub"), the
+The user's decisions D1-D10 (the hub handoff log), the seed's blocks (seed_format.md "Hub"), the
 port's side (agents hubvm, hubcore, hubchambers). Code: `apworld/so2/hub.py`; tables: data.py's
 hub section (`tools/ap_world_tables.py` from docs/ap/hub_state.json, hub_bosses.json,
 hub_proof.json and field.json). Story mode and open world are unchanged by it.
@@ -635,7 +635,7 @@ drops take progression first), **never** (0.1.x's rule). In every mode (rules.py
 
 - **The locations** (`moves.py`, written by scratchpad/apworld2/make_moves.py from
   scratchpad/killer_prof/move_levels.csv: the learn tables in archive #1981 and the move data in
-  #2129; docs/handoff/killer_prof.md): one per proficiency level of each killer move a learn
+  #2129; the killer_prof handoff log): one per proficiency level of each killer move a learn
   table teaches (the user, 2026-10-25: "every proficiency level"), 133 over 69 moves (Claude,
   Bowman and Dias 10 moves, Ashton 9, Ernest and Chisato 8, Precis and Opera 7). A move's level
   is min(uses / div, cap); the use count (record + 0x8a + 2 * move) goes up by 1 each time the
@@ -669,7 +669,7 @@ drops take progression first), **never** (0.1.x's rule). In every mode (rules.py
 
 ## Skillsanity (`skillsanity`, `skillsanity_shop_share`; 0.2.0)
 
-The user's design and decisions (docs/handoff/skillsanity.md); the seed and the port:
+The user's design and decisions (the skillsanity handoff log); the seed and the port:
 seed_format.md "Skillsanity"; the tables: `skills.py` (tools/ap_make_skills.py, from the disc),
 the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **skills_only**,
 **special_only**, **insanity** (both).
@@ -695,7 +695,7 @@ the code: `skillsanity.py`. `skillsanity`: **none** (default: the original), **s
 - **Progression at guild checks and learn levels** (0.2.1; the user, 2026-10-27: "let learn points
   hold progression, and the skill guilds should also be able to hold progression, as long as they
   are within reach routing wise ... You can beat the game without ever visiting an item shop";
-  docs/handoff/skilllogic.md; `skillsanity.guild_rule`, `learn_rule`, `learn_characters`). Item
+  the skilllogic handoff log; `skillsanity.guild_rule`, `learn_rule`, `learn_characters`). Item
   shops stay progression-free. Neither holds progression with `encounter_rate` 0 (no Fol, no
   levels), unless the seed is a hell seed (0.2.1: killer-move checks or learn points with
   `encounter_rate` 0; "The hell seed" below), whose free Fun City arena pays both.
@@ -753,13 +753,13 @@ if we can, I think a better route would be to eliminate the fee to train there I
 rules are set on the seed. Something like that is usually called a "hell" seed, where the grind is
 intentionally made preposterously hard." And: "For the Hell seeds, we should have the setup
 archipelago seed read throw a warning that the seed being loaded is a "Hell Seed" as well."
-(docs/handoff/hellseed.md; the code: `hell.py`.)
+(the hellseed handoff log; the code: `hell.py`.)
 
 - **What it is** (`hell.is_hell_seed`): `encounter_rate` 0 (no random battles) and something that
   still needs training: `killer_move_checks` (a move's use count) or `skillsanity` `special_only`
   / `insanity` (learn points: levels). Every other seed, `encounter_rate` 0 with only drops or
   guild checks included, is as before.
-- **The arena** (verified headless in the port, docs/handoff/hellseed.md "Phase 1"): the Fun City
+- **The arena** (verified headless in the port, the hellseed handoff log "Phase 1"): the Fun City
   Fighting Arena's fights are ordinary battles (map 305's ext 0xb7, no battle rule, never reading
   the encounter rate): a killer move's uses count, the fighter gains the enemy's EXP and the party
   its Fol (a rank E Duel: 104 EXP, 102 Fol; Bullying up to ~12,000 Fol a registration). Any member
@@ -790,7 +790,7 @@ archipelago seed read throw a warning that the seed being loaded is a "Hell Seed
   the patch line is a version-1 feature, `hell_seed` is display only, and a hell seed is version 2
   or 3 anyway. The port's 0.02.51 shows `hell_seed` as a warning on setup's Archipelago page and
   logs it when the seed loads; 0.02.50 plays a hell seed the same, without the warning.
-- **Why** (0.2.1's last failure, docs/handoff/killer0.md): with `encounter_rate` 0 every
+- **Why** (0.2.1's last failure, the killer0 handoff log): with `encounter_rate` 0 every
   killer-move level was EXCLUDED and no learn level or guild check could hold progression, but
   skillsanity still made each chosen killer level's move progression, so solo_noexpel seed 75's
   mix with `encounter_rate: 0` failed every fill. On a hell seed those locations hold progression
@@ -837,14 +837,14 @@ the party has 12 places instead of 8.
 
 ### The bench (`bench`; 0.2.1, on by default)
 
-The user (2026-10-26, docs/handoff/bench.md "The user's answers" B7: "a `bench` option, on by
+The user (2026-10-26, the bench handoff log "The user's answers" B7: "a `bench` option, on by
 default"; 2026-10-27: "Bench needs to be rolled into the 0.02.51 + 0.2.1 release"), to "make
 every character obtainable ... keep from causing any issues wherein the user gets a full party
 and there are 4 checks that were the character items ... It also guarantees that the player can
 choose to use whoever they would like in the party." The port keeps a bench of four places (8-11)
 after the game's 8 slots: a member received with the 8 full joins the bench, and Party Order
 swaps anyone but the hero between the party and the bench (seed_format.md "The bench", port
-0.02.51; built on branch party-bench, docs/handoff/partybuild.md).
+0.02.51; built on branch party-bench, the partybuild handoff log).
 
 - **Where it applies** (`world.bench_applies()`, kept as `world.bench`): open world with
   `character_items` (`party_rules: "open"`) and hub mode, exactly where the port reads
@@ -979,7 +979,7 @@ are checked on the scripted defeat as on a win (the tournament's Dias can be bea
 script then starts the fight again until the party loses); 516, and Berle in Eluria Tower
 (520, the same kind of timed fight), on the time-up (battle outcome 4), which is how the story
 wins them; a wipe there is a game over and checks nothing. Escapes never check a boss, and the
-goal needs a victory. Checked in the scenes themselves: `docs/handoff/deathlink.md`.
+goal needs a victory. Checked in the scenes themselves: the deathlink handoff log.
 
 ## The seed (`generate_output`)
 
@@ -1006,7 +1006,7 @@ The world never reads the discs. Each site's `word` / `expected` come from field
 
 Every access rule (locations, events, entrances and the goal) is an Archipelago **Rule Builder**
 rule (`rule_builder/`, Archipelago 0.6.7 and later; its `docs/rule builder.md`), not a lambda:
-docs/plans/trackers.md B2, the user's decision D3. The rule sites work out what a place needs from
+the tracker plan's B2, the user's decision D3. The rule sites work out what a place needs from
 the world's data and options, as before, and set it with `world.set_rule(spot, rule)` /
 `world.set_completion_rule(rule)` (an entrance: `Region.connect(target, name, rule)`, which calls
 set_rule). Resolving a rule for the world simplifies it into frozen dataclasses (`Rule.Resolved`),
@@ -1041,7 +1041,7 @@ What it gives:
 - Universal Tracker's `/explain <location>` prints the location's rule with what you have in
   green and what is missing in red, and the rules of the entrances into its region ("Trackers"
   below has a sample); `/get_logical_path` uses them too.
-- The tracker export (trackers.md B3) walks the resolved rules: `logic.as_rule(resolved).to_dict()`
+- The tracker export (the tracker plan's B3) walks the resolved rules: `logic.as_rule(resolved).to_dict()`
   serialises one (JSON), and `SO2World.rule_from_dict` of that, resolved for the same world, is the
   same rule.
 - Generation is as fast as with the lambdas. The Rule Builder's result cache
@@ -1071,7 +1071,7 @@ interned, no rule reads a region, and a scan of the world's modules for `.access
 
 ## Trackers (Universal Tracker; 0.2.2)
 
-docs/plans/trackers.md is the plan (B1 is this section; PopTracker and the map tab come later).
+The tracker plan (B1 is this section) is built: PopTracker in docs/ap/poptracker.md, the map tab in docs/ap/tracker_maps.md.
 [Universal Tracker](https://github.com/FarisTheAncient/Archipelago/releases) (UT: FarisTheAncient's
 `worlds/tracker`, 0.3.6 for Archipelago 0.6.2 and later) is an Archipelago client. It loads
 so2.apworld itself, builds the world again on the player's machine (generate_early ..
@@ -1207,7 +1207,7 @@ way updateTracker does), and its list in custom_ut_sort's order.
     SKIP_REQUIREMENTS_UPDATE=1 prlimit --as=$((8<<30)) scratchpad/ap/ap-venv/bin/python \
         tools/ap_ut_check.py --tracker scratchpad/ap_ut/tracker.apworld [--apworld dist/so2.apworld]
 
-### The logic export (for PopTracker; trackers.md B3, 0.2.2)
+### The logic export (for PopTracker; tracker plan B3, 0.2.2)
 
 A tracker that can't run the world (the PopTracker pack's Lua: decision D2, no game logic copied
 into Lua) reads the world's logic from the slot data instead: `fill_slot_data`'s **`tracker`** key,
@@ -1260,7 +1260,7 @@ the locations in logic and the goal. The pack's `scripts/logic.lua` is the same 
   passes, the "region" kind behind an entrance (an indirect condition), the goal, a deferred
   entrance (`to` -1) reaching nothing until `connect`; unknown formats and kinds refused. TestTrackerExportSize: at most 64 KB at the richest mix of each mode.
 
-### Story awareness (both trackers, story mode; trackers.md B6, decision D8, 0.2.2)
+### Story awareness (both trackers, story mode; tracker plan B6, decision D8, 0.2.2)
 
 The user (2026-10-27): "Story awareness in story mode would be a fantastic addition, yes." Story
 mode's stages need no items, so a tracker following the logic alone lists nearly every check from
@@ -1382,7 +1382,7 @@ before it (HEAD 812f9f6 in a farm with real top-level scripts, scratchpad/storya
 `tracker.story` is taken out of the 93 story-mode slots (59, 13 and 21 in the three sets; 4.2 to
 12.8 KB each), present in exactly those, and the checker's output the same (0 errors).
 
-### Universal Tracker's map tab (trackers.md B6, 0.2.2)
+### Universal Tracker's map tab (tracker plan B6, 0.2.2)
 
 UT can show a map tab: PopTracker-format maps with a square per location, coloured by UT's own logic
 (docs in UT's `docs/map-integration.md`). so2.apworld's (`ut_map.py`, the world's `tracker_world` and
@@ -1539,7 +1539,7 @@ two-player fill for so2). Name the test directories, or add `--continue-on-colle
 
     AP_TEST_WORLDS=so2 SKIP_REQUIREMENTS_UPDATE=1 ../ap-venv/bin/python -m pytest -q -n 8 test/general worlds/so2
 
-Results (2026-10-27, 0.2.2: story awareness; docs/handoff/storyaware.md; "Story awareness" above):
+Results (2026-10-27, 0.2.2: story awareness; the storyaware handoff log; "Story awareness" above):
 - The world's tests: **882 passed**, 3 skipped (67988 subtests), 10.9 s at `-n 6`: test_story.py's
   19 (UT's deferred story events equal to the reference's `evaluate(counts, story)` at 27 positions,
   three story mixes) and test_tracker.py's shape test allowing `story`. `SO2_SLOW_TESTS=1`: **885
@@ -1556,7 +1556,7 @@ Results (2026-10-27, 0.2.2: story awareness; docs/handoff/storyaware.md; "Story 
   four slots' five points (CLI and TrackerCore), the logic_version 2 room refused, and the story
   slot's nine story positions (CLI and TrackerCore) and enforce "off" ("Story awareness" above).
 
-Results (2026-10-27, 0.2.2: the logic export and 0.2.0 Skillsanity rooms; docs/handoff/logicexport.md;
+Results (2026-10-27, 0.2.2: the logic export and 0.2.0 Skillsanity rooms; the logicexport handoff log;
 "The logic export" and "Older rooms" above):
 - The world's tests: **863 passed** (65878 subtests; was 788), 14.8 s at `-n 6`: test_tracker.py's
   16 mix classes (the reference evaluator is the world's own logic at every sphere and on 10 more
@@ -1580,7 +1580,7 @@ Results (2026-10-27, 0.2.2: the logic export and 0.2.0 Skillsanity rooms; docs/h
   version 0.2.1 unchanged): **all 20 points match** (CLI and TrackerCore, 40 comparisons), the
   logic_version 2 room refused.
 
-Results (2026-10-27, 0.2.2: rules as data; docs/handoff/rulebuilder.md; "Rules as data" above):
+Results (2026-10-27, 0.2.2: rules as data; the rulebuilder handoff log; "Rules as data" above):
 - The world's tests: **788 passed** (65886 subtests; was 783): test_logic.py's 5 (11 worlds, every
   location, event, entrance and the goal; the round trips; the source scan), 12.7 s at `-n 6`.
   `SO2_SLOW_TESTS=1`: 789 passed, TestUTManySeeds' **320 rooms matching in every sphere**.
@@ -1612,7 +1612,7 @@ Results (2026-10-27, 0.2.2: rules as data; docs/handoff/rulebuilder.md; "Rules a
   `player_files_path` folder to exist, or UT opens a folder dialog: ut_explain.py's copy has an
   empty `Players`.)
 
-Results (2026-10-27, 0.2.2: Universal Tracker; docs/handoff/utworld.md; "Trackers" above):
+Results (2026-10-27, 0.2.2: Universal Tracker; the utworld handoff log; "Trackers" above):
 - The world's tests: **783 passed** (65867 subtests; was 699): test_ut.py's 84 (16 mix classes with
   WorldTestBase's defaults, TestUTRoom, TestUTCoverage, TestUTSort), 4.1 s at `-n 6`, slowest UT
   test 0.43 s. `SO2_SLOW_TESTS=1`: TestUTManySeeds, 16 mixes x 20 room seeds, **320 rooms, every
@@ -1639,7 +1639,7 @@ Results (2026-10-27, 0.2.2: Universal Tracker; docs/handoff/utworld.md; "Tracker
   in-process with its tab in our order, each slot rebuilt yaml-less with its own party, and a
   `logic_version` 2 room refused through UT's TrackerException with our message.
 
-Results (2026-10-27, 0.2.1: the bench; docs/handoff/benchworld.md):
+Results (2026-10-27, 0.2.1: the bench; the benchworld handoff log):
 - The world's tests: **699 passed** (50730 subtests; was 634; `python -m unittest`: 699, OK).
   test_party.py's `BenchChecks` (party_size 12, no healer guarantee; the pool every allowed
   member in party order, drawn without touching the world's RNG; fighter_status "item" for each,
@@ -1679,7 +1679,7 @@ Results (2026-10-27, 0.2.1: the bench; docs/handoff/benchworld.md):
   bench, and the save and a second load keep `bench: Leon, Ernest, Noel, Chisato`. The packaged
   world's open-world (bench and `bench: false`) and hub seeds load in the same build.
 
-Results (2026-10-27, 0.2.1: the hell seed; docs/handoff/hellseed.md):
+Results (2026-10-27, 0.2.1: the hell seed; the hellseed handoff log):
 - The world's tests: **634 passed** (44972 subtests; was 537): `test_hell.py` (the table above),
   test_skillsanity.py's helpers hell-aware (`may_hold`, `learn_need`) and its encounter_rate 0 mix
   split (skills_only: not a hell seed; insanity: a hell seed), test_v2.py's
@@ -1707,7 +1707,7 @@ Results (2026-10-27, 0.2.1: the hell seed; docs/handoff/hellseed.md):
   with 0 checker errors; progression at killer-move levels / learn levels / guild checks 166 /
   488 / 306.
 
-**The tests follow the guide** (2026-10-26, docs/handoff/aptests.md; the guide re-read live, the
+**The tests follow the guide** (2026-10-26, the aptests handoff log; the guide re-read live, the
 same as the checkout's copy at 54803be): an empty `test/__init__.py`; the base in `test/bases.py`
 (`SO2TestBase(WorldTestBase)`, `game = GAME`, plus the shared helpers and
 `assertSweptAccessDependency`: the guide's dependency check through event chains); files
@@ -1733,9 +1733,9 @@ tested with `assertAccessDependency` (every location checked unless noted):
 A fixed world bug stays in the suite as its reproducer: `TestOpenWorldNoExpelProgression` (open
 world, expel_progression off, the teleporter on, a solo world) fills in WorldTestBase's
 test_fill, test_voyage_gate_placements and test_seed_doors. Before 0.2.1 the North City Pass had
-no legal spot there and every solo fill raised FillError (docs/handoff/aptests.md "World bug");
+no legal spot there and every solo fill raised FillError (the aptests handoff log "World bug");
 the three were `@unittest.expectedFailure` until the fix (0.2.1: the North City and Noel's House
-passes at the start, test_keys_and_start; docs/handoff/ncpfix.md).
+passes at the start, test_keys_and_start; the ncpfix handoff log).
 
 **The release workflow** (many random seeds, outside the unit tests, as the guide asks):
 `tools/ap_batch.sh SET OUT FIRST LAST` generates seeds FIRST..LAST of a players set
@@ -1777,7 +1777,7 @@ Results (2026-10-23, phase 4):
   arrives from Bob's tile, a second session buys in Hearn's shop and the slot's check reaches
   the server).
 
-Results (2026-10-23, 0.1.1; docs/handoff/apareas.md):
+Results (2026-10-23, 0.1.1; the apareas handoff log):
 - The world's tests: 98 passed (7986 subtests; new: test_ship_landings in the three open-world
   classes). AP's general tests: 379 passed (116984 subtests).
 - 96 seeds (the phase-4 batch's players, seeds 1-96): 192 `.apso2`, 189 option combinations,
@@ -1787,7 +1787,7 @@ Results (2026-10-23, 0.1.1; docs/handoff/apareas.md):
   Ruins) in 44 of these 114 open-world slots; 0.1.1 in none.
 - `tools/ap_e2e_so2.sh`: 25 / 25, twice.
 
-Results (2026-10-23, 0.1.1 with the El voyage gate; docs/handoff/elgate.md):
+Results (2026-10-23, 0.1.1 with the El voyage gate; the elgate handoff log):
 - The world's tests: 108 passed (7986 subtests; new: test_voyage_gate and
   test_teleporter_needs_the_synard in the three open-world classes, test_gate_doors for the
   validator). AP's general tests: 379 passed (116979 subtests).
@@ -1824,7 +1824,7 @@ Results (2026-10-23, 0.1.1 with the El voyage gate; docs/handoff/elgate.md):
   predecessor wins a node's route is also first-come with `--jobs` > 1.
   docs/ap/late_proof.json is unchanged (two earlier runs prove both bosses).
 
-Results (2026-10-25, 0.2.0; docs/handoff/apworld2.md):
+Results (2026-10-25, 0.2.0; the apworld2 handoff log):
 - The world's tests: 235 passed (19741 subtests, a count that varies with the random fills;
   `test_v2.py`'s classes: drops in each mode, force filling first, no keys in drops; craftsanity in story and open world, no-fail alone;
   party v2's members, start, healer guarantee and exclusions; the goals' events, gate and seed;
@@ -1849,7 +1849,7 @@ Results (2026-10-25, 0.2.0; docs/handoff/apworld2.md):
   (the one new option that changes a story seed by default): all 32 `.apso2` identical to the
   0.1.1 batch's but for the `options` object (11 keys added, none changed).
 
-Results (2026-10-25, gift sites never hold progression; docs/handoff/apworld2.md "Session 4"):
+Results (2026-10-25, gift sites never hold progression; the apworld2 handoff log "Session 4"):
 - The world's tests: 240 passed (19751 subtests; new: `test_gifts_never_hold_progression` in
   `LateProofChecks` and `OpenWorldChecks`, run under `TestLateProofAny`, `TestLateProofRena`,
   `TestOpenWorld`, `TestOpenWorldRenaShops` and `TestOpenWorldNoTeleporter` — story and open
@@ -1864,7 +1864,7 @@ Results (2026-10-25, gift sites never hold progression; docs/handoff/apworld2.md
   one of the few places for an Expel-story key: the keys still found room among the chests and
   drops.
 
-Results (2026-10-25, hub mode; docs/handoff/hubworld.md):
+Results (2026-10-25, hub mode; the hubworld handoff log):
 - The world's tests: 312 passed (22635 subtests; new: `test_hub.py`, six option mixes: what the
   hub reaches, the chambers and their regions, the keys (something behind each, never Fienal's or
   the Portal of Sealing's, Lasguss with XINE), every boss reachable with its key alone, the Fienal
@@ -1886,7 +1886,7 @@ Results (2026-10-25, hub mode; docs/handoff/hubworld.md):
   code: all 192 `.apso2` byte-identical to the batch before it (`compare.py`), and `check.py` 0
   errors.
 
-Results (2026-10-25, `starting_character: any` as New Game's pick; docs/handoff/charselect.md):
+Results (2026-10-25, `starting_character: any` as New Game's pick; the charselect handoff log):
 - The world's tests: 318 passed; AP's general tests: 379 passed.
 - Both batches regenerated (players -> scratchpad/apworld2/batch/full_cs, players_hub -> hub_cs,
   seeds 1-96): 96/96 exit 0 each, `check.py` 0 errors on 192 + 192 files (it now checks the
@@ -1897,7 +1897,7 @@ Results (2026-10-25, `starting_character: any` as New Game's pick; docs/handoff/
   new list in every one, and where the party rules are open the pool has the start's place: one
   member more), and with them the other slot of the same multiworld (the shared fill).
 
-Results (2026-10-25, the hub proof; docs/handoff/hubproof.md):
+Results (2026-10-25, the hub proof; the hubproof handoff log):
 - The hub proof (`tools/ap_late_proof.py --state hub`; docs/ap/hub_proof.json): from the title's
   state New Game builds (the port's own code, SS_HUB_STATE, in each hero's game), the start Fun
   City 279 as the root, the chapter lock on, all 22 chamber rows and the P5 doors in its seed, the
@@ -1925,14 +1925,14 @@ Results (2026-10-25, the hub proof; docs/handoff/hubproof.md):
   progression items in chests (350 of them in the 32 chests only the hub proof reaches), 304 in
   chambers and cave bosses, 582 in drops. The story / open-world players' batch (`full_hp`): 96/96
   exit 0, 0 errors, all 192 `.apso2` byte-identical to the batch before (`full_cs`).
-- The late proof's driver fix (2026-10-25; docs/handoff/elgate.md "Proof gap explained"): each
+- The late proof's driver fix (2026-10-25; the elgate handoff log "Proof gap explained"): each
   entry has its own reload budget, and a run is resumed at the first entry the sweep skipped
   for reloads ("end loop", event_sweep.cpp kMaxReloads) instead of past it. Rerun from the gate
   build's node logs (only the nodes with reload loops rerun): both games 278 proven, the same set
   as docs/ap/late_proof.json, the same checks per map, maps and edges (the Cave of Trials L1 / L11
   bosses back).
 
-Results (2026-10-25, `difficulty`; docs/handoff/difficulty.md):
+Results (2026-10-25, `difficulty`; the difficulty handoff log):
 - The world's tests: 341 passed (318 + test_difficulty.py's 23: default, galaxy, universe in
   open world, any, universe in hub mode; each checks slot data, the version, the seed and that
   Earth would choose the same locations of the same kinds); AP's general tests: 379 passed.
@@ -1944,7 +1944,7 @@ Results (2026-10-25, `difficulty`; docs/handoff/difficulty.md):
   the version rule's difficulty and a `difficulty` kind) 0 errors on 64 + 32 files; with the
   identity batches 192 files, 0 errors.
 
-Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
+Results (2026-10-25, skillsanity; the skillsanity handoff log):
 - The world's tests: 380 passed (29330 subtests; `test_skillsanity.py`: none, skills_only with
   craftsanity, special_only in open world with killer moves, insanity in hub mode with shops,
   insanity with the Iseria Queen goal). AP's general tests: 379 passed.
@@ -1960,7 +1960,7 @@ Results (2026-10-25, skillsanity; docs/handoff/skillsanity.md):
   multiworlds where a slot has `cave_of_trials` (the renamed cave locations change the fill).
 
 Results (2026-10-26, 0.2.1: the North City and Noel's House passes at the start unless the
-teleporter and expel_progression are both on; docs/handoff/ncpfix.md):
+teleporter and expel_progression are both on; the ncpfix handoff log):
 - The world's tests: 449 passed (30513 subtests; was 430 passed, 3 xfailed: the three
   expectedFailures gone, the new mix `TestOpenWorldNoExpelProgressionNoBosses`); `python -m
   unittest` agrees (449, OK). The slowest test 1.13 s (TestInsanityIseriaQueen::test_skill_items,
@@ -1984,9 +1984,9 @@ teleporter and expel_progression are both on; docs/handoff/ncpfix.md):
   open world with boss_checks off). Seed 75 fails another way, not the start keys': open world,
   expel_progression, teleporter and boss_checks off, skillsanity special_only, killer moves for
   the hero; 91 progression items (60 move items) and only 63 locations that may hold a move item
-  ("Not enough locations for progression items"; open to the user, docs/handoff/ncpfix.md).
+  ("Not enough locations for progression items"; open to the user, the ncpfix handoff log).
 
-Results (2026-10-26, the tests to Archipelago's testing guide; docs/handoff/aptests.md; tests and
+Results (2026-10-26, the tests to Archipelago's testing guide; the aptests handoff log; tests and
 tools only, no world change):
 - The world's tests: 430 passed, 3 xfailed (30148 subtests; was 380 passed, 29338): every old
   test kept (one class renamed), plus the access dependencies of the table above and the new
@@ -2003,7 +2003,7 @@ tools only, no world change):
   too). The batches never saw it: each of their multiworlds has a ChecksFinder player.
 
 Results (2026-10-27, 0.2.1: skillsanity progression at guild checks and learn levels;
-docs/handoff/skilllogic.md):
+the skilllogic handoff log):
 - The world's tests: **537 passed** (37687 subtests; was 449): `test_skillsanity.py`'s old "no
   progression" test reversed into `test_what_skillsanity_locations_hold` and
   `test_learn_level_needs` for every mix, and 9 new mixes (the table above). Each part of the
@@ -2033,31 +2033,31 @@ docs/handoff/skilllogic.md):
 
 ## Changes
 
-**0.2.2** (2026-10-27, not released yet; docs/handoff/utworld.md; docs/release_notes/0.2.2.md is
-the draft). Tracker support, first piece (docs/plans/trackers.md B1): Universal Tracker, yaml-less
+**0.2.2** (2026-10-27, not released yet; the utworld handoff log; docs/release_notes/0.2.2.md is
+the draft). Tracker support, first piece (the tracker plan's B1): Universal Tracker, yaml-less
 ("Trackers" above). No new option, item or location; the same seeds as 0.2.1 byte for byte (the
 .apso2 and the spoiler); the slot data gains `logic_version` (1), `exclude_locations` and `tracker`.
-- *Rules as data* (trackers.md B2; docs/handoff/rulebuilder.md; "Rules as data" above): every
+- *Rules as data* (tracker plan B2; the rulebuilder handoff log; "Rules as data" above): every
   access rule is a Rule Builder rule (logic.py), so Universal Tracker's `/explain` works. The same
   logic (every rule's truth table the same, `logic_version` still 1) and the same seeds and slot
   data byte for byte.
-- *The logic export* (trackers.md B3; docs/handoff/logicexport.md; "The logic export" above): the
+- *The logic export* (tracker plan B3; the logicexport handoff log; "The logic export" above): the
   slot data gains `tracker`, the world's resolved logic as data (format 1, 4 to 35 KB), which the
   PopTracker pack evaluates (pack 1.0.0); `tools/ap_tracker_logic.py` is its reference evaluator.
   The same seeds byte for byte; `logic_version` still 1.
 - *0.2.0 Skillsanity rooms* in Universal Tracker: tracked with a logged warning instead of refused
   (the user's decision; measured conservative: "Older rooms"); 0.2.0 hell seeds still refused.
 
-**0.2.1** (2026-10-26 / 27, not released yet; docs/handoff/ncpfix.md, skilllogic.md,
-hellseed.md and benchworld.md, the user's decisions). No new item or location; one new option,
+**0.2.1** (2026-10-26 / 27, not released yet; the ncpfix, skilllogic,
+hellseed and benchworld handoff logs, the user's decisions). No new item or location; one new option,
 `bench` (on by default), and two new seed fields, `hell_seed` (display only) and `bench` (with
 seed version 4). The port's 0.02.50 plays every 0.2.1 seed without the bench (skilllogic2's
 headless proofs: a key and a character given from a guild check and from learn points;
-docs/handoff/skilllogic.md "Step 3"; hellseed's: the arena's fee waived by the seed's patch line,
-docs/handoff/hellseed.md); a bench seed (version 4) needs 0.02.51, which also adds the hell
+the skilllogic handoff log "Step 3"; hellseed's: the arena's fee waived by the seed's patch line,
+the hellseed handoff log); a bench seed (version 4) needs 0.02.51, which also adds the hell
 seed's warning in setup and the log.
 - *Fixed: open world with `expel_progression` or the teleporter off couldn't fill solo*
-  (docs/handoff/aptests.md "World bug"). The first Energy Nede stages need the North City and
+  (the aptests handoff log "World bug"). The first Energy Nede stages need the North City and
   Noel's House Passes, and before them Energy Nede has no location of this world that may hold
   them but the Synard boss; with either option off Expel holds only our Expel-story keys. So in
   a world with no other game's locations, 0.2.0 failed every fill with the teleporter on and
@@ -2107,7 +2107,7 @@ seed's warning in setup and the log.
   multiworld otherwise (skilllogic: every changed seed has a skillsanity player; Testing,
   "Results ... skillsanity progression").
 
-**0.2.0** (2026-10-25, released with the port's 0.02.50 on 2026-10-26; docs/handoff/apv2.md, the user's request and decisions;
+**0.2.0** (2026-10-25, released with the port's 0.02.50 on 2026-10-26; the apv2 handoff log, the user's request and decisions;
 the seed's new fields: seed_format.md "v2 fields"). A seed using none of the new features is a
 version-1 seed, but it still needs port 0.02.50: 0.2.0 writes the renamed options only
 (`story_route`, `enemy_dropsanity`) and the 0.02.00 port reads only the old names
@@ -2118,7 +2118,7 @@ player places its items otherwise (3 cave locations fewer, the cave's names by f
 does one where 0.1.1 put progression on a gift site (gift sites never hold it now). Of the 16
 all-story seeds of the batch, the 3 without a cave player are 0.1.1's but for `options`; the 13
 with one differ, 3 of them (5 files) already before the cave change, likely from the gift rule
-(docs/handoff/cavefix.md).
+(the cavefix handoff log).
 - *Goals:* `goal` indalecio (0.1.x's `final_boss`, kept as an alias) / indalecio_limiter_off /
   indalecio_limiter_off_and_iseria_queen, with the events "Limiter Off" and "Iseria Queen
   defeated", the seed's `goal.flags` / `goal.all` and the gate on the way to Indalecio
@@ -2150,7 +2150,7 @@ with one differ, 3 of them (5 files) already before the cave change, likely from
   version-3 seeds with `hub` and `bosses` ("Hub mode"). Story-mode and open-world seeds are
   byte-identical to the batch before it (Testing).
 - *Fixed: the Cave of Trials' learn chests are no locations* (2026-10-25, agent cavefix;
-  docs/handoff/cavefix.md). 0.1.x's "Cave of Trials Level 1: Portrait F / G / J chest" (ids
+  the cavefix handoff log). 0.1.x's "Cave of Trials Level 1: Portrait F / G / J chest" (ids
   1348308992, 1348368384, 1348369409; maps 740 / 798 / 799, really levels 4 / 10 / 10) are the
   routine that teaches Leon Extinction, Ashton tri-Ace and Celine Meteor Swarm: field.json read
   its push of the move index (0xc / 9 / 0xd) as items 12 / 9 / 13. They opened only with that
@@ -2188,7 +2188,7 @@ with one differ, 3 of them (5 files) already before the cave change, likely from
 
 **0.1.1** (2026-10-23, released with the port's 0.02.00). Open world only; story mode, the item
 pool, location names and ids are unchanged.
-- *Fixed: two ship landings missing from the logic* (docs/handoff/apareas.md). The Lacour
+- *Fixed: two ship landings missing from the logic* (the apareas handoff log). The Lacour
   continent is reached only by the Herlie ship, which lands in Port Hilton through a door the
   Hilton Pass opens, and Hoffmann Ruins only by the Hilton ship, which lands on map 231 (the Map
   231 Pass). 0.1.0 let the Hilton Pass be placed in Rosalia's Room (Lacour Castle) and the Map
@@ -2199,7 +2199,7 @@ pool, location names and ids are unchanged.
     entering Lacour from the world map (stage 7, the tournament, needs Lacour's);
   - an area reached by ship needs the landing's key too (data.KEY_GROUPS `landing`): Lacour's
     locations the Hilton Pass, Hoffmann Ruins' the Map 231 Pass.
-- *Fixed: the teleporter does not reach Expel's islands* (docs/handoff/apareas.md). The
+- *Fixed: the teleporter does not reach Expel's islands* (the apareas handoff log). The
   teleporter proof fired the Expel world map's entrance triggers wherever they lie, so it
   counted Hoffmann Ruins' 26 chests and Eluria Colony's 2 gifts as reachable again after the
   disc switch, and 0.1.0 let them hold any progression, a key the story needs after the switch
@@ -2214,7 +2214,7 @@ pool, location names and ids are unchanged.
   locations hold only our Expel-story keys in open world, as other Expel locations the
   teleporter does not reach; their teleporter access is gone (the story's visit and the Final
   Save Point remain).
-- *Fixed: keys left behind by the El voyage* (docs/handoff/elgate.md; "The El voyage and the
+- *Fixed: keys left behind by the El voyage* (the elgate handoff log; "The El voyage and the
   other one-way points" above). From the Front Line's meeting at chapter 27 step 7000 the story
   sails to El with no free play on the way, and the Cross and Lacour continents and Hoffmann
   Ruins' island stay out of reach until the teleporter or the Final Save Point; 0.1.0 put an El

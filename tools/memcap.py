@@ -1,7 +1,7 @@
 """memcap.py: a memory cap for every headless game process a tool starts.
 
 The machine is shared with the user's desktop, so no game run may take more than a few GB
-(docs/HANDOFF.md, machine budget). A run that misreads a table can loop and allocate
+(docs/CONVENTIONS.md, machine budget). A run that misreads a table can loop and allocate
 without bound; the cap turns that into a failure of that run instead of a full machine.
 
     from memcap import capped

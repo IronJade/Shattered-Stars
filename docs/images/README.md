@@ -2,10 +2,10 @@
 
 Every image here is a screenshot of Shattered Stars (this port) running, captured from its
 own OpenGL output (not a raw VRAM dump, not an emulator) for the README and wiki. They are
-the one approved exception to "no game assets in git" (`docs/HANDOFF.md`): nothing else
+the one approved exception to "no game assets in git" (`docs/CONVENTIONS.md`): nothing else
 from the discs is committed. Captured headless (`SDL_VIDEO_DRIVER=offscreen`), at 1280x960
 for every in-game shot; the setup-program shots are the setup window's own size,
-920x660. How each one was produced, including the exact command: `docs/handoff/readme_shots.md`.
+920x660. How each one was produced, including the exact command: the readme_shots handoff log.
 
 - `title-screen.png` — the title screen (logo, New Game / Continue / Voice Collection).
 - `field-arlia.png` — Arlia, an early Expel town, near its fountain.

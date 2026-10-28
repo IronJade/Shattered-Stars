@@ -887,7 +887,8 @@ by design).
   The port does not, so screens that open and animated sprites run a few vblanks
   earlier.
 - Remaining pixel differences on static screens are one-step gouraud body pixels, the
-  known GPU item in docs/CHECKLIST.md.
+  known GPU rasterisation item (PCSX-Redux's edge walker is up to 1 LSB off the hardware's
+  gouraud interpolation; docs/notes/gpu_accuracy.md).
 - `sprite_cache_cell` keys cells by host address, not by the low 16 bits of the PS1
   address, so the original's rare key collisions do not happen.
 - The field's pages other than 1-0xb, 0xe-0x11 and 0x13 are not ported: the page loader logs them and

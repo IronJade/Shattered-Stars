@@ -2,7 +2,7 @@
 
 The PopTracker pack ships only original placeholder maps. The port renders the real maps from
 the player's own disc into PopTracker's user-override folder (decision D5,
-docs/plans/trackers.md; "This keeps us trouble free from soliciting any IP"). Both sides must
+the tracker plan; "This keeps us trouble free from soliciting any IP"). Both sides must
 draw the **same layout**: the same image files and sizes, each field map in the same rectangle,
 each check's dot on the same pixel. This file describes that layout. B4 (the pack generator,
 `tools/ap_poptracker.py`) draws its placeholders from it, and the port's
@@ -170,7 +170,7 @@ map 1; none clamped. `area_only` is empty. 66 area images (242 map rectangles; t
 Salva Drift, 2024x1720 at 1/1) and 2 world maps (35 group dots). 794 rooms in 66 groups
 (105.1 M pixels), 1775 doorways (1822 markers, 6 clamped) holding 2011 doors (1836 with a way
 back), and 380 transfers started by the maps' own code. (Before the `area` audit of
-2026-10-27, docs/handoff/maptab.md: 793 rooms and 378 transfers; Port Hilton's pier, map 171,
+2026-10-27, the maptab handoff log: 793 rooms and 378 transfers; Port Hilton's pier, map 171,
 is a room since.)
 
 ## Rooms (format 1.1)

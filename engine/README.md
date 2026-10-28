@@ -21,7 +21,7 @@ against have their own licences, listed in `THIRD-PARTY-LICENSES.txt`.
 | GTE + libgte | done, bit-exact with PCSX-Redux / Sony's PsyQ 4.2 code |
 | MDEC + STR movies | decoder and player done, exact against jPSXdec's PS1 mode |
 | SPU (sound), memory cards | SPU, libspu and the game's sound driver ported (music and effects match PCSX-Redux); memory cards (raw 128 KB images) |
-| Game code | boot, title (logos, movies, menu, New Game, Continue, Voice Collection); field maps (event scripts, messages, actors, doors, chests, shops, encounters, effects, embedded map code, the credits and the end screen); world map (vehicles, bunny, courier, map); every camp menu page, item creation, save / load (byte-compatible with real memory cards); battles (combat, HUD, result screen, every enemy class, Claude, Rena, Celine, Leon, Noel, Ernest, Bowman, Chisato, battle items), every spell and party member, and the party AI; every one of the 564 encounters runs; the game is finishable on both discs with all 85 endings — see `docs/CHECKLIST.md` |
+| Game code | boot, title (logos, movies, menu, New Game, Continue, Voice Collection); field maps (event scripts, messages, actors, doors, chests, shops, encounters, effects, embedded map code, the credits and the end screen); world map (vehicles, bunny, courier, map); every camp menu page, item creation, save / load (byte-compatible with real memory cards); battles (combat, HUD, result screen, every enemy class, Claude, Rena, Celine, Leon, Noel, Ernest, Bowman, Chisato, battle items), every spell and party member, and the party AI; every one of the 564 encounters runs; the game is finishable on both discs with all 85 endings |
 
 Port progress per function is the `port` column of `docs/catalog/functions.csv`.
 
@@ -222,8 +222,63 @@ them): `where`, `warp MAP [X Y Z [DIR]]`, `fol N`, `item ID [COUNT]`, `heal`,
 over the top of the picture, and the status line in the window title ("Shattered Stars -
 map 18 | state 0 | ..."); without `--debug` neither appears.
 
-Debugging switches (start on a map, battles, traces, headless runs) are listed in
-`docs/HANDOFF.md`.
+### Debugging switches
+
+Debugging is for games without an Archipelago seed (the user, 2026-10-25): a windowed run with
+a seed ignores every option below and every `SS_*` hook but the server's, the mods' and the
+dialogue's (`engine/src/main.cpp`, logged as `[ap] an Archipelago game plays without
+debugging; ignored: ...`). Headless runs keep them, seed or not, so the tests work.
+
+- `--map N` new game (Claude) on field map N; `--map-pos X,Y,Z[,FACING[,CAMERA]]` the
+  leader's start (also after Continue); `SS_SCRIPT_GLOBALS="a0=6,a4=0x834"` script globals
+  for a `--map` start.
+- `--battle ENC[:STAGE]`, `--battle-end FRAMES[:OUTCOME]`; `SS_BATTLE_STUB=1` (instant
+  victory); `SS_BATTLE_RAM=<dump>`, `SS_BATTLE_STRONG=1`.
+- `SS_BLOAD_DRIVE_TIME=1` (comparisons only, default off): the battle's disc reads take the
+  console drive's time (seek + single-speed sectors). The port normally loads at once, so a
+  voice line's talk pose (the clip's load and upload) is shorter than the original's (6
+  frames vs 10-16); with the switch it matches Redux. `SS_TALK_TRACE=1` logs the party's
+  talk events (lines, talk pose, ally reaction, fury, weapon throws) with the rng count;
+  `SS_TALK_OFF=1` skips the opening lines (A/B checks); `SS_TALK_FLEE=F` makes the party
+  flee at battle frame F.
+- `SS_MENU_VOICE_TRACE=1` logs the field menus' voice streaming (init, reload after a
+  killer-move / party change, battle banks and field clips queued, done, shutdown) with the
+  menu / field state, budget and the sound slots; `SS_MENU_RNG=<dump>` loads the original's
+  random generator (a Redux `rng_open.bin`) when a field menu opens; `SS_FIELD_CLIP_RNG=<dump>`
+  the same before the field's first voice-clip pick. `SS_MENU_SOUND_DUMP=<prefix>` (each menu
+  voice step) and `SS_TALK_SOUND_DUMP=<path>` (battle start) write the sound driver's voice
+  slots 0-3 in the console's layout, for a byte compare with a Redux dump of the driver
+  (`scratchpad/fx_worker/mv/cmp_snd.py`).
+- `--debug`: a console on the terminal (`help`; where / warp / fol / item / heal / flag /
+  global / battle / noclip) and a status line in the window title.
+- `--mods DIR` / `SS_MODS_DIR` world-edit patches (default `mods/` next to config.ini;
+  `tools/so2_mod.py` writes them): loose `*.patch` files and mod packages (`mod.json`;
+  `docs/notes/mods.md`), applied in config.ini's `mod_order` (setup's Mods page). With a
+  folder override the config's order is ignored; `SS_MOD_ORDER="(loose),id,-id"` sets one
+  for a test run. `tools/mod_check.py` / `tools/mod_verify.py` check packages.
+- `SS_LOAD_SAVE=N` load save N without menus; `SS_SAVE_ANYWHERE=1` save outside save points.
+- `SS_STATE_DUMP="VBLANK:PATH,..."` the state block, config, party, records and inventory at those vblanks; `SS_MENU_DUMP=prefix` (with `SS_MENU_DUMP_OPEN`, `SS_MENU_DUMP_DELAY=n`) the same blocks around field menus.
+- `SS_SHOT="VBLANK:path.png[,VBLANK:path2.png,...]"` (default off; documentation
+  screenshots, `docs/images/`, the readme_shots handoff log) writes the frame actually
+  presented at each listed vblank -- the OpenGL output a player's window shows (scaled,
+  letterboxed to 4:3) -- not the raw PS1 display buffer `--capture` / `SS_VRAM_PNG` dump. A
+  headless run opens no window otherwise; this opens a second, hidden one just to render
+  into and read back with `glReadPixels`.
+- `SS_DEBUG_INPUT="VBLANK:cmd;VBLANK:cmd"` types debug console commands at set vblanks (with `--debug`).
+- `SS_KEYS="VBLANK:key,key,...;VBLANK:..."` (tests; default off) presses the port's keys as the
+  window would, headless too: the first at that vblank, then one per frame of the quit prompt
+  (`runtime/quit_prompt.h`, Esc) while it is up. Keys: escape, enter, left, right, cross, circle,
+  start, triangle, close (the window's close button), wait (a frame without a key). With
+  `SS_SHOT` at that vblank, each prompt frame is also written, as `NAME-prompt0.png`, ...
+  The game itself still takes its buttons from `--input`.
+- `--ap-seed FILE` loads an Archipelago seed (docs/ap/seed_format.md; console `ap_status`,
+  `ap_check ID`, `ap_give ITEM [FROM]`; `[ap]` log lines). `SS_AP_SERVER=ws://localhost:PORT`
+  (+ `SS_AP_SLOT`, `SS_AP_GAME`) connects any run to a local server, headless ones too;
+  `SS_PACE=1` paces a headless run in real time; `tools/ap_e2e.sh` is the end-to-end check.
+- `SS_TRACE=1` VM milestones, map loads, trigger regions, encounter settings, voice banks;
+  `SS_TRACE_LEADER=N` the leader's position, view position, control and Fol every N
+  vblanks; `SS_WORLD_DBG=N` world camera / leader; `SS_WORLD_VSYNC=3` the console's 20 fps
+  world-map pacing.
 
 ## Archipelago
 
@@ -388,6 +443,10 @@ tools/smoke_field_events.sh engine/build/shattered-stars   # whole-game headless
 
 The disc tests compare against reference values from `tools/so2_archive.py` and the
 live RAM dumps; without `SS_DISC1` they are skipped and only the unit tests run.
+
+ASan without root: `dnf download libasan` (x86_64), `rpm2cpio | cpio -idm` into a scratch
+dir, symlink `libasan.so -> libasan.so.8.0.0`, configure a build dir with
+`-fsanitize=address` and `-L<dir> -Wl,-rpath,<dir>`.
 
 ## Layout
 

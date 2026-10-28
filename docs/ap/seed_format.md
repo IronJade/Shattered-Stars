@@ -1,6 +1,6 @@
 # The seed file (`.apso2`) and the save sidecar
 
-Phase 1 of [the Archipelago plan](../archipelago_plan.md). The APWorld (`worlds/so2`) writes one
+Phase 1 of the Archipelago work (the world itself: [apworld.md](apworld.md)). The APWorld (`worlds/so2`) writes one
 `.apso2` file for each Star Ocean player in a multiworld; Archipelago packs every player's file
 into the multiworld's `AP_<seed>.zip`. Shattered Stars reads the seed at start-up, from
 `--ap-seed FILE` (this run only) or the `ap_seed` key in config.ini, which the setup program
@@ -750,7 +750,7 @@ uses the game's own two-way route, opened from chapter 36:
 ### The harbour (Port Hilton, open world; port behaviour, 2026-10-25)
 
 Port behaviour only: no seed field. The port decides from `world_mode: open_world`, so open-world
-seeds made by so2.apworld 0.1.1 get it with a port update (docs/handoff/ships.md).
+seeds made by so2.apworld 0.1.1 get it with a port update (the ships handoff log).
 
 - **The soft-lock it fixes.** Entering Lacour (214) from the world map at chapter 22 step 9999
   stores chapter 23 (909 routine 0x47e8). Port Hilton's sailor (map 169, actor 17, talk routine
@@ -853,7 +853,7 @@ seeds made by so2.apworld 0.1.1 get it with a port update (docs/handoff/ships.md
 
 ## v2 fields (so2.apworld 0.2.0, 2026-10-25)
 
-Written by the APWorld agent "apworld2" (log `docs/handoff/apworld2.md`) for the port agents
+Written by the APWorld agent "apworld2" (log the apworld2 handoff log) for the port agents
 of wave 2. Everything here is additive: a 0.1.x seed reads as before, and a 0.2.0 seed that
 turns none of these features on is a version-1 seed. (It still needs port 0.02.50: 0.2.0 names
 two options the new way only, `story_route` and `enemy_dropsanity`, which the 0.02.00 port
@@ -1128,11 +1128,11 @@ conditions and its return).
   Front Line and 126 Mars in Rena's game, 193 Linga and 124 / 444 in both), the refusals there
   (Celine at 124, Leon at 230), the starting character at New Game (Claude's game map 7: Ashton;
   Rena's game map 18: Leon), Dias joining Claude's game; smoke `ap_v2_m12`, `ap_v2_t477`,
-  `ap_v2_start`, `ap_v2_linga` (docs/handoff/party.md).
+  `ap_v2_start`, `ap_v2_linga` (the party handoff log).
 
 #### The hero in slot 1 (what the port does; agent "partybuild", `engine/src/game/ap/ap.cpp`)
 
-The user's decisions D1-D4 (docs/handoff/heroslot.md, 2026-10-26). In a seed with `world_mode:
+The user's decisions D1-D4 (the heroslot handoff log, 2026-10-26). In a seed with `world_mode:
 open_world` or `hub` whose starting character (named, or picked at the character select) is
 not the picked game's hero; every other seed (story mode, no starting character, the hero as
 the starting character, Archipelago off) keeps the party order exactly as before.
@@ -1166,7 +1166,7 @@ the starting character, Archipelago off) keeps the party order exactly as before
   +0x41 = 0 now names the starting member, so the stand-in shows them, and the game's own
   fallbacks (the Party Order page's close, party_validate_before_battle: the first active slot)
   land on them too.
-- Checked: unit test `ap_heroslot`; headless (docs/handoff/partybuild.md): Claude's opening with
+- Checked: unit test `ap_heroslot`; headless (the partybuild handoff log): Claude's opening with
   Ashton (`--map 7` to map 12's first free play) against the build before: the dumps differ only
   by the two members' places and config +0x41, rng and vblank identical; no starting character
   and a story seed: dumps identical; map 12 in Rena's game (Ashton back in slot 0 at map 17),
@@ -1179,10 +1179,10 @@ the starting character, Archipelago off) keeps the party order exactly as before
 
 #### The bench (what the port does; agent "partybuild", `engine/src/game/ap/bench.h`)
 
-The user's decisions B1-B8 (docs/handoff/bench.md, 2026-10-26), with a separate store the port
+The user's decisions B1-B8 (the bench handoff log, 2026-10-26), with a separate store the port
 owns (the user: "Lets go with a separate store from the start, as then we own the method to
 maintain the benched members equipment and settings"). Built on branch `party-bench` (agents
-"partybuild" to "partybuild6", 2026-10-26 / 27; docs/handoff/partybuild.md).
+"partybuild" to "partybuild6", 2026-10-26 / 27; the partybuild handoff log).
 
 **The contract** (what a seed, a save and an older port can count on):
 - **The seed.** `options.bench` (true / 1) turns the bench on, read only with `party_rules:
@@ -1407,7 +1407,7 @@ seed never; the starting character is only the usual way the leader gets set), o
   with and without it (headless proofs: Claude's opening with `starting_character: Ashton`
   through 14 rewritten messages and a latched scene; the late save's walk into the final scene;
   Rena's game's Arlia events; byte-identical state dumps and rng signatures;
-  docs/handoff/leader.md). Name lengths change
+  the leader handoff log). Name lengths change
   how long the typewriter takes over a line, as renaming the hero does in the original.
 - **The hub** (agent "hubleader", 2026-10-25; the user's ruling: hub mode as well, D7): the same
   rule everywhere, the boss chambers' original scenes (played through their story views)
@@ -1419,7 +1419,7 @@ seed never; the starting character is only the usual way the leader gets set), o
   for the rest), Bark 454 (the scene shows Ashton's own actor: Claude for the scene), 14 more
   chambers of both games; state dumps byte-identical with `SS_LEADER_STANDIN=0`; hub New Game with
   a named member and with the character select's pick (Fun City in the leader's place, the world
-  map with the hero), a save and its load (docs/handoff/hubleader.md).
+  map with the hero), a save and its load (the hubleader handoff log).
 - Debugging (environment, never config.ini): `SS_LEADER_STANDIN=0` off, `=1` on without an
   open-world or hub seed; `SS_LEADER_SLOT=N` party slot N as the leader (presentation only);
   `SS_LEADER_TRACE=1` logs what the walking actor shows and why.
@@ -1476,7 +1476,7 @@ Nothing new for the port: `drop` checks are phase 3's. `drop_progression` and
 
 ### The port: goals, doors, the trumpet, crafting, killer moves (implemented 2026-10-25)
 
-The hooks agent's part of wave 2 (log docs/handoff/hooks.md). Code: game/ap/seed.cpp
+The hooks agent's part of wave 2 (log the hooks handoff log). Code: game/ap/seed.cpp
 (reading), game/ap/ap.cpp (goal_won, door conditions, sell_locked, on_craft,
 scan_killer_moves), field/menu_shop.cpp, field/menu_creation.cpp; tests
 engine/tests/test_ap.cpp `ap_v2_*`; smoke cases `ap_v2_*`, `auto_wizard`.
@@ -1535,7 +1535,7 @@ engine/tests/test_ap.cpp `ap_v2_*`; smoke cases `ap_v2_*`, `auto_wizard`.
 
 ### The join level (open world and hub; port behaviour, agent "skillsanity2", 2026-10-25)
 
-The user's ruling (docs/handoff/skillsanity.md): in every seed with `world_mode` `open_world` or
+The user's ruling (the skillsanity handoff log): in every seed with `world_mode` `open_world` or
 `hub` (any version: no seed field), a member who joins takes the median level of the party. Story
 mode, no seed and Archipelago off keep the original join levels.
 - **When:** every new member's starting data (the game's `party_slot_init`: a script's join, a
@@ -1563,7 +1563,7 @@ mode, no seed and Archipelago off keep the original join levels.
 
 ### Skillsanity (`skillsanity`; agent "skillsanity2", 2026-10-25)
 
-The user's design (docs/handoff/skillsanity.md). `options.skillsanity`: `none` (the original),
+The user's design (the skillsanity handoff log). `options.skillsanity`: `none` (the original),
 `skills_only`, `special_only` or `insanity` (both).
 
 **Skills** (`skills_only`, `insanity`):
@@ -1616,7 +1616,7 @@ APWorld writes two things on it, and on no other seed:
   0x12000000`. Map 297 (the Fighting Arena's desk), routine 0x5c20: `push 0x7d0` (2000 Fol, then
   Bargaining's +/- 3 % a level) at 0x5dfc becomes `push 0`: "An entry fee of 0 FOL", the Fol test
   never fails, nothing is taken. The word is the same on NA, Europe, France and Germany
-  (docs/handoff/hellseed.md "Fee proofs": 7000 Fol after registering without the line, 9000 with
+  (the hellseed handoff log "Fee proofs": 7000 Fol after registering without the line, 9000 with
   it, on each). Every arena fight is an ordinary battle: killer-move uses count, the fighter gets
   the EXP and the party the Fol.
 - **`options.hell_seed: true`** (slot data too). Display only: the port plays the seed exactly as
@@ -1790,7 +1790,7 @@ entrances with no game knowledge, so an entrance-randomized room is only more da
 - **unconnected (deferred) entrances**: `to` -1 until the player finds where the door leads; a
   tracker then connects it (`TrackerLogic.connect(name, region)` in the reference,
   `so2_logic_connect(name, region)` in the pack, both tested) from the slot data's pairings or the
-  found-entrances data-storage key (trackers.md section 6);
+  found-entrances data-storage key (the tracker plan, section 6; docs/plans/next.md Phase C);
 - **optional keys** a format-1 reader ignores may be added, such as a region -> map ids hint for
   drawing a door's destination, or the pairings themselves.
 
@@ -1812,7 +1812,7 @@ default, 5.2 KB with the party options and 12.8 KB at the richest (8.7, 21.5 and
 In story mode the stages need no items, so nearly every check is in logic from the start. The port
 publishes the story's position while connected (`so2_story_{team}_{slot}` = `{"chapter": C,
 "step": S}`, docs/ap/data_storage.md); with this key a tracker can hold back what the story has not
-reached yet (docs/plans/trackers.md B6, decision D8). It is written only in story mode
+reached yet (the tracker plan's B6, the user's decision D8). It is written only in story mode
 (`apworld/so2/story.py` `export`); open world and hub mode have none (their stages and dungeons are
 keyed). A format-1 reader that doesn't know it ignores it and shows the plain logic. Universal
 Tracker doesn't read it: it builds the same thing from the world (docs/ap/apworld.md "Story
@@ -1860,9 +1860,9 @@ region (Expel from point 1, Energy Nede from 13).
 
 ## Hub (`world_mode: hub`)
 
-Written by the agent "hubdata" (log `docs/handoff/hubdata.md`), agreed with the port agent
-"hubvm" (log `docs/handoff/hubvm.md`, whose proposal the `bosses` rows follow). The design and
-the user's decisions: `docs/handoff/hub.md` (D1-D10). The data: `docs/ap/hub_state.json`
+Written by the agent "hubdata" (log the hubdata handoff log), agreed with the port agent
+"hubvm" (log the hubvm handoff log, whose proposal the `bosses` rows follow). The design and
+the user's decisions: the hub handoff log (D1-D10). The data: `docs/ap/hub_state.json`
 (`tools/ap_hub_state.py`) and `docs/ap/hub_bosses.json` (`tools/ap_hub_bosses.py`); the APWorld
 copies their rows into the seed.
 
@@ -1986,7 +1986,7 @@ Read by the port:
   door-arrival flags (curated `unlist`: the Field of Courage's 523 / 524, set by the door before
   its transfer and cleared by the arrival). `keep`: Arcmene's flag 11 (its 12 is dropped: it
   makes a disc of Nede's world map unwalkable and is clear in the late save). Every row is proven
-  headless by tools/ap_hub_chambers.py (both heroes; docs/handoff/hubchambers.md).
+  headless by tools/ap_hub_chambers.py (both heroes; the hubchambers handoff log).
 
 Reference only (the port ignores them; the APWorld and the proofs read them):
 
@@ -2090,14 +2090,14 @@ of it runs: the script VM tests one flag (`ap::g_hub_vm`) and takes the original
   745 = 1 at map 417 (view)`, and each flag's first read (`read flag 389 = 0 at map 463 (real)`). Flags a scene stores that the hub must not keep belong in `flags`
   (745, which the Alen-Tax and Arcmene scenes set, needs no listing: every map's set-up clears
   it; docs/catalog/globals.csv script_flags). Proven headless (late proof state, 2026-10-25): Visseyer 412 (no view),
-  Alen-Tax 61 and Arcmene 417 (views); docs/handoff/hubvm.md has the runs. Not flag 12 in
+  Alen-Tax 61 and Arcmene 417 (views); the hubvm handoff log has the runs. Not flag 12 in
   Arcmene's `keep`: it is clear in the hub state and makes part of Nede's world map unwalkable.
 - `status_text` (console `ap`) shows `hub | lock chapter on step on | chambers N | story view ...`.
 
 ### The port: New Game, the starts, the doors, P5 (agent "hubcore", `engine/src/game/ap/ap.cpp`)
 
 What the port does with the `hub` block's state, `hub.start`, the seed's `doors` in hub mode and
-the P5 rows (implemented 2026-10-25; docs/handoff/hubcore.md has the runs).
+the P5 rows (implemented 2026-10-25; the hubcore handoff log has the runs).
 
 - **New Game** (`on_new_game_state`, from the field's `field_create_state_block` new-game branch,
   after the original's hero, names, party and chapter 3 / 4): only when `world_mode` is hub and
@@ -2150,7 +2150,7 @@ the P5 rows (implemented 2026-10-25; docs/handoff/hubcore.md has the runs).
 
 ### The port: the questions (agent "hubask", `engine/src/game/ap/hub.cpp`)
 
-The user's rulings (2026-10-25, docs/handoff/hub.md): **Shigeo 281, ask first** (Fun City's 281
+The user's rulings (2026-10-25, the hub handoff log): **Shigeo 281, ask first** (Fun City's 281
 lies on the only Energy Nede -> Expel route, and his scene starts from a strip across the street
 while he is unbeaten) and **the arena 305, ask plus a way out** ("players will generally use the
 arena in Fun City as a way to level up their characters. They need to be able to do that without
@@ -2213,7 +2213,7 @@ being forced to go through Marsilio first"). A row's `ask`:
   nothing written back). On a chamber map an option shows only while its view is on (the Clerk
   exists only then anyway); elsewhere while the boss is unbeaten. A site whose words differ is
   logged and left alone (`... is not the shape the seed names ...; no extra option`).
-- **The two rows** (apworld/so2/hub.py `ASK`; proven headless, docs/handoff/hubask.md):
+- **The two rows** (apworld/so2/hub.py `ASK`; proven headless, the hubask handoff log):
   - Shigeo 533: `{"text": "Shigeo is on the rampage ahead.\nFace Shigeo now?", "again": "visit"}`:
     the doors into 281 (from 280, 292 and 297) ask. Yes: his scene and fight; no: 281 at the
     hub's state, the strip does nothing (walked across headless), the route on to 297 and Expel
