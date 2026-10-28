@@ -1,6 +1,8 @@
 #!/bin/bash
-# Prints THIRD-PARTY-LICENSES.txt for a release (port/tools/build_windows.sh, port/tools/build_linux.sh):
-# the licences of what the programs include. Usage: third_party_licenses.sh BUILD_DIR SDL_LICENCE
+# Prints THIRD-PARTY-LICENSES.txt for a release (port/tools/build_windows.sh,
+# port/tools/build_linux.sh, port/tools/build_macos.sh): the licences of what the programs include.
+# Usage: third_party_licenses.sh BUILD_DIR SDL_LICENCE (OPENSSL_LICENSE_FILE: an OpenSSL built
+# from source, whose licence no system folder holds)
 #   SDL 3 (zlib), Dear ImGui (MIT, setup), and the Archipelago client: apclientpp (MIT),
 #   wswrap (MIT), websocketpp (BSD-3-Clause), asio (Boost 1.0), nlohmann/json (MIT),
 #   OpenSSL (Apache 2.0), zlib (zlib).
@@ -57,7 +59,10 @@ if [ -d "$build/_deps/apclientpp-src" ]; then
   section "WebSocket++" "$build/_deps/websocketpp-src/COPYING"
   section "Asio" "$build/_deps/asio-src/asio/LICENSE_1_0.txt" "$build/_deps/asio-src/asio/COPYING"
   section "JSON for Modern C++ (nlohmann/json)" "$build/_deps/nlohmann_json-src/LICENSE.MIT"
-  section "OpenSSL (Apache License 2.0)" /usr/share/licenses/openssl-libs/LICENSE.txt /usr/share/doc/libssl3/copyright \
-    /usr/share/licenses/openssl/LICENSE.txt
+  # Not in a ws:// only build (no OpenSSL found: CMakeLists.txt's WSWRAP_NO_SSL).
+  if ! grep -q WSWRAP_NO_SSL "$build/build.ninja" 2>/dev/null; then
+    section "OpenSSL (Apache License 2.0)" /usr/share/licenses/openssl-libs/LICENSE.txt \
+      /usr/share/doc/libssl3/copyright /usr/share/licenses/openssl/LICENSE.txt "${OPENSSL_LICENSE_FILE:-}"
+  fi
   zlib_section
 fi
