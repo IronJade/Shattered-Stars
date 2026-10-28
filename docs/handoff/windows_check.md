@@ -445,3 +445,39 @@ game connected (setup's Archipelago page: the room's address `localhost:38281`, 
     unpacked into "…\Shattered Stars Ä\" starts and saves; a seed's New Game, a check, a save and
     a load; the bench seed's Party Order flip.
 13. Optional, with a toolchain: `ss_tests.exe` / `ss_game_tests.exe` (the RC runs them under Wine).
+
+### 2026-10-28: the 0.03.00 RC (d9ae923) on Windows 11: 10 PASS, 2 FAIL, 1 NOT RUN
+
+Files served from the Linux machine over the LAN (no drafts yet), SHA-256 OK against SHA256SUMS
+(win64 zip df0a2783..., so2.apworld e10dc209..., YAML 09b32d47..., pack 8154d618...). Third-party:
+PopTracker 0.36.0, Universal Tracker 0.3.6 (tracker.apworld of Tracker_v0.3.6), Archipelago 0.6.8.
+Seeds (0.2.2): story AP_31431921816017738297, open AP_27761045372153240048, bench
+AP_12126604286085242730; old (0.2.1) AP_01377674854056060847. The game ran headless at real pace
+(SS_PACE=1) against a local ArchipelagoServer; setup, PopTracker and UT driven with real input.
+Full notes on the Windows machine: C:\Users\hitsu\ss-0.03.00\windows_check_0.03.00_results.md.
+
+- 1 version PASS (0.03.00 both, header "Setup · v0.03.00", file version 0.3.0.0, DreamGlyph Studios,
+  no WinThreads).
+- 2 render button PASS: 24.6-26.2 s (3 runs); no-disc tooltip; progress + switching pages mid-render,
+  no hang; Done / Open folder / Copy path; 68 + 794 PNGs (134.7 MB), zip 134,897,214 bytes, 868
+  entries, testzip OK; config.ini unchanged; closed mid-render: exit in 122 ms, no .part, no
+  truncated PNG. The render used Documents\PopTracker\user-override\so2_shattered_stars (neither
+  PopTracker folder existed before; Documents not OneDrive-redirected).
+- 3 command line PASS (default, the "Test Ä 日本" path, --ut-zip, --no-ut-zip, no disc: exit 1).
+- 4 PopTracker load PASS (the user makes %USERPROFILE%\PopTracker\packs; PopTracker doesn't).
+- 5 connect / autotrack PASS (logic from the room, live clear, /send, Auto tab 18 -> 26 -> world map).
+  Note: Auto tab / Story toggle off on right-click (left-click on an active toggle does nothing).
+- 6 story awareness PASS. On blue: reads clearly on the bright maps, less prominent on dark dungeon
+  rooms (Salva Drift); the tester recommends keeping blue (red already means items missing).
+- 7 rendered maps PASS. 9 older room PASS. 12 glance PASS. 13 NOT RUN (no toolchain).
+- **8 offline: FAIL** on "Address empty, save, Continue while connected": the save's offline checks
+  are never sent (on_loaded merges, sends nothing; the same in 0.02.00 and 0.02.51). PASS on "server
+  stopped mid-game, restarted": reconnect "sent 1 checks". Fix: agent loadsend.
+- **10 Universal Tracker: FAIL**: every connect to a so2 slot with a maps zip set drops with
+  AttributeError 'VisualTracker' object has no attribute 'location_icons' (TrackerClient.py 1885 ->
+  1916 -> 1520): the Retrieved for location_setting_key arrives ~70 ms after joining, before any map
+  is laid out; independent of the dialog and of stored keys. Sub-checks blocked. Fix: agent utcrash.
+- 11 room maps / doors PASS for the panel and auto tab; **the diamond click to be rechecked**: a click
+  on the map's diamond opened PopTracker's popup and clicking in it didn't switch tabs (the design:
+  click the "Door X" section in the popup; precise retest asked).
+- Not for 0.03.00: "?GUARD (894)"-style item names in spoilers and check lines (since 0.2.0).
