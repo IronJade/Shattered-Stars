@@ -91,3 +91,10 @@ Expected: `passed: 0 case(s) failed`; 115 ok, 0 FAIL; auto-tab-off "Auto Tab off
 dropped the connection: AttributeError: ..." (informational: UT's issue, the 0.2.2 notes' known
 limitation). Checklist row: docs/release/release_checklist.md 12.3, "UT's map tab through a real
 connection (utcrash)".
+
+## Scratch left (not removed)
+scratchpad/utcrash in this worktree, about 1.1 GB: the ut_* run folders (each an Archipelago symlink
+farm with real top-level scripts, the rooms and the case logs), copies of the two zips, the built
+apworld (dist/apworld). utcrash2's `rm -rf` of the farms inside the ut_* folders was refused by a
+safety check (a variable in the path), so it goes with the worktree, or by hand. The worktree's
+scratchpad/ap farm links into the main tree's scratchpad/ap (read-only use).
