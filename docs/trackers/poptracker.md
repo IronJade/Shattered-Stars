@@ -246,6 +246,8 @@ awareness"; docs/apworld/apworld.md "Story awareness" for where the points come 
   something to act on; a check later in the story needs nothing but playing on) and from yellow
   (`SequenceBreak` says it can be had now out of logic, which isn't so: the party can't get there
   yet). Hiding such checks (`None`) would lose the "you will get here" view the user asked for.
+  **Blue stays** (the user, 2026-10-28, after the Windows check: clear on the bright maps, less
+  prominent on dark dungeon rooms such as Salva Drift, still better than red, which means items missing).
 - A step-only change (chapter 60 step 3000 -> 4000, the Final Save Point) changes no item, so
   `so2_story_changed` re-runs the rules itself (`so2_refresh()`).
 

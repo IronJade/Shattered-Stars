@@ -468,7 +468,7 @@ Full notes on the Windows machine: C:\Users\hitsu\ss-0.03.00\windows_check_0.03.
 - 5 connect / autotrack PASS (logic from the room, live clear, /send, Auto tab 18 -> 26 -> world map).
   Note: Auto tab / Story toggle off on right-click (left-click on an active toggle does nothing).
 - 6 story awareness PASS. On blue: reads clearly on the bright maps, less prominent on dark dungeon
-  rooms (Salva Drift); the tester recommends keeping blue (red already means items missing).
+  rooms (Salva Drift); the tester recommends keeping blue (red already means items missing). **The user: keep blue.**
 - 7 rendered maps PASS. 9 older room PASS. 12 glance PASS. 13 NOT RUN (no toolchain).
 - **8 offline: FAIL** on "Address empty, save, Continue while connected": the save's offline checks
   are never sent (on_loaded merges, sends nothing; the same in 0.02.00 and 0.02.51). PASS on "server
