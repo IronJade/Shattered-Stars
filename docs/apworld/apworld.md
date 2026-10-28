@@ -1412,7 +1412,19 @@ APWorld always matches the installed world's location names, whatever pack versi
   host.yaml by hand (empty: UT asks again on the next connect). The tab then follows the game: UT watches the port's `so2_map_{team}_{slot}`
   (`map_page_setting_key`): a field map opens its room's page, a world map its world map with a
   **player marker** at the party's x / z (`location_setting_key`, `location_icon_coords`, the marker
-  `images/status/you.png` from the pack), a map with no page keeps the page. The menu lists the maps
+  `images/status/you.png` from the pack), a map with no page keeps the page. **At connect** UT opens
+  Expel's world map (with the marker if the game is there) and follows the game from its next
+  write (the next room, or a step on a world map): UT 0.3.6 lays out its first page before it has
+  asked for the key, and the key's first value (a `Retrieved`) only moves the marker, it doesn't
+  load a page. `map_page_index` gives Expel's world map for no value, never -1, because that first
+  page must be laid out: UT 0.3.6's map tab widget (VisualTracker) has no marker list until one is,
+  and with -1 there every first connect dropped the connection (the 0.03.00 RC's Windows recheck,
+  item 10: `AttributeError: 'VisualTracker' object has no attribute 'location_icons'`,
+  TrackerClient.py 1885 > 1916 > 1520). **Known issue (UT's):** with Auto Tab turned off
+  (`/toggle_auto_tab`) before UT's first connect of a session, UT 0.3.6 lays out no page at connect,
+  for any world, and drops the connection the same way; the workaround is not to turn it off before
+  connecting (turned off once connected, or on again and `/connect`, UT stays connected:
+  ap_ut_connect.py's informational `auto-tab-off` case). The menu lists the maps
   as the pack's tabs: Expel / Energy Nede > area group > area > its overview and its rooms, by
   "<map> <name>"; the boards (Shops, Item Creation, ...) too. `/load_map`, `/list_maps` and
   `/reload_pack` are UT's commands.
@@ -1446,7 +1458,16 @@ APWorld always matches the installed world's location names, whatever pack versi
   `ut_pack_path` at the zip, no display and no D-Bus) on a generated open-world room rebuilt
   yaml-less by UT, and loads every page's picture and the marker through UT's own image loader
   (TrackerKivy's `ap:zip:` load, decoded by Kivy). `--zip` takes either zip: the pack's or the
-  port's.
+  port's. Its stand-in has no map tab widget, so it can't see what UT's connect order does to one:
+  trackers/tools/ap_ut_connect.py (utcrash) runs **UT's own GUI client** (TrackerManager and the
+  real VisualTracker; Kivy on SDL's offscreen driver, no display) connected to a local MultiServer
+  room, a client connected as the slot writing the keys as the port does, one UT session per case:
+  started with `--connect`, the GUI's Connect and slot prompt, the key stored before or not (a room,
+  a world map), host.yaml's path preset or UT's dialog (a kdialog stand-in first on PATH answers
+  with the zip, or Cancel), a room made with so2.apworld 0.2.1, `/connect` again; it checks UT stays
+  connected, the page, the picture, the marker widgets and that UT tracks (and reports, not counted,
+  what Auto Tab turned off before the first connect does). Command and results:
+  docs/release/release_checklist.md 12.3.
 - **Results (2026-10-27, maptab).** `TestUT` 4/4 (pack tests 41/41). UT's loader (UT 0.3.6's
   TrackerClient, the repo's world and again the packaged so2.apworld from custom_worlds): 15/15
   each: the slot rebuilt yaml-less; the map key `so2_map_0_1`; 867 pages (794 rooms, 68 area and
@@ -1471,6 +1492,17 @@ APWorld always matches the installed world's location names, whatever pack versi
   text changed in the world, nothing a seed reads). A negative control, the same zip under
   scratchpad/utzip/ (a folder ending in "zip"): the image check fails (IsADirectoryError: UT splits
   at the first `zip/`), the other 15 pass.
+- **Results (2026-10-28, utcrash and utcrash2: the connect crash).** trackers/tools/ap_ut_connect.py
+  with UT 0.3.6 (Tracker_v0.3.6's tracker.apworld), both zips, the 0.2.1 room: with `map_page_index`
+  -1 for no value (before the fix) 5 of the 6 counted cases (launch, room-key, world-key, dialog,
+  old-room) dropped the connection at the first connect with the Windows recheck's traceback, cancel
+  (no map tab) passed; with Expel's world map for no value all 6 pass (0 FAIL: launch 37 checks,
+  room-key 20, world-key 15, dialog 16, cancel 7, old-room 15), against the repo world and the
+  packaged so2.apworld (282,098 bytes), the markers at (948, 1250) on Expel's world map and (720, 1000)
+  on Energy Nede's. `auto-tab-off` (informational): still drops the connection (UT's); on again and
+  `/connect`, or off once connected, UT stays connected. UT's loader (ap_poptracker_utmap.py) 16/16 in
+  its four runs (its no-value check now: Expel's world map, laid out by load_pack before the key is
+  read); `TestUT` 5/5 (pack tests 43 OK); ap_ut_check.py UT MATCHES THE WORLD (59).
 
 ## Files
 
