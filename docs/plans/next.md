@@ -100,6 +100,10 @@ Packaging (.app, signing) after that. For 0.03.00 the Mac only checks the tracke
 
 ## Phase C: so2.apworld 0.3.0, entrance randomization (docs/entrance randomization.md)
 
+**The full plan is docs/plans/er.md** (2026-10-28, agent erplan: options, the entrance model with
+counts, logic, port, trackers, proof, work breakdown, release, risks, the user's open questions).
+This section keeps the history and the requirements it was written from.
+
 **Goal (the user):** "add Entrance Randomizer to the options using [Generic ER] as a guiding principle".
 
 What Generic ER requires of a world (the guide):
