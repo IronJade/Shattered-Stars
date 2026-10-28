@@ -11,11 +11,19 @@ set -u
 BIN=${1:-port/build/shattered-stars}
 # Every game run under a memory cap (docs/CONVENTIONS.md machine budget; tools/memcap.py):
 # SS_MEM_CAP_GB (default 4) GB of address space each. An ASan build can't take one.
-if [ "${SS_MEM_CAP_GB:-4}" != 0 ] && ! grep -q __asan_init "$BIN" 2>/dev/null; then
+if [ "$(uname -s)" != Darwin ] && [ "${SS_MEM_CAP_GB:-4}" != 0 ] && ! grep -q __asan_init "$BIN" 2>/dev/null; then
   ulimit -v $(( ${SS_MEM_CAP_GB:-4} * 1024 * 1024 ))
 fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
+# macOS has neither RLIMIT_AS (ulimit -v fails) nor GNU timeout: tools/memcap.py stands in as
+# `timeout` there, ending a run at its time limit or once its footprint passes the cap.
+if [ "$(uname -s)" = Darwin ]; then
+  mkdir -p "$WORK/bin"
+  printf '#!/bin/sh\nexec python3 "%s" "$@"\n' "$(cd "$(dirname "$0")/../.." && pwd)/tools/memcap.py" >"$WORK/bin/timeout"
+  chmod +x "$WORK/bin/timeout"
+  export PATH="$WORK/bin:$PATH"
+fi
 fail=0
 
 run() {  # run NAME FRAMES MAP INPUT (no world edits unless SS_MODS_DIR is given)
@@ -327,7 +335,7 @@ SAVE_INPUT="300:triangle,306:none,400:up,406:none,450:cross,456:none,550:cross,5
 for v in ap plain; do
   [ $v = ap ] && AP_ARGS=(--ap-seed "$WORK/tiny.apso2") || AP_ARGS=()
   SS_DEBUG_INPUT="200:ap_check 1347569665" SS_SAVE_ANYWHERE=1 SS_MODS_DIR="$WORK/no-mods" SDL_VIDEO_DRIVER=offscreen \
-    SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/save_$v.mcd" timeout 900 "$BIN" --headless --debug "${AP_ARGS[@]}" \
+    SDL_AUDIO_DRIVER=dummy SS_MEMCARD1="$WORK/save_$v.mcd" timeout 900 "$BIN" --headless --debug ${AP_ARGS[@]+"${AP_ARGS[@]}"} \
     --frames 1100 --map 18 --input "$SAVE_INPUT" </dev/null >"$WORK/ap_save_$v.log" 2>&1
 done
 check ap_save_ap "a save writes the sidecar" '\[ap\] saved .*save_ap\.slot01\.ap\.json'
@@ -446,13 +454,18 @@ SEED
 check ap_hub_mansion "refused without the key" '\[ap\] door 3480401 \(Salva Drift \(map 53 -> 62\)\): locked, needs Salva Drift Key'
 check ap_hub_mansion "the hero stays on the ramp" '\[leader\] vblank 420 map 53 state 0 pos -29,-(6[89]|70),-1(39|4[01]) '
 check ap_hub_mansion "the key opens it at the next step" 'field_load_map\(map=62 keep=1 flags=2\) at vblank 4[5-9][0-9]'
-for v in open story; do
-  SS_DISC2="${SS_DISC2:-${SS_DISC1//Disc 1/Disc 2}}" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
-    timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
-done
-check ap_p4_tele_open "the teleporter's edits apply (3, with the harbour's 12)" '\[mods\] 15 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
-check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
-check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+TELE_D2="${SS_DISC2:-${SS_DISC1:+${SS_DISC1//Disc 1/Disc 2}}}"
+if [ -n "$TELE_D2" ] && [ -f "$TELE_D2" ]; then  # map 303 is on disc 2
+  for v in open story; do
+    SS_DISC2="$TELE_D2" "${AP_RUN[@]}" SS_SCRIPT_GLOBALS="a0=40,a4=0" SS_EVENT_SWEEP=1 SS_EVENT_SWEEP_DISC=2 \
+      timeout 900 "$BIN" --headless --ap-seed "$WORK/p4$v.apso2" --frames 4700 --map 303 </dev/null >"$WORK/ap_p4_tele_$v.log" 2>&1
+  done
+  check ap_p4_tele_open "the teleporter's edits apply (3, with the harbour's 12)" '\[mods\] 15 script, 0 item, 0 shop, 0 enemy patch\(es\) from the seed'
+  check ap_p4_tele_open "the old man sends the party to Arlia at chapter 40" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end map 18 '
+  check ap_p4_tele_story "without the teleporter he only talks" '\[sweep\] map 303 vblank [0-9]+ entry 22 K25 end ok '
+else
+  echo "SKIP ap_p4_tele: no disc 2 image next to disc 1 (or SS_DISC2)"
+fi
 
 # Archipelago phase 4 [ships agent]: Port Hilton's harbour (docs/apworld/seed_format.md "The harbour").
 # Chapter 23, in front of the Hilton sailor (map 169, actor 17): in an open-world seed he no longer
@@ -715,7 +728,7 @@ td_bytes() {
     fi
   done
 }
-if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c)" = 302 ] \
+if [ -f "$WORK/tdias_in.state" ] && [ -f "$WORK/tdias_out.state" ] && [ "$(td_bytes "$WORK/tdias_in.state" | wc -c | tr -d ' ')" = 302 ] \
    && cmp -s <(td_bytes "$WORK/tdias_in.state") <(td_bytes "$WORK/tdias_out.state"); then
   echo "PASS ap_tdias_load: Dias leaves the tournament byte for byte as he came"
 else
@@ -1166,7 +1179,7 @@ check ap_hub_arcmene "the view ends at the transfer out: chapter 41 dropped, fla
 check ap_hub_arcmene "the chapter stays 60" 'play: story chapter 60 step 4000'
 for v in hubstory none; do
   [ $v = none ] && seedarg=() || seedarg=(--ap-seed "$WORK/$v.apso2")
-  "${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard "${seedarg[@]}" --frames 600 --map 418 \
+  "${HUB_RUN[@]}" SS_SWEEP_PLAY="418:T2" timeout 900 "$BIN" --headless --no-memcard ${seedarg[@]+"${seedarg[@]}"} --frames 600 --map 418 \
     </dev/null >"$WORK/ap_hub_arcmene_$v.log" 2>&1
   check ap_hub_arcmene_$v "no view: the chamber is empty at chapter 60" 'play: control on map 417 after 1 of 1 steps'
   if grep -qE 'story view on|a battle at' "$WORK/ap_hub_arcmene_$v.log"; then echo "FAIL ap_hub_arcmene_$v: a view or a fight"; fail=1; else echo "PASS ap_hub_arcmene_$v: no view, no fight"; fi

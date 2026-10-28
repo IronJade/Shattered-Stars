@@ -65,6 +65,11 @@ if(MSVC)
   set(SS_WARNINGS /W4 /permissive-)
 else()
   set(SS_WARNINGS -Wall -Wextra -Wpedantic -Wshadow -Wno-unused-parameter)
+  # Floating point as written, on every machine: no a*b+c fused into one rounding. Clang on
+  # arm64 (macOS) fuses by default, which moved the tracker maps' rasterized edges
+  # (tools/tracker_maps.cpp) off the Linux and Windows pixels; x86-64 builds have no FMA
+  # unless asked for, so nothing changes there.
+  add_compile_options(-ffp-contract=off)
 endif()
 
 # Everything except the platform layer, so tests can link it without a window.

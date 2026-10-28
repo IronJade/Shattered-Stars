@@ -379,6 +379,8 @@ bool Window::next_event(bool& open, KeyEvent& out) {
 }
 
 void Window::present(const u32* pixels, int width, int height, float aspect) {
+  // Its own context: with SS_SHOT's window open too, the context made last stays current.
+  SDL_GL_MakeCurrent(window_, static_cast<SDL_GLContext>(context_));
   int win_w = 0, win_h = 0;
   SDL_GetWindowSizeInPixels(window_, &win_w, &win_h);
   int view_w = win_w, view_h = win_h;
@@ -403,20 +405,25 @@ void Window::present(const u32* pixels, int width, int height, float aspect) {
   gl::Uniform1i(gl::GetUniformLocation(program_, "image"), 0);
   gl::BindVertexArray(vao_);
   gl::DrawArrays(gl::TRIANGLES, 0, 3);
+  if (keep_frames_ && win_w > 0 && win_h > 0) {
+    std::vector<u32> raw(static_cast<size_t>(win_w) * win_h);
+    gl::PixelStorei(gl::PACK_ALIGNMENT, 4);
+    gl::ReadPixels(0, 0, win_w, win_h, gl::RGBA, gl::UNSIGNED_BYTE, raw.data());
+    kept_.resize(raw.size());
+    for (int y = 0; y < win_h; ++y)  // GL rows run bottom-up; PNGs want top row first.
+      std::memcpy(&kept_[static_cast<size_t>(y) * win_w], &raw[static_cast<size_t>(win_h - 1 - y) * win_w],
+                  static_cast<size_t>(win_w) * 4);
+    kept_width_ = win_w;
+    kept_height_ = win_h;
+  }
   SDL_GL_SwapWindow(window_);
 }
 
 bool Window::read_pixels(std::vector<u32>& out, int& width, int& height) const {
-  if (!context_) return false;
-  SDL_GetWindowSizeInPixels(window_, &width, &height);
-  if (width <= 0 || height <= 0) return false;
-  std::vector<u32> raw(static_cast<size_t>(width) * height);
-  gl::PixelStorei(gl::PACK_ALIGNMENT, 4);
-  gl::ReadPixels(0, 0, width, height, gl::RGBA, gl::UNSIGNED_BYTE, raw.data());
-  out.resize(raw.size());
-  for (int y = 0; y < height; ++y)  // GL rows run bottom-up; PNGs want top row first.
-    std::memcpy(&out[static_cast<size_t>(y) * width], &raw[static_cast<size_t>(height - 1 - y) * width],
-                static_cast<size_t>(width) * 4);
+  if (kept_.empty()) return false;
+  out = kept_;
+  width = kept_width_;
+  height = kept_height_;
   return true;
 }
 
