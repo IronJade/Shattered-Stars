@@ -2,7 +2,7 @@
 """Renders the modder's reference tables (docs/modding/reference/*.csv, made by
 tools/mod_reference.py) as wiki pages.
 
-  mod_reference_wiki.py [--csv docs/modding/reference] [--wiki scratchpad/wiki]
+  mod_reference_wiki.py [--csv docs/modding/reference] [--wiki wiki]
 
 Writes Modding-Reference.md (the hub) and the Reference-* pages: Items (one page per kind),
 Maps (per disc), Doors (in parts by map number), Chests, Shops and Enemies. Facts only, as
@@ -18,7 +18,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_DIR = os.path.join(ROOT, "docs", "modding", "reference")
-WIKI = os.path.join(ROOT, "scratchpad", "wiki")
+WIKI = os.path.join(ROOT, "wiki")
 REPO = "https://github.com/IronJade/Shattered-Stars"
 CSV_URL = f"{REPO}/blob/main/docs/modding/reference"
 DOOR_PAGE_ROWS = 450
