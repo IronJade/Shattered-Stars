@@ -772,6 +772,96 @@ TEST(ap_server_link) {
   ap::stop();
 }
 
+// A save's checks go out when it is loaded while connected [loadsend agent] (the Windows recheck of
+// 0.03.00, item 8): a game connects at the title, before Continue, so the connect sends only the
+// session's checks (none yet); a check made offline and saved reached the server only at a later
+// reconnect. The load sends the merged checks and the goal, as the connect does. Never the checks
+// of another seed's or slot's sidecar (location ids are the game's, the same in every seed); nothing
+// without a sidecar, before the slot connects (the connect sends them), in another room, or off.
+TEST(ap_load_sends_checks) {
+  ap::stop();
+  const fs::path dir = scratch("loadsend");
+  const std::string card = (dir / "memcard1.mcd").string();
+  ap::Seed s;
+  std::string error;
+  CHECK(ap::load_seed_text(kSeed, &s, &error));
+  // Offline: the crate's check, saved in file 1.
+  ap::start_with(s);
+  CHECK(ap::location_checked(1347569665));
+  ap::on_saved(card, 0);
+  ap::stop();
+  // Another run, connected at the title: nothing to send yet. Continue, file 1: the crate goes out.
+  ap::start_with(s);
+  std::vector<int64_t> sent;
+  int goals = 0;
+  std::vector<std::string> deaths;
+  std::vector<ap_net::Event> events;
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap_net::Event c;
+  c.kind = ap_net::Event::kConnected;
+  c.seed_name = "12345678901234567890";
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected() && sent.empty() && goals == 0);
+  ap::on_loaded(card, 0);
+  CHECK(sent == std::vector<int64_t>{1347569665});
+  CHECK(goals == 0);
+  // A save with the goal: its checks and the session's (merged), and the goal.
+  ap::SaveState st;
+  st.seed = "12345678901234567890";
+  st.slot_name = "Claude";
+  st.checked = {1};
+  st.goal_done = true;
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 1), st, &error));
+  sent.clear();
+  ap::on_loaded(card, 1);
+  CHECK(sent == (std::vector<int64_t>{1, 1347569665}) && goals == 1);
+  // Another seed's sidecar, or another slot's of this seed (loaded only with SS_AP_ANY_SAVE=1):
+  // used, never sent.
+  st.seed = "other";
+  st.checked = {1349650432};
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 2), st, &error));
+  st.seed = "12345678901234567890";
+  st.slot_name = "Dias";
+  CHECK(ap::write_sidecar(ap::sidecar_path(card, 3), st, &error));
+  sent.clear();
+  goals = 0;
+  ap::on_loaded(card, 2);
+  CHECK(ap::is_checked(1349650432) && ap::state().goal_done && sent.empty() && goals == 0);
+  ap::on_loaded(card, 3);
+  CHECK(ap::is_checked(1349650432) && sent.empty() && goals == 0);
+  // A save without a sidecar: a fresh state, nothing to send.
+  ap::on_loaded(card, 9);
+  CHECK(ap::state().checked.empty() && sent.empty() && goals == 0);
+  // The slot not connected yet: the load sends nothing, the connect sends the save's checks.
+  ap::stop();
+  ap::start_with(s);
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap::on_loaded(card, 0);
+  CHECK(!ap::connected() && ap::is_checked(1347569665) && sent.empty());
+  events.push_back(c);
+  ap::vblank();
+  CHECK(ap::connected() && sent == std::vector<int64_t>{1347569665} && goals == 0);
+  // Another room: nothing at the connect or the load.
+  ap::stop();
+  ap::start_with(s);
+  sent.clear();
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  c.seed_name = "other";
+  events.push_back(c);
+  ap::vblank();
+  ap::on_loaded(card, 0);
+  CHECK(!ap::connected() && ap::is_checked(1347569665) && sent.empty());
+  // Archipelago off: the load is the game's own (no sidecar read, nothing sent).
+  ap::stop();
+  ap::connect(std::make_unique<FakeLink>(&sent, &goals, &deaths, &events));
+  ap::on_loaded(card, 0);
+  CHECK(!ap::enabled() && !ap::is_checked(1347569665) && sent.empty() && goals == 0);
+  ap::stop();
+  std::error_code ec;
+  fs::remove_all(dir, ec);
+}
+
 TEST(ap_placeholders) {
   ap::stop();
   ap::Seed s;
