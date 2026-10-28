@@ -134,14 +134,13 @@ function so2_door_text(id)
     return cut(head, math.max(12, room)) .. tail
 end
 
--- The door markers' colour (each door section's access rule): Inspect (blue, "look here") for a
--- door whose destination is known, SequenceBreak (yellow) for one not found yet (Phase C).
--- Doors are diamonds, checks squares; a door is never a check, so never green or red.
+-- The door markers' colour (each door section's access rule): SequenceBreak (yellow), the one
+-- colour no check uses (checks are green / red / blue / grey, orange / teal / purple when mixed),
+-- so a door never looks like a check. A door not found yet (the entrance randomizer, Phase C) is
+-- yellow too for now (its panel line reads "?"); its own colour is Phase C's decision, and this
+-- is the one place to change it (so2_door_destinations(id) == nil there).
 function so2_door_access(id)
-    if so2_door_destinations(id) == nil then
-        return AccessibilityLevel.SequenceBreak
-    end
-    return AccessibilityLevel.Inspect
+    return AccessibilityLevel.SequenceBreak
 end
 
 -- Opens the destination's tab, outermost first; false when there is none (unknown, or a map that

@@ -820,7 +820,7 @@ class TestLua(unittest.TestCase):
         n = doors = 0
         for _, s in g.STUB.sections.items():
             if s.FullID.startswith("Doors/"):
-                self.assertEqual(g.STUB.rule(s.access), 3, "a door with a known destination: Inspect")
+                self.assertEqual(g.STUB.rule(s.access), 5, "a door: SequenceBreak (yellow), the colour no check uses")
                 self.assertIsNone(s.visible, "doors are always visible")
                 doors += 1
                 continue
@@ -855,6 +855,23 @@ class TestDoorsLua(TestLua):
     def item(self, g, wid):
         m, letter = self.ways[wid][:2]
         return g.Tracker.FindObjectForCode(g.Tracker, f"door_{m}_{letter.lower()}")
+
+    def test_door_colour_is_no_checks(self):
+        """Doors are SequenceBreak (yellow), and no check can ever be: the checks' rule (so2_access)
+        returns only Normal / None / Inspect, and only doors.lua names SequenceBreak."""
+        scripts = os.path.join(PACK, "scripts")
+        for base, _, files in os.walk(scripts):
+            for f in files:
+                if f.endswith(".lua"):
+                    text = read(os.path.join(base, f))
+                    if f == "doors.lua":
+                        self.assertIn("AccessibilityLevel.SequenceBreak", text)
+                    else:
+                        self.assertNotIn("SequenceBreak", text, f"{f}: SequenceBreak is the doors' colour")
+        lua = self.runtime("map")
+        g = lua.globals()
+        for wid in sorted(self.ways)[:50]:
+            self.assertEqual(g.so2_door_access(wid), 5)
 
     def test_panel_lines(self):
         lua = self.runtime("map")
@@ -950,7 +967,8 @@ class TestDoorsLua(TestLua):
 
     def test_entrance_randomizer_seam(self):
         """Phase C's seam: slot data door_pairs (doorway id -> the doorway at the other end) and the
-        found doors in so2_doors_{team}_{slot}: '?' and yellow until found, then the pair's room."""
+        found doors in so2_doors_{team}_{slot}: '?' until found, then the pair's room; yellow either way
+        (the colour for unknown doors is Phase C's decision)."""
         lua = self.runtime("map")
         g, T = lua.globals(), lua.globals().Tracker
         ids = sorted(self.ways)
@@ -962,12 +980,12 @@ class TestDoorsLua(TestLua):
         letter = self.ways[a][1]
         self.assertEqual(self.item(g, a).BadgeText, f"{letter} \u2192 ?")
         sec = T.FindObjectForCode(T, f"@Doors/18 {letter}/Door {letter}")
-        self.assertEqual(g.STUB.rule(sec.access), 5, "not found yet: SequenceBreak (yellow)")
+        self.assertEqual(g.STUB.rule(sec.access), 5, "not found yet: SequenceBreak (yellow), as a known door for now")
         self.assertFalse(g.so2_door_go(a), "unknown: no tab to open")
         self.assertNotIn("?", self.item(g, other).BadgeText, "a door the room doesn't randomize: vanilla")
         g.STUB.handlers.SetReply("so2_doors_0_1", to_lua(lua, [a]), None)
         self.assertTrue(self.item(g, a).BadgeText.startswith(f"{letter} \u2192 62 "))
-        self.assertEqual(g.STUB.rule(sec.access), 3)
+        self.assertEqual(g.STUB.rule(sec.access), 5, "found: still yellow (doors never take a check's colour)")
         self.assertEqual(self.item(g, b).BadgeText, f"{self.ways[b][1]} \u2192 ?", "found one way only")
         self.clear_hints(lua)
         self.assertTrue(g.so2_door_go(a))

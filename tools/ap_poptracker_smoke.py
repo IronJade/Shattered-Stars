@@ -48,7 +48,8 @@ dialog helper is reachable) and SDL's dummy video driver, under a scratch HOME.
    of map 26 (AvailableChestCount 0: what a click on "Door A" in the map popup does) and reports the
    section a few frames later. The pack's handler must set it back (a door is never checked) and open
    the destination room's tab path (the saved state's active tabs, SO2_MAP_TABS of door A's first
-   destination). Also printed: the door panel's line for that door, and PopTracker's peak memory
+   destination). The door section's AccessibilityLevel must be SequenceBreak (yellow: the colour no
+   check uses). Also printed: the door panel's line for that door, and PopTracker's peak memory
    with the rooms' maps (VmHWM of its processes).
 Prints one line per check; exit status 0 when all pass.
 """
@@ -458,6 +459,7 @@ ScriptHost:AddOnFrameHandler("so2 smoke doors", function(elapsed)
     if frames == 60 and sec then
         local item = SO2_DOORS.items[%(door)d]
         print("so2door line " .. (item and item.BadgeText or "?"))
+        print("so2door level " .. tostring(sec.AccessibilityLevel) .. " " .. tostring(AccessibilityLevel.SequenceBreak))
         print("so2door click " .. sec.FullID .. " " .. sec.AvailableChestCount)
         sec.AvailableChestCount = 0
         clicked = true
@@ -526,6 +528,10 @@ def run_doors(apprun, root, pack_dir, port, tabs):
     print(f"info  doors: door A of map 26 -> {dests}; panel line {line.group(1) if line else '?'!r}; "
           f"PopTracker peak memory {peak // 1024} MB")
     after = re.search(r"so2door after (\d+) (\d+)", text)
+    level = re.search(r"so2door level (\S+) (\S+)", text)
+    check(level is not None and level.group(1) == level.group(2) == "5",
+          "doors: the door is SequenceBreak (yellow: the colour no check uses)"
+          + (f"; PopTracker says {level.group(1)}" if level else ""))
     check("so2door click " + section + " 1" in text, f"doors: {section} clicked (it had 1 of 1)")
     check(after is not None and after.group(1) == after.group(2) == "1",
           "doors: the pack set the door back at once (a door is never checked)")
