@@ -102,8 +102,12 @@ game::ap::Json layout() {
   return j;
 }
 
+// A temp directory of its own per case, directly under the system temp dir (not nested under a
+// shared parent this file creates), so each test's own 'fs::remove_all' at the end removes the
+// whole thing and no 'tracker_maps_test/' folder is left in the directory ss_game_tests runs
+// from (as b82b176 did for test_tracker_job.cpp).
 fs::path scratch(const char* name) {
-  const fs::path p = fs::current_path() / "tracker_maps_test" / name;
+  const fs::path p = fs::temp_directory_path() / (std::string("ss_tracker_maps_test_") + name);
   std::error_code ec;
   fs::remove_all(p, ec);
   fs::create_directories(p);
